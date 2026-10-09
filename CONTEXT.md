@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 12 张票据；尚无产品代码。下一步从票据 01 开始实施。**
+2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据；尚无产品代码。下一步从票据 01 开始实施。**
 
 ## 一句话
 
@@ -8,7 +8,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 当前状态
 
-- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M99，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
+- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M104，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
 - 已接受 ADR-0001–0004、ADR-0006–0011；ADR-0005 已被 ADR-0008 取代。
 - 技术栈：TypeScript（Node 22），引擎不依赖框架；ajv 校验、CanvasKit 栅格化（字体全部显式加载）、自研布局（ADR-0011）。busbox-render-engine 只作算法参考。
 - 首期规格 [渲染流水线](.scratch/render-pipeline/spec.md)（ready-for-agent）：先不接 agent，跑通 M402 从数据集校验到 PNG；主接缝为渲染入口，输出图片、问题清单与布局摘要；次接缝为发布静态数据定义。
@@ -21,7 +21,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 |---|---|
 | [AGENTS.md](AGENTS.md) | agent 工作方式与技能配置（`CLAUDE.md` 只是加载入口） |
 | [GLOSSARY.md](GLOSSARY.md) | 领域术语表，唯一的术语事实源 |
-| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M97 逐条决定 |
+| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M104 逐条决定 |
 | [docs/model/business-entities.md](docs/model/business-entities.md) | 业务实体、关系与规则，含两张关系图与 G 系列待定事项 |
 | [docs/model/template-elements.md](docs/model/template-elements.md) | 13 种模板元素、共有属性、位置与尺寸、可绑定范围、排布与适配 |
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
@@ -29,7 +29,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/examples/m402-dsl/](docs/examples/m402-dsl/README.md) | 数据定义 DSL、编译产物、数据集、模板 DSL、渲染请求草稿 |
 | [docs/adr/](docs/adr/) | 难以逆转、需要解释的决定 |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式与领域文档规则 |
-| [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 12 张票据 |
+| [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 
 ## 关键决定摘要
 
@@ -42,7 +42,6 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 - OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
 - CloudKiln 的执行模型能否看图。
-- 渲染检查顺序，随实现细化。
 
 ## 外部来源
 
@@ -55,4 +54,4 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 下一步
 
-按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架完成后，02 竖排站名（风险最高）、03 数据把关、04 布局可并行；12 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。
+按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架完成后，02 竖排站名（风险最高）、03 数据把关、04 布局、05 图片、06 文字片段与 12 草稿/正式出图可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。
