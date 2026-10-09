@@ -1,6 +1,6 @@
 # RenderWeave 需求探索
 
-状态：第 1–3 轮已答；建模草稿 M1–M98 已定。本文保存目标、事实、建议和决策树；已明确术语见 [GLOSSARY.md](../../GLOSSARY.md)，项目现状见 [CONTEXT.md](../../CONTEXT.md)。
+状态：第 1–3 轮已答；建模草稿 M1–M99 已定。本文保存目标、事实、建议和决策树；已明确术语见 [GLOSSARY.md](../../GLOSSARY.md)，项目现状见 [CONTEXT.md](../../CONTEXT.md)。
 
 ## 用户已明确
 
@@ -65,6 +65,20 @@
 | 旧 RenderWeave 以自有验证器为权威，编译出的 JSON Schema 仅用于互操作 | 旧 RenderWeave `docs/adr/0002-closed-dsl-inline-compiler-and-authoritative-validator.md` | 新草稿写的是用 JSON Schema 验证数据，两者不同 |
 | 旧 RenderWeave 模板侧已有：带对外/私有之分且必须有默认值的自定义定义、首个命中加必填 otherwise 的映射定义、按显式上下文和参数填充调用子模板的 TemplateUse；绑定不回退到静态值 | 旧 RenderWeave `docs/context/template-editor.md:46`、`:52`、`:60`、`:67` | 概念可参照，不代表其版本、授权、Profile 等机制需要继承 |
 | 旧 RenderWeave 资源（Asset）内容可替换、引用指向当前内容；删除时只检查各模板当前内容中的引用 | 旧 RenderWeave `docs/context/asset.md:10`、`:21` | 与 M10 一致，可回答"历史版本是否计入引用" |
+
+### Rust 渲染器核查（2026-10-09）
+
+用户提供 `E:
+ust-appusbox-render-engine`，由子 agent 阅读、主会话抽查。路径相对该仓库根；只读，未构建。
+
+| 事实 | 证据 | 证据边界 |
+|---|---|---|
+| 仓库含两套引擎：Legacy 把 design-layout-draw 的 CanvasKit drawCore V4（TS）逐段移植为 skia-safe + SkParagraph；Haibo 是 2026-07-26 加入的严格 DSL 服务，文本与布局自写 | `docs/specs/001-render-engine/requirements.md:12-19`；`crates/engine/src/text/vertical.rs:599-615`（注释逐段对应 `vertical.ts` 行号）；最后提交 2026-07-26 | 旧 RenderWeave 的 `renderer/` 是另一套代码，从未调用该引擎（子 agent 结论，未逐条复核） |
+| 竖排两端分布按字形墨迹让首字贴顶、末字贴底，溢出时以 scaleY 压缩；但没有"先收紧字距"、没有 60% 下限，也不上报严重问题 | `crates/engine/src/text/vertical.rs:188-257`、`:599-725` | 我们的 M82、M88 需要在其算法上补齐 |
+| 横排两端按墨迹宽度分配间隙，间隙为负时改用 scaleX；缩字号用二分搜索，可缩到 1px | `crates/engine/src/text/horizontal.rs:253-380`；`crates/engine/src/text/fit.rs:45-96` | 顺序、下限与上报不符合 M84、M86 |
+| 缺字按 glyphId 为 0 检测并分两级上报，但实际整段换用后备字体；斜体固定为直立；外描边画两遍；两套引擎都不支持 SVG 图片、缩字组与布局摘要 | `crates/engine/src/text/horizontal.rs:1081-1097`；`crates/engine/src/text/stroke.rs:141-171` | M10/M12 的逐字替代、M80 倾斜、M74 SVG、M91 缩字组需自行实现 |
+| 原生 Skia 在 Windows（DirectWrite）与 Linux（FreeType）出图像素不同；绘制约比 CanvasKit WASM 快 18 倍 | `docs/specs/001-render-engine/design.md:84`；`acceptance.md:140-173`、`:206-210` | 性能数字为其文档记录，未复测 |
+| 拟合在绘制阶段进行、最终字号不回写，因此产不出布局摘要，也做不了跨元素的统一缩字 | 子 agent 结论（`crates/engine/src/pipeline/mod.rs`） | 我们的实现须把"测量、决定、记录"放在绘制之前 |
 
 ### Agent 执行环境核查（2026-10-08）
 
@@ -280,6 +294,7 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 | M96 | 循环模板的适用尺寸范围可以写得很宽，主要用于防止明显错误的调用（F7） |
 | M97 | M402 设计稿中站名上方的蓝色"1"圆标是早期的错误设计，忽略；地铁、医院等标识沿用草稿处理，作为停靠站点的"标识"（列表[文本]，按取值选图）（F6） |
 | M98 | 渲染引擎用 TypeScript（Node 22）实现为不依赖框架的模块加命令行入口；数据集校验用 ajv，栅格化与文字排版基于 Skia（必要时按字形逐个排版），布局自行实现；本期不用 NestJS，服务外壳后续再选（实施规划，见 [ADR-0011](../adr/0011-typescript-framework-free-render-engine.md)） |
+| M99 | 栅格化定为 CanvasKit，字体全部显式加载、不使用系统字体，以保证跨平台出图一致；busbox-render-engine 只作算法参考，不作后端；排版按"测量、决定、记录、绘制"分步，布局摘要在绘制前生成（实施规划，见 [ADR-0011](../adr/0011-typescript-framework-free-render-engine.md)） |
 
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
@@ -297,4 +312,4 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 - [M402 设计稿解读](../examples/m402-design-analysis.md) 把用户提供的真实设计稿（[原图](../examples/materials/m402-route-sign.jpg)）对照到模型，列出缺口 N1–N4 与观察到的适配规则，作为 Q13 的依据。
 - [M402 DSL 草稿](../examples/m402-dsl/README.md) 把模型写成数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求；起草约定为 S 编号，发现的问题为 F 编号。
 - 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`；当前已接受 ADR-0001–0004、ADR-0006–0011；ADR-0005 已被 ADR-0008 取代。
-- 下一步：首期规格已发布在 `.scratch/render-pipeline/spec.md`（ready-for-agent），接着拆成票据。
+- 下一步：首期规格 `.scratch/render-pipeline/spec.md` 已拆成 12 张票据（`.scratch/render-pipeline/issues/`），从 01 开始实施。
