@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；尚无产品代码。下一步是实施规划。**
+2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已发布；尚无产品代码。下一步是把规格拆成票据。**
 
 ## 一句话
 
@@ -8,8 +8,10 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 当前状态
 
-- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M97，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
-- 已接受 ADR-0001–0004、ADR-0006–0010；ADR-0005 已被 ADR-0008 取代。
+- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M98，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
+- 已接受 ADR-0001–0004、ADR-0006–0011；ADR-0005 已被 ADR-0008 取代。
+- 技术栈：TypeScript（Node 22），引擎不依赖框架；ajv 校验、Skia 栅格化、自研布局（ADR-0011）。
+- 首期规格 [渲染流水线](.scratch/render-pipeline/spec.md)（ready-for-agent）：先不接 agent，跑通 M402 从数据集校验到 PNG；主接缝为渲染入口，输出图片、问题清单与布局摘要；次接缝为发布静态数据定义。
 - 以真实设计稿 [M402 线路牌](docs/examples/materials/m402-route-sign.jpg)（740 × 165 mm，120 DPI，35 站）核对了模型，并写出 [DSL 草稿](docs/examples/m402-dsl/README.md)：10 个 JSON 文件合法，M402 数据集按编译产物 JSON Schema 校验 0 错误，5 个模板的引用全部能对上。尚未实际渲染。
 - 仓库只有文档，没有代码、构建或测试。
 
@@ -52,4 +54,4 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 下一步
 
-进入实施规划：按 ADR-0003 先不接 agent，跑通"数据定义校验与编译 → 模板求值 → 排版渲染输出 PNG"的最小闭环，以 M402 草稿为测试样例；之后接 MCP 服务与 CloudKiln。规格与票据记录在 `.scratch/<feature>/`。
+把 [渲染流水线规格](.scratch/render-pipeline/spec.md) 拆成票据（`.scratch/render-pipeline/issues/`），建议先做竖排、字形压缩与缩字组的技术验证；之后接 MCP 服务与 CloudKiln。

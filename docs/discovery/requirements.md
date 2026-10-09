@@ -1,6 +1,6 @@
 # RenderWeave 需求探索
 
-状态：第 1–3 轮已答；建模草稿 M1–M97 已定。本文保存目标、事实、建议和决策树；已明确术语见 [GLOSSARY.md](../../GLOSSARY.md)，项目现状见 [CONTEXT.md](../../CONTEXT.md)。
+状态：第 1–3 轮已答；建模草稿 M1–M98 已定。本文保存目标、事实、建议和决策树；已明确术语见 [GLOSSARY.md](../../GLOSSARY.md)，项目现状见 [CONTEXT.md](../../CONTEXT.md)。
 
 ## 用户已明确
 
@@ -279,6 +279,7 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 | M95 | 首版接受多个循环容器靠相同内边距保持列对齐（F5） |
 | M96 | 循环模板的适用尺寸范围可以写得很宽，主要用于防止明显错误的调用（F7） |
 | M97 | M402 设计稿中站名上方的蓝色"1"圆标是早期的错误设计，忽略；地铁、医院等标识沿用草稿处理，作为停靠站点的"标识"（列表[文本]，按取值选图）（F6） |
+| M98 | 渲染引擎用 TypeScript（Node 22）实现为不依赖框架的模块加命令行入口；数据集校验用 ajv，栅格化与文字排版基于 Skia（必要时按字形逐个排版），布局自行实现；本期不用 NestJS，服务外壳后续再选（实施规划，见 [ADR-0011](../adr/0011-typescript-framework-free-render-engine.md)） |
 
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
@@ -295,5 +296,5 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 - [线路牌案例](../examples/route-sign.md) 按业务实体模型走查线路牌：数据定义、数据集、模板组合与演示 A–D。
 - [M402 设计稿解读](../examples/m402-design-analysis.md) 把用户提供的真实设计稿（[原图](../examples/materials/m402-route-sign.jpg)）对照到模型，列出缺口 N1–N4 与观察到的适配规则，作为 Q13 的依据。
 - [M402 DSL 草稿](../examples/m402-dsl/README.md) 把模型写成数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求；起草约定为 S 编号，发现的问题为 F 编号。
-- 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`；当前已接受 ADR-0001–0004、ADR-0006–0010；ADR-0005 已被 ADR-0008 取代。
-- 下一步：进入实施规划，规格与票据以本地 Markdown 记录在 `.scratch/`（见 `docs/agents/issue-tracker.md`）。
+- 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`；当前已接受 ADR-0001–0004、ADR-0006–0011；ADR-0005 已被 ADR-0008 取代。
+- 下一步：首期规格已发布在 `.scratch/render-pipeline/spec.md`（ready-for-agent），接着拆成票据。
