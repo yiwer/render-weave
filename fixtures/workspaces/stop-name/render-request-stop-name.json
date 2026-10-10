@@ -1,0 +1,7 @@
+{
+  "template": "竖排站名",
+  "dataset": { "id": "ds-stop-name" },
+  "parameters": {},
+  "output": { "width": 20, "height": 73, "dpi": 120, "format": "png" },
+  "mode": "final"
+}

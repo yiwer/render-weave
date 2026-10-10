@@ -67,6 +67,8 @@ export const ProblemCodes = {
 
   /** 实际尺寸超出画板的适用尺寸范围。 */
   renderSizeOutOfRange: 'render.sizeOutOfRange',
+  /** 文字按适配规则处理后仍放不下元素框。 */
+  layoutTextOverflow: 'layout.textOverflow',
 } as const;
 
 export type ProblemCode = (typeof ProblemCodes)[keyof typeof ProblemCodes];

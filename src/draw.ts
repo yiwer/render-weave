@@ -39,10 +39,22 @@ export function draw(ck: CanvasKit, fonts: FontStore, ops: readonly DrawOp[], ou
       } else {
         const font = fonts.get(op.font);
         if (!font) continue;
-        const skFont = fonts.makeFont(font, op.fontSize);
+        // 纵向压缩用"字号乘 scaleY、横向放大 1/scaleY"表达，变换在生成字形轮廓时完成，
+        // 描边作用在变换后的轮廓上，所以压缩后描边宽度不变。
+        const skFont = fonts.makeFont(font, op.fontSize * op.scaleY);
+        skFont.setScaleX(op.scaleX / op.scaleY);
         try {
+          if (op.stroke) {
+            // 描边画在填充之下，画笔宽度取两倍，字形外侧可见的宽度即为 stroke.width（M108）。
+            paint.setStyle(ck.PaintStyle.Stroke);
+            paint.setStrokeWidth(op.stroke.width * 2);
+            paint.setStrokeJoin(ck.StrokeJoin.Round);
+            setColor(ck, paint, op.stroke.color);
+            canvas.drawGlyphs(op.glyphs as number[], op.positions as number[], 0, 0, skFont, paint);
+            paint.setStyle(ck.PaintStyle.Fill);
+          }
           setColor(ck, paint, op.color);
-          canvas.drawGlyphs(op.glyphs as number[], op.positions as number[], op.x, op.y, skFont, paint);
+          canvas.drawGlyphs(op.glyphs as number[], op.positions as number[], 0, 0, skFont, paint);
         } finally {
           skFont.delete();
         }

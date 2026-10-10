@@ -16,10 +16,23 @@ export interface LoadedFont {
   readonly descender: number;
 }
 
+/** 字形墨迹的边界，em 单位，相对基线起点，y 向下为正。 */
+export interface InkBounds {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
 type LoadOutcome = { font: LoadedFont } | { error: { code: Problem['code']; message: string } };
+
+/** 求墨迹边界时使用的字号与二分次数：精度约为 4 × 256 / 2^32 em，远小于一个像素。 */
+const INK_PROBE_SIZE = 256;
+const INK_PROBE_STEPS = 32;
 
 export class FontStore {
   private readonly outcomes = new Map<string, LoadOutcome>();
+  private readonly inkCache = new Map<string, InkBounds | null>();
 
   constructor(
     private readonly ck: CanvasKit,
@@ -52,11 +65,68 @@ export class FontStore {
     return skFont;
   }
 
+  /**
+   * 字形墨迹的精确边界；没有墨迹（如空格）时为 undefined。
+   * 用 getGlyphIntercepts 对字形轮廓求交：左右边界直接得到，上下边界二分求得。
+   * 不用 getGlyphBounds：它在规范化字号下取整，实测误差可达 1/64 em，小字号时更大。
+   */
+  inkBounds(font: LoadedFont, glyph: number): InkBounds | undefined {
+    const key = `${font.id}#${glyph}`;
+    const cached = this.inkCache.get(key);
+    if (cached !== undefined) return cached ?? undefined;
+
+    const skFont = this.makeFont(font, INK_PROBE_SIZE);
+    try {
+      const glyphs = [glyph];
+      const origin = [0, 0];
+      const far = INK_PROBE_SIZE * 4;
+      const intercepts = (top: number, bottom: number) => skFont.getGlyphIntercepts(glyphs, origin, top, bottom);
+      const all = intercepts(-far, far);
+      if (all.length === 0) {
+        this.inkCache.set(key, null);
+        return undefined;
+      }
+      let left = Infinity;
+      let right = -Infinity;
+      for (let i = 0; i < all.length; i += 2) {
+        left = Math.min(left, all[i]!);
+        right = Math.max(right, all[i + 1]!);
+      }
+      // 墨迹顶：使 [-far, y] 有交点的最小 y；墨迹底：使 [y, far] 有交点的最大 y。
+      let lo = -far;
+      let hi = far;
+      for (let i = 0; i < INK_PROBE_STEPS; i++) {
+        const mid = (lo + hi) / 2;
+        if (intercepts(-far, mid).length > 0) hi = mid;
+        else lo = mid;
+      }
+      const top = hi;
+      lo = -far;
+      hi = far;
+      for (let i = 0; i < INK_PROBE_STEPS; i++) {
+        const mid = (lo + hi) / 2;
+        if (intercepts(mid, far).length > 0) lo = mid;
+        else hi = mid;
+      }
+      const bounds = {
+        left: left / INK_PROBE_SIZE,
+        top: top / INK_PROBE_SIZE,
+        right: right / INK_PROBE_SIZE,
+        bottom: lo / INK_PROBE_SIZE,
+      };
+      this.inkCache.set(key, bounds);
+      return bounds;
+    } finally {
+      skFont.delete();
+    }
+  }
+
   dispose(): void {
     for (const outcome of this.outcomes.values()) {
       if ('font' in outcome) outcome.font.typeface.delete();
     }
     this.outcomes.clear();
+    this.inkCache.clear();
   }
 
   private async loadOutcome(id: string): Promise<LoadOutcome> {

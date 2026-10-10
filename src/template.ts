@@ -47,10 +47,35 @@ export interface TextElementModel {
   /** 字号，毫米（em 框的高度）。 */
   readonly fontSize: number;
   readonly color: Color;
+  readonly writingMode: 'horizontal' | 'vertical';
+  /** 横排时是文字在框内的水平位置；竖排时是整列在框内的水平位置。 */
   readonly horizontalAlign: 'start' | 'center' | 'end';
-  readonly verticalAlign: 'top' | 'center' | 'bottom';
+  /** distribute（两端分布）只用于竖排：首字墨迹贴顶、末字墨迹贴底、中间均分。 */
+  readonly verticalAlign: 'top' | 'center' | 'bottom' | 'distribute';
+  readonly fit: TextFit;
+  readonly stroke?: TextStroke;
   readonly place: FreePlace;
 }
+
+/** 文字放不下时的处理（M82、M88）。 */
+export interface TextFit {
+  /** 收紧字距：字距最小收到 0。两端分布时字距由框高决定、本来就不小于 0，这一步记录的是"压缩之前先收字距"的顺序。 */
+  readonly tightenSpacing: boolean;
+  /** 压缩字形：沿书写方向压缩，不低于 compressMin。 */
+  readonly compressGlyphs: boolean;
+  readonly compressMin: number;
+  /** 仍放不下时的问题等级。 */
+  readonly onFail: 'severe' | 'hint';
+}
+
+/** 文字描边：画在填充之下，width 是字形外侧可见的宽度，毫米（M108）。 */
+export interface TextStroke {
+  readonly color: Color;
+  readonly width: number;
+}
+
+/** 字形压缩的下限，模板只能设得更高（M88）。 */
+export const MIN_COMPRESSION = 0.6;
 
 /** 文本内容片段：文字，或绑定变量的插槽。 */
 export type ContentItem = { readonly kind: 'text'; readonly text: string } | { readonly kind: 'slot'; readonly path: string };
@@ -70,7 +95,21 @@ export type Color = string;
 
 const TEMPLATE_KEYS = ['dslVersion', 'name', 'base', 'parameters', 'derived', 'checks', 'artboard'];
 const ARTBOARD_KEYS = ['sizeRange', 'fill', 'layout', 'children'];
-const TEXT_KEYS = ['type', 'name', 'content', 'font', 'fontSize', 'color', 'horizontalAlign', 'verticalAlign', 'place'];
+const TEXT_KEYS = [
+  'type',
+  'name',
+  'content',
+  'font',
+  'fontSize',
+  'color',
+  'writingMode',
+  'horizontalAlign',
+  'verticalAlign',
+  'fit',
+  'stroke',
+  'place',
+];
+const FIT_KEYS = ['steps', 'compressMin', 'onFail'];
 const FREE_PLACE_KEYS = ['left', 'right', 'top', 'bottom', 'width', 'height'];
 
 export function parseTemplate(name: string, document: unknown): { model?: TemplateModel; problems: Problem[] } {
@@ -212,13 +251,121 @@ class TemplateReader {
     const fontSize = value['fontSize'];
     if (!isPositive(fontSize)) this.fail(path, '文本的字号 fontSize 必须是大于 0 的毫米数');
     const color = value['color'] === undefined ? '#000000FF' : this.readColor(value['color'], path, 'color');
+    const writingMode = this.readEnum(value['writingMode'], ['horizontal', 'vertical'] as const, 'horizontal', path, 'writingMode');
     const horizontalAlign = this.readEnum(value['horizontalAlign'], ['start', 'center', 'end'] as const, 'start', path, 'horizontalAlign');
-    const verticalAlign = this.readEnum(value['verticalAlign'], ['top', 'center', 'bottom'] as const, 'top', path, 'verticalAlign');
+    const verticalAlign = this.readEnum(
+      value['verticalAlign'],
+      ['top', 'center', 'bottom', 'distribute'] as const,
+      'top',
+      path,
+      'verticalAlign',
+    );
+    if (verticalAlign === 'distribute' && writingMode !== 'vertical') {
+      this.fail(path, 'verticalAlign 取 distribute（两端分布）只用于竖排文字');
+    }
+    const fit = this.readFit(value['fit'], writingMode, path);
+    const stroke = value['stroke'] === undefined ? undefined : this.readStroke(value['stroke'], path);
     const place = this.readFreePlace(value['place'], path);
-    if (!content || !font || !isPositive(fontSize) || !color || !horizontalAlign || !verticalAlign || !place) {
+    if (
+      !content ||
+      !font ||
+      !isPositive(fontSize) ||
+      !color ||
+      !writingMode ||
+      !horizontalAlign ||
+      !verticalAlign ||
+      !fit ||
+      (value['stroke'] !== undefined && !stroke) ||
+      !place
+    ) {
       return undefined;
     }
-    return { type: 'text', name, path, content, font, fontSize, color, horizontalAlign, verticalAlign, place };
+    return {
+      type: 'text',
+      name,
+      path,
+      content,
+      font,
+      fontSize,
+      color,
+      writingMode,
+      horizontalAlign,
+      verticalAlign,
+      fit,
+      ...(stroke && { stroke }),
+      place,
+    };
+  }
+
+  /**
+   * 放不下时的处理。竖排支持 tightenSpacing、compressGlyphs，且收紧字距必须在压缩字形之前（M82）；
+   * 横排的压缩、缩字与拉开字距在票据 09 加入；按宽度统一缩字（widthOverflow）在票据 10 加入。
+   * 不写 fit 时文字不做适配，放不下即按严重问题上报。
+   */
+  private readFit(value: unknown, writingMode: TextElementModel['writingMode'] | undefined, path: ElementPath): TextFit | undefined {
+    const none: TextFit = { tightenSpacing: false, compressGlyphs: false, compressMin: MIN_COMPRESSION, onFail: 'severe' };
+    if (value === undefined) return none;
+    if (!isRecord(value)) {
+      this.fail(path, 'fit 必须是对象');
+      return undefined;
+    }
+    if ('widthOverflow' in value) {
+      this.unsupported(path, 'fit.widthOverflow（按宽度统一缩字）尚未支持');
+    }
+    this.checkKeys(
+      Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'widthOverflow')),
+      FIT_KEYS,
+      path,
+      '放不下时的处理 fit',
+    );
+    const steps = value['steps'] ?? [];
+    if (!Array.isArray(steps) || !steps.every((step): step is string => typeof step === 'string')) {
+      this.fail(path, 'fit.steps 必须是步骤名称的列表');
+      return undefined;
+    }
+    const supported = writingMode === 'vertical' ? ['tightenSpacing', 'compressGlyphs'] : [];
+    for (const step of steps) {
+      if (!supported.includes(step)) {
+        this.unsupported(path, `${writingMode === 'vertical' ? '竖排' : '横排'}文字的适配步骤 ${step} 尚未支持`);
+        return undefined;
+      }
+    }
+    if (new Set(steps).size !== steps.length) {
+      this.fail(path, 'fit.steps 中的步骤不能重复');
+      return undefined;
+    }
+    if (steps.includes('compressGlyphs') && !(steps.includes('tightenSpacing') && steps.indexOf('tightenSpacing') < steps.indexOf('compressGlyphs'))) {
+      this.fail(path, '收紧字距必须排在压缩字形之前：字距收到 0 之前不压缩字形（M82）');
+      return undefined;
+    }
+    const compressMin = value['compressMin'] ?? MIN_COMPRESSION;
+    if (typeof compressMin !== 'number' || compressMin < MIN_COMPRESSION || compressMin > 1) {
+      this.fail(path, `fit.compressMin 必须在 ${MIN_COMPRESSION} 到 1 之间（M88）`);
+      return undefined;
+    }
+    const onFail = this.readEnum(value['onFail'], ['severe', 'hint'] as const, 'severe', path, 'fit.onFail');
+    if (!onFail) return undefined;
+    return {
+      tightenSpacing: steps.includes('tightenSpacing'),
+      compressGlyphs: steps.includes('compressGlyphs'),
+      compressMin,
+      onFail,
+    };
+  }
+
+  private readStroke(value: unknown, path: ElementPath): TextStroke | undefined {
+    if (!isRecord(value)) {
+      this.fail(path, 'stroke 必须写成 { "color": 颜色, "width": 毫米 }');
+      return undefined;
+    }
+    this.checkKeys(value, ['color', 'width'], path, '文字描边');
+    const color = this.readColor(value['color'], path, 'stroke.color');
+    const width = value['width'];
+    if (!isPositive(width)) {
+      this.fail(path, 'stroke.width 必须是大于 0 的毫米数');
+      return undefined;
+    }
+    return color ? { color, width } : undefined;
   }
 
   private readContent(value: unknown, path: ElementPath): ContentItem[] | undefined {

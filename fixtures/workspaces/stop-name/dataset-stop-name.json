@@ -1,0 +1,11 @@
+{
+  "dataset": {
+    "id": "ds-stop-name",
+    "name": "M402 最长站名",
+    "staticSchema": { "name": "站名样例", "version": 1 },
+    "origin": { "kind": "manual", "note": "取自 M402 数据集" }
+  },
+  "data": {
+    "name": "李朗国际珠宝园"
+  }
+}

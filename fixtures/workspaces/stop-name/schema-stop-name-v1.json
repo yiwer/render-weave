@@ -1,0 +1,14 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站名样例",
+  "version": 1,
+  "displayName": "站名样例（竖排站名）",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": { "required": true, "minLength": 1, "maxLength": 20 }
+    }
+  ]
+}

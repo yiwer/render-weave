@@ -1,0 +1,29 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "竖排站名",
+  "base": { "name": "站名样例", "version": 1 },
+  "artboard": {
+    "sizeRange": { "width": { "min": 10, "max": 40 }, "height": { "min": 40, "max": 120 } },
+    "fill": "#FFFFFF",
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "text",
+        "name": "站名",
+        "content": [{ "slot": "name" }],
+        "writingMode": "vertical",
+        "verticalAlign": "distribute",
+        "horizontalAlign": "center",
+        "font": "res:font-hei-medium",
+        "fontSize": 10,
+        "color": "#333333",
+        "fit": {
+          "steps": ["tightenSpacing", "compressGlyphs"],
+          "compressMin": 0.6,
+          "onFail": "severe"
+        },
+        "place": { "left": 0, "top": 0, "width": { "fixed": 20 }, "height": { "fixed": 73 } }
+      }
+    ]
+  }
+}

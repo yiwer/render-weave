@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "站名样例 v1",
+  "x-renderweave-static-schema": { "name": "站名样例", "version": 1 },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name"],
+  "properties": {
+    "name": { "title": "站名", "type": "string", "minLength": 1, "maxLength": 20 }
+  }
+}

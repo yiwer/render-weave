@@ -60,6 +60,7 @@ S2–S13 已确认（M90）。
 | S15 | 文本 `horizontalAlign` 取 start、center、end，缺省 start；`verticalAlign` 取 top、center、bottom，缺省 top；两端分布 distribute 随票据 02、09 加入 | 草稿中已用到 center 与 distribute |
 | S16 | 渲染请求的 `dataset` 写成 `{"id": 数据集 ID}` 或 `{"inline": 数据集文档}`，数据集文档与 S6 的文件格式相同（内联时 `dataset.id` 可省略）；`output.format` 取 png 或 jpg（jpeg 同义）；`mode` 取 draft 或 final | 规格"渲染请求" |
 | S17 | 资源仓库目录下的 `resources.json` 列出资源：`{"resources": [{"id": 资源ID, "kind": "image" 或 "font", "file": 相对路径}]}` | S8；文件形式的首版资源仓库 |
+| S18 | 文本 `writingMode` 取 horizontal（缺省）或 vertical；`verticalAlign: "distribute"` 只用于竖排。`fit` 写成 `{"steps": [...], "compressMin": 数, "onFail": "severe" 或 "hint"}`：竖排步骤为 tightenSpacing、compressGlyphs，收紧字距必须排在压缩字形之前；compressMin 缺省 0.6，只能设得更高；onFail 缺省 severe。横排步骤随票据 09 加入，`widthOverflow` 随票据 10 加入。`stroke` 写成 `{"color": 颜色, "width": 毫米}` | 票据 02；M402 草稿中的 fit 与 stroke 写法不变（M108、M109） |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
 

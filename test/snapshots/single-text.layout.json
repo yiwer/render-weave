@@ -30,8 +30,13 @@
         "text": {
           "content": "欢迎乘坐 M402 路",
           "font": "res:font-hei-medium",
+          "writingMode": "horizontal",
           "fontSize": 10,
-          "width": 79.9
+          "width": 79.9,
+          "height": 10,
+          "spacing": 0,
+          "compression": 1,
+          "overflow": false
         }
       }
     ]

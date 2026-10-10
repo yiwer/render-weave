@@ -92,6 +92,7 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
       if (problem) problems.push(problem);
     }
     const result = layout(evaluated, request.output, fonts);
+    problems.push(...result.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
     const image = draw(ck, fonts, result.drawOps, request.output);
     return { image, problems, layout: result.summary };

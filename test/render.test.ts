@@ -100,7 +100,7 @@ describe('数据集校验', () => {
     expect(unknownKey.problems.map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.datasetUnknownKey, { kind: 'field', path: 'extra' }],
     ]);
-    expect(tooLong.problems.map((p) => [p.code, p.location])).toEqual([
+    expect(tooLong.problems.filter((p) => p.location.kind === 'field').map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.datasetConstraintViolated, { kind: 'field', path: 'message' }],
     ]);
   });
