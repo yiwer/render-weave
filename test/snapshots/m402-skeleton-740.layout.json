@@ -46,7 +46,16 @@
               "height": 24,
               "spacing": 0,
               "compression": 1,
-              "overflow": false
+              "overflow": false,
+              "fragments": [
+                {
+                  "text": "M402",
+                  "font": "res:font-hei-heavy",
+                  "fontSize": 24,
+                  "color": "#E60012FF",
+                  "slant": 0
+                }
+              ]
             }
           },
           {
@@ -77,7 +86,16 @@
               "height": 23,
               "spacing": 0,
               "compression": 1,
-              "overflow": false
+              "overflow": false,
+              "fragments": [
+                {
+                  "text": "万国城总站",
+                  "font": "res:font-hei-heavy",
+                  "fontSize": 23,
+                  "color": "#FFFFFFFF",
+                  "slant": 0
+                }
+              ]
             }
           },
           {
@@ -119,7 +137,16 @@
                   "height": 8,
                   "spacing": 0,
                   "compression": 1,
-                  "overflow": false
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "票价：一票制2元",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 8,
+                      "color": "#333333FF",
+                      "slant": 0
+                    }
+                  ]
                 }
               }
             ]
@@ -142,7 +169,16 @@
               "height": 8,
               "spacing": 0,
               "compression": 1,
-              "overflow": false
+              "overflow": false,
+              "fragments": [
+                {
+                  "text": "巴士集团",
+                  "font": "res:font-hei-heavy",
+                  "fontSize": 8,
+                  "color": "#FFFFFFFF",
+                  "slant": 0
+                }
+              ]
             }
           }
         ]
@@ -229,7 +265,16 @@
                   "height": 9,
                   "spacing": 0,
                   "compression": 1,
-                  "overflow": false
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "下一站：田贝",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 9,
+                      "color": "#333333FF",
+                      "slant": 0
+                    }
+                  ]
                 }
               }
             ]
@@ -272,7 +317,16 @@
                   "height": 10,
                   "spacing": 0,
                   "compression": 1,
-                  "overflow": false
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "始发站服务时间：07:30-22:30",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 10,
+                      "color": "#222222FF",
+                      "slant": 0
+                    }
+                  ]
                 }
               },
               {
@@ -303,7 +357,16 @@
                       "height": 5.5,
                       "spacing": 0,
                       "compression": 1,
-                      "overflow": false
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "（工作日运营）「定时班车」",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        }
+                      ]
                     }
                   },
                   {

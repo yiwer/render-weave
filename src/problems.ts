@@ -82,6 +82,12 @@ export const ProblemCodes = {
   templateUnsupported: 'template.unsupported',
   templateDuplicateElementName: 'template.duplicateElementName',
   templateInvalidElementName: 'template.invalidElementName',
+  /** 插槽或绑定引用的变量不存在。 */
+  templateUnknownVariable: 'template.unknownVariable',
+  /** 变量路径经过了列表或基本类型的值；路径只能经过单引用。 */
+  templateInvalidPath: 'template.invalidPath',
+  /** 取值类型与用途不符，如图片字段放进文字插槽、展示格式与字段类型不符。 */
+  templateTypeMismatch: 'template.typeMismatch',
 
   resourceNotFound: 'resource.notFound',
   resourceKindMismatch: 'resource.kindMismatch',

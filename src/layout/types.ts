@@ -46,7 +46,7 @@ export interface TextSummary {
   readonly writingMode: TextElementModel['writingMode'];
   /** 最终字号，毫米。 */
   readonly fontSize: number;
-  /** 文字实际占用的宽与高，毫米；竖排两端分布时高度是首字墨迹顶到末字墨迹底。 */
+  /** 文字实际占用的宽与高，毫米；横排的宽包含倾斜带来的外扩，竖排两端分布时高度是首字墨迹顶到末字墨迹底。 */
   readonly width: number;
   readonly height: number;
   /** 字距：相邻字格之间的空白，毫米。 */
@@ -55,6 +55,17 @@ export interface TextSummary {
   readonly compression: number;
   /** 按适配规则处理后仍放不下。 */
   readonly overflow: boolean;
+  /** 各片段求值后的文字与合并后的样式。 */
+  readonly fragments: readonly FragmentSummary[];
+}
+
+export interface FragmentSummary {
+  readonly text: string;
+  readonly font: string;
+  readonly fontSize: number;
+  readonly color: string;
+  /** 倾斜角度，度。 */
+  readonly slant: number;
 }
 
 /** 四角圆角：左上、右上、右下、左下，毫米。 */
@@ -120,7 +131,10 @@ export type DrawOp =
       /** 字形的横向与纵向缩放；竖排压缩时 scaleY 小于 1。 */
       readonly scaleX: number;
       readonly scaleY: number;
-      readonly color: string;
+      /** 以基线为轴的错切：字形上每一点按其在基线以上的高度向右移 skew 倍，倾斜 θ 度时为 tan θ（M117）。 */
+      readonly skew: number;
+      /** 填充色；没有时只画描边。一个文本的描边全部画完再画填充，免得后面片段的描边盖住前面的字（M108）。 */
+      readonly color?: string;
       readonly stroke?: { readonly color: string; readonly width: number };
       readonly glyphs: readonly number[];
       /** 每个字形的基线起点，按 x、y 交替排列，毫米，相对画板。 */

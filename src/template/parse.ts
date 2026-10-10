@@ -12,10 +12,12 @@ import {
   type ElementPath,
 } from '../element-path.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode } from '../problems.js';
+import { parseDisplayFormat, type DisplayFormat } from '../display-format.js';
 import { parseResourceRef } from '../resources.js';
 import { isRecord } from '../util.js';
 import { parseStaticSchemaRef } from '../workspace.js';
 import {
+  MAX_SLANT,
   MIN_COMPRESSION,
   type ArtboardModel,
   type Color,
@@ -25,6 +27,7 @@ import {
   type Edges,
   type ElementBase,
   type ElementModel,
+  type FragmentStyle,
   type Layout,
   type Place,
   type Point,
@@ -53,9 +56,12 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
     'writingMode',
     'horizontalAlign',
     'verticalAlign',
+    'slant',
     'fit',
     'stroke',
     'padding',
+    // 不支持，单独说明该怎么写（M115）。
+    'fontWeight',
   ],
   image: [...COMMON_KEYS, 'source', 'fit'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
@@ -73,6 +79,7 @@ const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   grid: ['row', 'column', 'rowSpan', 'columnSpan', 'width', 'height', 'margin', 'justifySelf', 'alignSelf', ...SIZE_LIMIT_KEYS],
 };
 const FIT_KEYS = ['steps', 'compressMin', 'onFail'];
+const FRAGMENT_STYLE_KEYS = ['font', 'fontSize', 'color', 'slant', 'fontWeight'];
 const NO_EDGES: Edges = { top: 0, right: 0, bottom: 0, left: 0 };
 const NO_CORNERS: Corners = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
 const ALIGNS = ['start', 'center', 'end'] as const;
@@ -461,13 +468,14 @@ class TemplateReader {
   }
 
   private readText(value: Record<string, unknown>, base: Read<ElementBase>, path: ElementPath): Read<TextElementModel> {
-    const content = this.readContent(value['content'], path);
-    const fontRef = value['font'];
-    const font = typeof fontRef === 'string' ? parseResourceRef(fontRef) : undefined;
-    if (!font) this.fail(path, '文本的字体 font 必须是资源引用 res:资源ID');
+    this.rejectFontWeight(value, path);
+    const writingMode = this.readEnum(value['writingMode'], ['horizontal', 'vertical'] as const, 'horizontal', path, 'writingMode');
+    const content = this.readContent(value['content'], writingMode, path);
+    const font = this.readFont(value['font'], path, '文本的字体 font');
     const fontSize = this.readNumber(value['fontSize'], undefined, path, 'fontSize', { min: 0, exclusiveMin: true });
     const color = value['color'] === undefined ? '#000000FF' : this.readColor(value['color'], path, 'color');
-    const writingMode = this.readEnum(value['writingMode'], ['horizontal', 'vertical'] as const, 'horizontal', path, 'writingMode');
+    const slant = this.readSlant(value['slant'], path, 'slant');
+    if (slant && writingMode === 'vertical') this.unsupported(path, '竖排文字的倾斜 slant 尚未支持');
     const horizontalAlign = this.readEnum(value['horizontalAlign'], ALIGNS, 'start', path, 'horizontalAlign');
     const verticalAlign = this.readEnum(value['verticalAlign'], ['top', 'center', 'bottom', 'distribute'] as const, 'top', path, 'verticalAlign');
     if (verticalAlign === 'distribute' && writingMode !== 'vertical') {
@@ -476,8 +484,8 @@ class TemplateReader {
     const fit = this.readFit(value['fit'], writingMode, path);
     const stroke = this.optional(value['stroke'], (v) => this.readTextStroke(v, path));
     const padding = this.readEdges(value['padding'], path, 'padding');
-    if (!base || !content || !font || fontSize === undefined || !color || !writingMode || !horizontalAlign || !verticalAlign) return undefined;
-    if (!fit || stroke === null || !padding) return undefined;
+    if (!base || !content || !font || fontSize === undefined || !color || slant === undefined) return undefined;
+    if (!writingMode || !horizontalAlign || !verticalAlign || !fit || stroke === null || !padding) return undefined;
     return {
       ...base,
       type: 'text',
@@ -485,6 +493,7 @@ class TemplateReader {
       font,
       fontSize,
       color,
+      slant,
       writingMode,
       horizontalAlign,
       verticalAlign,
@@ -494,24 +503,93 @@ class TemplateReader {
     };
   }
 
-  private readContent(value: unknown, path: ElementPath): Read<ContentItem[]> {
+  /**
+   * 文本内容：文字片段 { "text" } 与变量插槽 { "slot", "format"? }，都可单独写 font、fontSize、color、slant，
+   * 未写的沿用文本元素的设置（M73）。竖排文字按统一的字号与字格排列（M109），片段只能单独设颜色。
+   */
+  private readContent(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<ContentItem[]> {
     if (!Array.isArray(value)) {
       this.fail(path, '文本内容 content 必须是片段列表');
       return undefined;
     }
     const items: ContentItem[] = [];
     for (const item of value) {
-      if (isRecord(item) && typeof item['text'] === 'string' && Object.keys(item).length === 1) {
-        items.push({ kind: 'text', text: item['text'] });
-      } else if (isRecord(item) && typeof item['slot'] === 'string' && item['slot'] !== '') {
-        this.checkKeys(item, ['slot'], path, '变量插槽');
-        items.push({ kind: 'slot', path: item['slot'] });
-      } else {
-        this.fail(path, '文本片段必须写成 { "text": 文字 } 或 { "slot": 变量路径 }');
+      const isText = isRecord(item) && 'text' in item;
+      const isSlot = isRecord(item) && 'slot' in item;
+      if (!isRecord(item) || isText === isSlot) {
+        this.fail(path, '文本片段必须写成 { "text": 文字 } 或 { "slot": 变量路径 }，可另写 font、fontSize、color、slant');
         return undefined;
       }
+      this.rejectFontWeight(item, path);
+      this.checkKeys(item, isText ? ['text', ...FRAGMENT_STYLE_KEYS] : ['slot', 'format', ...FRAGMENT_STYLE_KEYS], path, isText ? '文字片段' : '变量插槽');
+      const style = this.readFragmentStyle(item, path);
+      if (!style) return undefined;
+      if (writingMode === 'vertical' && (style.font !== undefined || style.fontSize !== undefined || style.slant !== undefined)) {
+        this.unsupported(path, '竖排文字的片段暂只能单独设颜色 color');
+        return undefined;
+      }
+      if (isText) {
+        if (typeof item['text'] !== 'string') {
+          this.fail(path, '文字片段的 text 必须是字符串');
+          return undefined;
+        }
+        items.push({ kind: 'text', text: item['text'], style });
+        continue;
+      }
+      const slot = item['slot'];
+      if (typeof slot !== 'string' || !/^[^.]+(\.[^.]+)*$/.test(slot)) {
+        this.fail(path, '变量插槽的 slot 必须是用"."分隔的变量路径，如 terminal.name');
+        return undefined;
+      }
+      const format = item['format'] === undefined ? undefined : this.readDisplayFormat(item['format'], path, slot);
+      if (item['format'] !== undefined && !format) return undefined;
+      items.push({ kind: 'slot', path: slot, ...(format && { format }), style });
     }
     return items;
+  }
+
+  private readDisplayFormat(value: unknown, path: ElementPath, slot: string): Read<DisplayFormat> {
+    const parsed = typeof value === 'string' ? parseDisplayFormat(value) : '展示格式 format 必须是字符串，如 HH:mm、0.##';
+    if (typeof parsed !== 'string') return parsed;
+    this.fail(path, `插槽 ${slot}：${parsed}`);
+    return undefined;
+  }
+
+  private readFragmentStyle(item: Record<string, unknown>, path: ElementPath): Read<FragmentStyle> {
+    const style: { font?: string; fontSize?: number; color?: Color; slant?: number } = {};
+    let ok = true;
+    const read = <T>(key: string, reader: (value: unknown) => Read<T>, assign: (value: T) => void) => {
+      if (item[key] === undefined) return;
+      const value = reader(item[key]);
+      if (value === undefined) ok = false;
+      else assign(value);
+    };
+    read('font', (v) => this.readFont(v, path, '片段的字体 font'), (v) => (style.font = v));
+    read('fontSize', (v) => this.readNumber(v, undefined, path, '片段的 fontSize', { min: 0, exclusiveMin: true }), (v) => (style.fontSize = v));
+    read('color', (v) => this.readColor(v, path, '片段的 color'), (v) => (style.color = v));
+    read('slant', (v) => this.readSlant(v, path, '片段的 slant'), (v) => (style.slant = v));
+    return ok ? style : undefined;
+  }
+
+  private readFont(value: unknown, path: ElementPath, label: string): Read<string> {
+    if (isRecord(value) && 'var' in value) {
+      this.unsupported(path, `${label} 绑定变量尚未支持`);
+      return undefined;
+    }
+    const font = typeof value === 'string' ? parseResourceRef(value) : undefined;
+    if (!font) this.fail(path, `${label} 必须是资源引用 res:资源ID`);
+    return font;
+  }
+
+  /** 倾斜角度，度，绝对值不超过 MAX_SLANT。 */
+  private readSlant(value: unknown, path: ElementPath, label: string): Read<number> {
+    return this.readNumber(value, 0, path, label, { min: -MAX_SLANT, max: MAX_SLANT });
+  }
+
+  /** 字重随字体资源（M115）：写了 fontWeight 时说明该怎么写，而不只是报未知属性。 */
+  private rejectFontWeight(value: Record<string, unknown>, path: ElementPath): void {
+    if (value['fontWeight'] === undefined) return;
+    this.fail(path, '字重由字体资源决定，不写 fontWeight：改用对应字重的字体资源，如 font 写 res:font-hei-heavy（M115）');
   }
 
   /**

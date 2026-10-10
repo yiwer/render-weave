@@ -20,6 +20,8 @@
 
 已做的检查（2026-10-08，本地 Python 与 jsonschema 4.26.0）：10 个文件均为合法 JSON；数据集按编译产物校验 0 个错误，加入未定义的键会被拒绝（S7）；5 个模板中的变量引用、插槽路径、循环模板基准与参数填写全部能对上，被引用的变量名均为英文（S1）。尚未实际渲染。
 
+票据 06 复查（2026-10-10，按引擎的展示格式解析逐个检查）：5 个模板中的 22 个文本片段都符合 S23 的写法，没有竖排片段设颜色以外的样式；带展示格式的 4 个插槽（`fare` 用 `0.##`，`firstDeparture`、`lastDeparture` 与班次时刻的 `value` 用 `HH:mm`）与字段类型相符。`terminal.name`、`nextStop.name` 经过派生变量，留待票据 07 检查。
+
 ## 模板如何组合
 
 ```mermaid
@@ -66,6 +68,7 @@ S2–S13 已确认（M90）。
 | S20 | 外观：padding、margin 可写成一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 可写成一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项；所有元素可写 `visible`（布尔）、`opacity`（0–1）、`rotation`（度）；容器与画板可写 `clip`。图形的 `stroke` 写成 `{"color", "width", "dash"?: [实, 空, …], "cap"?: butt/round/square}`。图形：rect（fill、stroke、cornerRadius）、ellipse（fill、stroke）、line（from、to、stroke 必填）、polygon（points 至少 3 个顶点）、path（d、fill、stroke、fillRule: nonzero/evenodd） | 票据 04（M110、M111） |
 | S21 | 数据定义：字段类型为 text、number、date、time、datetime、boolean、image、list、ref；列表写 `items`（元素不能又是列表），引用写 `ref: {name, version}`。约束随类型：所有字段可写 required；text 可写 minLength、maxLength、pattern、enum；number 可写 min、max、integer、enum；image 可写 allowedSources（resource、url，不写时两种都允许）；list 可写 minItems、maxItems；列表元素的约束写在 `items.constraints`，不能写 required。字段名称以英文字母开头，只含字母、数字与下划线。编译时日期用标准 `date` 格式，时刻、时间用 `rw-time`、`rw-datetime`，都附等价正则 | 票据 03（M113） |
 | S22 | 图片：`{"type": "image", "source": "res:资源ID", "fit": "contain" 或 "cover" 或 "fill"}`，fit 缺省为 contain（完整显示）；没有 source 时不画内容 | 票据 05（M114） |
+| S23 | 文本内容 `content` 是片段列表：文字片段 `{"text": 文字}`，变量插槽 `{"slot": 变量路径, "format"?: 展示格式}`；两种片段都可另写 `font`、`fontSize`、`color`、`slant`，未写的沿用文本元素。文本元素可写 `slant`（倾斜角度，度，正值向右倾，绝对值不超过 45，缺省 0，只用于横排）。展示格式：日期与时刻用 `yyyy`、`MM`、`M`、`dd`、`d`、`HH`、`H`、`mm`、`ss`，如 `HH:mm`、`yyyy年M月d日`；数值用 `0` 与 `#`，如 `0.##`、`0.00`。字重随字体资源，不写 `fontWeight`（换用 `res:font-hei-heavy` 等）。竖排文字的片段只能单独写 `color` | 票据 06（M115–M118）；草稿中票价、服务时间、运营说明与线路号的写法不变 |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
 

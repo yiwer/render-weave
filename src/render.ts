@@ -2,7 +2,7 @@
  * 渲染入口（主接缝）：接收工作区与渲染请求，返回图片、问题清单与布局摘要。
  * 不依赖任何框架，命令行、日后的 MCP 服务与 HTTP 服务都调用这一个函数。
  *
- * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 数据集版本与模板基准 → 尺寸范围 → 求值 → 排版 → 绘制。
+ * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 数据集版本与模板基准 → 模板静态检查 → 尺寸范围 → 求值 → 排版 → 绘制。
  * 完整的检查顺序与草稿预览的出图条件见 M102（票据 12）。
  */
 import { loadCanvasKit } from './canvaskit.js';
@@ -14,6 +14,7 @@ import { evaluate, walkVisible } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
+import { checkTemplate } from './template/check.js';
 import type { TemplateModel } from './template/model.js';
 import { parseTemplate } from './template/parse.js';
 import { FontStore } from './text/fonts.js';
@@ -94,9 +95,11 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
     );
     return { problems };
   }
+  const checked = checkTemplate(template, schema.compiled);
+  problems.push(...checked.problems);
   problems.push(...checkSizeRange(template, request.output));
 
-  const evaluated = evaluate(template, dataset.data);
+  const evaluated = evaluate(template, dataset.data, checked);
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources);
   const images = new ImageStore(ck, workspace.resources);
@@ -104,13 +107,17 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
     // 先加载会显示的元素用到的字体与图片，排版与绘制都是同步的。
     for (const node of walkVisible(evaluated.root)) {
       const model = node.model;
-      const problem =
-        model.type === 'text'
-          ? await fonts.load(model.font, model.path)
-          : model.type === 'image' && model.source
-            ? await images.load(model.source, model.path)
-            : undefined;
-      if (problem) problems.push(problem);
+      if (model.type === 'text') {
+        // 元素自身的字体与各片段的字体，同一元素的同一字体只报一次。
+        const ids = new Set([model.font, ...(node.fragments ?? []).map((fragment) => fragment.style.font)]);
+        for (const id of ids) {
+          const problem = await fonts.load(id, model.path);
+          if (problem) problems.push(problem);
+        }
+      } else if (model.type === 'image' && model.source) {
+        const problem = await images.load(model.source, model.path);
+        if (problem) problems.push(problem);
+      }
     }
     const result = layout(evaluated, request.output, { fonts, images }, ck);
     problems.push(...result.problems);

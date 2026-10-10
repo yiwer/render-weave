@@ -1,6 +1,14 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createMemoryResourceRepository, loadWorkspace, type ResourceRepository, type Workspace } from '../../src/index.js';
+import {
+  createMemoryResourceRepository,
+  loadWorkspace,
+  openResourceRepository,
+  publishStaticSchema,
+  type ResourceRepository,
+  type StaticSchemaEntry,
+  type Workspace,
+} from '../../src/index.js';
 
 export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const resourcesDir = join(repoRoot, 'fixtures', 'resources');
@@ -111,4 +119,60 @@ export function withEmptyTemplate(workspace: Workspace, name: string, base: { na
     artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } } },
   };
   return { ...workspace, templates: [...workspace.templates.filter((entry) => entry.name !== name), { name, document }] };
+}
+
+/** 在 M402 草稿工作区里加一个基准为"线路牌 v1"的实验模板，数据集用 M402 数据集。 */
+export async function loadM402Lab(artboard: Record<string, unknown>): Promise<Workspace> {
+  const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
+  const document = {
+    dslVersion: 'renderweave-template/1',
+    name: 'M402 实验',
+    base: { name: '线路牌', version: 1 },
+    artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } }, ...artboard },
+  };
+  return { ...workspace, templates: [...workspace.templates, { name: 'M402 实验', document }] };
+}
+
+export function m402LabRequest(width: number, height: number, dpi = 120): Record<string, unknown> {
+  return {
+    template: 'M402 实验',
+    dataset: { id: 'ds-m402-wanguocheng' },
+    parameters: {},
+    output: { width, height, dpi, format: 'png' },
+    mode: 'final',
+  };
+}
+
+/**
+ * 文字实验工作区：用给定字段发布静态数据定义"文字实验 v1"（另有"站点实验 v1"可供引用，只含站名 name），
+ * 配一个基准为它、只含画板的模板"文字实验"；资源仓库为真实的夹具目录。
+ */
+export async function textLab(fields: unknown[], artboard: Record<string, unknown>): Promise<Workspace> {
+  const schemas: StaticSchemaEntry[] = [];
+  for (const [name, defined] of [
+    ['站点实验', [{ name: 'name', displayName: '站名', type: 'text' }]],
+    ['文字实验', fields],
+  ] as const) {
+    const { published, problems } = publishStaticSchema({ dslVersion: 'renderweave-schema/1', name, displayName: name, fields: defined }, schemas);
+    if (!published) throw new Error(JSON.stringify(problems));
+    schemas.push(published);
+  }
+  const document = {
+    dslVersion: 'renderweave-template/1',
+    name: '文字实验',
+    base: { name: '文字实验', version: 1 },
+    artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } }, ...artboard },
+  };
+  const { repository, problems } = await openResourceRepository(resourcesDir);
+  return { staticSchemas: schemas, templates: [{ name: '文字实验', document }], datasets: [], resources: repository, problems };
+}
+
+export function textLabRequest(data: Record<string, unknown>, width: number, height: number, dpi = 120): Record<string, unknown> {
+  return {
+    template: '文字实验',
+    dataset: { inline: { dataset: { staticSchema: { name: '文字实验', version: 1 } }, data } },
+    parameters: {},
+    output: { width, height, dpi, format: 'png' },
+    mode: 'final',
+  };
 }

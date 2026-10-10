@@ -88,3 +88,26 @@ export function boundsOf(pixels: Pixels, match: (rgba: [number, number, number, 
   }
   return right < 0 ? undefined : { left, top, right, bottom };
 }
+
+/** 像素矩形 [left, right) × [top, bottom) 内满足条件的像素的外接框。 */
+export function boundsIn(
+  pixels: Pixels,
+  region: { left: number; top: number; right: number; bottom: number },
+  match: (rgba: [number, number, number, number]) => boolean,
+): { left: number; top: number; right: number; bottom: number } | undefined {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -1;
+  let bottom = -1;
+  for (let y = Math.max(0, region.top); y < Math.min(pixels.height, region.bottom); y++) {
+    for (let x = Math.max(0, region.left); x < Math.min(pixels.width, region.right); x++) {
+      if (match(pixelAt(pixels, x, y))) {
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x);
+        bottom = Math.max(bottom, y);
+      }
+    }
+  }
+  return right < 0 ? undefined : { left, top, right, bottom };
+}

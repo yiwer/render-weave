@@ -177,6 +177,8 @@ class Painter {
     // 描边作用在变换后的轮廓上，所以压缩后描边宽度不变。
     const skFont = this.fonts.makeFont(font, op.fontSize * op.scaleY);
     skFont.setScaleX(op.scaleX / op.scaleY);
+    // Skia 的 skewX 与 y 轴同向（向下为正），向右倾时取负值；错切同样在生成轮廓时完成，描边随之倾斜。
+    if (op.skew !== 0) skFont.setSkewX(-op.skew);
     try {
       const glyphs = op.glyphs as number[];
       const positions = op.positions as number[];
@@ -189,8 +191,10 @@ class Painter {
         this.setColor(op.stroke.color);
         this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
       }
-      this.useFill(op.color);
-      this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
+      if (op.color) {
+        this.useFill(op.color);
+        this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
+      }
     } finally {
       skFont.delete();
     }

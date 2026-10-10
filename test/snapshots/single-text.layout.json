@@ -36,7 +36,16 @@
           "height": 10,
           "spacing": 0,
           "compression": 1,
-          "overflow": false
+          "overflow": false,
+          "fragments": [
+            {
+              "text": "欢迎乘坐 M402 路",
+              "font": "res:font-hei-medium",
+              "fontSize": 10,
+              "color": "#E60012FF",
+              "slant": 0
+            }
+          ]
         }
       }
     ]

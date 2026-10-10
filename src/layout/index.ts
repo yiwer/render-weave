@@ -93,7 +93,7 @@ class Layouter {
   private textMeasure(node: EvaluatedNode): TextMeasure {
     let measure = this.textMeasures.get(node);
     if (!measure && node.model.type === 'text') {
-      measure = measureTextNode(node.model, node.text ?? '', this.fonts);
+      measure = measureTextNode(node.model, node.fragments ?? [], this.fonts);
       this.textMeasures.set(node, measure);
     }
     return measure!;
@@ -170,7 +170,7 @@ class Layouter {
         summary = { children: this.arrangeContainer(node, model, box) };
         break;
       case 'text': {
-        const text = recordText(model, node.text ?? '', this.textMeasure(node), box, this.drawOps, this.problems);
+        const text = recordText(model, node.fragments ?? [], this.textMeasure(node), box, this.drawOps, this.problems);
         summary = text ? { text } : {};
         break;
       }
