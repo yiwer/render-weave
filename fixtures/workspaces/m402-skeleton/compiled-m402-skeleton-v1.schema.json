@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M402 骨架 v1",
+  "x-renderweave-static-schema": { "name": "M402 骨架", "version": 1 },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

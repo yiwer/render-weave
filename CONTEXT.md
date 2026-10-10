@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）与 02（竖排站名）已完成：文本字段可以横排或竖排渲染成 PNG/JPEG，竖排支持两端分布、收紧字距与纵向压缩。**
+2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）、02（竖排站名）与 04（布局与图形）已完成：容器的自由、堆叠、网格三种布局，横排与竖排文字，五种图形，M402 版式骨架在 740 与 1500 mm 宽度下都能出图。**
 
 ## 一句话
 
@@ -13,7 +13,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 技术栈：TypeScript（Node 22），引擎不依赖框架；ajv 校验、CanvasKit 栅格化（字体全部显式加载）、自研布局（ADR-0011）。busbox-render-engine 只作算法参考。
 - 首期规格 [渲染流水线](.scratch/render-pipeline/spec.md)（ready-for-agent）：先不接 agent，跑通 M402 从数据集校验到 PNG；主接缝为渲染入口，输出图片、问题清单与布局摘要；次接缝为发布静态数据定义。
 - 以真实设计稿 [M402 线路牌](docs/examples/materials/m402-route-sign.jpg)（740 × 165 mm，120 DPI，35 站）核对了模型，并写出 [DSL 草稿](docs/examples/m402-dsl/README.md)：10 个 JSON 文件合法，M402 数据集按编译产物 JSON Schema 校验 0 错误，5 个模板的引用全部能对上。M402 尚未实际渲染（票据 14 验收）。
-- 渲染引擎（`src/`）：TypeScript，不依赖框架；渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，命令行 `renderweave render` 把三者写到输出目录。目前支持画板、自由布局与横排、竖排文本（含描边）；其余元素、布局方式与模板变量按票据 02–14 加入，遇到时返回问题。
+- 渲染引擎（`src/`）：TypeScript，不依赖框架；渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，命令行 `renderweave render` 把三者写到输出目录。目前支持画板与容器（自由、堆叠、网格布局，填充、描边、四角圆角、透明度、旋转、裁剪）、横排与竖排文本（含描边）、矩形、椭圆、线条、多边形与路径；其余元素、布局方式与模板变量按票据 02–14 加入，遇到时返回问题。
 - 测试（`test/`）：vitest，以渲染入口为接缝；布局摘要做文件快照（`test/snapshots/`），图片与 golden 比对（`test/golden/`，失败时在 `test-output/golden/` 生成三联图）。
 
 ## 文档地图
@@ -22,7 +22,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 |---|---|
 | [AGENTS.md](AGENTS.md) | agent 工作方式与技能配置（`CLAUDE.md` 只是加载入口） |
 | [GLOSSARY.md](GLOSSARY.md) | 领域术语表，唯一的术语事实源 |
-| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M109 逐条决定 |
+| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M111 逐条决定 |
 | [docs/model/business-entities.md](docs/model/business-entities.md) | 业务实体、关系与规则，含两张关系图与 G 系列待定事项 |
 | [docs/model/template-elements.md](docs/model/template-elements.md) | 13 种模板元素、共有属性、位置与尺寸、可绑定范围、排布与适配 |
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
@@ -67,4 +67,4 @@ npm run render -- render --workspace fixtures/workspaces/single-text --resources
 
 ## 下一步
 
-按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架、02 竖排站名已完成；03 数据把关、04 布局、05 图片、06 文字片段、11 缺字替代与 12 草稿/正式出图现在可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。
+按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架、02 竖排站名、04 布局已完成；03 数据把关、05 图片、06 文字片段、11 缺字替代与 12 草稿/正式出图现在可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。

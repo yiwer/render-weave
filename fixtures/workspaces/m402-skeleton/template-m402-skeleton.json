@@ -1,0 +1,203 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "M402 版式骨架",
+  "base": { "name": "M402 骨架", "version": 1 },
+  "artboard": {
+    "sizeRange": { "width": { "min": 740, "max": 1500 }, "height": { "min": 165, "max": 165 } },
+    "fill": "#FF8000",
+    "cornerRadius": { "topLeft": 12, "topRight": 12, "bottomRight": 0, "bottomLeft": 0 },
+    "layout": {
+      "mode": "grid",
+      "rows": [{ "fixed": 34 }, { "fraction": 1 }, { "fixed": 10 }, { "fixed": 21 }],
+      "columns": [{ "fraction": 1 }]
+    },
+    "children": [
+      {
+        "type": "container",
+        "name": "顶栏",
+        "place": { "row": 1, "column": 1 },
+        "layout": { "mode": "stack", "direction": "row", "gap": 8, "alignItems": "center" },
+        "padding": { "left": 22, "right": 18 },
+        "children": [
+          {
+            "type": "text",
+            "name": "线路号",
+            "content": [{ "text": "M402" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 24,
+            "color": "#E60012",
+            "stroke": { "color": "#FFFFFF", "width": 0.8 },
+            "place": { "width": "hug", "height": "hug" }
+          },
+          {
+            "type": "path",
+            "name": "开往箭头",
+            "d": "M0 0 L5 6 L0 12 L3 12 L8 6 L3 0 Z M6 0 L11 6 L6 12 L9 12 L14 6 L9 0 Z",
+            "fill": "#FFE600",
+            "place": { "width": { "fixed": 14 }, "height": { "fixed": 12 } }
+          },
+          {
+            "type": "text",
+            "name": "终点站",
+            "content": [{ "text": "万国城总站" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 23,
+            "color": "#FFFFFF",
+            "place": { "width": "hug", "height": "hug" }
+          },
+          {
+            "type": "container",
+            "name": "顶栏留白",
+            "place": { "width": "fill", "height": { "fixed": 1 } }
+          },
+          {
+            "type": "container",
+            "name": "票价框",
+            "fill": "#FFFFFF",
+            "cornerRadius": 5.5,
+            "padding": { "top": 1.5, "bottom": 1.5, "left": 6, "right": 12 },
+            "layout": { "mode": "stack", "direction": "row", "alignItems": "center" },
+            "place": { "width": { "fixed": 120 }, "height": { "fixed": 16 } },
+            "children": [
+              {
+                "type": "text",
+                "name": "票价",
+                "content": [{ "text": "票价：一票制2元" }],
+                "font": "res:font-hei-medium",
+                "fontSize": 8,
+                "color": "#333333",
+                "place": { "width": "fill", "height": "hug" }
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "name": "运营方",
+            "content": [{ "text": "巴士集团" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 8,
+            "color": "#FFFFFF",
+            "place": { "width": "hug", "height": "hug" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "站点面板",
+        "place": { "row": 2, "column": 1 },
+        "fill": "#FFFFFF",
+        "cornerRadius": { "topLeft": 12, "topRight": 12, "bottomRight": 0, "bottomLeft": 0 },
+        "padding": { "top": 4, "left": 23, "right": 23 },
+        "layout": { "mode": "stack", "direction": "column" },
+        "children": [
+          {
+            "type": "rect",
+            "name": "站点列占位",
+            "fill": "#F4F4F4",
+            "stroke": { "color": "#BBBBBB", "width": 0.3, "dash": [2, 1] },
+            "place": { "width": "fill", "height": "fill" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "道路带",
+        "place": { "row": 3, "column": 1 },
+        "fill": "#DCDCDC",
+        "padding": { "left": 23, "right": 23 },
+        "layout": { "mode": "stack", "direction": "row" },
+        "children": [
+          {
+            "type": "rect",
+            "name": "道路段列占位",
+            "stroke": { "color": "#999999", "width": 0.3, "dash": [2, 1] },
+            "place": { "width": "fill", "height": "fill" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "底栏",
+        "place": { "row": 4, "column": 1 },
+        "fill": "#F2F2F2",
+        "layout": { "mode": "stack", "direction": "row" },
+        "children": [
+          {
+            "type": "container",
+            "name": "下一站区",
+            "padding": { "left": 8 },
+            "layout": { "mode": "stack", "direction": "row", "gap": 1, "alignItems": "center" },
+            "place": { "width": { "fixed": 115 }, "height": "fill" },
+            "children": [
+              {
+                "type": "text",
+                "name": "下一站",
+                "content": [{ "text": "下一站：田贝" }],
+                "font": "res:font-hei-medium",
+                "fontSize": 9,
+                "color": "#333333",
+                "place": { "width": "hug", "height": "hug" }
+              }
+            ]
+          },
+          {
+            "type": "polygon",
+            "name": "服务时间箭头",
+            "points": [[0, 0], [5, 10.5], [0, 21], [3, 21], [8, 10.5], [3, 0]],
+            "fill": "#FF8000",
+            "place": { "width": { "fixed": 8 }, "height": { "fixed": 21 } }
+          },
+          {
+            "type": "container",
+            "name": "服务时间内容",
+            "fill": "#FFEF00",
+            "padding": { "left": 3 },
+            "layout": { "mode": "stack", "direction": "row", "gap": 4, "alignItems": "center" },
+            "place": { "width": "fill", "height": "fill" },
+            "children": [
+              {
+                "type": "text",
+                "name": "服务时间",
+                "content": [{ "text": "始发站服务时间：07:30-22:30" }],
+                "font": "res:font-hei-medium",
+                "fontSize": 10,
+                "color": "#222222",
+                "place": { "width": "hug", "height": "hug" }
+              },
+              {
+                "type": "container",
+                "name": "班次说明",
+                "layout": { "mode": "stack", "direction": "column", "gap": 0.5 },
+                "place": { "width": "fill", "height": "hug" },
+                "children": [
+                  {
+                    "type": "text",
+                    "name": "运营说明",
+                    "content": [{ "text": "（工作日运营）「定时班车」" }],
+                    "font": "res:font-hei-medium",
+                    "fontSize": 5.5,
+                    "color": "#222222",
+                    "place": { "width": "hug", "height": "hug" }
+                  },
+                  {
+                    "type": "rect",
+                    "name": "班次列占位",
+                    "stroke": { "color": "#999999", "width": 0.3, "dash": [2, 1] },
+                    "place": { "width": "fill", "height": { "fixed": 5.5 } }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "path",
+            "name": "底带收尾",
+            "d": "M0 0 L1 0 Q6 0 6 6 L6 21 L0 21 Z",
+            "fill": "#FFEF00",
+            "place": { "width": { "fixed": 6 }, "height": { "fixed": 21 } }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -20,7 +20,7 @@ export {
 } from './resources.js';
 export { ProblemCodes, type Problem, type ProblemCode, type ProblemLevel, type ProblemLocation } from './problems.js';
 export { formatElementPath, type ElementPath, type ElementPathSegment } from './element-path.js';
-export type { LayoutSummary, LayoutNode } from './layout.js';
+export type { LayoutSummary, LayoutNode, TextSummary } from './layout/index.js';
 export type { EncodedImage } from './draw.js';
 export { readPngInfo, readJpegDpi } from './image-metadata.js';
 export { mmToPx } from './units.js';

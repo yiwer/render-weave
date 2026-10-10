@@ -1,0 +1,7 @@
+{
+  "template": "M402 版式骨架",
+  "dataset": { "id": "ds-m402-skeleton" },
+  "parameters": {},
+  "output": { "width": 740, "height": 165, "dpi": 120, "format": "png" },
+  "mode": "final"
+}

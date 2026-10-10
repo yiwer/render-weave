@@ -1,0 +1,9 @@
+{
+  "dataset": {
+    "id": "ds-m402-skeleton",
+    "name": "M402 版式骨架",
+    "staticSchema": { "name": "M402 骨架", "version": 1 },
+    "origin": { "kind": "manual", "note": "骨架不含数据" }
+  },
+  "data": {}
+}

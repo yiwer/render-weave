@@ -167,7 +167,7 @@
             "cornerRadius": 5.5,
             "padding": { "top": 1.5, "bottom": 1.5, "left": 6, "right": 12 },
             "layout": { "mode": "stack", "direction": "row", "alignItems": "center" },
-            "place": { "width": { "fixed": 68 }, "height": { "fixed": 11 } },
+            "place": { "width": { "fixed": 120 }, "height": { "fixed": 16 } },
             "children": [
               {
                 "type": "text",

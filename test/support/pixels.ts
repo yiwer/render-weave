@@ -63,3 +63,28 @@ export function runsInColumn(pixels: Pixels, x: number, match: (rgba: [number, n
   }
   return runs;
 }
+
+/** 按毫米坐标取像素（DPI 换算）。 */
+export function pixelAtMm(pixels: Pixels, xMm: number, yMm: number, dpi: number): [number, number, number, number] {
+  const scale = dpi / 25.4;
+  return pixelAt(pixels, Math.floor(xMm * scale), Math.floor(yMm * scale));
+}
+
+/** 满足条件的像素的外接框（像素）。 */
+export function boundsOf(pixels: Pixels, match: (rgba: [number, number, number, number]) => boolean): { left: number; top: number; right: number; bottom: number } | undefined {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -1;
+  let bottom = -1;
+  for (let y = 0; y < pixels.height; y++) {
+    for (let x = 0; x < pixels.width; x++) {
+      if (match(pixelAt(pixels, x, y))) {
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x);
+        bottom = Math.max(bottom, y);
+      }
+    }
+  }
+  return right < 0 ? undefined : { left, top, right, bottom };
+}

@@ -92,7 +92,7 @@ describe('竖排站名：两端分布、收紧字距与纵向压缩（M402 站�
 
     expect(result.problems).toEqual([]);
     expect(narrow.problems.map((p) => p.code)).toEqual([ProblemCodes.layoutTextOverflow]);
-    expect(narrow.problems[0]!.message).toContain('字号 10 mm 比元素框宽 8 mm 更宽');
+    expect(narrow.problems[0]!.message).toContain('字号 10 mm 比可用宽 8 mm 更宽');
   });
 
   it('上、中、下对齐时字格相接，整段在框内对齐', async () => {

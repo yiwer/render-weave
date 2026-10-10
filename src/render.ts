@@ -9,11 +9,12 @@ import { loadCanvasKit } from './canvaskit.js';
 import { validateDataset, CompiledSchemaError } from './dataset-validation.js';
 import { draw, type EncodedImage } from './draw.js';
 import { formatElementPath } from './element-path.js';
-import { evaluate } from './evaluate.js';
-import { layout, type LayoutSummary } from './layout.js';
+import { evaluate, walkEvaluated } from './evaluate.js';
+import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
-import { parseTemplate, type TemplateModel } from './template.js';
+import type { TemplateModel } from './template/model.js';
+import { parseTemplate } from './template/parse.js';
 import { FontStore } from './text/fonts.js';
 import { formatStaticSchemaRef, sameStaticSchema, type DatasetDocument, type Workspace } from './workspace.js';
 
@@ -87,11 +88,12 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources);
   try {
-    for (const child of evaluated.children) {
-      const problem = await fonts.load(child.model.font, child.model.path);
+    for (const node of walkEvaluated(evaluated.root)) {
+      if (node.model.type !== 'text' || !node.model.visible) continue;
+      const problem = await fonts.load(node.model.font, node.model.path);
       if (problem) problems.push(problem);
     }
-    const result = layout(evaluated, request.output, fonts);
+    const result = layout(evaluated, request.output, fonts, ck);
     problems.push(...result.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
     const image = draw(ck, fonts, result.drawOps, request.output);

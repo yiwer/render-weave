@@ -1,0 +1,337 @@
+{
+  "template": "M402 版式骨架",
+  "output": {
+    "width": 740,
+    "height": 165,
+    "dpi": 120,
+    "widthPx": 3496,
+    "heightPx": 780,
+    "format": "png"
+  },
+  "root": {
+    "path": "M402 版式骨架",
+    "name": "M402 版式骨架",
+    "type": "artboard",
+    "x": 0,
+    "y": 0,
+    "width": 740,
+    "height": 165,
+    "visible": true,
+    "children": [
+      {
+        "path": "M402 版式骨架/顶栏",
+        "name": "顶栏",
+        "type": "container",
+        "x": 0,
+        "y": 0,
+        "width": 740,
+        "height": 34,
+        "visible": true,
+        "children": [
+          {
+            "path": "M402 版式骨架/顶栏/线路号",
+            "name": "线路号",
+            "type": "text",
+            "x": 22,
+            "y": 5,
+            "width": 64.896,
+            "height": 24,
+            "visible": true,
+            "text": {
+              "content": "M402",
+              "font": "res:font-hei-heavy",
+              "writingMode": "horizontal",
+              "fontSize": 24,
+              "width": 64.896,
+              "height": 24,
+              "spacing": 0,
+              "compression": 1,
+              "overflow": false
+            }
+          },
+          {
+            "path": "M402 版式骨架/顶栏/开往箭头",
+            "name": "开往箭头",
+            "type": "path",
+            "x": 94.896,
+            "y": 11,
+            "width": 14,
+            "height": 12,
+            "visible": true
+          },
+          {
+            "path": "M402 版式骨架/顶栏/终点站",
+            "name": "终点站",
+            "type": "text",
+            "x": 116.896,
+            "y": 5.5,
+            "width": 115,
+            "height": 23,
+            "visible": true,
+            "text": {
+              "content": "万国城总站",
+              "font": "res:font-hei-heavy",
+              "writingMode": "horizontal",
+              "fontSize": 23,
+              "width": 115,
+              "height": 23,
+              "spacing": 0,
+              "compression": 1,
+              "overflow": false
+            }
+          },
+          {
+            "path": "M402 版式骨架/顶栏/顶栏留白",
+            "name": "顶栏留白",
+            "type": "container",
+            "x": 239.896,
+            "y": 16.5,
+            "width": 314.105,
+            "height": 1,
+            "visible": true,
+            "children": []
+          },
+          {
+            "path": "M402 版式骨架/顶栏/票价框",
+            "name": "票价框",
+            "type": "container",
+            "x": 562,
+            "y": 9,
+            "width": 120,
+            "height": 16,
+            "visible": true,
+            "children": [
+              {
+                "path": "M402 版式骨架/顶栏/票价框/票价",
+                "name": "票价",
+                "type": "text",
+                "x": 568,
+                "y": 13,
+                "width": 102,
+                "height": 8,
+                "visible": true,
+                "text": {
+                  "content": "票价：一票制2元",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 8,
+                  "width": 60.559,
+                  "height": 8,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false
+                }
+              }
+            ]
+          },
+          {
+            "path": "M402 版式骨架/顶栏/运营方",
+            "name": "运营方",
+            "type": "text",
+            "x": 690,
+            "y": 13,
+            "width": 32,
+            "height": 8,
+            "visible": true,
+            "text": {
+              "content": "巴士集团",
+              "font": "res:font-hei-heavy",
+              "writingMode": "horizontal",
+              "fontSize": 8,
+              "width": 32,
+              "height": 8,
+              "spacing": 0,
+              "compression": 1,
+              "overflow": false
+            }
+          }
+        ]
+      },
+      {
+        "path": "M402 版式骨架/站点面板",
+        "name": "站点面板",
+        "type": "container",
+        "x": 0,
+        "y": 34,
+        "width": 740,
+        "height": 100,
+        "visible": true,
+        "children": [
+          {
+            "path": "M402 版式骨架/站点面板/站点列占位",
+            "name": "站点列占位",
+            "type": "rect",
+            "x": 23,
+            "y": 38,
+            "width": 694,
+            "height": 96,
+            "visible": true
+          }
+        ]
+      },
+      {
+        "path": "M402 版式骨架/道路带",
+        "name": "道路带",
+        "type": "container",
+        "x": 0,
+        "y": 134,
+        "width": 740,
+        "height": 10,
+        "visible": true,
+        "children": [
+          {
+            "path": "M402 版式骨架/道路带/道路段列占位",
+            "name": "道路段列占位",
+            "type": "rect",
+            "x": 23,
+            "y": 134,
+            "width": 694,
+            "height": 10,
+            "visible": true
+          }
+        ]
+      },
+      {
+        "path": "M402 版式骨架/底栏",
+        "name": "底栏",
+        "type": "container",
+        "x": 0,
+        "y": 144,
+        "width": 740,
+        "height": 21,
+        "visible": true,
+        "children": [
+          {
+            "path": "M402 版式骨架/底栏/下一站区",
+            "name": "下一站区",
+            "type": "container",
+            "x": 0,
+            "y": 144,
+            "width": 115,
+            "height": 21,
+            "visible": true,
+            "children": [
+              {
+                "path": "M402 版式骨架/底栏/下一站区/下一站",
+                "name": "下一站",
+                "type": "text",
+                "x": 8,
+                "y": 150,
+                "width": 54,
+                "height": 9,
+                "visible": true,
+                "text": {
+                  "content": "下一站：田贝",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 9,
+                  "width": 54,
+                  "height": 9,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false
+                }
+              }
+            ]
+          },
+          {
+            "path": "M402 版式骨架/底栏/服务时间箭头",
+            "name": "服务时间箭头",
+            "type": "polygon",
+            "x": 115,
+            "y": 144,
+            "width": 8,
+            "height": 21,
+            "visible": true
+          },
+          {
+            "path": "M402 版式骨架/底栏/服务时间内容",
+            "name": "服务时间内容",
+            "type": "container",
+            "x": 123,
+            "y": 144,
+            "width": 611,
+            "height": 21,
+            "visible": true,
+            "children": [
+              {
+                "path": "M402 版式骨架/底栏/服务时间内容/服务时间",
+                "name": "服务时间",
+                "type": "text",
+                "x": 126,
+                "y": 149.5,
+                "width": 135.13,
+                "height": 10,
+                "visible": true,
+                "text": {
+                  "content": "始发站服务时间：07:30-22:30",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 10,
+                  "width": 135.13,
+                  "height": 10,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false
+                }
+              },
+              {
+                "path": "M402 版式骨架/底栏/服务时间内容/班次说明",
+                "name": "班次说明",
+                "type": "container",
+                "x": 265.13,
+                "y": 148.75,
+                "width": 468.87,
+                "height": 11.5,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "M402 版式骨架/底栏/服务时间内容/班次说明/运营说明",
+                    "name": "运营说明",
+                    "type": "text",
+                    "x": 265.13,
+                    "y": 148.75,
+                    "width": 71.501,
+                    "height": 5.5,
+                    "visible": true,
+                    "text": {
+                      "content": "（工作日运营）「定时班车」",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 5.5,
+                      "width": 71.501,
+                      "height": 5.5,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false
+                    }
+                  },
+                  {
+                    "path": "M402 版式骨架/底栏/服务时间内容/班次说明/班次列占位",
+                    "name": "班次列占位",
+                    "type": "rect",
+                    "x": 265.13,
+                    "y": 154.75,
+                    "width": 468.87,
+                    "height": 5.5,
+                    "visible": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "M402 版式骨架/底栏/底带收尾",
+            "name": "底带收尾",
+            "type": "path",
+            "x": 734,
+            "y": 144,
+            "width": 6,
+            "height": 21,
+            "visible": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -2,24 +2,41 @@
  * 求值：把模板与数据集求值为一棵静态元素树，变量插槽换成实际文字。
  * 缺值时结果为空，不回退到设计时的占位内容（M16）。
  */
-import type { ContentItem, TemplateModel, TextElementModel } from './template.js';
+import type { ArtboardModel, ContentItem, ElementModel, TemplateModel } from './template/model.js';
 import { isRecord } from './util.js';
 
-export interface EvaluatedText {
-  readonly model: TextElementModel;
-  readonly text: string;
+export interface EvaluatedNode {
+  readonly model: ArtboardModel | ElementModel;
+  /** 文本元素求值后的文字。 */
+  readonly text?: string;
+  readonly children?: readonly EvaluatedNode[];
 }
 
 export interface EvaluatedTemplate {
   readonly template: TemplateModel;
-  readonly children: readonly EvaluatedText[];
+  readonly root: EvaluatedNode;
 }
 
 export function evaluate(template: TemplateModel, data: unknown): EvaluatedTemplate {
-  return {
-    template,
-    children: template.artboard.children.map((model) => ({ model, text: renderContent(model.content, data) })),
-  };
+  return { template, root: evaluateNode(template.artboard, data) };
+}
+
+function evaluateNode(model: ArtboardModel | ElementModel, data: unknown): EvaluatedNode {
+  switch (model.type) {
+    case 'artboard':
+    case 'container':
+      return { model, children: model.children.map((child) => evaluateNode(child, data)) };
+    case 'text':
+      return { model, text: renderContent(model.content, data) };
+    default:
+      return { model };
+  }
+}
+
+/** 遍历求值树中的所有节点（先序）。 */
+export function* walkEvaluated(node: EvaluatedNode): Generator<EvaluatedNode> {
+  yield node;
+  for (const child of node.children ?? []) yield* walkEvaluated(child);
 }
 
 function renderContent(content: readonly ContentItem[], data: unknown): string {

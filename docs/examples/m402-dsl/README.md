@@ -61,6 +61,8 @@ S2–S13 已确认（M90）。
 | S16 | 渲染请求的 `dataset` 写成 `{"id": 数据集 ID}` 或 `{"inline": 数据集文档}`，数据集文档与 S6 的文件格式相同（内联时 `dataset.id` 可省略）；`output.format` 取 png 或 jpg（jpeg 同义）；`mode` 取 draft 或 final | 规格"渲染请求" |
 | S17 | 资源仓库目录下的 `resources.json` 列出资源：`{"resources": [{"id": 资源ID, "kind": "image" 或 "font", "file": 相对路径}]}` | S8；文件形式的首版资源仓库 |
 | S18 | 文本 `writingMode` 取 horizontal（缺省）或 vertical；`verticalAlign: "distribute"` 只用于竖排。`fit` 写成 `{"steps": [...], "compressMin": 数, "onFail": "severe" 或 "hint"}`：竖排步骤为 tightenSpacing、compressGlyphs，收紧字距必须排在压缩字形之前；compressMin 缺省 0.6，只能设得更高；onFail 缺省 severe。横排步骤随票据 09 加入，`widthOverflow` 随票据 10 加入。`stroke` 写成 `{"color": 颜色, "width": 毫米}` | 票据 02；M402 草稿中的 fit 与 stroke 写法不变（M108、M109） |
+| S19 | 布局：`layout` 写成 `{"mode": "free"}`、`{"mode": "stack", "direction": "row" 或 "column", "gap", "justifyContent": start/center/end/spaceBetween/spaceEvenly, "alignItems": start/center/end}` 或 `{"mode": "grid", "rows": [...], "columns": [...], "rowGap", "columnGap"}`，行列每项为 `{"fixed": 毫米}`、`{"fraction": 比例}` 或 `"hug"`。`place` 可写的属性随所在容器而定：自由为 left/right/top/bottom；堆叠为 margin、alignSelf；网格为 row、column、rowSpan、columnSpan、margin、justifySelf、alignSelf；三者都可写 width、height（`{"fixed": 毫米}`、`"hug"`、`"fill"`、`{"fill": 权重}`）与 minWidth、maxWidth、minHeight、maxHeight。未写宽高时，网格中为填满，堆叠与自由中为随内容 | 票据 04（M111） |
+| S20 | 外观：padding、margin 可写成一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 可写成一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项；所有元素可写 `visible`（布尔）、`opacity`（0–1）、`rotation`（度）；容器与画板可写 `clip`。图形的 `stroke` 写成 `{"color", "width", "dash"?: [实, 空, …], "cap"?: butt/round/square}`。图形：rect（fill、stroke、cornerRadius）、ellipse（fill、stroke）、line（from、to、stroke 必填）、polygon（points 至少 3 个顶点）、path（d、fill、stroke、fillRule: nonzero/evenodd） | 票据 04（M110、M111） |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
 
@@ -79,3 +81,5 @@ S2–S13 已确认（M90）。
 ## 更正
 
 设计稿共有 **35** 个停靠站点（30 个黑色站名、4 个灰色已过站与 1 个本站），[设计稿解读](../m402-design-analysis.md)初稿误写为 34，已更正。
+
+票价框原估为 68 × 11 mm，实现票据 04 时排版报出"票价：一票制2元"在框内放不下（8 mm 字号需宽 60.6 mm，框内只有 50 mm）。按设计稿逐像素量得白框约为 x 539.4–659.8 mm、y 13.3–29.2 mm，已改为 120 × 16 mm（2026-10-09）。
