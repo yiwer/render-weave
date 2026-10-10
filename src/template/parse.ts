@@ -57,6 +57,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
     'stroke',
     'padding',
   ],
+  image: [...COMMON_KEYS, 'source', 'fit'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
   ellipse: [...COMMON_KEYS, 'fill', 'stroke'],
   line: [...COMMON_KEYS, 'from', 'to', 'stroke'],
@@ -64,7 +65,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule'],
 };
 /** 元素目录中已有、但尚未实现的元素类型。 */
-const PLANNED_TYPES = new Set(['image', 'loop', 'call', 'qrcode', 'barcode']);
+const PLANNED_TYPES = new Set(['loop', 'call', 'qrcode', 'barcode']);
 const SIZE_LIMIT_KEYS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   free: ['left', 'right', 'top', 'bottom', 'width', 'height', ...SIZE_LIMIT_KEYS],
@@ -268,6 +269,12 @@ class TemplateReader {
       case 'text':
         element = this.readText(value, base, path);
         break;
+      case 'image': {
+        const source = this.optional(value['source'], (v) => this.readImageSource(v, path));
+        const fit = this.readEnum(value['fit'], ['contain', 'cover', 'fill'] as const, 'contain', path, 'fit');
+        element = base && source !== null && fit ? { ...base, type: 'image', ...(source && { source }), fit } : undefined;
+        break;
+      }
       case 'rect': {
         const fill = this.optional(value['fill'], (v) => this.readColor(v, path, 'fill'));
         const stroke = this.optional(value['stroke'], (v) => this.readShapeStroke(v, path));
@@ -425,6 +432,17 @@ class TemplateReader {
       ...(justifySelf && { justifySelf }),
       ...(alignSelf && { alignSelf }),
     };
+  }
+
+  /** 图片来源：资源引用 res:资源ID；绑定变量在票据 07 加入。 */
+  private readImageSource(value: unknown, path: ElementPath): Read<string> {
+    if (isRecord(value) && 'var' in value) {
+      this.unsupported(path, 'source 绑定变量尚未支持');
+      return undefined;
+    }
+    const id = typeof value === 'string' ? parseResourceRef(value) : undefined;
+    if (!id) this.fail(path, '图片来源 source 必须是资源引用 res:资源ID');
+    return id;
   }
 
   private readSize(value: unknown, path: ElementPath, label: string): Read<SizeSpec> {

@@ -86,6 +86,8 @@ export const ProblemCodes = {
   resourceNotFound: 'resource.notFound',
   resourceKindMismatch: 'resource.kindMismatch',
   resourceUnreadable: 'resource.unreadable',
+  /** 资源的文件格式不受支持（图片只支持 PNG、JPEG、WebP，SVG 见票据 13）。 */
+  resourceUnsupportedFormat: 'resource.unsupportedFormat',
 
   /** 实际尺寸超出画板的适用尺寸范围。 */
   renderSizeOutOfRange: 'render.sizeOutOfRange',

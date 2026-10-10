@@ -9,7 +9,8 @@ import { loadCanvasKit } from './canvaskit.js';
 import { validateDataset, CompiledSchemaError } from './dataset-validation.js';
 import { draw, type EncodedImage } from './draw.js';
 import { formatElementPath } from './element-path.js';
-import { evaluate, walkEvaluated } from './evaluate.js';
+import { ImageStore } from './images.js';
+import { evaluate, walkVisible } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
@@ -98,19 +99,27 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   const evaluated = evaluate(template, dataset.data);
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources);
+  const images = new ImageStore(ck, workspace.resources);
   try {
-    for (const node of walkEvaluated(evaluated.root)) {
-      if (node.model.type !== 'text' || !node.model.visible) continue;
-      const problem = await fonts.load(node.model.font, node.model.path);
+    // 先加载会显示的元素用到的字体与图片，排版与绘制都是同步的。
+    for (const node of walkVisible(evaluated.root)) {
+      const model = node.model;
+      const problem =
+        model.type === 'text'
+          ? await fonts.load(model.font, model.path)
+          : model.type === 'image' && model.source
+            ? await images.load(model.source, model.path)
+            : undefined;
       if (problem) problems.push(problem);
     }
-    const result = layout(evaluated, request.output, fonts, ck);
+    const result = layout(evaluated, request.output, { fonts, images }, ck);
     problems.push(...result.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
-    const image = draw(ck, fonts, result.drawOps, request.output);
+    const image = draw(ck, { fonts, images }, result.drawOps, request.output);
     return { image, problems, layout: result.summary };
   } finally {
     fonts.dispose();
+    images.dispose();
   }
 }
 

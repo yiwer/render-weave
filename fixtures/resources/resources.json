@@ -1,9 +1,19 @@
 {
-  "description": "测试与样例共用的资源仓库。字体文件由 npm run fetch-fonts 下载到 fonts/，不进版本库。",
+  "description": "测试与样例共用的资源仓库。字体文件由 npm run fetch-fonts 下载到 fonts/，不进版本库；图片夹具的来源见 images/README.md。",
   "resources": [
     { "id": "font-hei-regular", "kind": "font", "file": "fonts/SourceHanSansCN-Regular.otf" },
     { "id": "font-hei-medium", "kind": "font", "file": "fonts/SourceHanSansCN-Medium.otf" },
     { "id": "font-hei-bold", "kind": "font", "file": "fonts/SourceHanSansCN-Bold.otf" },
-    { "id": "font-hei-heavy", "kind": "font", "file": "fonts/SourceHanSansCN-Heavy.otf" }
+    { "id": "font-hei-heavy", "kind": "font", "file": "fonts/SourceHanSansCN-Heavy.otf" },
+    { "id": "route-no-m402", "kind": "image", "file": "images/m402/route-no-m402.png" },
+    { "id": "landmark-1", "kind": "image", "file": "images/m402/landmark-1.png" },
+    { "id": "landmark-2", "kind": "image", "file": "images/m402/landmark-2.png" },
+    { "id": "landmark-3", "kind": "image", "file": "images/m402/landmark-3.png" },
+    { "id": "landmark-4", "kind": "image", "file": "images/m402/landmark-4.png" },
+    { "id": "icon-metro", "kind": "image", "file": "images/m402/icon-metro.png" },
+    { "id": "icon-hospital", "kind": "image", "file": "images/m402/icon-hospital.png" },
+    { "id": "test-quadrants-png", "kind": "image", "file": "images/test/quadrants.png" },
+    { "id": "test-quadrants-jpg", "kind": "image", "file": "images/test/quadrants.jpg" },
+    { "id": "test-quadrants-webp", "kind": "image", "file": "images/test/quadrants.webp" }
   ]
 }

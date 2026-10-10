@@ -33,10 +33,11 @@ function evaluateNode(model: ArtboardModel | ElementModel, data: unknown): Evalu
   }
 }
 
-/** 遍历求值树中的所有节点（先序）。 */
-export function* walkEvaluated(node: EvaluatedNode): Generator<EvaluatedNode> {
+/** 先序遍历求值树中会显示的节点：隐藏的元素连同其子元素都跳过（M27）。 */
+export function* walkVisible(node: EvaluatedNode): Generator<EvaluatedNode> {
+  if (node.model.type !== 'artboard' && !node.model.visible) return;
   yield node;
-  for (const child of node.children ?? []) yield* walkEvaluated(child);
+  for (const child of node.children ?? []) yield* walkVisible(child);
 }
 
 function renderContent(content: readonly ContentItem[], data: unknown): string {

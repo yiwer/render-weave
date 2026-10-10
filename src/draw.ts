@@ -7,6 +7,7 @@ import { setJpegDpi, setPngDpi } from './image-metadata.js';
 import type { DrawOp, Radii } from './layout/index.js';
 import type { RenderRequest } from './request.js';
 import type { ShapeStroke } from './template/model.js';
+import type { ImageStore } from './images.js';
 import type { FontStore } from './text/fonts.js';
 import { mmToPx, pxPerMm } from './units.js';
 
@@ -20,13 +21,18 @@ export interface EncodedImage {
 
 const JPEG_QUALITY = 92;
 
-export function draw(ck: CanvasKit, fonts: FontStore, ops: readonly DrawOp[], output: RenderRequest['output']): EncodedImage {
+export function draw(
+  ck: CanvasKit,
+  resources: { readonly fonts: FontStore; readonly images: ImageStore },
+  ops: readonly DrawOp[],
+  output: RenderRequest['output'],
+): EncodedImage {
   const widthPx = mmToPx(output.width, output.dpi);
   const heightPx = mmToPx(output.height, output.dpi);
   const surface = ck.MakeSurface(widthPx, heightPx);
   if (!surface) throw new Error(`无法创建 ${widthPx} × ${heightPx} 像素的画布`);
   const canvas = surface.getCanvas();
-  const painter = new Painter(ck, fonts, canvas);
+  const painter = new Painter(ck, resources.fonts, resources.images, canvas);
   try {
     // JPEG 没有透明通道，未填充的区域按白色输出。
     canvas.clear(output.format === 'jpeg' ? ck.WHITE : ck.TRANSPARENT);
@@ -55,6 +61,7 @@ class Painter {
   constructor(
     private readonly ck: CanvasKit,
     private readonly fonts: FontStore,
+    private readonly images: ImageStore,
     private readonly canvas: Canvas,
   ) {
     this.paint = new ck.Paint();
@@ -78,9 +85,27 @@ class Painter {
         return this.ellipse(op);
       case 'path':
         return this.path(op);
+      case 'image':
+        return this.image(op);
       case 'glyphs':
         return this.glyphs(op);
     }
+  }
+
+  /** 按记录的源区域与目标区域绘制；线性插值加多级纹理，缩小时不起锯齿。 */
+  private image(op: Extract<DrawOp, { op: 'image' }>): void {
+    const loaded = this.images.get(op.image);
+    if (!loaded) return;
+    this.paint.setStyle(this.ck.PaintStyle.Fill);
+    this.paint.setColor(this.ck.BLACK);
+    this.canvas.drawImageRectOptions(
+      loaded.image,
+      this.ck.XYWHRect(op.src.x, op.src.y, op.src.width, op.src.height),
+      this.ck.XYWHRect(op.dst.x, op.dst.y, op.dst.width, op.dst.height),
+      this.ck.FilterMode.Linear,
+      this.ck.MipmapMode.Linear,
+      this.paint,
+    );
   }
 
   private save(op: Extract<DrawOp, { op: 'save' }>): void {

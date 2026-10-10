@@ -24,7 +24,7 @@ export interface ArtboardModel extends ContainerBody {
   readonly sizeRange: { readonly width: Range; readonly height: Range };
 }
 
-export type ElementModel = ContainerModel | TextElementModel | ShapeModel;
+export type ElementModel = ContainerModel | TextElementModel | ImageModel | ShapeModel;
 export type ShapeModel = RectModel | EllipseModel | LineModel | PolygonModel | PathModel;
 export type NodeModel = ArtboardModel | ElementModel;
 
@@ -179,6 +179,17 @@ export interface TextStroke {
 
 /** 字形压缩的下限，模板只能设得更高（M88）。 */
 export const MIN_COMPRESSION = 0.6;
+
+/**
+ * 图片：来源为资源引用（M10）；适配方式为完整显示（contain）、铺满裁剪（cover）或拉伸（fill），
+ * 前两者在元素框内居中。没有来源时不画内容。
+ */
+export interface ImageModel extends ElementBase {
+  readonly type: 'image';
+  /** 图片资源 ID。 */
+  readonly source?: string;
+  readonly fit: 'contain' | 'cover' | 'fill';
+}
 
 export interface RectModel extends ElementBase {
   readonly type: 'rect';

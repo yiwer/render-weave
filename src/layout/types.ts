@@ -26,7 +26,18 @@ export interface LayoutNode {
   readonly height: number;
   readonly visible: boolean;
   readonly text?: TextSummary;
+  readonly image?: ImageSummary;
   readonly children?: readonly LayoutNode[];
+}
+
+export interface ImageSummary {
+  readonly source: string;
+  readonly fit: 'contain' | 'cover' | 'fill';
+  /** 图片的像素尺寸。 */
+  readonly naturalWidth: number;
+  readonly naturalHeight: number;
+  /** 图片实际画出的区域，毫米；完整显示时可能小于元素框，铺满裁剪时等于元素框。 */
+  readonly drawn: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
 
 export interface TextSummary {
@@ -90,6 +101,16 @@ export type DrawOp =
       readonly fill?: string;
       /** 以轮廓为中线。 */
       readonly stroke?: ShapeStroke;
+    }
+  | {
+      readonly op: 'image';
+      readonly path: string;
+      /** 图片资源 ID。 */
+      readonly image: string;
+      /** 取图片中的哪一块，像素。 */
+      readonly src: Box;
+      /** 画到哪里，毫米，相对画板。 */
+      readonly dst: Box;
     }
   | {
       readonly op: 'glyphs';

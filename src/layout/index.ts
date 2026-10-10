@@ -13,19 +13,26 @@ import type { EvaluatedNode, EvaluatedTemplate } from '../evaluate.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
 import type { RenderRequest } from '../request.js';
 import type { Align, ArtboardModel, ContainerModel, Edges, ElementModel, Layout, Place, SizeSpec, Track } from '../template/model.js';
+import type { ImageStore } from '../images.js';
 import type { FontStore } from '../text/fonts.js';
 import { mmToPx, roundMm } from '../units.js';
+import { imageIntrinsic, recordImage } from './image.js';
 import { radii, recordShape, shapeIntrinsic, type PathBounds } from './shapes.js';
 import { measureTextNode, recordText, type TextMeasure } from './text.js';
 import { EPSILON, type Box, type DrawOp, type LayoutNode, type LayoutResult, type Size } from './types.js';
 
-export type { Box, DrawOp, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
+export type { Box, DrawOp, ImageSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
 
 type Axis = 'width' | 'height';
 
-/** 字体须已由 FontStore 加载；加载失败的文本元素不画，只在布局摘要中记录框。 */
-export function layout(evaluated: EvaluatedTemplate, output: RenderRequest['output'], fonts: FontStore, ck: CanvasKit): LayoutResult {
-  const layouter = new Layouter(fonts, ck);
+/** 字体与图片须已由 FontStore、ImageStore 加载；加载失败的元素不画，只在布局摘要中记录框。 */
+export function layout(
+  evaluated: EvaluatedTemplate,
+  output: RenderRequest['output'],
+  resources: { readonly fonts: FontStore; readonly images: ImageStore },
+  ck: CanvasKit,
+): LayoutResult {
+  const layouter = new Layouter(resources.fonts, resources.images, ck);
   const root = layouter.arrange(evaluated.root, { x: 0, y: 0, width: output.width, height: output.height });
   return {
     summary: {
@@ -54,6 +61,7 @@ class Layouter {
 
   constructor(
     private readonly fonts: FontStore,
+    private readonly images: ImageStore,
     private readonly ck: CanvasKit,
   ) {}
 
@@ -71,6 +79,9 @@ class Layouter {
         break;
       case 'text':
         size = this.textMeasure(node).intrinsic;
+        break;
+      case 'image':
+        size = imageIntrinsic(model, model.source ? this.images.get(model.source) : undefined);
         break;
       default:
         size = shapeIntrinsic(model, (d) => this.pathBounds(d));
@@ -161,6 +172,11 @@ class Layouter {
       case 'text': {
         const text = recordText(model, node.text ?? '', this.textMeasure(node), box, this.drawOps, this.problems);
         summary = text ? { text } : {};
+        break;
+      }
+      case 'image': {
+        const image = recordImage(model, box, model.source ? this.images.get(model.source) : undefined, this.drawOps);
+        summary = image ? { image } : {};
         break;
       }
       default:
