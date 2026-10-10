@@ -207,22 +207,22 @@ describe('展示格式', () => {
 describe('插槽与展示格式的检查', () => {
   it('引用的字段不存在、路径经过列表或文本、取值不能显示为文字、展示格式与类型不符时报问题，定位到元素', async () => {
     const cases: [string, unknown, string, string][] = [
-      ['未知字段', { slot: 'farePrice' }, ProblemCodes.templateUnknownVariable, '插槽 farePrice 引用的字段不存在：数据定义中没有 farePrice'],
-      ['未知子字段', { slot: 'stop.road' }, ProblemCodes.templateUnknownVariable, '插槽 stop.road 引用的字段不存在：stop中没有 road'],
-      ['经过列表', { slot: 'times.value' }, ProblemCodes.templateInvalidPath, '插槽路径 times.value 中的 times 是列表字段，路径只能经过单引用'],
-      ['经过文本', { slot: 'label.length' }, ProblemCodes.templateInvalidPath, '插槽路径 label.length 中的 label 是文本字段，路径只能经过单引用'],
-      ['图片', { slot: 'logo' }, ProblemCodes.templateTypeMismatch, '插槽 logo 是图片字段，不能显示为文字'],
-      ['引用', { slot: 'stop' }, ProblemCodes.templateTypeMismatch, '插槽 stop 是数据定义引用字段，不能显示为文字'],
+      ['未知字段', { slot: 'farePrice' }, ProblemCodes.templateUnknownVariable, '插槽 farePrice：变量 farePrice 不存在：既不是数据字段，也不是参数或派生变量'],
+      ['未知子字段', { slot: 'stop.road' }, ProblemCodes.templateUnknownVariable, '插槽 stop.road：stop 中没有字段 road'],
+      ['经过列表', { slot: 'times.value' }, ProblemCodes.templateInvalidPath, '插槽 times.value：times 的类型是列表[时刻]，路径只能经过单引用'],
+      ['经过文本', { slot: 'label.length' }, ProblemCodes.templateInvalidPath, '插槽 label.length：label 的类型是文本，路径只能经过单引用'],
+      ['图片', { slot: 'logo' }, ProblemCodes.templateTypeMismatch, '插槽 logo 的类型是图片，不能显示为文字'],
+      ['引用', { slot: 'stop' }, ProblemCodes.templateTypeMismatch, '插槽 stop 的类型是数据定义引用（站点实验 v1），不能显示为文字'],
       [
         '布尔',
         { slot: 'accessible' },
         ProblemCodes.templateTypeMismatch,
-        '插槽 accessible 是布尔字段，不能显示为文字，按真假显示不同文字请用条件显示或状态样式',
+        '插槽 accessible 的类型是布尔，不能显示为文字，按真假显示不同文字请用条件显示或状态样式',
       ],
       ['时刻格式用于数值', { slot: 'fare', format: 'HH:mm' }, ProblemCodes.templateTypeMismatch, '插槽 fare：展示格式"HH:mm"含时分秒，只能用于时刻或时间，不能用于数值'],
       ['数值格式用于时刻', { slot: 'first', format: '0.##' }, ProblemCodes.templateTypeMismatch, '插槽 first：数值格式"0.##"不能用于时刻'],
       ['日期格式用于时刻', { slot: 'first', format: 'M月d日' }, ProblemCodes.templateTypeMismatch, '插槽 first：展示格式"M月d日"含年月日，只能用于日期或时间，不能用于时刻'],
-      ['格式用于文本', { slot: 'label', format: 'HH:mm' }, ProblemCodes.templateTypeMismatch, '插槽 label：文本字段不带展示格式"HH:mm"'],
+      ['格式用于文本', { slot: 'label', format: 'HH:mm' }, ProblemCodes.templateTypeMismatch, '插槽 label：文本类型不带展示格式"HH:mm"'],
     ];
     const workspace = await textLab(FIELDS, column(cases.map(([name, slot]) => text(name, [{ text: '前' }, slot]))));
     const result = await render(workspace, textLabRequest({ label: '甲', fare: 2, first: '07:30', stop: { name: '东门' } }, 80, 120, 72));

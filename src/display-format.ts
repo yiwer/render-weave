@@ -5,6 +5,7 @@
  * 数值按十进制四舍五入，不经过浮点运算：数值最多 15 位有效数字（M112），
  * String(数值) 得到的就是原始的十进制写法，在这串数字上取舍即可（如 2.005 按 0.00 得到 2.01）。
  */
+import { joinDecimal, plainNumber, toDecimal } from './decimal.js';
 
 /** 能放进文字插槽的取值种类。 */
 export type DisplayKind = 'text' | 'number' | 'date' | 'time' | 'datetime';
@@ -130,39 +131,6 @@ export function displayValue(value: unknown, kind: DisplayKind, format?: Display
       return format?.kind === 'datetime' ? formatDatetime(parts, format) : value;
     }
   }
-}
-
-interface Decimal {
-  readonly negative: boolean;
-  /** 整数部分与小数部分的数字。 */
-  readonly integer: string;
-  readonly fraction: string;
-}
-
-/** 数值的十进制写法，展开指数记法。 */
-function toDecimal(value: number): Decimal {
-  const [mantissa = '0', exponentText = '0'] = String(Math.abs(value)).split('e');
-  const [integer = '0', fraction = ''] = mantissa.split('.');
-  let digits = integer + fraction;
-  let point = integer.length + Number(exponentText);
-  if (point < 0) {
-    digits = '0'.repeat(-point) + digits;
-    point = 0;
-  }
-  if (point > digits.length) digits += '0'.repeat(point - digits.length);
-  return { negative: value < 0, integer: digits.slice(0, point), fraction: digits.slice(point) };
-}
-
-function joinDecimal(negative: boolean, integer: string, fraction: string, minInteger: number): string {
-  const int = integer.replace(/^0+/, '').padStart(minInteger, '0');
-  const zero = !/[1-9]/.test(int + fraction);
-  return (negative && !zero ? '-' : '') + int + (fraction ? `.${fraction}` : '');
-}
-
-/** 未给格式时的数值：最短的十进制写法，不用指数记法。 */
-function plainNumber(value: number): string {
-  const { negative, integer, fraction } = toDecimal(value);
-  return joinDecimal(negative, integer, fraction.replace(/0+$/, ''), 1);
 }
 
 function formatNumber(value: number, format: NumberFormat): string {

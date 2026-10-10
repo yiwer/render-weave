@@ -13,6 +13,7 @@ export type ProblemLevel = 'hint' | 'severe';
  * - parameter：对外参数名。
  * - element：元素路径（M101），如 `标准线路单边/站点面板/站点列[12]/名称区/站名`。
  * - check：模板名与检查项名。
+ * - variable：模板名与模板变量名（参数、派生变量的声明）。
  * - definition：数据定义中的位置，如 `stops.items.constraints`（发布与编译时的问题）。
  * - input：无法归到以上几类的输入位置，如工作区文件或渲染请求的属性。
  */
@@ -21,6 +22,7 @@ export type ProblemLocation =
   | { kind: 'parameter'; name: string }
   | { kind: 'element'; path: string }
   | { kind: 'check'; template: string; name: string }
+  | { kind: 'variable'; template: string; name: string }
   | { kind: 'definition'; schema: string; path: string }
   | { kind: 'input'; source: string };
 
@@ -86,8 +88,28 @@ export const ProblemCodes = {
   templateUnknownVariable: 'template.unknownVariable',
   /** 变量路径经过了列表或基本类型的值；路径只能经过单引用。 */
   templateInvalidPath: 'template.invalidPath',
-  /** 取值类型与用途不符，如图片字段放进文字插槽、展示格式与字段类型不符。 */
+  /** 取值类型与用途不符，如图片字段放进文字插槽、展示格式与字段类型不符、绑定的变量类型与属性不符。 */
   templateTypeMismatch: 'template.typeMismatch',
+  /** 数据字段、参数与派生变量共用一个命名空间，名称重复（M90 S3）。 */
+  templateDuplicateVariable: 'template.duplicateVariable',
+  /** 派生变量之间的引用成环。 */
+  templateVariableCycle: 'template.variableCycle',
+  /** 状态样式列出的取值不会出现，如拼错了派生变量的取值。 */
+  templateUnknownStateValue: 'template.unknownStateValue',
+  /** 求值时绑定得到的值不能用于该属性：数值缺值或超出范围。 */
+  templateBindingValueInvalid: 'template.bindingValueInvalid',
+
+  /** 对外参数必须提供而没有提供。 */
+  parameterMissing: 'parameter.missing',
+  /** 渲染请求填写了模板没有的参数。 */
+  parameterUnknown: 'parameter.unknown',
+  /** 渲染请求填写了内部参数；内部参数只由模板设计者设定（M15）。 */
+  parameterInternal: 'parameter.internal',
+  /** 参数取值的类型或约束不对。 */
+  parameterInvalid: 'parameter.invalid',
+
+  /** 检查项的问题条件成立，等级与提示文字由检查项给出（M25）。 */
+  checkFailed: 'check.failed',
 
   resourceNotFound: 'resource.notFound',
   resourceKindMismatch: 'resource.kindMismatch',

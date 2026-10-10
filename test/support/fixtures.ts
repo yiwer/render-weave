@@ -145,9 +145,9 @@ export function m402LabRequest(width: number, height: number, dpi = 120): Record
 
 /**
  * 文字实验工作区：用给定字段发布静态数据定义"文字实验 v1"（另有"站点实验 v1"可供引用，只含站名 name），
- * 配一个基准为它、只含画板的模板"文字实验"；资源仓库为真实的夹具目录。
+ * 配一个基准为它的模板"文字实验"，可另带参数、派生变量与检查项（declarations）；资源仓库为真实的夹具目录。
  */
-export async function textLab(fields: unknown[], artboard: Record<string, unknown>): Promise<Workspace> {
+export async function textLab(fields: unknown[], artboard: Record<string, unknown>, declarations: Record<string, unknown> = {}): Promise<Workspace> {
   const schemas: StaticSchemaEntry[] = [];
   for (const [name, defined] of [
     ['站点实验', [{ name: 'name', displayName: '站名', type: 'text' }]],
@@ -161,17 +161,24 @@ export async function textLab(fields: unknown[], artboard: Record<string, unknow
     dslVersion: 'renderweave-template/1',
     name: '文字实验',
     base: { name: '文字实验', version: 1 },
+    ...declarations,
     artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } }, ...artboard },
   };
   const { repository, problems } = await openResourceRepository(resourcesDir);
   return { staticSchemas: schemas, templates: [{ name: '文字实验', document }], datasets: [], resources: repository, problems };
 }
 
-export function textLabRequest(data: Record<string, unknown>, width: number, height: number, dpi = 120): Record<string, unknown> {
+export function textLabRequest(
+  data: Record<string, unknown>,
+  width: number,
+  height: number,
+  dpi = 120,
+  parameters: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     template: '文字实验',
     dataset: { inline: { dataset: { staticSchema: { name: '文字实验', version: 1 } }, data } },
-    parameters: {},
+    parameters,
     output: { width, height, dpi, format: 'png' },
     mode: 'final',
   };

@@ -2,7 +2,13 @@
  * 模板 DSL 解析（renderweave-template/1）。
  *
  * 把模板文档读成类型明确的模型，并在出图前发现结构错误，问题以元素路径定位。
- * 尚未实现的元素类型、属性与变量绑定在后续票据中逐步加入，遇到时返回问题而不是静默忽略。
+ * 尚未实现的元素类型与属性在后续票据中逐步加入，遇到时返回问题而不是静默忽略。
+ *
+ * 同一个读取器有两种用法，区别只在遇到变量引用 { "var": … } 时怎么办（BindingHost）：
+ * - 静态读取（parseTemplate）：记下引用（绑定、插槽、状态样式）供模板静态检查，返回占位值；
+ *   状态样式的每个取值都与元素合并后读一遍，覆盖的属性同样经过检查。
+ * - 求值读取（readArtboardResolved）：按作用域取值，状态样式先按变量取值选中再与元素合并；
+ *   隐藏的元素不再读取其余属性，直接用静态读取的模型（M27）。
  */
 import {
   RESERVED_NAME_CHARACTERS,
@@ -13,6 +19,7 @@ import {
 } from '../element-path.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode } from '../problems.js';
 import { parseDisplayFormat, type DisplayFormat } from '../display-format.js';
+import { isVarOperand, normalizeColor, readDeclarations } from './declarations.js';
 import { parseResourceRef } from '../resources.js';
 import { isRecord } from '../util.js';
 import { parseStaticSchemaRef } from '../workspace.js';
@@ -39,12 +46,15 @@ import {
   type TextFit,
   type TextStroke,
   type Track,
+  type VariableUse,
 } from './model.js';
 
 const TEMPLATE_KEYS = ['dslVersion', 'name', 'base', 'parameters', 'derived', 'checks', 'artboard'];
 const CONTAINER_BODY_KEYS = ['layout', 'padding', 'fill', 'stroke', 'cornerRadius', 'clip', 'children'];
 const ARTBOARD_KEYS = ['sizeRange', ...CONTAINER_BODY_KEYS];
-const COMMON_KEYS = ['type', 'name', 'place', 'visible', 'opacity', 'rotation'];
+const COMMON_KEYS = ['type', 'name', 'place', 'visible', 'opacity', 'rotation', 'states'];
+/** 状态样式不能覆盖的属性：结构与身份。 */
+const STATE_FIXED_KEYS = ['type', 'name', 'children', 'states'];
 const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   container: [...COMMON_KEYS, ...CONTAINER_BODY_KEYS],
   text: [
@@ -85,9 +95,95 @@ const NO_CORNERS: Corners = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLef
 const ALIGNS = ['start', 'center', 'end'] as const;
 
 export function parseTemplate(name: string, document: unknown): { model?: TemplateModel; problems: Problem[] } {
-  const reader = new TemplateReader(name);
+  const host = new StaticHost();
+  const reader = new TemplateReader(name, host, new WeakMap());
   const model = reader.readTemplate(document);
-  return { model: reader.failed ? undefined : model, problems: reader.problems };
+  return { model: reader.failed ? undefined : model, problems: dedupe(reader.problems) };
+}
+
+/** 求值读取：按作用域重新读取画板，得到绑定与状态样式都已取值的模型。 */
+export function readArtboardResolved(template: TemplateModel, host: BindingHost): { artboard?: ArtboardModel; problems: Problem[] } {
+  const reader = new TemplateReader(template.name, host, template.staticElements);
+  const artboard = reader.readArtboard(template.artboardDocument, rootPath(template.name));
+  return { ...(artboard && { artboard }), problems: reader.problems };
+}
+
+/** 读到绑定的位置：元素路径与属性名称。 */
+export interface BindingSite {
+  readonly path: ElementPath;
+  readonly label: string;
+}
+
+export interface NumberRule {
+  readonly min?: number;
+  readonly max?: number;
+  readonly exclusiveMin?: boolean;
+  readonly integer?: boolean;
+}
+
+/** 读取时遇到变量引用怎么办。各方法返回 undefined 表示没有可用的值（问题已报告）。 */
+export interface BindingHost {
+  /** 求值读取为 true：状态样式按取值选中、隐藏的元素不再读取。 */
+  readonly resolving: boolean;
+  color(ref: string, site: BindingSite): Read<Color>;
+  /** fallback 是属性未写时的缺省值，缺值或取值不合规时用它；没有缺省值则返回 undefined。 */
+  number(ref: string, site: BindingSite, rule: NumberRule, fallback: number | undefined): Read<number>;
+  boolean(ref: string, site: BindingSite, fallback: boolean): Read<boolean>;
+  /** 图片资源 ID；null 表示不画内容。 */
+  image(ref: string, site: BindingSite): string | null;
+  /** 插槽：求值读取返回文字；静态读取返回 undefined，保留插槽。 */
+  slot(ref: string, format: DisplayFormat | undefined, site: BindingSite): string | undefined;
+  /** 状态样式：求值读取返回选中的取值（没有列出时为 undefined）。 */
+  state(ref: string, keys: readonly string[], site: BindingSite): string | undefined;
+}
+
+/** 静态读取：记下变量引用，返回能通过各属性检查的占位值。 */
+class StaticHost implements BindingHost {
+  readonly resolving = false;
+  readonly uses: VariableUse[] = [];
+
+  color(ref: string, site: BindingSite): Color {
+    this.uses.push({ use: 'binding', var: ref, expected: 'color', element: site.path, label: site.label });
+    return '#000000FF';
+  }
+
+  number(ref: string, site: BindingSite, rule: NumberRule, fallback: number | undefined): number {
+    this.uses.push({ use: 'binding', var: ref, expected: 'number', element: site.path, label: site.label });
+    if (fallback !== undefined) return fallback;
+    if (rule.min !== undefined) return rule.exclusiveMin ? rule.min + 1 : rule.min;
+    return rule.max !== undefined ? Math.min(0, rule.max) : 0;
+  }
+
+  boolean(ref: string, site: BindingSite, fallback: boolean): boolean {
+    this.uses.push({ use: 'binding', var: ref, expected: 'boolean', element: site.path, label: site.label });
+    return fallback;
+  }
+
+  image(ref: string, site: BindingSite): null {
+    this.uses.push({ use: 'binding', var: ref, expected: 'image', element: site.path, label: site.label });
+    return null;
+  }
+
+  slot(ref: string, format: DisplayFormat | undefined, site: BindingSite): undefined {
+    this.uses.push({ use: 'slot', var: ref, ...(format && { format }), element: site.path });
+    return undefined;
+  }
+
+  state(ref: string, keys: readonly string[], site: BindingSite): undefined {
+    this.uses.push({ use: 'state', var: ref, keys, element: site.path });
+    return undefined;
+  }
+}
+
+/** 状态样式的各取值与元素合并后重读一遍，同一个问题只报一次。 */
+function dedupe(problems: readonly Problem[]): Problem[] {
+  const seen = new Set<string>();
+  return problems.filter((problem) => {
+    const key = JSON.stringify(problem);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** 读取失败时返回 undefined，并已记录问题。 */
@@ -98,8 +194,14 @@ class TemplateReader {
   /** 有严重到无法继续使用模型的问题。 */
   failed = false;
   private readonly elementNames = new Map<string, ElementPath>();
+  /** 读状态样式的各取值时为 false：同一元素再读一遍，不登记名称、不记录静态模型。 */
+  private primary = true;
 
-  constructor(private readonly templateName: string) {}
+  constructor(
+    private readonly templateName: string,
+    private readonly host: BindingHost,
+    private readonly staticElements: WeakMap<object, ElementModel>,
+  ) {}
 
   readTemplate(document: unknown): Read<TemplateModel> {
     const path = rootPath(this.templateName);
@@ -111,20 +213,25 @@ class TemplateReader {
     if (document['dslVersion'] !== 'renderweave-template/1') {
       this.fail(path, '模板的 dslVersion 必须是 renderweave-template/1');
     }
-    for (const key of ['parameters', 'derived', 'checks']) {
-      const value = document[key];
-      if (value !== undefined && !(Array.isArray(value) && value.length === 0)) {
-        this.unsupported(path, `模板的 ${key}（参数、派生变量与检查项）尚未支持`);
-      }
-    }
+    const declared = readDeclarations(this.templateName, document);
+    this.problems.push(...declared.problems);
+    if (declared.problems.length > 0) this.failed = true;
     const base = parseStaticSchemaRef(document['base']);
     if (!base) this.fail(path, '模板必须用 base 写明基准数据定义的名称与版本号');
     const artboard = this.readArtboard(document['artboard'], path);
-    if (!base || !artboard) return undefined;
-    return { name: this.templateName, base, artboard };
+    if (!base || !artboard || !isRecord(document['artboard'])) return undefined;
+    return {
+      name: this.templateName,
+      base,
+      ...declared.declarations,
+      artboard,
+      artboardDocument: document['artboard'],
+      uses: this.host instanceof StaticHost ? this.host.uses : [],
+      staticElements: this.staticElements,
+    };
   }
 
-  private readArtboard(value: unknown, path: ElementPath): Read<ArtboardModel> {
+  readArtboard(value: unknown, path: ElementPath): Read<ArtboardModel> {
     if (!isRecord(value)) {
       this.fail(path, '模板必须有画板 artboard');
       return undefined;
@@ -248,14 +355,80 @@ class TemplateReader {
     return tracks;
   }
 
-  private readElement(value: unknown, parent: ElementPath, parentLayout: Layout): Read<ElementModel> {
-    if (!isRecord(value)) {
+  private readElement(document: unknown, parent: ElementPath, parentLayout: Layout): Read<ElementModel> {
+    if (!isRecord(document)) {
       this.fail(parent, '元素必须是 JSON 对象');
       return undefined;
     }
-    const name = this.readElementName(value['name'], parent);
+    const name = this.readElementName(document['name'], parent);
     if (name === undefined) return undefined;
     const path = childPath(parent, name);
+    const value = this.applyStates(document, path, parent, parentLayout);
+    if (!value) return undefined;
+    if (this.host.resolving) {
+      // 隐藏的元素不参与布局，也不再读取其余属性（其绑定可能本来就缺值，如末站的"下一站地标"）。
+      const visible = this.readBoolean(value['visible'], true, path, 'visible');
+      const fallback = this.staticElements.get(document);
+      if (visible === false && fallback) return { ...fallback, path, visible: false };
+      const element = this.readElementBody(value, name, path, parentLayout);
+      // 求值时取到的值不能用（问题已报告）：元素按隐藏处理，其余元素照常排版。
+      return element ?? (fallback && { ...fallback, path, visible: false });
+    }
+    const element = this.readElementBody(value, name, path, parentLayout);
+    if (element && this.primary) this.staticElements.set(document, element);
+    return element;
+  }
+
+  /**
+   * 状态样式（M28，S5）：按变量取值覆盖属性，未列出的取值沿用元素自身属性；覆盖值可以是字面值或变量。
+   * 静态读取时把每个取值的覆盖与元素合并后各读一遍；求值读取时返回选中取值合并后的元素文档。
+   */
+  private applyStates(
+    document: Record<string, unknown>,
+    path: ElementPath,
+    parent: ElementPath,
+    parentLayout: Layout,
+  ): Read<Record<string, unknown>> {
+    const states = document['states'];
+    if (states === undefined) return document;
+    const usage = '状态样式写成 { "by": { "var": 变量 }, "cases": { 取值: { 属性: 值 } } }';
+    if (!isRecord(states) || !isVarOperand(states['by']) || !isRecord(states['cases'])) {
+      this.fail(path, usage);
+      return undefined;
+    }
+    this.checkKeys(states, ['by', 'cases'], path, '状态样式');
+    const cases = states['cases'];
+    for (const [key, override] of Object.entries(cases)) {
+      if (!isRecord(override)) {
+        this.fail(path, `状态样式取值"${key}"的覆盖必须是对象：${usage}`);
+        return undefined;
+      }
+      const fixed = Object.keys(override).filter((property) => STATE_FIXED_KEYS.includes(property));
+      if (fixed.length > 0) {
+        this.fail(path, `状态样式不能覆盖 ${fixed.join('、')}（取值"${key}"）`);
+        return undefined;
+      }
+    }
+    const { states: _states, ...own } = document;
+    const chosen = this.host.state(states['by'].var, Object.keys(cases), { path, label: 'states.by' });
+    if (this.host.resolving) return chosen === undefined ? own : { ...own, ...(cases[chosen] as Record<string, unknown>) };
+    if (this.primary) {
+      this.primary = false;
+      try {
+        for (const override of Object.values(cases)) {
+          // 子元素不随状态变化，不必再读。
+          const merged = { ...own, ...(override as Record<string, unknown>) };
+          if ('children' in merged) merged['children'] = [];
+          this.readElement(merged, parent, parentLayout);
+        }
+      } finally {
+        this.primary = true;
+      }
+    }
+    return own;
+  }
+
+  private readElementBody(value: Record<string, unknown>, name: string, path: ElementPath, parentLayout: Layout): Read<ElementModel> {
     const type = value['type'];
     if (typeof type !== 'string' || !(type in ELEMENT_KEYS)) {
       if (typeof type === 'string' && PLANNED_TYPES.has(type)) this.unsupported(path, `元素类型 ${type} 尚未支持`);
@@ -263,7 +436,7 @@ class TemplateReader {
       return undefined;
     }
     const elementType = type as ElementModel['type'];
-    this.checkKeys(value, ELEMENT_KEYS[elementType], path, '元素');
+    this.checkKeys(value, ELEMENT_KEYS[elementType].filter((key) => key !== 'states'), path, '元素');
     const base = this.readElementBase(value, name, path, parentLayout);
 
     let element: Read<ElementModel>;
@@ -277,9 +450,9 @@ class TemplateReader {
         element = this.readText(value, base, path);
         break;
       case 'image': {
-        const source = this.optional(value['source'], (v) => this.readImageSource(v, path));
+        const source = value['source'] === undefined ? null : this.readImageSource(value['source'], path);
         const fit = this.readEnum(value['fit'], ['contain', 'cover', 'fill'] as const, 'contain', path, 'fit');
-        element = base && source !== null && fit ? { ...base, type: 'image', ...(source && { source }), fit } : undefined;
+        element = base && source !== undefined && fit ? { ...base, type: 'image', ...(source !== null && { source }), fit } : undefined;
         break;
       }
       case 'rect': {
@@ -317,7 +490,7 @@ class TemplateReader {
       }
       case 'path': {
         const d = value['d'];
-        if (typeof d !== 'string' || d.trim() === '') this.fail(path, '路径必须用 d 给出 SVG 路径数据（毫米）');
+        if (typeof d !== 'string' || d.trim() === '') this.fail(path, '路径必须用 d 给出 SVG 路径数据（毫米）；路径数据不能绑定变量（M71）');
         const fill = this.optional(value['fill'], (v) => this.readColor(v, path, 'fill'));
         const stroke = this.optional(value['stroke'], (v) => this.readShapeStroke(v, path));
         const fillRule = this.readEnum(value['fillRule'], ['nonzero', 'evenodd'] as const, 'nonzero', path, 'fillRule');
@@ -336,6 +509,8 @@ class TemplateReader {
       this.fail(parent, '元素必须有名称 name');
       return undefined;
     }
+    // 求值读取与状态样式的重读都是同一批元素，名称已在静态读取时检查过。
+    if (this.host.resolving || !this.primary) return value;
     const path = childPath(parent, value);
     if (RESERVED_NAME_CHARACTERS.some((ch) => value.includes(ch))) {
       this.report(ProblemCodes.templateInvalidElementName, path, `元素名称"${value}"不能含有 / [ ]`);
@@ -441,12 +616,9 @@ class TemplateReader {
     };
   }
 
-  /** 图片来源：资源引用 res:资源ID；绑定变量在票据 07 加入。 */
-  private readImageSource(value: unknown, path: ElementPath): Read<string> {
-    if (isRecord(value) && 'var' in value) {
-      this.unsupported(path, 'source 绑定变量尚未支持');
-      return undefined;
-    }
+  /** 图片来源：资源引用 res:资源ID，或绑定图片类型的变量（缺值时不画内容）。 */
+  private readImageSource(value: unknown, path: ElementPath): string | null | undefined {
+    if (isVarOperand(value)) return this.host.image(value.var, { path, label: 'source' });
     const id = typeof value === 'string' ? parseResourceRef(value) : undefined;
     if (!id) this.fail(path, '图片来源 source 必须是资源引用 res:资源ID');
     return id;
@@ -456,11 +628,10 @@ class TemplateReader {
     if (value === 'hug') return { kind: 'hug' };
     if (value === 'fill') return { kind: 'fill', weight: 1 };
     if (isRecord(value) && Object.keys(value).length === 1) {
-      if ('var' in value) {
-        this.unsupported(path, `${label} 绑定变量尚未支持`);
-        return undefined;
+      if ('fixed' in value && (isVarOperand(value['fixed']) || typeof value['fixed'] === 'number')) {
+        const fixed = this.readNumber(value['fixed'], undefined, path, `${label}.fixed`, { min: 0 });
+        return fixed === undefined ? undefined : { kind: 'fixed', value: fixed };
       }
-      if (typeof value['fixed'] === 'number' && value['fixed'] >= 0) return { kind: 'fixed', value: value['fixed'] };
       if (isPositive(value['fill'])) return { kind: 'fill', weight: value['fill'] };
     }
     this.fail(path, `${label} 写成 { "fixed": 毫米 }、"hug"、"fill" 或 { "fill": 权重 }`);
@@ -543,7 +714,9 @@ class TemplateReader {
       }
       const format = item['format'] === undefined ? undefined : this.readDisplayFormat(item['format'], path, slot);
       if (item['format'] !== undefined && !format) return undefined;
-      items.push({ kind: 'slot', path: slot, ...(format && { format }), style });
+      const text = this.host.slot(slot, format, { path, label: '插槽' });
+      if (text !== undefined) items.push({ kind: 'text', text, style });
+      else items.push({ kind: 'slot', path: slot, ...(format && { format }), style });
     }
     return items;
   }
@@ -572,8 +745,8 @@ class TemplateReader {
   }
 
   private readFont(value: unknown, path: ElementPath, label: string): Read<string> {
-    if (isRecord(value) && 'var' in value) {
-      this.unsupported(path, `${label} 绑定变量尚未支持`);
+    if (isVarOperand(value)) {
+      this.fail(path, `${label} 不能绑定变量；需要按取值换字体时用状态样式`);
       return undefined;
     }
     const font = typeof value === 'string' ? parseResourceRef(value) : undefined;
@@ -705,7 +878,10 @@ class TemplateReader {
 
   private readEdges(value: unknown, path: ElementPath, label: string): Read<Edges> {
     if (value === undefined) return NO_EDGES;
-    if (typeof value === 'number' && value >= 0) return { top: value, right: value, bottom: value, left: value };
+    if (isVarOperand(value) || (typeof value === 'number' && value >= 0)) {
+      const all = this.readNumber(value, 0, path, label, { min: 0 });
+      return all === undefined ? undefined : { top: all, right: all, bottom: all, left: all };
+    }
     if (isRecord(value)) {
       this.checkKeys(value, ['top', 'right', 'bottom', 'left'], path, label);
       const side = (key: string) => this.readNumber(value[key], 0, path, `${label}.${key}`, { min: 0 });
@@ -719,7 +895,10 @@ class TemplateReader {
 
   private readCorners(value: unknown, path: ElementPath): Read<Corners> {
     if (value === undefined) return NO_CORNERS;
-    if (typeof value === 'number' && value >= 0) return { topLeft: value, topRight: value, bottomRight: value, bottomLeft: value };
+    if (isVarOperand(value) || (typeof value === 'number' && value >= 0)) {
+      const all = this.readNumber(value, 0, path, 'cornerRadius', { min: 0 });
+      return all === undefined ? undefined : { topLeft: all, topRight: all, bottomRight: all, bottomLeft: all };
+    }
     if (isRecord(value)) {
       this.checkKeys(value, ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'], path, 'cornerRadius');
       const corner = (key: string) => this.readNumber(value[key], 0, path, `cornerRadius.${key}`, { min: 0 });
@@ -732,13 +911,9 @@ class TemplateReader {
   }
 
   private readColor(value: unknown, path: ElementPath, label: string): Read<Color> {
-    if (isRecord(value) && 'var' in value) {
-      this.unsupported(path, `${label} 绑定变量尚未支持`);
-      return undefined;
-    }
-    if (typeof value === 'string' && /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(value)) {
-      return (value.length === 7 ? `${value}FF` : value).toUpperCase();
-    }
+    if (isVarOperand(value)) return this.host.color(value.var, { path, label });
+    const color = normalizeColor(value);
+    if (color) return color;
     this.fail(path, `${label} 必须是 #RRGGBB 或 #RRGGBBAA 形式的颜色`);
     return undefined;
   }
@@ -748,35 +923,19 @@ class TemplateReader {
     fallback: number | undefined,
     path: ElementPath,
     label: string,
-    rule: { min?: number; max?: number; exclusiveMin?: boolean; integer?: boolean },
+    rule: NumberRule,
   ): Read<number> {
     if (value === undefined && fallback !== undefined) return fallback;
-    if (isRecord(value) && 'var' in value) {
-      this.unsupported(path, `${label} 绑定变量尚未支持`);
-      return undefined;
-    }
-    const ok =
-      isFiniteNumber(value) &&
-      (rule.min === undefined || (rule.exclusiveMin ? value > rule.min : value >= rule.min)) &&
-      (rule.max === undefined || value <= rule.max) &&
-      (!rule.integer || Number.isInteger(value));
-    if (ok) return value;
-    const conditions = [
-      rule.integer ? '整数' : '数',
-      rule.min !== undefined ? `${rule.exclusiveMin ? '大于' : '不小于'} ${rule.min}` : '',
-      rule.max !== undefined ? `不大于 ${rule.max}` : '',
-    ].filter(Boolean);
-    this.fail(path, `${label} 必须是${conditions.join('、')}`);
+    if (isVarOperand(value)) return this.host.number(value.var, { path, label }, rule, fallback);
+    if (isFiniteNumber(value) && satisfies(value, rule)) return value;
+    this.fail(path, `${label} 必须是${describeRule(rule)}`);
     return undefined;
   }
 
   private readBoolean(value: unknown, fallback: boolean, path: ElementPath, label: string): Read<boolean> {
     if (value === undefined) return fallback;
     if (typeof value === 'boolean') return value;
-    if (isRecord(value) && 'var' in value) {
-      this.unsupported(path, `${label} 绑定变量尚未支持`);
-      return undefined;
-    }
+    if (isVarOperand(value)) return this.host.boolean(value.var, { path, label }, fallback);
     this.fail(path, `${label} 必须是 true 或 false`);
     return undefined;
   }
@@ -823,6 +982,26 @@ class TemplateReader {
   private report(code: ProblemCode, path: ElementPath, message: string): void {
     this.problems.push(severe(code, { kind: 'element', path: formatElementPath(path) }, message));
   }
+}
+
+/** 数值是否满足属性的取值规则。 */
+export function satisfies(value: number, rule: NumberRule): boolean {
+  return (
+    (rule.min === undefined || (rule.exclusiveMin ? value > rule.min : value >= rule.min)) &&
+    (rule.max === undefined || value <= rule.max) &&
+    (!rule.integer || Number.isInteger(value))
+  );
+}
+
+/** 取值规则的说明，如"数、不小于 0、不大于 1"。 */
+export function describeRule(rule: NumberRule): string {
+  return [
+    rule.integer ? '整数' : '数',
+    rule.min !== undefined ? `${rule.exclusiveMin ? '大于' : '不小于'} ${rule.min}` : '',
+    rule.max !== undefined ? `不大于 ${rule.max}` : '',
+  ]
+    .filter(Boolean)
+    .join('、');
 }
 
 function isFiniteNumber(value: unknown): value is number {

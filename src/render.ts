@@ -2,7 +2,8 @@
  * 渲染入口（主接缝）：接收工作区与渲染请求，返回图片、问题清单与布局摘要。
  * 不依赖任何框架，命令行、日后的 MCP 服务与 HTTP 服务都调用这一个函数。
  *
- * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 数据集版本与模板基准 → 模板静态检查 → 尺寸范围 → 求值 → 排版 → 绘制。
+ * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 数据集版本与模板基准 → 模板静态检查 → 对外参数 → 尺寸范围
+ * → 求值（检查项、派生变量、绑定、条件显示、状态样式、插槽）→ 排版 → 绘制。
  * 完整的检查顺序与草稿预览的出图条件见 M102（票据 12）。
  */
 import { loadCanvasKit } from './canvaskit.js';
@@ -15,6 +16,7 @@ import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
 import { checkTemplate } from './template/check.js';
+import { Scope, resolveParameters } from './template/scope.js';
 import type { TemplateModel } from './template/model.js';
 import { parseTemplate } from './template/parse.js';
 import { FontStore } from './text/fonts.js';
@@ -97,9 +99,14 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   }
   const checked = checkTemplate(template, schema.compiled);
   problems.push(...checked.problems);
+  const parameters = resolveParameters(template, request.parameters);
+  problems.push(...parameters.problems);
   problems.push(...checkSizeRange(template, request.output));
 
-  const evaluated = evaluate(template, dataset.data, checked);
+  const evaluation = evaluate(new Scope(template, checked.table, dataset.data, parameters.values));
+  problems.push(...evaluation.problems);
+  const evaluated = evaluation.evaluated;
+  if (!evaluated) return { problems };
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources);
   const images = new ImageStore(ck, workspace.resources);

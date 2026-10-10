@@ -22,6 +22,8 @@
 
 票据 06 复查（2026-10-10，按引擎的展示格式解析逐个检查）：5 个模板中的 22 个文本片段都符合 S23 的写法，没有竖排片段设颜色以外的样式；带展示格式的 4 个插槽（`fare` 用 `0.##`，`firstDeparture`、`lastDeparture` 与班次时刻的 `value` 用 `HH:mm`）与字段类型相符。`terminal.name`、`nextStop.name` 经过派生变量，留待票据 07 检查。
 
+票据 07 复查（2026-10-10，用引擎的模板解析与静态检查）：去掉后续票据的写法（3 个循环容器与画板 `size` 属票据 08，道路名的横排适配属票据 09，站名的 `widthOverflow` 属票据 10）后，5 个模板解析都没有问题；基准为"线路牌 v1""停靠站点 v1"的 3 个模板静态检查都没有问题，共 44 处变量引用（绑定、插槽与状态样式）全部对得上，包括 `terminal.name`、`nextStop.name`。"标识图标""班次时刻"的基准是单值数据定义，留待票据 08 检查。主模板去掉循环容器后按 M402 数据集实际出图（见 `test/golden/m402-bars.png`）：顶栏与底栏的元素与内容和设计稿逐项对得上（线路号、开往箭头、终点站、票价、运营方、下一站及地标、服务时间、运营说明）；设计稿中终点站与服务时间用的斜体美术字、各元素的精确尺寸未还原（草稿尺寸为估计），班次时刻一行属票据 08。
+
 ## 模板如何组合
 
 ```mermaid
@@ -69,6 +71,7 @@ S2–S13 已确认（M90）。
 | S21 | 数据定义：字段类型为 text、number、date、time、datetime、boolean、image、list、ref；列表写 `items`（元素不能又是列表），引用写 `ref: {name, version}`。约束随类型：所有字段可写 required；text 可写 minLength、maxLength、pattern、enum；number 可写 min、max、integer、enum；image 可写 allowedSources（resource、url，不写时两种都允许）；list 可写 minItems、maxItems；列表元素的约束写在 `items.constraints`，不能写 required。字段名称以英文字母开头，只含字母、数字与下划线。编译时日期用标准 `date` 格式，时刻、时间用 `rw-time`、`rw-datetime`，都附等价正则 | 票据 03（M113） |
 | S22 | 图片：`{"type": "image", "source": "res:资源ID", "fit": "contain" 或 "cover" 或 "fill"}`，fit 缺省为 contain（完整显示）；没有 source 时不画内容 | 票据 05（M114） |
 | S23 | 文本内容 `content` 是片段列表：文字片段 `{"text": 文字}`，变量插槽 `{"slot": 变量路径, "format"?: 展示格式}`；两种片段都可另写 `font`、`fontSize`、`color`、`slant`，未写的沿用文本元素。文本元素可写 `slant`（倾斜角度，度，正值向右倾，绝对值不超过 45，缺省 0，只用于横排）。展示格式：日期与时刻用 `yyyy`、`MM`、`M`、`dd`、`d`、`HH`、`H`、`mm`、`ss`，如 `HH:mm`、`yyyy年M月d日`；数值用 `0` 与 `#`，如 `0.##`、`0.00`。字重随字体资源，不写 `fontWeight`（换用 `res:font-hei-heavy` 等）。竖排文字的片段只能单独写 `color` | 票据 06（M115–M118）；草稿中票价、服务时间、运营说明与线路号的写法不变 |
+| S24 | 模板变量：`parameters` 每项 `{"name", "displayName", "visibility": "public" 或 "internal", "type", "constraints"?, "default"?}`，type 为基本字段类型或 color，内部参数必须有 default；`derived` 每项 `{"name", "displayName", "type", "ref"?, "op", …}`，op 取 branch（`branches: [{"when": 条件, "then": 运算数}]`、`otherwise`）、pickItem（`list`、`position`: "first"、"last" 或 `{"index": 运算数}`）、length（`of`）、add 或 subtract（`left`、`right`），type 为 ref 时写明 `ref`；`checks` 每项 `{"name", "problemWhen": 运算数, "level": "severe" 或 "hint", "message"}`。运算数写成 `{"var": 路径}` 或 `{"value": 固定值}`。绑定见 S4，尺寸写成 `{"fixed": {"var": …}}`；状态样式见 S5，可覆盖除 type、name、children、states 以外的属性 | 票据 07（M119–M122）；草稿原有写法不变 |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
 

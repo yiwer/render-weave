@@ -5,17 +5,122 @@
 import type { DisplayFormat } from '../display-format.js';
 import type { ElementPath } from '../element-path.js';
 import type { StaticSchemaRef } from '../workspace.js';
+import type { BasicKind } from './types.js';
 
 export interface Range {
   readonly min: number;
   readonly max: number;
 }
 
+/**
+ * 解析后的模板。画板是静态读取的结果：绑定处为占位值，只用于检查与隐藏元素的定位；
+ * 出图时按作用域重新读取画板文档（evaluate.ts），绑定与状态样式在那时取值。
+ */
 export interface TemplateModel {
   readonly name: string;
   readonly base: StaticSchemaRef;
+  readonly parameters: readonly ParameterModel[];
+  readonly derived: readonly DerivedModel[];
+  readonly checks: readonly CheckModel[];
   readonly artboard: ArtboardModel;
+  /** 画板文档原文，求值时重新读取。 */
+  readonly artboardDocument: Record<string, unknown>;
+  /** 静态读取时记下的变量引用：绑定、插槽与状态样式，供模板静态检查。 */
+  readonly uses: readonly VariableUse[];
+  /** 静态读取得到的元素模型，按元素文档查找；求值时隐藏的元素直接用它。 */
+  readonly staticElements: WeakMap<object, ElementModel>;
 }
+
+// ---------- 模板变量 ----------
+
+/** 模板参数（M15）：对外参数可由调用方填写，没有缺省值时必须提供；内部参数只由设计者设定，必须有缺省值。 */
+export interface ParameterModel {
+  readonly name: string;
+  readonly displayName: string;
+  readonly visibility: 'public' | 'internal';
+  readonly type: BasicKind;
+  readonly constraints: ParameterConstraints;
+  /** 缺省值，已按类型规范化（颜色为 #RRGGBBAA）。 */
+  readonly default?: string | number | boolean;
+}
+
+export interface ParameterConstraints {
+  readonly integer?: boolean;
+  readonly min?: number;
+  readonly max?: number;
+  readonly minLength?: number;
+  readonly maxLength?: number;
+  readonly pattern?: string;
+  readonly enum?: readonly (string | number)[];
+}
+
+/** 派生变量（M3、M8、M23–M25、M78）：一个运算，结果类型必须声明；引用类型还要写明静态数据定义。 */
+export interface DerivedModel {
+  readonly name: string;
+  readonly displayName: string;
+  readonly type: BasicKind | 'ref';
+  readonly ref?: StaticSchemaRef;
+  readonly operation: Operation;
+}
+
+export type Operation =
+  | {
+      /** 条件分支：按序取首个命中的分支，都不命中取"否则"。 */
+      readonly op: 'branch';
+      readonly branches: readonly { readonly when: Condition; readonly then: Operand }[];
+      readonly otherwise: Operand;
+    }
+  | {
+      /** 取项：首项、末项或第 N 项（从 1 开始），超出范围得空值。 */
+      readonly op: 'pickItem';
+      readonly list: VarOperand;
+      readonly position: 'first' | 'last' | { readonly index: Operand };
+    }
+  | { readonly op: 'length'; readonly of: VarOperand }
+  | { readonly op: 'add' | 'subtract'; readonly left: Operand; readonly right: Operand };
+
+export type CompareOp = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' | 'empty' | 'notEmpty';
+
+/** 结构化比较（S11）：empty、notEmpty 只有左侧。 */
+export interface Condition {
+  readonly left: Operand;
+  readonly op: CompareOp;
+  readonly right?: Operand;
+}
+
+export interface VarOperand {
+  readonly var: string;
+}
+
+/** 运算数：变量（路径可经过单引用）或固定值。 */
+export type Operand = VarOperand | { readonly value: string | number | boolean };
+
+/** 检查项（M25）：问题条件为真时，按等级与提示文字记入问题清单。 */
+export interface CheckModel {
+  readonly name: string;
+  readonly problemWhen: Operand;
+  readonly level: 'severe' | 'hint';
+  readonly message: string;
+}
+
+/** 静态读取时记下的一处变量引用。 */
+export type VariableUse =
+  | {
+      /** 绑定：属性取值交给变量，类型必须一致（M71）。 */
+      readonly use: 'binding';
+      readonly var: string;
+      readonly expected: 'color' | 'number' | 'boolean' | 'image';
+      readonly element: ElementPath;
+      readonly label: string;
+    }
+  | { readonly use: 'slot'; readonly var: string; readonly format?: DisplayFormat; readonly element: ElementPath }
+  | {
+      /** 状态样式：按变量取值选用的覆盖；keys 是列出的取值。 */
+      readonly use: 'state';
+      readonly var: string;
+      readonly keys: readonly string[];
+      readonly element: ElementPath;
+    };
 
 /** 画板：模板的根，与容器一样有布局方式与外观，另有适用尺寸范围。实际尺寸由渲染请求给出。 */
 export interface ArtboardModel extends ContainerBody {
