@@ -13,6 +13,7 @@ export type ProblemLevel = 'hint' | 'severe';
  * - parameter：对外参数名。
  * - element：元素路径（M101），如 `标准线路单边/站点面板/站点列[12]/名称区/站名`。
  * - check：模板名与检查项名。
+ * - definition：数据定义中的位置，如 `stops.items.constraints`（发布与编译时的问题）。
  * - input：无法归到以上几类的输入位置，如工作区文件或渲染请求的属性。
  */
 export type ProblemLocation =
@@ -20,6 +21,7 @@ export type ProblemLocation =
   | { kind: 'parameter'; name: string }
   | { kind: 'element'; path: string }
   | { kind: 'check'; template: string; name: string }
+  | { kind: 'definition'; schema: string; path: string }
   | { kind: 'input'; source: string };
 
 export interface Problem {
@@ -51,6 +53,26 @@ export const ProblemCodes = {
   datasetFormatInvalid: 'dataset.formatInvalid',
   datasetConstraintViolated: 'dataset.constraintViolated',
   datasetInvalid: 'dataset.invalid',
+  /** 图片字段引用的资源不存在。 */
+  datasetResourceNotFound: 'dataset.resourceNotFound',
+  /** 图片字段引用了字体等非图片资源。 */
+  datasetResourceKindMismatch: 'dataset.resourceKindMismatch',
+  /** 数值超过 15 位有效数字（M112）。 */
+  datasetTooManyDigits: 'dataset.tooManyDigits',
+  /** 数据集选定的静态数据定义与模板基准不是同一个版本（M37），属于阻止展开的问题（M102）。 */
+  datasetStaticSchemaMismatch: 'dataset.staticSchemaMismatch',
+
+  /** 数据定义 DSL 的结构或取值不合法。 */
+  definitionInvalid: 'definition.invalid',
+  definitionUnknownProperty: 'definition.unknownProperty',
+  /** 约束彼此冲突，或不适用于该字段类型。 */
+  definitionConstraintConflict: 'definition.constraintConflict',
+  /** 列表的元素又是列表（M33）。 */
+  definitionNestedList: 'definition.nestedList',
+  /** 引用的静态数据定义版本不存在。 */
+  definitionRefNotFound: 'definition.refNotFound',
+  /** 数据定义之间的引用成环（M32）。 */
+  definitionRefCycle: 'definition.refCycle',
 
   /** 模板 DSL 的结构或取值不合法。 */
   templateInvalid: 'template.invalid',

@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadWorkspace, type Workspace } from '../../src/index.js';
+import { createMemoryResourceRepository, loadWorkspace, type ResourceRepository, type Workspace } from '../../src/index.js';
 
 export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const resourcesDir = join(repoRoot, 'fixtures', 'resources');
@@ -90,4 +90,25 @@ export function labRequest(width: number, height: number, dpi = 120): Record<str
     output: { width, height, dpi, format: 'png' },
     mode: 'final',
   };
+}
+
+/** M402 数据集引用的图片资源 ID；数据集校验只看资源是否存在、是不是图片，不读内容（图片夹具见票据 05）。 */
+export const M402_IMAGE_IDS = ['route-no-m402', 'landmark-1', 'landmark-2', 'landmark-3', 'landmark-4', 'icon-metro', 'icon-hospital'];
+
+export function imageOnlyResources(ids: readonly string[], fonts: readonly string[] = []): ResourceRepository {
+  return createMemoryResourceRepository([
+    ...ids.map((id) => ({ id, kind: 'image' as const, bytes: new Uint8Array() })),
+    ...fonts.map((id) => ({ id, kind: 'font' as const, bytes: new Uint8Array() })),
+  ]);
+}
+
+/** 在工作区里加一个指定基准、画板为空的模板，用于只看数据集校验的结果。 */
+export function withEmptyTemplate(workspace: Workspace, name: string, base: { name: string; version: number }): Workspace {
+  const document = {
+    dslVersion: 'renderweave-template/1',
+    name,
+    base,
+    artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } } },
+  };
+  return { ...workspace, templates: [...workspace.templates.filter((entry) => entry.name !== name), { name, document }] };
 }

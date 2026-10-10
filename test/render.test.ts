@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ProblemCodes, loadWorkspace, readJpegDpi, readPngInfo, render, type Problem } from '../src/index.js';
-import { greetingRequest, loadSingleText, m402Dir, resourcesDir, withTemplate } from './support/fixtures.js';
+import { M402_IMAGE_IDS, greetingRequest, imageOnlyResources, loadSingleText, m402Dir, resourcesDir, withTemplate } from './support/fixtures.js';
 import { expectMatchesGolden } from './support/golden.js';
 
 const codes = (problems: readonly Problem[]) => problems.map((problem) => problem.code);
@@ -106,7 +106,7 @@ describe('数据集校验', () => {
   });
 
   it('M402 草稿目录可直接作为工作区；列表中的字段路径序号从 1 开始，同一字段的格式错误只报一次', async () => {
-    const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
+    const workspace = { ...(await loadWorkspace({ dir: m402Dir, resourcesDir })), resources: imageOnlyResources(M402_IMAGE_IDS) };
     const m402 = workspace.datasets.find((dataset) => dataset.id === 'ds-m402-wanguocheng')!;
     const data = structuredClone(m402.document.data) as Record<string, any>;
     data['firstDeparture'] = '7:30';

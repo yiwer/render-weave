@@ -1,4 +1,5 @@
 export { render, type RenderResult } from './render.js';
+export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
   loadWorkspace,

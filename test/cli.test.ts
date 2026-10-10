@@ -27,7 +27,7 @@ describe('命令行', () => {
   it('出图成功：写出图片、问题清单与布局摘要，退出码为 0', async () => {
     const { code, out, stdout } = await renderWith(greetingRequest());
 
-    expect(code).toBe(ExitCodes.imageWritten);
+    expect(code).toBe(ExitCodes.ok);
     expect(readPngInfo(new Uint8Array(await readFile(join(out, 'image.png'))))).toEqual({ width: 756, height: 189, dpi: 120 });
     expect(JSON.parse(await readFile(join(out, 'problems.json'), 'utf8'))).toEqual([]);
     expect(JSON.parse(await readFile(join(out, 'layout.json'), 'utf8')).template).toBe('问候牌');
@@ -37,7 +37,7 @@ describe('命令行', () => {
   it('正式出图因严重问题未出图：退出码为 1，不留下图片', async () => {
     const { code, out } = await renderWith(greetingRequest({ output: { width: 1600, height: 40, dpi: 120, format: 'png' } }));
 
-    expect(code).toBe(ExitCodes.noImage);
+    expect(code).toBe(ExitCodes.failed);
     expect(existsSync(join(out, 'image.png'))).toBe(false);
     expect(JSON.parse(await readFile(join(out, 'problems.json'), 'utf8'))[0].code).toBe('render.sizeOutOfRange');
   });

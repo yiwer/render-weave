@@ -2,7 +2,7 @@
  * 渲染入口（主接缝）：接收工作区与渲染请求，返回图片、问题清单与布局摘要。
  * 不依赖任何框架，命令行、日后的 MCP 服务与 HTTP 服务都调用这一个函数。
  *
- * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 尺寸范围 → 求值 → 排版 → 绘制。
+ * 本版本的顺序：渲染请求 → 模板 → 数据集与编译产物 → 数据集校验 → 数据集版本与模板基准 → 尺寸范围 → 求值 → 排版 → 绘制。
  * 完整的检查顺序与草稿预览的出图条件见 M102（票据 12）。
  */
 import { loadCanvasKit } from './canvaskit.js';
@@ -68,7 +68,7 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
     return { problems };
   }
   try {
-    problems.push(...validateDataset(schema.compiled, dataset.data));
+    problems.push(...validateDataset(schema.compiled, dataset.data, workspace.resources));
   } catch (error) {
     if (!(error instanceof CompiledSchemaError)) throw error;
     problems.push(
@@ -82,6 +82,17 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   }
 
   if (!template) return { problems };
+  // 渲染时数据集选定的静态数据定义必须与模板基准完全一致（M37）；不一致时模板无法展开，两种模式都不出图（M102）。
+  if (!sameStaticSchema(template.base, schemaRef)) {
+    problems.push(
+      severe(
+        ProblemCodes.datasetStaticSchemaMismatch,
+        { kind: 'input', source: 'dataset.staticSchema' },
+        `数据集选定的是"${formatStaticSchemaRef(schemaRef)}"，模板"${template.name}"的基准是"${formatStaticSchemaRef(template.base)}"`,
+      ),
+    );
+    return { problems };
+  }
   problems.push(...checkSizeRange(template, request.output));
 
   const evaluated = evaluate(template, dataset.data);

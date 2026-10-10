@@ -9,6 +9,7 @@
 | [schema-stop-v1.json](schema-stop-v1.json) | 静态数据定义"停靠站点 v1"：站名、地标、所在道路、标识 |
 | [schema-route-sign-v1.json](schema-route-sign-v1.json) | 静态数据定义"线路牌 v1"，站点为列表[停靠站点 v1]，2–50 项 |
 | [compiled-route-sign-v1.schema.json](compiled-route-sign-v1.schema.json) | "线路牌 v1"的编译产物 JSON Schema 2020-12，停靠站点内联展开 |
+| [compiled-stop-v1.schema.json](compiled-stop-v1.schema.json) | "停靠站点 v1"的编译产物，由发布生成（票据 03） |
 | [dataset-m402.json](dataset-m402.json) | 按设计稿转录的 M402 数据集，35 个停靠站点 |
 | [template-route-sign.json](template-route-sign.json) | 主模板"标准线路单边"：顶栏、站点面板、道路带、底栏 |
 | [template-stop.json](template-stop.json) | 循环模板"站点"：标识行、竖排站名、地标、本站高亮 |
@@ -63,6 +64,7 @@ S2–S13 已确认（M90）。
 | S18 | 文本 `writingMode` 取 horizontal（缺省）或 vertical；`verticalAlign: "distribute"` 只用于竖排。`fit` 写成 `{"steps": [...], "compressMin": 数, "onFail": "severe" 或 "hint"}`：竖排步骤为 tightenSpacing、compressGlyphs，收紧字距必须排在压缩字形之前；compressMin 缺省 0.6，只能设得更高；onFail 缺省 severe。横排步骤随票据 09 加入，`widthOverflow` 随票据 10 加入。`stroke` 写成 `{"color": 颜色, "width": 毫米}` | 票据 02；M402 草稿中的 fit 与 stroke 写法不变（M108、M109） |
 | S19 | 布局：`layout` 写成 `{"mode": "free"}`、`{"mode": "stack", "direction": "row" 或 "column", "gap", "justifyContent": start/center/end/spaceBetween/spaceEvenly, "alignItems": start/center/end}` 或 `{"mode": "grid", "rows": [...], "columns": [...], "rowGap", "columnGap"}`，行列每项为 `{"fixed": 毫米}`、`{"fraction": 比例}` 或 `"hug"`。`place` 可写的属性随所在容器而定：自由为 left/right/top/bottom；堆叠为 margin、alignSelf；网格为 row、column、rowSpan、columnSpan、margin、justifySelf、alignSelf；三者都可写 width、height（`{"fixed": 毫米}`、`"hug"`、`"fill"`、`{"fill": 权重}`）与 minWidth、maxWidth、minHeight、maxHeight。未写宽高时，网格中为填满，堆叠与自由中为随内容 | 票据 04（M111） |
 | S20 | 外观：padding、margin 可写成一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 可写成一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项；所有元素可写 `visible`（布尔）、`opacity`（0–1）、`rotation`（度）；容器与画板可写 `clip`。图形的 `stroke` 写成 `{"color", "width", "dash"?: [实, 空, …], "cap"?: butt/round/square}`。图形：rect（fill、stroke、cornerRadius）、ellipse（fill、stroke）、line（from、to、stroke 必填）、polygon（points 至少 3 个顶点）、path（d、fill、stroke、fillRule: nonzero/evenodd） | 票据 04（M110、M111） |
+| S21 | 数据定义：字段类型为 text、number、date、time、datetime、boolean、image、list、ref；列表写 `items`（元素不能又是列表），引用写 `ref: {name, version}`。约束随类型：所有字段可写 required；text 可写 minLength、maxLength、pattern、enum；number 可写 min、max、integer、enum；image 可写 allowedSources（resource、url，不写时两种都允许）；list 可写 minItems、maxItems；列表元素的约束写在 `items.constraints`，不能写 required。字段名称以英文字母开头，只含字母、数字与下划线。编译时日期用标准 `date` 格式，时刻、时间用 `rw-time`、`rw-datetime`，都附等价正则 | 票据 03（M113） |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
 

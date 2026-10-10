@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "停靠站点 v1",
+  "x-renderweave-static-schema": {
+    "name": "停靠站点",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "road"
+  ],
+  "properties": {
+    "name": {
+      "title": "站名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "landmark": {
+      "title": "地标",
+      "type": "string",
+      "pattern": "^res:[A-Za-z0-9][A-Za-z0-9_-]*$",
+      "x-renderweave-type": "image"
+    },
+    "road": {
+      "title": "所在道路",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12
+    },
+    "badges": {
+      "title": "站名上方的标识",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "enum": [
+          "地铁",
+          "医院"
+        ]
+      }
+    }
+  }
+}

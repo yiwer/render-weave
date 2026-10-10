@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）、02（竖排站名）与 04（布局与图形）已完成：容器的自由、堆叠、网格三种布局，横排与竖排文字，五种图形，M402 版式骨架在 740 与 1500 mm 宽度下都能出图。**
+2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）、02（竖排站名）、03（数据把关）与 04（布局与图形）已完成：数据定义可以发布为静态数据定义并编译出 JSON Schema，数据集按全部字段类型与约束校验；容器的自由、堆叠、网格三种布局，横排与竖排文字，五种图形，M402 版式骨架在 740 与 1500 mm 宽度下都能出图。**
 
 ## 一句话
 
@@ -22,7 +22,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 |---|---|
 | [AGENTS.md](AGENTS.md) | agent 工作方式与技能配置（`CLAUDE.md` 只是加载入口） |
 | [GLOSSARY.md](GLOSSARY.md) | 领域术语表，唯一的术语事实源 |
-| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M111 逐条决定 |
+| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M113 逐条决定 |
 | [docs/model/business-entities.md](docs/model/business-entities.md) | 业务实体、关系与规则，含两张关系图与 G 系列待定事项 |
 | [docs/model/template-elements.md](docs/model/template-elements.md) | 13 种模板元素、共有属性、位置与尺寸、可绑定范围、排布与适配 |
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
@@ -46,6 +46,7 @@ npm install
 npm test                # 先由准备脚本下载并核对思源黑体，再运行全部测试
 npm run typecheck
 npm run render -- render --workspace fixtures/workspaces/single-text --resources fixtures/resources --request fixtures/workspaces/single-text/render-request-greeting.json --out out
+npm run render -- publish --definition <数据定义.json> --workspace <工作区目录> --out <输出目录>
 ```
 
 - 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）；更新 golden 图片用 `UPDATE_GOLDEN=1 npm test`。
@@ -67,4 +68,4 @@ npm run render -- render --workspace fixtures/workspaces/single-text --resources
 
 ## 下一步
 
-按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架、02 竖排站名、04 布局已完成；03 数据把关、05 图片、06 文字片段、11 缺字替代与 12 草稿/正式出图现在可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。
+按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架、02 竖排站名、03 数据把关、04 布局已完成；05 图片、06 文字片段、11 缺字替代与 12 草稿/正式出图现在可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。

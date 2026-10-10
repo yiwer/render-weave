@@ -8,6 +8,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ProblemCodes, severe, type Problem } from './problems.js';
 import { openResourceRepository, type ResourceRepository } from './resources.js';
+import { significantDigits } from './schema/formats.js';
+import { MAX_SIGNIFICANT_DIGITS } from './schema/model.js';
 import { describeError, isRecord } from './util.js';
 
 export interface StaticSchemaRef {
@@ -110,8 +112,9 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
     const source = join(options.dir, file);
     const location = { kind: 'input', source } as const;
     let document: unknown;
+    const tooPrecise: string[] = [];
     try {
-      document = JSON.parse(await readFile(source, 'utf8'));
+      document = parseJsonKeepingPrecision(await readFile(source, 'utf8'), tooPrecise);
     } catch (error) {
       problems.push(severe(ProblemCodes.inputUnreadable, location, `工作区文件无法读取：${describeError(error)}`));
       continue;
@@ -169,6 +172,15 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
         problems.push(severe(ProblemCodes.inputDuplicate, location, `数据集 ID 重复：${id}`));
         continue;
       }
+      for (const literal of tooPrecise) {
+        problems.push(
+          severe(
+            ProblemCodes.datasetTooManyDigits,
+            location,
+            `数据集 ${id} 中的数值 ${literal} 超过 ${MAX_SIGNIFICANT_DIGITS} 位有效数字，按双精度读取会失真（M112）`,
+          ),
+        );
+      }
       datasets.set(id, { id, document: parsed, source });
     }
   }
@@ -181,4 +193,17 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
     resources: repository,
     problems: [...problems, ...resourceProblems],
   };
+}
+
+/**
+ * 解析 JSON，并记下超过 15 位有效数字的数值原文：这样的数值按双精度读取后会失真，
+ * 之后再也无法从读出的值发现（M112）。依赖 JSON.parse 的原文访问（Node 22 起可用）。
+ */
+export function parseJsonKeepingPrecision(text: string, tooPrecise: string[]): unknown {
+  return JSON.parse(text, function (_key, value, context?: { source?: string }) {
+    if (typeof value === 'number' && context?.source && significantDigits(context.source) > MAX_SIGNIFICANT_DIGITS) {
+      tooPrecise.push(context.source);
+    }
+    return value;
+  });
 }
