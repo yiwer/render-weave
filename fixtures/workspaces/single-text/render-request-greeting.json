@@ -1,0 +1,7 @@
+{
+  "template": "问候牌",
+  "dataset": { "id": "ds-greeting" },
+  "parameters": {},
+  "output": { "width": 160, "height": 40, "dpi": 120, "format": "png" },
+  "mode": "final"
+}

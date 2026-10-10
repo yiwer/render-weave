@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据；尚无产品代码。下一步从票据 01 开始实施。**
+2026-10-09 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）已完成：一个文本字段可以从数据集渲染成 PNG/JPEG。**
 
 ## 一句话
 
@@ -8,12 +8,13 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 当前状态
 
-- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M104，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
+- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M104，实施中的决定从 M105 起，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
 - 已接受 ADR-0001–0004、ADR-0006–0011；ADR-0005 已被 ADR-0008 取代。
 - 技术栈：TypeScript（Node 22），引擎不依赖框架；ajv 校验、CanvasKit 栅格化（字体全部显式加载）、自研布局（ADR-0011）。busbox-render-engine 只作算法参考。
 - 首期规格 [渲染流水线](.scratch/render-pipeline/spec.md)（ready-for-agent）：先不接 agent，跑通 M402 从数据集校验到 PNG；主接缝为渲染入口，输出图片、问题清单与布局摘要；次接缝为发布静态数据定义。
-- 以真实设计稿 [M402 线路牌](docs/examples/materials/m402-route-sign.jpg)（740 × 165 mm，120 DPI，35 站）核对了模型，并写出 [DSL 草稿](docs/examples/m402-dsl/README.md)：10 个 JSON 文件合法，M402 数据集按编译产物 JSON Schema 校验 0 错误，5 个模板的引用全部能对上。尚未实际渲染。
-- 仓库只有文档，没有代码、构建或测试。
+- 以真实设计稿 [M402 线路牌](docs/examples/materials/m402-route-sign.jpg)（740 × 165 mm，120 DPI，35 站）核对了模型，并写出 [DSL 草稿](docs/examples/m402-dsl/README.md)：10 个 JSON 文件合法，M402 数据集按编译产物 JSON Schema 校验 0 错误，5 个模板的引用全部能对上。M402 尚未实际渲染（票据 14 验收）。
+- 渲染引擎（`src/`）：TypeScript，不依赖框架；渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，命令行 `renderweave render` 把三者写到输出目录。目前支持画板、自由布局与横排文本；其余元素、布局方式与模板变量按票据 02–14 加入，遇到时返回问题。
+- 测试（`test/`）：vitest，以渲染入口为接缝；布局摘要做文件快照（`test/snapshots/`），图片与 golden 比对（`test/golden/`，失败时在 `test-output/golden/` 生成三联图）。
 
 ## 文档地图
 
@@ -21,7 +22,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 |---|---|
 | [AGENTS.md](AGENTS.md) | agent 工作方式与技能配置（`CLAUDE.md` 只是加载入口） |
 | [GLOSSARY.md](GLOSSARY.md) | 领域术语表，唯一的术语事实源 |
-| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M104 逐条决定 |
+| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M107 逐条决定 |
 | [docs/model/business-entities.md](docs/model/business-entities.md) | 业务实体、关系与规则，含两张关系图与 G 系列待定事项 |
 | [docs/model/template-elements.md](docs/model/template-elements.md) | 13 种模板元素、共有属性、位置与尺寸、可绑定范围、排布与适配 |
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
@@ -37,6 +38,18 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **模板**：模板是出图函数，所有模板地位平等，沿数据定义引用组合为子模板与循环模板，作用域不继承（ADR-0007）。模板变量分数据字段、模板参数（对外、内部）、派生变量；派生变量是单步运算按名组合，不引入文本表达式（ADR-0004）。模板没有版本，可直接修改与升级基准版本。
 - **呈现**：画板以毫米为单位并声明适用尺寸范围；13 种元素；一块线路牌上站名字号一致、按站数分档；放不下时字形压缩（最多 60%）再统一缩字，最小可读字号 5 mm。
 - **Agent**：每轮一个 CloudKiln Task；只读 MCP 服务提供读取、校验、草稿预览、识别；成果以文件交回，经人审核应用（ADR-0001、ADR-0003、ADR-0009）。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
+
+## 开发
+
+```bash
+npm install
+npm test                # 先由准备脚本下载并核对思源黑体，再运行全部测试
+npm run typecheck
+npm run render -- render --workspace fixtures/workspaces/single-text --resources fixtures/resources --request fixtures/workspaces/single-text/render-request-greeting.json --out out
+```
+
+- 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）；更新 golden 图片用 `UPDATE_GOLDEN=1 npm test`。
+- CanvasKit 用 full 构建，默认构建不能编码 JPEG。
 
 ## 尚待实测
 
@@ -54,4 +67,4 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 下一步
 
-按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架完成后，02 竖排站名（风险最高）、03 数据把关、04 布局、05 图片、06 文字片段与 12 草稿/正式出图可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。
+按依赖顺序实施 [渲染流水线票据](.scratch/render-pipeline/issues/)：01 渲染骨架已完成；02 竖排站名（风险最高）、03 数据把关、04 布局、05 图片、06 文字片段与 12 草稿/正式出图现在可并行；07 模板变量等 02–06 全部完成；最长依赖链为 01→02 或 04→07→08→09 或 10→14，共 6 张；13 SVG 不阻塞验收；14 为 M402 端到端验收。之后接 MCP 服务与 CloudKiln。

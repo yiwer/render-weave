@@ -1,0 +1,9 @@
+{
+  "description": "测试与样例共用的资源仓库。字体文件由 npm run fetch-fonts 下载到 fonts/，不进版本库。",
+  "resources": [
+    { "id": "font-hei-regular", "kind": "font", "file": "fonts/SourceHanSansCN-Regular.otf" },
+    { "id": "font-hei-medium", "kind": "font", "file": "fonts/SourceHanSansCN-Medium.otf" },
+    { "id": "font-hei-bold", "kind": "font", "file": "fonts/SourceHanSansCN-Bold.otf" },
+    { "id": "font-hei-heavy", "kind": "font", "file": "fonts/SourceHanSansCN-Heavy.otf" }
+  ]
+}

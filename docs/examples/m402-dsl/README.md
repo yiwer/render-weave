@@ -50,6 +50,19 @@ S2–S13 已确认（M90）。
 | S12 | 取项超出范围时结果为空，不报错 | 末站时"下一站"为空，整行隐藏（M78） |
 | S13 | 模板按名称引用，模板名称唯一 | |
 
+## 实现中补充的写法
+
+实现票据 01（渲染骨架）时补充，M402 草稿原有写法不变（M105）。
+
+| 编号 | 写法 | 说明 |
+|---|---|---|
+| S14 | 自由布局写成 `"layout": {"mode": "free"}`；元素的 `place` 写 `left` 或 `right`、`top` 或 `bottom`（毫米，缺省为距左 0、距上 0），以及 `width`、`height`（`{"fixed": 毫米}` 或 `"hug"`） | M93；省略 `layout` 时按自由布局 |
+| S15 | 文本 `horizontalAlign` 取 start、center、end，缺省 start；`verticalAlign` 取 top、center、bottom，缺省 top；两端分布 distribute 随票据 02、09 加入 | 草稿中已用到 center 与 distribute |
+| S16 | 渲染请求的 `dataset` 写成 `{"id": 数据集 ID}` 或 `{"inline": 数据集文档}`，数据集文档与 S6 的文件格式相同（内联时 `dataset.id` 可省略）；`output.format` 取 png 或 jpg（jpeg 同义）；`mode` 取 draft 或 final | 规格"渲染请求" |
+| S17 | 资源仓库目录下的 `resources.json` 列出资源：`{"resources": [{"id": 资源ID, "kind": "image" 或 "font", "file": 相对路径}]}` | S8；文件形式的首版资源仓库 |
+
+工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
+
 ## 起草中发现的问题
 
 | 编号 | 问题 | 结论 |

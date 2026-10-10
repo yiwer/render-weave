@@ -1,0 +1,22 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "问候牌",
+  "base": { "name": "问候", "version": 1 },
+  "artboard": {
+    "sizeRange": { "width": { "min": 50, "max": 1500 }, "height": { "min": 20, "max": 200 } },
+    "fill": "#FFF4E0",
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "text",
+        "name": "问候语",
+        "content": [{ "slot": "message" }],
+        "font": "res:font-hei-medium",
+        "fontSize": 10,
+        "color": "#E60012",
+        "verticalAlign": "center",
+        "place": { "left": 8, "top": 13, "width": { "fixed": 144 }, "height": { "fixed": 14 } }
+      }
+    ]
+  }
+}

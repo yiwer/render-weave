@@ -1,0 +1,39 @@
+{
+  "template": "问候牌",
+  "output": {
+    "width": 160,
+    "height": 40,
+    "dpi": 120,
+    "widthPx": 756,
+    "heightPx": 189,
+    "format": "png"
+  },
+  "root": {
+    "path": "问候牌",
+    "name": "问候牌",
+    "type": "artboard",
+    "x": 0,
+    "y": 0,
+    "width": 160,
+    "height": 40,
+    "visible": true,
+    "children": [
+      {
+        "path": "问候牌/问候语",
+        "name": "问候语",
+        "type": "text",
+        "x": 8,
+        "y": 13,
+        "width": 144,
+        "height": 14,
+        "visible": true,
+        "text": {
+          "content": "欢迎乘坐 M402 路",
+          "font": "res:font-hei-medium",
+          "fontSize": 10,
+          "width": 79.9
+        }
+      }
+    ]
+  }
+}

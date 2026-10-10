@@ -1,0 +1,14 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "问候",
+  "version": 1,
+  "displayName": "问候（渲染骨架样例）",
+  "fields": [
+    {
+      "name": "message",
+      "displayName": "问候语",
+      "type": "text",
+      "constraints": { "required": true, "minLength": 1, "maxLength": 20 }
+    }
+  ]
+}

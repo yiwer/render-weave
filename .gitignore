@@ -12,6 +12,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# 准备脚本下载的字体（SIL OFL，不进版本库）与测试输出
+fixtures/resources/fonts/
+test-output/
+
 # 本地配置与密钥
 .env
 .env.*

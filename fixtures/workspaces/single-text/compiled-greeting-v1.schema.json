@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "问候 v1",
+  "x-renderweave-static-schema": { "name": "问候", "version": 1 },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["message"],
+  "properties": {
+    "message": { "title": "问候语", "type": "string", "minLength": 1, "maxLength": 20 }
+  }
+}

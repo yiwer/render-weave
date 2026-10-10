@@ -1,0 +1,14 @@
+{
+  "description": "思源黑体（Source Han Sans）CN 子集，供测试、样例与缺字替代使用。按字重固定文件与 SHA-256。",
+  "source": "https://github.com/adobe-fonts/source-han-sans",
+  "release": "2.005R",
+  "path": "SubsetOTF/CN",
+  "license": "SIL Open Font License 1.1",
+  "targetDir": "fixtures/resources/fonts",
+  "fonts": [
+    { "file": "SourceHanSansCN-Regular.otf", "weight": 400, "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4" },
+    { "file": "SourceHanSansCN-Medium.otf", "weight": 500, "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01" },
+    { "file": "SourceHanSansCN-Bold.otf", "weight": 700, "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6" },
+    { "file": "SourceHanSansCN-Heavy.otf", "weight": 900, "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c" }
+  ]
+}

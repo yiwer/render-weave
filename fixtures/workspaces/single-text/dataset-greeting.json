@@ -1,0 +1,11 @@
+{
+  "dataset": {
+    "id": "ds-greeting",
+    "name": "欢迎乘坐",
+    "staticSchema": { "name": "问候", "version": 1 },
+    "origin": { "kind": "manual", "note": "渲染骨架样例" }
+  },
+  "data": {
+    "message": "欢迎乘坐 M402 路"
+  }
+}
