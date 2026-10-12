@@ -171,7 +171,7 @@ describe('资源版本公开边界', () => {
   });
 
   it('内容写完而清单尚未提交时读者只见旧清单，其他写者得到 busy', async () => {
-    await importSource();
+    expect((await importSource()).problems).toEqual([]);
     await writeSource([{ id: 'second', kind: 'font', file: 'content.bin' }]);
     const actual = await vi.importActual<typeof fs>('node:fs/promises');
     let notifyReached!: () => void, allowCommit!: () => void;
@@ -189,7 +189,7 @@ describe('资源版本公开边界', () => {
       expect(during.list().map((item) => item.id)).toEqual(['photo']);
       expect(await during.read('photo', 1)).toEqual(bytes);
       expect((await importSource()).problems[0]?.code).toBe(ProblemCodes.resourceStoreBusy);
-    } finally { allowCommit(); }
+    } finally { allowCommit(); await pending; }
     expect((await pending).problems).toEqual([]);
     expect((await store()).list().map((item) => item.id)).toEqual(['photo', 'second']);
   });

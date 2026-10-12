@@ -5,6 +5,8 @@ import { isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import { hint, ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
 import { parseResourceRef, ResourceReadError, type ResourceInfo, type ResourceRepository } from './resources.js';
 import { describeError, isRecord } from './util.js';
+import { inspectResourceWorkspace, resourceWorkspaceFingerprint, type ResourceWorkspaceImpact } from './resource-impact.js';
+import type { RenderOptions } from './render.js';
 
 const FORMAT = 'renderweave-resources/1';
 const MANIFEST = 'resources.json';
@@ -37,8 +39,116 @@ class StoreError extends Error {
   constructor(readonly code: ProblemCode, readonly source: string, message: string) { super(message); }
 }
 function problem(error: unknown, source: string): Problem {
-  return severe(error instanceof StoreError ? error.code : ProblemCodes.resourceWriteFailed,
+  return severe(error instanceof StoreError || error instanceof ResourceReadError ? error.code : ProblemCodes.resourceWriteFailed,
     { kind: 'input', source: error instanceof StoreError ? error.source : source }, describeError(error));
+}
+
+export interface ResourceReplacementCheck {
+  readonly format: 'renderweave-resource-replacement/1';
+  readonly resourcesDirectory: string;
+  readonly resource: VersionedResourceInfo;
+  readonly replacement: { readonly sha256: string; readonly byteLength: number };
+  readonly impact: ResourceWorkspaceImpact;
+}
+interface ReplacementContext {
+  readonly dir: string;
+  readonly workspaceDir: string;
+  readonly file: string;
+  readonly renderOptions?: RenderOptions;
+}
+
+async function replacementBytes(file: string): Promise<Uint8Array> {
+  try {
+    if (!(await fs.lstat(file)).isFile()) fail(file, '替换内容必须是普通文件，不能是目录或链接', ProblemCodes.resourceUnreadable);
+    return new Uint8Array(await fs.readFile(file));
+  } catch (error) { fail(file, `替换文件无法读取：${describeError(error)}`, ProblemCodes.resourceUnreadable); }
+}
+
+/** 只读检查，报告覆盖指定工作区；源字节哈希也固定，避免检查后换错文件。 */
+export async function checkResourceReplacement(options: ReplacementContext & { id: string; kind: ResourceInfo['kind'] }): Promise<{ check?: ResourceReplacementCheck; problems: Problem[] }> {
+  try {
+    const root = await fs.realpath(options.dir);
+    const store = new FileVersionedStore(root, await loadManifest(root));
+    const resource = store.get(options.id);
+    if (!resource) fail(options.id, `资源 ${options.id} 不存在`, ProblemCodes.resourceNotFound);
+    if (options.kind !== resource.kind) fail(options.id, '资源种类创建后不可改变', ProblemCodes.resourceKindMismatch);
+    await store.read(resource.id, resource.version);
+    const bytes = await replacementBytes(options.file);
+    const result = await inspectResourceWorkspace(options.workspaceDir, options.id, options.renderOptions);
+    if (!result.impact) return { problems: result.problems };
+    return { problems: result.problems, check: { format: 'renderweave-resource-replacement/1', resourcesDirectory: root,
+      resource, replacement: { sha256: hash(bytes), byteLength: bytes.length }, impact: result.impact } };
+  } catch (error) { return { problems: [problem(error, options.dir)] }; }
+}
+
+function readReplacementCheck(value: unknown): ResourceReplacementCheck {
+  const invalid = () => fail('replacementCheck', '需要完整的替换检查报告，请先重新检查', ProblemCodes.resourceReplacementInvalid);
+  if (!isRecord(value) || value.format !== 'renderweave-resource-replacement/1' || typeof value.resourcesDirectory !== 'string' ||
+    !isRecord(value.resource) || !isRecord(value.replacement) || !isRecord(value.impact)) return invalid();
+  const { resource, replacement, impact } = value;
+  const sha = (input: unknown) => typeof input === 'string' && /^[0-9a-f]{64}$/.test(input);
+  const length = (input: unknown) => typeof input === 'number' && Number.isSafeInteger(input) && input >= 0;
+  if (!validId(resource.id) || (resource.kind !== 'image' && resource.kind !== 'font') || !positive(resource.version) ||
+    !sha(resource.sha256) || !length(resource.byteLength) || !sha(replacement.sha256) || !length(replacement.byteLength) ||
+    typeof impact.workspaceDirectory !== 'string' || !sha(impact.workspaceFingerprint) || !isRecord(impact.renderOptions) ||
+    !Array.isArray(impact.references) || !Array.isArray(impact.configuration) || typeof impact.scope !== 'string') return invalid();
+  // 复制调用者报告，防止异步写入期间修改预期条件。
+  return structuredClone(value) as unknown as ResourceReplacementCheck;
+}
+
+/** 在写锁内核对已检查的版本、工作区和候选内容，成功时只追加新版本。 */
+export async function applyResourceReplacement(options: ReplacementContext & { check: unknown }): Promise<{ replaced?: VersionedResourceInfo; problems: Problem[] }> {
+  let checked: ResourceReplacementCheck;
+  let renderOptions: RenderOptions | undefined;
+  const { dir, workspaceDir, file } = options;
+  try {
+    checked = readReplacementCheck(options.check);
+    renderOptions = options.renderOptions === undefined ? undefined : structuredClone(options.renderOptions);
+  }
+  catch (error) { return { problems: [problem(error, options.dir)] }; }
+  let replaced: VersionedResourceInfo | undefined;
+  let workspaceToVerify: string;
+  const stale = (source: string, message: string): never => fail(source, `${message}，请重新检查`, ProblemCodes.resourceReplacementStale);
+  const problems = await writeTransaction(dir, false, async (root, write) => {
+    if (root !== checked.resourcesDirectory) stale(root, '检查报告属于另一个资源仓库');
+    const manifest = await loadManifest(root);
+    const entry = manifest.resources.find((item) => item.id === checked.resource.id);
+    if (!entry) return stale(checked.resource.id, '资源已不存在');
+    if (entry.kind !== checked.resource.kind) fail(entry.id, '资源种类创建后不可改变', ProblemCodes.resourceKindMismatch);
+    const current = entry.versions[entry.currentVersion - 1]!;
+    if (entry.currentVersion !== checked.resource.version || current.sha256 !== checked.resource.sha256 || current.byteLength !== checked.resource.byteLength) stale(entry.id, '资源预期内容版本已过期');
+    await new FileVersionedStore(root, manifest).read(entry.id, entry.currentVersion);
+    const result = await inspectResourceWorkspace(workspaceDir, entry.id, renderOptions);
+    const impact = result.impact;
+    if (!impact) {
+      const issue = result.problems[0]!;
+      fail(workspaceDir, issue.message, issue.code);
+    }
+    if (impact.workspaceDirectory !== checked.impact.workspaceDirectory || impact.workspaceFingerprint !== checked.impact.workspaceFingerprint ||
+      JSON.stringify(impact.renderOptions) !== JSON.stringify(checked.impact.renderOptions)) stale(workspaceDir, '工作区或字体配置已变化');
+    workspaceToVerify = impact.workspaceDirectory;
+    const bytes = await replacementBytes(file);
+    if (bytes.length !== checked.replacement.byteLength || hash(bytes) !== checked.replacement.sha256) stale(file, '待替换文件内容已变化');
+    if (!Number.isSafeInteger(entry.currentVersion + 1)) fail(entry.id, '内容版本已超出安全整数范围', ProblemCodes.resourceWriteFailed);
+    await ensureObjects(root);
+    const content: ContentVersion = { version: entry.currentVersion + 1, sha256: hash(bytes), byteLength: bytes.length, file: `objects/${randomUUID()}.bin` };
+    await write(content.file, bytes);
+    entry.versions.push(content);
+    entry.currentVersion = content.version;
+    replaced = metadata(entry, content);
+    return manifest;
+  }, async () => {
+    // 内容和临时清单均写完后再核对，变化则撤回本次文件，不发布当前指针。
+    if (await resourceWorkspaceFingerprint(workspaceToVerify, renderOptions) !== checked.impact.workspaceFingerprint) stale(workspaceDir, '提交前工作区已变化');
+  });
+  return { replaced: problems.some((issue) => issue.level === 'severe') ? undefined : replaced, problems };
+}
+
+async function ensureObjects(root: string): Promise<void> {
+  const objects = join(root, 'objects');
+  try { await fs.mkdir(objects); }
+  catch (error) { if (!(isRecord(error) && error.code === 'EEXIST')) throw error; }
+  if (!(await fs.lstat(objects)).isDirectory() || await fs.realpath(objects) !== objects) fail(objects, '内容目录必须是仓库内普通目录，不能是链接');
 }
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 const positive = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
@@ -162,6 +272,7 @@ export async function openVersionedResourceStore(dir: string): Promise<{ store?:
 /** 排他写事务。只清理本次成功创建的文件，清单发布后不回滚内容。 */
 async function writeTransaction(dir: string, initialize: boolean,
   prepare: (root: string, write: (file: string, bytes: Uint8Array) => Promise<void>) => Promise<Manifest>,
+  beforeCommit?: () => Promise<void>,
 ): Promise<Problem[]> {
   const problems: Problem[] = [];
   const owned: string[] = [];
@@ -188,6 +299,7 @@ async function writeTransaction(dir: string, initialize: boolean,
     const name = `.manifest-${randomUUID()}.tmp`;
     temporary = join(root, name);
     await write(name, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
+    await beforeCommit?.();
     // 初始化用 link 的不覆盖语义；导入在持锁期间原子替换整份清单。
     if (initialize) await fs.link(temporary, join(root, MANIFEST));
     else await fs.rename(temporary, join(root, MANIFEST));
@@ -232,10 +344,7 @@ export async function importResources(options: { sourceDir: string; dir: string 
       if (ids.has(item.id)) fail(`${sourcePath}#${item.id}`, `目标仓库已有资源 ${item.id}，不能导入覆盖`, ProblemCodes.inputDuplicate);
       ids.add(item.id);
     }
-    const objects = join(root, 'objects');
-    try { await fs.mkdir(objects); }
-    catch (error) { if (!(isRecord(error) && error.code === 'EEXIST')) throw error; }
-    if (!(await fs.lstat(objects)).isDirectory() || await fs.realpath(objects) !== objects) fail(objects, '内容目录必须是仓库内普通目录，不能是链接');
+    await ensureObjects(root);
     for (const item of source.resources as { id: string; kind: 'image' | 'font'; file: string }[]) {
       let bytes: Uint8Array;
       try { bytes = new Uint8Array(await fs.readFile(await localFile(sourceRoot, item.file))); }

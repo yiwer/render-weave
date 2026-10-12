@@ -137,6 +137,8 @@ export const ProblemCodes = {
   resourceVersionNotFound: 'resource.versionNotFound',
   resourceStoreBusy: 'resource.storeBusy',
   resourceWriteFailed: 'resource.writeFailed',
+  resourceReplacementStale: 'resource.replacementStale',
+  resourceReplacementInvalid: 'resource.replacementInvalid',
   /** 缺字已按字重逐字替代，提示。 */
   textGlyphFallback: 'text.glyphFallback',
   /** 原字体与后备字体均不能显示某些码点，严重。 */

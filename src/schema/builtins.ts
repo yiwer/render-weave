@@ -13,7 +13,7 @@ const SINGLE_FIELDS: Readonly<Record<string, Record<string, unknown>>> = {
 };
 
 /** 固定的内置编译产物；渲染时不调用数据定义编译器。内置名称保留，不能被工作区覆盖。 */
-export function findStaticSchema(workspace: Workspace, ref: StaticSchemaRef): StaticSchemaEntry | undefined {
+export function findStaticSchema(workspace: Pick<Workspace, 'staticSchemas'>, ref: StaticSchemaRef): StaticSchemaEntry | undefined {
   const single = ref.name.startsWith('单值·') && Object.hasOwn(SINGLE_FIELDS, ref.name.slice(3)) ? SINGLE_FIELDS[ref.name.slice(3)] : undefined;
   if (ref.name === '空数据定义' || single) {
     if (ref.version !== 1) return undefined;

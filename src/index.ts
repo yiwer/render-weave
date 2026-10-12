@@ -22,8 +22,10 @@ export {
 } from './resources.js';
 export {
   initializeResourceStore, importResources, openVersionedResourceStore,
+  checkResourceReplacement, applyResourceReplacement, type ResourceReplacementCheck,
   type VersionedResourceStore, type VersionedResourceInfo, type ResourceVersionMap, type PinnedResources,
 } from './versioned-resources.js';
+export type { ResourceImpact, ResourceConfigurationImpact, ResourceWorkspaceImpact } from './resource-impact.js';
 export { ProblemCodes, type Problem, type ProblemCode, type ProblemLevel, type ProblemLocation } from './problems.js';
 export { formatElementPath, type ElementPath, type ElementPathSegment } from './element-path.js';
 export type { LayoutSummary, LayoutNode, TextSummary, QrCodeSummary, BarcodeSummary } from './layout/index.js';
