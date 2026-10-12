@@ -14,6 +14,7 @@
     { "id": "icon-hospital", "kind": "image", "file": "images/m402/icon-hospital.png" },
     { "id": "test-quadrants-png", "kind": "image", "file": "images/test/quadrants.png" },
     { "id": "test-quadrants-jpg", "kind": "image", "file": "images/test/quadrants.jpg" },
-    { "id": "test-quadrants-webp", "kind": "image", "file": "images/test/quadrants.webp" }
+    { "id": "test-quadrants-webp", "kind": "image", "file": "images/test/quadrants.webp" },
+    { "id": "test-vector-svg", "kind": "image", "file": "images/test/vector.svg" }
   ]
 }

@@ -32,6 +32,8 @@ export interface RenderResult {
 export interface RenderOptions {
   /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
   readonly fallbackFonts?: readonly string[];
+  /** SVG 可用的字体资源 ID；缺省为思源黑体四种字重，始终禁用系统字体。 */
+  readonly svgFonts?: readonly string[];
 }
 
 export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
@@ -52,7 +54,7 @@ export async function render(workspace: Workspace, requestInput: unknown, option
   if (!evaluated) return expansionBlocked(problems);
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources, options.fallbackFonts);
-  const images = new ImageStore(ck, workspace.resources);
+  const images = new ImageStore(ck, workspace.resources, options.svgFonts);
   try {
     // 先加载会显示的元素用到的字体与图片，排版与绘制都是同步的。
     for (const node of walkVisible(evaluated.root)) {
@@ -72,8 +74,10 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     const root = await resolveGlyphFallbacks(evaluated.root, fonts, problems);
     let result = layout({ ...evaluated, root }, request.output, { fonts, images }, ck);
     problems.push(...result.problems);
+    const rasterized = images.prepare(result.drawOps, request.output.dpi);
+    problems.push(...rasterized.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
-    let drawOps = result.drawOps;
+    let drawOps = rasterized.drawOps;
     if (request.mode === 'draft') {
       const preview = withDraftPlaceholders(root);
       let draftRoot = preview.root;
@@ -81,8 +85,9 @@ export async function render(workspace: Workspace, requestInput: unknown, option
         // 占位字造成的缺字、溢出等不是原数据的问题，不进入公共问题清单。
         draftRoot = await resolveGlyphFallbacks(draftRoot, fonts, []);
         result = layout({ ...evaluated, root: draftRoot }, request.output, { fonts, images }, ck);
+        drawOps = images.prepare(result.drawOps, request.output.dpi).drawOps;
       }
-      drawOps = [...result.drawOps, ...draftBorders(draftRoot, result.summary, problems)];
+      drawOps = [...drawOps, ...draftBorders(draftRoot, result.summary, problems)];
     }
     const image = draw(ck, { fonts, images }, drawOps, request.output);
     return { image, problems, layout: result.summary };

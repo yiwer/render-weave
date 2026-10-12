@@ -136,19 +136,18 @@ describe('图片元素', () => {
   it('资源不存在、引用了字体资源、格式不受支持时报问题，定位到元素', async () => {
     const missing = await lab([image('图', 'res:no-such-image', at(0, 0, 10, 10))], 20, 20);
     const font = await lab([image('图', 'res:font-hei-medium', at(0, 0, 10, 10))], 20, 20);
-    const svgWorkspace = {
-      ...withLabTemplate(await loadSkeleton(), { children: [image('图', 'res:svg-icon', at(0, 0, 10, 10))] }),
+    const gifWorkspace = {
+      ...withLabTemplate(await loadSkeleton(), { children: [image('图', 'res:gif-icon', at(0, 0, 10, 10))] }),
       resources: createMemoryResourceRepository([
-        { id: 'svg-icon', kind: 'image', bytes: new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>') },
+        { id: 'gif-icon', kind: 'image', bytes: new TextEncoder().encode('GIF89a') },
       ]),
     };
-    const svg = await render(svgWorkspace, labRequest(20, 20));
+    const gif = await render(gifWorkspace, labRequest(20, 20));
     const location = { kind: 'element', path: '布局实验/图' };
 
     expect(missing.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.resourceNotFound, location]]);
     expect(font.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.resourceKindMismatch, location]]);
-    expect(svg.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.resourceUnsupportedFormat, location]]);
-    expect(svg.problems[0]!.message).toContain('SVG 图片尚未支持');
+    expect(gif.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.resourceUnsupportedFormat, location]]);
   });
 
   it('来源写法不对时模板检查报问题；没有来源时不画内容', async () => {

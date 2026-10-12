@@ -95,7 +95,7 @@ class Painter {
   /** 按记录的源区域与目标区域绘制；线性插值加多级纹理，缩小时不起锯齿。 */
   private image(op: Extract<DrawOp, { op: 'image' }>): void {
     const loaded = this.images.get(op.image);
-    if (!loaded) return;
+    if (!loaded?.image) return;
     this.paint.setStyle(this.ck.PaintStyle.Fill);
     this.paint.setColor(this.ck.BLACK);
     this.canvas.drawImageRectOptions(

@@ -19,10 +19,14 @@
     "render": "tsx src/bin.ts"
   },
   "dependencies": {
+    "@resvg/resvg-wasm": "2.6.2",
+    "@xmldom/xmldom": "0.9.12",
     "ajv": "8.20.0",
-    "canvaskit-wasm": "0.42.0"
+    "canvaskit-wasm": "0.42.0",
+    "css-tree": "3.2.1"
   },
   "devDependencies": {
+    "@types/css-tree": "3.2.0",
     "@types/node": "22.20.5",
     "tsx": "4.23.15",
     "typescript": "7.0.2",

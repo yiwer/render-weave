@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40" viewBox="0 0 80 40">
+  <defs>
+    <linearGradient id="sky"><stop stop-color="#00a4dc"/><stop offset="1" stop-color="#1648a0"/></linearGradient>
+    <clipPath id="round"><rect x="1" y="1" width="78" height="38" rx="6"/></clipPath>
+  </defs>
+  <style>.line { fill: none; stroke: white; stroke-width: 1; }</style>
+  <g clip-path="url(#round)">
+    <rect width="80" height="40" fill="url(#sky)"/>
+    <path d="M0 31 L26 8 L47 28 L66 6 L80 23 V40 H0Z" fill="#ffdb27"/>
+    <circle cx="62" cy="12" r="6" fill="#ff5948"/>
+    <path class="line" d="M5 36 L75 4 M5 4 L75 36"/>
+  </g>
+  <rect x="1" y="1" width="78" height="38" rx="6" fill="none" stroke="#172b4d" stroke-width="2"/>
+</svg>

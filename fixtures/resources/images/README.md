@@ -9,5 +9,6 @@
 | `m402/icon-metro.png` | `icon-metro` | 示意图标：绿底圆形加白色"M"（思源黑体 Heavy），不是官方标志 |
 | `m402/icon-hospital.png` | `icon-hospital` | 示意图标：红底圆形加白色十字 |
 | `test/quadrants.png`、`.jpg`、`.webp` | `test-quadrants-png`、`-jpg`、`-webp` | 200 × 100 像素四色测试图：左上红、右上绿、左下蓝、右下黄，外加 10 像素黑边，用于检查三种格式与三种适配方式（铺满裁剪会裁掉两侧黑边） |
+| `test/vector.svg` | `test-vector-svg` | 手写的 80 × 40 矢量测试图，含路径、渐变、内部 CSS、圆角裁剪与细线；用于 SVG 三种适配、高 DPI 和跨平台验证，不由位图生成脚本生成 |
 
 设计稿中地标随站点状态变色（已过站灰、本站红），夹具只提供深灰一种；M402 模板按状态样式调整透明度（见 DSL 草稿 `template-stop.json`）。

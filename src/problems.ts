@@ -126,7 +126,7 @@ export const ProblemCodes = {
   textGlyphFallback: 'text.glyphFallback',
   /** 原字体与后备字体均不能显示某些码点，严重。 */
   textGlyphMissing: 'text.glyphMissing',
-  /** 资源的文件格式不受支持（图片只支持 PNG、JPEG、WebP，SVG 见票据 13）。 */
+  /** 资源的文件格式不受支持（图片支持 PNG、JPEG、WebP、SVG）。 */
   resourceUnsupportedFormat: 'resource.unsupportedFormat',
 
   /** 实际尺寸超出画板的适用尺寸范围。 */
