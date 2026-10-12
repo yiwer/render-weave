@@ -79,6 +79,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
     'fontWeight',
   ],
   image: [...COMMON_KEYS, 'source', 'fit'],
+  qrcode: [...COMMON_KEYS, 'content', 'errorCorrectionLevel', 'foreground', 'background'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
   ellipse: [...COMMON_KEYS, 'fill', 'stroke'],
   line: [...COMMON_KEYS, 'from', 'to', 'stroke'],
@@ -86,7 +87,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule'],
 };
 /** 元素目录中已有、但尚未实现的元素类型。 */
-const PLANNED_TYPES = new Set(['qrcode', 'barcode']);
+const PLANNED_TYPES = new Set(['barcode']);
 const SIZE_LIMIT_KEYS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   free: ['left', 'right', 'top', 'bottom', 'width', 'height', ...SIZE_LIMIT_KEYS],
@@ -136,6 +137,7 @@ export interface BindingHost {
   boolean(ref: string, site: BindingSite, fallback: boolean): Read<boolean>;
   /** 图片资源 ID；null 表示不画内容。 */
   image(ref: string, site: BindingSite): string | null;
+  text(ref: string, site: BindingSite): string;
   /** 插槽：求值读取返回文字；静态读取返回 undefined，保留插槽。 */
   slot(ref: string, format: DisplayFormat | undefined, site: BindingSite): string | undefined;
   placeholder?(ref: string): string | undefined;
@@ -147,6 +149,11 @@ export interface BindingHost {
 class StaticHost implements BindingHost {
   readonly resolving = false;
   readonly uses: VariableUse[] = [];
+
+  text(ref: string, site: BindingSite): string {
+    this.uses.push({ use: 'binding', var: ref, expected: 'text', element: site.path, label: site.label });
+    return '';
+  }
 
   color(ref: string, site: BindingSite): Color {
     this.uses.push({ use: 'binding', var: ref, expected: 'color', element: site.path, label: site.label });
@@ -466,6 +473,19 @@ class TemplateReader {
         const source = value['source'] === undefined ? null : this.readImageSource(value['source'], path);
         const fit = this.readEnum(value['fit'], ['contain', 'cover', 'fill'] as const, 'contain', path, 'fit');
         element = base && source !== undefined && fit ? { ...base, type: 'image', ...(source !== null && { source }), fit } : undefined;
+        break;
+      }
+      case 'qrcode': {
+        const raw = value['content'];
+        const content = isVarOperand(raw) ? this.host.text(raw.var, { path, label: 'content' })
+          : typeof raw === 'string' ? raw : this.fail(path, '二维码 content 必须是文本或文本变量绑定');
+        const errorCorrectionLevel = this.readEnum(value['errorCorrectionLevel'], ['L', 'M', 'Q', 'H'] as const, 'M', path, 'errorCorrectionLevel');
+        const foreground = this.readColor(value['foreground'] ?? '#000000', path, 'foreground');
+        const background = this.readColor(value['background'] ?? '#FFFFFF', path, 'background');
+        const defaultSize: SizeSpec = parentLayout.mode === 'grid' ? { kind: 'fill', weight: 1 } : { kind: 'hug' };
+        element = base && content !== undefined && errorCorrectionLevel && foreground && background
+          ? { ...base, place: { ...base.place, width: base.place.width ?? defaultSize, height: base.place.height ?? defaultSize },
+            type: 'qrcode', content, errorCorrectionLevel, foreground, background } : undefined;
         break;
       }
       case 'rect': {

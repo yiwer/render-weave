@@ -75,6 +75,8 @@ class Painter {
 
   run(op: DrawOp): void {
     switch (op.op) {
+      case 'qrcode':
+        return this.qrcode(op);
       case 'save':
         return this.save(op);
       case 'restore':
@@ -90,6 +92,26 @@ class Painter {
         return this.image(op);
       case 'glyphs':
         return this.glyphs(op);
+    }
+  }
+
+  /** 码区和四模块留白已按最终 DPI 排好；关闭抗锯齿，避免模块接缝。 */
+  private qrcode(op: Extract<DrawOp, { op: 'qrcode' }>): void {
+    const { x, y, modules, moduleSize: size } = op;
+    this.paint.setAntiAlias(false);
+    try {
+      this.useFill(op.background);
+      this.canvas.drawRect(this.ck.XYWHRect(x, y, (modules + 8) * size, (modules + 8) * size), this.paint);
+      this.useFill(op.foreground);
+      for (let row = 0; row < modules; row++) {
+        for (let column = 0; column < modules; column++) {
+          if (op.data[row * modules + column]) {
+            this.canvas.drawRect(this.ck.XYWHRect(x + (column + 4) * size, y + (row + 4) * size, size, size), this.paint);
+          }
+        }
+      }
+    } finally {
+      this.paint.setAntiAlias(true);
     }
   }
 

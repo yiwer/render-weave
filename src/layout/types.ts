@@ -27,6 +27,7 @@ export interface LayoutNode {
   readonly visible: boolean;
   readonly text?: TextSummary;
   readonly image?: ImageSummary;
+  readonly qrcode?: QrCodeSummary;
   readonly children?: readonly LayoutNode[];
 }
 
@@ -38,6 +39,18 @@ export interface ImageSummary {
   readonly naturalHeight: number;
   /** 图片实际画出的区域，毫米；完整显示时可能小于元素框，铺满裁剪时等于元素框。 */
   readonly drawn: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+}
+
+export interface QrCodeSummary {
+  readonly format: 'qr';
+  readonly errorCorrectionLevel: 'L' | 'M' | 'Q' | 'H';
+  readonly modules: number;
+  readonly moduleSizePx: number;
+  readonly quietZoneModules: 4;
+  readonly quietZoneMm: number;
+  /** 毫米，相对画板，未计旋转；drawn 含必要留白，symbol 仅码区。 */
+  readonly drawn: Box;
+  readonly symbol: Box;
 }
 
 export interface TextSummary {
@@ -81,6 +94,16 @@ export type Radii = readonly [number, number, number, number];
 
 /** 绘制指令：坐标与尺寸都是毫米，相对画板左上角；按顺序执行，后画的在上面（M72）。 */
 export type DrawOp =
+  | {
+      readonly op: 'qrcode';
+      readonly x: number;
+      readonly y: number;
+      readonly moduleSize: number;
+      readonly modules: number;
+      readonly data: Uint8Array;
+      readonly foreground: string;
+      readonly background: string;
+    }
   | {
       readonly op: 'save';
       /** 小于 1 时把之后到 restore 为止的内容作为一个整体半透明。 */

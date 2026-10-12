@@ -17,12 +17,13 @@ import type { ImageStore } from '../images.js';
 import type { FontStore } from '../text/fonts.js';
 import { mmToPx, roundMm } from '../units.js';
 import { imageIntrinsic, recordImage } from './image.js';
+import { recordQrCode } from './qrcode.js';
 import { radii, recordShape, shapeIntrinsic, type PathBounds } from './shapes.js';
 import { measureTextNode, recordText, type TextMeasure } from './text.js';
 import { ShrinkGroups, containsShrinkGroup } from './shrink-groups.js';
 import { EPSILON, type Box, type DrawOp, type LayoutNode, type LayoutResult, type Size } from './types.js';
 
-export type { Box, DrawOp, ImageSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
+export type { Box, DrawOp, ImageSummary, QrCodeSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
 
 type Axis = 'width' | 'height';
 
@@ -34,13 +35,13 @@ export function layout(
   ck: CanvasKit,
 ): LayoutResult {
   const groups = new ShrinkGroups();
-  let layouter = new Layouter(resources.fonts, resources.images, ck, groups);
+  let layouter = new Layouter(resources.fonts, resources.images, ck, output.dpi, groups);
   const box = { x: 0, y: 0, width: output.width, height: output.height };
   let root = layouter.arrange(evaluated.root, box);
   const resolved = groups.resolve(evaluated.root);
   if (resolved) {
     // 首轮的暂时溢出与绘制记录不外泄；新布局器使自然尺寸与字形测量全部按最终字号重算。
-    layouter = new Layouter(resources.fonts, resources.images, ck);
+    layouter = new Layouter(resources.fonts, resources.images, ck, output.dpi);
     root = layouter.arrange(resolved.root, box);
     layouter.problems.push(...resolved.problems);
   }
@@ -74,6 +75,7 @@ class Layouter {
     private readonly fonts: FontStore,
     private readonly images: ImageStore,
     private readonly ck: CanvasKit,
+    private readonly dpi: number,
     private readonly groups?: ShrinkGroups,
   ) {}
 
@@ -94,6 +96,9 @@ class Layouter {
         break;
       case 'image':
         size = imageIntrinsic(model, model.source ? this.images.get(model.source) : undefined);
+        break;
+      case 'qrcode':
+        size = { width: 0, height: 0 };
         break;
       default:
         size = shapeIntrinsic(model, (d) => this.pathBounds(d));
@@ -205,6 +210,11 @@ class Layouter {
       case 'image': {
         const image = recordImage(model, box, model.source ? this.images.get(model.source) : undefined, this.drawOps);
         summary = image ? { image } : {};
+        break;
+      }
+      case 'qrcode': {
+        const qrcode = recordQrCode(model, box, this.dpi, this.drawOps, this.problems);
+        summary = qrcode ? { qrcode } : {};
         break;
       }
       default:

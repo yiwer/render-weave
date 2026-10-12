@@ -111,7 +111,7 @@ export type VariableUse =
       /** 绑定：属性取值交给变量，类型必须一致（M71）。 */
       readonly use: 'binding';
       readonly var: string;
-      readonly expected: 'color' | 'number' | 'boolean' | 'image';
+      readonly expected: 'color' | 'number' | 'boolean' | 'image' | 'text';
       readonly element: ElementPath;
       readonly label: string;
     }
@@ -132,7 +132,7 @@ export interface ArtboardModel extends ContainerBody {
   readonly sizeRange: { readonly width: Range; readonly height: Range };
 }
 
-export type ElementModel = ContainerModel | TextElementModel | ImageModel | ShapeModel | LoopModel | CallModel;
+export type ElementModel = ContainerModel | TextElementModel | ImageModel | QrCodeModel | ShapeModel | LoopModel | CallModel;
 export type ShapeModel = RectModel | EllipseModel | LineModel | PolygonModel | PathModel;
 export type NodeModel = ArtboardModel | ElementModel;
 
@@ -358,6 +358,15 @@ export interface ImageModel extends ElementBase {
   /** 图片资源 ID。 */
   readonly source?: string;
   readonly fit: 'contain' | 'cover' | 'fill';
+}
+
+/** 二维码使用 UTF-8 文本，码区保留四模块留白；尺寸由布局决定，不提供自然尺寸。 */
+export interface QrCodeModel extends ElementBase {
+  readonly type: 'qrcode';
+  readonly content: string;
+  readonly errorCorrectionLevel: 'L' | 'M' | 'Q' | 'H';
+  readonly foreground: Color;
+  readonly background: Color;
 }
 
 export interface RectModel extends ElementBase {

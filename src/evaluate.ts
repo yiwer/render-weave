@@ -244,6 +244,11 @@ class ResolvingHost implements BindingHost {
     return this.typed(ref, 'boolean') && this.scope.value(ref) === true;
   }
 
+  text(ref: string): string {
+    const value = this.typed(ref, 'text') ? this.scope.value(ref) : undefined;
+    return typeof value === 'string' ? value : '';
+  }
+
   image(ref: string, site: BindingSite): string | null {
     const value = this.typed(ref, 'image') ? this.scope.value(ref) : undefined;
     if (typeof value !== 'string') {
@@ -270,7 +275,7 @@ class ResolvingHost implements BindingHost {
   }
 
   /** 变量的类型是否就是绑定需要的类型。 */
-  private typed(ref: string, kind: 'color' | 'number' | 'boolean' | 'image'): boolean {
+  private typed(ref: string, kind: 'color' | 'number' | 'boolean' | 'image' | 'text'): boolean {
     const resolved = this.scope.table.typeOf(ref);
     return 'type' in resolved && resolved.type.kind === kind;
   }

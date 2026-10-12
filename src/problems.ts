@@ -34,6 +34,10 @@ export interface Problem {
 }
 
 export const ProblemCodes = {
+  qrContentInvalid: 'qrcode.contentInvalid',
+  qrCapacityExceeded: 'qrcode.capacityExceeded',
+  qrColorsInvalid: 'qrcode.colorsInvalid',
+  qrSizeInvalid: 'qrcode.sizeInvalid',
   /** 当前输入无法展开；与具体原因一起报告，两种模式都不进入布局或绘制。 */
   renderExpansionBlocked: 'render.expansionBlocked',
   /** 工作区、请求或资源文件无法读取或不是合法 JSON。 */

@@ -1,0 +1,23 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "线路查询码",
+  "base": { "name": "空数据定义", "version": 1 },
+  "parameters": [
+    { "name": "queryUrl", "displayName": "查询网址", "type": "text", "visibility": "public" }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 60, "max": 60 }, "height": { "min": 60, "max": 60 } },
+    "fill": "#FFFFFF",
+    "children": [
+      {
+        "type": "qrcode",
+        "name": "查询码",
+        "content": { "var": "queryUrl" },
+        "errorCorrectionLevel": "M",
+        "foreground": "#000000",
+        "background": "#FFFFFF",
+        "place": { "left": 5, "top": 5, "width": { "fixed": 50 }, "height": { "fixed": 50 } }
+      }
+    ]
+  }
+}
