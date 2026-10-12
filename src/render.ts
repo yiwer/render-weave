@@ -15,7 +15,8 @@ import { evaluate, walkVisible } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
-import { checkTemplate } from './template/check.js';
+import { prepareTemplates } from './template/program.js';
+import { findStaticSchema } from './schema/builtins.js';
 import { Scope, resolveParameters } from './template/scope.js';
 import type { TemplateModel } from './template/model.js';
 import { parseTemplate } from './template/parse.js';
@@ -50,7 +51,7 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   const dataset = resolveDataset(workspace, request, problems);
   if (!dataset) return { problems };
   const schemaRef = dataset.dataset.staticSchema;
-  const schema = workspace.staticSchemas.find((entry) => sameStaticSchema(entry.ref, schemaRef));
+  const schema = findStaticSchema(workspace, schemaRef);
   if (!schema) {
     problems.push(
       severe(
@@ -97,13 +98,14 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
     );
     return { problems };
   }
-  const checked = checkTemplate(template, schema.compiled);
+  const checked = prepareTemplates(workspace, template, schema.compiled);
   problems.push(...checked.problems);
   const parameters = resolveParameters(template, request.parameters);
   problems.push(...parameters.problems);
   problems.push(...checkSizeRange(template, request.output));
+  if (checked.blocked) return { problems };
 
-  const evaluation = evaluate(new Scope(template, checked.table, dataset.data, parameters.values));
+  const evaluation = evaluate(new Scope(template, checked.program.get(template.name)!.table, dataset.data, parameters.values), checked.program);
   problems.push(...evaluation.problems);
   const evaluated = evaluation.evaluated;
   if (!evaluated) return { problems };

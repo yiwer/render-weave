@@ -174,14 +174,14 @@ describe('尺寸与模板检查', () => {
 
   it('尚未支持的元素类型与未定义的属性返回问题，而不是静默忽略', async () => {
     const workspace = withTemplate(await loadSingleText(), '问候牌', (document) => {
-      document['artboard']['children'].push({ type: 'loop', name: '站点列' });
+      document['artboard']['children'].push({ type: 'qrcode', name: '二维码' });
       document['artboard']['children'][0]['underline'] = true;
     });
     const result = await render(workspace, greetingRequest());
 
     expect(result.problems.map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.templateUnknownProperty, { kind: 'element', path: '问候牌/问候语' }],
-      [ProblemCodes.templateUnsupported, { kind: 'element', path: '问候牌/站点列' }],
+        [ProblemCodes.templateUnsupported, { kind: 'element', path: '问候牌/二维码' }],
     ]);
   });
 

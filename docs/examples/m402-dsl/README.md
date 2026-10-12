@@ -24,6 +24,8 @@
 
 票据 07 复查（2026-10-10，用引擎的模板解析与静态检查）：去掉后续票据的写法（3 个循环容器与画板 `size` 属票据 08，道路名的横排适配属票据 09，站名的 `widthOverflow` 属票据 10）后，5 个模板解析都没有问题；基准为"线路牌 v1""停靠站点 v1"的 3 个模板静态检查都没有问题，共 44 处变量引用（绑定、插槽与状态样式）全部对得上，包括 `terminal.name`、`nextStop.name`。"标识图标""班次时刻"的基准是单值数据定义，留待票据 08 检查。主模板去掉循环容器后按 M402 数据集实际出图（见 `test/golden/m402-bars.png`）：顶栏与底栏的元素与内容和设计稿逐项对得上（线路号、开往箭头、终点站、票价、运营方、下一站及地标、服务时间、运营说明）；设计稿中终点站与服务时间用的斜体美术字、各元素的精确尺寸未还原（草稿尺寸为估计），班次时刻一行属票据 08。
 
+票据 08 复查（2026-10-11）：本目录现有 11 个 JSON 文件均合法；仅临时去掉票据 09/10 的布局语法后，5 个模板全部通过解析与调用图静态检查（47 处普通变量引用，另检查调用的数据来源与参数），单值数据定义已由引擎内置提供；M402 数据集校验 0 个问题。实际出图保留站点列、嵌套标识行和班次列，只移除道路合并循环与站名缩字组：3496 × 780 像素、0 个问题，见 `test/golden/m402-stops.png`。35 列宽度为 694/35 mm，第 5 站黄底红字，已过站灰字及半透明地标，15 个班次按内容宽度排列，最后一项不带 `/`。完整道路带、缩字组与端到端验收仍分别属于票据 09、10、14。
+
 ## 模板如何组合
 
 ```mermaid
@@ -74,6 +76,31 @@ S2–S13 已确认（M90）。
 | S24 | 模板变量：`parameters` 每项 `{"name", "displayName", "visibility": "public" 或 "internal", "type", "constraints"?, "default"?}`，type 为基本字段类型或 color，内部参数必须有 default；`derived` 每项 `{"name", "displayName", "type", "ref"?, "op", …}`，op 取 branch（`branches: [{"when": 条件, "then": 运算数}]`、`otherwise`）、pickItem（`list`、`position`: "first"、"last" 或 `{"index": 运算数}`）、length（`of`）、add 或 subtract（`left`、`right`），type 为 ref 时写明 `ref`；`checks` 每项 `{"name", "problemWhen": 运算数, "level": "severe" 或 "hint", "message"}`。运算数写成 `{"var": 路径}` 或 `{"value": 固定值}`。绑定见 S4，尺寸写成 `{"fixed": {"var": …}}`；状态样式见 S5，可覆盖除 type、name、children、states 以外的属性 | 票据 07（M119–M122）；草稿原有写法不变 |
 
 工作区目录中的 JSON 文件按内容归类，不看文件名：`dslVersion` 区分数据定义与模板，带 `x-renderweave-static-schema` 的是编译产物，由 `dataset` 与 `data` 组成的是数据集，其他文件（如渲染请求）忽略。因此本目录可以直接作为工作区加载（票据 14）。
+
+### 票据 08：调用写法（S25–S27）
+
+- **S25 循环容器**：沿用草稿的 `list`、`template`、`args` 和 `itemLayout`。`direction` 目前为 `row`，`widths` 取 `equal`、`content` 或 `{ "fixed": 毫米 }`；`gap` 缺省 0；每项高度填满内容区。外观可写 padding、fill、stroke、cornerRadius、clip。序号从 1 开始，循环信息只能在 args 中写 `{ "loop": "index" / "isFirst" / "isLast" / "count" }`；被调模板需要声明相应的对外参数。`mergeBy`、`spanBy`、`groupSize` 属票据 09。
+- **S26 子模板调用**：`type: "call"`；`template` 为固定模板名；`data` 取 `{ "var": "单引用字段路径" }`、`"current"` 或 `"none"`（缺省）。`args` 中每项写 `{ "var": "调用方变量" }` 或 `{ "value": 固定值 }`。模板目标不能经状态样式更换；其他参数与呈现属性仍可使用状态样式。被调模板按调用框实际尺寸重新排布，随内容时自然测量，不整体缩放、不按适用尺寸范围裁剪尺寸。
+- **S27 内置基准与路径**：`空数据定义 v1` 及 S9 的七种基本字段类型单值数据定义由引擎提供，无需额外 JSON 文件；单值字段 value 必填，内置名称不能被工作区覆盖。调用中的参数问题与检查项增加 `location.path` 指向实例；元素问题和布局摘要使用 `标准线路单边/站点面板/站点列[12]/名称区/站名` 一类路径。静态声明问题在模板定义处报告，运行时问题定位到具体实例。
+
+例如，在同以 `停靠站点 v1` 为基准的另一个模板中调用“站点”（自由布局）：
+
+```json
+{
+  "type": "call",
+  "name": "站点预览",
+  "template": "站点",
+  "data": "current",
+  "args": {
+    "index": { "value": 5 },
+    "currentIndex": { "value": 5 },
+    "stopNameSize": { "value": 10 }
+  },
+  "place": { "width": { "fixed": 20 }, "height": { "fixed": 100 } }
+}
+```
+
+此示例与站点列共用“站点”模板，其 `widthOverflow` 仍需票据 10；票据 08 的演示和测试在内存副本中移除该属性，共享草稿保持完整目标写法。
 
 ## 起草中发现的问题
 

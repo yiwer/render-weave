@@ -386,7 +386,7 @@ function operandsOf(derived: DerivedModel): string[] {
 }
 
 /** 固定值能否当作该类型使用；不能时返回说明。 */
-function literalProblem(value: string | number | boolean, expected: ValueType): string | undefined {
+export function literalProblem(value: string | number | boolean, expected: ValueType): string | undefined {
   const label = typeLabel(expected);
   switch (expected.kind) {
     case 'number':

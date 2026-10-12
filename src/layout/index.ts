@@ -162,6 +162,13 @@ class Layouter {
 
   arrange(node: EvaluatedNode, box: Box): LayoutNode {
     const model = node.model;
+    if (node.calledTemplate) {
+      const { name, sizeRange: { width, height } } = node.calledTemplate;
+      if (box.width < width.min - EPSILON || box.width > width.max + EPSILON || box.height < height.min - EPSILON || box.height > height.max + EPSILON) {
+        this.problems.push(severe(ProblemCodes.renderSizeOutOfRange, { kind: 'element', path: formatElementPath(model.path) },
+          `实际尺寸 ${fmt(box.width)} × ${fmt(box.height)} mm 超出模板“${name}”的适用尺寸范围：宽 ${width.min}–${width.max} mm，高 ${height.min}–${height.max} mm`));
+      }
+    }
     const wrapped = model.type !== 'artboard' && this.pushSave(model, box);
     let summary: Partial<LayoutNode> = {};
     switch (model.type) {
@@ -192,7 +199,7 @@ class Layouter {
     return {
       path: formatElementPath(model.path),
       name: model.name,
-      type: model.type,
+      type: node.sourceType ?? model.type,
       x: roundMm(box.x),
       y: roundMm(box.y),
       width: roundMm(box.width),
@@ -490,7 +497,7 @@ function hiddenNode(node: EvaluatedNode): LayoutNode {
   return {
     path: formatElementPath(node.model.path),
     name: node.model.name,
-    type: node.model.type,
+    type: node.sourceType ?? node.model.type,
     x: 0,
     y: 0,
     width: 0,

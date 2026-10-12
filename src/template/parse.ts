@@ -47,6 +47,9 @@ import {
   type TextStroke,
   type Track,
   type VariableUse,
+  type CallArgument,
+  type CallModel,
+  type LoopModel,
 } from './model.js';
 
 const TEMPLATE_KEYS = ['dslVersion', 'name', 'base', 'parameters', 'derived', 'checks', 'artboard'];
@@ -54,9 +57,11 @@ const CONTAINER_BODY_KEYS = ['layout', 'padding', 'fill', 'stroke', 'cornerRadiu
 const ARTBOARD_KEYS = ['sizeRange', ...CONTAINER_BODY_KEYS];
 const COMMON_KEYS = ['type', 'name', 'place', 'visible', 'opacity', 'rotation', 'states'];
 /** 状态样式不能覆盖的属性：结构与身份。 */
-const STATE_FIXED_KEYS = ['type', 'name', 'children', 'states'];
+const STATE_FIXED_KEYS = ['type', 'name', 'children', 'states', 'template'];
 const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   container: [...COMMON_KEYS, ...CONTAINER_BODY_KEYS],
+  loop: [...COMMON_KEYS, 'list', 'template', 'args', 'itemLayout', 'padding', 'fill', 'stroke', 'cornerRadius', 'clip', 'mergeBy'],
+  call: [...COMMON_KEYS, 'template', 'data', 'args'],
   text: [
     ...COMMON_KEYS,
     'content',
@@ -81,7 +86,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule'],
 };
 /** 元素目录中已有、但尚未实现的元素类型。 */
-const PLANNED_TYPES = new Set(['loop', 'call', 'qrcode', 'barcode']);
+const PLANNED_TYPES = new Set(['qrcode', 'barcode']);
 const SIZE_LIMIT_KEYS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   free: ['left', 'right', 'top', 'bottom', 'width', 'height', ...SIZE_LIMIT_KEYS],
@@ -102,9 +107,9 @@ export function parseTemplate(name: string, document: unknown): { model?: Templa
 }
 
 /** 求值读取：按作用域重新读取画板，得到绑定与状态样式都已取值的模型。 */
-export function readArtboardResolved(template: TemplateModel, host: BindingHost): { artboard?: ArtboardModel; problems: Problem[] } {
+export function readArtboardResolved(template: TemplateModel, host: BindingHost, path = rootPath(template.name)): { artboard?: ArtboardModel; problems: Problem[] } {
   const reader = new TemplateReader(template.name, host, template.staticElements);
-  const artboard = reader.readArtboard(template.artboardDocument, rootPath(template.name));
+  const artboard = reader.readArtboard(template.artboardDocument, path);
   return { ...(artboard && { artboard }), problems: reader.problems };
 }
 
@@ -196,6 +201,7 @@ class TemplateReader {
   private readonly elementNames = new Map<string, ElementPath>();
   /** 读状态样式的各取值时为 false：同一元素再读一遍，不登记名称、不记录静态模型。 */
   private primary = true;
+  private readonly calls: (LoopModel | CallModel)[] = [];
 
   constructor(
     private readonly templateName: string,
@@ -227,6 +233,7 @@ class TemplateReader {
       artboard,
       artboardDocument: document['artboard'],
       uses: this.host instanceof StaticHost ? this.host.uses : [],
+      calls: this.calls,
       staticElements: this.staticElements,
     };
   }
@@ -236,7 +243,7 @@ class TemplateReader {
       this.fail(path, '模板必须有画板 artboard');
       return undefined;
     }
-    if (value['size'] !== undefined) this.unsupported(path, '画板的 size（被调用时随内容）尚未支持');
+    if (value['size'] !== undefined && value['size'] !== 'hug') this.fail(path, '画板的 size 只能取 hug；实际尺寸由调用框或渲染请求决定');
     this.checkKeys(
       Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'size')),
       ARTBOARD_KEYS,
@@ -441,6 +448,11 @@ class TemplateReader {
 
     let element: Read<ElementModel>;
     switch (elementType) {
+      case 'loop':
+      case 'call':
+        element = this.readCall(value, base, path, elementType);
+        if (element && !this.host.resolving) this.calls.push(element);
+        break;
       case 'container': {
         const body = this.readContainerBody(value, path);
         element = base && body && { ...base, type: 'container', ...body };
@@ -502,6 +514,49 @@ class TemplateReader {
       }
     }
     return element;
+  }
+
+  private readCall(value: Record<string, unknown>, base: Read<ElementBase>, path: ElementPath, type: 'loop' | 'call'): Read<LoopModel | CallModel> {
+    const template = value['template'];
+    if (typeof template !== 'string' || template.trim() === '') return this.fail(path, '调用必须用 template 指定模板名称');
+    const argsValue = value['args'] ?? {};
+    if (!isRecord(argsValue)) return this.fail(path, '调用的 args 必须是参数名称到运算数的对象');
+    const args: Record<string, CallArgument> = Object.create(null) as Record<string, CallArgument>;
+    for (const [name, argument] of Object.entries(argsValue)) {
+      if (isVarOperand(argument)) args[name] = argument;
+      else if (isRecord(argument) && Object.keys(argument).length === 1 &&
+        (typeof argument['value'] === 'string' || typeof argument['value'] === 'boolean' || isFiniteNumber(argument['value']))) {
+        args[name] = { value: argument['value'] };
+      } else if (type === 'loop' && isRecord(argument) && Object.keys(argument).length === 1 &&
+        ['index', 'isFirst', 'isLast', 'count'].includes(String(argument['loop']))) {
+        args[name] = { loop: argument['loop'] as 'index' | 'isFirst' | 'isLast' | 'count' };
+      } else this.fail(path, `参数 ${name} 写成 { var: 路径 }、{ value: 固定值 }；循环容器还可用 { loop: index/isFirst/isLast/count }`);
+    }
+    if (type === 'call') {
+      const data = value['data'] ?? 'none';
+      if (data !== 'current' && data !== 'none' && !isVarOperand(data)) return this.fail(path, '子模板数据 data 写成 { var: 单引用路径 }、current 或 none');
+      return base && { ...base, type, template, data, args };
+    }
+    if (value['mergeBy'] !== undefined) this.unsupported(path, '合并相邻同值项 mergeBy 随票据 09 加入');
+    const list = value['list'];
+    if (!isVarOperand(list)) return this.fail(path, '循环的 list 必须是 { var: 列表字段路径 }');
+    const item = value['itemLayout'];
+    if (!isRecord(item)) return this.fail(path, '循环必须声明 itemLayout');
+    this.checkKeys(item, ['direction', 'widths', 'gap'], path, 'itemLayout');
+    const direction = this.readEnum(item['direction'], ['row'] as const, 'row', path, 'itemLayout.direction');
+    const gap = this.readNumber(item['gap'], 0, path, 'itemLayout.gap', { min: 0 });
+    const widths = item['widths'];
+    let widthSpec: LoopModel['itemLayout']['widths'];
+    if (widths === 'equal' || widths === 'content') widthSpec = widths;
+    else if (isRecord(widths) && Object.keys(widths).length === 1) {
+      const fixed = this.readNumber(widths['fixed'], undefined, path, 'itemLayout.widths.fixed', { min: 0, exclusiveMin: true });
+      if (fixed === undefined) return undefined;
+      widthSpec = { fixed };
+    } else return this.fail(path, 'itemLayout.widths 写成 equal、content 或 { fixed: 毫米 }');
+    const body = this.readContainerBody({ ...value, layout: { mode: 'free' }, children: [] }, path);
+    if (!base || !body || !direction || gap === undefined) return undefined;
+    const { children: _children, layout: _layout, ...appearance } = body;
+    return { ...base, ...appearance, type, template, list, args, itemLayout: { direction, widths: widthSpec, gap } };
   }
 
   private readElementName(value: unknown, parent: ElementPath): Read<string> {

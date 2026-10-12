@@ -63,7 +63,7 @@ export class Scope {
   constructor(
     readonly template: TemplateModel,
     readonly table: VariableTable,
-    private readonly data: unknown,
+    readonly data: unknown,
     private readonly parameters: ParameterValues,
   ) {
     this.derived = new Map(template.derived.map((derived) => [derived.name, derived]));

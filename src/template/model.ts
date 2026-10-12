@@ -27,6 +27,8 @@ export interface TemplateModel {
   readonly artboardDocument: Record<string, unknown>;
   /** 静态读取时记下的变量引用：绑定、插槽与状态样式，供模板静态检查。 */
   readonly uses: readonly VariableUse[];
+  /** 全部调用声明，包含隐藏元素与状态样式的各分支，供调用图检查。 */
+  readonly calls: readonly (LoopModel | CallModel)[];
   /** 静态读取得到的元素模型，按元素文档查找；求值时隐藏的元素直接用它。 */
   readonly staticElements: WeakMap<object, ElementModel>;
 }
@@ -130,7 +132,7 @@ export interface ArtboardModel extends ContainerBody {
   readonly sizeRange: { readonly width: Range; readonly height: Range };
 }
 
-export type ElementModel = ContainerModel | TextElementModel | ImageModel | ShapeModel;
+export type ElementModel = ContainerModel | TextElementModel | ImageModel | ShapeModel | LoopModel | CallModel;
 export type ShapeModel = RectModel | EllipseModel | LineModel | PolygonModel | PathModel;
 export type NodeModel = ArtboardModel | ElementModel;
 
@@ -244,6 +246,29 @@ export interface ContainerModel extends ElementBase, ContainerBody {
   readonly type: 'container';
 }
 
+export type LoopInfoKey = 'index' | 'isFirst' | 'isLast' | 'count';
+export type CallArgument = Operand | { readonly loop: LoopInfoKey };
+export type CallData = VarOperand | 'current' | 'none';
+
+export interface CallModel extends ElementBase {
+  readonly type: 'call';
+  readonly template: string;
+  readonly data: CallData;
+  readonly args: Readonly<Record<string, CallArgument>>;
+}
+
+export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' | 'layout'> {
+  readonly type: 'loop';
+  readonly list: VarOperand;
+  readonly template: string;
+  readonly args: Readonly<Record<string, CallArgument>>;
+  readonly itemLayout: {
+    readonly direction: 'row';
+    readonly widths: 'equal' | 'content' | { readonly fixed: number };
+    readonly gap: number;
+  };
+}
+
 export interface TextElementModel extends ElementBase {
   readonly type: 'text';
   readonly content: readonly ContentItem[];
@@ -274,7 +299,7 @@ export interface TextFragmentModel {
   readonly style: FragmentStyle;
 }
 
-/** 变量插槽：本版本只绑定数据字段，路径用"."经过单引用（M90 S2）；参数与派生变量见票据 07。 */
+/** 变量插槽：绑定数据字段、参数或派生变量，路径用"."经过单引用（M90 S2）。 */
 export interface SlotModel {
   readonly kind: 'slot';
   readonly path: string;

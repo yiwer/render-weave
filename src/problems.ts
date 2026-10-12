@@ -10,18 +10,18 @@ export type ProblemLevel = 'hint' | 'severe';
 /**
  * 问题的位置。
  * - field：数据集中的字段路径，列表序号从 1 开始，如 `stops[12].name`。
- * - parameter：对外参数名。
+ * - parameter：对外参数名；子模板实例的问题另带调用框 path。
  * - element：元素路径（M101），如 `标准线路单边/站点面板/站点列[12]/名称区/站名`。
- * - check：模板名与检查项名。
+ * - check：模板名与检查项名；子模板实例的问题另带调用框 path。
  * - variable：模板名与模板变量名（参数、派生变量的声明）。
  * - definition：数据定义中的位置，如 `stops.items.constraints`（发布与编译时的问题）。
  * - input：无法归到以上几类的输入位置，如工作区文件或渲染请求的属性。
  */
 export type ProblemLocation =
   | { kind: 'field'; path: string }
-  | { kind: 'parameter'; name: string }
+  | { kind: 'parameter'; name: string; path?: string }
   | { kind: 'element'; path: string }
-  | { kind: 'check'; template: string; name: string }
+  | { kind: 'check'; template: string; name: string; path?: string }
   | { kind: 'variable'; template: string; name: string }
   | { kind: 'definition'; schema: string; path: string }
   | { kind: 'input'; source: string };
@@ -94,6 +94,12 @@ export const ProblemCodes = {
   templateDuplicateVariable: 'template.duplicateVariable',
   /** 派生变量之间的引用成环。 */
   templateVariableCycle: 'template.variableCycle',
+  /** 模板调用关系成环，阻止展开（M102）。 */
+  templateCallCycle: 'template.callCycle',
+  /** 被调模板基准与调用数据不一致，阻止展开。 */
+  templateCallBaseMismatch: 'template.callBaseMismatch',
+  /** 循环模板基准与列表元素不一致，阻止展开（M102）。 */
+  templateLoopBaseMismatch: 'template.loopBaseMismatch',
   /** 状态样式列出的取值不会出现，如拼错了派生变量的取值。 */
   templateUnknownStateValue: 'template.unknownStateValue',
   /** 求值时绑定得到的值不能用于该属性：数值缺值或超出范围。 */
