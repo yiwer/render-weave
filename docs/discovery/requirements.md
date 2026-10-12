@@ -348,6 +348,8 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 | M144 | SVG 作为图片资源，采用 resvg WASM 2.6.2 解码；加载时取得按 96 DPI 换算的天然尺寸并把文字转为路径，布局完成后按实际显示尺寸和出图 DPI 栅格化，再交给 CanvasKit 合成。contain、cover、fill 沿用图片适配；cover 按裁剪前整图取样，fill 按两轴较高像素密度取样；同次出图按资源和栅格宽度缓存、结束释放。Windows 与 Linux 的 127/508 DPI PNG/JPEG 四份样例已验证字节相同，依据见 ADR-0012 与 docs/render-svg.md（票据 13，落实 M74、M99） |
 | M145 | SVG 加载先结构化清理 XML/CSS：拒绝 DOCTYPE/实体声明，移除脚本、事件、动画、foreignObject、外来命名空间元素、外部图片/字体/样式表；保留内部片段引用、普通内部 CSS 和内嵌 PNG/JPEG/WebP，不接受嵌套 data SVG。引擎选项 svgFonts 指定可用字体资源 ID，缺省为四档思源黑体，与 fallbackFonts 独立，禁用系统字体；有文字却没有可用资源字体时报严重问题。解析或栅格化失败报定位到图片元素的 resource.unreadable，两种模式诊断相同；中间位图遵守已有单边/总像素上限（票据 13） |
 
+| M146 | 首期 M402 按结构与行为验收：直接加载共享工作区原文件，本站 5 的完整布局快照与图片固定；本站 0/35/36、1500 mm、11 字站名及思源黑体仍缺字的场景通过。参考图的四区结构、站点顺序、高亮与道路跨列正确；既有草稿的顶栏/底栏尺寸、字体与示意图标造成的外观差异逐项记录在 docs/examples/m402-acceptance.md，精确复刻另行调整模板与素材。本票不修改 DSL、静态数据定义、编译产物或共享数据集（票据 14，首期验收） |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
@@ -363,4 +365,4 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 - [M402 设计稿解读](../examples/m402-design-analysis.md) 把用户提供的真实设计稿（[原图](../examples/materials/m402-route-sign.jpg)）对照到模型，列出缺口 N1–N4 与观察到的适配规则，作为 Q13 的依据。
 - [M402 DSL 草稿](../examples/m402-dsl/README.md) 把模型写成数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求；起草约定为 S 编号，发现的问题为 F 编号。
 - 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`；当前已接受 ADR-0001–0004、ADR-0006–0012；ADR-0005 已被 ADR-0008 取代。
-- 下一步：首期规格 `.scratch/render-pipeline/spec.md` 已拆成 14 张票据（`.scratch/render-pipeline/issues/`），01–13 已完成，下一步 14 做完整 M402 验收。
+- 下一步：首期规格 `.scratch/render-pipeline/spec.md` 的 01–14 全部完成，M402 端到端验收通过；后续接 MCP 服务与 CloudKiln。

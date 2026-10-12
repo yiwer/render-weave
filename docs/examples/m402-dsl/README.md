@@ -1,6 +1,6 @@
 # M402 DSL 草稿
 
-状态：2026-10-08 起草。用 [M402 设计稿](../materials/m402-route-sign.jpg)把业务实体模型写成可执行形式的第一层：数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求。起草时作出的约定（S 编号）与发现的问题（F 编号）均已确认（M89–M97）。尺寸、颜色按设计稿估计。
+状态：票据 14 已完成首期端到端验收，详见 [验收记录](../m402-acceptance.md)。本目录于 2026-10-08 起草，用 [M402 设计稿](../materials/m402-route-sign.jpg)把业务实体模型写成可执行形式的第一层：数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求。起草时作出的约定（S 编号）与发现的问题（F 编号）均已确认（M89–M97）。尺寸、颜色按设计稿估计，已知外观差异见验收记录。
 
 ## 文件
 
@@ -18,7 +18,7 @@
 | [template-departure-time.json](template-departure-time.json) | 循环模板"班次时刻"，基准为单值·时刻 |
 | [render-request-m402.json](render-request-m402.json) | 正式出图请求：本站序号 5（东门），740 × 165 mm、120 DPI、PNG |
 
-已做的检查（2026-10-08，本地 Python 与 jsonschema 4.26.0）：10 个文件均为合法 JSON；数据集按编译产物校验 0 个错误，加入未定义的键会被拒绝（S7）；5 个模板中的变量引用、插槽路径、循环模板基准与参数填写全部能对上，被引用的变量名均为英文（S1）。尚未实际渲染。
+起草时的检查（2026-10-08，本地 Python 与 jsonschema 4.26.0）：当时的 10 个文件均为合法 JSON；数据集按编译产物校验 0 个错误，加入未定义的键会被拒绝（S7）；5 个模板中的变量引用、插槽路径、循环模板基准与参数填写全部能对上，被引用的变量名均为英文（S1）。当时尚未实际渲染，后续结果见各票据记录。
 
 票据 06 复查（2026-10-10，按引擎的展示格式解析逐个检查）：5 个模板中的 22 个文本片段都符合 S23 的写法，没有竖排片段设颜色以外的样式；带展示格式的 4 个插槽（`fare` 用 `0.##`，`firstDeparture`、`lastDeparture` 与班次时刻的 `value` 用 `HH:mm`）与字段类型相符。`terminal.name`、`nextStop.name` 经过派生变量，留待票据 07 检查。
 
@@ -34,6 +34,8 @@
 
 
 票据 10 密度复核（2026-10-12，M135–M136）：参照用户提供的 [366 图片](../materials/366-route-sign.png)，主模板 stopNameSize 从分档派生变量改为缺省 10 mm 的内部参数，站数增加优先收窄列间留白，确实不足才统一缩字。2/20/35/50 站在 740/1500 mm 下均保持 10 mm；59 站实验在 740 mm 下为 9.763 mm、1500 mm 下为 10 mm。实验经发布入口生成取消 50 站上限的 v2 副本，并同步切换模板基准；本目录的静态 v1 和旧数据集不被改写。像素测量与判断见 [参考图复核](../m402-design-analysis.md#八366-密集站点参考图复核2026-10-12)。布局算法仍使用等分列与列内居中，视觉留白随列宽缩小，不额外绑定 itemLayout.gap。
+
+票据 14 验收：直接读取现有 11 份原 JSON，不再裁剪模板。原请求正式输出 3496 × 780 px、120 DPI、0 个问题；完整布局快照已固定。本站 0/35/36、1500 mm、11 字站名和 U+31350 缺字场景均有端到端测试；CLI 输出与入口函数逐字节相同。未改写任何 JSON，未调整 DSL 语法。场景结果、对照制品与外观差异见 [验收记录](../m402-acceptance.md)。
 
 ## 模板如何组合
 
@@ -125,7 +127,7 @@ S2–S13 已确认（M90）。
 直接运行完整草稿：
 
 ```bash
-npm run render -- render --workspace docs/examples/m402-dsl --resources fixtures/resources --request docs/examples/m402-dsl/render-request-m402.json --out out/ticket10
+npm run render -- render --workspace docs/examples/m402-dsl --resources fixtures/resources --request docs/examples/m402-dsl/render-request-m402.json --out out/ticket14/base
 ```
 
 ## 起草中发现的问题

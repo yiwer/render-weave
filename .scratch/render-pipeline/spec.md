@@ -1,7 +1,9 @@
-Status: ready-for-agent
+Status: resolved
 Category: enhancement
 
 # 渲染流水线首版：M402 线路牌从数据定义到 PNG
+
+实施状态：票据 01–14 已全部完成，17 个测试文件、339 个用例通过。完整 M402 工作区正式出图为 3496 × 780 px、120 DPI、0 个问题；场景矩阵、参考图差异和复现命令见 [端到端验收](../../docs/examples/m402-acceptance.md)。以下问题陈述保留立项时背景。
 
 ## Problem Statement
 

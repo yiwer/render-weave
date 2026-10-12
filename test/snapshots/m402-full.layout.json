@@ -1,0 +1,5220 @@
+{
+  "template": "标准线路单边",
+  "output": {
+    "width": 740,
+    "height": 165,
+    "dpi": 120,
+    "widthPx": 3496,
+    "heightPx": 780,
+    "format": "png"
+  },
+  "root": {
+    "path": "标准线路单边",
+    "name": "标准线路单边",
+    "type": "artboard",
+    "x": 0,
+    "y": 0,
+    "width": 740,
+    "height": 165,
+    "visible": true,
+    "children": [
+      {
+        "path": "标准线路单边/顶栏",
+        "name": "顶栏",
+        "type": "container",
+        "x": 0,
+        "y": 0,
+        "width": 740,
+        "height": 34,
+        "visible": true,
+        "children": [
+          {
+            "path": "标准线路单边/顶栏/线路号图片",
+            "name": "线路号图片",
+            "type": "image",
+            "x": 22,
+            "y": 4,
+            "width": 60,
+            "height": 26,
+            "visible": true,
+            "image": {
+              "source": "res:route-no-m402",
+              "fit": "contain",
+              "naturalWidth": 466,
+              "naturalHeight": 138,
+              "drawn": {
+                "x": 22,
+                "y": 8.116,
+                "width": 60,
+                "height": 17.768
+              }
+            }
+          },
+          {
+            "path": "标准线路单边/顶栏/线路号",
+            "name": "线路号",
+            "type": "text",
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "visible": false
+          },
+          {
+            "path": "标准线路单边/顶栏/开往箭头",
+            "name": "开往箭头",
+            "type": "path",
+            "x": 90,
+            "y": 11,
+            "width": 14,
+            "height": 12,
+            "visible": true
+          },
+          {
+            "path": "标准线路单边/顶栏/终点站",
+            "name": "终点站",
+            "type": "text",
+            "x": 112,
+            "y": 5.5,
+            "width": 115,
+            "height": 23,
+            "visible": true,
+            "text": {
+              "content": "万国城总站",
+              "font": "res:font-hei-heavy",
+              "writingMode": "horizontal",
+              "fontSize": 23,
+              "width": 115,
+              "height": 23,
+              "spacing": 0,
+              "compression": 1,
+              "overflow": false,
+              "fragments": [
+                {
+                  "text": "万国城总站",
+                  "font": "res:font-hei-heavy",
+                  "fontSize": 23,
+                  "color": "#FFFFFFFF",
+                  "slant": 0
+                }
+              ]
+            }
+          },
+          {
+            "path": "标准线路单边/顶栏/顶栏留白",
+            "name": "顶栏留白",
+            "type": "container",
+            "x": 235,
+            "y": 16.5,
+            "width": 319,
+            "height": 1,
+            "visible": true,
+            "children": []
+          },
+          {
+            "path": "标准线路单边/顶栏/票价框",
+            "name": "票价框",
+            "type": "container",
+            "x": 562,
+            "y": 9,
+            "width": 120,
+            "height": 16,
+            "visible": true,
+            "children": [
+              {
+                "path": "标准线路单边/顶栏/票价框/票价",
+                "name": "票价",
+                "type": "text",
+                "x": 568,
+                "y": 13,
+                "width": 102,
+                "height": 8,
+                "visible": true,
+                "text": {
+                  "content": "票价：一票制2元",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 8,
+                  "width": 60.559,
+                  "height": 8,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "票价：",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 8,
+                      "color": "#333333FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "一票制",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 8,
+                      "color": "#FF6A00FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "2",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 8,
+                      "color": "#FF6A00FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "元",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 8,
+                      "color": "#FF6A00FF",
+                      "slant": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "path": "标准线路单边/顶栏/运营方",
+            "name": "运营方",
+            "type": "text",
+            "x": 690,
+            "y": 13,
+            "width": 32,
+            "height": 8,
+            "visible": true,
+            "text": {
+              "content": "巴士集团",
+              "font": "res:font-hei-heavy",
+              "writingMode": "horizontal",
+              "fontSize": 8,
+              "width": 32,
+              "height": 8,
+              "spacing": 0,
+              "compression": 1,
+              "overflow": false,
+              "fragments": [
+                {
+                  "text": "巴士集团",
+                  "font": "res:font-hei-heavy",
+                  "fontSize": 8,
+                  "color": "#FFFFFFFF",
+                  "slant": 0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "path": "标准线路单边/站点面板",
+        "name": "站点面板",
+        "type": "container",
+        "x": 0,
+        "y": 34,
+        "width": 740,
+        "height": 100,
+        "visible": true,
+        "children": [
+          {
+            "path": "标准线路单边/站点面板/站点列",
+            "name": "站点列",
+            "type": "loop",
+            "x": 23,
+            "y": 38,
+            "width": 694,
+            "height": 96,
+            "visible": true,
+            "children": [
+              {
+                "path": "标准线路单边/站点面板/站点列[1]",
+                "name": "站点列",
+                "type": "call",
+                "x": 23,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[1]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 32.914,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[1]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 26.914,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[1]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 27.914,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "建设路总站",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.182,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "建设路总站",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#C8C8C8FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[1]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[2]",
+                "name": "站点列",
+                "type": "call",
+                "x": 42.829,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[2]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 48.243,
+                    "y": 38,
+                    "width": 9,
+                    "height": 10,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[2]/标识行[1]",
+                        "name": "标识行",
+                        "type": "call",
+                        "x": 48.243,
+                        "y": 38,
+                        "width": 9,
+                        "height": 10,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/站点面板/站点列[2]/标识行[1]/标识图",
+                            "name": "标识图",
+                            "type": "image",
+                            "x": 48.243,
+                            "y": 38,
+                            "width": 9,
+                            "height": 10,
+                            "visible": true,
+                            "image": {
+                              "source": "res:icon-metro",
+                              "fit": "contain",
+                              "naturalWidth": 96,
+                              "naturalHeight": 96,
+                              "drawn": {
+                                "x": 48.243,
+                                "y": 38.5,
+                                "width": 9,
+                                "height": 9
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[2]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 46.743,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[2]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 47.743,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "建设路",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 26.37,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "建设路",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#C8C8C8FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[2]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[3]",
+                "name": "站点列",
+                "type": "call",
+                "x": 62.657,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[3]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 72.571,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[3]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 66.571,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[3]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 67.571,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "中国银行大厦",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 4.544,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "中国银行大厦",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#C8C8C8FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[3]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[4]",
+                "name": "站点列",
+                "type": "call",
+                "x": 82.486,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[4]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 92.4,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[4]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 86.4,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[4]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 87.4,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "门诊部",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 21.855,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "门诊部",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#C8C8C8FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[4]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 88.4,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-2",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 88.4,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[5]",
+                "name": "站点列",
+                "type": "call",
+                "x": 102.314,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[5]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 112.229,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[5]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 106.229,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[5]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 107.229,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "东门",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 53.657,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "东门",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#E60012FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[5]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 108.229,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-3",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 108.229,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[6]",
+                "name": "站点列",
+                "type": "call",
+                "x": 122.143,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[6]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 132.057,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[6]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 126.057,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[6]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 127.057,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "田贝",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 54.411,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "田贝",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[6]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 128.057,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-2",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 128.057,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[7]",
+                "name": "站点列",
+                "type": "call",
+                "x": 141.971,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[7]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 151.886,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[7]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 145.886,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[7]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 146.886,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "洪湖公园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 11.253,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "洪湖公园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[7]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 147.886,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-2",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 147.886,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[8]",
+                "name": "站点列",
+                "type": "call",
+                "x": 161.8,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[8]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 171.714,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[8]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 165.714,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[8]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 166.714,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "东晓街道办",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 5.9,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "东晓街道办",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[8]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 167.714,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-1",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 167.714,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[9]",
+                "name": "站点列",
+                "type": "call",
+                "x": 181.629,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[9]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 191.543,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[9]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 185.543,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[9]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 186.543,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "草埔地铁站",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 5.932,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "草埔地铁站",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[9]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 187.543,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-4",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 187.543,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[10]",
+                "name": "站点列",
+                "type": "call",
+                "x": 201.457,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[10]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 211.371,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[10]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 205.371,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[10]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 206.371,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "荣超花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 11.24,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "荣超花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[10]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 207.371,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-1",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 207.371,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[11]",
+                "name": "站点列",
+                "type": "call",
+                "x": 221.286,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[11]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 231.2,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[11]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 225.2,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[11]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 226.2,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "粤宝宝丽路口",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 4.57,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "粤宝宝丽路口",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[11]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[12]",
+                "name": "站点列",
+                "type": "call",
+                "x": 241.114,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[12]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 251.029,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[12]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 245.029,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[12]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 246.029,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "粤宝",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 62.92,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "粤宝",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[12]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[13]",
+                "name": "站点列",
+                "type": "call",
+                "x": 260.943,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[13]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 270.857,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[13]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 264.857,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[13]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 265.857,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "粤宝红岗路口",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 4.57,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "粤宝红岗路口",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[13]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[14]",
+                "name": "站点列",
+                "type": "call",
+                "x": 280.771,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[14]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 290.686,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[14]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 284.686,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[14]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 285.686,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "德兴花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.23,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "德兴花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[14]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[15]",
+                "name": "站点列",
+                "type": "call",
+                "x": 300.6,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[15]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 310.514,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[15]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 304.514,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[15]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 305.514,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "钱排村",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 26.345,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "钱排村",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[15]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[16]",
+                "name": "站点列",
+                "type": "call",
+                "x": 320.429,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[16]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 330.343,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[16]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 324.343,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[16]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 325.343,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "德福花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.23,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "德福花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[16]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[17]",
+                "name": "站点列",
+                "type": "call",
+                "x": 340.257,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[17]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 350.171,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[17]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 344.171,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[17]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 345.171,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "莲花山庄",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.216,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "莲花山庄",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[17]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[18]",
+                "name": "站点列",
+                "type": "call",
+                "x": 360.086,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[18]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 370,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[18]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 364,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[18]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 365,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "春蕾幼儿园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.18,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "春蕾幼儿园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[18]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[19]",
+                "name": "站点列",
+                "type": "call",
+                "x": 379.914,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[19]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 389.829,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[19]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 383.829,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[19]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 384.829,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "东升学校",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.213,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "东升学校",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[19]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[20]",
+                "name": "站点列",
+                "type": "call",
+                "x": 399.743,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[20]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 409.657,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[20]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 403.657,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[20]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 404.657,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "金沙花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.207,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "金沙花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[20]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[21]",
+                "name": "站点列",
+                "type": "call",
+                "x": 419.571,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[21]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 429.486,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[21]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 423.486,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[21]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 424.486,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "森鑫源学校",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.173,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "森鑫源学校",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[21]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[22]",
+                "name": "站点列",
+                "type": "call",
+                "x": 439.4,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[22]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 444.814,
+                    "y": 38,
+                    "width": 9,
+                    "height": 10,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[22]/标识行[1]",
+                        "name": "标识行",
+                        "type": "call",
+                        "x": 444.814,
+                        "y": 38,
+                        "width": 9,
+                        "height": 10,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/站点面板/站点列[22]/标识行[1]/标识图",
+                            "name": "标识图",
+                            "type": "image",
+                            "x": 444.814,
+                            "y": 38,
+                            "width": 9,
+                            "height": 10,
+                            "visible": true,
+                            "image": {
+                              "source": "res:icon-hospital",
+                              "fit": "contain",
+                              "naturalWidth": 96,
+                              "naturalHeight": 96,
+                              "drawn": {
+                                "x": 444.814,
+                                "y": 38.5,
+                                "width": 9,
+                                "height": 9
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[22]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 443.314,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[22]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 444.314,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "布吉中学",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.243,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "布吉中学",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[22]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[23]",
+                "name": "站点列",
+                "type": "call",
+                "x": 459.229,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[23]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 469.143,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[23]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 463.143,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[23]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 464.143,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "布吉天虹",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.404,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "布吉天虹",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[23]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[24]",
+                "name": "站点列",
+                "type": "call",
+                "x": 479.057,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[24]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 488.971,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[24]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 482.971,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[24]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 483.971,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "大世纪花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.18,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "大世纪花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[24]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[25]",
+                "name": "站点列",
+                "type": "call",
+                "x": 498.886,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[25]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 508.8,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[25]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 502.8,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[25]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 503.8,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "布龙立交",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.23,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "布龙立交",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[25]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[26]",
+                "name": "站点列",
+                "type": "call",
+                "x": 518.714,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[26]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 528.629,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[26]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 522.629,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[26]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 523.629,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "石芽岭公园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.36,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "石芽岭公园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[26]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[27]",
+                "name": "站点列",
+                "type": "call",
+                "x": 538.543,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[27]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 548.457,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[27]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 542.457,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[27]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 543.457,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "大龙山物流园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 4.544,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "大龙山物流园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[27]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[28]",
+                "name": "站点列",
+                "type": "call",
+                "x": 558.371,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[28]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 568.286,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[28]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 562.286,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[28]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 563.286,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "左庭右院",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 11.24,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "左庭右院",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[28]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 564.286,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-2",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 564.286,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[29]",
+                "name": "站点列",
+                "type": "call",
+                "x": 578.2,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[29]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 588.114,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[29]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 582.114,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[29]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 583.114,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "尚峰花园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.24,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "尚峰花园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[29]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[30]",
+                "name": "站点列",
+                "type": "call",
+                "x": 598.029,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[30]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 607.943,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[30]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 601.943,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[30]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 602.943,
+                        "y": 51,
+                        "width": 10,
+                        "height": 73,
+                        "visible": true,
+                        "text": {
+                          "content": "石芽岭地铁站",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 73,
+                          "spacing": 2.89,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "石芽岭地铁站",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[30]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 603.943,
+                        "y": 125,
+                        "width": 8,
+                        "height": 8,
+                        "visible": true,
+                        "image": {
+                          "source": "res:landmark-1",
+                          "fit": "contain",
+                          "naturalWidth": 96,
+                          "naturalHeight": 96,
+                          "drawn": {
+                            "x": 603.943,
+                            "y": 125,
+                            "width": 8,
+                            "height": 8
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[31]",
+                "name": "站点列",
+                "type": "call",
+                "x": 617.857,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[31]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 627.771,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[31]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 621.771,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[31]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 622.771,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "联创科技园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.22,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "联创科技园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[31]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[32]",
+                "name": "站点列",
+                "type": "call",
+                "x": 637.686,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[32]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 643.1,
+                    "y": 38,
+                    "width": 9,
+                    "height": 10,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[32]/标识行[1]",
+                        "name": "标识行",
+                        "type": "call",
+                        "x": 643.1,
+                        "y": 38,
+                        "width": 9,
+                        "height": 10,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/站点面板/站点列[32]/标识行[1]/标识图",
+                            "name": "标识图",
+                            "type": "image",
+                            "x": 643.1,
+                            "y": 38,
+                            "width": 9,
+                            "height": 10,
+                            "visible": true,
+                            "image": {
+                              "source": "res:icon-hospital",
+                              "fit": "contain",
+                              "naturalWidth": 96,
+                              "naturalHeight": 96,
+                              "drawn": {
+                                "x": 643.1,
+                                "y": 38.5,
+                                "width": 9,
+                                "height": 9
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[32]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 641.6,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[32]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 642.6,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "第三人民医院",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 4.532,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "第三人民医院",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[32]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[33]",
+                "name": "站点列",
+                "type": "call",
+                "x": 657.514,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[33]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 667.429,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[33]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 661.429,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[33]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 662.429,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "李朗国际珠宝园",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 2.12,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "李朗国际珠宝园",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[33]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[34]",
+                "name": "站点列",
+                "type": "call",
+                "x": 677.343,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[34]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 687.257,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[34]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 681.257,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[34]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 682.257,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "左右家私",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 14.243,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "左右家私",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[34]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/站点面板/站点列[35]",
+                "name": "站点列",
+                "type": "call",
+                "x": 697.171,
+                "y": 38,
+                "width": 19.829,
+                "height": 96,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/站点面板/站点列[35]/标识行",
+                    "name": "标识行",
+                    "type": "loop",
+                    "x": 707.086,
+                    "y": 38,
+                    "width": 0,
+                    "height": 10,
+                    "visible": true,
+                    "children": []
+                  },
+                  {
+                    "path": "标准线路单边/站点面板/站点列[35]/名称区",
+                    "name": "名称区",
+                    "type": "container",
+                    "x": 701.086,
+                    "y": 50,
+                    "width": 12,
+                    "height": 84,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/站点面板/站点列[35]/名称区/站名",
+                        "name": "站名",
+                        "type": "text",
+                        "x": 702.086,
+                        "y": 51,
+                        "width": 10,
+                        "height": 82,
+                        "visible": true,
+                        "text": {
+                          "content": "万国城总站",
+                          "font": "res:font-hei-medium",
+                          "writingMode": "vertical",
+                          "fontSize": 10,
+                          "width": 10,
+                          "height": 82,
+                          "spacing": 8.363,
+                          "compression": 1,
+                          "overflow": false,
+                          "shrinkGroup": "stopNames",
+                          "fragments": [
+                            {
+                              "text": "万国城总站",
+                              "font": "res:font-hei-medium",
+                              "fontSize": 10,
+                              "color": "#333333FF",
+                              "slant": 0
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "path": "标准线路单边/站点面板/站点列[35]/名称区/地标",
+                        "name": "地标",
+                        "type": "image",
+                        "x": 0,
+                        "y": 0,
+                        "width": 0,
+                        "height": 0,
+                        "visible": false
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "标准线路单边/道路带",
+        "name": "道路带",
+        "type": "container",
+        "x": 0,
+        "y": 134,
+        "width": 740,
+        "height": 10,
+        "visible": true,
+        "children": [
+          {
+            "path": "标准线路单边/道路带/道路段列",
+            "name": "道路段列",
+            "type": "loop",
+            "x": 23,
+            "y": 134,
+            "width": 694,
+            "height": 10,
+            "visible": true,
+            "children": [
+              {
+                "path": "标准线路单边/道路带/道路段列[1]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 23,
+                "y": 134,
+                "width": 59.486,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[1]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0,
+                    "visible": false
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[1]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 23,
+                    "y": 134,
+                    "width": 59.486,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "建设路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 36.869,
+                      "height": 6.5,
+                      "spacing": 9.308,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "建设路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[4]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 82.486,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[4]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 82.486,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[4]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 82.886,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "深南路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.861,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "深南路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[5]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 102.314,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[5]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 102.314,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[5]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 102.714,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "东门路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.893,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "东门路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[6]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 122.143,
+                "y": 134,
+                "width": 39.657,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[6]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 122.143,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[6]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 122.543,
+                    "y": 134,
+                    "width": 39.257,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "文锦路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 26.718,
+                      "height": 6.5,
+                      "spacing": 4.269,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "文锦路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[8]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 161.8,
+                "y": 134,
+                "width": 39.657,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[8]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 161.8,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[8]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 162.2,
+                    "y": 134,
+                    "width": 39.257,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "文锦北路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 30.896,
+                      "height": 6.5,
+                      "spacing": 2.181,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "文锦北路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[10]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 201.457,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[10]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 201.457,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[10]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 201.857,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "龙岗大道",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.661,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "龙岗大道",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[11]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 221.286,
+                "y": 134,
+                "width": 59.486,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[11]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 221.286,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[11]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 221.686,
+                    "y": 134,
+                    "width": 59.086,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "粤宝路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 36.302,
+                      "height": 6.5,
+                      "spacing": 9.392,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "粤宝路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[14]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 280.771,
+                "y": 134,
+                "width": 158.629,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[14]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 280.771,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[14]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 281.171,
+                    "y": 134,
+                    "width": 158.229,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "西环路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 86.068,
+                      "height": 6.5,
+                      "spacing": 34.08,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "西环路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[22]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 439.4,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[22]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 439.4,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[22]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 439.8,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "吉华路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.867,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "吉华路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[23]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 459.229,
+                "y": 134,
+                "width": 39.657,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[23]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 459.229,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[23]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 459.629,
+                    "y": 134,
+                    "width": 39.257,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "中兴路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 26.326,
+                      "height": 6.5,
+                      "spacing": 4.466,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "中兴路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[25]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 498.886,
+                "y": 134,
+                "width": 59.486,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[25]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 498.886,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[25]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 499.286,
+                    "y": 134,
+                    "width": 59.086,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "东西干道",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 42.415,
+                      "height": 6.5,
+                      "spacing": 6.335,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "东西干道",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[28]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 558.371,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[28]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 558.371,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[28]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 558.771,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "红棉路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.853,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "红棉路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[29]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 578.2,
+                "y": 134,
+                "width": 99.143,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[29]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 578.2,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[29]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 578.6,
+                    "y": 134,
+                    "width": 98.743,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "布澜路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 56.345,
+                      "height": 6.5,
+                      "spacing": 19.199,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "布澜路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[34]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 677.343,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[34]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 677.343,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[34]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 677.743,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "平吉大道",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.653,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "平吉大道",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "标准线路单边/道路带/道路段列[35]",
+                "name": "道路段列",
+                "type": "call",
+                "x": 697.171,
+                "y": 134,
+                "width": 19.829,
+                "height": 10,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/道路带/道路段列[35]/分隔线",
+                    "name": "分隔线",
+                    "type": "rect",
+                    "x": 697.171,
+                    "y": 136,
+                    "width": 0.4,
+                    "height": 6,
+                    "visible": true
+                  },
+                  {
+                    "path": "标准线路单边/道路带/道路段列[35]/道路名",
+                    "name": "道路名",
+                    "type": "text",
+                    "x": 697.571,
+                    "y": 134,
+                    "width": 19.429,
+                    "height": 10,
+                    "visible": true,
+                    "text": {
+                      "content": "平朗路",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 6.5,
+                      "width": 15.429,
+                      "height": 6.5,
+                      "spacing": 0,
+                      "compression": 0.869,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "平朗路",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 6.5,
+                          "color": "#1E5BB8FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "标准线路单边/底栏",
+        "name": "底栏",
+        "type": "container",
+        "x": 0,
+        "y": 144,
+        "width": 740,
+        "height": 21,
+        "visible": true,
+        "children": [
+          {
+            "path": "标准线路单边/底栏/下一站区",
+            "name": "下一站区",
+            "type": "container",
+            "x": 0,
+            "y": 144,
+            "width": 115,
+            "height": 21,
+            "visible": true,
+            "children": [
+              {
+                "path": "标准线路单边/底栏/下一站区/下一站",
+                "name": "下一站",
+                "type": "text",
+                "x": 8,
+                "y": 150,
+                "width": 54,
+                "height": 9,
+                "visible": true,
+                "text": {
+                  "content": "下一站：田贝",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 9,
+                  "width": 54,
+                  "height": 9,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "下一站：",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 9,
+                      "color": "#333333FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "田贝",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 9,
+                      "color": "#FF6A00FF",
+                      "slant": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "标准线路单边/底栏/下一站区/下一站地标",
+                "name": "下一站地标",
+                "type": "image",
+                "x": 63,
+                "y": 150.5,
+                "width": 8,
+                "height": 8,
+                "visible": true,
+                "image": {
+                  "source": "res:landmark-2",
+                  "fit": "contain",
+                  "naturalWidth": 96,
+                  "naturalHeight": 96,
+                  "drawn": {
+                    "x": 63,
+                    "y": 150.5,
+                    "width": 8,
+                    "height": 8
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "path": "标准线路单边/底栏/服务时间箭头",
+            "name": "服务时间箭头",
+            "type": "polygon",
+            "x": 115,
+            "y": 144,
+            "width": 8,
+            "height": 21,
+            "visible": true
+          },
+          {
+            "path": "标准线路单边/底栏/服务时间内容",
+            "name": "服务时间内容",
+            "type": "container",
+            "x": 123,
+            "y": 144,
+            "width": 611,
+            "height": 21,
+            "visible": true,
+            "children": [
+              {
+                "path": "标准线路单边/底栏/服务时间内容/服务时间",
+                "name": "服务时间",
+                "type": "text",
+                "x": 126,
+                "y": 149.5,
+                "width": 135.13,
+                "height": 10,
+                "visible": true,
+                "text": {
+                  "content": "始发站服务时间：07:30-22:30",
+                  "font": "res:font-hei-medium",
+                  "writingMode": "horizontal",
+                  "fontSize": 10,
+                  "width": 135.13,
+                  "height": 10,
+                  "spacing": 0,
+                  "compression": 1,
+                  "overflow": false,
+                  "fragments": [
+                    {
+                      "text": "始发站服务时间：",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 10,
+                      "color": "#222222FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "07:30",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 10,
+                      "color": "#222222FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "-",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 10,
+                      "color": "#222222FF",
+                      "slant": 0
+                    },
+                    {
+                      "text": "22:30",
+                      "font": "res:font-hei-medium",
+                      "fontSize": 10,
+                      "color": "#222222FF",
+                      "slant": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "标准线路单边/底栏/服务时间内容/班次说明",
+                "name": "班次说明",
+                "type": "container",
+                "x": 265.13,
+                "y": 148.75,
+                "width": 468.87,
+                "height": 11.5,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "标准线路单边/底栏/服务时间内容/班次说明/运营说明",
+                    "name": "运营说明",
+                    "type": "text",
+                    "x": 265.13,
+                    "y": 148.75,
+                    "width": 71.501,
+                    "height": 5.5,
+                    "visible": true,
+                    "text": {
+                      "content": "（工作日运营）「定时班车」",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 5.5,
+                      "width": 71.501,
+                      "height": 5.5,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "（",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        },
+                        {
+                          "text": "工作日运营",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        },
+                        {
+                          "text": "）「",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        },
+                        {
+                          "text": "定时班车",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        },
+                        {
+                          "text": "」",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 5.5,
+                          "color": "#222222FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列",
+                    "name": "班次列",
+                    "type": "loop",
+                    "x": 265.13,
+                    "y": 154.75,
+                    "width": 468.87,
+                    "height": 5.5,
+                    "visible": true,
+                    "children": [
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[1]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 265.13,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[1]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 265.13,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "08:00",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "08:00",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[1]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 279.309,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[2]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 281.454,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[2]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 281.454,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "08:25",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "08:25",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[2]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 295.633,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[3]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 297.778,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[3]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 297.778,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "08:50",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "08:50",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[3]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 311.957,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[4]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 314.102,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[4]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 314.102,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "09:10",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "09:10",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[4]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 328.282,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[5]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 330.427,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[5]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 330.427,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "09:30",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "09:30",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[5]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 344.606,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[6]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 346.751,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[6]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 346.751,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "09:50",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "09:50",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[6]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 360.93,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[7]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 363.075,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[7]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 363.075,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "10:30",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "10:30",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[7]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 377.254,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[8]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 379.399,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[8]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 379.399,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "17:35",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "17:35",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[8]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 393.579,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[9]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 395.724,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[9]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 395.724,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "17:50",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "17:50",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[9]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 409.903,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[10]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 412.048,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[10]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 412.048,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "18:00",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "18:00",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[10]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 426.227,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[11]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 428.372,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[11]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 428.372,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "18:15",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "18:15",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[11]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 442.551,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[12]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 444.696,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[12]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 444.696,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "18:30",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "18:30",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[12]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 458.875,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[13]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 461.02,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[13]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 461.02,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "18:50",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "18:50",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[13]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 475.2,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[14]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 477.345,
+                        "y": 154.75,
+                        "width": 16.324,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[14]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 477.345,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "19:35",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "19:35",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[14]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 491.524,
+                            "y": 154.75,
+                            "width": 2.145,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "/",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 2.145,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "/",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[15]",
+                        "name": "班次列",
+                        "type": "call",
+                        "x": 493.669,
+                        "y": 154.75,
+                        "width": 14.179,
+                        "height": 5.5,
+                        "visible": true,
+                        "children": [
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[15]/时刻",
+                            "name": "时刻",
+                            "type": "text",
+                            "x": 493.669,
+                            "y": 154.75,
+                            "width": 14.179,
+                            "height": 5.5,
+                            "visible": true,
+                            "text": {
+                              "content": "20:25",
+                              "font": "res:font-hei-medium",
+                              "writingMode": "horizontal",
+                              "fontSize": 5.5,
+                              "width": 14.179,
+                              "height": 5.5,
+                              "spacing": 0,
+                              "compression": 1,
+                              "overflow": false,
+                              "fragments": [
+                                {
+                                  "text": "20:25",
+                                  "font": "res:font-hei-medium",
+                                  "fontSize": 5.5,
+                                  "color": "#222222FF",
+                                  "slant": 0
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "path": "标准线路单边/底栏/服务时间内容/班次说明/班次列[15]/分隔",
+                            "name": "分隔",
+                            "type": "text",
+                            "x": 0,
+                            "y": 0,
+                            "width": 0,
+                            "height": 0,
+                            "visible": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "标准线路单边/底栏/底带收尾",
+            "name": "底带收尾",
+            "type": "path",
+            "x": 734,
+            "y": 144,
+            "width": 6,
+            "height": 21,
+            "visible": true
+          }
+        ]
+      }
+    ]
+  }
+}
