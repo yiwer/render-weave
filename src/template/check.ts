@@ -11,8 +11,7 @@ import { formatMismatch } from '../display-format.js';
 import { formatElementPath } from '../element-path.js';
 import { plainNumber } from '../decimal.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode, type ProblemLocation } from '../problems.js';
-import { DATE_PATTERN, DATETIME_PATTERN, RESOURCE_REF_PATTERN, TIME_PATTERN } from '../schema/formats.js';
-import { normalizeColor } from './declarations.js';
+import { checkParameterValue } from './declarations.js';
 import type { CheckModel, Condition, DerivedModel, Operand, TemplateModel, VariableUse } from './model.js';
 import { displayKind, kindLabel, sameType, typeFromCompiled, typeLabel, type ValueType } from './types.js';
 
@@ -388,26 +387,10 @@ function operandsOf(derived: DerivedModel): string[] {
 /** 固定值能否当作该类型使用；不能时返回说明。 */
 export function literalProblem(value: string | number | boolean, expected: ValueType): string | undefined {
   const label = typeLabel(expected);
-  switch (expected.kind) {
-    case 'number':
-      return typeof value === 'number' ? undefined : `固定值 ${JSON.stringify(value)} 不是数值`;
-    case 'boolean':
-      return typeof value === 'boolean' ? undefined : `固定值 ${JSON.stringify(value)} 不是布尔值`;
-    case 'text':
-      return typeof value === 'string' ? undefined : `固定值 ${JSON.stringify(value)} 不是文本`;
-    case 'date':
-    case 'time':
-    case 'datetime':
-    case 'image': {
-      const pattern = { date: DATE_PATTERN, time: TIME_PATTERN, datetime: DATETIME_PATTERN, image: RESOURCE_REF_PATTERN }[expected.kind];
-      return typeof value === 'string' && new RegExp(pattern).test(value) ? undefined : `固定值 ${JSON.stringify(value)} 不是${label}`;
-    }
-    case 'color':
-      return normalizeColor(value) ? undefined : `固定值 ${JSON.stringify(value)} 不是颜色（#RRGGBB 或 #RRGGBBAA）`;
-    case 'list':
-    case 'ref':
-      return `${label}不能写成固定值`;
-  }
+  if (expected.kind === 'list' || expected.kind === 'ref') return `${label}不能写成固定值`;
+  if (!checkParameterValue({ type: expected.kind, constraints: {} }, value).problem) return undefined;
+  const expectedLabel = expected.kind === 'boolean' ? '布尔值' : expected.kind === 'color' ? '颜色（#RRGGBB 或 #RRGGBBAA）' : label;
+  return `固定值 ${JSON.stringify(value)} 不是${expectedLabel}`;
 }
 
 /** 状态样式的取值：布尔为 true、false，数值为最短的十进制写法，其余为文字本身（M90 S5）。 */

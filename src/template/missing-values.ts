@@ -38,7 +38,7 @@ export class MissingValues {
     if (variable.source === 'parameter') {
       return this.parameterProblems.some((problem) => problem.location.kind === 'parameter' && problem.location.name === variable.name);
     }
-    return this.problems.some((problem) => problem.location.kind === 'variable' &&
+    return [...this.problems, ...this.scope.problems].some((problem) => problem.location.kind === 'variable' &&
       problem.location.template === this.scope.template.name && problem.location.name === variable.name) ||
       this.scope.dependencies(variable.name).some((dependency) => this.hasProblem(dependency, seen));
   }

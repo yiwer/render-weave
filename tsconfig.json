@@ -6,6 +6,8 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,

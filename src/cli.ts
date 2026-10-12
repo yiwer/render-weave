@@ -5,14 +5,14 @@
  * - publish：把数据定义发布为下一个版本的静态数据定义，写出带版本号的 DSL 与编译产物。
  *   退出码：0 已发布；1 有问题未发布；2 用法错误或文件无法读取。
  */
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { Problem } from './problems.js';
 import { render } from './render.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { describeError } from './util.js';
-import { loadWorkspace, parseJsonKeepingPrecision } from './workspace.js';
+import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 
 export interface CliIo {
   readonly stdout: (text: string) => void;
@@ -57,16 +57,24 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     io.stderr(`${describeError(error)}\n\n${USAGE}`);
     return ExitCodes.usage;
   }
-  if (!names.every((name) => typeof values[name] === 'string')) {
+  if (!names.every((name) => typeof values[name] === 'string' && values[name] !== '')) {
     io.stderr(USAGE);
     return ExitCodes.usage;
   }
   const options = values as Record<string, string>;
-  return command === 'render' ? runRender(options, io) : runPublish(options, io);
+  try {
+    return await (command === 'render' ? runRender(options, io) : runPublish(options, io));
+  } catch (error) {
+    io.stderr(`命令执行失败：${describeError(error)}\n`);
+    return ExitCodes.failed;
+  }
 }
 
 async function runRender(options: Record<string, string>, io: CliIo): Promise<number> {
   const { workspace: workspaceDir, resources, request: requestFile, out } = options as Record<string, string>;
+  await mkdir(out!, { recursive: true });
+  // 一次调用开始即清除旧成果，文件读取失败也不能留下看似本次成功的图片。
+  await Promise.all(['image.png', 'image.jpg', 'layout.json', 'problems.json'].map((file) => rm(join(out!, file), { force: true })));
   let request: unknown;
   const tooPrecise: string[] = [];
   try {
@@ -83,9 +91,6 @@ async function runRender(options: Record<string, string>, io: CliIo): Promise<nu
   const workspace = await loadWorkspace({ dir: workspaceDir!, resourcesDir: resources! });
   const result = await render(workspace, request);
 
-  await mkdir(out!, { recursive: true });
-  // 先清掉上一次的输出，避免这次未出图时留下旧图片造成误会。
-  await Promise.all(['image.png', 'image.jpg', 'layout.json'].map((file) => rm(join(out!, file), { force: true })));
   await writeFile(join(out!, 'problems.json'), `${JSON.stringify(result.problems, null, 2)}\n`);
   if (result.layout) await writeFile(join(out!, 'layout.json'), `${JSON.stringify(result.layout, null, 2)}\n`);
 
@@ -103,14 +108,23 @@ async function runRender(options: Record<string, string>, io: CliIo): Promise<nu
 async function runPublish(options: Record<string, string>, io: CliIo): Promise<number> {
   const { definition: definitionFile, workspace: workspaceDir, out } = options as Record<string, string>;
   let definition: unknown;
+  const tooPrecise: string[] = [];
   try {
-    definition = JSON.parse(await readFile(definitionFile!, 'utf8'));
+    definition = parseJsonKeepingPrecision(await readFile(definitionFile!, 'utf8'), tooPrecise);
   } catch (error) {
     io.stderr(`数据定义无法读取：${definitionFile}\n  ${describeError(error)}\n`);
     return ExitCodes.usage;
   }
+  if (tooPrecise.length > 0) {
+    io.stderr(`数据定义中的数值超过 15 位有效数字，按双精度读取会失真：${tooPrecise.join('、')}\n`);
+    return ExitCodes.usage;
+  }
   // 发布只需要已发布的静态数据定义，不读资源仓库。
-  const workspace = await loadWorkspace({ dir: workspaceDir!, resourcesDir: workspaceDir! });
+  const workspace = await loadWorkspaceDocuments(workspaceDir!);
+  if (workspace.problems.some((problem) => problem.level === 'severe')) {
+    io.stdout(`未发布；${reportProblems(workspace.problems, io)}\n`);
+    return ExitCodes.failed;
+  }
   const { published, problems } = publishStaticSchema(definition, workspace.staticSchemas);
   const summary = reportProblems(problems, io);
   if (!published) {
@@ -123,10 +137,28 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
   await mkdir(out!, { recursive: true });
   const schemaFile = join(out!, `schema-${stem}-v${version}.json`);
   const compiledFile = join(out!, `compiled-${stem}-v${version}.schema.json`);
-  await writeFile(schemaFile, `${JSON.stringify(published.definition, null, 2)}\n`);
-  await writeFile(compiledFile, `${JSON.stringify(published.compiled, null, 2)}\n`);
+  await writePublishedFiles([
+    { path: schemaFile, value: published.definition },
+    { path: compiledFile, value: published.compiled },
+  ]);
   io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
   return ExitCodes.ok;
+}
+
+/** 排他创建，绝不覆盖已有静态数据定义；可捕获的失败撤回本次创建的文件。 */
+async function writePublishedFiles(files: readonly { path: string; value: unknown }[]): Promise<void> {
+  const owned: { path: string; handle: FileHandle }[] = [];
+  try {
+    for (const file of files) owned.push({ path: file.path, handle: await open(file.path, 'wx') });
+    for (let i = 0; i < files.length; i++) await owned[i]!.handle.writeFile(`${JSON.stringify(files[i]!.value, null, 2)}\n`);
+  } catch (error) {
+    // Windows 必须先关闭句柄才能撤回；只清理排他创建成功的文件。
+    for (const file of owned) await file.handle.close();
+    for (const file of owned) await rm(file.path, { force: true });
+    throw error;
+  } finally {
+    for (const file of owned) await file.handle.close();
+  }
 }
 
 function reportProblems(problems: readonly Problem[], io: CliIo): string {

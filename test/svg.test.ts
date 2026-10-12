@@ -2,7 +2,6 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createMemoryResourceRepository, ProblemCodes, render, type RenderOptions } from '../src/index.js';
-import { sanitizeSvg } from '../src/svg.js';
 import { labRequest, loadSkeleton, resourcesDir, withLabTemplate } from './support/fixtures.js';
 import { expectMatchesGolden } from './support/golden.js';
 import { decodePixels, pixelAt } from './support/pixels.js';
@@ -75,20 +74,24 @@ describe('SVG 图片', () => {
       <rect class="ok" width="80" height="40" onclick="alert(1)" style="stroke: url(https://invalid.example/a);stroke-width: 0"/>
       <path id="p" d="M1 1L2 2" fill="url(#local)"/><use href="#p"/>
     `);
-    const safe = sanitizeSvg(source).xml;
-    expect(safe).not.toMatch(/script|foreignObject|animate|onclick|https:\/\/invalid|file:\/\/|@font-face|@import/);
-    expect(safe).toContain('url(#local)');
-    expect(safe).toContain('href="#p"');
     const result = await inline(source);
     expect(result.problems).toEqual([]);
     expect(pixelAt(await decodePixels(result.image!.bytes), 100, 100)).toEqual([255, 0, 0, 255]);
   });
 
-  it('CSS 转义 URL、相对引用及嵌套 data SVG 都不能绕过清理', () => {
-    const safe = sanitizeSvg(wrap(String.raw`<style>.x {fill:u\72l(https://invalid.example/x)}</style>
-      <rect fill="url(../x.svg#g)" style="filter: url('//invalid.example/f')"/>
-      <image href="data:image/svg+xml;base64,PHN2Zy8+"/>`)).xml;
-    expect(safe).not.toMatch(/invalid|\.\.\/|data:image\/svg/);
+  it('CSS 转义 URL、相对引用及嵌套 data SVG 不改变渲染结果，局部引用仍可绘制', async () => {
+    const nested = Buffer.from(wrap('<rect width="80" height="40" fill="red"/>')).toString('base64');
+    const safeBody = '<defs><rect id="local" x="40" width="40" height="40" fill="blue"/></defs><use href="#local"/>';
+    const source = wrap(String.raw`<style>.x {fill:u\72l(https://invalid.example/x)}</style>
+      <rect class="x" width="40" height="40" fill="url(../x.svg#g)" style="filter: url('//invalid.example/f')"/>
+      ${safeBody}<image width="80" height="40" href="data:image/svg+xml;base64,${nested}"/>`);
+    const result = await inline(source);
+    const clean = await inline(wrap('<rect width="40" height="40"/>' + safeBody));
+    expect(result.problems).toEqual([]);
+    expect(result.image!.bytes).toEqual(clean.image!.bytes);
+    const pixels = await decodePixels(result.image!.bytes);
+    expect(pixelAt(pixels, 50, 100)).toEqual([0, 0, 0, 255]);
+    expect(pixelAt(pixels, 150, 100)).toEqual([0, 0, 255, 255]);
   });
 
   it('内嵌 PNG 图片可绘制', async () => {

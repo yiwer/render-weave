@@ -51,7 +51,8 @@ export function draw(
     }
   } finally {
     painter.delete();
-    surface.delete();
+    // MakeSurface 的像素缓冲区由 JS 包装层分配，当前 CanvasKit 的 delete() 不会释放它。
+    surface.dispose();
   }
 }
 

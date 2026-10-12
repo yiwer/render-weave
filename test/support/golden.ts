@@ -159,6 +159,6 @@ function triptych(ck: CanvasKit, ...images: Image[]): Uint8Array {
       snapshot.delete();
     }
   } finally {
-    surface.delete();
+    surface.dispose();
   }
 }

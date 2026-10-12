@@ -178,7 +178,7 @@ class DeclarationReader {
     if (type === 'ref' && !ref) this.report(ProblemCodes.templateInvalid, where, '结果类型为 ref 时必须用 ref 写明静态数据定义的名称与版本号');
     if (type !== 'ref' && value['ref'] !== undefined) this.report(ProblemCodes.templateInvalid, where, '只有结果类型为 ref 时才写 ref');
     const op = value['op'];
-    if (typeof op !== 'string' || !(op in OPERATION_KEYS)) {
+    if (typeof op !== 'string' || !Object.hasOwn(OPERATION_KEYS, op)) {
       this.report(ProblemCodes.templateInvalid, where, `派生变量的运算 op 只能取 ${Object.keys(OPERATION_KEYS).join('、')}`);
       return undefined;
     }

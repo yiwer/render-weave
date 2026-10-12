@@ -94,6 +94,13 @@ export function parseDatasetDocument(value: unknown): DatasetDocument | string {
  * 资源仓库是另一个目录，因为同一个资源仓库常被多个工作区共用。
  */
 export async function loadWorkspace(options: { dir: string; resourcesDir: string }): Promise<Workspace> {
+  const documents = await loadWorkspaceDocuments(options.dir);
+  const { repository, problems } = await openResourceRepository(options.resourcesDir);
+  return { ...documents, resources: repository, problems: [...documents.problems, ...problems] };
+}
+
+/** 发布只读取工作区文档，资源仓库的可用性不影响版本历史。 */
+export async function loadWorkspaceDocuments(dir: string): Promise<Omit<Workspace, 'resources'>> {
   const problems: Problem[] = [];
   const definitions = new Map<string, { ref: StaticSchemaRef; definition?: unknown; compiled?: Record<string, unknown> }>();
   const templates = new Map<string, TemplateEntry>();
@@ -101,15 +108,15 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
 
   let files: string[] = [];
   try {
-    files = (await readdir(options.dir)).filter((file) => file.endsWith('.json')).sort();
+    files = (await readdir(dir)).filter((file) => file.endsWith('.json')).sort();
   } catch (error) {
     problems.push(
-      severe(ProblemCodes.inputUnreadable, { kind: 'input', source: options.dir }, `工作区目录无法读取：${describeError(error)}`),
+      severe(ProblemCodes.inputUnreadable, { kind: 'input', source: dir }, `工作区目录无法读取：${describeError(error)}`),
     );
   }
 
   for (const file of files) {
-    const source = join(options.dir, file);
+    const source = join(dir, file);
     const location = { kind: 'input', source } as const;
     let document: unknown;
     const tooPrecise: string[] = [];
@@ -185,13 +192,11 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
     }
   }
 
-  const { repository, problems: resourceProblems } = await openResourceRepository(options.resourcesDir);
   return {
     staticSchemas: [...definitions.values()],
     templates: [...templates.values()],
     datasets: [...datasets.values()],
-    resources: repository,
-    problems: [...problems, ...resourceProblems],
+    problems,
   };
 }
 

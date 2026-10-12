@@ -19,7 +19,7 @@ async function solidPng(width: number, height: number, mark?: { x: number; y: nu
     return bytes;
   } finally {
     paint.delete();
-    surface.delete();
+    surface.dispose();
   }
 }
 

@@ -1,5 +1,7 @@
 # 模板元素目录（草稿）
 
+本文包含未来设计，不等同于当前引擎支持清单。首期可执行范围见 [阶段验收的 DSL 能力表](../stage1-acceptance.md#dsl-当前可承载的能力)，具体 JSON 写法见 [M402 DSL](../examples/m402-dsl/README.md)。
+
 状态：2026-10-08 起草并对齐，对应业务实体模型的 G10；E1–E10 均已定（M67–M76）。参照来源：rid-rs 与 design-layout-draw 的 Wpf 元素（WpfFrame、WpfBox、WpfText 等），旧 RenderWeave `renderweave-design/1.0` 的十八种节点（`renderweave-template/.../NodeContractCatalog.java`）。排布与适配的具体规则（缩字、换行、循环项如何排列）随第 3 轮 Q13 决定，本文只给出它们挂在哪个元素、哪个属性上。文末 E 编号为对齐过程中的问题。
 
 ## 一、元素一览

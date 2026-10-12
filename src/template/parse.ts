@@ -438,7 +438,7 @@ class TemplateReader {
 
   private readElementBody(value: Record<string, unknown>, name: string, path: ElementPath, parentLayout: Layout): Read<ElementModel> {
     const type = value['type'];
-    if (typeof type !== 'string' || !(type in ELEMENT_KEYS)) {
+    if (typeof type !== 'string' || !Object.hasOwn(ELEMENT_KEYS, type)) {
       if (typeof type === 'string' && PLANNED_TYPES.has(type)) this.unsupported(path, `元素类型 ${type} 尚未支持`);
       else this.fail(path, `未知的元素类型 ${String(type)}`);
       return undefined;
@@ -641,9 +641,11 @@ class TemplateReader {
       columnSpan = index('columnSpan', 1) ?? 1;
       if (row + rowSpan - 1 > parentLayout.rows.length) {
         this.fail(path, `网格只有 ${parentLayout.rows.length} 行，元素占到第 ${row + rowSpan - 1} 行`);
+        return undefined;
       }
       if (column + columnSpan - 1 > parentLayout.columns.length) {
         this.fail(path, `网格只有 ${parentLayout.columns.length} 列，元素占到第 ${column + columnSpan - 1} 列`);
+        return undefined;
       }
     }
 

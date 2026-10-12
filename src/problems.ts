@@ -22,7 +22,7 @@ export type ProblemLocation =
   | { kind: 'parameter'; name: string; path?: string }
   | { kind: 'element'; path: string }
   | { kind: 'check'; template: string; name: string; path?: string }
-  | { kind: 'variable'; template: string; name: string }
+  | { kind: 'variable'; template: string; name: string; path?: string }
   | { kind: 'definition'; schema: string; path: string }
   | { kind: 'input'; source: string };
 
@@ -106,6 +106,8 @@ export const ProblemCodes = {
   templateUnknownStateValue: 'template.unknownStateValue',
   /** 求值时绑定得到的值不能用于该属性：数值缺值或超出范围。 */
   templateBindingValueInvalid: 'template.bindingValueInvalid',
+  /** 派生运算的结果超出数值范围或精度，按缺值处理。 */
+  templateEvaluationInvalid: 'template.evaluationInvalid',
 
   /** 对外参数必须提供而没有提供。 */
   parameterMissing: 'parameter.missing',

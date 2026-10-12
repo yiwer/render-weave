@@ -90,7 +90,10 @@ class Expander {
     if (!artboard) this.failed = true;
     this.problems.push(...scope.runChecks().map((problem) => called && problem.location.kind === 'check'
       ? { ...problem, location: { ...problem.location, path: formatElementPath(path) } } : problem), ...problems, ...host.problems);
-    return artboard && this.node(artboard, scope, host, origin, path);
+    const node = artboard && this.node(artboard, scope, host, origin, path);
+    this.problems.push(...scope.problems.map((problem) => called && problem.location.kind === 'variable'
+      ? { ...problem, location: { ...problem.location, path: formatElementPath(path) } } : problem));
+    return node;
   }
 
   private node(model: ArtboardModel | ElementModel, scope: Scope, host: ResolvingHost, origin: DataOrigin | undefined, root: ElementPath): EvaluatedNode {
@@ -145,7 +148,7 @@ class Expander {
   private invoke(call: LoopModel | CallModel, caller: Scope, data: unknown, path: ElementPath, place: Place,
     origin?: DataOrigin, appearance?: CallModel, loop?: Readonly<Record<LoopInfoKey, number | boolean>>): EvaluatedNode {
     const target = this.program.get(call.template)!;
-    const requested: Record<string, unknown> = {};
+    const requested: Record<string, unknown> = Object.create(null);
     const reportedStatically = new Set<string>();
     for (const parameter of target.template.parameters) {
       if (parameter.visibility !== 'public') continue;

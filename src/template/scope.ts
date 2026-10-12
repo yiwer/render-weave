@@ -42,7 +42,7 @@ export function resolveParameters(template: TemplateModel, requested: Readonly<R
     if (values.has(parameter.name)) continue;
     if (parameter.default !== undefined) {
       values.set(parameter.name, parameter.default);
-    } else if (!(parameter.name in requested)) {
+    } else if (!Object.hasOwn(requested, parameter.name)) {
       problems.push(
         severe(
           ProblemCodes.parameterMissing,
@@ -56,6 +56,7 @@ export function resolveParameters(template: TemplateModel, requested: Readonly<R
 }
 
 export class Scope {
+  readonly problems: Problem[] = [];
   private readonly derived: ReadonlyMap<string, DerivedModel>;
   private readonly computed = new Map<string, unknown>();
   private readonly computing = new Set<string>();
@@ -180,7 +181,11 @@ export class Scope {
         const left = this.operand(operation.left);
         const right = this.operand(operation.right);
         if (typeof left !== 'number' || typeof right !== 'number') return undefined;
-        return addDecimal(left, operation.op === 'add' ? right : -right);
+        const result = addDecimal(left, operation.op === 'add' ? right : -right);
+        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
+          { kind: 'variable', template: this.template.name, name: derived.name },
+          `派生变量“${derived.displayName}”的加减无法得到有限且不超过 15 位有效数字的结果，按缺值处理`));
+        return result;
       }
     }
   }

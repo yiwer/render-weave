@@ -2,6 +2,8 @@
  * 十进制数值：按十进制写法计算与输出，不经过浮点运算（M17、M112）。
  * 数值最多 15 位有效数字，String(数值) 得到的就是原始的十进制写法；加减在这串数字上用整数完成。
  */
+import { significantDigits } from './schema/formats.js';
+import { MAX_SIGNIFICANT_DIGITS } from './schema/model.js';
 
 export interface Decimal {
   readonly negative: boolean;
@@ -37,7 +39,8 @@ export function plainNumber(value: number): string {
 }
 
 /** 十进制加法（减法传入相反数）：两数按相同的小数位数化成整数相加，再按十进制写法转回数值。 */
-export function addDecimal(a: number, b: number): number {
+export function addDecimal(a: number, b: number): number | undefined {
+  if (![a, b].every((value) => Number.isFinite(value) && significantDigits(String(value)) <= MAX_SIGNIFICANT_DIGITS)) return undefined;
   const da = toDecimal(a);
   const db = toDecimal(b);
   const places = Math.max(da.fraction.length, db.fraction.length);
@@ -45,5 +48,7 @@ export function addDecimal(a: number, b: number): number {
   const sum = scaled(da) + scaled(db);
   const digits = (sum < 0n ? -sum : sum).toString().padStart(places + 1, '0');
   const text = `${sum < 0n ? '-' : ''}${digits.slice(0, digits.length - places)}.${digits.slice(digits.length - places) || '0'}`;
-  return Number(text);
+  const result = Number(text);
+  // 在转回 Number 前检查精度，避免 1 + 1e-17 被舍入成 1 后再也看不出失真。
+  return Number.isFinite(result) && significantDigits(text) <= MAX_SIGNIFICANT_DIGITS ? result : undefined;
 }

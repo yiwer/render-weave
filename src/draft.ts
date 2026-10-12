@@ -29,7 +29,7 @@ export function draftBorders(root: EvaluatedNode, summary: LayoutSummary, proble
   collect(root);
   const paths = new Set(problems.flatMap((problem) => {
     const location = problem.location;
-    return location.kind === 'element' || ((location.kind === 'parameter' || location.kind === 'check') && location.path)
+    return location.kind === 'element' || ((location.kind === 'parameter' || location.kind === 'check' || location.kind === 'variable') && location.path)
       ? [location.path!] : [];
   }));
   const ops: DrawOp[] = [];
