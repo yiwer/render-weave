@@ -19,6 +19,7 @@ import { mmToPx, roundMm } from '../units.js';
 import { imageIntrinsic, recordImage } from './image.js';
 import { radii, recordShape, shapeIntrinsic, type PathBounds } from './shapes.js';
 import { measureTextNode, recordText, type TextMeasure } from './text.js';
+import { ShrinkGroups, containsShrinkGroup } from './shrink-groups.js';
 import { EPSILON, type Box, type DrawOp, type LayoutNode, type LayoutResult, type Size } from './types.js';
 
 export type { Box, DrawOp, ImageSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
@@ -32,8 +33,17 @@ export function layout(
   resources: { readonly fonts: FontStore; readonly images: ImageStore },
   ck: CanvasKit,
 ): LayoutResult {
-  const layouter = new Layouter(resources.fonts, resources.images, ck);
-  const root = layouter.arrange(evaluated.root, { x: 0, y: 0, width: output.width, height: output.height });
+  const groups = new ShrinkGroups();
+  let layouter = new Layouter(resources.fonts, resources.images, ck, groups);
+  const box = { x: 0, y: 0, width: output.width, height: output.height };
+  let root = layouter.arrange(evaluated.root, box);
+  const resolved = groups.resolve(evaluated.root);
+  if (resolved) {
+    // 首轮的暂时溢出与绘制记录不外泄；新布局器使自然尺寸与字形测量全部按最终字号重算。
+    layouter = new Layouter(resources.fonts, resources.images, ck);
+    root = layouter.arrange(resolved.root, box);
+    layouter.problems.push(...resolved.problems);
+  }
   return {
     summary: {
       template: evaluated.template.name,
@@ -58,11 +68,13 @@ class Layouter {
   private readonly intrinsics = new Map<EvaluatedNode, Size>();
   private readonly textMeasures = new Map<EvaluatedNode, TextMeasure>();
   private readonly pathBoundsCache = new Map<string, ReturnType<PathBounds>>();
+  private readonly grouped = new Map<EvaluatedNode, boolean>();
 
   constructor(
     private readonly fonts: FontStore,
     private readonly images: ImageStore,
     private readonly ck: CanvasKit,
+    private readonly groups?: ShrinkGroups,
   ) {}
 
   // ---------- 测量 ----------
@@ -185,6 +197,7 @@ class Layouter {
         summary = { children: this.arrangeContainer(node, model, box) };
         break;
       case 'text': {
+        this.groups?.observe(model, box);
         const text = recordText(model, node.fragments ?? [], this.textMeasure(node), box, this.drawOps, this.problems);
         summary = text ? { text } : {};
         break;
@@ -310,7 +323,7 @@ class Layouter {
       if (place(child)[main]?.kind === 'fill') {
         fills.push(child);
       } else {
-        const size = this.resolveSize(child, main, 'hug', 0);
+        const size = this.resolveSize(child, main, 'hug');
         sizes.set(child, size);
         used += size;
       }
@@ -445,10 +458,15 @@ class Layouter {
   }
 
   /** 按尺寸方式取尺寸：固定、随内容，或填满给定的可用空间；再按最小最大尺寸限制，不小于 0。 */
-  private resolveSize(node: EvaluatedNode, axis: Axis, fallback: SizeSpec['kind'], fillAvailable: number): number {
+  private resolveSize(node: EvaluatedNode, axis: Axis, fallback: SizeSpec['kind'], fillAvailable?: number): number {
     const spec = place(node)[axis];
     const kind = spec?.kind ?? fallback;
-    const value = spec?.kind === 'fixed' ? spec.value : kind === 'fill' ? fillAvailable : this.intrinsic(node)[axis];
+    let value = spec?.kind === 'fixed' ? spec.value : kind === 'fill' ? (fillAvailable ?? 0) : this.intrinsic(node)[axis];
+    if (axis === 'width' && kind === 'hug' && fillAvailable !== undefined) {
+      let grouped = this.grouped.get(node);
+      if (grouped === undefined) { grouped = containsShrinkGroup(node); this.grouped.set(node, grouped); }
+      if (grouped) value = Math.min(value, Math.max(0, fillAvailable));
+    }
     return clampSize(node, axis, value);
   }
 

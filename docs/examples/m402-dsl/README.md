@@ -29,6 +29,12 @@
 
 票据 09 复查（2026-10-11）：11 个 JSON 文件合法，5 个模板及 47 处普通变量引用通过解析与调用图静态检查，M402 数据集校验 0 个问题；检查和渲染只在内存副本中移除票据 10 的 `widthOverflow`，本目录 JSON 保留完整目标写法。道路带得到 15 段，起始原始站序为 1、4、5、6、8、10、11、14、22、23、25、28、29、34、35；各段边界与站点列一致，首段不画分隔线。实际出图 3496 × 780 像素、0 个问题，见 `test/golden/m402-roads.png`，已目视核对。道路名按 M131 使用同间隔分布（spaceEvenly），左右留白与字间距相同，并支持先横向压缩、再缩字；缩字组和端到端验收仍属于票据 10、14。
 
+
+票据 10 复查（2026-10-12）：共享草稿不再需要移除任何配置，11 个 JSON、5 个模板、47 处普通变量引用及调用图静态检查全部通过，数据集校验无问题。CLI 直接出图为 3496 × 780 像素、0 个问题，图片与 `test/golden/m402-roads.png` 一致；35 个站名均为 10 mm，摘要均标记 shrinkGroup: stopNames。2/20/35/50 站在 740 和 1500 mm 下分别为 12/12/10/7 mm；50 站加大名称区内边距的实验全组统一为 5.88 mm。道路段适用宽度上限同步扩到 1500 mm，允许整条线路合并为一段。这是初次实现的历史结果；默认分档随后按 M135 取消，见下文复核。
+
+
+票据 10 密度复核（2026-10-12，M135–M136）：参照用户提供的 [366 图片](../materials/366-route-sign.png)，主模板 stopNameSize 从分档派生变量改为缺省 10 mm 的内部参数，站数增加优先收窄列间留白，确实不足才统一缩字。2/20/35/50 站在 740/1500 mm 下均保持 10 mm；59 站实验在 740 mm 下为 9.763 mm、1500 mm 下为 10 mm。实验经发布入口生成取消 50 站上限的 v2 副本，并同步切换模板基准；本目录的静态 v1 和旧数据集不被改写。像素测量与判断见 [参考图复核](../m402-design-analysis.md#八366-密集站点参考图复核2026-10-12)。布局算法仍使用等分列与列内居中，视觉留白随列宽缩小，不额外绑定 itemLayout.gap。
+
 ## 模板如何组合
 
 ```mermaid
@@ -70,7 +76,7 @@ S2–S13 已确认（M90）。
 | S15 | 文本 `horizontalAlign` 取 start、center、end，缺省 start；`verticalAlign` 取 top、center、bottom，缺省 top；两端分布 distribute 随票据 02、09 加入 | 草稿中已用到 center 与 distribute |
 | S16 | 渲染请求的 `dataset` 写成 `{"id": 数据集 ID}` 或 `{"inline": 数据集文档}`，数据集文档与 S6 的文件格式相同（内联时 `dataset.id` 可省略）；`output.format` 取 png 或 jpg（jpeg 同义）；`mode` 取 draft 或 final | 规格"渲染请求" |
 | S17 | 资源仓库目录下的 `resources.json` 列出资源：`{"resources": [{"id": 资源ID, "kind": "image" 或 "font", "file": 相对路径}]}` | S8；文件形式的首版资源仓库 |
-| S18 | 文本 `writingMode` 取 horizontal（缺省）或 vertical；`verticalAlign: "distribute"` 只用于竖排。`fit` 写成 `{"steps": [...], "compressMin": 数, "onFail": "severe" 或 "hint"}`：竖排步骤为 tightenSpacing、compressGlyphs，收紧字距必须排在压缩字形之前；compressMin 缺省 0.6，只能设得更高；onFail 缺省 severe。横排步骤随票据 09 加入，`widthOverflow` 随票据 10 加入。`stroke` 写成 `{"color": 颜色, "width": 毫米}` | 票据 02；M402 草稿中的 fit 与 stroke 写法不变（M108、M109） |
+| S18 | 文本 `writingMode` 取 horizontal（缺省）或 vertical；`verticalAlign: "distribute"` 只用于竖排。`fit` 写成 `{"steps": [...], "compressMin": 数, "onFail": "severe" 或 "hint"}`：竖排步骤为 tightenSpacing、compressGlyphs，收紧字距必须排在压缩字形之前；compressMin 缺省 0.6，只能设得更高；onFail 缺省 severe。横排步骤见 S29，`widthOverflow` 缩字组见 S31。`stroke` 写成 `{"color": 颜色, "width": 毫米}` | 票据 02；M402 草稿中的 fit 与 stroke 写法不变（M108、M109） |
 | S19 | 布局：`layout` 写成 `{"mode": "free"}`、`{"mode": "stack", "direction": "row" 或 "column", "gap", "justifyContent": start/center/end/spaceBetween/spaceEvenly, "alignItems": start/center/end}` 或 `{"mode": "grid", "rows": [...], "columns": [...], "rowGap", "columnGap"}`，行列每项为 `{"fixed": 毫米}`、`{"fraction": 比例}` 或 `"hug"`。`place` 可写的属性随所在容器而定：自由为 left/right/top/bottom；堆叠为 margin、alignSelf；网格为 row、column、rowSpan、columnSpan、margin、justifySelf、alignSelf；三者都可写 width、height（`{"fixed": 毫米}`、`"hug"`、`"fill"`、`{"fill": 权重}`）与 minWidth、maxWidth、minHeight、maxHeight。未写宽高时，网格中为填满，堆叠与自由中为随内容 | 票据 04（M111） |
 | S20 | 外观：padding、margin 可写成一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 可写成一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项；所有元素可写 `visible`（布尔）、`opacity`（0–1）、`rotation`（度）；容器与画板可写 `clip`。图形的 `stroke` 写成 `{"color", "width", "dash"?: [实, 空, …], "cap"?: butt/round/square}`。图形：rect（fill、stroke、cornerRadius）、ellipse（fill、stroke）、line（from、to、stroke 必填）、polygon（points 至少 3 个顶点）、path（d、fill、stroke、fillRule: nonzero/evenodd） | 票据 04（M110、M111） |
 | S21 | 数据定义：字段类型为 text、number、date、time、datetime、boolean、image、list、ref；列表写 `items`（元素不能又是列表），引用写 `ref: {name, version}`。约束随类型：所有字段可写 required；text 可写 minLength、maxLength、pattern、enum；number 可写 min、max、integer、enum；image 可写 allowedSources（resource、url，不写时两种都允许）；list 可写 minItems、maxItems；列表元素的约束写在 `items.constraints`，不能写 required。字段名称以英文字母开头，只含字母、数字与下划线。编译时日期用标准 `date` 格式，时刻、时间用 `rw-time`、`rw-datetime`，都附等价正则 | 票据 03（M113） |
@@ -103,7 +109,7 @@ S2–S13 已确认（M90）。
 }
 ```
 
-此示例与站点列共用“站点”模板，其 `widthOverflow` 仍需票据 10；票据 08 的演示和测试在内存副本中移除该属性，共享草稿保持完整目标写法。
+此示例与站点列共用“站点”模板，其 `widthOverflow` 已由票据 10 实现，可直接渲染；票据 08 的历史演示在内存副本中移除过该属性。
 
 
 票据 09 补充（M127–M130）：
@@ -112,6 +118,15 @@ S2–S13 已确认（M90）。
 - **S29 横排两端分布与适配**：`horizontalAlign: "distribute"` 以字形墨迹铺满内容区，含片段的字体、字号与倾斜，间距均分且不为负；单字墨迹居中，空格用前进宽度占位。`fit: { "steps": ["compressGlyphs", "shrink"], "compressMin": 0.6, "minFontSize": 5, "onFail": "severe" }` 表示先横向压缩，再在宽或高不足时同比缩小本元素各片段；任一非空片段达到最小字号即停，已经低于下限的片段不再缩小。compressMin 缺省 0.6（可提高到 1），minFontSize 缺省 5 mm（可提高）；步骤不可颠倒，只有 shrink 时也拒绝。只写 compressGlyphs 则保持字号；不写 fit 不做适配。仍超出返回 layout.textOverflow；摘要记录最终字号、片段字号、压缩比及字距。跨实例统一字号见票据 10。
 
 - **S30 横排同间隔分布**（M131）：`horizontalAlign: "spaceEvenly"` 将内容区余宽分为“字形数 + 1”份，两侧与相邻字形间各留一份。按实际墨迹计算，含倾斜和片段样式；单字居中，空文本字距为 0。布局摘要 width 仍为首字墨迹到末字墨迹的跨度，不含两侧留白；spacing 同时表示字间距与每侧留白。空间不足时留白归零，再按 S29 适配。M402 道路段使用此值；distribute 继续表示两端贴边。
+
+
+- **S31 竖排缩字组**（M132–M134）：`fit.widthOverflow: { "shrinkGroup": "stopNames", "minFontSize": 5 }`，minFontSize 可省略，最低 5 mm。组名在一次出图内共用，跨循环与子模板；隐藏文本不参与，可见空文本参与。第一轮按实际内容宽求组内最小可用字号，第二轮统一重排，重新计算自然尺寸与竖排压缩，字号和片段字号均写最终值，摘要另写 text.shrinkGroup。组内下限取最高值；下限高于任一原字号时报配置错误，宽度在下限仍不足报严重问题。高度不足仅做原有竖排适配，不因此缩小全组。需要随列宽缩字时，可使用 fill，或在有明确可用宽的自由/网格/纵向堆叠布局中使用 hug；横向堆叠主方向 hug 仍按自然尺寸分配，固定尺寸不会改写。
+
+直接运行完整草稿：
+
+```bash
+npm run render -- render --workspace docs/examples/m402-dsl --resources fixtures/resources --request docs/examples/m402-dsl/render-request-m402.json --out out/ticket10
+```
 
 ## 起草中发现的问题
 

@@ -41,6 +41,8 @@ export interface ImageSummary {
 }
 
 export interface TextSummary {
+  /** 一次出图内的缩字组名称；字号是全组统一重排后的值。 */
+  readonly shrinkGroup?: string;
   readonly content: string;
   readonly font: string;
   readonly writingMode: TextElementModel['writingMode'];

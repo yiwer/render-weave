@@ -93,7 +93,7 @@ const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   stack: ['width', 'height', 'margin', 'alignSelf', ...SIZE_LIMIT_KEYS],
   grid: ['row', 'column', 'rowSpan', 'columnSpan', 'width', 'height', 'margin', 'justifySelf', 'alignSelf', ...SIZE_LIMIT_KEYS],
 };
-const FIT_KEYS = ['steps', 'compressMin', 'minFontSize', 'onFail'];
+const FIT_KEYS = ['steps', 'compressMin', 'minFontSize', 'onFail', 'widthOverflow'];
 const FRAGMENT_STYLE_KEYS = ['font', 'fontSize', 'color', 'slant', 'fontWeight'];
 const NO_EDGES: Edges = { top: 0, right: 0, bottom: 0, left: 0 };
 const NO_CORNERS: Corners = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
@@ -835,7 +835,7 @@ class TemplateReader {
 
   /**
    * 放不下时的处理。竖排支持 tightenSpacing、compressGlyphs，且收紧字距必须在压缩字形之前（M82）；
-   * 横排先 compressGlyphs 再 shrink；按宽度统一缩字（widthOverflow）在票据 10 加入。
+   * 横排先 compressGlyphs 再 shrink；竖排可用 widthOverflow 按列宽全组统一缩字。
    * 不写 fit 时文字不做适配，放不下即按严重问题上报（M109）。
    */
   private readFit(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<TextFit> {
@@ -845,13 +845,18 @@ class TemplateReader {
       this.fail(path, 'fit 必须是对象');
       return undefined;
     }
-    if ('widthOverflow' in value) this.unsupported(path, 'fit.widthOverflow（按宽度统一缩字）尚未支持');
-    this.checkKeys(
-      Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'widthOverflow')),
-      FIT_KEYS,
-      path,
-      '放不下时的处理 fit',
-    );
+    this.checkKeys(value, FIT_KEYS, path, '放不下时的处理 fit');
+    let widthOverflow: TextFit['widthOverflow'];
+    if (value['widthOverflow'] !== undefined) {
+      const rule = value['widthOverflow'];
+      if (writingMode !== 'vertical' || !isRecord(rule)) return this.fail(path, 'widthOverflow 必须是竖排文本的缩字组配置对象');
+      this.checkKeys(rule, ['shrinkGroup', 'minFontSize'], path, 'widthOverflow');
+      const group = rule['shrinkGroup'];
+      const minimum = rule['minFontSize'] ?? 5;
+      if (typeof group !== 'string' || !group.trim() || group !== group.trim()) return this.fail(path, 'shrinkGroup 必须是非空且首尾无空白的组名');
+      if (!isFiniteNumber(minimum) || minimum < 5) return this.fail(path, 'widthOverflow.minFontSize 不能低于 5 mm（M86）');
+      widthOverflow = { shrinkGroup: group, minFontSize: minimum };
+    }
     const steps = value['steps'] ?? [];
     if (!Array.isArray(steps) || !steps.every((step): step is string => typeof step === 'string')) {
       this.fail(path, 'fit.steps 必须是步骤名称的列表');
@@ -894,6 +899,7 @@ class TemplateReader {
       compressMin,
       shrink: steps.includes('shrink'),
       minFontSize,
+      ...(widthOverflow && { widthOverflow }),
       onFail,
     };
   }

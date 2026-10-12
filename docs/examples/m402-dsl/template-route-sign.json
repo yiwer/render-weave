@@ -12,6 +12,7 @@
       "constraints": { "integer": true, "min": 0, "max": 50 },
       "default": 0
     },
+    { "name": "stopNameSize", "displayName": "站名字号", "visibility": "internal", "type": "number", "constraints": { "min": 5 }, "default": 10 },
     { "name": "primaryColor", "displayName": "主色", "visibility": "internal", "type": "color", "default": "#FF8000" },
     { "name": "bandYellow", "displayName": "底带黄", "visibility": "internal", "type": "color", "default": "#FFEF00" }
   ],
@@ -74,14 +75,6 @@
         { "when": { "left": { "var": "serviceNote" }, "op": "empty" }, "then": { "value": false } }
       ],
       "otherwise": { "value": true }
-    },
-    {
-      "name": "stopNameSize", "displayName": "站名字号", "type": "number", "op": "branch",
-      "branches": [
-        { "when": { "left": { "var": "stopCount" }, "op": "le", "right": { "value": 20 } }, "then": { "value": 12 } },
-        { "when": { "left": { "var": "stopCount" }, "op": "le", "right": { "value": 35 } }, "then": { "value": 10 } }
-      ],
-      "otherwise": { "value": 7 }
     },
     {
       "name": "currentIndexOutOfRange", "displayName": "本站超出", "type": "boolean", "op": "branch",

@@ -142,6 +142,7 @@ export function recordText(
   const { fontScale = 1, ...publicSummary } = summary;
   return {
     ...publicSummary,
+    ...(model.fit.widthOverflow && { shrinkGroup: model.fit.widthOverflow.shrinkGroup }),
     fragments: fragments.map((fragment) => ({
       text: fragment.text,
       font: `res:${fragment.style.font}`,
@@ -253,7 +254,8 @@ function recordVertical(
     if (vertical.columnWidth > content.width + EPSILON) {
       reasons.push(`字号 ${fmt(model.fontSize)} mm 比可用宽 ${fmt(content.width)} mm 更宽`);
     }
-    problems.push(overflowProblem(model, `竖排文字"${text}"放不下：${reasons.join('；')}`));
+    const level = model.fit.widthOverflow && vertical.columnWidth > content.width + EPSILON ? 'severe' : model.fit.onFail;
+    problems.push(overflowProblem(model, `竖排文字"${text}"放不下：${reasons.join('；')}`, level));
   }
   // 按片段把整列的字形位置分回去，各片段只是颜色不同。
   let index = 0;
@@ -340,10 +342,10 @@ function summarize(
   };
 }
 
-function overflowProblem(model: TextElementModel, message: string): Problem {
+function overflowProblem(model: TextElementModel, message: string, level = model.fit.onFail): Problem {
   return {
     code: ProblemCodes.layoutTextOverflow,
-    level: model.fit.onFail,
+    level,
     location: { kind: 'element', path: formatElementPath(model.path) },
     message,
   };

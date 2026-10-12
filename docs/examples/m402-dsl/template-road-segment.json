@@ -10,7 +10,7 @@
   ],
 
   "artboard": {
-    "sizeRange": { "width": { "min": 5, "max": 800 }, "height": { "min": 8, "max": 14 } },
+    "sizeRange": { "width": { "min": 5, "max": 1500 }, "height": { "min": 8, "max": 14 } },
     "layout": { "mode": "stack", "direction": "row", "alignItems": "center" },
     "children": [
       {

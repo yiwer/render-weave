@@ -332,6 +332,8 @@ export interface TextFit {
   /** 横排完成压缩后，宽或高仍放不下时同比缩小本元素全部片段的字号。 */
   readonly shrink: boolean;
   readonly minFontSize: number;
+  /** 竖排按可用列宽缩字；组名在一次出图内共用，跨模板调用。 */
+  readonly widthOverflow?: { readonly shrinkGroup: string; readonly minFontSize: number };
   /** 仍放不下时的问题等级。 */
   readonly onFail: 'severe' | 'hint';
 }

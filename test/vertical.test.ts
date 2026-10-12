@@ -83,7 +83,7 @@ describe('竖排站名：两端分布、收紧字距与纵向压缩（M402 站�
     expect(stopName(result).text).toMatchObject({ spacing: 0, compression: 1, overflow: true });
   });
 
-  it('字号比列宽更宽时报问题（按宽度统一缩字见票据 10）', async () => {
+  it('未指定缩字组时，字号比列宽更宽时报问题', async () => {
     const result = await render(await loadStopName(), stopNameRequest('田贝', { output: { width: 12, height: 73, dpi: 120, format: 'png' } }));
     const workspace = withTemplate(await loadStopName(), '竖排站名', (document) => {
       document['artboard']['children'][0]['place']['width'] = { fixed: 8 };
@@ -129,9 +129,7 @@ describe('竖排站名：两端分布、收紧字距与纵向压缩（M402 站�
     expect(await withFit({ steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.5 })).toEqual([
       [ProblemCodes.templateInvalid, location],
     ]);
-    expect(await withFit({ steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: 'stopNames' } })).toEqual([
-      [ProblemCodes.templateUnsupported, location],
-    ]);
+    expect(await withFit({ steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: 'stopNames' } })).toEqual([]);
   });
 
   it('同样的输入两次渲染，布局摘要与图片字节都相同', async () => {
