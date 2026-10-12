@@ -372,10 +372,13 @@ export interface QrCodeModel extends ElementBase {
 /** 与锁定编码器一致的输入上限，避免无界编码和文字测量；不是符号标准容量。 */
 export const MAX_CODE128_LENGTH = 500;
 
-/** CODE128 的内容始终为原始文本；字体只用于独立的下方文字区域。 */
+export const BARCODE_FORMATS = ['CODE128', 'EAN-13', 'EAN-8', 'UPC-A'] as const;
+export type BarcodeFormat = typeof BARCODE_FORMATS[number];
+
+/** 条形码内容始终为原始文本；字体只用于独立的下方文字区域。 */
 export interface BarcodeModel extends ElementBase {
   readonly type: 'barcode';
-  readonly format: 'CODE128';
+  readonly format: BarcodeFormat;
   readonly content: string;
   readonly foreground: Color;
   readonly background: Color;

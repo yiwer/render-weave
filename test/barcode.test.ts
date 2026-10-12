@@ -35,6 +35,7 @@ describe('CODE128 最终图片与诊断', () => {
         expect(await decode(result.image!.bytes)).toEqual([content]);
         const summary = nodeOf(result).barcode!;
         expect(summary.format).toBe('CODE128');
+        if (summary.format !== 'CODE128') throw new Error('错误的条码格式');
         expect(summary.quietZoneModules).toBe(10);
         expect(Number.isInteger(summary.moduleSizePx)).toBe(true);
         expect(summary.moduleSizePx).toBeGreaterThanOrEqual(2);
@@ -149,7 +150,7 @@ describe('CODE128 最终图片与诊断', () => {
     expect(await decode(draft.image!.bytes)).toEqual([]);
   });
 
-  it.each([{ format: 'EAN-13' }, { format: { var: 'format' } }, { content: 123 }, { showText: true }, { font: { var: 'font' } }, { quietZone: 0 }])(
+  it.each([{ format: 'EAN-5' }, { format: { var: 'format' } }, { content: 123 }, { showText: true }, { font: { var: 'font' } }, { quietZone: 0 }])(
     '非法 DSL %j 在出图前拒绝', async extra => {
       const result = await render(await work(extra), request());
       expect(result.image).toBeUndefined();

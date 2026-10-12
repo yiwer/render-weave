@@ -24,6 +24,7 @@ import { parseResourceRef } from '../resources.js';
 import { isRecord } from '../util.js';
 import { parseStaticSchemaRef } from '../workspace.js';
 import {
+  BARCODE_FORMATS,
   MAX_SLANT,
   MIN_COMPRESSION,
   type ArtboardModel,
@@ -477,7 +478,8 @@ class TemplateReader {
         const raw = value['content'];
         const content = isVarOperand(raw) ? this.host.text(raw.var, { path, label: 'content' })
           : typeof raw === 'string' ? raw : this.fail(path, '条形码 content 必须是文本或文本变量绑定');
-        const format = value['format'] === 'CODE128' ? 'CODE128' : this.fail(path, '条形码 format 必须明确指定 CODE128');
+        const format = BARCODE_FORMATS.find(format => format === value['format'])
+          ?? this.fail(path, `条形码 format 必须明确指定 ${BARCODE_FORMATS.join('、')}`);
         const foreground = this.readColor(value['foreground'] ?? '#000000', path, 'foreground');
         const background = this.readColor(value['background'] ?? '#FFFFFF', path, 'background');
         const showText = this.readBoolean(value['showText'], false, path, 'showText');

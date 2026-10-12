@@ -1,5 +1,7 @@
 # M402 DSL 草稿
 
+第二阶段 EAN/UPC 使用[独立商品码样例](../retail-barcode-dsl/README.md)，完整编号、校验位与专属留白见[说明](../../render-retail-barcodes.md)。
+
 第二阶段 CODE128 使用[独立资产码样例](../barcode-dsl/README.md)，语法见[条形码说明](../../render-barcode.md)；本目录 11 份 JSON 保持兼容基线。
 
 第二阶段票据 01 新增二维码语法，独立可执行样例见 [查询码工作区](../qrcode-dsl/README.md)，规则见 [二维码说明](../../render-qrcode.md)。原 M402 的 11 份 JSON 与既有出图行为保持不变。

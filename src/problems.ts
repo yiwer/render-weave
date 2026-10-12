@@ -35,6 +35,7 @@ export interface Problem {
 
 export const ProblemCodes = {
   barcodeContentInvalid: 'barcode.contentInvalid',
+  barcodeChecksumInvalid: 'barcode.checksumInvalid',
   barcodeCapacityExceeded: 'barcode.capacityExceeded',
   barcodeColorsInvalid: 'barcode.colorsInvalid',
   barcodeSizeInvalid: 'barcode.sizeInvalid',

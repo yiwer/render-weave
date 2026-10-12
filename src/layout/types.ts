@@ -1,6 +1,6 @@
 import type { Problem } from '../problems.js';
 import type { RenderRequest } from '../request.js';
-import type { NodeModel, ShapeStroke, TextElementModel } from '../template/model.js';
+import type { BarcodeFormat, NodeModel, ShapeStroke, TextElementModel } from '../template/model.js';
 
 export interface LayoutSummary {
   readonly template: string;
@@ -42,17 +42,22 @@ export interface ImageSummary {
   readonly drawn: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
 
-export interface BarcodeSummary {
-  readonly format: 'CODE128';
+interface BarcodeSummaryBase {
   readonly modules: number;
   readonly moduleSizePx: number;
-  readonly quietZoneModules: 10;
-  readonly quietZoneMm: number;
   /** 完整背景框，包含留白、上下保护间隔和可选下方文字。坐标未计旋转。 */
   readonly drawn: Box;
   readonly symbol: Box;
   readonly label?: { readonly box: Box; readonly text: TextSummary };
 }
+
+/** CODE128 保留单侧标量；EAN/UPC 分别记录左右必要留白。 */
+export type BarcodeSummary = BarcodeSummaryBase & (
+  | { readonly format: 'CODE128'; readonly quietZoneModules: 10; readonly quietZoneMm: number }
+  | { readonly format: Exclude<BarcodeFormat, 'CODE128'>;
+      readonly quietZoneModules: { readonly left: number; readonly right: number };
+      readonly quietZoneMm: { readonly left: number; readonly right: number } }
+);
 
 export interface QrCodeSummary {
   readonly format: 'qr';

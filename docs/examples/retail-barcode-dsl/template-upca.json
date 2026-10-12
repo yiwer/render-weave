@@ -1,0 +1,52 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "UPC-A商品编号牌",
+  "base": {
+    "name": "空数据定义",
+    "version": 1
+  },
+  "parameters": [
+    {
+      "name": "productId",
+      "displayName": "完整商品编号",
+      "type": "text",
+      "visibility": "public"
+    }
+  ],
+  "artboard": {
+    "sizeRange": {
+      "width": {
+        "min": 65,
+        "max": 65
+      },
+      "height": {
+        "min": 42,
+        "max": 42
+      }
+    },
+    "fill": "#FFFFFF",
+    "children": [
+      {
+        "type": "barcode",
+        "name": "商品码",
+        "format": "UPC-A",
+        "content": {
+          "var": "productId"
+        },
+        "showText": true,
+        "font": "res:font-hei-regular",
+        "fontSize": 3,
+        "place": {
+          "left": 5,
+          "top": 5,
+          "width": {
+            "fixed": 55
+          },
+          "height": {
+            "fixed": 30
+          }
+        }
+      }
+    ]
+  }
+}

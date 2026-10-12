@@ -1,0 +1,24 @@
+{
+  "template": "EAN-8商品编号牌",
+  "dataset": {
+    "inline": {
+      "dataset": {
+        "staticSchema": {
+          "name": "空数据定义",
+          "version": 1
+        }
+      },
+      "data": {}
+    }
+  },
+  "parameters": {
+    "productId": "01234565"
+  },
+  "output": {
+    "width": 65,
+    "height": 42,
+    "dpi": 120,
+    "format": "png"
+  },
+  "mode": "final"
+}
