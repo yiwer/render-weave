@@ -1,5 +1,5 @@
 /**
- * 文字测量：按码点取字形、前进宽度与墨迹上下边界，逐字排列。
+ * 文字测量：按码点取字形、前进宽度与墨迹边界，逐字排列。
  * 不做连字与字偶距调整，换来的是每个字形的位置都由引擎掌握，
  * 竖排、字形压缩、两端分布与逐字缺字替代都在这一层上进行（M106）。
  */
@@ -20,7 +20,8 @@ export interface MeasuredText {
   readonly descent: number;
 }
 
-export function measureText(fonts: FontStore, font: LoadedFont, text: string, fontSize: number): MeasuredText {
+/** inkSkew 只用于墨迹求界，前进宽度保持不变；横排两端分布按倾斜后的墨迹排字。 */
+export function measureText(fonts: FontStore, font: LoadedFont, text: string, fontSize: number, inkSkew = 0): MeasuredText {
   const ascent = font.ascender * fontSize;
   const descent = font.descender * fontSize;
   const codePoints = Array.from(text).length;
@@ -30,7 +31,7 @@ export function measureText(fonts: FontStore, font: LoadedFont, text: string, fo
     const ids = Array.from(skFont.getGlyphIDs(text, codePoints));
     const advances = skFont.getGlyphWidths(ids);
     const glyphs = ids.map((id, i): MeasuredGlyph => {
-      const ink = fonts.inkBounds(font, id);
+      const ink = fonts.inkBounds(font, id, inkSkew);
       return {
         id,
         advance: advances[i]!,

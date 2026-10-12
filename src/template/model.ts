@@ -246,7 +246,7 @@ export interface ContainerModel extends ElementBase, ContainerBody {
   readonly type: 'container';
 }
 
-export type LoopInfoKey = 'index' | 'isFirst' | 'isLast' | 'count';
+export type LoopInfoKey = 'index' | 'isFirst' | 'isLast' | 'count' | 'groupSize';
 export type CallArgument = Operand | { readonly loop: LoopInfoKey };
 export type CallData = VarOperand | 'current' | 'none';
 
@@ -260,12 +260,15 @@ export interface CallModel extends ElementBase {
 export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' | 'layout'> {
   readonly type: 'loop';
   readonly list: VarOperand;
+  /** 列表项中的基本类型字段路径，连续同值项合并，以首项作为被调模板的数据。 */
+  readonly mergeBy?: string;
   readonly template: string;
   readonly args: Readonly<Record<string, CallArgument>>;
   readonly itemLayout: {
     readonly direction: 'row';
     readonly widths: 'equal' | 'content' | { readonly fixed: number };
     readonly gap: number;
+    readonly spanBy?: 'groupSize';
   };
 }
 
@@ -280,8 +283,8 @@ export interface TextElementModel extends ElementBase {
   /** 倾斜角度，度；正值向右倾，以错切变换模拟（M80、M117）。只用于横排。 */
   readonly slant: number;
   readonly writingMode: 'horizontal' | 'vertical';
-  /** 横排时是文字在框内的水平位置；竖排时是整列在框内的水平位置。 */
-  readonly horizontalAlign: Align;
+  /** 横排可按墨迹两端分布（distribute）或同间隔分布（spaceEvenly，含两侧留白）；竖排只取 Align。 */
+  readonly horizontalAlign: Align | 'distribute' | 'spaceEvenly';
   /** distribute（两端分布）只用于竖排：首字墨迹贴顶、末字墨迹贴底、中间均分。 */
   readonly verticalAlign: 'top' | 'center' | 'bottom' | 'distribute';
   readonly fit: TextFit;
@@ -319,13 +322,16 @@ export interface FragmentStyle {
 /** 倾斜角度的上限，度。 */
 export const MAX_SLANT = 45;
 
-/** 文字放不下时的处理（M82、M88、M109）。 */
+/** 文字放不下时的处理（M82、M84、M88、M109）。 */
 export interface TextFit {
   /** 收紧字距：字距最小收到 0。两端分布时字距由框高决定、本来就不小于 0，这一步记录的是"压缩之前先收字距"的顺序。 */
   readonly tightenSpacing: boolean;
   /** 压缩字形：沿书写方向压缩，不低于 compressMin。 */
   readonly compressGlyphs: boolean;
   readonly compressMin: number;
+  /** 横排完成压缩后，宽或高仍放不下时同比缩小本元素全部片段的字号。 */
+  readonly shrink: boolean;
+  readonly minFontSize: number;
   /** 仍放不下时的问题等级。 */
   readonly onFail: 'severe' | 'hint';
 }

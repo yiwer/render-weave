@@ -93,7 +93,7 @@ const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   stack: ['width', 'height', 'margin', 'alignSelf', ...SIZE_LIMIT_KEYS],
   grid: ['row', 'column', 'rowSpan', 'columnSpan', 'width', 'height', 'margin', 'justifySelf', 'alignSelf', ...SIZE_LIMIT_KEYS],
 };
-const FIT_KEYS = ['steps', 'compressMin', 'onFail'];
+const FIT_KEYS = ['steps', 'compressMin', 'minFontSize', 'onFail'];
 const FRAGMENT_STYLE_KEYS = ['font', 'fontSize', 'color', 'slant', 'fontWeight'];
 const NO_EDGES: Edges = { top: 0, right: 0, bottom: 0, left: 0 };
 const NO_CORNERS: Corners = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
@@ -528,21 +528,26 @@ class TemplateReader {
         (typeof argument['value'] === 'string' || typeof argument['value'] === 'boolean' || isFiniteNumber(argument['value']))) {
         args[name] = { value: argument['value'] };
       } else if (type === 'loop' && isRecord(argument) && Object.keys(argument).length === 1 &&
-        ['index', 'isFirst', 'isLast', 'count'].includes(String(argument['loop']))) {
-        args[name] = { loop: argument['loop'] as 'index' | 'isFirst' | 'isLast' | 'count' };
-      } else this.fail(path, `参数 ${name} 写成 { var: 路径 }、{ value: 固定值 }；循环容器还可用 { loop: index/isFirst/isLast/count }`);
+        ['index', 'isFirst', 'isLast', 'count', 'groupSize'].includes(String(argument['loop']))) {
+        args[name] = { loop: argument['loop'] as 'index' | 'isFirst' | 'isLast' | 'count' | 'groupSize' };
+      } else this.fail(path, `参数 ${name} 写成 { var: 路径 }、{ value: 固定值 }；循环容器还可用 { loop: index/isFirst/isLast/count/groupSize }`);
     }
     if (type === 'call') {
       const data = value['data'] ?? 'none';
       if (data !== 'current' && data !== 'none' && !isVarOperand(data)) return this.fail(path, '子模板数据 data 写成 { var: 单引用路径 }、current 或 none');
       return base && { ...base, type, template, data, args };
     }
-    if (value['mergeBy'] !== undefined) this.unsupported(path, '合并相邻同值项 mergeBy 随票据 09 加入');
+    const mergeBy = value['mergeBy'];
+    if (mergeBy !== undefined && (typeof mergeBy !== 'string' || !/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$/.test(mergeBy))) {
+      return this.fail(path, 'mergeBy 必须是列表项中的字段路径');
+    }
     const list = value['list'];
     if (!isVarOperand(list)) return this.fail(path, '循环的 list 必须是 { var: 列表字段路径 }');
     const item = value['itemLayout'];
     if (!isRecord(item)) return this.fail(path, '循环必须声明 itemLayout');
-    this.checkKeys(item, ['direction', 'widths', 'gap'], path, 'itemLayout');
+    this.checkKeys(item, ['direction', 'widths', 'gap', 'spanBy'], path, 'itemLayout');
+    const spanBy = item['spanBy'];
+    if (spanBy !== undefined && spanBy !== 'groupSize') return this.fail(path, 'itemLayout.spanBy 只能取 groupSize');
     const direction = this.readEnum(item['direction'], ['row'] as const, 'row', path, 'itemLayout.direction');
     const gap = this.readNumber(item['gap'], 0, path, 'itemLayout.gap', { min: 0 });
     const widths = item['widths'];
@@ -553,10 +558,15 @@ class TemplateReader {
       if (fixed === undefined) return undefined;
       widthSpec = { fixed };
     } else return this.fail(path, 'itemLayout.widths 写成 equal、content 或 { fixed: 毫米 }');
+    if (mergeBy !== undefined && (widthSpec !== 'equal' || spanBy !== 'groupSize')) {
+      return this.fail(path, '合并循环必须使用 widths: equal、spanBy: groupSize，按原始项数分列');
+    }
+    if (spanBy !== undefined && mergeBy === undefined) return this.fail(path, 'spanBy: groupSize 需要同时指定 mergeBy');
     const body = this.readContainerBody({ ...value, layout: { mode: 'free' }, children: [] }, path);
     if (!base || !body || !direction || gap === undefined) return undefined;
     const { children: _children, layout: _layout, ...appearance } = body;
-    return { ...base, ...appearance, type, template, list, args, itemLayout: { direction, widths: widthSpec, gap } };
+    return { ...base, ...appearance, type, template, list, args, ...(typeof mergeBy === 'string' && { mergeBy }),
+      itemLayout: { direction, widths: widthSpec, gap, ...(spanBy && { spanBy }) } };
   }
 
   private readElementName(value: unknown, parent: ElementPath): Read<string> {
@@ -702,7 +712,10 @@ class TemplateReader {
     const color = value['color'] === undefined ? '#000000FF' : this.readColor(value['color'], path, 'color');
     const slant = this.readSlant(value['slant'], path, 'slant');
     if (slant && writingMode === 'vertical') this.unsupported(path, '竖排文字的倾斜 slant 尚未支持');
-    const horizontalAlign = this.readEnum(value['horizontalAlign'], ALIGNS, 'start', path, 'horizontalAlign');
+    const horizontalAlign = this.readEnum(value['horizontalAlign'], [...ALIGNS, 'distribute', 'spaceEvenly'] as const, 'start', path, 'horizontalAlign');
+    if ((horizontalAlign === 'distribute' || horizontalAlign === 'spaceEvenly') && writingMode !== 'horizontal') {
+      this.fail(path, `horizontalAlign 取 ${horizontalAlign} 只用于横排文字`);
+    }
     const verticalAlign = this.readEnum(value['verticalAlign'], ['top', 'center', 'bottom', 'distribute'] as const, 'top', path, 'verticalAlign');
     if (verticalAlign === 'distribute' && writingMode !== 'vertical') {
       this.fail(path, 'verticalAlign 取 distribute（两端分布）只用于竖排文字');
@@ -822,11 +835,11 @@ class TemplateReader {
 
   /**
    * 放不下时的处理。竖排支持 tightenSpacing、compressGlyphs，且收紧字距必须在压缩字形之前（M82）；
-   * 横排的压缩、缩字与拉开字距在票据 09 加入；按宽度统一缩字（widthOverflow）在票据 10 加入。
+   * 横排先 compressGlyphs 再 shrink；按宽度统一缩字（widthOverflow）在票据 10 加入。
    * 不写 fit 时文字不做适配，放不下即按严重问题上报（M109）。
    */
   private readFit(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<TextFit> {
-    const none: TextFit = { tightenSpacing: false, compressGlyphs: false, compressMin: MIN_COMPRESSION, onFail: 'severe' };
+    const none: TextFit = { tightenSpacing: false, compressGlyphs: false, compressMin: MIN_COMPRESSION, shrink: false, minFontSize: 5, onFail: 'severe' };
     if (value === undefined) return none;
     if (!isRecord(value)) {
       this.fail(path, 'fit 必须是对象');
@@ -844,7 +857,7 @@ class TemplateReader {
       this.fail(path, 'fit.steps 必须是步骤名称的列表');
       return undefined;
     }
-    const supported = writingMode === 'vertical' ? ['tightenSpacing', 'compressGlyphs'] : [];
+    const supported = writingMode === 'vertical' ? ['tightenSpacing', 'compressGlyphs'] : ['compressGlyphs', 'shrink'];
     for (const step of steps) {
       if (!supported.includes(step)) {
         this.unsupported(path, `${writingMode === 'vertical' ? '竖排' : '横排'}文字的适配步骤 ${step} 尚未支持`);
@@ -856,23 +869,31 @@ class TemplateReader {
       return undefined;
     }
     if (
-      steps.includes('compressGlyphs') &&
+      writingMode === 'vertical' && steps.includes('compressGlyphs') &&
       !(steps.includes('tightenSpacing') && steps.indexOf('tightenSpacing') < steps.indexOf('compressGlyphs'))
     ) {
       this.fail(path, '收紧字距必须排在压缩字形之前：字距收到 0 之前不压缩字形（M82）');
       return undefined;
     }
     const compressMin = value['compressMin'] ?? MIN_COMPRESSION;
-    if (typeof compressMin !== 'number' || compressMin < MIN_COMPRESSION || compressMin > 1) {
+    if (!isFiniteNumber(compressMin) || compressMin < MIN_COMPRESSION || compressMin > 1) {
       this.fail(path, `fit.compressMin 必须在 ${MIN_COMPRESSION} 到 1 之间（M88）`);
       return undefined;
     }
+    if (steps.includes('shrink') && (!steps.includes('compressGlyphs') || steps.indexOf('shrink') < steps.indexOf('compressGlyphs'))) {
+      return this.fail(path, '横排必须先 compressGlyphs 再 shrink（M84）');
+    }
+    const minFontSize = value['minFontSize'] ?? 5;
+    if (!isFiniteNumber(minFontSize) || minFontSize < 5) return this.fail(path, 'fit.minFontSize 不能低于 5 mm（M86）');
+    if (value['minFontSize'] !== undefined && !steps.includes('shrink')) return this.fail(path, 'minFontSize 只用于横排 shrink 步骤');
     const onFail = this.readEnum(value['onFail'], ['severe', 'hint'] as const, 'severe', path, 'fit.onFail');
     if (!onFail) return undefined;
     return {
       tightenSpacing: steps.includes('tightenSpacing'),
       compressGlyphs: steps.includes('compressGlyphs'),
       compressMin,
+      shrink: steps.includes('shrink'),
+      minFontSize,
       onFail,
     };
   }

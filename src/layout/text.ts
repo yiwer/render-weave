@@ -60,8 +60,8 @@ export function measureTextNode(model: TextElementModel, fragments: readonly Eva
   };
 }
 
-function measureRun(fragment: EvaluatedFragment, fonts: FontStore, x: number): MeasuredRun {
-  const measured = measureText(fonts, fonts.get(fragment.style.font)!, fragment.text, fragment.style.fontSize);
+function measureRun(fragment: EvaluatedFragment, fonts: FontStore, x: number, inkSkew = 0): MeasuredRun {
+  const measured = measureText(fonts, fonts.get(fragment.style.font)!, fragment.text, fragment.style.fontSize, inkSkew);
   const advance = measured.glyphs.reduce((sum, glyph) => sum + glyph.advance, 0);
   return { fragment, glyphs: measured.glyphs, ascent: measured.ascent, descent: measured.descent, advance, x };
 }
@@ -76,7 +76,7 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
   const runs: MeasuredRun[] = [];
   let x = 0;
   for (const fragment of fragments) {
-    const run = measureRun(fragment, fonts, x);
+    const run = measureRun(fragment, fonts, x, distributesInk(model) ? slantSkew(fragment.style.slant) : 0);
     runs.push(run);
     x += run.advance;
   }
@@ -93,7 +93,13 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
     left = Math.min(left, run.x + Math.min(-skew * run.descent, skew * run.ascent));
     right = Math.max(right, run.x + run.advance + Math.max(skew * run.ascent, -skew * run.descent));
   }
-  return { runs, ascent, descent, width: right - left, height: ascent + descent, lead: -left };
+  const width = distributesInk(model)
+    ? runs.reduce((sum, run) => sum + run.glyphs.reduce((total, glyph) => {
+      const ink = horizontalInk(glyph);
+      return total + ink.right - ink.left;
+    }, 0), 0)
+    : right - left;
+  return { runs, ascent, descent, width, height: ascent + descent, lead: -left };
 }
 
 function measureVertical(model: TextElementModel, fragments: readonly EvaluatedFragment[], fonts: FontStore): Omit<MeasuredLines, 'intrinsic'> {
@@ -133,19 +139,20 @@ export function recordText(
     model.writingMode === 'vertical' && measure.column
       ? recordVertical(model, text, measure, measure.column, content, drawOps, problems)
       : recordHorizontal(model, text, measure, content, drawOps, problems);
+  const { fontScale = 1, ...publicSummary } = summary;
   return {
-    ...summary,
+    ...publicSummary,
     fragments: fragments.map((fragment) => ({
       text: fragment.text,
       font: `res:${fragment.style.font}`,
-      fontSize: roundMm(fragment.style.fontSize),
+      fontSize: roundMm(fragment.style.fontSize * fontScale),
       color: fragment.style.color,
       slant: fragment.style.slant,
     })),
   };
 }
 
-type Summary = Omit<TextSummary, 'fragments'>;
+type Summary = Omit<TextSummary, 'fragments'> & { fontScale?: number };
 
 function recordHorizontal(
   model: TextElementModel,
@@ -155,9 +162,27 @@ function recordHorizontal(
   drawOps: DrawOp[],
   problems: Problem[],
 ): Summary {
-  const { width, height } = measure;
+  const availableWidth = Math.max(0, content.width);
+  const availableHeight = Math.max(0, content.height);
+  const compression = model.fit.compressGlyphs && measure.width > availableWidth
+    ? Math.max(model.fit.compressMin, availableWidth / measure.width) : 1;
+  const sizes = measure.runs.filter((run) => run.glyphs.length > 0).map((run) => run.fragment.style.fontSize);
+  const floor = Math.min(1, Math.max(...(sizes.length ? sizes : [model.fontSize]).map((size) => model.fit.minFontSize / size)));
+  const fontScale = model.fit.shrink ? Math.max(floor, Math.min(1,
+    measure.width > 0 ? availableWidth / (measure.width * compression) : 1,
+    measure.height > 0 ? availableHeight / measure.height : 1)) : 1;
+  const scaleX = compression * fontScale;
+  const naturalWidth = measure.width * scaleX;
+  const height = measure.height * fontScale;
+  const count = measure.runs.reduce((sum, run) => sum + run.glyphs.length, 0);
+  const distribute = distributesInk(model);
+  const evenly = model.horizontalAlign === 'spaceEvenly';
+  const intervals = evenly ? count + 1 : count - 1;
+  const spacing = distribute && count > 0 && intervals > 0 ? Math.max(0, (availableWidth - naturalWidth) / intervals) : 0;
+  const width = naturalWidth + spacing * Math.max(0, count - 1);
   const offsetX =
-    model.horizontalAlign === 'start' ? 0 : model.horizontalAlign === 'center' ? (content.width - width) / 2 : content.width - width;
+    evenly ? spacing : distribute ? (count === 1 ? Math.max(0, (content.width - width) / 2) : 0)
+      : model.horizontalAlign === 'start' ? 0 : model.horizontalAlign === 'center' ? (content.width - width) / 2 : content.width - width;
   const offsetY =
     model.verticalAlign === 'center' ? (content.height - height) / 2 : model.verticalAlign === 'bottom' ? content.height - height : 0;
   const overflow = width > content.width + EPSILON || height > content.height + EPSILON;
@@ -169,19 +194,35 @@ function recordHorizontal(
       ),
     );
   }
-  const originX = content.x + offsetX + measure.lead;
-  const baseline = content.y + offsetY + measure.ascent;
+  const originX = content.x + offsetX;
+  const baseline = content.y + offsetY + measure.ascent * fontScale;
+  let cursor = originX;
   const placed = measure.runs.map((run) => {
     const positions: number[] = [];
-    let x = originX + run.x;
+    let x = originX + (measure.lead + run.x) * scaleX;
     for (const glyph of run.glyphs) {
-      positions.push(x, baseline);
-      x += glyph.advance;
+      if (distribute) {
+        const ink = horizontalInk(glyph);
+        positions.push(cursor - ink.left * scaleX, baseline);
+        cursor += (ink.right - ink.left) * scaleX + spacing;
+      } else {
+        positions.push(x, baseline);
+        x += glyph.advance * scaleX;
+      }
     }
-    return { style: run.fragment.style, glyphs: run.glyphs.map((glyph) => glyph.id), positions };
+    return { style: { ...run.fragment.style, fontSize: run.fragment.style.fontSize * fontScale }, glyphs: run.glyphs.map((glyph) => glyph.id), positions };
   });
-  pushGlyphs(drawOps, model, placed, 1);
-  return summarize(model, text, width, height, 0, 1, overflow);
+  pushGlyphs(drawOps, model, placed, 1, compression);
+  return { ...summarize(model, text, width, height, spacing, compression, overflow), fontSize: roundMm(model.fontSize * fontScale), fontScale };
+}
+
+/** 两端分布测量时已按倾斜后的轮廓求墨迹边界；无墨迹字形用前进宽度占位。 */
+function horizontalInk(glyph: MeasuredGlyph): { left: number; right: number } {
+  return glyph.ink ?? { left: 0, right: glyph.advance };
+}
+
+function distributesInk(model: TextElementModel): boolean {
+  return model.horizontalAlign === 'distribute' || model.horizontalAlign === 'spaceEvenly';
 }
 
 function recordVertical(
@@ -197,7 +238,7 @@ function recordVertical(
     fontSize: model.fontSize,
     boxWidth: content.width,
     boxHeight: content.height,
-    horizontalAlign: model.horizontalAlign,
+    horizontalAlign: model.horizontalAlign === 'distribute' || model.horizontalAlign === 'spaceEvenly' ? 'start' : model.horizontalAlign,
     verticalAlign: model.verticalAlign,
     compressGlyphs: model.fit.compressGlyphs,
     compressMin: model.fit.compressMin,
@@ -239,7 +280,7 @@ interface PlacedRun {
  * 记录字形绘制指令：相邻、样式相同的片段合成一条。
  * 有描边时先画全部片段的描边、再画全部填充（M108），免得后面片段的描边盖住前面的字。
  */
-function pushGlyphs(drawOps: DrawOp[], model: TextElementModel, runs: readonly PlacedRun[], compressionY: number): void {
+function pushGlyphs(drawOps: DrawOp[], model: TextElementModel, runs: readonly PlacedRun[], compressionY: number, compressionX = 1): void {
   const merged: { style: ResolvedStyle; glyphs: number[]; positions: number[] }[] = [];
   for (const run of runs) {
     if (run.glyphs.length === 0) continue;
@@ -256,9 +297,9 @@ function pushGlyphs(drawOps: DrawOp[], model: TextElementModel, runs: readonly P
     path: formatElementPath(model.path),
     font: run.style.font,
     fontSize: run.style.fontSize,
-    scaleX: 1,
+    scaleX: compressionX,
     scaleY: compressionY,
-    skew: slantSkew(run.style.slant),
+    skew: slantSkew(run.style.slant) * compressionX,
     glyphs: run.glyphs,
     positions: run.positions,
   });

@@ -66,16 +66,17 @@ export class FontStore {
   }
 
   /**
-   * 字形墨迹的精确边界；没有墨迹（如空格）时为 undefined。
+   * 字形墨迹的精确边界（可带倾斜）；没有墨迹（如空格）时为 undefined。
    * 用 getGlyphIntercepts 对字形轮廓求交：左右边界直接得到，上下边界二分求得。
    * 不用 getGlyphBounds：它在规范化字号下取整，实测误差可达 1/64 em，小字号时更大。
    */
-  inkBounds(font: LoadedFont, glyph: number): InkBounds | undefined {
-    const key = `${font.id}#${glyph}`;
+  inkBounds(font: LoadedFont, glyph: number, skew = 0): InkBounds | undefined {
+    const key = `${font.id}#${glyph}#${skew}`;
     const cached = this.inkCache.get(key);
     if (cached !== undefined) return cached ?? undefined;
 
     const skFont = this.makeFont(font, INK_PROBE_SIZE);
+    if (skew !== 0) skFont.setSkewX(-skew);
     try {
       const glyphs = [glyph];
       const origin = [0, 0];

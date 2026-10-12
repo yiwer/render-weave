@@ -17,6 +17,7 @@ import { describeRule, readArtboardResolved, satisfies, type BindingHost, type B
 import { Scope, resolveParameters } from './template/scope.js';
 import { argumentProblem, type TemplateProgram } from './template/program.js';
 import { displayKind } from './template/types.js';
+import { groupLoopItems } from './template/loop.js';
 
 export interface EvaluatedNode {
   readonly model: ArtboardModel | Exclude<ElementModel, LoopModel | CallModel>;
@@ -24,6 +25,9 @@ export interface EvaluatedNode {
   readonly sourceType?: 'loop' | 'call';
   /** 被调画板的尺寸范围，在实际调用框确定后检查。 */
   readonly calledTemplate?: { readonly name: string; readonly sizeRange: ArtboardModel['sizeRange'] };
+  /** 合并循环沿原始列划分空间，组宽包含被合并的内部列间距。 */
+  readonly loopColumns?: { readonly count: number; readonly gap: number };
+  readonly loopGroup?: { readonly index: number; readonly size: number };
   /** 文本元素求值后的片段，样式已合并上文本元素的设置。 */
   readonly fragments?: readonly EvaluatedFragment[];
   readonly children?: readonly EvaluatedNode[];
@@ -101,16 +105,19 @@ class Expander {
         const items: unknown[] = Array.isArray(value) ? value : [];
         const listType = scope.table.typeOf(model.list.var);
         const wrap = 'type' in listType && listType.type.kind === 'list' && listType.type.items.kind !== 'ref';
-        const children = items.map((item, index) => {
-          const path = [...model.path.slice(0, -1), { name: model.name, index: index + 1 }];
+        const children = groupLoopItems(items, model.mergeBy).map((group) => {
+          const { data: item, index, size } = group;
+          const path = [...model.path.slice(0, -1), { name: model.name, index }];
           const width = model.itemLayout.widths;
           const place: Place = { ...EMPTY_PLACE,
             width: width === 'equal' ? { kind: 'fill', weight: 1 } : width === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: width.fixed },
             height: { kind: 'fill', weight: 1 } };
-          return this.invoke(model, scope, wrap ? { value: item } : item, path, place, undefined,
-            { index: index + 1, isFirst: index === 0, isLast: index === items.length - 1, count: items.length });
+          const child = this.invoke(model, scope, wrap ? { value: item } : item, path, place, undefined,
+            { index, isFirst: index === 1, isLast: index + size - 1 === items.length, count: items.length, groupSize: size });
+          return model.mergeBy ? { ...child, loopGroup: { index, size } } : child;
         });
-        return { sourceType: 'loop', model: { ...model, type: 'container', children: [],
+        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { count: items.length, gap: model.itemLayout.gap } }),
+          model: { ...model, type: 'container', children: [],
           layout: { mode: 'stack', direction: 'row', gap: model.itemLayout.gap, justifyContent: 'start', alignItems: 'start' } }, children };
       }
       default: return { model };

@@ -49,7 +49,7 @@ export interface TextSummary {
   /** 文字实际占用的宽与高，毫米；横排的宽包含倾斜带来的外扩，竖排两端分布时高度是首字墨迹顶到末字墨迹底。 */
   readonly width: number;
   readonly height: number;
-  /** 字距：相邻字格之间的空白，毫米。 */
+  /** 字距，毫米：横排分布是相邻墨迹的间隔（spaceEvenly 两侧也留同样间隔），竖排是相邻字格之间的空白。 */
   readonly spacing: number;
   /** 沿书写方向的压缩比，1 为不压缩。 */
   readonly compression: number;
@@ -128,10 +128,10 @@ export type DrawOp =
       readonly path: string;
       readonly font: string;
       readonly fontSize: number;
-      /** 字形的横向与纵向缩放；竖排压缩时 scaleY 小于 1。 */
+      /** 字形的横向与纵向缩放；沿书写方向压缩，另一方向保持 1。 */
       readonly scaleX: number;
       readonly scaleY: number;
-      /** 以基线为轴的错切：字形上每一点按其在基线以上的高度向右移 skew 倍，倾斜 θ 度时为 tan θ（M117）。 */
+      /** 以基线为轴的错切：基线以上每单位高度向右移 skew；横排为 tan θ × scaleX（M117）。 */
       readonly skew: number;
       /** 填充色；没有时只画描边。一个文本的描边全部画完再画填充，免得后面片段的描边盖住前面的字（M108）。 */
       readonly color?: string;

@@ -27,7 +27,7 @@
         "type": "text",
         "name": "道路名",
         "content": [{ "slot": "road" }],
-        "horizontalAlign": "distribute",
+        "horizontalAlign": "spaceEvenly",
         "verticalAlign": "center",
         "font": "res:font-hei-medium",
         "fontSize": 6.5,

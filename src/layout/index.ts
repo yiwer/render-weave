@@ -125,6 +125,14 @@ class Layouter {
         break;
       }
     }
+    if (node.loopColumns) {
+      const { count, gap } = node.loopColumns;
+      const column = Math.max(0, ...children.map((child) => {
+        const size = child.loopGroup!.size;
+        return (this.outerHug(child, 'width') - (size - 1) * gap) / size;
+      }));
+      content = { ...content, width: count * column + Math.max(0, count - 1) * gap };
+    }
     return {
       width: content.width + model.padding.left + model.padding.right,
       height: content.height + model.padding.top + model.padding.bottom,
@@ -245,6 +253,18 @@ class Layouter {
 
   private childBoxes(node: EvaluatedNode, model: ArtboardModel | ContainerModel, content: Box): Map<EvaluatedNode, Box> {
     const children = visibleChildren(node);
+    if (node.loopColumns) {
+      const { count, gap } = node.loopColumns;
+      if (count === 0) return new Map();
+      const gaps = gap * (count - 1);
+      const column = Math.max(0, content.width - gaps) / count;
+      if (gaps > content.width + EPSILON) this.contentOverflow(model, `原始列间距需要 ${fmt(gaps)} mm，可用 ${fmt(content.width)} mm`);
+      return new Map(children.map((child) => {
+        const group = child.loopGroup!;
+        return [child, { x: content.x + (group.index - 1) * (column + gap), y: content.y,
+          width: group.size * column + (group.size - 1) * gap, height: content.height }];
+      }));
+    }
     switch (model.layout.mode) {
       case 'free':
         return new Map(children.map((child) => [child, this.freeBox(child, content)]));

@@ -44,6 +44,10 @@ export function prepareTemplates(workspace: Workspace, root: TemplateModel, comp
         if (!target) { blocked = true; continue; }
       }
       const source = callSourceType(call, template, checked.table);
+      if (call.type === 'loop' && call.mergeBy) {
+        const issue = mergeKeyProblem(call, checked.table);
+        if (issue) report(call, ProblemCodes.templateTypeMismatch, issue, true);
+      }
       if ('message' in source) report(call, source.code, source.message, true);
       else if (!sameStaticSchema(source.ref, target.base)) {
         report(call, call.type === 'loop' ? ProblemCodes.templateLoopBaseMismatch : ProblemCodes.templateCallBaseMismatch,
@@ -86,6 +90,20 @@ export function prepareTemplates(workspace: Workspace, root: TemplateModel, comp
     seen.add(key);
     return true;
   }), blocked };
+}
+
+function mergeKeyProblem(call: LoopModel, table: VariableTable): string | undefined {
+  const list = table.typeOf(call.list.var);
+  if (!('type' in list) || list.type.kind !== 'list') return undefined; // 数据来源检查已报告。
+  let type = list.type.items;
+  for (const field of call.mergeBy!.split('.')) {
+    if (type.kind !== 'ref') return `mergeBy ${call.mergeBy} 的路径只能经过列表项的单引用字段`;
+    const next = type.fields.get(field);
+    if (!next) return `mergeBy ${call.mergeBy} 引用了列表项中不存在的字段 ${field}`;
+    type = next;
+  }
+  if (type.kind === 'list' || type.kind === 'ref') return `mergeBy ${call.mergeBy} 必须指向基本类型字段`;
+  return undefined;
 }
 
 function callSourceType(call: LoopModel | CallModel, template: TemplateModel, table: VariableTable):

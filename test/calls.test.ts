@@ -324,7 +324,7 @@ describe('调用图与参数检查', () => {
   });
 
   it('普通调用中不能使用循环信息，未知循环信息也不接受', async () => {
-    for (const element of [call({ args: { n: { loop: 'index' } } }), loop({ args: { n: { loop: 'groupSize' } } })]) {
+    for (const element of [call({ args: { n: { loop: 'index' } } }), loop({ args: { n: { loop: 'unknown' } } })]) {
       const workspace = await textLab([], { children: [element] });
       const result = await render(workspace, { ...textLabRequest({}, 40, 10), mode: 'draft' });
       expect(codes(result)).toContain(ProblemCodes.templateInvalid);
