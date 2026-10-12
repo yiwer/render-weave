@@ -1,12 +1,12 @@
 /**
  * 资源仓库：按资源 ID 管理图片资源与字体资源，资源引用写成 `res:资源ID`（M90 S8）。
  *
- * 首版为文件形式：仓库目录下的 `resources.json` 列出每个资源的 ID、种类与相对路径。
+ * 文件形式：旧 resources.json 列出 ID、种类与相对路径；版本清单固定内容版本并校验字节。
  * 引擎只通过 ResourceRepository 接口取资源，日后换成数据库或对象存储不影响引擎。
  */
 import { readFile } from 'node:fs/promises';
 import { isAbsolute, join, normalize, relative } from 'node:path';
-import { ProblemCodes, severe, type Problem } from './problems.js';
+import { ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
 import { describeError, isRecord } from './util.js';
 
 export type ResourceKind = 'image' | 'font';
@@ -26,6 +26,7 @@ export class ResourceReadError extends Error {
   constructor(
     readonly resourceId: string,
     message: string,
+    readonly code: ProblemCode = ProblemCodes.resourceUnreadable,
   ) {
     super(message);
   }
@@ -45,7 +46,7 @@ interface FileEntry extends ResourceInfo {
   readonly file: string;
 }
 
-/** 打开文件形式的资源仓库。清单有问题时仍返回可用部分，问题一并返回。 */
+/** 自动识别新旧清单。旧清单返回可用部分；版本清单错误时整体拒绝。 */
 export async function openResourceRepository(
   dir: string,
 ): Promise<{ repository: ResourceRepository; problems: Problem[] }> {
@@ -64,6 +65,11 @@ export async function openResourceRepository(
     return { repository: new FileResourceRepository(entries), problems };
   }
 
+  if (isRecord(manifest) && 'format' in manifest) {
+    const { openVersionedResourceStore } = await import('./versioned-resources.js');
+    const result = await openVersionedResourceStore(dir);
+    return { repository: result.store?.pin().repository ?? new FileResourceRepository(entries), problems: result.problems };
+  }
   const list = isRecord(manifest) ? manifest['resources'] : undefined;
   if (!Array.isArray(list)) {
     problems.push(severe(ProblemCodes.inputUnreadable, location, '资源仓库清单缺少 resources 列表'));

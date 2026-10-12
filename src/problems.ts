@@ -133,6 +133,10 @@ export const ProblemCodes = {
   resourceNotFound: 'resource.notFound',
   resourceKindMismatch: 'resource.kindMismatch',
   resourceUnreadable: 'resource.unreadable',
+  resourceIntegrityMismatch: 'resource.integrityMismatch',
+  resourceVersionNotFound: 'resource.versionNotFound',
+  resourceStoreBusy: 'resource.storeBusy',
+  resourceWriteFailed: 'resource.writeFailed',
   /** 缺字已按字重逐字替代，提示。 */
   textGlyphFallback: 'text.glyphFallback',
   /** 原字体与后备字体均不能显示某些码点，严重。 */

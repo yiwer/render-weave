@@ -13,6 +13,7 @@ import { render } from './render.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
+import { initializeResourceStore, importResources, openVersionedResourceStore } from './versioned-resources.js';
 
 export interface CliIo {
   readonly stdout: (text: string) => void;
@@ -24,6 +25,9 @@ export const ExitCodes = { ok: 0, failed: 1, usage: 2 } as const;
 const USAGE = `用法：
   renderweave render --workspace <目录> --resources <目录> --request <文件> --out <目录>
   renderweave publish --definition <文件> --workspace <目录> --out <目录>
+  renderweave resources-init --resources <新目录>
+  renderweave resources-import --source <旧资源目录> --resources <版本仓库目录>
+  renderweave resources-list --resources <版本仓库目录>
 
 render
   --workspace   工作区目录：静态数据定义、编译产物、模板与数据集的 JSON 文件
@@ -39,9 +43,17 @@ publish
 
 type Options = Record<string, string | boolean | undefined>;
 
+const COMMAND_OPTIONS: Record<string, readonly string[]> = {
+  render: ['workspace', 'resources', 'request', 'out'],
+  publish: ['definition', 'workspace', 'out'],
+  'resources-init': ['resources'],
+  'resources-import': ['source', 'resources'],
+  'resources-list': ['resources'],
+};
+
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   const [command, ...rest] = argv;
-  const names = command === 'render' ? ['workspace', 'resources', 'request', 'out'] : command === 'publish' ? ['definition', 'workspace', 'out'] : undefined;
+  const names = command && Object.hasOwn(COMMAND_OPTIONS, command) ? COMMAND_OPTIONS[command] : undefined;
   if (!names) {
     io.stderr(USAGE);
     return ExitCodes.usage;
@@ -63,11 +75,34 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   const options = values as Record<string, string>;
   try {
-    return await (command === 'render' ? runRender(options, io) : runPublish(options, io));
+    if (command === 'render') return await runRender(options, io);
+    if (command === 'publish') return await runPublish(options, io);
+    return await runResources(command!, options, io);
   } catch (error) {
     io.stderr(`命令执行失败：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
+}
+
+async function runResources(command: string, options: Record<string, string>, io: CliIo): Promise<number> {
+  const dir = options.resources!;
+  if (command === 'resources-init') {
+    const result = await initializeResourceStore(dir);
+    reportProblems(result.problems, io);
+    if (result.problems.some((item) => item.level === 'severe')) return ExitCodes.failed;
+    io.stdout(`已准备资源版本仓库：${dir}\n`);
+  } else if (command === 'resources-import') {
+    const result = await importResources({ dir, sourceDir: options.source! });
+    reportProblems(result.problems, io);
+    if (result.problems.some((item) => item.level === 'severe')) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify(result.imported, null, 2)}\n`);
+  } else {
+    const result = await openVersionedResourceStore(dir);
+    reportProblems(result.problems, io);
+    if (!result.store) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify(result.store.list(), null, 2)}\n`);
+  }
+  return ExitCodes.ok;
 }
 
 async function runRender(options: Record<string, string>, io: CliIo): Promise<number> {

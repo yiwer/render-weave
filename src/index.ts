@@ -15,10 +15,15 @@ export {
   openResourceRepository,
   createMemoryResourceRepository,
   parseResourceRef,
+  ResourceReadError,
   type ResourceRepository,
   type ResourceInfo,
   type ResourceKind,
 } from './resources.js';
+export {
+  initializeResourceStore, importResources, openVersionedResourceStore,
+  type VersionedResourceStore, type VersionedResourceInfo, type ResourceVersionMap, type PinnedResources,
+} from './versioned-resources.js';
 export { ProblemCodes, type Problem, type ProblemCode, type ProblemLevel, type ProblemLocation } from './problems.js';
 export { formatElementPath, type ElementPath, type ElementPathSegment } from './element-path.js';
 export type { LayoutSummary, LayoutNode, TextSummary, QrCodeSummary, BarcodeSummary } from './layout/index.js';

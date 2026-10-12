@@ -182,7 +182,7 @@ export class FontStore {
       bytes = await this.repository.read(id);
     } catch (error) {
       const message = error instanceof ResourceReadError ? error.message : `字体资源 res:${id} 无法读取`;
-      return { error: { code: ProblemCodes.resourceUnreadable, message } };
+      return { error: { code: error instanceof ResourceReadError ? error.code : ProblemCodes.resourceUnreadable, message } };
     }
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
     const typeface = this.ck.Typeface.MakeTypefaceFromData(buffer);

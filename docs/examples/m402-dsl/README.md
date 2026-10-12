@@ -136,6 +136,8 @@ S2–S13 已确认（M90）。
 npm run render -- render --workspace docs/examples/m402-dsl --resources fixtures/resources --request docs/examples/m402-dsl/render-request-m402.json --out out/ticket14/base
 ```
 
+第二阶段票据 04 可把同一份图片和字体导入为资源内容 v1，再直接运行上述 M402 请求；JSON 与 `res:ID` 写法均不变。准备、导入、查询、固定版本映射及导入前后逐字节验收见[资源内容版本说明](../../resources-versioning.md)。
+
 ## 起草中发现的问题
 
 | 编号 | 问题 | 结论 |

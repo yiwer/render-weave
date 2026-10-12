@@ -112,7 +112,7 @@ export class ImageStore {
       bytes = await this.repository.read(id);
     } catch (error) {
       const message = error instanceof ResourceReadError ? error.message : `图片资源 res:${id} 无法读取`;
-      return { error: { code: ProblemCodes.resourceUnreadable, message } };
+      return { error: { code: error instanceof ResourceReadError ? error.code : ProblemCodes.resourceUnreadable, message } };
     }
     const format = detectFormat(bytes);
     if (!format) {
