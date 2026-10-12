@@ -34,6 +34,12 @@ export interface Problem {
 }
 
 export const ProblemCodes = {
+  deliveryUnsupported: 'delivery.unsupported',
+  deliveryWriteFailed: 'delivery.writeFailed',
+  recordInvalid: 'record.invalid',
+  recordIntegrityMismatch: 'record.integrityMismatch',
+  recordBuildMismatch: 'record.buildMismatch',
+  recordReplayMismatch: 'record.replayMismatch',
   barcodeContentInvalid: 'barcode.contentInvalid',
   barcodeChecksumInvalid: 'barcode.checksumInvalid',
   barcodeCapacityExceeded: 'barcode.capacityExceeded',

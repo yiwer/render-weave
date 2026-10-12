@@ -10,6 +10,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { Problem } from './problems.js';
 import { render, type RenderOptions } from './render.js';
+import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-records.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
@@ -23,6 +24,9 @@ export interface CliIo {
 export const ExitCodes = { ok: 0, failed: 1, usage: 2 } as const;
 
 const USAGE = `用法：
+  renderweave deliver --workspace <目录> --resources <版本仓库> --request <单项批量请求.json> --out <新目录> [--options <字体配置.json>]
+  renderweave replay --record <记录目录> --out <新目录>
+  renderweave record-read --record <记录目录>
   renderweave render --workspace <目录> --resources <目录> --request <文件> --out <目录>
   renderweave publish --definition <文件> --workspace <目录> --out <目录>
   renderweave resources-init --resources <新目录>
@@ -48,6 +52,9 @@ publish
 type Options = Record<string, string | boolean | undefined>;
 
 const COMMAND_OPTIONS: Record<string, readonly string[]> = {
+  deliver: ['workspace', 'resources', 'request', 'out'],
+  replay: ['record', 'out'],
+  'record-read': ['record'],
   render: ['workspace', 'resources', 'request', 'out'],
   publish: ['definition', 'workspace', 'out'],
   'resources-init': ['resources'],
@@ -66,7 +73,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     return ExitCodes.usage;
   }
   let values: Options;
-  const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' ? ['options'] : [];
+  const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options'] : [];
   try {
     ({ values } = parseArgs({
       args: [...rest],
@@ -86,11 +93,43 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   try {
     if (command === 'render') return await runRender(options, io);
     if (command === 'publish') return await runPublish(options, io);
+    if (command === 'deliver' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     return await runResources(command!, options, io);
   } catch (error) {
     io.stderr(`命令执行失败：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
+}
+
+async function runRecords(command: string, options: Record<string, string>, io: CliIo): Promise<number> {
+  if (command === 'deliver') {
+    let request: unknown, renderOptions: RenderOptions | undefined;
+    try {
+      const precision: string[] = [];
+      request = parseJsonKeepingPrecision(await readFile(options.request!, 'utf8'), precision);
+      if (options.options) renderOptions = JSON.parse(await readFile(options.options, 'utf8'));
+      if (precision.length) throw new Error(`请求数值超过 15 位有效数字：${precision.join('、')}`);
+    } catch (error) { io.stderr(`请求或选项无法读取：${describeError(error)}\n`); return ExitCodes.usage; }
+    const workspace = await loadWorkspaceDocuments(options.workspace!);
+    const opened = await openVersionedResourceStore(options.resources!);
+    reportProblems(opened.problems, io);
+    if (!opened.store) return ExitCodes.failed;
+    const result = await deliverBatch({ workspace, resources: opened.store, request, outDir: options.out!, renderOptions });
+    reportProblems(result.problems, io);
+    if (!result.delivered) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify(result.delivered, null, 2)}\n`);
+  } else if (command === 'replay') {
+    const result = await replayOutputRecord({ dir: options.record!, outDir: options.out! });
+    reportProblems(result.problems, io);
+    if (!result.replayed) return ExitCodes.failed;
+    io.stdout(`已重新渲染，图片、问题清单和布局摘要均一致：${result.replayed.directory}\n`);
+  } else {
+    const result = await readOutputRecord({ dir: options.record! });
+    reportProblems(result.problems, io);
+    if (!result.record) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify(result.record, null, 2)}\n`);
+  }
+  return ExitCodes.ok;
 }
 
 async function runResources(command: string, options: Record<string, string>, io: CliIo): Promise<number> {

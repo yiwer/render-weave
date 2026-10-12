@@ -1,4 +1,5 @@
 export { render, type RenderResult, type RenderOptions } from './render.js';
+export { deliverBatch, readOutputRecord, replayOutputRecord, type BatchRenderRequest, type DeliveryResult, type DeliveryReference, type OutputRecord, type RecordedResource } from './output-records.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
