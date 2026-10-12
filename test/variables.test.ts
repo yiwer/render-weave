@@ -418,6 +418,7 @@ describe('模板静态检查', () => {
       ],
       [ProblemCodes.templateInvalid, element('字体'), '文本的字体 font 不能绑定变量；需要按取值换字体时用状态样式'],
       [ProblemCodes.templateInvalid, element('改名'), '状态样式不能覆盖 name（取值"甲"）'],
+      [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }, '输入无法展开，草稿预览与正式出图均停止；具体原因见上述问题'],
     ]);
   });
 });

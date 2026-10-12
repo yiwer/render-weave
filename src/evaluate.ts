@@ -17,9 +17,12 @@ import { describeRule, readArtboardResolved, satisfies, type BindingHost, type B
 import { Scope, resolveParameters } from './template/scope.js';
 import { argumentProblem, type TemplateProgram } from './template/program.js';
 import { displayKind } from './template/types.js';
+import { fieldOrigin, MissingValues, type DataOrigin } from './template/missing-values.js';
 import { groupLoopItems } from './template/loop.js';
 
 export interface EvaluatedNode {
+  /** 已定位的缺值或静态问题，供草稿画问题边框；不影响正常布局。 */
+  readonly previewProblem?: boolean;
   readonly model: ArtboardModel | Exclude<ElementModel, LoopModel | CallModel>;
   /** 调用与循环展开为普通容器，摘要保留原来的元素类型。 */
   readonly sourceType?: 'loop' | 'call';
@@ -34,6 +37,7 @@ export interface EvaluatedNode {
 }
 
 export interface EvaluatedFragment {
+  readonly placeholder?: string;
   readonly text: string;
   readonly style: ResolvedStyle;
   /** 缺字替代前的字体资源 ID；仅替代成功的片段携带。 */
@@ -56,9 +60,10 @@ export interface EvaluatedTemplate {
 
 const TRANSPARENT = '#00000000';
 
-export function evaluate(scope: Scope, program: TemplateProgram): { evaluated?: EvaluatedTemplate; problems: Problem[] } {
-  const expander = new Expander(program);
-  const root = expander.expand(scope, rootPath(scope.template.name), false);
+export function evaluate(scope: Scope, program: TemplateProgram, problems: readonly Problem[] = [],
+  parameterProblems: readonly Problem[] = []): { evaluated?: EvaluatedTemplate; problems: Problem[] } {
+  const expander = new Expander(program, problems);
+  const root = expander.expand(scope, rootPath(scope.template.name), false, { path: '' }, parameterProblems);
   return { ...(root && !expander.failed && { evaluated: { template: scope.template, root } }), problems: expander.problems };
 }
 
@@ -77,18 +82,26 @@ export function fragmentsText(fragments: readonly EvaluatedFragment[]): string {
 class Expander {
   readonly problems: Problem[] = [];
   failed = false;
-  constructor(private readonly program: TemplateProgram) {}
+  constructor(private readonly program: TemplateProgram, private readonly inputProblems: readonly Problem[]) {}
 
-  expand(scope: Scope, path: ElementPath, called: boolean): EvaluatedNode | undefined {
-    const host = new ResolvingHost(scope);
+  expand(scope: Scope, path: ElementPath, called: boolean, origin?: DataOrigin, parameterProblems: readonly Problem[] = []): EvaluatedNode | undefined {
+    const host = new ResolvingHost(scope, new MissingValues(scope, this.inputProblems, origin, parameterProblems));
     const { artboard, problems } = readArtboardResolved(scope.template, host, path);
     if (!artboard) this.failed = true;
     this.problems.push(...scope.runChecks().map((problem) => called && problem.location.kind === 'check'
       ? { ...problem, location: { ...problem.location, path: formatElementPath(path) } } : problem), ...problems, ...host.problems);
-    return artboard && this.node(artboard, scope);
+    return artboard && this.node(artboard, scope, host, origin, path);
   }
 
-  private node(model: ArtboardModel | ElementModel, scope: Scope): EvaluatedNode {
+  private node(model: ArtboardModel | ElementModel, scope: Scope, host: ResolvingHost, origin: DataOrigin | undefined, root: ElementPath): EvaluatedNode {
+    const node = this.expandNode(model, scope, host, origin, root);
+    const staticPath = formatElementPath([{ name: scope.template.name }, ...model.path.slice(root.length)]);
+    const problem = host.affected.has(formatElementPath(model.path)) || this.inputProblems.some((p) =>
+      p.location.kind === 'element' && p.location.path === staticPath);
+    return problem ? { ...node, previewProblem: true } : node;
+  }
+
+  private expandNode(model: ArtboardModel | ElementModel, scope: Scope, host: ResolvingHost, origin: DataOrigin | undefined, root: ElementPath): EvaluatedNode {
     if (model.type !== 'artboard' && !model.visible) {
       return { model: model.type === 'loop' || model.type === 'call' ? emptyContainer(model) : model,
         ...(model.type === 'loop' || model.type === 'call' ? { sourceType: model.type } : {}) };
@@ -96,11 +109,12 @@ class Expander {
     switch (model.type) {
       case 'artboard':
       case 'container':
-        return { model, children: model.children.map((child) => this.node(child, scope)) };
+        return { model, children: model.children.map((child) => this.node(child, scope, host, origin, root)) };
       case 'text': return { model, fragments: fragmentsOf(model) };
       case 'call': {
         const data = model.data === 'current' ? scope.data : model.data === 'none' ? {} : scope.value(model.data.var);
-        return this.invoke(model, scope, data, model.path, model.place, model);
+        const childOrigin = model.data === 'current' ? origin : model.data === 'none' ? undefined : fieldOrigin(origin, model.data.var);
+        return this.invoke(model, scope, data, model.path, model.place, typeof childOrigin === 'string' ? { path: childOrigin } : childOrigin, model);
       }
       case 'loop': {
         const value = scope.value(model.list.var);
@@ -114,7 +128,9 @@ class Expander {
           const place: Place = { ...EMPTY_PLACE,
             width: width === 'equal' ? { kind: 'fill', weight: 1 } : width === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: width.fixed },
             height: { kind: 'fill', weight: 1 } };
-          const child = this.invoke(model, scope, wrap ? { value: item } : item, path, place, undefined,
+          const listOrigin = fieldOrigin(origin, model.list.var);
+          const child = this.invoke(model, scope, wrap ? { value: item } : item, path, place,
+            listOrigin === undefined ? undefined : { path: `${listOrigin}[${index}]`, wrapped: wrap }, undefined,
             { index, isFirst: index === 1, isLast: index + size - 1 === items.length, count: items.length, groupSize: size });
           return model.mergeBy ? { ...child, loopGroup: { index, size } } : child;
         });
@@ -127,7 +143,7 @@ class Expander {
   }
 
   private invoke(call: LoopModel | CallModel, caller: Scope, data: unknown, path: ElementPath, place: Place,
-    appearance?: CallModel, loop?: Readonly<Record<LoopInfoKey, number | boolean>>): EvaluatedNode {
+    origin?: DataOrigin, appearance?: CallModel, loop?: Readonly<Record<LoopInfoKey, number | boolean>>): EvaluatedNode {
     const target = this.program.get(call.template)!;
     const requested: Record<string, unknown> = {};
     const reportedStatically = new Set<string>();
@@ -149,7 +165,10 @@ class Expander {
       return !reportedStatically.has(problem.location.name);
     }).map((problem) => problem.location.kind === 'parameter'
       ? { ...problem, location: { ...problem.location, path: formatElementPath(path) } } : problem));
-    const root = this.expand(new Scope(target.template, target.table, data, parameters.values), path, true);
+    const root = this.expand(new Scope(target.template, target.table, data, parameters.values), path, true, origin,
+      [...parameters.problems.filter((problem) => problem.location.kind !== 'parameter' || !reportedStatically.has(problem.location.name)),
+        ...[...reportedStatically].filter((name) => !parameters.values.has(name))
+        .map((name) => severe(ProblemCodes.parameterMissing, { kind: 'parameter', name }, ''))]);
     if (!root) return { sourceType: 'call', model: { ...emptyContainer(call), path, place, visible: false } };
     const artboard = root.model as ArtboardModel;
     return { ...root, sourceType: 'call', calledTemplate: { name: target.template.name, sizeRange: artboard.sizeRange },
@@ -170,6 +189,7 @@ function fragmentsOf(model: TextElementModel): EvaluatedFragment[] {
   return model.content.map((item) => ({
     // 求值读取已把插槽换成文字。
     text: item.kind === 'text' ? item.text : '',
+    ...(item.kind === 'text' && item.placeholder && { placeholder: item.placeholder }),
     style: {
       font: item.style.font ?? model.font,
       fontSize: item.style.fontSize ?? model.fontSize,
@@ -186,8 +206,15 @@ function fragmentsOf(model: TextElementModel): EvaluatedFragment[] {
 class ResolvingHost implements BindingHost {
   readonly resolving = true;
   readonly problems: Problem[] = [];
+  readonly affected = new Set<string>();
 
-  constructor(private readonly scope: Scope) {}
+  constructor(private readonly scope: Scope, private readonly missing: MissingValues) {}
+
+  placeholder(ref: string): string | undefined {
+    const resolved = this.scope.table.typeOf(ref);
+    return !('type' in resolved) || !displayKind(resolved.type) || this.missing.hasProblem(ref)
+      ? `〔${this.missing.label(ref)}〕` : undefined;
+  }
 
   color(ref: string): Color {
     return (this.typed(ref, 'color') && normalizeColor(this.scope.value(ref))) || TRANSPARENT;
@@ -216,7 +243,10 @@ class ResolvingHost implements BindingHost {
 
   image(ref: string, site: BindingSite): string | null {
     const value = this.typed(ref, 'image') ? this.scope.value(ref) : undefined;
-    if (typeof value !== 'string') return null;
+    if (typeof value !== 'string') {
+      if (this.missing.hasProblem(ref)) this.affected.add(formatElementPath(site.path));
+      return null;
+    }
     const id = parseResourceRef(value);
     if (id) return id;
     this.problems.push(

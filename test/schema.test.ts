@@ -254,6 +254,7 @@ describe('数据集版本与模板基准', () => {
 
     expect(final.problems.map((p) => [p.code, p.level, p.location])).toEqual([
       [ProblemCodes.datasetStaticSchemaMismatch, 'severe', { kind: 'input', source: 'dataset.staticSchema' }],
+      [ProblemCodes.renderExpansionBlocked, 'severe', { kind: 'input', source: 'render' }],
     ]);
     expect(final.problems[0]!.message).toBe('数据集选定的是"问候 v2"，模板"问候牌"的基准是"问候 v1"');
     expect(final.image).toBeUndefined();

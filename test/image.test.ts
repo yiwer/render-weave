@@ -155,7 +155,7 @@ describe('图片元素', () => {
     const wrong = await lab([image('图', 'logo.png', at(0, 0, 10, 10))], 20, 20);
     const empty = await lab([{ type: 'image', name: '空图', place: at(0, 0, 10, 10) }], 20, 20);
 
-    expect(wrong.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid]);
+    expect(wrong.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid, ProblemCodes.renderExpansionBlocked]);
     expect(empty.problems).toEqual([]);
     expect(node(empty, '空图').image).toBeUndefined();
   });

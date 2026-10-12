@@ -138,6 +138,7 @@ export interface BindingHost {
   image(ref: string, site: BindingSite): string | null;
   /** 插槽：求值读取返回文字；静态读取返回 undefined，保留插槽。 */
   slot(ref: string, format: DisplayFormat | undefined, site: BindingSite): string | undefined;
+  placeholder?(ref: string): string | undefined;
   /** 状态样式：求值读取返回选中的取值（没有列出时为 undefined）。 */
   state(ref: string, keys: readonly string[], site: BindingSite): string | undefined;
 }
@@ -783,7 +784,10 @@ class TemplateReader {
       const format = item['format'] === undefined ? undefined : this.readDisplayFormat(item['format'], path, slot);
       if (item['format'] !== undefined && !format) return undefined;
       const text = this.host.slot(slot, format, { path, label: '插槽' });
-      if (text !== undefined) items.push({ kind: 'text', text, style });
+      if (text !== undefined) {
+        const placeholder = text === '' ? this.host.placeholder?.(slot) : undefined;
+        items.push({ kind: 'text', text, style, ...(placeholder && { placeholder }) });
+      }
       else items.push({ kind: 'slot', path: slot, ...(format && { format }), style });
     }
     return items;

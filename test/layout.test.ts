@@ -222,9 +222,10 @@ describe('网格布局', () => {
     const missing = await lab({ layout: grid, children: [rect('甲', { column: 1 })] }, 20, 20);
     const wrongMode = await lab({ layout: { mode: 'stack', direction: 'row' }, children: [rect('甲', { row: 1 })] }, 20, 20);
 
-    expect(outside.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.templateInvalid, { kind: 'element', path: '布局实验/甲' }]]);
-    expect(missing.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid]);
-    expect(wrongMode.problems.map((p) => p.code)).toEqual([ProblemCodes.templateUnknownProperty]);
+    expect(outside.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.templateInvalid, { kind: 'element', path: '布局实验/甲' }],
+      [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }]]);
+    expect(missing.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid, ProblemCodes.renderExpansionBlocked]);
+    expect(wrongMode.problems.map((p) => p.code)).toEqual([ProblemCodes.templateUnknownProperty, ProblemCodes.renderExpansionBlocked]);
   });
 });
 
@@ -353,6 +354,6 @@ describe('外观与图形（254 DPI 下 1 mm 为 10 像素）', () => {
     const noStroke = await lab({ children: [{ type: 'line', name: '线', from: [0, 0], to: [10, 0], place: fixed(10, 10) }] }, 20, 20);
 
     expect(badPath.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.templateInvalid, { kind: 'element', path: '布局实验/坏路径' }]]);
-    expect(noStroke.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid]);
+    expect(noStroke.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid, ProblemCodes.renderExpansionBlocked]);
   });
 });

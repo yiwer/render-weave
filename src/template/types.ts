@@ -10,9 +10,10 @@ import { formatStaticSchemaRef, parseStaticSchemaRef, type StaticSchemaRef } fro
 export type BasicKind = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'image' | 'color';
 
 export type ValueType =
-  | { readonly kind: BasicKind; readonly enum?: readonly (string | number)[] }
+  ( { readonly kind: BasicKind; readonly enum?: readonly (string | number)[] }
   | { readonly kind: 'list'; readonly items: ValueType }
-  | { readonly kind: 'ref'; readonly ref?: StaticSchemaRef; readonly fields: ReadonlyMap<string, ValueType> };
+  | { readonly kind: 'ref'; readonly ref?: StaticSchemaRef; readonly fields: ReadonlyMap<string, ValueType> }
+  ) & { readonly displayName?: string };
 
 export const BASIC_KINDS: readonly BasicKind[] = ['text', 'number', 'date', 'time', 'datetime', 'boolean', 'image', 'color'];
 
@@ -41,6 +42,11 @@ export function kindLabel(kind: ValueType['kind']): string {
 
 /** 编译产物中一个属性的类型（M103：渲染只读编译产物）。 */
 export function typeFromCompiled(schema: Record<string, unknown>): ValueType {
+  const type = compiledType(schema);
+  return typeof schema['title'] === 'string' ? { ...type, displayName: schema['title'] } : type;
+}
+
+function compiledType(schema: Record<string, unknown>): ValueType {
   const special = schema['x-renderweave-type'];
   if (special === 'date' || special === 'time' || special === 'datetime' || special === 'image') return { kind: special };
   const values = Array.isArray(schema['enum']) ? (schema['enum'] as (string | number)[]) : undefined;

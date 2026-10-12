@@ -50,4 +50,24 @@ describe('命令行', () => {
     expect(missing.stderr).toContain('渲染请求无法读取');
     expect(usage.code).toBe(ExitCodes.usage);
   });
+
+  it('草稿写出占位，随后同目录正式失败清除旧图片，问题清单不变', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'renderweave-modes-'));
+    const requestFile = join(dir, 'request.json');
+    const out = join(dir, 'out');
+    const input = greetingRequest({ dataset: { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: {} } }, mode: 'draft' });
+    const args = ['render', '--workspace', singleTextDir, '--resources', resourcesDir, '--request', requestFile, '--out', out];
+    await writeFile(requestFile, JSON.stringify(input));
+    expect((await run(args)).code).toBe(ExitCodes.ok);
+    const problems = await readFile(join(out, 'problems.json'), 'utf8');
+    const draft = JSON.parse(await readFile(join(out, 'layout.json'), 'utf8'));
+    expect(draft.root.children[0].text.content).toBe('〔问候语〕');
+    expect(existsSync(join(out, 'image.png'))).toBe(true);
+    await writeFile(requestFile, JSON.stringify({ ...input, mode: 'final' }));
+    expect((await run(args)).code).toBe(ExitCodes.failed);
+    expect(existsSync(join(out, 'image.png'))).toBe(false);
+    expect(await readFile(join(out, 'problems.json'), 'utf8')).toBe(problems);
+    const final = JSON.parse(await readFile(join(out, 'layout.json'), 'utf8'));
+    expect(final.root.children[0].text.content).toBe('');
+  });
 });

@@ -35,7 +35,8 @@ export async function resolveGlyphFallbacks(node: EvaluatedNode, fonts: FontStor
         run = { ...run, text: run.text + char };
         fragments[fragments.length - 1] = run;
       } else {
-        run = { text: char, style: { ...fragment.style, font }, ...(substitute && { sourceFont: original.id }) };
+        run = { text: char, style: { ...fragment.style, font }, ...(fragment.placeholder && { placeholder: fragment.placeholder }),
+          ...(substitute && { sourceFont: original.id }) };
         fragments.push(run);
       }
     });

@@ -149,6 +149,7 @@ export function recordText(
     ...(model.fit.widthOverflow && { shrinkGroup: model.fit.widthOverflow.shrinkGroup }),
     fragments: fragments.map((fragment) => ({
       text: fragment.text,
+      ...(fragment.placeholder && fragment.text !== '' && { placeholder: true as const }),
       font: `res:${fragment.style.font}`,
       ...(fragment.sourceFont && { sourceFont: `res:${fragment.sourceFont}` }),
       fontSize: roundMm(fragment.style.fontSize * fontScale),

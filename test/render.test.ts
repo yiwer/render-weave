@@ -134,8 +134,8 @@ describe('数据集校验', () => {
       greetingRequest({ dataset: { inline: { dataset: { staticSchema: { name: '问候', version: 9 } }, data: {} } } }),
     );
 
-    expect(codes(missing.problems)).toEqual([ProblemCodes.datasetNotFound]);
-    expect(codes(unknownSchema.problems)).toEqual([ProblemCodes.staticSchemaNotFound]);
+    expect(codes(missing.problems)).toEqual([ProblemCodes.datasetNotFound, ProblemCodes.renderExpansionBlocked]);
+    expect(codes(unknownSchema.problems)).toEqual([ProblemCodes.staticSchemaNotFound, ProblemCodes.datasetStaticSchemaMismatch, ProblemCodes.renderExpansionBlocked]);
     expect(missing.image).toBeUndefined();
     expect(unknownSchema.image).toBeUndefined();
   });
@@ -168,6 +168,7 @@ describe('尺寸与模板检查', () => {
 
     expect(result.problems.map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.templateDuplicateElementName, { kind: 'element', path: '问候牌/问候语' }],
+      [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }],
     ]);
     expect(result.image).toBeUndefined();
   });
@@ -182,6 +183,7 @@ describe('尺寸与模板检查', () => {
     expect(result.problems.map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.templateUnknownProperty, { kind: 'element', path: '问候牌/问候语' }],
         [ProblemCodes.templateUnsupported, { kind: 'element', path: '问候牌/二维码' }],
+      [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }],
     ]);
   });
 

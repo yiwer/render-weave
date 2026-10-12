@@ -299,6 +299,8 @@ export type ContentItem = TextFragmentModel | SlotModel;
 export interface TextFragmentModel {
   readonly kind: 'text';
   readonly text: string;
+  /** 求值时记录的草稿占位，正式内容始终取 text；不属于 DSL。 */
+  readonly placeholder?: string;
   readonly style: FragmentStyle;
 }
 

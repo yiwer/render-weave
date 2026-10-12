@@ -64,6 +64,8 @@ export interface TextSummary {
 }
 
 export interface FragmentSummary {
+  /** 仅草稿中实际显示占位文字的片段。 */
+  readonly placeholder?: true;
   /** 成功替代前的资源引用，font 为实际使用的后备字体。 */
   readonly sourceFont?: string;
   readonly text: string;

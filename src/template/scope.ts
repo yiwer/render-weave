@@ -80,6 +80,51 @@ export class Scope {
     return current ?? undefined;
   }
 
+  /** 派生变量本次求值用到的变量引用；供草稿追溯缺值是否由已有问题导致。 */
+  dependencies(name: string): readonly string[] {
+    const derived = this.derived.get(name);
+    if (!derived) return [];
+    const refs = (operands: readonly (Operand | undefined)[]) => operands.flatMap((o) => o && 'var' in o ? [o.var] : []);
+    const operation = derived.operation;
+    switch (operation.op) {
+      case 'branch': {
+        const dependencies: string[] = [];
+        for (const branch of operation.branches) {
+          dependencies.push(...refs([branch.when.left, branch.when.right]));
+          if (this.condition(branch.when)) return [...dependencies, ...refs([branch.then])];
+        }
+        return [...dependencies, ...refs([operation.otherwise])];
+      }
+      case 'pickItem': return [operation.list.var, ...refs([typeof operation.position === 'object' ? operation.position.index : undefined])];
+      case 'length': return [operation.of.var];
+      case 'add':
+      case 'subtract': return refs([operation.left, operation.right]);
+    }
+  }
+
+  /** 取项与条件分支产生的引用仍能追溯到当前数据中的确切字段/列表项。 */
+  dataPath(path: string, seen = new Set<string>()): string | undefined {
+    if (seen.has(path)) return undefined;
+    seen.add(path);
+    const [name = '', ...rest] = path.split('.');
+    if (this.table.get(name)?.source === 'field') return path;
+    const operation = this.derived.get(name)?.operation;
+    const suffix = rest.length ? `.${rest.join('.')}` : '';
+    if (operation?.op === 'pickItem') {
+      const list = this.value(operation.list.var);
+      if (!Array.isArray(list)) return undefined;
+      const index = operation.position === 'first' ? 1 : operation.position === 'last' ? list.length : this.operand(operation.position.index);
+      const origin = this.dataPath(operation.list.var, seen);
+      return origin !== undefined && typeof index === 'number' && Number.isInteger(index) && index >= 1 && index <= list.length
+        ? `${origin}[${index}]${suffix}` : undefined;
+    }
+    if (operation?.op === 'branch') {
+      const operand = operation.branches.find((branch) => this.condition(branch.when))?.then ?? operation.otherwise;
+      return 'var' in operand ? this.dataPath(`${operand.var}${suffix}`, seen) : undefined;
+    }
+    return undefined;
+  }
+
   /** 检查项（M25）：问题条件为真时，按其等级与提示文字记入问题清单。 */
   runChecks(): Problem[] {
     return this.template.checks.flatMap((check: CheckModel) =>

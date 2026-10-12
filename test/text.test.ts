@@ -250,6 +250,7 @@ describe('插槽与展示格式的检查', () => {
         { kind: 'element', path: '文字实验/数值' },
         '插槽 fare：数值格式"0.#0"写法不对：整数部分写若干个 0（前面可加 #），小数部分写若干个 0 再接若干个 #，如 0、0.##、0.00',
       ],
+      [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }, '输入无法展开，草稿预览与正式出图均停止；具体原因见上述问题'],
     ]);
   });
 
@@ -259,6 +260,7 @@ describe('插槽与展示格式的检查', () => {
 
     expect(result.problems.map((p) => [p.code, p.message])).toEqual([
       [ProblemCodes.templateInvalid, '字重由字体资源决定，不写 fontWeight：改用对应字重的字体资源，如 font 写 res:font-hei-heavy（M115）'],
+      [ProblemCodes.renderExpansionBlocked, '输入无法展开，草稿预览与正式出图均停止；具体原因见上述问题'],
     ]);
   });
 
@@ -275,6 +277,7 @@ describe('插槽与展示格式的检查', () => {
     expect(result.problems.map((p) => [p.code, p.location.kind === 'element' && p.location.path, p.message])).toEqual([
       [ProblemCodes.templateUnsupported, '文字实验/站名', '竖排文字的片段暂只能单独设颜色 color'],
       [ProblemCodes.templateUnsupported, '文字实验/倾斜站名', '竖排文字的倾斜 slant 尚未支持'],
+      [ProblemCodes.renderExpansionBlocked, false, '输入无法展开，草稿预览与正式出图均停止；具体原因见上述问题'],
     ]);
   });
 });

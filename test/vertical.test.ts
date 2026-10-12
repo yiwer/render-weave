@@ -123,11 +123,13 @@ describe('竖排站名：两端分布、收紧字距与纵向压缩（M402 站�
       return (await render(workspace, stopNameRequest('田贝'))).problems.map((p) => [p.code, p.location]);
     };
     const location = { kind: 'element', path: '竖排站名/站名' };
+    const blocked = [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }];
 
-    expect(await withFit({ steps: ['compressGlyphs', 'tightenSpacing'] })).toEqual([[ProblemCodes.templateInvalid, location]]);
-    expect(await withFit({ steps: ['compressGlyphs'] })).toEqual([[ProblemCodes.templateInvalid, location]]);
+    expect(await withFit({ steps: ['compressGlyphs', 'tightenSpacing'] })).toEqual([[ProblemCodes.templateInvalid, location], blocked]);
+    expect(await withFit({ steps: ['compressGlyphs'] })).toEqual([[ProblemCodes.templateInvalid, location], blocked]);
     expect(await withFit({ steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.5 })).toEqual([
       [ProblemCodes.templateInvalid, location],
+      blocked,
     ]);
     expect(await withFit({ steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: 'stopNames' } })).toEqual([]);
   });

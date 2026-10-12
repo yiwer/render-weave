@@ -51,7 +51,7 @@ class Checker implements VariableTable {
   ) {
     const data = typeFromCompiled(compiled);
     if (data.kind === 'ref') {
-      for (const [name, type] of data.fields) this.variables.set(name, { name, displayName: name, source: 'field', type });
+      for (const [name, type] of data.fields) this.variables.set(name, { name, displayName: type.displayName ?? name, source: 'field', type });
     }
     for (const parameter of template.parameters) {
       if (this.claim(parameter.name, '参数')) {
