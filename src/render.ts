@@ -21,6 +21,7 @@ import { Scope, resolveParameters } from './template/scope.js';
 import type { TemplateModel } from './template/model.js';
 import { parseTemplate } from './template/parse.js';
 import { FontStore } from './text/fonts.js';
+import { resolveGlyphFallbacks } from './text/fallback.js';
 import { formatStaticSchemaRef, sameStaticSchema, type DatasetDocument, type Workspace } from './workspace.js';
 
 export interface RenderResult {
@@ -31,7 +32,12 @@ export interface RenderResult {
   readonly layout?: LayoutSummary;
 }
 
-export async function render(workspace: Workspace, requestInput: unknown): Promise<RenderResult> {
+export interface RenderOptions {
+  /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
+  readonly fallbackFonts?: readonly string[];
+}
+
+export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
   const problems: Problem[] = [...workspace.problems];
   const parsed = parseRenderRequest(requestInput);
   problems.push(...parsed.problems);
@@ -110,7 +116,7 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
   const evaluated = evaluation.evaluated;
   if (!evaluated) return { problems };
   const ck = await loadCanvasKit();
-  const fonts = new FontStore(ck, workspace.resources);
+  const fonts = new FontStore(ck, workspace.resources, options.fallbackFonts);
   const images = new ImageStore(ck, workspace.resources);
   try {
     // 先加载会显示的元素用到的字体与图片，排版与绘制都是同步的。
@@ -128,7 +134,8 @@ export async function render(workspace: Workspace, requestInput: unknown): Promi
         if (problem) problems.push(problem);
       }
     }
-    const result = layout(evaluated, request.output, { fonts, images }, ck);
+    const root = await resolveGlyphFallbacks(evaluated.root, fonts, problems);
+    const result = layout({ ...evaluated, root }, request.output, { fonts, images }, ck);
     problems.push(...result.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
     const image = draw(ck, { fonts, images }, result.drawOps, request.output);

@@ -103,9 +103,12 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
 }
 
 function measureVertical(model: TextElementModel, fragments: readonly EvaluatedFragment[], fonts: FontStore): Omit<MeasuredLines, 'intrinsic'> {
-  // 竖排片段只能单独设颜色，字体与字号都是元素自身的。
+  // 模板竖排片段只能单独设颜色；缺字替代后字体可不同，共用能容纳所有实际字体的行框。
   const runs = fragments.map((fragment) => measureRun(fragment, fonts, 0));
-  const { ascent, descent } = ownLine(model, fonts);
+  const inked = runs.filter((run) => run.glyphs.length > 0);
+  const { ascent, descent } = inked.length
+    ? { ascent: Math.max(...inked.map((run) => run.ascent)), descent: Math.max(...inked.map((run) => run.descent)) }
+    : ownLine(model, fonts);
   const glyphs = runs.flatMap((run) => run.glyphs);
   return {
     runs,
@@ -142,10 +145,12 @@ export function recordText(
   const { fontScale = 1, ...publicSummary } = summary;
   return {
     ...publicSummary,
+    ...(fragments.some((fragment) => fragment.sourceFont) && { fontFallback: true as const }),
     ...(model.fit.widthOverflow && { shrinkGroup: model.fit.widthOverflow.shrinkGroup }),
     fragments: fragments.map((fragment) => ({
       text: fragment.text,
       font: `res:${fragment.style.font}`,
+      ...(fragment.sourceFont && { sourceFont: `res:${fragment.sourceFont}` }),
       fontSize: roundMm(fragment.style.fontSize * fontScale),
       color: fragment.style.color,
       slant: fragment.style.slant,

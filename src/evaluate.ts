@@ -36,6 +36,8 @@ export interface EvaluatedNode {
 export interface EvaluatedFragment {
   readonly text: string;
   readonly style: ResolvedStyle;
+  /** 缺字替代前的字体资源 ID；仅替代成功的片段携带。 */
+  readonly sourceFont?: string;
 }
 
 export interface ResolvedStyle {

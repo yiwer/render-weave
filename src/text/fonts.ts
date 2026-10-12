@@ -14,6 +14,8 @@ export interface LoadedFont {
   /** 行框：基线以上与以下的高度，em 单位。 */
   readonly ascender: number;
   readonly descender: number;
+  /** OS/2.usWeightClass；文件未提供可用值时按常规字重 400。 */
+  readonly weight: number;
 }
 
 /** 字形墨迹的边界，em 单位，相对基线起点，y 向下为正。 */
@@ -30,14 +32,53 @@ type LoadOutcome = { font: LoadedFont } | { error: { code: Problem['code']; mess
 const INK_PROBE_SIZE = 256;
 const INK_PROBE_STEPS = 32;
 
+/** 引擎默认后备字体资源 ID；文件由 fetch-fonts 准备，模板不必引用。 */
+export const DEFAULT_FALLBACK_FONTS: readonly string[] = [
+  'font-hei-regular', 'font-hei-medium', 'font-hei-bold', 'font-hei-heavy',
+];
+
 export class FontStore {
   private readonly outcomes = new Map<string, LoadOutcome>();
   private readonly inkCache = new Map<string, InkBounds | null>();
+  private fallbackFonts?: Promise<readonly LoadedFont[]>;
 
   constructor(
     private readonly ck: CanvasKit,
     private readonly repository: ResourceRepository,
+    private readonly fallbackIds: readonly string[] = DEFAULT_FALLBACK_FONTS,
   ) {}
+
+  /** 仅在遇到缺字时加载后备字体；缺档取最近字重，距离相同取较轻者。 */
+  async fallbackFor(font: LoadedFont): Promise<LoadedFont | undefined> {
+    // 原字体已经是配置中的思源黑体时不重复尝试，也不串换其他字重。
+    if (this.fallbackIds.includes(font.id)) return undefined;
+    this.fallbackFonts ??= this.loadFallbacks();
+    const candidates = await this.fallbackFonts;
+    return [...candidates].sort((a, b) =>
+      Math.abs(a.weight - font.weight) - Math.abs(b.weight - font.weight) || a.weight - b.weight)[0];
+  }
+
+  private async loadFallbacks(): Promise<readonly LoadedFont[]> {
+    const fonts: LoadedFont[] = [];
+    for (const id of new Set(this.fallbackIds)) {
+      let outcome = this.outcomes.get(id);
+      if (!outcome) {
+        outcome = await this.loadOutcome(id);
+        this.outcomes.set(id, outcome);
+      }
+      if ('font' in outcome) fonts.push(outcome.font);
+    }
+    return fonts;
+  }
+
+  /** 与 measureText 相同的码点到字形映射；空格等无墨迹但有字形的字符不是缺字。 */
+  glyphIds(font: LoadedFont, text: string): readonly number[] {
+    const count = Array.from(text).length;
+    if (!count) return [];
+    const skFont = this.makeFont(font, 1);
+    try { return Array.from(skFont.getGlyphIDs(text, count)); }
+    finally { skFont.delete(); }
+  }
 
   /** 加载字体；失败时返回定位到使用该字体的元素的问题。 */
   async load(id: string, usedBy: ElementPath): Promise<Problem | undefined> {
@@ -149,11 +190,12 @@ export class FontStore {
 
     let metrics = readFontMetrics(bytes);
     if (!metrics) {
-      const probe = this.makeFont({ id, typeface, ascender: 0, descender: 0 }, 1);
+      const probe = this.makeFont({ id, typeface, ascender: 0, descender: 0, weight: 400 }, 1);
       const skMetrics = probe.getMetrics();
       probe.delete();
       metrics = { unitsPerEm: 1, ascender: -skMetrics.ascent, descender: skMetrics.descent };
     }
-    return { font: { id, typeface, ascender: metrics.ascender, descender: metrics.descender } };
+    const weight = metrics.weightClass && metrics.weightClass >= 1 && metrics.weightClass <= 1000 ? metrics.weightClass : 400;
+    return { font: { id, typeface, ascender: metrics.ascender, descender: metrics.descender, weight } };
   }
 }

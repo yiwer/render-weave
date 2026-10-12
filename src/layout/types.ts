@@ -41,6 +41,8 @@ export interface ImageSummary {
 }
 
 export interface TextSummary {
+  /** 有替代时为 true；未替代时省略。具体原字体与实际字体见 fragments。 */
+  readonly fontFallback?: true;
   /** 一次出图内的缩字组名称；字号是全组统一重排后的值。 */
   readonly shrinkGroup?: string;
   readonly content: string;
@@ -62,6 +64,8 @@ export interface TextSummary {
 }
 
 export interface FragmentSummary {
+  /** 成功替代前的资源引用，font 为实际使用的后备字体。 */
+  readonly sourceFont?: string;
   readonly text: string;
   readonly font: string;
   readonly fontSize: number;
