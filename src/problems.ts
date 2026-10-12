@@ -34,6 +34,10 @@ export interface Problem {
 }
 
 export const ProblemCodes = {
+  barcodeContentInvalid: 'barcode.contentInvalid',
+  barcodeCapacityExceeded: 'barcode.capacityExceeded',
+  barcodeColorsInvalid: 'barcode.colorsInvalid',
+  barcodeSizeInvalid: 'barcode.sizeInvalid',
   qrContentInvalid: 'qrcode.contentInvalid',
   qrCapacityExceeded: 'qrcode.capacityExceeded',
   qrColorsInvalid: 'qrcode.colorsInvalid',

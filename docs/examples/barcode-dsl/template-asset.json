@@ -1,0 +1,24 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "资产编号牌",
+  "base": { "name": "空数据定义", "version": 1 },
+  "parameters": [
+    { "name": "assetId", "displayName": "资产编号", "type": "text", "visibility": "public" }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 120, "max": 120 }, "height": { "min": 45, "max": 45 } },
+    "fill": "#FFFFFF",
+    "children": [
+      {
+        "type": "barcode",
+        "name": "资产码",
+        "format": "CODE128",
+        "content": { "var": "assetId" },
+        "showText": true,
+        "font": "res:font-hei-regular",
+        "fontSize": 3,
+        "place": { "left": 5, "top": 5, "width": { "fixed": 110 }, "height": { "fixed": 32 } }
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ import type { FontStore } from './fonts.js';
 
 export async function resolveGlyphFallbacks(node: EvaluatedNode, fonts: FontStore, problems: Problem[]): Promise<EvaluatedNode> {
   if (node.model.type !== 'artboard' && !node.model.visible) return node;
-  if (node.model.type !== 'text') {
+  if (node.model.type !== 'text' && !(node.model.type === 'barcode' && node.model.showText)) {
     if (!node.children) return node;
     const children: EvaluatedNode[] = [];
     for (const child of node.children) children.push(await resolveGlyphFallbacks(child, fonts, problems));

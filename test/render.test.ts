@@ -173,16 +173,16 @@ describe('尺寸与模板检查', () => {
     expect(result.image).toBeUndefined();
   });
 
-  it('尚未支持的元素类型与未定义的属性返回问题，而不是静默忽略', async () => {
+  it('未知的元素类型与未定义的属性返回问题，而不是静默忽略', async () => {
     const workspace = withTemplate(await loadSingleText(), '问候牌', (document) => {
-      document['artboard']['children'].push({ type: 'barcode', name: '条形码' });
+      document['artboard']['children'].push({ type: 'unknown-widget', name: '未知元素' });
       document['artboard']['children'][0]['underline'] = true;
     });
     const result = await render(workspace, greetingRequest());
 
     expect(result.problems.map((p) => [p.code, p.location])).toEqual([
       [ProblemCodes.templateUnknownProperty, { kind: 'element', path: '问候牌/问候语' }],
-        [ProblemCodes.templateUnsupported, { kind: 'element', path: '问候牌/条形码' }],
+      [ProblemCodes.templateInvalid, { kind: 'element', path: '问候牌/未知元素' }],
       [ProblemCodes.renderExpansionBlocked, { kind: 'input', source: 'render' }],
     ]);
   });

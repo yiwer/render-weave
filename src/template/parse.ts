@@ -80,14 +80,13 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   ],
   image: [...COMMON_KEYS, 'source', 'fit'],
   qrcode: [...COMMON_KEYS, 'content', 'errorCorrectionLevel', 'foreground', 'background'],
+  barcode: [...COMMON_KEYS, 'content', 'format', 'foreground', 'background', 'showText', 'font', 'fontSize'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
   ellipse: [...COMMON_KEYS, 'fill', 'stroke'],
   line: [...COMMON_KEYS, 'from', 'to', 'stroke'],
   polygon: [...COMMON_KEYS, 'points', 'fill', 'stroke'],
   path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule'],
 };
-/** 元素目录中已有、但尚未实现的元素类型。 */
-const PLANNED_TYPES = new Set(['barcode']);
 const SIZE_LIMIT_KEYS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
   free: ['left', 'right', 'top', 'bottom', 'width', 'height', ...SIZE_LIMIT_KEYS],
@@ -446,8 +445,7 @@ class TemplateReader {
   private readElementBody(value: Record<string, unknown>, name: string, path: ElementPath, parentLayout: Layout): Read<ElementModel> {
     const type = value['type'];
     if (typeof type !== 'string' || !Object.hasOwn(ELEMENT_KEYS, type)) {
-      if (typeof type === 'string' && PLANNED_TYPES.has(type)) this.unsupported(path, `元素类型 ${type} 尚未支持`);
-      else this.fail(path, `未知的元素类型 ${String(type)}`);
+      this.fail(path, `未知的元素类型 ${String(type)}`);
       return undefined;
     }
     const elementType = type as ElementModel['type'];
@@ -473,6 +471,23 @@ class TemplateReader {
         const source = value['source'] === undefined ? null : this.readImageSource(value['source'], path);
         const fit = this.readEnum(value['fit'], ['contain', 'cover', 'fill'] as const, 'contain', path, 'fit');
         element = base && source !== undefined && fit ? { ...base, type: 'image', ...(source !== null && { source }), fit } : undefined;
+        break;
+      }
+      case 'barcode': {
+        const raw = value['content'];
+        const content = isVarOperand(raw) ? this.host.text(raw.var, { path, label: 'content' })
+          : typeof raw === 'string' ? raw : this.fail(path, '条形码 content 必须是文本或文本变量绑定');
+        const format = value['format'] === 'CODE128' ? 'CODE128' : this.fail(path, '条形码 format 必须明确指定 CODE128');
+        const foreground = this.readColor(value['foreground'] ?? '#000000', path, 'foreground');
+        const background = this.readColor(value['background'] ?? '#FFFFFF', path, 'background');
+        const showText = this.readBoolean(value['showText'], false, path, 'showText');
+        const font = value['font'] !== undefined || showText ? this.readFont(value['font'], path, '条形码下方文字 font') : undefined;
+        const fontSize = this.readNumber(value['fontSize'], 3, path, 'fontSize', { min: 0, exclusiveMin: true });
+        const defaultSize: SizeSpec = parentLayout.mode === 'grid' ? { kind: 'fill', weight: 1 } : { kind: 'hug' };
+        element = base && content !== undefined && format && foreground && background && showText !== undefined && fontSize !== undefined
+          && (!(value['font'] !== undefined || showText) || font)
+          ? { ...base, place: { ...base.place, width: base.place.width ?? defaultSize, height: base.place.height ?? defaultSize },
+            type: 'barcode', format, content, foreground, background, showText, ...(font && { font }), fontSize } : undefined;
         break;
       }
       case 'qrcode': {

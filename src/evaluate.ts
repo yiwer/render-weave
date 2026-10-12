@@ -14,6 +14,7 @@ import { stateKey } from './template/check.js';
 import { normalizeColor } from './template/declarations.js';
 import type { ArtboardModel, CallModel, Color, ContainerModel, ElementModel, LoopInfoKey, LoopModel, Place, TemplateModel, TextElementModel } from './template/model.js';
 import { describeRule, readArtboardResolved, satisfies, type BindingHost, type BindingSite, type NumberRule } from './template/parse.js';
+import { MAX_CODE128_LENGTH } from './template/model.js';
 import { Scope, resolveParameters } from './template/scope.js';
 import { argumentProblem, type TemplateProgram } from './template/program.js';
 import { displayKind } from './template/types.js';
@@ -114,6 +115,8 @@ class Expander {
       case 'container':
         return { model, children: model.children.map((child) => this.node(child, scope, host, origin, root)) };
       case 'text': return { model, fragments: fragmentsOf(model) };
+      case 'barcode': return { model, ...(model.showText && model.font && model.content.length <= MAX_CODE128_LENGTH && { fragments: [{ text: model.content,
+        style: { font: model.font, fontSize: model.fontSize, color: model.foreground, slant: 0 } }] }) };
       case 'call': {
         const data = model.data === 'current' ? scope.data : model.data === 'none' ? {} : scope.value(model.data.var);
         const childOrigin = model.data === 'current' ? origin : model.data === 'none' ? undefined : fieldOrigin(origin, model.data.var);

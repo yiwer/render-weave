@@ -1,0 +1,7 @@
+{
+  "template": "资产编号牌",
+  "dataset": { "inline": { "dataset": { "staticSchema": { "name": "空数据定义", "version": 1 } }, "data": {} } },
+  "parameters": { "assetId": "RW-M402-000123" },
+  "output": { "width": 120, "height": 45, "dpi": 120, "format": "png" },
+  "mode": "final"
+}

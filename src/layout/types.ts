@@ -28,6 +28,7 @@ export interface LayoutNode {
   readonly text?: TextSummary;
   readonly image?: ImageSummary;
   readonly qrcode?: QrCodeSummary;
+  readonly barcode?: BarcodeSummary;
   readonly children?: readonly LayoutNode[];
 }
 
@@ -39,6 +40,18 @@ export interface ImageSummary {
   readonly naturalHeight: number;
   /** 图片实际画出的区域，毫米；完整显示时可能小于元素框，铺满裁剪时等于元素框。 */
   readonly drawn: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+}
+
+export interface BarcodeSummary {
+  readonly format: 'CODE128';
+  readonly modules: number;
+  readonly moduleSizePx: number;
+  readonly quietZoneModules: 10;
+  readonly quietZoneMm: number;
+  /** 完整背景框，包含留白、上下保护间隔和可选下方文字。坐标未计旋转。 */
+  readonly drawn: Box;
+  readonly symbol: Box;
+  readonly label?: { readonly box: Box; readonly text: TextSummary };
 }
 
 export interface QrCodeSummary {
@@ -94,6 +107,15 @@ export type Radii = readonly [number, number, number, number];
 
 /** 绘制指令：坐标与尺寸都是毫米，相对画板左上角；按顺序执行，后画的在上面（M72）。 */
 export type DrawOp =
+  | {
+      readonly op: 'barcode';
+      readonly drawn: Box;
+      readonly symbol: Box;
+      readonly moduleSize: number;
+      readonly widths: readonly number[];
+      readonly foreground: string;
+      readonly background: string;
+    }
   | {
       readonly op: 'qrcode';
       readonly x: number;

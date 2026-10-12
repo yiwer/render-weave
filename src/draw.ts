@@ -75,6 +75,8 @@ class Painter {
 
   run(op: DrawOp): void {
     switch (op.op) {
+      case 'barcode':
+        return this.barcode(op);
       case 'qrcode':
         return this.qrcode(op);
       case 'save':
@@ -92,6 +94,24 @@ class Painter {
         return this.image(op);
       case 'glyphs':
         return this.glyphs(op);
+    }
+  }
+
+  private barcode(op: Extract<DrawOp, { op: 'barcode' }>): void {
+    this.paint.setAntiAlias(false);
+    try {
+      const { drawn, symbol } = op;
+      this.useFill(op.background);
+      this.canvas.drawRect(this.ck.XYWHRect(drawn.x, drawn.y, drawn.width, drawn.height), this.paint);
+      this.useFill(op.foreground);
+      let x = symbol.x;
+      op.widths.forEach((modules, index) => {
+        const width = modules * op.moduleSize;
+        if (index % 2 === 0) this.canvas.drawRect(this.ck.XYWHRect(x, symbol.y, width, symbol.height), this.paint);
+        x += width;
+      });
+    } finally {
+      this.paint.setAntiAlias(true);
     }
   }
 

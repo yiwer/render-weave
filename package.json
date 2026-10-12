@@ -22,6 +22,7 @@
     "@resvg/resvg-wasm": "2.6.2",
     "@xmldom/xmldom": "0.9.12",
     "ajv": "8.20.0",
+    "bwip-js": "4.11.4",
     "canvaskit-wasm": "0.42.0",
     "css-tree": "3.2.1",
     "qrcode": "1.5.4"
@@ -33,6 +34,7 @@
     "jsqr": "1.4.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "zxing-wasm": "3.1.5"
   }
 }

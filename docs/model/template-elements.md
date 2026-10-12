@@ -1,6 +1,6 @@
 # 模板元素目录（草稿）
 
-第二阶段票据 01 已落地二维码，实际 DSL 与尺寸/诊断约束见 [二维码说明](../render-qrcode.md)；条形码仍按第二阶段后续票据实施。
+第二阶段票据 01 已落地[二维码](../render-qrcode.md)，票据 02 已落地 [CODE128 条形码](../render-barcode.md)；实际 DSL、尺寸与诊断约束见相应说明，EAN/UPC 按票据 03 实施。
 
 本文包含未来设计，不等同于当前引擎支持清单。首期可执行范围见 [阶段验收的 DSL 能力表](../stage1-acceptance.md#dsl-当前可承载的能力)，具体 JSON 写法见 [M402 DSL](../examples/m402-dsl/README.md)。
 

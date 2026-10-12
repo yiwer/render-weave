@@ -18,12 +18,13 @@ import type { FontStore } from '../text/fonts.js';
 import { mmToPx, roundMm } from '../units.js';
 import { imageIntrinsic, recordImage } from './image.js';
 import { recordQrCode } from './qrcode.js';
+import { recordBarcode } from './barcode.js';
 import { radii, recordShape, shapeIntrinsic, type PathBounds } from './shapes.js';
 import { measureTextNode, recordText, type TextMeasure } from './text.js';
 import { ShrinkGroups, containsShrinkGroup } from './shrink-groups.js';
 import { EPSILON, type Box, type DrawOp, type LayoutNode, type LayoutResult, type Size } from './types.js';
 
-export type { Box, DrawOp, ImageSummary, QrCodeSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
+export type { Box, DrawOp, ImageSummary, QrCodeSummary, BarcodeSummary, LayoutNode, LayoutResult, LayoutSummary, Radii, TextSummary } from './types.js';
 
 type Axis = 'width' | 'height';
 
@@ -97,6 +98,7 @@ class Layouter {
       case 'image':
         size = imageIntrinsic(model, model.source ? this.images.get(model.source) : undefined);
         break;
+      case 'barcode':
       case 'qrcode':
         size = { width: 0, height: 0 };
         break;
@@ -210,6 +212,11 @@ class Layouter {
       case 'image': {
         const image = recordImage(model, box, model.source ? this.images.get(model.source) : undefined, this.drawOps);
         summary = image ? { image } : {};
+        break;
+      }
+      case 'barcode': {
+        const barcode = recordBarcode(model, node.fragments ?? [], box, this.dpi, this.fonts, this.drawOps, this.problems);
+        summary = barcode ? { barcode } : {};
         break;
       }
       case 'qrcode': {

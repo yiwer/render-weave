@@ -59,9 +59,9 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     // 先加载会显示的元素用到的字体与图片，排版与绘制都是同步的。
     for (const node of walkVisible(evaluated.root)) {
       const model = node.model;
-      if (model.type === 'text') {
+      if (model.type === 'text' || (model.type === 'barcode' && model.showText && model.font)) {
         // 元素自身的字体与各片段的字体，同一元素的同一字体只报一次。
-        const ids = new Set([model.font, ...(node.fragments ?? []).map((fragment) => fragment.style.font)]);
+        const ids = new Set([model.font!, ...(node.fragments ?? []).map((fragment) => fragment.style.font)]);
         for (const id of ids) {
           const problem = await fonts.load(id, model.path);
           if (problem) problems.push(problem);

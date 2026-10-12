@@ -132,7 +132,7 @@ export interface ArtboardModel extends ContainerBody {
   readonly sizeRange: { readonly width: Range; readonly height: Range };
 }
 
-export type ElementModel = ContainerModel | TextElementModel | ImageModel | QrCodeModel | ShapeModel | LoopModel | CallModel;
+export type ElementModel = ContainerModel | TextElementModel | ImageModel | QrCodeModel | BarcodeModel | ShapeModel | LoopModel | CallModel;
 export type ShapeModel = RectModel | EllipseModel | LineModel | PolygonModel | PathModel;
 export type NodeModel = ArtboardModel | ElementModel;
 
@@ -367,6 +367,21 @@ export interface QrCodeModel extends ElementBase {
   readonly errorCorrectionLevel: 'L' | 'M' | 'Q' | 'H';
   readonly foreground: Color;
   readonly background: Color;
+}
+
+/** 与锁定编码器一致的输入上限，避免无界编码和文字测量；不是符号标准容量。 */
+export const MAX_CODE128_LENGTH = 500;
+
+/** CODE128 的内容始终为原始文本；字体只用于独立的下方文字区域。 */
+export interface BarcodeModel extends ElementBase {
+  readonly type: 'barcode';
+  readonly format: 'CODE128';
+  readonly content: string;
+  readonly foreground: Color;
+  readonly background: Color;
+  readonly showText: boolean;
+  readonly font?: string;
+  readonly fontSize: number;
 }
 
 export interface RectModel extends ElementBase {

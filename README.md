@@ -41,7 +41,8 @@ node scripts/accept-stage1.mjs out/stage1/stability
 - [M402 DSL 样例](docs/examples/m402-dsl/README.md)：可直接运行的 JSON 写法。
 - [M402 外观验收](docs/examples/m402-acceptance.md)：参考图差异与场景结果。
 - [草稿与正式模式](docs/render-modes.md)、[字体](docs/render-fonts.md)、[SVG](docs/render-svg.md)：问题处理和资源约定。
+- [CODE128 条形码](docs/render-barcode.md)、[资产编号样例](docs/examples/barcode-dsl/README.md)：资源字体、下方文字与独立解码验收。
 - [二维码](docs/render-qrcode.md)、[查询码样例](docs/examples/qrcode-dsl/README.md)：文本绑定、可执行命令与最终图片解码验证。
 - [CONTEXT.md](CONTEXT.md)：开发接续入口与文档地图。
 
-二维码已在第二阶段票据 01 实现；服务、MCP、CloudKiln、OCR、在线编辑器、批量出图及条形码仍未实现。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。
+二维码与 CODE128 已在第二阶段票据 01、02 实现；EAN/UPC、服务、MCP、CloudKiln、OCR、在线编辑器与批量出图仍未实现。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。
