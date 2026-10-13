@@ -209,13 +209,32 @@ describe('资源版本公开边界', () => {
   });
 
   it.each(['same-size', 'different-size', 'missing'])('损坏内容不可作为 v1 读取：%s', async (damage) => {
-    await importSource();
+    expect((await importSource()).problems).toEqual([]);
     const opened = await store();
     const file = await contentFile();
     if (damage === 'missing') await fs.unlink(file);
     else await fs.writeFile(file, damage === 'same-size' ? Uint8Array.from([9, 9, 9, 9, 9]) : 'changed');
     expect(opened.get('photo')?.sha256).toBe(digest(bytes));
     await expect(opened.read('photo', 1)).rejects.toMatchObject({ resourceId: 'photo', code: damage === 'missing' ? ProblemCodes.resourceUnreadable : ProblemCodes.resourceIntegrityMismatch });
+  });
+
+  it.runIf(process.platform === 'win32')('清单替换短暂 EPERM 后仍可提交，旧内容不丢失', async () => {
+    for (let i = 0; i < 5; i++) vi.mocked(fs.rename).mockRejectedValueOnce(Object.assign(new Error('temporary rename denial'), { code: 'EPERM' }));
+    const result = await importSource();
+    expect(result.problems).toEqual([]);
+    expect(await (await store()).read('photo', 1)).toEqual(bytes);
+  });
+
+  it.runIf(process.platform === 'win32')('清单替换持续 EPERM 时有限失败、保留旧清单并释放写锁', async () => {
+    const before = await fs.readFile(manifest(target));
+    const actual = await vi.importActual<typeof fs>('node:fs/promises');
+    vi.mocked(fs.rename).mockRejectedValue(Object.assign(new Error('persistent rename denial'), { code: 'EPERM' }));
+    try {
+      expect((await importSource()).problems[0]?.code).toBe(ProblemCodes.resourceWriteFailed);
+      expect(await fs.readFile(manifest(target))).toEqual(before);
+      expect(await fs.readdir(join(target, 'objects'))).toEqual([]);
+    } finally { vi.mocked(fs.rename).mockImplementation(actual.rename); }
+    expect((await importSource()).problems).toEqual([]);
   });
 
   it.each(['hash', 'version', 'path', 'current', 'kind', 'duplicate', 'format'])('损坏版本清单整体拒绝：%s', async (damage) => {

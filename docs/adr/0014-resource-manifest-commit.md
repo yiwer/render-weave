@@ -11,3 +11,5 @@ status: accepted
 代价是所有维护入口必须遵守同一把写锁，读取须校验 SHA-256 与字节数，清单损坏时整体拒绝。可捕获失败回收本次文件；进程强杀可能留下未被清单引用的文件和写锁，不自动抢锁或回收历史。此约定针对本地受控文件系统，未提供断电持久性、网络文件系统事务或抵御外部进程并发篡改路径的保证。实际平台与异常验收见[资源版本说明](../resources-versioning.md)。
 
 依据：M152、M166–M171，第二阶段[票据 04](../../.scratch/local-production-output/issues/04-versioned-resource-import.md)与[票据 05](../../.scratch/local-production-output/issues/05-safe-resource-replacement.md)。资源替换已沿用同一提交规则，并在发布前复核已检查的预期版本、工作区与候选内容。
+
+M179 补充：Windows 清单重命名短暂拒绝时，在同一写锁下做有限重试并在每次尝试前复核替换条件；持续拒绝仍按失败回滚，不以删除旧清单换取重命名成功。提交点与历史内容规则不变。

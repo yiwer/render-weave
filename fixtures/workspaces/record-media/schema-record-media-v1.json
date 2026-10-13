@@ -1,0 +1,7 @@
+{
+  "dslVersion": "renderweave-schema/1", "name": "记录素材", "version": 1, "displayName": "记录素材验收",
+  "fields": [
+    { "name": "photo", "displayName": "图片", "type": "image", "constraints": { "allowedSources": ["resource"] } },
+    { "name": "message", "displayName": "文字", "type": "text" }
+  ]
+}

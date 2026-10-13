@@ -1,0 +1,5 @@
+{
+  "template": "记录素材牌", "mode": "final",
+  "dataset": { "inline": { "dataset": { "staticSchema": { "name": "记录素材", "version": 1 } }, "data": { "photo": "res:test-quadrants-png", "message": "A深田圳B" } } },
+  "parameters": {}, "output": { "width": 100, "height": 40, "dpi": 120, "format": "png" }
+}

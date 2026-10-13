@@ -1,7 +1,7 @@
 /** 单项正式交付、完整性读取与自足重放；渲染逻辑统一调用 render。 */
 import { ProblemCodes, severe, type Problem } from './problems.js';
 import { render, type RenderResult, type RenderOptions } from './render.js';
-import { createMemoryResourceRepository, parseResourceRef } from './resources.js';
+import { createMemoryResourceRepository, parseResourceRef, type ResourceKind } from './resources.js';
 import type { VersionedResourceInfo, VersionedResourceStore } from './versioned-resources.js';
 import { isRecord, describeError } from './util.js';
 import { rendererBuildId } from './renderer-build.js';
@@ -53,19 +53,19 @@ export async function deliverBatch(options: {
     const input: RecordInput = JSON.parse(Buffer.from(inputBytes).toString('utf8'));
     const { resources: store, outDir } = options;
     // 所有元信息先同步固定，后续读取按确切版本；绝不渲染后重新取当前资源。
-    const selected = prepared.fontIds.map((id) => ({ id, info: structuredClone(store.get(id)) }));
+    const selected = [...prepared.resourceKinds].map(([id, kind]) => ({ id, kind, info: structuredClone(store.get(id)) }));
     const resources: RecordedResource[] = [];
     const files = new Map<string, Uint8Array>();
-    const memory: { id: string; kind: 'font'; bytes: Uint8Array }[] = [];
-    for (const { id, info } of selected) {
+    const memory: { id: string; kind: ResourceKind; bytes: Uint8Array }[] = [];
+    for (const { id, kind, info } of selected) {
       if (!info) { resources.push({ id, state: 'missing' }); continue; }
       if (info.id !== id || !Number.isSafeInteger(info.version) || info.version < 1) recordFail(`资源 ${id} 的固定版本元信息不合法`);
-      if (info.kind !== 'font') recordFail(`字体 ${id} 的资源种类不正确`);
+      if (info.kind !== kind) recordFail(`资源 ${id} 的种类应为 ${kind}`);
       const bytes = new Uint8Array(await store.read(id, info.version));
-      if (digest(bytes) !== info.sha256 || bytes.length !== info.byteLength) recordFail(`字体 ${id} 与固定版本不一致`, ProblemCodes.recordIntegrityMismatch);
-      const file = `font-${String(memory.length + 1).padStart(6, '0')}.bin`;
+      if (digest(bytes) !== info.sha256 || bytes.length !== info.byteLength) recordFail(`资源 ${id} 与固定版本不一致`, ProblemCodes.recordIntegrityMismatch);
+      const file = `${kind}-${String(memory.length + 1).padStart(6, '0')}.bin`;
       resources.push({ ...info, state: 'available', file });
-      files.set(file, bytes); memory.push({ id, kind: 'font', bytes });
+      files.set(file, bytes); memory.push({ id, kind, bytes });
     }
     const build = await rendererBuildId();
     const result = await render({ ...input.documents, resources: createMemoryResourceRepository(memory) }, singleRequest(input.batch), input.options);
@@ -94,7 +94,8 @@ async function loadRecord(dir: string): Promise<{ record: OutputRecord; input: R
   for (const file of ['input.json', 'problems.json', 'layout.json']) if (!files.has(file)) recordFail(`缺少记录文件：${file}`);
   const saved: unknown = JSON.parse(Buffer.from(files.get('input.json')!).toString('utf8'));
   if (!isRecord(saved) || !isRecord(saved.documents) || !isRecord(saved.options) || !Array.isArray(saved.options.fallbackFonts) || !Array.isArray(saved.options.svgFonts)) recordFail('记录输入不完整');
-  const { input, fontIds } = prepareRecordInput(saved.documents as unknown as RecordDocuments, saved.batch, saved.options);
+  const { input, resourceKinds } = prepareRecordInput(saved.documents as unknown as RecordDocuments, saved.batch, saved.options);
+  if (digest(jsonBytes(input.documents)) !== digest(jsonBytes(saved.documents))) recordFail('记录文档依赖不完整或含有非规范内容');
   if (raw.itemId !== input.batch.items[0]!.id) recordFail('记录项标识与请求不一致');
   const expected = new Set(['input.json', 'problems.json', 'layout.json', singleRequest(input.batch).output.format === 'png' ? 'image.png' : 'image.jpg']);
   const seen = new Set<string>();
@@ -103,13 +104,13 @@ async function loadRecord(dir: string): Promise<{ record: OutputRecord; input: R
     seen.add(entry.id);
     if (entry.state === 'missing') {
       if (Object.keys(entry).some((key) => key !== 'id' && key !== 'state')) recordFail('缺失资源不能带内容引用');
-    } else if (entry.state === 'available' && entry.kind === 'font' && Number.isSafeInteger(entry.version) && Number(entry.version) > 0 && validFile(entry) && /^font-\d{6}\.bin$/.test(entry.file)) {
+    } else if (entry.state === 'available' && entry.kind === resourceKinds.get(entry.id) && (entry.kind === 'font' || entry.kind === 'image') && Number.isSafeInteger(entry.version) && Number(entry.version) > 0 && validFile(entry) && new RegExp(`^${entry.kind}-\\d{6}\\.bin$`).test(entry.file)) {
       const bytes = files.get(entry.file);
-      if (!bytes || expected.has(entry.file) || digest(bytes) !== entry.sha256 || bytes.length !== entry.byteLength) recordFail('字体版本与记录内容不一致');
+      if (!bytes || expected.has(entry.file) || digest(bytes) !== entry.sha256 || bytes.length !== entry.byteLength) recordFail('资源版本与记录内容不一致');
       expected.add(entry.file);
     } else recordFail('记录资源元信息不完整');
   }
-  if (fontIds.length !== seen.size || fontIds.some((id) => !seen.has(id))) recordFail('记录缺少字体配置的可用或缺失状态');
+  if (resourceKinds.size !== seen.size || [...resourceKinds.keys()].some((id) => !seen.has(id))) recordFail('记录缺少资源的可用或缺失状态');
   if (expected.size !== files.size || [...expected].some((file) => !files.has(file))) recordFail('记录成果或资源文件集合不完整');
   return { record: raw as unknown as OutputRecord, input, files };
 }

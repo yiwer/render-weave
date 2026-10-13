@@ -1,0 +1,14 @@
+{
+  "dslVersion": "renderweave-template/1", "name": "记录素材牌", "base": { "name": "记录素材", "version": 1 },
+  "parameters": [{ "name": "picture", "displayName": "参数图片", "type": "image", "visibility": "public", "default": "res:test-quadrants-webp" }],
+  "artboard": {
+    "sizeRange": { "width": { "min": 80, "max": 200 }, "height": { "min": 40, "max": 100 } }, "fill": "#FFFFFF",
+    "children": [
+      { "type": "text", "name": "缺字替代", "font": "res:subset", "fontSize": 8, "content": [{ "slot": "message" }], "place": { "left": 4, "top": 2, "width": { "fixed": 90 }, "height": { "fixed": 12 } } },
+      { "type": "image", "name": "PNG", "source": { "var": "photo" }, "place": { "left": 4, "top": 20, "width": { "fixed": 18 }, "height": { "fixed": 12 } } },
+      { "type": "image", "name": "JPEG", "source": "res:test-quadrants-jpg", "place": { "left": 28, "top": 20, "width": { "fixed": 18 }, "height": { "fixed": 12 } } },
+      { "type": "image", "name": "WebP", "source": { "var": "picture" }, "place": { "left": 52, "top": 20, "width": { "fixed": 18 }, "height": { "fixed": 12 } } },
+      { "type": "image", "name": "SVG", "source": "res:record-text-svg", "place": { "left": 76, "top": 20, "width": { "fixed": 20 }, "height": { "fixed": 12 } } }
+    ]
+  }
+}

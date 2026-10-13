@@ -39,7 +39,7 @@ node scripts/accept-stage1.mjs out/stage1/stability
 
 - [阶段验收与 DSL 能力边界](docs/stage1-acceptance.md)：可靠性、鲁棒性、可用性结果及延期范围。
 - [资源内容版本](docs/resources-versioning.md)：CLI 导入、替换影响检查、应用替换、查询旧版和固定版本出图。
-- [单项正式交付与出图记录](docs/output-records.md)：文字/图形正式交付、独立复制、完整性读取及确切构建重放。
+- [单项正式交付与出图记录](docs/output-records.md)：完整 M402、模板调用与素材依赖、独立复制及确切构建重放。
 - [M402 DSL 样例](docs/examples/m402-dsl/README.md)：可直接运行的 JSON 写法。
 - [M402 外观验收](docs/examples/m402-acceptance.md)：参考图差异与场景结果。
 - [草稿与正式模式](docs/render-modes.md)、[字体](docs/render-fonts.md)、[SVG](docs/render-svg.md)：问题处理和资源约定。
@@ -48,4 +48,4 @@ node scripts/accept-stage1.mjs out/stage1/stability
 - [二维码](docs/render-qrcode.md)、[查询码样例](docs/examples/qrcode-dsl/README.md)：文本绑定、可执行命令与最终图片解码验证。
 - [CONTEXT.md](CONTEXT.md)：开发接续入口与文档地图。
 
-二维码、CODE128、EAN/UPC、资源版本导入与替换、单项正式交付与记录重放已在第二阶段票据 01–06 实现；服务、MCP、CloudKiln、OCR、在线编辑器与多项批量调度仍未实现。记录目前只覆盖单根模板的文字与图形，完整调用闭包和图片留待票据 07。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。
+二维码、CODE128、EAN/UPC、资源版本导入与替换、完整模板与素材的单项正式交付和记录重放已在第二阶段票据 01–07 实现；服务、MCP、CloudKiln、OCR、在线编辑器与多项批量调度仍未实现。记录支持完整 M402、PNG/JPEG/WebP/SVG 与字体，码图交付与 URL 图片仍后置。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。

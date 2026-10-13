@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-renderweave-static-schema": { "name": "记录素材", "version": 1 },
+  "type": "object", "additionalProperties": false,
+  "properties": {
+    "photo": { "type": "string", "x-renderweave-type": "image", "pattern": "^res:[A-Za-z0-9][A-Za-z0-9_-]*$" },
+    "message": { "type": "string" }
+  }
+}

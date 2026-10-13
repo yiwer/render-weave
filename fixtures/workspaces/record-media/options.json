@@ -1,0 +1,4 @@
+{
+  "fallbackFonts": ["missing-fallback", "font-hei-regular"],
+  "svgFonts": ["missing-svg-font", "font-hei-regular"]
+}

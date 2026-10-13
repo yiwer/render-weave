@@ -11,7 +11,7 @@ export const jsonBytes = (value: unknown): Uint8Array => Buffer.from(`${JSON.str
 export const digest = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex');
 export const fileInfo = (file: string, bytes: Uint8Array): RecordFile => ({ file, sha256: digest(bytes), byteLength: bytes.length });
 export function validFile(value: unknown): value is RecordFile {
-  return isRecord(value) && typeof value.file === 'string' && /^(input\.json|image\.(png|jpg)|problems\.json|layout\.json|font-\d{6}\.bin)$/.test(value.file) &&
+  return isRecord(value) && typeof value.file === 'string' && /^(input\.json|image\.(png|jpg)|problems\.json|layout\.json|(font|image)-\d{6}\.bin)$/.test(value.file) &&
     typeof value.sha256 === 'string' && /^[0-9a-f]{64}$/.test(value.sha256) && typeof value.byteLength === 'number' && Number.isSafeInteger(value.byteLength) && value.byteLength >= 0;
 }
 export async function readRecordFile(root: string, file: string): Promise<Uint8Array> {

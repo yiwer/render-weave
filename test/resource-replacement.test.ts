@@ -179,6 +179,19 @@ describe('检查与应用资源替换', () => {
     expect((await store()).get('photo')?.version).toBe(1);
     expect(await fs.readdir(join(dir, 'objects'))).toEqual(files);
   });
+
+  it.runIf(process.platform === 'win32')('清单替换短暂 EPERM 后重新核对工作区，过期报告不能趁重试提交', async () => {
+    const report = await check();
+    const before = await fs.readFile(join(dir, 'resources.json'));
+    vi.mocked(fs.rename).mockImplementationOnce(async () => {
+      await json(join(workspaceDir, 'changed.json'), {});
+      throw Object.assign(new Error('temporary rename denial'), { code: 'EPERM' });
+    });
+    const result = await apply(report);
+    expect(result.replaced).toBeUndefined();
+    expect(result.problems[0]?.code).toBe(ProblemCodes.resourceReplacementStale);
+    expect(await fs.readFile(join(dir, 'resources.json'))).toEqual(before);
+  });
 });
 
 describe('真实图片、字体与 CLI 验收', () => {

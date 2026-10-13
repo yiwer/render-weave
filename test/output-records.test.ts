@@ -132,7 +132,7 @@ it('草稿、未知属性、无标识、非法选项拒绝；严重渲染问题�
   expect((await deliver({ request })).delivered).toBeUndefined();
   await expect(fs.stat(out)).rejects.toThrow();
 });
-it.each(['image', 'call', 'loop', 'qrcode', 'barcode'])('未覆盖的 %s 元素不能生成成功记录', async (type) => {
+it.each(['call', 'loop', 'qrcode', 'barcode'])('无效调用或未覆盖的 %s 元素不能生成成功记录', async (type) => {
   const modified = withTemplate(workspace, '问候牌', (document) => document.artboard.children.push({ type, name: 'unsupported' }));
   expect((await deliver({ workspace: modified })).delivered).toBeUndefined();
 });

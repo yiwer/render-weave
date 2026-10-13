@@ -1,6 +1,7 @@
 /** 本地资源内容版本：不可变内容文件先落盘，整份清单最后发布。 */
 import * as fs from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import { hint, ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
 import { parseResourceRef, ResourceReadError, type ResourceInfo, type ResourceRepository } from './resources.js';
@@ -299,10 +300,20 @@ async function writeTransaction(dir: string, initialize: boolean,
     const name = `.manifest-${randomUUID()}.tmp`;
     temporary = join(root, name);
     await write(name, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
-    await beforeCommit?.();
     // 初始化用 link 的不覆盖语义；导入在持锁期间原子替换整份清单。
-    if (initialize) await fs.link(temporary, join(root, MANIFEST));
-    else await fs.rename(temporary, join(root, MANIFEST));
+    if (initialize) { await beforeCommit?.(); await fs.link(temporary, join(root, MANIFEST)); }
+    else {
+      // Windows 的短暂共享/权限拒绝不必使整次导入失败；持续失败最多等待 2540 ms。
+      // 等待期间仍持有写锁，每次尝试都重新核对替换前提，绝不先删除旧清单。
+      for (let attempt = 0; ; attempt++) {
+        await beforeCommit?.();
+        try { await fs.rename(temporary, join(root, MANIFEST)); break; }
+        catch (error) {
+          if (process.platform !== 'win32' || attempt >= 7 || !isRecord(error) || !['EPERM', 'EACCES', 'EBUSY'].includes(String(error.code))) throw error;
+          await delay(20 * 2 ** attempt);
+        }
+      }
+    }
     committed = true;
   } catch (error) { problems.push(problem(error, join(root, MANIFEST))); }
   finally {
