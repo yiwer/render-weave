@@ -21,8 +21,9 @@ const { template, mode, ...item } = single;
 const request = join(origin, 'batch.json'), config = join(origin, 'options.json');
 await writeFile(request, JSON.stringify({ template, mode, items: [{ id: '../问候牌', ...item }] }));
 await writeFile(config, JSON.stringify({ fallbackFonts: ['font-hei-medium', 'missing-fallback'], svgFonts: [] }));
-const record = join(origin, 'record');
-process.stdout.write(cli('deliver', '--workspace', workspace, '--resources', resources, '--request', request, '--options', config, '--out', record));
+// 单项批次的记录在批次目录的 0001 子目录。
+const batch = join(origin, 'batch'), record = join(batch, '0001');
+process.stdout.write(cli('deliver', '--workspace', workspace, '--resources', resources, '--request', request, '--options', config, '--out', batch));
 const copy = join(run, 'independent-record');
 await cp(record, copy, { recursive: true });
 
@@ -45,7 +46,7 @@ await new Promise((done, reject) => {
   child.on('error', error => { clearTimeout(timer); reject(error); });
   child.on('exit', () => { clearTimeout(timer); ready ? done() : reject(new Error(`子进程提前退出：${stderr}`)); });
 });
-const partial = spawnSync(process.execPath, ['dist/bin.js', 'record-read', '--record', interrupted], { encoding: 'utf8', windowsHide: true });
+const partial = spawnSync(process.execPath, ['dist/bin.js', 'record-read', '--record', join(interrupted, '0001')], { encoding: 'utf8', windowsHide: true });
 assert.equal(partial.status, 1);
 assert.match(partial.stderr, /record\.invalid/);
 

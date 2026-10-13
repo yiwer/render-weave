@@ -31,18 +31,42 @@ async function durableWrite(path: string, bytes: Uint8Array): Promise<void> {
   const handle = await fs.open(path, 'wx');
   try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
 }
-export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json', manifest: unknown): Promise<void> {
+const writeFailed = (error: unknown): never =>
+  recordFail(`输出未交付：${error instanceof Error ? error.message : String(error)}`, ProblemCodes.deliveryWriteFailed);
+
+/** 排他创建；EEXIST 即失败，包括两个进程争同一个目标。 */
+export async function createExclusiveDirectory(dir: string, parents = true): Promise<string> {
   try {
     const root = resolve(dir);
-    await fs.mkdir(dirname(root), { recursive: true });
-    await fs.mkdir(root); // EEXIST 即失败，包括两个进程争同一个目标。
-    for (const [file, bytes] of files) await durableWrite(join(root, file), bytes);
+    if (parents) await fs.mkdir(dirname(root), { recursive: true });
+    await fs.mkdir(root);
+    return root;
+  } catch (error) { return writeFailed(error); }
+}
+/** 在已排他创建的目录中逐个排他写入并同步。 */
+export async function writeDurableFiles(root: string, files: ReadonlyMap<string, Uint8Array>): Promise<void> {
+  try { for (const [file, bytes] of files) await durableWrite(join(root, file), bytes); } catch (error) { writeFailed(error); }
+}
+/** 内容写完后最后发布清单：link 是同卷的原子、不覆盖发布；强退前没有完成清单，强退后完整内容已写好。 */
+export async function publishManifest(root: string, name: 'record.json' | 'replay.json' | 'batch.json', manifest: unknown): Promise<void> {
+  try {
     const temporary = join(root, '.complete.tmp');
     await durableWrite(temporary, jsonBytes(manifest));
-    // link 是同卷的原子、不覆盖发布；强退前没有完成清单，强退后完整内容已写好。
-    await fs.link(temporary, join(root, manifestName));
+    await fs.link(temporary, join(root, name));
     await fs.unlink(temporary).catch(() => undefined);
-  } catch (error) {
-    recordFail(`输出未交付：${error instanceof Error ? error.message : String(error)}`, ProblemCodes.deliveryWriteFailed);
-  }
+  } catch (error) { writeFailed(error); }
+}
+export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json', manifest: unknown, parents = true): Promise<void> {
+  const root = await createExclusiveDirectory(dir, parents);
+  await writeDurableFiles(root, files);
+  await publishManifest(root, manifestName, manifest);
+}
+/** 单项写入失败后判断目标存储是否整体可用：能在批次目录排他写入、同步并删除一个探测文件。 */
+export async function storageAvailable(root: string, probe: string): Promise<boolean> {
+  try {
+    const path = join(root, probe);
+    await durableWrite(path, new Uint8Array());
+    await fs.unlink(path);
+    return true;
+  } catch { return false; }
 }

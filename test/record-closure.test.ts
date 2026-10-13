@@ -32,8 +32,10 @@ beforeAll(async () => {
   request = await json(join(m402Dir, 'render-request-m402.json'));
   mediaRequest = await json(join(mediaDir, 'render-request.json')); options = await json(join(mediaDir, 'options.json'));
   for (const [name, workspace, single, renderOptions] of [['m402', m402, request, undefined], ['media', media, mediaRequest, options]] as const) {
-    const result = await deliverBatch({ workspace, resources: store, request: batch(single), outDir: join(root, name), renderOptions });
-    expect(result.problems.filter((p) => p.level === 'severe')).toEqual([]); expect(result.delivered).toBeDefined();
+    // 单项批次的记录目录移到固定位置，后续用例直接把它当作独立记录。
+    const result = await deliverBatch({ workspace, resources: store, request: batch(single), outDir: join(root, `${name}-batch`), renderOptions });
+    expect(result.problems).toEqual([]); expect(result.items[0]?.status).toBe('delivered');
+    await fs.rename(join(root, `${name}-batch`, '0001'), join(root, name));
     const direct = await render(workspace, single, renderOptions);
     expect(await fs.readFile(join(root, name, 'image.png'))).toEqual(Buffer.from(direct.image!.bytes));
     expect(await json(join(root, name, 'problems.json'))).toEqual(direct.problems);
@@ -113,7 +115,7 @@ it('不完整模板/引用定义、循环调用与版本不一致不交付', asy
     withTemplate(m402, child.name, (d) => { d.base.version = 2; }),
     withTemplate(m402, request.template, (d) => d.artboard.children.push({ type: 'call', name: '自调', data: 'current', template: request.template, args: {} })),
   ];
-  for (const workspace of variants) expect((await deliverBatch({ workspace, resources: store, request: batch(request), outDir: target() })).delivered).toBeUndefined();
+  for (const workspace of variants) expect((await deliverBatch({ workspace, resources: store, request: batch(request), outDir: target() })).directory).toBeUndefined();
 });
 it('图片实参、派生分支及隐藏状态资源都冻结，普通文字中的 res: 不当作图片', async () => {
   let workspace = await textLab([], { children: [{ type: 'call', name: '调用', template: '图片子模板', data: 'current', args: { image: { value: 'res:icon-metro' } },
@@ -130,10 +132,10 @@ it('图片实参、派生分支及隐藏状态资源都冻结，普通文字中�
     ] } };
   workspace = { ...workspace, templates: [...workspace.templates, { name: child.name, document: child }] };
   const out = target(); const result = await deliverBatch({ workspace, resources: store, request: batch(textLabRequest({}, 20, 20, 120, { image: 'res:route-no-m402' })), outDir: out, renderOptions: { fallbackFonts: [], svgFonts: [] } });
-  expect(result.problems).toEqual([]); expect(result.delivered).toBeDefined();
-  const ids = (await readOutputRecord({ dir: out })).record?.resources.map((r) => r.id);
+  expect(result.problems).toEqual([]); expect(result.items[0]?.status).toBe('delivered');
+  const ids = (await readOutputRecord({ dir: join(out, '0001') })).record?.resources.map((r) => r.id);
   expect(ids).toEqual(['icon-hospital', 'icon-metro', 'landmark-1', 'landmark-2', 'landmark-3', 'landmark-4', 'route-no-m402']);
-  expect((await replayOutputRecord({ dir: out, outDir: target() })).replayed).toBeDefined();
+  expect((await replayOutputRecord({ dir: join(out, '0001'), outDir: target() })).replayed).toBeDefined();
 });
 it('列表图片通过单值包装传入子模板，片段及隐藏状态字体也归档', async () => {
   const workspace = await textLab([{ name: 'pictures', displayName: '图片列表', type: 'list', items: { type: 'image' } }], { children: [
@@ -149,10 +151,10 @@ it('列表图片通过单值包装传入子模板，片段及隐藏状态字体�
   const out = target();
   const result = await deliverBatch({ workspace: { ...workspace, templates: [...workspace.templates, { name: child.name, document: child }] }, resources: store,
     request: batch(textLabRequest({ pictures: ['res:test-quadrants-png', 'res:test-quadrants-webp'] }, 40, 20)), outDir: out, renderOptions: { fallbackFonts: [], svgFonts: [] } });
-  expect(result.problems).toEqual([]); expect(result.delivered).toBeDefined();
-  const ids = (await readOutputRecord({ dir: out })).record?.resources.map((r) => r.id);
+  expect(result.problems).toEqual([]); expect(result.items[0]?.status).toBe('delivered');
+  const ids = (await readOutputRecord({ dir: join(out, '0001') })).record?.resources.map((r) => r.id);
   expect(ids).toEqual(['font-hei-bold', 'font-hei-heavy', 'font-hei-medium', 'font-hei-regular', 'test-quadrants-png', 'test-quadrants-webp']);
-  expect((await replayOutputRecord({ dir: out, outDir: target() })).replayed).toBeDefined();
+  expect((await replayOutputRecord({ dir: join(out, '0001'), outDir: target() })).replayed).toBeDefined();
 });
 it('子模板的另一个基准版本虽存在，仍拒绝与调用数据版本错配', async () => {
   const changed = withTemplate(m402, '站点', (d) => { d.base.version = 2; });
@@ -160,6 +162,6 @@ it('子模板的另一个基准版本虽存在，仍拒绝与调用数据版本�
   const version2 = { ...entry, ref: { name: '停靠站点', version: 2 } };
   (version2.definition as any).version = 2; version2.compiled!['x-renderweave-static-schema'] = version2.ref;
   const result = await deliverBatch({ workspace: { ...changed, staticSchemas: [...changed.staticSchemas, version2] }, resources: store, request: batch(request), outDir: target() });
-  expect(result.delivered).toBeUndefined();
-  expect(result.problems.some((p) => p.code === 'template.loopBaseMismatch' || p.code === 'template.callBaseMismatch')).toBe(true);
+  expect(result.items[0]?.status).toBe('failed');
+  expect(result.items[0]?.problems.some((p) => p.code === 'template.loopBaseMismatch' || p.code === 'template.callBaseMismatch')).toBe(true);
 });

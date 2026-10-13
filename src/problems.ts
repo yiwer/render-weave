@@ -36,6 +36,12 @@ export interface Problem {
 export const ProblemCodes = {
   deliveryUnsupported: 'delivery.unsupported',
   deliveryWriteFailed: 'delivery.writeFailed',
+  /** 单项写入失败后探测到批次目录整体不可写，停止调度。 */
+  deliveryStorageUnavailable: 'delivery.storageUnavailable',
+  /** 进度回调抛错，停止调度。 */
+  deliveryStopped: 'delivery.stopped',
+  /** 渲染项因批次停止而未执行。 */
+  deliveryNotRun: 'delivery.notRun',
   recordInvalid: 'record.invalid',
   recordIntegrityMismatch: 'record.integrityMismatch',
   recordBuildMismatch: 'record.buildMismatch',

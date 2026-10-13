@@ -4,6 +4,8 @@
  *   退出码：0 已出图；1 未出图（正式出图有严重问题，或请求、模板、数据集找不到）；2 用法错误或请求文件无法读取。
  * - publish：把数据定义发布为下一个版本的静态数据定义，写出带版本号的 DSL 与编译产物。
  *   退出码：0 已发布；1 有问题未发布；2 用法错误或文件无法读取。
+ * - deliver：批量正式交付到新批次目录，逐项进度写到标准错误流，汇总写到标准输出。
+ *   退出码：0 全部项已交付；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取。
  */
 import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -24,7 +26,7 @@ export interface CliIo {
 export const ExitCodes = { ok: 0, failed: 1, usage: 2 } as const;
 
 const USAGE = `用法：
-  renderweave deliver --workspace <目录> --resources <版本仓库> --request <单项批量请求.json> --out <新目录> [--options <字体配置.json>]
+  renderweave deliver --workspace <目录> --resources <版本仓库> --request <批量请求.json> --out <新批次目录> [--options <字体配置.json>]
   renderweave replay --record <记录目录> --out <新目录>
   renderweave record-read --record <记录目录>
   renderweave render --workspace <目录> --resources <目录> --request <文件> --out <目录>
@@ -114,10 +116,19 @@ async function runRecords(command: string, options: Record<string, string>, io: 
     const opened = await openVersionedResourceStore(options.resources!);
     reportProblems(opened.problems, io);
     if (!opened.store) return ExitCodes.failed;
-    const result = await deliverBatch({ workspace, resources: opened.store, request, outDir: options.out!, renderOptions });
+    const labels = { delivered: '已交付', failed: '失败', notRun: '未执行' } as const;
+    const result = await deliverBatch({
+      workspace, resources: opened.store, request, outDir: options.out!, renderOptions,
+      onItem: (item, { completed, total }) => {
+        io.stderr(`[${completed}/${total}] ${item.id}：${labels[item.status]}${item.directory ? ` ${item.directory}` : ''}（严重 ${item.severe}，提示 ${item.hints}）\n`);
+        if (item.status !== 'delivered') reportProblems(item.problems, io);
+      },
+    });
     reportProblems(result.problems, io);
-    if (!result.delivered) return ExitCodes.failed;
-    io.stdout(`${JSON.stringify(result.delivered, null, 2)}\n`);
+    if (!result.directory) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify({ directory: result.directory, manifest: 'batch.json', summary: result.summary }, null, 2)}\n`);
+    // 部分失败、未执行或汇总清单未写出都不是完整交付。
+    return result.summary.delivered === result.summary.total && result.problems.length === 0 ? ExitCodes.ok : ExitCodes.failed;
   } else if (command === 'replay') {
     const result = await replayOutputRecord({ dir: options.record!, outDir: options.out! });
     reportProblems(result.problems, io);

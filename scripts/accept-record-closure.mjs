@@ -30,7 +30,7 @@ for (const [name, source, requestFile] of [
   const single = await json(join(workspace, requestFile)), { template, mode, ...item } = single;
   const batch = join(origin, `${name}-batch.json`);
   await writeFile(batch, JSON.stringify({ template, mode, items: [{ id: name, ...item }] }));
-  const record = join(origin, `${name}-record`), independent = join(run, `${name}-independent`);
+  const delivery = join(origin, `${name}-batch`), record = join(delivery, '0001'), independent = join(run, `${name}-independent`);
   const optionArgs = name === 'media' ? ['--options', join(workspace, 'options.json')] : [];
   const plain = join(origin, `${name}-plain`);
   // render CLI 没有字体选项；通过公开 API 比较完全相同的配置与版本字节。
@@ -41,7 +41,7 @@ for (const [name, source, requestFile] of [
   await writeFile(join(plain, 'image.png'), direct.image.bytes);
   await writeFile(join(plain, 'layout.json'), JSON.stringify(direct.layout, null, 2) + '\n');
   await writeFile(join(plain, 'problems.json'), JSON.stringify(direct.problems, null, 2) + '\n');
-  process.stdout.write(cli('deliver', '--workspace', workspace, '--resources', resources, '--request', batch, '--out', record, ...optionArgs));
+  process.stdout.write(cli('deliver', '--workspace', workspace, '--resources', resources, '--request', batch, '--out', delivery, ...optionArgs));
   for (const file of ['image.png', 'layout.json', 'problems.json']) assert.deepEqual(await readFile(join(record, file)), await readFile(join(plain, file)));
   assert.equal(direct.problems.length, name === 'media' ? 1 : 0);
   if (name === 'media') assert.equal(direct.problems[0].code, 'text.glyphFallback');

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { deliverBatch, readOutputRecord, replayOutputRecord, initializeResourceStore, importResources, openVersionedResourceStore,
-  render, type VersionedResourceStore, type Workspace } from '../src/index.js';
+  render, type BatchDeliveryResult, type VersionedResourceStore, type Workspace } from '../src/index.js';
 import { runCli } from '../src/cli.js';
 import { greetingRequest, loadSingleText, resourcesDir, singleTextDir, withTemplate } from './support/fixtures.js';
 
@@ -21,6 +21,9 @@ const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('h
 async function manifestEdit(edit: (manifest: any) => void) {
   const file = join(dir, 'record.json'), value = await json(file); edit(value); await fs.writeFile(file, JSON.stringify(value));
 }
+/** 单项批次的记录目录与是否交付成功。 */
+const recordIn = (batchDir: string) => join(batchDir, '0001');
+const delivered = (result: BatchDeliveryResult) => result.items[0]?.status === 'delivered';
 async function deliver(extra = {}) { return deliverBatch({ workspace, resources: store, request: batch(), outDir: out, renderOptions: options, ...extra }); }
 async function rejected() { const result = await replayOutputRecord({ dir, outDir: out }); expect(result.replayed).toBeUndefined(); expect(result.problems[0]?.level).toBe('severe'); return result; }
 beforeAll(async () => {
@@ -32,9 +35,9 @@ beforeAll(async () => {
   workspace = await loadSingleText();
   baseline = join(root, 'baseline');
   const result = await deliverBatch({ workspace, resources: store, request: batch(), outDir: baseline, renderOptions: options });
-  expect(result.problems).toEqual([]); expect(result.delivered).toBeDefined();
+  expect(result.problems).toEqual([]); expect(result.items[0]?.problems).toEqual([]); expect(delivered(result)).toBe(true);
 });
-beforeEach(async () => { dir = join(root, `copy-${++counter}`); out = join(root, `output-${counter}`); await fs.cp(baseline, dir, { recursive: true }); });
+beforeEach(async () => { dir = join(root, `copy-${++counter}`); out = join(root, `output-${counter}`); await fs.cp(recordIn(baseline), dir, { recursive: true }); });
 afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 afterAll(async () => {
   if (!resolve(root).startsWith(join(resolve(tmpdir()), 'renderweave-records-'))) throw new Error('测试清理路径越界');
@@ -63,8 +66,8 @@ it('内联数据、参数和 JPEG 走相同合同', async () => {
   const request = batch();
   request.items[0]!.dataset = { inline: workspace.datasets[0]!.document };
   request.items[0]!.output = { width: 160, height: 40, dpi: 120, format: 'jpeg' };
-  const result = await deliver({ request }); expect(result.problems).toEqual([]); expect(result.delivered?.image).toBe('image.jpg');
-  expect((await replayOutputRecord({ dir: out, outDir: join(root, 'jpeg-replay') })).replayed).toBeDefined();
+  const result = await deliver({ request }); expect(result.problems).toEqual([]); expect(result.items[0]?.files?.image).toBe('image.jpg');
+  expect((await replayOutputRecord({ dir: recordIn(out), outDir: join(root, 'jpeg-replay') })).replayed).toBeDefined();
 });
 it('图形及对外参数随记录保存并重放', async () => {
   const modified = withTemplate(workspace, '问候牌', (document) => {
@@ -73,13 +76,14 @@ it('图形及对外参数随记录保存并重放', async () => {
     document.artboard.children.unshift({ type: 'rect', name: '色块', fill: '#0099CC', place: { left: 0, top: 0, width: { fixed: 160 }, height: { fixed: 5 } } });
   });
   const request = batch(); request.items[0]!.parameters = { label: '独立交付' };
-  const result = await deliver({ workspace: modified, request }); expect(result.problems).toEqual([]); expect(result.delivered).toBeDefined();
-  expect((await json(join(out, 'input.json'))).batch.items[0].parameters).toEqual({ label: '独立交付' });
-  expect((await replayOutputRecord({ dir: out, outDir: join(root, 'shape-replay') })).replayed).toBeDefined();
+  const result = await deliver({ workspace: modified, request }); expect(result.problems).toEqual([]); expect(delivered(result)).toBe(true);
+  expect((await json(join(recordIn(out), 'input.json'))).batch.items[0].parameters).toEqual({ label: '独立交付' });
+  expect((await replayOutputRecord({ dir: recordIn(out), outDir: join(root, 'shape-replay') })).replayed).toBeDefined();
 });
 it('固定版本的字体字节损坏时不开始交付', async () => {
   const result = await deliver({ resources: { ...store, get: store.get.bind(store), read: async () => new Uint8Array([1, 2]) } });
-  expect(result.delivered).toBeUndefined(); expect(result.problems[0]?.code).toBe('record.integrityMismatch');
+  expect(result.directory).toBeUndefined(); expect(result.items).toEqual([]); expect(result.problems[0]?.code).toBe('record.integrityMismatch');
+  await expect(fs.stat(out)).rejects.toThrow();
 });
 
 it.each(['template', 'dataset', 'compiled', 'definition'])('删除记录的 %s 后即使更新文件哈希也拒绝', async (part) => {
@@ -122,19 +126,27 @@ it('漏掉缺失字体状态、重复文件及遗漏成果条目均拒绝', asyn
     await fs.writeFile(join(dir, 'record.json'), original); await manifestEdit(change); await rejected();
   }
 });
-it.each([{ items: [] }, { items: [{ id: 'x' }, { id: 'x' }] }])('空列表或多项明确拒绝', async ({ items }) => {
-  const result = await deliver({ request: { ...batch(), items } }); expect(result.delivered).toBeUndefined(); expect(result.problems[0]?.code).toBe('delivery.unsupported');
-});
-it('草稿、未知属性、无标识、非法选项拒绝；严重渲染问题无记录', async () => {
-  for (const request of [{ ...batch(), mode: 'draft' }, { ...batch(), extra: true }, { ...batch(), items: [{ ...batch().items[0], id: '' }] }]) expect((await deliver({ request })).delivered).toBeUndefined();
-  expect((await deliver({ renderOptions: { fallbackFonts: null } })).delivered).toBeUndefined();
-  const request = batch(); request.items[0]!.dataset = { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: { message: '' } } };
-  expect((await deliver({ request })).delivered).toBeUndefined();
+it.each([
+  ['空列表', { items: [] }], ['重复标识', { items: [{ id: 'x' }, { id: 'x' }] }], ['超过 1,000 项', { items: Array.from({ length: 1001 }, (_, i) => ({ id: `item-${i}` })) }],
+])('%s在执行前整批拒绝，不建目录', async (_name, { items }) => {
+  const result = await deliver({ request: { ...batch(), items } });
+  expect(result.directory).toBeUndefined(); expect(result.problems[0]?.code).toBe('request.invalid');
   await expect(fs.stat(out)).rejects.toThrow();
 });
-it.each(['call', 'loop', 'qrcode', 'barcode'])('无效调用或未覆盖的 %s 元素不能生成成功记录', async (type) => {
+it('草稿、未知属性、无标识、非法选项整批拒绝；严重渲染问题只使本项失败且无记录', async () => {
+  for (const request of [{ ...batch(), mode: 'draft' }, { ...batch(), extra: true }, { ...batch(), items: [{ ...batch().items[0], id: '' }] }]) expect((await deliver({ request })).directory).toBeUndefined();
+  expect((await deliver({ renderOptions: { fallbackFonts: null } })).directory).toBeUndefined();
+  await expect(fs.stat(out)).rejects.toThrow();
+  const request = batch(); request.items[0]!.dataset = { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: { message: '' } } };
+  const result = await deliver({ request });
+  expect(result.items[0]).toMatchObject({ status: 'failed', directory: recordIn(out), files: { problems: 'problems.json' } });
+  expect(await json(join(recordIn(out), 'problems.json'))).toEqual(result.items[0]!.problems);
+  await expect(fs.stat(join(recordIn(out), 'record.json'))).rejects.toThrow();
+  expect((await readOutputRecord({ dir: recordIn(out) })).record).toBeUndefined();
+});
+it.each(['call', 'loop', 'qrcode', 'barcode'])('无效调用或未覆盖的 %s 元素使根模板无法准备，整批拒绝', async (type) => {
   const modified = withTemplate(workspace, '问候牌', (document) => document.artboard.children.push({ type, name: 'unsupported' }));
-  expect((await deliver({ workspace: modified })).delivered).toBeUndefined();
+  expect((await deliver({ workspace: modified })).directory).toBeUndefined();
 });
 it('冻结前复制请求和文档，字体只读固定版本一次；调用中修改输入不影响记录', async () => {
   const copy = withTemplate(workspace, '问候牌', () => undefined), request = batch();
@@ -143,55 +155,59 @@ it('冻结前复制请求和文档，字体只读固定版本一次；调用中�
     return store.read(id, version);
   });
   const result = await deliver({ workspace: copy, request, resources: { ...store, get: store.get.bind(store), read } });
-  expect(result.delivered?.id).toBe('../../不作路径'); expect(read).toHaveBeenCalledTimes(1);
-  expect(await fs.readFile(join(out, 'image.png'))).toEqual(await fs.readFile(join(baseline, 'image.png')));
+  expect(result.items[0]?.id).toBe('../../不作路径'); expect(read).toHaveBeenCalledTimes(1);
+  expect(await fs.readFile(join(recordIn(out), 'image.png'))).toEqual(await fs.readFile(join(recordIn(baseline), 'image.png')));
 });
 it('目标存在及并发竞争均不覆盖，恰好一个交付成功', async () => {
-  const results = await Promise.all([deliver(), deliver()]); expect(results.filter((r) => r.delivered)).toHaveLength(1);
-  const before = await fs.readFile(join(out, 'record.json')); expect((await deliver()).delivered).toBeUndefined();
-  expect(await fs.readFile(join(out, 'record.json'))).toEqual(before);
+  const results = await Promise.all([deliver(), deliver()]); expect(results.filter((r) => r.directory)).toHaveLength(1);
+  const before = await fs.readFile(join(out, 'batch.json')); expect((await deliver()).directory).toBeUndefined();
+  expect(await fs.readFile(join(out, 'batch.json'))).toEqual(before);
   expect((await replayOutputRecord({ dir, outDir: out })).replayed).toBeUndefined();
 });
-it.each(['image.png', 'input.json', '.complete.tmp'])('%s 写入失败不发布完成清单', async (file) => {
+it.each(['image.png', 'input.json', '.complete.tmp'])('%s 写入失败使本项失败，不发布完成清单', async (file) => {
   const original = (await vi.importActual<typeof fs>('node:fs/promises')).open;
   vi.mocked(fs.open).mockImplementation(async (...args: Parameters<typeof fs.open>) => {
-    if (String(args[0]) === join(out, file)) throw new Error('injected disk error');
+    if (String(args[0]) === join(recordIn(out), file)) throw new Error('injected disk error');
     return original(...args);
   });
-  const result = await deliver(); expect(result.delivered).toBeUndefined(); expect(result.problems[0]?.code).toBe('delivery.writeFailed');
-  expect((await readOutputRecord({ dir: out })).record).toBeUndefined();
+  const result = await deliver(); expect(result.items[0]?.status).toBe('failed');
+  expect(result.items[0]?.problems.map((p) => p.code)).toContain('delivery.writeFailed'); expect(result.items[0]?.reason).toContain('injected disk error');
+  expect(result.problems).toEqual([]);
+  expect((await readOutputRecord({ dir: recordIn(out) })).record).toBeUndefined();
 });
 it('完成清单发布失败留下的全套内容也不能读取为成功', async () => {
   vi.mocked(fs.link).mockRejectedValueOnce(new Error('injected commit failure'));
-  expect((await deliver()).delivered).toBeUndefined();
-  expect((await readOutputRecord({ dir: out })).record).toBeUndefined();
-  await expect(fs.stat(join(out, 'image.png'))).resolves.toBeDefined();
+  expect(delivered(await deliver())).toBe(false);
+  expect((await readOutputRecord({ dir: recordIn(out) })).record).toBeUndefined();
+  await expect(fs.stat(join(recordIn(out), 'image.png'))).resolves.toBeDefined();
+  expect((await json(join(out, 'batch.json'))).items[0].status).toBe('failed');
 });
 it('实际写入一部分后失败关闭句柄，残留内容没有完成清单', async () => {
   const original = (await vi.importActual<typeof fs>('node:fs/promises')).open;
   vi.mocked(fs.open).mockImplementation(async (...args: Parameters<typeof fs.open>) => {
     const handle = await original(...args);
-    if (String(args[0]) === join(out, 'image.png')) {
+    if (String(args[0]) === join(recordIn(out), 'image.png')) {
       const write = handle.writeFile.bind(handle);
       vi.spyOn(handle, 'writeFile').mockImplementation(async () => { await write('partial'); throw new Error('disk full after partial write'); });
     }
     return handle;
   });
-  expect((await deliver()).delivered).toBeUndefined();
-  expect(await fs.readFile(join(out, 'image.png'), 'utf8')).toBe('partial');
-  expect((await readOutputRecord({ dir: out })).record).toBeUndefined();
+  expect(delivered(await deliver())).toBe(false);
+  expect(await fs.readFile(join(recordIn(out), 'image.png'), 'utf8')).toBe('partial');
+  expect((await readOutputRecord({ dir: recordIn(out) })).record).toBeUndefined();
   // Windows 可删除文件证明失败路径已关闭句柄。
-  await fs.unlink(join(out, 'image.png'));
+  await fs.unlink(join(recordIn(out), 'image.png'));
 });
 it('CLI 正式交付、读取、复制重放、目标保护及用法错误', async () => {
   const request = join(root, 'batch.json'), config = join(root, 'options.json');
   await fs.writeFile(request, JSON.stringify(batch())); await fs.writeFile(config, JSON.stringify(options));
   const io = { stdout: vi.fn(), stderr: vi.fn() };
   expect(await runCli(['deliver', '--workspace', singleTextDir, '--resources', join(root, 'resources'), '--request', request, '--options', config, '--out', out], io)).toBe(0);
-  expect(await runCli(['record-read', '--record', out], io)).toBe(0);
+  expect(await runCli(['record-read', '--record', recordIn(out)], io)).toBe(0);
   expect(await runCli(['replay', '--record', dir, '--out', join(root, 'cli-replay')], io)).toBe(0);
   expect(await runCli(['replay', '--record', dir, '--out', out], io)).toBe(1);
   expect(await runCli(['replay', '--record', dir], io)).toBe(2);
+  expect(await runCli(['deliver', '--workspace', singleTextDir, '--resources', join(root, 'resources'), '--request', request, '--out', out], io)).toBe(1);
   await fs.writeFile(request, '{');
-  expect(await runCli(['deliver', '--workspace', singleTextDir, '--resources', join(root, 'resources'), '--request', request, '--out', out], io)).toBe(2);
+  expect(await runCli(['deliver', '--workspace', singleTextDir, '--resources', join(root, 'resources'), '--request', request, '--out', join(root, 'never')], io)).toBe(2);
 });

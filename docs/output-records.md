@@ -1,12 +1,12 @@
-# 单项正式交付与出图记录
+# 批量正式交付与出图记录
 
-第二阶段票据 06–07 已实现：以一个渲染项的批量请求交付完整模板及其调用、数据和素材依赖，把记录整体复制后独立重放。公开入口为 `deliverBatch`、`readOutputRecord`、`replayOutputRecord`。既有 `render` 继续负责纯渲染。
+第二阶段票据 06–08 已实现：一个根模板列出多个渲染项，逐项正式交付。每个成功项都是一份自足出图记录，含完整模板调用、数据和素材依赖，整体复制后可独立重放。公开入口为 `deliverBatch`、`readOutputRecord`、`replayOutputRecord`；既有 `render` 继续负责纯渲染。
 
-当前边界：只接受 `final`、一个根模板和恰好一个渲染项；已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。URL 图片和码图交付仍明确拒绝，多项调度从 08 开始。纯渲染原有能力不受此限制。
+当前边界：只接受 `final` 模式，渲染项数为 1–1,000；串行执行。已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。批量草稿（票据 09）、取消与中断辨认（10）、素材去重（11）及码图交付（12）尚未实现，URL 图片与码图仍明确拒绝。每份记录独立复制所用字体，M402 一项约 34 MB，长批次的磁盘占用要按此估算。
 
-## 从 CLI 出图与重放
+## 从 CLI 批量交付与重放
 
-Node.js 22 及以上，在仓库根目录运行。所有交付及重放目标必须是新目录；重复执行时换新目标。
+Node.js 22 及以上，在仓库根目录运行。交付和重放的目标必须是新目录；重复执行时换新目标。
 
 ```powershell
 npm ci
@@ -14,19 +14,50 @@ npm run fetch-fonts
 npm run build
 node dist/bin.js resources-init --resources out/record-resources
 node dist/bin.js resources-import --source fixtures/resources --resources out/record-resources
-node dist/bin.js deliver --workspace fixtures/workspaces/single-text --resources out/record-resources --request docs/examples/output-record/batch-request.json --options docs/examples/output-record/options.json --out out/greeting-record
-node dist/bin.js record-read --record out/greeting-record
-Copy-Item -LiteralPath out/greeting-record -Destination out/greeting-archive -Recurse
-node dist/bin.js replay --record out/greeting-archive --out out/greeting-replayed
+node dist/bin.js deliver --workspace docs/examples/m402-dsl --resources out/record-resources --request docs/examples/output-record/m402-batch-request.json --out out/m402-batch
+node dist/bin.js record-read --record out/m402-batch/0035
+Copy-Item -LiteralPath out/m402-batch/0035 -Destination out/m402-35-archive -Recurse
+node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 ```
 
-样例生成 756 × 189 px、120 DPI 的 PNG。`replay` 只接收记录和新输出目录，不接收工作区或资源仓库。Linux 复制命令可用 `cp -R out/greeting-record out/greeting-archive`。复制成功后即可将归档目录交给具有同一构建的另一台机器。
+[35 项请求](examples/output-record/m402-batch-request.json)逐项列出 M402 本站 1–35，每项生成 3496 × 780 px、120 DPI 的 PNG。[混合请求](examples/output-record/m402-mixed-batch-request.json)在合法项之间放入本站 36、错误数据版本、超大尺寸和不存在的数据集，交付后只有这 4 项失败，退出码为 1。[单项请求](examples/output-record/batch-request.json)配合 `--workspace fixtures/workspaces/single-text --options docs/examples/output-record/options.json` 使用，样例故意配置一个缺失的后备字体，用来证明缺失状态也随记录保存。
 
-[批量请求样例](examples/output-record/batch-request.json)包含根模板、统一模式和 `items`。项的 `id` 是非空唯一标识，仅作为数据保存，不参与文件路径；数据集可用 `{ "id": "ds-greeting" }` 或 `{ "inline": { "dataset": { "staticSchema": { "name": "问候", "version": 1 } }, "data": { "message": "欢迎乘坐" } } }`。`parameters` 和 `output` 沿用单次渲染合同。
+`deliver` 每完成一项，就在标准错误流打印一行进度，形如 `[3/35] m402-03：已交付 out\m402-batch\0003（严重 0，提示 0）`；失败项随后列出问题。全部结束后，标准输出给出批次目录与汇总。`replay` 只接收一项记录和新输出目录，不接收工作区或资源仓库；Linux 复制命令可用 `cp -R`。
 
-`--options` 可省略，届时把引擎默认的后备字体与 SVG 字体配置展开后保存。样例故意配置一个缺失后备字体，证明缺失状态也能保存，重放不会补入当前机器上的字体。显式空数组禁用相应候选列表。
+退出码：
 
-退出码：`0` 已完整交付、完整读取或重放匹配；`1` 输入范围、完整性、构建、渲染或文件操作失败；`2` CLI 用法、请求/选项读取或请求数值精度错误。诊断写到标准错误流，正式交付引用及读取的清单写到标准输出。
+- `deliver`：`0` 全部项已交付且 `batch.json` 已写出；`1` 整批拒绝、目标已存在、部分项失败或未执行、汇总未写出；`2` CLI 用法、请求/选项读取错误或请求数值精度错误。
+- `record-read`、`replay`：`0` 完整读取或重放匹配；`1` 完整性、构建、渲染或文件操作失败；`2` 用法错误。
+
+失败项的重试方式：修正后显式列成新批次，交付到新目录。旧批次不会被覆盖，也不会自动续跑或重试。
+
+## 批量请求与执行规则
+
+请求包含 `template`、`mode`（目前只能是 `final`）和 `items`。每项有 `id`、`dataset`、`parameters`、`output`：
+
+- `id`：非空，批次内唯一，只作为数据保存，不参与文件路径。
+- `dataset`：写成 `{ "id": "ds-m402-wanguocheng" }` 引用已保存的数据集，或写成 `{ "inline": { "dataset": { "staticSchema": { "name": "问候", "version": 1 } }, "data": { … } } }` 内联数据。
+- `parameters`、`output`：沿用单次渲染合同。
+
+执行前整批拒绝（不建目录、不产生成功项）的情况：
+
+- 外层结构不合法、出现未定义属性、渲染项不是对象。
+- 项列表为空、超过 1,000 项、标识重复。
+- 选项不合法，或工作区有严重读取问题。
+- 根模板无法准备：不存在、调用闭包缺失或成环、含码图元素。
+- 固定资源的字节与版本不符。
+- 目标目录已存在。
+
+只让本项失败、其他项照常交付的情况：数据集缺失或数据版本错误、参数或出图尺寸非法、渲染出现严重问题（如本站 36 的 `check.failed`）、本项写入失败。
+
+开始执行前，以下内容在一次同步步骤内固定：
+
+- 文档、全部渲染项和渲染配置复制一份。
+- 所有项可能用到的资源先固定版本映射，再读出字节并校验。
+
+运行中改写传入的工作区对象或请求，或在仓库里替换资源，都不会混入本批；下一批才使用新内容。每项仍调用同一个 `render`，不复制检查、求值或排版逻辑。
+
+各项串行执行。每项写完成果即释放图片字节，返回值和 `batch.json` 只保留状态、问题与文件引用。单项写入失败后会在批次目录写一个探测文件：可写就继续下一项；整体不可写就停止调度，其余项标为 `notRun`，并给出 `delivery.storageUnavailable`。`onItem` 回调抛错同样停止调度，问题码为 `delivery.stopped`。
 
 ## 公开入口
 
@@ -35,39 +66,73 @@ import { loadWorkspace, openVersionedResourceStore, deliverBatch,
   readOutputRecord, replayOutputRecord } from './dist/index.js';
 
 const workspace = await loadWorkspace({
-  dir: 'fixtures/workspaces/single-text', resourcesDir: 'out/record-resources',
+  dir: 'docs/examples/m402-dsl', resourcesDir: 'out/record-resources',
 });
 const opened = await openVersionedResourceStore('out/record-resources');
 if (!opened.store) throw new Error(JSON.stringify(opened.problems));
 const result = await deliverBatch({
   workspace, resources: opened.store,
-  request: { template: '问候牌', mode: 'final', items: [{
-    id: 'greeting-01', dataset: { id: 'ds-greeting' }, parameters: {},
-    output: { width: 160, height: 40, dpi: 120, format: 'png' },
-  }] },
-  outDir: 'out/api-record',
+  request: { template: '标准线路单边', mode: 'final', items: [1, 2, 3].map((current) => ({
+    id: `m402-${current}`, dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: current },
+    output: { width: 740, height: 165, dpi: 120, format: 'png' },
+  })) },
+  outDir: 'out/api-batch',
+  onItem: (item, { completed, total }) => console.log(`${completed}/${total}`, item.id, item.status),
 });
-if (!result.delivered) throw new Error(JSON.stringify(result.problems));
-const checked = await readOutputRecord({ dir: result.delivered.directory });
-const replayed = await replayOutputRecord({ dir: result.delivered.directory, outDir: 'out/api-replay' });
+if (!result.directory) throw new Error(JSON.stringify(result.problems)); // 整批拒绝
+const first = result.items[0]!;
+if (first.status === 'delivered') {
+  const checked = await readOutputRecord({ dir: first.directory! });
+  const replayed = await replayOutputRecord({ dir: first.directory!, outDir: 'out/api-replay' });
+}
 ```
 
-交付返回文件引用和问题清单，不在返回值累积图片字节。资源使用已打开版本仓库的当前快照；所有所需图片和字体的版本先固定，再读取并校验字节，交给本次渲染的内存资源仓库。传入 `workspace.resources` 不参与交付。文档、请求、配置在首次异步操作前复制并序列化，渲染使用这份保存内容。
+`BatchDeliveryResult` 的字段：
 
-模板依赖包括隐藏调用及全部状态分支，按名称收集可达模板并检查循环、缺失和重复。每个模板基准、派生引用类型、实际数据集基准，以及静态定义原文和编译产物中的确切版本引用都随记录保存。渲染器继续校验每一层调用的数据版本，不把不同版本合并。
+- `directory`：批次目录，整批拒绝时没有。
+- `summary`：`total`、`delivered`、`failed`、`notRun` 四个计数。
+- `items`：按输入顺序排列的逐项结果。
+- `problems`：批次级问题。
 
-资源按声明的类型收集：固定图片、文本/片段/状态字体、图片参数的默认值与根调用实参、图片派生分支、被调模板的图片实参、数据集对象和列表中的图片字段。普通文本中的 `res:` 不当作资源。隐藏元素和未命中分支的引用也固定；后备与 SVG 字体候选保留配置顺序和可用/缺失状态。SVG 原字节独立保存，内嵌图片属于其字节，外部引用仍由既有 SVG 清理规则处理，不会在重放时读取外部地址。
+逐项结果 `BatchItemResult` 的字段：
+
+- `index`（从 1 开始）、`id`、`status`：`delivered`、`failed` 或 `notRun`。
+- `directory`：可直接打开的本项目录。
+- `files`：受控文件名。
+- `severe`、`hints`：问题计数，`problems` 为完整问题清单。
+- `reason`：没有本项目录时说明原因。
+
+资源使用已打开版本仓库的版本，传入的 `workspace.resources` 不参与交付。
+
+模板依赖包括隐藏调用及全部状态分支，按名称收集可达模板，并检查循环、缺失和重复。以下内容都随记录保存：每个模板基准、派生引用类型、实际数据集基准，以及静态定义原文和编译产物中的确切版本引用。渲染器继续校验每一层调用的数据版本，不把不同版本合并。
+
+资源按声明的类型收集：
+
+- 固定图片、文本/片段/状态字体。
+- 图片参数的默认值与根调用实参、图片派生分支、被调模板的图片实参。
+- 数据集对象和列表中的图片字段。
+
+普通文本中的 `res:` 不当作资源。隐藏元素和未命中分支的引用也固定；后备字体与 SVG 字体候选保留配置顺序和可用/缺失状态。SVG 原字节独立保存，内嵌图片属于其字节；外部引用仍由既有 SVG 清理规则处理，重放时不会读取外部地址。
 
 ## 文件格式与完整性
 
-单项输出目录即记录目录：
+批次目录：
+
+- `batch.json`：`renderweave-batch/1` 汇总清单，全部项结束后最后原子发布。字段包括构建标识、根模板、模式、`summary`、逐项条目和批次级问题。
+- 逐项条目的字段：`index`、`id`、`status`、`directory`（相对批次目录）、`files`、`severe`、`hints`，没有目录时另有 `reason`。缺少 `batch.json` 的批次目录表示运行未正常结束。
+- `0001/`、`0002/` 等子目录：名称只由输入序号生成。
+  - 成功项是一份完整出图记录（见下文）。
+  - 失败项只有 `problems.json`，以及可用时的 `layout.json`，没有 `record.json`，不能读作记录。
+  - 写入失败或未执行的项可能没有目录，原因写在 `reason`。
+
+每项记录目录：
 
 - `record.json`：`renderweave-output-record/1` 完成清单；包含构建标识、项标识、资源 ID/种类/版本/可用状态，以及每个内容文件的 SHA-256 与字节数。
 - `input.json`：实际请求、模板调用闭包、数据集、相关静态定义 DSL 和编译产物、渲染配置。内置定义没有独立 DSL 原文，保存实际编译产物并由确切构建约束其行为。读取时核对保存文档与重新收集的完整依赖相同，不能通过删除内置定义再让本机生成来补缺。
 - `font-000001.bin`、`image-000005.bin` 等：固定版本的独立资源副本，文件扩展名不参与图片格式识别。缺失引用和候选写入清单。
 - `image.png` 或 `image.jpg`、`problems.json`、`layout.json`：本次正式结果。重放重新生成三者，逐一比较哈希；一致才写出新目录及 `replay.json` 完成清单。
 
-排他创建输出目录，内容文件逐个排他写入并同步；最后才原子发布完整清单。写入失败或进程中断可能留下目录和文件，缺少 `record.json` 的目录始终不能读为成功。清单引用只允许受控单层文件名，拒绝逃逸路径、重复条目、缺失文件、链接及损坏字节。记录内容默认独立复制，字体不依赖原版本仓库。这里验证本地文件系统的写入失败和进程强退，不宣称断电持久性或网络文件系统事务。
+批次目录与各项目录都排他创建，内容文件逐个排他写入并同步；各项最后才原子发布 `record.json`，全部项结束后再发布 `batch.json`。写入失败或进程中断可能留下目录和文件，缺少 `record.json` 的目录始终不能读为成功。清单引用只允许受控单层文件名，拒绝逃逸路径、重复条目、缺失文件、链接及损坏字节。记录内容默认独立复制，字体不依赖原版本仓库。这里验证本地文件系统的写入失败和进程强退，不宣称断电持久性或网络文件系统事务。
 
 完整性校验用于发现缺失和改动，不是来源签名。记录包含业务数据、模板、图片和字体原文件，交接范围包含这些内容，不能只交付清单或图片。
 
@@ -108,3 +173,36 @@ docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-re
 17 项新增记录依赖测试覆盖完整调用、列表单值图片、隐藏/状态/片段资源、图片参数及派生值、原记录和仓库失效、嵌套内容删除/篡改、内置定义缺失、存在多个版本时的调用版本错配。票据 06 的文件故障和强退脚本仍通过。全量回归中另捕获 Windows 清单替换偶发 `EPERM`，补了有限重试及 3 项资源回归，细节见[资源版本说明](resources-versioning.md)。
 
 票据 07 最终全量为 26 文件、592 项，连续三轮通过；类型检查和构建通过。新 CLI 已读取原票据 06 的记录，格式兼容仍受确切构建重放规则约束。
+
+## 票据 08 验收
+
+```powershell
+npm test
+npm run typecheck
+npm run build
+node scripts/accept-batch.mjs out/stage2/batch-windows
+```
+
+公开入口回归（`test/batch-delivery.test.ts`）覆盖以下场景：
+
+- 35 项 M402 本站逐项与公开 `render` 一致，35 张图各不相同，进度回调按序。
+- 混合批次只有 4 个坏项失败，修正后另组批次不改动原批次。
+- 根模板缺失、项不是对象、工作区有严重问题时整批拒绝。
+- 运行中真实替换资源、改写传入的模板和请求，本批不受影响，下一批改用 v2。
+- 标识只作数据；单项写入失败后继续；存储整体不可写时停止并标出未执行；进度回调抛错时停止。
+- CLI 的进度、汇总与退出码。
+
+脚本通过编译 CLI 交付[35 项请求](examples/output-record/m402-batch-request.json)和[混合请求](examples/output-record/m402-mixed-batch-request.json)，逐项与 `render` 逐字节比较，另外验证：
+
+- 第 35 项复制后可读取、可重放。
+- 修正后的失败项另组批次交付，原批次全部文件哈希不变；再次写入同一目标被拒绝。
+- 退出码：非 JSON 请求返回 2，非批量 JSON 返回 1。
+
+2026-10-12 实测（Windows，Node v24.21.0）：
+
+- 27 个测试文件、603 项全过，类型检查和构建通过。
+- 35 项用时 37.6 秒，批次目录共 1.22 GB：每份记录独立复制 4 个字体，约 34 MB。
+- 本站 5 的图片 SHA-256 与票据 07 的 M402 基准相同，为 `785e0aad9beebf1203a6fd78284c69ab9606fa7d2323af94bd6bb50aabbfda72`。
+- 票据 06、07 的验收脚本按新目录布局（记录在批次目录的 `0001/`）重跑通过，图片哈希与原记录一致。
+
+Linux 复核与全新环境安装由票据 13 汇总；长批次的素材去重和内存曲线由票据 11 验收。

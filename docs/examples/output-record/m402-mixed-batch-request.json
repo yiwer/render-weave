@@ -1,0 +1,14 @@
+{
+  "template": "标准线路单边",
+  "mode": "final",
+  "items": [
+    {"id": "m402-01", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 1}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "stop-36", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 36}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "m402-02", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 2}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "wrong-version", "dataset": {"inline": {"dataset": {"staticSchema": {"name": "线路牌", "version": 2}}, "data": {}}}, "parameters": {"currentIndex": 2}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "m402-03", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 3}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "too-large", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 4}, "output": {"width": 5000, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "no-dataset", "dataset": {"id": "ds-missing"}, "parameters": {"currentIndex": 5}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "m402-35", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 35}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}}
+  ]
+}
