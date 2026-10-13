@@ -4,8 +4,8 @@
  *   退出码：0 已出图；1 未出图（正式出图有严重问题，或请求、模板、数据集找不到）；2 用法错误或请求文件无法读取。
  * - publish：把数据定义发布为下一个版本的静态数据定义，写出带版本号的 DSL 与编译产物。
  *   退出码：0 已发布；1 有问题未发布；2 用法错误或文件无法读取。
- * - deliver：批量正式交付到新批次目录，逐项进度写到标准错误流，汇总写到标准输出。
- *   退出码：0 全部项已交付；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取。
+ * - deliver：批量正式交付或草稿预览到新批次目录，逐项进度写到标准错误流，汇总写到标准输出。
+ *   退出码：0 全部项已交付（草稿为全部已预览，可能仍有严重问题）；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取。
  */
 import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -116,19 +116,22 @@ async function runRecords(command: string, options: Record<string, string>, io: 
     const opened = await openVersionedResourceStore(options.resources!);
     reportProblems(opened.problems, io);
     if (!opened.store) return ExitCodes.failed;
-    const labels = { delivered: '已交付', failed: '失败', notRun: '未执行' } as const;
+    const labels = { delivered: '已交付', previewed: '已预览', failed: '失败', notRun: '未执行' } as const;
     const result = await deliverBatch({
       workspace, resources: opened.store, request, outDir: options.out!, renderOptions,
       onItem: (item, { completed, total }) => {
         io.stderr(`[${completed}/${total}] ${item.id}：${labels[item.status]}${item.directory ? ` ${item.directory}` : ''}（严重 ${item.severe}，提示 ${item.hints}）\n`);
-        if (item.status !== 'delivered') reportProblems(item.problems, io);
+        if (item.status === 'failed' || item.status === 'notRun' || item.severe > 0) reportProblems(item.problems, io);
       },
     });
     reportProblems(result.problems, io);
     if (!result.directory) return ExitCodes.failed;
-    io.stdout(`${JSON.stringify({ directory: result.directory, manifest: 'batch.json', summary: result.summary }, null, 2)}\n`);
-    // 部分失败、未执行或汇总清单未写出都不是完整交付。
-    return result.summary.delivered === result.summary.total && result.problems.length === 0 ? ExitCodes.ok : ExitCodes.failed;
+    const { summary, mode } = result;
+    io.stdout(`${JSON.stringify({ directory: result.directory, manifest: 'batch.json', mode, summary }, null, 2)}\n`);
+    if (mode === 'draft' && summary.severe > 0) io.stderr(`草稿预览含严重问题 ${summary.severe} 个，不是可交付成品；修正后以 final 模式交付\n`);
+    // 0 只表示本模式的成果全部完整：草稿全部已预览，或正式全部已交付；部分失败、未执行或汇总未写出返回 1。
+    const complete = mode === 'draft' ? summary.previewed : summary.delivered;
+    return complete === summary.total && result.problems.length === 0 ? ExitCodes.ok : ExitCodes.failed;
   } else if (command === 'replay') {
     const result = await replayOutputRecord({ dir: options.record!, outDir: options.out! });
     reportProblems(result.problems, io);

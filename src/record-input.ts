@@ -38,7 +38,8 @@ type BatchItem = BatchRenderRequest['items'][number];
 /** 已通过外层检查的批次：各项只确认是带唯一 id 的对象，内容留给逐项解析。 */
 export interface BatchEnvelope {
   readonly template: string;
-  readonly mode: 'final';
+  /** 一批统一一个模式；渲染项不能各自指定。 */
+  readonly mode: RenderRequest['mode'];
   readonly items: readonly (Readonly<Record<string, unknown>> & { readonly id: string })[];
 }
 
@@ -47,7 +48,7 @@ export function parseBatchEnvelope(value: unknown): BatchEnvelope {
   if (!isRecord(value)) recordFail('批量请求必须是对象', ProblemCodes.requestInvalid);
   keys(value, ['template', 'mode', 'items']);
   if (typeof value.template !== 'string' || value.template === '') recordFail('批量请求必须指定根模板名称', ProblemCodes.requestInvalid);
-  if (value.mode !== 'final') recordFail('当前正式交付只接受 final 模式', ProblemCodes.deliveryUnsupported);
+  if (value.mode !== 'final' && value.mode !== 'draft') recordFail('批次模式只能是 draft（草稿预览）或 final（正式交付）', ProblemCodes.requestInvalid);
   if (!Array.isArray(value.items) || value.items.length === 0) recordFail('渲染项列表必须是非空数组', ProblemCodes.requestInvalid);
   if (value.items.length > MAX_BATCH_ITEMS) recordFail(`渲染项共 ${value.items.length} 项，超过一批 ${MAX_BATCH_ITEMS} 项的上限，请拆成多个批次`, ProblemCodes.requestInvalid);
   const ids = new Set<string>();
@@ -57,7 +58,7 @@ export function parseBatchEnvelope(value: unknown): BatchEnvelope {
     if (ids.has(item.id)) recordFail(`渲染项标识重复：${item.id}`, ProblemCodes.requestInvalid);
     ids.add(item.id);
   });
-  return structuredClone({ template: value.template, mode: 'final', items: value.items as BatchEnvelope['items'] });
+  return structuredClone({ template: value.template, mode: value.mode, items: value.items as BatchEnvelope['items'] });
 }
 
 /** 逐项解析数据集、参数与出图参数；错误只属于本项。 */
@@ -68,10 +69,10 @@ export function parseBatchItem(envelope: Pick<BatchEnvelope, 'template' | 'mode'
   return { item: structuredClone({ id: item.id, ...input }), problems: [] };
 }
 
-/** 出图记录保存的是恰好一项的批次。 */
+/** 逐项准备与出图记录使用恰好一项的批次。 */
 export function parseBatchRequest(value: unknown): BatchRenderRequest {
   const envelope = parseBatchEnvelope(value);
-  if (envelope.items.length !== 1) recordFail('出图记录必须恰好包含一个渲染项');
+  if (envelope.items.length !== 1) recordFail('单项输入必须恰好包含一个渲染项');
   const { item, problems } = parseBatchItem(envelope, envelope.items[0]!);
   if (!item) recordFail(problems.map((p) => p.message).join('；'), ProblemCodes.requestInvalid);
   return { template: envelope.template, mode: envelope.mode, items: [item] };

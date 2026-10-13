@@ -61,7 +61,7 @@ it('显式列出 M402 本站 1–35：全部交付，结果与进度按输入顺
   const result = await deliverBatch({ workspace: m402, resources: store, request: m402Batch(items), outDir: out,
     onItem: (item, { completed, total }) => { progress.push([completed, total, item.id]); } });
   expect(result.problems).toEqual([]);
-  expect(result.summary).toEqual({ total: 35, delivered: 35, failed: 0, notRun: 0 });
+  expect(result.summary).toMatchObject({ previewed: 0, total: 35, delivered: 35, failed: 0, notRun: 0 });
   expect(progress).toEqual(items.map((item, i) => [i + 1, 35, item.id]));
   const images = new Set<string>();
   for (const [i, item] of result.items.entries()) {
@@ -92,7 +92,7 @@ it('合法项之间夹入本站 36、错误数据版本、超大尺寸与缺失�
   expect(result.problems).toEqual([]);
   expect(result.items.map((i) => [i.index, i.id, i.status])).toEqual([[1, 'm402-01', 'delivered'], [2, 'stop-36', 'failed'], [3, 'm402-02', 'delivered'],
     [4, 'wrong-version', 'failed'], [5, 'm402-03', 'delivered'], [6, 'too-large', 'failed'], [7, 'no-dataset', 'failed'], [8, 'm402-35', 'delivered']]);
-  expect(result.summary).toEqual({ total: 8, delivered: 4, failed: 4, notRun: 0 });
+  expect(result.summary).toMatchObject({ previewed: 0, total: 8, delivered: 4, failed: 4, notRun: 0 });
   const codes = (id: string) => result.items.find((i) => i.id === id)!.problems.map((p) => p.code);
   expect(codes('stop-36')).toContain('check.failed');
   expect(codes('wrong-version')).toEqual(['record.invalid']);
@@ -112,7 +112,7 @@ it('合法项之间夹入本站 36、错误数据版本、超大尺寸与缺失�
 
   const before = await snapshot(out);
   const retry = await deliverBatch({ workspace: m402, resources: store, request: m402Batch([stop(4, 'too-large'), stop(5, 'no-dataset')]), outDir: target() });
-  expect(retry.summary).toEqual({ total: 2, delivered: 2, failed: 0, notRun: 0 });
+  expect(retry.summary).toMatchObject({ previewed: 0, total: 2, delivered: 2, failed: 0, notRun: 0 });
   const again = await deliverBatch({ workspace: m402, resources: store, request: m402Batch([stop(4, 'too-large')]), outDir: out });
   expect(again.directory).toBeUndefined(); expect(again.problems[0]?.code).toBe('delivery.writeFailed');
   expect(await snapshot(out)).toEqual(before);
@@ -124,7 +124,7 @@ it.each([
 ] as const)('%s：执行前整批拒绝，不建目录、不出成功项', async (_name, change) => {
   const out = target();
   const result = await deliverBatch({ workspace: m402, resources: store, request: change(m402Batch([stop(1)])), outDir: out });
-  expect(result.directory).toBeUndefined(); expect(result).toMatchObject({ items: [], summary: { total: 0, delivered: 0, failed: 0, notRun: 0 } });
+  expect(result.directory).toBeUndefined(); expect(result).toMatchObject({ items: [], summary: { total: 0, delivered: 0, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 } });
   expect(result.problems[0]?.level).toBe('severe');
   await expect(fs.stat(out)).rejects.toThrow();
 });
@@ -181,7 +181,7 @@ it('项标识只作数据；单项写入失败而存储仍可写时继续交付�
   expect(result.items[1]!.problems.map((p) => p.code)).toContain('delivery.writeFailed');
   expect(result.problems).toEqual([]);
   expect((await fs.readdir(out)).sort()).toEqual(['0001', '0002', '0003', 'batch.json']);
-  expect((await json(join(out, 'batch.json'))).summary).toEqual({ total: 3, delivered: 2, failed: 1, notRun: 0 });
+  expect((await json(join(out, 'batch.json'))).summary).toMatchObject({ previewed: 0, total: 3, delivered: 2, failed: 1, notRun: 0 });
   expect((await readOutputRecord({ dir: join(out, '0002') })).record).toBeUndefined();
   expect((await readOutputRecord({ dir: join(out, '0003') })).record?.itemId).toBe('x/y:z');
 });
@@ -198,7 +198,7 @@ it('写入失败后探测到批次目录不可写即停止，后续项标为未�
     onItem: (item) => { progress.push(item.status); } });
   expect(result.items.map((i) => i.status)).toEqual(['delivered', 'failed', 'notRun', 'notRun']);
   expect(progress).toEqual(['delivered', 'failed', 'notRun', 'notRun']);
-  expect(result.summary).toEqual({ total: 4, delivered: 1, failed: 1, notRun: 2 });
+  expect(result.summary).toMatchObject({ previewed: 0, total: 4, delivered: 1, failed: 1, notRun: 2 });
   expect(result.items[2]!.problems.map((p) => p.code)).toEqual(['delivery.notRun']);
   expect(result.items[3]!.reason).toContain('停止调度');
   // 汇总清单同样写不出去：批次问题如实说明，不虚报完整交付。
@@ -211,7 +211,7 @@ it('进度回调抛错时停止调度，已交付项保留，汇总照常发布'
     onItem: () => { throw new Error('consumer gone'); } });
   expect(result.items.map((i) => i.status)).toEqual(['delivered', 'notRun', 'notRun']);
   expect(result.problems.map((p) => p.code)).toEqual(['delivery.stopped']);
-  expect((await json(join(out, 'batch.json'))).summary).toEqual({ total: 3, delivered: 1, failed: 0, notRun: 2 });
+  expect((await json(join(out, 'batch.json'))).summary).toMatchObject({ previewed: 0, total: 3, delivered: 1, failed: 0, notRun: 2 });
 });
 
 it('CLI：逐项进度写标准错误流，汇总写标准输出；全部成功 0，部分失败或目标已存在 1，请求读取错误 2', async () => {
@@ -221,7 +221,7 @@ it('CLI：逐项进度写标准错误流，汇总写标准输出；全部成功 
   await fs.writeFile(request, JSON.stringify(greetingBatch(['a', 'b'])));
   expect(await runCli(args(request, out), io)).toBe(0);
   expect(stderr.join('')).toMatch(/\[1\/2\] a：已交付[\s\S]*\[2\/2\] b：已交付/);
-  expect(JSON.parse(stdout.join(''))).toEqual({ directory: out, manifest: 'batch.json', summary: { total: 2, delivered: 2, failed: 0, notRun: 0 } });
+  expect(JSON.parse(stdout.join(''))).toEqual({ directory: out, manifest: 'batch.json', mode: 'final', summary: { total: 2, delivered: 2, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 } });
   expect(await runCli(args(request, out), io)).toBe(1);
 
   const { output } = greetingRequest() as { output: Record<string, unknown> };
@@ -229,7 +229,7 @@ it('CLI：逐项进度写标准错误流，汇总写标准输出；全部成功 
   stderr.length = 0; stdout.length = 0;
   expect(await runCli(args(request, target()), io)).toBe(1);
   expect(stderr.join('')).toMatch(/\[2\/2\] huge：失败[\s\S]*request\.outputTooLarge/);
-  expect(JSON.parse(stdout.join('')).summary).toEqual({ total: 2, delivered: 1, failed: 1, notRun: 0 });
+  expect(JSON.parse(stdout.join('')).summary).toMatchObject({ previewed: 0, total: 2, delivered: 1, failed: 1, notRun: 0 });
 
   await fs.writeFile(request, '{');
   expect(await runCli(args(request, target()), io)).toBe(2);

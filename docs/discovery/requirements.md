@@ -434,6 +434,14 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 | M183 | 串行执行，每项结束调用 `onItem(item, { completed, total })`。单项写入失败后在批次目录排他写入并删除探测文件：可写则继续，不可写则以 `delivery.storageUnavailable` 停止、其余项 `notRun`（`delivery.notRun`）；回调抛错以 `delivery.stopped` 停止。CLI `deliver` 逐项进度写标准错误流、汇总写标准输出；全部交付且汇总写出返回 0，其余 1，用法或请求读取错误 2；取消（130）留给票据 10 |
 | M184 | 实测：每份记录独立复制所用字体，M402 单项约 34 MB；35 项 Windows 用时 37.6 秒、占 1.22 GB，按此 1,000 项约 34 GB。票据 11 须先实现 ADR-0013 的硬链接去重，A12 长批次验收才可在普通开发机执行 |
 
+以下为第二阶段票据 09 的实施决定：
+
+| 编号 | 实施决定 |
+|---|---|
+| M185 | 批次 `mode` 取 `draft` 或 `final`，整批统一；渲染项带 `mode` 属于未定义属性，整批拒绝，其他模式值以 `request.invalid` 拒绝。逐项沿用单次渲染的草稿规则：有图片即 `previewed`（可含严重问题），无法展开为 `failed`；同一输入两种模式的问题清单逐项一致 |
+| M186 | 草稿成果与正式成品分开命名：状态 `previewed` 而非 `delivered`，图片为 `draft.png`/`draft.jpg`，最后原子发布 `renderweave-preview/1` 的 `preview.json`（模式、构建、项标识、三个文件哈希）；不复制输入与资源，不生成 `record.json`，`record-read`/`replay` 拒绝，记录读取另外要求批次模式为 final |
+| M187 | `batch.json` 与返回值的 summary 增加 `previewed` 项数及全部项的 `severe`、`hints` 总数，返回值带 `mode`。CLI 草稿全部预览完整返回 0，含严重问题时另在标准错误流提示不是可交付成品；有失败或未执行项返回 1。固定输入、逐项释放与目标保护与正式批次共用 |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

@@ -41,3 +41,7 @@
 - 本机 Docker 未运行，未做 Linux 复核（本票验收不含跨平台，归票据 13）。
 - 每份记录独立复制字体，35 项占 1.22 GB（M184），票据 11 须先做去重。
 - PRD A06 的"非法码"场景依赖码图交付，归票据 12。
+
+## Comments
+
+- 2026-10-13 补做 Linux 复核：Docker `node:22-alpine`（Node v22.23.3）用同一构建运行 `scripts/accept-batch.mjs out/stage2/batch-linux`，35 项图片哈希与 Windows 逐一相同，构建标识相同，混合批次失败项与退出码一致；经挂载写盘用时约 95 秒。

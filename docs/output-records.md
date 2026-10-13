@@ -1,8 +1,8 @@
-# 批量正式交付与出图记录
+# 批量正式交付、草稿预览与出图记录
 
-第二阶段票据 06–08 已实现：一个根模板列出多个渲染项，逐项正式交付。每个成功项都是一份自足出图记录，含完整模板调用、数据和素材依赖，整体复制后可独立重放。公开入口为 `deliverBatch`、`readOutputRecord`、`replayOutputRecord`；既有 `render` 继续负责纯渲染。
+第二阶段票据 06–09 已实现：一个根模板列出多个渲染项，逐项正式交付，或先整批生成草稿预览。每个成功项都是一份自足出图记录，含完整模板调用、数据和素材依赖，整体复制后可独立重放。公开入口为 `deliverBatch`、`readOutputRecord`、`replayOutputRecord`；既有 `render` 继续负责纯渲染。
 
-当前边界：只接受 `final` 模式，渲染项数为 1–1,000；串行执行。已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。批量草稿（票据 09）、取消与中断辨认（10）、素材去重（11）及码图交付（12）尚未实现，URL 图片与码图仍明确拒绝。每份记录独立复制所用字体，M402 一项约 34 MB，长批次的磁盘占用要按此估算。
+当前边界：一批统一为 `final` 或 `draft` 模式，渲染项数为 1–1,000，串行执行。已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。取消与中断辨认（票据 10）、素材去重（11）及码图交付（12）尚未实现，URL 图片与码图仍明确拒绝。每份记录独立复制所用字体，M402 一项约 34 MB，长批次的磁盘占用要按此估算。
 
 ## 从 CLI 批量交付与重放
 
@@ -26,14 +26,14 @@ node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 
 退出码：
 
-- `deliver`：`0` 全部项已交付且 `batch.json` 已写出；`1` 整批拒绝、目标已存在、部分项失败或未执行、汇总未写出；`2` CLI 用法、请求/选项读取错误或请求数值精度错误。
+- `deliver`：`0` 本模式的成果全部完整（正式为全部已交付，草稿为全部已预览）且 `batch.json` 已写出；`1` 整批拒绝、目标已存在、部分项失败或未执行、汇总未写出；`2` CLI 用法、请求/选项读取错误或请求数值精度错误。草稿返回 0 不代表可交付，汇总仍列出严重问题数。
 - `record-read`、`replay`：`0` 完整读取或重放匹配；`1` 完整性、构建、渲染或文件操作失败；`2` 用法错误。
 
 失败项的重试方式：修正后显式列成新批次，交付到新目录。旧批次不会被覆盖，也不会自动续跑或重试。
 
 ## 批量请求与执行规则
 
-请求包含 `template`、`mode`（目前只能是 `final`）和 `items`。每项有 `id`、`dataset`、`parameters`、`output`：
+请求包含 `template`、`mode`（`final` 或 `draft`，整批统一，渲染项不能各自指定）和 `items`。每项有 `id`、`dataset`、`parameters`、`output`：
 
 - `id`：非空，批次内唯一，只作为数据保存，不参与文件路径。
 - `dataset`：写成 `{ "id": "ds-m402-wanguocheng" }` 引用已保存的数据集，或写成 `{ "inline": { "dataset": { "staticSchema": { "name": "问候", "version": 1 } }, "data": { … } } }` 内联数据。
@@ -48,7 +48,7 @@ node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 - 固定资源的字节与版本不符。
 - 目标目录已存在。
 
-只让本项失败、其他项照常交付的情况：数据集缺失或数据版本错误、参数或出图尺寸非法、渲染出现严重问题（如本站 36 的 `check.failed`）、本项写入失败。
+只让本项失败、其他项照常交付的情况：数据集缺失或数据版本错误、参数或出图尺寸非法、正式模式下渲染出现严重问题（如本站 36 的 `check.failed`）、两种模式下都无法展开、本项写入失败。
 
 开始执行前，以下内容在一次同步步骤内固定：
 
@@ -58,6 +58,31 @@ node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 运行中改写传入的工作区对象或请求，或在仓库里替换资源，都不会混入本批；下一批才使用新内容。每项仍调用同一个 `render`，不复制检查、求值或排版逻辑。
 
 各项串行执行。每项写完成果即释放图片字节，返回值和 `batch.json` 只保留状态、问题与文件引用。单项写入失败后会在批次目录写一个探测文件：可写就继续下一项；整体不可写就停止调度，其余项标为 `notRun`，并给出 `delivery.storageUnavailable`。`onItem` 回调抛错同样停止调度，问题码为 `delivery.stopped`。
+
+## 草稿批次
+
+把请求的 `mode` 改为 `draft`，就能用同一批渲染项先核对，再以 `final` 运行。每项沿用单次渲染的草稿规则（见[草稿与正式模式](render-modes.md)），三类项各有明确结果：
+
+| 情况 | 草稿批次 | 正式批次 |
+|---|---|---|
+| 没有严重问题 | `previewed`：草稿图片、问题清单、布局摘要 | `delivered`：图片与完整出图记录 |
+| 有严重问题但可展开（本站 36、某站缺站名） | `previewed`：草稿图片带占位与问题边框，严重问题计入汇总 | `failed`：无图片，保留问题清单与真实内容布局摘要 |
+| 无法展开（如数据集选错定义） | `failed`：只有问题清单 | `failed`：相同问题清单 |
+
+同一输入的两种模式问题清单逐项一致；草稿布局摘要描述实际显示的占位布局，可能与正式不同。为避免把预览当成品：
+
+- 草稿图片命名为 `draft.png`/`draft.jpg`。
+- `batch.json` 与返回值标明 `mode: draft`，状态为 `previewed`，不会出现 `delivered`。
+- 草稿项不生成出图记录。
+- CLI 在含严重问题时另行提示"不是可交付成品"。
+
+草稿批次同样固定输入、逐项释放图片字节、排他创建目标。
+
+```powershell
+node dist/bin.js deliver --workspace docs/examples/m402-dsl --resources out/record-resources --request docs/examples/output-record/m402-draft-batch-request.json --out out/m402-draft
+```
+
+[草稿样例](examples/output-record/m402-draft-batch-request.json)包含合法的本站 1 与 35、可展开的本站 36，以及无法展开的 `wrong-schema`。本站 1、35、36 得到草稿预览，`wrong-schema` 失败，因此退出码为 1。去掉 `wrong-schema` 后全部预览完整，退出码 0，汇总仍有 1 个严重问题。
 
 ## 公开入口
 
@@ -90,13 +115,14 @@ if (first.status === 'delivered') {
 `BatchDeliveryResult` 的字段：
 
 - `directory`：批次目录，整批拒绝时没有。
-- `summary`：`total`、`delivered`、`failed`、`notRun` 四个计数。
+- `mode`：批次模式，整批拒绝时没有。
+- `summary`：`total`、`delivered`、`previewed`、`failed`、`notRun` 五个项数，以及全部项的严重问题总数 `severe` 和提示总数 `hints`。
 - `items`：按输入顺序排列的逐项结果。
 - `problems`：批次级问题。
 
 逐项结果 `BatchItemResult` 的字段：
 
-- `index`（从 1 开始）、`id`、`status`：`delivered`、`failed` 或 `notRun`。
+- `index`（从 1 开始）、`id`、`status`：`delivered`（正式交付成功）、`previewed`（草稿预览已生成，可能仍有严重问题）、`failed` 或 `notRun`。
 - `directory`：可直接打开的本项目录。
 - `files`：受控文件名。
 - `severe`、`hints`：问题计数，`problems` 为完整问题清单。
@@ -121,7 +147,8 @@ if (first.status === 'delivered') {
 - `batch.json`：`renderweave-batch/1` 汇总清单，全部项结束后最后原子发布。字段包括构建标识、根模板、模式、`summary`、逐项条目和批次级问题。
 - 逐项条目的字段：`index`、`id`、`status`、`directory`（相对批次目录）、`files`、`severe`、`hints`，没有目录时另有 `reason`。缺少 `batch.json` 的批次目录表示运行未正常结束。
 - `0001/`、`0002/` 等子目录：名称只由输入序号生成。
-  - 成功项是一份完整出图记录（见下文）。
+  - 正式成功项是一份完整出图记录（见下文）。
+  - 草稿预览项有 `draft.png` 或 `draft.jpg`、`problems.json`、`layout.json`，最后发布 `preview.json`（`renderweave-preview/1`：模式、构建标识、项标识及三个文件的 SHA-256）。它不是出图记录：不复制输入与资源，`record-read` 和 `replay` 都拒绝。
   - 失败项只有 `problems.json`，以及可用时的 `layout.json`，没有 `record.json`，不能读作记录。
   - 写入失败或未执行的项可能没有目录，原因写在 `reason`。
 
@@ -181,6 +208,7 @@ npm test
 npm run typecheck
 npm run build
 node scripts/accept-batch.mjs out/stage2/batch-windows
+docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-batch.mjs out/stage2/batch-linux
 ```
 
 公开入口回归（`test/batch-delivery.test.ts`）覆盖以下场景：
@@ -205,4 +233,25 @@ node scripts/accept-batch.mjs out/stage2/batch-windows
 - 本站 5 的图片 SHA-256 与票据 07 的 M402 基准相同，为 `785e0aad9beebf1203a6fd78284c69ab9606fa7d2323af94bd6bb50aabbfda72`。
 - 票据 06、07 的验收脚本按新目录布局（记录在批次目录的 `0001/`）重跑通过，图片哈希与原记录一致。
 
-Linux 复核与全新环境安装由票据 13 汇总；长批次的素材去重和内存曲线由票据 11 验收。
+2026-10-13 在 Docker `node:22-alpine`（Linux，Node v22.23.3）上用同一构建复跑：35 项图片哈希与 Windows 逐一相同，构建标识相同，混合批次失败项及各退出码一致。经挂载目录写盘，35 项用时约 95 秒。全新环境安装由票据 13 汇总；长批次的素材去重和内存曲线由票据 11 验收。
+
+## 票据 09 验收
+
+同一脚本（`scripts/accept-batch.mjs`）新增草稿部分，命令同上。公开入口回归在 `test/batch-draft.test.ts`，覆盖：
+
+- 同一输入的草稿与正式两批：三类项状态、逐项问题清单一致、草稿文件与 `preview.json` 哈希、草稿无记录。
+- 模式只能整批统一，草稿同样保护已有目标。
+- CLI 草稿退出码与"不是可交付成品"提示。
+
+脚本运行[草稿样例](examples/output-record/m402-draft-batch-request.json)，验证：
+
+- 退出码 1：本站 1、35、36 已预览，`wrong-schema` 失败。
+- 同一请求按 final 运行：逐项 `problems.json` 与草稿相同，本站 36 无图片；本站 1 的草稿图与正式图哈希相同。
+- 去掉无法展开项后：退出码 0，汇总 1 个严重问题并输出不可交付提示。
+
+2026-10-13 实测：
+
+- Windows（Node v24.21.0）：28 个测试文件、606 项全过，类型检查和构建通过。
+- Linux 容器：草稿图片、问题清单与草稿布局摘要和 Windows 逐字节一致。
+
+Docker 同时大量写盘时，全量测试曾两次偶发 Windows 资源清单 `rename` 的 EPERM，超出 M179 的有界重试；无负载时全量通过，外部占用者仍未知。

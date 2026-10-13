@@ -1,0 +1,10 @@
+{
+  "template": "标准线路单边",
+  "mode": "draft",
+  "items": [
+    {"id": "m402-01", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 1}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "stop-36", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 36}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "wrong-schema", "dataset": {"inline": {"dataset": {"staticSchema": {"name": "停靠站点", "version": 1}}, "data": {}}}, "parameters": {"currentIndex": 2}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}},
+    {"id": "m402-35", "dataset": {"id": "ds-m402-wanguocheng"}, "parameters": {"currentIndex": 35}, "output": {"width": 740, "height": 165, "dpi": 120, "format": "png"}}
+  ]
+}

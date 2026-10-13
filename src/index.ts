@@ -2,7 +2,7 @@ export { render, type RenderResult, type RenderOptions } from './render.js';
 export {
   deliverBatch, readOutputRecord, replayOutputRecord, MAX_BATCH_ITEMS,
   type BatchRenderRequest, type BatchDeliveryResult, type BatchItemResult, type BatchItemEntry, type BatchItemFiles, type BatchItemStatus,
-  type BatchManifest, type BatchProgress, type BatchSummary, type OutputRecord, type RecordedResource,
+  type BatchManifest, type BatchProgress, type BatchSummary, type PreviewManifest, type OutputRecord, type RecordedResource,
 } from './output-records.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';

@@ -134,7 +134,7 @@ it.each([
   await expect(fs.stat(out)).rejects.toThrow();
 });
 it('草稿、未知属性、无标识、非法选项整批拒绝；严重渲染问题只使本项失败且无记录', async () => {
-  for (const request of [{ ...batch(), mode: 'draft' }, { ...batch(), extra: true }, { ...batch(), items: [{ ...batch().items[0], id: '' }] }]) expect((await deliver({ request })).directory).toBeUndefined();
+  for (const request of [{ ...batch(), mode: 'preview' }, { ...batch(), extra: true }, { ...batch(), items: [{ ...batch().items[0], id: '' }] }]) expect((await deliver({ request })).directory).toBeUndefined();
   expect((await deliver({ renderOptions: { fallbackFonts: null } })).directory).toBeUndefined();
   await expect(fs.stat(out)).rejects.toThrow();
   const request = batch(); request.items[0]!.dataset = { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: { message: '' } } };

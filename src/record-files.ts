@@ -48,7 +48,7 @@ export async function writeDurableFiles(root: string, files: ReadonlyMap<string,
   try { for (const [file, bytes] of files) await durableWrite(join(root, file), bytes); } catch (error) { writeFailed(error); }
 }
 /** 内容写完后最后发布清单：link 是同卷的原子、不覆盖发布；强退前没有完成清单，强退后完整内容已写好。 */
-export async function publishManifest(root: string, name: 'record.json' | 'replay.json' | 'batch.json', manifest: unknown): Promise<void> {
+export async function publishManifest(root: string, name: 'record.json' | 'replay.json' | 'preview.json' | 'batch.json', manifest: unknown): Promise<void> {
   try {
     const temporary = join(root, '.complete.tmp');
     await durableWrite(temporary, jsonBytes(manifest));
@@ -56,7 +56,7 @@ export async function publishManifest(root: string, name: 'record.json' | 'repla
     await fs.unlink(temporary).catch(() => undefined);
   } catch (error) { writeFailed(error); }
 }
-export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json', manifest: unknown, parents = true): Promise<void> {
+export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json' | 'preview.json', manifest: unknown, parents = true): Promise<void> {
   const root = await createExclusiveDirectory(dir, parents);
   await writeDurableFiles(root, files);
   await publishManifest(root, manifestName, manifest);

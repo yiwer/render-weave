@@ -2,6 +2,7 @@
 import { join } from 'node:path';
 import { ProblemCodes, severe, type Problem } from './problems.js';
 import { render, type RenderResult, type RenderOptions } from './render.js';
+import type { RenderMode } from './request.js';
 import { createMemoryResourceRepository, parseResourceRef, type ResourceKind } from './resources.js';
 import type { VersionedResourceInfo, VersionedResourceStore } from './versioned-resources.js';
 import { isRecord, describeError } from './util.js';
@@ -23,13 +24,15 @@ export interface OutputRecord {
   readonly files: readonly RecordFile[];
 }
 
-export type BatchItemStatus = 'delivered' | 'failed' | 'notRun';
-/** 本项目录中的受控文件名；成功项四个都有，失败项只有问题清单和可用的布局摘要。 */
+/** delivered：正式交付成功；previewed：草稿预览已生成，可能仍有严重问题，不是可交付成品。 */
+export type BatchItemStatus = 'delivered' | 'previewed' | 'failed' | 'notRun';
+/** 本项目录中的受控文件名：正式成功项有图片、问题清单、布局摘要和记录；草稿项以 draft 命名图片并以 preview.json 收尾；失败项只有问题清单和可用的布局摘要。 */
 export interface BatchItemFiles {
-  readonly image?: 'image.png' | 'image.jpg';
+  readonly image?: 'image.png' | 'image.jpg' | 'draft.png' | 'draft.jpg';
   readonly problems: 'problems.json';
   readonly layout?: 'layout.json';
   readonly record?: 'record.json';
+  readonly preview?: 'preview.json';
 }
 /** batch.json 中的一项。目录名由输入序号生成，相对批次目录；项标识只作数据。 */
 export interface BatchItemEntry {
@@ -49,13 +52,30 @@ export interface BatchItemResult extends Omit<BatchItemEntry, 'directory'> {
   readonly directory?: string;
   readonly problems: readonly Problem[];
 }
-export interface BatchSummary { readonly total: number; readonly delivered: number; readonly failed: number; readonly notRun: number }
+/** 各状态的项数，以及全部项的严重问题与提示总数；草稿批次的严重问题数说明它不能直接交付。 */
+export interface BatchSummary {
+  readonly total: number;
+  readonly delivered: number;
+  readonly previewed: number;
+  readonly failed: number;
+  readonly notRun: number;
+  readonly severe: number;
+  readonly hints: number;
+}
+/** 草稿项目录的 preview.json：预览成果写完后最后发布；不是出图记录，不能重放。 */
+export interface PreviewManifest {
+  readonly format: 'renderweave-preview/1';
+  readonly mode: 'draft';
+  readonly build: string;
+  readonly itemId: string;
+  readonly files: readonly RecordFile[];
+}
 /** 批次目录的 batch.json：全部项结束后最后发布。 */
 export interface BatchManifest {
   readonly format: 'renderweave-batch/1';
   readonly build: string;
   readonly template: string;
-  readonly mode: 'final';
+  readonly mode: RenderMode;
   readonly summary: BatchSummary;
   readonly items: readonly BatchItemEntry[];
   readonly problems: readonly Problem[];
@@ -64,6 +84,8 @@ export interface BatchProgress { readonly completed: number; readonly total: num
 export interface BatchDeliveryResult {
   /** 批次目录；整批拒绝时没有，也不会创建。 */
   readonly directory?: string;
+  /** 批次模式；整批拒绝时没有。 */
+  readonly mode?: RenderMode;
   readonly summary: BatchSummary;
   /** 按输入顺序；只含状态、问题与文件引用，不含图片字节。 */
   readonly items: readonly BatchItemResult[];
@@ -102,7 +124,8 @@ const singleBatch = (envelope: BatchEnvelope, raw: BatchEnvelope['items'][number
 const severeCount = (problems: readonly Problem[]) => problems.filter((p) => p.level === 'severe').length;
 
 /**
- * 批量正式交付：一个根模板、final 模式、1–1,000 个带唯一 id 的渲染项，串行逐项交付到新批次目录。
+ * 批量交付：一个根模板、整批统一的 final 或 draft 模式、1–1,000 个带唯一 id 的渲染项，串行逐项交付到新批次目录。
+ * final 成功项是出图记录（delivered）；draft 有图即为预览（previewed，可含严重问题），不生成记录。
  * 首次异步操作前固定文档、全部渲染项、配置及资源版本映射；外层非法、根模板无法准备、固定资源不符或目标已存在则整批拒绝。
  * 项级错误只使本项失败；单项写入失败后探测存储，整体不可写则停止，后续项标为未执行。
  * 每项结束即调用 onItem，返回值只含状态与文件引用，不累积图片字节。
@@ -153,7 +176,7 @@ export async function deliverBatch(options: {
     const root = await createExclusiveDirectory(options.outDir);
     frozen = { envelope, documents, configured, pinned, contents, build, root, outDir: options.outDir };
   } catch (error) {
-    return { summary: { total: 0, delivered: 0, failed: 0, notRun: 0 }, items: [], problems: failure(error) };
+    return { summary: { total: 0, delivered: 0, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 }, items: [], problems: failure(error) };
   }
 
   const items: BatchItemResult[] = [], problems: Problem[] = [];
@@ -181,14 +204,15 @@ export async function deliverBatch(options: {
     }
   }
   const count = (status: BatchItemStatus) => items.filter((item) => item.status === status).length;
-  const summary: BatchSummary = { total: items.length, delivered: count('delivered'), failed: count('failed'), notRun: count('notRun') };
+  const summary: BatchSummary = { total: items.length, delivered: count('delivered'), previewed: count('previewed'), failed: count('failed'), notRun: count('notRun'),
+    severe: items.reduce((sum, item) => sum + item.severe, 0), hints: items.reduce((sum, item) => sum + item.hints, 0) };
   const entries: BatchItemEntry[] = items.map(({ problems: _problems, directory, index, id, status, ...rest }) =>
     ({ index, id, status, ...(directory ? { directory: itemDirectory(index) } : {}), ...rest }));
   try {
     const manifest: BatchManifest = { format: 'renderweave-batch/1', build: frozen.build, template: frozen.envelope.template, mode: frozen.envelope.mode, summary, items: entries, problems };
     await publishManifest(frozen.root, 'batch.json', manifest);
   } catch (error) { problems.push(...failure(error)); }
-  return { directory: frozen.outDir, summary, items, problems };
+  return { directory: frozen.outDir, mode: frozen.envelope.mode, summary, items, problems };
 }
 
 const itemDirectory = (index: number) => String(index).padStart(4, '0');
@@ -229,17 +253,28 @@ async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item
     files.set('input.json', inputBytes);
     rendered = await render({ ...input.documents, resources: createMemoryResourceRepository(memory) }, singleRequest(input.batch), input.options);
   } catch (error) { return failed(failure(error)); }
+  // 无法展开（两种模式）或正式有严重问题时没有图片：本项失败，保留问题清单与可用的布局摘要。
   if (!rendered.image || !rendered.layout) return failed(rendered.problems, rendered.layout);
-  for (const [file, bytes] of resultFiles(rendered)) files.set(file, bytes);
-  const image = rendered.image.format === 'png' ? 'image.png' : 'image.jpg';
-  const record: OutputRecord = { format: 'renderweave-output-record/1', build: frozen.build, itemId: planned.raw.id, resources, files: [...files].map(([file, bytes]) => fileInfo(file, bytes)) };
-  try { await publishRecordDirectory(path, files, 'record.json', record, false); } catch (error) {
-    const problems = [...rendered.problems, ...failure(error)];
-    return { item: { ...base, status: 'failed', severe: severeCount(problems), hints: problems.length - severeCount(problems), reason: describeError(error), problems }, writeFailed: true };
+  const { problems } = rendered, counts = { severe: severeCount(problems), hints: problems.length - severeCount(problems) };
+  const draft = frozen.envelope.mode === 'draft';
+  const image = draft ? (rendered.image.format === 'png' ? 'draft.png' : 'draft.jpg') : (rendered.image.format === 'png' ? 'image.png' : 'image.jpg');
+  try {
+    if (draft) {
+      // 草稿只保存预览成果，不复制输入与资源，也不生成出图记录。
+      const preview = new Map([[image, rendered.image.bytes], ['problems.json', jsonBytes(problems)], ['layout.json', jsonBytes(rendered.layout)]]);
+      const manifest: PreviewManifest = { format: 'renderweave-preview/1', mode: 'draft', build: frozen.build, itemId: planned.raw.id, files: [...preview].map(([file, bytes]) => fileInfo(file, bytes)) };
+      await publishRecordDirectory(path, preview, 'preview.json', manifest, false);
+    } else {
+      for (const [file, bytes] of resultFiles(rendered)) files.set(file, bytes);
+      const record: OutputRecord = { format: 'renderweave-output-record/1', build: frozen.build, itemId: planned.raw.id, resources, files: [...files].map(([file, bytes]) => fileInfo(file, bytes)) };
+      await publishRecordDirectory(path, files, 'record.json', record, false);
+    }
+  } catch (error) {
+    const all = [...problems, ...failure(error)];
+    return { item: { ...base, status: 'failed', severe: severeCount(all), hints: counts.hints, reason: describeError(error), problems: all }, writeFailed: true };
   }
-  const { problems } = rendered;
-  return { item: { ...base, status: 'delivered', directory, files: { image, problems: 'problems.json', layout: 'layout.json', record: 'record.json' },
-    severe: severeCount(problems), hints: problems.length - severeCount(problems), problems }, writeFailed: false };
+  const itemFiles: BatchItemFiles = draft ? { image, problems: 'problems.json', layout: 'layout.json', preview: 'preview.json' } : { image, problems: 'problems.json', layout: 'layout.json', record: 'record.json' };
+  return { item: { ...base, status: draft ? 'previewed' : 'delivered', directory, files: itemFiles, ...counts, problems }, writeFailed: false };
 }
 
 async function loadRecord(dir: string): Promise<{ record: OutputRecord; input: RecordInput; files: Map<string, Uint8Array> }> {
@@ -260,6 +295,7 @@ async function loadRecord(dir: string): Promise<{ record: OutputRecord; input: R
   const { input, resourceKinds } = prepareRecordInput(saved.documents as unknown as RecordDocuments, saved.batch, saved.options);
   if (digest(jsonBytes(input.documents)) !== digest(jsonBytes(saved.documents))) recordFail('记录文档依赖不完整或含有非规范内容');
   if (raw.itemId !== input.batch.items[0]!.id) recordFail('记录项标识与请求不一致');
+  if (input.batch.mode !== 'final') recordFail('出图记录只能来自正式交付；草稿预览不能读取或重放');
   const expected = new Set(['input.json', 'problems.json', 'layout.json', singleRequest(input.batch).output.format === 'png' ? 'image.png' : 'image.jpg']);
   const seen = new Set<string>();
   for (const entry of raw.resources) {

@@ -1,4 +1,4 @@
-/** 编译 CLI 的 M402 批量正式交付验收：35 项本站、混合失败、失败项另组新批次及目标保护；保留出图供人核对。 */
+/** 编译 CLI 的 M402 批量验收：35 项本站、混合失败、失败项另组新批次、目标保护及草稿预览；保留出图供人核对。 */
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -35,7 +35,7 @@ const fullSeconds = (performance.now() - started) / 1000;
 assert.equal(fullRun.status, 0, fullRun.stderr);
 assert.equal((fullRun.stderr.match(/：已交付/g) ?? []).length, 35);
 const request = await json(fullRequest), manifest = await json(join(full, 'batch.json'));
-assert.deepEqual(JSON.parse(fullRun.stdout).summary, { total: 35, delivered: 35, failed: 0, notRun: 0 });
+assert.deepEqual(JSON.parse(fullRun.stdout).summary, { total: 35, delivered: 35, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 });
 assert.deepEqual(manifest.items.map(item => [item.id, item.status, item.directory]), request.items.map((item, i) => [item.id, 'delivered', String(i + 1).padStart(4, '0')]));
 const images = {};
 for (const [i, item] of request.items.entries()) {
@@ -92,7 +92,37 @@ let diskBytes = 0;
 for (const entry of await readdir(full, { recursive: true, withFileTypes: true })) if (entry.isFile()) diskBytes += (await stat(join(entry.parentPath, entry.name))).size;
 evidence.full.diskBytes = diskBytes;
 
+// 草稿批次（票据 09）：可展开的严重问题项仍有预览，无法展开项失败；与同一输入的正式批次公共诊断一致；草稿没有出图记录。
+const draftRequest = 'docs/examples/output-record/m402-draft-batch-request.json', draft = join(run, 'm402-draft'), draftRun = deliver(draftRequest, draft);
+assert.equal(draftRun.status, 1, draftRun.stderr);
+const draftManifest = await json(join(draft, 'batch.json'));
+assert.equal(draftManifest.mode, 'draft');
+assert.deepEqual(draftManifest.items.map(item => [item.id, item.status]), [['m402-01', 'previewed'], ['stop-36', 'previewed'], ['wrong-schema', 'failed'], ['m402-35', 'previewed']]);
+const asFinal = join(run, 'm402-draft-as-final'), asFinalRequest = join(run, 'draft-as-final-request.json');
+await writeFile(asFinalRequest, JSON.stringify({ ...(await json(draftRequest)), mode: 'final' }));
+assert.equal(deliver(asFinalRequest, asFinal).status, 1);
+const finalManifest = await json(join(asFinal, 'batch.json'));
+assert.deepEqual(finalManifest.items.map(item => item.status), ['delivered', 'failed', 'failed', 'delivered']);
+for (const [i, item] of draftManifest.items.entries()) {
+  assert.deepEqual(await json(join(draft, item.directory, 'problems.json')), await json(join(asFinal, finalManifest.items[i].directory, 'problems.json')));
+  if (item.status !== 'previewed') continue;
+  const names = (await readdir(join(draft, item.directory))).sort();
+  assert.deepEqual(names, ['draft.png', 'layout.json', 'preview.json', 'problems.json']);
+  assert.equal(spawnSync(process.execPath, ['dist/bin.js', 'record-read', '--record', join(draft, item.directory)], { encoding: 'utf8', windowsHide: true }).status, 1);
+}
+// 合法项的草稿与正式图片相同；本站 36 只有草稿图片。
+assert.equal(hash(await readFile(join(draft, '0001', 'draft.png'))), images['m402-01']);
+await assert.rejects(stat(join(asFinal, '0002', 'image.png')));
+const previewOnly = join(run, 'draft-previewable-request.json'), previewable = join(run, 'm402-draft-previewable');
+await writeFile(previewOnly, JSON.stringify({ ...(await json(draftRequest)), items: (await json(draftRequest)).items.filter(item => item.id !== 'wrong-schema') }));
+const previewRun = deliver(previewOnly, previewable);
+assert.equal(previewRun.status, 0, previewRun.stderr);
+const previewSummary = JSON.parse(previewRun.stdout).summary;
+assert(previewSummary.previewed === 3 && previewSummary.severe > 0);
+assert.match(previewRun.stderr, /不是可交付成品/);
+evidence.draft = { exit: draftRun.status, summary: draftManifest.summary, sameRequestAsFinal: finalManifest.summary, previewableExit: previewRun.status, previewableSummary: previewSummary, directory: draft };
+
 await writeFile(join(out, 'hashes.json'), JSON.stringify(images, null, 2) + '\n');
 await writeFile(join(out, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n');
 await writeFile(join(out, 'environment.json'), JSON.stringify({ node: process.version, platform: process.platform }, null, 2) + '\n');
-console.log(`PASS: 35 items delivered in ${evidence.full.seconds}s; mixed batch failed only the 4 bad items; retry kept the original batch; ${run}`);
+console.log(`PASS: 35 items delivered in ${evidence.full.seconds}s; mixed batch failed only the 4 bad items; retry kept the original batch; draft previews severe items without records; ${run}`);
