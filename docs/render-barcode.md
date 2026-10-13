@@ -78,7 +78,7 @@ npm run typecheck
 npm run build
 $env:CI='1'; npm test
 node scripts/accept-barcode.mjs out/stage2/code128-windows
-docker run --rm -v F:/GenCode/RenderWeave:/work -w /work node:22-alpine node scripts/accept-barcode.mjs out/stage2/code128-linux
+docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-barcode.mjs out/stage2/code128-linux
 ```
 
 2026-10-12：类型检查与构建通过，21 个文件、427 项测试通过，其中条形码新增 34 项。入口测试覆盖 24 种内容/文字开关/DPI/格式组合，另验证全部 95 个可打印 ASCII、绑定、循环、90°旋转、2 px 边界、字体替代及失败模式。新增一张带下方文字的 golden；原 M402 和二维码回归通过。

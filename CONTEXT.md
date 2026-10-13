@@ -1,38 +1,40 @@
 # RenderWeave 项目上下文
 
-2026-10-12 工作快照。**需求探索与业务实体建模已完成，M402 DSL 草稿通过一致性检查；首期规格"渲染流水线"已拆成 14 张票据，票据 01（渲染骨架）、02（竖排站名）、03（数据把关）、04（布局与图形）、05（图片）、06（文字片段）、07（模板变量）、08（循环容器与子模板调用）、09（合并相邻同值项与道路带）、10（缩字组与密集站点适配）、11（缺字替代）、12（草稿预览与正式出图）、13（SVG 图片）与 14（M402 端到端验收）已完成：数据定义可以发布为静态数据定义并编译出 JSON Schema，数据集按全部字段类型与约束校验；容器的自由、堆叠、网格三种布局，横排与竖排文字（片段单独设样式、插槽展示格式、倾斜），五种图形，PNG、JPEG、WebP、SVG 图片的三种适配方式；模板参数、派生变量、检查项、绑定、条件显示与状态样式，出图前做模板静态检查。循环容器按等分、内容或固定宽度排列，子模板按独立作用域求值、按调用框重新排布。合并循环按原始站点列跨宽，横排按墨迹分布并先压缩再缩字，道路名采用两侧与字间等留白的同间隔分布。缩字组跨循环与子模板两轮统一字号，摘要标明所属组。M402 完整草稿直接渲染，35 个站点列、15 段道路、标识行、15 个班次时刻及顶栏底栏能正确出图。**
+接续工作的入口：当前阶段、下一步、已实现能力与文档地图。本文只放结论和指针。票据状态以票据文件的 `**Status:**` 行为准；验收细节、测试数量与提交记录分别在票据 `## Answer`、对应的 `docs/*.md` 和 git log 里。
 
 ## 一句话
 
 RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结构及其出图方式，再用符合定义的数据批量生成 PNG/JPG。首个业务场景是公交线路牌。业务 Agent（在 CloudKiln 云沙箱中运行）负责数据定义提取、数据集提取、模板辅助设计与修改，经 RenderWeave 的只读 MCP 服务使用校验、预览与识别能力，成果经人审核后应用。
 
-## 当前状态
+## 当前阶段与下一步
 
-- 需求访谈第 1–3 轮全部回答；建模讨论确定 M1–M104，实施及收尾中的决定 M105–M149，第二阶段规划、拆票、码图与资源版本实施 M150–M179，逐条记录在 [需求探索记录](docs/discovery/requirements.md)。
-- 已接受 ADR-0001–0004、ADR-0006–0014；ADR-0005 已被 ADR-0008 取代。ADR-0013 的完整模板/素材单项记录已实现，去重仍待后续票据；ADR-0014 的资源清单提交已实现。
-- 技术栈：TypeScript（Node 22），引擎不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG（字体全部显式加载）、自研布局（ADR-0011）。busbox-render-engine 只作算法参考。
-- 首期规格 [渲染流水线](.scratch/render-pipeline/spec.md)（resolved）：已跑通 M402 从数据集校验到 PNG，首期 14 张票据全部完成；主接缝为渲染入口，输出图片、问题清单与布局摘要；次接缝为发布静态数据定义。
-- 以真实设计稿 [M402 线路牌](docs/examples/materials/m402-route-sign.jpg)（740 × 165 mm，120 DPI，35 站）核对了模型，并写出 [DSL 草稿](docs/examples/m402-dsl/README.md)：11 个 JSON 文件合法，M402 数据集按编译产物 JSON Schema 校验 0 错误，5 个模板的引用全部能对上。票据 09 已实际渲染 15 段道路带并与 35 个站点列逐段核对边界（`test/golden/m402-roads.png`）；票据 10 已实现缩字组，完整草稿直接出图 0 个问题；票据 14 已完成端到端验收，完整布局、边界场景、CLI 及参考图差异见验收记录。
-- 渲染引擎（`src/`）：TypeScript，不依赖框架；渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，命令行 `renderweave render` 把三者写到输出目录。目前支持画板与容器（自由、堆叠、网格布局，填充、描边、四角圆角、透明度、旋转、裁剪）、横排与竖排文本（片段可单独设字体、字号、颜色与倾斜，插槽按展示格式输出，含描边）、图片、矩形、椭圆、线条、多边形与路径；模板参数、派生变量（条件分支、取项、长度、加减）、检查项、绑定、条件显示与状态样式都已支持，出图前检查变量引用与类型；循环容器与子模板调用已支持，包含七种基本字段类型的单值包装、独立作用域、实例路径及调用图静态检查；合并相邻同值项、原始列跨宽、横排墨迹两端/同间隔分布与先压缩再缩字已支持；竖排缩字组跨循环与子模板两轮统一字号已支持；缺字按 OS/2 字重逐字替代为思源黑体，摘要保留原字体与实际字体，成功记提示、仍缺字记严重问题；独立检查汇总后判断能否展开；草稿显示缺值占位与问题边框，正式严重问题不出图，两种模式的问题清单一致；SVG 按实际尺寸和 DPI 栅格化，清理脚本与外部引用，只用资源字体；Windows/Linux 四份 PNG/JPEG 样例字节一致。票据 14 完整 M402 验收通过，原文件直接出图，7 个场景与参考图差异已记录。
-- 第二阶段二维码已实现：`qrcode` 文本与颜色绑定、L/M/Q/H、UTF-8 字节模式、四模块留白、整数模块至少 2 px，布局摘要与草稿/正式诊断齐全；不支持自身随内容尺寸。最终 PNG/JPEG 的 48 种组合独立解码通过，Windows/Linux 各 16 份图片及摘要哈希相同。DSL 与依赖说明见 [二维码说明](docs/render-qrcode.md)，CLI 工作区见 [查询码样例](docs/examples/qrcode-dsl/README.md)。M402 共享 JSON 未改。
-- 第二阶段 CODE128 已实现：可打印 ASCII 原文绑定（最多 500 字符）、颜色/显隐/状态、整数模块至少 2 px、左右 10 模块留白；下方文字使用显式资源字体并沿用缺字替代，单独占位。独立解码覆盖全部 95 个可打印 ASCII 及 24 种内容/文字开关/DPI/格式组合；Windows/Linux 各 8 份图片及摘要哈希一致。见 [条形码说明](docs/render-barcode.md)与[资产编号样例](docs/examples/barcode-dsl/README.md)。
-- 第二阶段 EAN/UPC 已实现：三格式严格接收包含校验位的完整数字文本，不补位、不改原值；EAN-13/EAN-8/UPC-A 分别采用 11/7、7/7、9/9 模块左右留白。48 种出图组合独立核对格式与完整字节；Windows/Linux 各 24 份图片、布局及解码结果一致，CODE128 既有 8 份哈希未变。见 [EAN/UPC 说明](docs/render-retail-barcodes.md)与[商品编号样例](docs/examples/retail-barcode-dsl/README.md)。
-- 第二阶段资源 v1 导入已实现：保留旧清单 ID、种类和实际字节，准备/导入/查询 CLI 与公开版本读取、固定映射接口可用，旧 render 自动识别版本仓库。排他写锁、内容先写/清单后提交、SHA-256 与字节数检查保护历史内容；37 项回归覆盖损坏、非法路径、并发、故障回滚及 CLI 文件结果。Windows/Linux 的 15 个资源和 M402 图片、布局、问题哈希一致，M402 共享 JSON 未改。见 [资源版本说明](docs/resources-versioning.md)与 [ADR-0014](docs/adr/0014-resource-manifest-commit.md)。
-- 第二阶段资源替换已实现：先检查指定工作区的固定引用、状态样式、图片参数/派生值/实参、数据集图片字段，后备字体与 SVG 字体配置单列；应用持写锁核对预期版本、工作区指纹及候选哈希，成功追加版本且保留历史。CLI 可检查、应用、查询旧版及 `render --versions` 出图。Windows/Linux 各 5 份 M402 图片、布局、问题及引用证据一致：图片和字体替换均改变当前出图，固定 v1 与原图一致。见 [资源版本说明](docs/resources-versioning.md)。
-- 第二阶段单项正式交付与自足重放已实现：单根模板文字/图形、数据集引用或内联、参数及字体配置快照，资源版本与实际字节先固定再渲染；带格式版本的完整清单最后发布，独立复制后只靠记录重放。引擎/锁文件/实际生产依赖字节构成构建标识；损坏、缺失、越界、构建不符、并发目标及半成品均拒绝。45 项记录回归、Windows/Linux CLI 与真实进程强退已验证。见 [出图记录说明](docs/output-records.md)。
-- 第二阶段完整记录已实现：收集可达的 5 个 M402 模板、静态定义与引用闭包，按类型冻结图片、片段/状态字体、参数/派生值/实参和数据集图片字段；保存 PNG/JPEG/WebP/SVG、后备字体顺序与缺失状态。独立复制并移走原工作区后，完整 M402 和 SVG/缺字替代样例均与原 render 一致。17 项新增依赖测试通过；Windows 清单 rename 偶发拒绝另补有界重试和 3 项故障测试，外部占用者未知。见 [出图记录说明](docs/output-records.md)与[资源版本说明](docs/resources-versioning.md)。
-- 测试（`test/`）：vitest，26 个文件、592 个用例通过，以公开渲染与资源管理入口为接缝；布局摘要做文件快照（`test/snapshots/`），图片与 golden 比对（`test/golden/`，失败时在 `test-output/golden/` 生成三联图）。
-- 首期收尾：[阶段验收](docs/stage1-acceptance.md)记录两轴代码审查、可靠性/鲁棒性/可用性检测与 DSL 能力边界。已修复发布覆盖与失败处理、原型键误收、日期检查分歧、派生加减溢出/精度、动态网格越界，以及软件画板像素缓冲区泄漏。Windows/Linux 的 M402 图片与摘要、四份 SVG 图片一致；100 次串行复测通过。首次使用见 [README](README.md)。新增能力转入下一阶段。
-- 第二阶段已形成 [本地生产出图 PRD](.scratch/local-production-output/spec.md)（ready-for-agent，票据 01–07 已实施）：二维码/条形码、资源内容版本、批量出图、出图记录与重放。先串行逐项交付，沿用公开渲染入口，以 35 项 M402、独立码图解码、历史重放及 1,000 项稳定性验收；动态模板、循环扩展、URL 图片和服务/Agent 接入继续后置。
-- 第二阶段 [13 张实施票据](.scratch/local-production-output/README.md)已按用户确认发布，票据 01–07 已 resolved，其余为 ready-for-agent。每张采用 tracer bullet，包含完整行为、直接阻塞和验收；当前无阻塞票与下一张均为 08（多项正式交付）。
+- 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
+- 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
+- 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：共 13 张 tracer-bullet 票据，阻塞关系见[索引](.scratch/local-production-output/README.md)。
+- **下一步**：票据 08 [多项正式交付](.scratch/local-production-output/issues/08-batch-final-delivery.md)。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。
+- 接入服务前，须先补资源隔离验证。
+
+## 已实现能力
+
+领域模型文档含未来设计，当前可执行的能力以本节为准。
+
+- **入口**：渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，这是主接缝；发布静态数据定义是次接缝。CLI `renderweave render` / `publish` 把成果写到输出目录，用法见 [README](README.md)。
+- **数据**：数据定义发布为静态数据定义，并编译出 JSON Schema；数据集按全部字段类型与约束校验。
+- **元素与布局**：画板与容器（自由、堆叠、网格）；横排与竖排文本（片段样式、插槽展示格式、倾斜、描边）；PNG/JPEG/WebP/SVG 图片（三种适配，SVG 见 [SVG 说明](docs/render-svg.md)）；矩形、椭圆、线条、多边形、路径。
+- **模板**：模板参数、派生变量（条件分支、取项、长度、加减）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（等分、内容、固定宽度）与子模板调用（独立作用域）。
+- **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。
+- **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
+- **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、完整模板与素材的单项正式交付与记录重放（[说明](docs/output-records.md)）。
+- **未实现**：批量出图（票据 08–11）、码图交付与 URL 图片、动态模板、服务/MCP/CloudKiln/OCR 接入、在线编辑器。
 
 ## 文档地图
 
 | 文档 | 职责 |
 |---|---|
 | [AGENTS.md](AGENTS.md) | agent 工作方式与技能配置（`CLAUDE.md` 只是加载入口） |
+| [CODING_STANDARDS.md](CODING_STANDARDS.md) | 引擎边界、测试接缝、快照与 golden 更新 |
 | [GLOSSARY.md](GLOSSARY.md) | 领域术语表，唯一的术语事实源 |
-| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M1–M179 逐条决定 |
+| [docs/discovery/requirements.md](docs/discovery/requirements.md) | 需求访谈、已核查事实（旧系统、CloudKiln、Qwen-OCR）、M 编号逐条决定 |
 | [docs/model/business-entities.md](docs/model/business-entities.md) | 业务实体、关系与规则，含两张关系图与 G 系列待定事项 |
 | [docs/model/template-elements.md](docs/model/template-elements.md) | 13 种模板元素、共有属性、位置与尺寸、可绑定范围、排布与适配 |
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
@@ -49,15 +51,16 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/render-fonts.md](docs/render-fonts.md) | 字体加载、缺字替代、引擎后备字体配置与问题摘要 |
 | [docs/output-records.md](docs/output-records.md) | 完整模板与素材的单项交付、自足重放与故障验收 |
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
-| [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式与领域文档规则 |
+| [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
-| [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张已确认的 tracer-bullet 票据 |
+| [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
 
 ## 关键决定摘要
 
 - **数据**：数据定义可修改，发布为不可变的静态数据定义（名称加自增版本号）；数据集与模板都依赖确切版本，渲染时必须一致（ADR-0008）。以编译出的 JSON Schema 为数据集校验权威（ADR-0006）。数据集自成一体，不设跨数据集共享实体（ADR-0010）。
 - **模板**：模板是出图函数，所有模板地位平等，沿数据定义引用组合为子模板与循环模板，作用域不继承（ADR-0007）。模板变量分数据字段、模板参数（对外、内部）、派生变量；派生变量是单步运算按名组合，不引入文本表达式（ADR-0004）。模板没有版本，可直接修改与升级基准版本。
 - **呈现**：画板以毫米为单位并声明适用尺寸范围；13 种元素；一块线路牌上站名字号一致，默认 10 mm；站数增加先收窄列间留白，列内不足才统一缩字，最小可读字号 5 mm；长站名仅沿竖排方向压缩字形（最低 60%）。366 参考图的 59 列已验证，见 M135–M136。
+- **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
 - **Agent**：每轮一个 CloudKiln Task；只读 MCP 服务提供读取、校验、草稿预览、识别；成果以文件交回，经人审核应用（ADR-0001、ADR-0003、ADR-0009）。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
 
 ## 开发
@@ -70,8 +73,8 @@ npm run render -- render --workspace fixtures/workspaces/single-text --resources
 npm run render -- publish --definition <数据定义.json> --workspace <工作区目录> --out <输出目录>
 ```
 
-- 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）；图片夹具由 `scripts/make-image-fixtures.ts` 生成并提交，来源见 `fixtures/resources/images/README.md`；更新 golden 图片用 `UPDATE_GOLDEN=1 npm test`。
-- CanvasKit 用 full 构建，默认构建不能编码 JPEG。
+- 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）。图片夹具由 `scripts/make-image-fixtures.ts` 生成并提交，来源见 `fixtures/resources/images/README.md`。
+- 各票据的验收脚本是 `scripts/accept-*.mjs`，成果写到 `out/`（不进版本库）。快照与 golden 的更新方法见 [CODING_STANDARDS.md](CODING_STANDARDS.md)。
 
 ## 尚待实测
 
@@ -80,13 +83,11 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 
 ## 外部来源
 
-| 来源 | 路径 | 用途 |
-|---|---|---|
-| 旧 RenderWeave 草稿项目 | `D:\Yiwer\code\RenderWeave` | 概念参照，全部重写 |
-| rid-rs 模板模块 | `E:\MiLu\code\route-info-board\rid-rs` | 线路牌业务与数据源设计的来源 |
-| design-layout-draw | `D:\Yiwer\code\design-layout-draw` | 布局引擎、渲染器、编辑器参照 |
-| CloudKiln | `F:\GenCode\CloudKiln` | Agent 任务执行环境 |
+四个外部项目的源码快照（2026-10-12，对应主仓库 58fc181）放在 `outside_context/`，不进版本库，默认搜索也不覆盖，查阅时要把路径写明。旧文档引用的是历史绝对路径，把前缀换成快照目录即可找到。各项目的来源提交、脱敏文件清单与逐文件 SHA-256 见 `outside_context/manifest.json`。
 
-## 下一步
-
-[渲染流水线票据](.scratch/render-pipeline/issues/) 01–14 全部完成，阶段收尾检测与修复见 [阶段验收](docs/stage1-acceptance.md)。第二阶段 [13 张票据](.scratch/local-production-output/README.md)已确认并发布，票据 01–07 已完成，下一张为 08 多项正式交付。票据 02 已提交（43633b2），03 已提交（71a5fe8），04 已提交（b43a965）；05 已提交（3b37439）；06 已提交（31e14f6）；07 完整 M402 记录已确认提交。本机对比图位于 `out/stage2/replacement-windows/` 的 before、after-image、after-font、after-font-v1 目录。接入服务前仍须补资源隔离验证；首期外观差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
+| 来源 | 快照目录 | 历史路径前缀 | 用途 |
+|---|---|---|---|
+| 旧 RenderWeave 草稿项目 | `outside_context/legacy-renderweave/` | `D:\Yiwer\code\RenderWeave` | 概念参照，全部重写 |
+| rid-rs 模板模块 | `outside_context/rid-rs/` | `E:\MiLu\code\route-info-board\rid-rs` | 线路牌业务与数据源设计的来源 |
+| design-layout-draw | `outside_context/design-layout-draw/` | `D:\Yiwer\code\design-layout-draw` | 布局引擎、渲染器、编辑器参照 |
+| CloudKiln | `outside_context/CloudKiln/` | `F:\GenCode\CloudKiln` | Agent 任务执行环境；涉及接入时须核查届时版本 |

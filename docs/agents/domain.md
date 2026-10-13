@@ -1,51 +1,20 @@
-# Domain Docs
+# 领域文档
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+工程类技能探索代码前如何读取本仓库的领域文档。本仓库是 single-context：一个根目录 `GLOSSARY.md` 加 `docs/adr/`，外加本仓库特有的 M 编号决定记录。
 
-## Before exploring, read these
+## 探索前先读
 
-- **`GLOSSARY.md`** at the repo root, or
-- **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+1. `GLOSSARY.md`：唯一的术语事实源。以中文术语为准，括号里的英文名供代码命名参考。
+2. `docs/adr/`：读与本次改动相关的 ADR。状态看各文件 frontmatter 的 `status`；ADR-0005 已被 ADR-0008 取代。
+3. `docs/discovery/requirements.md`：M 编号逐条决定，大部分决定都在这里，没写成 ADR。按主题词或编号 grep，不必通读。
+4. 需要实体关系或元素属性时，读 `docs/model/business-entities.md` 与 `docs/model/template-elements.md`。这两份含未来设计；当前可执行的能力以 `CONTEXT.md`「已实现能力」为准。
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+## 术语表里没有的概念
 
-## File structure
+`GLOSSARY.md` 没有收录的概念有两种可能：一是在发明项目不用的说法，应改用已有术语；二是确实存在缺口，交给 `/domain-modeling` 补上。
 
-Single-context repo (most repos):
+## 冲突时明说
 
-```
-/
-├── GLOSSARY.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
-```
+产出与已有 ADR 或 M 编号决定矛盾时，明确指出，不要静默覆盖：
 
-Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
-
-```
-/
-├── GLOSSARY-MAP.md
-├── docs/adr/                          ← system-wide decisions
-└── src/
-    ├── ordering/
-    │   ├── GLOSSARY.md
-    │   └── docs/adr/                  ← context-specific decisions
-    └── billing/
-        ├── GLOSSARY.md
-        └── docs/adr/
-```
-
-## Use the glossary's vocabulary
-
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _与 ADR-0007（模板地位平等）冲突，但值得重新讨论，因为……_

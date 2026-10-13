@@ -12,6 +12,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# 外部项目源码快照（只作参照，见 CONTEXT.md「外部来源」）
+outside_context/
+
 # 准备脚本下载的字体（SIL OFL，不进版本库）与测试输出
 fixtures/resources/fonts/
 test-output/

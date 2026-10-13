@@ -61,7 +61,7 @@ npm run typecheck
 npm run build
 $env:CI='1'; npm test
 node scripts/accept-retail-barcodes.mjs out/stage2/retail-windows
-docker run --rm -v F:/GenCode/RenderWeave:/work -w /work node:22-alpine node scripts/accept-retail-barcodes.mjs out/stage2/retail-linux
+docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-retail-barcodes.mjs out/stage2/retail-linux
 ```
 
 2026-10-12：类型检查、构建通过；22 个文件、469 项测试通过，含本票新增 42 项。入口测试覆盖三格式的 48 种编号/文字开关/DPI/格式组合、绑定/状态/颜色/90°旋转、精确 2 px 与两侧留白、输入与校验位失败、循环定位、CLI 成果清理及三张 golden。

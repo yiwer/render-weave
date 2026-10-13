@@ -438,5 +438,5 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 - [线路牌案例](../examples/route-sign.md) 按业务实体模型走查线路牌：数据定义、数据集、模板组合与演示 A–D。
 - [M402 设计稿解读](../examples/m402-design-analysis.md) 把用户提供的真实设计稿（[原图](../examples/materials/m402-route-sign.jpg)）对照到模型，列出缺口 N1–N4 与观察到的适配规则，作为 Q13 的依据。
 - [M402 DSL 草稿](../examples/m402-dsl/README.md) 把模型写成数据定义 DSL、编译产物 JSON Schema、数据集、模板 DSL 与渲染请求；起草约定为 S 编号，发现的问题为 F 编号。
-- 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`；当前已接受 ADR-0001–0004、ADR-0006–0014；ADR-0005 已被 ADR-0008 取代。ADR-0013 已实现完整模板与素材的单项记录，去重仍待后续票据。
-- 下一步：首期规格 `.scratch/render-pipeline/spec.md` 的 01–14 全部完成，收尾见 `docs/stage1-acceptance.md`；第二阶段票据 01–07 已完成，索引为 `.scratch/local-production-output/README.md`，按编号下一张为 08 多项正式交付。服务接入前仍须另做资源隔离验证。
+- 涉及高变更成本、真实取舍且未来需要解释的已达成决定，写入 `docs/adr/`，状态见各文件 frontmatter。
+- 现状与下一步见根目录 `CONTEXT.md`。

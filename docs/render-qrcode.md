@@ -73,7 +73,7 @@ npm run typecheck
 npm run build
 $env:CI='1'; npm test
 node scripts/accept-qrcode.mjs out/stage2/qr-windows
-docker run --rm -v F:/GenCode/RenderWeave:/work -w /work node:22-alpine node scripts/accept-qrcode.mjs out/stage2/qr-linux
+docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-qrcode.mjs out/stage2/qr-linux
 ```
 
 入口测试覆盖 48 种内容/纠错/DPI/格式组合、绑定与状态样式、2 px 边界、失败模式、循环定位、重复确定性及 CLI 成果清理；新增一张小型 golden 固定画面。平台脚本独立解码 16 份查询码图片，并输出图片及布局摘要 SHA-256，平台环境另存。平台脚本使用同一构建和锁定依赖验证运行一致性；全新环境安装仍属阶段票据 13。
