@@ -44,9 +44,28 @@ export async function createExclusiveDirectory(dir: string, parents = true): Pro
     return root;
   } catch (error) { return writeFailed(error); }
 }
-/** 在已排他创建的目录中逐个排他写入并同步。 */
-export async function writeDurableFiles(root: string, files: ReadonlyMap<string, Uint8Array>): Promise<void> {
-  try { for (const [file, bytes] of files) await durableWrite(join(root, file), bytes); } catch (error) { writeFailed(error); }
+/** 同一批次内可共享的不可变内容：SHA-256 → 本批已完整写入并同步的文件路径。 */
+export type SharedContents = Map<string, string>;
+/** 本次写入中可共享的文件及其已核对的 SHA-256，连同本批的共享内容表。 */
+export interface SharedFiles { readonly contents: SharedContents; readonly digests: ReadonlyMap<string, string> }
+async function tryLink(source: string, path: string): Promise<boolean> {
+  try { await fs.link(source, path); return true; } catch { return false; }
+}
+/**
+ * 在已排他创建的目录中逐个排他写入并同步。可共享文件若本批已有同内容的完整文件，用硬链接建立本项自己的文件入口；
+ * 链接失败（如超出链接数上限、源已被删除）则独立写入，并把新副本登记为后续项的链接源。
+ */
+export async function writeDurableFiles(root: string, files: ReadonlyMap<string, Uint8Array>, shared?: SharedFiles): Promise<void> {
+  try {
+    for (const [file, bytes] of files) {
+      const path = join(root, file), sha256 = shared?.digests.get(file);
+      if (sha256 === undefined) { await durableWrite(path, bytes); continue; }
+      const source = shared!.contents.get(sha256);
+      if (source && await tryLink(source, path)) continue;
+      await durableWrite(path, bytes);
+      shared!.contents.set(sha256, path);
+    }
+  } catch (error) { writeFailed(error); }
 }
 /** 内容写完后最后发布清单：link 是同卷的原子、不覆盖发布；强退前没有完成清单，强退后完整内容已写好。 */
 export async function publishManifest(root: string, name: 'record.json' | 'replay.json' | 'preview.json' | 'batch.json', manifest: unknown): Promise<void> {
@@ -57,9 +76,10 @@ export async function publishManifest(root: string, name: 'record.json' | 'repla
     await fs.unlink(temporary).catch(() => undefined);
   } catch (error) { writeFailed(error); }
 }
-export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json' | 'preview.json', manifest: unknown, parents = true): Promise<void> {
+export async function publishRecordDirectory(dir: string, files: ReadonlyMap<string, Uint8Array>, manifestName: 'record.json' | 'replay.json' | 'preview.json', manifest: unknown,
+  parents = true, shared?: SharedFiles): Promise<void> {
   const root = await createExclusiveDirectory(dir, parents);
-  await writeDurableFiles(root, files);
+  await writeDurableFiles(root, files, shared);
   await publishManifest(root, manifestName, manifest);
 }
 /** 单项写入失败后判断目标存储是否整体可用：能在批次目录排他写入、同步并删除一个探测文件。 */

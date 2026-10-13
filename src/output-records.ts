@@ -10,7 +10,7 @@ import { rendererBuildId } from './renderer-build.js';
 import { checkBatchTemplate, parseBatchEnvelope, parseBatchItem, prepareRecordInput, RecordError, recordFail, recordOptions, singleRequest,
   type BatchEnvelope, type RecordDocuments, type RecordInput } from './record-input.js';
 import { createExclusiveDirectory, digest, fileInfo, jsonBytes, publishManifest, publishRecordDirectory, readRecordFile, recordRoot,
-  storageAvailable, validFile, writeDurableFiles, type RecordFile } from './record-files.js';
+  storageAvailable, validFile, writeDurableFiles, type RecordFile, type SharedContents } from './record-files.js';
 
 export type { BatchRenderRequest } from './record-input.js';
 export { MAX_BATCH_ITEMS } from './record-input.js';
@@ -132,6 +132,7 @@ const severeCount = (problems: readonly Problem[]) => problems.filter((p) => p.l
  * 首次异步操作前固定文档、全部渲染项、配置及资源版本映射；外层非法、根模板无法准备、固定资源不符或目标已存在则整批拒绝。
  * 项级错误只使本项失败；单项写入失败后探测存储，整体不可写则停止，后续项标为未执行。
  * 每项结束即调用 onItem，返回值只含状态与文件引用，不累积图片字节。
+ * 同批各项相同的资源副本以硬链接共享，每条记录仍持有自己的文件入口；链接失败回退独立复制。
  * signal 取消在项与项之间生效：正在执行的一项完成并提交后停止，其余项标为未执行，batch.json 照常发布；建目录前已取消则不建目录。
  */
 export async function deliverBatch(options: {
@@ -187,6 +188,8 @@ export async function deliverBatch(options: {
   }
 
   const items: BatchItemResult[] = [], problems: Problem[] = [];
+  // 本批已写好的资源副本，后续项用硬链接共享同一内容。
+  const shared: SharedContents = new Map();
   let stop: Problem | undefined;
   for (const planned of plan) {
     let item: BatchItemResult;
@@ -200,7 +203,7 @@ export async function deliverBatch(options: {
       item = { index: planned.index, id: planned.raw.id, status: 'notRun', severe: 1, hints: 0, reason,
         problems: [batchProblem(ProblemCodes.deliveryNotRun, reason)] };
     } else {
-      const executed = await deliverItem(frozen, planned);
+      const executed = await deliverItem(frozen, planned, shared);
       item = executed.item;
       if (executed.writeFailed && !(await storageAvailable(frozen.root, `.probe-${itemDirectory(planned.index)}.tmp`))) {
         stop = batchProblem(ProblemCodes.deliveryStorageUnavailable, `第 ${planned.index} 项写入失败后批次目录已不可写，停止调度`);
@@ -230,7 +233,7 @@ export async function deliverBatch(options: {
 export const itemDirectory = (index: number) => String(index).padStart(4, '0');
 
 /** 交付一项。成功需图片、问题清单、布局摘要和记录全部写好；渲染失败也写出问题清单与可用的布局摘要。 */
-async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item: BatchItemResult; writeFailed: boolean }> {
+async function deliverItem(frozen: Frozen, planned: PlannedItem, shared: SharedContents): Promise<{ item: BatchItemResult; writeFailed: boolean }> {
   const name = itemDirectory(planned.index), path = join(frozen.root, name), directory = join(frozen.outDir, name);
   const base = { index: planned.index, id: planned.raw.id };
   const failed = async (problems: readonly Problem[], layout?: unknown): Promise<{ item: BatchItemResult; writeFailed: boolean }> => {
@@ -248,6 +251,8 @@ async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item
   if (planned.problems.length) return failed(planned.problems);
   let rendered: RenderResult;
   const files = new Map<string, Uint8Array>();
+  // 资源副本的 SHA-256 取自固定版本：字节已在固定时核对，不再逐项重复散列。
+  const digests = new Map<string, string>();
   const resources: RecordedResource[] = [];
   try {
     const prepared = prepareRecordInput(frozen.documents, singleBatch(frozen.envelope, planned.raw), frozen.configured);
@@ -260,7 +265,7 @@ async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item
       if (info.kind !== kind) recordFail(`资源 ${id} 的种类应为 ${kind}`);
       const file = `${kind}-${String(memory.length + 1).padStart(6, '0')}.bin`, bytes = frozen.contents.get(id)!;
       resources.push({ ...info, state: 'available', file });
-      files.set(file, bytes); memory.push({ id, kind, bytes });
+      files.set(file, bytes); digests.set(file, info.sha256); memory.push({ id, kind, bytes });
     }
     files.set('input.json', inputBytes);
     rendered = await render({ ...input.documents, resources: createMemoryResourceRepository(memory) }, singleRequest(input.batch), input.options);
@@ -278,8 +283,9 @@ async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item
       await publishRecordDirectory(path, preview, 'preview.json', manifest, false);
     } else {
       for (const [file, bytes] of resultFiles(rendered)) files.set(file, bytes);
-      const record: OutputRecord = { format: 'renderweave-output-record/1', build: frozen.build, itemId: planned.raw.id, resources, files: [...files].map(([file, bytes]) => fileInfo(file, bytes)) };
-      await publishRecordDirectory(path, files, 'record.json', record, false);
+      const record: OutputRecord = { format: 'renderweave-output-record/1', build: frozen.build, itemId: planned.raw.id, resources,
+        files: [...files].map(([file, bytes]) => digests.has(file) ? { file, sha256: digests.get(file)!, byteLength: bytes.length } : fileInfo(file, bytes)) };
+      await publishRecordDirectory(path, files, 'record.json', record, false, { contents: shared, digests });
     }
   } catch (error) {
     const all = [...problems, ...failure(error)];

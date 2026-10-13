@@ -21,7 +21,9 @@ function createAjv(): Ajv2020 {
 }
 
 const ajv = createAjv();
-const compiledValidators = new WeakMap<object, ValidateFunction>();
+// 按编译产物内容缓存：ajv 按 schema 对象引用永久保留编译结果，而批量交付每项都重新解析记录输入、得到新对象；
+// 按对象引用缓存会每项编译一次并逐项累积内存。按内容缓存后，同一内容在进程内只编译一次。
+const compiledValidators = new Map<string, ValidateFunction>();
 
 /** 编译产物本身无法使用时抛出，由渲染入口转为问题。 */
 export class CompiledSchemaError extends Error {}
@@ -31,14 +33,15 @@ export function validateDataset(compiled: Record<string, unknown>, data: unknown
 }
 
 function validateAgainstSchema(compiled: Record<string, unknown>, data: unknown): Problem[] {
-  let validate = compiledValidators.get(compiled);
+  const key = JSON.stringify(compiled);
+  let validate = compiledValidators.get(key);
   if (!validate) {
     try {
       validate = ajv.compile(compiled);
     } catch (error) {
       throw new CompiledSchemaError(error instanceof Error ? error.message : String(error));
     }
-    compiledValidators.set(compiled, validate);
+    compiledValidators.set(key, validate);
   }
   if (validate(data)) return [];
   // 编译产物为时刻、时间同时写了 format 与等价的 pattern，同一字段的同类问题只报一次。

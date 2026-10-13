@@ -39,7 +39,7 @@ node scripts/accept-stage1.mjs out/stage1/stability
 
 - [阶段验收与 DSL 能力边界](docs/stage1-acceptance.md)：可靠性、鲁棒性、可用性结果及延期范围。
 - [资源内容版本](docs/resources-versioning.md)：CLI 导入、替换影响检查、应用替换、查询旧版和固定版本出图。
-- [批量正式交付、草稿预览与出图记录](docs/output-records.md)：35 项 M402 逐项交付、批量草稿、混合失败与退出码、模板调用与素材依赖、独立复制及确切构建重放。
+- [批量正式交付、草稿预览与出图记录](docs/output-records.md)：35 项 M402 逐项交付、批量草稿、混合失败与退出码、模板调用与素材依赖、取消与中断辨认、同批去重、独立复制及确切构建重放。
 - [M402 DSL 样例](docs/examples/m402-dsl/README.md)：可直接运行的 JSON 写法。
 - [M402 外观验收](docs/examples/m402-acceptance.md)：参考图差异与场景结果。
 - [草稿与正式模式](docs/render-modes.md)、[字体](docs/render-fonts.md)、[SVG](docs/render-svg.md)：问题处理和资源约定。
@@ -48,4 +48,4 @@ node scripts/accept-stage1.mjs out/stage1/stability
 - [二维码](docs/render-qrcode.md)、[查询码样例](docs/examples/qrcode-dsl/README.md)：文本绑定、可执行命令与最终图片解码验证。
 - [CONTEXT.md](CONTEXT.md)：开发接续入口与文档地图。
 
-二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放，以及项间取消与中断后辨认已在第二阶段票据 01–10 实现；素材去重，以及服务、MCP、业务 Agent、OCR、在线编辑器仍未实现。记录支持完整 M402、PNG/JPEG/WebP/SVG 与字体，码图交付与 URL 图片仍后置。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。
+二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放、项间取消与中断后辨认，以及同批素材硬链接去重已在第二阶段票据 01–11 实现；服务、MCP、业务 Agent、OCR、在线编辑器仍未实现。记录支持完整 M402、PNG/JPEG/WebP/SVG 与字体，码图交付与 URL 图片仍后置。领域模型文档包含未来设计，当前可执行能力以首期阶段验收、已完成的第二阶段票据及对应 DSL 样例为准。
