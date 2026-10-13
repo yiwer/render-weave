@@ -11,7 +11,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：共 13 张 tracer-bullet 票据，阻塞关系见[索引](.scratch/local-production-output/README.md)。
-- **下一步**：票据 10 [停止长批次与中断辨认](.scratch/local-production-output/issues/10-batch-cancel-and-interruption.md)，10、11 均已解除阻塞；10–13 已按 M188 收窄。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。票据 11 开工前先读其 Comments：未去重的记录磁盘占用很大（M184）。
+- **下一步**：票据 11 [千项交付去重与内存](.scratch/local-production-output/issues/11-long-batch-storage-and-memory.md)，11、12 均已解除阻塞；10–13 已按 M188 收窄。Windows 全量测试偶发资源清单提交失败（M179、M193），票据 13 前须有结论。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。票据 11 开工前先读其 Comments：未去重的记录磁盘占用很大（M184）。
 - 接入服务前，须先补资源隔离验证。
 
 ## 已实现能力
@@ -24,8 +24,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **模板**：模板参数、派生变量（条件分支、取项、长度、加减）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（等分、内容、固定宽度）与子模板调用（独立作用域）。
 - **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
-- **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览与逐项记录重放（[说明](docs/output-records.md)）。
-- **未实现**：取消与中断辨认、素材去重（票据 10–11）、码图交付与 URL 图片、动态模板、服务/MCP/CloudKiln/OCR 接入、在线编辑器。
+- **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认（[说明](docs/output-records.md)）。
+- **未实现**：素材去重（票据 11）、码图交付与 URL 图片、动态模板、服务/MCP/CloudKiln/OCR 接入、在线编辑器。
 
 ## 文档地图
 
@@ -49,7 +49,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/render-qrcode.md](docs/render-qrcode.md) | 二维码 DSL、整数像素模块、独立解码与错误诊断 |
 | [docs/render-svg.md](docs/render-svg.md) | SVG 资源、字体、加载边界与跨平台复现 |
 | [docs/render-fonts.md](docs/render-fonts.md) | 字体加载、缺字替代、引擎后备字体配置与问题摘要 |
-| [docs/output-records.md](docs/output-records.md) | 完整模板与素材的单项交付、自足重放与故障验收 |
+| [docs/output-records.md](docs/output-records.md) | 批量正式交付、草稿预览、取消与中断辨认、自足重放与故障验收 |
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |

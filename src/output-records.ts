@@ -121,6 +121,9 @@ interface Frozen {
   readonly outDir: string;
 }
 const singleBatch = (envelope: BatchEnvelope, raw: BatchEnvelope['items'][number]) => ({ template: envelope.template, mode: envelope.mode, items: [raw] });
+const NO_ITEMS: BatchSummary = { total: 0, delivered: 0, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 };
+const batchProblem = (code: Problem['code'], message: string) => severe(code, { kind: 'input', source: 'outputRecord' }, message);
+const cancelledBeforeStart = (): BatchDeliveryResult => ({ summary: NO_ITEMS, items: [], problems: [batchProblem(ProblemCodes.deliveryCancelled, '批次在开始执行前已取消，未建目录')] });
 const severeCount = (problems: readonly Problem[]) => problems.filter((p) => p.level === 'severe').length;
 
 /**
@@ -129,6 +132,7 @@ const severeCount = (problems: readonly Problem[]) => problems.filter((p) => p.l
  * 首次异步操作前固定文档、全部渲染项、配置及资源版本映射；外层非法、根模板无法准备、固定资源不符或目标已存在则整批拒绝。
  * 项级错误只使本项失败；单项写入失败后探测存储，整体不可写则停止，后续项标为未执行。
  * 每项结束即调用 onItem，返回值只含状态与文件引用，不累积图片字节。
+ * signal 取消在项与项之间生效：正在执行的一项完成并提交后停止，其余项标为未执行，batch.json 照常发布；建目录前已取消则不建目录。
  */
 export async function deliverBatch(options: {
   readonly workspace: RecordDocuments;
@@ -137,7 +141,9 @@ export async function deliverBatch(options: {
   readonly outDir: string;
   readonly renderOptions?: RenderOptions;
   readonly onItem?: (item: BatchItemResult, progress: BatchProgress) => void | Promise<void>;
+  readonly signal?: AbortSignal;
 }): Promise<BatchDeliveryResult> {
+  if (options.signal?.aborted) return cancelledBeforeStart();
   let frozen: Frozen, plan: PlannedItem[];
   try {
     const envelope = parseBatchEnvelope(options.request);
@@ -173,32 +179,38 @@ export async function deliverBatch(options: {
       contents.set(id, bytes);
     }
     const build = await rendererBuildId();
+    if (options.signal?.aborted) return cancelledBeforeStart();
     const root = await createExclusiveDirectory(options.outDir);
     frozen = { envelope, documents, configured, pinned, contents, build, root, outDir: options.outDir };
   } catch (error) {
-    return { summary: { total: 0, delivered: 0, previewed: 0, failed: 0, notRun: 0, severe: 0, hints: 0 }, items: [], problems: failure(error) };
+    return { summary: NO_ITEMS, items: [], problems: failure(error) };
   }
 
   const items: BatchItemResult[] = [], problems: Problem[] = [];
   let stop: Problem | undefined;
   for (const planned of plan) {
     let item: BatchItemResult;
+    // 取消只在开始下一项前检查：同步 WASM 绘制无法中途打断，正在执行的一项总会完成并提交。
+    if (!stop && options.signal?.aborted) {
+      stop = batchProblem(ProblemCodes.deliveryCancelled, '已取消，当前项完成后停止调度');
+      problems.push(stop);
+    }
     if (stop) {
       const reason = `批次已停止，未执行：${stop.message}`;
       item = { index: planned.index, id: planned.raw.id, status: 'notRun', severe: 1, hints: 0, reason,
-        problems: [severe(ProblemCodes.deliveryNotRun, { kind: 'input', source: 'outputRecord' }, reason)] };
+        problems: [batchProblem(ProblemCodes.deliveryNotRun, reason)] };
     } else {
       const executed = await deliverItem(frozen, planned);
       item = executed.item;
       if (executed.writeFailed && !(await storageAvailable(frozen.root, `.probe-${itemDirectory(planned.index)}.tmp`))) {
-        stop = severe(ProblemCodes.deliveryStorageUnavailable, { kind: 'input', source: 'outputRecord' }, `第 ${planned.index} 项写入失败后批次目录已不可写，停止调度`);
+        stop = batchProblem(ProblemCodes.deliveryStorageUnavailable, `第 ${planned.index} 项写入失败后批次目录已不可写，停止调度`);
         problems.push(stop);
       }
     }
     items.push(item);
     try { await options.onItem?.(item, { completed: items.length, total: plan.length }); } catch (error) {
       if (!stop) {
-        stop = severe(ProblemCodes.deliveryStopped, { kind: 'input', source: 'outputRecord' }, `进度回调失败，停止调度：${describeError(error)}`);
+        stop = batchProblem(ProblemCodes.deliveryStopped, `进度回调失败，停止调度：${describeError(error)}`);
         problems.push(stop);
       }
     }
@@ -215,7 +227,7 @@ export async function deliverBatch(options: {
   return { directory: frozen.outDir, mode: frozen.envelope.mode, summary, items, problems };
 }
 
-const itemDirectory = (index: number) => String(index).padStart(4, '0');
+export const itemDirectory = (index: number) => String(index).padStart(4, '0');
 
 /** 交付一项。成功需图片、问题清单、布局摘要和记录全部写好；渲染失败也写出问题清单与可用的布局摘要。 */
 async function deliverItem(frozen: Frozen, planned: PlannedItem): Promise<{ item: BatchItemResult; writeFailed: boolean }> {

@@ -5,14 +5,16 @@
  * - publish：把数据定义发布为下一个版本的静态数据定义，写出带版本号的 DSL 与编译产物。
  *   退出码：0 已发布；1 有问题未发布；2 用法错误或文件无法读取。
  * - deliver：批量正式交付或草稿预览到新批次目录，逐项进度写到标准错误流，汇总写到标准输出。
- *   退出码：0 全部项已交付（草稿为全部已预览，可能仍有严重问题）；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取。
+ *   退出码：0 全部项已交付（草稿为全部已预览，可能仍有严重问题）；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取；130 已取消。
+ * - batch-read：辨认批次目录。退出码：0 batch.json 已发布，运行已结束；1 运行未完成（没有 batch.json）或目录无法读取；2 用法错误。
  */
 import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import type { Problem } from './problems.js';
+import { ProblemCodes, type Problem } from './problems.js';
 import { render, type RenderOptions } from './render.js';
 import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-records.js';
+import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
@@ -21,12 +23,15 @@ import { initializeResourceStore, importResources, openVersionedResourceStore, c
 export interface CliIo {
   readonly stdout: (text: string) => void;
   readonly stderr: (text: string) => void;
+  /** deliver 的取消信号；bin 在收到 Ctrl+C（SIGINT）时触发。 */
+  readonly signal?: AbortSignal;
 }
 
-export const ExitCodes = { ok: 0, failed: 1, usage: 2 } as const;
+export const ExitCodes = { ok: 0, failed: 1, usage: 2, cancelled: 130 } as const;
 
 const USAGE = `用法：
   renderweave deliver --workspace <目录> --resources <版本仓库> --request <批量请求.json> --out <新批次目录> [--options <字体配置.json>]
+  renderweave batch-read --batch <批次目录>
   renderweave replay --record <记录目录> --out <新目录>
   renderweave record-read --record <记录目录>
   renderweave render --workspace <目录> --resources <目录> --request <文件> --out <目录>
@@ -55,6 +60,7 @@ type Options = Record<string, string | boolean | undefined>;
 
 const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   deliver: ['workspace', 'resources', 'request', 'out'],
+  'batch-read': ['batch'],
   replay: ['record', 'out'],
   'record-read': ['record'],
   render: ['workspace', 'resources', 'request', 'out'],
@@ -95,7 +101,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   try {
     if (command === 'render') return await runRender(options, io);
     if (command === 'publish') return await runPublish(options, io);
-    if (command === 'deliver' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
+    if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     return await runResources(command!, options, io);
   } catch (error) {
     io.stderr(`命令执行失败：${describeError(error)}\n`);
@@ -118,20 +124,36 @@ async function runRecords(command: string, options: Record<string, string>, io: 
     if (!opened.store) return ExitCodes.failed;
     const labels = { delivered: '已交付', previewed: '已预览', failed: '失败', notRun: '未执行' } as const;
     const result = await deliverBatch({
-      workspace, resources: opened.store, request, outDir: options.out!, renderOptions,
+      workspace, resources: opened.store, request, outDir: options.out!, renderOptions, signal: io.signal,
       onItem: (item, { completed, total }) => {
         io.stderr(`[${completed}/${total}] ${item.id}：${labels[item.status]}${item.directory ? ` ${item.directory}` : ''}（严重 ${item.severe}，提示 ${item.hints}）\n`);
         if (item.status === 'failed' || item.status === 'notRun' || item.severe > 0) reportProblems(item.problems, io);
       },
     });
     reportProblems(result.problems, io);
-    if (!result.directory) return ExitCodes.failed;
+    const cancelled = result.problems.some((problem) => problem.code === ProblemCodes.deliveryCancelled);
+    if (!result.directory) return cancelled ? ExitCodes.cancelled : ExitCodes.failed;
     const { summary, mode } = result;
     io.stdout(`${JSON.stringify({ directory: result.directory, manifest: 'batch.json', mode, summary }, null, 2)}\n`);
+    if (cancelled) {
+      io.stderr(`已取消：${summary.notRun} 项未执行，已结束的项保留在批次目录；未执行项可另组新批次交付\n`);
+      return ExitCodes.cancelled;
+    }
     if (mode === 'draft' && summary.severe > 0) io.stderr(`草稿预览含严重问题 ${summary.severe} 个，不是可交付成品；修正后以 final 模式交付\n`);
     // 0 只表示本模式的成果全部完整：草稿全部已预览，或正式全部已交付；部分失败、未执行或汇总未写出返回 1。
     const complete = mode === 'draft' ? summary.previewed : summary.delivered;
     return complete === summary.total && result.problems.length === 0 ? ExitCodes.ok : ExitCodes.failed;
+  } else if (command === 'batch-read') {
+    const result = await readBatch({ dir: options.batch! });
+    reportProblems(result.problems, io);
+    if (!result.batch) return ExitCodes.failed;
+    io.stdout(`${JSON.stringify(result.batch, null, 2)}\n`);
+    if (result.batch.state === 'unfinished') {
+      const done = result.batch.items.filter((item) => item.status !== 'incomplete').length;
+      io.stderr(`未完成运行：没有 batch.json。${done} 项完成清单已发布；${result.batch.items.length - done} 个目录没有完成清单（失败或中断），不算交付。` +
+        '重新运行时，把已完成标识以外的项另组新批次\n');
+      return ExitCodes.failed;
+    }
   } else if (command === 'replay') {
     const result = await replayOutputRecord({ dir: options.record!, outDir: options.out! });
     reportProblems(result.problems, io);

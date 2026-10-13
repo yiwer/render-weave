@@ -14,9 +14,10 @@ export function validFile(value: unknown): value is RecordFile {
   return isRecord(value) && typeof value.file === 'string' && /^(input\.json|image\.(png|jpg)|problems\.json|layout\.json|(font|image)-\d{6}\.bin)$/.test(value.file) &&
     typeof value.sha256 === 'string' && /^[0-9a-f]{64}$/.test(value.sha256) && typeof value.byteLength === 'number' && Number.isSafeInteger(value.byteLength) && value.byteLength >= 0;
 }
+const MANIFESTS = new Set(['record.json', 'preview.json', 'batch.json']);
 export async function readRecordFile(root: string, file: string): Promise<Uint8Array> {
   // 文件名是受控的单层名称，拒绝路径、驱动器、ADS 及符号链接/目录。
-  if (file !== 'record.json' && !validFile({ file, sha256: '0'.repeat(64), byteLength: 0 })) recordFail('记录含非法文件路径');
+  if (!MANIFESTS.has(file) && !validFile({ file, sha256: '0'.repeat(64), byteLength: 0 })) recordFail('记录含非法文件路径');
   const path = join(root, file);
   if (!(await fs.lstat(path)).isFile()) recordFail(`记录文件必须是普通文件：${file}`);
   if (await fs.realpath(path) !== join(root, file)) recordFail(`记录文件越出目录：${file}`);

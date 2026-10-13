@@ -40,6 +40,8 @@ export const ProblemCodes = {
   deliveryStorageUnavailable: 'delivery.storageUnavailable',
   /** 进度回调抛错，停止调度。 */
   deliveryStopped: 'delivery.stopped',
+  /** 调用方取消批次：当前项完成并提交后停止调度；开始前取消则不建目录。 */
+  deliveryCancelled: 'delivery.cancelled',
   /** 渲染项因批次停止而未执行。 */
   deliveryNotRun: 'delivery.notRun',
   recordInvalid: 'record.invalid',

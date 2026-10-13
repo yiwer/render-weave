@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 import { runCli } from './cli.js';
 
-process.exitCode = await runCli(process.argv.slice(2), {
+const argv = process.argv.slice(2), controller = new AbortController();
+// deliver 在项间响应 Ctrl+C：当前项完成并提交后停止。只监听一次，再按一次恢复默认行为，立即结束进程；其他命令保持默认。
+if (argv[0] === 'deliver') {
+  process.once('SIGINT', () => {
+    process.stderr.write('收到中断：当前项完成并提交后停止；再按一次 Ctrl+C 立即结束\n');
+    controller.abort();
+  });
+}
+process.exitCode = await runCli(argv, {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
+  signal: controller.signal,
 });

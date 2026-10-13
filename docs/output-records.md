@@ -1,8 +1,8 @@
 # 批量正式交付、草稿预览与出图记录
 
-第二阶段票据 06–09 已实现：一个根模板列出多个渲染项，逐项正式交付，或先整批生成草稿预览。每个成功项都是一份自足出图记录，含完整模板调用、数据和素材依赖，整体复制后可独立重放。公开入口为 `deliverBatch`、`readOutputRecord`、`replayOutputRecord`；既有 `render` 继续负责纯渲染。
+第二阶段票据 06–10 已实现：一个根模板列出多个渲染项，逐项正式交付，或先整批生成草稿预览；运行中可在项间取消，进程意外结束后能辨认哪些项已完整交付。每个成功项都是一份自足出图记录，含完整模板调用、数据和素材依赖，整体复制后可独立重放。公开入口为 `deliverBatch`、`readBatch`、`readOutputRecord`、`replayOutputRecord`；既有 `render` 继续负责纯渲染。
 
-当前边界：一批统一为 `final` 或 `draft` 模式，渲染项数为 1–1,000，串行执行。已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。取消与中断辨认（票据 10）、素材去重（11）及码图交付（12）尚未实现，URL 图片与码图仍明确拒绝。每份记录独立复制所用字体，M402 一项约 34 MB，长批次的磁盘占用要按此估算。
+当前边界：一批统一为 `final` 或 `draft` 模式，渲染项数为 1–1,000，串行执行。已支持子模板、循环、引用定义、PNG/JPEG/WebP/SVG 与缺字替代。素材去重（票据 11）及码图交付（12）尚未实现，URL 图片与码图仍明确拒绝。每份记录独立复制所用字体，M402 一项约 34 MB，长批次的磁盘占用要按此估算。
 
 ## 从 CLI 批量交付与重放
 
@@ -24,12 +24,24 @@ node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 
 `deliver` 每完成一项，就在标准错误流打印一行进度，形如 `[3/35] m402-03：已交付 out\m402-batch\0003（严重 0，提示 0）`；失败项随后列出问题。全部结束后，标准输出给出批次目录与汇总。`replay` 只接收一项记录和新输出目录，不接收工作区或资源仓库；Linux 复制命令可用 `cp -R`。
 
+运行中按一次 Ctrl+C：正在渲染的一项完成并提交后停止，其余项标为未执行，照常写出 `batch.json`，退出码 130。同步绘制无法中途打断，所以要等当前项结束。再按一次 Ctrl+C 立即结束进程，这时 `batch.json` 不会写出。
+
+```powershell
+node dist/bin.js batch-read --batch out/m402-batch
+```
+
+`batch-read` 辨认一个批次目录：
+
+- 有 `batch.json`：运行已结束（可能有失败、未执行或已取消），核对清单与各项目录一致后输出清单。
+- 没有 `batch.json`：运行被中断或仍在进行。逐个检查 `0001/` 等子目录，已发布 `record.json`（正式）或 `preview.json`（草稿）的项标为 `delivered`/`previewed` 并给出项标识；其余目录标为 `incomplete`，不算交付。
+
 退出码：
 
-- `deliver`：`0` 本模式的成果全部完整（正式为全部已交付，草稿为全部已预览）且 `batch.json` 已写出；`1` 整批拒绝、目标已存在、部分项失败或未执行、汇总未写出；`2` CLI 用法、请求/选项读取错误或请求数值精度错误。草稿返回 0 不代表可交付，汇总仍列出严重问题数。
+- `deliver`：`0` 本模式的成果全部完整（正式为全部已交付，草稿为全部已预览）且 `batch.json` 已写出；`1` 整批拒绝、目标已存在、部分项失败或未执行、汇总未写出；`2` CLI 用法、请求/选项读取错误或请求数值精度错误；`130` 已取消。草稿返回 0 不代表可交付，汇总仍列出严重问题数。
+- `batch-read`：`0` 运行已结束且清单与目录一致；`1` 没有 `batch.json`（未完成运行），或目录不是批次目录、清单与目录不一致；`2` 用法错误。
 - `record-read`、`replay`：`0` 完整读取或重放匹配；`1` 完整性、构建、渲染或文件操作失败；`2` 用法错误。
 
-失败项的重试方式：修正后显式列成新批次，交付到新目录。旧批次不会被覆盖，也不会自动续跑或重试。
+失败、未执行或中断项的重试方式：从原请求中去掉已交付的项标识（中断时由 `batch-read` 给出），其余显式列成新批次，交付到新目录。旧批次不会被覆盖，也不会自动续跑或重试。
 
 ## 批量请求与执行规则
 
@@ -58,6 +70,12 @@ node dist/bin.js replay --record out/m402-35-archive --out out/m402-35-replayed
 运行中改写传入的工作区对象或请求，或在仓库里替换资源，都不会混入本批；下一批才使用新内容。每项仍调用同一个 `render`，不复制检查、求值或排版逻辑。
 
 各项串行执行。每项写完成果即释放图片字节，返回值和 `batch.json` 只保留状态、问题与文件引用。单项写入失败后会在批次目录写一个探测文件：可写就继续下一项；整体不可写就停止调度，其余项标为 `notRun`，并给出 `delivery.storageUnavailable`。`onItem` 回调抛错同样停止调度，问题码为 `delivery.stopped`。
+
+取消用 `signal`（`AbortSignal`），只在开始下一项前检查：
+
+- 建批次目录前已取消：不建目录，不执行任何项，返回批次级问题 `delivery.cancelled`。
+- 运行中取消：正在执行的一项完成并提交后停止，其余项为 `notRun`，`batch.json` 照常发布，批次级问题为 `delivery.cancelled`。
+- 取消请求到达时已没有待执行项：批次照常完成，不报取消。
 
 ## 草稿批次
 
@@ -103,6 +121,7 @@ const result = await deliverBatch({
   })) },
   outDir: 'out/api-batch',
   onItem: (item, { completed, total }) => console.log(`${completed}/${total}`, item.id, item.status),
+  signal: AbortSignal.timeout(600_000), // 可选：取消在项间生效
 });
 if (!result.directory) throw new Error(JSON.stringify(result.problems)); // 整批拒绝
 const first = result.items[0]!;
@@ -130,6 +149,8 @@ if (first.status === 'delivered') {
 
 资源使用已打开版本仓库的版本，传入的 `workspace.resources` 不参与交付。
 
+`readBatch({ dir })` 返回 `{ batch?, problems }`。`batch.state` 为 `finished` 时带 `manifest`（即 `batch.json`）；为 `unfinished` 时带 `items`，每项有 `index`、`directory`、`status`（`delivered`、`previewed` 或 `incomplete`）及已完成项的 `id`。它只看完成清单是否已发布并核对格式和项标识，逐文件哈希仍由 `readOutputRecord` 负责。
+
 模板依赖包括隐藏调用及全部状态分支，按名称收集可达模板，并检查循环、缺失和重复。以下内容都随记录保存：每个模板基准、派生引用类型、实际数据集基准，以及静态定义原文和编译产物中的确切版本引用。渲染器继续校验每一层调用的数据版本，不把不同版本合并。
 
 资源按声明的类型收集：
@@ -145,7 +166,7 @@ if (first.status === 'delivered') {
 批次目录：
 
 - `batch.json`：`renderweave-batch/1` 汇总清单，全部项结束后最后原子发布。字段包括构建标识、根模板、模式、`summary`、逐项条目和批次级问题。
-- 逐项条目的字段：`index`、`id`、`status`、`directory`（相对批次目录）、`files`、`severe`、`hints`，没有目录时另有 `reason`。缺少 `batch.json` 的批次目录表示运行未正常结束。
+- 逐项条目的字段：`index`、`id`、`status`、`directory`（相对批次目录）、`files`、`severe`、`hints`，没有目录时另有 `reason`。缺少 `batch.json` 的批次目录表示运行未正常结束，用 `batch-read` 辨认已完成的项。以点开头的 `.complete.tmp`、`.probe-0002.tmp` 是未发布的临时或探测文件，不参与辨认。
 - `0001/`、`0002/` 等子目录：名称只由输入序号生成。
   - 正式成功项是一份完整出图记录（见下文）。
   - 草稿预览项有 `draft.png` 或 `draft.jpg`、`problems.json`、`layout.json`，最后发布 `preview.json`（`renderweave-preview/1`：模式、构建标识、项标识及三个文件的 SHA-256）。它不是出图记录：不复制输入与资源，`record-read` 和 `replay` 都拒绝。
@@ -255,3 +276,33 @@ docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-ba
 - Linux 容器：草稿图片、问题清单与草稿布局摘要和 Windows 逐字节一致。
 
 Docker 同时大量写盘时，全量测试曾两次偶发 Windows 资源清单 `rename` 的 EPERM，超出 M179 的有界重试；无负载时全量通过，外部占用者仍未知。
+
+## 票据 10 验收
+
+```powershell
+npm test
+npm run typecheck
+npm run build
+node scripts/accept-batch-cancel.mjs out/stage2/cancel-windows
+docker run --rm -v "${PWD}:/work" -w /work node:22-alpine node scripts/accept-batch-cancel.mjs out/stage2/cancel-linux
+```
+
+公开入口回归（`test/batch-cancel.test.ts`，9 项）覆盖：
+
+- 开始前取消、读取固定资源期间取消：不建目录。
+- 两项之间取消、当前项写图片时取消：已开始的项完成并可读，其余未执行，`batch.json` 照常发布。
+- 取消请求在最后一项期间到达：批次照常完成。
+- `batch.json` 未发布时按完成清单辨认，正式与草稿两种批次都覆盖；内容已写完但没有 `record.json` 的项不能读成记录，已完成项可重放。
+- 写入失败项的残留目录不影响已结束批次的辨认；拒绝非批次目录、被改的清单、缺完成清单的项及非受控条目。
+- CLI `deliver` 取消返回 130，`batch-read` 的 0/1/2。
+
+脚本 `scripts/accept-batch-cancel.mjs` 用编译 CLI 验证真实进程：
+
+- Ctrl+C：M402 前 6 项，第 1 项完成后中断，退出码 130，`batch.json` 记 `delivery.cancelled`，最后交付的一项可读取。Windows 无法从外部投递 POSIX 信号，改为在子进程内触发 `bin.js` 注册的 SIGINT 监听；Linux 另外发送真实 SIGINT，并验证第二次 Ctrl+C 立即结束进程、`batch-read` 判为未完成。
+- 强杀：分别在第 2 项写图片时、第 2 项 `record.json` 发布前、`batch.json` 发布前 SIGKILL。`batch-read` 返回 1；只有已发布完成清单的项为 `delivered`，`record-read` 对它们返回 0、对其余目录返回 1；最后一项完整记录复制走后可重放。
+
+2026-10-13 实测：
+
+- Windows（Node v24.21.0）与 Linux 容器（Node v22.23.3）脚本均通过。两平台中断时都已开始第 2 项，结果均为已交付 2 项、未执行 4 项；Linux 连按两次后第 2 项为 `incomplete`。
+- 29 个测试文件、615 项；类型检查和构建通过。
+- 全量测试在 Windows 上偶发 M179 的资源清单提交失败（EPERM，或 CLI `resources-import` 返回 1）：加入本票测试文件后 13 轮中 5 轮出现，单独排除该文件时 3 轮全过。失败都在其他文件的资源导入，与取消逻辑无关。推断是测试并发写盘增多，加重了外部进程（疑为实时防护扫描）对清单文件的占用；票据 11 的批内去重会大幅减少测试写盘，根因仍待单独排查。

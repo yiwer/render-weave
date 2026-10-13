@@ -4,6 +4,7 @@ export {
   type BatchRenderRequest, type BatchDeliveryResult, type BatchItemResult, type BatchItemEntry, type BatchItemFiles, type BatchItemStatus,
   type BatchManifest, type BatchProgress, type BatchSummary, type PreviewManifest, type OutputRecord, type RecordedResource,
 } from './output-records.js';
+export { readBatch, type BatchReading, type FoundBatchItem } from './batch-read.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
