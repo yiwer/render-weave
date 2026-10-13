@@ -4,14 +4,14 @@
 
 ## 一句话
 
-RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结构及其出图方式，再用符合定义的数据批量生成 PNG/JPG。首个业务场景是公交线路牌。业务 Agent（在 CloudKiln 云沙箱中运行）负责数据定义提取、数据集提取、模板辅助设计与修改，经 RenderWeave 的只读 MCP 服务使用校验、预览与识别能力，成果经人审核后应用。
+RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结构及其出图方式，再用符合定义的数据批量生成 PNG/JPG。首个业务场景是公交线路牌。核心目的（M189）：用户在系统中给出示例图，业务 Agent 辅助完成数据定义与数据集设计，再完成模板设计；Agent 经只读工具使用校验、预览与识别能力，成果经人审核后应用。Agent 运行方式待定：CloudKiln 不可用，候选为服务器内 Claude Code。
 
 ## 当前阶段与下一步
 
 - 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：共 13 张 tracer-bullet 票据，阻塞关系见[索引](.scratch/local-production-output/README.md)。
-- **下一步**：票据 10 [停止长批次与中断辨认](.scratch/local-production-output/issues/10-batch-cancel-and-interruption.md)，10、11 均已解除阻塞。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。票据 11 开工前先读其 Comments：未去重的记录磁盘占用很大（M184）。
+- **下一步**：票据 10 [停止长批次与中断辨认](.scratch/local-production-output/issues/10-batch-cancel-and-interruption.md)，10、11 均已解除阻塞；10–13 已按 M188 收窄。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。票据 11 开工前先读其 Comments：未去重的记录磁盘占用很大（M184）。
 - 接入服务前，须先补资源隔离验证。
 
 ## 已实现能力
@@ -61,7 +61,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **模板**：模板是出图函数，所有模板地位平等，沿数据定义引用组合为子模板与循环模板，作用域不继承（ADR-0007）。模板变量分数据字段、模板参数（对外、内部）、派生变量；派生变量是单步运算按名组合，不引入文本表达式（ADR-0004）。模板没有版本，可直接修改与升级基准版本。
 - **呈现**：画板以毫米为单位并声明适用尺寸范围；13 种元素；一块线路牌上站名字号一致，默认 10 mm；站数增加先收窄列间留白，列内不足才统一缩字，最小可读字号 5 mm；长站名仅沿竖排方向压缩字形（最低 60%）。366 参考图的 59 列已验证，见 M135–M136。
 - **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
-- **Agent**：每轮一个 CloudKiln Task；只读 MCP 服务提供读取、校验、草稿预览、识别；成果以文件交回，经人审核应用（ADR-0001、ADR-0003、ADR-0009）。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
+- **Agent**：只读工具提供读取、校验、草稿预览、识别；成果经人审核应用（ADR-0001、ADR-0003）。ADR-0009 的 CloudKiln 执行方式已不可用，待重定后改写（M189）。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
 
 ## 开发
 
@@ -79,7 +79,7 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 ## 尚待实测
 
 - OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
-- CloudKiln 的执行模型能否看图。
+- Agent 运行方式（M189、M190）：第二阶段完成后，用 Claude Code 加 Qwen token plan key 验证看图（示例图与预览图）、调用渲染工具的最小闭环。
 
 ## 外部来源
 
@@ -90,4 +90,4 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 | 旧 RenderWeave 草稿项目 | `outside_context/legacy-renderweave/` | `D:\Yiwer\code\RenderWeave` | 概念参照，全部重写 |
 | rid-rs 模板模块 | `outside_context/rid-rs/` | `E:\MiLu\code\route-info-board\rid-rs` | 线路牌业务与数据源设计的来源 |
 | design-layout-draw | `outside_context/design-layout-draw/` | `D:\Yiwer\code\design-layout-draw` | 布局引擎、渲染器、编辑器参照 |
-| CloudKiln | `outside_context/CloudKiln/` | `F:\GenCode\CloudKiln` | Agent 任务执行环境；涉及接入时须核查届时版本 |
+| CloudKiln | `outside_context/CloudKiln/` | `F:\GenCode\CloudKiln` | 原定 Agent 执行环境，已不可用（M189），仅作参照 |
