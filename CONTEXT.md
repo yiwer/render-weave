@@ -12,7 +12,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
-- **下一步**：阶段 3。Agent 运行方式已验证（[Agent 运行方式验证](docs/agent-validation.md)，M209–M217，ADR-0015）：Claude Code 加 qwen3.8-max 能看图、调用渲染工具；交给 Agent 的资料分三层（通用指南、领域约定包、项目说明，M216），带线路牌约定时数据定义与模板基本不用返工。局部放大工具让 366 的 59 站转全（M217）。接下来：把模板 DSL 参考整理为 DSL 1.0 并给出 JSON Schema；换一个领域（如价签）写约定包并测试。验证命令 `node scripts/m190/run.mjs <输出目录> --steps …`，key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+- 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
+- **下一步**：用户已确认第三阶段拆分（M218–M222），票据 01 与 03 可并行，按编号先领取 01。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -59,6 +60,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
+| [.scratch/agent-template-authoring/](.scratch/agent-template-authoring/README.md) | 第三阶段 PRD（Agent 代建模板的本地闭环，v0.3）与 9 张票据 |
 
 ## 关键决定摘要
 
