@@ -20,3 +20,4 @@
 ## Comments
 
 - 2026-10-13（M200）：第一条的 EPERM 已查明并修复。根因是初始化以硬链接发布清单，Windows 上偶发使首次导入无法替换清单。回归门槛 `node scripts/stress-resource-commit.mjs` 须在两个平台通过；修复后 Windows 全量连续 6 轮无 EPERM。
+- 2026-10-13：Standards 轴 P2（Duplicated Code / Shotgun Surgery）已处理。出图记录收集资源种类与替换影响检查原先各自遍历模板和数据集中的资源引用，现共用 `src/resource-references.ts`；新增可写资源的元素只改这一处。纯重构，全量测试、类型检查、构建与 `accept-coded-sign`、`accept-resource-replacement` 均通过，三份替换检查报告的引用位置与重构前逐项相同。Linux 复核用 `node:22-alpine`（Node v22.23.3），容器内重新 `npm ci`，不挂载宿主依赖：619 项通过，3 项 Windows 专属 EPERM 用例跳过；两个验收脚本的 `hashes.json` 和 `evidence.json` 与 Windows（Node v24.21.0）逐项一致。

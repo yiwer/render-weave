@@ -5,6 +5,7 @@ import type { RenderOptions } from './render.js';
 import { parseTemplate } from './template/parse.js';
 import { DEFAULT_FALLBACK_FONTS } from './text/fonts.js';
 import { findStaticSchema } from './schema/builtins.js';
+import { datasetResourceReferences, templateResourceReferences } from './resource-references.js';
 import { parseResourceRef, type ResourceKind } from './resources.js';
 import { parseDefinition } from './schema/parse.js';
 import type { ValueModel } from './schema/model.js';
@@ -185,41 +186,12 @@ function collect(documents: RecordDocuments, rootTemplate: string, configured: R
   };
   [...configured.fallbackFonts, ...configured.svgFonts].forEach((id) => add(`res:${id}`, 'font'));
   for (const [name, template] of templates) {
-    const model = models.get(name)!;
-    for (const parameter of model.parameters) if (parameter.type === 'image') {
-      add(parameter.default, 'image');
-      if (request && name === rootTemplate && parameter.visibility === 'public') add(request.parameters[parameter.name], 'image');
+    if (request && name === rootTemplate) for (const parameter of models.get(name)!.parameters) {
+      if (parameter.type === 'image' && parameter.visibility === 'public') add(request.parameters[parameter.name], 'image');
     }
-    for (const derived of model.derived) if (derived.type === 'image' && derived.operation.op === 'branch') {
-      for (const branch of derived.operation.branches) if ('value' in branch.then) add(branch.then.value, 'image');
-      if ('value' in derived.operation.otherwise) add(derived.operation.otherwise.value, 'image');
-    }
-    const scanStyle = (style: Record<string, unknown>, type: unknown, target: unknown): void => {
-      if (type === 'image') add(style.source, 'image');
-      // 条形码下方文字的字体不能绑定变量，只能固定或由状态样式切换；关闭文字时同样固定，记录不随显示与否变化。
-      if (type === 'text' || type === 'barcode') add(style.font, 'font');
-      if (type === 'text' && Array.isArray(style.content)) for (const fragment of style.content) if (isRecord(fragment)) add(fragment.font, 'font');
-      if ((type === 'call' || type === 'loop') && typeof target === 'string' && isRecord(style.args)) {
-        const args = style.args;
-        for (const parameter of models.get(target)!.parameters) if (parameter.type === 'image') {
-          const argument = args[parameter.name]; if (isRecord(argument)) add(argument.value, 'image');
-        }
-      }
-    };
-    const scan = (node: unknown): void => {
-      if (!isRecord(node)) return;
-      scanStyle(node, node.type, node.template);
-      if (isRecord(node.states) && isRecord(node.states.cases)) for (const style of Object.values(node.states.cases)) if (isRecord(style)) scanStyle(style, node.type, node.template);
-      if (Array.isArray(node.children)) node.children.forEach(scan);
-    };
-    scan((template.document as Record<string, unknown>).artboard);
+    for (const site of templateResourceReferences(name, template.document as Record<string, unknown>, (target) => models.get(target))) add(site.value, site.resourceKind);
   }
-  function scanData(schema: Record<string, unknown>, value: unknown): void {
-    if (schema['x-renderweave-type'] === 'image') add(value, 'image');
-    else if (schema.type === 'array' && isRecord(schema.items) && Array.isArray(value)) {
-      const items = schema.items; value.forEach((item) => scanData(items, item));
-    } else if (isRecord(schema.properties) && isRecord(value)) for (const [name, property] of Object.entries(schema.properties)) if (isRecord(property)) scanData(property, value[name]);
-  }
-  if (dataset) scanData(schemas.get(schemaKey(dataset.dataset.staticSchema))!.compiled!, dataset.data);
+  // 编译产物已在 visitSchema 中确认为内联形式。
+  if (dataset) for (const site of datasetResourceReferences(schemas.get(schemaKey(dataset.dataset.staticSchema))!.compiled!, dataset.data)) add(site.value, site.resourceKind);
   return { templates, schemas, dataset, resourceKinds: new Map([...resourceKinds].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) };
 }
