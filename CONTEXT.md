@@ -12,7 +12,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
-- **下一步**：阶段 3。Agent 运行方式已验证（[Agent 运行方式验证](docs/agent-validation.md)，M209–M214，ADR-0015）：Claude Code 加 qwen3.8-max 能看图、调用渲染工具；带领域约定时数据定义候选只需改 1–2 处，模板生成首测 23 分钟出 0 问题的 5 个模板、专家改 3 处。接下来：把模板层约定补进领域约定文档并复测模板生成；用 366 参考图测推广；把模板 DSL 参考整理为 DSL 1.0 并给出 JSON Schema。验证命令 `node scripts/m190/run.mjs <输出目录> --steps …`，key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+- **下一步**：阶段 3。Agent 运行方式已验证（[Agent 运行方式验证](docs/agent-validation.md)，M209–M216，ADR-0015）：Claude Code 加 qwen3.8-max 能看图、调用渲染工具；交给 Agent 的资料分三层（通用指南、领域约定包、项目说明，M216），带线路牌约定时数据定义与模板基本不用返工。接下来：做局部放大工具，补测密排小字转录（366 漏 1 站）；把模板 DSL 参考整理为 DSL 1.0 并给出 JSON Schema；换一个领域（如价签）写约定包并测试。验证命令 `node scripts/m190/run.mjs <输出目录> --steps …`，key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -84,7 +84,7 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 ## 尚待实测
 
 - OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
-- Agent 生成模板的稳定性与推广：首测 1 次（M214），需补测带模板层约定的多次运行与 366 参考图。
+- Agent 的推广：只测了线路牌（M402、366）；其他领域需先写约定包。366 的模板生成未测（需先定数据集）。
 
 ## 外部来源
 

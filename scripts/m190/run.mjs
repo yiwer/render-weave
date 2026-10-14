@@ -1,13 +1,20 @@
 // M190 Agent 运行方式验证：Claude Code（-p）加 Qwen token plan 的 Anthropic 兼容端点。
 //
-// 用法：node scripts/m190/run.mjs <输出目录> [--steps vision,loop,design,template] [--model qwen3.8-max] [--vision-models a,b] [--hints <文档>] [--max-turns 60]
-//       node scripts/m190/run.mjs --evaluate <候选目录>   只评估已有候选，不调用模型
+// 用法：node scripts/m190/run.mjs <输出目录> [--steps vision,loop,design,template] [--model qwen3.8-max] [--vision-models a,b]
+//         [--scenario m402] [--domain route-sign] [--no-guide] [--max-turns 60]
+//       node scripts/m190/run.mjs --evaluate <候选目录>   只评估已有数据定义与数据集候选，不调用模型
+//       node scripts/m190/run.mjs --evaluate-template <工作区目录> [输出目录] [--template-name 线路牌主模板]   只评估已有模板
 //   vision：直接调兼容端点，各模型转录 M402 示例图，与专家数据集对照。
 //   loop：Agent 用 Read 看示例图，再调 MCP 草稿预览工具并读返回的图片。工作区副本埋了两个只在预览图上出现的标记
 //         （第 23 站改名、票价改为 7），答出这两个值才算看到了工具返回的图。
-//   design：Agent 只拿到示例图与 DSL 参考（--hints 时另附领域约定），产出数据定义与数据集候选；引擎重新校验，再与专家版逐项对照。
+//   design：Agent 拿到示例图与 DSL 参考，产出数据定义与数据集候选；引擎重新校验，再与专家版逐项对照。
+//
+// design 与 template 交给 Agent 的资料分三层，提示词本身不含具体业务：
+//   docs/brief.md：项目说明，取 scenarios/<场景>/brief-<步骤>.md（尺寸、目标范围、命名、客户说明）；
+//   docs/guide.md：通用做法，适用于任何出图场景（--no-guide 时不给，用于对照）；
+//   docs/domain-<领域>.md：领域约定，--domain 指定时才给（如 route-sign）。
 //   template：Agent 拿到示例图、模板 DSL 参考与专家版数据定义和数据集，写模板并用草稿预览迭代；引擎按 120 DPI 重新出图，
-//             与示例图比较缩小后的像素差，并给出专家模板的同一指标作参照。
+//             与示例图比较缩小后的像素差，再用专家版验收过的场景压测（本站位置、站数、长站名、宽度），都给出专家模板的同一指标作参照。
 //
 // key 只从环境变量 QWEN_TOKEN_PLAN_API_KEY 读取（Windows 上本进程没有时读用户级环境变量），不打印、不写文件。
 // Claude Code 子进程的环境从空白开始，只放系统必需变量与 Qwen 配置，配置目录独立，不继承宿主的 CLAUDE_*/ANTHROPIC_* 变量与登录凭据；
@@ -22,22 +29,32 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
 const ENDPOINT = 'https://token-plan.maas.qianwenaiapi.com/apps/anthropic';
-const SAMPLE = join(REPO, 'docs/examples/materials/m402-route-sign.jpg'); // 内容是 PNG
+// 场景：示例图与是否有专家真值。vision、loop、template 只用 m402（需要专家数据集与模板）；design 两个场景都可用。
+const SCENARIOS = {
+  m402: { sample: join(REPO, 'docs/examples/materials/m402-route-sign.jpg'), truth: true }, // 内容是 PNG
+  366: { sample: join(REPO, 'docs/examples/materials/366-route-sign.png'), truth: false },
+};
 const EXAMPLE = join(REPO, 'docs/examples/m402-dsl');
 const RESOURCES = join(REPO, 'fixtures/resources');
 
 const argv = process.argv.slice(2);
 const opt = (name, fallback) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : fallback; };
-const out = resolve(argv[0]?.startsWith('--') ? 'out/m190' : argv[0] ?? 'out/m190');
+const out = resolve(argv[0]?.startsWith('--') ? argv[2] ?? 'out/m190' : argv[0] ?? 'out/m190');
 const steps = opt('steps', 'vision,loop,design').split(',');
 const model = opt('model', 'qwen3.8-max');
 const visionModels = opt('vision-models', 'qwen3.8-max,qwen3.7-plus').split(',');
-const hints = opt('hints'); // design 步骤附带的领域约定文档（复制为 docs/domain-hints.md）
+const scenario = opt('scenario', 'm402');
+if (!SCENARIOS[scenario]) { console.error(`未知场景 ${scenario}`); process.exit(2); }
+const SAMPLE = SCENARIOS[scenario].sample;
+if (!SCENARIOS[scenario].truth && !argv.includes('--evaluate') && steps.some((s) => s !== 'design')) { console.error(`场景 ${scenario} 没有专家真值，只能跑 design`); process.exit(2); }
+const domain = opt('domain'); // 领域约定包名，对应 domain-<名>.md
+const withGuide = !argv.includes('--no-guide');
 
 const evaluateOnly = opt('evaluate');
-const KEY = evaluateOnly ? undefined : readKey();
+const evaluateTemplate = opt('evaluate-template');
+const KEY = evaluateOnly || evaluateTemplate ? undefined : readKey();
 const truth = JSON.parse(await readFile(join(EXAMPLE, 'dataset-m402.json'), 'utf8')).data;
-if (!evaluateOnly) await mkdir(out, { recursive: true });
+await mkdir(out, { recursive: true });
 const report = { model, endpoint: ENDPOINT, startedAt: new Date().toISOString() };
 
 function readKey() {
@@ -163,6 +180,14 @@ async function loop() {
   return { markers, verdict, pass: Object.values(verdict).every(Boolean), run };
 }
 
+// ---- 资料分层 ----
+const layers = () => ({ scenario, guide: withGuide, domain: domain ?? null });
+async function copyLayers(agent, step) {
+  await copyFile(join(HERE, 'scenarios', scenario, `brief-${step}.md`), join(agent, 'docs/brief.md'));
+  if (withGuide) await copyFile(join(HERE, 'guide.md'), join(agent, 'docs/guide.md'));
+  if (domain) await copyFile(join(HERE, `domain-${domain}.md`), join(agent, `docs/domain-${domain}.md`));
+}
+
 // ---- design ----
 async function design() {
   const dir = join(out, 'design'), agent = join(dir, 'agent');
@@ -170,13 +195,13 @@ async function design() {
   await mkdir(join(agent, 'docs'), { recursive: true });
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(HERE, 'dsl-reference.md'), join(agent, 'docs/dsl-reference.md'));
-  if (hints) await copyFile(resolve(hints), join(agent, 'docs/domain-hints.md'));
+  await copyLayers(agent, 'design');
   const run = await runAgent({ name: 'design', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'check_definitions,check_dataset,list_resources',
     workspace: EXAMPLE, prompt: await readFile(join(HERE, 'prompt-design.md'), 'utf8'), maxTurns: 40 });
   await cp(join(agent, 'candidates'), join(dir, 'candidates'), { recursive: true });
   const evaluation = await evaluateCandidates(join(agent, 'candidates'));
   console.log('design', JSON.stringify(evaluation.dataset ?? {}), `${run.wallMs} ms`);
-  return { hints: hints ?? null, run, evaluation };
+  return { layers: layers(), run, evaluation };
 }
 
 async function evaluateCandidates(dir) {
@@ -203,6 +228,7 @@ async function evaluateCandidates(dir) {
   const target = published.find((p) => p.ref.name === ref?.name && p.ref.version === ref?.version);
   const { repository } = await engine.openResourceRepository(RESOURCES);
   const problems = target ? validateDataset(target.compiled, datasetDoc.doc.data, repository).map((p) => p.message) : ['找不到数据集选定的数据定义'];
+  if (!SCENARIOS[scenario].truth) return { definitions, unpublished: pending.map((p) => p.f), dataset: { file: datasetDoc.f, problems } };
   const data = datasetDoc.doc.data;
   const stops = Object.values(data).find((v) => Array.isArray(v) && v.length >= 20 && typeof v[0] === 'object') ?? [];
   const column = (expected) => {
@@ -251,6 +277,13 @@ async function evaluateCandidates(dir) {
   };
 }
 
+if (evaluateTemplate) {
+  const request = { dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 120, format: 'png' }, mode: 'draft' };
+  const mainTemplate = opt('template-name', '线路牌主模板');
+  console.log('render', JSON.stringify(await renderAndCompare(resolve(evaluateTemplate), { ...request, template: mainTemplate }, join(out, 'render-120.png'))));
+  for (const row of await stressTemplates([['候选', resolve(evaluateTemplate), mainTemplate], ['专家', EXAMPLE, '标准线路单边']], join(out, 'stress'))) console.log('stress', JSON.stringify(row));
+  process.exit(0);
+}
 if (evaluateOnly) {
   console.log(JSON.stringify(await evaluateCandidates(resolve(evaluateOnly)), null, 1));
   process.exit(0);
@@ -265,15 +298,47 @@ async function template() {
   }
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(HERE, 'template-reference.md'), join(agent, 'docs/template-reference.md'));
-  if (hints) await copyFile(resolve(hints), join(agent, 'docs/domain-hints.md'));
+  await copyLayers(agent, 'template');
   const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources', workspace,
     prompt: await readFile(join(HERE, 'prompt-template.md'), 'utf8'), maxTurns: Number(opt('max-turns', '60')) });
   const request = { dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 120, format: 'png' }, mode: 'draft' };
   const candidate = await renderAndCompare(workspace, { ...request, template: '线路牌主模板' }, join(dir, 'render-120.png'));
   const expert = await renderAndCompare(EXAMPLE, { ...request, template: '标准线路单边' }, join(dir, 'expert-120.png'));
   const templates = (await readdir(workspace)).filter((f) => f.endsWith('.json') && !/^(schema|compiled|dataset)-/.test(f));
+  const stress = await stressTemplates([['候选', workspace, '线路牌主模板'], ['专家', EXAMPLE, '标准线路单边']], join(dir, 'stress'));
   console.log('template', JSON.stringify({ templates: templates.length, candidate, expert }), `${run.wallMs} ms`);
-  return { hints: hints ?? null, run, templates, candidate, expert };
+  for (const row of stress) console.log('stress', JSON.stringify(row));
+  return { layers: layers(), run, templates, candidate, expert, stress };
+}
+
+/** 专家版验收过的场景：本站 0/1/末站、2/20/50 站、12 字长站名、740 与 1500 mm。草稿 30 DPI，记严重问题数与代码。 */
+async function stressTemplates(subjects, dir) {
+  const engine = await import(pathToFileURL(join(REPO, 'dist/index.js')).href);
+  await mkdir(dir, { recursive: true });
+  const base = JSON.parse(await readFile(join(EXAMPLE, 'dataset-m402.json'), 'utf8'));
+  const stops = base.data.stops;
+  const extra = Array.from({ length: 15 }, (_, i) => ({ name: ['新城', '科技', '文化', '体育', '滨海'][i % 5] + ['东', '西', '南'][Math.floor(i / 5)] + '站', road: i < 8 ? '新城大道' : '滨海路' }));
+  const withStops = (list) => ({ dataset: { staticSchema: base.dataset.staticSchema }, data: { ...base.data, stops: list } });
+  const scenarios = [
+    ['35 站本站 5', stops, 5, 740], ['本站 0', stops, 0, 740], ['本站 1', stops, 1, 740], ['本站 35', stops, 35, 740],
+    ['2 站', stops.slice(0, 2), 1, 740], ['20 站', stops.slice(0, 20), 5, 740], ['50 站 740', [...stops, ...extra], 5, 740],
+    ['50 站 1500', [...stops, ...extra], 5, 1500], ['35 站 1500', stops, 5, 1500],
+    ['12 字站名', stops.map((s, i) => (i === 10 ? { ...s, name: '李朗国际珠宝园北门公交站' } : s)), 5, 740],
+  ];
+  const rows = [];
+  for (const [label, list, currentIndex, width] of scenarios) {
+    const row = { label };
+    for (const [who, workspaceDir, template] of subjects) {
+      const workspace = await engine.loadWorkspace({ dir: workspaceDir, resourcesDir: RESOURCES });
+      const r = await engine.render(workspace, { template, dataset: { inline: withStops(list) }, parameters: { currentIndex },
+        output: { width, height: 165, dpi: 30, format: 'png' }, mode: 'draft' });
+      const severe = r.problems.filter((p) => p.level === 'severe');
+      row[who] = { severe: severe.length, hint: r.problems.length - severe.length, codes: [...new Set(severe.map((p) => p.code))] };
+      if (r.image) await writeFile(join(dir, `${who}-${label.replace(/s+/g, '-')}.png`), r.image.bytes);
+    }
+    rows.push(row);
+  }
+  return rows;
 }
 
 /** 草稿出图（有严重问题也出图），按 8 倍缩小后与示例图逐像素比较：相似度 = 1 − 平均绝对差 / 255。 */
@@ -297,7 +362,44 @@ async function renderAndCompare(workspaceDir, request, file) {
   const a = shrink(result.image.bytes), b = shrink(await readFile(SAMPLE));
   let sum = 0, n = 0;
   for (let i = 0; i < a.length; i += 4) for (let c = 0; c < 3; c++) { sum += Math.abs(a[i + c] - b[i + c]); n++; }
-  return { problems, size: `${result.image.widthPx}×${result.image.heightPx}`, similarity: Number((1 - sum / n / 255).toFixed(4)) };
+  return { problems, size: `${result.image.widthPx}×${result.image.heightPx}`, similarity: Number((1 - sum / n / 255).toFixed(4)),
+    ...(result.layout && { landmarkBaseline: landmarkBaseline(result.layout) }), roadAlign: await roadAlign(workspaceDir) };
+}
+
+/**
+ * 用户验收发现的版面约定一（领域约定 10）：地标是竖排站名的最后一格。无地标站名的底边应与有地标列的地标底边齐平。
+ * 取第 1 站（建设路总站，无地标）与第 4 站（门诊部，有地标）比较，差值单位毫米。
+ */
+function landmarkBaseline(layout) {
+  const nodes = [];
+  (function walk(n) { nodes.push(n); for (const c of n.children ?? []) walk(c); })(layout.root);
+  const visible = nodes.filter((n) => n.visible !== false && typeof n.y === 'number');
+  // 比较前去掉首尾空白（含全角空格）：有的模板用空格给地标占位。
+  const name = (content) => visible.find((n) => n.type === 'text' && n.text?.content?.trim() === content && n.text?.writingMode === 'vertical');
+  const plain = name(truth.stops[0].name), marked = name(truth.stops[3].name);
+  if (!plain || !marked) return { found: false };
+  const prefix = marked.path.slice(0, marked.path.lastIndexOf(']') + 1);
+  const landmark = visible.filter((n) => n.type === 'image' && n.path.startsWith(prefix) && n.y >= marked.y).sort((a, b) => b.y - a.y)[0];
+  if (!landmark) return { found: false, reason: '有地标的列中找不到地标图片' };
+  const delta = Number((plain.y + plain.height - (landmark.y + landmark.height)).toFixed(2));
+  return { found: true, deltaMm: delta, pass: Math.abs(delta) <= 2 };
+}
+
+/** 用户验收发现的版面约定二（领域约定 11，M131）：道路名用同间隔分布。静态检查模板中插槽绑定 road 的文字元素。 */
+async function roadAlign(workspaceDir) {
+  const aligns = [];
+  for (const f of await readdir(workspaceDir)) {
+    if (!f.endsWith('.json')) continue;
+    const doc = JSON.parse(await readFile(join(workspaceDir, f), 'utf8'));
+    if (doc.dslVersion !== 'renderweave-template/1') continue;
+    (function walk(v) {
+      if (Array.isArray(v)) return v.forEach(walk);
+      if (!v || typeof v !== 'object') return;
+      if (v.type === 'text' && Array.isArray(v.content) && v.content.some((c) => typeof c.slot === 'string' && /(^|.)road$/.test(c.slot))) aligns.push(v.horizontalAlign ?? 'start');
+      Object.values(v).forEach(walk);
+    })(doc);
+  }
+  return { aligns, pass: aligns.length > 0 && aligns.every((a) => a === 'spaceEvenly') };
 }
 
 for (const step of steps) {

@@ -43,7 +43,7 @@ async function publishAll(paths) {
 const TOOLS = {
   render_draft: {
     description: '按渲染请求用引擎出一张草稿预览图（PNG，不写文件）。模式固定为草稿，DPI 上限 60。返回问题清单与预览图。',
-    inputSchema: { type: 'object', required: ['request'], properties: { request: { type: 'object', description: '渲染请求：template、dataset.id、parameters、output{width,height,dpi,format}' } } },
+    inputSchema: { type: 'object', required: ['request'], properties: { request: { type: 'object', description: '渲染请求：template、dataset（{id} 或 {inline: 数据集文档}）、parameters、output{width,height,dpi,format}' } } },
     async call({ request }) {
       const workspace = await engine.loadWorkspace({ dir: WS, resourcesDir: RES });
       const output = { ...(request?.output ?? {}), dpi: Math.min(Number(request?.output?.dpi ?? 50), 60), format: 'png' };
