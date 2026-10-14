@@ -297,21 +297,21 @@ async function writeTransaction(dir: string, initialize: boolean,
       finally { await handle.close(); }
     };
     const manifest = await prepare(root, write);
-    const name = `.manifest-${randomUUID()}.tmp`;
+    const name = `.manifest-${randomUUID()}.tmp`, target = join(root, MANIFEST);
     temporary = join(root, name);
     await write(name, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
-    // 初始化用 link 的不覆盖语义；导入在持锁期间原子替换整份清单。
-    if (initialize) { await beforeCommit?.(); await fs.link(temporary, join(root, MANIFEST)); }
-    else {
-      // Windows 的短暂共享/权限拒绝不必使整次导入失败；持续失败最多等待 2540 ms。
-      // 等待期间仍持有写锁，每次尝试都重新核对替换前提，绝不先删除旧清单。
-      for (let attempt = 0; ; attempt++) {
-        await beforeCommit?.();
-        try { await fs.rename(temporary, join(root, MANIFEST)); break; }
-        catch (error) {
-          if (process.platform !== 'win32' || attempt >= 7 || !isRecord(error) || !['EPERM', 'EACCES', 'EBUSY'].includes(String(error.code))) throw error;
-          await delay(20 * 2 ** attempt);
-        }
+    // 初始化与导入都以 rename 原子发布整份清单。初始化不用 link：Windows 上以 link 发布、再删临时名的清单
+    // 偶尔变成可删除却不能被 rename 替换的文件，之后每次导入都持续 EPERM（M200）。
+    // Windows 的短暂共享/权限拒绝不必使整次提交失败；持续失败最多等待 2540 ms。
+    // 等待期间仍持有写锁，每次尝试都重新核对提交前提，绝不先删除旧清单。
+    for (let attempt = 0; ; attempt++) {
+      await beforeCommit?.();
+      // 所有写入方都先取得写锁，持锁确认尚无清单即保证初始化不覆盖。
+      if (initialize && await fs.lstat(target).then(() => true, () => false)) fail(target, '资源仓库已有清单，初始化不覆盖', ProblemCodes.resourceWriteFailed);
+      try { await fs.rename(temporary, target); break; }
+      catch (error) {
+        if (process.platform !== 'win32' || attempt >= 7 || !isRecord(error) || !['EPERM', 'EACCES', 'EBUSY'].includes(String(error.code))) throw error;
+        await delay(20 * 2 ** attempt);
       }
     }
     committed = true;

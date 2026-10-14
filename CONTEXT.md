@@ -11,7 +11,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：共 13 张 tracer-bullet 票据，阻塞关系见[索引](.scratch/local-production-output/README.md)。
-- **下一步**：票据 13 [全新环境阶段验收](.scratch/local-production-output/issues/13-stage2-cross-platform-acceptance.md)，阻塞已全部解除。开工前须先解决 Windows 全量测试偶发的资源清单提交失败（M179、M193），随测试增多已更频繁。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。
+- **下一步**：票据 13 [全新环境阶段验收](.scratch/local-production-output/issues/13-stage2-cross-platform-acceptance.md)，阻塞已全部解除。Windows 全量测试偶发的资源清单 EPERM 已查明并修复（M200），回归门槛为 `scripts/stress-resource-commit.mjs`。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。
 - 接入服务前，须先补资源隔离验证。
 
 ## 已实现能力
