@@ -191,7 +191,7 @@ docker run --rm -v <快照目录>:/fresh node:22-alpine sh /fresh/linux.sh <快�
 
 | # | 级别 | 位置 | 发现 | 处理 |
 |---|---|---|---|---|
-| 1 | P2，判断：Duplicated Code / Shotgun Surgery | `src/record-input.ts:175-223`、`src/resource-impact.ts:83-128` | 两处各自遍历模板树与数据集编译产物，收集资源引用（图片来源、文字/条形码字体、片段字体、调用实参、状态样式、参数默认值、派生分支、数据集图片字段）。票据 12 加条形码字体时两处都要改（`record-input.ts:200`、`resource-impact.ts:87`）。逐分支核对后，两者目前等价，没有已知错误 | 转为后续重构任务，本阶段不改 |
+| 1 | P2，判断：Duplicated Code / Shotgun Surgery | `src/record-input.ts:175-223`、`src/resource-impact.ts:83-128` | 两处各自遍历模板树与数据集编译产物，收集资源引用（图片来源、文字/条形码字体、片段字体、调用实参、状态样式、参数默认值、派生分支、数据集图片字段）。票据 12 加条形码字体时两处都要改（`record-input.ts:200`、`resource-impact.ts:87`）。逐分支核对后，两者等价，没有已知错误 | 验收后由提交 `8e8fe11` 抽出共用的 `src/resource-references.ts`，见下文「验收后的重构」 |
 | 2 | P3，判断：Duplicated Code | `src/layout/barcode.ts:41-55`、`src/layout/qrcode.ts:21-44` | 颜色不透明与不同色检查、拒绝随内容尺寸、按最终 DPI 向内取整像素边界三段逻辑重复 | 两处尚无分歧，暂不改 |
 | 3 | P3，约定：中文注释与文档 | `src/renderer-build.ts:32` | 唯一一处英文注释 | 已改为中文 |
 | 4 | P3，文档完整 | `src/cli.ts:1-14` | 文件头只写了 render、publish、deliver、batch-read 的退出码 | 已补 record-read、replay、resources-* |
@@ -225,9 +225,22 @@ docker run --rm -v <快照目录>:/fresh node:22-alpine sh /fresh/linux.sh <快�
 
 两轴汇总：
 
-- Standards 4 项，最高 P2，判断性；其中 2 项 P3 已修正，1 项 P2、1 项 P3 转后续。
+- Standards 4 项，最高 P2，判断性；2 项 P3 已修正，P2 在验收后以重构处理，1 项 P3 转后续。
 - Spec 3 项，最高 P2；P3 与指南缺口已修正，P2 转后续。
 - 没有剩余阻断项。
+
+## 验收后的重构
+
+Standards 第 1 项在本阶段验收之后、合并前处理：提交 `8e8fe11` 新增 `src/resource-references.ts`，出图记录收集与替换影响检查都改为调用它。
+
+- **行为差别**：只有一批同时存在两个整批拒绝原因时，先报哪一个可能不同。
+- **合并前审查**：逐分支核对与原逻辑等价。新增的两处异常在调用前已被更早的检查拦住，不会触发。
+- **原提交的验证**：Windows 全量 622 项；Linux 容器内 `npm ci` 后 619 项通过、3 项跳过；`accept-coded-sign`、`accept-resource-replacement` 在两个平台通过，结果一致。
+- **合并后的复核**（Windows，Node v24.21.0）：
+  - 类型检查、构建、全量 622 项通过。
+  - `node scripts/accept-stage2.mjs out/stage2/merge-check 100` 的 15 步全部通过，长批次改为 100 项。
+  - 441 个成果文件与本文 Windows 验收运行逐个比较：356 个逐字节相同；85 个是含构建标识的清单（记录 57、批次 11、预览 6、重放 11），去掉构建标识后相同。58 份 `input.json` 全部相同，记录收集到的资源与重构前完全一致。
+- **构建标识**：随源码改为 `sha256:fe8f7c84…`。本文 A14 的跨平台结论针对重构前的 `src` 子树 `456419ff`；重构后没有在 Linux 上重跑全部验收，以原提交在 Linux 的测试与两个码图/替换脚本结果，加上与重构前成果完全一致作为依据。
 
 ## 本地边界与接入服务前的要求
 

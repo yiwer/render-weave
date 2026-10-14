@@ -36,7 +36,8 @@
 - **A01–A13**：按验收文档「A01–A15 汇总」引用各票 Answer 与本次复跑结果。
 - **两轴审查**：无阻断项。
   - 已修正：英文注释、CLI 头注释缺退出码、README 与资源版本说明中的过期描述。
-  - 转后续任务：批量项缺数据集时报 `record.invalid`（Spec P2）；两套资源引用遍历（Standards P2）；码图布局有重复代码（P3）。
+  - 两套资源引用遍历（Standards P2）已在验收后由 `8e8fe11` 处理，见下方 Comments 与验收文档「验收后的重构」。
+  - 转后续任务：批量项缺数据集时报 `record.invalid`（Spec P2）；码图布局有重复代码（P3）。
 - **偏差**：
   - 两个平台运行的快照只差 `scripts/accept-stage2.mjs` 的指纹收集部分。本票中修正了两处收集问题：把请求文件误认作批次清单，以及相对文档路径的分隔符不同。Windows 的成果用修正后的脚本 `--collect-only` 重新收集，未重跑验收；被测的引擎、测试与依赖完全相同。
   - 两个平台的长批次部分时段同时运行，同机还有另一个会话在跑测试，耗时只作参考。
@@ -46,3 +47,4 @@
 ## Comments
 
 - 2026-10-13（M200）：第一条的 EPERM 已查明并修复。根因是初始化以硬链接发布清单，Windows 上偶发使首次导入无法替换清单。回归门槛 `node scripts/stress-resource-commit.mjs` 须在两个平台通过；修复后 Windows 全量连续 6 轮无 EPERM。
+- 2026-10-13：Standards 轴 P2（Duplicated Code / Shotgun Surgery）已处理。出图记录收集资源种类与替换影响检查原先各自遍历模板和数据集中的资源引用，现共用 `src/resource-references.ts`；新增可写资源的元素只改这一处。纯重构，全量测试、类型检查、构建与 `accept-coded-sign`、`accept-resource-replacement` 均通过，三份替换检查报告的引用位置与重构前逐项相同。Linux 复核用 `node:22-alpine`（Node v22.23.3），容器内重新 `npm ci`，不挂载宿主依赖：619 项通过，3 项 Windows 专属 EPERM 用例跳过；两个验收脚本的 `hashes.json` 和 `evidence.json` 与 Windows（Node v24.21.0）逐项一致。
