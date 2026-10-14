@@ -11,7 +11,7 @@ console.log = (...a) => console.error(...a); // stdout 只留给协议
 const argv = process.argv.slice(2);
 const opt = (name) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : undefined; };
 const REPO = resolve(fileURLToPath(import.meta.url), '../../..'), WS = opt('workspace'), RES = opt('resources'), ROOT = opt('root'), LOG = opt('log');
-const ENABLED = new Set((opt('tools') ?? 'render_draft,check_definitions,check_dataset,list_resources').split(','));
+const ENABLED = new Set((opt('tools') ?? 'render_draft,check_definitions,check_dataset,list_resources,view_image').split(','));
 
 const engine = await import(pathToFileURL(join(REPO, 'dist/index.js')).href);
 const { validateDataset } = await import(pathToFileURL(join(REPO, 'dist/dataset-validation.js')).href);
@@ -21,12 +21,16 @@ const formatProblems = (problems) => problems.length === 0 ? '没有问题。' :
   problems.map((p) => `- [${p.level}] ${p.code} @ ${JSON.stringify(p.location)}：${p.message}`).join('\n');
 
 /** 只允许读 Agent 工作目录内的文件。 */
-async function readJsonInRoot(path) {
+async function readInRoot(path) {
   const full = resolve(ROOT, path);
   const rel = relative(ROOT, full);
   if (rel.startsWith('..') || isAbsolute(rel)) throw new Error(`只能读取工作目录内的文件：${path}`);
-  return JSON.parse(await readFile(full, 'utf8'));
+  return readFile(full);
 }
+const readJsonInRoot = async (path) => JSON.parse((await readInRoot(path)).toString('utf8'));
+
+let canvasKit;
+const VIEW_MAX_SIDE = 1400;
 
 async function publishAll(paths) {
   const published = [], report = [];
@@ -80,6 +84,36 @@ const TOOLS = {
       const { repository } = await engine.openResourceRepository(RES);
       const problems = validateDataset(target.compiled, parsed.data, repository);
       return { content: [{ type: 'text', text: `${report.join('\n\n')}\n\n## ${datasetPath}（按 ${ref.name} v${ref.version} 校验）\n${formatProblems(problems)}` }], summary: { datasetProblems: problems.length } };
+    },
+  },
+  view_image: {
+    description: '局部放大查看工作目录内的图片（如示例图、预览图）：按像素区域裁切，放大到最长边约 1400 px，返回 PNG。用于核对小字、密排列表、图标与小标记。省略 region 时返回整图并给出原图尺寸。不写文件。',
+    inputSchema: { type: 'object', required: ['path'], properties: {
+      path: { type: 'string', description: '工作目录内的图片路径，如 sample.png' },
+      region: { type: 'object', description: '原图像素区域，左上角为原点', properties: { x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' } } },
+    } },
+    async call({ path, region }) {
+      canvasKit ??= await (await import(pathToFileURL(join(REPO, 'dist/canvaskit.js')).href)).loadCanvasKit();
+      const ck = canvasKit;
+      const image = ck.MakeImageFromEncoded(await readInRoot(path));
+      if (!image) throw new Error(`无法解码图片：${path}`);
+      const W = image.width(), H = image.height();
+      const x = Math.max(0, Math.min(W - 1, Math.round(region?.x ?? 0))), y = Math.max(0, Math.min(H - 1, Math.round(region?.y ?? 0)));
+      const w = Math.max(1, Math.min(W - x, Math.round(region?.width ?? W))), h = Math.max(1, Math.min(H - y, Math.round(region?.height ?? H)));
+      const scale = Math.min(4, VIEW_MAX_SIDE / Math.max(w, h));
+      const ow = Math.max(1, Math.round(w * scale)), oh = Math.max(1, Math.round(h * scale));
+      const surface = ck.MakeSurface(ow, oh);
+      const paint = new ck.Paint();
+      surface.getCanvas().drawImageRectOptions(image, ck.XYWHRect(x, y, w, h), ck.XYWHRect(0, 0, ow, oh), ck.FilterMode.Linear, ck.MipmapMode.Linear, paint);
+      const bytes = surface.makeImageSnapshot().encodeToBytes();
+      image.delete(); surface.delete(); paint.delete();
+      return {
+        content: [
+          { type: 'text', text: `原图 ${W}×${H} px；区域 x=${x} y=${y} 宽 ${w} 高 ${h}；放大 ${scale.toFixed(2)} 倍，输出 ${ow}×${oh} px。` },
+          { type: 'image', data: Buffer.from(bytes).toString('base64'), mimeType: 'image/png' },
+        ],
+        summary: { region: [x, y, w, h], scale: Number(scale.toFixed(2)) },
+      };
     },
   },
   list_resources: {

@@ -32,7 +32,7 @@ const ENDPOINT = 'https://token-plan.maas.qianwenaiapi.com/apps/anthropic';
 // 场景：示例图与是否有专家真值。vision、loop、template 只用 m402（需要专家数据集与模板）；design 两个场景都可用。
 const SCENARIOS = {
   m402: { sample: join(REPO, 'docs/examples/materials/m402-route-sign.jpg'), truth: true }, // 内容是 PNG
-  366: { sample: join(REPO, 'docs/examples/materials/366-route-sign.png'), truth: false },
+  366: { sample: join(REPO, 'docs/examples/materials/366-route-sign.png'), truth: false, transcription: join(HERE, 'scenarios/366/truth.json') },
 };
 const EXAMPLE = join(REPO, 'docs/examples/m402-dsl');
 const RESOURCES = join(REPO, 'fixtures/resources');
@@ -196,7 +196,7 @@ async function design() {
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(HERE, 'dsl-reference.md'), join(agent, 'docs/dsl-reference.md'));
   await copyLayers(agent, 'design');
-  const run = await runAgent({ name: 'design', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'check_definitions,check_dataset,list_resources',
+  const run = await runAgent({ name: 'design', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'check_definitions,check_dataset,list_resources,view_image',
     workspace: EXAMPLE, prompt: await readFile(join(HERE, 'prompt-design.md'), 'utf8'), maxTurns: 40 });
   await cp(join(agent, 'candidates'), join(dir, 'candidates'), { recursive: true });
   const evaluation = await evaluateCandidates(join(agent, 'candidates'));
@@ -228,7 +228,11 @@ async function evaluateCandidates(dir) {
   const target = published.find((p) => p.ref.name === ref?.name && p.ref.version === ref?.version);
   const { repository } = await engine.openResourceRepository(RESOURCES);
   const problems = target ? validateDataset(target.compiled, datasetDoc.doc.data, repository).map((p) => p.message) : ['找不到数据集选定的数据定义'];
-  if (!SCENARIOS[scenario].truth) return { definitions, unpublished: pending.map((p) => p.f), dataset: { file: datasetDoc.f, problems } };
+  if (!SCENARIOS[scenario].truth) {
+    const transcription = SCENARIOS[scenario].transcription && JSON.parse(await readFile(SCENARIOS[scenario].transcription, 'utf8'));
+    const stops = Object.values(datasetDoc.doc.data).find((v) => Array.isArray(v) && v.length >= 2 && typeof v[0] === 'object') ?? [];
+    return { definitions, unpublished: pending.map((p) => p.f), dataset: { file: datasetDoc.f, problems, ...(transcription && { transcription: scoreTranscription(stops, transcription.stops) }) } };
+  }
   const data = datasetDoc.doc.data;
   const stops = Object.values(data).find((v) => Array.isArray(v) && v.length >= 20 && typeof v[0] === 'object') ?? [];
   const column = (expected) => {
@@ -288,6 +292,31 @@ if (evaluateOnly) {
   console.log(JSON.stringify(await evaluateCandidates(resolve(evaluateOnly)), null, 1));
   process.exit(0);
 }
+/**
+ * 按人工转录真值给站点打分（没有专家数据集的场景）。站名按名字对齐，不按位置，免得漏一站后全部错位；
+ * 地标比较 res:landmark-N 的 N，设施比较文本列表（地铁、医院）。
+ */
+function scoreTranscription(stops, truthStops) {
+  const truthNames = truthStops.map((t) => t.name);
+  const nameKey = [...new Set(stops.flatMap((s) => Object.keys(s)))]
+    .map((k) => [k, stops.filter((s) => truthNames.includes(String(s[k]).replace(CIRCLED, '').trim())).length]).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const names = stops.map((s) => String(s[nameKey] ?? '').replace(CIRCLED, '').trim());
+  const byName = new Map(stops.map((s, i) => [names[i], s]));
+  const landmarkOf = (s) => { const m = Object.values(s ?? {}).map(String).join(' ').match(/res:landmark-(\d+)/); return m ? Number(m[1]) : undefined; };
+  const facilitiesOf = (s) => Object.values(s ?? {}).filter((v) => Array.isArray(v) && v.every((x) => typeof x === 'string' && !x.startsWith('res:'))).flat().sort().join('+');
+  const found = truthStops.filter((t) => byName.has(t.name));
+  return {
+    stops: `${stops.length}/${truthStops.length}`,
+    namesExact: found.length, namesInOrder: lcs(names, truthNames),
+    missing: truthStops.filter((t) => !byName.has(t.name)).map((t) => t.name),
+    unexpected: names.filter((n) => !truthNames.includes(n)),
+    landmarks: { matched: found.filter((t) => t.landmark && landmarkOf(byName.get(t.name)) === t.landmark).length, of: truthStops.filter((t) => t.landmark).length,
+      extra: found.filter((t) => !t.landmark && landmarkOf(byName.get(t.name)) !== undefined).length },
+    facilities: { matched: found.filter((t) => t.facilities && facilitiesOf(byName.get(t.name)) === [...t.facilities].sort().join('+')).length, of: truthStops.filter((t) => t.facilities).length,
+      extra: found.filter((t) => !t.facilities && facilitiesOf(byName.get(t.name)) !== '').length },
+  };
+}
+
 // ---- template ----
 async function template() {
   const dir = join(out, 'template'), agent = join(dir, 'agent'), workspace = join(agent, 'workspace');
@@ -299,7 +328,7 @@ async function template() {
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(HERE, 'template-reference.md'), join(agent, 'docs/template-reference.md'));
   await copyLayers(agent, 'template');
-  const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources', workspace,
+  const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources,view_image', workspace,
     prompt: await readFile(join(HERE, 'prompt-template.md'), 'utf8'), maxTurns: Number(opt('max-turns', '60')) });
   const request = { dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 120, format: 'png' }, mode: 'draft' };
   const candidate = await renderAndCompare(workspace, { ...request, template: '线路牌主模板' }, join(dir, 'render-120.png'));
@@ -334,7 +363,7 @@ async function stressTemplates(subjects, dir) {
         output: { width, height: 165, dpi: 30, format: 'png' }, mode: 'draft' });
       const severe = r.problems.filter((p) => p.level === 'severe');
       row[who] = { severe: severe.length, hint: r.problems.length - severe.length, codes: [...new Set(severe.map((p) => p.code))] };
-      if (r.image) await writeFile(join(dir, `${who}-${label.replace(/s+/g, '-')}.png`), r.image.bytes);
+      if (r.image) await writeFile(join(dir, `${who}-${label.replace(/\s+/g, '-')}.png`), r.image.bytes);
     }
     rows.push(row);
   }
@@ -395,7 +424,7 @@ async function roadAlign(workspaceDir) {
     (function walk(v) {
       if (Array.isArray(v)) return v.forEach(walk);
       if (!v || typeof v !== 'object') return;
-      if (v.type === 'text' && Array.isArray(v.content) && v.content.some((c) => typeof c.slot === 'string' && /(^|.)road$/.test(c.slot))) aligns.push(v.horizontalAlign ?? 'start');
+      if (v.type === 'text' && Array.isArray(v.content) && v.content.some((c) => typeof c.slot === 'string' && /(^|\.)road$/.test(c.slot))) aligns.push(v.horizontalAlign ?? 'start');
       Object.values(v).forEach(walk);
     })(doc);
   }
