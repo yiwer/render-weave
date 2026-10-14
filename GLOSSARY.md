@@ -223,10 +223,10 @@ _Avoid_: 拼接
 面向数据定义提取、数据集提取、模板辅助设计或模板辅助修改的委托任务。执行 agent 通过 MCP 服务使用 RenderWeave 的渲染等能力。
 
 **MCP 服务（RenderWeave MCP Server）**：
-RenderWeave 为执行 agent 提供工具的 MCP 服务器，只有读取、校验、草稿预览、识别四类只读工具；agent 在 CloudKiln 云沙箱中运行，经 CloudKiln 的 MCP 支持接入。
+RenderWeave 为执行 agent 提供工具的 MCP 服务器，只有读取、校验、草稿预览、识别四类只读工具；agent 以 Claude Code 无头运行，经 MCP 连接本服务（ADR-0015）。
 
 **任务轮次（Task Round）**：
-业务 Agent 任务中的一次执行，对应一个 CloudKiln Task；输入为素材、上一轮成果与反馈。
+业务 Agent 任务中的一次执行，即一次 Claude Code 无头运行（ADR-0015）；输入为素材、上一轮成果与反馈。
 _Avoid_: 会话、Attempt
 
 **素材（Source Material）**：
@@ -238,7 +238,7 @@ _Avoid_: 观察结果
 
 **任务成果（Task Outcome）**：
 一轮执行以文件交回的候选内容、待确认项、来源证据与说明；经人审核后才能应用。
-_Avoid_: 产物（指 CloudKiln 交付的文件本身）
+_Avoid_: 产物
 
 **待确认项（Pending Item）**：
 任务成果中需要人确认的值，原因为看不清、推测、来源冲突或必填未提供。

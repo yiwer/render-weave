@@ -1,10 +1,13 @@
 // M190 Agent 运行方式验证：Claude Code（-p）加 Qwen token plan 的 Anthropic 兼容端点。
 //
-// 用法：node scripts/m190/run.mjs <输出目录> [--steps vision,loop,design] [--model qwen3.8-max] [--vision-models a,b]
+// 用法：node scripts/m190/run.mjs <输出目录> [--steps vision,loop,design,template] [--model qwen3.8-max] [--vision-models a,b] [--hints <文档>] [--max-turns 60]
+//       node scripts/m190/run.mjs --evaluate <候选目录>   只评估已有候选，不调用模型
 //   vision：直接调兼容端点，各模型转录 M402 示例图，与专家数据集对照。
 //   loop：Agent 用 Read 看示例图，再调 MCP 草稿预览工具并读返回的图片。工作区副本埋了两个只在预览图上出现的标记
 //         （第 23 站改名、票价改为 7），答出这两个值才算看到了工具返回的图。
-//   design：Agent 只拿到示例图与 DSL 参考，产出数据定义与数据集候选；引擎重新校验，再与专家版逐项对照。
+//   design：Agent 只拿到示例图与 DSL 参考（--hints 时另附领域约定），产出数据定义与数据集候选；引擎重新校验，再与专家版逐项对照。
+//   template：Agent 拿到示例图、模板 DSL 参考与专家版数据定义和数据集，写模板并用草稿预览迭代；引擎按 120 DPI 重新出图，
+//             与示例图比较缩小后的像素差，并给出专家模板的同一指标作参照。
 //
 // key 只从环境变量 QWEN_TOKEN_PLAN_API_KEY 读取（Windows 上本进程没有时读用户级环境变量），不打印、不写文件。
 // Claude Code 子进程的环境从空白开始，只放系统必需变量与 Qwen 配置，配置目录独立，不继承宿主的 CLAUDE_*/ANTHROPIC_* 变量与登录凭据；
@@ -25,14 +28,16 @@ const RESOURCES = join(REPO, 'fixtures/resources');
 
 const argv = process.argv.slice(2);
 const opt = (name, fallback) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : fallback; };
-const out = resolve(argv[0] ?? 'out/m190');
+const out = resolve(argv[0]?.startsWith('--') ? 'out/m190' : argv[0] ?? 'out/m190');
 const steps = opt('steps', 'vision,loop,design').split(',');
 const model = opt('model', 'qwen3.8-max');
 const visionModels = opt('vision-models', 'qwen3.8-max,qwen3.7-plus').split(',');
+const hints = opt('hints'); // design 步骤附带的领域约定文档（复制为 docs/domain-hints.md）
 
-const KEY = readKey();
+const evaluateOnly = opt('evaluate');
+const KEY = evaluateOnly ? undefined : readKey();
 const truth = JSON.parse(await readFile(join(EXAMPLE, 'dataset-m402.json'), 'utf8')).data;
-await mkdir(out, { recursive: true });
+if (!evaluateOnly) await mkdir(out, { recursive: true });
 const report = { model, endpoint: ENDPOINT, startedAt: new Date().toISOString() };
 
 function readKey() {
@@ -165,12 +170,13 @@ async function design() {
   await mkdir(join(agent, 'docs'), { recursive: true });
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(HERE, 'dsl-reference.md'), join(agent, 'docs/dsl-reference.md'));
+  if (hints) await copyFile(resolve(hints), join(agent, 'docs/domain-hints.md'));
   const run = await runAgent({ name: 'design', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'check_definitions,check_dataset,list_resources',
     workspace: EXAMPLE, prompt: await readFile(join(HERE, 'prompt-design.md'), 'utf8'), maxTurns: 40 });
   await cp(join(agent, 'candidates'), join(dir, 'candidates'), { recursive: true });
   const evaluation = await evaluateCandidates(join(agent, 'candidates'));
   console.log('design', JSON.stringify(evaluation.dataset ?? {}), `${run.wallMs} ms`);
-  return { run, evaluation };
+  return { hints: hints ?? null, run, evaluation };
 }
 
 async function evaluateCandidates(dir) {
@@ -209,6 +215,27 @@ async function evaluateCandidates(dir) {
   };
   const times = Object.values(data).find((v) => Array.isArray(v) && v.length > 3 && v.every((t) => /^\d\d:\d\d/.test(String(t)))) ?? [];
   const values = Object.values(data).filter((v) => typeof v !== 'object').map(String);
+  // 专家版的 5 条领域约定（M77、M97、M24、M30/M62 与票价拆分），逐站或逐项核对。
+  const arrayKey = (pick) => [...new Set(stops.flatMap((s) => Object.keys(s)))].find((k) => stops.some((s) => Array.isArray(s[k]) && pick(s[k])));
+  const badgeKey = arrayKey((v) => v.every((x) => typeof x === 'string' && !x.startsWith('res:')));
+  const badgeOf = (s) => badgeKey && Array.isArray(s[badgeKey]) ? [...s[badgeKey]].sort().join('+') : '';
+  const conventions = {
+    landmarks: {
+      matched: stops.filter((s, i) => truth.stops[i]?.landmark && Object.values(s).includes(truth.stops[i].landmark)).length,
+      of: truth.stops.filter((s) => s.landmark).length,
+      extra: stops.filter((s, i) => !truth.stops[i]?.landmark && Object.values(s).some((v) => String(v).startsWith('res:landmark'))).length,
+    },
+    badges: {
+      key: badgeKey ?? null,
+      matched: stops.filter((s, i) => truth.stops[i]?.badges && badgeOf(s) === [...truth.stops[i].badges].sort().join('+')).length,
+      of: truth.stops.filter((s) => s.badges).length,
+      extra: stops.filter((s, i) => !truth.stops[i]?.badges && (badgeOf(s) !== '' || Object.values(s).some((v) => /^res:icon-/.test(String(v))))).length,
+    },
+    fareIsNumber: Object.values(data).some((v) => typeof v === 'number' && v === truth.fare),
+    noTerminalField: !values.includes(truth.stops.at(-1).name),
+    noCurrentStop: !Object.keys(data).some((k) => /current|index/i.test(k)),
+    routeNoText: values.includes(truth.routeNo),
+  };
   return {
     definitions, unpublished: pending.map((p) => p.f),
     dataset: {
@@ -216,17 +243,68 @@ async function evaluateCandidates(dir) {
       names: column(truth.stops.map((s) => s.name)), roads: column(truth.stops.map((s) => s.road)),
       circledSuffixes: stops.filter((s) => Object.values(s).some((v) => typeof v === 'string' && CIRCLED.test(v))).length,
       landmarkRefs: stops.filter((s) => Object.values(s).some((v) => String(v).startsWith('res:landmark'))).length,
-      times: lcs(times, truth.departureTimes),
+      times: lcs(times, truth.departureTimes), extraTimes: times.length - lcs(times, truth.departureTimes),
+      conventions,
       headerValues: Object.fromEntries(['routeNo', 'fare', 'fareType', 'operator', 'firstDeparture', 'lastDeparture', 'serviceNote', 'scheduleType']
         .map((k) => [k, values.includes(String(truth[k])) ? '一致' : values.some((v) => !v.startsWith('res:') && v.includes(String(truth[k]))) ? '并入其他字段' : '缺']))
     },
   };
 }
 
+if (evaluateOnly) {
+  console.log(JSON.stringify(await evaluateCandidates(resolve(evaluateOnly)), null, 1));
+  process.exit(0);
+}
+// ---- template ----
+async function template() {
+  const dir = join(out, 'template'), agent = join(dir, 'agent'), workspace = join(agent, 'workspace');
+  await mkdir(workspace, { recursive: true });
+  await mkdir(join(agent, 'docs'), { recursive: true });
+  for (const f of ['schema-stop-v1.json', 'schema-route-sign-v1.json', 'compiled-stop-v1.schema.json', 'compiled-route-sign-v1.schema.json', 'dataset-m402.json']) {
+    await copyFile(join(EXAMPLE, f), join(workspace, f));
+  }
+  await copyFile(SAMPLE, join(agent, 'sample.png'));
+  await copyFile(join(HERE, 'template-reference.md'), join(agent, 'docs/template-reference.md'));
+  if (hints) await copyFile(resolve(hints), join(agent, 'docs/domain-hints.md'));
+  const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources', workspace,
+    prompt: await readFile(join(HERE, 'prompt-template.md'), 'utf8'), maxTurns: Number(opt('max-turns', '60')) });
+  const request = { dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 120, format: 'png' }, mode: 'draft' };
+  const candidate = await renderAndCompare(workspace, { ...request, template: '线路牌主模板' }, join(dir, 'render-120.png'));
+  const expert = await renderAndCompare(EXAMPLE, { ...request, template: '标准线路单边' }, join(dir, 'expert-120.png'));
+  const templates = (await readdir(workspace)).filter((f) => f.endsWith('.json') && !/^(schema|compiled|dataset)-/.test(f));
+  console.log('template', JSON.stringify({ templates: templates.length, candidate, expert }), `${run.wallMs} ms`);
+  return { hints: hints ?? null, run, templates, candidate, expert };
+}
+
+/** 草稿出图（有严重问题也出图），按 8 倍缩小后与示例图逐像素比较：相似度 = 1 − 平均绝对差 / 255。 */
+async function renderAndCompare(workspaceDir, request, file) {
+  const engine = await import(pathToFileURL(join(REPO, 'dist/index.js')).href);
+  const { loadCanvasKit } = await import(pathToFileURL(join(REPO, 'dist/canvaskit.js')).href);
+  const workspace = await engine.loadWorkspace({ dir: workspaceDir, resourcesDir: RESOURCES });
+  const result = await engine.render(workspace, request);
+  const problems = { severe: result.problems.filter((p) => p.level === 'severe').length, hint: result.problems.filter((p) => p.level === 'hint').length };
+  if (!result.image) return { problems, image: false };
+  await writeFile(file, result.image.bytes);
+  const ck = await loadCanvasKit();
+  const shrink = (bytes) => {
+    const image = ck.MakeImageFromEncoded(bytes);
+    const surface = ck.MakeSurface(437, 98);
+    surface.getCanvas().drawImageRect(image, ck.XYWHRect(0, 0, image.width(), image.height()), ck.XYWHRect(0, 0, 437, 98), new ck.Paint());
+    const pixels = surface.makeImageSnapshot().readPixels(0, 0, { width: 437, height: 98, colorType: ck.ColorType.RGBA_8888, alphaType: ck.AlphaType.Unpremul, colorSpace: ck.ColorSpace.SRGB });
+    image.delete(); surface.delete();
+    return pixels;
+  };
+  const a = shrink(result.image.bytes), b = shrink(await readFile(SAMPLE));
+  let sum = 0, n = 0;
+  for (let i = 0; i < a.length; i += 4) for (let c = 0; c < 3; c++) { sum += Math.abs(a[i + c] - b[i + c]); n++; }
+  return { problems, size: `${result.image.widthPx}×${result.image.heightPx}`, similarity: Number((1 - sum / n / 255).toFixed(4)) };
+}
+
 for (const step of steps) {
   if (step === 'vision') report.vision = await vision();
   else if (step === 'loop') report.loop = await loop();
   else if (step === 'design') report.design = await design();
+  else if (step === 'template') report.template = await template();
   await writeFile(join(out, 'report.json'), JSON.stringify(report, null, 2));
 }
 console.log(`报告：${join(out, 'report.json')}`);

@@ -12,7 +12,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
-- **下一步**：阶段 3。M190 已验证（[Agent 运行方式验证](docs/agent-validation.md)，M209–M211）：Claude Code 加 qwen3.8-max 能看示例图与预览图、调用渲染工具，数据定义候选只需少量返工。接下来：把 5 条领域约定写成 Agent 的领域提示，用 `node scripts/m190/run.mjs <输出目录> --steps design` 复测；测模板生成；改写 ADR-0009。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`，不贴在对话里。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+- **下一步**：阶段 3。Agent 运行方式已验证（[Agent 运行方式验证](docs/agent-validation.md)，M209–M214，ADR-0015）：Claude Code 加 qwen3.8-max 能看图、调用渲染工具；带领域约定时数据定义候选只需改 1–2 处，模板生成首测 23 分钟出 0 问题的 5 个模板、专家改 3 处。接下来：把模板层约定补进领域约定文档并复测模板生成；用 366 参考图测推广；把模板 DSL 参考整理为 DSL 1.0 并给出 JSON Schema。验证命令 `node scripts/m190/run.mjs <输出目录> --steps …`，key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -43,7 +43,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/stage1-acceptance.md](docs/stage1-acceptance.md) | 阶段收尾审查、可靠性/鲁棒性/可用性、修复结果与 DSL 能力边界 |
 | [docs/stage2-acceptance.md](docs/stage2-acceptance.md) | 第二阶段全新环境复跑、跨平台比对、指南实测、两轴审查与服务前要求 |
 | [docs/roadmap.md](docs/roadmap.md) | 产品定位、形态、v1.0 代建模式、阶段与稳定版本、待定的难逆转事项 |
-| [docs/agent-validation.md](docs/agent-validation.md) | M190 Agent 运行方式验证：看图、工具闭环、数据定义候选质量、模型取舍与复现 |
+| [docs/agent-validation.md](docs/agent-validation.md) | M190 Agent 运行方式验证与阶段 3 首测：看图、工具闭环、数据定义候选、领域约定复测、模板生成、模型取舍与复现 |
 | [docs/guide.md](docs/guide.md) | 首次使用指南：导入资源、批量交付、失败定位、替换与独立重放 |
 | [docs/examples/m402-design-analysis.md](docs/examples/m402-design-analysis.md) | 真实设计稿对照模型 |
 | [docs/examples/m402-dsl/](docs/examples/m402-dsl/README.md) | 数据定义 DSL、编译产物、数据集、模板 DSL、渲染请求草稿 |
@@ -66,7 +66,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **模板**：模板是出图函数，所有模板地位平等，沿数据定义引用组合为子模板与循环模板，作用域不继承（ADR-0007）。模板变量分数据字段、模板参数（对外、内部）、派生变量；派生变量是单步运算按名组合，不引入文本表达式（ADR-0004）。模板没有版本，可直接修改与升级基准版本。
 - **呈现**：画板以毫米为单位并声明适用尺寸范围；13 种元素；一块线路牌上站名字号一致，默认 10 mm；站数增加先收窄列间留白，列内不足才统一缩字，最小可读字号 5 mm；长站名仅沿竖排方向压缩字形（最低 60%）。366 参考图的 59 列已验证，见 M135–M136。
 - **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
-- **Agent**：只读工具提供读取、校验、草稿预览、识别；成果经人审核应用（ADR-0001、ADR-0003）。ADR-0009 的 CloudKiln 执行方式已不可用（M189），本地已验证 Claude Code 加 Qwen 兼容端点（M209），ADR 待阶段 3 改写。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
+- **Agent**：只读工具提供读取、校验、草稿预览、识别；成果经人审核应用（ADR-0001、ADR-0003）。业务 Agent 每轮是一次受限模式的 Claude Code 无头运行，经兼容端点调用 Qwen，只连只读 MCP 服务（ADR-0015，取代 CloudKiln 方案 ADR-0009）。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
 
 ## 开发
 
@@ -84,7 +84,7 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 ## 尚待实测
 
 - OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
-- Agent 生成模板（阶段 3）：示例图 → 模板需要几轮、多少人工；数据定义部分已验证（M211）。
+- Agent 生成模板的稳定性与推广：首测 1 次（M214），需补测带模板层约定的多次运行与 366 参考图。
 
 ## 外部来源
 

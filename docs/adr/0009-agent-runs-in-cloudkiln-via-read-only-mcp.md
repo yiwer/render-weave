@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0015
 ---
 
 # 业务 Agent 任务在 CloudKiln 云沙箱执行，经只读 MCP 使用能力，成果以文件交回
