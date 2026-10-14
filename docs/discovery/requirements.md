@@ -479,6 +479,14 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 |---|---|
 | M200 | 根因：初始化以硬链接发布首份清单并删除临时名，Windows 上约 2% 的新仓库此后无法 rename 替换 `resources.json`。该文件可删除、可独占打开，持续 15 秒以上且跨进程不恢复，所以首次导入持续 EPERM，M179 的有限重试无效。并发压测中旧代码 960 次失败 3–21 次；纯文件系统对照下，link 发布 640 次失败 13 次，rename 发布 0 次。修复为初始化持锁确认尚无清单后以 rename 发布，与导入共用提交与重试循环；所有写者持锁，不覆盖语义不变。单元测试复现率过低，回归门槛为 `scripts/stress-resource-commit.mjs`（8 路 × 120 轮，旧构建 3 轮全红、修复后全过）；修复后 Windows 全量连续 6 轮无 EPERM。出图记录的完成清单发布后不再替换，继续用硬链接 |
 
+以下为第二阶段票据 13（阶段验收）的决定：
+
+| 编号 | 决定 |
+|---|---|
+| M201 | 全新环境复跑方式：两个平台都用同一工作树快照（临时索引 `git write-tree` 加 `git archive`，不含被忽略文件），在空目录安装；Windows 在本机解包，Linux 在 Docker `node:22-alpine` 容器内解包并 `npm ci`，不挂载宿主 `node_modules`。随后各自下载固定字体、构建、类型检查、全量测试，由 `scripts/accept-stage2.mjs` 依次运行全部验收脚本与资源提交压测并收集成果指纹，再用 `scripts/compare-platforms.mjs` 比较。指纹覆盖图片、问题清单、布局摘要、出图记录、批次与预览清单及各脚本的哈希文件。记录 `input.json` 为每份文档保存交付机上的路径（`source`），比较前把这些绝对路径换成占位符，`record.json` 中 `input.json` 的哈希相应替换，其余逐字节比较（PRD A14：路径不参与比较）。取消验收在随机时刻强杀进程，长批次已逐项自检，二者只用各自断言，不比目录。另用两个平台各自的全新构建互相重放对方交付的出图记录。 |
+| M202 | `docs/guide.md` 是首次使用者的唯一入口：准备、复制工作区、导入资源、35 项交付、失败定位、检查后替换、脱离原工作区重放、记录内容与交接、退出码与常见问题，命令在 PowerShell 与 Linux shell 下各给一种写法；README 链接到它。A15 按指南逐条执行，Windows 用 PowerShell 写法、Linux 用 shell 写法各走一次，记录命令、退出码与成果。 |
+| M203 | 两轴审查无阻断项。顺手修正：`renderer-build.ts` 的英文注释、CLI 头注释缺 `record-read`/`replay`/`resources-*` 退出码、README 与资源版本说明中的过期能力描述。转为后续独立任务、本阶段不改：批量项找不到数据集或静态定义时报 `record.invalid`，而单次渲染给出 `input.datasetNotFound` 等精确问题码（Spec P2，指南已说明看 `message`）；`record-input.ts` 与 `resource-impact.ts` 各自遍历资源引用，新增元素需两处同改（Standards P2）；条形码与二维码布局重复像素对齐和颜色检查（Standards P3）。 |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

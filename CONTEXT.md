@@ -10,9 +10,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 - 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
-- 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：共 13 张 tracer-bullet 票据，阻塞关系见[索引](.scratch/local-production-output/README.md)。
-- **下一步**：票据 13 [全新环境阶段验收](.scratch/local-production-output/issues/13-stage2-cross-platform-acceptance.md)，阻塞已全部解除。Windows 全量测试偶发的资源清单 EPERM 已查明并修复（M200），回归门槛为 `scripts/stress-resource-commit.mjs`。领取规则见 [issue tracker](docs/agents/issue-tracker.md)「领取票据」。
-- 接入服务前，须先补资源隔离验证。
+- 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
+- **下一步**：按 M189、M190 验证 Agent 运行方式，用 Claude Code 加 Qwen token plan key 跑通看图（示例图与预览图）并调用渲染工具的最小闭环；key 由用户通过环境变量提供，不贴在对话里。审查转出的两项后续见 M203。
+- 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
 
@@ -40,6 +40,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/examples/route-sign.md](docs/examples/route-sign.md) | 线路牌走查：演示 A–D（同名站点、站数与长站名、素材不完整、辅助修改） |
 | [docs/examples/m402-acceptance.md](docs/examples/m402-acceptance.md) | 首期端到端验收、场景结果、参考图差异与复现命令 |
 | [docs/stage1-acceptance.md](docs/stage1-acceptance.md) | 阶段收尾审查、可靠性/鲁棒性/可用性、修复结果与 DSL 能力边界 |
+| [docs/stage2-acceptance.md](docs/stage2-acceptance.md) | 第二阶段全新环境复跑、跨平台比对、指南实测、两轴审查与服务前要求 |
+| [docs/guide.md](docs/guide.md) | 首次使用指南：导入资源、批量交付、失败定位、替换与独立重放 |
 | [docs/examples/m402-design-analysis.md](docs/examples/m402-design-analysis.md) | 真实设计稿对照模型 |
 | [docs/examples/m402-dsl/](docs/examples/m402-dsl/README.md) | 数据定义 DSL、编译产物、数据集、模板 DSL、渲染请求草稿 |
 | [docs/adr/](docs/adr/) | 难以逆转、需要解释的决定 |

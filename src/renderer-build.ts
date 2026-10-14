@@ -29,7 +29,7 @@ export async function rendererBuildId(): Promise<string> {
     const metadata = JSON.parse(await readFile(join(packageDir, 'package.json'), 'utf8'));
     const require = createRequire(join(packageDir, 'package.json'));
     for (const name of Object.keys(metadata.dependencies ?? {}).sort()) {
-      // package.json may be hidden by exports; locate the owning package from its resolved entry.
+      // 包的 exports 可能不暴露 package.json；此时从解析到的入口文件向上找到所属包目录。
       let resolved: string;
       try { resolved = require.resolve(`${name}/package.json`); }
       catch { resolved = require.resolve(name); }

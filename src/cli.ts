@@ -7,6 +7,9 @@
  * - deliver：批量正式交付或草稿预览到新批次目录，逐项进度写到标准错误流，汇总写到标准输出。
  *   退出码：0 全部项已交付（草稿为全部已预览，可能仍有严重问题）；1 整批拒绝、部分失败或未执行、汇总未写出；2 用法错误或请求/选项无法读取；130 已取消。
  * - batch-read：辨认批次目录。退出码：0 batch.json 已发布，运行已结束；1 运行未完成（没有 batch.json）或目录无法读取；2 用法错误。
+ * - record-read、replay：完整读取一项出图记录，或按确切构建重新渲染并比对。退出码：0 完整读取或重放一致；1 完整性、构建、渲染或文件失败；2 用法错误。
+ * - resources-init、resources-import、resources-list、resources-get、resources-check、resources-apply：资源版本仓库维护。
+ *   退出码：0 成功；1 仓库、内容、检查、冲突或文件失败；2 用法错误。
  */
 import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
