@@ -77,8 +77,16 @@ export function parseDatasetDocument(value: unknown): DatasetDocument | string {
   if (!isRecord(value) || !isRecord(value['dataset']) || !('data' in value)) {
     return '数据集必须由 dataset（身份）与 data（数据）两部分组成';
   }
+  // 未知键报错，不静默忽略（M223）：根只有 dataset 与 data；身份部分的其他键（名称、来源等）不作要求。
+  const extra = Object.keys(value).filter((key) => key !== 'dataset' && key !== 'data');
+  if (extra.length > 0) return `数据集只能有 dataset 与 data 两部分，不能有 ${extra.join('、')}`;
   const identity = value['dataset'];
-  const staticSchema = parseStaticSchemaRef(identity['staticSchema']);
+  const schemaRef = identity['staticSchema'];
+  if (isRecord(schemaRef)) {
+    const unknown = Object.keys(schemaRef).filter((key) => key !== 'name' && key !== 'version');
+    if (unknown.length > 0) return `数据集的 dataset.staticSchema 只能写 name 与 version，不能有 ${unknown.join('、')}`;
+  }
+  const staticSchema = parseStaticSchemaRef(schemaRef);
   if (!staticSchema) return '数据集的 dataset.staticSchema 必须写明静态数据定义的名称与版本号';
   if (identity['id'] !== undefined && typeof identity['id'] !== 'string') return '数据集的 dataset.id 必须是文本';
   return { dataset: { ...identity, staticSchema }, data: value['data'] };

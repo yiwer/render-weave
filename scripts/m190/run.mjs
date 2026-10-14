@@ -194,7 +194,8 @@ async function design() {
   await mkdir(join(agent, 'candidates'), { recursive: true });
   await mkdir(join(agent, 'docs'), { recursive: true });
   await copyFile(SAMPLE, join(agent, 'sample.png'));
-  await copyFile(join(HERE, 'dsl-reference.md'), join(agent, 'docs/dsl-reference.md'));
+  // Agent 参考的事实源在 agent/reference/（第三阶段票据 01）；在 Agent 工作目录中沿用 dsl-reference.md 这个文件名。
+  await copyFile(join(REPO, 'agent/reference/data-definition.md'), join(agent, 'docs/dsl-reference.md'));
   await copyLayers(agent, 'design');
   const run = await runAgent({ name: 'design', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'check_definitions,check_dataset,list_resources,view_image',
     workspace: EXAMPLE, prompt: await readFile(join(HERE, 'prompt-design.md'), 'utf8'), maxTurns: 40 });

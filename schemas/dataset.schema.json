@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:dsl:1:dataset",
+  "title": "RenderWeave 数据集文档（DSL 1.0）",
+  "description": "数据集由身份（dataset）与业务数据（data）组成。本 Schema 只检查外层结构；data 按所选静态数据定义的编译产物校验（ADR-0006），由引擎完成，见 docs/dsl/data-definition.md「Schema 之外的检查」。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dataset", "data"],
+  "properties": {
+    "dataset": {
+      "type": "object",
+      "required": ["staticSchema"],
+      "properties": {
+        "id": { "type": "string", "description": "数据集 ID；工作区中的数据集必须有，内联在渲染请求中时可省略" },
+        "staticSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "version": { "type": "integer", "minimum": 1 }
+          },
+          "description": "所选静态数据定义的确切版本（ADR-0008）"
+        }
+      },
+      "description": "身份部分。除 id 与 staticSchema 外，可写名称（name）、来源（origin）等说明性内容，引擎不作要求"
+    },
+    "data": { "description": "业务数据，按所选静态数据定义的编译产物校验" }
+  }
+}

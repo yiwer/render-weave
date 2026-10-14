@@ -56,7 +56,7 @@ Agent 先用 Read 看示例图，再调用 `render_draft` 读回预览图。工�
 
 ## 验证点 3：数据定义与数据集候选
 
-**任务**：Agent 只拿到示例图和一份 DSL 参考（`scripts/m190/dsl-reference.md`）。参考里只有语法和一个商品价签的例子，不含任何 M402 内容。Agent 用 Write 写候选，用 MCP 工具校验。运行结束后，由引擎独立重新校验，再与专家版对照。
+**任务**：Agent 只拿到示例图和一份 DSL 参考（当时的 `scripts/m190/dsl-reference.md`，现为 `agent/reference/data-definition.md`，示例已按 M222 改为会议胸牌）。参考里只有语法和一个商品价签的例子，不含任何 M402 内容。Agent 用 Write 写候选，用 MCP 工具校验。运行结束后，由引擎独立重新校验，再与专家版对照。
 
 ### 三次运行
 

@@ -72,8 +72,10 @@ class DefinitionReader {
       if (ref) version = ref.version;
       else this.fail('', '版本号 version 必须是正整数');
     }
-    const displayName = document['displayName'] ?? name;
+    // null 不当作"没写"（M223），与 JSON Schema 一致。
+    const displayName = document['displayName'] === undefined ? name : document['displayName'];
     if (typeof displayName !== 'string' || displayName.trim() === '') this.fail('', '显示名称 displayName 必须是文本');
+    if (document['description'] !== undefined && typeof document['description'] !== 'string') this.fail('', '说明 description 必须是文本');
 
     const fieldsValue = document['fields'];
     const fields: FieldModel[] = [];
@@ -114,7 +116,7 @@ class DefinitionReader {
     }
     if (value['description'] !== undefined && typeof value['description'] !== 'string') this.fail(name, '说明 description 必须是文本');
 
-    const constraints = value['constraints'] ?? {};
+    const constraints = value['constraints'] === undefined ? {} : value['constraints'];
     let required = false;
     if (isRecord(constraints) && 'required' in constraints) {
       if (typeof constraints['required'] !== 'boolean') this.fail(`${name}.constraints`, 'required 必须是 true 或 false');
@@ -134,7 +136,7 @@ class DefinitionReader {
     }
     const fieldType = type as (typeof TYPES)[number];
     const constraintsPath = `${path}.constraints`;
-    const constraintsValue = value['constraints'] ?? {};
+    const constraintsValue = value['constraints'] === undefined ? {} : value['constraints'];
     if (!isRecord(constraintsValue)) {
       this.fail(constraintsPath, 'constraints 必须是对象');
       return undefined;
@@ -162,6 +164,7 @@ class DefinitionReader {
       case 'boolean':
         return { type: fieldType };
       case 'ref': {
+        if (isRecord(value['ref'])) this.checkKeys(value['ref'], ['name', 'version'], `${path}.ref`, '引用');
         const ref = parseStaticSchemaRef(value['ref']);
         if (!ref) {
           this.fail(path, '引用类型必须用 ref 写明被引用的静态数据定义名称与版本号，如 { "name": "停靠站点", "version": 1 }');
@@ -275,7 +278,7 @@ class DefinitionReader {
   }
 
   private readImage(c: Record<string, unknown>, path: string): ValueModel | undefined {
-    const sources = c['allowedSources'] ?? ['resource', 'url'];
+    const sources = c['allowedSources'] === undefined ? ['resource', 'url'] : c['allowedSources'];
     if (
       !Array.isArray(sources) ||
       sources.length === 0 ||
