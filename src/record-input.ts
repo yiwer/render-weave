@@ -196,10 +196,9 @@ function collect(documents: RecordDocuments, rootTemplate: string, configured: R
     }
     const scanStyle = (style: Record<string, unknown>, type: unknown, target: unknown): void => {
       if (type === 'image') add(style.source, 'image');
-      if (type === 'text') {
-        add(style.font, 'font');
-        if (Array.isArray(style.content)) for (const fragment of style.content) if (isRecord(fragment)) add(fragment.font, 'font');
-      }
+      // 条形码下方文字的字体不能绑定变量，只能固定或由状态样式切换；关闭文字时同样固定，记录不随显示与否变化。
+      if (type === 'text' || type === 'barcode') add(style.font, 'font');
+      if (type === 'text' && Array.isArray(style.content)) for (const fragment of style.content) if (isRecord(fragment)) add(fragment.font, 'font');
       if ((type === 'call' || type === 'loop') && typeof target === 'string' && isRecord(style.args)) {
         const args = style.args;
         for (const parameter of models.get(target)!.parameters) if (parameter.type === 'image') {
@@ -209,7 +208,6 @@ function collect(documents: RecordDocuments, rootTemplate: string, configured: R
     };
     const scan = (node: unknown): void => {
       if (!isRecord(node)) return;
-      if (node.type === 'qrcode' || node.type === 'barcode') recordFail('码图正式交付留待后续票据', ProblemCodes.deliveryUnsupported);
       scanStyle(node, node.type, node.template);
       if (isRecord(node.states) && isRecord(node.states.cases)) for (const style of Object.values(node.states.cases)) if (isRecord(style)) scanStyle(style, node.type, node.template);
       if (Array.isArray(node.children)) node.children.forEach(scan);

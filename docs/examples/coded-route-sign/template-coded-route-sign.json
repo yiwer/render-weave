@@ -1,0 +1,60 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "带码线路牌",
+  "base": { "name": "线路牌", "version": 1 },
+  "parameters": [
+    { "name": "currentIndex", "displayName": "本站序号", "type": "number", "visibility": "public", "constraints": { "integer": true, "min": 0, "max": 50 }, "default": 0 },
+    { "name": "queryUrl", "displayName": "查询网址", "type": "text", "visibility": "public" },
+    { "name": "assetNo", "displayName": "资产编号", "type": "text", "visibility": "public" },
+    { "name": "assetFormat", "displayName": "资产码格式", "type": "text", "visibility": "public", "default": "CODE128" }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 850, "max": 850 }, "height": { "min": 165, "max": 165 } },
+    "fill": "#FFFFFF",
+    "layout": { "mode": "grid", "rows": [{ "fraction": 1 }], "columns": [{ "fixed": 740 }, { "fraction": 1 }] },
+    "children": [
+      {
+        "type": "call",
+        "name": "线路牌",
+        "template": "标准线路单边",
+        "data": "current",
+        "args": { "currentIndex": { "var": "currentIndex" } },
+        "place": { "row": 1, "column": 1, "width": "fill", "height": "fill" }
+      },
+      {
+        "type": "container",
+        "name": "码区",
+        "layout": { "mode": "free" },
+        "place": { "row": 1, "column": 2, "width": "fill", "height": "fill" },
+        "children": [
+          {
+            "type": "qrcode",
+            "name": "查询码",
+            "content": { "var": "queryUrl" },
+            "errorCorrectionLevel": "M",
+            "place": { "left": 25, "top": 8, "width": { "fixed": 60 }, "height": { "fixed": 60 } }
+          },
+          {
+            "type": "barcode",
+            "name": "资产码",
+            "format": "CODE128",
+            "content": { "var": "assetNo" },
+            "showText": true,
+            "font": "res:font-hei-regular",
+            "fontSize": 3,
+            "states": {
+              "by": { "var": "assetFormat" },
+              "cases": {
+                "CODE128": {},
+                "EAN-13": { "format": "EAN-13" },
+                "EAN-8": { "format": "EAN-8" },
+                "UPC-A": { "format": "UPC-A" }
+              }
+            },
+            "place": { "left": 5, "top": 85, "width": { "fixed": 100 }, "height": { "fixed": 40 } }
+          }
+        ]
+      }
+    ]
+  }
+}

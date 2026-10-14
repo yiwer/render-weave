@@ -144,7 +144,7 @@ it('草稿、未知属性、无标识、非法选项整批拒绝；严重渲染�
   await expect(fs.stat(join(recordIn(out), 'record.json'))).rejects.toThrow();
   expect((await readOutputRecord({ dir: recordIn(out) })).record).toBeUndefined();
 });
-it.each(['call', 'loop', 'qrcode', 'barcode'])('无效调用或未覆盖的 %s 元素使根模板无法准备，整批拒绝', async (type) => {
+it.each(['call', 'loop', 'qrcode', 'barcode'])('缺少必填属性的 %s 元素使根模板无法准备，整批拒绝', async (type) => {
   const modified = withTemplate(workspace, '问候牌', (document) => document.artboard.children.push({ type, name: 'unsupported' }));
   expect((await deliver({ workspace: modified })).directory).toBeUndefined();
 });

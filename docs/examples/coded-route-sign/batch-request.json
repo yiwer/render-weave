@@ -1,0 +1,12 @@
+{
+  "template": "带码线路牌",
+  "mode": "final",
+  "items": [
+    { "id": "coded-01-code128", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 1, "queryUrl": "https://example.com/routes/M402?stop=1", "assetNo": "RW-M402-000101", "assetFormat": "CODE128" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "coded-02-ean13", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 2, "queryUrl": "https://example.com/routes/M402?stop=2", "assetNo": "0012345678905", "assetFormat": "EAN-13" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "bad-ean13-checksum", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 3, "queryUrl": "https://example.com/routes/M402?stop=3", "assetNo": "0012345678906", "assetFormat": "EAN-13" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "coded-03-ean8", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 3, "queryUrl": "https://example.com/routes/M402?stop=3", "assetNo": "01234565", "assetFormat": "EAN-8" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "coded-04-upca", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 4, "queryUrl": "https://example.com/routes/M402?stop=4", "assetNo": "012345678905", "assetFormat": "UPC-A" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "coded-35-jpeg", "dataset": { "id": "ds-m402-wanguocheng" }, "parameters": { "currentIndex": 35, "queryUrl": "https://example.com/routes/M402?stop=35", "assetNo": "RW-M402-003535", "assetFormat": "CODE128" }, "output": { "width": 850, "height": 165, "dpi": 120, "format": "jpeg" } }
+  ]
+}
