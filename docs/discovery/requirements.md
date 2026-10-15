@@ -533,6 +533,12 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 |---|---|
 | M224 | 模板与请求同样让解析器与 JSON Schema 同进同退：`children`、`place`、`args`、`data`、`fit` 的 `steps`/`compressMin`/`minFontSize`、码元素的 `foreground`/`background`、渲染请求的 `parameters` 写成 `null` 不再当作"没写"；`base`、派生变量的 `ref`、`sizeRange` 及其范围对象不再静默忽略多余键；检查项的 `displayName` 必须是非空文本；渲染请求的 `dataset` 只能是 `{ id }`（非空）与 `{ inline }` 之一。仓库语料中都没有这些写法，全量测试不受影响。`checkDslDocument` 识别全部五种文档。批次请求没有格式标识，`renderweave-batch/1` 是交付后批次清单的标识；此前规格与 ADR-0016 的误写已改正。请求的两份 Schema 各自内嵌数据集文档结构，以测试保证与 `dataset.schema.json` 一致 |
 
+以下为第三阶段票据 03 的实施决定：
+
+| 编号 | 实施决定 |
+|---|---|
+| M225 | `renderweave mcp` 的工具合同 0.3.0，详见 [MCP 工具服务](../mcp.md)。<br>**工具**：10 个只读工具，即 `list_documents`、`read_document`、`list_resources`、`check_definitions`、`check_dataset`、`check_templates`、`render_draft`、`inspect_layout`、`view_image`、`dsl_reference`。<br>**快照与路径**：工作区在启动时读入为快照，本轮内不变，应用时按快照判断工作区是否已变（M51）；读文件的工具只读 `--root` 内的文件，按真实路径判断，经目录联接越界同样拒绝。<br>**草稿预览与元素检查**：<br>• `mode` 只能是 `draft`、`format` 只能是 `png`，写了其他值作为工具错误拒绝，不悄悄改写；<br>• DPI 上限 300、最长边不超过 2000 像素，超出时降低并注明原值；<br>• 工作副本以 `templates` 文件路径传入，按模板名代替或新增，只在本次调用的内存中生效（M49、M50）；`datasetPath` 代替 `request.dataset`。<br>**放大预览**：用户故事 22 的预览放大用 `render_draft` 的 `region`（毫米），按区域大小提高 DPI，不把预览写成文件。<br>**错误与输出**：参数按输入 Schema 校验；不合规、越界与文件不存在作为工具错误返回，便于 Agent 修正，协议错误才用 JSON-RPC 错误。结果是 JSON 文本加图片内容块，问题位置中的宿主路径改写为"工作区/…"。<br>**其他**：资源仓库接口新增 `list()`；`--tools` 可只开放部分工具。`scripts/m190/` 改用本服务，一次性的 `mcp-server.mjs` 删除；模板步骤的工作区改为快照，模板写在 `candidates/` 并以工作副本预览 |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

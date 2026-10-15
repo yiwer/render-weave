@@ -13,7 +13,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
 - 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **下一步**：第三阶段票据 01、02 已完成（DSL 1.0 五种文档的参考、Schema、一致性测试与 ADR-0016）。下一张是 03（`renderweave mcp` 只读工具），之后 04 起为任务闭环。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+- **下一步**：第三阶段票据 01–03 已完成：DSL 1.0 五种文档的参考、Schema、一致性测试与 ADR-0016；`renderweave mcp` 只读工具服务（[说明](docs/mcp.md)，M225）。下一张是 04（一条命令发起数据定义提取），之后为审核、应用与多轮。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -28,7 +28,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
-- **未实现**：URL 图片、跨批次去重、动态模板、服务/MCP/业务 Agent/OCR 接入、在线编辑器。
+- **MCP 只读工具服务**：`renderweave mcp` 提供 10 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大与 DSL 参考。工具合同 0.3.0 有快照测试，见 [MCP 工具服务](docs/mcp.md)。
+- **未实现**：URL 图片、跨批次去重、动态模板、HTTP 服务、业务 Agent 任务闭环（`renderweave agent`）、OCR 接入、在线编辑器。
 
 ## 文档地图
 
@@ -59,6 +60,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/output-records.md](docs/output-records.md) | 批量正式交付、草稿预览、取消与中断辨认、自足重放与故障验收 |
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
 | [docs/dsl/](docs/dsl/README.md) | DSL 1.0 参考：五种文档的写法、Schema 与引擎的分工、Schema 之外的检查、已知限制 |
+| [docs/mcp.md](docs/mcp.md) | `renderweave mcp`：启动、10 个只读工具、草稿预览与元素检查的输入、路径限制、合同版本 |
 | [agent/](agent/reference/data-definition.md) | 交给业务 Agent 的资料：DSL 参考（`agent/reference/`），三层资料将在票据 08 迁入 |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |

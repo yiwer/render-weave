@@ -1,0 +1,310 @@
+{
+  "tools": [
+    {
+      "name": "list_documents",
+      "description": "列出工作区快照中的文档：已发布的静态数据定义（名称、版本、有无编译产物）、模板（名称与基准）、数据集（ID 与所选静态数据定义），以及读取工作区时发现的问题。快照在服务启动时读入，之后不变；不含内置数据定义（空数据定义、单值·文本等）。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    {
+      "name": "read_document",
+      "description": "读取工作区快照中的一份文档，返回 JSON 原文。kind 取 definition（静态数据定义 DSL）、compiled（编译产物 JSON Schema，内置数据定义也能读）、template（模板）或 dataset（数据集）；definition 与 compiled 写 name 与 version，template 写 name，dataset 写 id。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "definition",
+              "compiled",
+              "template",
+              "dataset"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "静态数据定义或模板的名称"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "静态数据定义的版本"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "数据集 ID"
+          }
+        }
+      }
+    },
+    {
+      "name": "list_resources",
+      "description": "列出资源仓库中可引用的资源：资源 ID 与种类（image 或 font）。数据集与模板中写成 res:资源ID。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    {
+      "name": "check_definitions",
+      "description": "按给出的顺序在内存中发布工作目录内的数据定义文件（被引用的放前面），返回每个文件将发布成的名称与版本，以及带位置的问题。版本号接在工作区快照中同名定义之后，也可以引用快照中已发布的定义。includeCompiled 为 true 时附上编译产物。不写任何文件。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "工作目录内的数据定义文件，被引用的放前面"
+          },
+          "includeCompiled": {
+            "type": "boolean",
+            "description": "附上编译产物 JSON Schema，缺省为 false"
+          }
+        }
+      }
+    },
+    {
+      "name": "check_dataset",
+      "description": "校验工作目录内的一份数据集文件：按它选定的静态数据定义的编译产物校验数据，并检查 res: 资源引用。所选定义可以是工作区快照中已发布的，也可以是 definitionPaths 中的候选（先按顺序在内存中发布）。返回带字段路径的问题。不写任何文件。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "工作目录内的数据集文件"
+          },
+          "definitionPaths": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "工作目录内的候选数据定义文件，被引用的放前面"
+          }
+        }
+      }
+    },
+    {
+      "name": "check_templates",
+      "description": "对工作目录内的模板文件（工作副本）做静态检查：结构、变量与类型、调用与循环的基准、参数等。工作副本按模板名代替工作区快照中的同名模板，或作为新模板加入；被调模板先在工作副本中找，再在快照中找。返回带元素路径的问题（同一问题只报一次）。不写任何文件，不改动已保存的模板。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "工作目录内的模板文件"
+          }
+        }
+      }
+    },
+    {
+      "name": "render_draft",
+      "description": "按渲染请求出一张草稿预览图（PNG），返回问题清单与图片。request 是渲染请求（template、dataset、parameters、output）；mode 只能是 draft 或省略，output.format 只能是 png 或省略。DPI 上限 300，且图片最长边不超过 2000 像素，超出时自动降低并在结果中注明；省略 dpi 时取上限。templates 列出工作目录内的模板文件作为工作副本，代替同名的已保存模板（也可以是新模板）；datasetPath 用工作目录内的数据集文件代替 request.dataset。region 只返回画板上的一块区域（毫米，相对画板左上角），DPI 按区域大小提高，用于放大核对预览中的小字与标记。不写任何文件。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "type": "object",
+            "description": "渲染请求：template、dataset（{\"id\": 数据集ID} 或 {\"inline\": 数据集文档}）、parameters、output（width、height 毫米，dpi 可省略）"
+          },
+          "templates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "工作目录内的模板文件，作为工作副本代替同名的已保存模板，或作为新模板加入"
+          },
+          "datasetPath": {
+            "type": "string",
+            "minLength": 1,
+            "description": "工作目录内的数据集文件，代替 request.dataset；两者只写一个"
+          },
+          "region": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "画板上的区域，毫米，相对画板左上角",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "inspect_layout",
+      "description": "按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 300 个元素。结果同时给出这些元素上的问题。不写任何文件。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "type": "object",
+            "description": "渲染请求：template、dataset（{\"id\": 数据集ID} 或 {\"inline\": 数据集文档}）、parameters、output（width、height 毫米，dpi 可省略）"
+          },
+          "templates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "工作目录内的模板文件，作为工作副本代替同名的已保存模板，或作为新模板加入"
+          },
+          "datasetPath": {
+            "type": "string",
+            "minLength": 1,
+            "description": "工作目录内的数据集文件，代替 request.dataset；两者只写一个"
+          },
+          "elements": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "元素路径"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "向下展开的层数，0 只看元素本身，缺省 1"
+          }
+        }
+      }
+    },
+    {
+      "name": "view_image",
+      "description": "局部放大查看工作目录内的图片（如示例图）：按像素区域裁切，放大到最长边约 1400 像素（最多 4 倍），返回 PNG 与原图尺寸。用于核对小字、密排列表、图标与小标记。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "工作目录内的图片，如 sample.png"
+          },
+          "region": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "原图像素区域，左上角为原点",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "dsl_reference",
+      "description": "返回 DSL 参考或 JSON Schema 原文。name 取 reference/data-definition（数据定义与数据集参考）、reference/template（模板参考），或 schema/data-definition、schema/dataset、schema/template、schema/render-request、schema/batch-request（JSON Schema 2020-12）。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "enum": [
+              "reference/data-definition",
+              "reference/template",
+              "schema/data-definition",
+              "schema/dataset",
+              "schema/template",
+              "schema/render-request",
+              "schema/batch-request"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -31,6 +31,14 @@ node dist/bin.js publish --definition path/to/schema-example.json --workspace pa
 
 第一次使用请照[使用指南](docs/guide.md)走一遍：导入资源、交付 35 项、定位失败项、替换资源，再脱离原工作区重放出图记录，每步写明命令与预期退出码。
 
+## MCP 只读工具服务
+
+```powershell
+node dist/bin.js mcp --workspace docs/examples/m402-dsl --resources fixtures/resources --root path/to/round
+```
+
+给业务 Agent 或任何 MCP 客户端使用：标准输入输出上按行分隔的 JSON-RPC。工具全部只读，包括读取、校验、草稿预览、元素检查、局部放大与 DSL 参考。工作区在启动时读入为快照，读文件的工具只能读 `--root` 内的文件。工具合同与限制见 [MCP 工具服务](docs/mcp.md)。
+
 ## 验证与文档
 
 ```powershell
@@ -51,6 +59,8 @@ node scripts/accept-stage1.mjs out/stage1/stability
 - [EAN/UPC 条形码](docs/render-retail-barcodes.md)、[商品编号样例](docs/examples/retail-barcode-dsl/README.md)：完整编号、校验位与格式专属留白。
 - [CODE128 条形码](docs/render-barcode.md)、[资产编号样例](docs/examples/barcode-dsl/README.md)：资源字体、下方文字与独立解码验收。
 - [二维码](docs/render-qrcode.md)、[查询码样例](docs/examples/qrcode-dsl/README.md)：文本绑定、可执行命令与最终图片解码验证。
+- [DSL 1.0 参考](docs/dsl/README.md)：五种文档的写法、JSON Schema 与一致性测试。
+- [MCP 工具服务](docs/mcp.md)：`renderweave mcp` 的工具合同、只读与路径限制。
 - [CONTEXT.md](CONTEXT.md)：开发接续入口与文档地图。
 
-二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放、项间取消与中断后辨认、同批素材硬链接去重，以及码图模板的交付与重放已在第二阶段实现，见[第二阶段验收](docs/stage2-acceptance.md)。记录支持完整 M402、PNG/JPEG/WebP/SVG、字体与码图；URL 图片、服务、MCP、业务 Agent、OCR、在线编辑器仍未实现。领域模型文档包含未来设计，当前可执行能力以两期阶段验收及对应 DSL 样例为准。
+二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放、项间取消与中断后辨认、同批素材硬链接去重，以及码图模板的交付与重放已在第二阶段实现，见[第二阶段验收](docs/stage2-acceptance.md)。记录支持完整 M402、PNG/JPEG/WebP/SVG、字体与码图；第三阶段已有 DSL 1.0 参考与 Schema、只读 MCP 工具服务；URL 图片、HTTP 服务、业务 Agent 任务闭环、OCR、在线编辑器仍未实现。领域模型文档包含未来设计，当前可执行能力以两期阶段验收及对应 DSL 样例为准。

@@ -16,6 +16,7 @@ async function inline(svg: string, options: RenderOptions = {}, children = [pict
   return render({ ...workspace, resources: {
     get: (id) => id === 'test-vector-svg' ? { id, kind: 'image' } : original.get(id),
     read: (id) => id === 'test-vector-svg' ? Promise.resolve(bytes) : original.read(id),
+    list: () => original.list(),
   } }, { ...labRequest(100, 40, dpi), mode }, options);
 }
 

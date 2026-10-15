@@ -19,6 +19,7 @@ async function workspace(children: unknown[], style = 'Regular'): Promise<Worksp
   return { ...base, resources: {
     get: (id) => id === 'subset' ? subset.get(id) : base.resources.get(id),
     read: (id) => id === 'subset' ? subset.read(id) : base.resources.read(id),
+    list: () => [...base.resources.list(), ...subset.list()],
   } };
 }
 

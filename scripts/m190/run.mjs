@@ -18,7 +18,7 @@
 //
 // key 只从环境变量 QWEN_TOKEN_PLAN_API_KEY 读取（Windows 上本进程没有时读用户级环境变量），不打印、不写文件。
 // Claude Code 子进程的环境从空白开始，只放系统必需变量与 Qwen 配置，配置目录独立，不继承宿主的 CLAUDE_*/ANTHROPIC_* 变量与登录凭据；
-// 以 --restricted 运行（无执行代码的工具，文件工具限于工作目录），只连本目录的 MCP 服务。
+// 以 --restricted 运行（无执行代码的工具，文件工具限于工作目录），只连本仓库的 MCP 服务 renderweave mcp（dist/bin.js，第三阶段票据 03）。
 // 需要先 npm run build；Claude Code 可执行文件取 CLAUDE_BIN，缺省为 PATH 上的 claude。
 import { execFileSync, spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
@@ -119,8 +119,10 @@ async function vision() {
 async function runAgent({ name, cwd, tools, mcpTools, workspace, prompt, maxTurns }) {
   const dir = join(out, name);
   const mcpConfig = join(dir, 'mcp.json');
+  // 工作区在服务启动时读入为只读快照；工具只能读 Agent 工作目录内的文件。
   await writeFile(mcpConfig, JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
-    join(HERE, 'mcp-server.mjs'), '--workspace', workspace, '--resources', RESOURCES, '--root', cwd, '--log', join(dir, 'tools.jsonl'), '--tools', mcpTools] } } }));
+    join(REPO, 'dist/bin.js'), 'mcp', '--workspace', workspace, '--resources', RESOURCES, '--root', cwd, '--log', join(dir, 'tools.jsonl'),
+    ...(mcpTools ? ['--tools', mcpTools] : [])] } } }));
   const PASS = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 'PATH', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'APPDATA', 'LOCALAPPDATA',
     'TEMP', 'TMP', 'TMPDIR', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramData', 'CommonProgramFiles', 'USERNAME', 'USER', 'USERDOMAIN',
     'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
@@ -320,8 +322,10 @@ function scoreTranscription(stops, truthStops) {
 
 // ---- template ----
 async function template() {
-  const dir = join(out, 'template'), agent = join(dir, 'agent'), workspace = join(agent, 'workspace');
+  // 工作区快照在 Agent 工作目录之外，经 list_documents 与 read_document 读取；Agent 把模板写到 candidates/，草稿预览时作为工作副本传入（M50）。
+  const dir = join(out, 'template'), agent = join(dir, 'agent'), workspace = join(dir, 'workspace'), candidates = join(agent, 'candidates');
   await mkdir(workspace, { recursive: true });
+  await mkdir(candidates, { recursive: true });
   await mkdir(join(agent, 'docs'), { recursive: true });
   for (const f of ['schema-stop-v1.json', 'schema-route-sign-v1.json', 'compiled-stop-v1.schema.json', 'compiled-route-sign-v1.schema.json', 'dataset-m402.json']) {
     await copyFile(join(EXAMPLE, f), join(workspace, f));
@@ -329,13 +333,22 @@ async function template() {
   await copyFile(SAMPLE, join(agent, 'sample.png'));
   await copyFile(join(REPO, 'agent/reference/template.md'), join(agent, 'docs/template-reference.md'));
   await copyLayers(agent, 'template');
-  const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources,view_image', workspace,
+  const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob',
+    mcpTools: 'list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image', workspace,
     prompt: await readFile(join(HERE, 'prompt-template.md'), 'utf8'), maxTurns: Number(opt('max-turns', '60')) });
+  // 评估用工作区：快照加上 candidates/ 中的模板。
+  const evaluated = join(dir, 'evaluated');
+  await cp(workspace, evaluated, { recursive: true });
+  const templates = [];
+  for (const f of await readdir(candidates)) {
+    if (!f.endsWith('.json')) continue;
+    const doc = JSON.parse(await readFile(join(candidates, f), 'utf8'));
+    if (String(doc.dslVersion ?? '').startsWith('renderweave-template/')) { templates.push(f); await copyFile(join(candidates, f), join(evaluated, f)); }
+  }
   const request = { dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 120, format: 'png' }, mode: 'draft' };
-  const candidate = await renderAndCompare(workspace, { ...request, template: '线路牌主模板' }, join(dir, 'render-120.png'));
+  const candidate = await renderAndCompare(evaluated, { ...request, template: '线路牌主模板' }, join(dir, 'render-120.png'));
   const expert = await renderAndCompare(EXAMPLE, { ...request, template: '标准线路单边' }, join(dir, 'expert-120.png'));
-  const templates = (await readdir(workspace)).filter((f) => f.endsWith('.json') && !/^(schema|compiled|dataset)-/.test(f));
-  const stress = await stressTemplates([['候选', workspace, '线路牌主模板'], ['专家', EXAMPLE, '标准线路单边']], join(dir, 'stress'));
+  const stress = await stressTemplates([['候选', evaluated, '线路牌主模板'], ['专家', EXAMPLE, '标准线路单边']], join(dir, 'stress'));
   console.log('template', JSON.stringify({ templates: templates.length, candidate, expert }), `${run.wallMs} ms`);
   for (const row of stress) console.log('stress', JSON.stringify(row));
   return { layers: layers(), run, templates, candidate, expert, stress };

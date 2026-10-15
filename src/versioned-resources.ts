@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import { hint, ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
-import { parseResourceRef, ResourceReadError, type ResourceInfo, type ResourceRepository } from './resources.js';
+import { parseResourceRef, ResourceReadError, sortedInfos, type ResourceInfo, type ResourceRepository } from './resources.js';
 import { describeError, isRecord } from './util.js';
 import { inspectResourceWorkspace, resourceWorkspaceFingerprint, type ResourceWorkspaceImpact } from './resource-impact.js';
 import type { RenderOptions } from './render.js';
@@ -251,6 +251,7 @@ class FileVersionedStore implements VersionedResourceStore {
     Object.freeze(fixed);
     return { versions: fixed, problems, repository: {
       get: (id) => Object.hasOwn(fixed, id) ? this.get(id, fixed[id]) : undefined,
+      list: () => sortedInfos(Object.entries(fixed).flatMap(([id, version]) => this.get(id, version) ?? [])),
       read: async (id) => {
         if (!Object.hasOwn(fixed, id)) throw new ResourceReadError(id, `固定版本映射中没有资源 ${id}`, ProblemCodes.resourceVersionNotFound);
         return this.read(id, fixed[id]!);

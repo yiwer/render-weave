@@ -18,6 +18,8 @@ export interface ResourceInfo {
 
 export interface ResourceRepository {
   get(id: string): ResourceInfo | undefined;
+  /** 全部资源，按资源 ID 排序。 */
+  list(): readonly ResourceInfo[];
   /** 读取资源内容；资源不存在或文件无法读取时抛出 ResourceReadError。 */
   read(id: string): Promise<Uint8Array>;
 }
@@ -113,6 +115,10 @@ class FileResourceRepository implements ResourceRepository {
     return entry && { id: entry.id, kind: entry.kind };
   }
 
+  list(): readonly ResourceInfo[] {
+    return sortedInfos(this.entries.values());
+  }
+
   async read(id: string): Promise<Uint8Array> {
     const entry = this.entries.get(id);
     if (!entry) throw new ResourceReadError(id, `资源仓库中没有资源 ${id}`);
@@ -135,12 +141,17 @@ export function createMemoryResourceRepository(
       const entry = entries.get(id);
       return entry && { id: entry.id, kind: entry.kind };
     },
+    list: () => sortedInfos(entries.values()),
     async read(id) {
       const entry = entries.get(id);
       if (!entry) throw new ResourceReadError(id, `资源仓库中没有资源 ${id}`);
       return entry.bytes;
     },
   };
+}
+
+export function sortedInfos(entries: Iterable<ResourceInfo>): ResourceInfo[] {
+  return [...entries].map(({ id, kind }) => ({ id, kind })).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 function isInside(dir: string, file: string): boolean {

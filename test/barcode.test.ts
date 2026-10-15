@@ -173,6 +173,7 @@ describe('CODE128 最终图片与诊断', () => {
     const workspace: Workspace = { ...base, resources: {
       get: id => id === 'subset' ? subset.get(id) : base.resources.get(id),
       read: id => id === 'subset' ? subset.read(id) : base.resources.read(id),
+      list: () => [...base.resources.list(), ...subset.list()],
     } };
     const success = await render(workspace, request());
     expect(success.problems.map(p => p.code)).toEqual(['text.glyphFallback']);

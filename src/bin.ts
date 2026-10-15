@@ -9,8 +9,11 @@ if (argv[0] === 'deliver') {
     controller.abort();
   });
 }
+// mcp 的标准输出只能有协议消息：其他输出一律改到标准错误流。
+if (argv[0] === 'mcp') console.log = console.info = console.debug = console.warn = (...args: unknown[]) => console.error(...args);
 process.exitCode = await runCli(argv, {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   signal: controller.signal,
+  stdin: process.stdin,
 });

@@ -10,8 +10,9 @@
  * - record-read、replay：完整读取一项出图记录，或按确切构建重新渲染并比对。退出码：0 完整读取或重放一致；1 完整性、构建、渲染或文件失败；2 用法错误。
  * - resources-init、resources-import、resources-list、resources-get、resources-check、resources-apply：资源版本仓库维护。
  *   退出码：0 成功；1 仓库、内容、检查、冲突或文件失败；2 用法错误。
+ * - mcp：在标准输入输出上提供只读的 MCP 工具服务（src/mcp/），读完标准输入后结束。退出码：0 正常结束；2 用法错误或目录无法打开。
  */
-import { mkdir, open, readFile, rm, writeFile, type FileHandle } from 'node:fs/promises';
+import { appendFile, mkdir, open, readFile, rm, stat, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ProblemCodes, type Problem } from './problems.js';
@@ -19,6 +20,9 @@ import { render, type RenderOptions } from './render.js';
 import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-records.js';
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
+import { WorkingDirectory } from './mcp/files.js';
+import { serveMcp } from './mcp/server.js';
+import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
@@ -28,6 +32,8 @@ export interface CliIo {
   readonly stderr: (text: string) => void;
   /** deliver 的取消信号；bin 在收到 Ctrl+C（SIGINT）时触发。 */
   readonly signal?: AbortSignal;
+  /** mcp 读取协议消息的输入流；bin 传入进程的标准输入。 */
+  readonly stdin?: NodeJS.ReadableStream;
 }
 
 export const ExitCodes = { ok: 0, failed: 1, usage: 2, cancelled: 130 } as const;
@@ -45,6 +51,7 @@ const USAGE = `用法：
   renderweave resources-get --resources <目录> --id <资源ID> --version <内容版本>
   renderweave resources-check --resources <目录> --workspace <目录> --id <资源ID> --kind <image|font> --file <新内容文件> --out <检查报告.json> [--options <字体配置.json>]
   renderweave resources-apply --resources <目录> --workspace <目录> --file <新内容文件> --check <检查报告.json> [--options <字体配置.json>]
+  renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
 
 render
   --workspace   工作区目录：静态数据定义、编译产物、模板与数据集的 JSON 文件
@@ -52,6 +59,13 @@ render
   --request     渲染请求 JSON 文件
   --out         输出目录：image.png 或 image.jpg、problems.json、layout.json
   --versions    可选，资源版本映射 JSON 文件，仅用于版本仓库
+
+mcp（只读工具服务，stdio 上按行分隔的 JSON-RPC）
+  --workspace   工作区目录，启动时读入为快照，之后不再读取
+  --resources   资源仓库目录
+  --root        本轮工作目录：工具只能读取其中的文件
+  --tools       可选，只开放列出的工具，逗号分隔
+  --log         可选，每次工具调用追加一行记录
 
 publish
   --definition  数据定义 DSL 文件（renderweave-schema/1）
@@ -74,6 +88,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'resources-get': ['resources', 'id', 'version'],
   'resources-check': ['resources', 'workspace', 'id', 'kind', 'file', 'out'],
   'resources-apply': ['resources', 'workspace', 'file', 'check'],
+  mcp: ['workspace', 'resources', 'root'],
 };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
@@ -84,7 +99,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     return ExitCodes.usage;
   }
   let values: Options;
-  const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options'] : [];
+  const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
+    : command === 'mcp' ? ['tools', 'log'] : [];
   try {
     ({ values } = parseArgs({
       args: [...rest],
@@ -104,6 +120,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   try {
     if (command === 'render') return await runRender(options, io);
     if (command === 'publish') return await runPublish(options, io);
+    if (command === 'mcp') return await runMcp(options, io);
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     return await runResources(command!, options, io);
   } catch (error) {
@@ -217,6 +234,35 @@ async function runResources(command: string, options: Record<string, string>, io
     if (!result.store) return ExitCodes.failed;
     io.stdout(`${JSON.stringify(result.store.list(), null, 2)}\n`);
   }
+  return ExitCodes.ok;
+}
+
+async function runMcp(options: Record<string, string>, io: CliIo): Promise<number> {
+  if (!io.stdin) { io.stderr('mcp 需要标准输入\n'); return ExitCodes.usage; }
+  let workingDirectory: WorkingDirectory;
+  try {
+    if (!(await stat(options.workspace!)).isDirectory()) throw new Error(`不是目录：${options.workspace}`);
+    workingDirectory = await WorkingDirectory.open(options.root!);
+  } catch (error) {
+    io.stderr(`目录无法打开：${describeError(error)}\n`);
+    return ExitCodes.usage;
+  }
+  // 工作区只在启动时读一次，作为本轮的只读快照；资源内容按需读取。
+  const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
+  const all = createTools({ workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!) });
+  const names = options.tools?.split(',').map((name) => name.trim());
+  const unknown = names?.filter((name) => !all.some((tool) => tool.name === name)) ?? [];
+  if (unknown.length > 0) {
+    io.stderr(`没有工具：${unknown.join('、')}；可用：${all.map((tool) => tool.name).join('、')}\n`);
+    return ExitCodes.usage;
+  }
+  const tools = names ? all.filter((tool) => names.includes(tool.name)) : all;
+  reportProblems(workspace.problems, io);
+  io.stderr(`renderweave mcp ${MCP_CONTRACT_VERSION}：工具 ${tools.length} 个，工作区快照中有模板 ${workspace.templates.length} 个、数据集 ${workspace.datasets.length} 个\n`);
+  await serveMcp(io.stdin, {
+    tools, version: MCP_CONTRACT_VERSION, write: io.stdout,
+    ...(options.log ? { log: (entry: Record<string, unknown>) => appendFile(options.log!, `${JSON.stringify(entry)}\n`) } : {}),
+  });
   return ExitCodes.ok;
 }
 
