@@ -9,6 +9,8 @@ if (argv[0] === 'deliver') {
     controller.abort();
   });
 }
+// agent review 在 Ctrl+C 时关闭审核页服务再退出；审核结果每次操作都已写入 review.json。
+if (argv[0] === 'agent' && argv[1] === 'review') process.once('SIGINT', () => controller.abort());
 // mcp 的标准输出只能有协议消息：其他输出一律改到标准错误流。
 if (argv[0] === 'mcp') console.log = console.info = console.debug = console.warn = (...args: unknown[]) => console.error(...args);
 process.exitCode = await runCli(argv, {

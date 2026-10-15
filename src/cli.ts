@@ -13,16 +13,24 @@
  * - mcp：在标准输入输出上提供只读的 MCP 工具服务（src/mcp/），读完标准输入后结束。退出码：0 正常结束；2 用法错误或目录无法打开。
  * - agent run：发起一轮业务 Agent 任务（src/agent/），在新轮次目录中写出 round.json、check.json，结构合格时另有 outcome.json 与候选文件。
  *   退出码：0 成果合格；1 成果不合格（没有交回、结构不合格或候选有严重问题），问题清单见 check.json；2 用法错误、输入无法读取或任务顺序不对。
+ * - agent review：在 127.0.0.1 上打开一轮的审核页，审核结果写入轮次目录的 review.json；Ctrl+C 结束。
+ *   退出码：0 正常结束；1 轮次无法审核（没有 outcome.json、候选被改动）或端口被占用；2 用法错误。
+ * - agent apply：把审核通过的一轮应用到工作区：数据定义发布为下一个版本。
+ *   退出码：0 已应用；1 拒绝或失败（未审核、未通过、已应用过、工作区已变化、发布或写入失败），工作区保持原状；2 用法错误或工作区无法读取。
  */
-import { appendFile, mkdir, open, readFile, rm, stat, writeFile, type FileHandle } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { appendFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ProblemCodes, type Problem } from './problems.js';
 import { render, type RenderOptions } from './render.js';
 import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-records.js';
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
+import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
 import { AgentUsageError, DEFAULT_KEY_ENV, runAgentTask } from './agent/run.js';
+import { applyAgentRound, readReview } from './agent/review.js';
+import { startReviewServer } from './agent/review-server.js';
 import { AGENT_TASKS, findAgentTask } from './agent/tasks.js';
 import { WorkingDirectory } from './mcp/files.js';
 import { serveMcp } from './mcp/server.js';
@@ -58,6 +66,8 @@ const USAGE = `用法：
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>] [--definition <数据定义>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
+  renderweave agent review <轮次目录> [--port <端口>] [--no-open]
+  renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
 
 render
   --workspace   工作区目录：静态数据定义、编译产物、模板与数据集的 JSON 文件
@@ -84,6 +94,14 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --key-env     可选，key 所在的环境变量名，缺省 QWEN_TOKEN_PLAN_API_KEY；key 只经环境变量传入，不写任何文件
   --model、--small-model、--endpoint、--max-turns、--claude  可选，模型、轻量任务模型、兼容端点、轮数上限与 Claude Code 可执行文件
 
+agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
+  --port        可选，端口，缺省由系统分配
+  --no-open     可选，不自动打开浏览器，只打印地址
+
+agent apply（只接受审核通过的轮次；数据定义发布为下一个版本）
+  --workspace   可选，写入的工作区，缺省为发起本轮时的 --workspace
+  --overwrite   可选，工作区自成果生成后已变化时仍然应用：按当前工作区发布为下一个版本
+
 publish
   --definition  数据定义 DSL 文件（renderweave-schema/1）
   --workspace   已发布的静态数据定义所在的工作区：确定下一个版本号，并解析引用
@@ -107,45 +125,62 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'resources-apply': ['resources', 'workspace', 'file', 'check'],
   mcp: ['workspace', 'resources', 'root'],
   'agent run': ['task', 'sample', 'brief', 'resources', 'out'],
+  'agent review': [],
+  'agent apply': [],
 };
 const AGENT_RUN_OPTIONAL = ['domain', 'workspace', 'definition', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
+/** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
+const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
+const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'] };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
-  // agent 带子命令：agent run。
+  // agent 带子命令：agent run、agent review、agent apply。
   const [first, ...more] = argv;
   const command = first === 'agent' && more[0] !== undefined ? `agent ${more[0]}` : first;
   const rest = first === 'agent' ? more.slice(1) : more;
   const names = command && Object.hasOwn(COMMAND_OPTIONS, command) ? COMMAND_OPTIONS[command] : undefined;
-  if (!names) {
+  if (!command || !names) {
     io.stderr(USAGE);
     return ExitCodes.usage;
   }
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
-    : command === 'mcp' ? ['tools', 'log'] : command === 'agent run' ? AGENT_RUN_OPTIONAL : [];
+    : command === 'mcp' ? ['tools', 'log'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
+    : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace'] : [];
+  const flags = COMMAND_FLAGS[command] ?? [];
+  let positionals: string[];
   try {
-    ({ values } = parseArgs({
+    const parsed = parseArgs({
       args: [...rest],
-      options: Object.fromEntries([...names, ...optional].map((name) => [name, { type: 'string' as const }])),
+      options: Object.fromEntries([
+        ...[...names, ...optional].map((name): [string, { type: 'string' | 'boolean' }] => [name, { type: 'string' }]),
+        ...flags.map((name): [string, { type: 'string' | 'boolean' }] => [name, { type: 'boolean' }]),
+      ]),
       strict: true,
-    }));
+      allowPositionals: POSITIONAL_COMMANDS.has(command),
+    });
+    values = parsed.values as Options;
+    positionals = parsed.positionals;
   } catch (error) {
     io.stderr(`${describeError(error)}\n\n${USAGE}`);
     return ExitCodes.usage;
   }
   if (!names.every((name) => typeof values[name] === 'string' && values[name] !== '') ||
-    optional.some((name) => values[name] !== undefined && values[name] === '')) {
+    optional.some((name) => values[name] !== undefined && values[name] === '') ||
+    (POSITIONAL_COMMANDS.has(command) && (positionals.length !== 1 || positionals[0] === ''))) {
     io.stderr(USAGE);
     return ExitCodes.usage;
   }
   const options = values as Record<string, string>;
   try {
+    if (command === 'agent review') return await runReview(positionals[0]!, options, values['no-open'] === true, io);
+    if (command === 'agent apply') return await runApply(positionals[0]!, options, values['overwrite'] === true, io);
     if (command === 'render') return await runRender(options, io);
     if (command === 'publish') return await runPublish(options, io);
     if (command === 'mcp') return await runMcp(options, io);
     if (command === 'agent run') return await runAgent(options, io);
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
-    return await runResources(command!, options, io);
+    return await runResources(command, options, io);
   } catch (error) {
     io.stderr(`命令执行失败：${describeError(error)}\n`);
     return ExitCodes.failed;
@@ -223,7 +258,7 @@ async function runResources(command: string, options: Record<string, string>, io
       reportProblems(result.problems, io);
       if (!result.check) return ExitCodes.failed;
       await mkdir(dirname(options.out!), { recursive: true });
-      await writePublishedFiles([{ path: options.out!, value: result.check }]);
+      await writeExclusiveJsonFiles([{ path: options.out!, value: result.check }]);
       io.stdout(`${JSON.stringify(result.check, null, 2)}\n`);
     } else {
       const check: unknown = JSON.parse(await readFile(options.check!, 'utf8'));
@@ -305,6 +340,71 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     if (!(error instanceof AgentUsageError)) throw error;
     io.stderr(`${error.message}\n`);
     return ExitCodes.usage;
+  }
+}
+
+async function runReview(roundDir: string, options: Record<string, string>, noOpen: boolean, io: CliIo): Promise<number> {
+  const port = options.port === undefined ? 0 : Number(options.port);
+  if (!Number.isSafeInteger(port) || port < 0 || port > 65535) {
+    io.stderr('--port 必须是 0–65535 的整数\n');
+    return ExitCodes.usage;
+  }
+  const { view, problems } = await readReview(roundDir);
+  if (!view) {
+    reportProblems(problems, io);
+    return ExitCodes.failed;
+  }
+  let server;
+  try {
+    server = await startReviewServer({ roundDir, port });
+  } catch (error) {
+    io.stderr(`审核页无法启动：${describeError(error)}\n`);
+    return ExitCodes.failed;
+  }
+  const decided = view.pending.filter((item) => item.decision).length;
+  io.stdout(`${server.url}\n`);
+  io.stderr(`审核页：${server.url}（${view.round.taskName}，待确认项 ${view.pending.length} 个，已处理 ${decided} 个）。审核结果随时保存到 review.json；按 Ctrl+C 结束\n`);
+  if (!noOpen) openBrowser(server.url, io);
+  if (io.signal && !io.signal.aborted) await new Promise((done) => io.signal!.addEventListener('abort', done, { once: true }));
+  await server.close();
+  return ExitCodes.ok;
+}
+
+async function runApply(roundDir: string, options: Record<string, string>, overwrite: boolean, io: CliIo): Promise<number> {
+  let result;
+  try {
+    result = await applyAgentRound({ roundDir, ...(options.workspace !== undefined ? { workspace: options.workspace } : {}), overwrite });
+  } catch (error) {
+    if (!(error instanceof AgentUsageError)) throw error;
+    io.stderr(`${error.message}\n`);
+    return ExitCodes.usage;
+  }
+  reportProblems(result.problems, io);
+  if (result.drift) {
+    const { drift } = result;
+    const lines = [
+      ...drift.newerDefinitions.map((item) => `  同名数据定义已发布新版本：${item.name} ${item.snapshot === null ? '（快照中没有）' : `v${item.snapshot}`} → v${item.workspace}`),
+      ...drift.added.map((file) => `  新增：${file}`), ...drift.removed.map((file) => `  删除：${file}`), ...drift.changed.map((file) => `  修改：${file}`),
+    ];
+    io.stderr(`工作区相对本轮快照的差异（指纹 ${drift.expected} → ${drift.actual}）：\n${lines.join('\n')}\n`);
+  }
+  if (!result.applied) return ExitCodes.failed;
+  io.stdout(`${JSON.stringify({
+    workspace: result.applied.workspace, overwrite: result.applied.overwrite,
+    published: result.applied.published.map((item) => ({ name: item.name, version: item.version, files: item.files })),
+  }, null, 2)}\n`);
+  return ExitCodes.ok;
+}
+
+/** 用系统默认浏览器打开审核页；失败时只提示，不影响服务。 */
+function openBrowser(url: string, io: CliIo): void {
+  const [command, args] = process.platform === 'win32' ? ['explorer.exe', [url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+  try {
+    const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true });
+    child.on('error', () => io.stderr(`无法自动打开浏览器，请手动打开 ${url}\n`));
+    child.unref();
+  } catch {
+    io.stderr(`无法自动打开浏览器，请手动打开 ${url}\n`);
   }
 }
 
@@ -405,34 +505,17 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
     io.stdout(`未发布；${summary}\n`);
     return ExitCodes.failed;
   }
-  // 文件名沿用定义文件名：去掉 schema- 前缀与 -v<版本> 后缀，如 schema-route-sign-v1.json → route-sign。
-  const stem = basename(definitionFile!, '.json').replace(/^schema-/, '').replace(/-v\d+$/, '');
   const version = published.ref.version;
+  const names = publishedFileNames(definitionFile!, version);
   await mkdir(out!, { recursive: true });
-  const schemaFile = join(out!, `schema-${stem}-v${version}.json`);
-  const compiledFile = join(out!, `compiled-${stem}-v${version}.schema.json`);
-  await writePublishedFiles([
+  const schemaFile = join(out!, names.schema);
+  const compiledFile = join(out!, names.compiled);
+  await writeExclusiveJsonFiles([
     { path: schemaFile, value: published.definition },
     { path: compiledFile, value: published.compiled },
   ]);
   io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
   return ExitCodes.ok;
-}
-
-/** 排他创建，绝不覆盖已有静态数据定义；可捕获的失败撤回本次创建的文件。 */
-async function writePublishedFiles(files: readonly { path: string; value: unknown }[]): Promise<void> {
-  const owned: { path: string; handle: FileHandle }[] = [];
-  try {
-    for (const file of files) owned.push({ path: file.path, handle: await open(file.path, 'wx') });
-    for (let i = 0; i < files.length; i++) await owned[i]!.handle.writeFile(`${JSON.stringify(files[i]!.value, null, 2)}\n`);
-  } catch (error) {
-    // Windows 必须先关闭句柄才能撤回；只清理排他创建成功的文件。
-    for (const file of owned) await file.handle.close();
-    for (const file of owned) await rm(file.path, { force: true });
-    throw error;
-  } finally {
-    for (const file of owned) await file.handle.close();
-  }
 }
 
 function reportProblems(problems: readonly Problem[], io: CliIo): string {

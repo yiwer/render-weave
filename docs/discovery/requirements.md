@@ -545,6 +545,12 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 |---|---|
 | M226 | `renderweave agent run` 发起一轮任务，说明见 [业务 Agent 任务](../agent-tasks.md)。<br>**任务类型**：任务类型有英文标识（`definition-extraction` 等）与中文名称，命令行两者都接受。本票只实现数据定义提取。按 M43"每个任务一种成果"，数据定义提取只交数据定义；验证脚本 design 步骤顺带交的数据集，改为 `scratch/` 中的自查草稿，不算成果。<br>**轮次目录**：独占，由命令新建（不存在或为空）。工作区复制为快照，并记录指纹，供应用时判断工作区是否已变（M51）。<br>**成果分两层**：<br>• Agent 交回 `agent/outcome.json`（候选、待确认项、说明）；<br>• RenderWeave 先校验结构，合格时写轮次成果 `outcome.json`（`renderweave-outcome/1`，加上输入哈希、指纹与用量），并把候选复制进轮次目录；结构不合格时不写；<br>• `round.json`（运行记录）与 `check.json`（问题清单）总是写出。<br>**待确认项**：原因取英文枚举 `unreadable`、`inferred`、`conflicting`、`requiredMissing`，对应 M44 四类；位置在数据定义中写字段名。<br>**退出码**：0 合格，1 不合格（不自动重试），2 用法错误。<br>**隔离与 key**：环境按白名单组装；key 只从 `--key-env` 指定的环境变量读取，不再像验证脚本那样回退读取 Windows 用户级变量。<br>**示例图**：按文件头定扩展名（M402 示例图文件名是 .jpg，内容是 PNG）。<br>**工具**：MCP 工具按任务开放，数据定义提取开放 7 个。<br>**资料**：通用指南与线路牌约定提前迁入 `agent/guide.md`、`agent/domains/route-sign.md`（票据 08 的一部分）；提示词在 `agent/tasks/<任务>.md`；成果格式在 `agent/reference/outcome.md`，示例用会议胸牌（M222） |
 
+以下为第三阶段票据 05 的实施决定：
+
+| 编号 | 实施决定 |
+|---|---|
+| M227 | 审核与应用，说明见 [业务 Agent 任务](../agent-tasks.md#审核)。<br>**审核页形态**：本地服务，不用静态页，因为静态页写不了 `review.json`。由 `renderweave agent review <轮次目录>` 启动：<br>• 只用 `node:http`，只绑定 `127.0.0.1`，只服务一个轮次目录；<br>• 核对 `Host`，写操作要求 `application/json` 与同源 `Origin`；<br>• 页面在 `web/review.html`，Agent 写的内容一律按纯文本显示。<br>它是命令行附带的单用户本地页面，不是阶段 4 的 HTTP 服务外壳；CODING_STANDARDS 的引擎边界据此补充说明。<br>**处理方式在数据定义中的含义**：<br>• 采纳候选：保留候选文件中的写法；<br>• 改值：替换整个字段，没有位置时替换整份定义；<br>• 标为空：删去该字段，没有位置时不发布这份候选。<br>只有待确认项能逐项改，其余内容整体确认一次。审核中发现别处不对，就判不通过，带反馈重跑（票据 07）。切换条件：如果审核时经常要改待确认项以外的字段，再开放任意字段改值。<br>**图上位置**：成果增加可选的 `locations`（文字描述，加可选的示例图像素区域），满足"字段对应图上哪一部分"。它是 Agent 的自述，不是识别证据（M220）。资料要求 Agent 写；票据 04 的旧轮次没有它，也能审核。<br>**review.json**（`renderweave-review/1`）：<br>• 用 `outcomeSha256` 绑定所审核的成果；<br>• 每次操作整份替换，关闭后重开可以继续；<br>• 给出结论后要先撤回才能再改，应用后不能再改；<br>• 通过的条件：待确认项全部处理、其余内容整体确认、引擎校验没有严重问题。<br>**应用**：<br>• `renderweave agent apply <轮次目录>`，工作区缺省为发起本轮时的 `--workspace`；<br>• 应用前重新核对审核结果与候选哈希；<br>• 工作区指纹变化时，列出同名定义的新版本与新增、删除、修改的文件，拒绝应用；<br>• M51 的"覆盖"就是明确加 `--overwrite`：按当前工作区发布为下一个版本，候选之间的引用改到新版本。"重做"就是基于当前工作区重新发起一轮；<br>• 全部定义先在内存中发布成功，再排他写入；任一失败都撤回已写文件；<br>• 成功后写 `applied.json`，同一轮不能再应用。<br>**问题码**：`round.invalid`、`review.pending`、`review.invalid`、`review.notApproved`、`apply.workspaceChanged`、`apply.alreadyApplied`、`apply.failed` |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

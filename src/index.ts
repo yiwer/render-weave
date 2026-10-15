@@ -43,5 +43,15 @@ export {
   runAgentTask, workspaceFingerprint, AgentUsageError, DEFAULT_MODEL, DEFAULT_ENDPOINT, DEFAULT_KEY_ENV,
   type AgentRunOptions, type AgentRunResult, type RoundRecord, type RoundOutcome, type RoundInputs, type RoundUsage,
 } from './agent/run.js';
-export { checkAgentOutcome, PENDING_REASONS, type OutcomeCheck, type CandidateCheck, type PendingItem, type PendingReason, type SubmittedOutcome } from './agent/outcome.js';
+export {
+  checkAgentOutcome, PENDING_REASONS,
+  type OutcomeCheck, type CandidateCheck, type PendingItem, type PendingReason, type SubmittedOutcome, type FieldLocation,
+} from './agent/outcome.js';
+export {
+  readReview, changeReview, applyAgentRound, REVIEW_FILE, APPLIED_FILE, REVIEW_ACTIONS,
+  type ReviewAction, type ReviewStatus, type ReviewDecision, type ReviewRecord, type ReviewChange, type ReviewView, type PendingView,
+  type CandidateView, type FieldView, type CompiledSummary, type WorkspaceDrift, type NewerDefinition, type AppliedRecord,
+  type AgentApplyOptions, type AgentApplyResult,
+} from './agent/review.js';
+export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';

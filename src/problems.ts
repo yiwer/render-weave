@@ -169,6 +169,20 @@ export const ProblemCodes = {
 
   /** Agent 没有交回 outcome.json，或其结构、候选文件、待确认项不合格（M48）。 */
   outcomeInvalid: 'outcome.invalid',
+  /** 轮次目录不完整，或候选文件、成果自生成后被改动，不能审核或应用。 */
+  roundInvalid: 'round.invalid',
+  /** 审核尚未完成：待确认项没有处理完，或其余值还没有整体确认（M47）。 */
+  reviewPending: 'review.pending',
+  /** review.json 不可读、不合格、针对的不是当前成果，或处理结果相互矛盾；也用于拒绝不允许的审核操作。 */
+  reviewInvalid: 'review.invalid',
+  /** 应用被拒绝：没有审核结果，或审核未通过、尚在进行。 */
+  reviewNotApproved: 'review.notApproved',
+  /** 应用被拒绝：工作区自成果生成后已变化，需明确选择覆盖或重做（M51）。 */
+  applyWorkspaceChanged: 'apply.workspaceChanged',
+  /** 应用被拒绝：本轮已经应用过。 */
+  applyAlreadyApplied: 'apply.alreadyApplied',
+  /** 应用失败：发布或写入失败，已撤回本次写入，工作区保持原状。 */
+  applyFailed: 'apply.failed',
 } as const;
 
 export type ProblemCode = (typeof ProblemCodes)[keyof typeof ProblemCodes];

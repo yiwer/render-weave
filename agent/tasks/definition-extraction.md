@@ -16,4 +16,4 @@
    - 可以在 scratch/ 中按示例图写一份数据集草稿，用 check_dataset 确认定义能装下图上的全部信息；
    - 草稿不是成果。
 4. 用 check_definitions 校验，有问题就修改，直到没有问题。
-5. 按 outcome.md 写 outcome.json：列出候选文件、待确认项与说明。拿不准的取舍列为待确认项，不要猜。
+5. 按 outcome.md 写 outcome.json：列出候选文件、字段在图上的位置、待确认项与说明。拿不准的取舍列为待确认项，不要猜。

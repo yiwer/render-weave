@@ -45,7 +45,14 @@ node dist/bin.js mcp --workspace docs/examples/m402-dsl --resources fixtures/res
 node dist/bin.js agent run --task 数据定义提取 --sample path/to/sample.png --brief path/to/brief.md --resources fixtures/resources --out out/rounds/r1 --domain route-sign
 ```
 
-发起一轮数据定义提取。Claude Code 在空白环境中以受限模式运行，只连只读 MCP 服务；key 只从环境变量 `QWEN_TOKEN_PLAN_API_KEY` 读取。成果先校验结构，再经引擎校验，退出码 0 表示合格、1 表示不合格。轮次目录、成果格式与隔离见 [业务 Agent 任务](docs/agent-tasks.md)。
+发起一轮数据定义提取。Claude Code 在空白环境中以受限模式运行，只连只读 MCP 服务；key 只从环境变量 `QWEN_TOKEN_PLAN_API_KEY` 读取。成果先校验结构，再经引擎校验，退出码 0 表示合格、1 表示不合格。
+
+```powershell
+node dist/bin.js agent review out/rounds/r1
+node dist/bin.js agent apply out/rounds/r1 --workspace path/to/workspace
+```
+
+`agent review` 在本机打开审核页：对照示例图逐项处理待确认项（采纳候选、改值或标为空），其余内容整体确认一次，然后通过或不通过；审核结果随时保存到轮次目录的 `review.json`。`agent apply` 只接受审核通过的轮次，把数据定义发布为下一个版本；工作区自成果生成后变了，就列出差异并拒绝，加 `--overwrite` 才按当前工作区发布。轮次目录、成果格式、审核与应用见 [业务 Agent 任务](docs/agent-tasks.md)。
 
 ## 验证与文档
 
@@ -69,7 +76,7 @@ node scripts/accept-stage1.mjs out/stage1/stability
 - [二维码](docs/render-qrcode.md)、[查询码样例](docs/examples/qrcode-dsl/README.md)：文本绑定、可执行命令与最终图片解码验证。
 - [DSL 1.0 参考](docs/dsl/README.md)：五种文档的写法、JSON Schema 与一致性测试。
 - [MCP 工具服务](docs/mcp.md)：`renderweave mcp` 的工具合同、只读与路径限制。
-- [业务 Agent 任务](docs/agent-tasks.md)：`renderweave agent run` 的选项、隔离、轮次目录与成果校验。
+- [业务 Agent 任务](docs/agent-tasks.md)：`renderweave agent run`、`review`、`apply` 的选项、隔离、轮次目录、成果校验、审核与应用。
 - [CONTEXT.md](CONTEXT.md)：开发接续入口与文档地图。
 
-二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放、项间取消与中断后辨认、同批素材硬链接去重，以及码图模板的交付与重放已在第二阶段实现，见[第二阶段验收](docs/stage2-acceptance.md)。记录支持完整 M402、PNG/JPEG/WebP/SVG、字体与码图；第三阶段已有 DSL 1.0 参考与 Schema、只读 MCP 工具服务、数据定义提取任务；URL 图片、HTTP 服务、审核与应用、其余 Agent 任务、OCR、在线编辑器仍未实现。领域模型文档包含未来设计，当前可执行能力以两期阶段验收及对应 DSL 样例为准。
+二维码、CODE128、EAN/UPC、资源版本导入与替换、批量正式交付与草稿预览（1–1,000 项串行）、记录重放、项间取消与中断后辨认、同批素材硬链接去重，以及码图模板的交付与重放已在第二阶段实现，见[第二阶段验收](docs/stage2-acceptance.md)。记录支持完整 M402、PNG/JPEG/WebP/SVG、字体与码图；第三阶段已有 DSL 1.0 参考与 Schema、只读 MCP 工具服务、数据定义提取及其审核与发布；URL 图片、HTTP 服务、其余 Agent 任务、OCR、在线编辑器仍未实现。领域模型文档包含未来设计，当前可执行能力以两期阶段验收及对应 DSL 样例为准。

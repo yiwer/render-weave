@@ -321,6 +321,44 @@ renderweave agent run --task 数据定义提取 --sample docs/examples/materials
 
 这只是单次结果。"运营方是否随线路变化"属于项目说明该写明的业务事实；把它写进项目说明，或在通用指南里要求"把看似固定的文字列为待确认"，二选一，留给票据 08 的评估决定。
 
+## 审核与应用走查（票据 05）
+
+成果格式加上"图上位置"（`locations`，M227）之后，用同样的命令与资料重跑一次，输出到 `out/agent-t05-m402`。然后用这一轮走完审核与应用。
+
+| 项 | 结果 |
+|---|---|
+| 结论 | 合格，退出码 0。站点 v1、公交线路牌 v1 在内存中发布成功，0 问题 |
+| 用时 / 轮数 / 输出 tokens | 13.2 分钟 / 36 / 37.3k，正常结束 |
+| 工具调用 | 24 次：`view_image` 18 次，`check_definitions`、`check_dataset` 各 2 次，`list_resources`、`list_documents` 各 1 次。有 3 次把参数名写错（如把 `path` 写成 `file_path`），每次都按报错在下一次改对 |
+| 图上位置 | 14 项，覆盖图上能看到的全部字段，每项都带区域。逐个裁出核对：全部指向正确的元素；6 处框得准，8 处边缘偏了，裁掉了字的一部分。审核页定位时按区域的 1.6 倍放大，这种偏差不影响找到元素 |
+| 待确认项 | 4 项：右上角"巴士集团"是否该建运营方字段（整份文件，推测）、设施枚举只有地铁与医院、运营日注记与发车方式是否随线路变化 |
+| 隔离 | 服务 `rw:connected`；轮次目录与命令输出共 24 个文件，搜索 key 0 命中 |
+
+**与专家版对照**：
+
+- 专家字段 15 个，对上 14 个。
+- 运营方这次列为了待确认项；票据 04 那次只写进了说明。资料没有改动，这是单次结果的波动，留给票据 08 的连续两次评估判断。
+- 6 项约定全部做对。
+
+**走查**：在内置浏览器里按代建工程师的方式操作；截图用 Edge 无头模式经 CDP 存档。01–03 截自审核前的副本（`out/agent-t05-shots`），04 截自真实轮次。
+
+1. 打开审核页，"还不能通过的原因"列出 5 条：4 项待确认项未处理，加上其余内容未整体确认。见[截图 01](images/agent-review/01-overview.png)。
+2. 定位"票价"：示例图放大到 375%，框住"2"。见[截图 02](images/agent-review/02-locate.png)。
+3. 第 1 项选"改值"：在整份定义中补上 `operator`（运营方）字段，见[截图 03](images/agent-review/03-pending-edit.png)。第 2–4 项采纳候选。
+4. 刷新页面，相当于关闭后重开：4 项处理结果都在；公交线路牌的字段清单中只有 `operator` 标为改过，编译产物变为 11 个属性。
+5. 勾选整体确认，写上备注，审核通过。见[截图 04](images/agent-review/04-approved.png)。
+6. 应用：
+   - `renderweave agent apply out/agent-t05-m402`：退出码 2，因为发起本轮时没给工作区，提示用 `--workspace` 指定；
+   - 加上一个新的空工作区：退出码 0，发布站点 v1、公交线路牌 v1，`operator` 在发布的定义中；
+   - 再应用一次：退出码 1，报 `apply.alreadyApplied`。
+
+   此时审核页显示"已应用"，审核按钮全部不可用。
+
+**走查中改进的两处**：
+
+- 宽幅示例图下方原来留出大片空白，查看区高度改为随图的比例收缩，至少 420 像素；
+- 整份改值后，原来把所有字段都标为改过，改为按字段名与原文比对，只标出真正改动、新增或删去的字段。
+
 ## 延迟与用量
 
 - **做数据定义一轮约 7–12 分钟，做模板约 21–31 分钟**，大部分时间在模型的长思考上。要求验证极端情况后，模板的轮数与预览次数大约翻倍。工具调用在 7 ms–1.1 s 内完成。
@@ -335,6 +373,18 @@ renderweave agent run --task 数据定义提取 --sample docs/examples/materials
 - **ADR-0015 取代 ADR-0009（CloudKiln）**：本地方式已验证；云上每轮独立容器、经网络连接 MCP 服务还没测。
 
 ## 复现
+
+产品命令（票据 04、05）：
+
+```bash
+npm run build
+renderweave agent run --task 数据定义提取 --sample docs/examples/materials/m402-route-sign.jpg \
+  --brief scripts/m190/scenarios/m402/brief-definition.md --domain route-sign --resources fixtures/resources --out out/agent-t05-m402
+renderweave agent review out/agent-t05-m402
+renderweave agent apply out/agent-t05-m402 --workspace <工作区>
+```
+
+验证脚本：
 
 ```bash
 npm run build

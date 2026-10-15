@@ -8,7 +8,7 @@ import { Ajv2020, type ErrorObject } from 'ajv/dist/2020.js';
 import { dslDocumentKind } from '../dsl.js';
 import { ToolInputError, WorkingDirectory } from '../mcp/files.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
-import { publishStaticSchema } from '../schema/publish.js';
+import { publishStaticSchema, type PublishedStaticSchema } from '../schema/publish.js';
 import { isRecord } from '../util.js';
 import type { StaticSchemaEntry, StaticSchemaRef } from '../workspace.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
@@ -28,9 +28,21 @@ export interface PendingItem {
   readonly note: string;
 }
 
+/** 候选中的一处在示例图上的位置，供审核人对照；由 Agent 自述，不是识别证据（M220）。 */
+export interface FieldLocation {
+  readonly file: string;
+  /** 数据定义写字段名；省略表示整份文件。 */
+  readonly path?: string;
+  /** 文字描述，如"顶栏左侧的大号线路号"。 */
+  readonly where: string;
+  /** 示例图像素区域，左上角为原点，与 view_image 的 region 写法相同。 */
+  readonly region?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+}
+
 /** Agent 在工作目录中写的 outcome.json。 */
 export interface SubmittedOutcome {
   readonly candidates: readonly string[];
+  readonly locations?: readonly FieldLocation[];
   readonly pending: readonly PendingItem[];
   readonly notes: string;
 }
@@ -40,6 +52,18 @@ export const SUBMITTED_OUTCOME_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['candidates', 'pending', 'notes'],
   properties: {
     candidates: { type: 'array', minItems: 1, uniqueItems: true, items: { type: 'string', minLength: 1 } },
+    locations: { type: 'array', items: {
+      type: 'object', additionalProperties: false, required: ['file', 'where'],
+      properties: {
+        file: { type: 'string', minLength: 1 },
+        path: { type: 'string', minLength: 1 },
+        where: { type: 'string', minLength: 1 },
+        region: { type: 'object', additionalProperties: false, required: ['x', 'y', 'width', 'height'], properties: {
+          x: { type: 'number', minimum: 0 }, y: { type: 'number', minimum: 0 },
+          width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 },
+        } },
+      },
+    } },
     pending: { type: 'array', items: {
       type: 'object', additionalProperties: false, required: ['file', 'reason', 'note'],
       properties: {
@@ -106,7 +130,7 @@ export async function checkAgentOutcome(options: {
   const submission = submitted as unknown as SubmittedOutcome;
 
   // 候选文件：在 candidates/ 下，可读，种类属于本任务。
-  const candidates: (CandidateCheck & { document?: unknown })[] = [];
+  const candidates: (CandidateCheck & { document: unknown })[] = [];
   for (const [index, path] of submission.candidates.entries()) {
     const where = at(`candidates[${index + 1}]`);
     let real: string;
@@ -143,13 +167,17 @@ export async function checkAgentOutcome(options: {
     problems.push(severe(ProblemCodes.outcomeInvalid, at('candidates'), `候选数据定义的名称重复：${String(name)}`));
   }
 
-  // 待确认项：指向候选文件；数据定义的位置是其中的字段名。
+  // 待确认项与图上位置：指向候选文件；数据定义的位置是其中的字段名。
   const byPath = new Map(candidates.map((candidate) => [candidate.path, candidate]));
-  for (const [index, item] of submission.pending.entries()) {
-    const where = at(`pending[${index + 1}]`);
-    const candidate = byPath.get(item.file.replaceAll('\\', '/').replace(/^\.\//, ''));
+  const pointers = [
+    ...submission.pending.map((item, index) => ({ key: `pending[${index + 1}]`, label: '待确认项', item })),
+    ...(submission.locations ?? []).map((item, index) => ({ key: `locations[${index + 1}]`, label: '图上位置', item })),
+  ];
+  for (const { key, label, item } of pointers) {
+    const where = at(key);
+    const candidate = byPath.get(normalizeCandidatePath(item.file));
     if (!candidate) {
-      problems.push(severe(ProblemCodes.outcomeInvalid, where, `待确认项指向的文件不在候选中：${item.file}`));
+      problems.push(severe(ProblemCodes.outcomeInvalid, where, `${label}指向的文件不在候选中：${item.file}`));
     } else if (item.path !== undefined && candidate.kind === 'definition' && !fieldNames(candidate.document).includes(item.path)) {
       problems.push(severe(ProblemCodes.outcomeInvalid, where, `数据定义"${candidate.name}"中没有字段 ${item.path}`));
     }
@@ -157,33 +185,51 @@ export async function checkAgentOutcome(options: {
 
   // 引擎校验：数据定义按依赖顺序在内存中发布，版本号接在快照之后。
   const checked: CandidateCheck[] = candidates.map(({ document: _document, ...candidate }) => candidate);
-  const definitions = candidates.filter((candidate) => candidate.kind === 'definition');
-  const published: StaticSchemaEntry[] = [];
-  const results = new Map<string, { published?: StaticSchemaRef; problems: Problem[] }>();
+  const results = publishInDependencyOrder(candidates.filter((candidate) => candidate.kind === 'definition'), options.staticSchemas);
+  const final = checked.map((candidate) => {
+    const result = results.get(candidate.path);
+    return result ? { ...candidate, ...(result.published ? { published: result.published.ref } : {}), problems: result.problems } : candidate;
+  });
+  const severeFound = problems.some((problem) => problem.level === 'severe') ||
+    final.some((candidate) => candidate.problems.some((problem) => problem.level === 'severe'));
+  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final, ...(problems.length === 0 ? { submission } : {}) };
+}
+
+/**
+ * 在内存中按依赖顺序发布数据定义：引用其他候选的定义，等被引用者发布后再发布；版本号接在 existing 之后。
+ * 结果按发布顺序排列，发布不了的定义带着最后一次尝试的问题排在最后。
+ */
+export function publishInDependencyOrder(
+  definitions: readonly { readonly path: string; readonly document: unknown }[],
+  existing: readonly StaticSchemaEntry[],
+): Map<string, { published?: PublishedStaticSchema; problems: Problem[] }> {
+  const published: PublishedStaticSchema[] = [];
+  const results = new Map<string, { published?: PublishedStaticSchema; problems: Problem[] }>();
+  const failed = new Map<string, Problem[]>();
   let remaining = definitions;
   for (let progress = true; progress && remaining.length > 0;) {
     progress = false;
-    const next: typeof remaining = [];
+    const next: (typeof definitions)[number][] = [];
     for (const candidate of remaining) {
-      const outcome = publishStaticSchema(candidate.document, [...options.staticSchemas, ...published]);
+      const outcome = publishStaticSchema(candidate.document, [...existing, ...published]);
       if (outcome.published) {
         published.push(outcome.published);
-        results.set(candidate.path, { published: outcome.published.ref, problems: outcome.problems });
+        results.set(candidate.path, { published: outcome.published, problems: outcome.problems });
         progress = true;
       } else {
-        results.set(candidate.path, { problems: outcome.problems });
+        failed.set(candidate.path, outcome.problems);
         next.push(candidate);
       }
     }
     remaining = next;
   }
-  const final = checked.map((candidate) => {
-    const result = results.get(candidate.path);
-    return result ? { ...candidate, ...(result.published ? { published: result.published } : {}), problems: result.problems } : candidate;
-  });
-  const severeFound = problems.some((problem) => problem.level === 'severe') ||
-    final.some((candidate) => candidate.problems.some((problem) => problem.level === 'severe'));
-  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final, ...(problems.length === 0 ? { submission } : {}) };
+  for (const candidate of remaining) results.set(candidate.path, { problems: failed.get(candidate.path)! });
+  return results;
+}
+
+/** 待确认项与图上位置中的文件写法统一为 candidates/… 的正斜杠形式。 */
+export function normalizeCandidatePath(file: string): string {
+  return file.replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
 function candidateKind(document: unknown): CandidateKind | undefined {
@@ -211,6 +257,8 @@ function describe(error: ErrorObject): string {
     case 'minLength': return `${at} 不能为空`;
     case 'uniqueItems': return `${at} 有重复项`;
     case 'type': return `${at} 应为 ${String(params['type'])}`;
+    case 'minimum': return `${at} 不能小于 ${String(params['limit'])}`;
+    case 'exclusiveMinimum': return `${at} 必须大于 ${String(params['limit'])}`;
     default: return `${at} ${error.message ?? '不合规'}`;
   }
 }

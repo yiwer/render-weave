@@ -12,7 +12,7 @@ import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/pro
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadWorkspaceDocuments } from '../workspace.js';
-import { OUTCOME_FILE, checkAgentOutcome, type OutcomeCheck, type PendingItem } from './outcome.js';
+import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type PendingItem } from './outcome.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
 export const DEFAULT_ENDPOINT = 'https://token-plan.maas.qianwenaiapi.com/apps/anthropic';
@@ -97,6 +97,8 @@ export interface RoundOutcome {
   readonly inputs: { readonly sampleSha256: string; readonly workspaceFingerprint: string; readonly previous: null };
   readonly candidates: readonly { readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly sha256: string;
     readonly published?: { readonly name: string; readonly version: number } }[];
+  /** 字段在示例图上的位置，来自 Agent，没有时为空列表。 */
+  readonly locations: readonly FieldLocation[];
   readonly pending: readonly PendingItem[];
   readonly notes: string;
   readonly usage: RoundUsage;
@@ -202,7 +204,8 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
       inputs: { sampleSha256: inputs.sample.sha256, workspaceFingerprint: inputs.workspace.fingerprint, previous: null },
       candidates: check.candidates.map((candidate) => ({ path: candidate.path, kind: candidate.kind!, ...(candidate.name !== undefined ? { name: candidate.name } : {}),
         sha256: candidate.sha256!, ...(candidate.published ? { published: candidate.published } : {}) })),
-      pending: check.submission.pending.map((item) => ({ ...item, file: item.file.replaceAll('\\', '/').replace(/^\.\//, '') })),
+      locations: (check.submission.locations ?? []).map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
+      pending: check.submission.pending.map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
       notes: check.submission.notes,
       usage,
     };

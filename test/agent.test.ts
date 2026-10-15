@@ -185,6 +185,15 @@ describe('成果校验入口', () => {
   };
   const definitions = { 'candidates/schema-badge.json': BADGE, 'candidates/schema-session.json': SESSION };
 
+  it('成果格式文档（交给 Agent 的资料）中的示例结构合格', async () => {
+    const text = await readFile(join(repoRoot, 'agent/reference/outcome.md'), 'utf8');
+    const example = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(text)![1]!);
+    expect(example.locations.length).toBeGreaterThan(0);
+    const badge = { ...BADGE, fields: [...BADGE.fields, { name: 'seat', displayName: '座位排号', type: 'number' }] };
+    expect(await check({ 'candidates/schema-badge.json': badge, 'candidates/schema-session.json': SESSION, 'outcome.json': example }))
+      .toEqual({ verdict: 'qualified', messages: [] });
+  });
+
   it('结构合格：只看 outcome.json 与候选，不看草稿', async () => {
     expect(await check({ ...definitions, 'outcome.json': { candidates: ['candidates/schema-session.json', 'candidates/schema-badge.json'], pending: [], notes: '说明' } }))
       .toEqual({ verdict: 'qualified', messages: [] });
@@ -209,6 +218,13 @@ describe('成果校验入口', () => {
       ['outcome.json#pending[1]：数据定义"场次"中没有字段 room']],
     ['数据定义名称重复', { candidates: ['candidates/schema-session.json', 'candidates/schema-session-copy.json'], pending: [], notes: '说明' },
       ['outcome.json#candidates：候选数据定义的名称重复：场次']],
+    ['图上位置的字段不存在', { candidates: ['candidates/schema-session.json'], locations: [{ file: 'candidates/schema-session.json', path: 'room', where: '底部' }], pending: [], notes: '说明' },
+      ['outcome.json#locations[1]：数据定义"场次"中没有字段 room']],
+    ['图上位置指向非候选文件', { candidates: ['candidates/schema-session.json'], locations: [{ file: 'candidates/schema-badge.json', where: '整张' }], pending: [], notes: '说明' },
+      ['outcome.json#locations[1]：图上位置指向的文件不在候选中：candidates/schema-badge.json']],
+    ['图上位置的区域越界', { candidates: ['candidates/schema-session.json'],
+      locations: [{ file: 'candidates/schema-session.json', path: 'title', where: '底部', region: { x: -1, y: 0, width: 0, height: 5 } }], pending: [], notes: '说明' },
+      ['outcome.json#locations.0.region.x：locations.0.region.x 不能小于 0', 'outcome.json#locations.0.region.width：locations.0.region.width 必须大于 0']],
   ])('结构不合格：%s', async (_label, outcome, messages) => {
     expect(await check({ ...definitions, 'candidates/schema-session-copy.json': SESSION, 'scratch/schema.json': SESSION,
       'candidates/dataset.json': { dataset: { staticSchema: { name: '场次', version: 1 } }, data: {} }, 'outcome.json': outcome }))
