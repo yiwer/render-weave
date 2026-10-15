@@ -7,10 +7,11 @@ import { relative, sep } from 'node:path';
 import { Ajv2020, type ErrorObject } from 'ajv/dist/2020.js';
 import { dslDocumentKind } from '../dsl.js';
 import { ToolInputError, WorkingDirectory } from '../mcp/files.js';
-import { ProblemCodes, severe, type Problem } from '../problems.js';
-import { publishStaticSchema, type PublishedStaticSchema } from '../schema/publish.js';
+import { ProblemCodes, hint, severe, type Problem } from '../problems.js';
 import { isRecord } from '../util.js';
-import type { StaticSchemaEntry, StaticSchemaRef } from '../workspace.js';
+import type { StaticSchemaRef, Workspace } from '../workspace.js';
+import { checkCandidates, type CandidateContext } from './candidates.js';
+import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
 /** 待确认项的四类原因（M44）：看不清、推测、来源冲突、必填未提供。 */
@@ -20,9 +21,9 @@ export type PendingReason = (typeof PENDING_REASONS)[number];
 export interface PendingItem {
   /** 候选文件，相对 Agent 工作目录，如 candidates/schema-badge.json。 */
   readonly file: string;
-  /** 文件内的位置：数据定义写字段名，数据集写字段路径；省略表示整份文件。 */
+  /** 文件内的位置：数据定义写字段名，数据集写字段路径，模板写元素路径；省略表示整份文件。 */
   readonly path?: string;
-  /** 候选值，可以没有。 */
+  /** 候选值，可以没有。数据集中是该位置的值，草稿与"采纳候选"都用它；数据定义与模板中是给审核人的建议。 */
   readonly candidate?: unknown;
   readonly reason: PendingReason;
   readonly note: string;
@@ -31,7 +32,7 @@ export interface PendingItem {
 /** 候选中的一处在示例图上的位置，供审核人对照；由 Agent 自述，不是识别证据（M220）。 */
 export interface FieldLocation {
   readonly file: string;
-  /** 数据定义写字段名；省略表示整份文件。 */
+  /** 位置写法同待确认项；省略表示整份文件。 */
   readonly path?: string;
   /** 文字描述，如"顶栏左侧的大号线路号"。 */
   readonly where: string;
@@ -82,15 +83,18 @@ export interface CandidateCheck {
   /** 相对 Agent 工作目录的路径，用 / 分隔。 */
   readonly path: string;
   readonly kind?: CandidateKind;
+  /** 数据定义与模板的名称，数据集的 id。 */
   readonly name?: string;
   readonly sha256?: string;
   /** 数据定义候选在内存中发布成的名称与版本。 */
   readonly published?: StaticSchemaRef;
   readonly problems: readonly Problem[];
+  /** 数据集中落在待确认位置上的问题：留给审核处理，不计入本轮结论（M46）。 */
+  readonly deferred?: readonly Problem[];
 }
 
 export interface OutcomeCheck {
-  /** 合格：结构合格，且候选没有严重问题。 */
+  /** 合格：结构合格，且候选没有严重问题（待确认位置上的问题除外）。 */
   readonly verdict: 'qualified' | 'unqualified';
   /** 结构问题：没有 outcome.json、结构不合格、候选文件或待确认项不对。 */
   readonly problems: readonly Problem[];
@@ -99,17 +103,24 @@ export interface OutcomeCheck {
   readonly submission?: SubmittedOutcome;
 }
 
+/** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）。 */
+export interface OutcomeContext extends CandidateContext {
+  readonly request?: { readonly template: string };
+}
+
 export const OUTCOME_FILE = 'outcome.json';
 const CANDIDATE_DIR = 'candidates';
 const validateSubmission = new Ajv2020({ allErrors: true, strict: true }).compile(SUBMITTED_OUTCOME_SCHEMA);
 
-/** 校验一轮的成果：agentDir 是 Agent 工作目录，staticSchemas 是本轮工作区快照中已发布的静态数据定义。 */
+/** 校验一轮的成果：agentDir 是 Agent 工作目录，workspace 是本轮的工作区快照（连同资源仓库）。 */
 export async function checkAgentOutcome(options: {
   readonly task: AgentTaskId;
   readonly agentDir: string;
-  readonly staticSchemas: readonly StaticSchemaEntry[];
+  readonly workspace: Workspace;
+  readonly context?: OutcomeContext;
 }): Promise<OutcomeCheck> {
   const task = AGENT_TASKS[options.task];
+  const context = options.context ?? {};
   const files = await WorkingDirectory.open(options.agentDir);
   const problems: Problem[] = [];
   const at = (source: string) => ({ kind: 'input', source: source === '' ? OUTCOME_FILE : `${OUTCOME_FILE}#${source}` }) as const;
@@ -130,7 +141,7 @@ export async function checkAgentOutcome(options: {
   const submission = submitted as unknown as SubmittedOutcome;
 
   // 候选文件：在 candidates/ 下，可读，种类属于本任务。
-  const candidates: (CandidateCheck & { document: unknown })[] = [];
+  const candidates: (CandidateCheck & { kind: CandidateKind; document: unknown })[] = [];
   for (const [index, path] of submission.candidates.entries()) {
     const where = at(`candidates[${index + 1}]`);
     let real: string;
@@ -159,72 +170,70 @@ export async function checkAgentOutcome(options: {
       problems.push(severe(ProblemCodes.outcomeInvalid, where, `${task.name}的候选只能是${task.candidateKinds.map(kindName).join('或')}：${path}`));
       continue;
     }
-    const name = isRecord(document) && typeof document['name'] === 'string' ? document['name'] : undefined;
+    const name = candidateName(kind, document);
     candidates.push({ path: rel, kind, ...(name !== undefined ? { name } : {}), sha256: createHash('sha256').update(bytes).digest('hex'), document, problems: [] });
   }
   const names = candidates.filter((candidate) => candidate.kind === 'definition').map((candidate) => candidate.name);
   for (const name of new Set(names.filter((value, index) => names.indexOf(value) !== index))) {
     problems.push(severe(ProblemCodes.outcomeInvalid, at('candidates'), `候选数据定义的名称重复：${String(name)}`));
   }
+  if (task.id === 'template-design' && context.request && candidates.length === submission.candidates.length &&
+    !candidates.some((candidate) => candidate.kind === 'template' && candidate.name === context.request!.template)) {
+    problems.push(severe(ProblemCodes.outcomeInvalid, at('candidates'), `出图请求的主模板 ${context.request.template} 不在候选中`));
+  }
 
-  // 待确认项与图上位置：指向候选文件；数据定义的位置是其中的字段名。
+  // 待确认项与图上位置：指向候选文件中的一个位置（数据定义写字段名，数据集写字段路径，模板写元素路径）。
   const byPath = new Map(candidates.map((candidate) => [candidate.path, candidate]));
   const pointers = [
     ...submission.pending.map((item, index) => ({ key: `pending[${index + 1}]`, label: '待确认项', item })),
     ...(submission.locations ?? []).map((item, index) => ({ key: `locations[${index + 1}]`, label: '图上位置', item })),
   ];
+  // 待确认项要处理，位置必须找得到；图上位置只给审核人参考，对不上时记为提示，不影响结论。
   for (const { key, label, item } of pointers) {
     const where = at(key);
+    const report = (message: string) => problems.push(label === '待确认项'
+      ? severe(ProblemCodes.outcomeInvalid, where, message)
+      : hint(ProblemCodes.outcomeInvalid, where, `${message}（图上位置只作参考，不影响结论）`));
     const candidate = byPath.get(normalizeCandidatePath(item.file));
     if (!candidate) {
-      problems.push(severe(ProblemCodes.outcomeInvalid, where, `${label}指向的文件不在候选中：${item.file}`));
-    } else if (item.path !== undefined && candidate.kind === 'definition' && !fieldNames(candidate.document).includes(item.path)) {
-      problems.push(severe(ProblemCodes.outcomeInvalid, where, `数据定义"${candidate.name}"中没有字段 ${item.path}`));
+      report(`${label}指向的文件不在候选中：${item.file}`);
+      continue;
     }
+    if (item.path === undefined) continue;
+    const { error } = locate(candidate.kind, candidate.document, item.path);
+    if (error) report(candidate.kind === 'definition' ? `数据定义"${candidate.name}"中没有字段 ${item.path}` : error);
   }
 
-  // 引擎校验：数据定义按依赖顺序在内存中发布，版本号接在快照之后。
-  const checked: CandidateCheck[] = candidates.map(({ document: _document, ...candidate }) => candidate);
-  const results = publishInDependencyOrder(candidates.filter((candidate) => candidate.kind === 'definition'), options.staticSchemas);
-  const final = checked.map((candidate) => {
+  // 引擎校验：数据集先填上待确认项的候选值（草稿用候选值，M46），落在待确认位置上的问题留给审核。
+  const pendingPaths = new Map<string, string[]>();
+  for (const item of submission.pending) {
+    if (item.path === undefined) continue;
+    const file = normalizeCandidatePath(item.file);
+    pendingPaths.set(file, [...(pendingPaths.get(file) ?? []), item.path]);
+  }
+  const documents = candidates.map((candidate) => ({ path: candidate.path, kind: candidate.kind,
+    document: candidate.kind === 'dataset' ? withPendingCandidates(candidate.document, submission.pending.filter((item) => normalizeCandidatePath(item.file) === candidate.path)) : candidate.document }));
+  const results = checkCandidates(documents, options.workspace, context);
+  const final: CandidateCheck[] = candidates.map(({ document: _document, ...candidate }) => {
     const result = results.get(candidate.path);
-    return result ? { ...candidate, ...(result.published ? { published: result.published.ref } : {}), problems: result.problems } : candidate;
+    if (!result) return candidate;
+    const paths = pendingPaths.get(candidate.path) ?? [];
+    const deferred = candidate.kind === 'dataset' ? result.problems.filter((problem) => problem.location.kind === 'field' && paths.some((path) => within(path, (problem.location as { path: string }).path))) : [];
+    return {
+      ...candidate, ...(result.published ? { published: result.published.ref } : {}),
+      problems: result.problems.filter((problem) => !deferred.includes(problem)), ...(deferred.length > 0 ? { deferred } : {}),
+    };
   });
   const severeFound = problems.some((problem) => problem.level === 'severe') ||
     final.some((candidate) => candidate.problems.some((problem) => problem.level === 'severe'));
-  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final, ...(problems.length === 0 ? { submission } : {}) };
+  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final, ...(problems.every((problem) => problem.level !== 'severe') ? { submission } : {}) };
 }
 
-/**
- * 在内存中按依赖顺序发布数据定义：引用其他候选的定义，等被引用者发布后再发布；版本号接在 existing 之后。
- * 结果按发布顺序排列，发布不了的定义带着最后一次尝试的问题排在最后。
- */
-export function publishInDependencyOrder(
-  definitions: readonly { readonly path: string; readonly document: unknown }[],
-  existing: readonly StaticSchemaEntry[],
-): Map<string, { published?: PublishedStaticSchema; problems: Problem[] }> {
-  const published: PublishedStaticSchema[] = [];
-  const results = new Map<string, { published?: PublishedStaticSchema; problems: Problem[] }>();
-  const failed = new Map<string, Problem[]>();
-  let remaining = definitions;
-  for (let progress = true; progress && remaining.length > 0;) {
-    progress = false;
-    const next: (typeof definitions)[number][] = [];
-    for (const candidate of remaining) {
-      const outcome = publishStaticSchema(candidate.document, [...existing, ...published]);
-      if (outcome.published) {
-        published.push(outcome.published);
-        results.set(candidate.path, { published: outcome.published, problems: outcome.problems });
-        progress = true;
-      } else {
-        failed.set(candidate.path, outcome.problems);
-        next.push(candidate);
-      }
-    }
-    remaining = next;
-  }
-  for (const candidate of remaining) results.set(candidate.path, { problems: failed.get(candidate.path)! });
-  return results;
+/** 数据集中带候选值的待确认项：把候选值写到该位置。找不到的位置已在结构检查中报过。 */
+export function withPendingCandidates(document: unknown, pending: readonly PendingItem[]): unknown {
+  const changes = pending.filter((item) => item.path !== undefined && item.candidate !== undefined)
+    .map((item) => ({ path: item.path!, action: 'set' as const, value: item.candidate }));
+  return changes.length === 0 ? document : applyChanges('dataset', document, changes).document;
 }
 
 /** 待确认项与图上位置中的文件写法统一为 candidates/… 的正斜杠形式。 */
@@ -237,13 +246,14 @@ function candidateKind(document: unknown): CandidateKind | undefined {
   return kind === 'definition' || kind === 'dataset' || kind === 'template' ? kind : undefined;
 }
 
-function kindName(kind: CandidateKind): string {
-  return { definition: '数据定义', dataset: '数据集', template: '模板' }[kind];
+/** 数据定义与模板取 name，数据集取 dataset.id。 */
+export function candidateName(kind: CandidateKind, document: unknown): string | undefined {
+  const value = kind === 'dataset' ? (isRecord(document) && isRecord(document['dataset']) ? document['dataset']['id'] : undefined) : isRecord(document) ? document['name'] : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
-function fieldNames(document: unknown): string[] {
-  const fields = isRecord(document) && Array.isArray(document['fields']) ? document['fields'] : [];
-  return fields.flatMap((field) => (isRecord(field) && typeof field['name'] === 'string' ? [field['name']] : []));
+function kindName(kind: CandidateKind): string {
+  return { definition: '数据定义', dataset: '数据集', template: '模板' }[kind];
 }
 
 function describe(error: ErrorObject): string {

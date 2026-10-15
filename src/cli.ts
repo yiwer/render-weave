@@ -64,7 +64,8 @@ const USAGE = `用法：
   renderweave resources-check --resources <目录> --workspace <目录> --id <资源ID> --kind <image|font> --file <新内容文件> --out <检查报告.json> [--options <字体配置.json>]
   renderweave resources-apply --resources <目录> --workspace <目录> --file <新内容文件> --check <检查报告.json> [--options <字体配置.json>]
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
-  renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>] [--definition <数据定义>]
+  renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
+                        [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
@@ -84,13 +85,16 @@ mcp（只读工具服务，stdio 上按行分隔的 JSON-RPC）
   --log         可选，每次工具调用追加一行记录
 
 agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 renderweave mcp）
-  --task        数据定义提取（目前只支持这一种；数据集提取、模板辅助设计、模板辅助修改尚未实现）
+  --task        数据定义提取、数据集提取或模板辅助设计（模板辅助修改尚未实现）
   --sample      示例图：PNG、JPEG 或 WebP
   --brief       项目说明（Markdown）：业务、尺寸、目标范围、客户说明
   --resources   资源仓库目录
   --out         新轮次目录，必须不存在或为空
   --domain      可选，领域约定包，取 agent/domains/<领域>.md，如 route-sign
-  --workspace   可选，工作区目录，复制为本轮的只读快照
+  --workspace   工作区目录，复制为本轮的只读快照；数据集提取与模板辅助设计必须给
+  --definition  数据集提取所基于的已发布数据定义：名称，或 名称@版本（只写名称时取最新版本）
+  --dataset     模板辅助设计所基于的已保存数据集 id
+  --request     示例图对应的出图请求（主模板名、参数与输出尺寸）：模板辅助设计必须给；数据集提取可选，用工作区已有的模板预览
   --key-env     可选，key 所在的环境变量名，缺省 QWEN_TOKEN_PLAN_API_KEY；key 只经环境变量传入，不写任何文件
   --model、--small-model、--endpoint、--max-turns、--claude  可选，模型、轻量任务模型、兼容端点、轮数上限与 Claude Code 可执行文件
 
@@ -128,7 +132,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'agent review': [],
   'agent apply': [],
 };
-const AGENT_RUN_OPTIONAL = ['domain', 'workspace', 'definition', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
+const AGENT_RUN_OPTIONAL = ['domain', 'workspace', 'definition', 'dataset', 'request', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'] };
@@ -319,6 +323,8 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options.domain !== undefined ? { domain: options.domain } : {}),
       ...(options.workspace !== undefined ? { workspace: options.workspace } : {}),
       ...(options.definition !== undefined ? { definition: options.definition } : {}),
+      ...(options.dataset !== undefined ? { dataset: options.dataset } : {}),
+      ...(options.request !== undefined ? { request: options.request } : {}),
       ...(options.model !== undefined ? { model: options.model } : {}),
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
@@ -391,7 +397,7 @@ async function runApply(roundDir: string, options: Record<string, string>, overw
   if (!result.applied) return ExitCodes.failed;
   io.stdout(`${JSON.stringify({
     workspace: result.applied.workspace, overwrite: result.applied.overwrite,
-    published: result.applied.published.map((item) => ({ name: item.name, version: item.version, files: item.files })),
+    published: result.applied.published.map((item) => ({ kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files })),
   }, null, 2)}\n`);
   return ExitCodes.ok;
 }

@@ -1,30 +1,32 @@
 /**
- * 审核与应用（M47、M18、M51；第三阶段 PRD 第 10、11 条）。
+ * 审核与应用（M46、M47、M18、M51、M52；第三阶段 PRD 第 10、11 条）。
  *
- * 审核结果保存在轮次目录的 review.json。它在 Agent 工作目录之外，Agent 写不到。待确认项逐项处理：
- * - 采纳候选（adopt）：保留候选文件中该位置的写法；
- * - 改值（edit）：用审核人给的值替换该位置。数据定义中是整个字段；省略位置时是整份定义；
- * - 标为空（empty）：删去该位置。数据定义中删去该字段；省略位置时不发布这份候选。
+ * 审核结果保存在轮次目录的 review.json。它在 Agent 工作目录之外，Agent 写不到。待确认项逐项处理（位置的写法见 locations.ts）：
+ * - 采纳候选（adopt）：数据定义与模板保留候选文件中该位置的写法；数据集把候选值写到该位置，没有候选值时保留文件中的值；
+ * - 改值（edit）：用审核人给的值替换该位置；省略位置时替换整份文件；
+ * - 标为空（empty）：删去该位置；省略位置时不写入这份候选。
  *
- * 其余内容整体确认一次。审核视图把处理结果作用到候选上，在工作区快照上于内存中重新发布，给出字段清单与编译产物摘要。
+ * 其余内容整体确认一次。审核视图把处理结果作用到候选上，在工作区快照上重新校验，给出字段清单、数据清单或元素清单；
+ * 有出图请求时，由 RenderWeave 重新渲染草稿预览（M52）。数据集中还没处理的待确认项用候选值预览（M46）。
  *
  * 应用只接受审核通过的轮次：先核对成果与候选没有被改动，再比对工作区指纹。工作区已变化时列出差异并拒绝，除非明确选择覆盖。
- * 全部定义先在内存中发布成功，再排他写入；任何失败都撤回本次写入，工作区保持原状。
+ * 在当前工作区上重新校验，全部通过后再排他写入：数据定义发布为下一个版本，数据集与模板作为新文件保存；任何失败都撤回本次写入。
  */
 import { createHash, randomUUID } from 'node:crypto';
 import { readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
+import { createMemoryResourceRepository } from '../resources.js';
 import { publishStaticSchema, type PublishedStaticSchema } from '../schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from '../schema/publish-files.js';
 import { describeError, isRecord } from '../util.js';
-import { loadWorkspaceDocuments, type StaticSchemaEntry, type StaticSchemaRef } from '../workspace.js';
-import {
-  OUTCOME_FILE, SUBMITTED_OUTCOME_SCHEMA, publishInDependencyOrder,
-  type FieldLocation, type PendingItem, type PendingReason,
-} from './outcome.js';
+import { loadWorkspace, loadWorkspaceDocuments, type StaticSchemaEntry, type StaticSchemaRef, type Workspace } from '../workspace.js';
+import { checkCandidates, type CandidateContext, type CandidateResult } from './candidates.js';
+import { applyChanges, flattenData, flattenElements, fullElementPath, locate, overlaps, read, within, type Change } from './locations.js';
+import { OUTCOME_FILE, SUBMITTED_OUTCOME_SCHEMA, candidateName, type FieldLocation, type PendingItem, type PendingReason } from './outcome.js';
+import { renderPreview, type PreviewView } from './preview.js';
 import { AgentUsageError, workspaceFingerprint, type RoundOutcome, type RoundRecord, type RoundUsage } from './run.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
@@ -33,6 +35,7 @@ export const APPLIED_FILE = 'applied.json';
 export const REVIEW_ACTIONS = ['adopt', 'edit', 'empty'] as const;
 export type ReviewAction = (typeof REVIEW_ACTIONS)[number];
 export type ReviewStatus = 'inProgress' | 'approved' | 'rejected';
+export type { PreviewView } from './preview.js';
 
 /** 一个待确认项的处理结果。 */
 export interface ReviewDecision {
@@ -42,7 +45,7 @@ export interface ReviewDecision {
   readonly file: string;
   readonly path?: string;
   readonly action: ReviewAction;
-  /** 改值时的新值：数据定义中是整个字段；省略位置时是整份定义。 */
+  /** 改值时的新值：数据定义中是整个字段，模板中是整个元素，数据集中是该位置的值；省略位置时是整份文件。 */
   readonly value?: unknown;
 }
 
@@ -90,9 +93,11 @@ export interface ReviewView {
   readonly saved: boolean;
   readonly pending: readonly PendingView[];
   readonly candidates: readonly CandidateView[];
+  /** 由 RenderWeave 重新渲染的草稿预览；本轮有出图请求时才有。 */
+  readonly preview?: PreviewView;
   /** 审核层面的问题：未处理的待确认项、未整体确认、处理结果矛盾、review.json 不合格。候选的引擎问题在各候选中。 */
   readonly problems: readonly Problem[];
-  /** 没有任何严重问题（含候选的引擎问题）时才能通过。 */
+  /** 没有任何严重问题（含候选的引擎问题，以及模板辅助设计的预览问题）时才能通过。 */
   readonly canApprove: boolean;
   readonly applied?: AppliedRecord;
 }
@@ -109,16 +114,25 @@ export interface PendingView extends PendingItem {
 export interface CandidateView {
   readonly path: string;
   readonly kind: CandidateKind;
+  /** 数据定义与模板的名称，数据集的 id。 */
   readonly name?: string;
   readonly displayName?: string;
   readonly description?: string;
-  /** 整份标为空：不发布。 */
+  /** 整份标为空：不写入。 */
   readonly dropped: boolean;
   /** 整份改过。 */
   readonly edited: boolean;
   /** 作用了处理结果之后的文档。 */
   readonly document?: unknown;
+  /** 数据定义的字段清单；其他种类为空。 */
   readonly fields: readonly FieldView[];
+  /** 数据集的数据清单：逐个叶子值。 */
+  readonly entries?: readonly EntryView[];
+  /** 数据集选定的数据定义。 */
+  readonly staticSchema?: StaticSchemaRef;
+  /** 模板的元素清单与对外参数、基准。 */
+  readonly elements?: readonly ElementView[];
+  readonly template?: { readonly base?: StaticSchemaRef; readonly parameters: readonly ParameterView[] };
   /** 整份候选在图上的位置。 */
   readonly location?: FieldLocation;
   /** 在工作区快照上于内存中发布成的名称与版本。 */
@@ -126,6 +140,9 @@ export interface CandidateView {
   readonly compiled?: CompiledSummary;
   readonly problems: readonly Problem[];
 }
+
+/** kept 保留原样；edited 审核时改过；removed 审核时标为空，不再出现在文档中。 */
+export type ItemState = 'kept' | 'edited' | 'removed';
 
 export interface FieldView {
   readonly name: string;
@@ -138,8 +155,33 @@ export interface FieldView {
   readonly location?: FieldLocation;
   /** 指向该字段的待确认项序号。 */
   readonly pending: readonly number[];
-  /** kept 保留原样；edited 审核时改过；removed 审核时标为空，不再出现在定义中。 */
-  readonly state: 'kept' | 'edited' | 'removed';
+  readonly state: ItemState;
+}
+
+export interface EntryView {
+  /** 字段路径，如 stations[3].name。 */
+  readonly path: string;
+  readonly value: unknown;
+  readonly location?: FieldLocation;
+  /** 位置与它重叠的待确认项序号。 */
+  readonly pending: readonly number[];
+  readonly state: ItemState;
+}
+
+export interface ElementView {
+  /** 元素路径，如 胸牌/姓名区/姓名。 */
+  readonly path: string;
+  readonly type: string;
+  readonly location?: FieldLocation;
+  readonly pending: readonly number[];
+  readonly state: ItemState;
+}
+
+export interface ParameterView {
+  readonly name: string;
+  readonly displayName?: string;
+  readonly type?: string;
+  readonly visibility?: string;
 }
 
 export interface CompiledSummary {
@@ -176,7 +218,10 @@ export interface AppliedRecord {
   /** 工作区已变化时明确选择了覆盖。 */
   readonly overwrite: boolean;
   readonly fingerprints: { readonly round: string; readonly before: string; readonly after: string };
-  readonly published: readonly { readonly candidate: string; readonly name: string; readonly version: number; readonly files: readonly string[] }[];
+  /** 写入的内容：数据定义带发布的版本，数据集与模板没有版本。 */
+  readonly published: readonly {
+    readonly candidate: string; readonly kind: CandidateKind; readonly name: string; readonly version?: number; readonly files: readonly string[];
+  }[];
   /** 覆盖时工作区相对成果所基于快照的变化。 */
   readonly drift?: WorkspaceDrift;
 }
@@ -197,6 +242,7 @@ export interface AgentApplyResult {
 }
 
 const REASON_NAMES: Record<PendingReason, string> = { unreadable: '看不清', inferred: '推测', conflicting: '来源冲突', requiredMissing: '必填未提供' };
+const KIND_NAMES: Record<CandidateKind, string> = { definition: '定义', dataset: '数据集', template: '模板' };
 const TYPE_NAMES: Record<string, string> = {
   text: '文本', number: '数值', date: '日期', time: '时刻', datetime: '日期时间', boolean: '是否', image: '图片', list: '列表', ref: '引用',
 };
@@ -238,14 +284,19 @@ const validateReviewRecord = ajv.compile({
 
 interface RoundCandidate { readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly document: unknown }
 
-/** 读入并核对过的轮次：成果、运行记录、候选与工作区快照。 */
+/** 读入并核对过的轮次：成果、运行记录、候选、工作区快照与出图请求。 */
 interface AgentRound {
   readonly dir: string;
   readonly outcome: RoundOutcome;
   readonly outcomeSha256: string;
   readonly record: RoundRecord;
   readonly candidates: readonly RoundCandidate[];
-  readonly snapshot: readonly StaticSchemaEntry[];
+  /** 工作区快照，连同资源仓库（有记录时）。 */
+  readonly workspace: Workspace;
+  readonly resourcesDir?: string;
+  readonly context: CandidateContext;
+  /** 规范化后的出图请求（轮次目录的 request.json）。 */
+  readonly request?: Record<string, unknown>;
   readonly applied?: AppliedRecord;
 }
 
@@ -254,7 +305,7 @@ export async function readReview(roundDir: string): Promise<{ view?: ReviewView;
   const opened = await openRound(roundDir);
   if (!opened.round) return { problems: opened.problems };
   const { record, saved, problems } = await readReviewRecord(opened.round);
-  return { view: buildView(opened.round, record, saved, problems), problems: [] };
+  return { view: await buildView(opened.round, record, saved, problems), problems: [] };
 }
 
 /**
@@ -267,8 +318,8 @@ export async function changeReview(roundDir: string, change: unknown): Promise<{
   const round = opened.round;
   const current = await readReviewRecord(round);
   const view = () => buildView(round, current.record, current.saved, current.problems);
-  const refuse = (message: string, code: Problem['code'] = ProblemCodes.reviewInvalid) =>
-    ({ view: view(), problems: [severe(code, { kind: 'input', source: join(round.dir, REVIEW_FILE) }, message)] });
+  const refuse = async (message: string, code: Problem['code'] = ProblemCodes.reviewInvalid) =>
+    ({ view: await view(), problems: [severe(code, { kind: 'input', source: join(round.dir, REVIEW_FILE) }, message)] });
 
   if (round.applied) return refuse('本轮已经应用，审核结果不再修改');
   if (current.problems.length > 0) return refuse(`review.json 不能继续使用：${current.problems.map((problem) => problem.message).join('；')}`);
@@ -287,8 +338,9 @@ export async function changeReview(roundDir: string, change: unknown): Promise<{
       const pending = pendingItem(item);
       if (!pending) return refuse(`没有待确认项 ${String(item)}`);
       if (!REVIEW_ACTIONS.includes(action as ReviewAction)) return refuse(`处理方式只能是 ${REVIEW_ACTIONS.join('、')}`);
-      if (action === 'edit' && !isRecord(value)) {
-        return refuse(pending.path === undefined ? '改值时要给出整份定义（JSON 对象）' : `改值时要给出字段 ${pending.path} 的完整写法（JSON 对象）`);
+      if (action === 'edit') {
+        const invalid = editValueProblem(kindOf(round, pending.file), pending.path, value);
+        if (invalid) return refuse(invalid);
       }
       if (action !== 'edit' && value !== undefined) return refuse('只有改值才带新值');
       const decision: ReviewDecision = {
@@ -314,11 +366,10 @@ export async function changeReview(roundDir: string, change: unknown): Promise<{
       if (!inProgress) return refuse(concluded);
       const comment = optionalComment(change['comment']);
       if (comment === null) return refuse('备注必须是文本');
-      const before = view();
+      const before = await view();
       if (!before.canApprove) {
-        const blocking = [...before.problems, ...before.candidates.flatMap((candidate) => candidate.problems)].filter((problem) => problem.level === 'severe');
         return { view: before, problems: [severe(ProblemCodes.reviewPending, { kind: 'input', source: join(round.dir, REVIEW_FILE) },
-          `还不能通过：${blocking.map((problem) => problem.message).join('；')}`)] };
+          `还不能通过：${blockingProblems(before).map((problem) => problem.message).join('；')}`)] };
       }
       const { comment: _comment, ...rest } = record;
       next = { ...rest, status: 'approved', ...(comment ? { comment } : {}), updatedAt: now, decidedAt: now };
@@ -341,10 +392,12 @@ export async function changeReview(roundDir: string, change: unknown): Promise<{
       return refuse(`无法识别的审核操作：${change['type']}`);
   }
   await saveReviewRecord(round.dir, next);
-  return { view: buildView(round, next, true, []), problems: [] };
+  return { view: await buildView(round, next, true, []), problems: [] };
 }
 
-/** 应用审核通过的轮次：数据定义经发布入口发布为下一个版本（M18），写入工作区。 */
+/**
+ * 应用审核通过的轮次：数据定义经发布入口发布为下一个版本（M18），数据集与模板作为新文件保存到工作区（M49 的"应用即保存"）。
+ */
 export async function applyAgentRound(options: AgentApplyOptions): Promise<AgentApplyResult> {
   const opened = await openRound(options.roundDir);
   if (!opened.round) return { problems: opened.problems };
@@ -366,10 +419,9 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
   }
   // review.json 可能被手工改过：按其中的处理结果重新核对一遍，仍须没有严重问题。
   const state = reviewState(round, review.record);
-  const view = buildView(round, review.record, true, [], state);
+  const view = await buildView(round, review.record, true, [], state);
   if (!view.canApprove) {
-    const blocking = [...view.problems, ...view.candidates.flatMap((candidate) => candidate.problems)].filter((problem) => problem.level === 'severe');
-    return { problems: [severe(ProblemCodes.reviewInvalid, at(REVIEW_FILE), `审核结果与成果对不上，不能应用：${blocking.map((problem) => problem.message).join('；')}`)] };
+    return { problems: [severe(ProblemCodes.reviewInvalid, at(REVIEW_FILE), `审核结果与成果对不上，不能应用：${blockingProblems(view).map((problem) => problem.message).join('；')}`)] };
   }
 
   const source = options.workspace ?? round.record.inputs.workspace.source;
@@ -383,22 +435,23 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
 
   // 工作区自成果生成后变了：列出差异，要求明确选择覆盖或重做（M51）。
   const before = await workspaceFingerprint(workspace);
-  const current = await loadWorkspaceDocuments(workspace);
+  const current = await loadRoundWorkspace(workspace, round.resourcesDir);
   let drift: WorkspaceDrift | undefined;
   if (before !== round.outcome.inputs.workspaceFingerprint) {
     drift = await workspaceDrift(round, workspace, before, current.staticSchemas, state);
     if (!options.overwrite) {
       return { drift, problems: [severe(ProblemCodes.applyWorkspaceChanged, { kind: 'input', source: workspace },
-        '工作区自成果生成后已变化：确认差异后加 --overwrite 按当前工作区发布为下一个版本，或基于当前工作区重新发起一轮')] };
+        '工作区自成果生成后已变化：确认差异后加 --overwrite 按当前工作区写入，或基于当前工作区重新发起一轮')] };
     }
   }
   const failed = (problems: readonly Problem[]): AgentApplyResult => ({ ...(drift ? { drift } : {}), problems });
   if (current.problems.some((problem) => problem.level === 'severe')) return failed(current.problems);
 
-  // 按审核时的发布顺序在当前工作区上重新发布。覆盖时版本号可能后移，候选之间的引用随之改到新版本。
+  // 数据定义：按审核时的发布顺序在当前工作区上重新发布。覆盖时版本号可能后移，候选之间的引用随之改到新版本。
   const versions = new Map<string, number>();
   const published: { candidate: string; entry: PublishedStaticSchema }[] = [];
   for (const [path, result] of state.results) {
+    if (!result.published) continue;
     const document = structuredClone(state.documents.get(path)) as Record<string, unknown>;
     retargetReferences(document, (ref) => {
       const version = versions.get(`${ref.name}\0${ref.version}`);
@@ -409,14 +462,31 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
     if (!outcome.published) {
       return failed([severe(ProblemCodes.applyFailed, at(path), `发布失败，工作区未改动：${outcome.problems.map((problem) => problem.message).join('；')}`), ...outcome.problems]);
     }
-    versions.set(`${result.published!.ref.name}\0${result.published!.ref.version}`, outcome.published.ref.version);
+    versions.set(`${result.published.ref.name}\0${result.published.ref.version}`, outcome.published.ref.version);
     published.push({ candidate: path, entry: outcome.published });
   }
+  // 数据集与模板：在当前工作区上重新校验（工作区可能已有同名的数据集或模板）。
+  const saved = round.candidates.filter((candidate) => candidate.kind !== 'definition' && state.documents.has(candidate.path));
+  const recheck = checkCandidates(saved.map((candidate) => ({ path: candidate.path, kind: candidate.kind, document: state.documents.get(candidate.path) })), current, round.context);
+  const severeFound = [...recheck].flatMap(([path, result]) => result.problems.filter((problem) => problem.level === 'severe').map((problem) => ({ path, problem })));
+  if (severeFound.length > 0) {
+    return failed([severe(ProblemCodes.applyFailed, { kind: 'input', source: workspace },
+      `在当前工作区上校验不通过，工作区未改动：${severeFound.map(({ path, problem }) => `${path}：${problem.message}`).join('；')}`)]);
+  }
 
-  const files = published.flatMap(({ candidate, entry }) => {
-    const names = publishedFileNames(candidate, entry.ref.version);
-    return [{ path: join(workspace, names.schema), value: entry.definition }, { path: join(workspace, names.compiled), value: entry.compiled }];
-  });
+  const entries: { candidate: string; kind: CandidateKind; name: string; version?: number; files: { path: string; value: unknown }[] }[] = [
+    ...published.map(({ candidate, entry }) => {
+      const names = publishedFileNames(candidate, entry.ref.version);
+      return { candidate, kind: 'definition' as const, name: entry.ref.name, version: entry.ref.version,
+        files: [{ path: join(workspace, names.schema), value: entry.definition }, { path: join(workspace, names.compiled), value: entry.compiled }] };
+    }),
+    ...saved.map((candidate) => {
+      const file = `${candidate.kind}-${basename(candidate.path, '.json').replace(/^(dataset|template)-/, '')}.json`;
+      return { candidate: candidate.path, kind: candidate.kind, name: candidateName(candidate.kind, state.documents.get(candidate.path)) ?? file,
+        files: [{ path: join(workspace, file), value: state.documents.get(candidate.path) }] };
+    }),
+  ];
+  const files = entries.flatMap((entry) => entry.files);
   try {
     await writeExclusiveJsonFiles(files);
   } catch (error) {
@@ -425,10 +495,10 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
   const applied: AppliedRecord = {
     format: 'renderweave-applied/1', appliedAt: new Date().toISOString(), workspace, overwrite: drift !== undefined,
     fingerprints: { round: round.outcome.inputs.workspaceFingerprint, before, after: await workspaceFingerprint(workspace) },
-    published: published.map(({ candidate, entry }) => {
-      const names = publishedFileNames(candidate, entry.ref.version);
-      return { candidate, name: entry.ref.name, version: entry.ref.version, files: [names.schema, names.compiled] };
-    }),
+    published: entries.map((entry) => ({
+      candidate: entry.candidate, kind: entry.kind, name: entry.name, ...(entry.version !== undefined ? { version: entry.version } : {}),
+      files: entry.files.map((file) => basename(file.path)),
+    })),
     ...(drift ? { drift } : {}),
   };
   try {
@@ -456,7 +526,7 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   if (typeof outcomeFile === 'string') return fail(OUTCOME_FILE, `没有可审核的轮次成果：${outcomeFile}。结构不合格的轮次没有 outcome.json，不能审核`);
   if (!validateRoundOutcome(outcomeFile.value)) return fail(OUTCOME_FILE, 'outcome.json 不是 renderweave-outcome/1 轮次成果');
   const stored = outcomeFile.value as unknown as RoundOutcome;
-  const outcome: RoundOutcome = { ...stored, locations: stored.locations ?? [] };
+  let outcome: RoundOutcome = { ...stored, locations: stored.locations ?? [] };
   const recordFile = await readJson('round.json');
   if (typeof recordFile === 'string') return fail('round.json', `轮次记录无法读取：${recordFile}`);
   const record = recordFile.value as RoundRecord;
@@ -475,21 +545,54 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     if (createHash('sha256').update(bytes).digest('hex') !== candidate.sha256) return fail(candidate.path, `候选文件自成果生成后被改动：${candidate.path}`);
     candidates.push({ path: candidate.path, kind: candidate.kind, ...(candidate.name !== undefined ? { name: candidate.name } : {}), document: JSON.parse(bytes.toString('utf8')) });
   }
-  for (const item of [...outcome.pending, ...outcome.locations]) {
-    if (!candidates.some((candidate) => candidate.path === item.file)) return fail(OUTCOME_FILE, `待确认项或图上位置指向的文件不在候选中：${item.file}`);
+  for (const item of outcome.pending) {
+    if (!candidates.some((candidate) => candidate.path === item.file)) return fail(OUTCOME_FILE, `待确认项指向的文件不在候选中：${item.file}`);
   }
-  const { staticSchemas } = await loadWorkspaceDocuments(join(root, 'snapshot'));
+  // 模板中的元素路径统一为从模板名开始的写法，待确认项、图上位置与元素清单才能对上。
+  const full = <T extends { file: string; path?: string }>(item: T): T => {
+    const candidate = candidates.find((entry) => entry.path === item.file);
+    return candidate?.kind === 'template' && item.path !== undefined ? { ...item, path: fullElementPath(candidate.document, item.path) } : item;
+  };
+  outcome = { ...outcome, pending: outcome.pending.map(full), locations: outcome.locations.map(full) };
+  let request: Record<string, unknown> | undefined;
+  if (record.inputs.request) {
+    const requestFile = await readJson('request.json');
+    if (typeof requestFile === 'string' || !isRecord(requestFile.value)) return fail('request.json', '出图请求无法读取');
+    request = requestFile.value;
+  }
+  const resourcesDir = record.inputs.resources ?? await resourcesFromMcpConfig(root);
+  const workspace = await loadRoundWorkspace(join(root, 'snapshot'), resourcesDir);
   let applied: AppliedRecord | undefined;
   const appliedFile = await readJson(APPLIED_FILE);
   if (typeof appliedFile !== 'string') applied = appliedFile.value as AppliedRecord;
   else if (await exists(join(root, APPLIED_FILE))) return fail(APPLIED_FILE, `应用记录无法读取：${appliedFile}`);
   return {
     round: {
-      dir: root, outcome, outcomeSha256: createHash('sha256').update(outcomeFile.bytes).digest('hex'), record, candidates, snapshot: staticSchemas,
-      ...(applied ? { applied } : {}),
+      dir: root, outcome, outcomeSha256: createHash('sha256').update(outcomeFile.bytes).digest('hex'), record, candidates, workspace,
+      ...(resourcesDir ? { resourcesDir } : {}),
+      context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition } : {},
+      ...(request ? { request } : {}), ...(applied ? { applied } : {}),
     },
     problems: [],
   };
+}
+
+/** 工作区连同资源仓库；没有资源仓库记录时（票据 04、05 的数据定义轮次）用空仓库，数据定义的校验用不到资源。 */
+async function loadRoundWorkspace(dir: string, resourcesDir: string | undefined): Promise<Workspace> {
+  if (resourcesDir) return loadWorkspace({ dir, resourcesDir });
+  return { ...(await loadWorkspaceDocuments(dir)), resources: createMemoryResourceRepository([]) };
+}
+
+/** 早期轮次的 round.json 没有记录资源仓库，从 MCP 配置的启动参数里取。 */
+async function resourcesFromMcpConfig(root: string): Promise<string | undefined> {
+  try {
+    const config = JSON.parse(await readFile(join(root, 'logs/mcp.json'), 'utf8')) as { mcpServers?: { rw?: { args?: string[] } } };
+    const args = config.mcpServers?.rw?.args ?? [];
+    const index = args.indexOf('--resources');
+    return index >= 0 ? args[index + 1] : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** 读 review.json；没有时给出空白的审核结果。不可读、不合格或针对的不是当前成果时带问题，此时不能继续审核或应用。 */
@@ -521,11 +624,22 @@ async function readReviewRecord(round: AgentRound): Promise<{ record: ReviewReco
     if (!pending || pending.file !== decision.file || pending.path !== decision.path) return invalid(`处理结果 ${decision.item} 与待确认项对不上`);
     if (seen.has(decision.item)) return invalid(`待确认项 ${decision.item} 有多个处理结果`);
     seen.add(decision.item);
-    if ((decision.action === 'edit') !== (decision.value !== undefined) || (decision.action === 'edit' && !isRecord(decision.value))) {
-      return invalid(`处理结果 ${decision.item}：只有改值带新值，且新值是 JSON 对象`);
-    }
+    if (decision.action !== 'edit' && decision.value !== undefined) return invalid(`处理结果 ${decision.item}：只有改值带新值`);
+    const problem = decision.action === 'edit' ? editValueProblem(kindOf(round, decision.file), decision.path, decision.value) : undefined;
+    if (problem) return invalid(`处理结果 ${decision.item}：${problem}`);
   }
   return { record, saved: true, problems: [] };
+}
+
+/** 改值的新值是否合用：整份与数据定义、模板中的位置要给 JSON 对象，数据集中的位置给任意值。 */
+function editValueProblem(kind: CandidateKind, path: string | undefined, value: unknown): string | undefined {
+  if (path === undefined) return isRecord(value) ? undefined : `改值时要给出整份${KIND_NAMES[kind]}（JSON 对象）`;
+  if (kind === 'dataset') return value === undefined ? `改值时要给出 ${path} 的新值` : undefined;
+  return isRecord(value) ? undefined : `改值时要给出${kind === 'definition' ? '字段' : '元素'} ${path} 的完整写法（JSON 对象）`;
+}
+
+function kindOf(round: AgentRound, file: string): CandidateKind {
+  return round.candidates.find((candidate) => candidate.path === file)?.kind ?? 'definition';
 }
 
 async function saveReviewRecord(dir: string, record: ReviewRecord): Promise<void> {
@@ -548,45 +662,54 @@ async function saveReviewRecord(dir: string, record: ReviewRecord): Promise<void
 }
 
 interface ReviewState {
-  /** 作用了处理结果之后、仍要发布的候选文档。 */
+  /** 作用了处理结果之后、仍要写入的候选文档。 */
   readonly documents: ReadonlyMap<string, unknown>;
   readonly dropped: ReadonlySet<string>;
   readonly wholeEdited: ReadonlySet<string>;
-  /** 候选文件 → 字段名 → 审核时的改动。 */
-  readonly fieldChanges: ReadonlyMap<string, ReadonlyMap<string, { readonly action: 'edit' | 'empty'; readonly value?: unknown }>>;
-  /** 在工作区快照上按依赖顺序于内存中发布的结果，按发布顺序排列。 */
-  readonly results: ReadonlyMap<string, { published?: PublishedStaticSchema; problems: Problem[] }>;
+  /** 候选文件 → 已处理的改值与标为空（不含整份）。 */
+  readonly changes: ReadonlyMap<string, readonly { readonly path: string; readonly action: 'edit' | 'empty'; readonly value?: unknown }[]>;
+  /** 在工作区快照上校验的结果；数据定义按发布顺序排在前面。 */
+  readonly results: ReadonlyMap<string, CandidateResult>;
   readonly problems: readonly Problem[];
 }
 
-/** 把处理结果作用到候选上，再在快照上发布一遍。 */
+/** 把处理结果作用到候选上，再在快照上校验一遍。 */
 function reviewState(round: AgentRound, record: ReviewRecord): ReviewState {
   const problems: Problem[] = [];
   const source = join(round.dir, REVIEW_FILE);
-  // 同一位置的处理结果必须一致；整份改动与字段改动不能同时出现。
+  // 同一位置的处理结果必须一致；位置相互包含的处理会相互覆盖；整份改动与位置上的改动不能同时出现。
   const byLocation = new Map<string, ReviewDecision[]>();
   for (const decision of record.decisions) {
     const key = `${decision.file}\0${decision.path ?? ''}`;
     byLocation.set(key, [...(byLocation.get(key) ?? []), decision]);
   }
-  const effective = new Map<string, ReviewDecision>();
-  for (const [key, decisions] of byLocation) {
+  const effective: ReviewDecision[] = [];
+  for (const decisions of byLocation.values()) {
     const effects = new Set(decisions.map((decision) => canonical({ action: decision.action, value: decision.value })));
     if (effects.size > 1) {
       problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source },
         `待确认项 ${decisions.map((decision) => decision.item).join('、')} 指向同一位置，处理结果不一致`));
       continue;
     }
-    if (decisions[0]!.action !== 'adopt') effective.set(key, decisions[0]!);
+    if (decisions[0]!.action !== 'adopt') effective.push(decisions[0]!);
   }
   const documents = new Map<string, unknown>(), dropped = new Set<string>(), wholeEdited = new Set<string>();
-  const fieldChanges = new Map<string, Map<string, { action: 'edit' | 'empty'; value?: unknown }>>();
+  const changes = new Map<string, { path: string; action: 'edit' | 'empty'; value?: unknown }[]>();
   for (const candidate of round.candidates) {
-    const whole = effective.get(`${candidate.path}\0`);
-    const fields = [...effective.values()].filter((decision) => decision.file === candidate.path && decision.path !== undefined);
-    if (whole && fields.length > 0) {
+    const mine = effective.filter((decision) => decision.file === candidate.path);
+    const whole = mine.find((decision) => decision.path === undefined);
+    const located = mine.filter((decision) => decision.path !== undefined);
+    if (whole && located.length > 0) {
       problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source },
-        `${candidate.path} 既整份处理（待确认项 ${whole.item}），又处理了其中的字段（待确认项 ${fields.map((decision) => decision.item).join('、')}）`));
+        `${candidate.path} 既整份处理（待确认项 ${whole.item}），又处理了其中的位置（待确认项 ${located.map((decision) => decision.item).join('、')}）`));
+    }
+    for (const [index, a] of located.entries()) {
+      for (const b of located.slice(index + 1)) {
+        if (a.path !== b.path && overlaps(a.path!, b.path!)) {
+          problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source },
+            `待确认项 ${a.item}、${b.item} 的位置相互包含（${a.path}、${b.path}），处理结果会相互覆盖`));
+        }
+      }
     }
     if (whole?.action === 'empty') {
       dropped.add(candidate.path);
@@ -597,32 +720,38 @@ function reviewState(round: AgentRound, record: ReviewRecord): ReviewState {
       documents.set(candidate.path, structuredClone(whole.value));
       continue;
     }
-    const changes = new Map(fields.map((decision) => [decision.path!, { action: decision.action as 'edit' | 'empty', ...(decision.action === 'edit' ? { value: decision.value } : {}) }]));
-    fieldChanges.set(candidate.path, changes);
-    const document = structuredClone(candidate.document);
-    if (changes.size > 0 && isRecord(document) && Array.isArray(document['fields'])) {
-      document['fields'] = document['fields'].flatMap((field: unknown) => {
-        const change = isRecord(field) && typeof field['name'] === 'string' ? changes.get(field['name']) : undefined;
-        return change === undefined ? [field] : change.action === 'empty' ? [] : [structuredClone(change.value)];
-      });
+    const decided = located.map((decision) => ({ path: decision.path!, action: decision.action as 'edit' | 'empty', ...(decision.action === 'edit' ? { value: decision.value } : {}) }));
+    changes.set(candidate.path, decided);
+    let document = candidate.document;
+    if (candidate.kind === 'dataset') {
+      // 数据集：采纳与尚未处理的待确认项用候选值（M46 的草稿用候选值）。
+      const candidateValues: Change[] = round.outcome.pending.flatMap((item) => (item.file === candidate.path && item.path !== undefined && item.candidate !== undefined &&
+        !decided.some((change) => overlaps(change.path, item.path!)) ? [{ path: item.path, action: 'set' as const, value: item.candidate }] : []));
+      document = applyChanges('dataset', document, candidateValues).document;
     }
-    documents.set(candidate.path, document);
+    const applied = applyChanges(candidate.kind, document, decided.map((change) => ({ path: change.path, action: change.action === 'edit' ? 'set' as const : 'remove' as const, value: change.value })));
+    for (const error of applied.errors) problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source }, `${candidate.path}：${error}`));
+    documents.set(candidate.path, applied.document);
   }
-  const definitions = round.candidates.filter((candidate) => candidate.kind === 'definition' && documents.has(candidate.path))
-    .map((candidate) => ({ path: candidate.path, document: documents.get(candidate.path) }));
-  return { documents, dropped, wholeEdited, fieldChanges, results: publishInDependencyOrder(definitions, round.snapshot), problems };
+  const results = checkCandidates(round.candidates.filter((candidate) => documents.has(candidate.path))
+    .map((candidate) => ({ path: candidate.path, kind: candidate.kind, document: documents.get(candidate.path) })), round.workspace, round.context);
+  return { documents, dropped, wholeEdited, changes, results, problems };
 }
 
-function buildView(round: AgentRound, record: ReviewRecord, saved: boolean, recordProblems: readonly Problem[], computed?: ReviewState): ReviewView {
+async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean, recordProblems: readonly Problem[], computed?: ReviewState): Promise<ReviewView> {
   const state = computed ?? reviewState(round, record);
   const problems: Problem[] = [...recordProblems, ...state.problems];
   const decisions = new Map(record.decisions.map((decision) => [decision.item, decision]));
-  const locate = (file: string, path?: string) => round.outcome.locations.find((location) => location.file === file && location.path === path);
+  const locationsOf = (file: string) => round.outcome.locations.filter((location) => location.file === file);
   const pending: PendingView[] = round.outcome.pending.map((item, index) => {
     const candidate = round.candidates.find((entry) => entry.path === item.file);
     const decision = decisions.get(index + 1);
-    const location = locate(item.file, item.path);
-    const current = item.path === undefined ? candidate?.document : fieldsOf(candidate?.document).find((field) => field['name'] === item.path);
+    const location = locationsOf(item.file).find((entry) => entry.path === item.path);
+    let current: unknown = candidate?.document;
+    if (candidate && item.path !== undefined) {
+      const { slot } = locate(candidate.kind, candidate.document, item.path);
+      current = slot ? read(slot) : undefined;
+    }
     return {
       ...item, item: index + 1, reasonName: REASON_NAMES[item.reason] ?? item.reason,
       ...(current !== undefined ? { current } : {}), ...(decision ? { decision } : {}), ...(location ? { location } : {}),
@@ -639,37 +768,26 @@ function buildView(round: AgentRound, record: ReviewRecord, saved: boolean, reco
   const candidates: CandidateView[] = round.candidates.map((candidate) => {
     const document = state.documents.get(candidate.path);
     const result = state.results.get(candidate.path);
-    const changes = state.fieldChanges.get(candidate.path) ?? new Map();
-    const whole = state.wholeEdited.has(candidate.path);
-    const pendingFor = (name: string) => pending.filter((item) => item.file === candidate.path && item.path === name).map((item) => item.item);
-    // 整份改值时按字段名与原文比对：没变的保留，变了或新加的标为改过，原有而被删掉的标为已删去。
-    const original = new Map(fieldsOf(candidate.document).map((field) => [String(field['name']), field]));
-    const fields: FieldView[] = whole
-      ? [
-        ...fieldsOf(document).map((field) => {
-          const name = String(field['name']), before = original.get(name);
-          return fieldView(field, before !== undefined && canonical(before) === canonical(field) ? 'kept' : 'edited', locate(candidate.path, name), pendingFor(name));
-        }),
-        ...[...original].filter(([name]) => !fieldsOf(document).some((field) => String(field['name']) === name))
-          .map(([name, field]) => fieldView(field, 'removed', locate(candidate.path, name), pendingFor(name))),
-      ]
-      : fieldsOf(candidate.document).map((field) => {
-        const name = String(field['name']);
-        const change = changes.get(name);
-        const shown = change?.action === 'edit' && isRecord(change.value) ? change.value : field;
-        return fieldView(shown, change === undefined ? 'kept' : change.action === 'edit' ? 'edited' : 'removed', locate(candidate.path, name), pendingFor(name));
-      });
-    const compiled = result?.published?.compiled;
     const shownDocument = document ?? candidate.document;
-    const location = locate(candidate.path);
+    const context: ItemContext = {
+      candidate, document, whole: state.wholeEdited.has(candidate.path), changes: state.changes.get(candidate.path) ?? [],
+      locations: locationsOf(candidate.path), pending: pending.filter((item) => item.file === candidate.path),
+    };
+    const location = context.locations.find((entry) => entry.path === undefined);
+    const compiled = result?.published?.compiled;
+    const dataset = candidate.kind === 'dataset' && isRecord(shownDocument) && isRecord(shownDocument['dataset']) ? shownDocument['dataset'] : undefined;
     return {
       path: candidate.path, kind: candidate.kind,
-      ...(isRecord(shownDocument) && typeof shownDocument['name'] === 'string' ? { name: shownDocument['name'] } : candidate.name !== undefined ? { name: candidate.name } : {}),
+      ...(candidateName(candidate.kind, shownDocument) !== undefined ? { name: candidateName(candidate.kind, shownDocument)! } : candidate.name !== undefined ? { name: candidate.name } : {}),
       ...(isRecord(shownDocument) && typeof shownDocument['displayName'] === 'string' ? { displayName: shownDocument['displayName'] } : {}),
+      ...(dataset && typeof dataset['name'] === 'string' ? { displayName: dataset['name'] } : {}),
       ...(isRecord(shownDocument) && typeof shownDocument['description'] === 'string' ? { description: shownDocument['description'] } : {}),
-      dropped: state.dropped.has(candidate.path), edited: whole,
+      dropped: state.dropped.has(candidate.path), edited: context.whole,
       ...(document !== undefined ? { document } : {}),
-      fields, ...(location ? { location } : {}),
+      fields: candidate.kind === 'definition' ? fieldViews(context) : [],
+      ...(candidate.kind === 'dataset' ? { entries: entryViews(context), ...(dataset && isRecord(dataset['staticSchema']) ? { staticSchema: dataset['staticSchema'] as unknown as StaticSchemaRef } : {}) } : {}),
+      ...(candidate.kind === 'template' ? { elements: elementViews(context), template: templateSummary(shownDocument) } : {}),
+      ...(location ? { location } : {}),
       ...(result?.published ? { published: result.published.ref } : {}),
       ...(compiled ? { compiled: {
         ...(typeof compiled['title'] === 'string' ? { title: compiled['title'] } : {}),
@@ -680,20 +798,162 @@ function buildView(round: AgentRound, record: ReviewRecord, saved: boolean, reco
       problems: result?.problems ?? [],
     };
   });
-  const severeFound = problems.some((problem) => problem.level === 'severe') ||
-    candidates.some((candidate) => candidate.problems.some((problem) => problem.level === 'severe'));
-  const sample = round.record.inputs.sample.file;
-  return {
+  const preview = await previewOf(round, state);
+  const view: Omit<ReviewView, 'canApprove'> = {
     round: {
       dir: round.dir, task: round.outcome.task, taskName: AGENT_TASKS[round.outcome.task].name, verdict: round.record.verdict,
-      sample, workspace: round.record.inputs.workspace?.source ?? null, notes: round.outcome.notes, usage: round.outcome.usage,
+      sample: round.record.inputs.sample.file, workspace: round.record.inputs.workspace?.source ?? null, notes: round.outcome.notes, usage: round.outcome.usage,
     },
-    review: record, saved, pending, candidates, problems, canApprove: !severeFound,
+    review: record, saved, pending, candidates, ...(preview ? { preview } : {}), problems,
     ...(round.applied ? { applied: round.applied } : {}),
   };
+  return { ...view, canApprove: blockingProblems(view).length === 0 };
 }
 
-function fieldView(field: Record<string, unknown>, state: FieldView['state'], location: FieldLocation | undefined, pending: number[]): FieldView {
+/** 阻止通过的严重问题：审核层面的、候选的，以及模板辅助设计的预览问题。 */
+function blockingProblems(view: Pick<ReviewView, 'problems' | 'candidates' | 'preview'>): Problem[] {
+  return [...view.problems, ...view.candidates.flatMap((candidate) => candidate.problems), ...(view.preview?.blocking ? view.preview.problems : [])]
+    .filter((problem) => problem.level === 'severe');
+}
+
+/** 有出图请求时重新渲染预览：模板辅助设计用审核后的候选模板与已保存的数据集；数据集提取用已保存的模板与审核后的候选数据集。 */
+async function previewOf(round: AgentRound, state: ReviewState): Promise<PreviewView | undefined> {
+  if (!round.request) return undefined;
+  const templates = round.candidates.filter((candidate) => candidate.kind === 'template' && state.documents.has(candidate.path))
+    .flatMap((candidate) => {
+      const name = candidateName('template', state.documents.get(candidate.path));
+      return name === undefined ? [] : [{ name, document: state.documents.get(candidate.path), source: candidate.path }];
+    });
+  const names = new Set(templates.map((entry) => entry.name));
+  const workspace: Workspace = { ...round.workspace, templates: [...round.workspace.templates.filter((entry) => !names.has(entry.name)), ...templates] };
+  let request = round.request, shown = round.request, dataset: unknown;
+  if (round.outcome.task === 'dataset-extraction') {
+    const candidate = round.candidates.find((entry) => entry.kind === 'dataset' && state.documents.has(entry.path));
+    if (!candidate) return { request: shown, problems: [], blocking: false };
+    dataset = state.documents.get(candidate.path);
+    request = { ...round.request, dataset: { inline: dataset } };
+    shown = { ...round.request, dataset: { candidate: candidate.path } };
+  }
+  return renderPreview({
+    roundDir: round.dir, workspace, request, shown, sample: await readFile(join(round.dir, round.record.inputs.sample.file)),
+    inputs: { templates: templates.map((entry) => entry.document), dataset }, blocking: round.outcome.task === 'template-design',
+  });
+}
+
+interface ItemContext {
+  readonly candidate: RoundCandidate;
+  /** 审核后的文档；整份标为空时没有。 */
+  readonly document: unknown;
+  readonly whole: boolean;
+  readonly changes: readonly { readonly path: string; readonly action: 'edit' | 'empty'; readonly value?: unknown }[];
+  readonly locations: readonly FieldLocation[];
+  readonly pending: readonly PendingView[];
+}
+
+/** 某个位置上最具体的图上位置。 */
+function locationAt(context: ItemContext, path: string): FieldLocation | undefined {
+  return context.locations.filter((location) => location.path !== undefined && within(location.path, path))
+    .sort((a, b) => b.path!.length - a.path!.length)[0];
+}
+
+function pendingAt(context: ItemContext, path: string, exact = false): number[] {
+  return context.pending.filter((item) => item.path !== undefined && (exact ? item.path === path : overlaps(item.path, path))).map((item) => item.item);
+}
+
+function stateAt(context: ItemContext, path: string): ItemState {
+  return context.changes.some((change) => change.action === 'edit' && within(change.path, path)) ? 'edited' : 'kept';
+}
+
+function fieldViews(context: ItemContext): FieldView[] {
+  const view = (field: Record<string, unknown>, state: ItemState) => {
+    const name = String(field['name']);
+    return fieldView(field, state, context.locations.find((location) => location.path === name), pendingAt(context, name, true));
+  };
+  const original = fieldsOf(context.candidate.document);
+  if (context.whole) {
+    // 整份改值时按字段名与原文比对：没变的保留，变了或新加的标为改过，原有而被删掉的标为已删去。
+    const now = fieldsOf(context.document);
+    return [
+      ...now.map((field) => {
+        const before = original.find((item) => item['name'] === field['name']);
+        return view(field, before !== undefined && canonical(before) === canonical(field) ? 'kept' : 'edited');
+      }),
+      ...original.filter((field) => !now.some((item) => item['name'] === field['name'])).map((field) => view(field, 'removed')),
+    ];
+  }
+  return original.map((field) => {
+    const change = context.changes.find((item) => item.path === field['name']);
+    if (!change) return view(field, 'kept');
+    return change.action === 'empty' ? view(field, 'removed') : view(isRecord(change.value) ? change.value : field, 'edited');
+  });
+}
+
+function entryViews(context: ItemContext): EntryView[] {
+  const view = (path: string, value: unknown, state: ItemState): EntryView => {
+    const location = locationAt(context, path);
+    return { path, value, ...(location ? { location } : {}), pending: pendingAt(context, path), state };
+  };
+  const data = (document: unknown) => (isRecord(document) ? document['data'] : undefined);
+  if (context.whole) {
+    const before = new Map(flattenData(data(context.candidate.document)).map((entry) => [entry.path, entry.value]));
+    const now = flattenData(data(context.document));
+    return [
+      ...now.map((entry) => view(entry.path, entry.value, before.has(entry.path) && canonical(before.get(entry.path)) === canonical(entry.value) ? 'kept' : 'edited')),
+      ...[...before].filter(([path]) => !now.some((entry) => entry.path === path)).map(([path, value]) => view(path, value, 'removed')),
+    ];
+  }
+  const removed = context.changes.filter((change) => change.action === 'empty').flatMap((change) => {
+    const { slot } = locate('dataset', context.candidate.document, change.path);
+    const value = slot ? read(slot) : undefined;
+    return value === undefined ? [] : flattenData(value, change.path).length > 0 ? flattenData(value, change.path) : [{ path: change.path, value }];
+  });
+  return [
+    ...flattenData(data(context.document)).map((entry) => view(entry.path, entry.value, stateAt(context, entry.path))),
+    ...removed.map((entry) => view(entry.path, entry.value, 'removed')),
+  ];
+}
+
+function elementViews(context: ItemContext): ElementView[] {
+  const paths = [...flattenElements(context.candidate.document), ...flattenElements(context.document)].map((item) => item.path);
+  const view = (path: string, element: Record<string, unknown>, state: ItemState): ElementView => {
+    const location = locationAt(context, path) ?? context.locations.find((entry) => entry.path !== undefined && within(path, entry.path) &&
+      !paths.some((other) => other.length > path.length && within(path, other) && within(other, entry.path!)));
+    return { path, type: String(element['type']), ...(location ? { location } : {}), pending: pendingAt(context, path), state };
+  };
+  const original = flattenElements(context.candidate.document);
+  const now = flattenElements(context.document);
+  if (context.whole) {
+    // 只比较元素自身的属性，子元素各自比较。
+    const own = (element: Record<string, unknown>) => canonical({ ...element, children: undefined });
+    return [
+      ...now.map(({ path, element }) => {
+        const before = original.find((item) => item.path === path);
+        return view(path, element, before && own(before.element) === own(element) ? 'kept' : 'edited');
+      }),
+      ...original.filter((item) => !now.some((entry) => entry.path === item.path)).map(({ path, element }) => view(path, element, 'removed')),
+    ];
+  }
+  const removed = context.changes.filter((change) => change.action === 'empty')
+    .flatMap((change) => original.filter((item) => within(change.path, item.path)));
+  return [
+    ...now.map(({ path, element }) => view(path, element, stateAt(context, path))),
+    ...removed.map(({ path, element }) => view(path, element, 'removed')),
+  ];
+}
+
+function templateSummary(document: unknown): { base?: StaticSchemaRef; parameters: ParameterView[] } {
+  if (!isRecord(document)) return { parameters: [] };
+  const base = isRecord(document['base']) ? document['base'] as unknown as StaticSchemaRef : undefined;
+  const parameters = (Array.isArray(document['parameters']) ? document['parameters'] : []).filter(isRecord).map((parameter) => ({
+    name: String(parameter['name']),
+    ...(typeof parameter['displayName'] === 'string' ? { displayName: parameter['displayName'] } : {}),
+    ...(typeof parameter['type'] === 'string' ? { type: parameter['type'] } : {}),
+    ...(typeof parameter['visibility'] === 'string' ? { visibility: parameter['visibility'] } : {}),
+  }));
+  return { ...(base ? { base } : {}), parameters };
+}
+
+function fieldView(field: Record<string, unknown>, state: ItemState, location: FieldLocation | undefined, pending: number[]): FieldView {
   const constraints = constraintLabels(field['constraints']);
   if (field['type'] === 'list' && isRecord(field['items'])) constraints.push(...constraintLabels(field['items']['constraints']).map((label) => `每项${label}`));
   return {
@@ -765,7 +1025,7 @@ async function workspaceDrift(round: AgentRound, workspace: string, actual: stri
     removed: [...before.keys()].filter((file) => !after.has(file)),
     changed: [...after.keys()].filter((file) => before.has(file) && before.get(file) !== after.get(file)),
     newerDefinitions: names.flatMap((name) => {
-      const snapshot = latest(round.snapshot, name), now = latest(current, name);
+      const snapshot = latest(round.workspace.staticSchemas, name), now = latest(current, name);
       return now !== null && (snapshot === null || now > snapshot) ? [{ name, snapshot, workspace: now }] : [];
     }),
   };
@@ -779,10 +1039,12 @@ async function jsonFileHashes(dir: string): Promise<Map<string, string>> {
   return hashes;
 }
 
-/** 键排序后的 JSON，用来比较两个处理结果是否相同。 */
+/** 键排序后的 JSON，用来比较两个值是否相同。 */
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (isRecord(value)) return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+  if (isRecord(value)) {
+    return `{${Object.keys(value).filter((key) => value[key] !== undefined).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+  }
   return JSON.stringify(value) ?? 'undefined';
 }
 

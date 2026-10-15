@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
-import { checkAgentOutcome, runAgentTask, workspaceFingerprint, type AgentRunOptions } from '../src/index.js';
+import { checkAgentOutcome, createMemoryResourceRepository, runAgentTask, workspaceFingerprint, type AgentRunOptions } from '../src/index.js';
 import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -180,7 +180,7 @@ describe('成果校验入口', () => {
     return preset(files);
   }
   const check = async (files: Record<string, unknown>) => {
-    const result = await checkAgentOutcome({ task: 'definition-extraction', agentDir: await agentDir(files), staticSchemas: [] });
+    const result = await checkAgentOutcome({ task: 'definition-extraction', agentDir: await agentDir(files), workspace: { staticSchemas: [], templates: [], datasets: [], problems: [], resources: createMemoryResourceRepository([]) } });
     return { verdict: result.verdict, messages: result.problems.map((problem) => `${(problem.location as { source: string }).source}：${problem.message}`) };
   };
   const definitions = { 'candidates/schema-badge.json': BADGE, 'candidates/schema-session.json': SESSION };
@@ -192,6 +192,19 @@ describe('成果校验入口', () => {
     const badge = { ...BADGE, fields: [...BADGE.fields, { name: 'seat', displayName: '座位排号', type: 'number' }] };
     expect(await check({ 'candidates/schema-badge.json': badge, 'candidates/schema-session.json': SESSION, 'outcome.json': example }))
       .toEqual({ verdict: 'qualified', messages: [] });
+  });
+
+  it('图上位置对不上时只记提示：结论仍为合格，成果照常写出', async () => {
+    const result = await checkAgentOutcome({ task: 'definition-extraction', agentDir: await agentDir({ ...definitions, 'outcome.json': {
+      candidates: ['candidates/schema-session.json'], pending: [], notes: '说明',
+      locations: [{ file: 'candidates/schema-session.json', path: 'room', where: '底部' }, { file: 'candidates/schema-badge.json', where: '整张' }],
+    } }), workspace: { staticSchemas: [], templates: [], datasets: [], problems: [], resources: createMemoryResourceRepository([]) } });
+    expect(result.verdict).toBe('qualified');
+    expect(result.submission).toBeDefined();
+    expect(result.problems.map((problem) => [problem.level, problem.message])).toEqual([
+      ['hint', '数据定义"场次"中没有字段 room（图上位置只作参考，不影响结论）'],
+      ['hint', '图上位置指向的文件不在候选中：candidates/schema-badge.json（图上位置只作参考，不影响结论）'],
+    ]);
   });
 
   it('结构合格：只看 outcome.json 与候选，不看草稿', async () => {
@@ -218,10 +231,6 @@ describe('成果校验入口', () => {
       ['outcome.json#pending[1]：数据定义"场次"中没有字段 room']],
     ['数据定义名称重复', { candidates: ['candidates/schema-session.json', 'candidates/schema-session-copy.json'], pending: [], notes: '说明' },
       ['outcome.json#candidates：候选数据定义的名称重复：场次']],
-    ['图上位置的字段不存在', { candidates: ['candidates/schema-session.json'], locations: [{ file: 'candidates/schema-session.json', path: 'room', where: '底部' }], pending: [], notes: '说明' },
-      ['outcome.json#locations[1]：数据定义"场次"中没有字段 room']],
-    ['图上位置指向非候选文件', { candidates: ['candidates/schema-session.json'], locations: [{ file: 'candidates/schema-badge.json', where: '整张' }], pending: [], notes: '说明' },
-      ['outcome.json#locations[1]：图上位置指向的文件不在候选中：candidates/schema-badge.json']],
     ['图上位置的区域越界', { candidates: ['candidates/schema-session.json'],
       locations: [{ file: 'candidates/schema-session.json', path: 'title', where: '底部', region: { x: -1, y: 0, width: 0, height: 5 } }], pending: [], notes: '说明' },
       ['outcome.json#locations.0.region.x：locations.0.region.x 不能小于 0', 'outcome.json#locations.0.region.width：locations.0.region.width 必须大于 0']],

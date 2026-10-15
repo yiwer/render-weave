@@ -50,7 +50,8 @@ export {
 export {
   readReview, changeReview, applyAgentRound, REVIEW_FILE, APPLIED_FILE, REVIEW_ACTIONS,
   type ReviewAction, type ReviewStatus, type ReviewDecision, type ReviewRecord, type ReviewChange, type ReviewView, type PendingView,
-  type CandidateView, type FieldView, type CompiledSummary, type WorkspaceDrift, type NewerDefinition, type AppliedRecord,
+  type CandidateView, type FieldView, type EntryView, type ElementView, type ParameterView, type ItemState, type PreviewView,
+  type CompiledSummary, type WorkspaceDrift, type NewerDefinition, type AppliedRecord,
   type AgentApplyOptions, type AgentApplyResult,
 } from './agent/review.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';

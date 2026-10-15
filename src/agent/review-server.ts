@@ -11,6 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeError } from '../util.js';
+import { PREVIEW_DIR } from './preview.js';
 import { changeReview, readReview } from './review.js';
 
 const PAGE = fileURLToPath(new URL('../../web/review.html', import.meta.url));
@@ -54,6 +55,15 @@ export async function startReviewServer(options: { readonly roundDir: string; re
       const extension = view.round.sample.slice(view.round.sample.lastIndexOf('.') + 1);
       response.writeHead(200, { 'content-type': IMAGE_TYPES[extension] ?? 'application/octet-stream', 'cache-control': 'no-store' });
       response.end(await readFile(join(view.round.dir, view.round.sample)));
+      return;
+    }
+    // 预览图：RenderWeave 重新渲染、缓存在轮次目录 previews/ 下的 PNG，文件名是输入的哈希。
+    const preview = /^\/previews\/([0-9a-f]{64}\.png)$/.exec(url.pathname);
+    if (request.method === 'GET' && preview) {
+      let bytes: Buffer;
+      try { bytes = await readFile(join(options.roundDir, PREVIEW_DIR, preview[1]!)); } catch { return send(response, 404, { error: '没有这张预览图' }); }
+      response.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
+      response.end(bytes);
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/review') {

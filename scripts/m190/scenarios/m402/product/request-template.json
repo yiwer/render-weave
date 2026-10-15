@@ -1,0 +1,7 @@
+{
+  "template": "线路牌主模板",
+  "dataset": { "id": "ds-m402-wanguocheng" },
+  "parameters": { "currentIndex": 5 },
+  "output": { "width": 740, "height": 165, "dpi": 50, "format": "png" },
+  "mode": "final"
+}

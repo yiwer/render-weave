@@ -359,6 +359,81 @@ renderweave agent run --task 数据定义提取 --sample docs/examples/materials
 - 宽幅示例图下方原来留出大片空白，查看区高度改为随图的比例收缩，至少 420 像素；
 - 整份改值后，原来把所有字段都标为改过，改为按字段名与原文比对，只标出真正改动、新增或删去的字段。
 
+## 数据集提取与模板辅助设计实跑（票据 06）
+
+接着票据 05 应用后的工作区（站点 v1、带运营方字段的公交线路牌 v1），用产品命令依次跑数据集提取与模板辅助设计。项目说明与出图请求在 `scripts/m190/scenarios/m402/product/`，只写这一单的事实。
+
+### 数据集提取
+
+```bash
+renderweave agent run --task 数据集提取 --definition 公交线路牌 --workspace out/agent-t06-workspace \
+  --sample docs/examples/materials/m402-route-sign.jpg --brief scripts/m190/scenarios/m402/product/brief-dataset.md \
+  --domain route-sign --resources fixtures/resources --out out/agent-t06-dataset
+```
+
+| 项 | 结果 |
+|---|---|
+| 结论 | 合格，退出码 0，0 问题 |
+| 用时 / 轮数 / 输出 tokens | 11.4 分钟 / 38 / 33.1k，正常结束 |
+| 工具调用 | 29 次，0 错误：`view_image` 24 次，`read_document` 2 次，`list_documents`、`list_resources`、`check_dataset` 各 1 次 |
+| 图上位置 | 18 项，都带区域：顶栏、票价、首末班、班次时刻等单值，以及有代表性的几站（首站、本站、六字站名、末站、设施图标） |
+| 待确认项 | 0 项 |
+| 隔离 | 轮次目录与命令输出共 25 个文件，搜索 key 0 命中 |
+
+**与专家数据集对照**（`docs/examples/m402-dsl/dataset-m402.json`，按含义逐项比，字段名不同）：
+
+- 线路号与线路号图片、票制、票价、运营方、首班、末班、运营说明、班车类型全对；
+- 15 个班次时刻全对；
+- 35 站的站名、道路、地标、设施都是 35/35。
+
+审核页列出 92 个值。工作区还没有模板，这一轮没有出图请求，也就没有预览；整体确认后通过，应用后保存为 `dataset-m402-wanguocheng.json`。
+
+### 模板辅助设计
+
+```bash
+renderweave agent run --task 模板辅助设计 --dataset ds-m402-wanguocheng --request scripts/m190/scenarios/m402/product/request-template.json \
+  --workspace out/agent-t06-workspace --sample docs/examples/materials/m402-route-sign.jpg \
+  --brief scripts/m190/scenarios/m402/product/brief-template.md --domain route-sign --resources fixtures/resources --out out/agent-t06-template-2
+```
+
+跑了两轮：
+
+| 项 | 第 1 轮（`out/agent-t06-template`） | 第 2 轮（`out/agent-t06-template-2`） |
+|---|---|---|
+| 结论 | 不合格：结构问题 17 条，全部是元素路径的写法；没有写出 `outcome.json`，不能审核 | 合格，另有 2 条图上位置的提示 |
+| 用时 / 轮数 / 输出 tokens | 36.5 分钟 / 92 / 94.0k | 28.5 分钟 / 68 / 78.1k |
+| 工具调用 | 37 次，1 次错误（同时写了 `request.dataset` 与 `datasetPath`，下一次改对）；草稿预览 14 次 | 31 次，0 错误；草稿预览 14 次，静态检查 4 次 |
+| 候选 | 主模板加 4 个被调模板，引擎校验 0 问题 | 主模板加 4 个被调模板（站点列、设施图标、道路段、发车时刻项），引擎校验 0 问题 |
+| 待确认项 | 2 项 | 6 项：下一站地标的颜色、终点站与站名的字体、票价胶囊与下一站区的定宽、目测的色值 |
+| 图上位置 | 15 项 | 20 项，其中 2 项指向的元素不存在 |
+
+两轮合计 67 个文件，搜索 key 0 命中。
+
+**第 1 轮为什么不合格**：
+
+- Agent 写元素路径时全部省略了模板名，因为 `file` 已经指明了模板；
+- 部分图上位置穿进了被调模板，如 `站名面板/站点列循环/站名高亮区`。
+
+模板本身没有问题，是契约过严。修正后（M228）：元素路径可以省略模板名；图上位置对不上只记提示，不影响结论；被调模板里的元素写在被调模板的文件下。用新校验只读核对第 1 轮，结论为合格（7 条提示）。资料同步修改后重跑，即第 2 轮，Agent 照新写法把被调模板中的元素写在了各自的文件下。
+
+**审核**：
+
+- 审核页把示例图与 RenderWeave 重新渲染的预览上下对照（3496 × 780 像素，120 DPI，与示例图同宽），没有预览问题；
+- 站名、已过站灰字、本站高亮、地标、道路带与底栏都与示例图一致，早期错误设计的蓝色圆圈按客户说明没有画；
+- 6 项待确认项逐项核对后都采纳，整体确认，审核通过。见[截图：总览](images/agent-review/06-template-overview.png)、[截图：站名区放大对照](images/agent-review/06-template-compare.png)。
+
+**应用与正式出图**：
+
+- 应用后，工作区新增 5 个模板文件；
+- 用 `renderweave deliver` 出本站为第 5 站、第 1 站与不标本站 3 张图，全部交付，严重 0、提示 0；
+- `record-read` 完整读取，`replay` 重新渲染后图片、问题清单与布局摘要均一致。
+
+**仍有的差异**（Agent 在说明中列出）：
+
+- 下一站后的带圈数字按资源原色绘制，示例图中是橙色；
+- 双箭头用多边形近似；
+- 12 字站名带地标时，地标缩到 4 mm。
+
 ## 延迟与用量
 
 - **做数据定义一轮约 7–12 分钟，做模板约 21–31 分钟**，大部分时间在模型的长思考上。要求验证极端情况后，模板的轮数与预览次数大约翻倍。工具调用在 7 ms–1.1 s 内完成。

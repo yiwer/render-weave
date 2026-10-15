@@ -22,6 +22,7 @@
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } .viewer { position: static !important; } }
   section, .viewer { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
   .viewer { position: sticky; top: 64px; }
+  .pane + .pane { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
   .stack > * + * { margin-top: 16px; }
   h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
   h3 { margin: 0; font-size: 14px; font-weight: 600; }
@@ -31,11 +32,11 @@
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.danger { color: var(--bad); }
   button:disabled { opacity: .45; cursor: not-allowed; }
-  .viewport { position: relative; overflow: auto; height: calc(100vh - 190px); min-height: 280px; background: #ece6dc; border-radius: 6px; cursor: zoom-in; }
-  .canvas { position: relative; transform-origin: 0 0; }
+  .viewport { position: relative; overflow: auto; height: 420px; background: #ece6dc; border-radius: 6px; cursor: zoom-in; }
+  .canvas { position: relative; }
   .canvas img { display: block; image-rendering: auto; user-select: none; }
   .mark { position: absolute; border: 3px solid var(--accent); background: rgba(180, 83, 42, .12); box-shadow: 0 0 0 9999px rgba(43, 40, 36, .18); pointer-events: none; }
-  .caption { margin-top: 8px; color: var(--muted); min-height: 1.5em; }
+  .caption { margin-top: 6px; color: var(--muted); min-height: 1.5em; }
   .muted { color: var(--muted); }
   .mono, pre, code, textarea { font-family: var(--mono); font-size: 12px; }
   pre { margin: 6px 0 0; padding: 8px; background: #f3eee6; border-radius: 6px; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
@@ -47,15 +48,17 @@
   .choices { display: flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; }
   .choices label { cursor: pointer; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .scroll { max-height: 560px; overflow: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; vertical-align: top; padding: 6px 6px; border-top: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; border-top: none; }
+  th { color: var(--muted); font-weight: 500; border-top: none; position: sticky; top: 0; background: var(--panel); }
   tr.removed td { color: var(--muted); text-decoration: line-through; }
   tr.edited td:first-child { box-shadow: inset 3px 0 var(--accent); }
+  tr.pending td:first-child { box-shadow: inset 3px 0 var(--warn); }
   .problems { margin: 0; padding-left: 18px; }
   .problems li.severe { color: var(--bad); }
   .notes { white-space: pre-wrap; word-break: break-word; }
-  .toast { position: fixed; right: 20px; bottom: 20px; max-width: 520px; padding: 10px 14px; border-radius: 8px; background: var(--text); color: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.2); display: none; white-space: pre-wrap; }
+  .toast { position: fixed; right: 20px; bottom: 20px; max-width: 520px; padding: 10px 14px; border-radius: 8px; background: var(--text); color: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.2); display: none; white-space: pre-wrap; z-index: 10; }
   details summary { cursor: pointer; color: var(--accent); }
   a.locate { color: var(--accent); cursor: pointer; text-decoration: underline; }
 </style>
@@ -68,29 +71,13 @@
   <span id="dir" class="dir"></span>
 </header>
 <main>
-  <div class="viewer">
-    <div class="toolbar">
-      <strong>示例图</strong>
-      <button data-zoom="fit">适应</button>
-      <button data-zoom="1">100%</button>
-      <button data-zoom="2">200%</button>
-      <button data-zoom="4">400%</button>
-      <button id="clear-mark">清除标记</button>
-      <span id="zoom-label" class="muted"></span>
-    </div>
-    <div id="viewport" class="viewport" title="单击放大，Shift+单击缩小">
-      <div id="canvas" class="canvas"><img id="sample" src="/sample" alt="示例图"><div id="mark" class="mark" hidden></div></div>
-    </div>
-    <div id="caption" class="caption">单击图片放大，Shift+单击缩小；点字段或待确认项的"定位"查看它在图上的位置。</div>
-  </div>
+  <div class="viewer" id="viewer"></div>
   <div class="stack" id="content"></div>
 </main>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
 let view = null;
-let scale = 1;
-let fitted = true;
 const $ = (id) => document.getElementById(id);
 /** 只用 textContent 建节点：Agent 写的说明与候选内容都不当作 HTML。 */
 function h(tag, attrs, ...children) {
@@ -107,6 +94,7 @@ function h(tag, attrs, ...children) {
 const json = (value) => JSON.stringify(value, null, 2);
 const STATUS = { inProgress: ['审核中', 'warn'], approved: ['已通过', 'ok'], rejected: ['未通过', 'bad'] };
 const ACTIONS = { adopt: '采纳候选', edit: '改值', empty: '标为空' };
+const KINDS = { definition: '定义', dataset: '数据集', template: '模板' };
 
 function toast(message) {
   const node = $('toast');
@@ -133,64 +121,117 @@ async function change(payload) {
   return response.ok;
 }
 
-// ---------- 示例图 ----------
-const img = $('sample'), viewport = $('viewport');
-function applyScale(next, anchor) {
-  const before = scale;
-  scale = Math.min(8, Math.max(0.05, next));
-  img.style.width = `${img.naturalWidth * scale}px`;
-  img.style.height = `${img.naturalHeight * scale}px`;
-  $('zoom-label').textContent = `${Math.round(scale * 100)}%（原图 ${img.naturalWidth} × ${img.naturalHeight}）`;
-  if (anchor) {
-    viewport.scrollLeft = anchor.x * scale - anchor.viewX;
-    viewport.scrollTop = anchor.y * scale - anchor.viewY;
+// ---------- 图片查看：示例图与预览各一个，缩放与滚动可以联动 ----------
+class Viewer {
+  constructor(title, hint) {
+    this.scale = 1; this.fitted = true; this.marked = null; this.peer = null; this.syncing = false;
+    this.img = h('img', { alt: title });
+    this.mark = h('div', { class: 'mark', hidden: true });
+    this.label = h('span', { class: 'muted' });
+    this.caption = h('div', { class: 'caption' }, hint);
+    this.viewport = h('div', { class: 'viewport', title: '单击放大，Shift+单击缩小' }, h('div', { class: 'canvas' }, this.img, this.mark));
+    const zoom = (text, value) => h('button', { onclick: () => value === 'fit' ? this.fit() : this.zoomCenter(value) }, text);
+    this.node = h('div', { class: 'pane' },
+      h('div', { class: 'toolbar' }, h('strong', {}, title), zoom('适应', 'fit'), zoom('100%', 1), zoom('200%', 2), zoom('400%', 4),
+        h('button', { onclick: () => this.clearMark() }, '清除标记'), this.label),
+      this.viewport, this.caption);
+    this.img.addEventListener('load', () => { sizeViewports(); this.fit(); });
+    this.viewport.addEventListener('click', (event) => {
+      const rect = this.viewport.getBoundingClientRect();
+      const viewX = event.clientX - rect.left, viewY = event.clientY - rect.top;
+      this.fitted = false;
+      this.apply(this.scale * (event.shiftKey ? 0.5 : 2), { x: (this.viewport.scrollLeft + viewX) / this.scale, y: (this.viewport.scrollTop + viewY) / this.scale, viewX, viewY });
+    });
+    this.viewport.addEventListener('scroll', () => this.sync());
   }
-  placeMark();
-  return before;
+  setSource(src) { if (this.img.getAttribute('src') !== src) this.img.src = src; }
+  apply(next, anchor) {
+    if (!this.img.naturalWidth) return;
+    this.scale = Math.min(8, Math.max(0.03, next));
+    this.img.style.width = `${this.img.naturalWidth * this.scale}px`;
+    this.img.style.height = `${this.img.naturalHeight * this.scale}px`;
+    this.label.textContent = `${Math.round(this.scale * 100)}%（${this.img.naturalWidth} × ${this.img.naturalHeight}）`;
+    if (anchor) {
+      this.viewport.scrollLeft = anchor.x * this.scale - anchor.viewX;
+      this.viewport.scrollTop = anchor.y * this.scale - anchor.viewY;
+    }
+    this.placeMark();
+    this.sync();
+  }
+  fit() {
+    if (!this.img.naturalWidth) return;
+    this.fitted = true;
+    this.apply(Math.min(this.viewport.clientWidth / this.img.naturalWidth, this.viewport.clientHeight / this.img.naturalHeight));
+  }
+  zoomCenter(value) {
+    this.fitted = false;
+    const v = this.viewport;
+    this.apply(value, { x: (v.scrollLeft + v.clientWidth / 2) / this.scale, y: (v.scrollTop + v.clientHeight / 2) / this.scale, viewX: v.clientWidth / 2, viewY: v.clientHeight / 2 });
+  }
+  /** 让另一个查看器显示同一处：两张图按显示宽度对齐（预览按示例图的像素宽度出图）。 */
+  sync() {
+    const peer = this.peer;
+    if (!peer || this.syncing || !$('sync')?.checked || !peer.img.naturalWidth || !this.img.naturalWidth) return;
+    peer.syncing = true;
+    peer.fitted = this.fitted;
+    peer.scale = this.scale * this.img.naturalWidth / peer.img.naturalWidth;
+    peer.img.style.width = `${peer.img.naturalWidth * peer.scale}px`;
+    peer.img.style.height = `${peer.img.naturalHeight * peer.scale}px`;
+    peer.label.textContent = `${Math.round(peer.scale * 100)}%（${peer.img.naturalWidth} × ${peer.img.naturalHeight}）`;
+    peer.viewport.scrollLeft = this.viewport.scrollLeft;
+    peer.viewport.scrollTop = this.viewport.scrollTop * (peer.img.naturalHeight * peer.scale) / Math.max(1, this.img.naturalHeight * this.scale);
+    peer.placeMark();
+    requestAnimationFrame(() => { peer.syncing = false; });
+  }
+  placeMark() {
+    if (!this.marked || !this.marked.region) { this.mark.hidden = true; return; }
+    const r = this.marked.region;
+    Object.assign(this.mark.style, { left: `${r.x * this.scale}px`, top: `${r.y * this.scale}px`, width: `${r.width * this.scale}px`, height: `${r.height * this.scale}px` });
+    this.mark.hidden = false;
+  }
+  locate(location, label) {
+    this.marked = location;
+    this.caption.textContent = `${label}：${location.where}${location.region ? '' : '（Agent 没有给出区域，只有文字描述）'}`;
+    this.node.scrollIntoView({ block: 'nearest' });
+    if (location.region) {
+      const r = location.region, v = this.viewport;
+      this.fitted = false;
+      this.apply(Math.min(v.clientWidth / (r.width * 1.6), v.clientHeight / (r.height * 1.6), 4),
+        { x: r.x + r.width / 2, y: r.y + r.height / 2, viewX: v.clientWidth / 2, viewY: v.clientHeight / 2 });
+    } else this.placeMark();
+  }
+  clearMark() { this.marked = null; this.placeMark(); this.caption.textContent = ''; }
 }
-function fit() { fitted = true; applyScale(Math.min(viewport.clientWidth / img.naturalWidth, viewport.clientHeight / img.naturalHeight)); }
-/** 查看区高度随图的比例：宽幅图（如线路牌）不留大片空白，竖幅图占满窗口；至少 420 像素，便于放大后上下查看。 */
-function sizeViewport() {
-  const available = window.innerHeight - 190, atFitWidth = img.naturalHeight * viewport.clientWidth / img.naturalWidth + 4;
-  viewport.style.height = `${Math.max(420, Math.min(available, atFitWidth))}px`;
+
+const sample = new Viewer('示例图', '单击图片放大，Shift+单击缩小；点"定位"查看它在示例图上的位置。');
+let preview = null;
+sample.setSource('/sample');
+$('viewer').append(sample.node);
+
+/** 查看区高度随图的比例：宽幅图不留大片空白，竖幅图占满窗口；有预览时两者平分。 */
+function sizeViewports() {
+  const panes = [sample, preview].filter(Boolean);
+  const available = (window.innerHeight - 170) / panes.length - 70;
+  for (const pane of panes) {
+    if (!pane.img.naturalWidth) continue;
+    const atFitWidth = pane.img.naturalHeight * pane.viewport.clientWidth / pane.img.naturalWidth + 4;
+    pane.viewport.style.height = `${Math.max(panes.length > 1 ? 220 : 420, Math.min(available, atFitWidth))}px`;
+  }
 }
-img.addEventListener('load', () => { sizeViewport(); fit(); });
-window.addEventListener('resize', () => { sizeViewport(); if (fitted) fit(); });
-for (const button of document.querySelectorAll('[data-zoom]')) {
-  button.addEventListener('click', () => {
-    if (button.dataset.zoom === 'fit') return fit();
-    fitted = false;
-    const cx = (viewport.scrollLeft + viewport.clientWidth / 2) / scale, cy = (viewport.scrollTop + viewport.clientHeight / 2) / scale;
-    applyScale(Number(button.dataset.zoom), { x: cx, y: cy, viewX: viewport.clientWidth / 2, viewY: viewport.clientHeight / 2 });
-  });
+window.addEventListener('resize', () => { sizeViewports(); for (const pane of [sample, preview]) if (pane?.fitted) pane.fit(); });
+
+function syncPreview() {
+  const shown = view.preview;
+  if (!shown) return;
+  if (!preview) {
+    preview = new Viewer('预览（RenderWeave 重新渲染）', '草稿模式：问题处画框，缺失的值用占位。');
+    preview.peer = sample; sample.peer = preview;
+    $('viewer').append(preview.node, h('label', { class: 'muted' }, h('input', { type: 'checkbox', id: 'sync', checked: true }), ' 两图联动缩放与滚动'));
+  }
+  if (shown.image) preview.setSource(`/${shown.image}`);
+  else preview.caption.textContent = '出图请求无法渲染，见预览的问题。';
 }
-viewport.addEventListener('click', (event) => {
-  const rect = viewport.getBoundingClientRect();
-  const viewX = event.clientX - rect.left, viewY = event.clientY - rect.top;
-  const x = (viewport.scrollLeft + viewX) / scale, y = (viewport.scrollTop + viewY) / scale;
-  fitted = false;
-  applyScale(scale * (event.shiftKey ? 0.5 : 2), { x, y, viewX, viewY });
-});
-let marked = null;
-function placeMark() {
-  const mark = $('mark');
-  if (!marked || !marked.region) { mark.hidden = true; return; }
-  const r = marked.region;
-  Object.assign(mark.style, { left: `${r.x * scale}px`, top: `${r.y * scale}px`, width: `${r.width * scale}px`, height: `${r.height * scale}px` });
-  mark.hidden = false;
-}
-function locate(location, label) {
-  marked = location;
-  $('caption').textContent = `${label}：${location.where}${location.region ? '' : '（Agent 没有给出区域，只有文字描述）'}`;
-  if (location.region) {
-    const r = location.region;
-    fitted = false;
-    const next = Math.min(viewport.clientWidth / (r.width * 1.6), viewport.clientHeight / (r.height * 1.6), 4);
-    applyScale(next, { x: r.x + r.width / 2, y: r.y + r.height / 2, viewX: viewport.clientWidth / 2, viewY: viewport.clientHeight / 2 });
-  } else placeMark();
-}
-$('clear-mark').addEventListener('click', () => { marked = null; placeMark(); $('caption').textContent = ''; });
-const locateLink = (location, label) => location ? h('a', { class: 'locate', onclick: () => locate(location, label) }, '定位') : null;
+const locateLink = (location, label) => location ? h('a', { class: 'locate', onclick: () => sample.locate(location, label) }, '定位') : null;
 
 // ---------- 页面 ----------
 function problemList(problems) {
@@ -209,21 +250,26 @@ function render() {
   $('verdict').textContent = round.verdict === 'qualified' ? '成果合格' : '成果不合格';
   $('verdict').className = `chip ${round.verdict === 'qualified' ? 'ok' : 'bad'}`;
   $('dir').textContent = round.dir;
-  $('content').replaceChildren(conclusion(editable), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection());
+  syncPreview();
+  $('content').replaceChildren(conclusion(editable), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection());
+}
+
+function blocking() {
+  return [...view.problems, ...view.candidates.flatMap((candidate) => candidate.problems), ...(view.preview?.blocking ? view.preview.problems : [])]
+    .filter((problem) => problem.level === 'severe');
 }
 
 function conclusion(editable) {
   const { review, applied } = view;
   const comment = h('textarea', { id: 'comment', placeholder: '不通过时写明理由；通过时可留备注', style: 'min-height:60px', disabled: !editable }, review.comment ?? '');
-  const blocking = [...view.problems, ...view.candidates.flatMap((candidate) => candidate.problems)];
   const decided = view.pending.filter((item) => item.decision).length;
   return h('section', {},
     h('h2', {}, '审核结论'),
     h('p', {}, `待确认项已处理 ${decided} / ${view.pending.length}。`, view.saved ? `审核结果已保存（${review.updatedAt}）。` : '还没有保存过审核结果。'),
-    applied ? h('p', {}, `已于 ${applied.appliedAt} 应用到 ${applied.workspace}：`, applied.published.map((item) => `${item.name} v${item.version}`).join('、')) : null,
+    applied ? h('p', {}, `已于 ${applied.appliedAt} 应用到 ${applied.workspace}：`, applied.published.map((item) => `${item.name}${item.version ? ` v${item.version}` : ''}`).join('、')) : null,
     h('label', {}, h('input', { type: 'checkbox', checked: review.restConfirmed, disabled: !editable,
       onchange: (event) => change({ type: 'confirmRest', confirmed: event.target.checked }) }),
-      ' 待确认项以外的字段、类型与约束已整体核对，确认无误'),
+      ' 待确认项以外的内容已整体核对，确认无误'),
     h('div', { style: 'margin-top:8px' }, comment),
     h('div', { class: 'row' },
       h('button', { class: 'primary', disabled: !editable || !view.canApprove, onclick: () => change({ type: 'approve', ...(comment.value.trim() ? { comment: comment.value } : {}) }) }, '审核通过'),
@@ -231,7 +277,20 @@ function conclusion(editable) {
       h('button', { disabled: review.status === 'inProgress' || Boolean(applied), onclick: () => change({ type: 'reopen' }) }, '撤回结论'),
       review.status === 'approved' && !applied ? h('span', { class: 'muted' }, '下一步：renderweave agent apply ', h('code', {}, view.round.dir)) : null),
     h('h3', { style: 'margin-top:12px' }, '还不能通过的原因'),
-    problemList(blocking.filter((problem) => problem.level === 'severe')));
+    problemList(blocking()));
+}
+
+function previewSection() {
+  const shown = view.preview;
+  if (!shown) return null;
+  return h('section', {},
+    h('h2', {}, '预览'),
+    h('p', { class: 'muted', style: 'margin-top:0' }, '由 RenderWeave 按出图请求重新渲染（草稿模式），不用 Agent 自己的图。',
+      shown.blocking ? '预览的严重问题会阻止审核通过。' : '预览用的是工作区已保存的模板，问题只作参考。',
+      shown.dpi ? ` ${shown.widthPx} × ${shown.heightPx} 像素，${shown.dpi} DPI。` : ''),
+    h('details', {}, h('summary', {}, '出图请求'), h('pre', {}, json(shown.request))),
+    h('h3', { style: 'margin-top:10px' }, '预览的问题'),
+    problemList(shown.problems));
 }
 
 function pendingSection(editable) {
@@ -239,12 +298,22 @@ function pendingSection(editable) {
     view.pending.length === 0 ? h('p', { class: 'muted' }, 'Agent 没有列出待确认项。') : view.pending.map((item) => pendingCard(item, editable)));
 }
 
+function choiceLabels(item) {
+  const kind = view.candidates.find((candidate) => candidate.path === item.file)?.kind ?? 'definition';
+  if (item.path === undefined) return { adopt: '采纳候选（保留当前写法）', edit: `改值（改写整份${KINDS[kind]}）`, empty: `标为空（不写入这份${KINDS[kind]}）` };
+  if (kind === 'dataset') return { adopt: item.candidate !== undefined ? '采纳候选（用候选值）' : '采纳候选（保留当前值）', edit: '改值（改写这个值）', empty: '标为空（删去这个值）' };
+  const what = kind === 'definition' ? '字段' : '元素';
+  return { adopt: '采纳候选（保留当前写法）', edit: `改值（改写这个${what}）`, empty: `标为空（删去这个${what}）` };
+}
+
 function pendingCard(item, editable) {
   const decision = item.decision;
   const name = `action-${item.item}`;
-  const value = h('textarea', { hidden: decision?.action !== 'edit', disabled: !editable }, json(decision?.action === 'edit' ? decision.value : item.current ?? {}));
-  const radio = (action, text) => h('label', {}, h('input', { type: 'radio', name, value: action, checked: decision?.action === action, disabled: !editable,
-    onchange: () => { value.hidden = action !== 'edit'; } }), ` ${text}`);
+  const labels = choiceLabels(item);
+  const initial = decision?.action === 'edit' ? decision.value : item.current !== undefined ? item.current : item.candidate ?? null;
+  const value = h('textarea', { hidden: decision?.action !== 'edit', disabled: !editable }, json(initial));
+  const radio = (action) => h('label', {}, h('input', { type: 'radio', name, value: action, checked: decision?.action === action, disabled: !editable,
+    onchange: () => { value.hidden = action !== 'edit'; } }), ` ${labels[action]}`);
   const save = () => {
     const chosen = document.querySelector(`input[name="${name}"]:checked`);
     if (!chosen) return toast('先选择处理方式');
@@ -253,49 +322,89 @@ function pendingCard(item, editable) {
     try { parsed = JSON.parse(value.value); } catch (error) { return toast(`新值不是有效的 JSON：${error.message}`); }
     return change({ type: 'decide', item: item.item, action: 'edit', value: parsed });
   };
-  const where = item.path === undefined ? '整份文件' : `字段 ${item.path}`;
+  const where = item.path === undefined ? '整份文件' : item.path;
   return h('div', { class: `card${decision ? ' done' : ''}` },
     h('div', { class: 'card-head' }, h('strong', {}, `#${item.item}`), h('span', { class: 'chip warn' }, item.reasonName),
       h('span', { class: 'mono' }, `${item.file} · ${where}`), locateLink(item.location, `待确认项 #${item.item}`),
       h('span', { class: `chip ${decision ? 'ok' : ''}` }, decision ? `已处理：${ACTIONS[decision.action]}` : '未处理')),
     h('p', { class: 'notes', style: 'margin:6px 0' }, item.note),
     item.candidate !== undefined ? h('div', {}, h('span', { class: 'muted' }, '候选值'), h('pre', {}, json(item.candidate))) : null,
-    h('details', {}, h('summary', {}, '候选文件中的当前写法'), h('pre', {}, json(item.current))),
-    h('div', { class: 'choices' },
-      radio('adopt', '采纳候选（保留当前写法）'),
-      radio('edit', item.path === undefined ? '改值（改写整份定义）' : '改值（改写这个字段）'),
-      radio('empty', item.path === undefined ? '标为空（不发布这份定义）' : '标为空（删去这个字段）')),
+    h('details', {}, h('summary', {}, '候选文件中的当前写法'), h('pre', {}, item.current === undefined ? '（没有值）' : json(item.current))),
+    h('div', { class: 'choices' }, radio('adopt'), radio('edit'), radio('empty')),
     value,
     h('div', { class: 'row' }, h('button', { class: 'primary', disabled: !editable, onclick: save }, '保存处理'),
       decision ? h('button', { disabled: !editable, onclick: () => change({ type: 'undecide', item: item.item }) }, '清除处理') : null));
 }
 
+const stateChip = (state) => state === 'edited' ? h('span', { class: 'chip accent' }, '改过') : state === 'removed' ? h('span', { class: 'chip bad' }, '已删去') : null;
+const pendingChips = (numbers) => numbers.length ? numbers.map((n) => h('span', { class: 'chip warn' }, `#${n}`)) : '';
+const rowClass = (item) => item.state !== 'kept' ? item.state : item.pending.length ? 'pending' : '';
+const short = (value) => { const text = typeof value === 'string' ? value : JSON.stringify(value); return text.length > 120 ? `${text.slice(0, 120)}…` : text; };
+
 function candidateSection(candidate) {
+  const label = candidate.name ?? candidate.path;
   const tags = [
+    h('span', { class: 'chip' }, KINDS[candidate.kind]),
     candidate.published ? h('span', { class: 'chip ok' }, `将发布为 ${candidate.published.name} v${candidate.published.version}（按快照）`) : null,
-    candidate.dropped ? h('span', { class: 'chip bad' }, '标为空，不发布') : null,
+    candidate.dropped ? h('span', { class: 'chip bad' }, '标为空，不写入') : null,
     candidate.edited ? h('span', { class: 'chip accent' }, '整份改过') : null,
   ];
-  const rows = candidate.fields.map((field) => h('tr', { class: field.state },
-    h('td', {}, h('div', { class: 'mono' }, field.name), field.displayName ? h('div', {}, field.displayName) : null,
-      field.state === 'edited' ? h('span', { class: 'chip accent' }, '改过') : null, field.state === 'removed' ? h('span', { class: 'chip bad' }, '已删去') : null),
+  const body = candidate.kind === 'definition' ? definitionBody(candidate) : candidate.kind === 'dataset' ? datasetBody(candidate) : templateBody(candidate);
+  return h('section', {},
+    h('div', { class: 'card-head' }, h('h2', { style: 'margin:0' }, label), candidate.displayName ? h('span', { class: 'muted' }, candidate.displayName) : null,
+      h('span', { class: 'mono muted' }, candidate.path), ...tags, locateLink(candidate.location, label)),
+    candidate.description ? h('p', { class: 'muted' }, candidate.description) : null,
+    body,
+    candidate.problems.length ? [h('h3', { style: 'margin-top:12px' }, '引擎校验问题'), problemList(candidate.problems)] : null);
+}
+
+function definitionBody(candidate) {
+  const rows = candidate.fields.map((field) => h('tr', { class: rowClass(field) },
+    h('td', {}, h('div', { class: 'mono' }, field.name), field.displayName ? h('div', {}, field.displayName) : null, stateChip(field.state)),
     h('td', { class: 'mono' }, field.type),
     h('td', {}, field.constraints.length ? field.constraints.join('；') : h('span', { class: 'muted' }, '无')),
     h('td', {}, field.location ? [field.location.where, ' ', locateLink(field.location, `${candidate.name ?? candidate.path} · ${field.name}`)] : h('span', { class: 'muted' }, '未标注'),
       field.description ? h('div', { class: 'muted' }, field.description) : null),
-    h('td', {}, field.pending.length ? field.pending.map((n) => h('span', { class: 'chip warn' }, `#${n}`)) : '')));
+    h('td', {}, pendingChips(field.pending))));
   const compiled = candidate.compiled;
-  return h('section', {},
-    h('div', { class: 'card-head' }, h('h2', { style: 'margin:0' }, candidate.name ?? candidate.path), candidate.displayName ? h('span', { class: 'muted' }, candidate.displayName) : null,
-      h('span', { class: 'mono muted' }, candidate.path), ...tags, locateLink(candidate.location, candidate.name ?? candidate.path)),
-    candidate.description ? h('p', { class: 'muted' }, candidate.description) : null,
+  return [
     h('table', {}, h('thead', {}, h('tr', {}, ['字段', '类型', '约束', '图上位置 / 说明', '待确认'].map((text) => h('th', {}, text)))), h('tbody', {}, rows)),
     h('h3', { style: 'margin-top:12px' }, '编译产物摘要'),
     compiled ? h('div', {},
       h('p', { style: 'margin:4px 0' }, `${compiled.title ?? ''}：属性 ${compiled.properties} 个；必填 ${compiled.required.length ? compiled.required.join('、') : '无'}。`),
       h('details', {}, h('summary', {}, '查看完整 JSON Schema'), h('pre', {}, json(compiled.schema))))
       : h('p', { class: 'muted' }, candidate.dropped ? '不发布。' : '未能编译，见下方问题。'),
-    candidate.problems.length ? [h('h3', { style: 'margin-top:12px' }, '引擎校验问题'), problemList(candidate.problems)] : null);
+  ];
+}
+
+function datasetBody(candidate) {
+  const entries = candidate.entries ?? [];
+  const rows = entries.map((entry) => h('tr', { class: rowClass(entry) },
+    h('td', { class: 'mono' }, entry.path, ' ', stateChip(entry.state)),
+    h('td', {}, short(entry.value)),
+    h('td', {}, entry.location ? [entry.location.where, ' ', locateLink(entry.location, `${candidate.name ?? candidate.path} · ${entry.path}`)] : ''),
+    h('td', {}, pendingChips(entry.pending))));
+  return [
+    candidate.staticSchema ? h('p', { style: 'margin:4px 0' }, `选定的数据定义：${candidate.staticSchema.name} v${candidate.staticSchema.version}；共 ${entries.length} 个值。`) : null,
+    h('div', { class: 'scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ['字段路径', '值', '图上位置', '待确认'].map((text) => h('th', {}, text)))), h('tbody', {}, rows))),
+    h('details', {}, h('summary', {}, '查看完整数据集'), h('pre', {}, json(candidate.document ?? null))),
+  ];
+}
+
+function templateBody(candidate) {
+  const template = candidate.template ?? { parameters: [] };
+  const elements = candidate.elements ?? [];
+  const rows = elements.map((element) => h('tr', { class: rowClass(element) },
+    h('td', { class: 'mono' }, element.path, ' ', stateChip(element.state)),
+    h('td', { class: 'mono' }, element.type),
+    h('td', {}, element.location ? [element.location.where, ' ', locateLink(element.location, element.path)] : ''),
+    h('td', {}, pendingChips(element.pending))));
+  const parameters = template.parameters.map((p) => `${p.name}${p.displayName ? `（${p.displayName}）` : ''}${p.type ? ` ${p.type}` : ''}${p.visibility ? ` ${p.visibility}` : ''}`);
+  return [
+    h('p', { style: 'margin:4px 0' }, `基准：${template.base ? `${template.base.name} v${template.base.version}` : '未知'}；参数：${parameters.length ? parameters.join('、') : '无'}；元素 ${elements.filter((e) => e.state !== 'removed').length} 个。`),
+    h('div', { class: 'scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ['元素路径', '类型', '图上位置', '待确认'].map((text) => h('th', {}, text)))), h('tbody', {}, rows))),
+    h('details', {}, h('summary', {}, '查看完整模板'), h('pre', {}, json(candidate.document ?? null))),
+  ];
 }
 
 function notesSection() {

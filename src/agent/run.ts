@@ -11,7 +11,9 @@ import { createWriteStream } from 'node:fs';
 import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadWorkspaceDocuments } from '../workspace.js';
+import { parseRenderRequest } from '../request.js';
+import { isRecord } from '../util.js';
+import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
 import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type PendingItem } from './outcome.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
@@ -39,8 +41,12 @@ export interface AgentRunOptions {
   readonly out: string;
   readonly domain?: string;
   readonly workspace?: string;
-  /** 数据集提取与模板辅助设计所基于的静态数据定义（票据 06）；没有时提示先做数据定义提取。 */
+  /** 数据集提取所基于的静态数据定义：名称，或"名称@版本"，只写名称时取工作区中的最新版本。 */
   readonly definition?: string;
+  /** 模板辅助设计所基于的已保存数据集 id。 */
+  readonly dataset?: string;
+  /** 示例图对应的出图请求文件：主模板名、参数与输出尺寸；审核页按它重新渲染预览（M52）。 */
+  readonly request?: string;
   /** key 的值只在内存中传给子进程；keyEnv 是它所在的环境变量名，只用于记录。 */
   readonly key: string;
   readonly keyEnv: string;
@@ -86,6 +92,14 @@ export interface RoundInputs {
   readonly brief: { readonly source: string; readonly sha256: string };
   readonly domain: string | null;
   readonly workspace: { readonly source: string | null; readonly fingerprint: string; readonly documents: number };
+  /** 资源仓库目录；审核时重新渲染预览要用。 */
+  readonly resources?: string;
+  /** 本轮所基于的数据定义（数据集提取、模板辅助设计）。 */
+  readonly definition?: StaticSchemaRef | null;
+  /** 本轮所基于的数据集（模板辅助设计）。 */
+  readonly dataset?: string | null;
+  /** 示例图对应的出图请求：原文件与规范化后存在轮次目录的 request.json。 */
+  readonly request?: { readonly source: string; readonly file: 'request.json'; readonly template: string } | null;
   readonly previous: null;
 }
 
@@ -113,10 +127,18 @@ export interface AgentRunResult {
 
 export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunResult> {
   const task = AGENT_TASKS[options.task];
-  if ((options.task === 'dataset-extraction' || options.task === 'template-design') && options.definition === undefined) {
+  if (!task.implemented) throw new AgentUsageError(`任务类型"${task.name}"尚未实现`);
+  // 任务顺序（M43）：数据集提取要已发布的数据定义，模板辅助设计要已保存的数据集。
+  if (task.requires !== 'none' && options.definition === undefined && options.dataset === undefined) {
     throw new AgentUsageError(`只给了示例图，没有指定数据定义：先做数据定义提取并发布（M43），例如 renderweave agent run --task 数据定义提取 …`);
   }
-  if (!task.implemented) throw new AgentUsageError(`任务类型"${task.name}"尚未实现，目前只支持数据定义提取`);
+  if (task.requires === 'dataset' && options.dataset === undefined) {
+    throw new AgentUsageError(`${task.name}要基于已保存的数据集：先做数据集提取并应用（M43），再用 --dataset 指定数据集 id`);
+  }
+  if (task.request === 'none' && options.request !== undefined) throw new AgentUsageError(`${task.name}不用出图请求，去掉 --request`);
+  if (task.request === 'required' && options.request === undefined) {
+    throw new AgentUsageError(`${task.name}要用 --request 给出示例图对应的出图请求（主模板名、参数与输出尺寸），审核时按它重新渲染预览`);
+  }
   await requireFile(options.sample, '示例图');
   // 按文件头定扩展名：文件名与内容不符时，Claude Code 会按扩展名声明错误的图片类型。
   const extension = imageExtension(await readFile(options.sample));
@@ -130,7 +152,10 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
     }
   }
   if (options.workspace !== undefined && !(await isDirectory(options.workspace))) throw new AgentUsageError(`工作区目录无法读取：${options.workspace}`);
+  if (task.requires !== 'none' && options.workspace === undefined) throw new AgentUsageError(`${task.name}要用 --workspace 指定已发布的数据定义所在的工作区`);
   if (!(await isFile(join(options.resources, 'resources.json')))) throw new AgentUsageError(`资源仓库缺少 resources.json：${options.resources}`);
+  const basis = task.requires === 'none' ? { definition: null, dataset: null } : await resolveBasis(task.requires, options);
+  const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!);
   if (options.key === '') throw new AgentUsageError(`环境变量 ${options.keyEnv} 为空`);
   const roundDir = resolve(options.out);
   if (await exists(roundDir) && (!(await isDirectory(roundDir)) || (await readdir(roundDir)).length > 0)) {
@@ -148,7 +173,13 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
   if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
   for (const reference of task.references) await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
-  const prompt = (await readFile(join(AGENT_MATERIALS, 'tasks', `${task.id}.md`), 'utf8')).replaceAll('{sample}', sampleFile);
+  if (request) {
+    await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
+    await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
+  }
+  const prompt = (await readFile(join(AGENT_MATERIALS, 'tasks', `${task.id}.md`), 'utf8')).replaceAll('{sample}', sampleFile)
+    .replaceAll('{definition}', basis.definition ? formatStaticSchemaRef(basis.definition) : '')
+    .replaceAll('{dataset}', basis.dataset ?? '').replaceAll('{template}', request?.template ?? '');
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
@@ -163,6 +194,9 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
     brief: { source: resolve(options.brief), sha256: await sha256File(options.brief) },
     domain: options.domain ?? null,
     workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
+    resources: resolve(options.resources),
+    definition: basis.definition, dataset: basis.dataset,
+    request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
     previous: null,
   };
 
@@ -190,8 +224,11 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   const { mcp, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
-  const { staticSchemas } = await loadWorkspaceDocuments(snapshotDir);
-  const check = await checkAgentOutcome({ task: task.id, agentDir, staticSchemas });
+  const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
+  const check = await checkAgentOutcome({
+    task: task.id, agentDir, workspace: snapshot,
+    context: { ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}), ...(request ? { request: { template: request.template } } : {}) },
+  });
   let outcome: RoundOutcome | undefined;
   if (check.submission) {
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
@@ -221,6 +258,69 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   };
   await writeFile(join(roundDir, 'round.json'), `${JSON.stringify(record, null, 2)}\n`);
   return { roundDir, record, check, ...(outcome ? { outcome } : {}) };
+}
+
+/** 数据集提取按 --definition 找已发布的数据定义；模板辅助设计按 --dataset 找已保存的数据集，数据定义取它选定的那一份。 */
+async function resolveBasis(requires: 'definition' | 'dataset' | 'template', options: AgentRunOptions): Promise<{ definition: StaticSchemaRef; dataset: string | null }> {
+  const workspace = await loadWorkspaceDocuments(options.workspace!);
+  const published = workspace.staticSchemas.filter((entry) => entry.compiled !== undefined);
+  const list = (names: string[]) => (names.length === 0 ? '工作区中没有' : `可用：${[...names].sort().join('、')}`);
+  let definition: StaticSchemaRef | undefined;
+  if (options.definition !== undefined) {
+    const match = /^(.+?)(?:@([1-9]\d*))?$/.exec(options.definition);
+    const name = match?.[1] ?? options.definition, version = match?.[2] === undefined ? undefined : Number(match[2]);
+    const versions = published.filter((entry) => entry.ref.name === name).map((entry) => entry.ref.version);
+    const chosen = version ?? (versions.length > 0 ? Math.max(...versions) : undefined);
+    if (chosen === undefined || !versions.includes(chosen)) {
+      throw new AgentUsageError(`工作区中没有已发布的数据定义 ${options.definition}：先做数据定义提取并发布（M43）。${list(published.map((entry) => `${entry.ref.name}@${entry.ref.version}`))}`);
+    }
+    definition = { name, version: chosen };
+  }
+  if (requires === 'definition') return { definition: definition!, dataset: null };
+  const entry = workspace.datasets.find((item) => item.id === options.dataset);
+  if (!entry) throw new AgentUsageError(`工作区中没有数据集 ${options.dataset}：先做数据集提取并应用（M43）。${list(workspace.datasets.map((item) => item.id))}`);
+  const ref = entry.document.dataset.staticSchema;
+  if (!published.some((item) => sameStaticSchema(item.ref, ref))) throw new AgentUsageError(`数据集 ${entry.id} 选定的数据定义 ${formatStaticSchemaRef(ref)} 没有发布在工作区中`);
+  if (definition && !sameStaticSchema(definition, ref)) {
+    throw new AgentUsageError(`数据集 ${entry.id} 选定的是 ${formatStaticSchemaRef(ref)}，与 --definition ${options.definition} 不一致`);
+  }
+  return { definition: ref, dataset: entry.id };
+}
+
+/**
+ * 读出图请求并规范化：模板辅助设计时数据集固定为 --dataset；数据集提取时去掉数据集，预览时换成候选，
+ * 且主模板必须已在工作区中、基准是所选数据定义。
+ */
+async function readRequest(file: string, task: AgentTaskId, basis: { definition: StaticSchemaRef | null; dataset: string | null }, workspaceDir: string):
+  Promise<{ document: Record<string, unknown>; template: string }> {
+  let value: unknown;
+  const tooPrecise: string[] = [];
+  try {
+    value = parseJsonKeepingPrecision(await readFile(file, 'utf8'), tooPrecise);
+  } catch (error) {
+    throw new AgentUsageError(`出图请求无法读取：${file}（${error instanceof Error ? error.message : String(error)}）`);
+  }
+  if (!isRecord(value)) throw new AgentUsageError(`出图请求必须是 JSON 对象：${file}`);
+  if (tooPrecise.length > 0) throw new AgentUsageError(`出图请求中的数值超过 15 位有效数字：${tooPrecise.join('、')}`);
+  const document: Record<string, unknown> = { ...value };
+  if (task === 'template-design') {
+    if (document['dataset'] !== undefined && !(isRecord(document['dataset']) && document['dataset']['id'] === basis.dataset && Object.keys(document['dataset']).length === 1)) {
+      throw new AgentUsageError(`出图请求的数据集要写成 {"id": "${basis.dataset}"}，或省略`);
+    }
+    document['dataset'] = { id: basis.dataset };
+  } else delete document['dataset'];
+  const parsed = parseRenderRequest({ ...document, dataset: document['dataset'] ?? { id: '候选数据集' } });
+  if (!parsed.request) throw new AgentUsageError(`出图请求不合格：${parsed.problems.map((problem) => problem.message).join('；')}`);
+  const template = parsed.request.template;
+  if (task === 'dataset-extraction') {
+    const saved = (await loadWorkspaceDocuments(workspaceDir)).templates.find((entry) => entry.name === template);
+    const base = isRecord(saved?.document) ? saved.document['base'] : undefined;
+    if (!saved) throw new AgentUsageError(`出图请求的模板 ${template} 不在工作区中：数据集提取的预览要用已保存的模板`);
+    if (!isRecord(base) || !sameStaticSchema({ name: String(base['name']), version: Number(base['version']) }, basis.definition!)) {
+      throw new AgentUsageError(`出图请求的模板 ${template} 的基准不是 ${formatStaticSchemaRef(basis.definition!)}`);
+    }
+  }
+  return { document, template };
 }
 
 /** 工作区指纹：按文件名排序的 JSON 文件名与内容哈希，再整体取哈希；应用时据此判断工作区是否已变（M51）。 */
