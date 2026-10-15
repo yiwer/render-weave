@@ -539,6 +539,12 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 |---|---|
 | M225 | `renderweave mcp` 的工具合同 0.3.0，详见 [MCP 工具服务](../mcp.md)。<br>**工具**：10 个只读工具，即 `list_documents`、`read_document`、`list_resources`、`check_definitions`、`check_dataset`、`check_templates`、`render_draft`、`inspect_layout`、`view_image`、`dsl_reference`。<br>**快照与路径**：工作区在启动时读入为快照，本轮内不变，应用时按快照判断工作区是否已变（M51）；读文件的工具只读 `--root` 内的文件，按真实路径判断，经目录联接越界同样拒绝。<br>**草稿预览与元素检查**：<br>• `mode` 只能是 `draft`、`format` 只能是 `png`，写了其他值作为工具错误拒绝，不悄悄改写；<br>• DPI 上限 300、最长边不超过 2000 像素，超出时降低并注明原值；<br>• 工作副本以 `templates` 文件路径传入，按模板名代替或新增，只在本次调用的内存中生效（M49、M50）；`datasetPath` 代替 `request.dataset`。<br>**放大预览**：用户故事 22 的预览放大用 `render_draft` 的 `region`（毫米），按区域大小提高 DPI，不把预览写成文件。<br>**错误与输出**：参数按输入 Schema 校验；不合规、越界与文件不存在作为工具错误返回，便于 Agent 修正，协议错误才用 JSON-RPC 错误。结果是 JSON 文本加图片内容块，问题位置中的宿主路径改写为"工作区/…"。<br>**其他**：资源仓库接口新增 `list()`；`--tools` 可只开放部分工具。`scripts/m190/` 改用本服务，一次性的 `mcp-server.mjs` 删除；模板步骤的工作区改为快照，模板写在 `candidates/` 并以工作副本预览 |
 
+以下为第三阶段票据 04 的实施决定：
+
+| 编号 | 实施决定 |
+|---|---|
+| M226 | `renderweave agent run` 发起一轮任务，说明见 [业务 Agent 任务](../agent-tasks.md)。<br>**任务类型**：任务类型有英文标识（`definition-extraction` 等）与中文名称，命令行两者都接受。本票只实现数据定义提取。按 M43"每个任务一种成果"，数据定义提取只交数据定义；验证脚本 design 步骤顺带交的数据集，改为 `scratch/` 中的自查草稿，不算成果。<br>**轮次目录**：独占，由命令新建（不存在或为空）。工作区复制为快照，并记录指纹，供应用时判断工作区是否已变（M51）。<br>**成果分两层**：<br>• Agent 交回 `agent/outcome.json`（候选、待确认项、说明）；<br>• RenderWeave 先校验结构，合格时写轮次成果 `outcome.json`（`renderweave-outcome/1`，加上输入哈希、指纹与用量），并把候选复制进轮次目录；结构不合格时不写；<br>• `round.json`（运行记录）与 `check.json`（问题清单）总是写出。<br>**待确认项**：原因取英文枚举 `unreadable`、`inferred`、`conflicting`、`requiredMissing`，对应 M44 四类；位置在数据定义中写字段名。<br>**退出码**：0 合格，1 不合格（不自动重试），2 用法错误。<br>**隔离与 key**：环境按白名单组装；key 只从 `--key-env` 指定的环境变量读取，不再像验证脚本那样回退读取 Windows 用户级变量。<br>**示例图**：按文件头定扩展名（M402 示例图文件名是 .jpg，内容是 PNG）。<br>**工具**：MCP 工具按任务开放，数据定义提取开放 7 个。<br>**资料**：通用指南与线路牌约定提前迁入 `agent/guide.md`、`agent/domains/route-sign.md`（票据 08 的一部分）；提示词在 `agent/tasks/<任务>.md`；成果格式在 `agent/reference/outcome.md`，示例用会议胸牌（M222） |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

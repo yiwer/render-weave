@@ -39,3 +39,9 @@ export type { LayoutSummary, LayoutNode, TextSummary, QrCodeSummary, BarcodeSumm
 export type { EncodedImage } from './draw.js';
 export { readPngInfo, readJpegDpi } from './image-metadata.js';
 export { mmToPx } from './units.js';
+export {
+  runAgentTask, workspaceFingerprint, AgentUsageError, DEFAULT_MODEL, DEFAULT_ENDPOINT, DEFAULT_KEY_ENV,
+  type AgentRunOptions, type AgentRunResult, type RoundRecord, type RoundOutcome, type RoundInputs, type RoundUsage,
+} from './agent/run.js';
+export { checkAgentOutcome, PENDING_REASONS, type OutcomeCheck, type CandidateCheck, type PendingItem, type PendingReason, type SubmittedOutcome } from './agent/outcome.js';
+export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';

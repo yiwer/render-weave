@@ -13,7 +13,12 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
 - 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **下一步**：第三阶段票据 01–03 已完成：DSL 1.0 五种文档的参考、Schema、一致性测试与 ADR-0016；`renderweave mcp` 只读工具服务（[说明](docs/mcp.md)，M225）。下一张是 04（一条命令发起数据定义提取），之后为审核、应用与多轮。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+- **下一步**：第三阶段票据 01–04 已完成：
+  - DSL 1.0 五种文档的参考、Schema、一致性测试与 ADR-0016；
+  - `renderweave mcp` 只读工具服务（[说明](docs/mcp.md)，M225）；
+  - `renderweave agent run` 发起数据定义提取并校验成果（[说明](docs/agent-tasks.md)，M226）。
+
+  下一张是 05（审核数据定义候选并发布），之后为数据集与模板任务、多轮与评估。key 只经环境变量 `QWEN_TOKEN_PLAN_API_KEY`。审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -29,7 +34,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
 - **MCP 只读工具服务**：`renderweave mcp` 提供 10 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大与 DSL 参考。工具合同 0.3.0 有快照测试，见 [MCP 工具服务](docs/mcp.md)。
-- **未实现**：URL 图片、跨批次去重、动态模板、HTTP 服务、业务 Agent 任务闭环（`renderweave agent`）、OCR 接入、在线编辑器。
+- **业务 Agent 任务**：`renderweave agent run --task 数据定义提取` 在独占轮次目录中组装三层资料与工作区快照，按 ADR-0015 在空白环境里启动 Claude Code，只连 `renderweave mcp`。Agent 交回的成果先查结构、再经引擎校验，写出 `outcome.json`、`check.json` 与 `round.json`，见 [业务 Agent 任务](docs/agent-tasks.md)。资料在 `agent/`。
+- **未实现**：URL 图片、跨批次去重、动态模板、HTTP 服务、审核页与应用、数据集提取与模板任务、多轮反馈、OCR 接入、在线编辑器。
 
 ## 文档地图
 
@@ -61,7 +67,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
 | [docs/dsl/](docs/dsl/README.md) | DSL 1.0 参考：五种文档的写法、Schema 与引擎的分工、Schema 之外的检查、已知限制 |
 | [docs/mcp.md](docs/mcp.md) | `renderweave mcp`：启动、10 个只读工具、草稿预览与元素检查的输入、路径限制、合同版本 |
-| [agent/](agent/reference/data-definition.md) | 交给业务 Agent 的资料：DSL 参考（`agent/reference/`），三层资料将在票据 08 迁入 |
+| [docs/agent-tasks.md](docs/agent-tasks.md) | `renderweave agent run`：选项、隔离、轮次目录、成果格式与校验、退出码 |
+| [agent/](agent/guide.md) | 交给业务 Agent 的资料：通用做法 `guide.md`、领域约定 `domains/`、任务提示词 `tasks/`、DSL 参考与成果格式 `reference/`；项目说明模板与归属规则在票据 08 补齐 |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |

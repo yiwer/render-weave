@@ -11,6 +11,8 @@
  * - resources-init、resources-import、resources-list、resources-get、resources-check、resources-apply：资源版本仓库维护。
  *   退出码：0 成功；1 仓库、内容、检查、冲突或文件失败；2 用法错误。
  * - mcp：在标准输入输出上提供只读的 MCP 工具服务（src/mcp/），读完标准输入后结束。退出码：0 正常结束；2 用法错误或目录无法打开。
+ * - agent run：发起一轮业务 Agent 任务（src/agent/），在新轮次目录中写出 round.json、check.json，结构合格时另有 outcome.json 与候选文件。
+ *   退出码：0 成果合格；1 成果不合格（没有交回、结构不合格或候选有严重问题），问题清单见 check.json；2 用法错误、输入无法读取或任务顺序不对。
  */
 import { appendFile, mkdir, open, readFile, rm, stat, writeFile, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -20,6 +22,8 @@ import { render, type RenderOptions } from './render.js';
 import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-records.js';
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
+import { AgentUsageError, DEFAULT_KEY_ENV, runAgentTask } from './agent/run.js';
+import { AGENT_TASKS, findAgentTask } from './agent/tasks.js';
 import { WorkingDirectory } from './mcp/files.js';
 import { serveMcp } from './mcp/server.js';
 import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
@@ -52,6 +56,8 @@ const USAGE = `用法：
   renderweave resources-check --resources <目录> --workspace <目录> --id <资源ID> --kind <image|font> --file <新内容文件> --out <检查报告.json> [--options <字体配置.json>]
   renderweave resources-apply --resources <目录> --workspace <目录> --file <新内容文件> --check <检查报告.json> [--options <字体配置.json>]
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
+  renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>] [--definition <数据定义>]
+                        [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
 
 render
   --workspace   工作区目录：静态数据定义、编译产物、模板与数据集的 JSON 文件
@@ -66,6 +72,17 @@ mcp（只读工具服务，stdio 上按行分隔的 JSON-RPC）
   --root        本轮工作目录：工具只能读取其中的文件
   --tools       可选，只开放列出的工具，逗号分隔
   --log         可选，每次工具调用追加一行记录
+
+agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 renderweave mcp）
+  --task        数据定义提取（目前只支持这一种；数据集提取、模板辅助设计、模板辅助修改尚未实现）
+  --sample      示例图：PNG、JPEG 或 WebP
+  --brief       项目说明（Markdown）：业务、尺寸、目标范围、客户说明
+  --resources   资源仓库目录
+  --out         新轮次目录，必须不存在或为空
+  --domain      可选，领域约定包，取 agent/domains/<领域>.md，如 route-sign
+  --workspace   可选，工作区目录，复制为本轮的只读快照
+  --key-env     可选，key 所在的环境变量名，缺省 QWEN_TOKEN_PLAN_API_KEY；key 只经环境变量传入，不写任何文件
+  --model、--small-model、--endpoint、--max-turns、--claude  可选，模型、轻量任务模型、兼容端点、轮数上限与 Claude Code 可执行文件
 
 publish
   --definition  数据定义 DSL 文件（renderweave-schema/1）
@@ -89,10 +106,15 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'resources-check': ['resources', 'workspace', 'id', 'kind', 'file', 'out'],
   'resources-apply': ['resources', 'workspace', 'file', 'check'],
   mcp: ['workspace', 'resources', 'root'],
+  'agent run': ['task', 'sample', 'brief', 'resources', 'out'],
 };
+const AGENT_RUN_OPTIONAL = ['domain', 'workspace', 'definition', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
-  const [command, ...rest] = argv;
+  // agent 带子命令：agent run。
+  const [first, ...more] = argv;
+  const command = first === 'agent' && more[0] !== undefined ? `agent ${more[0]}` : first;
+  const rest = first === 'agent' ? more.slice(1) : more;
   const names = command && Object.hasOwn(COMMAND_OPTIONS, command) ? COMMAND_OPTIONS[command] : undefined;
   if (!names) {
     io.stderr(USAGE);
@@ -100,7 +122,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
-    : command === 'mcp' ? ['tools', 'log'] : [];
+    : command === 'mcp' ? ['tools', 'log'] : command === 'agent run' ? AGENT_RUN_OPTIONAL : [];
   try {
     ({ values } = parseArgs({
       args: [...rest],
@@ -121,6 +143,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'render') return await runRender(options, io);
     if (command === 'publish') return await runPublish(options, io);
     if (command === 'mcp') return await runMcp(options, io);
+    if (command === 'agent run') return await runAgent(options, io);
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     return await runResources(command!, options, io);
   } catch (error) {
@@ -235,6 +258,54 @@ async function runResources(command: string, options: Record<string, string>, io
     io.stdout(`${JSON.stringify(result.store.list(), null, 2)}\n`);
   }
   return ExitCodes.ok;
+}
+
+async function runAgent(options: Record<string, string>, io: CliIo): Promise<number> {
+  const task = findAgentTask(options.task!);
+  if (!task) {
+    io.stderr(`没有任务类型 ${options.task}；可用：${Object.values(AGENT_TASKS).map((item) => item.name).join('、')}\n`);
+    return ExitCodes.usage;
+  }
+  const keyEnv = options['key-env'] ?? DEFAULT_KEY_ENV;
+  const key = process.env[keyEnv];
+  if (!key) {
+    io.stderr(`缺少环境变量 ${keyEnv}：key 只经环境变量传入\n`);
+    return ExitCodes.usage;
+  }
+  const maxTurns = options['max-turns'] === undefined ? undefined : Number(options['max-turns']);
+  if (maxTurns !== undefined && (!Number.isSafeInteger(maxTurns) || maxTurns < 1)) {
+    io.stderr('--max-turns 必须是正整数\n');
+    return ExitCodes.usage;
+  }
+  io.stderr(`开始${task.name}：轮次目录 ${options.out}\n`);
+  try {
+    const result = await runAgentTask({
+      task: task.id, sample: options.sample!, brief: options.brief!, resources: options.resources!, out: options.out!, key, keyEnv,
+      ...(options.domain !== undefined ? { domain: options.domain } : {}),
+      ...(options.workspace !== undefined ? { workspace: options.workspace } : {}),
+      ...(options.definition !== undefined ? { definition: options.definition } : {}),
+      ...(options.model !== undefined ? { model: options.model } : {}),
+      ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
+      ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
+      ...(maxTurns !== undefined ? { maxTurns } : {}),
+      ...(options.claude !== undefined ? { claude: { command: options.claude } } : {}),
+    });
+    const { check, record } = result;
+    reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems)], io);
+    if (record.run.error) io.stderr(`${record.run.error}\n`);
+    io.stdout(`${JSON.stringify({
+      round: result.roundDir, verdict: check.verdict,
+      candidates: check.candidates.map((candidate) => ({ path: candidate.path, ...(candidate.published ? { published: candidate.published } : {}) })),
+      pending: result.outcome?.pending.length ?? null,
+      usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
+    }, null, 2)}\n`);
+    if (check.verdict === 'unqualified') io.stderr('成果不合格：问题清单见 check.json；是否带着问题重跑由你决定，不会自动重试\n');
+    return check.verdict === 'qualified' ? ExitCodes.ok : ExitCodes.failed;
+  } catch (error) {
+    if (!(error instanceof AgentUsageError)) throw error;
+    io.stderr(`${error.message}\n`);
+    return ExitCodes.usage;
+  }
 }
 
 async function runMcp(options: Record<string, string>, io: CliIo): Promise<number> {

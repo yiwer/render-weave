@@ -166,6 +166,9 @@ export const ProblemCodes = {
   layoutContentOverflow: 'layout.contentOverflow',
   /** 文字按适配规则处理后仍放不下元素框。 */
   layoutTextOverflow: 'layout.textOverflow',
+
+  /** Agent 没有交回 outcome.json，或其结构、候选文件、待确认项不合格（M48）。 */
+  outcomeInvalid: 'outcome.invalid',
 } as const;
 
 export type ProblemCode = (typeof ProblemCodes)[keyof typeof ProblemCodes];

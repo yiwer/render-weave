@@ -11,8 +11,8 @@
 //
 // design 与 template 交给 Agent 的资料分三层，提示词本身不含具体业务：
 //   docs/brief.md：项目说明，取 scenarios/<场景>/brief-<步骤>.md（尺寸、目标范围、命名、客户说明）；
-//   docs/guide.md：通用做法，适用于任何出图场景（--no-guide 时不给，用于对照）；
-//   docs/domain-<领域>.md：领域约定，--domain 指定时才给（如 route-sign）。
+//   docs/guide.md：通用做法，取 agent/guide.md，适用于任何出图场景（--no-guide 时不给，用于对照）；
+//   docs/domain-<领域>.md：领域约定，取 agent/domains/<领域>.md，--domain 指定时才给（如 route-sign）。
 //   template：Agent 拿到示例图、模板 DSL 参考与专家版数据定义和数据集，写模板并用草稿预览迭代；引擎按 120 DPI 重新出图，
 //             与示例图比较缩小后的像素差，再用专家版验收过的场景压测（本站位置、站数、长站名、宽度），都给出专家模板的同一指标作参照。
 //
@@ -186,8 +186,8 @@ async function loop() {
 const layers = () => ({ scenario, guide: withGuide, domain: domain ?? null });
 async function copyLayers(agent, step) {
   await copyFile(join(HERE, 'scenarios', scenario, `brief-${step}.md`), join(agent, 'docs/brief.md'));
-  if (withGuide) await copyFile(join(HERE, 'guide.md'), join(agent, 'docs/guide.md'));
-  if (domain) await copyFile(join(HERE, `domain-${domain}.md`), join(agent, `docs/domain-${domain}.md`));
+  if (withGuide) await copyFile(join(REPO, 'agent/guide.md'), join(agent, 'docs/guide.md'));
+  if (domain) await copyFile(join(REPO, `agent/domains/${domain}.md`), join(agent, `docs/domain-${domain}.md`));
 }
 
 // ---- design ----
