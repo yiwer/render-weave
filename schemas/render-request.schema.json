@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:dsl:1:render-request",
+  "title": "RenderWeave 渲染请求（DSL 1.0）",
+  "description": "一次出图：模板、数据集、对外参数、出图参数与模式。像素上限、模板与数据集是否存在、参数是否符合模板声明由引擎检查，见 docs/dsl/requests.md。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "template",
+    "dataset",
+    "output",
+    "mode"
+  ],
+  "properties": {
+    "template": {
+      "$ref": "#/$defs/nonEmpty"
+    },
+    "dataset": {
+      "$ref": "#/$defs/datasetSelection"
+    },
+    "parameters": {
+      "$ref": "#/$defs/parameters"
+    },
+    "output": {
+      "$ref": "#/$defs/output"
+    },
+    "mode": {
+      "$ref": "#/$defs/mode"
+    }
+  },
+  "$defs": {
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datasetDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset",
+        "data"
+      ],
+      "properties": {
+        "dataset": {
+          "type": "object",
+          "required": [
+            "staticSchema"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "数据集 ID；工作区中的数据集必须有，内联在渲染请求中时可省略"
+            },
+            "staticSchema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "version"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "description": "所选静态数据定义的确切版本（ADR-0008）"
+            }
+          },
+          "description": "身份部分。除 id 与 staticSchema 外，可写名称（name）、来源（origin）等说明性内容，引擎不作要求"
+        },
+        "data": {
+          "description": "业务数据，按所选静态数据定义的编译产物校验"
+        }
+      }
+    },
+    "datasetSelection": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/nonEmpty"
+            }
+          },
+          "description": "引用工作区中的数据集"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inline"
+          ],
+          "properties": {
+            "inline": {
+              "$ref": "#/$defs/datasetDocument"
+            }
+          },
+          "description": "附带一份数据集文档，dataset.id 可省略"
+        }
+      ]
+    },
+    "parameters": {
+      "type": "object",
+      "description": "对外参数名到取值；取值是否符合参数类型与约束由引擎按模板检查"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height",
+        "dpi",
+        "format"
+      ],
+      "properties": {
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "实际宽度，毫米"
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "实际高度，毫米"
+        },
+        "dpi": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "format": {
+          "enum": [
+            "png",
+            "jpg",
+            "jpeg"
+          ]
+        }
+      }
+    },
+    "mode": {
+      "enum": [
+        "draft",
+        "final"
+      ],
+      "description": "draft 草稿预览；final 正式出图"
+    }
+  }
+}

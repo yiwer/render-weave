@@ -6,7 +6,7 @@ export {
 } from './output-records.js';
 export { readBatch, type BatchReading, type FoundBatchItem } from './batch-read.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
-export { checkDslDocument, type DslDocumentCheck, type DslDocumentKind } from './dsl.js';
+export { checkDslDocument, dslDocumentKind, type DslDocumentCheck, type DslDocumentKind } from './dsl.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
   loadWorkspace,

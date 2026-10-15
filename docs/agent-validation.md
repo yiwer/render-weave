@@ -116,7 +116,7 @@ Agent 先用 Read 看示例图，再调用 `render_draft` 读回预览图。工�
 **做法**：Agent 拿到以下资料：
 
 - 示例图；
-- 模板 DSL 参考 `scripts/m190/template-reference.md`：按解析器规则写成，不含 M402 的任何设计，示例是商品价签，已用引擎实际渲染核对，0 问题；
+- 模板 DSL 参考 `scripts/m190/template-reference.md`（现为 `agent/reference/template.md`，示例已按 M222 改为会议胸牌）：按解析器规则写成，不含 M402 的任何设计，当时的示例是商品价签，已用引擎实际渲染核对，0 问题；
 - 专家版数据定义、编译产物与数据集，这样不受数据定义质量影响。
 
 工具是 `render_draft` 与 `list_resources`。要求主模板名为"线路牌主模板"，带 public 参数 currentIndex。命令为 `run.mjs --steps template`。

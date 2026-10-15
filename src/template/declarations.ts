@@ -174,6 +174,7 @@ class DeclarationReader {
     if (type !== 'ref' && !BASIC_KINDS.includes(type as BasicKind)) {
       this.report(ProblemCodes.templateInvalid, where, `派生变量必须声明结果类型 type：${[...BASIC_KINDS, 'ref'].join('、')}（M23）`);
     }
+    if (isRecord(value['ref'])) this.checkKeys(value['ref'], ['name', 'version'], where, '引用 ref');
     const ref = value['ref'] === undefined ? undefined : parseStaticSchemaRef(value['ref']);
     if (type === 'ref' && !ref) this.report(ProblemCodes.templateInvalid, where, '结果类型为 ref 时必须用 ref 写明静态数据定义的名称与版本号');
     if (type !== 'ref' && value['ref'] !== undefined) this.report(ProblemCodes.templateInvalid, where, '只有结果类型为 ref 时才写 ref');
@@ -294,6 +295,10 @@ class DeclarationReader {
     const errors = this.problems.length;
     if (!name) this.report(ProblemCodes.templateInvalid, where, '检查项必须有名称 name');
     this.checkKeys(value, CHECK_KEYS, where, '检查项');
+    const displayName = value['displayName'];
+    if (displayName !== undefined && (typeof displayName !== 'string' || displayName === '')) {
+      this.report(ProblemCodes.templateInvalid, where, '检查项的显示名称 displayName 必须是非空文本');
+    }
     const problemWhen = this.operand(value['problemWhen'], where, 'problemWhen');
     const level = value['level'];
     if (level !== 'severe' && level !== 'hint') this.report(ProblemCodes.templateInvalid, where, '检查项的等级 level 只能取 severe 或 hint');

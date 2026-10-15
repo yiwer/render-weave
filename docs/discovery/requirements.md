@@ -527,6 +527,12 @@ agent 是否能在工作副本上直接修改、校验和反复试渲染，还�
 |---|---|
 | M223 | DSL 1.0 冻结时让解析器与 JSON Schema 同进同退，收紧了几处原先静默接受的写法：数据定义根上的 `description` 必须是文本；`displayName`、`constraints`、`allowedSources` 写成 `null` 不再当作"没写"；字段与列表元素的 `ref` 只能有 `name`、`version`；数据集根上只能有 `dataset` 与 `data`，`dataset.staticSchema` 只能有 `name`、`version`。这些写法在仓库语料中都不存在，全量测试不受影响。新增公开入口 `checkDslDocument` 做单份文档的自足检查，供一致性测试与后续 MCP 校验工具使用。模板与请求中的引用对象留待票据 02 一并收紧 |
 
+以下为第三阶段票据 02 的实施决定：
+
+| 编号 | 实施决定 |
+|---|---|
+| M224 | 模板与请求同样让解析器与 JSON Schema 同进同退：`children`、`place`、`args`、`data`、`fit` 的 `steps`/`compressMin`/`minFontSize`、码元素的 `foreground`/`background`、渲染请求的 `parameters` 写成 `null` 不再当作"没写"；`base`、派生变量的 `ref`、`sizeRange` 及其范围对象不再静默忽略多余键；检查项的 `displayName` 必须是非空文本；渲染请求的 `dataset` 只能是 `{ id }`（非空）与 `{ inline }` 之一。仓库语料中都没有这些写法，全量测试不受影响。`checkDslDocument` 识别全部五种文档。批次请求没有格式标识，`renderweave-batch/1` 是交付后批次清单的标识；此前规格与 ADR-0016 的误写已改正。请求的两份 Schema 各自内嵌数据集文档结构，以测试保证与 `dataset.schema.json` 一致 |
+
 待答：暂无需要讨论的问题。以下需要实测后确定：
 
 - M56 OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。

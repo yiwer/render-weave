@@ -1,10 +1,10 @@
-# RenderWeave 模板 DSL 参考（renderweave-template/1）
+# RenderWeave 模板参考（DSL 1.0，renderweave-template/1）
 
 模板是出图函数：以一份静态数据定义为基准（base），把数据与参数排成一张图。单位一律是毫米；颜色写 `#RRGGBB` 或 `#RRGGBBAA`；字体与图片写资源引用 `res:资源ID`。工作区目录中的每个 `.json` 文件按内容归类（数据定义、模板、数据集、编译产物），文件名随意。
 
 ## 文件结构
 
-```json
+```text
 {
   "dslVersion": "renderweave-template/1",
   "name": "模板名（唯一，被调用时按名引用）",
@@ -23,11 +23,13 @@
 
 - 画板的实际尺寸由渲染请求（主模板）或调用框（被调模板）决定，必须落在 `sizeRange` 内。被调模板随内容定尺寸时，画板写 `"size": "hug"`。
 - 一个模板内，数据字段、参数、派生变量共用一个命名空间，不能重名。变量名用英文，中文写在 `displayName`。
+- 不允许出现未定义的键；任何可选键都不能写成 null：要么写值，要么省略。
+- 元素名称非空，不含 / [ ]，在同一模板内不能重复。
 - 内置基准：`空数据定义 v1`（没有数据），以及单值数据定义 `单值·文本`、`单值·数值`、`单值·日期`、`单值·时刻`、`单值·时间`、`单值·布尔`、`单值·图片`（v1，唯一字段名 `value`），用于遍历基本类型列表。
 
 ## 变量与运算数
 
-- 引用变量写 `{"var": "路径"}`，路径用"."经过单引用字段，例如 `{"var": "terminal.name"}`；字面值写 `{"value": 文字、数值或布尔}`。
+- 引用变量写 `{"var": "路径"}`，路径用"."经过单引用字段，例如 `{"var": "mainSession.room"}`；字面值写 `{"value": 文字、数值或布尔}`。
 - **参数** `{"name", "displayName", "visibility": "public" 或 "internal", "type", "constraints"?, "default"?}`：type 为基本字段类型（text、number、date、time、datetime、boolean、image）或 `color`；internal 参数必须有 default。public 参数由渲染请求的 `parameters` 或调用方的 `args` 提供。
 - **派生变量** `{"name", "displayName", "type", "ref"?, "op", ...}`，单步运算按名组合：
   - `branch`：`"branches": [{"when": 条件, "then": 运算数}], "otherwise": 运算数`
@@ -35,11 +37,12 @@
   - `length`：`"of": {"var": 列表或文本}`
   - `add` / `subtract`：`"left": 运算数, "right": 运算数`
 - **条件** `{"left": 运算数, "op": 比较, "right": 运算数}`，比较取 eq、ne、lt、le、gt、ge、empty、notEmpty（后两个不写 right）。
-- **检查项** `{"name", "problemWhen": {"var": 布尔变量}, "level": "severe" 或 "hint", "message"}`。
+- **检查项** `{"name", "displayName"?, "problemWhen": {"var": 布尔变量}, "level": "severe" 或 "hint", "message"}`。
+- 一个派生变量只能写自己这种运算的键。
 
 ## 绑定与状态样式
 
-- 可绑定的属性直接把值写成运算数即为绑定，例如 `"source": {"var": "logo"}`、`"color": {"var": "accentColor"}`、`"visible": {"var": "hasLandmark"}`；尺寸写成 `{"fixed": {"var": "size"}}`。
+- 可绑定的属性直接把值写成运算数即为绑定，例如 `"source": {"var": "logo"}`、`"color": {"var": "accentColor"}`、`"visible": {"var": "hasPhoto"}`；尺寸写成 `{"fixed": {"var": "size"}}`。
 - 状态样式：`"states": {"by": {"var": 变量}, "cases": {"取值": {属性: 值}}}`。按变量取值覆盖元素属性；未列出的取值沿用元素自身属性；布尔取值写 `"true"`/`"false"`。不能覆盖 type、name、children、states、template。
 - 隐藏元素（`visible` 为 false）不占位。
 
@@ -72,13 +75,24 @@
     - 跨实例统一字号（例如同一张图上一组标签必须同字号）：`"widthOverflow": {"shrinkGroup": "组名", "minFontSize": 5}`；同名组在一次出图内共用，宽度不足时全组统一缩到同一字号，最低 5 mm。
 - **image**：`{"source": "res:资源ID" 或 {"var": 图片字段}, "fit": "contain"（缺省）| "cover" | "fill"}`；没有 source 时不画内容。
 - **rect**（fill、stroke、cornerRadius）、**ellipse**（fill、stroke）、**line**（from、to、stroke 必填，坐标写成 `[x, y]`，毫米、相对元素框左上角）、**polygon**（points 至少 3 个 `[x, y]` 顶点）、**path**（SVG 路径 d、fill、stroke、fillRule）。图形 stroke 为 `{"color", "width", "dash"?: [实, 空], "cap"?: butt/round/square}`。路径与多边形坐标以毫米计、相对元素框，框变大时不拉伸。
-- **qrcode** / **barcode**：二维码、条形码，本任务一般用不到。
+- **qrcode**：二维码。属性如下：
+  - `content`：文本或文本变量，必填；
+  - `errorCorrectionLevel`：取 L、M（缺省）、Q、H；
+  - `foreground`、`background`：前景色与背景色，缺省为黑码白底，必须不透明且不同色。
+
+  码区保持方形，并自带必要留白；尺寸或 DPI 不足时会报问题。
+- **barcode**：条形码。属性如下：
+  - `content`：文本或文本变量，必填，按文本处理，保留前导零；
+  - `format`：CODE128、EAN-13、EAN-8 或 UPC-A，必填；EAN/UPC 要写含校验位的完整编号；
+  - `foreground`、`background`：前景色与背景色；
+  - `showText`：是否在码下方显示文字，为 true 时必须写 `font`；
+  - `fontSize`：下方文字的字号，缺省 3。
 
 ### 循环与调用
 
 - **loop**：遍历列表，每项调用一次另一个模板。
   ```json
-  { "type": "loop", "name": "规格列", "list": {"var": "specs"}, "template": "规格格子",
+  { "type": "loop", "name": "场次列", "list": {"var": "sessions"}, "template": "场次行",
     "args": { "index": {"loop": "index"}, "count": {"loop": "count"}, "accent": {"var": "accentColor"} },
     "itemLayout": { "direction": "row", "widths": "equal", "gap": 1 } }
   ```
@@ -90,80 +104,331 @@
 
 ## 渲染请求（草稿预览工具的参数）
 
-```json
+```text
 { "template": "主模板名", "dataset": {"id": "数据集 ID"}, "parameters": {"public 参数名": 值},
   "output": { "width": 毫米, "height": 毫米, "dpi": 50, "format": "png" } }
 ```
 
+预览工具固定用草稿模式，不必写 `mode`；正式的渲染请求另须写 `"mode": "draft"` 或 `"final"`。
+
 `dataset` 也可以写成 `{"inline": 数据集文档}`，数据集文档的格式与数据集文件相同，内联时 `dataset.id` 可省略。用它可以试验其他数据，例如项数最少、最多或文本最长的情况。
 
-预览返回问题清单（含元素路径，如 `主模板/面板/规格列[3]/名称`）和预览图。严重问题会在草稿上画红框，并用占位代替缺失内容。
+预览返回问题清单（含元素路径，如 `简易胸牌/标签列[2]/标签文字`）和预览图。严重问题会在草稿上画红框，并用占位代替缺失内容。
 
-## 示例：商品价签
+## 示例：会议胸牌
 
-数据定义"价签 v1"有 productName、price（数值）、unit、logo（图片）与 specs（list<ref 规格项 v1>，规格项含 label、value）。
+数据定义与数据集见 dsl-reference.md（数据定义参考）中的"胸牌 v1"。
 
-规格格子模板：
+标签格（基本类型列表 tags 的循环项，按内容宽度排列，所以画板写 size: hug）：
+
 ```json
 {
   "dslVersion": "renderweave-template/1",
-  "name": "规格格子",
-  "base": { "name": "规格项", "version": 1 },
+  "name": "标签格",
+  "base": {
+    "name": "单值·文本",
+    "version": 1
+  },
   "parameters": [
-    { "name": "index", "displayName": "序号", "visibility": "public", "type": "number" },
-    { "name": "accent", "displayName": "强调色", "visibility": "public", "type": "color" }
-  ],
-  "derived": [
-    { "name": "isFirst", "displayName": "是否首项", "type": "boolean", "op": "branch",
-      "branches": [ { "when": { "left": { "var": "index" }, "op": "eq", "right": { "value": 1 } }, "then": { "value": true } } ],
-      "otherwise": { "value": false } }
+    {
+      "name": "accent",
+      "displayName": "强调色",
+      "visibility": "public",
+      "type": "color",
+      "default": "#1F6FEB"
+    }
   ],
   "artboard": {
-    "sizeRange": { "width": { "min": 5, "max": 200 }, "height": { "min": 5, "max": 100 } },
-    "layout": { "mode": "stack", "direction": "column", "gap": 1, "alignItems": "center" },
-    "padding": 1,
+    "sizeRange": {
+      "width": {
+        "min": 2,
+        "max": 60
+      },
+      "height": {
+        "min": 2,
+        "max": 20
+      }
+    },
+    "size": "hug",
+    "layout": {
+      "mode": "stack",
+      "direction": "row",
+      "alignItems": "center"
+    },
+    "padding": {
+      "left": 1.5,
+      "right": 1.5,
+      "top": 0.5,
+      "bottom": 0.5
+    },
+    "fill": "#F6F8FA",
+    "stroke": {
+      "color": {
+        "var": "accent"
+      },
+      "width": 0.3
+    },
+    "cornerRadius": 1.5,
     "children": [
-      { "type": "text", "name": "规格名", "content": [ { "slot": "label" } ], "font": "res:font-hei-regular", "fontSize": 3, "color": "#666666",
-        "states": { "by": { "var": "isFirst" }, "cases": { "true": { "color": { "var": "accent" } } } } },
-      { "type": "text", "name": "规格值", "content": [ { "slot": "value" } ], "font": "res:font-hei-bold", "fontSize": 4, "color": "#222222",
-        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6 } }
+      {
+        "type": "text",
+        "name": "标签文字",
+        "content": [
+          {
+            "slot": "value"
+          }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 3,
+        "color": {
+          "var": "accent"
+        }
+      }
     ]
   }
 }
 ```
 
-主模板：
+简易胸牌（主模板）：
+
 ```json
 {
   "dslVersion": "renderweave-template/1",
-  "name": "标准价签",
-  "base": { "name": "价签", "version": 1 },
+  "name": "简易胸牌",
+  "base": {
+    "name": "胸牌",
+    "version": 1
+  },
   "parameters": [
-    { "name": "accentColor", "displayName": "强调色", "visibility": "internal", "type": "color", "default": "#D2401E" }
+    {
+      "name": "accentColor",
+      "displayName": "主色",
+      "visibility": "internal",
+      "type": "color",
+      "default": "#1F6FEB"
+    }
   ],
   "derived": [
-    { "name": "specCount", "displayName": "规格数", "type": "number", "op": "length", "of": { "var": "specs" } },
-    { "name": "hasSpecs", "displayName": "有规格", "type": "boolean", "op": "branch",
-      "branches": [ { "when": { "left": { "var": "specCount" }, "op": "gt", "right": { "value": 0 } }, "then": { "value": true } } ],
-      "otherwise": { "value": false } }
+    {
+      "name": "roleColor",
+      "displayName": "身份色",
+      "type": "color",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "role"
+            },
+            "op": "eq",
+            "right": {
+              "value": "讲者"
+            }
+          },
+          "then": {
+            "value": "#D2401E"
+          }
+        }
+      ],
+      "otherwise": {
+        "var": "accentColor"
+      }
+    }
   ],
   "artboard": {
-    "sizeRange": { "width": { "min": 60, "max": 120 }, "height": { "min": 30, "max": 60 } },
-    "fill": "#FFFFFF", "stroke": { "color": "#D2401E", "width": 0.6 }, "cornerRadius": 2,
-    "layout": { "mode": "grid", "rows": [ { "fixed": 12 }, { "fraction": 1 }, { "fixed": 14 } ], "columns": [ { "fraction": 1 }, { "fixed": 28 } ] },
+    "sizeRange": {
+      "width": {
+        "min": 80,
+        "max": 100
+      },
+      "height": {
+        "min": 110,
+        "max": 140
+      }
+    },
+    "fill": "#FFFFFF",
+    "stroke": {
+      "color": {
+        "var": "roleColor"
+      },
+      "width": 0.6
+    },
+    "cornerRadius": 3,
     "padding": 3,
+    "layout": {
+      "mode": "grid",
+      "rows": [
+        {
+          "fixed": 10
+        },
+        {
+          "fixed": 40
+        },
+        {
+          "fixed": 12
+        },
+        {
+          "fraction": 1
+        },
+        {
+          "fixed": 22
+        }
+      ],
+      "columns": [
+        {
+          "fixed": 10
+        },
+        {
+          "fraction": 1
+        }
+      ],
+      "rowGap": 1,
+      "columnGap": 1
+    },
     "children": [
-      { "type": "text", "name": "品名", "place": { "row": 1, "column": 1 }, "content": [ { "slot": "productName" } ],
-        "font": "res:font-hei-bold", "fontSize": 6, "color": "#222222", "verticalAlign": "center",
-        "fit": { "steps": ["compressGlyphs", "shrink"], "minFontSize": 5 } },
-      { "type": "image", "name": "品牌标志", "place": { "row": 1, "column": 2 }, "source": { "var": "logo" }, "fit": "contain" },
-      { "type": "loop", "name": "规格列", "place": { "row": 2, "column": 1, "columnSpan": 2 }, "visible": { "var": "hasSpecs" },
-        "list": { "var": "specs" }, "template": "规格格子",
-        "args": { "index": { "loop": "index" }, "accent": { "var": "accentColor" } },
-        "itemLayout": { "direction": "row", "widths": "equal", "gap": 1 } },
-      { "type": "text", "name": "售价", "place": { "row": 3, "column": 1, "columnSpan": 2 }, "horizontalAlign": "end", "verticalAlign": "bottom",
-        "content": [ { "text": "¥", "fontSize": 6 }, { "slot": "price", "format": "0.00" }, { "text": "/" }, { "slot": "unit" } ],
-        "font": "res:font-hei-heavy", "fontSize": 10, "color": { "var": "accentColor" } }
+      {
+        "type": "text",
+        "name": "页眉",
+        "place": {
+          "row": 1,
+          "column": 1,
+          "columnSpan": 2
+        },
+        "content": [
+          {
+            "text": "参会证 · "
+          },
+          {
+            "slot": "eventDate",
+            "format": "M月d日"
+          }
+        ],
+        "font": "res:font-hei-bold",
+        "fontSize": 4.5,
+        "color": {
+          "var": "roleColor"
+        },
+        "verticalAlign": "center"
+      },
+      {
+        "type": "text",
+        "name": "身份",
+        "place": {
+          "row": 2,
+          "column": 1,
+          "rowSpan": 2
+        },
+        "content": [
+          {
+            "slot": "role"
+          }
+        ],
+        "font": "res:font-hei-bold",
+        "fontSize": 6,
+        "color": {
+          "var": "roleColor"
+        },
+        "writingMode": "vertical",
+        "verticalAlign": "distribute",
+        "horizontalAlign": "center",
+        "fit": {
+          "steps": [
+            "tightenSpacing",
+            "compressGlyphs"
+          ]
+        }
+      },
+      {
+        "type": "image",
+        "name": "照片",
+        "place": {
+          "row": 2,
+          "column": 2
+        },
+        "source": {
+          "var": "photo"
+        },
+        "fit": "contain"
+      },
+      {
+        "type": "text",
+        "name": "姓名",
+        "place": {
+          "row": 3,
+          "column": 2
+        },
+        "content": [
+          {
+            "slot": "fullName"
+          }
+        ],
+        "font": "res:font-hei-heavy",
+        "fontSize": 8,
+        "color": "#1F2328",
+        "horizontalAlign": "center",
+        "verticalAlign": "center",
+        "fit": {
+          "steps": [
+            "compressGlyphs",
+            "shrink"
+          ],
+          "minFontSize": 5
+        },
+        "states": {
+          "by": {
+            "var": "role"
+          },
+          "cases": {
+            "讲者": {
+              "color": "#D2401E"
+            }
+          }
+        }
+      },
+      {
+        "type": "loop",
+        "name": "标签列",
+        "place": {
+          "row": 4,
+          "column": 2,
+          "height": {
+            "fixed": 5
+          }
+        },
+        "list": {
+          "var": "tags"
+        },
+        "template": "标签格",
+        "args": {
+          "accent": {
+            "var": "roleColor"
+          }
+        },
+        "itemLayout": {
+          "direction": "row",
+          "widths": "content",
+          "gap": 1
+        }
+      },
+      {
+        "type": "qrcode",
+        "name": "签到码",
+        "place": {
+          "row": 5,
+          "column": 2,
+          "width": {
+            "fixed": 20
+          },
+          "height": {
+            "fixed": 20
+          },
+          "justifySelf": "end"
+        },
+        "content": {
+          "var": "badgeNo"
+        },
+        "errorCorrectionLevel": "M"
+      }
     ]
   }
 }

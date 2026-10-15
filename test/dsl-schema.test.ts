@@ -1,53 +1,17 @@
-import { readdir, readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
-import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import type { ValidateFunction } from 'ajv/dist/2020.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ProblemCodes, checkDslDocument, openResourceRepository, publishStaticSchema, render, type Problem, type StaticSchemaEntry } from '../src/index.js';
+import { loadCorpus, loadSchemas, type CorpusDocument } from './support/dsl-corpus.js';
 import { repoRoot, resourcesDir, withEmptyTemplate } from './support/fixtures.js';
 
 /**
- * DSL 1.0 一致性（M219）：`schemas/` 中的 JSON Schema 与引擎对同一批文档的判断一致。
+ * DSL 1.0 一致性（M219）：`schemas/` 中的 JSON Schema 与引擎对同一批文档的判断一致。本文件覆盖数据定义与数据集，
+ * 模板与请求见 dsl-template-schema.test.ts。
  * - 仓库内的语料：Schema 拒绝的，引擎一定拒绝；引擎拒绝而 Schema 接受的，只能是列明的语义检查。
  * - 变异样本：结构错误被两边同时拒绝。
  */
-
-const SKIP_DIRS = new Set(['node_modules', 'out', 'dist', 'build', 'test-output', 'outside_context', '.git', '.claude', '.scratch', 'fonts']);
-
-interface CorpusDocument {
-  readonly source: string;
-  readonly document: Record<string, unknown>;
-}
-
-async function collect(dir: string, out: CorpusDocument[]): Promise<void> {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) await collect(join(dir, entry.name), out);
-      continue;
-    }
-    const file = join(dir, entry.name);
-    const source = relative(repoRoot, file);
-    if (entry.name.endsWith('.json')) {
-      const parsed = tryParse(await readFile(file, 'utf8'));
-      if (parsed) out.push({ source, document: parsed });
-    } else if (entry.name.endsWith('.md')) {
-      // 文档中的 json 代码块也是语料：示例写错了同样要被发现。
-      const text = await readFile(file, 'utf8');
-      [...text.matchAll(/```json\n([\s\S]*?)```/g)].forEach((match, index) => {
-        const parsed = tryParse(match[1]!);
-        if (parsed) out.push({ source: `${source}#json${index + 1}`, document: parsed });
-      });
-    }
-  }
-}
-
-function tryParse(text: string): Record<string, unknown> | undefined {
-  try {
-    const value: unknown = JSON.parse(text);
-    return value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 const isDefinition = (d: Record<string, unknown>) => typeof d['dslVersion'] === 'string' && d['dslVersion'].startsWith('renderweave-schema/');
 const isDataset = (d: Record<string, unknown>) => !('dslVersion' in d) && 'dataset' in d && 'data' in d;
@@ -69,18 +33,15 @@ let definitionSchema: ValidateFunction;
 let datasetSchema: ValidateFunction;
 
 beforeAll(async () => {
-  // 严格模式能发现 Schema 中拼错的关键字；strictRequired 与 strictTypes 是 ajv 自己的额外要求，标准写法下的条件分支会触发，故关闭。
-  const ajv = new Ajv2020({ allErrors: true, strict: true, strictRequired: false, strictTypes: false });
-  const load = async (file: string) => ajv.compile(JSON.parse(await readFile(join(repoRoot, 'schemas', file), 'utf8')));
-  definitionSchema = await load('data-definition.schema.json');
-  datasetSchema = await load('dataset.schema.json');
-  corpus = [];
-  await collect(repoRoot, corpus);
+  const schemas = await loadSchemas();
+  definitionSchema = schemas.definition;
+  datasetSchema = schemas.dataset;
+  corpus = await loadCorpus();
 });
 
 describe('语料与 Schema 一致', () => {
   it('仓库中的数据定义：有效的都通过 Schema，Schema 拒绝的引擎都拒绝', () => {
-    const definitions = corpus.filter((c) => isDefinition(c.document));
+    const definitions = corpus.filter((c) => c.kind === 'definition');
     expect(definitions.length).toBeGreaterThan(5);
     const disagreements: string[] = [];
     let valid = 0;
@@ -96,7 +57,7 @@ describe('语料与 Schema 一致', () => {
   });
 
   it('仓库中的数据集文档：有效的都通过 Schema，Schema 拒绝的引擎都拒绝', () => {
-    const datasets = corpus.filter((c) => isDataset(c.document));
+    const datasets = corpus.filter((c) => c.kind === 'dataset');
     expect(datasets.length).toBeGreaterThan(3);
     const disagreements: string[] = [];
     for (const { source, document } of datasets) {
@@ -203,7 +164,7 @@ function runMutations(documents: readonly CorpusDocument[], mutations: readonly 
 
 describe('结构错误被 Schema 与引擎同时拒绝', () => {
   it('数据定义的变异样本', () => {
-    const valid = corpus.filter((c) => isDefinition(c.document) && checkDslDocument(c.document).problems.length === 0);
+    const valid = corpus.filter((c) => c.kind === 'definition' && checkDslDocument(c.document).problems.length === 0);
     const { applied, escapes } = runMutations(valid, DEFINITION_MUTATIONS, () => definitionSchema);
     expect(escapes).toEqual([]);
     // 每种变异至少在一份语料上用到，否则说明语料缺少对应写法。
@@ -211,7 +172,7 @@ describe('结构错误被 Schema 与引擎同时拒绝', () => {
   });
 
   it('数据集文档的变异样本', () => {
-    const valid = corpus.filter((c) => isDataset(c.document) && checkDslDocument(c.document).problems.length === 0);
+    const valid = corpus.filter((c) => c.kind === 'dataset' && checkDslDocument(c.document).problems.length === 0);
     const { applied, escapes } = runMutations(valid, DATASET_MUTATIONS, () => datasetSchema);
     expect(escapes).toEqual([]);
     expect(applied.size).toBe(DATASET_MUTATIONS.length);

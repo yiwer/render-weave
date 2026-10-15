@@ -1,0 +1,3222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:renderweave:dsl:1:template",
+  "title": "RenderWeave 模板（renderweave-template/1，DSL 1.0）",
+  "description": "模板是出图函数：以一份静态数据定义为基准，把数据与参数排成图。本 Schema 只检查结构；变量是否声明、类型是否对得上、元素名称是否重复等语义检查由引擎完成，见 docs/dsl/template.md「Schema 之外的检查」。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dslVersion",
+    "name",
+    "base",
+    "artboard"
+  ],
+  "properties": {
+    "dslVersion": {
+      "const": "renderweave-template/1"
+    },
+    "name": {
+      "$ref": "#/$defs/nonEmpty"
+    },
+    "base": {
+      "$ref": "#/$defs/staticSchemaRef"
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/parameter"
+      }
+    },
+    "derived": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/derived"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "artboard": {
+      "$ref": "#/$defs/artboard"
+    }
+  },
+  "$defs": {
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonBlank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "variableName": {
+      "type": "string",
+      "pattern": "^[^.]+$",
+      "description": "模板变量名：非空、不含\".\"（M90 S2）"
+    },
+    "elementName": {
+      "type": "string",
+      "pattern": "^[^/\\[\\]]+$",
+      "description": "元素名称：非空，不含 / [ ]；同一模板内不能重复（由引擎检查）"
+    },
+    "staticSchemaRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "resourceRef": {
+      "type": "string",
+      "pattern": "^res:[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$"
+    },
+    "varOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "var"
+      ],
+      "properties": {
+        "var": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "valueOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      }
+    },
+    "operand": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/varOperand"
+        },
+        {
+          "$ref": "#/$defs/valueOperand"
+        }
+      ]
+    },
+    "loopOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loop"
+      ],
+      "properties": {
+        "loop": {
+          "enum": [
+            "index",
+            "isFirst",
+            "isLast",
+            "count",
+            "groupSize"
+          ]
+        }
+      }
+    },
+    "colorOrVar": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/color"
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "booleanOrVar": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "numberOrVar": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "nonNegativeOrVar": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "positiveOrVar": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "unitOrVar": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "slantOrVar": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": -45,
+          "maximum": 45
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "indexOrVar": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "point": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      },
+      "description": "[x, y]，毫米，相对元素框左上角"
+    },
+    "edges": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "top": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "right": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "bottom": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "left": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            }
+          }
+        }
+      ]
+    },
+    "corners": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "topLeft": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "topRight": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "bottomRight": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "bottomLeft": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            }
+          }
+        }
+      ]
+    },
+    "shapeStroke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "color",
+        "width"
+      ],
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "width": {
+          "$ref": "#/$defs/positiveOrVar"
+        },
+        "dash": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "cap": {
+          "enum": [
+            "butt",
+            "round",
+            "square"
+          ]
+        }
+      }
+    },
+    "textStroke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "color",
+        "width"
+      ],
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "width": {
+          "$ref": "#/$defs/positiveOrVar"
+        }
+      }
+    },
+    "size": {
+      "anyOf": [
+        {
+          "enum": [
+            "hug",
+            "fill"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fixed"
+          ],
+          "properties": {
+            "fixed": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fill"
+          ],
+          "properties": {
+            "fill": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "track": {
+      "anyOf": [
+        {
+          "const": "hug"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fixed"
+          ],
+          "properties": {
+            "fixed": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fraction"
+          ],
+          "properties": {
+            "fraction": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "layout": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "const": "free"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "direction"
+          ],
+          "properties": {
+            "mode": {
+              "const": "stack"
+            },
+            "direction": {
+              "enum": [
+                "row",
+                "column"
+              ]
+            },
+            "gap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "justifyContent": {
+              "enum": [
+                "start",
+                "center",
+                "end",
+                "spaceBetween",
+                "spaceEvenly"
+              ]
+            },
+            "alignItems": {
+              "enum": [
+                "start",
+                "center",
+                "end"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "rows",
+            "columns"
+          ],
+          "properties": {
+            "mode": {
+              "const": "grid"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/track"
+              }
+            },
+            "columns": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/track"
+              }
+            },
+            "rowGap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "columnGap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            }
+          }
+        }
+      ]
+    },
+    "placeInFree": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "right": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "top": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "bottom": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "width": {
+          "$ref": "#/$defs/size"
+        },
+        "height": {
+          "$ref": "#/$defs/size"
+        },
+        "minWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "minHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "left",
+              "right"
+            ]
+          },
+          {
+            "required": [
+              "top",
+              "bottom"
+            ]
+          }
+        ]
+      }
+    },
+    "placeInStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "$ref": "#/$defs/size"
+        },
+        "height": {
+          "$ref": "#/$defs/size"
+        },
+        "margin": {
+          "$ref": "#/$defs/edges"
+        },
+        "alignSelf": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "minWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "minHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        }
+      }
+    },
+    "placeInGrid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row",
+        "column"
+      ],
+      "properties": {
+        "row": {
+          "$ref": "#/$defs/indexOrVar"
+        },
+        "column": {
+          "$ref": "#/$defs/indexOrVar"
+        },
+        "rowSpan": {
+          "$ref": "#/$defs/indexOrVar"
+        },
+        "columnSpan": {
+          "$ref": "#/$defs/indexOrVar"
+        },
+        "width": {
+          "$ref": "#/$defs/size"
+        },
+        "height": {
+          "$ref": "#/$defs/size"
+        },
+        "margin": {
+          "$ref": "#/$defs/edges"
+        },
+        "justifySelf": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "alignSelf": {
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "minWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxWidth": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "minHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        },
+        "maxHeight": {
+          "$ref": "#/$defs/nonNegativeOrVar"
+        }
+      }
+    },
+    "elementInFree": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/element"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "place": {
+              "$ref": "#/$defs/placeInFree"
+            }
+          }
+        }
+      ]
+    },
+    "elementInStack": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/element"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "place": {
+              "$ref": "#/$defs/placeInStack"
+            }
+          }
+        }
+      ]
+    },
+    "elementInGrid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/element"
+        },
+        {
+          "type": "object",
+          "required": [
+            "place"
+          ],
+          "properties": {
+            "place": {
+              "$ref": "#/$defs/placeInGrid"
+            }
+          }
+        }
+      ]
+    },
+    "element": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "container",
+            "loop",
+            "call",
+            "text",
+            "image",
+            "qrcode",
+            "barcode",
+            "rect",
+            "ellipse",
+            "line",
+            "polygon",
+            "path"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "container"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/containerElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "loop"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/loopElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "call"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/callElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/textElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/imageElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "qrcode"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/qrcodeElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "barcode"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/barcodeElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "rect"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/rectElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "ellipse"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/ellipseElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "line"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/lineElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "polygon"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/polygonElement"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "path"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/$defs/pathElement"
+          }
+        }
+      ]
+    },
+    "containerElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "const": "container"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "layout": {
+          "$ref": "#/$defs/layout"
+        },
+        "padding": {
+          "$ref": "#/$defs/edges"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "cornerRadius": {
+          "$ref": "#/$defs/corners"
+        },
+        "clip": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "children": {
+          "type": "array"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "layout",
+                    "padding",
+                    "fill",
+                    "stroke",
+                    "cornerRadius",
+                    "clip"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "anyOf": [
+              {
+                "not": {
+                  "required": [
+                    "layout"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "layout"
+                ],
+                "properties": {
+                  "layout": {
+                    "type": "object",
+                    "required": [
+                      "mode"
+                    ],
+                    "properties": {
+                      "mode": {
+                        "const": "free"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInFree"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "layout"
+            ],
+            "properties": {
+              "layout": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "stack"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInStack"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "layout"
+            ],
+            "properties": {
+              "layout": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "grid"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInGrid"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "loopElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "list",
+        "template",
+        "itemLayout"
+      ],
+      "properties": {
+        "type": {
+          "const": "loop"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "list": {
+          "$ref": "#/$defs/varOperand"
+        },
+        "template": {
+          "$ref": "#/$defs/nonBlank"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/operand"
+              },
+              {
+                "$ref": "#/$defs/loopOperand"
+              }
+            ]
+          }
+        },
+        "itemLayout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "widths"
+          ],
+          "properties": {
+            "direction": {
+              "const": "row"
+            },
+            "widths": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "equal",
+                    "content"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "fixed"
+                  ],
+                  "properties": {
+                    "fixed": {
+                      "$ref": "#/$defs/positiveOrVar"
+                    }
+                  }
+                }
+              ]
+            },
+            "gap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
+            "spanBy": {
+              "const": "groupSize"
+            }
+          }
+        },
+        "padding": {
+          "$ref": "#/$defs/edges"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "cornerRadius": {
+          "$ref": "#/$defs/corners"
+        },
+        "clip": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "mergeBy": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "list",
+                    "args",
+                    "itemLayout",
+                    "padding",
+                    "fill",
+                    "stroke",
+                    "cornerRadius",
+                    "clip",
+                    "mergeBy"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "mergeBy"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "itemLayout": {
+                "type": "object",
+                "required": [
+                  "spanBy"
+                ],
+                "properties": {
+                  "widths": {
+                    "const": "equal"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "itemLayout"
+            ],
+            "properties": {
+              "itemLayout": {
+                "type": "object",
+                "required": [
+                  "spanBy"
+                ]
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "mergeBy"
+            ]
+          }
+        }
+      ],
+      "description": "循环容器（S25、S28）：合并相邻同值项时 mergeBy、widths: equal 与 spanBy: groupSize 同时出现"
+    },
+    "callElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "template"
+      ],
+      "properties": {
+        "type": {
+          "const": "call"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "template": {
+          "$ref": "#/$defs/nonBlank"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "enum": [
+                "current",
+                "none"
+              ]
+            },
+            {
+              "$ref": "#/$defs/varOperand"
+            }
+          ]
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/operand"
+          }
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "data",
+                    "args"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "textElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "content",
+        "font",
+        "fontSize"
+      ],
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fragment"
+          }
+        },
+        "font": {
+          "$ref": "#/$defs/resourceRef"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/positiveOrVar"
+        },
+        "color": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "writingMode": {
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "horizontalAlign": {
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "distribute",
+            "spaceEvenly"
+          ]
+        },
+        "verticalAlign": {
+          "enum": [
+            "top",
+            "center",
+            "bottom",
+            "distribute"
+          ]
+        },
+        "slant": {
+          "$ref": "#/$defs/slantOrVar"
+        },
+        "fit": {
+          "$ref": "#/$defs/fit"
+        },
+        "stroke": {
+          "$ref": "#/$defs/textStroke"
+        },
+        "padding": {
+          "$ref": "#/$defs/edges"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "content",
+                    "font",
+                    "fontSize",
+                    "color",
+                    "writingMode",
+                    "horizontalAlign",
+                    "verticalAlign",
+                    "slant",
+                    "fit",
+                    "stroke",
+                    "padding"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "writingMode"
+            ],
+            "properties": {
+              "writingMode": {
+                "const": "vertical"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "horizontalAlign": {
+                "enum": [
+                  "start",
+                  "center",
+                  "end"
+                ]
+              },
+              "slant": {
+                "anyOf": [
+                  {
+                    "const": 0
+                  },
+                  {
+                    "$ref": "#/$defs/varOperand"
+                  }
+                ]
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "font"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "fontSize"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "slant"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "fit": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "minFontSize"
+                  ]
+                },
+                "properties": {
+                  "steps": {
+                    "enum": [
+                      [],
+                      [
+                        "tightenSpacing"
+                      ],
+                      [
+                        "tightenSpacing",
+                        "compressGlyphs"
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "verticalAlign": {
+                "enum": [
+                  "top",
+                  "center",
+                  "bottom"
+                ]
+              },
+              "fit": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "widthOverflow"
+                  ]
+                },
+                "properties": {
+                  "steps": {
+                    "enum": [
+                      [],
+                      [
+                        "compressGlyphs"
+                      ],
+                      [
+                        "compressGlyphs",
+                        "shrink"
+                      ]
+                    ]
+                  }
+                },
+                "if": {
+                  "type": "object",
+                  "required": [
+                    "minFontSize"
+                  ]
+                },
+                "then": {
+                  "type": "object",
+                  "required": [
+                    "steps"
+                  ],
+                  "properties": {
+                    "steps": {
+                      "const": [
+                        "compressGlyphs",
+                        "shrink"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "description": "文字：竖排不能用 distribute/spaceEvenly 横向分布、倾斜与片段字体字号；横排不能用 verticalAlign: distribute 与 widthOverflow（M109、M115–M118、M132）"
+    },
+    "imageElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "const": "image"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/resourceRef"
+            },
+            {
+              "$ref": "#/$defs/varOperand"
+            }
+          ]
+        },
+        "fit": {
+          "enum": [
+            "contain",
+            "cover",
+            "fill"
+          ]
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "source",
+                    "fit"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "qrcodeElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "content"
+      ],
+      "properties": {
+        "type": {
+          "const": "qrcode"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/varOperand"
+            }
+          ]
+        },
+        "errorCorrectionLevel": {
+          "enum": [
+            "L",
+            "M",
+            "Q",
+            "H"
+          ]
+        },
+        "foreground": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "background": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "content",
+                    "errorCorrectionLevel",
+                    "foreground",
+                    "background"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "barcodeElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "content",
+        "format"
+      ],
+      "properties": {
+        "type": {
+          "const": "barcode"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/varOperand"
+            }
+          ]
+        },
+        "format": {
+          "enum": [
+            "CODE128",
+            "EAN-13",
+            "EAN-8",
+            "UPC-A"
+          ]
+        },
+        "foreground": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "background": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "showText": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "font": {
+          "$ref": "#/$defs/resourceRef"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/positiveOrVar"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "content",
+                    "format",
+                    "foreground",
+                    "background",
+                    "showText",
+                    "font",
+                    "fontSize"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      },
+      "if": {
+        "type": "object",
+        "required": [
+          "showText"
+        ],
+        "properties": {
+          "showText": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "required": [
+          "font"
+        ]
+      }
+    },
+    "rectElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "const": "rect"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "cornerRadius": {
+          "$ref": "#/$defs/corners"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "fill",
+                    "stroke",
+                    "cornerRadius"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "ellipseElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "const": "ellipse"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "fill",
+                    "stroke"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "lineElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "from",
+        "to",
+        "stroke"
+      ],
+      "properties": {
+        "type": {
+          "const": "line"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "from": {
+          "$ref": "#/$defs/point"
+        },
+        "to": {
+          "$ref": "#/$defs/point"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "from",
+                    "to",
+                    "stroke"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "polygonElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "points"
+      ],
+      "properties": {
+        "type": {
+          "const": "polygon"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "points": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/point"
+          }
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "points",
+                    "fill",
+                    "stroke"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "pathElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "d"
+      ],
+      "properties": {
+        "type": {
+          "const": "path"
+        },
+        "name": {
+          "$ref": "#/$defs/elementName"
+        },
+        "place": {
+          "type": "object"
+        },
+        "visible": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "opacity": {
+          "$ref": "#/$defs/unitOrVar"
+        },
+        "rotation": {
+          "$ref": "#/$defs/numberOrVar"
+        },
+        "d": {
+          "$ref": "#/$defs/nonBlank"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "fillRule": {
+          "enum": [
+            "nonzero",
+            "evenodd"
+          ]
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "cases"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/varOperand"
+            },
+            "cases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "place",
+                    "visible",
+                    "opacity",
+                    "rotation",
+                    "d",
+                    "fill",
+                    "stroke",
+                    "fillRule"
+                  ]
+                }
+              }
+            }
+          },
+          "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
+        }
+      }
+    },
+    "textFragment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "font": {
+          "$ref": "#/$defs/resourceRef"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/positiveOrVar"
+        },
+        "color": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "slant": {
+          "$ref": "#/$defs/slantOrVar"
+        }
+      }
+    },
+    "slotFragment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slot"
+      ],
+      "properties": {
+        "slot": {
+          "type": "string",
+          "pattern": "^[^.]+(\\.[^.]+)*$"
+        },
+        "format": {
+          "type": "string"
+        },
+        "font": {
+          "$ref": "#/$defs/resourceRef"
+        },
+        "fontSize": {
+          "$ref": "#/$defs/positiveOrVar"
+        },
+        "color": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "slant": {
+          "$ref": "#/$defs/slantOrVar"
+        }
+      }
+    },
+    "fragment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/textFragment"
+        },
+        {
+          "$ref": "#/$defs/slotFragment"
+        }
+      ]
+    },
+    "fit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "tightenSpacing",
+              "compressGlyphs",
+              "shrink"
+            ]
+          }
+        },
+        "compressMin": {
+          "type": "number",
+          "minimum": 0.6,
+          "maximum": 1
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 5
+        },
+        "onFail": {
+          "enum": [
+            "severe",
+            "hint"
+          ]
+        },
+        "widthOverflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "shrinkGroup"
+          ],
+          "properties": {
+            "shrinkGroup": {
+              "type": "string",
+              "pattern": "^\\S(.*\\S)?$"
+            },
+            "minFontSize": {
+              "type": "number",
+              "minimum": 5
+            }
+          }
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max"
+      ],
+      "properties": {
+        "min": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "artboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sizeRange"
+      ],
+      "properties": {
+        "sizeRange": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "width",
+            "height"
+          ],
+          "properties": {
+            "width": {
+              "$ref": "#/$defs/range"
+            },
+            "height": {
+              "$ref": "#/$defs/range"
+            }
+          }
+        },
+        "size": {
+          "const": "hug"
+        },
+        "layout": {
+          "$ref": "#/$defs/layout"
+        },
+        "padding": {
+          "$ref": "#/$defs/edges"
+        },
+        "fill": {
+          "$ref": "#/$defs/colorOrVar"
+        },
+        "stroke": {
+          "$ref": "#/$defs/shapeStroke"
+        },
+        "cornerRadius": {
+          "$ref": "#/$defs/corners"
+        },
+        "clip": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "children": {
+          "type": "array"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "anyOf": [
+              {
+                "not": {
+                  "required": [
+                    "layout"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "layout"
+                ],
+                "properties": {
+                  "layout": {
+                    "type": "object",
+                    "required": [
+                      "mode"
+                    ],
+                    "properties": {
+                      "mode": {
+                        "const": "free"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInFree"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "layout"
+            ],
+            "properties": {
+              "layout": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "stack"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInStack"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "layout"
+            ],
+            "properties": {
+              "layout": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "grid"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "children": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/elementInGrid"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "displayName",
+        "visibility",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/variableName"
+        },
+        "displayName": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "internal"
+          ]
+        },
+        "type": {
+          "enum": [
+            "text",
+            "number",
+            "date",
+            "time",
+            "datetime",
+            "boolean",
+            "image",
+            "color"
+          ]
+        },
+        "constraints": {
+          "type": "object"
+        },
+        "default": {}
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "visibility"
+            ],
+            "properties": {
+              "visibility": {
+                "const": "internal"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "default"
+            ]
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "minLength": {
+                    "$ref": "#/$defs/count"
+                  },
+                  "maxLength": {
+                    "$ref": "#/$defs/count"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "number"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "number"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "integer": {
+                    "type": "boolean"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "date"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "time"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "datetime"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "boolean"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "$ref": "#/$defs/resourceRef"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "color"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "$ref": "#/$defs/color"
+              },
+              "constraints": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "left",
+        "op"
+      ],
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/operand"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge",
+            "empty",
+            "notEmpty"
+          ]
+        },
+        "right": {
+          "$ref": "#/$defs/operand"
+        }
+      },
+      "if": {
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "properties": {
+          "op": {
+            "enum": [
+              "empty",
+              "notEmpty"
+            ]
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "not": {
+          "required": [
+            "right"
+          ]
+        }
+      },
+      "else": {
+        "type": "object",
+        "required": [
+          "right"
+        ]
+      }
+    },
+    "derived": {
+      "type": "object",
+      "required": [
+        "name",
+        "displayName",
+        "type",
+        "op"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/variableName"
+        },
+        "displayName": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "type": {
+          "enum": [
+            "text",
+            "number",
+            "date",
+            "time",
+            "datetime",
+            "boolean",
+            "image",
+            "color",
+            "ref"
+          ]
+        },
+        "ref": {
+          "$ref": "#/$defs/staticSchemaRef"
+        },
+        "op": {
+          "enum": [
+            "branch",
+            "pickItem",
+            "length",
+            "add",
+            "subtract"
+          ]
+        },
+        "branches": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "when",
+              "then"
+            ],
+            "properties": {
+              "when": {
+                "$ref": "#/$defs/condition"
+              },
+              "then": {
+                "$ref": "#/$defs/operand"
+              }
+            }
+          }
+        },
+        "otherwise": {
+          "$ref": "#/$defs/operand"
+        },
+        "list": {
+          "$ref": "#/$defs/varOperand"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "enum": [
+                "first",
+                "last"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "index"
+              ],
+              "properties": {
+                "index": {
+                  "$ref": "#/$defs/operand"
+                }
+              }
+            }
+          ]
+        },
+        "of": {
+          "$ref": "#/$defs/varOperand"
+        },
+        "left": {
+          "$ref": "#/$defs/operand"
+        },
+        "right": {
+          "$ref": "#/$defs/operand"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "ref"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "ref"
+            ]
+          },
+          "else": {
+            "type": "object",
+            "not": {
+              "required": [
+                "ref"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "branch"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "branches",
+              "otherwise"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "branches",
+                "otherwise"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "pickItem"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "list",
+              "position"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "list",
+                "position"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "length"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "of"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "of"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "add"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "left",
+              "right"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "left",
+                "right"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "subtract"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "left",
+              "right"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "left",
+                "right"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "problemWhen",
+        "level",
+        "message"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "displayName": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "problemWhen": {
+          "$ref": "#/$defs/operand"
+        },
+        "level": {
+          "enum": [
+            "severe",
+            "hint"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    }
+  }
+}

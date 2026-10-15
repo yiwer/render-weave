@@ -327,7 +327,7 @@ async function template() {
     await copyFile(join(EXAMPLE, f), join(workspace, f));
   }
   await copyFile(SAMPLE, join(agent, 'sample.png'));
-  await copyFile(join(HERE, 'template-reference.md'), join(agent, 'docs/template-reference.md'));
+  await copyFile(join(REPO, 'agent/reference/template.md'), join(agent, 'docs/template-reference.md'));
   await copyLayers(agent, 'template');
   const run = await runAgent({ name: 'template', cwd: agent, tools: 'Read,Write,Edit,Glob', mcpTools: 'render_draft,list_resources,view_image', workspace,
     prompt: await readFile(join(HERE, 'prompt-template.md'), 'utf8'), maxTurns: Number(opt('max-turns', '60')) });

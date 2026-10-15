@@ -50,9 +50,11 @@ export function parseRenderRequest(value: unknown): { request?: RenderRequest; p
 
   let dataset: RenderRequest['dataset'] | undefined;
   const datasetValue = value['dataset'];
-  if (isRecord(datasetValue) && typeof datasetValue['id'] === 'string' && !('inline' in datasetValue)) {
+  // 只能是 { id } 与 { inline } 之一，不静默忽略其他键（M224）。
+  const datasetKeys = isRecord(datasetValue) ? Object.keys(datasetValue) : [];
+  if (isRecord(datasetValue) && datasetKeys.length === 1 && typeof datasetValue['id'] === 'string' && datasetValue['id'] !== '') {
     dataset = { id: datasetValue['id'] };
-  } else if (isRecord(datasetValue) && 'inline' in datasetValue && !('id' in datasetValue)) {
+  } else if (isRecord(datasetValue) && datasetKeys.length === 1 && 'inline' in datasetValue) {
     const parsed = parseDatasetDocument(datasetValue['inline']);
     if (typeof parsed === 'string') invalid('request.dataset.inline', parsed);
     else dataset = { inline: parsed };
@@ -60,7 +62,7 @@ export function parseRenderRequest(value: unknown): { request?: RenderRequest; p
     invalid('request.dataset', '渲染请求的数据集写成 { "id": 数据集 ID } 或 { "inline": 数据集文档 } 之一');
   }
 
-  const parameters = value['parameters'] ?? {};
+  const parameters = value['parameters'] === undefined ? {} : value['parameters'];
   if (!isRecord(parameters)) invalid('request.parameters', '对外参数必须是 JSON 对象');
 
   const output = value['output'];

@@ -6,15 +6,15 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 |---|---|---|---|
 | 数据定义 | `"dslVersion": "renderweave-schema/1"` | [数据定义与数据集](data-definition.md) | [data-definition.schema.json](../../schemas/data-definition.schema.json) |
 | 数据集 | 由 `dataset` 与 `data` 两部分组成 | [数据定义与数据集](data-definition.md#数据集文档) | [dataset.schema.json](../../schemas/dataset.schema.json) |
-| 模板 | `"dslVersion": "renderweave-template/1"` | 第三阶段票据 02 | 第三阶段票据 02 |
-| 渲染请求 | 命令行 `render --request` 与公开渲染入口的输入 | 第三阶段票据 02 | 第三阶段票据 02 |
-| 批次请求 | `"format": "renderweave-batch/1"` | 第三阶段票据 02；现有说明见[出图记录](../output-records.md) | 第三阶段票据 02 |
+| 模板 | `"dslVersion": "renderweave-template/1"` | [模板](template.md) | [template.schema.json](../../schemas/template.schema.json) |
+| 渲染请求 | 含 `template` 与 `output`，是命令行 `render --request` 与公开渲染入口的输入 | [渲染请求与批次请求](requests.md) | [render-request.schema.json](../../schemas/render-request.schema.json) |
+| 批次请求 | 含 `template`、`mode` 与 `items`；交付后的批次清单另有标识 `renderweave-batch/1` | [渲染请求与批次请求](requests.md#批次请求) | [batch-request.schema.json](../../schemas/batch-request.schema.json) |
 
 ## Schema 与引擎的分工
 
 - **JSON Schema 只检查结构**：键是否允许、类型、枚举取值、必填项。Schema 拒绝的文档，引擎一定拒绝。
 - **引擎另做语义检查**：约束冲突、正则合法性、字段名称重复、引用是否存在、数据是否符合所选静态数据定义等。这类问题 Schema 表达不了，每份参考的「Schema 之外的检查」逐类列出。
-- **一致性测试**：`test/dsl-schema.test.ts` 用仓库中的全部语料与结构错误的变异样本，核对两边的判断。改动解析器或 Schema 时，这项测试必须保持通过。
+- **一致性测试**：`test/dsl-schema.test.ts`（数据定义与数据集）和 `test/dsl-template-schema.test.ts`（模板与请求），用仓库中的全部语料与结构错误的变异样本核对两边的判断。改动解析器或 Schema 时，这两项测试必须保持通过。
 
 ## 在编辑器中使用
 

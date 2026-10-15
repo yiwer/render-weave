@@ -230,6 +230,7 @@ class TemplateReader {
     const declared = readDeclarations(this.templateName, document);
     this.problems.push(...declared.problems);
     if (declared.problems.length > 0) this.failed = true;
+    if (isRecord(document['base'])) this.checkKeys(document['base'], ['name', 'version'], path, '基准 base');
     const base = parseStaticSchemaRef(document['base']);
     if (!base) this.fail(path, '模板必须用 base 写明基准数据定义的名称与版本号');
     const artboard = this.readArtboard(document['artboard'], path);
@@ -266,6 +267,7 @@ class TemplateReader {
 
   private readSizeRange(value: unknown, path: ElementPath): Read<ArtboardModel['sizeRange']> {
     const range = (v: unknown, label: string): Read<Range> => {
+      if (isRecord(v)) this.checkKeys(v, ['min', 'max'], path, `适用尺寸范围 sizeRange.${label}`);
       if (isRecord(v) && isPositive(v['min']) && isPositive(v['max']) && v['min'] <= v['max']) {
         return { min: v['min'], max: v['max'] };
       }
@@ -276,6 +278,7 @@ class TemplateReader {
       this.fail(path, '画板必须声明适用尺寸范围 sizeRange');
       return undefined;
     }
+    this.checkKeys(value, ['width', 'height'], path, '适用尺寸范围 sizeRange');
     const width = range(value['width'], 'width');
     const height = range(value['height'], 'height');
     return width && height ? { width, height } : undefined;
@@ -288,7 +291,8 @@ class TemplateReader {
     const stroke = this.optional(value['stroke'], (v) => this.readShapeStroke(v, path));
     const cornerRadius = this.readCorners(value['cornerRadius'], path);
     const clip = this.readBoolean(value['clip'], false, path, 'clip');
-    const childrenValue = value['children'] ?? [];
+    // null 不当作"没写"（M224），与 JSON Schema 一致；下同。
+    const childrenValue = value['children'] === undefined ? [] : value['children'];
     const children: ElementModel[] = [];
     if (!Array.isArray(childrenValue)) {
       this.fail(path, 'children 必须是元素列表');
@@ -480,8 +484,8 @@ class TemplateReader {
           : typeof raw === 'string' ? raw : this.fail(path, '条形码 content 必须是文本或文本变量绑定');
         const format = BARCODE_FORMATS.find(format => format === value['format'])
           ?? this.fail(path, `条形码 format 必须明确指定 ${BARCODE_FORMATS.join('、')}`);
-        const foreground = this.readColor(value['foreground'] ?? '#000000', path, 'foreground');
-        const background = this.readColor(value['background'] ?? '#FFFFFF', path, 'background');
+        const foreground = this.readColor(value['foreground'] === undefined ? '#000000' : value['foreground'], path, 'foreground');
+        const background = this.readColor(value['background'] === undefined ? '#FFFFFF' : value['background'], path, 'background');
         const showText = this.readBoolean(value['showText'], false, path, 'showText');
         const font = value['font'] !== undefined || showText ? this.readFont(value['font'], path, '条形码下方文字 font') : undefined;
         const fontSize = this.readNumber(value['fontSize'], 3, path, 'fontSize', { min: 0, exclusiveMin: true });
@@ -497,8 +501,8 @@ class TemplateReader {
         const content = isVarOperand(raw) ? this.host.text(raw.var, { path, label: 'content' })
           : typeof raw === 'string' ? raw : this.fail(path, '二维码 content 必须是文本或文本变量绑定');
         const errorCorrectionLevel = this.readEnum(value['errorCorrectionLevel'], ['L', 'M', 'Q', 'H'] as const, 'M', path, 'errorCorrectionLevel');
-        const foreground = this.readColor(value['foreground'] ?? '#000000', path, 'foreground');
-        const background = this.readColor(value['background'] ?? '#FFFFFF', path, 'background');
+        const foreground = this.readColor(value['foreground'] === undefined ? '#000000' : value['foreground'], path, 'foreground');
+        const background = this.readColor(value['background'] === undefined ? '#FFFFFF' : value['background'], path, 'background');
         const defaultSize: SizeSpec = parentLayout.mode === 'grid' ? { kind: 'fill', weight: 1 } : { kind: 'hug' };
         element = base && content !== undefined && errorCorrectionLevel && foreground && background
           ? { ...base, place: { ...base.place, width: base.place.width ?? defaultSize, height: base.place.height ?? defaultSize },
@@ -557,7 +561,7 @@ class TemplateReader {
   private readCall(value: Record<string, unknown>, base: Read<ElementBase>, path: ElementPath, type: 'loop' | 'call'): Read<LoopModel | CallModel> {
     const template = value['template'];
     if (typeof template !== 'string' || template.trim() === '') return this.fail(path, '调用必须用 template 指定模板名称');
-    const argsValue = value['args'] ?? {};
+    const argsValue = value['args'] === undefined ? {} : value['args'];
     if (!isRecord(argsValue)) return this.fail(path, '调用的 args 必须是参数名称到运算数的对象');
     const args: Record<string, CallArgument> = Object.create(null) as Record<string, CallArgument>;
     for (const [name, argument] of Object.entries(argsValue)) {
@@ -571,7 +575,7 @@ class TemplateReader {
       } else this.fail(path, `参数 ${name} 写成 { var: 路径 }、{ value: 固定值 }；循环容器还可用 { loop: index/isFirst/isLast/count/groupSize }`);
     }
     if (type === 'call') {
-      const data = value['data'] ?? 'none';
+      const data = value['data'] === undefined ? 'none' : value['data'];
       if (data !== 'current' && data !== 'none' && !isVarOperand(data)) return this.fail(path, '子模板数据 data 写成 { var: 单引用路径 }、current 或 none');
       return base && { ...base, type, template, data, args };
     }
@@ -639,7 +643,7 @@ class TemplateReader {
   }
 
   private readPlace(value: unknown, path: ElementPath, parentLayout: Layout): Read<Place> {
-    const place = value ?? {};
+    const place = value === undefined ? {} : value;
     if (!isRecord(place)) {
       this.fail(path, 'place 必须是对象');
       return undefined;
@@ -895,12 +899,12 @@ class TemplateReader {
       if (writingMode !== 'vertical' || !isRecord(rule)) return this.fail(path, 'widthOverflow 必须是竖排文本的缩字组配置对象');
       this.checkKeys(rule, ['shrinkGroup', 'minFontSize'], path, 'widthOverflow');
       const group = rule['shrinkGroup'];
-      const minimum = rule['minFontSize'] ?? 5;
+      const minimum = rule['minFontSize'] === undefined ? 5 : rule['minFontSize'];
       if (typeof group !== 'string' || !group.trim() || group !== group.trim()) return this.fail(path, 'shrinkGroup 必须是非空且首尾无空白的组名');
       if (!isFiniteNumber(minimum) || minimum < 5) return this.fail(path, 'widthOverflow.minFontSize 不能低于 5 mm（M86）');
       widthOverflow = { shrinkGroup: group, minFontSize: minimum };
     }
-    const steps = value['steps'] ?? [];
+    const steps = value['steps'] === undefined ? [] : value['steps'];
     if (!Array.isArray(steps) || !steps.every((step): step is string => typeof step === 'string')) {
       this.fail(path, 'fit.steps 必须是步骤名称的列表');
       return undefined;
@@ -923,7 +927,7 @@ class TemplateReader {
       this.fail(path, '收紧字距必须排在压缩字形之前：字距收到 0 之前不压缩字形（M82）');
       return undefined;
     }
-    const compressMin = value['compressMin'] ?? MIN_COMPRESSION;
+    const compressMin = value['compressMin'] === undefined ? MIN_COMPRESSION : value['compressMin'];
     if (!isFiniteNumber(compressMin) || compressMin < MIN_COMPRESSION || compressMin > 1) {
       this.fail(path, `fit.compressMin 必须在 ${MIN_COMPRESSION} 到 1 之间（M88）`);
       return undefined;
@@ -931,7 +935,7 @@ class TemplateReader {
     if (steps.includes('shrink') && (!steps.includes('compressGlyphs') || steps.indexOf('shrink') < steps.indexOf('compressGlyphs'))) {
       return this.fail(path, '横排必须先 compressGlyphs 再 shrink（M84）');
     }
-    const minFontSize = value['minFontSize'] ?? 5;
+    const minFontSize = value['minFontSize'] === undefined ? 5 : value['minFontSize'];
     if (!isFiniteNumber(minFontSize) || minFontSize < 5) return this.fail(path, 'fit.minFontSize 不能低于 5 mm（M86）');
     if (value['minFontSize'] !== undefined && !steps.includes('shrink')) return this.fail(path, 'minFontSize 只用于横排 shrink 步骤');
     const onFail = this.readEnum(value['onFail'], ['severe', 'hint'] as const, 'severe', path, 'fit.onFail');

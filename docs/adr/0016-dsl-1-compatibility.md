@@ -4,7 +4,7 @@ status: accepted
 
 # DSL 1.0 冻结现行写法，1.x 只做加法，继续拒绝未知键
 
-DSL 1.0 就是数据定义（`renderweave-schema/1`）、模板（`renderweave-template/1`）、数据集、渲染请求与批次请求（`renderweave-batch/1`）的现行写法。这次冻结不改名、不改语义，只写下成文契约：
+DSL 1.0 就是数据定义（`renderweave-schema/1`）、模板（`renderweave-template/1`）、数据集、渲染请求与批次请求的现行写法。这次冻结不改名、不改语义，只写下成文契约：
 
 - 人读参考放在 `docs/dsl/`，Agent 参考放在 `agent/reference/`；
 - 结构契约是 `schemas/` 中的 JSON Schema 2020-12；
