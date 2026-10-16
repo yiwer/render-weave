@@ -112,5 +112,10 @@ async function readBody(request: IncomingMessage): Promise<string> {
     if (size > MAX_BODY_BYTES) throw new Error(`超过 ${MAX_BODY_BYTES} 字节`);
     chunks.push(chunk as Buffer);
   }
-  return Buffer.concat(chunks).toString('utf8');
+  // 严格按 UTF-8 解码：其他编码的中文（如 Windows 命令行按本地代码页发出的）会被拒绝，而不是悄悄变成乱码存进 review.json。
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));
+  } catch {
+    throw new Error('请求体不是有效的 UTF-8');
+  }
 }

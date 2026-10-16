@@ -12,7 +12,7 @@ status: accepted
 
 代价：
 
-- 依赖 Claude Code 对非 Anthropic 模型的兼容行为，例如它的费用统计不认识模型名。升级 Claude Code 或换模型后，要复跑 `scripts/m190/run.mjs`。
+- 依赖 Claude Code 对非 Anthropic 模型的兼容行为，例如它的费用统计不认识模型名。升级 Claude Code 或换模型后，要复跑 `scripts/m190/run.mjs`（票据 08 起改为评估工具 `scripts/agent-eval/run.ts`，连续两次达线才算可用，见 [Agent 评估](../agent-eval.md)）。
 - Claude Code 只是运行时，不是对外入口，也不以它的名义对外（M205）。
 - 素材经过的外部服务变为千问 token plan 的模型服务，以及识别用的阿里云百炼。对外说明要同步更新。
 

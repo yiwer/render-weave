@@ -1,0 +1,59 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站点",
+  "version": 1,
+  "displayName": "停靠站点",
+  "description": "线路牌上单个停靠站点的业务信息：站名、设施类别、地标图、所在道路。终点站为列表末项，由模板推导，不另设字段。",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "facilities",
+      "displayName": "设施类别",
+      "description": "站名上方小图标表示的站点设施类别，模板按取值选图；一站可多个，没有就省略",
+      "type": "list",
+      "items": {
+        "type": "text",
+        "constraints": {
+          "enum": [
+            "地铁",
+            "医院"
+          ]
+        }
+      },
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 3
+      }
+    },
+    {
+      "name": "landmark",
+      "displayName": "地标图",
+      "description": "站名下方带圈数字等地标图片，是站点的可选图片属性，引用资源仓库",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "roadName",
+      "displayName": "所在道路",
+      "description": "站点所处道路名；牌面底部道路带由模板对连续同名道路合并绘制",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 12
+      }
+    }
+  ]
+}

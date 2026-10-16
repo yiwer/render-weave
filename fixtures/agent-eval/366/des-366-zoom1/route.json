@@ -1,0 +1,107 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "一条线路一个行驶方向的线路牌数据。终点站、下一站、已过站均由模板从站点列表与出图参数“本站序号”派生，不入库。",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "routeNoArt",
+      "displayName": "线路号艺术字",
+      "description": "牌面用艺术字图片呈现线路号时引用资源；无资源时省略，模板回退为文本线路号。",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营企业",
+      "description": "牌面右上角的企业名称，没有则省略。",
+      "type": "text",
+      "constraints": {
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "fareType",
+      "displayName": "票制",
+      "description": "票制文本；模板按取值拼接票价展示（如一票制只显示票价，分段收费加上车价与全程价）。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "enum": [
+          "一票制",
+          "分段收费"
+        ]
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价（元）",
+      "description": "一票制时为单一票价；分段收费时为上车票价。单位“元”由模板拼接。",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "fullFare",
+      "displayName": "全程票价（元）",
+      "description": "仅分段收费时填写。",
+      "type": "number",
+      "constraints": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "始发站服务开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "始发站服务结束时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "stops",
+      "displayName": "站点列表",
+      "description": "按行驶方向排序的停靠站；首项为始发站，末项为终点站（牌面去向）。",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 60
+      }
+    }
+  ]
+}

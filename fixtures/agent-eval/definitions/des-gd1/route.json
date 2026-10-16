@@ -1,0 +1,130 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "一条公交线路的一个行驶方向（一份数据对应一个方向）。终点站为站点列表末项、下一站与已过站由模板派生；本站序号是出图参数，不进数据集。",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "description": "线路号文本，如 M402",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "routeNoImage",
+      "displayName": "线路号艺术字图",
+      "description": "牌面使用艺术字呈现线路号时引用的图片；不用则省略",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营企业",
+      "description": "牌面右上角的运营企业名称",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "fareSystem",
+      "displayName": "票制",
+      "description": "票制文本，如一票制、分段制",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价（元）",
+      "description": "票价数值，单位“元”由模板拼接",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "始发站服务时间起",
+      "description": "始发站首班时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "始发站服务时间止",
+      "description": "始发站末班时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "operationNote",
+      "displayName": "运营备注",
+      "description": "运营日期备注，如工作日运营；无则省略",
+      "type": "text",
+      "constraints": {
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "serviceMode",
+      "displayName": "发车方式",
+      "description": "发车方式，如定时班车；无则省略",
+      "type": "text",
+      "constraints": {
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "departures",
+      "displayName": "定时发车时刻",
+      "description": "定时班车的发车时刻列表，模板按 / 连接；非定时发车则省略",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "maxItems": 60
+      }
+    },
+    {
+      "name": "stops",
+      "displayName": "站点列表",
+      "description": "按行驶顺序的停靠站，首项为始发站、末项为终点站",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 50
+      }
+    }
+  ]
+}

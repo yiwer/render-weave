@@ -1,0 +1,106 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "一条线路一个行驶方向的线路牌数据；终点、下一站、已过站等由模板派生",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    {
+      "name": "routeNoImage",
+      "displayName": "线路号艺术字图片",
+      "description": "牌面用艺术字图片呈现线路号时引用资源；无对应资源时省略，模板用文本样式兜底",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "operatorName",
+      "displayName": "运营企业",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "fareType",
+      "displayName": "票制",
+      "description": "如“一票制”“分段收费”",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    {
+      "name": "boardingFare",
+      "displayName": "上车票价（元）",
+      "description": "分段收费时的上车价；一票制时省略",
+      "type": "number",
+      "constraints": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "fullFare",
+      "displayName": "全程票价（元）",
+      "description": "一票制时即唯一票价",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "始发站服务开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "始发站服务结束时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "stations",
+      "displayName": "站点列表",
+      "description": "按行驶方向顺序；末项即终点站",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "公交站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 60
+      }
+    }
+  ]
+}

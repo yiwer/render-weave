@@ -1,0 +1,447 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "站点格",
+  "base": {
+    "name": "停靠站点",
+    "version": 1
+  },
+  "parameters": [
+    {
+      "name": "index",
+      "displayName": "本站序号",
+      "visibility": "public",
+      "type": "number"
+    },
+    {
+      "name": "currentIndex",
+      "displayName": "当前站序号",
+      "visibility": "public",
+      "type": "number"
+    }
+  ],
+  "derived": [
+    {
+      "name": "isCurrent",
+      "displayName": "是否当前站",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "index"
+            },
+            "op": "eq",
+            "right": {
+              "var": "currentIndex"
+            }
+          },
+          "then": {
+            "value": true
+          }
+        }
+      ],
+      "otherwise": {
+        "value": false
+      }
+    },
+    {
+      "name": "isPassed",
+      "displayName": "是否已过站",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "index"
+            },
+            "op": "lt",
+            "right": {
+              "var": "currentIndex"
+            }
+          },
+          "then": {
+            "value": true
+          }
+        }
+      ],
+      "otherwise": {
+        "value": false
+      }
+    },
+    {
+      "name": "hasLandmark",
+      "displayName": "有地标",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "landmark"
+            },
+            "op": "notEmpty"
+          },
+          "then": {
+            "value": true
+          }
+        }
+      ],
+      "otherwise": {
+        "value": false
+      }
+    },
+    {
+      "name": "passedKey",
+      "displayName": "非当前站状态键",
+      "type": "text",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "isPassed"
+            },
+            "op": "eq",
+            "right": {
+              "value": true
+            }
+          },
+          "then": {
+            "value": "passed"
+          }
+        }
+      ],
+      "otherwise": {
+        "value": "future"
+      }
+    },
+    {
+      "name": "nameState",
+      "displayName": "站名状态",
+      "type": "text",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "isCurrent"
+            },
+            "op": "eq",
+            "right": {
+              "value": true
+            }
+          },
+          "then": {
+            "value": "current"
+          }
+        }
+      ],
+      "otherwise": {
+        "var": "passedKey"
+      }
+    },
+    {
+      "name": "nameLen",
+      "displayName": "站名字数",
+      "type": "number",
+      "op": "length",
+      "of": {
+        "var": "name"
+      }
+    },
+    {
+      "name": "nameAreaH",
+      "displayName": "站名分布高度",
+      "type": "number",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "hasLandmark"
+            },
+            "op": "eq",
+            "right": {
+              "value": false
+            }
+          },
+          "then": {
+            "value": 80
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 1
+            }
+          },
+          "then": {
+            "value": 9
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 2
+            }
+          },
+          "then": {
+            "value": 44.5
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 3
+            }
+          },
+          "then": {
+            "value": 56.33
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 4
+            }
+          },
+          "then": {
+            "value": 62.25
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 5
+            }
+          },
+          "then": {
+            "value": 65.8
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "nameLen"
+            },
+            "op": "eq",
+            "right": {
+              "value": 6
+            }
+          },
+          "then": {
+            "value": 68.17
+          }
+        }
+      ],
+      "otherwise": {
+        "value": 69
+      }
+    }
+  ],
+  "artboard": {
+    "sizeRange": {
+      "width": {
+        "min": 8,
+        "max": 1500
+      },
+      "height": {
+        "min": 60,
+        "max": 120
+      }
+    },
+    "layout": {
+      "mode": "stack",
+      "direction": "column",
+      "gap": 0,
+      "alignItems": "center"
+    },
+    "padding": {
+      "top": 6
+    },
+    "children": [
+      {
+        "type": "loop",
+        "name": "标识列",
+        "place": {
+          "width": "hug",
+          "height": {
+            "fixed": 10
+          }
+        },
+        "list": {
+          "var": "badges"
+        },
+        "template": "站点标识",
+        "args": {},
+        "itemLayout": {
+          "direction": "row",
+          "widths": "content",
+          "gap": 0.6
+        }
+      },
+      {
+        "type": "container",
+        "name": "站名框",
+        "place": {
+          "width": "fill",
+          "height": "fill"
+        },
+        "layout": {
+          "mode": "grid",
+          "rows": [
+            {
+              "fraction": 1
+            }
+          ],
+          "columns": [
+            {
+              "fraction": 1
+            },
+            {
+              "fixed": 11
+            },
+            {
+              "fraction": 1
+            }
+          ],
+          "rowGap": 0,
+          "columnGap": 0
+        },
+        "children": [
+          {
+            "type": "rect",
+            "name": "当前站黄条",
+            "place": {
+              "row": 1,
+              "column": 2,
+              "width": {
+                "fixed": 9.5
+              },
+              "justifySelf": "center"
+            },
+            "fill": "#FFEC00",
+            "visible": {
+              "var": "isCurrent"
+            }
+          },
+          {
+            "type": "container",
+            "name": "站名列",
+            "place": {
+              "row": 1,
+              "column": 2
+            },
+            "layout": {
+              "mode": "stack",
+              "direction": "column",
+              "gap": 0,
+              "alignItems": "center",
+              "justifyContent": "spaceBetween"
+            },
+            "padding": {
+              "top": 1,
+              "bottom": 1
+            },
+            "children": [
+              {
+                "type": "text",
+                "name": "站名",
+                "place": {
+                  "width": "fill",
+                  "height": {
+                    "fixed": {
+                      "var": "nameAreaH"
+                    }
+                  }
+                },
+                "content": [
+                  {
+                    "slot": "name"
+                  }
+                ],
+                "font": "res:font-hei-medium",
+                "fontSize": 9,
+                "color": "#1A1A1A",
+                "writingMode": "vertical",
+                "horizontalAlign": "center",
+                "verticalAlign": "distribute",
+                "fit": {
+                  "steps": [
+                    "tightenSpacing",
+                    "compressGlyphs"
+                  ],
+                  "compressMin": 0.6
+                },
+                "states": {
+                  "by": {
+                    "var": "nameState"
+                  },
+                  "cases": {
+                    "passed": {
+                      "color": "#ABABAB"
+                    },
+                    "current": {
+                      "color": "#E60012"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "image",
+                "name": "地标",
+                "place": {
+                  "width": {
+                    "fixed": 11
+                  },
+                  "height": {
+                    "fixed": 11
+                  }
+                },
+                "source": {
+                  "var": "landmark"
+                },
+                "fit": "contain",
+                "visible": {
+                  "var": "hasLandmark"
+                },
+                "states": {
+                  "by": {
+                    "var": "nameState"
+                  },
+                  "cases": {
+                    "passed": {
+                      "opacity": 0.45
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

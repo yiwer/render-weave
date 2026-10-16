@@ -1,0 +1,82 @@
+{
+  "template": "商品价签",
+  "mode": "final",
+  "items": [
+    {
+      "id": "water",
+      "dataset": {
+        "id": "ds-pricetag-water"
+      },
+      "parameters": {},
+      "output": {
+        "width": 100,
+        "height": 52,
+        "dpi": 300,
+        "format": "png"
+      }
+    },
+    {
+      "id": "longest-name",
+      "dataset": {
+        "inline": {
+          "dataset": {
+            "staticSchema": {
+              "name": "商品价签",
+              "version": 1
+            }
+          },
+          "data": {
+            "productName": "新疆阿克苏冰糖心红富士苹果特级大果精选礼盒装十二枚入节日礼品",
+            "itemNo": "0088012",
+            "origin": "新疆阿克苏",
+            "spec": "12枚/盒",
+            "unit": "盒",
+            "retailPrice": 128,
+            "memberPrice": 118,
+            "priceChecker": "张敏",
+            "supervisePhone": "12358",
+            "logo": "res:test-vector-svg"
+          }
+        }
+      },
+      "parameters": {},
+      "output": {
+        "width": 100,
+        "height": 52,
+        "dpi": 300,
+        "format": "png"
+      }
+    },
+    {
+      "id": "no-member-price",
+      "dataset": {
+        "inline": {
+          "dataset": {
+            "staticSchema": {
+              "name": "商品价签",
+              "version": 1
+            }
+          },
+          "data": {
+            "productName": "散装云南小粒咖啡豆",
+            "itemNo": "0300417",
+            "origin": "云南保山",
+            "spec": "散装",
+            "unit": "500g",
+            "retailPrice": 39.9,
+            "priceChecker": "张敏",
+            "supervisePhone": "12358",
+            "logo": "res:test-vector-svg"
+          }
+        }
+      },
+      "parameters": {},
+      "output": {
+        "width": 100,
+        "height": 52,
+        "dpi": 300,
+        "format": "png"
+      }
+    }
+  ]
+}

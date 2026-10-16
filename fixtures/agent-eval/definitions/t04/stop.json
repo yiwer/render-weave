@@ -1,0 +1,59 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站点",
+  "version": 1,
+  "displayName": "公交站点",
+  "description": "公交线路牌上的一个停靠站：站名、所在道路、设施类别与地标图片。站序即列表顺序。",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "road",
+      "displayName": "所在道路",
+      "description": "该站所处道路名；模板将相邻同名道路合并为道路带的一段。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "facilities",
+      "displayName": "设施类别",
+      "description": "站名上方小图标表示的设施类别，一站可多个，没有则省略；模板按取值选图。",
+      "type": "list",
+      "items": {
+        "type": "text",
+        "constraints": {
+          "enum": [
+            "地铁",
+            "医院"
+          ]
+        }
+      },
+      "constraints": {
+        "maxItems": 3
+      }
+    },
+    {
+      "name": "landmark",
+      "displayName": "地标图片",
+      "description": "站名下方带圈数字对应的地标图片，可选。",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    }
+  ]
+}

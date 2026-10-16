@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-agent-eval-config/1",
+  "consecutivePasses": 2,
+  "resources": "fixtures/resources",
+  "scenarios": [
+    {
+      "id": "m402-definition",
+      "name": "M402 数据定义",
+      "kind": "definition",
+      "sample": "docs/examples/materials/m402-route-sign.jpg",
+      "brief": "scripts/agent-eval/scenarios/m402/brief-definition.md",
+      "domain": "route-sign",
+      "pass": { "conventions": 6, "expertFields": 14 }
+    },
+    {
+      "id": "m402-template",
+      "name": "M402 模板",
+      "kind": "template",
+      "sample": "docs/examples/materials/m402-route-sign.jpg",
+      "brief": "scripts/agent-eval/scenarios/m402/brief-template.md",
+      "domain": "route-sign",
+      "workspace": {
+        "from": "docs/examples/m402-dsl",
+        "files": ["schema-route-sign-v1.json", "schema-stop-v1.json", "compiled-route-sign-v1.schema.json", "compiled-stop-v1.schema.json", "dataset-m402.json"]
+      },
+      "dataset": "ds-m402-wanguocheng",
+      "request": "scripts/agent-eval/scenarios/m402/request-template.json",
+      "pass": { "stress": 10, "layoutChecks": 2 }
+    },
+    {
+      "id": "366-transcription",
+      "name": "366 数据定义与转录",
+      "kind": "transcription",
+      "sample": "docs/examples/materials/366-route-sign.png",
+      "brief": "scripts/agent-eval/scenarios/366/brief-definition.md",
+      "datasetBrief": "scripts/agent-eval/scenarios/366/brief-dataset.md",
+      "domain": "route-sign",
+      "truth": "scripts/agent-eval/scenarios/366/truth.json",
+      "pass": { "names": 57, "landmarks": 14, "facilities": 17 }
+    }
+  ]
+}

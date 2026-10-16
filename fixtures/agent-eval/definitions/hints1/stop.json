@@ -1,0 +1,57 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站点",
+  "version": 1,
+  "displayName": "站点",
+  "description": "公交线路牌上的单个停靠站，按行驶方向排序；是否已过站、是否高亮由出图请求参数决定，不进数据",
+  "fields": [
+    {
+      "name": "stopName",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "landmark",
+      "displayName": "地标图片",
+      "description": "站名下方带圈数字样式的地标图片，可选属性",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "facilities",
+      "displayName": "设施类别",
+      "description": "站名上方小图标表示的设施类别，一站可多个，模板按取值选图，没有就省略",
+      "type": "list",
+      "items": {
+        "type": "text",
+        "constraints": {
+          "enum": [
+            "地铁",
+            "医院"
+          ]
+        }
+      },
+      "constraints": {
+        "maxItems": 3
+      }
+    },
+    {
+      "name": "roadName",
+      "displayName": "所在道路",
+      "description": "站点所在线路牌底部路名带的道路名，模板对连续同值站点合并为一个路段带",
+      "type": "text",
+      "constraints": {
+        "maxLength": 12
+      }
+    }
+  ]
+}

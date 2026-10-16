@@ -1,0 +1,6 @@
+{
+  "template": "线路牌主模板",
+  "parameters": { "currentIndex": 15 },
+  "output": { "width": 740, "height": 165, "dpi": 50, "format": "png" },
+  "mode": "final"
+}

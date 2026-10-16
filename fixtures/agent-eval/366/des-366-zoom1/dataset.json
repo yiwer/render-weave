@@ -1,0 +1,330 @@
+{
+  "dataset": {
+    "id": "route-366-to-pszb",
+    "name": "366路 开往坪山综保场站方向",
+    "staticSchema": {
+      "name": "公交线路牌",
+      "version": 1
+    },
+    "origin": {
+      "kind": "manual",
+      "note": "依 sample.png 设计稿（740×165mm，366 路开往坪山综保场站方向）逐列放大转录"
+    }
+  },
+  "data": {
+    "routeNo": "366",
+    "operator": "东部公交",
+    "fareType": "分段收费",
+    "fare": 2,
+    "fullFare": 10,
+    "serviceStart": "06:50",
+    "serviceEnd": "22:20",
+    "stops": [
+      {
+        "name": "皇岗口岸公交接驳站",
+        "road": "福田南路",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "福滨新村",
+        "road": "滨河大道",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "赤尾地铁站",
+        "road": "滨河大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "滨河华强天桥",
+        "road": "滨河大道"
+      },
+      {
+        "name": "爱华南天桥",
+        "road": "滨河大道",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "上步南天桥",
+        "road": "滨河大道"
+      },
+      {
+        "name": "鹿丹村",
+        "road": "滨河路",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "宝安南路",
+        "road": "宝安路"
+      },
+      {
+        "name": "振业大厦",
+        "road": "宝安路"
+      },
+      {
+        "name": "西湖宾馆",
+        "road": "宝安南路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "宝安北路",
+        "road": "宝安北路"
+      },
+      {
+        "name": "市安全教育基地",
+        "road": "宝安北路"
+      },
+      {
+        "name": "笋岗街道办",
+        "road": "梅园路",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "洪湖公园",
+        "road": "文锦北路",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "东晓街道办",
+        "road": "文锦北路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "草埔地铁站",
+        "road": "文锦北路",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-4"
+      },
+      {
+        "name": "荣超花园",
+        "road": "龙岗大道",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "深圳东站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "龙珠花园",
+        "road": "龙岗大道",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "大芬地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "桂芳园",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "丹竹头地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "深坑居民小组",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "六约地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "牛始埔居民小组",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "六约天桥",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "塘坑地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "横岗街道办",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "力嘉创意文化园",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "横岗志健广场",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "横岗地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "永湖地铁站",
+        "road": "龙岗大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "马峦山郊野公园",
+        "road": "龙岗大道"
+      },
+      {
+        "name": "碧湖春天花园",
+        "road": "坪山大道"
+      },
+      {
+        "name": "石楼围居民小组",
+        "road": "坪山大道"
+      },
+      {
+        "name": "油社居民小组",
+        "road": "坪山大道"
+      },
+      {
+        "name": "碧桂园凤凰公馆",
+        "road": "坪山大道"
+      },
+      {
+        "name": "润樾山花园",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山大道沙湖路口",
+        "road": "坪山大道"
+      },
+      {
+        "name": "佳华沙湖广场",
+        "road": "坪山大道"
+      },
+      {
+        "name": "深业东城国际",
+        "road": "坪山大道"
+      },
+      {
+        "name": "锦龙地铁站",
+        "road": "坪山大道",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "坪山城市候机楼",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山大道同富支路口",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山大道东纵路口",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山围地铁站",
+        "road": "坪山大道",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "飞东村",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山广场地铁站",
+        "road": "坪山大道",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "坪山区委区政府",
+        "road": "坪山大道",
+        "facilities": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "大工业区体育中心",
+        "road": "坪山大道"
+      },
+      {
+        "name": "松子坑",
+        "road": "坪山大道"
+      },
+      {
+        "name": "盘古石",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山区群团活动中心",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坪山中医院",
+        "road": "坪山大道",
+        "facilities": [
+          "医院"
+        ]
+      },
+      {
+        "name": "坑梓汽车站",
+        "road": "坪山大道"
+      },
+      {
+        "name": "坑梓沙梨园小区",
+        "road": "光祖北路"
+      },
+      {
+        "name": "兰景吉康路口",
+        "road": "兰景北路"
+      },
+      {
+        "name": "坑梓中心幼儿园",
+        "road": "兰景北路"
+      },
+      {
+        "name": "坪山综保场站",
+        "road": "丹梓大道"
+      }
+    ]
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "一份数据对应一条线路的一个行驶方向。终点站（站点末项）、下一站（本站后一项）、已过站（与本站序号比较）由模板推导，不进数据；出哪一站的牌、高亮哪一站由出图请求参数决定。",
+  "fields": [
+    {
+      "name": "routeNumber",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 10
+      }
+    },
+    {
+      "name": "routeNumberArt",
+      "displayName": "线路号艺术字",
+      "description": "牌面线路号使用艺术字图片时引用资源仓库中的对应图片",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "fareType",
+      "displayName": "票制",
+      "description": "如「一票制」「分段收费」，展示时由模板与票价拼接",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "farePrice",
+      "displayName": "票价（元）",
+      "description": "数值记录，单位「元」由模板拼接",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "firstServiceStart",
+      "displayName": "始发站服务开始时刻",
+      "type": "time"
+    },
+    {
+      "name": "firstServiceEnd",
+      "displayName": "始发站服务结束时刻",
+      "type": "time"
+    },
+    {
+      "name": "operationDays",
+      "displayName": "运营日说明",
+      "description": "如「工作日运营」，括号等装饰由模板添加",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "serviceKind",
+      "displayName": "班次类型",
+      "description": "如「定时班车」，书名号等装饰由模板添加",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "departureTimes",
+      "displayName": "始发站发车时刻",
+      "description": "定时班车的发车时刻列表，按先后顺序",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 120
+      }
+    },
+    {
+      "name": "stops",
+      "displayName": "停靠站点",
+      "description": "按该方向行驶顺序排列；首项为始发站，末项即牌面显示的终点站",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 80
+      }
+    }
+  ]
+}

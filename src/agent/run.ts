@@ -195,8 +195,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await requireFile(options.brief, '项目说明');
   const domainFile = options.domain === undefined ? undefined : join(AGENT_MATERIALS, 'domains', `${options.domain}.md`);
   if (domainFile) {
-    try { await requireFile(domainFile, '领域约定'); } catch {
-      const known = (await readdir(join(AGENT_MATERIALS, 'domains'))).filter((file) => file.endsWith('.md')).map((file) => file.slice(0, -3));
+    // 以 _ 开头的是给维护者的模板（如 _template.md），不是领域约定包。
+    try { if (options.domain!.startsWith('_')) throw new Error(); await requireFile(domainFile, '领域约定'); } catch {
+      const known = (await readdir(join(AGENT_MATERIALS, 'domains'))).filter((file) => file.endsWith('.md') && !file.startsWith('_')).map((file) => file.slice(0, -3));
       throw new AgentUsageError(`没有领域约定包 ${options.domain}；可用：${known.join('、')}`);
     }
   }
@@ -313,7 +314,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   const started = Date.now();
   const executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir });
-  const { mcp, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
+  const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
@@ -357,7 +358,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const record: RoundRecord = {
     format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
     runtime: { model, smallModel, endpoint, maxTurns, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
-    run: { ...usage, exitCode: executed.exitCode, ...(executed.error ? { error: executed.error } : {}), ...(mcp ? { mcp } : {}) },
+    run: { ...usage, exitCode: executed.exitCode, ...(executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };
   await writeFile(join(roundDir, 'round.json'), `${JSON.stringify(record, null, 2)}\n`);
@@ -531,7 +532,7 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
 }
 
 /** 从 Claude Code 的流式输出中取用量：初始化消息给出模型、版本与 MCP 状态，结果消息给出轮数与 token。 */
-async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[] }> {
+async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[]; apiError?: string }> {
   let text = '';
   try { text = await readFile(file, 'utf8'); } catch { return {}; }
   const messages = text.split('\n').flatMap((line) => { try { return [JSON.parse(line) as Record<string, any>]; } catch { return []; } });
@@ -546,6 +547,8 @@ async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { m
     claudeCodeVersion: typeof init?.['claude_code_version'] === 'string' ? init['claude_code_version'] : undefined,
     endedBy: typeof result?.['subtype'] === 'string' ? result['subtype'] : undefined,
     mcp: Array.isArray(init?.['mcp_servers']) ? init['mcp_servers'].map((server: Record<string, unknown>) => `${String(server['name'])}:${String(server['status'])}`) : undefined,
+    // 模型服务报错（如额度用完的 429）时，Claude Code 的结束方式仍是 success，只另带 is_error。
+    apiError: result?.['is_error'] === true ? `模型服务报错：${String(result['result'] ?? '').slice(0, 300)}` : undefined,
   };
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
 }

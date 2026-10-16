@@ -176,7 +176,7 @@ Agent 先用 Read 看示例图，再调用 `render_draft` 读回预览图。工�
 |---|---|---|---|
 | 通用做法 | `scripts/m190/guide.md`（票据 04 起为 `agent/guide.md`） | 任何"示例图 → 数据定义 → 模板"都适用的 16 条规则（第 16 条转录规则见 M217），从这次观察到的失败中提炼，不含具体业务。规则涵盖：<br>· 出图选择是参数且有"不选"值；可推出的信息不存；组合值拆开；编号另存文本<br>· 类别图标用枚举；像文字的符号先查资源；含义不明不建字段<br>· 适用尺寸按目标范围；重复元素字号一致；分布方式按示例图留白判断<br>· 可选元素放在所属排布流里；交付前预览验证极端情况 | 每次都给（`--no-guide` 用于对照） |
 | 领域约定 | `scripts/m190/domain-route-sign.md`（票据 04 起为 `agent/domains/route-sign.md`） | 线路牌领域的 12 条约定：带圈数字是地标、设施类别、票制与票价、本站 0 不标、地标是站名流的最后一格、道路名同间隔分布等。不含任何具体项目 | `--domain route-sign` |
-| 项目说明 | `scripts/m190/scenarios/<场景>/brief-<步骤>.md` | 本次设计稿的尺寸、目标范围、命名、示例图对应的请求、客户说明（如 M402 的蓝色圆标忽略） | 按 `--scenario` 自动给 |
+| 项目说明 | `scripts/m190/scenarios/<场景>/brief-<步骤>.md`（票据 08 起在 `scripts/agent-eval/scenarios/<场景>/`） | 本次设计稿的尺寸、目标范围、命名、示例图对应的请求、客户说明（如 M402 的蓝色圆标忽略） | 按 `--scenario` 自动给 |
 
 - 设计与模板两份提示词改为通用文字，只说明三层资料的优先级：项目说明 > 领域约定 > 通用做法。
 - 模板参考补上了内联数据集写法，Agent 可以用它试验极端数据。
@@ -208,7 +208,7 @@ Agent 先用 Read 看示例图，再调用 `render_draft` 读回预览图。工�
 
 | 资料 | 次数 | 压测 10 个场景 | 地标在列内 | 道路名同间隔 | 相似度 | 用时 / 轮数 / 预览次数 |
 |---|---|---|---|---|---|---|
-| 只有模板参考（首测） | 1 | 7 | 否（−12 mm） | 否（distribute） | 0.909 | 23 分钟 / 33 / 7 |
+| 只有模板参考（首测） | 1 | 6（原记为 7，票据 08 复算：1500 mm 宽的两个场景都失败） | 否（−12 mm） | 否（distribute） | 0.909 | 23 分钟 / 33 / 7 |
 | 通用指南 | 1 | 8：1500 mm 宽时被调模板越界 | 否：没画地标，列为待确认 | 是 | 0.900 | 28 分钟 / 65 / 19 |
 | 通用指南 + 线路牌约定 | 2 | **10、10** | **是（0 mm）、是（0 mm）** | **是、是** | 0.902、0.877 | 21.5 分钟 / 57 / 13；31 分钟 / 55 / 17 |
 
@@ -285,7 +285,7 @@ Agent 先用 Read 看示例图，再调用 `render_draft` 读回预览图。工�
 
 ```bash
 renderweave agent run --task 数据定义提取 --sample docs/examples/materials/m402-route-sign.jpg \
-  --brief scripts/m190/scenarios/m402/brief-definition.md --domain route-sign --resources fixtures/resources --out out/agent-t04-m402
+  --brief scripts/agent-eval/scenarios/m402/brief-definition.md --domain route-sign --resources fixtures/resources --out out/agent-t04-m402
 ```
 
 **输入**：
@@ -361,13 +361,13 @@ renderweave agent run --task 数据定义提取 --sample docs/examples/materials
 
 ## 数据集提取与模板辅助设计实跑（票据 06）
 
-接着票据 05 应用后的工作区（站点 v1、带运营方字段的公交线路牌 v1），用产品命令依次跑数据集提取与模板辅助设计。项目说明与出图请求在 `scripts/m190/scenarios/m402/product/`，只写这一单的事实。
+接着票据 05 应用后的工作区（站点 v1、带运营方字段的公交线路牌 v1），用产品命令依次跑数据集提取与模板辅助设计。项目说明与出图请求在 `scripts/agent-eval/scenarios/m402/`，只写这一单的事实。
 
 ### 数据集提取
 
 ```bash
 renderweave agent run --task 数据集提取 --definition 公交线路牌 --workspace out/agent-t06-workspace \
-  --sample docs/examples/materials/m402-route-sign.jpg --brief scripts/m190/scenarios/m402/product/brief-dataset.md \
+  --sample docs/examples/materials/m402-route-sign.jpg --brief scripts/agent-eval/scenarios/m402/brief-dataset.md \
   --domain route-sign --resources fixtures/resources --out out/agent-t06-dataset
 ```
 
@@ -391,9 +391,9 @@ renderweave agent run --task 数据集提取 --definition 公交线路牌 --work
 ### 模板辅助设计
 
 ```bash
-renderweave agent run --task 模板辅助设计 --dataset ds-m402-wanguocheng --request scripts/m190/scenarios/m402/product/request-template.json \
+renderweave agent run --task 模板辅助设计 --dataset ds-m402-wanguocheng --request scripts/agent-eval/scenarios/m402/request-template.json \
   --workspace out/agent-t06-workspace --sample docs/examples/materials/m402-route-sign.jpg \
-  --brief scripts/m190/scenarios/m402/product/brief-template.md --domain route-sign --resources fixtures/resources --out out/agent-t06-template-2
+  --brief scripts/agent-eval/scenarios/m402/brief-template.md --domain route-sign --resources fixtures/resources --out out/agent-t06-template-2
 ```
 
 跑了两轮：
@@ -440,7 +440,7 @@ renderweave agent run --task 模板辅助设计 --dataset ds-m402-wanguocheng --
 
 **工作区** `out/agent-t07-workspace`：专家版数据定义、编译产物与数据集（`docs/examples/m402-dsl/`），加上首测的 5 个模板（`out/m190/template1/`）。
 
-**M215 两项检查**：抽成 `scripts/m190/m215-checks.mjs`，评估脚本 `run.mjs` 也改用它。先校准：
+**M215 两项检查**：抽成 `scripts/m190/m215-checks.mjs`，评估脚本 `run.mjs` 也改用它（票据 08 起在 `scripts/agent-eval/score.ts`）。先校准：
 
 | 模板 | 草稿问题 | 地标底线差 | 道路名对齐 |
 |---|---|---|---|
@@ -453,9 +453,9 @@ renderweave agent run --task 模板辅助设计 --dataset ds-m402-wanguocheng --
 
 ```bash
 renderweave agent run --task 模板辅助修改 --workspace out/agent-t07-workspace \
-  --request scripts/m190/scenarios/m402/product/request-template.json \
-  --requirement scripts/m190/scenarios/m402/product/requirement-m215.md \
-  --sample docs/examples/materials/m402-route-sign.jpg --brief scripts/m190/scenarios/m402/product/brief-template.md \
+  --request scripts/agent-eval/scenarios/m402/request-template.json \
+  --requirement scripts/agent-eval/scenarios/m402/requirement-m215.md \
+  --sample docs/examples/materials/m402-route-sign.jpg --brief scripts/agent-eval/scenarios/m402/brief-template.md \
   --domain route-sign --resources fixtures/resources --out out/agent-t07-revision
 ```
 
@@ -510,7 +510,7 @@ renderweave agent run --task 模板辅助修改 --workspace out/agent-t07-worksp
 
 ```bash
 renderweave agent run --from out/agent-t07-revision \
-  --feedback scripts/m190/scenarios/m402/product/feedback-m215-round2.md --out out/agent-t07-revision-2
+  --feedback scripts/agent-eval/scenarios/m402/feedback-m215-round2.md --out out/agent-t07-revision-2
 ```
 
 第一次发起时被拒：下一轮沿用修改要求，命令又按应用后的模板核对其中的元素路径，而 `站点格/站名框/地标` 已被第 1 轮移进站名列。修改要求只应在第 1 轮核对，已补回归测试并修复，然后重新发起。
@@ -535,13 +535,23 @@ renderweave agent run --from out/agent-t07-revision \
 | 2 站 | 严重 | **0 严重** | 0 严重 |
 | 50 站 740 mm | 0 严重 | 0 严重 | 0 严重 |
 | 50 站、35 站 1500 mm | 严重 | 严重 | **0 严重** |
-| 通过 | 7/10 | 8/10 | **10/10** |
+| 通过 | 6/10 | 7/10 | **10/10** |
 | 与示例图的相似度 | 0.909 | 0.914 | 0.914 |
 | M215 两项 | 都不通过 | 都通过 | 都通过 |
 
 第 2 轮后，`deliver` 出本站 5、不标本站（本站 0）与 1500 mm 宽三张图，全部交付，严重 0、提示 0；`record-read` 完整读取，`replay` 一致。1500 mm 宽时，站点列与道路带随画板加宽，顶栏元素仍按 740 mm 的位置排列：没有宽画板的设计稿可依据，反馈又要求其余保持不变，Agent 在说明中写明了这一点。
 
 **安全**：两轮的轮次目录、交付目录、工作区与截图共 209 个文件，搜索 key 0 命中。
+
+## 评估门槛首跑（票据 08）
+
+验证脚本退役，换成经产品路径运行的评估工具 `scripts/agent-eval/run.ts`（M230）。三个场景各跑两次，场景、评分与报告见 [Agent 评估](agent-eval.md)。
+
+- **第一次评估**，门槛未通过。模板与 366 都是 2/2 达线。M402 数据定义第 2 次结构不合格：Agent 把示例图上看不清的设施图标，写成了数据定义的待确认项，位置是数据集路径 `stations[9].facilities`。它的数据定义本身到线，专家字段 14/15、约定 6/6。
+- **修复**：在数据定义提取的提示词中写明，待确认项与图上位置只针对数据定义本身，看不清的值写在说明里。
+- **第二次评估**：只重跑用到数据定义提取的两个场景，门槛通过。M402 数据定义两次都是 15/15、6/6；366 站名 58、59，地标与设施全对。模板场景读的资料没有变（资料哈希可核对），沿用第一次的 2/2。
+- **通用指南的新条目**：第 1 条补了"看不出是否随对象变化的内容文字，建可选字段并列为待确认"。之后 4 次 M402 数据定义都建了运营方；票据 04、05 的两次产品实跑都漏了它。
+- **用时与安全**：两次评估分别 75 分钟与 34 分钟（场景并行），各轮之和 275 分钟、输出 75.8 万 tokens；全部产物 392 个文件，搜索 key 0 命中。
 
 ## 延迟与用量
 
@@ -563,31 +573,26 @@ renderweave agent run --from out/agent-t07-revision \
 ```bash
 npm run build
 renderweave agent run --task 数据定义提取 --sample docs/examples/materials/m402-route-sign.jpg \
-  --brief scripts/m190/scenarios/m402/brief-definition.md --domain route-sign --resources fixtures/resources --out out/agent-t05-m402
+  --brief scripts/agent-eval/scenarios/m402/brief-definition.md --domain route-sign --resources fixtures/resources --out out/agent-t05-m402
 renderweave agent review out/agent-t05-m402
 renderweave agent apply out/agent-t05-m402 --workspace <工作区>
 ```
 
-验证脚本：
+评估（票据 08 起，取代验证脚本）：
 
 ```bash
 npm run build
-node scripts/m190/run.mjs out/m190/run1
+npx tsx scripts/agent-eval/run.ts
 ```
 
-- `--steps vision,loop,design` 可以只跑其中几步（缺省就是这三步），`--vision-models` 指定看图的模型。
-- 资料分层：通用指南缺省就给，`--no-guide` 去掉；`--domain route-sign` 加线路牌约定；`--scenario m402|366` 选项目说明与示例图。366 只能跑 design。
-- 模板生成：`--steps template`，可加 `--max-turns`。评估包含压测、地标底线与道路名对齐检查。
-- 只评估、不调用模型：`node scripts/m190/run.mjs --evaluate <候选目录> [--scenario 366]` 评估数据定义候选；`node scripts/m190/run.mjs --evaluate-template <工作区> [输出目录] [--template-name 名称]` 评估模板。
-- M215 两项检查单独跑：`node scripts/m190/m215-checks.mjs --workspace <工作区> --resources <资源仓库> --request <出图请求.json> [--out <草稿.png>]`，输出草稿问题数、地标底线差与道路名对齐。
-- 报告写在 `<输出目录>/report.json`。各步骤的流式日志、MCP 调用日志与候选文件都在同一目录下。
-- Claude Code 可执行文件默认取 PATH 上的 `claude`，也可以用 `CLAUDE_BIN` 指定。
-- 运行 1、2 用的是同样的提示和工具，是在开发这个脚本时手动跑的。
+场景、通过线、评分方法与报告见 [Agent 评估](agent-eval.md)。项目说明、出图请求、修改要求与反馈等场景资料在 `scripts/agent-eval/scenarios/`，上文各节命令中的路径已按票据 08 的位置更新。
+
+验证脚本 `scripts/m190/run.mjs` 已在票据 08 退役，原文见提交 `e09ca8d` 及更早的历史。它的看图（vision）、工具闭环（loop）步骤只用于 M190 的一次性验证；design 与 template 步骤的检查由评估工具沿用，见上。运行 1、2 是开发那份脚本时手动跑的。
 
 ## 未覆盖
 
-- **其他领域**：只测了线路牌（M402、366）。价签、资产标签等领域要先写领域约定包再测。
-- **366 的模板生成**：没有测，需要先确定 366 的数据集。
+- **其他领域**：线路牌（M402、366）之外，票据 09 测了超市商品价签：先只给通用指南、再加价签约定包，对比与全流程见[第三阶段验收](stage3-acceptance.md#端到端代建a11)。资产标签等其他领域没有测。
+- **366 的模板生成**：票据 09 已测，从数据集到模板、出图与一轮修改，见[第三阶段验收](stage3-acceptance.md#366-线路牌全流程)。
 - **长站名列首、列尾的单字**：加工具后仍各错 1 处，可以在指南里补一条"长名逐字核对首尾"，或由 OCR 识别工具交叉核对（M56）。
 - **云上运行方式**：按会话隔离的容器、并发、额度没有测。
 - **Linux 上的 Claude Code**：没有测。

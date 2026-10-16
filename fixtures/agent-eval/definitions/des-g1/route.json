@@ -1,0 +1,130 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "横排站列式公交线路牌（如 M402）。当前站高亮、已过站置灰、下一站由出图参数与模板派生，不进数据。",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "description": "线路号文本；牌面艺术字图片另见 routeNoImage",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    {
+      "name": "routeNoImage",
+      "displayName": "线路号艺术字",
+      "description": "线路号的艺术字图片呈现，可选；如 res:route-no-m402",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "destination",
+      "displayName": "开往方向",
+      "description": "顶栏方向箭头后的终点站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营企业",
+      "description": "顶栏右侧企业名，如“巴士集团”；若确认全线路固定可移至模板",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "fareType",
+      "displayName": "票价类型",
+      "description": "票价胶囊中的类型文本，如“一票制”；“票价：”标签由模板固定",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    {
+      "name": "fareAmount",
+      "displayName": "票价金额（元）",
+      "description": "票价数值，单位“元”由模板固定",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "始发站服务开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "始发站服务结束时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceNote",
+      "displayName": "运营备注",
+      "description": "服务时间旁的运营说明，如“（工作日运营）「定时班车」”",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "departures",
+      "displayName": "始发站发车时刻",
+      "description": "定时班车的发车时刻列表，按先后顺序",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 100
+      }
+    },
+    {
+      "name": "stations",
+      "displayName": "站点列表",
+      "description": "自始发站至终点站顺序排列；站数 2–50",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 50
+      }
+    }
+  ]
+}

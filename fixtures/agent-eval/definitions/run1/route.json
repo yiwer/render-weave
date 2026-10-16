@@ -1,0 +1,130 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "公交线路牌业务数据：线路、方向、站点序、道路段、票价、服务时间与定时班次；版式、颜色与固定装饰归模板。",
+  "fields": [
+    {
+      "name": "routeCode",
+      "displayName": "线路号",
+      "description": "线路号文本形式（如 M402），用于检索与校对；牌面以对应花字图呈现。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "pattern": "^[A-Z]{1,2}[0-9]{1,4}$"
+      }
+    },
+    {
+      "name": "routeNumberImage",
+      "displayName": "线路号花字图",
+      "description": "牌面左上的线路号花字，每线路一张图片资源。",
+      "type": "image",
+      "constraints": {
+        "required": true,
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营企业",
+      "description": "牌面右上角的运营企业名称。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "destination",
+      "displayName": "方向终点站",
+      "description": "本行驶方向的终点站，显示于顶部箭头之后。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价说明",
+      "description": "“票价：”标签后的票价说明（如 一票制2元）。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "stations",
+      "displayName": "站点序",
+      "description": "本方向自起点至终点的全部站点，按行驶顺序排列。",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "minItems": 2,
+        "maxItems": 60
+      }
+    },
+    {
+      "name": "currentStationIndex",
+      "displayName": "当前停靠站序号",
+      "description": "当前停靠站序号（从 1 起，对应 stations 顺序）；用于高亮该站并推导“下一站”。静态站牌省略本字段。",
+      "type": "number",
+      "constraints": {
+        "integer": true,
+        "min": 1,
+        "max": 60
+      }
+    },
+    {
+      "name": "serviceStartTime",
+      "displayName": "始发站首班服务时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEndTime",
+      "displayName": "始发站末班服务时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceNote",
+      "displayName": "运营备注",
+      "description": "运营方式备注，如 （工作日运营）「定时班车」。",
+      "type": "text",
+      "constraints": {
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "departureTimes",
+      "displayName": "定时发车时刻",
+      "description": "始发站定时发车时刻列表，按先后顺序显示。",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 60
+      }
+    }
+  ]
+}

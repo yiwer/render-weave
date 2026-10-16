@@ -164,6 +164,12 @@ describe('发起一轮数据定义提取', () => {
     expect(missing.record.run.error).toContain('无法启动');
     expect(missing.check.verdict).toBe('unqualified');
 
+    // 模型服务报错（如额度用完）时 Claude Code 的结束方式仍是 success：错误记进轮次记录，不能只说没有交回 outcome.json。
+    const quota = await run(await preset({ '.api-error': 'API Error: Request rejected (429) · Your token-plan 1-month quota has been exhausted.' }));
+    expect(quota.record.run).toMatchObject({ endedBy: 'success', error: '模型服务报错：API Error: Request rejected (429) · Your token-plan 1-month quota has been exhausted.' });
+    expect(quota.check.verdict).toBe('unqualified');
+    expect((await run(await preset({}))).record.run).not.toHaveProperty('error');
+
     const conflict = await run(await preset({
       'outcome.json': { candidates: ['candidates/schema-badge.json'], pending: [], notes: '说明' },
       'candidates/schema-badge.json': { ...SESSION, fields: [{ name: 'title', displayName: '标题', type: 'text', constraints: { minLength: 5, maxLength: 2 } }] },
@@ -260,7 +266,8 @@ describe('命令行', () => {
         [['--task', '模板辅助修改', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--out', out], '模板辅助修改要用 --request'],
         [[...base_(), '--out', out, '--key-env', 'RW_TEST_MISSING_KEY'], '缺少环境变量 RW_TEST_MISSING_KEY'],
         [[...base_(), '--out', base], '轮次目录必须不存在或为空'],
-        [[...base_(), '--out', out, '--domain', 'price-tag'], '没有领域约定包 price-tag；可用：route-sign'],
+        [[...base_(), '--out', out, '--domain', 'asset-tag'], '没有领域约定包 asset-tag；可用：price-tag、route-sign'],
+        [[...base_(), '--out', out, '--domain', '_template'], '没有领域约定包 _template；可用：price-tag、route-sign'],
         [[...base_(), '--out', out, '--sample', brief], '示例图不是 PNG、JPEG 或 WebP'],
         [[...base_(), '--out', out, '--max-turns', '0'], '--max-turns 必须是正整数'],
       ];

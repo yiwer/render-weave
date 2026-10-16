@@ -1,0 +1,9 @@
+{
+  "template": "线路牌主模板",
+  "mode": "final",
+  "items": [
+    { "id": "current-15", "dataset": { "id": "ds-366-pingshan" }, "parameters": { "currentIndex": 15 }, "output": { "width": 740, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "no-current", "dataset": { "id": "ds-366-pingshan" }, "parameters": { "currentIndex": 0 }, "output": { "width": 740, "height": 165, "dpi": 120, "format": "png" } },
+    { "id": "last-stop", "dataset": { "id": "ds-366-pingshan" }, "parameters": { "currentIndex": 59 }, "output": { "width": 740, "height": 165, "dpi": 120, "format": "png" } }
+  ]
+}

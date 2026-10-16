@@ -1,0 +1,47 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站点",
+  "version": 1,
+  "displayName": "站点",
+  "description": "公交线路牌上的一个站点：站名、类别标记（模板按取值选图）、所在路段名",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    },
+    {
+      "name": "marks",
+      "displayName": "设施换乘标记",
+      "description": "站名上方的类别标记，模板按取值选图：地铁→icon-metro、医院→icon-hospital；站名上方的蓝色圆形数字标记为早期错误设计，不入库",
+      "type": "list",
+      "items": {
+        "type": "text",
+        "constraints": {
+          "enum": [
+            "地铁",
+            "医院"
+          ]
+        }
+      },
+      "constraints": {
+        "maxItems": 3
+      }
+    },
+    {
+      "name": "roadName",
+      "displayName": "路段名",
+      "description": "该站所处路段（底带路名）；连续同名的站点由模板合并为一个格子",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 10
+      }
+    }
+  ]
+}

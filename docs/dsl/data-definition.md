@@ -1,4 +1,4 @@
-# 数据定义与数据集（DSL 1.0）
+# 数据  定义与数据集（DSL 1.0）
 
 数据定义描述一类图上随业务变化的信息：有哪些字段、各是什么类型、受什么约束。数据集是一份按某个静态数据定义填写的业务数据。版式、颜色与固定装饰写在模板里，不属于数据定义。
 
@@ -158,7 +158,7 @@
 
 | 类别 | 问题代码 | 例子 |
 |---|---|---|
-| 约束冲突 | `definition.constraintConflict` | `minLength` 大于 `maxLength`；下界大于上界；`integer` 时上下界之间没有整数；枚举值违反长度、正则、范围或整数要求 |
+| 约束冲突 | `definition.constraintConflict` | `minLength` 大[]()于 `maxLength`；下界大于上界；`integer` 时上下界之间没有整数；枚举值违反长度、正则、范围或整数要求 |
 | 正则不合法 | `definition.invalid` | `pattern` 不是合法的 ECMAScript 正则（Unicode 模式） |
 | 有效数字超过 15 位 | `definition.invalid` | `min`、`max`、数值枚举超过 15 位有效数字（M112） |
 | 字段名称重复 | `definition.invalid` | 同一数据定义中两个字段同名 |

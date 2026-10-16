@@ -1,0 +1,47 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "道路段",
+  "base": { "name": "停靠站点", "version": 1 },
+  "parameters": [
+    { "name": "isFirst", "displayName": "是否首段", "visibility": "public", "type": "boolean" }
+  ],
+  "derived": [
+    {
+      "name": "showSep",
+      "displayName": "显示左分隔线",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "isFirst" }, "op": "eq", "right": { "value": true } }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 5, "max": 400 }, "height": { "min": 6, "max": 14 } },
+    "layout": { "mode": "free" },
+    "fill": "#D6D6D6",
+    "children": [
+      {
+        "type": "rect",
+        "name": "分隔线",
+        "place": { "left": 0, "top": 0, "width": { "fixed": 0.5 }, "height": "fill" },
+        "fill": "#FFFFFF",
+        "visible": { "var": "showSep" }
+      },
+      {
+        "type": "text",
+        "name": "道路名",
+        "place": { "left": 0, "top": 0, "width": "fill", "height": "fill" },
+        "content": [ { "slot": "road" } ],
+        "font": "res:font-hei-regular",
+        "fontSize": 5,
+        "color": "#0072BC",
+        "horizontalAlign": "distribute",
+        "verticalAlign": "center",
+        "padding": { "left": 1.2, "right": 1.2 },
+        "fit": { "steps": ["compressGlyphs", "shrink"], "compressMin": 0.6, "minFontSize": 5, "onFail": "hint" }
+      }
+    ]
+  }
+}

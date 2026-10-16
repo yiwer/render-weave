@@ -404,6 +404,10 @@ describe('命令行', () => {
     expect((await post({ type: 'approve' })).status).toBe(409);
     expect((await post({ type: 'confirmRest', confirmed: true }, { origin: 'https://evil.example' })).status).toBe(403);
     expect((await fetch(`${url}api/review`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: '{"type":"reopen"}' })).status).toBe(415);
+    // 非 UTF-8 的请求体（Windows 命令行按本地代码页发出的中文）拒绝，不把乱码存进 review.json。
+    const gbk = Buffer.concat([Buffer.from('{"type":"reject","comment":"'), Buffer.from([0xb5, 0xd8, 0xb1, 0xea]), Buffer.from('"}')]);
+    const garbled = await fetch(`${url}api/review`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: gbk });
+    expect([garbled.status, ((await garbled.json()) as { error: string }).error]).toEqual([400, expect.stringContaining('不是有效的 UTF-8')]);
     const rebound = await new Promise<number>((done, fail) => {
       const request = httpRequest(`${url}api/review`, { headers: { host: 'attacker.example' } }, (response) => { response.resume(); done(response.statusCode!); });
       request.on('error', fail);

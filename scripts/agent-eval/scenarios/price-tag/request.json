@@ -1,0 +1,6 @@
+{
+  "template": "商品价签",
+  "parameters": {},
+  "output": { "width": 100, "height": 52, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

@@ -1,0 +1,59 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "站点",
+  "version": 1,
+  "displayName": "站点",
+  "description": "公交线路牌上的单个站点：站名、站顶地标/换乘图标、可换乘地铁线路、所属道路段。",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "description": "站点名称，牌面竖排显示。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 10
+      }
+    },
+    {
+      "name": "icon",
+      "displayName": "站顶图标",
+      "description": "站名上方的地标/换乘图标（地铁、医院等），引用图片资源。",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "transferLines",
+      "displayName": "换乘地铁线路",
+      "description": "该站可换乘的地铁线路号，牌面以站名下方圈号显示。",
+      "type": "list",
+      "items": {
+        "type": "number",
+        "constraints": {
+          "integer": true,
+          "min": 1,
+          "max": 20
+        }
+      },
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 4
+      }
+    },
+    {
+      "name": "roadName",
+      "displayName": "道路段名称",
+      "description": "该站所处路段的道路名；牌面底部道路带由模板按相邻同名合并显示。",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 12
+      }
+    }
+  ]
+}

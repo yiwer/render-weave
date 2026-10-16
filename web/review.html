@@ -263,7 +263,7 @@ function render() {
   $('dir').textContent = round.dir;
   $('round').textContent = `第 ${round.round} 轮`;
   syncPreview();
-  $('content').replaceChildren(conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection());
+  $('content').replaceChildren(...[conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection()].filter(Boolean));
 }
 
 function blocking() {

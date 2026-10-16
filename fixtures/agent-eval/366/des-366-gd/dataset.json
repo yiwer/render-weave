@@ -1,0 +1,317 @@
+{
+  "dataset": {
+    "id": "route-366-pszhbz",
+    "name": "366路 开往坪山综保场站",
+    "staticSchema": {
+      "name": "公交线路牌",
+      "version": 1
+    },
+    "origin": {
+      "kind": "manual",
+      "note": "按 sample.png 设计稿转录"
+    }
+  },
+  "data": {
+    "routeNo": "366",
+    "operatorName": "东部公交",
+    "fareType": "分段收费",
+    "boardingFare": 2,
+    "fullFare": 10,
+    "serviceStart": "06:50",
+    "serviceEnd": "22:20",
+    "stations": [
+      {
+        "name": "皇岗口岸公交接驳站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1",
+        "roadName": "福田路"
+      },
+      {
+        "name": "福滨新村",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2",
+        "roadName": "滨河大道"
+      },
+      {
+        "name": "赤尾地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "roadName": "滨河大道"
+      },
+      {
+        "name": "滨河华强天桥",
+        "landmark": "res:landmark-1",
+        "roadName": "滨河大道"
+      },
+      {
+        "name": "爱华南天桥",
+        "roadName": "宝安路"
+      },
+      {
+        "name": "上步南天桥",
+        "roadName": "宝安路"
+      },
+      {
+        "name": "鹿丹村",
+        "roadName": "宝安路"
+      },
+      {
+        "name": "宝安南路",
+        "roadName": "宝安北路"
+      },
+      {
+        "name": "振业大厦",
+        "landmark": "res:landmark-2",
+        "roadName": "宝安北路"
+      },
+      {
+        "name": "西湖宾馆",
+        "roadName": "宝安北路"
+      },
+      {
+        "name": "宝安北路",
+        "roadName": "宝安北路"
+      },
+      {
+        "name": "市安全教育基地",
+        "roadName": "梅园路"
+      },
+      {
+        "name": "笋岗街道办",
+        "roadName": "梅园路"
+      },
+      {
+        "name": "洪湖公园",
+        "landmark": "res:landmark-1",
+        "roadName": "文锦北路"
+      },
+      {
+        "name": "东晓街道办",
+        "landmark": "res:landmark-2",
+        "roadName": "文锦北路"
+      },
+      {
+        "name": "草埔地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-4",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "荣超花园",
+        "landmark": "res:landmark-2",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "深圳东站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "龙珠花园",
+        "landmark": "res:landmark-1",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "大芬地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "桂芳园",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "丹竹头地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "深坑居民小组",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "六约地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "牛始埔居民小组",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "六约天桥",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "塘坑地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "横岗街道办",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "力嘉创意文化园",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "横岗志健广场",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "横岗地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-1",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "永湖地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2",
+        "roadName": "龙岗大道"
+      },
+      {
+        "name": "马峦山郊野公园",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "碧湖春天花园",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "碧桂园凤凰公馆",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "石楼围居民小组",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "润樾山花园",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山大道沙湖路口",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "佳华沙湖广场",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "深业东城国际",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "锦龙地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山城市候机楼",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山大道同富支路口",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山大道东纵路口",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山围地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "landmark": "res:landmark-2",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "飞东村",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山广场地铁站",
+        "facilities": [
+          "地铁"
+        ],
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山区委区政府",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "大工业区体育中心",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "松子坑",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "盘古石",
+        "roadName": "坪山大道"
+      },
+      {
+        "name": "坪山区群团活动中心",
+        "roadName": "兰景北路"
+      },
+      {
+        "name": "坪山中医院",
+        "facilities": [
+          "医院"
+        ],
+        "roadName": "兰景北路"
+      },
+      {
+        "name": "坑梓汽车站",
+        "roadName": "兰景北路"
+      },
+      {
+        "name": "坑梓沙梨园小区",
+        "roadName": "兰景北路"
+      },
+      {
+        "name": "兰景吉康路口",
+        "roadName": "兰景北路"
+      },
+      {
+        "name": "坑梓中心幼儿园",
+        "roadName": "丹梓大道"
+      },
+      {
+        "name": "坪山综保场站",
+        "roadName": "丹梓大道"
+      }
+    ]
+  }
+}

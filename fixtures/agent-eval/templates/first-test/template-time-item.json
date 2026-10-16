@@ -1,0 +1,29 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "时刻项",
+  "base": { "name": "单值·时刻", "version": 1 },
+  "parameters": [
+    { "name": "isLast", "displayName": "是否末项", "visibility": "public", "type": "boolean" }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 2, "max": 30 }, "height": { "min": 3, "max": 8 } },
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "text",
+        "name": "时刻",
+        "place": { "left": 0, "top": 0, "width": "hug", "height": "hug" },
+        "content": [ { "slot": "value", "format": "HH:mm" }, { "text": "/" } ],
+        "font": "res:font-hei-medium",
+        "fontSize": 4,
+        "color": "#1A1A1A",
+        "states": {
+          "by": { "var": "isLast" },
+          "cases": {
+            "true": { "content": [ { "slot": "value", "format": "HH:mm" } ] }
+          }
+        }
+      }
+    ]
+  }
+}

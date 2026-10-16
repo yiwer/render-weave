@@ -1,0 +1,107 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌（单方向）",
+  "description": "一条线路一个行驶方向的全部业务数据。终点站取站点列表末项，下一站、已过站由本站序号派生；本站序号是出图参数，不进数据集。",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 10
+      }
+    },
+    {
+      "name": "routeNoImage",
+      "displayName": "线路号艺术字图片",
+      "description": "牌面线路号使用艺术字图片时的呈现资源，可选。",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "fareSystem",
+      "displayName": "票制",
+      "description": "如“一票制”“分段收费”。",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 10
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价",
+      "description": "票价数值，单位“元”由模板拼接。",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "firstDepartTime",
+      "displayName": "始发站首班时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "lastDepartTime",
+      "displayName": "始发站末班时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "scheduleNote",
+      "displayName": "定时班车备注",
+      "description": "定时班车的运营日备注，如“工作日运营”，可选。",
+      "type": "text",
+      "constraints": {
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "scheduledTimes",
+      "displayName": "定时班车时刻",
+      "description": "定时班车发车时刻列表，可选；无定时班车时省略。",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "maxItems": 60
+      }
+    },
+    {
+      "name": "stations",
+      "displayName": "站点列表",
+      "description": "按行驶方向顺序的停靠站，首项为始发站、末项为终点站。",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 50
+      }
+    }
+  ]
+}

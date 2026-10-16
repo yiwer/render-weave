@@ -1,0 +1,24 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "站点标识",
+  "base": { "name": "单值·文本", "version": 1 },
+  "artboard": {
+    "sizeRange": { "width": { "min": 3, "max": 12 }, "height": { "min": 3, "max": 12 } },
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "image",
+        "name": "标识图",
+        "place": { "left": 0.5, "top": 1, "width": { "fixed": 8 }, "height": { "fixed": 8 } },
+        "fit": "contain",
+        "states": {
+          "by": { "var": "value" },
+          "cases": {
+            "地铁": { "source": "res:icon-metro" },
+            "医院": { "source": "res:icon-hospital" }
+          }
+        }
+      }
+    ]
+  }
+}

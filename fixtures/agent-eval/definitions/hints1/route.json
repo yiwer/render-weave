@@ -1,0 +1,113 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "公交线路牌",
+  "version": 1,
+  "displayName": "公交线路牌",
+  "description": "一条线路一个行驶方向的牌面业务信息；终点为站点列表末项、下一站为本站后一项，均由模板计算，不进数据",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "routeNoArt",
+      "displayName": "线路号艺术字",
+      "description": "牌面线路号使用艺术字图片时引用资源，否则省略",
+      "type": "image",
+      "constraints": {
+        "allowedSources": [
+          "resource"
+        ]
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营企业",
+      "description": "牌面右上角运营企业名称",
+      "type": "text",
+      "constraints": {
+        "maxLength": 16
+      }
+    },
+    {
+      "name": "fareType",
+      "displayName": "票制",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价（元）",
+      "description": "票价数值，展示单位由模板拼接",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0
+      }
+    },
+    {
+      "name": "stops",
+      "displayName": "停靠站点",
+      "description": "按本方向行驶顺序的全部停靠站，末项即终点站",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 60
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "始发站服务开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "始发站服务结束时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceNote",
+      "displayName": "服务备注",
+      "description": "如运营日、班车性质等说明文字",
+      "type": "text",
+      "constraints": {
+        "maxLength": 40
+      }
+    },
+    {
+      "name": "departureTimes",
+      "displayName": "始发站发车时刻",
+      "description": "定时班车的始发发车时刻列表，非定时班车省略",
+      "type": "list",
+      "items": {
+        "type": "time"
+      },
+      "constraints": {
+        "maxItems": 60
+      }
+    }
+  ]
+}
