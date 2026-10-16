@@ -24,3 +24,11 @@ status: accepted
 - 并发与额度。
 
 依据：M189、M190、M205、M209–M212；验证记录见 [Agent 运行方式验证](../agent-validation.md)。
+
+## 修订（2026-10-16，M232）
+
+模型改为经 OpenCode Go 调用：缺省 Claude Haiku 5.5（Anthropic 兼容端点），可选 Gemini 4 Argon；千问不再使用。本 ADR 的核心不变：仍是 Claude Code 无头运行、受限模式、只读 MCP、成果经人审核，换的只是端点与模型名，延续"模型可以替换"。
+
+- **Gemini 只有 Google 接口**：`agent run` 在本进程里起一个转换代理，只绑定 127.0.0.1，随本轮结束关闭。Claude Code 连代理，环境变量里只有本轮随机令牌；上游 key 留在 RenderWeave 进程内。这比直接把 key 交给 Claude Code 更收紧。
+- **素材经过的外部服务**改为 OpenCode，以及其后的模型提供方：Haiku 是 Anthropic，Gemini 是 Google。上文"代价"中千问 token plan 那一条由此取代，对外说明要同步更新。
+- **两个模型都已在当前资料上通过评估门槛**，见[第三阶段验收](../stage3-acceptance.md#模型对比)。

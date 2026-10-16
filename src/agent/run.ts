@@ -4,6 +4,7 @@
  * 只连本仓库的 `renderweave mcp`；结束后校验 Agent 交回的 outcome.json，写出轮次记录、成果与校验结果。
  *
  * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；key 只经环境变量传入，不写任何文件。
+ * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 时在本进程起转换代理，Claude Code 只拿到本轮令牌（M232）。
  *
  * 多轮（M58）：带 from 发起下一轮时，沿用上一轮的任务、素材、基准、出图请求与修改要求，工作区重新取快照；
  * 上一轮成果（含审核时的修改）放进 candidates/ 作为起点，原样记录放进 previous/，反馈放进 docs/feedback.md。
@@ -19,6 +20,7 @@ import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
+import { isGoogleModel, startModelProxy } from './model-proxy.js';
 import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type PendingItem } from './outcome.js';
 import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
@@ -26,11 +28,14 @@ import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } fro
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
-export const DEFAULT_ENDPOINT = 'https://token-plan.maas.qianwenaiapi.com/apps/anthropic';
-export const DEFAULT_MODEL = 'qwen3.8-max';
+/** 缺省用 OpenCode Go 上的 Claude Haiku 5.5（M232）。 */
+export const DEFAULT_ENDPOINT = 'https://opencode.ai/inference/go/anthropic';
+export const DEFAULT_MODEL = 'claude-haiku-5-5';
 /** Claude Code 的轻量任务（如生成标题）用的模型，不看图。 */
-export const DEFAULT_SMALL_MODEL = 'qwen3.7-plus';
-export const DEFAULT_KEY_ENV = 'QWEN_TOKEN_PLAN_API_KEY';
+export const DEFAULT_SMALL_MODEL = 'claude-haiku-5-5';
+export const DEFAULT_KEY_ENV = 'OPEN_CODE_API_KEY';
+/** Gemini 只提供 Google 接口，经本机转换代理连这个端点；轻量任务模型缺省与模型相同（M232）。 */
+export const DEFAULT_GOOGLE_ENDPOINT = 'https://opencode.ai/inference/go/google/v1beta';
 const AGENT_MATERIALS = fileURLToPath(new URL('../../agent/', import.meta.url));
 const BIN = fileURLToPath(new URL('../bin.js', import.meta.url));
 /** 子进程只继承这些系统变量。 */
@@ -93,7 +98,8 @@ export interface RoundRecord {
   readonly endedAt: string;
   readonly inputs: RoundInputs;
   readonly runtime: {
-    readonly model: string; readonly smallModel: string; readonly endpoint: string; readonly maxTurns: number;
+    /** google：模型只提供 Google 接口，本轮经本机转换代理连接 endpoint（M232）。 */
+    readonly model: string; readonly smallModel: string; readonly protocol: 'anthropic' | 'google'; readonly endpoint: string; readonly maxTurns: number;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
   readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[] };
@@ -212,6 +218,13 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
   if (options.feedback !== undefined) await requireFile(options.feedback, '反馈');
   if (options.key === '') throw new AgentUsageError(`环境变量 ${options.keyEnv} 为空`);
+  const model = options.model ?? DEFAULT_MODEL;
+  const google = isGoogleModel(model);
+  const smallModel = options.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL);
+  if (isGoogleModel(smallModel) !== google) {
+    throw new AgentUsageError('模型与轻量任务模型要同为 Gemini，或同为 Anthropic 接口的模型：Gemini 经本机转换代理连接，两者共用一个端点');
+  }
+  const endpoint = options.endpoint ?? (google ? DEFAULT_GOOGLE_ENDPOINT : DEFAULT_ENDPOINT);
   const roundDir = resolve(options.out);
   if (await exists(roundDir) && (!(await isDirectory(roundDir)) || (await readdir(roundDir)).length > 0)) {
     throw new AgentUsageError(`轮次目录必须不存在或为空：${options.out}`);
@@ -293,8 +306,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     } : null,
   };
 
-  const model = options.model ?? DEFAULT_MODEL, smallModel = options.smallModel ?? DEFAULT_SMALL_MODEL;
-  const endpoint = options.endpoint ?? DEFAULT_ENDPOINT, maxTurns = options.maxTurns ?? task.maxTurns;
+  const maxTurns = options.maxTurns ?? task.maxTurns;
   const mcpConfig = join(logsDir, 'mcp.json');
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', resolve(options.resources), '--root', agentDir,
@@ -302,9 +314,11 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   ] } } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
+  // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
+  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl') }) : undefined;
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
-    ANTHROPIC_BASE_URL: endpoint, ANTHROPIC_AUTH_TOKEN: options.key, ANTHROPIC_MODEL: model,
+    ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
     ANTHROPIC_DEFAULT_OPUS_MODEL: model, ANTHROPIC_DEFAULT_SONNET_MODEL: model, ANTHROPIC_DEFAULT_HAIKU_MODEL: smallModel,
     CLAUDE_CODE_SUBAGENT_MODEL: model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
   });
@@ -313,7 +327,12 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     '--max-turns', String(maxTurns), '--no-session-persistence'];
 
   const started = Date.now();
-  const executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir });
+  let executed: Awaited<ReturnType<typeof execute>>;
+  try {
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir });
+  } finally {
+    await proxy?.close();
+  }
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
@@ -357,7 +376,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
   const record: RoundRecord = {
     format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
-    runtime: { model, smallModel, endpoint, maxTurns, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
+    runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
     run: { ...usage, exitCode: executed.exitCode, ...(executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };

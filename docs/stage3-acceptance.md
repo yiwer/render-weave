@@ -273,6 +273,17 @@
 5. **缺省模型**：Haiku 5.5 已过门槛，比千问快 3–6 倍。换缺省会改变素材流向的外部服务（M212），要先确认客户资料能否经过 OpenCode 与 Anthropic，见「模型对比」。
 6. **第二阶段遗留**：`resources-import` 写入没有初始化的目录时，报的是 `ENOENT: realpath`，没有提示先执行 `resources-init`。
 
+## 验收后的变更
+
+- **模型改用 OpenCode Go**（M232，用户决定）：
+  - 缺省改为 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon，千问不再使用。「后续」第 5 条由此了结。
+  - 上文"缺省模型仍是 qwen3.8-max"等表述是验收当时的状态。
+- **评估代理移进产品**：`scripts/agent-eval/proxy.ts` 移入 `src/agent/model-proxy.ts`，由 `agent run` 在选 Gemini 时自动起用。Standards 第 1 项的来源限制保留，另加了本轮令牌：Claude Code 只拿到令牌，拿不到上游 key。OpenAI 格式不再支持。
+- **验证**：
+  - Windows 全量 39 个文件、745 项通过：删掉旧代理的 5 项，新增 Gemini 经代理的 2 项；新用例去掉令牌检查后变红。
+  - Linux 容器同一份代码 741 项通过、4 项 Windows 专用用例跳过。
+  - 用真实模型各跑一轮价签数据定义提取：不带模型参数用 Haiku，`--model gemini-4-argon-contributor` 经内置代理，都合格。
+
 ## 复现与证据位置
 
 - 轮次目录、批次、时间线与审核服务日志在 `out/agent-t09/`（不进版本库）；时间线是 `out/agent-t09/timeline.txt`。

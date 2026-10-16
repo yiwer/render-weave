@@ -45,7 +45,7 @@ node dist/bin.js mcp --workspace docs/examples/m402-dsl --resources fixtures/res
 node dist/bin.js agent run --task 数据定义提取 --sample path/to/sample.png --brief path/to/brief.md --resources fixtures/resources --out out/rounds/r1 --domain route-sign
 ```
 
-发起一轮数据定义提取；数据集提取用 `--task 数据集提取 --definition <数据定义> --workspace <工作区>`，模板辅助设计用 `--task 模板辅助设计 --dataset <数据集ID> --request <出图请求.json> --workspace <工作区>`，修改已保存的模板用 `--task 模板辅助修改 --request <出图请求.json> --requirement <修改要求.md> --workspace <工作区>`。审核不通过时用 `--from <上一轮目录> --feedback <反馈.md>` 发起下一轮，沿用上一轮的输入，并拿到上一轮成果（含审核时的修改）与反馈。Claude Code 在空白环境中以受限模式运行，只连只读 MCP 服务；key 只从环境变量读取，缺省 `QWEN_TOKEN_PLAN_API_KEY`，用 `--key-env` 可换成别的变量，例如 OpenCode Go 的 `OPEN_CODE_API_KEY`。成果先校验结构，再经引擎校验，退出码 0 表示合格、1 表示不合格。
+发起一轮数据定义提取；数据集提取用 `--task 数据集提取 --definition <数据定义> --workspace <工作区>`，模板辅助设计用 `--task 模板辅助设计 --dataset <数据集ID> --request <出图请求.json> --workspace <工作区>`，修改已保存的模板用 `--task 模板辅助修改 --request <出图请求.json> --requirement <修改要求.md> --workspace <工作区>`。审核不通过时用 `--from <上一轮目录> --feedback <反馈.md>` 发起下一轮，沿用上一轮的输入，并拿到上一轮成果（含审核时的修改）与反馈。Claude Code 在空白环境中以受限模式运行，只连只读 MCP 服务；模型缺省为 OpenCode Go 上的 Claude Haiku 5.5，`--model gemini-4-argon-contributor` 换成 Gemini 4 Argon（经本机转换代理连接 Google 接口）；key 只从环境变量读取，缺省 `OPEN_CODE_API_KEY`。成果先校验结构，再经引擎校验，退出码 0 表示合格、1 表示不合格。
 
 ```powershell
 node dist/bin.js agent review out/rounds/r1

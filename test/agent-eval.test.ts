@@ -168,7 +168,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
       format: 'renderweave-agent-eval/1', mcpContract: '0.3.0', consecutivePasses: 2,
-      runtime: { model: 'qwen3.8-max', servedModels: ['qwen3.8-max'], claudeCodeVersions: ['fake-1'] },
+      runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       gate: { pass: false }, totals: { outputTokens: 222 * 4 },
     });
     expect(Object.keys(report.materials)).toEqual(expect.arrayContaining(['agent/guide.md', 'agent/domains/route-sign.md', 'agent/tasks/template-design.md']));

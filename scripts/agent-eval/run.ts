@@ -9,7 +9,8 @@
  *   后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛。
  *   两种用法都可加 --reports <目录>：报告写到哪里，缺省 docs/agent-eval/reports/<名称>.json
  *
- * 需要 key（缺省读环境变量 QWEN_TOKEN_PLAN_API_KEY，由 renderweave agent run 读取，本命令不读取其值），耗时长、消耗额度，
+ * 模型缺省与 renderweave agent run 相同（OpenCode Go 上的 Claude Haiku 5.5）；--model gemini-… 时由 agent run 起本机转换代理。
+ * 需要 key（缺省读环境变量 OPEN_CODE_API_KEY，由 renderweave agent run 读取，本命令不读取其值），耗时长、消耗额度，
  * 所以不进 npm test。退出码：0 门槛通过；1 门槛未通过；2 用法错误。
  */
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
@@ -42,7 +43,7 @@ if (values.rescore !== undefined) {
   await finish(values.label ?? manifest.label, manifest.startedAt, outDir, await scoreAll(outDir, manifest), manifest.provenance, manifest.endedAt);
 }
 
-const keyEnv = values['key-env'] ?? 'QWEN_TOKEN_PLAN_API_KEY';
+const keyEnv = values['key-env'] ?? 'OPEN_CODE_API_KEY';
 if (!process.env[keyEnv]) fail(`缺少环境变量 ${keyEnv}：key 只经环境变量传入`);
 try { await stat(join(REPO, 'dist/bin.js')); } catch { fail('没有 dist/bin.js：先运行 npm run build'); }
 const jobs = positive(values.jobs, 3, '--jobs');

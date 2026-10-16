@@ -100,8 +100,9 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --requirement 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在
   --from        上一轮的轮次目录：下一轮沿用它的任务、素材、基准、出图请求与修改要求，拿到它的成果（含审核时的修改）
   --feedback    带 --from 时必须给：给下一轮的反馈（Markdown）
-  --key-env     可选，key 所在的环境变量名，缺省 QWEN_TOKEN_PLAN_API_KEY；key 只经环境变量传入，不写任何文件
-  --model、--small-model、--endpoint、--max-turns、--claude  可选，模型、轻量任务模型、兼容端点、轮数上限与 Claude Code 可执行文件
+  --key-env     可选，key 所在的环境变量名，缺省 OPEN_CODE_API_KEY；key 只经环境变量传入，不写任何文件
+  --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
+  --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
 
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配

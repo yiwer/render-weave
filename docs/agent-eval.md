@@ -32,17 +32,9 @@ npx tsx scripts/agent-eval/run.ts
 | `--rescore <目录>` | 只按已有的轮次目录重新评分并重写报告，不调用模型；评分规则改了以后用它 |
 | `--repetitions <起-止>` | 分段跑：模型的额度窗口装不下一整遍时，先 `--repetitions 1-1`，额度恢复后用同一个 `--label` 跑 `--repetitions 2-2`。后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛 |
 
-**只提供 OpenAI 或 Google 接口的模型**：Claude Code 只会发 Anthropic Messages 请求。评估这类模型时先启动转换代理，再把 `--endpoint` 指向它：
+**模型**：缺省与 `renderweave agent run` 相同，即 OpenCode Go 上的 Claude Haiku 5.5。评估 Gemini 4 Argon 时加 `--model gemini-4-argon-contributor`：Gemini 只有 Google 接口，`agent run` 会在每轮里自动起本机转换代理（M232）。
 
-```bash
-npx tsx scripts/agent-eval/proxy.ts --port 47410 --log out/tools/proxy.jsonl
-npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contributor --small-model gemini-4-argon-contributor \
-  --endpoint http://127.0.0.1:47410 --key-env OPEN_CODE_API_KEY
-```
-
-代理只用于评估：只接受本机命令行的请求（Host 必须是本机地址加端口，拒绝带 Origin 的网页请求与非 JSON 请求），上游 key 只从环境变量（缺省 `OPEN_CODE_API_KEY`）读进内存。模型名以 `gemini` 开头的转成 Google generateContent，其余转成 OpenAI Chat Completions。上游一次性返回，代理再拼成流式事件；日志只记用时、状态、token 与内容块类型，不记内容。
-
-key 由 `renderweave agent run` 从环境变量读取（缺省 `QWEN_TOKEN_PLAN_API_KEY`），评估命令只检查变量存在，不读取它的值。退出码：0 门槛通过；1 门槛未通过；2 用法错误。
+key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KEY`），评估命令只检查变量存在，不读取它的值。退出码：0 门槛通过；1 门槛未通过；2 用法错误。
 
 每个场景的每一次在 `<out>/run-<第几次>/<场景>/` 下，含各轮的轮次目录（可以用 `renderweave agent review` 打开）与场景自己的工作区。
 

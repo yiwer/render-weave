@@ -25,15 +25,13 @@ npm run build
 - 成果放在 `out/build/`（不进版本库）。每轮的轮次目录必须是新目录，已存在就换个名字。
 - 用 `$LASTEXITCODE` 看退出码。`agent run`：0 成果合格，1 不合格（问题清单在 `check.json`），2 用法错误。
 
-**key**：模型的 key 只放在环境变量里，renderweave 不会把它写进任何文件，也不会打印。缺省读 `QWEN_TOKEN_PLAN_API_KEY`（千问 token plan）。在 Windows 的"编辑账户的环境变量"里新建它，然后重开终端。不要把 key 写进命令行或脚本。
+**模型与 key**：模型经 OpenCode Go 套餐调用（M232），key 放在环境变量 `OPEN_CODE_API_KEY`。在 Windows 的"编辑账户的环境变量"里新建它，然后重开终端。renderweave 不会把 key 写进任何文件，也不会打印；不要把 key 写进命令行或脚本。
 
-换模型或端点时，用 `--model`、`--small-model`、`--endpoint` 与 `--key-env <变量名>` 指定。换之前要跑一次评估门槛并达线，见 [Agent 评估](agent-eval.md)。已达线的另一组是 OpenCode Go 套餐上的 Claude Haiku 5.5，第三阶段验收的端到端代建用的就是它。key 放在环境变量 `OPEN_CODE_API_KEY`，每条 `agent run` 命令末尾加上：
+- **缺省是 Claude Haiku 5.5**：本页命令不写模型参数，用的就是它。第三阶段验收的端到端代建用的也是它，每轮几分钟。
+- **质量要求高的单子用 Gemini 4 Argon**：在 `agent run` 命令末尾加 `--model gemini-4-argon-contributor`。评估中它的成绩最好，但模板轮要 20 多分钟，单价约为 Haiku 的 40 倍。Gemini 只有 Google 接口，renderweave 会在本机自动起转换代理，不用另外准备。带反馈的下一轮（`--from`）不沿用模型，要继续用 Gemini 时同样加这个参数。
+- 换别的模型或端点用 `--model`、`--small-model`、`--endpoint` 与 `--key-env <变量名>`；换之前要跑一次评估门槛并达线，见 [Agent 评估](agent-eval.md)。
 
-```powershell
---model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --key-env OPEN_CODE_API_KEY
-```
-
-示例图、项目说明与工作区快照会发给所选的模型服务，客户资料能否外发要先确认。OpenCode Go 按 5 小时、每周、每月三个窗口计额度，窗口用完时报 429，见第 2 步的"模型服务报错"。实测几个模型的 5 小时窗口在同一时刻用完，按共用一个池对待，不要同时跑太多轮。
+示例图、项目说明、工作区快照与工具返回的预览图会经 OpenCode 发给模型提供方（Haiku 是 Anthropic，Gemini 是 Google），客户资料能否外发要先确认。OpenCode Go 按 5 小时、每周、每月三个窗口计额度，窗口用完时报 429，见第 2 步的"模型服务报错"。实测几个模型的 5 小时窗口在同一时刻用完，按共用一个池对待，不要同时跑太多轮。
 
 **资源仓库与工作区**：
 
@@ -199,13 +197,13 @@ node dist/bin.js agent apply out/build/r4-revision
 
 ## 用时与用量参考
 
-以下是 qwen3.8-max 在 M402、366 上的实测，每轮从发起到交回成果。审核与写说明的人工时间另计，第三阶段验收文档有逐步记录。
+以下是 M402、366 与价签的实测，每轮从发起到交回成果。Haiku 取评估与第三阶段端到端代建，Gemini 取评估。审核与写说明的人工时间另计，见[第三阶段验收](stage3-acceptance.md)。
 
-| 轮次 | 用时 | 输出 tokens |
+| 轮次 | Claude Haiku 5.5 | Gemini 4 Argon |
 |---|---|---|
-| 数据定义提取 | 11–19 分钟 | 3.5–5.5 万 |
-| 数据集提取 | 14–24 分钟 | 4.3–5.4 万 |
-| 模板辅助设计 | 30–50 分钟 | 8.6–11.6 万 |
-| 模板辅助修改 | 18–23 分钟 | 4–6.6 万 |
+| 数据定义提取 | 1–5 分钟，输出 1.0–5.9 万 tokens | 4–7 分钟，1.6–2.2 万 |
+| 数据集提取 | 1–5 分钟，0.8–5.9 万 | 2–4 分钟，0.6–1.3 万 |
+| 模板辅助设计 | 2–9 分钟，2.8–10 万 | 21–25 分钟，8.2–8.9 万 |
+| 模板辅助修改 | 1–4 分钟，1.2–3.1 万 | 未测 |
 
 每轮的用时、轮数、token 与实际服务的模型记在轮次目录的 `round.json`，审核页底部也会显示。

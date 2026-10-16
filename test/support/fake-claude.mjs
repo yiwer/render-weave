@@ -2,19 +2,54 @@
 // 用法：node fake-claude.mjs <预置成果目录|none> [Claude Code 参数…]；提示词从标准输入读。
 // 它把预置成果复制进工作目录，记录收到的参数、环境变量名（不记值）与提示词，再输出流式日志的初始化与结果消息。
 // 预置目录里有 .api-error 时，模拟模型服务报错：结果消息带 is_error 与这段文字（Claude Code 的结束方式仍是 success）。
+// 预置目录里有 .model-calls.json 时，像 Claude Code 一样依次向 ANTHROPIC_BASE_URL 发 Messages 请求，响应写进 model-calls-result.json。
+// 每项是 { body, token?, headers? }：token 为 "wrong" 时换一个错的令牌；body 中的 "{{tool_use_id}}" 换成上一次响应里第一个工具调用的 id。
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { cp, writeFile } from 'node:fs/promises';
+import { request as httpRequest } from 'node:http';
 import { join } from 'node:path';
 
 const [preset, ...args] = process.argv.slice(2);
 let prompt = '';
 for await (const chunk of process.stdin) prompt += chunk;
+const token = process.env.ANTHROPIC_AUTH_TOKEN;
 await writeFile('fake-run.json', JSON.stringify({
   args, prompt, env: Object.keys(process.env).sort(),
   configDir: process.env.CLAUDE_CONFIG_DIR, model: process.env.ANTHROPIC_MODEL, baseUrl: process.env.ANTHROPIC_BASE_URL,
-  hasToken: Boolean(process.env.ANTHROPIC_AUTH_TOKEN),
+  hasToken: Boolean(token), tokenSha256: token ? createHash('sha256').update(token).digest('hex') : null,
 }));
 if (preset !== 'none') await cp(preset, process.cwd(), { recursive: true });
+
+const calls = preset !== 'none' && existsSync(join(preset, '.model-calls.json')) ? JSON.parse(readFileSync(join(preset, '.model-calls.json'), 'utf8')) : [];
+const results = [];
+let toolUseId;
+for (const call of calls) {
+  const body = JSON.stringify(call.body).replaceAll('{{tool_use_id}}', toolUseId ?? '');
+  const base = new URL(process.env.ANTHROPIC_BASE_URL);
+  const response = await new Promise((done, fail) => {
+    const req = httpRequest({
+      host: base.hostname, port: base.port, method: 'POST', path: '/v1/messages?beta=true',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${call.token === 'wrong' ? 'wrong-token' : token}`, 'x-claude-code-session-id': 'fake-session', ...call.headers },
+    }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { text += chunk; });
+      res.on('end', () => done({ status: res.statusCode, text }));
+    });
+    req.on('error', fail);
+    req.end(body);
+  });
+  const events = response.text.startsWith('event:')
+    ? response.text.split('\n\n').filter(Boolean).map((chunk) => JSON.parse(chunk.split('\n').find((line) => line.startsWith('data: ')).slice(6)))
+    : undefined;
+  const parsed = events ? undefined : JSON.parse(response.text);
+  toolUseId = events?.find((event) => event.type === 'content_block_start' && event.content_block.type === 'tool_use')?.content_block.id
+    ?? parsed?.content?.find((block) => block.type === 'tool_use')?.id ?? toolUseId;
+  results.push({ status: response.status, ...(events ? { events } : { json: parsed }) });
+}
+if (calls.length > 0) await writeFile('model-calls-result.json', JSON.stringify(results, null, 2));
+
 const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
 write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
 const apiError = preset !== 'none' && existsSync(join(preset, '.api-error')) ? readFileSync(join(preset, '.api-error'), 'utf8') : undefined;

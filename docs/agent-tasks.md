@@ -46,8 +46,8 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--request` | 示例图对应的出图请求（主模板名、对外参数与输出尺寸）。模板辅助设计与模板辅助修改必须给；数据集提取可选，给了就用工作区已有的模板预览候选数据集 |
 | `--requirement` | 模板辅助修改的修改要求（Markdown），见[模板辅助修改](#模板辅助修改) |
 | `--from`、`--feedback` | 带反馈发起下一轮，见[下一轮](#下一轮) |
-| `--key-env` | 可选，key 所在的环境变量名，缺省 `QWEN_TOKEN_PLAN_API_KEY` |
-| `--model`、`--small-model`、`--endpoint` | 可选，缺省为千问 token plan 的 qwen3.8-max、qwen3.7-plus 与对应的兼容端点 |
+| `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
+| `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
 

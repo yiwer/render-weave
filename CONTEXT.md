@@ -22,10 +22,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **下一步**：阶段收尾只差 A11 的真人计时：请一位内部成员照[代建指南](docs/agent-guide.md)重走价签流程并记下每步用时。之后按验收文档「后续」排：
   - 交回前核对成果的只读工具；
   - 让 Agent 能查看资源图片；
-  - 小尺寸标签的缩字下限；
-  - 是否把缺省模型换成 Claude Haiku 5.5：要先确认素材能否外发到 OpenCode。
+  - 小尺寸标签的缩字下限。
 
-  key 只经环境变量：千问用 `QWEN_TOKEN_PLAN_API_KEY`，OpenCode Go 用 `OPEN_CODE_API_KEY`。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。key 只经环境变量 `OPEN_CODE_API_KEY`。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -41,8 +40,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
 - **MCP 只读工具服务**：`renderweave mcp` 提供 10 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大与 DSL 参考。工具合同 0.3.0 有快照测试，见 [MCP 工具服务](docs/mcp.md)。
-- **业务 Agent 任务**：`renderweave agent run` 支持数据定义提取、数据集提取（`--definition`）、模板辅助设计（`--dataset`、`--request`）与模板辅助修改（`--requirement`，主模板调用树中的已保存模板预置为工作副本），带反馈的下一轮用 `--from`、`--feedback`，在独占轮次目录中组装三层资料与工作区快照，按 ADR-0015 在空白环境里启动 Claude Code，只连 `renderweave mcp`。Agent 交回的成果先查结构、再经引擎校验，写出 `outcome.json`、`check.json` 与 `round.json`。`agent review` 在本机打开审核页：对照示例图、图上位置与 RenderWeave 重新渲染的草稿预览（M52；模板辅助修改另有修改前的预览与结构化差异），逐项处理待确认项、整体确认，结果存进 `review.json`，并列出轮次链；`agent apply` 只接受审核通过的轮次，工作区变化时列出差异并拒绝（`--overwrite` 覆盖，或带反馈重做），把数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。见 [业务 Agent 任务](docs/agent-tasks.md)，从示例图到出图与修改的整套操作见 [代建指南](docs/agent-guide.md)。资料在 `agent/`，领域约定包有公交线路牌 `route-sign` 与超市商品价签 `price-tag`；审核页在 `web/`。
-- **Agent 评估**：`npx tsx scripts/agent-eval/run.ts` 经产品路径跑 M402 数据定义、M402 模板与 366 转录三个场景，按 M211–M217 的检查评分，每个场景连续两次达线门槛才通过；报告只存摘要，存档在 `docs/agent-eval/reports/`。升级 Claude Code、换模型、改资料、改工具合同后必须跑，不进 `npm test`；额度窗口装不下一整遍时可分段跑。只提供 OpenAI 或 Google 接口的模型经 `scripts/agent-eval/proxy.ts` 转换后评估。qwen3.8-max 与 OpenCode Go 上的 Claude Haiku 5.5、Gemini 4 Argon 门槛通过。见 [Agent 评估](docs/agent-eval.md)。
+- **业务 Agent 任务**：`renderweave agent run` 支持数据定义提取、数据集提取（`--definition`）、模板辅助设计（`--dataset`、`--request`）与模板辅助修改（`--requirement`，主模板调用树中的已保存模板预置为工作副本），带反馈的下一轮用 `--from`、`--feedback`，在独占轮次目录中组装三层资料与工作区快照，按 ADR-0015 在空白环境里启动 Claude Code，只连 `renderweave mcp`。Agent 交回的成果先查结构、再经引擎校验，写出 `outcome.json`、`check.json` 与 `round.json`。`agent review` 在本机打开审核页：对照示例图、图上位置与 RenderWeave 重新渲染的草稿预览（M52；模板辅助修改另有修改前的预览与结构化差异），逐项处理待确认项、整体确认，结果存进 `review.json`，并列出轮次链；`agent apply` 只接受审核通过的轮次，工作区变化时列出差异并拒绝（`--overwrite` 覆盖，或带反馈重做），把数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。见 [业务 Agent 任务](docs/agent-tasks.md)，从示例图到出图与修改的整套操作见 [代建指南](docs/agent-guide.md)。模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 4 Argon 时 `agent run` 在本机起转换代理，Claude Code 只拿到本轮令牌（M232）。资料在 `agent/`，领域约定包有公交线路牌 `route-sign` 与超市商品价签 `price-tag`；审核页在 `web/`。
+- **Agent 评估**：`npx tsx scripts/agent-eval/run.ts` 经产品路径跑 M402 数据定义、M402 模板与 366 转录三个场景，按 M211–M217 的检查评分，每个场景连续两次达线门槛才通过；报告只存摘要，存档在 `docs/agent-eval/reports/`。升级 Claude Code、换模型、改资料、改工具合同后必须跑，不进 `npm test`；额度窗口装不下一整遍时可分段跑。Gemini 经 `agent run` 内置的转换代理评估。qwen3.8-max 与 OpenCode Go 上的 Claude Haiku 5.5、Gemini 4 Argon 门槛通过。见 [Agent 评估](docs/agent-eval.md)。
 - **未实现**：URL 图片、跨批次去重、动态模板、HTTP 服务、OCR 接入、在线编辑器。
 
 ## 文档地图

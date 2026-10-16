@@ -2,7 +2,10 @@
  * `renderweave agent run` 的流程测试（第三阶段票据 04、验收 A05、A06）：用假执行器代替 Claude Code，不调用模型。
  * 成果校验入口 checkAgentOutcome 用构造的工作目录覆盖结构不合格的各种情形。
  */
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,11 +55,12 @@ async function preset(files: Record<string, unknown>): Promise<string> {
   return dir;
 }
 
-const qualified = () => preset({
+const QUALIFIED = {
   'outcome.json': SUBMISSION,
   'candidates/schema-badge.json': BADGE, 'candidates/schema-session.json': SESSION, 'candidates/schema-greeting.json': GREETING,
   'scratch/dataset-draft.json': { dataset: { staticSchema: { name: '胸牌', version: 1 } }, data: {} },
-});
+};
+const qualified = () => preset(QUALIFIED);
 
 function run(presetDir: string, overrides: Partial<AgentRunOptions> = {}) {
   return runAgentTask({
@@ -144,9 +148,10 @@ describe('发起一轮数据定义提取', () => {
       expect(await readFile(join(result.roundDir, candidate.path), 'utf8')).toBe(await readFile(join(result.roundDir, 'agent', candidate.path), 'utf8'));
     }
     expect(outcome.usage).toMatchObject({ turns: 7, inputTokens: 11, outputTokens: 222, cacheReadTokens: 33, cacheCreationTokens: 44,
-      servedModel: 'qwen3.8-max', claudeCodeVersion: 'fake-1', endedBy: 'success' });
+      servedModel: 'claude-haiku-5-5', claudeCodeVersion: 'fake-1', endedBy: 'success' });
     expect(result.record).toMatchObject({ format: 'renderweave-round/1', verdict: 'qualified',
-      run: { exitCode: 0, mcp: ['rw:connected'] }, runtime: { model: 'qwen3.8-max', maxTurns: 40 },
+      run: { exitCode: 0, mcp: ['rw:connected'] },
+      runtime: { model: 'claude-haiku-5-5', smallModel: 'claude-haiku-5-5', protocol: 'anthropic', endpoint: 'https://opencode.ai/inference/go/anthropic', maxTurns: 40 },
       inputs: { domain: null, workspace: { documents: 5 } } });
     expect(JSON.parse(await readFile(join(result.roundDir, 'check.json'), 'utf8'))).toMatchObject({ verdict: 'qualified', problems: [] });
   });
@@ -178,6 +183,113 @@ describe('发起一轮数据定义提取', () => {
     expect(conflict.check.problems).toEqual([]);
     expect(conflict.check.candidates[0]!.problems.map((problem) => problem.code)).toEqual(['definition.constraintConflict']);
     expect(conflict.outcome?.candidates[0]).not.toHaveProperty('published');
+  });
+});
+
+describe('选 Gemini 时经本机转换代理（M232）', () => {
+  const IMAGE = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } };
+  const TOOL = { name: 'view_image', description: '看图', input_schema: { type: 'object', properties: { path: { type: 'string' } } } };
+  const HELLO = { model: 'gemini-test', max_tokens: 10, messages: [{ role: 'user', content: '你好' }] };
+  // 假的 Google 上游：记录收到的请求，按顺序回放预置的响应。
+  const requests: { path: string; headers: Record<string, unknown>; body: any }[] = [];
+  const replies: { status?: number; body: unknown }[] = [];
+  let upstream: string;
+  let close: () => Promise<void>;
+
+  beforeAll(async () => {
+    const server = createServer((request, response) => {
+      let text = '';
+      request.setEncoding('utf8');
+      request.on('data', (chunk: string) => { text += chunk; });
+      request.on('end', () => {
+        requests.push({ path: request.url ?? '', headers: request.headers, body: JSON.parse(text) });
+        const reply = replies.shift() ?? { status: 500, body: { error: '没有预置响应' } };
+        response.writeHead(reply.status ?? 200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify(reply.body));
+      });
+    });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    upstream = `http://127.0.0.1:${(server.address() as AddressInfo).port}/google/v1beta`;
+    close = () => new Promise((done) => server.close(() => done()));
+  });
+
+  afterAll(() => close());
+
+  it('Claude Code 只拿到本轮令牌；请求转成 Google 格式带上游 key 转发，结果转回 Anthropic 格式；别的来源被拒绝；产物中没有 key', async () => {
+    replies.push(
+      { body: { candidates: [{ finishReason: 'STOP', content: { parts: [
+        { text: '想一想', thought: true }, { text: '我来看图。' },
+        { functionCall: { name: 'view_image', args: { path: 'sample.png' } }, thoughtSignature: 'sig-123' }] } }],
+        usageMetadata: { promptTokenCount: 3000, cachedContentTokenCount: 2000, candidatesTokenCount: 60, thoughtsTokenCount: 40 } } },
+      { body: { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '是四色方块。' }] } }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 3 } } },
+      { status: 429, body: { error: { message: 'Go usage limit exceeded' } } },
+    );
+    const calls = [
+      { body: { model: 'gemini-test', stream: true, max_tokens: 64000, system: [{ type: 'text', text: '你是助手。' }], tools: [TOOL],
+        messages: [{ role: 'user', content: [IMAGE, { type: 'text', text: '看图' }] }] } },
+      { body: { model: 'gemini-test', max_tokens: 100, tools: [TOOL], messages: [
+        { role: 'user', content: '看图' },
+        { role: 'assistant', content: [{ type: 'text', text: '我来看图。' }, { type: 'tool_use', id: '{{tool_use_id}}', name: 'view_image', input: { path: 'sample.png' } }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: '{{tool_use_id}}', content: [{ type: 'text', text: '放大图' }, IMAGE] }] },
+      ] } },
+      { body: HELLO },
+      // 以下四条在代理处被拒绝，不到上游。
+      { token: 'wrong', body: HELLO },
+      { headers: { host: 'evil.test' }, body: HELLO },
+      { headers: { origin: 'https://evil.test' }, body: HELLO },
+      { headers: { 'content-type': 'text/plain' }, body: HELLO },
+    ];
+    const result = await run(await preset({ ...QUALIFIED, '.model-calls.json': calls }), { model: 'gemini-test', endpoint: upstream });
+    expect(result.check.verdict).toBe('qualified');
+
+    const responses = JSON.parse(await readFile(join(result.roundDir, 'agent/model-calls-result.json'), 'utf8'));
+    expect(responses.map((response: { status: number }) => response.status)).toEqual([200, 200, 429, 401, 403, 403, 415]);
+    const events = responses[0].events;
+    // 思考部分不转给 Claude Code；缓存命中与思考 token 按 Anthropic 的口径换算。
+    expect(events.filter((event: any) => event.type === 'content_block_delta' && event.delta.type === 'text_delta').map((event: any) => event.delta.text)).toEqual(['我来看图。']);
+    expect(events[0].message.usage).toMatchObject({ input_tokens: 1000, cache_read_input_tokens: 2000 });
+    expect(events.find((event: any) => event.type === 'message_delta')).toMatchObject({ delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 100 } });
+    expect(responses[1].json).toMatchObject({ content: [{ type: 'text', text: '是四色方块。' }], stop_reason: 'end_turn' });
+    expect(responses[2].json).toMatchObject({ type: 'error', error: { type: 'rate_limit_error' } });
+
+    expect(requests).toHaveLength(3);
+    for (const request of requests) {
+      expect(request.path).toBe('/google/v1beta/models/gemini-test:generateContent');
+      expect(request.headers).toMatchObject({ 'x-goog-api-key': KEY, 'x-opencode-session': 'fake-session' });
+      expect(request.headers['authorization']).toBeUndefined();
+    }
+    expect(requests[0]!.body).toEqual({
+      contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } }, { text: '看图' }] }],
+      systemInstruction: { parts: [{ text: '你是助手。' }] },
+      tools: [{ functionDeclarations: [{ name: 'view_image', description: '看图', parametersJsonSchema: TOOL.input_schema }] }],
+      generationConfig: { maxOutputTokens: 64000 },
+    });
+    // 工具调用的 thoughtSignature 在下一次请求中补回。
+    expect(requests[1]!.body.contents).toEqual([
+      { role: 'user', parts: [{ text: '看图' }] },
+      { role: 'model', parts: [{ text: '我来看图。' }, { functionCall: { name: 'view_image', args: { path: 'sample.png' } }, thoughtSignature: 'sig-123' }] },
+      { role: 'user', parts: [{ functionResponse: { name: 'view_image', response: { content: '放大图' } } }, { inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } }] },
+    ]);
+
+    const fake = JSON.parse(await readFile(join(result.roundDir, 'agent/fake-run.json'), 'utf8'));
+    expect(fake.baseUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+    expect(fake.tokenSha256).not.toBe(createHash('sha256').update(KEY).digest('hex'));
+    await expect(fetch(`${fake.baseUrl}/v1/models`)).rejects.toThrow();
+    expect(result.record.runtime).toMatchObject({ model: 'gemini-test', smallModel: 'gemini-test', protocol: 'google', endpoint: upstream, keyEnv: 'RW_TEST_KEY' });
+    const log = (await readFile(join(result.roundDir, 'logs/model-proxy.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+    expect(log.map((entry) => entry.status)).toEqual([200, 200, 429]);
+    expect(log[0]).toMatchObject({ model: 'gemini-test', blocks: ['text', 'tool_use'], stop: 'tool_use' });
+
+    const leaks = [];
+    for (const file of await filesUnder(result.roundDir)) if ((await readFile(file)).includes(KEY)) leaks.push(file);
+    expect(leaks).toEqual([]);
+  });
+
+  it('端点缺省为 OpenCode Go 的 Google 接口；模型与轻量任务模型不同为 Gemini 时报用法错误', async () => {
+    const result = await run(await qualified(), { model: 'gemini-test' });
+    expect(result.record.runtime).toMatchObject({ protocol: 'google', smallModel: 'gemini-test', endpoint: 'https://opencode.ai/inference/go/google/v1beta' });
+    await expect(run(await qualified(), { model: 'gemini-test', smallModel: 'claude-haiku-5-5' })).rejects.toThrow('同为 Gemini');
+    await expect(run(await qualified(), { smallModel: 'gemini-test' })).rejects.toThrow('同为 Gemini');
   });
 });
 

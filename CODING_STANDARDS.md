@@ -4,7 +4,7 @@
 
 ## 引擎边界
 
-- 渲染引擎是不依赖框架的 TypeScript 模块，运行在 Node 22 上（ADR-0011）。HTTP 服务外壳、依赖注入框架不进入 `src/`。命令行附带的单用户本地页面不算服务外壳，例如 `agent review` 的审核页：只用 `node:http`，只绑定 `127.0.0.1`，不出图、不发布（M227）。
+- 渲染引擎是不依赖框架的 TypeScript 模块，运行在 Node 22 上（ADR-0011）。HTTP 服务外壳、依赖注入框架不进入 `src/`。命令行附带的单用户本地页面不算服务外壳，例如 `agent review` 的审核页：只用 `node:http`，只绑定 `127.0.0.1`，不出图、不发布（M227）。`agent run` 选 Gemini 时在本进程起的模型转换代理同理：只用 `node:http`，只绑定 `127.0.0.1`，随本轮关闭，只认本轮令牌（M232）。
 - 出图确定性：字体只从资源仓库显式加载，不读系统字体；SVG 只传入资源仓库的字体（ADR-0011、ADR-0012）。同一输入在 Windows 与 Linux 上应得到相同的图片和摘要；改动渲染路径时，用 `scripts/accept-*.mjs` 中对应的脚本复核。
 - CanvasKit 加载 full 构建（`src/canvaskit.ts`），默认构建不能编码 JPEG。
 
