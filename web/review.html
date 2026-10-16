@@ -24,6 +24,8 @@
   .viewer { position: sticky; top: 64px; }
   .pane + .pane { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
   .stack > * + * { margin-top: 16px; }
+  .stack, .viewer { min-width: 0; }
+  td code, td.mono { word-break: break-all; }
   h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
   h3 { margin: 0; font-size: 14px; font-weight: 600; }
   .toolbar { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
@@ -68,6 +70,7 @@
   <h1 id="title">审核</h1>
   <span id="status" class="chip">读取中</span>
   <span id="verdict" class="chip"></span>
+  <span id="round" class="chip"></span>
   <span id="dir" class="dir"></span>
 </header>
 <main>
@@ -88,7 +91,7 @@ function h(tag, attrs, ...children) {
     else if (key === 'class') node.className = value;
     else node.setAttribute(key, value === true ? '' : String(value));
   }
-  for (const child of children.flat()) if (child !== undefined && child !== null && child !== false) node.append(child instanceof Node ? child : String(child));
+  for (const child of children.flat(Infinity)) if (child !== undefined && child !== null && child !== false) node.append(child instanceof Node ? child : String(child));
   return node;
 }
 const json = (value) => JSON.stringify(value, null, 2);
@@ -124,7 +127,7 @@ async function change(payload) {
 // ---------- 图片查看：示例图与预览各一个，缩放与滚动可以联动 ----------
 class Viewer {
   constructor(title, hint) {
-    this.scale = 1; this.fitted = true; this.marked = null; this.peer = null; this.syncing = false;
+    this.scale = 1; this.fitted = true; this.marked = null; this.syncing = false;
     this.img = h('img', { alt: title });
     this.mark = h('div', { class: 'mark', hidden: true });
     this.label = h('span', { class: 'muted' });
@@ -168,20 +171,22 @@ class Viewer {
     const v = this.viewport;
     this.apply(value, { x: (v.scrollLeft + v.clientWidth / 2) / this.scale, y: (v.scrollTop + v.clientHeight / 2) / this.scale, viewX: v.clientWidth / 2, viewY: v.clientHeight / 2 });
   }
-  /** 让另一个查看器显示同一处：两张图按显示宽度对齐（预览按示例图的像素宽度出图）。 */
+  /** 让其余查看器显示同一处：各图按显示宽度对齐（预览按示例图的像素宽度出图）。 */
   sync() {
-    const peer = this.peer;
-    if (!peer || this.syncing || !$('sync')?.checked || !peer.img.naturalWidth || !this.img.naturalWidth) return;
-    peer.syncing = true;
-    peer.fitted = this.fitted;
-    peer.scale = this.scale * this.img.naturalWidth / peer.img.naturalWidth;
-    peer.img.style.width = `${peer.img.naturalWidth * peer.scale}px`;
-    peer.img.style.height = `${peer.img.naturalHeight * peer.scale}px`;
-    peer.label.textContent = `${Math.round(peer.scale * 100)}%（${peer.img.naturalWidth} × ${peer.img.naturalHeight}）`;
-    peer.viewport.scrollLeft = this.viewport.scrollLeft;
-    peer.viewport.scrollTop = this.viewport.scrollTop * (peer.img.naturalHeight * peer.scale) / Math.max(1, this.img.naturalHeight * this.scale);
-    peer.placeMark();
-    requestAnimationFrame(() => { peer.syncing = false; });
+    if (this.syncing || !$('sync')?.checked || !this.img.naturalWidth) return;
+    for (const peer of viewers()) {
+      if (peer === this || !peer.img.naturalWidth) continue;
+      peer.syncing = true;
+      peer.fitted = this.fitted;
+      peer.scale = this.scale * this.img.naturalWidth / peer.img.naturalWidth;
+      peer.img.style.width = `${peer.img.naturalWidth * peer.scale}px`;
+      peer.img.style.height = `${peer.img.naturalHeight * peer.scale}px`;
+      peer.label.textContent = `${Math.round(peer.scale * 100)}%（${peer.img.naturalWidth} × ${peer.img.naturalHeight}）`;
+      peer.viewport.scrollLeft = this.viewport.scrollLeft;
+      peer.viewport.scrollTop = this.viewport.scrollTop * (peer.img.naturalHeight * peer.scale) / Math.max(1, this.img.naturalHeight * this.scale);
+      peer.placeMark();
+      requestAnimationFrame(() => { peer.syncing = false; });
+    }
   }
   placeMark() {
     if (!this.marked || !this.marked.region) { this.mark.hidden = true; return; }
@@ -204,32 +209,38 @@ class Viewer {
 }
 
 const sample = new Viewer('示例图', '单击图片放大，Shift+单击缩小；点"定位"查看它在示例图上的位置。');
-let preview = null;
+let preview = null, before = null;
+const viewers = () => [sample, preview, before].filter(Boolean);
 sample.setSource('/sample');
 $('viewer').append(sample.node);
 
 /** 查看区高度随图的比例：宽幅图不留大片空白，竖幅图占满窗口；有预览时两者平分。 */
 function sizeViewports() {
-  const panes = [sample, preview].filter(Boolean);
+  const panes = viewers();
   const available = (window.innerHeight - 170) / panes.length - 70;
   for (const pane of panes) {
     if (!pane.img.naturalWidth) continue;
     const atFitWidth = pane.img.naturalHeight * pane.viewport.clientWidth / pane.img.naturalWidth + 4;
-    pane.viewport.style.height = `${Math.max(panes.length > 1 ? 220 : 420, Math.min(available, atFitWidth))}px`;
+    pane.viewport.style.height = `${Math.max(panes.length > 1 ? 140 : 300, Math.min(available, atFitWidth))}px`;
   }
 }
-window.addEventListener('resize', () => { sizeViewports(); for (const pane of [sample, preview]) if (pane?.fitted) pane.fit(); });
+window.addEventListener('resize', () => { sizeViewports(); for (const pane of viewers()) if (pane.fitted) pane.fit(); });
 
 function syncPreview() {
   const shown = view.preview;
   if (!shown) return;
+  const revision = Boolean(view.previewBefore);
   if (!preview) {
-    preview = new Viewer('预览（RenderWeave 重新渲染）', '草稿模式：问题处画框，缺失的值用占位。');
-    preview.peer = sample; sample.peer = preview;
-    $('viewer').append(preview.node, h('label', { class: 'muted' }, h('input', { type: 'checkbox', id: 'sync', checked: true }), ' 两图联动缩放与滚动'));
+    preview = new Viewer(revision ? '修改后（RenderWeave 用工作副本重新渲染）' : '预览（RenderWeave 重新渲染）', '草稿模式：问题处画框，缺失的值用占位。');
+    if (revision) before = new Viewer('修改前（已保存的模板）', '同一出图请求，用工作区中已保存的模板渲染。');
+    $('viewer').append(preview.node, ...(before ? [before.node] : []),
+      h('label', { class: 'muted' }, h('input', { type: 'checkbox', id: 'sync', checked: true }), ` ${before ? '三图' : '两图'}联动缩放与滚动`));
   }
-  if (shown.image) preview.setSource(`/${shown.image}`);
-  else preview.caption.textContent = '出图请求无法渲染，见预览的问题。';
+  for (const [pane, image] of [[preview, shown.image], [before, view.previewBefore?.image]]) {
+    if (!pane) continue;
+    if (image) pane.setSource(`/${image}`);
+    else pane.caption.textContent = '出图请求无法渲染，见预览的问题。';
+  }
 }
 const locateLink = (location, label) => location ? h('a', { class: 'locate', onclick: () => sample.locate(location, label) }, '定位') : null;
 
@@ -250,8 +261,9 @@ function render() {
   $('verdict').textContent = round.verdict === 'qualified' ? '成果合格' : '成果不合格';
   $('verdict').className = `chip ${round.verdict === 'qualified' ? 'ok' : 'bad'}`;
   $('dir').textContent = round.dir;
+  $('round').textContent = `第 ${round.round} 轮`;
   syncPreview();
-  $('content').replaceChildren(conclusion(editable), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection());
+  $('content').replaceChildren(conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection());
 }
 
 function blocking() {
@@ -266,7 +278,8 @@ function conclusion(editable) {
   return h('section', {},
     h('h2', {}, '审核结论'),
     h('p', {}, `待确认项已处理 ${decided} / ${view.pending.length}。`, view.saved ? `审核结果已保存（${review.updatedAt}）。` : '还没有保存过审核结果。'),
-    applied ? h('p', {}, `已于 ${applied.appliedAt} 应用到 ${applied.workspace}：`, applied.published.map((item) => `${item.name}${item.version ? ` v${item.version}` : ''}`).join('、')) : null,
+    applied ? h('p', {}, `已于 ${applied.appliedAt} 应用到 ${applied.workspace}：`,
+      applied.published.map((item) => `${item.name}${item.version ? ` v${item.version}` : ''}${item.replaced ? '（替换已保存的模板）' : ''}`).join('、') || '没有需要写入的内容') : null,
     h('label', {}, h('input', { type: 'checkbox', checked: review.restConfirmed, disabled: !editable,
       onchange: (event) => change({ type: 'confirmRest', confirmed: event.target.checked }) }),
       ' 待确认项以外的内容已整体核对，确认无误'),
@@ -280,17 +293,40 @@ function conclusion(editable) {
     problemList(blocking()));
 }
 
+/** 轮次链、修改要求与反馈：只有多轮或模板辅助修改时才有内容。 */
+function roundSection() {
+  const { chain, requirement, feedback } = view.round;
+  if (chain.length <= 1 && requirement === undefined && feedback === undefined) return null;
+  const REVIEW = { inProgress: '审核中', approved: '已通过', rejected: '未通过' };
+  const rows = chain.map((link) => h('tr', { class: link.dir === view.round.dir ? 'edited' : '' },
+    h('td', {}, `第 ${link.round} 轮`),
+    h('td', {}, link.missing ? h('span', { class: 'chip bad' }, '读不到') : [
+      link.verdict ? h('span', { class: `chip ${link.verdict === 'qualified' ? 'ok' : 'bad'}` }, link.verdict === 'qualified' ? '合格' : '不合格') : '',
+      ' ', link.review ? h('span', { class: 'chip' }, REVIEW[link.review]) : h('span', { class: 'muted' }, '未审核'),
+      link.applied ? [' ', h('span', { class: 'chip accent' }, '已应用')] : '']),
+    h('td', { class: 'mono' }, link.dir)));
+  return h('section', {},
+    h('h2', {}, '轮次'),
+    chain.length > 1 ? h('table', {}, h('thead', {}, h('tr', {}, ['轮次', '结论', '轮次目录'].map((text) => h('th', {}, text)))), h('tbody', {}, rows)) : null,
+    requirement !== undefined ? [h('h3', { style: 'margin-top:12px' }, '修改要求'), h('pre', {}, requirement)] : null,
+    feedback !== undefined ? [h('h3', { style: 'margin-top:12px' }, '上一轮审核后的反馈'), h('pre', {}, feedback)] : null);
+}
+
 function previewSection() {
   const shown = view.preview;
   if (!shown) return null;
+  const old = view.previewBefore;
+  const size = (item) => item.dpi ? ` ${item.widthPx} × ${item.heightPx} 像素，${item.dpi} DPI。` : '';
   return h('section', {},
-    h('h2', {}, '预览'),
+    h('h2', {}, old ? '修改前后的预览' : '预览'),
     h('p', { class: 'muted', style: 'margin-top:0' }, '由 RenderWeave 按出图请求重新渲染（草稿模式），不用 Agent 自己的图。',
-      shown.blocking ? '预览的严重问题会阻止审核通过。' : '预览用的是工作区已保存的模板，问题只作参考。',
-      shown.dpi ? ` ${shown.widthPx} × ${shown.heightPx} 像素，${shown.dpi} DPI。` : ''),
+      old ? '修改后的预览用审核后的工作副本，严重问题会阻止审核通过；修改前的预览用工作区中已保存的模板。'
+        : shown.blocking ? '预览的严重问题会阻止审核通过。' : '预览用的是工作区已保存的模板，问题只作参考。',
+      size(shown)),
     h('details', {}, h('summary', {}, '出图请求'), h('pre', {}, json(shown.request))),
-    h('h3', { style: 'margin-top:10px' }, '预览的问题'),
-    problemList(shown.problems));
+    h('h3', { style: 'margin-top:10px' }, old ? '修改后的问题' : '预览的问题'),
+    problemList(shown.problems),
+    old ? [h('h3', { style: 'margin-top:10px' }, '修改前的问题'), problemList(old.problems)] : null);
 }
 
 function pendingSection(editable) {
@@ -391,6 +427,30 @@ function datasetBody(candidate) {
   ];
 }
 
+const CHANGES = { added: '新增', removed: '删去', changed: '修改' };
+
+/** 模板辅助修改：工作副本相对已保存模板的结构化差异。 */
+function revisionBody(candidate) {
+  const revision = candidate.revision;
+  if (!revision) return null;
+  if (revision.status === 'added') return h('p', {}, h('span', { class: 'chip accent' }, '新增的模板'), ' 应用时作为新文件保存。');
+  if (revision.status === 'unchanged') return h('p', {}, h('span', { class: 'chip' }, '与已保存的模板相同'), ' 应用时不写入。');
+  const value = (item) => item === undefined ? h('span', { class: 'muted' }, '（无）') : h('code', {}, short(item));
+  const rows = revision.changes.flatMap((change) => {
+    const head = h('td', { class: 'mono' }, change.path, ' ', h('span', { class: `chip ${change.change === 'removed' ? 'bad' : 'accent'}` }, CHANGES[change.change]));
+    if (!change.properties) {
+      return [h('tr', {}, head, h('td', {}, change.target === 'element' ? '整个元素' : '整个键'), h('td', {}, value(change.before)), h('td', {}, value(change.after)))];
+    }
+    return change.properties.map((property, index) => h('tr', {},
+      index === 0 ? head : h('td', {}), h('td', { class: 'mono' }, property.key), h('td', {}, value(property.before)), h('td', {}, value(property.after))));
+  });
+  return [
+    h('h3', { style: 'margin-top:4px' }, `相对已保存模板的改动（${revision.changes.length} 处，基于 ${revision.basis?.file ?? '?'}）`),
+    h('div', { class: 'scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ['位置', '属性', '修改前', '修改后'].map((text) => h('th', {}, text)))), h('tbody', {}, rows))),
+    h('details', {}, h('summary', {}, '查看完整差异（JSON）'), h('pre', {}, json(revision.changes))),
+  ];
+}
+
 function templateBody(candidate) {
   const template = candidate.template ?? { parameters: [] };
   const elements = candidate.elements ?? [];
@@ -401,6 +461,7 @@ function templateBody(candidate) {
     h('td', {}, pendingChips(element.pending))));
   const parameters = template.parameters.map((p) => `${p.name}${p.displayName ? `（${p.displayName}）` : ''}${p.type ? ` ${p.type}` : ''}${p.visibility ? ` ${p.visibility}` : ''}`);
   return [
+    revisionBody(candidate),
     h('p', { style: 'margin:4px 0' }, `基准：${template.base ? `${template.base.name} v${template.base.version}` : '未知'}；参数：${parameters.length ? parameters.join('、') : '无'}；元素 ${elements.filter((e) => e.state !== 'removed').length} 个。`),
     h('div', { class: 'scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ['元素路径', '类型', '图上位置', '待确认'].map((text) => h('th', {}, text)))), h('tbody', {}, rows))),
     h('details', {}, h('summary', {}, '查看完整模板'), h('pre', {}, json(candidate.document ?? null))),

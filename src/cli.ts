@@ -11,11 +11,11 @@
  * - resources-init、resources-import、resources-list、resources-get、resources-check、resources-apply：资源版本仓库维护。
  *   退出码：0 成功；1 仓库、内容、检查、冲突或文件失败；2 用法错误。
  * - mcp：在标准输入输出上提供只读的 MCP 工具服务（src/mcp/），读完标准输入后结束。退出码：0 正常结束；2 用法错误或目录无法打开。
- * - agent run：发起一轮业务 Agent 任务（src/agent/），在新轮次目录中写出 round.json、check.json，结构合格时另有 outcome.json 与候选文件。
+ * - agent run：发起一轮业务 Agent 任务（src/agent/），或带 --from 发起下一轮；在新轮次目录中写出 round.json、check.json，结构合格时另有 outcome.json 与候选文件。
  *   退出码：0 成果合格；1 成果不合格（没有交回、结构不合格或候选有严重问题），问题清单见 check.json；2 用法错误、输入无法读取或任务顺序不对。
  * - agent review：在 127.0.0.1 上打开一轮的审核页，审核结果写入轮次目录的 review.json；Ctrl+C 结束。
  *   退出码：0 正常结束；1 轮次无法审核（没有 outcome.json、候选被改动）或端口被占用；2 用法错误。
- * - agent apply：把审核通过的一轮应用到工作区：数据定义发布为下一个版本。
+ * - agent apply：把审核通过的一轮应用到工作区：数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。
  *   退出码：0 已应用；1 拒绝或失败（未审核、未通过、已应用过、工作区已变化、发布或写入失败），工作区保持原状；2 用法错误或工作区无法读取。
  */
 import { spawn } from 'node:child_process';
@@ -65,8 +65,9 @@ const USAGE = `用法：
   renderweave resources-apply --resources <目录> --workspace <目录> --file <新内容文件> --check <检查报告.json> [--options <字体配置.json>]
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
-                        [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>]
+                        [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>] [--requirement <修改要求.md>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
+  renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--claude …]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
 
@@ -85,7 +86,7 @@ mcp（只读工具服务，stdio 上按行分隔的 JSON-RPC）
   --log         可选，每次工具调用追加一行记录
 
 agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 renderweave mcp）
-  --task        数据定义提取、数据集提取或模板辅助设计（模板辅助修改尚未实现）
+  --task        数据定义提取、数据集提取、模板辅助设计或模板辅助修改
   --sample      示例图：PNG、JPEG 或 WebP
   --brief       项目说明（Markdown）：业务、尺寸、目标范围、客户说明
   --resources   资源仓库目录
@@ -94,7 +95,11 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --workspace   工作区目录，复制为本轮的只读快照；数据集提取与模板辅助设计必须给
   --definition  数据集提取所基于的已发布数据定义：名称，或 名称@版本（只写名称时取最新版本）
   --dataset     模板辅助设计所基于的已保存数据集 id
-  --request     示例图对应的出图请求（主模板名、参数与输出尺寸）：模板辅助设计必须给；数据集提取可选，用工作区已有的模板预览
+  --request     示例图对应的出图请求（主模板名、参数与输出尺寸）：模板辅助设计与模板辅助修改必须给；数据集提取可选，用工作区已有的模板预览
+                模板辅助修改时主模板就是要改的已保存模板，它调用的模板也可以改；数据集写在请求里或用 --dataset 指定
+  --requirement 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在
+  --from        上一轮的轮次目录：下一轮沿用它的任务、素材、基准、出图请求与修改要求，拿到它的成果（含审核时的修改）
+  --feedback    带 --from 时必须给：给下一轮的反馈（Markdown）
   --key-env     可选，key 所在的环境变量名，缺省 QWEN_TOKEN_PLAN_API_KEY；key 只经环境变量传入，不写任何文件
   --model、--small-model、--endpoint、--max-turns、--claude  可选，模型、轻量任务模型、兼容端点、轮数上限与 Claude Code 可执行文件
 
@@ -102,9 +107,9 @@ agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配
   --no-open     可选，不自动打开浏览器，只打印地址
 
-agent apply（只接受审核通过的轮次；数据定义发布为下一个版本）
+agent apply（只接受审核通过的轮次；数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板）
   --workspace   可选，写入的工作区，缺省为发起本轮时的 --workspace
-  --overwrite   可选，工作区自成果生成后已变化时仍然应用：按当前工作区发布为下一个版本
+  --overwrite   可选，工作区自成果生成后已变化时仍然应用：按当前工作区发布为下一个版本；要改的模板已被他人保存时用工作副本覆盖
 
 publish
   --definition  数据定义 DSL 文件（renderweave-schema/1）
@@ -128,11 +133,13 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'resources-check': ['resources', 'workspace', 'id', 'kind', 'file', 'out'],
   'resources-apply': ['resources', 'workspace', 'file', 'check'],
   mcp: ['workspace', 'resources', 'root'],
-  'agent run': ['task', 'sample', 'brief', 'resources', 'out'],
+  'agent run': ['out'],
   'agent review': [],
   'agent apply': [],
 };
-const AGENT_RUN_OPTIONAL = ['domain', 'workspace', 'definition', 'dataset', 'request', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
+/** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
+const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'] };
@@ -300,8 +307,12 @@ async function runResources(command: string, options: Record<string, string>, io
 }
 
 async function runAgent(options: Record<string, string>, io: CliIo): Promise<number> {
-  const task = findAgentTask(options.task!);
-  if (!task) {
+  if (options.from === undefined && !['task', 'sample', 'brief', 'resources'].every((name) => options[name] !== undefined)) {
+    io.stderr(USAGE);
+    return ExitCodes.usage;
+  }
+  const task = options.task === undefined ? undefined : findAgentTask(options.task);
+  if (options.task !== undefined && !task) {
     io.stderr(`没有任务类型 ${options.task}；可用：${Object.values(AGENT_TASKS).map((item) => item.name).join('、')}\n`);
     return ExitCodes.usage;
   }
@@ -316,10 +327,17 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     io.stderr('--max-turns 必须是正整数\n');
     return ExitCodes.usage;
   }
-  io.stderr(`开始${task.name}：轮次目录 ${options.out}\n`);
+  io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`);
   try {
     const result = await runAgentTask({
-      task: task.id, sample: options.sample!, brief: options.brief!, resources: options.resources!, out: options.out!, key, keyEnv,
+      out: options.out!, key, keyEnv,
+      ...(task ? { task: task.id } : {}),
+      ...(options.sample !== undefined ? { sample: options.sample } : {}),
+      ...(options.brief !== undefined ? { brief: options.brief } : {}),
+      ...(options.resources !== undefined ? { resources: options.resources } : {}),
+      ...(options.requirement !== undefined ? { requirement: options.requirement } : {}),
+      ...(options.from !== undefined ? { from: options.from } : {}),
+      ...(options.feedback !== undefined ? { feedback: options.feedback } : {}),
       ...(options.domain !== undefined ? { domain: options.domain } : {}),
       ...(options.workspace !== undefined ? { workspace: options.workspace } : {}),
       ...(options.definition !== undefined ? { definition: options.definition } : {}),
@@ -335,8 +353,11 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems)], io);
     if (record.run.error) io.stderr(`${record.run.error}\n`);
     io.stdout(`${JSON.stringify({
-      round: result.roundDir, verdict: check.verdict,
-      candidates: check.candidates.map((candidate) => ({ path: candidate.path, ...(candidate.published ? { published: candidate.published } : {}) })),
+      round: result.roundDir, number: record.round, ...(record.inputs.previous ? { previous: record.inputs.previous.dir } : {}), verdict: check.verdict,
+      candidates: check.candidates.map((candidate) => ({
+        path: candidate.path, ...(candidate.published ? { published: candidate.published } : {}),
+        ...(candidate.revision ? { revision: candidate.revision.status, changes: candidate.revision.changes.length } : {}),
+      })),
       pending: result.outcome?.pending.length ?? null,
       usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
     }, null, 2)}\n`);
@@ -391,16 +412,25 @@ async function runApply(roundDir: string, options: Record<string, string>, overw
     const lines = [
       ...drift.newerDefinitions.map((item) => `  同名数据定义已发布新版本：${item.name} ${item.snapshot === null ? '（快照中没有）' : `v${item.snapshot}`} → v${item.workspace}`),
       ...drift.added.map((file) => `  新增：${file}`), ...drift.removed.map((file) => `  删除：${file}`), ...drift.changed.map((file) => `  修改：${file}`),
+      ...(drift.templates ?? []).flatMap((item) => [
+        `  模板 ${item.name} 已被他人保存（${item.basis.file} → ${item.current ? item.current.file : '已删去'}），他人的改动 ${item.changes.length} 处：`,
+        ...item.changes.map((change) => `    ${CHANGE_NAMES[change.change]} ${change.path}${change.properties ? `：${change.properties.map((property) => property.key).join('、')}` : ''}`),
+      ]),
     ];
     io.stderr(`工作区相对本轮快照的差异（指纹 ${drift.expected} → ${drift.actual}）：\n${lines.join('\n')}\n`);
   }
   if (!result.applied) return ExitCodes.failed;
   io.stdout(`${JSON.stringify({
     workspace: result.applied.workspace, overwrite: result.applied.overwrite,
-    published: result.applied.published.map((item) => ({ kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files })),
+    published: result.applied.published.map((item) => ({
+      kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files, ...(item.replaced ? { replaced: true } : {}),
+    })),
+    ...(result.applied.unchanged ? { unchanged: result.applied.unchanged } : {}),
   }, null, 2)}\n`);
   return ExitCodes.ok;
 }
+
+const CHANGE_NAMES = { added: '新增', removed: '删去', changed: '修改' } as const;
 
 /** 用系统默认浏览器打开审核页；失败时只提示，不影响服务。 */
 function openBrowser(url: string, io: CliIo): void {

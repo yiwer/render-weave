@@ -257,7 +257,7 @@ describe('命令行', () => {
       const cases: [string[], string][] = [
         [[...base_(), '--out', out, '--task', '印章提取'], '没有任务类型 印章提取'],
         [['--task', '数据集提取', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--out', out], '先做数据定义提取'],
-        [['--task', '模板辅助修改', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--out', out], '尚未实现'],
+        [['--task', '模板辅助修改', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--out', out], '模板辅助修改要用 --request'],
         [[...base_(), '--out', out, '--key-env', 'RW_TEST_MISSING_KEY'], '缺少环境变量 RW_TEST_MISSING_KEY'],
         [[...base_(), '--out', base], '轮次目录必须不存在或为空'],
         [[...base_(), '--out', out, '--domain', 'price-tag'], '没有领域约定包 price-tag；可用：route-sign'],

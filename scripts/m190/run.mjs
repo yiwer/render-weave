@@ -25,6 +25,7 @@ import { createWriteStream } from 'node:fs';
 import { copyFile, cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { landmarkBaseline, roadAlign } from './m215-checks.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -406,44 +407,10 @@ async function renderAndCompare(workspaceDir, request, file) {
   let sum = 0, n = 0;
   for (let i = 0; i < a.length; i += 4) for (let c = 0; c < 3; c++) { sum += Math.abs(a[i + c] - b[i + c]); n++; }
   return { problems, size: `${result.image.widthPx}×${result.image.heightPx}`, similarity: Number((1 - sum / n / 255).toFixed(4)),
-    ...(result.layout && { landmarkBaseline: landmarkBaseline(result.layout) }), roadAlign: await roadAlign(workspaceDir) };
+    ...(result.layout && { landmarkBaseline: landmarkBaseline(result.layout, truth.stops) }), roadAlign: await roadAlign(workspaceDir) };
 }
 
-/**
- * 用户验收发现的版面约定一（领域约定 10）：地标是竖排站名的最后一格。无地标站名的底边应与有地标列的地标底边齐平。
- * 取第 1 站（建设路总站，无地标）与第 4 站（门诊部，有地标）比较，差值单位毫米。
- */
-function landmarkBaseline(layout) {
-  const nodes = [];
-  (function walk(n) { nodes.push(n); for (const c of n.children ?? []) walk(c); })(layout.root);
-  const visible = nodes.filter((n) => n.visible !== false && typeof n.y === 'number');
-  // 比较前去掉首尾空白（含全角空格）：有的模板用空格给地标占位。
-  const name = (content) => visible.find((n) => n.type === 'text' && n.text?.content?.trim() === content && n.text?.writingMode === 'vertical');
-  const plain = name(truth.stops[0].name), marked = name(truth.stops[3].name);
-  if (!plain || !marked) return { found: false };
-  const prefix = marked.path.slice(0, marked.path.lastIndexOf(']') + 1);
-  const landmark = visible.filter((n) => n.type === 'image' && n.path.startsWith(prefix) && n.y >= marked.y).sort((a, b) => b.y - a.y)[0];
-  if (!landmark) return { found: false, reason: '有地标的列中找不到地标图片' };
-  const delta = Number((plain.y + plain.height - (landmark.y + landmark.height)).toFixed(2));
-  return { found: true, deltaMm: delta, pass: Math.abs(delta) <= 2 };
-}
-
-/** 用户验收发现的版面约定二（领域约定 11，M131）：道路名用同间隔分布。静态检查模板中插槽绑定 road 的文字元素。 */
-async function roadAlign(workspaceDir) {
-  const aligns = [];
-  for (const f of await readdir(workspaceDir)) {
-    if (!f.endsWith('.json')) continue;
-    const doc = JSON.parse(await readFile(join(workspaceDir, f), 'utf8'));
-    if (doc.dslVersion !== 'renderweave-template/1') continue;
-    (function walk(v) {
-      if (Array.isArray(v)) return v.forEach(walk);
-      if (!v || typeof v !== 'object') return;
-      if (v.type === 'text' && Array.isArray(v.content) && v.content.some((c) => typeof c.slot === 'string' && /(^|\.)road$/.test(c.slot))) aligns.push(v.horizontalAlign ?? 'start');
-      Object.values(v).forEach(walk);
-    })(doc);
-  }
-  return { aligns, pass: aligns.length > 0 && aligns.every((a) => a === 'spaceEvenly') };
-}
+// M215 的两项版面检查（地标底线、道路名同间隔分布）在 m215-checks.mjs。
 
 for (const step of steps) {
   if (step === 'vision') report.vision = await vision();

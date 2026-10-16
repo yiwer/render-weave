@@ -9,25 +9,32 @@
  * 其余内容整体确认一次。审核视图把处理结果作用到候选上，在工作区快照上重新校验，给出字段清单、数据清单或元素清单；
  * 有出图请求时，由 RenderWeave 重新渲染草稿预览（M52）。数据集中还没处理的待确认项用候选值预览（M46）。
  *
- * 应用只接受审核通过的轮次：先核对成果与候选没有被改动，再比对工作区指纹。工作区已变化时列出差异并拒绝，除非明确选择覆盖。
- * 在当前工作区上重新校验，全部通过后再排他写入：数据定义发布为下一个版本，数据集与模板作为新文件保存；任何失败都撤回本次写入。
+ * 模板辅助修改另有修改前的预览，候选带相对已保存模板的结构化差异（M49–M52）。
+ *
+ * 应用只接受审核通过的轮次：先核对成果与候选没有被改动，再比对工作区指纹。工作区已变化时列出差异并拒绝，除非明确选择覆盖；
+ * 模板辅助修改要改的模板已被他人保存时，另列出他人的改动（M51）。
+ * 在当前工作区上重新校验，全部通过后再写入：数据定义发布为下一个版本，数据集与新模板作为新文件保存，
+ * 模板的工作副本整份替换已保存的文件，与已保存内容相同的不写；任何失败都撤回本次写入。
+ *
+ * 下一轮（M58）由 readPreviousRound 读出上一轮成果（含审核时的修改）；轮次链沿 round.json 的 previous 追溯。
  */
-import { createHash, randomUUID } from 'node:crypto';
-import { readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { basename, join, resolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { basename, join, relative, resolve, sep } from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
 import { createMemoryResourceRepository } from '../resources.js';
 import { publishStaticSchema, type PublishedStaticSchema } from '../schema/publish.js';
-import { publishedFileNames, writeExclusiveJsonFiles } from '../schema/publish-files.js';
+import { publishedFileNames } from '../schema/publish-files.js';
 import { describeError, isRecord } from '../util.js';
 import { loadWorkspace, loadWorkspaceDocuments, type StaticSchemaEntry, type StaticSchemaRef, type Workspace } from '../workspace.js';
 import { checkCandidates, type CandidateContext, type CandidateResult } from './candidates.js';
+import { canonical, diffTemplate, revisionDiff, type RevisionDiff, type TemplateChange } from './diff.js';
 import { applyChanges, flattenData, flattenElements, fullElementPath, locate, overlaps, read, within, type Change } from './locations.js';
 import { OUTCOME_FILE, SUBMITTED_OUTCOME_SCHEMA, candidateName, type FieldLocation, type PendingItem, type PendingReason } from './outcome.js';
 import { renderPreview, type PreviewView } from './preview.js';
-import { AgentUsageError, workspaceFingerprint, type RoundOutcome, type RoundRecord, type RoundUsage } from './run.js';
+import { AgentUsageError, exists, jsonFileHashes, sha256, workspaceFingerprint } from './round-files.js';
+import type { RoundOutcome, RoundRecord, RoundUsage } from './run.js';
+import { replaceFile, writeJsonFiles, type JsonFileWrite } from './write-files.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
 export const REVIEW_FILE = 'review.json';
@@ -87,19 +94,46 @@ export interface ReviewView {
     readonly workspace: string | null;
     readonly notes: string;
     readonly usage: RoundUsage;
+    /** 第几轮。 */
+    readonly round: number;
+    /** 轮次链：从第 1 轮到本轮。 */
+    readonly chain: readonly RoundLink[];
+    /** 模板辅助修改的修改要求、下一轮的反馈：原文，按纯文本显示。 */
+    readonly requirement?: string;
+    readonly feedback?: string;
   };
   readonly review: ReviewRecord;
   /** review.json 是否已经存在。 */
   readonly saved: boolean;
   readonly pending: readonly PendingView[];
   readonly candidates: readonly CandidateView[];
-  /** 由 RenderWeave 重新渲染的草稿预览；本轮有出图请求时才有。 */
+  /** 由 RenderWeave 重新渲染的草稿预览；本轮有出图请求时才有。模板辅助修改时是修改后的预览。 */
   readonly preview?: PreviewView;
+  /** 模板辅助修改：修改前的预览，用已保存的模板渲染（M50、M52）。 */
+  readonly previewBefore?: PreviewView;
   /** 审核层面的问题：未处理的待确认项、未整体确认、处理结果矛盾、review.json 不合格。候选的引擎问题在各候选中。 */
   readonly problems: readonly Problem[];
   /** 没有任何严重问题（含候选的引擎问题，以及模板辅助设计的预览问题）时才能通过。 */
   readonly canApprove: boolean;
   readonly applied?: AppliedRecord;
+}
+
+/** 轮次链上的一轮。 */
+export interface RoundLink {
+  readonly round: number;
+  readonly dir: string;
+  readonly task?: AgentTaskId;
+  readonly verdict?: RoundRecord['verdict'];
+  readonly review?: ReviewStatus;
+  readonly applied: boolean;
+  /** 轮次目录或 round.json 读不到：链在这里断开。 */
+  readonly missing?: boolean;
+}
+
+/** 模板辅助修改中一份模板候选相对已保存内容的差异。 */
+export interface RevisionView extends RevisionDiff {
+  /** 工作副本所基于的保存内容（M51）；新增的模板没有。 */
+  readonly basis?: { readonly file: string; readonly sha256: string };
 }
 
 export interface PendingView extends PendingItem {
@@ -138,6 +172,8 @@ export interface CandidateView {
   /** 在工作区快照上于内存中发布成的名称与版本。 */
   readonly published?: StaticSchemaRef;
   readonly compiled?: CompiledSummary;
+  /** 模板辅助修改：审核后的工作副本相对已保存模板的差异。 */
+  readonly revision?: RevisionView;
   readonly problems: readonly Problem[];
 }
 
@@ -208,6 +244,18 @@ export interface WorkspaceDrift {
   readonly removed: readonly string[];
   readonly changed: readonly string[];
   readonly newerDefinitions: readonly NewerDefinition[];
+  /** 模板辅助修改：要改的模板已被他人保存（M51）。 */
+  readonly templates?: readonly TemplateConflict[];
+}
+
+/** 工作副本所基于的模板在快照之后又被保存过。 */
+export interface TemplateConflict {
+  readonly name: string;
+  readonly basis: { readonly file: string; readonly sha256: string };
+  /** 当前工作区中保存这份模板的文件；模板已被删去时为 null。 */
+  readonly current: { readonly file: string; readonly sha256: string } | null;
+  /** 他人在基准之后做的改动。 */
+  readonly changes: readonly TemplateChange[];
 }
 
 /** 应用记录 applied.json：写在轮次目录，本轮不能再次应用。 */
@@ -218,10 +266,13 @@ export interface AppliedRecord {
   /** 工作区已变化时明确选择了覆盖。 */
   readonly overwrite: boolean;
   readonly fingerprints: { readonly round: string; readonly before: string; readonly after: string };
-  /** 写入的内容：数据定义带发布的版本，数据集与模板没有版本。 */
+  /** 写入的内容：数据定义带发布的版本，数据集与模板没有版本；replaced 表示工作副本替换了已保存的模板。 */
   readonly published: readonly {
     readonly candidate: string; readonly kind: CandidateKind; readonly name: string; readonly version?: number; readonly files: readonly string[];
+    readonly replaced?: boolean;
   }[];
+  /** 与已保存内容相同、没有写入的工作副本（模板名）。 */
+  readonly unchanged?: readonly string[];
   /** 覆盖时工作区相对成果所基于快照的变化。 */
   readonly drift?: WorkspaceDrift;
 }
@@ -282,7 +333,10 @@ const validateReviewRecord = ajv.compile({
   },
 });
 
-interface RoundCandidate { readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly document: unknown }
+interface RoundCandidate {
+  readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly document: unknown;
+  readonly revises?: { readonly file: string; readonly sha256: string };
+}
 
 /** 读入并核对过的轮次：成果、运行记录、候选、工作区快照与出图请求。 */
 interface AgentRound {
@@ -297,6 +351,8 @@ interface AgentRound {
   readonly context: CandidateContext;
   /** 规范化后的出图请求（轮次目录的 request.json）。 */
   readonly request?: Record<string, unknown>;
+  readonly requirement?: string;
+  readonly feedback?: string;
   readonly applied?: AppliedRecord;
 }
 
@@ -433,15 +489,17 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
     throw new AgentUsageError(`工作区目录无法读取：${source}（${describeError(error)}）`);
   }
 
-  // 工作区自成果生成后变了：列出差异，要求明确选择覆盖或重做（M51）。
+  // 工作区自成果生成后变了：列出差异，要求明确选择覆盖或重做（M51）。要改的模板已被他人保存时，另列出他人的改动。
   const before = await workspaceFingerprint(workspace);
   const current = await loadRoundWorkspace(workspace, round.resourcesDir);
   let drift: WorkspaceDrift | undefined;
   if (before !== round.outcome.inputs.workspaceFingerprint) {
-    drift = await workspaceDrift(round, workspace, before, current.staticSchemas, state);
+    drift = await workspaceDrift(round, workspace, before, current, state);
     if (!options.overwrite) {
-      return { drift, problems: [severe(ProblemCodes.applyWorkspaceChanged, { kind: 'input', source: workspace },
-        '工作区自成果生成后已变化：确认差异后加 --overwrite 按当前工作区写入，或基于当前工作区重新发起一轮')] };
+      return { drift, problems: [severe(ProblemCodes.applyWorkspaceChanged, { kind: 'input', source: workspace }, drift.templates?.length
+        ? `要修改的模板已被他人保存（${drift.templates.map((item) => item.name).join('、')}）：确认差异后加 --overwrite 用工作副本覆盖，` +
+          '或用 renderweave agent run --from <本轮> --feedback <反馈> 基于最新保存的内容重做'
+        : '工作区自成果生成后已变化：确认差异后加 --overwrite 按当前工作区写入，或基于当前工作区重新发起一轮')] };
     }
   }
   const failed = (problems: readonly Problem[]): AgentApplyResult => ({ ...(drift ? { drift } : {}), problems });
@@ -465,7 +523,7 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
     versions.set(`${result.published.ref.name}\0${result.published.ref.version}`, outcome.published.ref.version);
     published.push({ candidate: path, entry: outcome.published });
   }
-  // 数据集与模板：在当前工作区上重新校验（工作区可能已有同名的数据集或模板）。
+  // 数据集与模板：在当前工作区上重新校验（工作区可能已有同名的数据集或模板；覆盖时工作副本代替最新保存的模板）。
   const saved = round.candidates.filter((candidate) => candidate.kind !== 'definition' && state.documents.has(candidate.path));
   const recheck = checkCandidates(saved.map((candidate) => ({ path: candidate.path, kind: candidate.kind, document: state.documents.get(candidate.path) })), current, round.context);
   const severeFound = [...recheck].flatMap(([path, result]) => result.problems.filter((problem) => problem.level === 'severe').map((problem) => ({ path, problem })));
@@ -474,21 +532,36 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
       `在当前工作区上校验不通过，工作区未改动：${severeFound.map(({ path, problem }) => `${path}：${problem.message}`).join('；')}`)]);
   }
 
-  const entries: { candidate: string; kind: CandidateKind; name: string; version?: number; files: { path: string; value: unknown }[] }[] = [
-    ...published.map(({ candidate, entry }) => {
-      const names = publishedFileNames(candidate, entry.ref.version);
-      return { candidate, kind: 'definition' as const, name: entry.ref.name, version: entry.ref.version,
-        files: [{ path: join(workspace, names.schema), value: entry.definition }, { path: join(workspace, names.compiled), value: entry.compiled }] };
-    }),
-    ...saved.map((candidate) => {
-      const file = `${candidate.kind}-${basename(candidate.path, '.json').replace(/^(dataset|template)-/, '')}.json`;
-      return { candidate: candidate.path, kind: candidate.kind, name: candidateName(candidate.kind, state.documents.get(candidate.path)) ?? file,
-        files: [{ path: join(workspace, file), value: state.documents.get(candidate.path) }] };
-    }),
-  ];
+  type Entry = { candidate: string; kind: CandidateKind; name: string; version?: number; replaced?: boolean; files: JsonFileWrite[] };
+  const entries: Entry[] = published.map(({ candidate, entry }) => {
+    const names = publishedFileNames(candidate, entry.ref.version);
+    return { candidate, kind: 'definition' as const, name: entry.ref.name, version: entry.ref.version, files: [
+      { path: join(workspace, names.schema), value: entry.definition, mode: 'create' as const },
+      { path: join(workspace, names.compiled), value: entry.compiled, mode: 'create' as const },
+    ] };
+  });
+  const unchanged: string[] = [];
+  for (const candidate of saved) {
+    const document = state.documents.get(candidate.path);
+    const name = candidateName(candidate.kind, document) ?? basename(candidate.path, '.json');
+    if (candidate.revises) {
+      // 模板的工作副本：与已保存内容相同的不写；否则整份替换当前保存这份模板的文件（M49 的"应用即保存"）。
+      if (revisionView(round, candidate, document).status === 'unchanged') {
+        unchanged.push(name);
+        continue;
+      }
+      const target = current.templates.find((entry) => entry.name === candidate.name)?.source;
+      entries.push({ candidate: candidate.path, kind: candidate.kind, name, ...(target ? { replaced: true } : {}),
+        files: [{ path: target ?? join(workspace, candidate.revises.file), value: document, mode: target ? 'replace' : 'create' }] });
+      continue;
+    }
+    const file = `${candidate.kind}-${basename(candidate.path, '.json').replace(/^(dataset|template)-/, '')}.json`;
+    entries.push({ candidate: candidate.path, kind: candidate.kind, name, files: [{ path: join(workspace, file), value: document, mode: 'create' }] });
+  }
   const files = entries.flatMap((entry) => entry.files);
+  let undoWrites: () => Promise<void>;
   try {
-    await writeExclusiveJsonFiles(files);
+    undoWrites = await writeJsonFiles(files);
   } catch (error) {
     return failed([severe(ProblemCodes.applyFailed, { kind: 'input', source: workspace }, `写入失败，已撤回本次写入，工作区未改动：${describeError(error)}`)]);
   }
@@ -497,14 +570,15 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
     fingerprints: { round: round.outcome.inputs.workspaceFingerprint, before, after: await workspaceFingerprint(workspace) },
     published: entries.map((entry) => ({
       candidate: entry.candidate, kind: entry.kind, name: entry.name, ...(entry.version !== undefined ? { version: entry.version } : {}),
-      files: entry.files.map((file) => basename(file.path)),
+      files: entry.files.map((file) => basename(file.path)), ...(entry.replaced ? { replaced: true } : {}),
     })),
+    ...(unchanged.length > 0 ? { unchanged } : {}),
     ...(drift ? { drift } : {}),
   };
   try {
     await writeFile(join(round.dir, APPLIED_FILE), `${JSON.stringify(applied, null, 2)}\n`, { flag: 'wx' });
   } catch (error) {
-    for (const file of files) await rm(file.path, { force: true });
+    await undoWrites();
     return failed([severe(ProblemCodes.applyFailed, at(APPLIED_FILE), `应用记录写入失败，已撤回本次写入，工作区未改动：${describeError(error)}`)]);
   }
   return { applied, ...(drift ? { drift } : {}), problems: [] };
@@ -542,8 +616,11 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     } catch (error) {
       return fail(candidate.path, `候选文件无法读取：${describeError(error)}`);
     }
-    if (createHash('sha256').update(bytes).digest('hex') !== candidate.sha256) return fail(candidate.path, `候选文件自成果生成后被改动：${candidate.path}`);
-    candidates.push({ path: candidate.path, kind: candidate.kind, ...(candidate.name !== undefined ? { name: candidate.name } : {}), document: JSON.parse(bytes.toString('utf8')) });
+    if (sha256(bytes) !== candidate.sha256) return fail(candidate.path, `候选文件自成果生成后被改动：${candidate.path}`);
+    candidates.push({
+      path: candidate.path, kind: candidate.kind, ...(candidate.name !== undefined ? { name: candidate.name } : {}), document: JSON.parse(bytes.toString('utf8')),
+      ...(candidate.revises ? { revises: candidate.revises } : {}),
+    });
   }
   for (const item of outcome.pending) {
     if (!candidates.some((candidate) => candidate.path === item.file)) return fail(OUTCOME_FILE, `待确认项指向的文件不在候选中：${item.file}`);
@@ -560,6 +637,15 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     if (typeof requestFile === 'string' || !isRecord(requestFile.value)) return fail('request.json', '出图请求无法读取');
     request = requestFile.value;
   }
+  const texts: { requirement?: string; feedback?: string } = {};
+  for (const name of ['requirement', 'feedback'] as const) {
+    if (!record.inputs[name]) continue;
+    try {
+      texts[name] = await readFile(join(root, `${name}.md`), 'utf8');
+    } catch (error) {
+      return fail(`${name}.md`, `${name === 'requirement' ? '修改要求' : '反馈'}无法读取：${describeError(error)}`);
+    }
+  }
   const resourcesDir = record.inputs.resources ?? await resourcesFromMcpConfig(root);
   const workspace = await loadRoundWorkspace(join(root, 'snapshot'), resourcesDir);
   let applied: AppliedRecord | undefined;
@@ -568,10 +654,11 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   else if (await exists(join(root, APPLIED_FILE))) return fail(APPLIED_FILE, `应用记录无法读取：${appliedFile}`);
   return {
     round: {
-      dir: root, outcome, outcomeSha256: createHash('sha256').update(outcomeFile.bytes).digest('hex'), record, candidates, workspace,
+      dir: root, outcome, outcomeSha256: sha256(outcomeFile.bytes), record, candidates, workspace,
       ...(resourcesDir ? { resourcesDir } : {}),
-      context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition } : {},
-      ...(request ? { request } : {}), ...(applied ? { applied } : {}),
+      context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition }
+        : outcome.task === 'template-revision' ? { revision: { templates: (record.inputs.templates ?? []).map((entry) => entry.name) } } : {},
+      ...(request ? { request } : {}), ...texts, ...(applied ? { applied } : {}),
     },
     problems: [],
   };
@@ -642,23 +729,9 @@ function kindOf(round: AgentRound, file: string): CandidateKind {
   return round.candidates.find((candidate) => candidate.path === file)?.kind ?? 'definition';
 }
 
+/** 整份替换：关闭后重开总能读到一份完整的审核结果。 */
 async function saveReviewRecord(dir: string, record: ReviewRecord): Promise<void> {
-  const target = join(dir, REVIEW_FILE), temporary = join(dir, `.review-${randomUUID()}.tmp`);
-  await writeFile(temporary, `${JSON.stringify(record, null, 2)}\n`, { flag: 'wx' });
-  try {
-    // 整份替换：关闭后重开总能读到一份完整的审核结果。Windows 上替换偶尔短暂被拒，有界重试。
-    for (let attempt = 0; ; attempt++) {
-      try {
-        await rename(temporary, target);
-        return;
-      } catch (error) {
-        if (process.platform !== 'win32' || attempt >= 7 || !isRecord(error) || !['EPERM', 'EACCES', 'EBUSY'].includes(String(error['code']))) throw error;
-        await delay(20 * 2 ** attempt);
-      }
-    }
-  } finally {
-    await rm(temporary, { force: true });
-  }
+  await replaceFile(join(dir, REVIEW_FILE), `${JSON.stringify(record, null, 2)}\n`);
 }
 
 interface ReviewState {
@@ -795,28 +868,35 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
         required: Array.isArray(compiled['required']) ? compiled['required'].map(String) : [],
         schema: compiled,
       } } : {}),
+      ...(round.outcome.task === 'template-revision' && candidate.kind === 'template' && document !== undefined ? { revision: revisionView(round, candidate, document) } : {}),
       problems: result?.problems ?? [],
     };
   });
   const preview = await previewOf(round, state);
+  const previewBefore = round.outcome.task === 'template-revision' ? await previewBeforeOf(round) : undefined;
   const view: Omit<ReviewView, 'canApprove'> = {
     round: {
       dir: round.dir, task: round.outcome.task, taskName: AGENT_TASKS[round.outcome.task].name, verdict: round.record.verdict,
       sample: round.record.inputs.sample.file, workspace: round.record.inputs.workspace?.source ?? null, notes: round.outcome.notes, usage: round.outcome.usage,
+      round: round.outcome.round, chain: await readRoundChain(round.dir),
+      ...(round.requirement !== undefined ? { requirement: round.requirement } : {}), ...(round.feedback !== undefined ? { feedback: round.feedback } : {}),
     },
-    review: record, saved, pending, candidates, ...(preview ? { preview } : {}), problems,
+    review: record, saved, pending, candidates, ...(preview ? { preview } : {}), ...(previewBefore ? { previewBefore } : {}), problems,
     ...(round.applied ? { applied: round.applied } : {}),
   };
   return { ...view, canApprove: blockingProblems(view).length === 0 };
 }
 
-/** 阻止通过的严重问题：审核层面的、候选的，以及模板辅助设计的预览问题。 */
+/** 阻止通过的严重问题：审核层面的、候选的，以及模板辅助设计、模板辅助修改的预览问题。 */
 function blockingProblems(view: Pick<ReviewView, 'problems' | 'candidates' | 'preview'>): Problem[] {
   return [...view.problems, ...view.candidates.flatMap((candidate) => candidate.problems), ...(view.preview?.blocking ? view.preview.problems : [])]
     .filter((problem) => problem.level === 'severe');
 }
 
-/** 有出图请求时重新渲染预览：模板辅助设计用审核后的候选模板与已保存的数据集；数据集提取用已保存的模板与审核后的候选数据集。 */
+/**
+ * 有出图请求时重新渲染预览：模板辅助设计与模板辅助修改用审核后的候选模板（同名的代替已保存的模板，M50）与已保存的数据集；
+ * 数据集提取用已保存的模板与审核后的候选数据集。
+ */
 async function previewOf(round: AgentRound, state: ReviewState): Promise<PreviewView | undefined> {
   if (!round.request) return undefined;
   const templates = round.candidates.filter((candidate) => candidate.kind === 'template' && state.documents.has(candidate.path))
@@ -836,8 +916,23 @@ async function previewOf(round: AgentRound, state: ReviewState): Promise<Preview
   }
   return renderPreview({
     roundDir: round.dir, workspace, request, shown, sample: await readFile(join(round.dir, round.record.inputs.sample.file)),
-    inputs: { templates: templates.map((entry) => entry.document), dataset }, blocking: round.outcome.task === 'template-design',
+    inputs: { templates: templates.map((entry) => entry.document), dataset }, blocking: round.outcome.task === 'template-design' || round.outcome.task === 'template-revision',
   });
+}
+
+/** 模板辅助修改的修改前预览：只用工作区快照中已保存的模板。 */
+async function previewBeforeOf(round: AgentRound): Promise<PreviewView | undefined> {
+  if (!round.request) return undefined;
+  return renderPreview({
+    roundDir: round.dir, workspace: round.workspace, request: round.request, shown: round.request,
+    sample: await readFile(join(round.dir, round.record.inputs.sample.file)), inputs: { templates: [] }, blocking: false,
+  });
+}
+
+/** 审核后的工作副本相对快照中同名已保存模板的差异；没有基准的是新增的模板。 */
+function revisionView(round: AgentRound, candidate: RoundCandidate, document: unknown): RevisionView {
+  const saved = candidate.revises ? round.workspace.templates.find((entry) => entry.name === candidate.name)?.document : undefined;
+  return { ...revisionDiff(saved, document), ...(candidate.revises ? { basis: candidate.revises } : {}) };
 }
 
 interface ItemContext {
@@ -1011,7 +1106,7 @@ function retargetReferences(document: Record<string, unknown>, retarget: (ref: S
   }
 }
 
-async function workspaceDrift(round: AgentRound, workspace: string, actual: string, current: readonly StaticSchemaEntry[], state: ReviewState): Promise<WorkspaceDrift> {
+async function workspaceDrift(round: AgentRound, workspace: string, actual: string, current: Workspace, state: ReviewState): Promise<WorkspaceDrift> {
   const before = await jsonFileHashes(join(round.dir, 'snapshot'));
   const after = await jsonFileHashes(workspace);
   const latest = (entries: readonly StaticSchemaEntry[], name: string) => {
@@ -1019,46 +1114,148 @@ async function workspaceDrift(round: AgentRound, workspace: string, actual: stri
     return versions.length === 0 ? null : Math.max(...versions);
   };
   const names = [...state.results.values()].flatMap((result) => (result.published ? [result.published.ref.name] : []));
+  // 模板辅助修改：改动了的工作副本所基于的模板，在当前工作区中换了内容、换了文件或被删去。
+  const templates: TemplateConflict[] = [];
+  for (const candidate of round.candidates) {
+    if (!candidate.revises || !state.documents.has(candidate.path)) continue;
+    if (revisionView(round, candidate, state.documents.get(candidate.path)).status !== 'modified') continue;
+    const entry = current.templates.find((item) => item.name === candidate.name);
+    const now = entry?.source ? { file: basename(entry.source), sha256: after.get(basename(entry.source)) ?? '' } : null;
+    if (now && now.file === candidate.revises.file && now.sha256 === candidate.revises.sha256) continue;
+    const saved = round.workspace.templates.find((item) => item.name === candidate.name)?.document;
+    templates.push({ name: candidate.name!, basis: candidate.revises, current: now, changes: entry ? diffTemplate(saved, entry.document) : [] });
+  }
   return {
     expected: round.outcome.inputs.workspaceFingerprint, actual,
     added: [...after.keys()].filter((file) => !before.has(file)),
     removed: [...before.keys()].filter((file) => !after.has(file)),
     changed: [...after.keys()].filter((file) => before.has(file) && before.get(file) !== after.get(file)),
     newerDefinitions: names.flatMap((name) => {
-      const snapshot = latest(round.workspace.staticSchemas, name), now = latest(current, name);
+      const snapshot = latest(round.workspace.staticSchemas, name), now = latest(current.staticSchemas, name);
       return now !== null && (snapshot === null || now > snapshot) ? [{ name, snapshot, workspace: now }] : [];
     }),
+    ...(round.outcome.task === 'template-revision' ? { templates } : {}),
   };
 }
 
-async function jsonFileHashes(dir: string): Promise<Map<string, string>> {
-  const hashes = new Map<string, string>();
-  for (const file of (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()) {
-    hashes.set(file, createHash('sha256').update(await readFile(join(dir, file))).digest('hex'));
-  }
-  return hashes;
+/** 下一轮所需的上一轮内容（M58）。 */
+export interface PreviousRound {
+  readonly dir: string;
+  readonly record: RoundRecord;
+  readonly round: number;
+  /** 上一轮所用的资源仓库。 */
+  readonly resources?: string;
+  /** 上一轮成果的哈希；结构不合格、没有成果时为 null。 */
+  readonly outcomeSha256: string | null;
+  readonly reviewSha256: string | null;
+  readonly reviewStatus: ReviewStatus | null;
+  /** 上一轮已经应用（有 applied.json）。 */
+  readonly applied: boolean;
+  /** 上一轮成果（含审核时的修改），路径相对 Agent 工作目录，如 candidates/schema-badge.json；结构不合格时是 Agent 交回的原样文件。 */
+  readonly candidates: readonly { readonly path: string; readonly bytes: Uint8Array }[];
+  /** 原样交给下一轮的记录：outcome.json、review.json、check.json 中存在的。 */
+  readonly files: readonly { readonly name: string; readonly bytes: Uint8Array }[];
 }
 
-/** 键排序后的 JSON，用来比较两个值是否相同。 */
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (isRecord(value)) {
-    return `{${Object.keys(value).filter((key) => value[key] !== undefined).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+/**
+ * 读出上一轮，供下一轮使用：成果按 review.json 作用审核时的修改（与审核页、应用同一套规则）；整份标为空的候选不再给。
+ * 上一轮结构不合格、没有成果时，给 Agent 当时交回的 candidates/ 下的文件与问题清单。
+ */
+export async function readPreviousRound(dir: string): Promise<PreviousRound> {
+  const root = resolve(dir);
+  let record: RoundRecord;
+  try {
+    record = JSON.parse(await readFile(join(root, 'round.json'), 'utf8')) as RoundRecord;
+  } catch (error) {
+    throw new AgentUsageError(`上一轮的轮次记录无法读取：${join(root, 'round.json')}（${describeError(error)}）`);
   }
-  return JSON.stringify(value) ?? 'undefined';
+  if (!isRecord(record) || record.format !== 'renderweave-round/1' || !Object.hasOwn(AGENT_TASKS, record.task) || !isRecord(record.inputs) ||
+    !Number.isSafeInteger(record.round) || !isRecord(record.inputs.sample) || !isRecord(record.inputs.workspace)) {
+    throw new AgentUsageError(`上一轮的 round.json 不是 renderweave-round/1 轮次记录：${root}`);
+  }
+  const files: { name: string; bytes: Uint8Array }[] = [];
+  for (const name of [OUTCOME_FILE, REVIEW_FILE, 'check.json']) {
+    if (await exists(join(root, name))) files.push({ name, bytes: await readFile(join(root, name)) });
+  }
+  const resources = record.inputs.resources ?? await resourcesFromMcpConfig(root);
+  const base = { dir: root, record, round: record.round, ...(resources ? { resources } : {}), applied: await exists(join(root, APPLIED_FILE)), files };
+  if (!files.some((file) => file.name === OUTCOME_FILE)) {
+    return { ...base, outcomeSha256: null, reviewSha256: null, reviewStatus: null, candidates: await readJsonTree(join(root, 'agent'), 'candidates') };
+  }
+  const opened = await openRound(root);
+  if (!opened.round) throw new AgentUsageError(`上一轮不能作为下一轮的基础：${opened.problems.map((problem) => problem.message).join('；')}`);
+  const review = await readReviewRecord(opened.round);
+  if (review.problems.length > 0) throw new AgentUsageError(`上一轮的审核结果不能使用：${review.problems.map((problem) => problem.message).join('；')}`);
+  const state = reviewState(opened.round, review.record);
+  if (state.problems.length > 0) throw new AgentUsageError(`上一轮的审核结果相互矛盾：${state.problems.map((problem) => problem.message).join('；')}`);
+  const candidates: { path: string; bytes: Uint8Array }[] = [];
+  for (const candidate of opened.round.candidates) {
+    if (!state.documents.has(candidate.path)) continue;
+    const document = state.documents.get(candidate.path);
+    // 没有改动的保留原文，改过的按审核结果重写。
+    candidates.push({ path: candidate.path, bytes: canonical(document) === canonical(candidate.document)
+      ? await readFile(join(root, candidate.path)) : Buffer.from(`${JSON.stringify(document, null, 2)}\n`) });
+  }
+  const reviewFile = files.find((file) => file.name === REVIEW_FILE);
+  return {
+    ...base, outcomeSha256: opened.round.outcomeSha256, reviewSha256: review.saved && reviewFile ? sha256(reviewFile.bytes) : null,
+    reviewStatus: review.saved ? review.record.status : null, candidates,
+  };
+}
+
+/** 沿 round.json 的 previous 追溯到第 1 轮，按轮次先后排列；某一轮读不到时链在那里断开。 */
+export async function readRoundChain(dir: string): Promise<RoundLink[]> {
+  const chain: RoundLink[] = [];
+  const seen = new Set<string>();
+  let current: string | undefined = resolve(dir), expected: number | undefined;
+  while (current !== undefined && !seen.has(current)) {
+    seen.add(current);
+    let record: RoundRecord | undefined;
+    try {
+      record = JSON.parse(await readFile(join(current, 'round.json'), 'utf8')) as RoundRecord;
+    } catch {
+      record = undefined;
+    }
+    if (!isRecord(record) || !isRecord(record.inputs) || !Number.isSafeInteger(record.round)) {
+      chain.unshift({ round: expected ?? 0, dir: current, applied: false, missing: true });
+      break;
+    }
+    let review: ReviewStatus | undefined;
+    try {
+      const value: unknown = JSON.parse(await readFile(join(current, REVIEW_FILE), 'utf8'));
+      if (isRecord(value) && ['inProgress', 'approved', 'rejected'].includes(String(value['status']))) review = value['status'] as ReviewStatus;
+    } catch {
+      review = undefined;
+    }
+    chain.unshift({
+      round: record.round, dir: current, task: record.task, verdict: record.verdict, ...(review ? { review } : {}), applied: await exists(join(current, APPLIED_FILE)),
+    });
+    const previous = record.inputs.previous;
+    expected = previous?.round;
+    current = previous ? resolve(previous.dir) : undefined;
+  }
+  return chain;
+}
+
+/** base 下 sub 目录里的全部 .json 文件，路径相对 base、用 / 分隔；目录不存在时为空。 */
+async function readJsonTree(base: string, sub: string): Promise<{ path: string; bytes: Uint8Array }[]> {
+  let names: string[];
+  try {
+    names = (await readdir(join(base, sub), { recursive: true })).map(String);
+  } catch {
+    return [];
+  }
+  const files: { path: string; bytes: Uint8Array }[] = [];
+  for (const name of names.sort()) {
+    const path = join(base, sub, name);
+    if (!name.endsWith('.json') || !(await stat(path)).isFile()) continue;
+    files.push({ path: relative(base, path).split(sep).join('/'), bytes: await readFile(path) });
+  }
+  return files;
 }
 
 /** 备注：没有给出时为 undefined；给了却不是文本时为 null。 */
 function optionalComment(value: unknown): string | undefined | null {
   if (value === undefined) return undefined;
   return typeof value === 'string' ? value.trim() : null;
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
 }

@@ -41,18 +41,19 @@ export { readPngInfo, readJpegDpi } from './image-metadata.js';
 export { mmToPx } from './units.js';
 export {
   runAgentTask, workspaceFingerprint, AgentUsageError, DEFAULT_MODEL, DEFAULT_ENDPOINT, DEFAULT_KEY_ENV,
-  type AgentRunOptions, type AgentRunResult, type RoundRecord, type RoundOutcome, type RoundInputs, type RoundUsage,
+  type AgentRunOptions, type AgentRunResult, type RoundRecord, type RoundOutcome, type RoundInputs, type RoundUsage, type PreviousRef, type TemplateBasis,
 } from './agent/run.js';
 export {
   checkAgentOutcome, PENDING_REASONS,
   type OutcomeCheck, type CandidateCheck, type PendingItem, type PendingReason, type SubmittedOutcome, type FieldLocation,
 } from './agent/outcome.js';
 export {
-  readReview, changeReview, applyAgentRound, REVIEW_FILE, APPLIED_FILE, REVIEW_ACTIONS,
+  readReview, changeReview, applyAgentRound, readPreviousRound, readRoundChain, REVIEW_FILE, APPLIED_FILE, REVIEW_ACTIONS,
   type ReviewAction, type ReviewStatus, type ReviewDecision, type ReviewRecord, type ReviewChange, type ReviewView, type PendingView,
   type CandidateView, type FieldView, type EntryView, type ElementView, type ParameterView, type ItemState, type PreviewView,
   type CompiledSummary, type WorkspaceDrift, type NewerDefinition, type AppliedRecord,
-  type AgentApplyOptions, type AgentApplyResult,
+  type AgentApplyOptions, type AgentApplyResult, type RoundLink, type RevisionView, type TemplateConflict, type PreviousRound,
 } from './agent/review.js';
+export { diffTemplate, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';

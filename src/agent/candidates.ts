@@ -2,7 +2,8 @@
  * 用引擎校验候选文件（第三阶段 PRD 第 9 条）：成果校验与审核视图共用，应用前也在当前工作区上再跑一遍。
  * - 数据定义：按依赖顺序在内存中发布，版本号接在工作区之后。
  * - 数据集：先按 JSON Schema 做前置校验；再要求有 id、不与工作区重复、选定本轮的数据定义；最后按编译产物校验数据。
- * - 模板：先按 JSON Schema 做前置校验；再以全部候选作为工作副本做静态检查。模板辅助设计只新建模板，名称不能与工作区重复。
+ * - 模板：先按 JSON Schema 做前置校验；再以全部候选作为工作副本做静态检查。模板辅助设计只新建模板，名称不能与工作区重复；
+ *   模板辅助修改的候选与主模板调用树中的模板同名时是它们的工作副本，代替已保存的模板（M49、M50）。
  */
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
 import { checkAgainstDslSchema } from '../dsl-schema.js';
@@ -24,6 +25,8 @@ export interface CandidateDocument {
 export interface CandidateContext {
   /** 数据集提取所选的数据定义：候选数据集必须选定它。 */
   readonly definition?: StaticSchemaRef;
+  /** 模板辅助修改可以改的已保存模板：出图请求主模板的调用树。 */
+  readonly revision?: { readonly templates: readonly string[] };
 }
 
 export interface CandidateResult {
@@ -38,7 +41,7 @@ export function checkCandidates(candidates: readonly CandidateDocument[], worksp
   const datasets = candidates.filter((candidate) => candidate.kind === 'dataset');
   for (const candidate of datasets) results.set(candidate.path, { problems: checkDataset(candidate, datasets, workspace, context) });
   const templates = candidates.filter((candidate) => candidate.kind === 'template');
-  for (const [path, problems] of checkTemplates(templates, workspace)) results.set(path, { problems });
+  for (const [path, problems] of checkTemplates(templates, workspace, context.revision)) results.set(path, { problems });
   return results;
 }
 
@@ -109,8 +112,8 @@ function checkDataset(candidate: CandidateDocument, all: readonly CandidateDocum
   return problems;
 }
 
-/** 模板候选作为工作副本叠加在工作区上，逐个做静态检查；同一问题只报一次，归到问题所在的模板。 */
-function checkTemplates(candidates: readonly CandidateDocument[], workspace: Workspace): Map<string, Problem[]> {
+/** 模板候选作为工作副本叠加在工作区上（同名的代替已保存的模板），逐个做静态检查；同一问题只报一次，归到问题所在的模板。 */
+function checkTemplates(candidates: readonly CandidateDocument[], workspace: Workspace, revision: CandidateContext['revision']): Map<string, Problem[]> {
   const results = new Map(candidates.map((candidate) => [candidate.path, [] as Problem[]]));
   const usable: { path: string; name: string; document: unknown }[] = [];
   for (const candidate of candidates) {
@@ -121,13 +124,20 @@ function checkTemplates(candidates: readonly CandidateDocument[], workspace: Wor
       continue;
     }
     const name = (candidate.document as Record<string, unknown>)['name'] as string;
-    if (workspace.templates.some((entry) => entry.name === name)) {
+    const saved = workspace.templates.some((entry) => entry.name === name);
+    if (saved && revision && !revision.templates.includes(name)) {
+      results.get(candidate.path)!.push(severe(ProblemCodes.templateInvalid, where,
+        `模板辅助修改只能改出图请求主模板调用到的模板（${revision.templates.join('、')}）：${name} 不在其中`));
+    } else if (saved && !revision) {
       results.get(candidate.path)!.push(severe(ProblemCodes.templateInvalid, where, `工作区已有模板 ${name}：模板辅助设计只新建模板，修改已保存的模板用模板辅助修改`));
     } else if (usable.some((other) => other.name === name)) {
       results.get(candidate.path)!.push(severe(ProblemCodes.templateInvalid, where, `候选模板的名称重复：${name}`));
     } else usable.push({ path: candidate.path, name, document: candidate.document });
   }
-  const overlay: Workspace = { ...workspace, templates: [...workspace.templates, ...usable.map((item) => ({ name: item.name, document: item.document, source: item.path }))] };
+  const replaced = new Set(usable.map((item) => item.name));
+  const overlay: Workspace = { ...workspace, templates: [
+    ...workspace.templates.filter((entry) => !replaced.has(entry.name)), ...usable.map((item) => ({ name: item.name, document: item.document, source: item.path })),
+  ] };
   const seen = new Set<string>();
   for (const item of usable) {
     const parsed = parseTemplate(item.name, item.document);

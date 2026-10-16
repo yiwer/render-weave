@@ -4,18 +4,27 @@
  * 只连本仓库的 `renderweave mcp`；结束后校验 Agent 交回的 outcome.json，写出轮次记录、成果与校验结果。
  *
  * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；key 只经环境变量传入，不写任何文件。
+ *
+ * 多轮（M58）：带 from 发起下一轮时，沿用上一轮的任务、素材、基准、出图请求与修改要求，工作区重新取快照；
+ * 上一轮成果（含审核时的修改）放进 candidates/ 作为起点，原样记录放进 previous/，反馈放进 docs/feedback.md。
+ * 模板辅助修改：把主模板调用树中已保存的模板复制进 candidates/ 作为工作副本（M49），并记录各自所基于的保存内容（M51）。
  */
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseRenderRequest } from '../request.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
-import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type PendingItem } from './outcome.js';
-import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
+import { templateCallTree } from './diff.js';
+import { locate } from './locations.js';
+import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type PendingItem } from './outcome.js';
+import { readPreviousRound, type PreviousRound } from './review.js';
+import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
+import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
+
+export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
 export const DEFAULT_ENDPOINT = 'https://token-plan.maas.qianwenaiapi.com/apps/anthropic';
 export const DEFAULT_MODEL = 'qwen3.8-max';
@@ -29,14 +38,12 @@ const SYSTEM_VARIABLES = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 
   'LOCALAPPDATA', 'TEMP', 'TMP', 'TMPDIR', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramData', 'CommonProgramFiles', 'USERNAME', 'USER',
   'USERDOMAIN', 'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
 
-/** 参数、输入文件或任务顺序不对：命令行报用法错误，不创建轮次目录。 */
-export class AgentUsageError extends Error {}
-
 export interface AgentRunOptions {
-  readonly task: AgentTaskId;
-  readonly sample: string;
-  readonly brief: string;
-  readonly resources: string;
+  /** 任务类型、示例图、项目说明与资源仓库：带 from 时沿用上一轮，不能再给。 */
+  readonly task?: AgentTaskId;
+  readonly sample?: string;
+  readonly brief?: string;
+  readonly resources?: string;
   /** 新的轮次目录：不存在或为空。 */
   readonly out: string;
   readonly domain?: string;
@@ -45,8 +52,14 @@ export interface AgentRunOptions {
   readonly definition?: string;
   /** 模板辅助设计所基于的已保存数据集 id。 */
   readonly dataset?: string;
-  /** 示例图对应的出图请求文件：主模板名、参数与输出尺寸；审核页按它重新渲染预览（M52）。 */
+  /** 示例图对应的出图请求文件：主模板名、参数与输出尺寸；审核页按它重新渲染预览（M52）。模板辅助修改时，主模板就是要修改的已保存模板。 */
   readonly request?: string;
+  /** 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在。 */
+  readonly requirement?: string;
+  /** 上一轮的轮次目录：下一轮沿用它的输入，拿到它的成果（含审核时的修改）与反馈（M58）。 */
+  readonly from?: string;
+  /** 给下一轮的反馈（Markdown）；带 from 时必须给。 */
+  readonly feedback?: string;
   /** key 的值只在内存中传给子进程；keyEnv 是它所在的环境变量名，只用于记录。 */
   readonly key: string;
   readonly keyEnv: string;
@@ -96,11 +109,36 @@ export interface RoundInputs {
   readonly resources?: string;
   /** 本轮所基于的数据定义（数据集提取、模板辅助设计）。 */
   readonly definition?: StaticSchemaRef | null;
-  /** 本轮所基于的数据集（模板辅助设计）。 */
+  /** 本轮所基于的数据集（模板辅助设计、模板辅助修改）。 */
   readonly dataset?: string | null;
   /** 示例图对应的出图请求：原文件与规范化后存在轮次目录的 request.json。 */
   readonly request?: { readonly source: string; readonly file: 'request.json'; readonly template: string } | null;
-  readonly previous: null;
+  /** 模板辅助修改可以改的已保存模板（主模板的调用树），以及各自所基于的保存内容：工作区中的文件名与内容哈希（M51）。 */
+  readonly templates?: readonly TemplateBasis[];
+  /** 模板辅助修改的修改要求，存在轮次目录的 requirement.md。 */
+  readonly requirement?: { readonly source: string; readonly file: 'requirement.md'; readonly sha256: string } | null;
+  /** 下一轮的反馈，存在轮次目录的 feedback.md。 */
+  readonly feedback?: { readonly source: string; readonly file: 'feedback.md'; readonly sha256: string } | null;
+  /** 上一轮；第 1 轮为 null。 */
+  readonly previous: PreviousRef | null;
+}
+
+export interface TemplateBasis {
+  readonly name: string;
+  readonly file: string;
+  readonly sha256: string;
+}
+
+/** 轮次链上的上一环：沿 previous.dir 可以一直追到第 1 轮。 */
+export interface PreviousRef {
+  readonly dir: string;
+  readonly round: number;
+  /** 上一轮成果的哈希；结构不合格、没有成果时为 null。 */
+  readonly outcomeSha256: string | null;
+  readonly reviewSha256: string | null;
+  readonly reviewStatus: 'inProgress' | 'approved' | 'rejected' | null;
+  /** 模板辅助修改：已保存的模板在上一轮之后被改过，本轮从最新保存的内容重新开始。 */
+  readonly basisChanged?: boolean;
 }
 
 /** 轮次成果 outcome.json（M48）：Agent 交回的内容加上 RenderWeave 记录的输入与用量；结构合格时才写出。 */
@@ -108,9 +146,15 @@ export interface RoundOutcome {
   readonly format: 'renderweave-outcome/1';
   readonly task: AgentTaskId;
   readonly round: number;
-  readonly inputs: { readonly sampleSha256: string; readonly workspaceFingerprint: string; readonly previous: null };
+  readonly inputs: {
+    readonly sampleSha256: string; readonly workspaceFingerprint: string;
+    readonly previous: { readonly dir: string; readonly round: number; readonly outcomeSha256: string | null; readonly reviewSha256: string | null } | null;
+    readonly feedbackSha256?: string;
+  };
   readonly candidates: readonly { readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly sha256: string;
-    readonly published?: { readonly name: string; readonly version: number } }[];
+    readonly published?: { readonly name: string; readonly version: number };
+    /** 模板辅助修改的工作副本所基于的保存内容（M51）；新增的模板没有。 */
+    readonly revises?: { readonly file: string; readonly sha256: string } }[];
   /** 字段在示例图上的位置，来自 Agent，没有时为空列表。 */
   readonly locations: readonly FieldLocation[];
   readonly pending: readonly PendingItem[];
@@ -125,20 +169,25 @@ export interface AgentRunResult {
   readonly outcome?: RoundOutcome;
 }
 
-export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunResult> {
+/** 下一轮的候选从哪里开始：写进提示词。 */
+const SEED_NOTES = {
+  previous: 'candidates/ 中已放好上一轮的成果（含审核时的修改），在它的基础上按反馈修改，不要从头重做。',
+  unqualified: 'candidates/ 中已放好上一轮交回的文件。上一轮的成果结构不合格，没有经过审核：按 previous/check.json 的问题与反馈修改。',
+  applied: '上一轮的成果已经应用：candidates/ 中放的是应用后最新保存的模板，已含上一轮的修改，在它的基础上按反馈修改。',
+  rebased: '已保存的模板在上一轮之后被人改过：candidates/ 中放的是最新保存的模板，previous/candidates/ 中上一轮的工作副本只作参考，在最新内容上按修改要求与反馈重新修改。',
+};
+
+export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResult> {
+  if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
+  if (given.from !== undefined) checkNextRound(given);
+  const previous = given.from === undefined ? undefined : await readPreviousRound(given.from);
+  const options = previous ? inherit(given, previous) : given;
+  if (options.task === undefined || options.sample === undefined || options.brief === undefined || options.resources === undefined) {
+    throw new AgentUsageError('发起第 1 轮要给出任务类型、示例图、项目说明与资源仓库');
+  }
   const task = AGENT_TASKS[options.task];
   if (!task.implemented) throw new AgentUsageError(`任务类型"${task.name}"尚未实现`);
-  // 任务顺序（M43）：数据集提取要已发布的数据定义，模板辅助设计要已保存的数据集。
-  if (task.requires !== 'none' && options.definition === undefined && options.dataset === undefined) {
-    throw new AgentUsageError(`只给了示例图，没有指定数据定义：先做数据定义提取并发布（M43），例如 renderweave agent run --task 数据定义提取 …`);
-  }
-  if (task.requires === 'dataset' && options.dataset === undefined) {
-    throw new AgentUsageError(`${task.name}要基于已保存的数据集：先做数据集提取并应用（M43），再用 --dataset 指定数据集 id`);
-  }
-  if (task.request === 'none' && options.request !== undefined) throw new AgentUsageError(`${task.name}不用出图请求，去掉 --request`);
-  if (task.request === 'required' && options.request === undefined) {
-    throw new AgentUsageError(`${task.name}要用 --request 给出示例图对应的出图请求（主模板名、参数与输出尺寸），审核时按它重新渲染预览`);
-  }
+  checkTaskOrder(task, options);
   await requireFile(options.sample, '示例图');
   // 按文件头定扩展名：文件名与内容不符时，Claude Code 会按扩展名声明错误的图片类型。
   const extension = imageExtension(await readFile(options.sample));
@@ -152,10 +201,15 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
     }
   }
   if (options.workspace !== undefined && !(await isDirectory(options.workspace))) throw new AgentUsageError(`工作区目录无法读取：${options.workspace}`);
-  if (task.requires !== 'none' && options.workspace === undefined) throw new AgentUsageError(`${task.name}要用 --workspace 指定已发布的数据定义所在的工作区`);
+  if (task.requires !== 'none' && options.workspace === undefined) throw new AgentUsageError(`${task.name}要用 --workspace 指定已发布的数据定义与已保存的数据集、模板所在的工作区`);
   if (!(await isFile(join(options.resources, 'resources.json')))) throw new AgentUsageError(`资源仓库缺少 resources.json：${options.resources}`);
-  const basis = task.requires === 'none' ? { definition: null, dataset: null } : await resolveBasis(task.requires, options);
-  const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!);
+  const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
+  const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
+  const dataset = request?.dataset ?? basis.dataset;
+  const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
+  // 元素路径只在第 1 轮核对：沿用到下一轮时，上一轮可能已经把那些元素改名或移走并应用了。
+  if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
+  if (options.feedback !== undefined) await requireFile(options.feedback, '反馈');
   if (options.key === '') throw new AgentUsageError(`环境变量 ${options.keyEnv} 为空`);
   const roundDir = resolve(options.out);
   if (await exists(roundDir) && (!(await isDirectory(roundDir)) || (await readdir(roundDir)).length > 0)) {
@@ -163,10 +217,11 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   }
 
   const startedAt = new Date().toISOString();
+  const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
 
-  // 资料：项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
+  // 资料：反馈 > 修改要求 > 项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
   const sampleFile = `sample${extension}`;
   await copyFile(options.sample, join(agentDir, sampleFile));
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
@@ -177,9 +232,37 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
   }
-  const prompt = (await readFile(join(AGENT_MATERIALS, 'tasks', `${task.id}.md`), 'utf8')).replaceAll('{sample}', sampleFile)
+  for (const [file, name] of [[options.requirement, 'requirement.md'], [options.feedback, 'feedback.md']] as const) {
+    if (file === undefined) continue;
+    await copyFile(file, join(agentDir, 'docs', name));
+    await copyFile(file, join(roundDir, name));
+  }
+
+  // 候选的起点：模板辅助修改从已保存的模板开始（工作副本，M49）；下一轮从上一轮成果（含审核时的修改）继续。
+  const seeds = new Map((revision ?? []).map((entry) => [`candidates/${entry.file}`, entry.bytes] as [string, Uint8Array]));
+  let seedNote = '', basisChanged: boolean | undefined;
+  if (previous) {
+    for (const file of previous.files) await writeAt(join(agentDir, 'previous', file.name), file.bytes);
+    for (const candidate of previous.candidates) await writeAt(join(agentDir, 'previous', candidate.path), candidate.bytes);
+    basisChanged = revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
+    if (!basisChanged) {
+      for (const candidate of previous.candidates) {
+        const name = templateName(candidate.bytes);
+        for (const [path, bytes] of seeds) if (name !== undefined && templateName(bytes) === name) seeds.delete(path);
+        seeds.set(candidate.path, candidate.bytes);
+      }
+    }
+    seedNote = basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
+  }
+  for (const [path, bytes] of seeds) await writeAt(join(agentDir, path), bytes);
+
+  let prompt = (await readFile(join(AGENT_MATERIALS, 'tasks', `${task.id}.md`), 'utf8')).replaceAll('{sample}', sampleFile)
     .replaceAll('{definition}', basis.definition ? formatStaticSchemaRef(basis.definition) : '')
-    .replaceAll('{dataset}', basis.dataset ?? '').replaceAll('{template}', request?.template ?? '');
+    .replaceAll('{dataset}', dataset ?? '').replaceAll('{template}', request?.template ?? '')
+    .replaceAll('{templates}', (revision ?? []).map((entry) => `${entry.name}（candidates/${entry.file}）`).join('、'));
+  if (previous) {
+    prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
+  }
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
@@ -189,15 +272,24 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
       documents++;
     }
   }
+  const textInput = async <T extends 'requirement.md' | 'feedback.md'>(file: string | undefined, name: T) =>
+    (file === undefined ? null : { source: resolve(file), file: name, sha256: sha256(await readFile(file)) });
+  const requirement = await textInput(options.requirement, 'requirement.md');
+  const feedback = await textInput(options.feedback, 'feedback.md');
   const inputs: RoundInputs = {
-    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: await sha256File(options.sample) },
-    brief: { source: resolve(options.brief), sha256: await sha256File(options.brief) },
+    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(await readFile(options.sample)) },
+    brief: { source: resolve(options.brief), sha256: sha256(await readFile(options.brief)) },
     domain: options.domain ?? null,
     workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
     resources: resolve(options.resources),
-    definition: basis.definition, dataset: basis.dataset,
+    definition: basis.definition, dataset,
     request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
-    previous: null,
+    ...(revision ? { templates: revision.map(({ name, file, sha256: digest }) => ({ name, file, sha256: digest })), requirement } : {}),
+    ...(previous ? { feedback } : {}),
+    previous: previous ? {
+      dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256, reviewStatus: previous.reviewStatus,
+      ...(basisChanged !== undefined ? { basisChanged } : {}),
+    } : null,
   };
 
   const model = options.model ?? DEFAULT_MODEL, smallModel = options.smallModel ?? DEFAULT_SMALL_MODEL;
@@ -225,10 +317,12 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
-  const check = await checkAgentOutcome({
-    task: task.id, agentDir, workspace: snapshot,
-    context: { ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}), ...(request ? { request: { template: request.template } } : {}) },
-  });
+  const context: OutcomeContext = {
+    ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
+    ...(request ? { request: { template: request.template } } : {}),
+    ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
+  };
+  const check = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
   let outcome: RoundOutcome | undefined;
   if (check.submission) {
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
@@ -237,10 +331,20 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
       await copyFile(join(agentDir, candidate.path), join(roundDir, candidate.path));
     }
     outcome = {
-      format: 'renderweave-outcome/1', task: task.id, round: 1,
-      inputs: { sampleSha256: inputs.sample.sha256, workspaceFingerprint: inputs.workspace.fingerprint, previous: null },
-      candidates: check.candidates.map((candidate) => ({ path: candidate.path, kind: candidate.kind!, ...(candidate.name !== undefined ? { name: candidate.name } : {}),
-        sha256: candidate.sha256!, ...(candidate.published ? { published: candidate.published } : {}) })),
+      format: 'renderweave-outcome/1', task: task.id, round,
+      inputs: {
+        sampleSha256: inputs.sample.sha256, workspaceFingerprint: inputs.workspace.fingerprint,
+        previous: previous ? { dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256 } : null,
+        ...(feedback ? { feedbackSha256: feedback.sha256 } : {}),
+      },
+      candidates: check.candidates.map((candidate) => {
+        const basisOf = candidate.kind === 'template' ? revision?.find((entry) => entry.name === candidate.name) : undefined;
+        return {
+          path: candidate.path, kind: candidate.kind!, ...(candidate.name !== undefined ? { name: candidate.name } : {}),
+          sha256: candidate.sha256!, ...(candidate.published ? { published: candidate.published } : {}),
+          ...(basisOf ? { revises: { file: basisOf.file, sha256: basisOf.sha256 } } : {}),
+        };
+      }),
       locations: (check.submission.locations ?? []).map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
       pending: check.submission.pending.map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
       notes: check.submission.notes,
@@ -251,7 +355,7 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   const { submission: _submission, ...checkRecord } = check;
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
   const record: RoundRecord = {
-    format: 'renderweave-round/1', task: task.id, round: 1, startedAt, endedAt: new Date().toISOString(), inputs,
+    format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
     runtime: { model, smallModel, endpoint, maxTurns, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
     run: { ...usage, exitCode: executed.exitCode, ...(executed.error ? { error: executed.error } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
@@ -260,8 +364,56 @@ export async function runAgentTask(options: AgentRunOptions): Promise<AgentRunRe
   return { roundDir, record, check, ...(outcome ? { outcome } : {}) };
 }
 
+/** 任务顺序（M43）与各任务需要的输入。 */
+function checkTaskOrder(task: AgentTask, options: AgentRunOptions): void {
+  if (task.requires === 'definition' || task.requires === 'dataset') {
+    if (options.definition === undefined && options.dataset === undefined) {
+      throw new AgentUsageError(`只给了示例图，没有指定数据定义：先做数据定义提取并发布（M43），例如 renderweave agent run --task 数据定义提取 …`);
+    }
+    if (task.requires === 'dataset' && options.dataset === undefined) {
+      throw new AgentUsageError(`${task.name}要基于已保存的数据集：先做数据集提取并应用（M43），再用 --dataset 指定数据集 id`);
+    }
+  }
+  if (task.requires === 'template') {
+    if (options.definition !== undefined) throw new AgentUsageError(`${task.name}不用 --definition：数据定义取主模板的基准`);
+    if (options.request === undefined) {
+      throw new AgentUsageError(`${task.name}要用 --request 给出出图请求：其中的主模板就是要修改的已保存模板，审核时按它渲染修改前后的预览`);
+    }
+    if (options.requirement === undefined) throw new AgentUsageError(`${task.name}要用 --requirement 给出修改要求（Markdown，可以写元素路径）`);
+  } else if (options.requirement !== undefined) throw new AgentUsageError('只有模板辅助修改用 --requirement');
+  if (task.request === 'none' && options.request !== undefined) throw new AgentUsageError(`${task.name}不用出图请求，去掉 --request`);
+  if (task.request === 'required' && options.request === undefined) {
+    throw new AgentUsageError(`${task.name}要用 --request 给出示例图对应的出图请求（主模板名、参数与输出尺寸），审核时按它重新渲染预览`);
+  }
+}
+
+/** 下一轮只给反馈与运行参数：任务、素材、基准、出图请求与修改要求都沿用上一轮。 */
+function checkNextRound(given: AgentRunOptions): void {
+  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement'] as const;
+  const repeated = fixed.filter((name) => given[name] !== undefined);
+  if (repeated.length > 0) {
+    throw new AgentUsageError(`带 --from 发起下一轮时沿用上一轮的输入，不能再给 ${repeated.map((name) => `--${name}`).join('、')}；要换输入就重新发起第 1 轮`);
+  }
+  if (given.feedback === undefined) throw new AgentUsageError('带 --from 发起下一轮时要用 --feedback 给出反馈');
+}
+
+/** 下一轮沿用上一轮的任务、素材、基准、出图请求与修改要求；工作区与资源仓库沿用上一轮的来源，工作区重新取快照。 */
+function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptions {
+  const { dir, record: { task, inputs } } = previous;
+  return {
+    ...given, task, sample: join(dir, inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...(previous.resources !== undefined ? { resources: previous.resources } : {}),
+    ...(inputs.domain !== null ? { domain: inputs.domain } : {}),
+    ...(inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
+    ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
+    ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
+    ...(inputs.request ? { request: join(dir, 'request.json') } : {}),
+    ...(inputs.requirement ? { requirement: join(dir, 'requirement.md') } : {}),
+  };
+}
+
 /** 数据集提取按 --definition 找已发布的数据定义；模板辅助设计按 --dataset 找已保存的数据集，数据定义取它选定的那一份。 */
-async function resolveBasis(requires: 'definition' | 'dataset' | 'template', options: AgentRunOptions): Promise<{ definition: StaticSchemaRef; dataset: string | null }> {
+async function resolveBasis(requires: 'definition' | 'dataset', options: AgentRunOptions): Promise<{ definition: StaticSchemaRef; dataset: string | null }> {
   const workspace = await loadWorkspaceDocuments(options.workspace!);
   const published = workspace.staticSchemas.filter((entry) => entry.compiled !== undefined);
   const list = (names: string[]) => (names.length === 0 ? '工作区中没有' : `可用：${[...names].sort().join('、')}`);
@@ -288,11 +440,13 @@ async function resolveBasis(requires: 'definition' | 'dataset' | 'template', opt
 }
 
 /**
- * 读出图请求并规范化：模板辅助设计时数据集固定为 --dataset；数据集提取时去掉数据集，预览时换成候选，
- * 且主模板必须已在工作区中、基准是所选数据定义。
+ * 读出图请求并规范化：
+ * - 模板辅助设计：数据集固定为 --dataset；
+ * - 模板辅助修改：数据集取 --dataset 或请求中的已保存数据集，主模板必须已在工作区中；
+ * - 数据集提取：去掉数据集，预览时换成候选，且主模板必须已在工作区中、基准是所选数据定义。
  */
-async function readRequest(file: string, task: AgentTaskId, basis: { definition: StaticSchemaRef | null; dataset: string | null }, workspaceDir: string):
-  Promise<{ document: Record<string, unknown>; template: string }> {
+async function readRequest(file: string, task: AgentTaskId, basis: { definition: StaticSchemaRef | null; dataset: string | null }, workspaceDir: string,
+  datasetOption: string | undefined): Promise<{ document: Record<string, unknown>; template: string; dataset?: string }> {
   let value: unknown;
   const tooPrecise: string[] = [];
   try {
@@ -303,33 +457,60 @@ async function readRequest(file: string, task: AgentTaskId, basis: { definition:
   if (!isRecord(value)) throw new AgentUsageError(`出图请求必须是 JSON 对象：${file}`);
   if (tooPrecise.length > 0) throw new AgentUsageError(`出图请求中的数值超过 15 位有效数字：${tooPrecise.join('、')}`);
   const document: Record<string, unknown> = { ...value };
-  if (task === 'template-design') {
-    if (document['dataset'] !== undefined && !(isRecord(document['dataset']) && document['dataset']['id'] === basis.dataset && Object.keys(document['dataset']).length === 1)) {
-      throw new AgentUsageError(`出图请求的数据集要写成 {"id": "${basis.dataset}"}，或省略`);
-    }
-    document['dataset'] = { id: basis.dataset };
+  const given = document['dataset'];
+  const savedId = isRecord(given) && Object.keys(given).length === 1 && typeof given['id'] === 'string' ? given['id'] : undefined;
+  let dataset: string | undefined;
+  if (task === 'template-design' || task === 'template-revision') {
+    dataset = task === 'template-design' ? basis.dataset! : datasetOption ?? savedId;
+    if (dataset === undefined) throw new AgentUsageError('模板辅助修改的出图请求要用已保存的数据集：写成 {"dataset": {"id": …}}，或用 --dataset 指定');
+    if (given !== undefined && savedId !== dataset) throw new AgentUsageError(`出图请求的数据集要写成 {"id": "${dataset}"}，或省略`);
+    document['dataset'] = { id: dataset };
   } else delete document['dataset'];
   const parsed = parseRenderRequest({ ...document, dataset: document['dataset'] ?? { id: '候选数据集' } });
   if (!parsed.request) throw new AgentUsageError(`出图请求不合格：${parsed.problems.map((problem) => problem.message).join('；')}`);
   const template = parsed.request.template;
-  if (task === 'dataset-extraction') {
-    const saved = (await loadWorkspaceDocuments(workspaceDir)).templates.find((entry) => entry.name === template);
-    const base = isRecord(saved?.document) ? saved.document['base'] : undefined;
-    if (!saved) throw new AgentUsageError(`出图请求的模板 ${template} 不在工作区中：数据集提取的预览要用已保存的模板`);
-    if (!isRecord(base) || !sameStaticSchema({ name: String(base['name']), version: Number(base['version']) }, basis.definition!)) {
+  if (task === 'dataset-extraction' || task === 'template-revision') {
+    const workspace = await loadWorkspaceDocuments(workspaceDir);
+    const saved = workspace.templates.find((entry) => entry.name === template);
+    if (!saved) throw new AgentUsageError(`出图请求的模板 ${template} 不在工作区中：${task === 'dataset-extraction' ? '数据集提取的预览要用已保存的模板' : '模板辅助修改要基于已保存的模板'}`);
+    if (task === 'template-revision' && !workspace.datasets.some((entry) => entry.id === dataset)) {
+      throw new AgentUsageError(`工作区中没有数据集 ${dataset}：模板辅助修改按出图请求渲染修改前后的预览，要用已保存的数据集`);
+    }
+    const base = isRecord(saved.document) ? saved.document['base'] : undefined;
+    if (task === 'dataset-extraction' && (!isRecord(base) || !sameStaticSchema({ name: String(base['name']), version: Number(base['version']) }, basis.definition!))) {
       throw new AgentUsageError(`出图请求的模板 ${template} 的基准不是 ${formatStaticSchemaRef(basis.definition!)}`);
     }
   }
-  return { document, template };
+  return { document, template, ...(dataset !== undefined ? { dataset } : {}) };
 }
 
-/** 工作区指纹：按文件名排序的 JSON 文件名与内容哈希，再整体取哈希；应用时据此判断工作区是否已变（M51）。 */
-export async function workspaceFingerprint(dir: string): Promise<string> {
-  const hash = createHash('sha256');
-  for (const file of (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()) {
-    hash.update(`${file}\0${createHash('sha256').update(await readFile(join(dir, file))).digest('hex')}\n`);
+/** 模板辅助修改可以改的已保存模板：主模板及它调用的模板，连同文件内容（工作副本的起点与 M51 的基准）。 */
+async function revisableTemplates(workspaceDir: string, main: string): Promise<(TemplateBasis & { document: unknown; bytes: Uint8Array })[]> {
+  const workspace = await loadWorkspaceDocuments(workspaceDir);
+  const result: (TemplateBasis & { document: unknown; bytes: Uint8Array })[] = [];
+  for (const name of templateCallTree(workspace.templates, main)) {
+    const entry = workspace.templates.find((item) => item.name === name)!;
+    const bytes = await readFile(entry.source!);
+    result.push({ name, file: basename(entry.source!), sha256: sha256(bytes), document: entry.document, bytes });
   }
-  return `sha256:${hash.digest('hex')}`;
+  return result;
+}
+
+/** 修改要求不能为空；反引号里以 templates 中模板名开头的元素路径必须找得到。 */
+async function checkRequirement(file: string, templates: readonly { readonly name: string; readonly document: unknown }[]): Promise<void> {
+  await requireFile(file, '修改要求');
+  const text = await readFile(file, 'utf8');
+  if (text.trim() === '') throw new AgentUsageError(`修改要求是空的：${file}`);
+  const missing: string[] = [];
+  for (const match of text.matchAll(/`([^`\n]+)`/g)) {
+    const path = match[1]!.trim();
+    const template = templates.find((entry) => path.startsWith(`${entry.name}/`));
+    const error = template ? locate('template', template.document, path).error : undefined;
+    if (error) missing.push(`${path}（${error}）`);
+  }
+  if (missing.length > 0) {
+    throw new AgentUsageError(`修改要求中的元素路径在已保存的模板中找不到：${missing.join('；')}。元素路径从模板名开始，用 / 分隔，不带循环序号`);
+  }
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
@@ -377,22 +558,22 @@ function imageExtension(bytes: Uint8Array): string | undefined {
   return undefined;
 }
 
-async function sha256File(file: string): Promise<string> {
-  return createHash('sha256').update(await readFile(file)).digest('hex');
-}
-
 async function requireFile(file: string, label: string): Promise<void> {
   if (!(await isFile(file))) throw new AgentUsageError(`${label}无法读取：${file}`);
 }
 
-async function exists(path: string): Promise<boolean> {
-  try { await stat(path); return true; } catch { return false; }
+async function writeAt(path: string, bytes: Uint8Array): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, bytes);
 }
 
-async function isFile(path: string): Promise<boolean> {
-  try { return (await stat(path)).isFile(); } catch { return false; }
-}
-
-async function isDirectory(path: string): Promise<boolean> {
-  try { return (await stat(path)).isDirectory(); } catch { return false; }
+/** 模板文件的名称；不是模板或无法解析时没有。 */
+function templateName(bytes: Uint8Array): string | undefined {
+  try {
+    const document: unknown = JSON.parse(Buffer.from(bytes).toString('utf8'));
+    return isRecord(document) && typeof document['dslVersion'] === 'string' && document['dslVersion'].startsWith('renderweave-template/') &&
+      typeof document['name'] === 'string' ? document['name'] : undefined;
+  } catch {
+    return undefined;
+  }
 }

@@ -11,6 +11,7 @@ import { ProblemCodes, hint, severe, type Problem } from '../problems.js';
 import { isRecord } from '../util.js';
 import type { StaticSchemaRef, Workspace } from '../workspace.js';
 import { checkCandidates, type CandidateContext } from './candidates.js';
+import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 
@@ -91,6 +92,8 @@ export interface CandidateCheck {
   readonly problems: readonly Problem[];
   /** 数据集中落在待确认位置上的问题：留给审核处理，不计入本轮结论（M46）。 */
   readonly deferred?: readonly Problem[];
+  /** 模板辅助修改：相对已保存模板的差异。 */
+  readonly revision?: RevisionDiff;
 }
 
 export interface OutcomeCheck {
@@ -103,7 +106,7 @@ export interface OutcomeCheck {
   readonly submission?: SubmittedOutcome;
 }
 
-/** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）。 */
+/** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）；模板辅助修改可以改的模板。 */
 export interface OutcomeContext extends CandidateContext {
   readonly request?: { readonly template: string };
 }
@@ -214,9 +217,17 @@ export async function checkAgentOutcome(options: {
   const documents = candidates.map((candidate) => ({ path: candidate.path, kind: candidate.kind,
     document: candidate.kind === 'dataset' ? withPendingCandidates(candidate.document, submission.pending.filter((item) => normalizeCandidatePath(item.file) === candidate.path)) : candidate.document }));
   const results = checkCandidates(documents, options.workspace, context);
-  const final: CandidateCheck[] = candidates.map(({ document: _document, ...candidate }) => {
+  const final: CandidateCheck[] = candidates.map(({ document, ...candidate }) => {
     const result = results.get(candidate.path);
     if (!result) return candidate;
+    if (context.revision && candidate.kind === 'template') {
+      const saved = context.revision.templates.includes(candidate.name ?? '') ? options.workspace.templates.find((entry) => entry.name === candidate.name)?.document : undefined;
+      const revision = revisionDiff(saved, document);
+      if (revision.status === 'unchanged') {
+        problems.push(hint(ProblemCodes.outcomeInvalid, { kind: 'input', source: candidate.path }, `工作副本与已保存的模板 ${candidate.name} 相同，应用时不写入`));
+      }
+      return { ...candidate, problems: result.problems, revision };
+    }
     const paths = pendingPaths.get(candidate.path) ?? [];
     const deferred = candidate.kind === 'dataset' ? result.problems.filter((problem) => problem.location.kind === 'field' && paths.some((path) => within(path, (problem.location as { path: string }).path))) : [];
     return {
