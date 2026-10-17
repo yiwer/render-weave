@@ -1,6 +1,6 @@
 # RenderWeave 项目上下文
 
-接续工作的入口：当前阶段、下一步、已实现能力与文档地图。本文只放结论和指针。票据状态以票据文件的 `**Status:**` 行为准；验收细节、测试数量与提交记录分别在票据 `## Answer`、对应的 `docs/*.md` 和 git log 里。
+接续工作的入口：当前阶段、下一步、已实现能力与文档地图。本文只放结论和指针。换设备或首次接手时，先照[开发环境与接续](docs/dev-setup.md)准备软件、key 与不进版本库的材料。票据状态以票据文件的 `**Status:**` 行为准；验收细节、测试数量与提交记录分别在票据 `## Answer`、对应的 `docs/*.md` 和 git log 里。
 
 ## 一句话
 
@@ -19,12 +19,12 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - `renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；
   - 三层资料与评估门槛（M230）；
   - 价签与 366 两张新示例图按[代建指南](docs/agent-guide.md)走完全流程。代建模式可行。
-- **下一步**：阶段收尾只差 A11 的真人计时：请一位内部成员照[代建指南](docs/agent-guide.md)重走价签流程并记下每步用时。之后按验收文档「后续」排：
+- **下一步**：阶段收尾只差 A11 的真人计时：请一位内部成员照[代建指南](docs/agent-guide.md)重走价签流程并记下每步用时，做法与记录位置见[票据 09](.scratch/agent-template-authoring/issues/09-stage3-acceptance.md)「剩余工作」。之后按验收文档「后续」排：
   - 交回前核对成果的只读工具；
   - 让 Agent 能查看资源图片；
   - 小尺寸标签的缩字下限。
 
-  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。key 只经环境变量 `OPEN_CODE_API_KEY`。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -59,6 +59,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/stage1-acceptance.md](docs/stage1-acceptance.md) | 阶段收尾审查、可靠性/鲁棒性/可用性、修复结果与 DSL 能力边界 |
 | [docs/stage2-acceptance.md](docs/stage2-acceptance.md) | 第二阶段全新环境复跑、跨平台比对、指南实测、两轴审查与服务前要求 |
 | [docs/stage3-acceptance.md](docs/stage3-acceptance.md) | 第三阶段验收矩阵 A01–A12、两张新示例图的端到端代建记录、模型对比、两轴审查与后续 |
+| [docs/dev-setup.md](docs/dev-setup.md) | 换设备接续：软件版本与自检、key 与模型服务、不进版本库的材料、Linux 测试与 key 扫描、已知的坑 |
 | [docs/roadmap.md](docs/roadmap.md) | 产品定位、形态、v1.0 代建模式、阶段与稳定版本、待定的难逆转事项 |
 | [docs/agent-validation.md](docs/agent-validation.md) | M190 Agent 运行方式验证与阶段 3 首测：看图、工具闭环、数据定义候选、领域约定复测、模板生成、产品命令实跑、审核与应用走查、数据集与模板实跑、模板辅助修改与多轮实跑（M215 复现）、模型取舍与复现 |
 | [docs/guide.md](docs/guide.md) | 首次使用指南：导入资源、批量交付、失败定位、替换与独立重放 |
@@ -96,8 +97,10 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 ## 开发
 
 ```bash
-npm install
-npm test                # 先由准备脚本下载并核对思源黑体，再运行全部测试
+npm ci
+npm run fetch-fonts     # 下载并核对思源黑体；npm test 之前也会自动执行
+npm run build
+npm test
 npm run typecheck
 npm run render -- render --workspace fixtures/workspaces/single-text --resources fixtures/resources --request fixtures/workspaces/single-text/render-request-greeting.json --out out
 npm run render -- publish --definition <数据定义.json> --workspace <工作区目录> --out <输出目录>
@@ -105,15 +108,17 @@ npm run render -- publish --definition <数据定义.json> --workspace <工作�
 
 - 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）。图片夹具由 `scripts/make-image-fixtures.ts` 生成并提交，来源见 `fixtures/resources/images/README.md`。
 - 各票据的验收脚本是 `scripts/accept-*.mjs`，成果写到 `out/`（不进版本库）。快照与 golden 的更新方法见 [CODING_STANDARDS.md](CODING_STANDARDS.md)。
+- 真实运行 Agent 之后、提交之前，用 `node scripts/scan-keys.mjs <轮次目录> docs src scripts test` 确认产物中没有 key（A05）。Linux 全量测试与评估门槛的做法见[开发环境与接续](docs/dev-setup.md)。
 
 ## 尚待实测
 
 - OCR 首选模型：用线路牌样图对比 qwen3.5-ocr 与 qwen-vl-ocr-2025-11-20。
-- Agent 的推广：只测了线路牌（M402、366）；其他领域需先写约定包。366 的模板生成未测（需先定数据集）。
+- Agent 的推广：线路牌（M402、366）与超市商品价签已测；资产标签等其他领域要先写约定包再测。
+- 真人代建用时（A11）：第三阶段的端到端代建由 Claude 代操作，真人审核与写说明要花多久还没测。
 
 ## 外部来源
 
-四个外部项目的源码快照（2026-10-12，对应主仓库 58fc181）放在 `outside_context/`，不进版本库，默认搜索也不覆盖，查阅时要把路径写明。旧文档引用的是历史绝对路径，把前缀换成快照目录即可找到。各项目的来源提交、脱敏文件清单与逐文件 SHA-256 见 `outside_context/manifest.json`。
+四个外部项目的源码快照（2026-10-12，对应主仓库 58fc181）放在 `outside_context/`，不进版本库，默认搜索也不覆盖，查阅时要把路径写明。其他设备上由维护者自行拷贝交接包并解压到仓库根的 `outside_context/`；没有它时，只是涉及旧实现的事实无法核对，其余工作不受影响。旧文档引用的是历史绝对路径，把前缀换成快照目录即可找到。各项目的来源提交、脱敏文件清单与逐文件 SHA-256 见 `outside_context/manifest.json`。
 
 | 来源 | 快照目录 | 历史路径前缀 | 用途 |
 |---|---|---|---|
