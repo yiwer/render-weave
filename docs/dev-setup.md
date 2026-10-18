@@ -8,7 +8,7 @@
 |---|---|---|
 | Node.js | 22 或以上；Windows 实测 v24.21.0，Linux 容器 v22.23.3 | 构建、测试、命令行 |
 | Git | 任意 | 检出与提交 |
-| Claude Code | 评估通过时是 2.1.296 | `renderweave agent run` 的运行环境（ADR-0015）；`claude --version` 能运行即可 |
+| Claude Code | 评估通过时是 2.1.296 | `renderweave agent run` 的运行环境（ADR-0015）。PATH 上要有可执行文件 `claude`（Windows 上是 `claude.exe`），只有 `claude.cmd` 不行，见「已知的坑」 |
 | Docker | 可选；原设备是 Docker Desktop 29.8 | 在 Linux 容器里跑全量测试（A12） |
 | 浏览器 | 任意 | `renderweave agent review` 的审核页 |
 
@@ -27,7 +27,7 @@ npm test
 ```
 
 - `fetch-fonts` 要联网，按 `scripts/fonts.json` 固定的版本与 SHA-256 下载到 `fixtures/resources/fonts/`。
-- 期望结果：Windows 上 39 个文件、745 项全部通过。Linux 上 741 项通过、4 项跳过，跳过的都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
+- 期望结果：Windows 上 39 个文件、749 项全部通过。Linux 上 745 项通过、4 项跳过，跳过的都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
 
 ## 3. key 与模型服务
 
@@ -86,6 +86,12 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
 - 只改了部分场景读的资料时，可以只重跑受影响的场景。用报告里的 `materials` 哈希证明其余场景的资料没变（M230）。
 
 ## 6. 已知的坑
+
+- **Windows 上用 npm 装的 Claude Code**：`npm install -g @anthropic-ai/claude-code@2.1.296` 在全局目录里只放 `claude.cmd` 与 `claude.ps1` 两个 shim。终端里 `claude --version` 能用，但 `agent run` 不经 shell 启动子进程，只认 `.exe`，结果每轮都是"无法启动 claude：spawn claude ENOENT"。
+  - 原生程序在 `<npm 全局目录>\node_modules\@anthropic-ai\claude-code\bin\claude.exe`，全局目录用 `npm prefix -g` 查。
+  - 解决：把这个 `bin` 目录加进 PATH；或者单次运行用 `--claude <claude.exe 的完整路径>`。
+  - 评估命令不接受 `--claude`，只能改 PATH。可以只对当前终端改：`$env:Path = "<bin 目录>;" + $env:Path`。
+- **Docker 把宿主的本机代理注入容器**：Docker 客户端配置了代理时（如 `http://127.0.0.1:10808`），容器里也有 `HTTP_PROXY` 等变量。可是容器里的 127.0.0.1 是容器自己，`npm ci` 会连接被拒，最后报"Exit handler never called!"。遇到这种情况，在容器命令开头加 `unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY &&`，让容器直连 npm 镜像源。
 
 - **命令行提交审核操作**：Windows 的 Git Bash 里用 `curl` 发中文，会按本机代码页发出，审核服务按 UTF-8 严格解码，返回 400。审核请在浏览器里操作；确实要用脚本时，用 Node 的 `fetch` 发 UTF-8 JSON。
 - **正式出图要资源版本仓库**：`fixtures/resources` 只能用于发起任务与审核预览。`deliver` 前先 `resources-init`，再 `resources-import`，见[代建指南](agent-guide.md)第 7 步。

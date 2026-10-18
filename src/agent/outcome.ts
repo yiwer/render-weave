@@ -111,9 +111,36 @@ export interface OutcomeContext extends CandidateContext {
   readonly request?: { readonly template: string };
 }
 
+/** 交回前核对（MCP 工具 check_outcome）要的本轮任务与已知输入：agent run 写到 Agent 工作目录之外，经 --outcome-context 交给 MCP 服务。 */
+export interface OutcomeTarget extends OutcomeContext {
+  readonly task: AgentTaskId;
+}
+
+const OUTCOME_TARGET_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['task'],
+  properties: {
+    task: { enum: Object.keys(AGENT_TASKS) },
+    definition: { type: 'object', additionalProperties: false, required: ['name', 'version'], properties: {
+      name: { type: 'string', minLength: 1 }, version: { type: 'integer', minimum: 1 },
+    } },
+    request: { type: 'object', additionalProperties: false, required: ['template'], properties: { template: { type: 'string', minLength: 1 } } },
+    revision: { type: 'object', additionalProperties: false, required: ['templates'], properties: {
+      templates: { type: 'array', items: { type: 'string', minLength: 1 } },
+    } },
+  },
+} as const;
+
 export const OUTCOME_FILE = 'outcome.json';
 const CANDIDATE_DIR = 'candidates';
-const validateSubmission = new Ajv2020({ allErrors: true, strict: true }).compile(SUBMITTED_OUTCOME_SCHEMA);
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+const validateSubmission = ajv.compile(SUBMITTED_OUTCOME_SCHEMA);
+const validateTarget = ajv.compile(OUTCOME_TARGET_SCHEMA);
+
+/** 读 --outcome-context 的内容；不合规时返回说明。 */
+export function parseOutcomeTarget(document: unknown): OutcomeTarget | string {
+  if (validateTarget(document)) return document as unknown as OutcomeTarget;
+  return (validateTarget.errors ?? []).map((error) => describe(error, '上下文')).join('；');
+}
 
 /** 校验一轮的成果：agentDir 是 Agent 工作目录，workspace 是本轮的工作区快照（连同资源仓库）。 */
 export async function checkAgentOutcome(options: {
@@ -267,8 +294,8 @@ function kindName(kind: CandidateKind): string {
   return { definition: '数据定义', dataset: '数据集', template: '模板' }[kind];
 }
 
-function describe(error: ErrorObject): string {
-  const at = error.instancePath === '' ? 'outcome.json' : error.instancePath.slice(1).replaceAll('/', '.');
+function describe(error: ErrorObject, root = OUTCOME_FILE): string {
+  const at = error.instancePath === '' ? root : error.instancePath.slice(1).replaceAll('/', '.');
   const params = error.params as Record<string, unknown>;
   switch (error.keyword) {
     case 'required': return `${at} 缺少 ${String(params['missingProperty'])}`;

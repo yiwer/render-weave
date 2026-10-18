@@ -181,7 +181,8 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(fake.prompt).toBe((await readFile(join(repoRoot, 'agent/tasks/dataset-extraction.md'), 'utf8')).replaceAll('{sample}', 'sample.png').replaceAll('{definition}', '胸牌 v1'));
     expect(fake.prompt).not.toMatch(/\{|线路|站名|M402/);
     expect(await readFile(join(dataset.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/data-definition.md'), 'utf8'));
-    expect((await json(join(dataset.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1)).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft');
+    expect((await json(join(dataset.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1)).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft,check_outcome');
+    expect(await json(join(dataset.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: { name: '胸牌', version: 1 }, request: { template: '胸牌卡' } });
 
     const template = await templateRound(dir);
     expect(template.record.inputs).toMatchObject({ definition: { name: '问候', version: 1 }, dataset: 'ds-greeting', request: { template: '问候横幅' } });
@@ -191,7 +192,8 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(prompt).toContain('已保存的 ds-greeting');
     expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
     expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
-      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference');
+      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome');
+    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: { template: '问候横幅' } });
   });
 });
 

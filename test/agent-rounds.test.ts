@@ -278,7 +278,10 @@ describe('模板辅助修改：发起与成果', () => {
     expect(prompt).toBe((await readFile(join(repoRoot, 'agent/tasks/template-revision.md'), 'utf8')).replaceAll('{sample}', 'sample.png')
       .replaceAll('{template}', '问候横幅').replaceAll('{dataset}', 'ds-greeting')
       .replaceAll('{templates}', '问候横幅（candidates/template-banner.json）、横幅文字（candidates/template-banner-words.json）'));
-    expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference'] });
+    expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'] });
+    expect(await json(join(round.roundDir, 'logs/outcome-context.json'))).toEqual({
+      task: 'template-revision', request: { template: '问候横幅' }, revision: { templates: ['问候横幅', '横幅文字'] },
+    });
     expect(await readFile(join(agent, 'docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
   });
 

@@ -17,6 +17,7 @@
 | 07 | [带反馈的下一轮与模板辅助修改](issues/07-feedback-rounds-and-template-edits.md) | 06 | A09 |
 | 08 | [三层资料归档，评估场景成为升级门槛](issues/08-materials-and-eval-gate.md) | 06 | A10 |
 | 09 | [新示例图完成端到端代建与阶段验收](issues/09-stage3-acceptance.md) | 02、07、08 | A11、A12；汇总 A01–A10 |
+| 10 | [Agent 交回前用只读工具核对成果](issues/10-check-outcome-before-handoff.md) | 07、08 | A04、A10（验收后的后续，来自 Spec 审查第 1 项） |
 
 已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。
 

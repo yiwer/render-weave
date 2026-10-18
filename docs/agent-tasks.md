@@ -55,9 +55,9 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 
 | 任务 | 前提（M43） | 成果 | DSL 参考 | MCP 工具 | 轮数上限 |
 |---|---|---|---|---|---|
-| 数据定义提取 | 无 | 数据定义 | 数据定义与数据集 | `list_documents`、`read_document`、`list_resources`、`check_definitions`、`check_dataset`、`view_image`、`dsl_reference` | 40 |
-| 数据集提取 | 已发布的数据定义 | 一份数据集 | 数据定义与数据集 | `list_documents`、`read_document`、`list_resources`、`check_dataset`、`view_image`、`dsl_reference`、`render_draft` | 40 |
-| 模板辅助设计 | 已保存的数据集 | 主模板与被调模板 | 模板 | `list_documents`、`read_document`、`list_resources`、`check_templates`、`render_draft`、`inspect_layout`、`view_image`、`dsl_reference` | 80 |
+| 数据定义提取 | 无 | 数据定义 | 数据定义与数据集 | `list_documents`、`read_document`、`list_resources`、`check_definitions`、`check_dataset`、`view_image`、`dsl_reference`、`check_outcome` | 40 |
+| 数据集提取 | 已发布的数据定义 | 一份数据集 | 数据定义与数据集 | `list_documents`、`read_document`、`list_resources`、`check_dataset`、`view_image`、`dsl_reference`、`render_draft`、`check_outcome` | 40 |
+| 模板辅助设计 | 已保存的数据集 | 主模板与被调模板 | 模板 | `list_documents`、`read_document`、`list_resources`、`check_templates`、`render_draft`、`inspect_layout`、`view_image`、`dsl_reference`、`check_outcome` | 80 |
 | 模板辅助修改 | 已保存的模板与数据集 | 工作副本与新建的被调模板 | 模板 | 同模板辅助设计 | 80 |
 
 **任务顺序**：只给示例图、没有指定数据定义时，命令提示先做数据定义提取；模板辅助设计没有 `--dataset` 时，提示先做数据集提取并应用。所选的数据定义或数据集不在工作区中时，列出可用的。
@@ -127,7 +127,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `agent/scratch/` | Agent 的自查草稿，不是成果 |
 | `agent/outcome.json` | Agent 交回的成果 |
 | `snapshot/` | 工作区快照，MCP 服务启动时读入 |
-| `logs/` | `mcp.json`、`stream.jsonl`（Claude Code 流式输出）、`stderr.txt`、`tools.jsonl`（工具调用日志）、`claude-config/` |
+| `logs/` | `mcp.json`、`outcome-context.json`（交回前核对用的本轮任务与已知输入，见[校验](#校验)）、`stream.jsonl`（Claude Code 流式输出）、`stderr.txt`、`tools.jsonl`（工具调用日志）、`claude-config/` |
 | `request.json` | 规范化后的出图请求，审核时按它重新渲染预览；Agent 改不到 |
 | `requirement.md`、`feedback.md` | 修改要求与反馈的副本，审核页显示；下一轮沿用修改要求 |
 | `round.json` | 轮次记录：输入（含所基于的数据定义、数据集、出图请求、资源仓库、模板辅助修改的基准与修改要求、上一轮与反馈）、运行参数、用量与结论，无论成果是否合格都写出 |
@@ -185,6 +185,11 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 
    Schema 不通过时只报 Schema 的问题，不再做引擎校验。
 3. **结论**：结构合格，且候选没有严重问题时为"合格"。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
+
+**交回前核对**（M233）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`，任务提示词要求交回前核对到合格。
+- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、出图请求的主模板、模板辅助修改可以改的模板。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
+- 这个文件在 Agent 工作目录之外，Agent 改不了。
+- 交回后的校验与它是同一份实现、同样的上下文，所以 Agent 交回前看到的结论与问题和 `check.json` 一致。
 
 ### 轮次成果 outcome.json
 

@@ -13,6 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
 import { checkAgentOutcome, createMemoryResourceRepository, runAgentTask, workspaceFingerprint, type AgentRunOptions } from '../src/index.js';
 import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { startMcp } from './support/mcp-client.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const KEY = `rw-test-key-${Math.random().toString(36).slice(2)}`;
@@ -120,8 +121,10 @@ describe('发起一轮数据定义提取', () => {
     const mcp = JSON.parse(await readFile(join(logs, 'mcp.json'), 'utf8'));
     expect(Object.keys(mcp.mcpServers)).toEqual(['rw']);
     expect(mcp.mcpServers.rw.args.slice(1)).toEqual(['mcp', '--workspace', join(result.roundDir, 'snapshot'), '--resources', resourcesDir, '--root', agent,
-      '--log', join(logs, 'tools.jsonl'), '--tools', 'list_documents,read_document,list_resources,check_definitions,check_dataset,view_image,dsl_reference']);
+      '--outcome-context', join(logs, 'outcome-context.json'), '--log', join(logs, 'tools.jsonl'),
+      '--tools', 'list_documents,read_document,list_resources,check_definitions,check_dataset,view_image,dsl_reference,check_outcome']);
     expect(mcp.mcpServers.rw.args[0]).toMatch(/bin\.js$/);
+    expect(JSON.parse(await readFile(join(logs, 'outcome-context.json'), 'utf8'))).toEqual({ task: 'definition-extraction' });
 
     const leaks = [];
     for (const file of await filesUnder(result.roundDir)) if ((await readFile(file)).includes(KEY)) leaks.push(file);
@@ -183,6 +186,19 @@ describe('发起一轮数据定义提取', () => {
     expect(conflict.check.problems).toEqual([]);
     expect(conflict.check.candidates[0]!.problems.map((problem) => problem.code)).toEqual(['definition.constraintConflict']);
     expect(conflict.outcome?.candidates[0]).not.toHaveProperty('published');
+  });
+
+  it('交回前核对与交回后的校验一致：按本轮交给 MCP 服务的参数调用 check_outcome，结论与问题和 check.json 相同', async () => {
+    const result = await run(await preset({ ...QUALIFIED, 'outcome.json': { ...SUBMISSION, pending: [{ ...SUBMISSION.pending[0], path: 'rank' }] } }));
+    const mcp = JSON.parse(await readFile(join(result.roundDir, 'logs/mcp.json'), 'utf8'));
+    const session = startMcp(mcp.mcpServers.rw.args.slice(2));
+    const checked = await session.callJson('check_outcome', {});
+    expect(await session.close()).toBe(0);
+    const record = JSON.parse(await readFile(join(result.roundDir, 'check.json'), 'utf8'));
+    expect(record.verdict).toBe('unqualified');
+    expect(record.problems[0].message).toContain('没有字段 rank');
+    expect(checked).toEqual({ verdict: record.verdict, problems: record.problems,
+      candidates: record.candidates.map(({ sha256: _sha256, ...candidate }: Record<string, unknown>) => candidate) });
   });
 });
 

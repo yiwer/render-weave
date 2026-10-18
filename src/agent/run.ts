@@ -21,7 +21,7 @@ import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJson
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
 import { isGoogleModel, startModelProxy } from './model-proxy.js';
-import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type PendingItem } from './outcome.js';
+import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type OutcomeTarget, type PendingItem } from './outcome.js';
 import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
@@ -306,10 +306,18 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     } : null,
   };
 
+  // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。
+  const context: OutcomeContext = {
+    ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
+    ...(request ? { request: { template: request.template } } : {}),
+    ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
+  };
+  const outcomeContext = join(logsDir, 'outcome-context.json');
+  await writeFile(outcomeContext, `${JSON.stringify({ task: task.id, ...context } satisfies OutcomeTarget, null, 2)}\n`);
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const mcpConfig = join(logsDir, 'mcp.json');
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
-    BIN, 'mcp', '--workspace', snapshotDir, '--resources', resolve(options.resources), '--root', agentDir,
+    BIN, 'mcp', '--workspace', snapshotDir, '--resources', resolve(options.resources), '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] } } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
@@ -337,11 +345,6 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
-  const context: OutcomeContext = {
-    ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
-    ...(request ? { request: { template: request.template } } : {}),
-    ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
-  };
   const check = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
   let outcome: RoundOutcome | undefined;
   if (check.submission) {

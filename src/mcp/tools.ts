@@ -1,12 +1,13 @@
 /**
- * `renderweave mcp` 的工具（第三阶段 PRD 第 5、6 条）：读取、校验、草稿预览、元素检查、局部放大、资源列表与 DSL 参考。
+ * `renderweave mcp` 的工具（第三阶段 PRD 第 5、6 条）：读取、校验、草稿预览、元素检查、局部放大、资源列表、DSL 参考与交回前核对成果。
  * 全部只读（M53）：不写工作区、资源仓库或工作目录，也没有发布、删除与正式出图的途径。
  * 工作区是服务启动时读入的快照；工作目录内的文件按路径读取（files.ts）。工作副本只在本次调用的内存中代替已保存模板（M49、M50）。
- * 工具名称、输入 Schema 与输出结构是 v0.3 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
+ * 工具名称、输入 Schema 与输出结构是 v0.4 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
  */
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
+import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
 import { loadCanvasKit } from '../canvaskit.js';
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
 import type { LayoutNode } from '../layout/index.js';
@@ -23,7 +24,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.3.0';
+export const MCP_CONTRACT_VERSION = '0.4.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -42,6 +43,8 @@ export interface ToolContext {
   readonly workspace: Workspace;
   readonly workspaceDir: string;
   readonly resourcesDir: string;
+  /** 本轮任务与已知输入（--outcome-context）；没有时 check_outcome 报工具错误。 */
+  readonly outcome?: OutcomeTarget;
 }
 
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -336,6 +339,25 @@ export function createTools(context: ToolContext): McpTool[] {
         const file = REFERENCE_FILES[args['name'] as keyof typeof REFERENCE_FILES];
         const text = await readFile(join(REPO_ROOT, file), 'utf8');
         return { content: [{ type: 'text', text }], summary: { name: args['name'], chars: text.length } };
+      },
+    },
+    {
+      name: 'check_outcome',
+      description: '交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。' +
+        '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
+        '返回结论 verdict（qualified 合格、unqualified 不合格）、outcome.json 的问题 problems 与每个候选的问题；数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。不写任何文件。',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+      async call() {
+        if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
+        const { task, ...known } = context.outcome;
+        const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        return json({
+          verdict: check.verdict,
+          problems: shown(check.problems),
+          candidates: check.candidates.map(({ sha256: _sha256, revision: _revision, problems, deferred, ...candidate }) => ({
+            ...candidate, problems: shown(problems), ...(deferred ? { deferred: shown(deferred) } : {}),
+          })),
+        }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
     },
   ];

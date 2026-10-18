@@ -1,0 +1,266 @@
+{
+  "format": "renderweave-agent-eval/1",
+  "label": "2026-10-18-check-outcome-366",
+  "startedAt": "2026-10-18T08:25:35.971Z",
+  "endedAt": "2026-10-18T08:38:26.001Z",
+  "git": {
+    "commit": "db19b79",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.4.0",
+  "materials": {
+    "agent/README.md": "7b68a94d90b6",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/price-tag.md": "8574f9eef7bf",
+    "agent/domains/route-sign.md": "3f32d33cb192",
+    "agent/guide.md": "3151ff74ba3f",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "6929b7772708",
+    "agent/reference/template.md": "f2933b479e4e",
+    "agent/tasks/dataset-extraction.md": "7418474bcc43",
+    "agent/tasks/definition-extraction.md": "872a27211ec2",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "639958fbf0af",
+    "agent/tasks/template-revision.md": "db27384e0c4b"
+  },
+  "consecutivePasses": 2,
+  "passLines": {
+    "m402-definition": {
+      "conventions": 6,
+      "expertFields": 14
+    },
+    "m402-template": {
+      "stress": 10,
+      "layoutChecks": 2
+    },
+    "366-transcription": {
+      "names": 57,
+      "landmarks": 14,
+      "facilities": 17
+    }
+  },
+  "results": [
+    {
+      "id": "366-transcription",
+      "name": "366 数据定义与转录",
+      "repetition": 1,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-1/366-transcription/definition",
+          "verdict": "qualified",
+          "wallMs": 235228,
+          "turns": 27,
+          "inputTokens": 26,
+          "outputTokens": 32157,
+          "cacheReadTokens": 416472,
+          "cacheCreationTokens": 57733,
+          "endedBy": "success",
+          "pending": 4,
+          "toolCalls": 14,
+          "toolErrors": 0
+        },
+        {
+          "task": "dataset-extraction",
+          "dir": "run-1/366-transcription/dataset",
+          "verdict": "qualified",
+          "wallMs": 329308,
+          "turns": 33,
+          "inputTokens": 28,
+          "outputTokens": 45711,
+          "cacheReadTokens": 645923,
+          "cacheCreationTokens": 88182,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 21,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 12,
+            "of": 15,
+            "missing": [
+              "运营说明",
+              "班车类型",
+              "班次时刻"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoArt",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.boardingFare",
+              "operator": "公交线路牌.operatorName",
+              "firstDeparture": "公交线路牌.serviceStartTime",
+              "lastDeparture": "公交线路牌.serviceEndTime",
+              "stops": "公交线路牌.stops",
+              "name": "公交站点.name",
+              "road": "公交站点.roadName",
+              "badges": "公交站点.facilities",
+              "landmark": "公交站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        },
+        "transcription": {
+          "stops": "59/59",
+          "names": 57,
+          "namesInOrder": 57,
+          "missing": [
+            "滨河华强天桥",
+            "牛始埔居民小组"
+          ],
+          "unexpected": [
+            "滨河强天桥",
+            "牛始浦居民小组"
+          ],
+          "landmarks": {
+            "matched": 15,
+            "of": 15,
+            "extra": 0
+          },
+          "facilities": {
+            "matched": 18,
+            "of": 18,
+            "extra": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "366-transcription",
+      "name": "366 数据定义与转录",
+      "repetition": 2,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-2/366-transcription/definition",
+          "verdict": "qualified",
+          "wallMs": 502835,
+          "turns": 36,
+          "inputTokens": 26,
+          "outputTokens": 52981,
+          "cacheReadTokens": 736345,
+          "cacheCreationTokens": 102789,
+          "endedBy": "success",
+          "pending": 5,
+          "toolCalls": 25,
+          "toolErrors": 0
+        },
+        {
+          "task": "dataset-extraction",
+          "dir": "run-2/366-transcription/dataset",
+          "verdict": "qualified",
+          "wallMs": 266321,
+          "turns": 27,
+          "inputTokens": 22,
+          "outputTokens": 39361,
+          "cacheReadTokens": 383571,
+          "cacheCreationTokens": 63176,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 15,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 12,
+            "of": 15,
+            "missing": [
+              "运营说明",
+              "班车类型",
+              "班次时刻"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoArt",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.boardFare",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStartTime",
+              "lastDeparture": "公交线路牌.serviceEndTime",
+              "stops": "公交线路牌.stations",
+              "name": "公交线路站点.name",
+              "road": "公交线路站点.road",
+              "badges": "公交线路站点.facilities",
+              "landmark": "公交线路站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        },
+        "transcription": {
+          "stops": "59/59",
+          "names": 59,
+          "namesInOrder": 59,
+          "missing": [],
+          "unexpected": [],
+          "landmarks": {
+            "matched": 15,
+            "of": 15,
+            "extra": 0
+          },
+          "facilities": {
+            "matched": 18,
+            "of": 18,
+            "extra": 0
+          }
+        }
+      }
+    }
+  ],
+  "gate": {
+    "pass": true,
+    "scenarios": [
+      {
+        "id": "366-transcription",
+        "name": "366 数据定义与转录",
+        "passes": [
+          true,
+          true
+        ],
+        "pass": true
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 1333692,
+    "inputTokens": 102,
+    "outputTokens": 170210,
+    "cacheReadTokens": 2182311
+  }
+}

@@ -1,0 +1,623 @@
+{
+  "format": "renderweave-agent-eval/1",
+  "label": "2026-10-18-check-outcome",
+  "startedAt": "2026-10-18T07:40:23.321Z",
+  "endedAt": "2026-10-18T08:07:50.052Z",
+  "git": {
+    "commit": "db19b79",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.4.0",
+  "materials": {
+    "agent/README.md": "7b68a94d90b6",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/price-tag.md": "8574f9eef7bf",
+    "agent/domains/route-sign.md": "3f32d33cb192",
+    "agent/guide.md": "3151ff74ba3f",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "6929b7772708",
+    "agent/reference/template.md": "f2933b479e4e",
+    "agent/tasks/dataset-extraction.md": "7418474bcc43",
+    "agent/tasks/definition-extraction.md": "872a27211ec2",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "639958fbf0af",
+    "agent/tasks/template-revision.md": "db27384e0c4b"
+  },
+  "consecutivePasses": 2,
+  "passLines": {
+    "m402-definition": {
+      "conventions": 6,
+      "expertFields": 14
+    },
+    "m402-template": {
+      "stress": 10,
+      "layoutChecks": 2
+    },
+    "366-transcription": {
+      "names": 57,
+      "landmarks": 14,
+      "facilities": 17
+    }
+  },
+  "results": [
+    {
+      "id": "m402-definition",
+      "name": "M402 数据定义",
+      "repetition": 1,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-1/m402-definition/definition",
+          "verdict": "qualified",
+          "wallMs": 320529,
+          "turns": 32,
+          "inputTokens": 30,
+          "outputTokens": 36705,
+          "cacheReadTokens": 564230,
+          "cacheCreationTokens": 64943,
+          "endedBy": "success",
+          "pending": 4,
+          "toolCalls": 20,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 14,
+            "of": 15,
+            "missing": [
+              "运营方"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareType",
+              "fare": "公交线路牌.fare",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.serviceDays",
+              "scheduleType": "公交线路牌.scheduleType",
+              "departureTimes": "公交线路牌.departureTimes",
+              "stops": "公交线路牌.stops",
+              "name": "线路站点.name",
+              "road": "线路站点.road",
+              "badges": "线路站点.facilities",
+              "landmark": "线路站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    },
+    {
+      "id": "m402-template",
+      "name": "M402 模板",
+      "repetition": 1,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/m402-template/template",
+          "verdict": "qualified",
+          "wallMs": 542684,
+          "turns": 47,
+          "inputTokens": 44,
+          "outputTokens": 88514,
+          "cacheReadTokens": 1791965,
+          "cacheCreationTokens": 129757,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 23,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9146
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "id": "366-transcription",
+      "name": "366 数据定义与转录",
+      "repetition": 1,
+      "pass": false,
+      "failures": [
+        "站名 56/59，要求至少 57（缺：滨河华强天桥、马峦山郊野公园、坪山区委区政府）"
+      ],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-1/366-transcription/definition",
+          "verdict": "qualified",
+          "wallMs": 938289,
+          "turns": 51,
+          "inputTokens": 36,
+          "outputTokens": 57410,
+          "cacheReadTokens": 1152001,
+          "cacheCreationTokens": 121259,
+          "endedBy": "success",
+          "pending": 4,
+          "toolCalls": 40,
+          "toolErrors": 0
+        },
+        {
+          "task": "dataset-extraction",
+          "dir": "run-1/366-transcription/dataset",
+          "verdict": "qualified",
+          "wallMs": 320353,
+          "turns": 30,
+          "inputTokens": 20,
+          "outputTokens": 37349,
+          "cacheReadTokens": 385769,
+          "cacheCreationTokens": 84656,
+          "endedBy": "success",
+          "pending": 0,
+          "toolCalls": 18,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 12,
+            "of": 15,
+            "missing": [
+              "运营说明",
+              "班车类型",
+              "班次时刻"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoArt",
+              "fareType": "公交线路牌.fareType",
+              "fare": "公交线路牌.boardingFare",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "stops": "公交线路牌.stations",
+              "name": "公交站点.name",
+              "road": "公交站点.road",
+              "badges": "公交站点.facilities",
+              "landmark": "公交站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        },
+        "transcription": {
+          "stops": "59/59",
+          "names": 56,
+          "namesInOrder": 56,
+          "missing": [
+            "滨河华强天桥",
+            "马峦山郊野公园",
+            "坪山区委区政府"
+          ],
+          "unexpected": [
+            "滨河强天桥",
+            "马恋山郊野公园",
+            "坪山区委政府"
+          ],
+          "landmarks": {
+            "matched": 15,
+            "of": 15,
+            "extra": 0
+          },
+          "facilities": {
+            "matched": 17,
+            "of": 18,
+            "extra": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "m402-definition",
+      "name": "M402 数据定义",
+      "repetition": 2,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-2/m402-definition/definition",
+          "verdict": "qualified",
+          "wallMs": 391091,
+          "turns": 32,
+          "inputTokens": 32,
+          "outputTokens": 40593,
+          "cacheReadTokens": 694192,
+          "cacheCreationTokens": 68719,
+          "endedBy": "success",
+          "pending": 6,
+          "toolCalls": 21,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 15,
+            "of": 15,
+            "missing": [],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.fare",
+              "operator": "公交线路牌.companyName",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.operatingDays",
+              "scheduleType": "公交线路牌.serviceType",
+              "departureTimes": "公交线路牌.departures",
+              "stops": "公交线路牌.stations",
+              "name": "公交站点.name",
+              "road": "公交站点.road",
+              "badges": "公交站点.facilities",
+              "landmark": "公交站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    },
+    {
+      "id": "m402-template",
+      "name": "M402 模板",
+      "repetition": 2,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-2/m402-template/template",
+          "verdict": "qualified",
+          "wallMs": 482922,
+          "turns": 35,
+          "inputTokens": 46,
+          "outputTokens": 78238,
+          "cacheReadTokens": 1746456,
+          "cacheCreationTokens": 111639,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 17,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9162
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "id": "366-transcription",
+      "name": "366 数据定义与转录",
+      "repetition": 2,
+      "pass": true,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-2/366-transcription/definition",
+          "verdict": "qualified",
+          "wallMs": 543980,
+          "turns": 32,
+          "inputTokens": 28,
+          "outputTokens": 58755,
+          "cacheReadTokens": 764134,
+          "cacheCreationTokens": 98065,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 21,
+          "toolErrors": 0
+        },
+        {
+          "task": "dataset-extraction",
+          "dir": "run-2/366-transcription/dataset",
+          "verdict": "qualified",
+          "wallMs": 389571,
+          "turns": 36,
+          "inputTokens": 24,
+          "outputTokens": 49931,
+          "cacheReadTokens": 480601,
+          "cacheCreationTokens": 81545,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 24,
+          "toolErrors": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 11,
+            "of": 15,
+            "missing": [
+              "运营方",
+              "运营说明",
+              "班车类型",
+              "班次时刻"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareType",
+              "fare": "公交线路牌.boardFare",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "stops": "公交线路牌.stops",
+              "name": "公交站点.name",
+              "road": "公交站点.road",
+              "badges": "公交站点.facilities",
+              "landmark": "公交站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        },
+        "transcription": {
+          "stops": "59/59",
+          "names": 59,
+          "namesInOrder": 59,
+          "missing": [],
+          "unexpected": [],
+          "landmarks": {
+            "matched": 15,
+            "of": 15,
+            "extra": 0
+          },
+          "facilities": {
+            "matched": 18,
+            "of": 18,
+            "extra": 0
+          }
+        }
+      }
+    }
+  ],
+  "gate": {
+    "pass": false,
+    "scenarios": [
+      {
+        "id": "m402-definition",
+        "name": "M402 数据定义",
+        "passes": [
+          true,
+          true
+        ],
+        "pass": true
+      },
+      {
+        "id": "m402-template",
+        "name": "M402 模板",
+        "passes": [
+          true,
+          true
+        ],
+        "pass": true
+      },
+      {
+        "id": "366-transcription",
+        "name": "366 数据定义与转录",
+        "passes": [
+          false,
+          true
+        ],
+        "pass": false
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 3929419,
+    "inputTokens": 260,
+    "outputTokens": 447495,
+    "cacheReadTokens": 7579348
+  }
+}

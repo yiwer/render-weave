@@ -31,6 +31,7 @@ import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-fi
 import { AgentUsageError, DEFAULT_KEY_ENV, runAgentTask } from './agent/run.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
+import { parseOutcomeTarget, type OutcomeTarget } from './agent/outcome.js';
 import { AGENT_TASKS, findAgentTask } from './agent/tasks.js';
 import { WorkingDirectory } from './mcp/files.js';
 import { serveMcp } from './mcp/server.js';
@@ -63,7 +64,7 @@ const USAGE = `用法：
   renderweave resources-get --resources <目录> --id <资源ID> --version <内容版本>
   renderweave resources-check --resources <目录> --workspace <目录> --id <资源ID> --kind <image|font> --file <新内容文件> --out <检查报告.json> [--options <字体配置.json>]
   renderweave resources-apply --resources <目录> --workspace <目录> --file <新内容文件> --check <检查报告.json> [--options <字体配置.json>]
-  renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
+  renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>] [--outcome-context <本轮任务.json>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
                         [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>] [--requirement <修改要求.md>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
@@ -157,7 +158,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
-    : command === 'mcp' ? ['tools', 'log'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
+    : command === 'mcp' ? ['tools', 'log', 'outcome-context'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
     : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
   let positionals: string[];
@@ -455,9 +456,25 @@ async function runMcp(options: Record<string, string>, io: CliIo): Promise<numbe
     io.stderr(`目录无法打开：${describeError(error)}\n`);
     return ExitCodes.usage;
   }
+  let outcome: OutcomeTarget | undefined;
+  if (options['outcome-context'] !== undefined) {
+    let parsed: OutcomeTarget | string;
+    try {
+      parsed = parseOutcomeTarget(JSON.parse(await readFile(options['outcome-context'], 'utf8')));
+    } catch (error) {
+      parsed = describeError(error);
+    }
+    if (typeof parsed === 'string') {
+      io.stderr(`成果核对的上下文无法使用：${options['outcome-context']}（${parsed}）\n`);
+      return ExitCodes.usage;
+    }
+    outcome = parsed;
+  }
   // 工作区只在启动时读一次，作为本轮的只读快照；资源内容按需读取。
   const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
-  const all = createTools({ workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!) });
+  const all = createTools({
+    workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!), ...(outcome ? { outcome } : {}),
+  });
   const names = options.tools?.split(',').map((name) => name.trim());
   const unknown = names?.filter((name) => !all.some((tool) => tool.name === name)) ?? [];
   if (unknown.length > 0) {

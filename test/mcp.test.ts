@@ -17,7 +17,8 @@ const REQUEST = {
   output: { width: 740, height: 165, dpi: 20 },
 };
 const READ_ONLY_TOOLS = ['list_documents', 'read_document', 'list_resources', 'check_definitions', 'check_dataset', 'check_templates',
-  'render_draft', 'inspect_layout', 'view_image', 'dsl_reference'];
+  'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'];
+const NOTE = { dslVersion: 'renderweave-schema/1', name: '便签', fields: [{ name: 'title', displayName: '标题', type: 'text', constraints: { required: true, maxLength: 4 } }] };
 
 let base: string, root: string, outside: string, logFile: string;
 let session: McpSession;
@@ -65,9 +66,7 @@ beforeAll(async () => {
   await writeFile(join(root, 'candidates/schema-stop-v1.json'), JSON.stringify(definition));
   delete definition.version;
   await writeFile(join(root, 'candidates/schema-stop.json'), JSON.stringify(definition));
-  await writeFile(join(root, 'candidates/schema-note.json'), JSON.stringify({
-    dslVersion: 'renderweave-schema/1', name: '便签', fields: [{ name: 'title', displayName: '标题', type: 'text', constraints: { required: true, maxLength: 4 } }],
-  }));
+  await writeFile(join(root, 'candidates/schema-note.json'), JSON.stringify(NOTE));
   await writeFile(join(root, 'candidates/dataset-note.json'), JSON.stringify({ dataset: { staticSchema: { name: '便签', version: 1 } }, data: { title: '超过四个字' } }));
   const dataset = JSON.parse(await readFile(join(m402Dir, 'dataset-m402.json'), 'utf8'));
   await writeFile(join(root, 'candidates/dataset-m402.json'), JSON.stringify(dataset));
@@ -91,7 +90,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.3.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.4.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
@@ -301,6 +300,57 @@ describe('局部放大与路径限制', () => {
     expect(text(await session.call('view_image', { path: join(root, 'sample.png') }))).toContain('"original"');
     expect(text(await session.call('view_image', { path: 'candidates' }))).toBe('不是文件：candidates');
     expect(text(await session.call('check_dataset', { path: 'nothing.json' }))).toContain('文件不存在：nothing.json');
+  });
+});
+
+describe('交回前核对成果', () => {
+  it('启动时没有给出本轮任务，check_outcome 作为工具错误返回', async () => {
+    const result = await session.call('check_outcome', {});
+    expect(result.isError).toBe(true);
+    expect(text(result)).toContain('--outcome-context');
+  });
+
+  it('按交回后的同一套规则核对：待确认项的路径对不上时不合格，改对后合格；不写任何文件', async () => {
+    const dir = join(base, 'handoff');
+    await mkdir(join(dir, 'candidates'), { recursive: true });
+    await writeFile(join(dir, 'candidates/schema-note.json'), JSON.stringify(NOTE));
+    const outcome = {
+      candidates: ['candidates/schema-note.json'],
+      locations: [{ file: 'candidates/schema-note.json', path: 'titel', where: '顶部的标题' }],
+      pending: [{ file: 'candidates/schema-note.json', path: 'subtitle', reason: 'inferred', note: '图上没有副标题' }],
+      notes: '便签只有标题。',
+    };
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify(outcome));
+    const contextFile = join(base, 'outcome-context.json');
+    await writeFile(contextFile, JSON.stringify({ task: 'definition-extraction' }));
+    const handoff = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', dir, '--outcome-context', contextFile]);
+
+    const first = await handoff.callJson('check_outcome', {});
+    expect(first.verdict).toBe('unqualified');
+    expect(first.problems.map((problem: { level: string; location: { source: string } }) => [problem.level, problem.location.source]))
+      .toEqual([['severe', 'outcome.json#pending[1]'], ['hint', 'outcome.json#locations[1]']]);
+    expect(first.problems[0].message).toContain('没有字段 subtitle');
+    expect(first.candidates).toEqual([{ path: 'candidates/schema-note.json', kind: 'definition', name: '便签', published: { name: '便签', version: 1 }, problems: [] }]);
+
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({ ...outcome, locations: [{ ...outcome.locations[0], path: 'title' }], pending: [] }));
+    const unchanged = await fingerprint(dir);
+    expect(await handoff.callJson('check_outcome', {})).toMatchObject({ verdict: 'qualified', problems: [] });
+    expect([...(await fingerprint(dir)).entries()]).toEqual([...unchanged.entries()]);
+    expect(await handoff.close()).toBe(0);
+  });
+
+  it('上下文文件读不了或不合规时是用法错误', async () => {
+    const stderr: string[] = [];
+    const io = { stdout: () => {}, stderr: (text: string) => stderr.push(text), stdin: process.stdin };
+    const args = ['mcp', '--workspace', m402Dir, '--resources', resourcesDir, '--root', root, '--outcome-context'];
+    const unknownTask = join(base, 'context-unknown-task.json');
+    await writeFile(unknownTask, JSON.stringify({ task: 'ocr' }));
+    const extraKey = join(base, 'context-extra-key.json');
+    await writeFile(extraKey, JSON.stringify({ task: 'template-design', request: { template: '标准线路单边' }, dataset: 'ds-m402' }));
+    expect(await runCli([...args, join(base, 'nope.json')], io)).toBe(2);
+    expect(await runCli([...args, unknownTask], io)).toBe(2);
+    expect(await runCli([...args, extraKey], io)).toBe(2);
+    expect(stderr.filter((line) => line.includes('成果核对的上下文'))).toHaveLength(3);
   });
 });
 

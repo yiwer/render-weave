@@ -17,3 +17,4 @@
 5. 用 check_dataset 校验，有问题就修改，直到没有问题；待确认的位置除外。
    - 有 request.json 时，用 render_draft 出草稿对照示例图：request 用 request.json 的内容，datasetPath 指向你的数据集。
 6. 按 outcome.md 写 outcome.json：列出候选文件、值在图上的位置、待确认项与说明。看不清或推测的值都列为待确认项，候选值写在 candidate 里，不要当作确定的值。
+7. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件。结论是 unqualified 时按问题修改，再核对，直到 qualified；deferred 中的问题落在待确认的位置上，留给审核，不用改。

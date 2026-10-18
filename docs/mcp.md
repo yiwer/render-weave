@@ -1,13 +1,13 @@
 # MCP 只读工具服务
 
-`renderweave mcp` 是交给业务 Agent 的工具服务，任何 MCP 客户端也都能用。它在标准输入输出上收发按行分隔的 JSON-RPC 2.0（MCP 的 stdio 传输），提供读取、校验、草稿预览、元素检查、局部放大、资源列表与 DSL 参考。
+`renderweave mcp` 是交给业务 Agent 的工具服务，任何 MCP 客户端也都能用。它在标准输入输出上收发按行分隔的 JSON-RPC 2.0（MCP 的 stdio 传输），提供读取、校验、草稿预览、元素检查、局部放大、资源列表、DSL 参考与交回前核对成果。
 
-所有工具都只读（M53）。Agent 的成果以文件形式写在本轮工作目录里，经人审核后才能应用（ADR-0015）。决定记录见 M225。
+所有工具都只读（M53）。Agent 的成果以文件形式写在本轮工作目录里，经人审核后才能应用（ADR-0015）。决定记录见 M225，交回前核对见 M233。
 
 ## 启动
 
 ```bash
-renderweave mcp --workspace <工作区目录> --resources <资源仓库> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>]
+renderweave mcp --workspace <工作区目录> --resources <资源仓库> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>] [--outcome-context <本轮任务.json>]
 ```
 
 | 选项 | 含义 |
@@ -17,8 +17,9 @@ renderweave mcp --workspace <工作区目录> --resources <资源仓库> --root 
 | `--root` | 本轮工作目录。读文件的工具只能读这个目录里的文件 |
 | `--tools` | 可选，只开放列出的工具，逗号分隔；工具名写错时报用法错误 |
 | `--log` | 可选，每次工具调用追加一行记录：工具、参数、用时、是否出错。日志由启动方保存，不经工具读写 |
+| `--outcome-context` | 可选，`check_outcome` 要的本轮任务与已知输入，JSON 文件，见[交回前核对](#交回前核对)。不给时 `check_outcome` 返回工具错误 |
 
-- **退出码**：0 表示读完标准输入后正常结束；2 表示用法错误，或工作区、工作目录无法打开。
+- **退出码**：0 表示读完标准输入后正常结束；2 表示用法错误，或工作区、工作目录、`--outcome-context` 的文件无法打开或不合规。
 - **输出约定**：标准输出只写协议消息，启动说明与工作区问题写到标准错误流。
 
 Claude Code 的配置示例（`--mcp-config`）：
@@ -44,8 +45,30 @@ Claude Code 的配置示例（`--mcp-config`）：
 | `inspect_layout` | `request`、`templates`、`datasetPath`、`elements`、`depth` | 元素的布局摘要与这些元素上的问题 |
 | `view_image` | `path`、`region`（像素） | 原图尺寸、裁切区域与放大后的 PNG |
 | `dsl_reference` | `name` | `agent/reference/` 中的参考，或 `schemas/` 中的 JSON Schema 原文 |
+| `check_outcome` | 无 | 按交回后的同一套规则核对工作目录根上的 `outcome.json` 与候选：结论 `verdict`、`outcome.json` 的问题，以及每个候选的问题与 `deferred` |
 
 工具结果是一段 JSON 文本，预览类工具再加一个图片内容块。
+
+### 交回前核对
+
+`check_outcome` 调用 `agent run` 交回后用的同一个校验（[业务 Agent 任务](agent-tasks.md#校验)），Agent 在交回前就能看到同样的结论与问题，包括待确认项与图上位置引用的路径对不上（M233）。
+
+- **输入**：没有参数，固定读工作目录根上的 `outcome.json`。
+- **上下文**：`--outcome-context` 的文件写本轮任务与已知输入：
+
+  ```json
+  { "task": "template-revision", "request": { "template": "标准线路单边" }, "revision": { "templates": ["标准线路单边", "站点"] } }
+  ```
+
+  | 键 | 必填 | 含义 |
+  |---|---|---|
+  | `task` | 是 | `definition-extraction`、`dataset-extraction`、`template-design` 或 `template-revision`，决定允许的候选种类 |
+  | `definition` | 否 | `{name, version}`，数据集提取所选的数据定义，候选数据集必须选定它 |
+  | `request` | 否 | `{template}`，出图请求的主模板，模板辅助设计时必须在候选中 |
+  | `revision` | 否 | `{templates}`，模板辅助修改可以改的已保存模板 |
+
+  `agent run` 每轮写到 `logs/outcome-context.json`，在 Agent 工作目录之外。
+- **返回**：与 `check.json` 相同，只是候选不带 `sha256` 与模板修改的结构化差异 `revision`。
 
 ### 草稿预览与元素检查
 
@@ -71,7 +94,7 @@ Claude Code 的配置示例（`--mcp-config`）：
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.3.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.4.0`，即 `initialize` 返回的 `serverInfo.version`。0.4.0 在 0.3.0 上新增 `check_outcome` 与 `--outcome-context`，原有工具不变（M233）。
 - **兼容规则**：新增工具或可选参数属于兼容改动；改名、删参数或改变输出结构，要升合同版本并复跑评估（PRD 第 6 条）。
 - **合同测试**：`test/mcp.test.ts` 用 JSON-RPC 直接驱动命令，不经模型，覆盖：
   - 协议、工具清单快照、每个工具的正常与异常输入；
