@@ -23,10 +23,10 @@ export interface LoadedImage {
   readonly dpi?: number;
 }
 
-type LoadOutcome = { image: LoadedImage } | { error: { code: Problem['code']; message: string } };
+export type ImageLoadOutcome = { image: LoadedImage } | { error: { code: Problem['code']; message: string } };
 
 export class ImageStore {
-  private readonly outcomes = new Map<string, LoadOutcome>();
+  private readonly outcomes = new Map<string, ImageLoadOutcome>();
   private readonly rasters = new Map<string, LoadedImage>();
   private readonly svgLoader: SvgLoader;
 
@@ -40,7 +40,7 @@ export class ImageStore {
   async load(id: string, usedBy: ElementPath): Promise<Problem | undefined> {
     let outcome = this.outcomes.get(id);
     if (!outcome) {
-      outcome = await this.loadOutcome(id);
+      outcome = await loadResourceImage(this.ck, this.repository, this.svgLoader, id);
       this.outcomes.set(id, outcome);
     }
     if ('image' in outcome) return undefined;
@@ -100,41 +100,42 @@ export class ImageStore {
     }
     return { drawOps, problems };
   }
+}
 
-  private async loadOutcome(id: string): Promise<LoadOutcome> {
-    const info = this.repository.get(id);
-    if (!info) return { error: { code: ProblemCodes.resourceNotFound, message: `资源仓库中没有图片资源 res:${id}` } };
-    if (info.kind !== 'image') {
-      return { error: { code: ProblemCodes.resourceKindMismatch, message: `res:${id} 是字体资源，不能用作图片` } };
-    }
-    let bytes: Uint8Array;
-    try {
-      bytes = await this.repository.read(id);
-    } catch (error) {
-      const message = error instanceof ResourceReadError ? error.message : `图片资源 res:${id} 无法读取`;
-      return { error: { code: error instanceof ResourceReadError ? error.code : ProblemCodes.resourceUnreadable, message } };
-    }
-    const format = detectFormat(bytes);
-    if (!format) {
-      if (looksLikeSvg(bytes)) {
-        try {
-          const svg = await this.svgLoader.load(bytes);
-          return { image: { id, svg, width: svg.width, height: svg.height } };
-        } catch (error) {
-          return { error: { code: ProblemCodes.resourceUnreadable,
-            message: `图片资源 res:${id} 的 SVG 无法解析：${error instanceof Error ? error.message : String(error)}` } };
-        }
-      }
-      return { error: { code: ProblemCodes.resourceUnsupportedFormat, message: `图片资源 res:${id} 的格式不受支持：只支持 PNG、JPEG、WebP、SVG` } };
-    }
-    const decoded = this.ck.MakeImageFromEncoded(bytes);
-    if (!decoded) return { error: { code: ProblemCodes.resourceUnreadable, message: `图片资源 res:${id} 无法解码` } };
-    // 生成多级纹理，缩小绘制时按 MipmapMode.Linear 取样。
-    const image = decoded.makeCopyWithDefaultMipmaps();
-    decoded.delete();
-    const dpi = format === 'png' ? readPngInfo(bytes).dpi : format === 'jpeg' ? readJpegDpi(bytes) : undefined;
-    return { image: { id, image, width: image.width(), height: image.height(), ...(dpi && { dpi }) } };
+/** 按资源 ID 读取并解码一张图片资源：位图直接解码（带多级纹理），SVG 解析后留待按显示尺寸栅格化。失败时给出问题码与说明，由调用方定位。 */
+export async function loadResourceImage(ck: CanvasKit, repository: ResourceRepository, svgLoader: SvgLoader, id: string): Promise<ImageLoadOutcome> {
+  const info = repository.get(id);
+  if (!info) return { error: { code: ProblemCodes.resourceNotFound, message: `资源仓库中没有图片资源 res:${id}` } };
+  if (info.kind !== 'image') {
+    return { error: { code: ProblemCodes.resourceKindMismatch, message: `res:${id} 是字体资源，不能用作图片` } };
   }
+  let bytes: Uint8Array;
+  try {
+    bytes = await repository.read(id);
+  } catch (error) {
+    const message = error instanceof ResourceReadError ? error.message : `图片资源 res:${id} 无法读取`;
+    return { error: { code: error instanceof ResourceReadError ? error.code : ProblemCodes.resourceUnreadable, message } };
+  }
+  const format = detectFormat(bytes);
+  if (!format) {
+    if (looksLikeSvg(bytes)) {
+      try {
+        const svg = await svgLoader.load(bytes);
+        return { image: { id, svg, width: svg.width, height: svg.height } };
+      } catch (error) {
+        return { error: { code: ProblemCodes.resourceUnreadable,
+          message: `图片资源 res:${id} 的 SVG 无法解析：${error instanceof Error ? error.message : String(error)}` } };
+      }
+    }
+    return { error: { code: ProblemCodes.resourceUnsupportedFormat, message: `图片资源 res:${id} 的格式不受支持：只支持 PNG、JPEG、WebP、SVG` } };
+  }
+  const decoded = ck.MakeImageFromEncoded(bytes);
+  if (!decoded) return { error: { code: ProblemCodes.resourceUnreadable, message: `图片资源 res:${id} 无法解码` } };
+  // 生成多级纹理，缩小绘制时按 MipmapMode.Linear 取样。
+  const image = decoded.makeCopyWithDefaultMipmaps();
+  decoded.delete();
+  const dpi = format === 'png' ? readPngInfo(bytes).dpi : format === 'jpeg' ? readJpegDpi(bytes) : undefined;
+  return { image: { id, image, width: image.width(), height: image.height(), ...(dpi && { dpi }) } };
 }
 
 function detectFormat(bytes: Uint8Array): 'png' | 'jpeg' | 'webp' | undefined {

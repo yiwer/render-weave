@@ -237,7 +237,7 @@
     },
     {
       "name": "view_image",
-      "description": "局部放大查看工作目录内的图片（如示例图）：按像素区域裁切，放大到最长边约 1400 像素（最多 4 倍），返回 PNG 与原图尺寸。用于核对小字、密排列表、图标与小标记。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。",
+      "description": "局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切，放大到最长边约 1400 像素（最多 4 倍），返回 PNG 与原图尺寸。用于核对小字、密排列表、图标与小标记，以及把示例图上的图标、标记与资源图片对照后再引用。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -248,7 +248,7 @@
           "path": {
             "type": "string",
             "minLength": 1,
-            "description": "工作目录内的图片，如 sample.png"
+            "description": "工作目录内的图片，如 sample.png；或 res:资源ID，如 res:landmark-1（只能是图片资源，可先用 list_resources 查看）"
           },
           "region": {
             "type": "object",

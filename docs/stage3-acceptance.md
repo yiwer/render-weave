@@ -280,6 +280,7 @@
   - 上文"缺省模型仍是 qwen3.8-max"等表述是验收当时的状态。
 - **评估代理移进产品**：`scripts/agent-eval/proxy.ts` 移入 `src/agent/model-proxy.ts`，由 `agent run` 在选 Gemini 时自动起用。Standards 第 1 项的来源限制保留，另加了本轮令牌：Claude Code 只拿到令牌，拿不到上游 key。OpenAI 格式不再支持。
 - **交回前核对成果**（M233，[票据 10](../.scratch/agent-template-authoring/issues/10-check-outcome-before-handoff.md)）：「后续」第 1 条。新增只读工具 `check_outcome`，Agent 交回前按同一套规则核对待确认项与图上位置的路径，MCP 合同升到 0.4.0。
+- **查看资源图片**（M234，[票据 11](../.scratch/agent-template-authoring/issues/11-view-resource-images.md)）：「后续」第 3 条。`view_image` 的 `path` 接受 `res:资源ID`，Agent 能把示例图上的地标、图标与资源图片对照后再引用，MCP 合同升到 0.5.0。
 - **验证**：
   - Windows 全量 39 个文件、745 项通过：删掉旧代理的 5 项，新增 Gemini 经代理的 2 项；新用例去掉令牌检查后变红。
   - Linux 容器同一份代码 741 项通过、4 项 Windows 专用用例跳过。

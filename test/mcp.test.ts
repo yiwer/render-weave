@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
-import { mmToPx, readPngInfo } from '../src/index.js';
+import { applyResourceReplacement, checkResourceReplacement, importResources, initializeResourceStore, mmToPx, readPngInfo } from '../src/index.js';
 import { startMcp, type McpSession, type ToolCall } from './support/mcp-client.js';
 import { m402Dir, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
@@ -90,7 +90,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.4.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.5.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
@@ -286,6 +286,51 @@ describe('局部放大与路径限制', () => {
     expect(readPngInfo(Buffer.from(image(crop)!.data, 'base64'))).toMatchObject({ width: 200, height: 200 });
     expect(JSON.parse(text(await session.call('view_image', { path: 'sample.png' })))).toMatchObject({ region: { x: 0, y: 0, width: 200, height: 100 }, output: { width: 800, height: 400 } });
     expect(text(await session.call('view_image', { path: 'notes.txt' }))).toBe('无法解码图片：notes.txt');
+  });
+
+  it('res:资源ID 查看资源仓库中的图片，区域、放大与输出和工作目录内的图片相同', async () => {
+    const region = { x: 150, y: 50, width: 100, height: 100 };
+    const fromFile = await session.call('view_image', { path: 'sample.png', region });
+    const fromResource = await session.call('view_image', { path: 'res:test-quadrants-png', region });
+    expect(fromResource.isError).toBeFalsy();
+    expect(JSON.parse(text(fromResource))).toEqual(JSON.parse(text(fromFile)));
+    expect(image(fromResource)!.data).toBe(image(fromFile)!.data);
+    expect(JSON.parse(text(await session.call('view_image', { path: 'res:landmark-2' })))).toMatchObject({ original: { width: 96, height: 96 }, scale: 4, output: { width: 384, height: 384 } });
+    // SVG 的区域按原始尺寸写，栅格化后放大。
+    const svg = await session.call('view_image', { path: 'res:test-vector-svg' });
+    expect(JSON.parse(text(svg))).toEqual({ original: { width: 80, height: 40 }, region: { x: 0, y: 0, width: 80, height: 40 }, scale: 4, output: { width: 320, height: 160 } });
+    expect(readPngInfo(Buffer.from(image(svg)!.data, 'base64'))).toMatchObject({ width: 320, height: 160 });
+  });
+
+  it('res: 后面只能是资源 ID：未知 ID、字体资源与写法不对的引用作为工具错误返回', async () => {
+    const unknown = await session.call('view_image', { path: 'res:landmark-99' });
+    expect([unknown.isError, text(unknown)]).toEqual([true, expect.stringContaining('资源仓库中没有图片资源 res:landmark-99')]);
+    expect(text(unknown)).toContain('list_resources');
+    const font = await session.call('view_image', { path: 'res:font-hei-regular' });
+    expect([font.isError, text(font)]).toEqual([true, expect.stringContaining('res:font-hei-regular 是字体资源')]);
+    for (const path of ['res:../resources.json', 'res:images/m402/landmark-2.png', 'res:']) {
+      const result = await session.call('view_image', { path });
+      expect([path, result.isError, text(result)]).toEqual([path, true, expect.stringContaining('res: 后面只能写资源 ID')]);
+    }
+  });
+
+  it('版本仓库取服务启动时的当前版本；资源内容不是图片时报格式不受支持', async () => {
+    const source = join(base, 'legacy-resources'), store = join(base, 'versioned-resources');
+    await mkdir(join(source, 'images'), { recursive: true });
+    await cp(join(resourcesDir, 'images/m402/landmark-2.png'), join(source, 'images/landmark-2.png'));
+    await writeFile(join(source, 'images/notes.txt'), '不是图片');
+    await writeFile(join(source, 'resources.json'), JSON.stringify({ resources: [
+      { id: 'landmark-2', kind: 'image', file: 'images/landmark-2.png' }, { id: 'not-image', kind: 'image', file: 'images/notes.txt' }] }));
+    expect((await initializeResourceStore(store)).problems).toEqual([]);
+    expect((await importResources({ sourceDir: source, dir: store })).problems).toEqual([]);
+    const replacement = join(resourcesDir, 'images/test/quadrants.png');
+    const check = await checkResourceReplacement({ dir: store, workspaceDir: singleTextDir, id: 'landmark-2', kind: 'image', file: replacement });
+    expect((await applyResourceReplacement({ dir: store, workspaceDir: singleTextDir, file: replacement, check: check.check })).replaced?.version).toBe(2);
+
+    const versioned = startMcp(['--workspace', singleTextDir, '--resources', store, '--root', root]);
+    expect(JSON.parse(text(await versioned.call('view_image', { path: 'res:landmark-2' }))).original).toEqual({ width: 200, height: 100 });
+    expect(text(await versioned.call('view_image', { path: 'res:not-image' }))).toContain('格式不受支持');
+    expect(await versioned.close()).toBe(0);
   });
 
   it('工作目录外的路径一律拒绝：上级目录、绝对路径、目录联接与不存在的文件', async () => {

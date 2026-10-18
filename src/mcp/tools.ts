@@ -1,30 +1,35 @@
 /**
  * `renderweave mcp` 的工具（第三阶段 PRD 第 5、6 条）：读取、校验、草稿预览、元素检查、局部放大、资源列表、DSL 参考与交回前核对成果。
  * 全部只读（M53）：不写工作区、资源仓库或工作目录，也没有发布、删除与正式出图的途径。
- * 工作区是服务启动时读入的快照；工作目录内的文件按路径读取（files.ts）。工作副本只在本次调用的内存中代替已保存模板（M49、M50）。
- * 工具名称、输入 Schema 与输出结构是 v0.4 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
+ * 工作区是服务启动时读入的快照；工作目录内的文件按路径读取（files.ts），资源仓库只按 res:资源ID 经资源仓库接口读取。工作副本只在本次调用的内存中代替已保存模板（M49、M50）。
+ * 工具名称、输入 Schema 与输出结构是 v0.5 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
  */
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
+import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
 import { loadCanvasKit } from '../canvaskit.js';
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
+import { loadResourceImage, type LoadedImage } from '../images.js';
 import type { LayoutNode } from '../layout/index.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
 import { render } from '../render.js';
+import { parseResourceRef } from '../resources.js';
 import { mmToPx } from '../units.js';
 import { findStaticSchema } from '../schema/builtins.js';
 import { publishStaticSchema } from '../schema/publish.js';
+import { rasterizeSvg, SvgLoader } from '../svg.js';
 import { parseTemplate } from '../template/parse.js';
 import { prepareTemplates } from '../template/program.js';
+import { DEFAULT_FALLBACK_FONTS } from '../text/fonts.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, parseDatasetDocument, parseStaticSchemaRef, type StaticSchemaEntry, type TemplateEntry, type Workspace } from '../workspace.js';
 import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.4.0';
+export const MCP_CONTRACT_VERSION = '0.5.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -34,6 +39,9 @@ const DRAFT_REGION_MAX_TOTAL_PX = 40_000_000;
 /** 局部放大的输出最长边与最大倍数。 */
 const VIEW_MAX_SIDE_PX = 1400;
 const VIEW_MAX_SCALE = 4;
+/** SVG 资源整图栅格化的单边与像素总数上限。 */
+const VIEW_SVG_MAX_SIDE_PX = 8000;
+const VIEW_SVG_MAX_TOTAL_PX = 16_000_000;
 /** 元素检查一次最多返回的元素数。 */
 const INSPECT_MAX_NODES = 300;
 
@@ -289,31 +297,38 @@ export function createTools(context: ToolContext): McpTool[] {
     },
     {
       name: 'view_image',
-      description: `局部放大查看工作目录内的图片（如示例图）：按像素区域裁切，放大到最长边约 ${VIEW_MAX_SIDE_PX} 像素（最多 ${VIEW_MAX_SCALE} 倍），返回 PNG 与原图尺寸。` +
-        '用于核对小字、密排列表、图标与小标记。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。',
+      description: `局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切，放大到最长边约 ${VIEW_MAX_SIDE_PX} 像素（最多 ${VIEW_MAX_SCALE} 倍），返回 PNG 与原图尺寸。` +
+        '用于核对小字、密排列表、图标与小标记，以及把示例图上的图标、标记与资源图片对照后再引用。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。',
       inputSchema: { type: 'object', additionalProperties: false, required: ['path'], properties: {
-        path: { type: 'string', minLength: 1, description: '工作目录内的图片，如 sample.png' },
+        path: { type: 'string', minLength: 1, description: '工作目录内的图片，如 sample.png；或 res:资源ID，如 res:landmark-1（只能是图片资源，可先用 list_resources 查看）' },
         region: { type: 'object', additionalProperties: false, required: ['x', 'y', 'width', 'height'], description: '原图像素区域，左上角为原点',
           properties: { x: { type: 'number', minimum: 0 }, y: { type: 'number', minimum: 0 }, width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 } } },
       } },
       async call(args) {
         const ck = await loadCanvasKit();
         const path = args['path'] as string;
-        const image = ck.MakeImageFromEncoded(await files.readBytes(path));
-        if (!image) throw new ToolInputError(`无法解码图片：${path}`);
-        const surfaces: { delete(): void }[] = [image];
+        const source = path.startsWith('res:') ? await readResourceImage(ck, path) : await readImageFile(ck, path);
+        const surfaces: { delete(): void }[] = source.image ? [source.image] : [];
         try {
-          const W = image.width(), H = image.height();
+          const W = source.width, H = source.height;
           const region = args['region'] as Record<string, number> | undefined;
           const x = Math.min(W - 1, Math.round(region?.['x'] ?? 0)), y = Math.min(H - 1, Math.round(region?.['y'] ?? 0));
           const w = Math.max(1, Math.min(W - x, Math.round(region?.['width'] ?? W))), h = Math.max(1, Math.min(H - y, Math.round(region?.['height'] ?? H)));
           const scale = Math.min(VIEW_MAX_SCALE, VIEW_MAX_SIDE_PX / Math.max(w, h));
           const ow = Math.max(1, Math.round(w * scale)), oh = Math.max(1, Math.round(h * scale));
+          // SVG 按放大后的尺寸栅格化整图，区域换算到栅格上；位图的换算比是 1。
+          let image = source.image;
+          if (!image) {
+            image = ck.MakeImageFromEncoded(rasterizeSvg(source.svg!, svgRasterWidth(W, H, scale))) ?? undefined;
+            if (!image) throw new Error('SVG 栅格结果无法解码');
+            surfaces.push(image);
+          }
+          const k = image.width() / W;
           const surface = ck.MakeSurface(ow, oh);
           if (!surface) throw new Error('无法创建绘图表面');
           const paint = new ck.Paint();
           surfaces.push(surface, paint);
-          surface.getCanvas().drawImageRectOptions(image, ck.XYWHRect(x, y, w, h), ck.XYWHRect(0, 0, ow, oh), ck.FilterMode.Linear, ck.MipmapMode.Linear, paint);
+          surface.getCanvas().drawImageRectOptions(image, ck.XYWHRect(x * k, y * k, w * k, h * k), ck.XYWHRect(0, 0, ow, oh), ck.FilterMode.Linear, ck.MipmapMode.Linear, paint);
           const snapshot = surface.makeImageSnapshot();
           surfaces.push(snapshot);
           const bytes = snapshot.encodeToBytes();
@@ -383,6 +398,23 @@ export function createTools(context: ToolContext): McpTool[] {
       }
     }
     return { published, results };
+  }
+
+  async function readImageFile(ck: CanvasKit, path: string): Promise<LoadedImage> {
+    const image = ck.MakeImageFromEncoded(await files.readBytes(path));
+    if (!image) throw new ToolInputError(`无法解码图片：${path}`);
+    return { id: path, image, width: image.width(), height: image.height() };
+  }
+
+  /** `res:资源ID` 只经资源仓库接口按 ID 读，不按路径读资源仓库目录；版本仓库是启动时固定的当前版本。 */
+  async function readResourceImage(ck: CanvasKit, ref: string): Promise<LoadedImage> {
+    const id = parseResourceRef(ref);
+    if (id === undefined) throw new ToolInputError(`res: 后面只能写资源 ID（字母、数字、- 与 _），如 res:landmark-1；收到 ${ref}`);
+    const outcome = await loadResourceImage(ck, workspace.resources, new SvgLoader(workspace.resources, DEFAULT_FALLBACK_FONTS, ck), id);
+    if ('error' in outcome) {
+      throw new ToolInputError(outcome.error.code === ProblemCodes.resourceNotFound ? `${outcome.error.message}；可先用 list_resources 查看` : outcome.error.message);
+    }
+    return outcome.image;
   }
 
   async function readWorkingCopy(path: string): Promise<TemplateEntry> {
@@ -456,6 +488,12 @@ export function createTools(context: ToolContext): McpTool[] {
 }
 
 interface Region { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+
+/** SVG 资源整图栅格化的宽度：按放大倍数取，单边与像素总数超限时降低清晰度。 */
+function svgRasterWidth(width: number, height: number, scale: number): number {
+  const limit = Math.min(VIEW_SVG_MAX_SIDE_PX, (VIEW_SVG_MAX_SIDE_PX * width) / height, Math.sqrt((VIEW_SVG_MAX_TOTAL_PX * width) / height));
+  return Math.max(1, Math.min(Math.ceil(width * scale), Math.floor(limit)));
+}
 
 /** 从整张预览中裁出像素区域，重新编码为 PNG。 */
 async function crop(bytes: Uint8Array, left: number, top: number, width: number, height: number): Promise<Uint8Array> {

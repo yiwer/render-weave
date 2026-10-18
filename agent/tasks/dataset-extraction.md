@@ -12,7 +12,7 @@
    三者冲突时，项目说明优先于领域约定，领域约定优先于通用做法。
 2. 用 list_documents、read_document 读数据定义 {definition} 及它引用的定义，弄清每个字段的含义与约束。
 3. 仔细查看示例图：先看整图，再用 view_image 分段放大，逐字核对；长列表逐项核对，不要跳读。
-   - 图片类的值先用 list_resources 查看资源仓库，用 res: 引用。
+   - 图片类的值先用 list_resources 查看资源仓库，再用 view_image 查看候选的资源图片（path 写 res:资源ID），与示例图上的图标、标记对照后用 res: 引用；不要按资源 ID 推测图片内容。
 4. 数据集写一份，放到 candidates/：dataset.staticSchema 写 {definition}；dataset.id 用英文或数字，不与工作区已有的数据集重复。
 5. 用 check_dataset 校验，有问题就修改，直到没有问题；待确认的位置除外。
    - 有 request.json 时，用 render_draft 出草稿对照示例图：request 用 request.json 的内容，datasetPath 指向你的数据集。

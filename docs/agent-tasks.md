@@ -37,7 +37,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--task` | 任务类型：`数据定义提取`、`数据集提取`、`模板辅助设计`、`模板辅助修改`，也可写英文标识 `definition-extraction`、`dataset-extraction`、`template-design`、`template-revision` |
 | `--sample` | 示例图，PNG、JPEG 或 WebP，按文件头判断格式，不看扩展名 |
 | `--brief` | 项目说明：业务、尺寸、目标范围、客户说明。只写这一单的事实 |
-| `--resources` | 资源仓库目录，Agent 经工具查看可引用的图片与字体；审核时重新渲染预览也用它 |
+| `--resources` | 资源仓库目录，Agent 经工具查看可引用的图片与字体，图片可以用 `view_image` 的 `res:资源ID` 看内容；审核时重新渲染预览也用它 |
 | `--out` | 新轮次目录，必须不存在或为空 |
 | `--domain` | 可选，领域约定包，取 `agent/domains/<领域>.md`，目前有 `route-sign`、`price-tag`；以 `_` 开头的 `_template.md` 是给维护者的模板，不能选 |
 | `--workspace` | 工作区目录，复制为本轮的只读快照。数据定义提取可选，其余三种任务必须给 |
