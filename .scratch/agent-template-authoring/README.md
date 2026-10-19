@@ -20,6 +20,7 @@
 | 10 | [Agent 交回前用只读工具核对成果](issues/10-check-outcome-before-handoff.md) | 07、08 | A04、A10（验收后的后续，来自 Spec 审查第 1 项） |
 | 11 | [Agent 用 view_image 查看资源仓库中的图片](issues/11-view-resource-images.md) | 10 | A04、A10（验收后的后续，来自 Spec 审查第 2 项） |
 | 12 | [循环容器可以纵向排列列表项](issues/12-vertical-loop.md) | 无 | A01、A02、A03、A10（验收后的后续，来自真人走查） |
+| 13 | [网格的比例列、跨行列元素与超出单元格不再静默重叠](issues/13-grid-overlap.md) | 无 | A01、A02、A03（验收后的后续，来自与 design-layout-draw 网格的对照） |
 
 已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。
 
