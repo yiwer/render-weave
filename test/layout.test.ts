@@ -229,6 +229,65 @@ describe('网格布局', () => {
   });
 });
 
+describe('网格中的元素不静默重叠（M237）', () => {
+  const block = (name: string, place: Record<string, unknown>, width: number, height = 5) => rect(name, { ...place, ...fixed(width, height) });
+  /** 网格放在随内容的容器里，测量与排列都按网格自己的内容。 */
+  const hugGrid = (layout: Record<string, unknown>, children: unknown[]) => ({
+    children: [{ type: 'container', name: '格', place: { width: 'hug', height: 'hug' }, layout: { mode: 'grid', ...layout }, children }],
+  });
+  const overflow = (result: RenderResult) => result.problems.map((p) => [p.code, p.location, p.message]);
+
+  it('随内容测量时比例列按比例放大到放得下内容', async () => {
+    const result = await lab(hugGrid({ columns: [{ fraction: 1 }, { fraction: 3 }], rows: [{ fixed: 5 }] },
+      [block('一', { row: 1, column: 1 }, 5), block('三', { row: 1, column: 2 }, 5)]), 100, 20);
+    expect(result.problems).toEqual([]);
+    expect(box(node(result, '布局实验/格'))).toEqual({ x: 0, y: 0, width: 20, height: 5 });
+    expect(node(result, '布局实验/格/三').x).toBe(5);
+  });
+
+  it('随内容测量时跨比例列的元素按所跨份数计入每份尺寸', async () => {
+    const result = await lab(hugGrid({ columns: [{ fraction: 1 }, { fraction: 1 }], rows: [{ fixed: 5 }], columnGap: 2 },
+      [block('跨', { row: 1, column: 1, columnSpan: 2 }, 22), rect('右', { row: 1, column: 2 })]), 100, 20);
+    expect(result.problems).toEqual([]);
+    expect(node(result, '布局实验/格').width).toBe(22);
+    expect(box(node(result, '布局实验/格/右'))).toEqual({ x: 12, y: 0, width: 10, height: 5 });
+  });
+
+  it('跨列元素把放不下的部分平均分给所跨的随内容列', async () => {
+    const result = await lab({ layout: { mode: 'grid', columns: ['hug', 'hug', { fraction: 1 }], rows: [{ fixed: 8 }, { fixed: 8 }], columnGap: 1 },
+      children: [block('短', { row: 1, column: 1 }, 5), block('长', { row: 2, column: 1, columnSpan: 2 }, 30), rect('右', { row: 1, column: 3 })] }, 100, 16);
+    expect(result.problems).toEqual([]);
+    expect(box(node(result, '布局实验/右'))).toEqual({ x: 31, y: 0, width: 69, height: 8 });
+  });
+
+  it('跨行元素同样撑开所跨的随内容行', async () => {
+    const result = await lab({ layout: { mode: 'grid', columns: [{ fixed: 10 }, { fixed: 10 }], rows: ['hug', 'hug', { fraction: 1 }] },
+      children: [block('高', { row: 1, column: 1, rowSpan: 2 }, 10, 20), block('矮', { row: 1, column: 2 }, 10, 4), rect('下', { row: 2, column: 2 })] }, 20, 30);
+    expect(result.problems).toEqual([]);
+    expect(box(node(result, '布局实验/下'))).toEqual({ x: 10, y: 12, width: 10, height: 8 });
+  });
+
+  it('跨度小的元素先撑开轨道', async () => {
+    const result = await lab({ layout: { mode: 'grid', columns: ['hug', 'hug', 'hug', { fraction: 1 }], rows: [{ fixed: 5 }, { fixed: 5 }, { fixed: 5 }] },
+      children: [block('三格', { row: 1, column: 1, columnSpan: 3 }, 34), block('两格', { row: 2, column: 1, columnSpan: 2 }, 10),
+        rect('一', { row: 3, column: 1 }), rect('二', { row: 3, column: 2 }), rect('三', { row: 3, column: 3 })] }, 100, 15);
+    expect(result.problems).toEqual([]);
+    expect(['一', '二', '三'].map((name) => node(result, `布局实验/${name}`).width)).toEqual([13, 13, 8]);
+  });
+
+  it('元素连同边距比所在单元格大时报内容超出，位置是网格容器', async () => {
+    const result = await lab({ layout: { mode: 'grid', columns: [{ fixed: 10 }, { fixed: 10 }, 'hug', { fraction: 1 }], rows: [{ fixed: 8 }] },
+      children: [block('宽块', { row: 1, column: 1 }, 18), block('边距块', { row: 1, column: 2, margin: { left: 3 } }, 8),
+        block('跨比例', { row: 1, column: 3, columnSpan: 2 }, 30), rect('填满', { row: 1, column: 1 })] }, 40, 8);
+    const at = { kind: 'element', path: '布局实验' };
+    expect(overflow(result)).toEqual([
+      [ProblemCodes.layoutContentOverflow, at, '内容放不下：元素“宽块”需要 18 × 5 mm，所在单元格 10 × 8 mm'],
+      [ProblemCodes.layoutContentOverflow, at, '内容放不下：元素“边距块”连同边距需要 11 × 5 mm，所在单元格 10 × 8 mm'],
+      [ProblemCodes.layoutContentOverflow, at, '内容放不下：元素“跨比例”需要 30 × 5 mm，所在单元格 20 × 8 mm'],
+    ]);
+  });
+});
+
 describe('自由布局', () => {
   it('可以距右、距下定位；填满时取容器尺寸减去距边', async () => {
     const result = await lab(

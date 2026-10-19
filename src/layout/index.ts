@@ -426,6 +426,11 @@ class Layouter {
       const availableHeight = cellHeight - p.margin.top - p.margin.bottom;
       const width = this.resolveSize(child, 'width', 'fill', availableWidth);
       const height = this.resolveSize(child, 'height', 'fill', availableHeight);
+      // 与堆叠放不下时一样报问题，免得元素悄悄画进相邻的单元格（M237）。
+      if (width > availableWidth + EPSILON || height > availableHeight + EPSILON) {
+        const { left, right, top, bottom } = p.margin;
+        this.contentOverflow(model, `元素“${child.model.name}”${left || right || top || bottom ? '连同边距' : ''}需要 ${fmt(width + left + right)} × ${fmt(height + top + bottom)} mm，所在单元格 ${fmt(cellWidth)} × ${fmt(cellHeight)} mm`);
+      }
       boxes.set(child, {
         x: cellX + p.margin.left + alignOffset(p.justifySelf ?? 'start', availableWidth - width),
         y: cellY + p.margin.top + alignOffset(p.alignSelf ?? 'start', availableHeight - height),
@@ -437,8 +442,10 @@ class Layouter {
   }
 
   /**
-   * 网格的行或列：固定取定值，随内容取只占这一条的元素中最大的，按比例的分剩余空间。
-   * available 为 undefined 时是在测量随内容的尺寸，按比例的也按随内容算。
+   * 网格的行或列（M237，参照 CSS Grid）：
+   * - 固定取定值；随内容先取只占这一条的元素中最大的，跨多条的元素按跨度从小到大，把放不下的部分平均分给所跨的随内容轨道；
+   * - 按比例的分剩余空间。available 为 undefined 时是在测量随内容的尺寸，每份取各元素"扣去所跨非比例轨道后 ÷ 所跨份数"的最大值，
+   *   这样实际排列时比例不变、内容放得下。跨比例轨道的元素不撑开随内容轨道。
    */
   private resolveTracks(
     tracks: readonly Track[],
@@ -447,22 +454,37 @@ class Layouter {
     axis: Axis,
     available: number | undefined,
   ): { sizes: number[]; starts: number[]; total: number } {
-    const sizes = tracks.map((track, index) => {
-      if (track.kind === 'fixed') return track.value;
-      if (track.kind === 'fraction' && available !== undefined) return 0;
-      const occupants = children.filter((child) => {
-        const p = place(child);
-        return axis === 'width' ? p.column === index + 1 && p.columnSpan === 1 : p.row === index + 1 && p.rowSpan === 1;
-      });
-      return Math.max(0, ...occupants.map((child) => this.outerHug(child, axis)));
+    const spans = children.map((child) => {
+      const p = place(child);
+      const start = (axis === 'width' ? p.column : p.row) - 1;
+      const indexes = tracks.map((_track, index) => index).slice(start, start + (axis === 'width' ? p.columnSpan : p.rowSpan));
+      const flexible = indexes.some((index) => tracks[index]!.kind === 'fraction');
+      // 只在影响轨道尺寸时测量内容：占了随内容轨道，或测量随内容尺寸时占了比例轨道。
+      const sizing = indexes.some((index) => tracks[index]!.kind === 'hug') || (available === undefined && flexible);
+      return { need: sizing ? this.outerHug(child, axis) : 0, indexes, flexible };
     });
+    const sizes = tracks.map((track, index) => {
+      if (track.kind !== 'hug') return track.kind === 'fixed' ? track.value : 0;
+      return Math.max(0, ...spans.filter((s) => s.indexes.length === 1 && s.indexes[0] === index).map((s) => s.need));
+    });
+    const spanned = (indexes: number[]) => indexes.reduce((sum, index) => sum + sizes[index]!, 0) + gap * (indexes.length - 1);
+    for (const { need, indexes } of spans.filter((s) => s.indexes.length > 1 && !s.flexible).sort((a, b) => a.indexes.length - b.indexes.length)) {
+      const hugs = indexes.filter((index) => tracks[index]!.kind === 'hug');
+      const missing = need - spanned(indexes);
+      if (hugs.length > 0 && missing > EPSILON) hugs.forEach((index) => (sizes[index]! += missing / hugs.length));
+    }
     const gaps = gap * Math.max(0, tracks.length - 1);
-    if (available !== undefined) {
-      const fixedTotal = sizes.reduce((sum, size) => sum + size, 0) + gaps;
-      const fractions = tracks.reduce((sum, track) => sum + (track.kind === 'fraction' ? track.value : 0), 0);
-      const remaining = Math.max(0, available - fixedTotal);
+    const fractions = tracks.reduce((sum, track) => sum + (track.kind === 'fraction' ? track.value : 0), 0);
+    if (fractions > 0) {
+      const weights = (indexes: number[]) => indexes.reduce((sum, index) => {
+        const track = tracks[index]!;
+        return sum + (track.kind === 'fraction' ? track.value : 0);
+      }, 0);
+      const unit = available === undefined
+        ? Math.max(0, ...spans.filter((s) => s.flexible).map((s) => (s.need - spanned(s.indexes)) / weights(s.indexes)))
+        : Math.max(0, available - sizes.reduce((sum, size) => sum + size, 0) - gaps) / fractions;
       tracks.forEach((track, index) => {
-        if (track.kind === 'fraction') sizes[index] = (remaining * track.value) / fractions;
+        if (track.kind === 'fraction') sizes[index] = unit * track.value;
       });
     }
     const starts: number[] = [];

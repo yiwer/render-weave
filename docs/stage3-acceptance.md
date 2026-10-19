@@ -323,6 +323,7 @@
   - Linux 容器同一份代码 741 项通过、4 项 Windows 专用用例跳过。
   - 用真实模型各跑一轮价签数据定义提取：不带模型参数用 Haiku，`--model gemini-4-argon-contributor` 经内置代理，都合格。
 - **纵向循环**（M236，[票据 12](../.scratch/agent-template-authoring/issues/12-vertical-loop.md)）：真人走查之后「后续」的第 1 条。循环的 `itemLayout` 可写 `"direction": "column"` 与 `heights`，是 DSL 1.x 的第一笔加法。用 M162 材料让 Haiku 重做模板：站点列表写成纵向循环，模板里没有旋转，本站 1、不标本站、本站 10 三张交付 0 问题。改了 Agent 参考后 Haiku 门槛复跑，见 [Agent 评估](agent-eval.md#历次评估)。
+- **网格不再静默重叠**（M237，[票据 13](../.scratch/agent-template-authoring/issues/13-grid-overlap.md)）：与 design-layout-draw 的网格对照时实测出三处元素重叠、问题清单为空的情形，按 CSS Grid 的做法修正：随内容测量的比例轨道、跨行列元素撑开随内容轨道、元素超出单元格报问题。修正前统计现有语料与 Agent 成果，命中为零；ADR-0016 补了缺陷修正的口径。
 
 ## 复现与证据位置
 
@@ -332,3 +333,4 @@
 - 价签与 366 的项目说明、出图请求、批次、修改要求与反馈在 `scripts/agent-eval/scenarios/price-tag/`、`scripts/agent-eval/scenarios/366/`。
 - 真人走查：材料在 `scripts/agent-eval/scenarios/m162/`；轮次目录、资源仓库、批次与计时文件在 `out/build/`（不进版本库）。
 - 纵向循环的 M162 实跑：轮次目录、预览、批次与 Linux 测试日志在 `out/t12/`、`out/t12-linux/`（不进版本库）。
+- 网格修正的影响面统计（重新评分的报告、重新出图的批次）与 Linux 测试日志在 `out/g13-*`、`out/t13-linux/`（不进版本库）。

@@ -10,13 +10,14 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 | 渲染请求 | 含 `template` 与 `output`，是命令行 `render --request` 与公开渲染入口的输入 | [渲染请求与批次请求](requests.md) | [render-request.schema.json](../../schemas/render-request.schema.json) |
 | 批次请求 | 含 `template`、`mode` 与 `items`；交付后的批次清单另有标识 `renderweave-batch/1` | [渲染请求与批次请求](requests.md#批次请求) | [batch-request.schema.json](../../schemas/batch-request.schema.json) |
 
-## 1.0 之后的加法
+## 1.0 之后的变化
 
-按 ADR-0016 只做加法，标识仍是 `/1`。用了下表写法的文档，在加入它之前的引擎上会被拒绝。
+按 ADR-0016，1.x 只做加法与布局缺陷修正，标识仍是 `/1`。用了新写法的文档，在加入它之前的引擎上会被拒绝；缺陷修正只改变原本有缺陷的出图。
 
-| 加入日期 | 写法 | 决定 |
-|---|---|---|
-| 2026-10-18 | 循环 `itemLayout` 可写 `"direction": "column"` 与 `heights`，列表项从上往下排（[模板 · 循环](template.md#循环)） | M236 |
+| 日期 | 类别 | 内容 | 决定 |
+|---|---|---|---|
+| 2026-10-18 | 加法 | 循环 `itemLayout` 可写 `"direction": "column"` 与 `heights`，列表项从上往下排（[模板 · 循环](template.md#循环)） | M236 |
+| 2026-10-18 | 缺陷修正 | 网格：随内容测量时比例轨道保持比例且放得下内容；跨多条轨道的元素撑开所跨的随内容轨道；元素超出单元格报 `layout.contentOverflow`（[模板 · 布局与位置](template.md#布局与位置)）。修正前统计现有语料与 Agent 成果，命中为零 | M237 |
 
 ## Schema 与引擎的分工
 

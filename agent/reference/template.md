@@ -57,6 +57,7 @@
 | 网格 | `{"mode": "grid", "rows": [轨道…], "columns": [轨道…], "rowGap", "columnGap"}`，轨道为 `{"fixed": 毫米}`、`{"fraction": 比例}` 或 `"hug"` | row、column（从 1 开始）、rowSpan、columnSpan、width、height、margin、justifySelf、alignSelf |
 
 - 宽高写 `{"fixed": 毫米}`、`"hug"`（随内容）、`"fill"` 或 `{"fill": 权重}`；三种布局都可另写 minWidth、maxWidth、minHeight、maxHeight。未写宽高时，网格中填满，堆叠与自由中随内容。
+- 网格轨道：fixed 取定值；hug 取放在这条轨道上的元素中最大的，跨多条轨道的元素会撑开所跨的 hug 轨道；fraction 按份数分剩余空间。元素连同 margin 比所在单元格大时报 `layout.contentOverflow`，要调整轨道或元素尺寸。
 - padding、margin 写一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 写一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项。
 
 ## 元素

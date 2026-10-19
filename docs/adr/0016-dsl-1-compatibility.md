@@ -21,3 +21,13 @@ DSL 1.0 就是数据定义（`renderweave-schema/1`）、模板（`renderweave-t
 没有选择"宽进严出"，也就是忽略未知键、只校验已知部分：那样 Schema、引擎与编辑器对同一份文档会有三种理解，这正是 DSL 1.0 要消除的。也没有选择在冻结时顺手整理写法，例如统一命名或合并相似的键：现有工作区、出图记录与 Agent 资料都依赖现行写法，整理的收益抵不过迁移成本，留待确有需要的 `/2`。
 
 依据：M219、M223，第三阶段 [PRD](../../.scratch/agent-template-authoring/spec.md) 与[票据 01](../../.scratch/agent-template-authoring/issues/01-dsl-schema-and-dataset.md)。
+
+## 修订（2026-10-18，M237）
+
+"出图结果保持不变"不保护布局缺陷。元素画进相邻区域却不报问题的出图，可以在 1.x 内修正，写法与标识都不变。修正有三个前提：
+
+- 先统计现有语料、golden、布局快照与 Agent 成果里有多少命中，命中的出图变化逐一核对；
+- 写进需求记录；
+- 记入 DSL README 的「1.0 之后的变化」。
+
+第一次用于网格（[票据 13](../../.scratch/agent-template-authoring/issues/13-grid-overlap.md)）：随内容测量的比例轨道、跨行跨列的元素与随内容轨道，以及元素超出单元格。统计时命中为零。

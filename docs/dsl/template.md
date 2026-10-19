@@ -124,7 +124,10 @@
 
 - **三种布局通用**：都可以另写 `minWidth`、`maxWidth`、`minHeight`、`maxHeight`。
 - **堆叠的分布与对齐**：`justifyContent` 取 `start`、`center`、`end`、`spaceBetween`、`spaceEvenly`，缺省为 `start`；`alignItems` 取 `start`、`center`、`end`，缺省为 `start`。
-- **网格轨道**：每项写 `{ "fixed": 毫米 }`、`{ "fraction": 比例 }` 或 `"hug"`。
+- **网格轨道**：每项写 `{ "fixed": 毫米 }`、`{ "fraction": 比例 }` 或 `"hug"`（M237）。
+  - 随内容轨道取只占这一条的元素中最大的；跨多条轨道的元素放不下时，把差额平均分给所跨的随内容轨道，跨度小的先算。跨了比例轨道的元素不撑开随内容轨道。
+  - 比例轨道按份数分固定与随内容轨道之外的剩余空间。网格本身随内容时（例如放在随内容的调用框里），每份取刚好放得下各元素的尺寸，比例不变。
+  - 元素连同 `margin` 比所在单元格（含跨行跨列）大时报 `layout.contentOverflow`，与堆叠放不下时一样。没写宽高的元素填满单元格，不会超出。
 - **宽高**：可写 `{ "fixed": 毫米 }`、`"hug"`（随内容）、`"fill"` 或 `{ "fill": 权重 }`。没写宽高时，网格中填满，堆叠与自由布局中随内容。
 - **自由布局的位置**：横向只能写 `left` 或 `right` 之一，纵向只能写 `top` 或 `bottom` 之一（M93）。
 - **边距与圆角**：`padding`、`margin` 写一个毫米数，或写 `{ top, right, bottom, left }` 中的若干项；`cornerRadius` 写一个毫米数，或写 `{ topLeft, topRight, bottomRight, bottomLeft }` 中的若干项（S20）。
