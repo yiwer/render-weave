@@ -1,13 +1,11 @@
-/** 辨认批次目录：batch.json 已发布即运行已结束；缺少时按各项已发布的完成清单辨认已完整的项，不把残留文件当成功。 */
-import * as fs from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+/** 辨认批次：批次清单已发布即运行已结束；缺少时按各项已发布的完成清单辨认已完整的项，不把残留文件当成功。 */
 import { ProblemCodes, severe, type Problem } from './problems.js';
-import { MAX_BATCH_ITEMS, RecordError, recordFail } from './record-input.js';
-import { readRecordFile } from './record-files.js';
-import { itemDirectory, type BatchItemStatus, type BatchManifest } from './output-records.js';
+import { RecordError, recordFail } from './record-input.js';
+import { itemDirectory, localBatchSource, type BatchSource } from './record-stores.js';
+import type { BatchItemStatus, BatchManifest } from './output-records.js';
 import { describeError, isRecord } from './util.js';
 
-/** 没有 batch.json 时找到的一项。 */
+/** 没有批次清单时找到的一项。 */
 export interface FoundBatchItem {
   /** 由子目录名得出的输入顺序，从 1 开始。 */
   readonly index: number;
@@ -23,26 +21,16 @@ export type BatchReading =
   | { readonly state: 'finished'; readonly directory: string; readonly manifest: BatchManifest }
   | { readonly state: 'unfinished'; readonly directory: string; readonly items: readonly FoundBatchItem[] };
 
-const ITEM = /^\d{4}$/;
 const STATUSES = new Set<BatchItemStatus>(['delivered', 'previewed', 'failed', 'notRun']);
-const json = async (root: string, file: string): Promise<unknown> => JSON.parse(Buffer.from(await readRecordFile(root, file)).toString('utf8'));
-async function exists(path: string): Promise<boolean> {
-  try { await fs.lstat(path); return true; } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
-    throw error;
-  }
-}
+const json = (bytes: Uint8Array): unknown => JSON.parse(Buffer.from(bytes).toString('utf8'));
 
 /** 只看完成清单是否已发布并核对格式与项标识；逐文件哈希由 record-read 负责。 */
-async function itemManifest(root: string, name: string): Promise<{ status: 'delivered' | 'previewed'; id: string } | undefined> {
-  const dir = join(root, name);
-  if (!(await fs.lstat(dir)).isDirectory()) recordFail(`批次子目录必须是普通目录：${name}`);
-  const record = await exists(join(dir, 'record.json')), preview = await exists(join(dir, 'preview.json'));
-  if (record && preview) recordFail(`第 ${name} 项同时有出图记录与预览清单`);
-  if (!record && !preview) return undefined;
-  const raw = await json(dir, record ? 'record.json' : 'preview.json');
+async function itemManifest(source: BatchSource, index: number): Promise<{ status: 'delivered' | 'previewed'; id: string } | undefined> {
+  const completion = await source.completion(index);
+  if (!completion) return undefined;
+  const record = completion.name === 'record.json', raw = json(completion.bytes);
   if (!isRecord(raw) || raw.format !== (record ? 'renderweave-output-record/1' : 'renderweave-preview/1') || typeof raw.itemId !== 'string' || !raw.itemId) {
-    recordFail(`第 ${name} 项的完成清单不合法`);
+    recordFail(`第 ${itemDirectory(index)} 项的完成清单不合法`);
   }
   return { status: record ? 'delivered' : 'previewed', id: raw.itemId };
 }
@@ -59,48 +47,46 @@ function batchManifest(raw: unknown): BatchManifest {
   return raw as unknown as BatchManifest;
 }
 
+/** 读取本地批次目录。 */
+export function readBatch(options: { readonly dir: string }): Promise<{ batch?: BatchReading; problems: readonly Problem[] }> {
+  return readBatchFrom(localBatchSource(options.dir));
+}
+
 /**
- * 读取批次目录。有 batch.json 时核对清单与各项目录一致后返回清单；
- * 没有时扫描受控序号子目录，以已发布的 record.json 或 preview.json 判定该项完整，其余报告为 incomplete。
+ * 读取一个批次。有批次清单时核对清单与各项成果一致后返回清单；
+ * 没有时按各项已发布的 record.json 或 preview.json 判定该项完整，其余报告为 incomplete。
  */
-export async function readBatch(options: { readonly dir: string }): Promise<{ batch?: BatchReading; problems: readonly Problem[] }> {
+export async function readBatchFrom(source: BatchSource): Promise<{ batch?: BatchReading; problems: readonly Problem[] }> {
   try {
-    const path = resolve(options.dir);
-    if (!(await fs.lstat(path)).isDirectory()) recordFail('批次目录不能是链接或文件');
-    const root = await fs.realpath(path), names = await fs.readdir(root);
-    // 以点开头的是未发布的临时文件或存储探测文件，不参与辨认。
-    for (const name of names) {
-      if (name === 'batch.json' || name.startsWith('.')) continue;
-      if (!ITEM.test(name) || Number(name) < 1 || Number(name) > MAX_BATCH_ITEMS) recordFail(`不是批次目录：含非受控条目 ${name}`);
-    }
-    const directories = names.filter((name) => ITEM.test(name)).sort();
-    if (!names.includes('batch.json')) {
+    const published = await source.manifest();
+    const indexes = await source.items();
+    if (!published) {
       const items: FoundBatchItem[] = [];
-      for (const name of directories) {
-        const found = await itemManifest(root, name);
-        items.push({ index: Number(name), directory: join(options.dir, name), status: found?.status ?? 'incomplete', ...(found ? { id: found.id } : {}) });
+      for (const index of indexes) {
+        const found = await itemManifest(source, index);
+        items.push({ index, directory: source.itemLocation(index), status: found?.status ?? 'incomplete', ...(found ? { id: found.id } : {}) });
       }
       const complete = items.filter((item) => item.status !== 'incomplete');
       if (new Set(complete.map((item) => item.status)).size > 1) recordFail('批次目录中同时有正式记录与草稿预览');
       if (new Set(complete.map((item) => item.id)).size !== complete.length) recordFail('批次目录中的项标识重复');
-      return { batch: { state: 'unfinished', directory: options.dir, items }, problems: [] };
+      return { batch: { state: 'unfinished', directory: source.location, items }, problems: [] };
     }
-    const manifest = batchManifest(await json(root, 'batch.json'));
-    const listed = new Set<string>();
+    const manifest = batchManifest(json(published));
+    const listed = new Set<number>();
     for (const entry of manifest.items) {
       if (!entry.directory) continue;
-      listed.add(entry.directory);
-      if (!directories.includes(entry.directory)) recordFail(`批次清单列出的目录不存在：${entry.directory}`);
-      const found = await itemManifest(root, entry.directory);
+      listed.add(entry.index);
+      if (!indexes.includes(entry.index)) recordFail(`批次清单列出的目录不存在：${entry.directory}`);
+      const found = await itemManifest(source, entry.index);
       const expected = entry.status === 'delivered' || entry.status === 'previewed' ? entry.status : undefined;
       if (found?.status !== expected || (found && found.id !== entry.id)) recordFail(`第 ${entry.directory} 项与批次清单不一致`);
     }
-    // 写入失败的项在清单中没有目录，磁盘上却可能留下未发布完成清单的残留目录。
-    for (const name of directories.filter((name) => !listed.has(name))) {
-      const entry = manifest.items[Number(name) - 1];
-      if (entry?.status !== 'failed' || await itemManifest(root, name)) recordFail(`批次目录含清单未列出的子目录：${name}`);
+    // 写入失败的项在清单中没有目录，存储中却可能留下未发布完成清单的残留成果。
+    for (const index of indexes.filter((index) => !listed.has(index))) {
+      const entry = manifest.items[index - 1];
+      if (entry?.status !== 'failed' || await itemManifest(source, index)) recordFail(`批次目录含清单未列出的子目录：${itemDirectory(index)}`);
     }
-    return { batch: { state: 'finished', directory: options.dir, manifest }, problems: [] };
+    return { batch: { state: 'finished', directory: source.location, manifest }, problems: [] };
   } catch (error) {
     return { problems: [severe(error instanceof RecordError ? error.code : ProblemCodes.recordInvalid, { kind: 'input', source: 'outputRecord' }, describeError(error))] };
   }

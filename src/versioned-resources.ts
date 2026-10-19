@@ -69,7 +69,7 @@ async function replacementBytes(file: string): Promise<Uint8Array> {
 export async function checkResourceReplacement(options: ReplacementContext & { id: string; kind: ResourceInfo['kind'] }): Promise<{ check?: ResourceReplacementCheck; problems: Problem[] }> {
   try {
     const root = await storeRoot(options.dir);
-    const store = new FileVersionedStore(root, await loadManifest(root));
+    const store = fileStore(root, await loadManifest(root));
     const resource = store.get(options.id);
     if (!resource) fail(options.id, `资源 ${options.id} 不存在`, ProblemCodes.resourceNotFound);
     if (options.kind !== resource.kind) fail(options.id, '资源种类创建后不可改变', ProblemCodes.resourceKindMismatch);
@@ -118,7 +118,7 @@ export async function applyResourceReplacement(options: ReplacementContext & { c
     if (entry.kind !== checked.resource.kind) fail(entry.id, '资源种类创建后不可改变', ProblemCodes.resourceKindMismatch);
     const current = entry.versions[entry.currentVersion - 1]!;
     if (entry.currentVersion !== checked.resource.version || current.sha256 !== checked.resource.sha256 || current.byteLength !== checked.resource.byteLength) stale(entry.id, '资源预期内容版本已过期');
-    await new FileVersionedStore(root, manifest).read(entry.id, entry.currentVersion);
+    await fileStore(root, manifest).read(entry.id, entry.currentVersion);
     const result = await inspectResourceWorkspace(workspaceDir, entry.id, renderOptions);
     const impact = result.impact;
     if (!impact) {
@@ -228,9 +228,14 @@ async function localFile(root: string, file: string): Promise<string> {
   return path;
 }
 
-class FileVersionedStore implements VersionedResourceStore {
+/** 本地仓库的快照：内容文件按清单中的相对路径读取，逐段拒绝链接。 */
+const fileStore = (root: string, manifest: Manifest) =>
+  new SnapshotStore(manifest, async (content) => new Uint8Array(await fs.readFile(await localFile(root, content.file))));
+
+/** 清单快照；内容由各实现按内容版本取出，读取时一律核对字节数与 SHA-256。 */
+class SnapshotStore implements VersionedResourceStore {
   private readonly entries: Map<string, Entry>;
-  constructor(private readonly dir: string, manifest: Manifest) {
+  constructor(manifest: Manifest, private readonly load: (content: ContentVersion) => Promise<Uint8Array>) {
     this.entries = new Map(manifest.resources.map((entry) => [entry.id, entry]));
   }
   list(): VersionedResourceInfo[] {
@@ -246,7 +251,7 @@ class FileVersionedStore implements VersionedResourceStore {
     const content = entry?.versions.find((item) => item.version === version);
     if (!content) throw new ResourceReadError(id, `资源 ${id} 的版本 ${version} 不存在`, ProblemCodes.resourceVersionNotFound);
     let bytes: Uint8Array;
-    try { bytes = new Uint8Array(await fs.readFile(await localFile(this.dir, content.file))); }
+    try { bytes = await this.load(content); }
     catch (error) { throw new ResourceReadError(id, `资源 ${id} v${version} 无法读取：${describeError(error)}`); }
     if (bytes.length !== content.byteLength || hash(bytes) !== content.sha256) {
       throw new ResourceReadError(id, `资源 ${id} v${version} 完整性校验失败：${content.file}`, ProblemCodes.resourceIntegrityMismatch);
@@ -279,12 +284,123 @@ class FileVersionedStore implements VersionedResourceStore {
 export async function openVersionedResourceStore(dir: string): Promise<{ store?: VersionedResourceStore; problems: Problem[] }> {
   try {
     const root = await storeRoot(dir);
-    return { store: new FileVersionedStore(root, await loadManifest(root)), problems: [] };
+    return { store: fileStore(root, await loadManifest(root)), problems: [] };
   } catch (error) {
     const issue = problem(error, join(dir, MANIFEST));
     if (!(error instanceof StoreError)) issue.code = ProblemCodes.inputUnreadable;
     return { problems: [issue] };
   }
+}
+
+/** 一批资源变更中的一项：新建资源（内容版本 1），或按预期的当前版本追加内容版本。 */
+export type ResourceChange =
+  | { readonly type: 'create'; readonly id: string; readonly kind: ResourceInfo['kind']; readonly bytes: Uint8Array }
+  | { readonly type: 'append'; readonly id: string; readonly expected: Pick<VersionedResourceInfo, 'version' | 'sha256' | 'byteLength'>; readonly bytes: Uint8Array };
+
+/**
+ * 版本化资源仓库的存储（ADR-0014、ADR-0018）：读者打开清单快照，写者整批提交。
+ * 本地实现以写锁加重命名清单提交，内存实现按顺序提交，服务端以数据库事务提交；语义相同：
+ * 资源 ID 与种类固定，内容版本递增，任一变更不满足条件则整批不生效。
+ */
+export interface ResourceVersionBackend {
+  open(): Promise<{ store?: VersionedResourceStore; problems: Problem[] }>;
+  /** 按顺序提交一批变更，返回新内容版本的元信息。beforeCommit 在内容写好、发布之前调用，抛错即整批撤回。 */
+  commit(changes: readonly ResourceChange[], options?: { readonly beforeCommit?: () => Promise<void> }):
+    Promise<{ committed?: readonly VersionedResourceInfo[]; problems: Problem[] }>;
+}
+
+/** 在清单上核对并应用一批变更；先全部核对，再逐项放入内容并改清单。place 返回内容位置。 */
+async function applyChanges(manifest: Manifest, changes: readonly ResourceChange[],
+  place: (bytes: Uint8Array, sha256: string) => Promise<string>): Promise<VersionedResourceInfo[]> {
+  const entries = new Map(manifest.resources.map((entry) => [entry.id, entry]));
+  const touched = new Set<string>();
+  function stale(source: string, message: string): never { fail(source, `${message}，请重新检查`, ProblemCodes.resourceReplacementStale); }
+  for (const change of changes) {
+    if (!(change.bytes instanceof Uint8Array)) fail(change.id, '资源内容必须是字节');
+    if (change.type === 'create') {
+      if (!validId(change.id)) fail(String(change.id), '资源 ID 不合法');
+      if (change.kind !== 'image' && change.kind !== 'font') fail(change.id, '资源种类必须是 image 或 font');
+      if (entries.has(change.id) || touched.has(change.id)) fail(change.id, `目标仓库已有资源 ${change.id}，不能导入覆盖`, ProblemCodes.inputDuplicate);
+    } else {
+      const entry = entries.get(change.id);
+      if (!entry || touched.has(change.id)) stale(change.id, '资源已不存在或在本批中已变更');
+      const current = entry.versions[entry.currentVersion - 1]!;
+      const { version, sha256, byteLength } = change.expected;
+      if (entry.currentVersion !== version || current.sha256 !== sha256 || current.byteLength !== byteLength) stale(change.id, '资源预期内容版本已过期');
+      if (!Number.isSafeInteger(entry.currentVersion + 1)) fail(entry.id, '内容版本已超出安全整数范围', ProblemCodes.resourceWriteFailed);
+    }
+    touched.add(change.id);
+  }
+  const committed: VersionedResourceInfo[] = [];
+  for (const change of changes) {
+    const sha256 = hash(change.bytes);
+    let entry = entries.get(change.id);
+    const content: ContentVersion = { version: entry ? entry.currentVersion + 1 : 1, sha256, byteLength: change.bytes.length, file: await place(change.bytes, sha256) };
+    if (!entry) {
+      entry = { id: change.id, kind: (change as Extract<ResourceChange, { type: 'create' }>).kind, currentVersion: 1, versions: [content] };
+      entries.set(entry.id, entry);
+      manifest.resources.push(entry);
+    } else {
+      entry.versions.push(content);
+      entry.currentVersion = content.version;
+    }
+    committed.push(metadata(entry, content));
+  }
+  return committed;
+}
+
+/** 本地目录中的版本仓库；须先以 initializeResourceStore 准备。 */
+export function localResourceBackend(dir: string): ResourceVersionBackend {
+  return {
+    open: () => openVersionedResourceStore(dir),
+    async commit(changes, options) {
+      let committed: VersionedResourceInfo[] = [];
+      const problems = await writeTransaction(dir, false, async (root, write) => {
+        const manifest = await loadManifest(root);
+        if (changes.length) await ensureObjects(root);
+        committed = await applyChanges(manifest, changes, async (bytes) => {
+          const file = `objects/${randomUUID()}.bin`;
+          await write(file, bytes);
+          return file;
+        });
+        return manifest;
+      }, options?.beforeCommit);
+      return problems.some((issue) => issue.level === 'severe') ? { problems } : { committed, problems };
+    },
+  };
+}
+
+/**
+ * 内存中的版本仓库，供测试与服务端的快速测试使用。内容按 SHA-256 存放；可传入自己的内容表，以便检查或改动底层字节。
+ * 提交按调用顺序依次进行，打开的快照不随后续提交变化。
+ */
+export function createMemoryResourceBackend(options: { readonly contents?: Map<string, Uint8Array> } = {}): ResourceVersionBackend {
+  const contents = options.contents ?? new Map<string, Uint8Array>();
+  let manifest: Manifest = { format: FORMAT, resources: [] };
+  let queue: Promise<unknown> = Promise.resolve();
+  const load = async (content: ContentVersion) => {
+    const bytes = contents.get(content.file);
+    if (!bytes) throw new Error(`内容不存在：${content.sha256}`);
+    return new Uint8Array(bytes);
+  };
+  return {
+    open: async () => ({ store: new SnapshotStore(structuredClone(manifest), load), problems: [] }),
+    commit(changes, commitOptions) {
+      const run = queue.then(async () => {
+        try {
+          const next = structuredClone(manifest);
+          const placed = new Map<string, Uint8Array>();
+          const committed = await applyChanges(next, changes, async (bytes, sha256) => { placed.set(sha256, new Uint8Array(bytes)); return sha256; });
+          await commitOptions?.beforeCommit?.();
+          for (const [sha256, bytes] of placed) if (!contents.has(sha256)) contents.set(sha256, bytes);
+          manifest = next;
+          return { committed, problems: [] };
+        } catch (error) { return { problems: [problem(error, 'memory')] }; }
+      });
+      queue = run;
+      return run;
+    },
+  };
 }
 
 /** 排他写事务。只清理本次成功创建的文件，清单发布后不回滚内容。 */

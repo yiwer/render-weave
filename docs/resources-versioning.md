@@ -46,6 +46,7 @@ node dist/bin.js render --workspace docs/examples/m402-dsl --resources out/resou
 | `store.pin(versions?)` | 返回 `repository`、不可变的 `versions` 和问题清单；错误时无仓库 |
 | `checkResourceReplacement({ dir, workspaceDir, id, kind, file, renderOptions? })` | 只读检查，返回 `check` 和问题清单；检查失败时无报告 |
 | `applyResourceReplacement({ dir, workspaceDir, file, check, renderOptions? })` | 重新核对报告条件并追加版本；成功返回 `replaced` 元信息和问题清单 |
+| `localResourceBackend(dir)`、`createMemoryResourceBackend()` | 版本仓库的存储接口：`open()` 打开快照，`commit(changes)` 整批新建资源或按预期版本追加内容版本，见[存储接口](storage-interfaces.md) |
 
 元信息包含 `id`、`kind`、`version`、`byteLength`、`sha256`。版本从 1 开始，哈希代表内容而非版本身份。每次 `read` 重新读取并校验字节数和 SHA-256，不把外部修改静默接受为旧版本。
 

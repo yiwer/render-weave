@@ -107,29 +107,69 @@ export async function loadWorkspace(options: { dir: string; resourcesDir: string
   return { ...documents, resources: repository, problems: [...documents.problems, ...problems] };
 }
 
+/** 工作区中的一份文档：来源说明（本地是文件路径）与按需读取的原始字节。 */
+export interface WorkspaceDocumentEntry {
+  readonly source: string;
+  read(): Promise<Uint8Array>;
+}
+
+/**
+ * 工作区文档的来源（ADR-0018）：本地目录、内存或服务端存储。
+ * 渲染只认解析后的 Workspace；来源只负责列出文档并给出原始字节，归类、精度检查与重复检查都在 readWorkspaceDocuments 中统一做。
+ */
+export interface WorkspaceDocumentSource {
+  /** 来源的位置说明，列不出文档时作为问题位置。 */
+  readonly location: string;
+  /** 按来源排序列出全部文档；列不出时抛错。 */
+  list(): Promise<readonly WorkspaceDocumentEntry[]>;
+}
+
+/** 本地目录：目录下的每个 .json 文件是一份文档。 */
+export function localWorkspaceDocuments(dir: string): WorkspaceDocumentSource {
+  return {
+    location: dir,
+    list: async () => (await readdir(dir)).filter((file) => file.endsWith('.json')).sort().map((file) => {
+      const source = join(dir, file);
+      return { source, read: async () => new Uint8Array(await readFile(source)) };
+    }),
+  };
+}
+
+/** 内存中的文档，供服务端与测试直接提供原始字节。 */
+export function memoryWorkspaceDocuments(documents: readonly { readonly source: string; readonly bytes: Uint8Array }[], location = 'memory'): WorkspaceDocumentSource {
+  const entries = [...documents].sort((a, b) => (a.source < b.source ? -1 : a.source > b.source ? 1 : 0))
+    .map(({ source, bytes }) => ({ source, read: async () => bytes }));
+  return { location, list: async () => entries };
+}
+
 /** 发布只读取工作区文档，资源仓库的可用性不影响版本历史。 */
 export async function loadWorkspaceDocuments(dir: string): Promise<Omit<Workspace, 'resources'>> {
+  return readWorkspaceDocuments(localWorkspaceDocuments(dir));
+}
+
+/** 读出并归类一个来源中的全部文档；无法读取或无法归类的文档记为问题，不中断其他文档。 */
+export async function readWorkspaceDocuments(source: WorkspaceDocumentSource): Promise<Omit<Workspace, 'resources'>> {
   const problems: Problem[] = [];
   const definitions = new Map<string, { ref: StaticSchemaRef; definition?: unknown; compiled?: Record<string, unknown> }>();
   const templates = new Map<string, TemplateEntry>();
   const datasets = new Map<string, DatasetEntry>();
 
-  let files: string[] = [];
+  let entries: readonly WorkspaceDocumentEntry[] = [];
   try {
-    files = (await readdir(dir)).filter((file) => file.endsWith('.json')).sort();
+    entries = await source.list();
   } catch (error) {
     problems.push(
-      severe(ProblemCodes.inputUnreadable, { kind: 'input', source: dir }, `工作区目录无法读取：${describeError(error)}`),
+      severe(ProblemCodes.inputUnreadable, { kind: 'input', source: source.location }, `工作区目录无法读取：${describeError(error)}`),
     );
   }
 
-  for (const file of files) {
-    const source = join(dir, file);
+  for (const entry of entries) {
+    const source = entry.source;
     const location = { kind: 'input', source } as const;
     let document: unknown;
     const tooPrecise: string[] = [];
     try {
-      document = parseJsonKeepingPrecision(await readFile(source, 'utf8'), tooPrecise);
+      document = parseJsonKeepingPrecision(Buffer.from(await entry.read()).toString('utf8'), tooPrecise);
     } catch (error) {
       problems.push(severe(ProblemCodes.inputUnreadable, location, `工作区文件无法读取：${describeError(error)}`));
       continue;

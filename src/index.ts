@@ -1,16 +1,27 @@
 export { render, type RenderResult, type RenderOptions } from './render.js';
 export {
   deliverBatch, readOutputRecord, replayOutputRecord, MAX_BATCH_ITEMS,
+  freezeBatch, deliverBatchItem, runFrozenBatch, summarizeBatch, readRecord, replayRecord,
+  type BatchSnapshot, type PinnedContents, type ReplayManifest,
   type BatchRenderRequest, type BatchDeliveryResult, type BatchItemResult, type BatchItemEntry, type BatchItemFiles, type BatchItemStatus,
   type BatchManifest, type BatchProgress, type BatchSummary, type PreviewManifest, type OutputRecord, type RecordedResource,
 } from './output-records.js';
-export { readBatch, type BatchReading, type FoundBatchItem } from './batch-read.js';
+export { readBatch, readBatchFrom, type BatchReading, type FoundBatchItem } from './batch-read.js';
+export {
+  createLocalBatchOutput, createMemoryBatch, localRecordSource, localBatchSource,
+  type BatchOutput, type BatchItemContents, type RecordSource, type BatchSource, type MemoryBatch,
+} from './record-stores.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { checkDslDocument, dslDocumentKind, type DslDocumentCheck, type DslDocumentKind } from './dsl.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
   loadWorkspace,
+  readWorkspaceDocuments,
+  localWorkspaceDocuments,
+  memoryWorkspaceDocuments,
   formatStaticSchemaRef,
+  type WorkspaceDocumentSource,
+  type WorkspaceDocumentEntry,
   type Workspace,
   type StaticSchemaRef,
   type StaticSchemaEntry,
@@ -30,6 +41,7 @@ export {
 export {
   initializeResourceStore, importResources, openVersionedResourceStore,
   checkResourceReplacement, applyResourceReplacement, type ResourceReplacementCheck,
+  localResourceBackend, createMemoryResourceBackend, type ResourceVersionBackend, type ResourceChange,
   type VersionedResourceStore, type VersionedResourceInfo, type ResourceVersionMap, type PinnedResources,
 } from './versioned-resources.js';
 export type { ResourceImpact, ResourceConfigurationImpact, ResourceWorkspaceImpact } from './resource-impact.js';
