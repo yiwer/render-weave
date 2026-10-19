@@ -16,7 +16,7 @@ node --input-type=module -e "import {openVersionedResourceStore} from './dist/in
 node dist/bin.js render --workspace docs/examples/m402-dsl --resources out/resources-v1 --request docs/examples/m402-dsl/render-request-m402.json --out out/m402-versioned
 ```
 
-`resources-import` 和 `resources-list` 的标准输出是元信息 JSON 数组，可保存供程序读取；问题写到标准错误流。三个维护命令的退出码为 `0` 成功、`1` 仓库/内容/写入失败、`2` 用法错误。查询只读取声明的元信息，内容完整性在按版本读取时检查；查询成功不代表所有内容都可读。
+`resources-import` 和 `resources-list` 的标准输出是元信息 JSON 数组，可保存供程序读取；问题写到标准错误流。三个维护命令的退出码为 `0` 成功、`1` 仓库/内容/写入失败、`2` 用法错误。除 `resources-init` 外，命令与接口都要求目录已经是版本仓库：目录不存在、没有清单或是旧版资源目录时报 `input.unreadable`，说明里写明先执行哪条命令（M239）。查询只读取声明的元信息，内容完整性在按版本读取时检查；查询成功不代表所有内容都可读。
 
 旧仓库仍使用原来的结构，不要求原地迁移：
 

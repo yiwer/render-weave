@@ -13,7 +13,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
 - 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **第三阶段 14 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
+- **第三阶段 15 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
   - DSL 1.0 与 JSON Schema（M223、M224）；
   - `renderweave mcp` 只读工具（M225）；
   - `renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；
@@ -23,9 +23,10 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 真人走查之后补了纵向循环（票据 12，M236）：`itemLayout.direction: "column"` 与 `heights`，竖排列表不再靠旋转 90°。这是 DSL 1.x 的第一笔加法。
   - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
   - 模板在画板上声明缩字下限（票据 14，M238），价签一类小标签可以缩到 5 mm 以下。
-- **下一步**：第三阶段还有两项后续（[第三阶段验收](docs/stage3-acceptance.md#后续)）：Gemini 在当前资料与 MCP 合同 0.5.0 上复跑评估门槛，用它之前先跑；M402 数据定义的余量只有 1 分（资料相同的 16 次里 14 次达线），下次改通用指南时在第 1 条补"按含义判断，不按排版判断"，并查数据定义提取 40 轮上限的余量。之后进入阶段 4。
+  - 资源命令遇到还不是版本仓库的目录时，提示先 `resources-init` 或从旧目录导入（票据 15，M239）。
+- **下一步**：进入阶段 4。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
-  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛，Gemini 还没复跑，用它之前先跑一遍（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 与 Gemini 都已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力

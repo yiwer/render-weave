@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { importResources, initializeResourceStore, loadWorkspace, openResourceRepository,
+import { checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, openResourceRepository,
   openVersionedResourceStore, ProblemCodes, render, ResourceReadError } from '../src/index.js';
 import { runCli } from '../src/cli.js';
 import { m402Dir, resourcesDir } from './support/fixtures.js';
@@ -313,5 +313,42 @@ describe('CLI 与实际出图', () => {
     expect(await runCli(['resources-list', '--resources', source], io)).toBe(1);
     expect(await runCli(['resources-import', '--source', join(root, 'absent'), '--resources', target], io)).toBe(1);
     expect(errors.join('')).toContain('input.unreadable');
+  });
+});
+
+describe('还不是版本仓库的目录提示先初始化（M239）', () => {
+  const run = async (args: string[]) => {
+    const errors: string[] = [];
+    const code = await runCli(args, { stdout: () => {}, stderr: (value: string) => errors.push(value) });
+    return { code, errors: errors.join('') };
+  };
+
+  it.each([['目录不存在', false], ['目录为空', true]])('%s时导入提示先 resources-init，不报 ENOENT，也不留下文件', async (_, create) => {
+    const dir = join(root, 'uninitialized');
+    if (create) await fs.mkdir(dir);
+    const result = await run(['resources-import', '--source', source, '--resources', dir]);
+    expect(result.code).toBe(1);
+    expect(result.errors).toContain('input.unreadable');
+    expect(result.errors).toContain(`resources-init --resources ${dir}`);
+    expect(result.errors).not.toContain('ENOENT');
+    expect(create ? await fs.readdir(dir) : await fs.stat(dir).then(() => 'exists', () => 'absent')).toEqual(create ? [] : 'absent');
+  });
+
+  it.each([['目录不存在', false], ['目录为空', true]])('%s时打开、列出、替换检查都给同一条提示', async (_, create) => {
+    const dir = join(root, 'uninitialized');
+    if (create) await fs.mkdir(dir);
+    const opened = await openVersionedResourceStore(dir);
+    expect(opened.problems).toEqual([expect.objectContaining({ code: ProblemCodes.inputUnreadable, message: expect.stringContaining(`resources-init --resources ${dir}`) })]);
+    expect(opened.problems[0]!.message).not.toContain('ENOENT');
+    expect((await run(['resources-list', '--resources', dir])).errors).toContain(opened.problems[0]!.message);
+    const check = await checkResourceReplacement({ dir, workspaceDir: m402Dir, id: 'photo', kind: 'image', file: join(source, 'content.bin') });
+    expect(check.problems.map((item) => item.message)).toEqual([opened.problems[0]!.message]);
+  });
+
+  it('旧版资源目录当作版本仓库时，提示新建仓库再从它导入', async () => {
+    const opened = await openVersionedResourceStore(source);
+    expect(opened.problems).toEqual([expect.objectContaining({ code: ProblemCodes.inputUnreadable,
+      message: expect.stringMatching(/旧版资源目录.*resources-init.*resources-import --source /) })]);
+    expect(opened.problems[0]!.message).toContain(`--source ${await fs.realpath(source)}`);
   });
 });

@@ -22,6 +22,7 @@
 | 12 | [循环容器可以纵向排列列表项](issues/12-vertical-loop.md) | 无 | A01、A02、A03、A10（验收后的后续，来自真人走查） |
 | 13 | [网格的比例列、跨行列元素与超出单元格不再静默重叠](issues/13-grid-overlap.md) | 无 | A01、A02、A03（验收后的后续，来自与 design-layout-draw 网格的对照） |
 | 14 | [模板声明自己的缩字下限，小尺寸标签可以缩到 5 mm 以下](issues/14-template-min-font-size.md) | 无 | A01、A02、A03、A10（验收后的后续，来自 Spec 审查第 3 项） |
+| 15 | [还不是版本仓库的目录提示先 resources-init](issues/15-uninitialized-resource-store.md) | 无 | A01（验收后的后续，第二阶段遗留） |
 
 已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。
 

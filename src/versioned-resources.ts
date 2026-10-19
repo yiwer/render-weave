@@ -68,7 +68,7 @@ async function replacementBytes(file: string): Promise<Uint8Array> {
 /** 只读检查，报告覆盖指定工作区；源字节哈希也固定，避免检查后换错文件。 */
 export async function checkResourceReplacement(options: ReplacementContext & { id: string; kind: ResourceInfo['kind'] }): Promise<{ check?: ResourceReplacementCheck; problems: Problem[] }> {
   try {
-    const root = await fs.realpath(options.dir);
+    const root = await storeRoot(options.dir);
     const store = new FileVersionedStore(root, await loadManifest(root));
     const resource = store.get(options.id);
     if (!resource) fail(options.id, `资源 ${options.id} 不存在`, ProblemCodes.resourceNotFound);
@@ -158,6 +158,19 @@ function fail(source: string, message: string, code: ProblemCode = ProblemCodes.
   throw new StoreError(code, source, message);
 }
 
+/** 已有仓库的真实根目录。目录或清单不存在时提示先初始化（M239），用调用者给的路径，便于照着执行。 */
+async function storeRoot(dir: string): Promise<string> {
+  const missing = (error: unknown) => isRecord(error) && error.code === 'ENOENT';
+  const uninitialized = (reason: string): never => fail(join(dir, MANIFEST),
+    `${dir} 还不是资源版本仓库（${reason}）：先执行 renderweave resources-init --resources ${dir}，再用 resources-import 导入资源`);
+  let root: string;
+  try { root = await fs.realpath(dir); }
+  catch (error) { if (missing(error)) uninitialized('目录不存在'); throw error; }
+  try { await fs.lstat(join(root, MANIFEST)); }
+  catch (error) { if (missing(error)) uninitialized(`没有 ${MANIFEST}`); }
+  return root;
+}
+
 async function loadManifest(dir: string): Promise<Manifest> {
   const path = join(dir, MANIFEST);
   let value: unknown;
@@ -167,6 +180,9 @@ async function loadManifest(dir: string): Promise<Manifest> {
   } catch (error) {
     if (error instanceof StoreError) throw error;
     fail(path, `资源清单无法读取：${describeError(error)}`);
+  }
+  if (isRecord(value) && !('format' in value) && Array.isArray(value.resources)) {
+    fail(path, `${dir} 是旧版资源目录，不是资源版本仓库：先用 renderweave resources-init 新建仓库，再执行 resources-import --source ${dir} --resources <新仓库> 导入`);
   }
   if (!isRecord(value) || value.format !== FORMAT || !Array.isArray(value.resources)) fail(path, `需要 ${FORMAT} 清单`);
   const ids = new Set<string>();
@@ -262,7 +278,7 @@ class FileVersionedStore implements VersionedResourceStore {
 
 export async function openVersionedResourceStore(dir: string): Promise<{ store?: VersionedResourceStore; problems: Problem[] }> {
   try {
-    const root = await fs.realpath(dir);
+    const root = await storeRoot(dir);
     return { store: new FileVersionedStore(root, await loadManifest(root)), problems: [] };
   } catch (error) {
     const issue = problem(error, join(dir, MANIFEST));
@@ -283,8 +299,10 @@ async function writeTransaction(dir: string, initialize: boolean,
   let committed = false;
   let temporary: string | undefined;
   try {
-    if (initialize) await fs.mkdir(root, { recursive: true });
-    root = await fs.realpath(root);
+    if (initialize) {
+      await fs.mkdir(root, { recursive: true });
+      root = await fs.realpath(root);
+    } else root = await storeRoot(dir);
     try { await fs.mkdir(join(root, LOCK)); locked = true; }
     catch (error) {
       if (isRecord(error) && error.code === 'EEXIST') fail(join(root, LOCK), '资源仓库正在写入；稍后重试，勿删除活动写锁', ProblemCodes.resourceStoreBusy);
