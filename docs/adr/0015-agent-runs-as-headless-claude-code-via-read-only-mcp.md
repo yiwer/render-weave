@@ -32,3 +32,7 @@ status: accepted
 - **Gemini 只有 Google 接口**：`agent run` 在本进程里起一个转换代理，只绑定 127.0.0.1，随本轮结束关闭。Claude Code 连代理，环境变量里只有本轮随机令牌；上游 key 留在 RenderWeave 进程内。这比直接把 key 交给 Claude Code 更收紧。
 - **素材经过的外部服务**改为 OpenCode，以及其后的模型提供方：Haiku 是 Anthropic，Gemini 是 Google。上文"代价"中千问 token plan 那一条由此取代，对外说明要同步更新。
 - **两个模型都已在当前资料上通过评估门槛**，见[第三阶段验收](../stage3-acceptance.md#模型对比)。
+
+## 修订（2026-10-19，ADR-0017）
+
+v1.0 的服务端不托管业务 Agent，代建仍在团队机器上用 `renderweave agent` 进行，成果经服务的导入接口写入客户的租户。上文"尚未验证，须在阶段 4 前补上"的四项，改为在托管 Agent 时补上：代建排期跟不上、命令行流程成为瓶颈，或到阶段 5 向客户开放 Agent。
