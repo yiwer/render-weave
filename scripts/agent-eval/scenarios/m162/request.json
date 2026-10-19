@@ -1,0 +1,6 @@
+{
+  "template": "竖版线路牌主模板",
+  "parameters": { "currentIndex": 1 },
+  "output": { "width": 350, "height": 950, "dpi": 50, "format": "png" },
+  "mode": "final"
+}

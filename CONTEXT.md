@@ -13,14 +13,14 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
 - 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **第三阶段票据 01–08、10、11 已完成，09 只差真人计时**（`ready-for-human`）。能力验收见[第三阶段验收](docs/stage3-acceptance.md)（M231）：
+- **第三阶段 11 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
   - DSL 1.0 与 JSON Schema（M223、M224）；
   - `renderweave mcp` 只读工具（M225）；
   - `renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；
   - 三层资料与评估门槛（M230）；
-  - 价签与 366 两张新示例图按[代建指南](docs/agent-guide.md)走完全流程。代建模式可行；
+  - 价签与 366 两张新示例图按[代建指南](docs/agent-guide.md)走完全流程，代建模式可行；A11 由用户本人用 M162 竖版线路牌补测，人工约 30 分钟，到正式出图为止；
   - 验收后补了交回前核对成果的只读工具 `check_outcome`（票据 10，M233），并让 `view_image` 能看资源仓库中的图片（`res:资源ID`，票据 11，M234）；MCP 合同 0.5.0。
-- **下一步**：阶段收尾只差 A11 的真人计时：请一位内部成员照[代建指南](docs/agent-guide.md)重走价签流程并记下每步用时，做法与记录位置见[票据 09](.scratch/agent-template-authoring/issues/09-stage3-acceptance.md)「剩余工作」。之后按验收文档「后续」排：小尺寸标签的缩字下限。
+- **下一步**：开纵向循环的票据（M235）。给循环容器加纵向排列，替代竖排站点列表的旋转 90° 写法。另有两项：Gemini 在 MCP 合同 0.5.0 上复跑评估门槛（用前先跑）；小尺寸标签的缩字下限。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 上过评估门槛，Gemini 还没复跑，用它之前先跑一遍（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。

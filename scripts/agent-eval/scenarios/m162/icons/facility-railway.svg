@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 火车站：白色圆角方形底板，深灰流线车头、轨道与枕木 -->
+  <rect x="4" y="4" width="92" height="92" rx="16" fill="#FFFFFF"/>
+  <path d="M28 72 V40 C28 24 38 15 50 15 C62 15 72 24 72 40 V72 Z" fill="#4D4D4D"/>
+  <path d="M35 43 C35 32 41 25 50 25 C59 25 65 32 65 43 Z" fill="#FFFFFF"/>
+  <rect x="34" y="56" width="9" height="5" rx="2.5" fill="#FFFFFF"/>
+  <rect x="57" y="56" width="9" height="5" rx="2.5" fill="#FFFFFF"/>
+  <path d="M37 72 L27 91 M63 72 L73 91" stroke="#4D4D4D" stroke-width="5" stroke-linecap="round"/>
+  <path d="M33 80 H67 M29 88 H71" stroke="#4D4D4D" stroke-width="4" stroke-linecap="round"/>
+</svg>

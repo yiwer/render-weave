@@ -36,6 +36,7 @@ npm run build
 **资源仓库与工作区**：
 
 - 资源仓库存放模板要用的字体与图片。正式出图要求版本仓库，建法见[使用指南](guide.md)第 2 步。下面的例子直接用仓库里的 `fixtures/resources`（发起任务与审核预览可以用），出图时换成版本仓库。
+- 要用仓库里没有的图片（例如设施图标）：把 `fixtures/resources` 复制一份，图片放进去并在 `resources.json` 里登记 `kind: "image"`，之后各步的 `--resources` 都指向这个副本，第 7 步也从它导入。项目说明里写明资源 ID，Agent 能看到这些图片并与示例图对照。例子见 [scripts/agent-eval/scenarios/m162/](../scripts/agent-eval/scenarios/m162/README.md)。
 - 工作区是一个目录，放已发布的数据定义、数据集与模板。新项目从空目录开始：
 
 ```powershell
@@ -74,13 +75,15 @@ node dist/bin.js agent run --task 数据定义提取 --sample <示例图> --brie
 node dist/bin.js agent review out/build/r1-definition
 ```
 
-浏览器会打开本机的审核页。审核结果随时存进轮次目录的 `review.json`，关掉页面后再执行同一命令就能接着审。按 Ctrl+C 结束服务。
+浏览器会打开本机的审核页，页头写着这一轮的任务与待确认项数。审核只在这个页面上做：每次点击都会立即存进轮次目录的 `review.json`，关掉页面后再执行同一命令就能接着审。按 Ctrl+C 结束服务。没打开审核页就执行第 4 步，会报"本轮还没有审核"。
 
 1. **对照示例图**：字段清单中有"定位"的，点一下就在示例图上框出它对应的部分。图可以放大，单击放大、Shift+单击缩小。
 2. **逐项处理待确认项**：每项有原因（看不清、推测、来源冲突、必填未提供）、Agent 的说明与候选值。三种处理：
    - **采纳候选**；
    - **改值**：在文本框里写新值，数据定义中是整个字段的 JSON；
    - **标为空**：删去这个字段，或这个值、这个元素。
+
+   怎么判断：只有这一单的业务方能回答的（长度上限、站数范围、某项内容会不会变），按实际情况采纳或改值；图上没有、你们也用不上的可选字段，标为空最省事；拿不准就采纳，之后还能用修改轮或下一版定义调整。
 3. **整体确认**：待确认项以外的内容核对无误后，勾选"已整体核对"。
 4. **给出结论**：
    - 没问题就点"审核通过"；
@@ -97,6 +100,7 @@ node dist/bin.js agent apply out/build/r1-definition --workspace out/build/works
 - 数据定义发布为静态数据定义，文件名如 `schema-<名称>-v1.json` 与编译产物；数据集与模板保存为新文件。
 - 工作区自发起之后被改过时拒绝应用，并列出差异。确认后加 `--overwrite` 按当前工作区写入，或按第 7 步基于最新内容重做。
 - 应用失败时工作区保持原状；同一轮不能应用两次。
+- 报"本轮还没有审核"或"审核未通过"时，回到第 3 步，在这一轮的审核页上给出结论。
 
 ## 5. 数据集提取
 
@@ -141,7 +145,7 @@ node dist/bin.js agent review out/build/r3-template
 
 ## 7. 正式出图
 
-把一个或多个出图项写进批次请求。数据集可以引用工作区中的 id，也可以直接写在批次里，适合样例数据。下面出两张：
+把一个或多个出图项写进批次请求。数据集可以引用工作区中的 id，也可以直接写在批次里，适合样例数据。本站序号这类对外参数写在每项的 `parameters` 里，不在数据集里：同一份数据集可以出沿线每个站台的牌子。下面出两张：
 
 ```json
 {
@@ -161,6 +165,8 @@ node dist/bin.js resources-init --resources out/build/resources
 node dist/bin.js resources-import --source fixtures/resources --resources out/build/resources
 node dist/bin.js deliver --workspace out/build/workspace --resources out/build/resources --request out/build/batch.json --out out/build/batch
 ```
+
+导入只做一次：再执行会报 `input.duplicate`（已有资源不能覆盖），已导入的内容不受影响；用 `resources-list --resources out/build/resources` 查看仓库里有哪些资源。
 
 每项一个目录，内有图片、问题清单与出图记录。失败项的定位、记录读取与重放见[使用指南](guide.md)。
 
