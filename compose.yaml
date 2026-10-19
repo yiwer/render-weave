@@ -1,0 +1,105 @@
+# 出图服务的本机环境（ADR-0017、M240、M259）：接口进程、一个 worker、PostgreSQL 与 S3 兼容存储（RustFS）。
+# 凭据只经环境变量传入，放在不进版本库的 .env 里：第一次运行 node service/scripts/up.mjs 会生成它并起服务，
+# 之后 docker compose up -d --build --wait 即可。Docker 后端测试：node service/scripts/test-docker.mjs。
+name: renderweave
+
+x-service-env: &service-env
+  RW_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD，先运行 node service/scripts/up.mjs 生成 .env}@postgres:5432/renderweave
+  RW_S3_ENDPOINT: http://s3:9000
+  RW_S3_BUCKET: renderweave
+  RW_S3_ACCESS_KEY_ID: ${RW_S3_ACCESS_KEY_ID:?缺少 RW_S3_ACCESS_KEY_ID，先运行 node service/scripts/up.mjs 生成 .env}
+  RW_S3_SECRET_ACCESS_KEY: ${RW_S3_SECRET_ACCESS_KEY:?缺少 RW_S3_SECRET_ACCESS_KEY，先运行 node service/scripts/up.mjs 生成 .env}
+  RW_LOG_LEVEL: ${RW_LOG_LEVEL:-info}
+
+x-readyz: &readyz
+  interval: 3s
+  timeout: 5s
+  retries: 30
+  start_period: 5s
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: renderweave
+      POSTGRES_DB: renderweave
+      POSTGRES_PASSWORD: ${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renderweave -d renderweave"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  s3:
+    image: rustfs/rustfs:1.0.3
+    environment:
+      RUSTFS_ACCESS_KEY: ${RW_S3_ACCESS_KEY_ID:?缺少 RW_S3_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${RW_S3_SECRET_ACCESS_KEY:?缺少 RW_S3_SECRET_ACCESS_KEY}
+    volumes:
+      - s3-data:/data
+
+  # 部署步骤：建好桶后退出。运行时的服务只用读、写、取头信息、列举。
+  setup:
+    build:
+      context: .
+      dockerfile: service/Dockerfile
+      target: runtime
+    image: renderweave-service:local
+    command: ["node", "service/dist/main.js", "setup"]
+    environment: *service-env
+    depends_on:
+      - s3
+
+  # 接口进程：启动时按版本号执行数据库迁移。
+  api:
+    image: renderweave-service:local
+    pull_policy: never
+    command: ["node", "service/dist/main.js", "api"]
+    environment: *service-env
+    ports:
+      - "${RW_API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      <<: *readyz
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+
+  # 渲染 worker 的调度进程：确认迁移与代码一致后就绪。
+  worker:
+    image: renderweave-service:local
+    pull_policy: never
+    command: ["node", "service/dist/main.js", "worker"]
+    environment: *service-env
+    ports:
+      - "${RW_WORKER_PORT:-8081}:8081"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      <<: *readyz
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+
+  # Docker 后端测试，只在 test 配置下运行：docker compose --profile test run --rm --build tester
+  tester:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: service/Dockerfile
+      target: test
+    image: renderweave-service-test:local
+    environment:
+      <<: *service-env
+      RW_API_URL: http://api:8080
+      RW_WORKER_URL: http://worker:8081
+    depends_on:
+      worker:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  s3-data:

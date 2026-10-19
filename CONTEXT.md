@@ -32,7 +32,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 票据 05（M255）：文本支持常态字间距 `letterSpacing`（正负毫米数或数值变量）与横排 `fit.steps` 中的 `"tightenSpacing"`（在压缩字形前先将正字距线性收紧至 0）。
   - 票据 06（M256）：竖排文本的文本片段与变量插槽支持独立设置 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动绕字格中心顺时针旋转 90°。
   - 票据 07（M257）：图片元素支持可选 `tint` 单色重染（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，支持状态样式覆盖），以 `srcIn` 滤镜替换像素 RGB 并保留原图透明度。
-- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）与 02（批量交付的问题清单与单次渲染对齐，M258）已完成，下一步是 03（服务骨架）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）与 03（服务骨架，M259、M260）已完成，下一步是 04（租户与鉴权）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 与 Gemini 都已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
@@ -53,7 +53,12 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **业务 Agent 任务**：`renderweave agent run` 支持数据定义提取、数据集提取（`--definition`）、模板辅助设计（`--dataset`、`--request`）与模板辅助修改（`--requirement`，主模板调用树中的已保存模板预置为工作副本），带反馈的下一轮用 `--from`、`--feedback`，在独占轮次目录中组装三层资料与工作区快照，按 ADR-0015 在空白环境里启动 Claude Code，只连 `renderweave mcp`。Agent 交回前可用 `check_outcome` 按同一套规则自查；交回的成果先查结构、再经引擎校验，写出 `outcome.json`、`check.json` 与 `round.json`。`agent review` 在本机打开审核页：对照示例图、图上位置与 RenderWeave 重新渲染的草稿预览（M52；模板辅助修改另有修改前的预览与结构化差异），逐项处理待确认项、整体确认，结果存进 `review.json`，并列出轮次链；`agent apply` 只接受审核通过的轮次，工作区变化时列出差异并拒绝（`--overwrite` 覆盖，或带反馈重做），把数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。见 [业务 Agent 任务](docs/agent-tasks.md)，从示例图到出图与修改的整套操作见 [代建指南](docs/agent-guide.md)。模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 4 Argon 时 `agent run` 在本机起转换代理，Claude Code 只拿到本轮令牌（M232）。资料在 `agent/`，领域约定包有公交线路牌 `route-sign` 与超市商品价签 `price-tag`；审核页在 `web/`。
 - **Agent 评估**：`npx tsx scripts/agent-eval/run.ts` 经产品路径跑 M402 数据定义、M402 模板与 366 转录三个场景，按 M211–M217 的检查评分，每个场景连续两次达线门槛才通过；报告只存摘要，存档在 `docs/agent-eval/reports/`。升级 Claude Code、换模型、改资料、改工具合同后必须跑，不进 `npm test`；额度窗口装不下一整遍时可分段跑。Gemini 经 `agent run` 内置的转换代理评估。qwen3.8-max 与 OpenCode Go 上的 Claude Haiku 5.5、Gemini 4 Argon 门槛通过。见 [Agent 评估](docs/agent-eval.md)。
 - **存储接口**：工作区文档、版本化资源仓库与出图记录都经接口读写，有本地与内存两种实现，同一组合同测试；批量交付拆成"固定"与"交付单项"两步，批次快照可序列化（[说明](docs/storage-interfaces.md)，ADR-0018，M250）。
-- **未实现**：URL 图片、跨批次去重、动态模板、HTTP 服务、OCR 接入、在线编辑器。
+- **出图服务骨架**：`service/` 单独成包，只经引擎的公开入口调用引擎。
+  - `node service/scripts/up.mjs` 一条命令起 PostgreSQL、S3 兼容存储、接口进程与 worker；
+  - 迁移按版本号执行、启动时检查，健康检查分存活与就绪，日志是结构化 JSON；
+  - 工作区文档、资源仓库与出图记录有 PostgreSQL 加 S3 实现，与本地、内存实现跑同一组合同用例；
+  - Docker 后端测试 `node service/scripts/test-docker.mjs`（[出图服务](docs/service.md)，M259、M260）。
+- **未实现**：URL 图片、动态模板、开放 API、鉴权与渲染任务、OCR 接入、在线编辑器；命令行没有跨批次去重（服务端按哈希去重）。
 
 ## 文档地图
 
@@ -86,6 +91,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/output-records.md](docs/output-records.md) | 批量正式交付、草稿预览、取消与中断辨认、自足重放与故障验收 |
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
 | [docs/storage-interfaces.md](docs/storage-interfaces.md) | 工作区文档、版本化资源仓库与出图记录的存储接口，本地与内存两种实现，批量交付的固定与交付单项 |
+| [docs/service.md](docs/service.md) | 出图服务：本机一条命令启动、配置的环境变量、进程与命令、健康检查、迁移、存储布局、构建标识与镜像、Docker 后端测试 |
 | [docs/dsl/](docs/dsl/README.md) | DSL 1.0 参考：五种文档的写法、Schema 与引擎的分工、Schema 之外的检查、已知限制 |
 | [docs/mcp.md](docs/mcp.md) | `renderweave mcp`：启动、11 个只读工具、草稿预览与元素检查的输入、交回前核对、查看资源图片、路径限制、合同版本 |
 | [docs/agent-guide.md](docs/agent-guide.md) | 代建指南：准备 key 与资料、写项目说明、发起各类任务、审核、应用、出图与修改，命令可以直接复制 |

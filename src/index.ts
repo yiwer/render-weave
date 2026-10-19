@@ -7,10 +7,14 @@ export {
   type BatchManifest, type BatchProgress, type BatchSummary, type PreviewManifest, type OutputRecord, type RecordedResource,
 } from './output-records.js';
 export { readBatch, readBatchFrom, type BatchReading, type FoundBatchItem } from './batch-read.js';
+/** 渲染器构建标识：引擎文件、锁文件与实际安装的生产依赖的哈希；出图记录只由同一构建重放（ADR-0013）。 */
+export { rendererBuildId } from './renderer-build.js';
 export {
-  createLocalBatchOutput, createMemoryBatch, localRecordSource, localBatchSource,
+  createLocalBatchOutput, createMemoryBatch, localRecordSource, localBatchSource, itemDirectory,
   type BatchOutput, type BatchItemContents, type RecordSource, type BatchSource, type MemoryBatch,
 } from './record-stores.js';
+/** 完成清单与批次清单的字节写法（record.json、preview.json、batch.json），各存储实现写法一致。 */
+export { jsonBytes as manifestBytes } from './record-files.js';
 export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
 export { checkDslDocument, dslDocumentKind, type DslDocumentCheck, type DslDocumentKind } from './dsl.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
@@ -41,7 +45,8 @@ export {
 export {
   initializeResourceStore, importResources, openVersionedResourceStore,
   checkResourceReplacement, applyResourceReplacement, type ResourceReplacementCheck,
-  localResourceBackend, createMemoryResourceBackend, type ResourceVersionBackend, type ResourceChange,
+  localResourceBackend, createMemoryResourceBackend, resourceBackend, type ResourceVersionBackend, type ResourceChange,
+  type ResourceManifestEntry, type ResourceManifestStorage,
   type VersionedResourceStore, type VersionedResourceInfo, type ResourceVersionMap, type PinnedResources,
 } from './versioned-resources.js';
 export type { ResourceImpact, ResourceConfigurationImpact, ResourceWorkspaceImpact } from './resource-impact.js';

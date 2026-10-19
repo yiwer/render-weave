@@ -9,7 +9,7 @@
 | Node.js | 22 或以上；Windows 实测 v24.21.0，Linux 容器 v22.23.3 | 构建、测试、命令行 |
 | Git | 任意 | 检出与提交 |
 | Claude Code | 评估通过时是 2.1.296 | `renderweave agent run` 的运行环境（ADR-0015）。PATH 上要有可执行文件 `claude`（Windows 上是 `claude.exe`），只有 `claude.cmd` 不行，见「已知的坑」 |
-| Docker | 可选；原设备是 Docker Desktop 29.8 | 在 Linux 容器里跑全量测试（A12） |
+| Docker | 可选；原设备是 Docker Desktop 29.8，Compose v5.5 | 在 Linux 容器里跑全量测试（A12）；本机起出图服务与跑 Docker 后端测试（[出图服务](service.md)） |
 | 浏览器 | 任意 | `renderweave agent review` 的审核页 |
 
 **Claude Code 版本不同时要跑评估门槛**：升级 Claude Code、换模型、改资料、改工具合同之后，都要跑一次评估，连续两次达线才能用（ADR-0015、M230）。做法见下文「常用检查」。
@@ -67,6 +67,16 @@ mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=re
 ```
 
 在 Linux 或 macOS 上，把 `$(pwd -W)` 换成 `$(pwd)`，并去掉 `MSYS_NO_PATHCONV=1`。
+
+**Docker 后端测试**：出图服务的 PostgreSQL 加 S3 实现、迁移与健康检查，不进 `npm test`。脚本从空环境构建镜像、起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，结束后清空容器与数据卷：
+
+```bash
+node service/scripts/test-docker.mjs
+```
+
+- 期望结果：4 个文件、23 项通过，最后打印"日志 N 行，不合格 0 行"。
+- 首次运行要下载镜像与字体，约几分钟。
+- 需要的凭据由脚本生成到仓库根的 `.env`（不进版本库），不用手工设置。本机起服务见[出图服务](service.md)。
 
 **key 扫描**：每次真实运行之后、提交之前执行。参数是本次的轮次目录与改过的目录。0 命中才算过，命中时退出码 1，只输出路径不输出 key：
 

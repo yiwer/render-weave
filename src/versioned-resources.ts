@@ -370,37 +370,86 @@ export function localResourceBackend(dir: string): ResourceVersionBackend {
   };
 }
 
+/** 清单中的一个资源：ID、种类、当前版本与全部内容版本。file 是各持久层自己的内容位置。 */
+export interface ResourceManifestEntry extends ResourceInfo {
+  readonly currentVersion: number;
+  readonly versions: readonly { readonly version: number; readonly sha256: string; readonly byteLength: number; readonly file: string }[];
+}
+
+/**
+ * 版本化资源仓库的持久层（ADR-0018）：只管清单与内容放在哪里、怎样原子地提交。
+ * 核对变更、内容版本递增、问题码与提交前条件都由 resourceBackend 统一负责，各持久层的语义因此相同。
+ */
+export interface ResourceManifestStorage {
+  /** 位置说明，作为问题位置。 */
+  readonly location: string;
+  /** 当前清单的快照，以及按内容位置取字节的方法；取到的字节由快照核对。 */
+  snapshot(): Promise<{ readonly entries: readonly ResourceManifestEntry[]; load(file: string): Promise<Uint8Array> }>;
+  /** 写入一份内容，返回内容位置。没有登记进清单的内容不会被读到。 */
+  place(bytes: Uint8Array, sha256: string): Promise<string>;
+  /**
+   * 一次提交：取得最新清单并排除其他提交，交给 apply 算出新清单，apply 成功才持久化。
+   * 新清单只在旧清单上追加资源与内容版本；apply 抛错时清单不变。
+   */
+  commit(apply: (entries: readonly ResourceManifestEntry[]) => Promise<readonly ResourceManifestEntry[]>): Promise<void>;
+}
+
+/** 在一个持久层上实现版本化资源仓库：打开清单快照，整批核对并提交变更。 */
+export function resourceBackend(storage: ResourceManifestStorage): ResourceVersionBackend {
+  return {
+    async open() {
+      try {
+        const { entries, load } = await storage.snapshot();
+        return { store: new SnapshotStore({ format: FORMAT, resources: structuredClone(entries) as Entry[] }, (content) => load(content.file)), problems: [] };
+      } catch (error) {
+        const issue = problem(error, storage.location);
+        if (!(error instanceof StoreError)) issue.code = ProblemCodes.inputUnreadable;
+        return { problems: [issue] };
+      }
+    },
+    async commit(changes, options) {
+      let committed: VersionedResourceInfo[] = [];
+      try {
+        await storage.commit(async (entries) => {
+          const manifest: Manifest = { format: FORMAT, resources: structuredClone(entries) as Entry[] };
+          committed = await applyChanges(manifest, changes, (bytes, sha256) => storage.place(bytes, sha256));
+          await options?.beforeCommit?.();
+          return manifest.resources;
+        });
+        return { committed, problems: [] };
+      } catch (error) { return { problems: [problem(error, storage.location)] }; }
+    },
+  };
+}
+
 /**
  * 内存中的版本仓库，供测试与服务端的快速测试使用。内容按 SHA-256 存放；可传入自己的内容表，以便检查或改动底层字节。
  * 提交按调用顺序依次进行，打开的快照不随后续提交变化。
  */
 export function createMemoryResourceBackend(options: { readonly contents?: Map<string, Uint8Array> } = {}): ResourceVersionBackend {
   const contents = options.contents ?? new Map<string, Uint8Array>();
-  let manifest: Manifest = { format: FORMAT, resources: [] };
+  let entries: readonly ResourceManifestEntry[] = [];
   let queue: Promise<unknown> = Promise.resolve();
-  const load = async (content: ContentVersion) => {
-    const bytes = contents.get(content.file);
-    if (!bytes) throw new Error(`内容不存在：${content.sha256}`);
-    return new Uint8Array(bytes);
-  };
-  return {
-    open: async () => ({ store: new SnapshotStore(structuredClone(manifest), load), problems: [] }),
-    commit(changes, commitOptions) {
-      const run = queue.then(async () => {
-        try {
-          const next = structuredClone(manifest);
-          const placed = new Map<string, Uint8Array>();
-          const committed = await applyChanges(next, changes, async (bytes, sha256) => { placed.set(sha256, new Uint8Array(bytes)); return sha256; });
-          await commitOptions?.beforeCommit?.();
-          for (const [sha256, bytes] of placed) if (!contents.has(sha256)) contents.set(sha256, bytes);
-          manifest = next;
-          return { committed, problems: [] };
-        } catch (error) { return { problems: [problem(error, 'memory')] }; }
-      });
-      queue = run;
+  return resourceBackend({
+    location: 'memory',
+    snapshot: async () => ({
+      entries: structuredClone(entries),
+      async load(file) {
+        const bytes = contents.get(file);
+        if (!bytes) throw new Error(`内容不存在：${file}`);
+        return new Uint8Array(bytes);
+      },
+    }),
+    async place(bytes, sha256) {
+      if (!contents.has(sha256)) contents.set(sha256, new Uint8Array(bytes));
+      return sha256;
+    },
+    commit(apply) {
+      const run = queue.then(async () => { entries = structuredClone(await apply(entries)); });
+      queue = run.catch(() => undefined);
       return run;
     },
-  };
+  });
 }
 
 /** 排他写事务。只清理本次成功创建的文件，清单发布后不回滚内容。 */

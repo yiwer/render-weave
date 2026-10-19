@@ -13,7 +13,7 @@
 - **本地文件**：命令行的后端，文件布局、退出码与行为都不变；
 - **内存**：供测试与服务端的快速测试使用。
 
-服务端的 PostgreSQL 加 S3 实现由票据 03 接入。三种实现跑同一组合同测试（`test/storage-contract.test.ts`）。
+服务端还有第三种实现：PostgreSQL 加 S3，在 `service/` 里（票据 03，见[出图服务](service.md)）。三种实现跑同一组合同用例，用例在 `test/support/storage-contract.ts`：本地与内存在 `npm test` 里跑，PostgreSQL 加 S3 在 Docker 后端测试里跑。
 
 接口都从 `dist/index.js` 导出，不依赖任何框架。
 
@@ -36,6 +36,7 @@
 | `ResourceVersionBackend.commit(changes, { beforeCommit? })` | 按顺序整批提交，见下文 |
 | `localResourceBackend(dir)` | 本地版本仓库，须先 `initializeResourceStore`；提交沿用写锁加重命名清单（ADR-0014） |
 | `createMemoryResourceBackend({ contents? })` | 内存仓库，内容按 SHA-256 存放；可传入自己的内容表，以便检查或改动底层字节 |
+| `resourceBackend(storage)` | 在一个持久层上实现仓库（M260）。持久层 `ResourceManifestStorage` 只管三件事：读清单快照、放内容（`place`）、原子提交新清单（`commit`）。核对变更、版本递增、问题码与提交前条件由引擎统一负责。内存仓库与服务端仓库都用它 |
 
 `commit` 的语义：
 
@@ -72,5 +73,6 @@
   - `BatchSource`：`manifest`、`items`、`completion`。
 - **本地实现**：`createLocalBatchOutput(outDir)`（目录已存在即失败）、`localRecordSource(dir)`、`localBatchSource(dir)`。
 - **内存实现**：`createMemoryBatch()`，同一份内容既是成果去处，也是批次与记录的读取来源。
+- **写法一致**：完成清单与批次清单的字节由 `manifestBytes` 生成，项目录名由 `itemDirectory` 生成，各实现写法相同。
 
 `deliverBatch`、`readOutputRecord`、`replayOutputRecord` 与 `readBatch` 就是这些接口加本地实现，行为与[出图记录说明](output-records.md)一致。

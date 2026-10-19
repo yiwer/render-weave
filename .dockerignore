@@ -1,0 +1,17 @@
+# 出图服务镜像的构建上下文（service/Dockerfile）：只放进构建与 Docker 后端测试需要的文件。
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src
+!service
+service/node_modules
+service/dist
+!test/support
+!fixtures/resources
+fixtures/resources/fonts
+!fixtures/workspaces
+!docs/examples/m402-dsl
+!scripts/fetch-fonts.mjs
+!scripts/fonts.json
