@@ -68,9 +68,9 @@ for (const item of mixedManifest.items.filter(entry => entry.status === 'deliver
 const failures = {};
 for (const item of mixedManifest.items.filter(entry => entry.status === 'failed')) failures[item.id] = (await json(join(mixed, item.directory, 'problems.json'))).map(p => p.code);
 assert(failures['stop-36'].includes('check.failed'));
-assert.deepEqual(failures['wrong-version'], ['record.invalid']);
+assert.deepEqual(failures['wrong-version'], ['input.staticSchemaNotFound', 'dataset.staticSchemaMismatch', 'render.expansionBlocked']);
 assert(failures['too-large'].includes('request.outputTooLarge'));
-assert.deepEqual(failures['no-dataset'], ['record.invalid']);
+assert.deepEqual(failures['no-dataset'], ['input.datasetNotFound', 'render.expansionBlocked']);
 
 // 修正后的失败项显式组成新批次；原批次一字不改，再次写入同一目标被拒绝。
 const before = await tree(mixed);

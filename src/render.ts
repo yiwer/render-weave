@@ -7,7 +7,7 @@
  */
 import { loadCanvasKit } from './canvaskit.js';
 import { draftBorders, withDraftPlaceholders } from './draft.js';
-import { preflight } from './preflight.js';
+import { preflight, preflightTemplate } from './preflight.js';
 import { draw, type EncodedImage } from './draw.js';
 import { formatElementPath } from './element-path.js';
 import { ImageStore } from './images.js';
@@ -36,15 +36,36 @@ export interface RenderOptions {
   readonly svgFonts?: readonly string[];
 }
 
-export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
+/**
+ * 渲染的同步前段：解析请求，再做出图前检查（M102）。无法展开时没有 prepared，problems 就是 render 会返回的完整问题清单；
+ * 批量交付据此给无法展开的项报与单次渲染相同的问题（M258）。
+ */
+export function prepareRender(workspace: Workspace, requestInput: unknown): {
+  request?: RenderRequest;
+  prepared?: NonNullable<ReturnType<typeof preflight>>;
+  problems: Problem[];
+} {
   const problems: Problem[] = [...workspace.problems];
   const parsed = parseRenderRequest(requestInput);
   problems.push(...parsed.problems);
   const request = parsed.request;
   if (!request) return { problems };
-
   const prepared = preflight(workspace, request, problems);
-  if (!prepared) return expansionBlocked(problems);
+  if (!prepared) expansionBlocked(problems);
+  return { request, prepared, problems };
+}
+
+/** 只看根模板一侧：无法展开时返回问题清单（工作区问题、模板一侧的问题与 render.expansionBlocked），能展开时返回 undefined（M258）。 */
+export function templateBlocked(workspace: Workspace, template: string): Problem[] | undefined {
+  const problems: Problem[] = [...workspace.problems];
+  if (!preflightTemplate(workspace, template, problems).blocked) return undefined;
+  expansionBlocked(problems);
+  return problems;
+}
+
+export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
+  const { request, prepared, problems } = prepareRender(workspace, requestInput);
+  if (!request || !prepared) return { problems };
   const { template, dataset, checked, parameters } = prepared;
   problems.push(...checkSizeRange(template, request.output));
   const evaluation = evaluate(new Scope(template, checked.program.get(template.name)!.table, dataset.data, parameters.values),

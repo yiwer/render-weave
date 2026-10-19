@@ -55,7 +55,7 @@
 
 | 接口 | 语义 |
 |---|---|
-| `freezeBatch({ workspace, resources, request, renderOptions? })` | **固定**：校验外层，复制文档、渲染项与配置，固定资源版本映射，并核对固定版本的字节。返回 `BatchSnapshot` 和已核对的资源内容；外层非法等情况整批拒绝 |
+| `freezeBatch({ workspace, resources, request, renderOptions? })` | **固定**：校验外层，复制文档、渲染项与配置，固定资源版本映射，并核对固定版本的字节。返回 `BatchSnapshot` 和已核对的资源内容；外层非法等情况整批拒绝。无法展开的项与根模板，问题清单与单次渲染相同（M258） |
 | `deliverBatchItem({ snapshot, index, contents, output })` | **交付单项**：按快照渲染第 `index` 项，经 `output` 写入成果；`writeFailed` 表示没能写入 |
 | `runFrozenBatch({ snapshot, contents, output, onItem?, signal? })` | 在一个进程内按顺序交付全部项，写入失败后探测存储，项间取消，最后发布批次清单 |
 | `summarizeBatch(snapshot, items, problems)` | 由逐项结果汇总批次清单（`batch.json` 的内容） |

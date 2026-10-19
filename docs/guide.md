@@ -145,11 +145,11 @@ cat out/guide/batch-mixed/0002/problems.json
 | 目录 | 项标识 | 问题码 | 原因 | 修正方法 |
 |---|---|---|---|---|
 | `0002` | `stop-36` | `check.failed` | 模板检查项"本站序号不能超过站点数"：本站 36 超过了 35 个停靠站点 | 本站序号改为 1–35 |
-| `0004` | `wrong-version` | `record.invalid` | 内联数据集选了工作区里没有的"线路牌 v2" | 改为工作区中的版本 1 |
+| `0004` | `wrong-version` | `input.staticSchemaNotFound`、`dataset.staticSchemaMismatch` | 内联数据集选了工作区里没有的"线路牌 v2"，与模板的基准"线路牌 v1"也不符 | 改为工作区中的版本 1 |
 | `0006` | `too-large` | `request.outputTooLarge` | 出图 23622 × 780 像素，单边超过 20000 像素上限 | 减小宽度或 DPI |
-| `0007` | `no-dataset` | `record.invalid` | 工作区里没有数据集 `ds-missing` | 改为已有的数据集 ID |
+| `0007` | `no-dataset` | `input.datasetNotFound` | 工作区里没有数据集 `ds-missing` | 改为已有的数据集 ID |
 
-注意：批量交付找不到数据集或静态数据定义时，问题码统一为 `record.invalid`，具体原因要看 `message`。单次 `render` 命令对同样的错误给出更细的问题码。
+`0004` 与 `0007` 无法展开，问题清单最后还有一条 `render.expansionBlocked`。批量交付的每一项与单次 `render` 对同一输入给出同一份问题清单，可以直接按问题码判断原因。
 
 修正后重试：把改好的项另组一个新批次，交付到新目录。原批次不会被覆盖，也不会自动续跑。
 

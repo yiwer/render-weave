@@ -1,9 +1,10 @@
 /** 批量正式交付、完整性读取与自足重放；渲染逻辑统一调用 render。 */
 import { ProblemCodes, severe, type Problem } from './problems.js';
-import { render, type RenderResult, type RenderOptions } from './render.js';
+import { prepareRender, render, templateBlocked, type RenderResult, type RenderOptions } from './render.js';
 import type { RenderMode } from './request.js';
-import { createMemoryResourceRepository, parseResourceRef, type ResourceKind } from './resources.js';
+import { createMemoryResourceRepository, parseResourceRef, type ResourceKind, type ResourceRepository } from './resources.js';
 import type { VersionedResourceInfo, VersionedResourceStore } from './versioned-resources.js';
+import type { Workspace } from './workspace.js';
 import { isRecord, describeError } from './util.js';
 import { rendererBuildId } from './renderer-build.js';
 import { checkBatchTemplate, parseBatchEnvelope, parseBatchItem, prepareRecordInput, RecordError, recordFail, recordOptions, singleRequest,
@@ -143,17 +144,30 @@ export async function freezeBatch(options: {
     const configured = recordOptions(options.renderOptions);
     const { templates, datasets, staticSchemas, problems } = options.workspace;
     const documents: RecordDocuments = structuredClone({ templates, datasets, staticSchemas, problems });
-    const templateKinds = checkBatchTemplate(documents, envelope.template, configured);
+    // 单次渲染也会报的问题，由渲染入口的同步前段给出，与单次渲染相同；能展开却成不了记录的，才报记录的问题（M258）。
+    let current: ResourceRepository | undefined;
+    const workspace = (): Workspace => ({ ...documents, resources: current ??= options.resources.pin().repository ?? createMemoryResourceRepository([]) });
+    let templateKinds: Map<string, ResourceKind>;
+    try { templateKinds = checkBatchTemplate(documents, envelope.template, configured); } catch (error) {
+      if (!(error instanceof RecordError)) throw error;
+      if (documents.problems.some((p) => p.level === 'severe')) return { problems: [...documents.problems] };
+      return { problems: templateBlocked(workspace(), envelope.template) ?? failure(error) };
+    }
     const kinds = new Map<string, ResourceKind>(templateKinds);
+    const unexpandable = (raw: BatchEnvelope['items'][number]) => {
+      const { prepared, problems } = prepareRender(workspace(),
+        { template: envelope.template, mode: envelope.mode, dataset: raw.dataset, parameters: raw.parameters, output: raw.output });
+      return prepared ? undefined : problems;
+    };
     const items = envelope.items.map((raw, i) => {
       const { item, problems: parsed } = parseBatchItem(envelope, raw);
-      if (!item) return { index: i + 1, id: raw.id, problems: parsed };
+      if (!item) return { index: i + 1, id: raw.id, problems: unexpandable(raw) ?? parsed };
       try {
         for (const [id, kind] of prepareRecordInput(documents, singleBatch(envelope, raw), configured).resourceKinds) if (!kinds.has(id)) kinds.set(id, kind);
         return { index: i + 1, id: raw.id, problems: [] };
       } catch (error) {
         if (!(error instanceof RecordError)) throw error;
-        return { index: i + 1, id: raw.id, problems: failure(error) };
+        return { index: i + 1, id: raw.id, problems: unexpandable(raw) ?? failure(error) };
       }
     });
     // 资源版本映射在任何异步读取前同步固定；运行中仓库再有替换也不混入本批。

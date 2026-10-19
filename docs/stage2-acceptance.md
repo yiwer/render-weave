@@ -208,7 +208,7 @@ docker run --rm -v <快照目录>:/fresh node:22-alpine sh /fresh/linux.sh <快�
 
 | # | 级别 | 依据 | 发现 | 处理 |
 |---|---|---|---|---|
-| 1 | P2 | PRD 实施决定 13"每项仍调用同一渲染引擎，不复制检查" | 批量项的数据集或其静态定义找不到时，记录准备先行拒绝，报 `record.invalid`（位置 `outputRecord`），见 `src/record-input.ts:120`、`:132`。单次 `render` 对同一输入报 `input.datasetNotFound`、`input.staticSchemaNotFound` 与 `dataset.staticSchemaMismatch`（`src/preflight.ts:30-33`、`:62`）。只有该项失败，`message` 写明原因，A06 仍成立 | 转为后续任务；[使用指南](guide.md)第 4 节提示看 `message` |
+| 1 | P2 | PRD 实施决定 13"每项仍调用同一渲染引擎，不复制检查" | 批量项的数据集或其静态定义找不到时，记录准备先行拒绝，报 `record.invalid`（位置 `outputRecord`），见 `src/record-input.ts:120`、`:132`。单次 `render` 对同一输入报 `input.datasetNotFound`、`input.staticSchemaNotFound` 与 `dataset.staticSchemaMismatch`（`src/preflight.ts:30-33`、`:62`）。只有该项失败，`message` 写明原因，A06 仍成立 | 转为后续任务；阶段 4 [票据 02](../.scratch/render-service-v1/issues/02-batch-problem-codes.md) 已对齐（M258） |
 | 2 | P3 | PRD 实施决定开头"没有实施的能力不得写入'当前支持'清单"（反向：已实现的能力也不能写成后置） | `README.md` 写"码图交付…仍后置"，`docs/resources-versioning.md:3` 写"批量和出图记录仍在后续票据中"，均已过期 | 已改 |
 | 3 | — | 用户故事 50、PRD 实施决定 22 | 原先没有一份覆盖导入、批量、失败定位、替换与重放的中文指南，记录内容与交接范围散在 `output-records.md` | 新增 [docs/guide.md](guide.md)，README 链接 |
 

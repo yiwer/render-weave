@@ -95,9 +95,9 @@ it('合法项之间夹入本站 36、错误数据版本、超大尺寸与缺失�
   expect(result.summary).toMatchObject({ previewed: 0, total: 8, delivered: 4, failed: 4, notRun: 0 });
   const codes = (id: string) => result.items.find((i) => i.id === id)!.problems.map((p) => p.code);
   expect(codes('stop-36')).toContain('check.failed');
-  expect(codes('wrong-version')).toEqual(['record.invalid']);
+  expect(codes('wrong-version')).toEqual(['input.staticSchemaNotFound', 'dataset.staticSchemaMismatch', 'render.expansionBlocked']);
   expect(codes('too-large')).toContain('request.outputTooLarge');
-  expect(codes('no-dataset')).toEqual(['record.invalid']);
+  expect(codes('no-dataset')).toEqual(['input.datasetNotFound', 'render.expansionBlocked']);
   for (const [i, item] of result.items.entries()) {
     expect(item.directory).toBe(join(out, pad(i + 1)));
     if (item.status === 'delivered') {
