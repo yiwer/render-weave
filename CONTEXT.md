@@ -22,7 +22,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 验收后补了交回前核对成果的只读工具 `check_outcome`（票据 10，M233），并让 `view_image` 能看资源仓库中的图片（`res:资源ID`，票据 11，M234）；MCP 合同 0.5.0。
   - 真人走查之后补了纵向循环（票据 12，M236）：`itemLayout.direction: "column"` 与 `heights`，竖排列表不再靠旋转 90°。这是 DSL 1.x 的第一笔加法。
   - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
-- **下一步**：第三阶段剩两项后续，见[第三阶段验收](docs/stage3-acceptance.md#后续)。一是 Gemini 在当前资料与 MCP 合同 0.5.0 上复跑评估门槛，用它之前先跑；二是小尺寸标签的缩字下限，先形成决定。之后进入阶段 4。
+- **下一步**：[票据 14](.scratch/agent-template-authoring/issues/14-template-min-font-size.md)，模板在画板上声明自己的缩字下限，价签一类小标签可以缩到 5 mm 以下（第三阶段 Spec 审查第 3 项）。另一项后续是 Gemini 在当前资料与 MCP 合同 0.5.0 上复跑评估门槛，用它之前先跑。之后进入阶段 4。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与票据 13 改过的 Agent 参考上过评估门槛，Gemini 还没复跑，用它之前先跑一遍（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
