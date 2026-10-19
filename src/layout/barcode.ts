@@ -91,7 +91,7 @@ function labelOf(model: BarcodeModel): TextElementModel | undefined {
   return { ...model, type: 'text', content: [{ kind: 'text', text: model.content, style: {} }], font: model.font,
     fontSize: model.fontSize, color: model.foreground, slant: 0, writingMode: 'horizontal', horizontalAlign: 'center', verticalAlign: 'center',
     padding: { top: 0, right: 0, bottom: 0, left: 0 },
-    fit: { tightenSpacing: false, compressGlyphs: false, compressMin: 1, shrink: false, minFontSize: model.fontSize, onFail: 'severe' } };
+    fit: { tightenSpacing: false, compressGlyphs: false, compressMin: 1, shrink: false, minFontSize: model.fontSize, minFontSizeSource: 'element', onFail: 'severe' } };
 }
 
 /** 字体墨迹可能越出行框或前进宽度，连同外伸部分一起预留，避免碰到码区或元素外。 */

@@ -110,6 +110,42 @@ describe('缩字组的两轮排版', () => {
   });
 });
 
+describe('缩字组的下限取画板的值（M238）', () => {
+  const grouped = { steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: '站名' }, compressMin: 0.6 };
+  const range = { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } };
+  async function lowered(widths: number[], artboard: Record<string, unknown>): Promise<RenderResult> {
+    const workspace = await textLab([], { fill: '#FFFFFF', ...artboard, layout: { mode: 'grid', columns: widths.map((fixed) => ({ fixed })), rows: [{ fraction: 1 }] },
+      children: widths.map((_w, i) => label(`列${i + 1}`, { fit: grouped, place: { column: i + 1, row: 1, width: 'fill', height: 'fill' } })) });
+    return render(workspace, { ...textLabRequest({}, widths.reduce((a, b) => a + b, 0), 65, 120), mode: 'draft' });
+  }
+
+  it('画板写 3 mm 时全组可缩到 5 mm 以下；不写时仍停在 5 mm', async () => {
+    const result = await lowered([4, 20], { minFontSize: 3 });
+    expect(result.problems).toEqual([]);
+    expect(texts(result).map((node) => node.text!.fontSize)).toEqual([4, 4]);
+    expect(texts(await lowered([4, 20], {})).map((node) => node.text!.fontSize)).toEqual([5, 5]);
+  });
+
+  it('缩字组的下限低于画板的值时静态拒绝', async () => {
+    const workspace = await textLab([], { minFontSize: 4, children: [label('站名', { fit: { ...grouped, widthOverflow: { shrinkGroup: '站名', minFontSize: 3 } } })] });
+    const result = await render(workspace, { ...textLabRequest({}, 20, 65, 120), mode: 'draft' });
+    expect(result.problems).toContainEqual(expect.objectContaining({ code: ProblemCodes.templateInvalid,
+      message: 'widthOverflow.minFontSize 不能低于画板的 minFontSize 4 mm（M238）' }));
+  });
+
+  it('跨模板的缩字组取各成员下限中最高的，到了下限仍放不下时写明组名与下限', async () => {
+    let workspace = await textLab([], { fill: '#FFFFFF', minFontSize: 3, layout: { mode: 'grid', columns: [{ fixed: 3.5 }, { fixed: 20 }], rows: [{ fraction: 1 }] },
+      children: [label('主站名', { fit: grouped, place: { column: 1, row: 1, width: 'fill', height: 'fill' } }),
+        { type: 'call', name: '调用', template: '子模板', data: 'none', place: { column: 2, row: 1 } }] });
+    workspace = { ...workspace, templates: [...workspace.templates, { name: '子模板', document: { dslVersion: 'renderweave-template/1', name: '子模板',
+      base: { name: '空数据定义', version: 1 }, artboard: { sizeRange: range, minFontSize: 4, children: [label('子站名', { fit: grouped })] } } }] };
+    const result = await render(workspace, { ...textLabRequest({}, 23.5, 65, 120), mode: 'draft' });
+    expect(texts(result).map((node) => node.text!.fontSize)).toEqual([4, 4]);
+    expect(result.problems.map((p) => [p.location, p.message])).toEqual([[{ kind: 'element', path: '文字实验/主站名' },
+      '竖排文字"田田田田田田田田"放不下：字号 4 mm 比可用宽 3.5 mm 更宽（缩字组 站名 已到最小字号 4 mm）']]);
+  });
+});
+
 async function calledWorkspace(): Promise<Workspace> {
   const workspace = await textLab([{ name: 'items', displayName: '站点', type: 'list', items: { type: 'ref', ref: { name: '站点实验', version: 1 } } }],
     { layout: { mode: 'stack', direction: 'row' }, children: [

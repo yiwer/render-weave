@@ -4,7 +4,7 @@
 
 **Blocked by:** 无
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** [第三阶段验收](../../../docs/stage3-acceptance.md) Spec 审查第 3 项、「后续」第 2 条；需求记录 M14（模板需设定最小可读字号）、M86（缺省 5 mm、只能调高）、M132（缩字组下限）；ADR-0016（1.x 只做加法）；验收 A01、A02、A03、A10。
 
@@ -22,29 +22,75 @@
 - **只管缩字，不检查原始字号**：画板的 `minFontSize` 不要求文字的原始字号不低于它。价签 3.2 mm 的标签文字和线路牌上的小字照常可用，旧模板不受影响。
 - **作用域不继承**（ADR-0007）：被调模板用自己画板的值。缩字组跨模板时，取组内各成员下限中最高的，规则同 M132。
 
-- [ ] DSL：
+- [x] DSL：
   - 画板新增可选键 `minFontSize`（毫米，不低于 1.5），缺省 5；
   - 元素 `fit.minFontSize` 与缩字组 `widthOverflow.minFontSize` 缺省取所在模板画板的值，写了就不能低于它；画板不写时仍不能低于 5 mm，旧模板的解析、出图与布局摘要不变；
   - 绑定变量的字号不在静态检查范围内，出图时按实际字号计算。
-- [ ] 缩字到了下限仍放不下时，`layout.textOverflow` 的说明写明下限的值与来源（画板、元素或缩字组）。字号本来就不高于下限、缩字不会生效时，也这样写。
-- [ ] 合同与参考同步：
+- [x] 缩字到了下限仍放不下时，`layout.textOverflow` 的说明写明下限的值与来源（画板、元素或缩字组）。字号本来就不高于下限、缩字不会生效时，也这样写。
+- [x] 合同与参考同步：
   - Schema：画板 `minFontSize` 的 `minimum` 为 1.5，`fit.minFontSize` 与缩字组的 `minimum` 也降到 1.5。"不能低于画板的值"是跨字段的语义检查，记入人读参考「Schema 之外的检查」，并在一致性测试的类别清单与用例里各加一项；
   - 人读参考：画板与文字适配两节，以及「已知限制」；
   - Agent 参考：画板与 `fit` 两处；
   - 价签约定包第 10 条改为在画板上写 `minFontSize`（例如 3 mm）。线路牌约定包不变，仍是 5 mm。
-- [ ] 测试：
+- [x] 测试：
   - 先写失败的测试：画板写 3 mm 后，3.4 mm 的长品名缩到 3 mm 附近放下；画板不写时行为不变；
   - 元素或缩字组低于画板的值报模板错误；画板低于 1.5 mm 报错；
   - 被调模板用自己的值；跨模板的缩字组取最高下限；
   - 下限来源分别是画板、元素、缩字组时问题说明的写法；
   - 已有的 golden、布局快照与 M402 共享样例不变（A01）。
-- [ ] 实跑：用票据 09 的价签材料（`scripts/agent-eval/scenarios/price-tag/`），让 Haiku 5.5 跑一轮模板辅助设计。
+- [x] 实跑：用票据 09 的价签材料（`scripts/agent-eval/scenarios/price-tag/`），让 Haiku 5.5 跑一轮模板辅助设计。
   - 画板写了缩字下限，品名写了压缩加缩字；
   - 用比示例更长的品名出图，品名缩字后放下，0 问题；
   - 批次三张交付 0 问题。
-- [ ] 改了 Agent 参考与价签约定包，按 M230 跑 Haiku 评估门槛，连续两次达线。
-- [ ] 全量测试、类型检查、构建在 Windows 与 Linux 上通过；需求记录记 M 编号，DSL README「1.0 之后的变化」记一行，`CONTEXT.md` 与第三阶段验收的「后续」同步；key 扫描命中 0。
+- [x] 改了 Agent 参考与价签约定包，按 M230 跑 Haiku 评估门槛，连续两次达线。
+- [x] 全量测试、类型检查、构建在 Windows 与 Linux 上通过；需求记录记 M 编号，DSL README「1.0 之后的变化」记一行，`CONTEXT.md` 与第三阶段验收的「后续」同步；key 扫描命中 0。
 
 **测试接缝：** 渲染与布局摘要从 `src/index.ts` 的 `render` 进入；文档检查从 `checkDslDocument` 进入；DSL 一致性测试在 `test/dsl-template-schema.test.ts`；缩字组的已有用例在 `test/shrink-groups.test.ts`。
 
 **不在本票：** 原始字号低于可读下限的检查、段落换行、按观看距离自动推算字号。
+
+## Answer
+
+2026-10-18 完成。决定见 M238。
+
+**成果**
+
+- `src/template/parse.ts`：画板新增 `minFontSize`，在读子元素之前读出，记为本模板的下限（缺省 5，不低于 1.5，否则报模板错误）。`fit.minFontSize` 与 `widthOverflow.minFontSize` 缺省取它，低于它报错，说明写明是画板的值还是缺省值。`TextFit` 新增 `minFontSizeSource`。常量 `DEFAULT_MIN_FONT_SIZE`、`MIN_READABLE_FONT_SIZE` 在 `src/template/model.ts`。
+- `src/layout/text.ts`：横排缩字停在下限、或字号本来就不高于下限时，`layout.textOverflow` 的说明末尾写明下限与来源。竖排缩字组到了下限仍放不下时，说明写组名与下限。
+- `src/layout/shrink-groups.ts`：组的下限从各成员的值起算，不再从 5 起算；次轮成员带上全组下限。
+- Schema：画板 `minFontSize`（`minimum` 1.5），`fit.minFontSize` 与缩字组的 `minimum` 降到 1.5。
+- 参考与资料：
+  - 人读参考的画板表、文字适配与缩字组、「Schema 之外的检查」新增一类；
+  - Agent 参考的画板骨架与说明、`fit` 两行；
+  - 价签约定包第 10 条改为在画板上写 `"minFontSize": 3`。
+- 文档：需求记录 M238；DSL README「1.0 之后的变化」；`CONTEXT.md`；[开发环境与接续](../../../docs/dev-setup.md) 的期望测试数；[第三阶段验收](../../../docs/stage3-acceptance.md)「后续」与「验收后的变更」；[Agent 评估](../../../docs/agent-eval.md#历次评估)。
+
+**验证**
+
+- **先写失败的测试**：`test/horizontal.test.ts` 新增「模板在画板上声明缩字下限（M238）」10 项，`test/shrink-groups.test.ts` 新增 3 项。除"只压缩不缩字时说明不提下限"这一项原本就成立，其余 12 项先变红，实现后转绿。覆盖：
+  - 画板写 3 mm 后 3.4 mm 的品名缩字放下，不写时不变；
+  - 下限来源分别是缺省值、画板、元素时的问题说明；
+  - 画板低于 1.5、写成文本，元素低于画板或缺省值时静态拒绝；
+  - 被调模板不继承调用方的下限；
+  - 缩字组在画板写 3 mm 时缩到 4 mm、不写时停在 5 mm；组的下限低于画板时拒绝；跨模板取最高下限，并在说明里写组名。
+- **一致性测试**：新增语义类别"缩字下限低于画板的值"及两个用例；变异样本"最小字号低于 5"改为"低于 1.5"，另加"画板最小字号低于 1.5""画板最小字号不是数"，Schema 与引擎都拒绝。
+- **兼容**：已有的 golden、布局快照与 M402 共享样例都没变。
+- **Windows**：`npm run typecheck`、`npm run build` 退出码 0；`npm test` 39 个文件、784 项通过（原 769 项加新增 15 项）。
+- **Linux**（`node:22-alpine`，从 tar 空目录安装）：780 项通过，4 项 Windows 专用用例跳过。
+- **价签实跑**（Haiku 5.5，Claude Code 2.1.296，模板辅助设计，票据 09 的价签材料，工作区只有数据定义与数据集）：
+  - 一轮合格，216 秒、40 轮；5 个待确认项（店标、物价员与监督电话的值、字体、估色），与下限无关；
+  - 画板写了 `"minFontSize": 3`，品名 4 mm、写了压缩加缩字；
+  - 经审核接口采纳全部待确认项并通过，`agent apply` 后用票据 09 的版本仓库 `deliver`：三张交付，0 问题；
+  - 30 字的最长品名先压到 60%，再从 4 mm 缩到 3.556 mm，一行放下，目测核对过。原来低于 5 mm 的文字缩不了字，这一张做不到。
+- **评估门槛**（Haiku 5.5，Claude Code 2.1.296，合同 0.5.0）：
+  - [2026-10-18-min-font-size](../../../docs/agent-eval/reports/2026-10-18-min-font-size.json)：M402 模板 2/2（压测 10、10，相似度 0.903、0.940），366 2/2（站名 58、59，地标与设施全对）；M402 数据定义 13、14，没达线。
+  - [2026-10-18-min-font-size-definition](../../../docs/agent-eval/reports/2026-10-18-min-font-size-definition.json)：资料相同，只重跑 M402 数据定义两次，13、15。没达线的两次都缺"运营说明"与"班车类型"，字段确实没建。
+- **key 扫描**：`node scripts/scan-keys.mjs out/t14 <两个评估目录> docs src scripts test agent schemas`，697 个文件命中 0。
+
+**对验收的偏差**
+
+- 门槛条目按 M230 的资料对比判定：
+  - M402 数据定义读的资料（数据定义参考、线路牌约定、通用指南、成果说明、项目说明）与 [2026-10-18-grid-overlap](../../../docs/agent-eval/reports/2026-10-18-grid-overlap.json) 完全相同，沿用那份的 2/2（14、14）；
+  - 本票改动涉及的 M402 模板与 366 都是 2/2；
+  - 两份新报告本身的结论都是"未通过"，原样存档。
+- 资料不变时，M402 数据定义今天四次里有两次是 13，此前六次都在线上，另作待查，不算本票的回归。

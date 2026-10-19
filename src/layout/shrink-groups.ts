@@ -20,7 +20,8 @@ export class ShrinkGroups {
       const previous = groups.get(rule.shrinkGroup);
       groups.set(rule.shrinkGroup, {
         size: Math.min(previous?.size ?? Infinity, model.fontSize, width),
-        floor: Math.max(previous?.floor ?? 5, rule.minFontSize),
+        // 各成员的下限已按所在模板的画板取缺省（M238），全组取最高的。
+        floor: Math.max(previous?.floor ?? 0, rule.minFontSize),
         original: Math.min(previous?.original ?? Infinity, model.fontSize),
       });
     }
@@ -34,7 +35,8 @@ export class ShrinkGroups {
           { kind: 'element', path: formatElementPath(model.path) },
           `缩字组 ${rule.shrinkGroup} 的最小字号 ${group.floor} mm 超过组内原始最小字号 ${group.original} mm`));
         const fontSize = Math.max(group.floor, group.size);
-        return { ...node, model: { ...model, fontSize },
+        // 次轮的成员带上全组下限，放不下时的说明按全组写。
+        return { ...node, model: { ...model, fontSize, fit: { ...model.fit, widthOverflow: { ...rule, minFontSize: group.floor } } },
           fragments: node.fragments?.map((fragment) => ({ ...fragment, style: { ...fragment.style, fontSize } })) };
       }
       return node.children ? { ...node, children: node.children.map(rewrite) } : node;

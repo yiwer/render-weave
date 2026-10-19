@@ -197,7 +197,7 @@ function recordHorizontal(
     problems.push(
       overflowProblem(
         model,
-        `文字"${text}"放不下：需要 ${fmt(width)} × ${fmt(height)} mm，可用 ${fmt(content.width)} × ${fmt(content.height)} mm`,
+        `文字"${text}"放不下：需要 ${fmt(width)} × ${fmt(height)} mm，可用 ${fmt(content.width)} × ${fmt(content.height)} mm${shrinkFloorNote(model, floor, fontScale)}`,
       ),
     );
   }
@@ -221,6 +221,16 @@ function recordHorizontal(
   });
   pushGlyphs(drawOps, model, placed, 1, compression);
   return { ...summarize(model, text, width, height, spacing, compression, overflow), fontSize: roundMm(model.fontSize * fontScale), fontScale };
+}
+
+const FLOOR_SOURCES = { default: '缺省值，画板可写 minFontSize 调低', artboard: '画板 minFontSize', element: '元素 fit.minFontSize' } as const;
+
+/** 缩字停在下限时说明下限与来源，免得以为缩字没起作用是别的原因（M238）。 */
+function shrinkFloorNote(model: TextElementModel, floor: number, fontScale: number): string {
+  if (!model.fit.shrink) return '';
+  const limit = `最小字号 ${fmt(model.fit.minFontSize)} mm（${FLOOR_SOURCES[model.fit.minFontSizeSource]}）`;
+  if (floor >= 1) return `；字号已不高于${limit}，没有缩字`;
+  return fontScale <= floor + EPSILON ? `；已缩到${limit}` : '';
 }
 
 /** 两端分布测量时已按倾斜后的轮廓求墨迹边界；无墨迹字形用前进宽度占位。 */
@@ -258,7 +268,9 @@ function recordVertical(
       reasons.push(`${tried}仍需高 ${fmt(vertical.extent)} mm，可用高 ${fmt(content.height)} mm`);
     }
     if (vertical.columnWidth > content.width + EPSILON) {
-      reasons.push(`字号 ${fmt(model.fontSize)} mm 比可用宽 ${fmt(content.width)} mm 更宽`);
+      const group = model.fit.widthOverflow;
+      const floored = group && model.fontSize <= group.minFontSize + EPSILON ? `（缩字组 ${group.shrinkGroup} 已到最小字号 ${fmt(group.minFontSize)} mm）` : '';
+      reasons.push(`字号 ${fmt(model.fontSize)} mm 比可用宽 ${fmt(content.width)} mm 更宽${floored}`);
     }
     const level = model.fit.widthOverflow && vertical.columnWidth > content.width + EPSILON ? 'severe' : model.fit.onFail;
     problems.push(overflowProblem(model, `竖排文字"${text}"放不下：${reasons.join('；')}`, level));

@@ -14,6 +14,7 @@
   "checks": [ 检查项, ... ],
   "artboard": {
     "sizeRange": { "width": { "min": 毫米, "max": 毫米 }, "height": { "min": 毫米, "max": 毫米 } },
+    "minFontSize": 毫米,
     "layout": { "mode": "free" },
     "padding": 毫米, "fill": "#FFFFFF", "stroke": { "color": "#000000", "width": 0.5 }, "cornerRadius": 毫米, "clip": false,
     "children": [ 元素, ... ]
@@ -22,6 +23,7 @@
 ```
 
 - 画板的实际尺寸由渲染请求（主模板）或调用框（被调模板）决定，必须落在 `sizeRange` 内。被调模板随内容定尺寸时，画板写 `"size": "hug"`。
+- 画板的 `minFontSize` 是本模板文字缩字的最低字号，可选，缺省 5 mm，不低于 1.5 mm。价签一类近看的小标签按领域约定写低一些，否则小于 5 mm 的文字缩不了字。它只管缩字，不限制原始字号；被调模板要用就在自己的画板上写。
 - 一个模板内，数据字段、参数、派生变量共用一个命名空间，不能重名。变量名用英文，中文写在 `displayName`。
 - 不允许出现未定义的键；任何可选键都不能写成 null：要么写值，要么省略。
 - 元素名称非空，不含 / [ ]，在同一模板内不能重复。
@@ -71,9 +73,9 @@
   - 竖排文字的片段只能单独写 color。
   - 展示格式：日期与时刻用 yyyy、MM、M、dd、d、HH、H、mm、ss，例如 `HH:mm`；数值用 0 与 #，例如 `0.##`。
   - `fit`（放不下时的适配，不写则不适配）：
-    - 横排：`{"steps": ["compressGlyphs", "shrink"], "compressMin": 0.6, "minFontSize": 5, "onFail": "severe" 或 "hint"}`，先横向压缩字形再缩字，顺序不可颠倒；minFontSize 缺省 5 mm，只能调高，不能低于 5 mm；只写 compressGlyphs 则只压缩、不缩字。
+    - 横排：`{"steps": ["compressGlyphs", "shrink"], "compressMin": 0.6, "minFontSize": 5, "onFail": "severe" 或 "hint"}`，先横向压缩字形再缩字，顺序不可颠倒；minFontSize 缺省取画板的 minFontSize（画板没写时为 5 mm），只能调高；只写 compressGlyphs 则只压缩、不缩字。
     - 竖排：`{"steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.6}`，先收紧字距再压缩字形。
-    - 跨实例统一字号（例如同一张图上一组标签必须同字号）：`"widthOverflow": {"shrinkGroup": "组名", "minFontSize": 5}`；同名组在一次出图内共用，宽度不足时全组统一缩到同一字号，最低 5 mm。
+    - 跨实例统一字号（例如同一张图上一组标签必须同字号）：`"widthOverflow": {"shrinkGroup": "组名", "minFontSize": 5}`；同名组在一次出图内共用，宽度不足时全组统一缩到同一字号，最低是各成员下限中最高的，缺省取所在画板的 minFontSize。
 - **image**：`{"source": "res:资源ID" 或 {"var": 图片字段}, "fit": "contain"（缺省）| "cover" | "fill"}`；没有 source 时不画内容。
 - **rect**（fill、stroke、cornerRadius）、**ellipse**（fill、stroke）、**line**（from、to、stroke 必填，坐标写成 `[x, y]`，毫米、相对元素框左上角）、**polygon**（points 至少 3 个 `[x, y]` 顶点）、**path**（SVG 路径 d、fill、stroke、fillRule）。图形 stroke 为 `{"color", "width", "dash"?: [实, 空], "cap"?: butt/round/square}`。路径与多边形坐标以毫米计、相对元素框，框变大时不拉伸。
 - **qrcode**：二维码。属性如下：

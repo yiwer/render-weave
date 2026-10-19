@@ -13,7 +13,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
 - 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
 - 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **第三阶段 13 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
+- **第三阶段 14 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
   - DSL 1.0 与 JSON Schema（M223、M224）；
   - `renderweave mcp` 只读工具（M225）；
   - `renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；
@@ -22,9 +22,10 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 验收后补了交回前核对成果的只读工具 `check_outcome`（票据 10，M233），并让 `view_image` 能看资源仓库中的图片（`res:资源ID`，票据 11，M234）；MCP 合同 0.5.0。
   - 真人走查之后补了纵向循环（票据 12，M236）：`itemLayout.direction: "column"` 与 `heights`，竖排列表不再靠旋转 90°。这是 DSL 1.x 的第一笔加法。
   - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
-- **下一步**：[票据 14](.scratch/agent-template-authoring/issues/14-template-min-font-size.md)，模板在画板上声明自己的缩字下限，价签一类小标签可以缩到 5 mm 以下（第三阶段 Spec 审查第 3 项）。另一项后续是 Gemini 在当前资料与 MCP 合同 0.5.0 上复跑评估门槛，用它之前先跑。之后进入阶段 4。
+  - 模板在画板上声明缩字下限（票据 14，M238），价签一类小标签可以缩到 5 mm 以下。
+- **下一步**：第三阶段还有两项后续（[第三阶段验收](docs/stage3-acceptance.md#后续)）：Gemini 在当前资料与 MCP 合同 0.5.0 上复跑评估门槛，用它之前先跑；M402 数据定义的余量只有 1 分（资料相同的 16 次里 14 次达线），下次改通用指南时在第 1 条补"按含义判断，不按排版判断"，并查数据定义提取 40 轮上限的余量。之后进入阶段 4。
 
-  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与票据 13 改过的 Agent 参考上过评估门槛，Gemini 还没复跑，用它之前先跑一遍（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
+  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛，Gemini 还没复跑，用它之前先跑一遍（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -36,7 +37,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **数据**：数据定义发布为静态数据定义，并编译出 JSON Schema；数据集按全部字段类型与约束校验。
 - **元素与布局**：画板与容器（自由、堆叠、网格）；横排与竖排文本（片段样式、插槽展示格式、倾斜、描边）；PNG/JPEG/WebP/SVG 图片（三种适配，SVG 见 [SVG 说明](docs/render-svg.md)）；矩形、椭圆、线条、多边形、路径。
 - **模板**：模板参数、派生变量（条件分支、取项、长度、加减）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（横向或纵向排列，每项等分、随内容或固定尺寸，M236）与子模板调用（独立作用域）。
-- **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。
+- **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。缩字下限由模板在画板上声明，缺省 5 mm，价签一类小标签可低到 1.5 mm（M238）。
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
 - **MCP 只读工具服务**：`renderweave mcp` 提供 11 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大（工作目录内的图片，或用 `res:资源ID` 看资源仓库中的图片，M234）、DSL 参考与交回前核对成果（`check_outcome`，M233）。工具合同 0.5.0 有快照测试，见 [MCP 工具服务](docs/mcp.md)。

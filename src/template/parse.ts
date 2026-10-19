@@ -26,7 +26,9 @@ import { parseStaticSchemaRef } from '../workspace.js';
 import {
   BARCODE_FORMATS,
   MAX_SLANT,
+  DEFAULT_MIN_FONT_SIZE,
   MIN_COMPRESSION,
+  MIN_READABLE_FONT_SIZE,
   type ArtboardModel,
   type Color,
   type ContainerBody,
@@ -56,7 +58,7 @@ import {
 
 const TEMPLATE_KEYS = ['dslVersion', 'name', 'base', 'parameters', 'derived', 'checks', 'artboard'];
 const CONTAINER_BODY_KEYS = ['layout', 'padding', 'fill', 'stroke', 'cornerRadius', 'clip', 'children'];
-const ARTBOARD_KEYS = ['sizeRange', ...CONTAINER_BODY_KEYS];
+const ARTBOARD_KEYS = ['sizeRange', 'minFontSize', ...CONTAINER_BODY_KEYS];
 const COMMON_KEYS = ['type', 'name', 'place', 'visible', 'opacity', 'rotation', 'states'];
 /** 状态样式不能覆盖的属性：结构与身份。 */
 const STATE_FIXED_KEYS = ['type', 'name', 'children', 'states', 'template'];
@@ -211,6 +213,8 @@ class TemplateReader {
   /** 读状态样式的各取值时为 false：同一元素再读一遍，不登记名称、不记录静态模型。 */
   private primary = true;
   private readonly calls: (LoopModel | CallModel)[] = [];
+  /** 本模板画板声明的缩字下限，元素与缩字组的下限缺省取它、只能更高（M238）。作用域不继承：每个模板各读各的画板。 */
+  private floor: { readonly value: number; readonly source: 'default' | 'artboard' } = { value: DEFAULT_MIN_FONT_SIZE, source: 'default' };
 
   constructor(
     private readonly templateName: string,
@@ -261,6 +265,12 @@ class TemplateReader {
       '画板',
     );
     const sizeRange = this.readSizeRange(value['sizeRange'], path);
+    // 先读下限，子元素的 fit 要用它。
+    if (value['minFontSize'] !== undefined) {
+      const floor = value['minFontSize'];
+      if (isFiniteNumber(floor) && floor >= MIN_READABLE_FONT_SIZE) this.floor = { value: floor, source: 'artboard' };
+      else this.fail(path, `画板的 minFontSize 不能低于 ${MIN_READABLE_FONT_SIZE} mm（M238）`);
+    }
     const body = this.readContainerBody(value, path);
     if (!sizeRange || !body) return undefined;
     return { type: 'artboard', name: this.templateName, path, sizeRange, ...body };
@@ -899,7 +909,12 @@ class TemplateReader {
    * 不写 fit 时文字不做适配，放不下即按严重问题上报（M109）。
    */
   private readFit(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<TextFit> {
-    const none: TextFit = { tightenSpacing: false, compressGlyphs: false, compressMin: MIN_COMPRESSION, shrink: false, minFontSize: 5, onFail: 'severe' };
+    const floor = this.floor;
+    const none: TextFit = { tightenSpacing: false, compressGlyphs: false, compressMin: MIN_COMPRESSION, shrink: false,
+      minFontSize: floor.value, minFontSizeSource: floor.source, onFail: 'severe' };
+    const tooLow = (key: string) => floor.source === 'artboard'
+      ? `${key} 不能低于画板的 minFontSize ${floor.value} mm（M238）`
+      : `${key} 不能低于 ${floor.value} mm（缺省值，画板可写 minFontSize 调低）`;
     if (value === undefined) return none;
     if (!isRecord(value)) {
       this.fail(path, 'fit 必须是对象');
@@ -912,9 +927,9 @@ class TemplateReader {
       if (writingMode !== 'vertical' || !isRecord(rule)) return this.fail(path, 'widthOverflow 必须是竖排文本的缩字组配置对象');
       this.checkKeys(rule, ['shrinkGroup', 'minFontSize'], path, 'widthOverflow');
       const group = rule['shrinkGroup'];
-      const minimum = rule['minFontSize'] === undefined ? 5 : rule['minFontSize'];
+      const minimum = rule['minFontSize'] === undefined ? floor.value : rule['minFontSize'];
       if (typeof group !== 'string' || !group.trim() || group !== group.trim()) return this.fail(path, 'shrinkGroup 必须是非空且首尾无空白的组名');
-      if (!isFiniteNumber(minimum) || minimum < 5) return this.fail(path, 'widthOverflow.minFontSize 不能低于 5 mm（M86）');
+      if (!isFiniteNumber(minimum) || minimum < floor.value) return this.fail(path, tooLow('widthOverflow.minFontSize'));
       widthOverflow = { shrinkGroup: group, minFontSize: minimum };
     }
     const steps = value['steps'] === undefined ? [] : value['steps'];
@@ -948,8 +963,8 @@ class TemplateReader {
     if (steps.includes('shrink') && (!steps.includes('compressGlyphs') || steps.indexOf('shrink') < steps.indexOf('compressGlyphs'))) {
       return this.fail(path, '横排必须先 compressGlyphs 再 shrink（M84）');
     }
-    const minFontSize = value['minFontSize'] === undefined ? 5 : value['minFontSize'];
-    if (!isFiniteNumber(minFontSize) || minFontSize < 5) return this.fail(path, 'fit.minFontSize 不能低于 5 mm（M86）');
+    const minFontSize = value['minFontSize'] === undefined ? floor.value : value['minFontSize'];
+    if (!isFiniteNumber(minFontSize) || minFontSize < floor.value) return this.fail(path, tooLow('fit.minFontSize'));
     if (value['minFontSize'] !== undefined && !steps.includes('shrink')) return this.fail(path, 'minFontSize 只用于横排 shrink 步骤');
     const onFail = this.readEnum(value['onFail'], ['severe', 'hint'] as const, 'severe', path, 'fit.onFail');
     if (!onFail) return undefined;
@@ -959,6 +974,7 @@ class TemplateReader {
       compressMin,
       shrink: steps.includes('shrink'),
       minFontSize,
+      minFontSizeSource: value['minFontSize'] === undefined ? floor.source : 'element',
       ...(widthOverflow && { widthOverflow }),
       onFail,
     };

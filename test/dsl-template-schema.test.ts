@@ -21,6 +21,7 @@ const SEMANTIC_CHECKS: readonly { readonly name: string; readonly matches: (p: P
   { name: '尺寸上下限颠倒', matches: (p) => p.code === ProblemCodes.templateInvalid && /(min\w+ 不能大于 max\w+|sizeRange)/.test(p.message) },
   { name: '参数约束或缺省值不合规', matches: (p) => p.code === ProblemCodes.templateInvalid && /(约束 \w+ 不能大于|不是合法的正则表达式|的缺省值)/.test(p.message) },
   { name: '展示格式不合法', matches: (p) => p.code === ProblemCodes.templateInvalid && /^插槽 /.test(p.message) },
+  { name: '缩字下限低于画板的值', matches: (p) => p.code === ProblemCodes.templateInvalid && /minFontSize 不能低于(画板的 minFontSize| [\d.]+ mm（缺省值)/.test(p.message) },
   { name: '出图像素超限', matches: (p) => p.code === ProblemCodes.requestOutputTooLarge },
   { name: '渲染项标识重复', matches: (p) => p.code === ProblemCodes.requestInvalid && p.message.startsWith('渲染项标识重复') },
 ];
@@ -187,7 +188,9 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['横排先缩字后压缩', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['shrink', 'compressGlyphs'] }))],
   ['竖排只压缩字形', on(ofType('text', isVertical), (e) => (e.fit = { steps: ['compressGlyphs'] }))],
   ['压缩下限低于 0.6', on(ofType('text'), (e) => (e.fit = { ...e.fit, compressMin: 0.5 }))],
-  ['最小字号低于 5', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs', 'shrink'], minFontSize: 4 }))],
+  ['最小字号低于 1.5', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs', 'shrink'], minFontSize: 1 }))],
+  ['画板最小字号低于 1.5', (d) => ((d.artboard.minFontSize = 1), true)],
+  ['画板最小字号不是数', (d) => ((d.artboard.minFontSize = '3'), true)],
   ['没有 shrink 却写最小字号', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs'], minFontSize: 6 }))],
   ['缩字组用于横排', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { widthOverflow: { shrinkGroup: 'g' } }))],
   ['缩字组名首尾有空白', on(ofType('text', isVertical), (e) => (e.fit = { ...e.fit, widthOverflow: { shrinkGroup: ' g' } }))],
@@ -296,6 +299,8 @@ describe('Schema 之外的语义检查（只看一份文档）', () => {
     ['参数约束或缺省值不合规', template({}, { parameters: [{ name: 'n', displayName: '数', visibility: 'internal', type: 'number', constraints: { max: 1 }, default: 3 }] })],
     ['参数约束或缺省值不合规', template({}, { parameters: [{ name: 'd', displayName: '日', visibility: 'internal', type: 'date', default: '2026-02-30' }] })],
     ['展示格式不合法', template({ children: [text('甲', { content: [{ slot: 'value', format: '0.#0' }] })] }, { base: { name: '单值·数值', version: 1 } })],
+    ['缩字下限低于画板的值', template({ minFontSize: 3, children: [text('甲', { fit: { steps: ['compressGlyphs', 'shrink'], minFontSize: 2.5 } })] })],
+    ['缩字下限低于画板的值', template({ children: [text('甲', { fit: { steps: ['compressGlyphs', 'shrink'], minFontSize: 4 } })] })],
     ['出图像素超限', { template: '样例', dataset: { id: 'x' }, output: { width: 1500, height: 165, dpi: 400, format: 'png' }, mode: 'final' }],
     ['渲染项标识重复', { template: '样例', mode: 'final', items: [{ id: 'a', dataset: { id: 'x' }, output }, { id: 'a', dataset: { id: 'x' }, output }] }],
   ];

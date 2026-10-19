@@ -221,3 +221,66 @@ describe('横排两端分布按墨迹铺满', () => {
     expect(columns[0]!.left).toBe(0);
   });
 });
+
+describe('模板在画板上声明缩字下限（M238）', () => {
+  const range = { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } };
+  const tag = (name: string, textFit: Record<string, unknown> = fit, place: Record<string, unknown> = { width: 'fill', height: 'fill' }) => ({
+    type: 'text', name, content: [{ text: '田田田田' }], font: 'res:font-hei-medium', fontSize: 3.4, color: '#000000', fit: textFit, place });
+  async function small(width: number, artboard: Record<string, unknown> = {}, textFit: Record<string, unknown> = fit): Promise<RenderResult> {
+    const workspace = await textLab([], { fill: '#FFFFFF', ...artboard, children: [tag('品名', textFit)] });
+    return render(workspace, { ...textLabRequest({}, width, 10, 254), mode: 'final' });
+  }
+  const messages = (result: RenderResult) => result.problems.map((p) => p.message);
+
+  it('画板写 3 mm 后，3.4 mm 的品名能缩字放下；不写时与原来相同', async () => {
+    const lowered = await small(7.5, { minFontSize: 3 });
+    expect(lowered.problems).toEqual([]);
+    expect(summary(lowered)).toMatchObject({ compression: 0.6, width: 7.5, overflow: false });
+    expect(summary(lowered).fontSize).toBeGreaterThan(3);
+    expect(summary(lowered).fontSize).toBeLessThan(3.4);
+    const unchanged = await small(7.5);
+    expect(summary(unchanged)).toMatchObject({ compression: 0.6, fontSize: 3.4, overflow: true });
+  });
+
+  it.each([
+    [{}, fit, 3.4, '；字号已不高于最小字号 5 mm（缺省值，画板可写 minFontSize 调低），没有缩字'],
+    [{ minFontSize: 3 }, fit, 3, '；已缩到最小字号 3 mm（画板 minFontSize）'],
+    [{ minFontSize: 3 }, { ...fit, minFontSize: 3.2 }, 3.2, '；已缩到最小字号 3.2 mm（元素 fit.minFontSize）'],
+  ])('到了下限仍放不下时写明下限与来源：画板 %j，适配 %j', async (artboard, textFit, size, tail) => {
+    const result = await small(5, artboard, textFit);
+    expect(summary(result)).toMatchObject({ fontSize: size, overflow: true });
+    expect(messages(result)).toEqual([expect.stringMatching(/^文字"田田田田"放不下：需要 [\d.]+ × [\d.]+ mm，可用 5 × 10 mm/)]);
+    expect(messages(result)[0]!.endsWith(tail)).toBe(true);
+  });
+
+  it('只压缩不缩字时，问题说明不提下限', async () => {
+    const result = await small(5, { minFontSize: 3 }, { steps: ['compressGlyphs'] });
+    expect(messages(result)[0]).not.toContain('最小字号');
+  });
+
+  it.each([
+    [{ minFontSize: 1.4 }, fit, '画板的 minFontSize 不能低于 1.5 mm（M238）'],
+    [{ minFontSize: '3' }, fit, '画板的 minFontSize 不能低于 1.5 mm（M238）'],
+    [{ minFontSize: 3 }, { ...fit, minFontSize: 2.5 }, 'fit.minFontSize 不能低于画板的 minFontSize 3 mm（M238）'],
+    [{}, { ...fit, minFontSize: 4.9 }, 'fit.minFontSize 不能低于 5 mm（缺省值，画板可写 minFontSize 调低）'],
+  ])('下限写错时静态拒绝：画板 %j，适配 %j', async (artboard, textFit, message) => {
+    const result = await small(20, artboard, textFit);
+    expect(result.problems).toContainEqual(expect.objectContaining({ code: ProblemCodes.templateInvalid, message }));
+    expect(result.layout).toBeUndefined();
+  });
+
+  it('被调模板用自己画板的下限，不继承调用方', async () => {
+    let workspace = await textLab([], { fill: '#FFFFFF', minFontSize: 3, layout: { mode: 'grid', columns: [{ fixed: 7.5 }, { fixed: 7.5 }], rows: [{ fixed: 10 }] },
+      children: [tag('主品名', fit, { row: 1, column: 1 }), { type: 'call', name: '调用', template: '子模板', data: 'none', place: { row: 1, column: 2 } }] });
+    workspace = { ...workspace, templates: [...workspace.templates, { name: '子模板', document: { dslVersion: 'renderweave-template/1', name: '子模板',
+      base: { name: '空数据定义', version: 1 }, artboard: { sizeRange: range, children: [tag('子品名')] } } }] };
+    const result = await render(workspace, { ...textLabRequest({}, 15, 10, 254), mode: 'draft' });
+    const sizeOf = (path: string) => {
+      const find = (node: any): any => (node.path === path ? node : (node.children ?? []).map(find).find(Boolean));
+      return find(result.layout!.root).text.fontSize;
+    };
+    expect(sizeOf('文字实验/主品名')).toBe(summary(await small(7.5, { minFontSize: 3 })).fontSize);
+    expect(sizeOf('文字实验/调用/子品名')).toBe(3.4);
+    expect(result.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.layoutTextOverflow, { kind: 'element', path: '文字实验/调用/子品名' }]]);
+  });
+});

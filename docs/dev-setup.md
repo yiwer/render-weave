@@ -27,7 +27,7 @@ npm test
 ```
 
 - `fetch-fonts` 要联网，按 `scripts/fonts.json` 固定的版本与 SHA-256 下载到 `fixtures/resources/fonts/`。
-- 期望结果：Windows 上 39 个文件、769 项全部通过。Linux 上另有 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
+- 期望结果：Windows 上 39 个文件、784 项全部通过。Linux 上另有 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
 
 ## 3. key 与模型服务
 

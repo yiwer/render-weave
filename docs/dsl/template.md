@@ -108,9 +108,12 @@
 |---|---|---|
 | `sizeRange` | 是 | 适用尺寸范围 `{ "width": { "min", "max" }, "height": { "min", "max" } }`，毫米，大于 0，`min` 不大于 `max` |
 | `size` | 否 | 只能写 `"hug"`：被调模板按内容的自然尺寸，例如按内容宽度排列的循环项（M92） |
+| `minFontSize` | 否 | 本模板文字缩字的最低字号，毫米，缺省 5，不低于 1.5（M86、M238）。价签一类近看的小标签写低一些，线路牌一类远看的牌子不写 |
 | `layout`、`padding`、`fill`、`stroke`、`cornerRadius`、`clip`、`children` | 否 | 同容器 |
 
 画板的实际尺寸由渲染请求（主模板）或调用框（被调模板）决定，并且必须落在 `sizeRange` 之内。被调模板按调用框的实际尺寸重新排布，不整体缩放（S26）。
+
+画板的 `minFontSize` 只管缩字，不检查文字的原始字号：3.2 mm 的价签标签文字照常可用。元素的 `fit.minFontSize` 与缩字组的 `minFontSize` 缺省取它，写了只能更高。被调模板用自己画板的值，不继承调用方。
 
 ## 布局与位置
 
@@ -181,12 +184,13 @@
 
 | 书写方向 | `steps` 的写法 | 其他 |
 |---|---|---|
-| 横排 | `[]`、`["compressGlyphs"]` 或 `["compressGlyphs", "shrink"]`：先横向压缩字形，再同比缩小字号（M84、S29） | `minFontSize` 只用于 `shrink`，缺省为 5，不能低于 5（M86） |
+| 横排 | `[]`、`["compressGlyphs"]` 或 `["compressGlyphs", "shrink"]`：先横向压缩字形，再同比缩小字号（M84、S29） | `minFontSize` 只用于 `shrink`，缺省取画板的 `minFontSize`（画板不写时为 5），不能低于它（M86、M238） |
 | 竖排 | `[]`、`["tightenSpacing"]` 或 `["tightenSpacing", "compressGlyphs"]`：先收紧字距，字距收到 0 才压缩字形（M82） | `widthOverflow`：`{ "shrinkGroup": 组名, "minFontSize"?: 毫米 }`，见下文 |
 
 - **`compressMin`**：压缩字形的下限，缺省 0.6，只能调高到 1 为止（M88）。
 - **`onFail`**：仍放不下时报 `severe`（缺省）或 `hint`。
-- **缩字组**（S31、M132–M134）：同名的组在一次出图内共用，跨循环与子模板。宽度不足时，全组统一缩到同一字号，最低 5 mm，组名首尾不能有空白。
+- **缩字组**（S31、M132–M134）：同名的组在一次出图内共用，跨循环与子模板。宽度不足时，全组统一缩到同一字号，组名首尾不能有空白。下限是各成员下限中最高的，每个成员缺省取所在模板画板的 `minFontSize`（M238）。
+- **到了下限仍放不下**：`layout.textOverflow` 的说明写明下限的值与来源（缺省值、画板、元素或缩字组）。字号本来就不高于下限时，说明里写"没有缩字"。
 
 ### 循环
 
@@ -1215,6 +1219,7 @@
 | 尺寸上下限颠倒 | `template.invalid` | `minWidth` 大于 `maxWidth`；`sizeRange` 的 `min` 大于 `max` |
 | 参数约束或缺省值不合规 | `template.invalid` | `min` 大于 `max`；`pattern` 不是合法正则；缺省值违反约束，或不是真实存在的日期 |
 | 展示格式不合法 | `template.invalid` | `format` 不是可识别的日期时刻或数值格式 |
+| 缩字下限低于画板的值 | `template.invalid` | 画板写了 `"minFontSize": 3`，元素的 `fit.minFontSize` 写 2.5；画板没写时低于 5 |
 | 状态样式覆盖后不合规 | `template.invalid` 等 | 覆盖值与元素合并后不符合该元素的规则，例如覆盖成竖排却带倾斜 |
 
 需要其他文档才能判断（由模板静态检查与渲染入口报告）：

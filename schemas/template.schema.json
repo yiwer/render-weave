@@ -2394,7 +2394,8 @@
         },
         "minFontSize": {
           "type": "number",
-          "minimum": 5
+          "minimum": 1.5,
+          "description": "缩字下限，缺省取画板的 minFontSize，不能低于它（语义检查，M238）"
         },
         "onFail": {
           "enum": [
@@ -2415,7 +2416,8 @@
             },
             "minFontSize": {
               "type": "number",
-              "minimum": 5
+              "minimum": 1.5,
+              "description": "缩字组下限，缺省取画板的 minFontSize，不能低于它（语义检查，M238）"
             }
           }
         }
@@ -2461,6 +2463,11 @@
               "$ref": "#/$defs/range"
             }
           }
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 1.5,
+          "description": "本模板文字缩字的最低字号，缺省 5 mm（M86、M238）；只管缩字，不检查原始字号"
         },
         "size": {
           "const": "hug"

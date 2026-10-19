@@ -340,7 +340,9 @@ export interface TextFit {
   readonly compressMin: number;
   /** 横排完成压缩后，宽或高仍放不下时同比缩小本元素全部片段的字号。 */
   readonly shrink: boolean;
+  /** 缩字下限：元素写了用元素的，否则用所在模板画板的，画板也没写时为 5 mm（M86、M238）。 */
   readonly minFontSize: number;
+  readonly minFontSizeSource: 'default' | 'artboard' | 'element';
   /** 竖排按可用列宽缩字；组名在一次出图内共用，跨模板调用。 */
   readonly widthOverflow?: { readonly shrinkGroup: string; readonly minFontSize: number };
   /** 仍放不下时的问题等级。 */
@@ -355,6 +357,10 @@ export interface TextStroke {
 
 /** 字形压缩的下限，模板只能设得更高（M88）。 */
 export const MIN_COMPRESSION = 0.6;
+/** 画板没写 minFontSize 时的缩字下限（M86）。 */
+export const DEFAULT_MIN_FONT_SIZE = 5;
+/** 画板 minFontSize 的最低值：八号字约 1.76 mm，再小的印刷文字基本读不了（M238）。 */
+export const MIN_READABLE_FONT_SIZE = 1.5;
 
 /**
  * 图片：来源为资源引用（M10）；适配方式为完整显示（contain）、铺满裁剪（cover）或拉伸（fill），
