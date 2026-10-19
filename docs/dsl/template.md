@@ -81,7 +81,7 @@
 | 能绑定 | 属性 |
 |---|---|
 | 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、码的 `foreground` 与 `background` |
-| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`rowGap`、`columnGap`，循环的 `itemLayout.gap` 与 `widths.fixed`，条形码 `fontSize` |
+| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`rowGap`、`columnGap`，循环的 `itemLayout.gap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
 | 布尔 | `visible`、`clip`、条形码 `showText` |
 | 图片 | 图片元素的 `source` |
 | 文本 | 码元素的 `content`；文字内容经插槽绑定 |
@@ -189,14 +189,19 @@
 
 ```text
 { "type": "loop", "name", "list": { "var": 列表 }, "template": 模板名, "args"?: { 参数名: 运算数 },
-  "itemLayout": { "direction": "row", "widths": "equal" | "content" | { "fixed": 毫米 }, "gap"?, "spanBy"? },
+  "itemLayout": { "direction"?: "row", "widths": 每项尺寸, "gap"?, "spanBy"? }
+              | { "direction": "column", "heights": 每项尺寸, "gap"? },
   "mergeBy"?: 字段路径, "padding"?, "fill"?, "stroke"?, "cornerRadius"?, "clip"? }
 ```
 
 - **被调模板的基准**：必须是列表元素的数据定义；基本类型列表用对应的单值数据定义，例如 `list<text>` 用 `单值·文本 v1`，字段为 `value`。
-- **每项的宽度与高度**：`widths` 可取 `equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。方向目前只有横向（`row`），每项高度填满循环区域（S25）。
+- **方向**（S25、M236）：
+  - `direction` 缺省为 `row`，列表项从左往右排，`widths` 定每项宽度，高度填满循环区域；
+  - `column` 从上往下排，`heights` 定每项高度，宽度填满循环区域。竖排的列表用它，不必把横向循环旋转 90°；
+  - 横向写 `heights`、纵向写 `widths` 都是错误，提示该用哪个词。
+- **每项尺寸**：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。列表项连同间距的总长超出循环区域时报 `layout.contentOverflow`，两个方向相同。
 - **循环信息**：只能经 `args` 传给被调模板，写成 `{ "loop": "index" | "isFirst" | "isLast" | "count" | "groupSize" }`，被调模板要声明同名的 public 参数来接收。序号从 1 开始。
-- **合并相邻同值项**（S28、M127–M130）：写 `"mergeBy": "字段路径"`，同时写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`。
+- **合并相邻同值项**（S28、M127–M130）：写 `"mergeBy": "字段路径"`，同时写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`。只支持横向，纵向循环写 `mergeBy` 或 `spanBy` 报错（M236）。
   - 相邻且取值严格相等的项合并成一组；缺值的项各自成组。
   - 组宽是组内各项的列宽加上内部间距；被调模板取组内首项的数据。
   - `{ "loop": "groupSize" }` 给出组内项数。
@@ -1227,7 +1232,7 @@
 
 DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按 ADR-0016 处理兼容。
 
-- **循环只能横向排列**，每项高度填满循环区域；没有纵向循环、自动换行或两排。
+- **循环只排成一行或一列**：没有自动换行或两排；合并相邻同值项只支持横向（M236）。
 - **没有段落换行**：一个文字元素是一行（竖排是一列），放不下时按 `fit` 适配。
 - **没有文本表达式与脚本**：只有五种单步运算（ADR-0004）。拼接文字用多个片段。
 - **没有动态模板**：被调模板名不能由数据决定，循环也没有过滤、反序或附加项。

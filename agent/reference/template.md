@@ -97,9 +97,11 @@
     "itemLayout": { "direction": "row", "widths": "equal", "gap": 1 } }
   ```
   - 被调模板的 base 必须是列表元素的数据定义；基本类型列表（如 list<time>）用对应的单值数据定义（如 `单值·时刻 v1`，字段 `value`）。
-  - `itemLayout.widths`：`equal`（等分）、`content`（随内容）或 `{"fixed": 毫米}`；目前只能横向（row），每项高度填满循环区域。
+  - 方向：`"direction": "row"`（缺省）从左往右排，用 `widths` 定每项宽度，高度填满循环区域；`"direction": "column"` 从上往下排，用 `heights` 定每项高度，宽度填满循环区域。竖排的列表（如站台竖牌的站点）用 column，不要把横向循环旋转 90°。
+  - `widths` / `heights` 取值相同：`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{"fixed": 毫米}`。横向写 heights、纵向写 widths 都是错误。
+  - 列表项的总长（含 gap）超出循环区域会报问题；按数据的最大项数核对循环区域够不够。
   - 循环信息只能经 args 传给被调模板：`{"loop": "index" | "isFirst" | "isLast" | "count" | "groupSize"}`，被调模板要声明同名的 public 参数接收。
-  - 合并相邻同值项：`"mergeBy": "字段路径"`，同时 `"itemLayout": {"direction": "row", "widths": "equal", "spanBy": "groupSize"}`。相邻且取值相同的项合并成一组，组宽为组内项数的列宽之和；被调模板取组内首项数据，`{"loop": "groupSize"}` 给出组内项数。
+  - 合并相邻同值项：`"mergeBy": "字段路径"`，同时 `"itemLayout": {"direction": "row", "widths": "equal", "spanBy": "groupSize"}`。相邻且取值相同的项合并成一组，组宽为组内项数的列宽之和；被调模板取组内首项数据，`{"loop": "groupSize"}` 给出组内项数。合并只支持横向循环。
 - **call**：调用一个子模板一次，`{"type": "call", "template": "模板名", "data": {"var": "单引用字段"} | "current" | "none", "args": {...}}`。被调模板按调用框的实际尺寸重新排布，作用域不继承：需要的值都要经 data 或 args 传入。
 
 ## 渲染请求（草稿预览工具的参数）
@@ -189,6 +191,72 @@
 }
 ```
 
+日程行（参会场次 sessions 的循环项，纵向循环里每项固定高度、宽度填满）：
+
+```json
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "日程行",
+  "base": {
+    "name": "场次",
+    "version": 1
+  },
+  "artboard": {
+    "sizeRange": {
+      "width": {
+        "min": 20,
+        "max": 100
+      },
+      "height": {
+        "min": 3,
+        "max": 10
+      }
+    },
+    "layout": {
+      "mode": "stack",
+      "direction": "row",
+      "gap": 1.5,
+      "alignItems": "center"
+    },
+    "children": [
+      {
+        "type": "text",
+        "name": "开始时刻",
+        "content": [
+          {
+            "slot": "startsAt",
+            "format": "HH:mm"
+          }
+        ],
+        "font": "res:font-hei-bold",
+        "fontSize": 3,
+        "color": "#1F2328"
+      },
+      {
+        "type": "text",
+        "name": "场次名称",
+        "place": {
+          "width": "fill"
+        },
+        "content": [
+          {
+            "slot": "title"
+          }
+        ],
+        "font": "res:font-hei-regular",
+        "fontSize": 3,
+        "color": "#57606A",
+        "fit": {
+          "steps": [
+            "compressGlyphs"
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
 简易胸牌（主模板）：
 
 ```json
@@ -242,7 +310,7 @@
         "max": 100
       },
       "height": {
-        "min": 110,
+        "min": 130,
         "max": 140
       }
     },
@@ -266,6 +334,9 @@
         },
         {
           "fixed": 12
+        },
+        {
+          "fixed": 5
         },
         {
           "fraction": 1
@@ -390,10 +461,7 @@
         "name": "标签列",
         "place": {
           "row": 4,
-          "column": 2,
-          "height": {
-            "fixed": 5
-          }
+          "column": 2
         },
         "list": {
           "var": "tags"
@@ -411,10 +479,29 @@
         }
       },
       {
+        "type": "loop",
+        "name": "日程列",
+        "place": {
+          "row": 5,
+          "column": 2
+        },
+        "list": {
+          "var": "sessions"
+        },
+        "template": "日程行",
+        "itemLayout": {
+          "direction": "column",
+          "heights": {
+            "fixed": 4.5
+          },
+          "gap": 0.5
+        }
+      },
+      {
         "type": "qrcode",
         "name": "签到码",
         "place": {
-          "row": 5,
+          "row": 6,
           "column": 2,
           "width": {
             "fixed": 20

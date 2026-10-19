@@ -10,6 +10,14 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 | 渲染请求 | 含 `template` 与 `output`，是命令行 `render --request` 与公开渲染入口的输入 | [渲染请求与批次请求](requests.md) | [render-request.schema.json](../../schemas/render-request.schema.json) |
 | 批次请求 | 含 `template`、`mode` 与 `items`；交付后的批次清单另有标识 `renderweave-batch/1` | [渲染请求与批次请求](requests.md#批次请求) | [batch-request.schema.json](../../schemas/batch-request.schema.json) |
 
+## 1.0 之后的加法
+
+按 ADR-0016 只做加法，标识仍是 `/1`。用了下表写法的文档，在加入它之前的引擎上会被拒绝。
+
+| 加入日期 | 写法 | 决定 |
+|---|---|---|
+| 2026-10-18 | 循环 `itemLayout` 可写 `"direction": "column"` 与 `heights`，列表项从上往下排（[模板 · 循环](template.md#循环)） | M236 |
+
 ## Schema 与引擎的分工
 
 - **JSON Schema 只检查结构**：键是否允许、类型、枚举取值、必填项。Schema 拒绝的文档，引擎一定拒绝。

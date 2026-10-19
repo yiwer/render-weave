@@ -178,6 +178,79 @@ describe('循环列表与尺寸', () => {
   });
 });
 
+describe('纵向循环（M236）', () => {
+  const stops = { items: [{ name: '甲' }, { name: '乙丙丁' }] };
+  const draft = (data: Record<string, unknown>, width: number, height: number) => ({ ...textLabRequest(data, width, height), mode: 'draft' });
+
+  it.each([
+    ['equal', 'equal', [20, 20]],
+    ['fixed', { fixed: 8 }, [8, 8]],
+    ['content', 'content', [5, 5]],
+  ])('每项高度 %s：自上而下排列，宽度填满循环区域，空隙参与布局', async (label, heights, expected) => {
+    const workspace = await referenceLoop({ itemLayout: { direction: 'column', heights, gap: 2 } });
+    const result = await render(workspace, textLabRequest(stops, 20, 42));
+    expect(result.problems).toEqual([]);
+    const loop = at(result, '文字实验/循环');
+    expect(loop.type).toBe('loop');
+    expect(loop.children!.map((node) => [node.x, node.width])).toEqual([[0, 20], [0, 20]]);
+    expect(loop.children!.map((node) => node.height)).toEqual(expected);
+    expect(loop.children![1]!.y).toBe(expected[0]! + 2);
+    await expect(`${JSON.stringify(loop, null, 2)}\n`).toMatchFileSnapshot(`./snapshots/loop-column-${label}.layout.json`);
+  });
+
+  it('列表项总高超出循环区域时，报告与横向超出宽度相同的问题', async () => {
+    const overflow = async (itemLayout: Record<string, unknown>, width: number, height: number) => {
+      const result = await render(await referenceLoop({ itemLayout }), draft({ items: [{ name: '甲' }, { name: '乙' }] }, width, height));
+      expect(result.image).toBeDefined();
+      return result.problems.map((p) => [p.code, p.location]);
+    };
+    const vertical = await overflow({ direction: 'column', heights: { fixed: 12 }, gap: 2 }, 20, 20);
+    expect(vertical).toEqual([[ProblemCodes.layoutContentOverflow, { kind: 'element', path: '文字实验/循环' }]]);
+    expect(await overflow({ direction: 'row', widths: { fixed: 12 }, gap: 2 }, 20, 20)).toEqual(vertical);
+  });
+
+  it.each([
+    [{ direction: 'column', widths: 'equal' }, {}, '纵向循环用 itemLayout.heights 指定每项高度，不写 widths'],
+    [{ direction: 'row', widths: 'equal', heights: 'equal' }, {}, '横向循环用 itemLayout.widths 指定每项宽度，不写 heights'],
+    [{ heights: 'equal' }, {}, '横向循环用 itemLayout.widths 指定每项宽度，不写 heights'],
+    [{ direction: 'column' }, {}, 'itemLayout.heights 写成 equal、content 或 { fixed: 毫米 }'],
+    [{ direction: 'column', heights: 'equal', spanBy: 'groupSize' }, { mergeBy: 'name' }, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环'],
+    [{ direction: 'column', heights: 'equal' }, { mergeBy: 'name' }, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环'],
+  ])('写错方向的词或纵向合并时报模板错误：%j %j', async (itemLayout, extra, message) => {
+    const result = await render(await referenceLoop({ itemLayout, ...extra }), draft(stops, 20, 42));
+    expect(result.problems).toContainEqual(expect.objectContaining({ code: ProblemCodes.templateInvalid, message }));
+    expect(result.image).toBeUndefined();
+  });
+
+  it('竖排站点列表：圆点与站名逐行排列，本站高亮', async () => {
+    let workspace = await textLab([listField({ type: 'ref', ref: ref('站点实验') })], { fill: '#FFFFFF', children: [loop({
+      place: { width: 'fill', height: 'fill' }, padding: 2, fill: '#F6F8FA', stroke: { color: '#1F6FEB', width: 0.4 },
+      args: { index: { loop: 'index' }, current: { var: 'current' } },
+      itemLayout: { direction: 'column', heights: 'equal', gap: 1 },
+    })] }, { parameters: [param('current', 'number', { default: 3 })] });
+    workspace = addTemplate(workspace, '子模板', '站点实验', [{
+      type: 'container', name: '行', place: { width: 'fill', height: 'fill' }, padding: { left: 2 }, cornerRadius: 1,
+      layout: { mode: 'stack', direction: 'row', gap: 2, alignItems: 'center' },
+      states: { by: { var: 'isCurrent' }, cases: { true: { fill: '#FFF000' } } },
+      children: [
+        { type: 'ellipse', name: '圆点', fill: '#1F6FEB', place: { width: { fixed: 3 }, height: { fixed: 3 } } },
+        text('站名', 'name', { fontSize: 4 }),
+      ],
+    }], { parameters: [param('index'), param('current')],
+      derived: [{ name: 'isCurrent', displayName: '是否本站', type: 'boolean', op: 'branch',
+        branches: [{ when: { left: { var: 'index' }, op: 'eq', right: { var: 'current' } }, then: { value: true } }], otherwise: { value: false } }] });
+    const names = ['东门', '人民路口', '腾昌花园', '四联路', '龙岗中心'];
+    const result = await render(workspace, textLabRequest({ items: names.map((name) => ({ name })) }, 30, 60));
+    expect(result.problems).toEqual([]);
+    const items = at(result, '文字实验/循环').children!;
+    expect(items.map((node) => node.y)).toEqual(items.map((_node, i) => 2 + i * (items[0]!.height + 1)));
+    const pixels = await decodePixels(result.image!.bytes);
+    const current = items[2]!;
+    expect(pixelAtMm(pixels, current.x + 0.5, current.y + current.height / 2, 120).slice(0, 3)).toEqual([255, 240, 0]);
+    await expectMatchesGolden('loop-column-stops', result.image!.bytes);
+  });
+});
+
 describe('子模板数据与调用框', () => {
   it('三种数据来源，多层单引用与子模板再调用；作用域不继承', async () => {
     let workspace = await textLab([{ name: 'stop', displayName: '站', type: 'ref', ref: ref('站点实验') }], {

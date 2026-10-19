@@ -12,7 +12,7 @@ import { ProblemCodes, severe, type Problem } from './problems.js';
 import { parseResourceRef } from './resources.js';
 import { stateKey } from './template/check.js';
 import { normalizeColor } from './template/declarations.js';
-import type { ArtboardModel, CallModel, Color, ContainerModel, ElementModel, LoopInfoKey, LoopModel, Place, TemplateModel, TextElementModel } from './template/model.js';
+import type { ArtboardModel, CallModel, Color, ContainerModel, ElementModel, LoopInfoKey, LoopModel, Place, SizeSpec, TemplateModel, TextElementModel } from './template/model.js';
 import { describeRule, readArtboardResolved, satisfies, type BindingHost, type BindingSite, type NumberRule } from './template/parse.js';
 import { MAX_CODE128_LENGTH } from './template/model.js';
 import { Scope, resolveParameters } from './template/scope.js';
@@ -127,22 +127,23 @@ class Expander {
         const items: unknown[] = Array.isArray(value) ? value : [];
         const listType = scope.table.typeOf(model.list.var);
         const wrap = 'type' in listType && listType.type.kind === 'list' && listType.type.items.kind !== 'ref';
+        const layout = model.itemLayout;
+        const spec = layout.direction === 'row' ? layout.widths : layout.heights;
+        const along: SizeSpec = spec === 'equal' ? { kind: 'fill', weight: 1 } : spec === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: spec.fixed };
+        const across: SizeSpec = { kind: 'fill', weight: 1 };
         const children = groupLoopItems(items, model.mergeBy).map((group) => {
           const { data: item, index, size } = group;
           const path = [...model.path.slice(0, -1), { name: model.name, index }];
-          const width = model.itemLayout.widths;
-          const place: Place = { ...EMPTY_PLACE,
-            width: width === 'equal' ? { kind: 'fill', weight: 1 } : width === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: width.fixed },
-            height: { kind: 'fill', weight: 1 } };
+          const place: Place = { ...EMPTY_PLACE, ...(layout.direction === 'row' ? { width: along, height: across } : { width: across, height: along }) };
           const listOrigin = fieldOrigin(origin, model.list.var);
           const child = this.invoke(model, scope, wrap ? { value: item } : item, path, place,
             listOrigin === undefined ? undefined : { path: `${listOrigin}[${index}]`, wrapped: wrap }, undefined,
             { index, isFirst: index === 1, isLast: index + size - 1 === items.length, count: items.length, groupSize: size });
           return model.mergeBy ? { ...child, loopGroup: { index, size } } : child;
         });
-        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { count: items.length, gap: model.itemLayout.gap } }),
+        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { count: items.length, gap: layout.gap } }),
           model: { ...model, type: 'container', children: [],
-          layout: { mode: 'stack', direction: 'row', gap: model.itemLayout.gap, justifyContent: 'start', alignItems: 'start' } }, children };
+          layout: { mode: 'stack', direction: layout.direction, gap: layout.gap, justifyContent: 'start', alignItems: 'start' } }, children };
       }
       default: return { model };
     }

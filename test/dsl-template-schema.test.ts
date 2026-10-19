@@ -96,6 +96,7 @@ const on = (match: (element: any, parentMode: ParentMode) => boolean, mutate: (e
 };
 const ofType = (type: string, extra: (element: any) => boolean = () => true) => (element: any) => element.type === type && extra(element);
 const isVertical = (element: any) => element.writingMode === 'vertical';
+const isColumnLoop = (element: any) => element.itemLayout?.direction === 'column';
 const onDeclaration = (key: 'parameters' | 'derived' | 'checks', match: (item: any) => boolean, mutate: (item: any) => unknown) => (doc: any) => {
   const item = Array.isArray(doc[key]) ? doc[key].find(match) : undefined;
   if (!item) return false;
@@ -198,7 +199,14 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['循环 list 不是变量', on(ofType('loop'), (e) => (e.list = 'stops'))],
   ['循环缺 itemLayout', on(ofType('loop'), (e) => delete e.itemLayout)],
   ['循环 widths 写法未知', on(ofType('loop'), (e) => (e.itemLayout.widths = 'auto'))],
-  ['循环方向为 column', on(ofType('loop'), (e) => (e.itemLayout.direction = 'column'))],
+  ['循环方向未知', on(ofType('loop'), (e) => (e.itemLayout.direction = 'diagonal'))],
+  ['横向循环改为纵向仍写 widths', on(ofType('loop', (e) => e.itemLayout.widths !== undefined), (e) => (e.itemLayout.direction = 'column'))],
+  ['横向循环写 heights', on(ofType('loop', (e) => e.itemLayout.widths !== undefined), (e) => (e.itemLayout.heights = 'equal'))],
+  ['纵向循环写 widths', on(ofType('loop', isColumnLoop), (e) => (e.itemLayout.widths = 'equal'))],
+  ['纵向循环缺 heights', on(ofType('loop', isColumnLoop), (e) => delete e.itemLayout.heights)],
+  ['纵向循环 heights 写法未知', on(ofType('loop', isColumnLoop), (e) => (e.itemLayout.heights = 'auto'))],
+  ['纵向循环合并相邻同值项', on(ofType('loop', isColumnLoop), (e) => ((e.mergeBy = 'title'), (e.itemLayout.spanBy = 'groupSize')))],
+  ['纵向循环只写 spanBy', on(ofType('loop', isColumnLoop), (e) => (e.itemLayout.spanBy = 'groupSize'))],
   ['只写 spanBy 不写 mergeBy', on(ofType('loop', (e) => !e.mergeBy), (e) => (e.itemLayout.spanBy = 'groupSize'))],
   ['合并循环 widths 不是 equal', on(ofType('loop', (e) => e.mergeBy), (e) => (e.itemLayout.widths = 'content'))],
   ['循环参数写成裸值', on(ofType('loop'), (e) => (e.args = { ...e.args, foo: 1 }))],

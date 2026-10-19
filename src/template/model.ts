@@ -264,13 +264,20 @@ export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' |
   readonly mergeBy?: string;
   readonly template: string;
   readonly args: Readonly<Record<string, CallArgument>>;
+  /** 横向用 widths 定每项宽度、高度填满；纵向用 heights 定每项高度、宽度填满（M236）。合并只支持横向。 */
   readonly itemLayout: {
     readonly direction: 'row';
-    readonly widths: 'equal' | 'content' | { readonly fixed: number };
+    readonly widths: LoopItemSize;
     readonly gap: number;
     readonly spanBy?: 'groupSize';
+  } | {
+    readonly direction: 'column';
+    readonly heights: LoopItemSize;
+    readonly gap: number;
   };
 }
+
+export type LoopItemSize = 'equal' | 'content' | { readonly fixed: number };
 
 export interface TextElementModel extends ElementBase {
   readonly type: 'text';

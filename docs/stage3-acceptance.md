@@ -304,12 +304,11 @@
 
 还没做的，按价值排序：
 
-1. **纵向循环**：真人走查发现。循环容器只能横排，竖排的站点列表只能靠旋转 90° 绕过去。给 `itemLayout.direction` 加 `"column"` 是 1.x 的加法，改了 Agent 参考要重跑评估门槛。收尾后开票据。
-2. **Gemini 复跑评估门槛**：MCP 合同升到 0.5.0 后，Haiku 已复跑，Gemini 还没有。下次用 Gemini 前先跑。
-3. **小尺寸标签的缩字下限**（Spec 3）：价签一类 100 mm 宽的标签需要低于 5 mm 的缩字下限，先形成决定。
-4. **第二阶段遗留**：`resources-import` 写入没有初始化的目录时，报的是 `ENOENT: realpath`，没有提示先执行 `resources-init`。
+1. **Gemini 复跑评估门槛**：MCP 合同升到 0.5.0、Agent 参考加了纵向循环之后，Haiku 已复跑，Gemini 还没有。下次用 Gemini 前先跑。
+2. **小尺寸标签的缩字下限**（Spec 3）：价签一类 100 mm 宽的标签需要低于 5 mm 的缩字下限，先形成决定。
+3. **第二阶段遗留**：`resources-import` 写入没有初始化的目录时，报的是 `ENOENT: realpath`，没有提示先执行 `resources-init`。
 
-已了结：交回前核对成果（票据 10，M233），查看资源图片（票据 11，M234），缺省模型（M232），真人计时（「真人走查（A11 补测）」）。
+已了结：交回前核对成果（票据 10，M233），查看资源图片（票据 11，M234），纵向循环（票据 12，M236），缺省模型（M232），真人计时（「真人走查（A11 补测）」）。
 
 ## 验收后的变更
 
@@ -323,6 +322,7 @@
   - Windows 全量 39 个文件、745 项通过：删掉旧代理的 5 项，新增 Gemini 经代理的 2 项；新用例去掉令牌检查后变红。
   - Linux 容器同一份代码 741 项通过、4 项 Windows 专用用例跳过。
   - 用真实模型各跑一轮价签数据定义提取：不带模型参数用 Haiku，`--model gemini-4-argon-contributor` 经内置代理，都合格。
+- **纵向循环**（M236，[票据 12](../.scratch/agent-template-authoring/issues/12-vertical-loop.md)）：真人走查之后「后续」的第 1 条。循环的 `itemLayout` 可写 `"direction": "column"` 与 `heights`，是 DSL 1.x 的第一笔加法。用 M162 材料让 Haiku 重做模板：站点列表写成纵向循环，模板里没有旋转，本站 1、不标本站、本站 10 三张交付 0 问题。改了 Agent 参考后 Haiku 门槛复跑，见 [Agent 评估](agent-eval.md#历次评估)。
 
 ## 复现与证据位置
 
@@ -331,3 +331,4 @@
 - Linux 运行的 tar、文件清单与日志在 `out/t09-linux-2/`；Windows 全量测试的输出在 `out/t09-windows-test.txt`。
 - 价签与 366 的项目说明、出图请求、批次、修改要求与反馈在 `scripts/agent-eval/scenarios/price-tag/`、`scripts/agent-eval/scenarios/366/`。
 - 真人走查：材料在 `scripts/agent-eval/scenarios/m162/`；轮次目录、资源仓库、批次与计时文件在 `out/build/`（不进版本库）。
+- 纵向循环的 M162 实跑：轮次目录、预览、批次与 Linux 测试日志在 `out/t12/`、`out/t12-linux/`（不进版本库）。

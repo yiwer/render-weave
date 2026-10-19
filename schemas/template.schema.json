@@ -1148,34 +1148,18 @@
         "itemLayout": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "widths"
-          ],
           "properties": {
             "direction": {
-              "const": "row"
+              "enum": [
+                "row",
+                "column"
+              ]
             },
             "widths": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "equal",
-                    "content"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "fixed"
-                  ],
-                  "properties": {
-                    "fixed": {
-                      "$ref": "#/$defs/positiveOrVar"
-                    }
-                  }
-                }
-              ]
+              "$ref": "#/$defs/loopItemSize"
+            },
+            "heights": {
+              "$ref": "#/$defs/loopItemSize"
             },
             "gap": {
               "$ref": "#/$defs/nonNegativeOrVar"
@@ -1183,7 +1167,50 @@
             "spanBy": {
               "const": "groupSize"
             }
-          }
+          },
+          "if": {
+            "type": "object",
+            "required": [
+              "direction"
+            ],
+            "properties": {
+              "direction": {
+                "const": "column"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "heights"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "widths"
+                  ]
+                },
+                {
+                  "required": [
+                    "spanBy"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "type": "object",
+            "required": [
+              "widths"
+            ],
+            "not": {
+              "required": [
+                "heights"
+              ]
+            }
+          },
+          "description": "横向（缺省）用 widths 定每项宽度，纵向（column）用 heights 定每项高度（M236）；spanBy 只用于横向"
         },
         "padding": {
           "$ref": "#/$defs/edges"
@@ -1261,6 +1288,9 @@
                 "properties": {
                   "widths": {
                     "const": "equal"
+                  },
+                  "direction": {
+                    "const": "row"
                   }
                 }
               }
@@ -1290,7 +1320,29 @@
           }
         }
       ],
-      "description": "循环容器（S25、S28）：合并相邻同值项时 mergeBy、widths: equal 与 spanBy: groupSize 同时出现"
+      "description": "循环容器（S25、S28、M236）：横向或纵向排列；合并相邻同值项时 mergeBy、widths: equal 与 spanBy: groupSize 同时出现，只支持横向"
+    },
+    "loopItemSize": {
+      "anyOf": [
+        {
+          "enum": [
+            "equal",
+            "content"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fixed"
+          ],
+          "properties": {
+            "fixed": {
+              "$ref": "#/$defs/positiveOrVar"
+            }
+          }
+        }
+      ]
     },
     "callElement": {
       "type": "object",

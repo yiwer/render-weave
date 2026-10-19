@@ -1,0 +1,96 @@
+{
+  "path": "文字实验/循环",
+  "name": "循环",
+  "type": "loop",
+  "x": 0,
+  "y": 0,
+  "width": 20,
+  "height": 42,
+  "visible": true,
+  "children": [
+    {
+      "path": "文字实验/循环[1]",
+      "name": "循环",
+      "type": "call",
+      "x": 0,
+      "y": 0,
+      "width": 20,
+      "height": 5,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/循环[1]/站名",
+          "name": "站名",
+          "type": "text",
+          "x": 0,
+          "y": 0,
+          "width": 5,
+          "height": 5,
+          "visible": true,
+          "text": {
+            "content": "甲",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 5,
+            "width": 5,
+            "height": 5,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "甲",
+                "font": "res:font-hei-medium",
+                "fontSize": 5,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/循环[2]",
+      "name": "循环",
+      "type": "call",
+      "x": 0,
+      "y": 7,
+      "width": 20,
+      "height": 5,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/循环[2]/站名",
+          "name": "站名",
+          "type": "text",
+          "x": 0,
+          "y": 7,
+          "width": 15,
+          "height": 5,
+          "visible": true,
+          "text": {
+            "content": "乙丙丁",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 5,
+            "width": 15,
+            "height": 5,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "乙丙丁",
+                "font": "res:font-hei-medium",
+                "fontSize": 5,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

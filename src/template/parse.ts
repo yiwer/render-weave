@@ -50,6 +50,7 @@ import {
   type VariableUse,
   type CallArgument,
   type CallModel,
+  type LoopItemSize,
   type LoopModel,
 } from './model.js';
 
@@ -587,28 +588,40 @@ class TemplateReader {
     if (!isVarOperand(list)) return this.fail(path, '循环的 list 必须是 { var: 列表字段路径 }');
     const item = value['itemLayout'];
     if (!isRecord(item)) return this.fail(path, '循环必须声明 itemLayout');
-    this.checkKeys(item, ['direction', 'widths', 'gap', 'spanBy'], path, 'itemLayout');
+    this.checkKeys(item, ['direction', 'widths', 'heights', 'gap', 'spanBy'], path, 'itemLayout');
     const spanBy = item['spanBy'];
     if (spanBy !== undefined && spanBy !== 'groupSize') return this.fail(path, 'itemLayout.spanBy 只能取 groupSize');
-    const direction = this.readEnum(item['direction'], ['row'] as const, 'row', path, 'itemLayout.direction');
+    const direction = this.readEnum(item['direction'], ['row', 'column'] as const, 'row', path, 'itemLayout.direction');
+    if (!direction) return undefined;
     const gap = this.readNumber(item['gap'], 0, path, 'itemLayout.gap', { min: 0 });
-    const widths = item['widths'];
-    let widthSpec: LoopModel['itemLayout']['widths'];
-    if (widths === 'equal' || widths === 'content') widthSpec = widths;
-    else if (isRecord(widths) && Object.keys(widths).length === 1) {
-      const fixed = this.readNumber(widths['fixed'], undefined, path, 'itemLayout.widths.fixed', { min: 0, exclusiveMin: true });
-      if (fixed === undefined) return undefined;
-      widthSpec = { fixed };
-    } else return this.fail(path, 'itemLayout.widths 写成 equal、content 或 { fixed: 毫米 }');
-    if (mergeBy !== undefined && (widthSpec !== 'equal' || spanBy !== 'groupSize')) {
+    // 两个方向各用各的词：横向 widths、纵向 heights，写错方向的词时指明该用哪个（M236）。
+    const [sizeKey, otherKey] = direction === 'row' ? ['widths', 'heights'] as const : ['heights', 'widths'] as const;
+    if (item[otherKey] !== undefined) {
+      return this.fail(path, `${direction === 'row' ? '横向' : '纵向'}循环用 itemLayout.${sizeKey} 指定每项${direction === 'row' ? '宽度' : '高度'}，不写 ${otherKey}`);
+    }
+    if (direction === 'column' && (mergeBy !== undefined || spanBy !== undefined)) {
+      return this.fail(path, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环');
+    }
+    const size = this.readLoopItemSize(item[sizeKey], path, sizeKey);
+    if (!size) return undefined;
+    if (direction === 'row' && mergeBy !== undefined && (size !== 'equal' || spanBy !== 'groupSize')) {
       return this.fail(path, '合并循环必须使用 widths: equal、spanBy: groupSize，按原始项数分列');
     }
     if (spanBy !== undefined && mergeBy === undefined) return this.fail(path, 'spanBy: groupSize 需要同时指定 mergeBy');
     const body = this.readContainerBody({ ...value, layout: { mode: 'free' }, children: [] }, path);
-    if (!base || !body || !direction || gap === undefined) return undefined;
+    if (!base || !body || gap === undefined) return undefined;
     const { children: _children, layout: _layout, ...appearance } = body;
     return { ...base, ...appearance, type, template, list, args, ...(typeof mergeBy === 'string' && { mergeBy }),
-      itemLayout: { direction, widths: widthSpec, gap, ...(spanBy && { spanBy }) } };
+      itemLayout: direction === 'row' ? { direction, widths: size, gap, ...(spanBy && { spanBy }) } : { direction, heights: size, gap } };
+  }
+
+  private readLoopItemSize(value: unknown, path: ElementPath, key: 'widths' | 'heights'): Read<LoopItemSize> {
+    if (value === 'equal' || value === 'content') return value;
+    if (isRecord(value) && Object.keys(value).length === 1) {
+      const fixed = this.readNumber(value['fixed'], undefined, path, `itemLayout.${key}.fixed`, { min: 0, exclusiveMin: true });
+      return fixed === undefined ? undefined : { fixed };
+    }
+    return this.fail(path, `itemLayout.${key} 写成 equal、content 或 { fixed: 毫米 }`);
   }
 
   private readElementName(value: unknown, parent: ElementPath): Read<string> {
