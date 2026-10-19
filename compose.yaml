@@ -3,8 +3,9 @@
 # 之后 docker compose up -d --build --wait 即可。Docker 后端测试：node service/scripts/test-docker.mjs。
 name: renderweave
 
+# 接口进程与 worker 用应用账号 renderweave_app 连库，行级安全对它生效；属主账号只给部署步骤 setup 执行迁移（M262）。
 x-service-env: &service-env
-  RW_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD，先运行 node service/scripts/up.mjs 生成 .env}@postgres:5432/renderweave
+  RW_DATABASE_URL: postgres://renderweave_app:${RW_APP_DB_PASSWORD:?缺少 RW_APP_DB_PASSWORD，先运行 node service/scripts/up.mjs 补全 .env}@postgres:5432/renderweave
   RW_S3_ENDPOINT: http://s3:9000
   RW_S3_BUCKET: renderweave
   RW_S3_ACCESS_KEY_ID: ${RW_S3_ACCESS_KEY_ID:?缺少 RW_S3_ACCESS_KEY_ID，先运行 node service/scripts/up.mjs 生成 .env}
@@ -40,7 +41,7 @@ services:
     volumes:
       - s3-data:/data
 
-  # 部署步骤：建好桶后退出。运行时的服务只用读、写、取头信息、列举。
+  # 部署步骤：用属主账号执行数据库迁移、设置应用账号的密码，再建好桶，然后退出。运行时的服务只用读、写、取头信息、列举。
   setup:
     build:
       context: .
@@ -48,11 +49,17 @@ services:
       target: runtime
     image: renderweave-service:local
     command: ["node", "service/dist/main.js", "setup"]
-    environment: *service-env
+    environment:
+      <<: *service-env
+      RW_OWNER_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}@postgres:5432/renderweave
+      RW_APP_DATABASE_PASSWORD: ${RW_APP_DB_PASSWORD:?缺少 RW_APP_DB_PASSWORD}
     depends_on:
-      - s3
+      postgres:
+        condition: service_healthy
+      s3:
+        condition: service_started
 
-  # 接口进程：启动时按版本号执行数据库迁移。
+  # 接口进程：等迁移与代码一致后启动。
   api:
     image: renderweave-service:local
     pull_policy: never
@@ -61,8 +68,6 @@ services:
     ports:
       - "${RW_API_PORT:-8080}:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
       setup:
         condition: service_completed_successfully
     healthcheck:
@@ -94,6 +99,7 @@ services:
     image: renderweave-service-test:local
     environment:
       <<: *service-env
+      RW_OWNER_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}@postgres:5432/renderweave
       RW_API_URL: http://api:8080
       RW_WORKER_URL: http://worker:8081
     depends_on:

@@ -1,52 +1,85 @@
 /**
  * 服务入口：node service/dist/main.js <命令>
- * - api：执行数据库迁移后启动接口进程；
- * - worker：确认迁移与代码一致后启动渲染 worker 的调度进程；
- * - setup：部署时建好对象存储的桶（运行时只用读、写、取头信息、列举）；
+ * - setup：部署步骤。用属主账号执行数据库迁移、设置应用账号的密码，再建好对象存储的桶（M262）；
+ * - api：等迁移与代码一致后启动接口进程，用应用账号连库；
+ * - worker：等迁移与代码一致后启动渲染 worker 的调度进程；
+ * - platform-admin <邮箱>：建平台管理员账号，随机初始密码只在标准输出显示一次；
  * - build-id：输出渲染器构建标识，镜像以它打标签（ADR-0019）。
  * 配置只从环境变量读取（M259）。日志是每行一个 JSON 对象。
  */
-import { CreateBucketCommand } from '@aws-sdk/client-s3';
-import { createApi } from './api.js';
-import { createS3Client, s3Blobs } from './blobs.js';
-import { ConfigError, loadConfig } from './config.js';
-import { createDb } from './db.js';
+import { CreateBucketCommand, type S3Client } from '@aws-sdk/client-s3';
+import { createApi } from './api/app.js';
+import { EmailTakenError } from './backend.js';
+import { ConfigError, loadConfig, loadSetupConfig } from './config.js';
+import { generatePassword, hashPassword } from './credentials.js';
 import { rendererBuildId } from './engine.js';
 import { createLogger, type Logger } from './log.js';
-import { loadMigrations, migrate } from './migrate.js';
-import { createWorkerHealthServer, waitForMigrations } from './worker.js';
+import { createPostgresBackend } from './postgres/backend.js';
+import { createS3Client, s3Blobs } from './postgres/blobs.js';
+import { createDb } from './postgres/db.js';
+import { loadMigrations, migrate, setAppRolePassword, waitForMigrations } from './postgres/migrate.js';
+import { createWorkerHealthServer } from './worker.js';
 
-const command = process.argv[2];
+const [command, argument] = process.argv.slice(2);
+const COMMANDS = ['setup', 'api', 'worker', 'platform-admin'] as const;
 
 async function main(): Promise<void> {
   if (command === 'build-id') {
     process.stdout.write(`${await rendererBuildId()}\n`);
     return;
   }
-  if (command !== 'api' && command !== 'worker' && command !== 'setup') {
-    process.stderr.write('用法：node service/dist/main.js api|worker|setup|build-id\n');
+  if (!COMMANDS.includes(command as never)) {
+    process.stderr.write('用法：node service/dist/main.js setup|api|worker|build-id|platform-admin <邮箱>\n');
     process.exitCode = 2;
     return;
   }
   const build = await rendererBuildId();
-  let logger: Logger = createLogger(command, build, process.env['RW_LOG_LEVEL'] || 'info');
+  const service = command === 'worker' ? 'worker' : command === 'api' ? 'api' : 'setup';
+  let logger: Logger = createLogger(service, build, process.env['RW_LOG_LEVEL'] || 'info');
   try {
+    if (command === 'setup') {
+      const config = loadSetupConfig(process.env);
+      logger = createLogger('setup', build, config.logLevel);
+      const owner = createDb(config.ownerDatabaseUrl);
+      try {
+        const state = await migrate(owner, await loadMigrations());
+        logger.info({ schemaVersion: state.version, applied: state.applied }, '数据库迁移完成');
+        await setAppRolePassword(owner, config.appDatabasePassword);
+        logger.info('应用账号已可登录');
+      } finally { await owner.end(); }
+      await createBucket(createS3Client(config.s3), config.s3.bucket, logger);
+      return;
+    }
+
     const config = loadConfig(process.env, { port: command === 'worker' ? 8081 : 8080 });
-    logger = createLogger(command, build, config.logLevel);
-    const s3 = createS3Client(config.s3);
-    if (command === 'setup') return await setup(s3, config.s3.bucket, logger);
-    const db = createDb(config.databaseUrl), blobs = s3Blobs(s3, config.s3.bucket), migrations = await loadMigrations();
-    const deps = { db, blobs, migrations, build, logger };
+    logger = createLogger(service, build, config.logLevel);
+    const db = createDb(config.databaseUrl), migrations = await loadMigrations();
+    const backend = createPostgresBackend({ db, blobs: s3Blobs(createS3Client(config.s3), config.s3.bucket), migrations });
+    const schemaVersion = await waitForMigrations(db, migrations, 60_000, (reason) => logger.info({ reason }, '等待数据库就绪'));
+
+    if (command === 'platform-admin') {
+      if (!argument) throw new ConfigError('用法：platform-admin <邮箱>');
+      const password = generatePassword();
+      try {
+        const user = await backend.platform.createPlatformUser(argument, await hashPassword(password));
+        await backend.platform.appendAudit({ actor: { kind: 'system', id: 'cli', label: '命令行' }, action: 'platformUser.create', object: { type: 'platformUser', id: user.id }, crossTenant: false }, new Date());
+        logger.info({ userId: user.id }, '已建平台管理员');
+        process.stdout.write(`平台管理员 ${user.email} 的初始密码（只显示这一次）：${password}\n`);
+      } catch (error) {
+        if (error instanceof EmailTakenError) throw new ConfigError('这个邮箱已有账号');
+        throw error;
+      } finally { await db.end(); }
+      return;
+    }
+
     let close: () => Promise<void>;
     if (command === 'api') {
-      const state = await migrate(db, migrations);
-      logger.info({ schemaVersion: state.version, applied: state.applied }, '数据库迁移完成');
-      const app = createApi(deps);
+      const app = createApi({ backend, build, logger });
       await app.listen({ host: '0.0.0.0', port: config.port });
+      logger.info({ schemaVersion, port: config.port }, '接口进程就绪');
       close = () => app.close();
     } else {
-      const schemaVersion = await waitForMigrations(deps, 60_000);
-      const server = createWorkerHealthServer(deps);
+      const server = createWorkerHealthServer({ backend, build, logger });
       await new Promise<void>((resolve) => server.listen(config.port, '0.0.0.0', resolve));
       logger.info({ schemaVersion, port: config.port }, 'worker 就绪，等待任务');
       close = () => new Promise((resolve) => server.close(() => resolve()));
@@ -66,7 +99,7 @@ async function main(): Promise<void> {
 }
 
 /** 建桶；对象存储刚起来时会拒绝连接，最多重试 60 秒。 */
-async function setup(s3: ReturnType<typeof createS3Client>, bucket: string, logger: Logger): Promise<void> {
+async function createBucket(s3: S3Client, bucket: string, logger: Logger): Promise<void> {
   const deadline = Date.now() + 60_000;
   for (;;) {
     try {

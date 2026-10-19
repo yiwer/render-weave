@@ -32,7 +32,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 票据 05（M255）：文本支持常态字间距 `letterSpacing`（正负毫米数或数值变量）与横排 `fit.steps` 中的 `"tightenSpacing"`（在压缩字形前先将正字距线性收紧至 0）。
   - 票据 06（M256）：竖排文本的文本片段与变量插槽支持独立设置 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动绕字格中心顺时针旋转 90°。
   - 票据 07（M257）：图片元素支持可选 `tint` 单色重染（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，支持状态样式覆盖），以 `srcIn` 滤镜替换像素 RGB 并保留原图透明度。
-- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）与 03（服务骨架，M259、M260）已完成，下一步是 04（租户与鉴权）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）、03（服务骨架，M259、M260）与 04（租户、账号与鉴权，M261–M263）已完成，下一步是 05（代建推送）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 与 Gemini 都已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
@@ -57,8 +57,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - `node service/scripts/up.mjs` 一条命令起 PostgreSQL、S3 兼容存储、接口进程与 worker；
   - 迁移按版本号执行、启动时检查，健康检查分存活与就绪，日志是结构化 JSON；
   - 工作区文档、资源仓库与出图记录有 PostgreSQL 加 S3 实现，与本地、内存实现跑同一组合同用例；
-  - Docker 后端测试 `node service/scripts/test-docker.mjs`（[出图服务](docs/service.md)，M259、M260）。
-- **未实现**：URL 图片、动态模板、开放 API、鉴权与渲染任务、OCR 接入、在线编辑器；命令行没有跨批次去重（服务端按哈希去重）。
+  - 租户、成员与五种身份的鉴权：会话、API 密钥与代建令牌只存哈希，权限按 M247 的矩阵；应用账号加行级安全、跨租户端点清单与审计（M261–M263）；
+  - 开放 API 用例跑内存后端进 `npm test`，跑 PostgreSQL 加 S3 后端在 Docker 后端测试 `node service/scripts/test-docker.mjs`（[出图服务](docs/service.md)，M259–M263）。
+- **未实现**：URL 图片、动态模板、开放 API 的业务端点与渲染任务、OCR 接入、在线编辑器；命令行没有跨批次去重（服务端按哈希去重）。
 
 ## 文档地图
 

@@ -7,20 +7,20 @@ import { join } from 'node:path';
 import { ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { describeStorageContract, type StorageHarness } from '../../test/support/storage-contract.js';
-import { blobKey, sha256Hex } from '../src/blobs.js';
-import type { Db } from '../src/db.js';
-import { loadMigrations, migrate } from '../src/migrate.js';
-import { createTenant, tenantStorage } from '../src/storage.js';
-import { blobs, config, connect, s3 } from './support.js';
+import type { ServiceBackend } from '../src/backend.js';
+import { blobKey, sha256Hex } from '../src/postgres/blobs.js';
+import type { Db } from '../src/postgres/db.js';
+import { config, postgresBackend, s3 } from './support.js';
 
-let db: Db;
-const tenant = async () => tenantStorage(db, blobs, await createTenant(db, 'contract'));
+let db: Db, backend: ServiceBackend;
+/** 每次取存储都新建一个租户；存储句柄与服务一样用应用账号，行级安全生效。 */
+const tenant = async () => {
+  const { id } = await backend.platform.createTenant('contract');
+  return { tenantId: id, ...backend.tenant(id).storage };
+};
 const text = (value: string) => new Uint8Array(Buffer.from(value));
 
-beforeAll(async () => {
-  db = connect();
-  await migrate(db, await loadMigrations());
-});
+beforeAll(async () => ({ db, backend } = await postgresBackend()));
 afterAll(async () => { await db.end(); });
 
 const postgresS3: StorageHarness = {
@@ -50,7 +50,7 @@ describeStorageContract([postgresS3]);
 
 describe('PostgreSQL 加 S3 特有的约束', () => {
   const keys = async (tenantId: string) => ((await s3.send(new ListObjectsV2Command({ Bucket: config.s3.bucket, Prefix: `tenants/${tenantId}/` }))).Contents ?? [])
-    .map((object) => object.Key!).sort();
+    .map((object: { Key?: string }) => object.Key!).sort();
 
   it('内容按 SHA-256 存在租户前缀下；同一租户内相同字节只存一份，不同租户各存一份', async () => {
     const first = await tenant(), second = await tenant();

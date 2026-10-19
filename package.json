@@ -12,9 +12,10 @@
   },
   "scripts": {
     "fetch-fonts": "node scripts/fetch-fonts.mjs",
-    "pretest": "node scripts/fetch-fonts.mjs",
+    "pretest": "node scripts/fetch-fonts.mjs && node scripts/service-deps.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "typecheck:service": "node scripts/service-deps.mjs && tsc --noEmit -p service",
     "build": "tsc -p tsconfig.build.json",
     "render": "tsx src/bin.ts"
   },

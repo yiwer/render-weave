@@ -4,6 +4,7 @@
  */
 import { ensureEnv, up } from './docker.mjs';
 
-if (ensureEnv()) console.error('已生成 .env（随机凭据，不进版本库）');
+const added = ensureEnv();
+if (added.length) console.error(`已在 .env 写入随机凭据（不进版本库）：${added.join('、')}`);
 const { build, image } = up();
 console.log(JSON.stringify({ api: `http://127.0.0.1:${process.env.RW_API_PORT ?? 8080}`, worker: `http://127.0.0.1:${process.env.RW_WORKER_PORT ?? 8081}`, build, image }, null, 2));

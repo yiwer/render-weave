@@ -4,7 +4,7 @@
  */
 import { createHash } from 'node:crypto';
 import { GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import type { S3Config } from './config.js';
+import type { S3Config } from '../config.js';
 
 export interface BlobStore {
   /** 写入一份内容并返回它的 SHA-256；同一租户内相同字节只存一份。 */

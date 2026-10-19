@@ -11,7 +11,7 @@ export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   resolve: { alias: [{ find: /^\.\.\/\.\.\/dist\/index\.js$/, replacement: `${repo}src/index.ts` }] },
   test: {
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.docker.test.ts'],
     testTimeout: 120_000,
     hookTimeout: 120_000,
     fileParallelism: false,

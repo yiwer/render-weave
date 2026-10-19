@@ -1,13 +1,14 @@
 /**
- * 健康检查与结构化日志：Compose 起的接口进程与 worker 都就绪；依赖不可用时报未就绪，响应里不带凭据。
+ * 健康检查与结构化日志：Compose 起的接口进程与 worker 都用应用账号连库并就绪；依赖不可用时报未就绪，响应里不带凭据。
  */
 import { Writable } from 'node:stream';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { createApi } from '../src/api.js';
-import { createS3Client, s3Blobs } from '../src/blobs.js';
-import { createDb, type Db } from '../src/db.js';
+import { createApi } from '../src/api/app.js';
 import { createLogger } from '../src/log.js';
-import { loadMigrations, type Migration } from '../src/migrate.js';
+import { createPostgresBackend } from '../src/postgres/backend.js';
+import { createS3Client, s3Blobs } from '../src/postgres/blobs.js';
+import { createDb, type Db } from '../src/postgres/db.js';
+import { loadMigrations, type Migration } from '../src/postgres/migrate.js';
 import { apiUrl, blobs, config, connect, databaseUrl, workerUrl } from './support.js';
 
 let db: Db, migrations: Migration[];
@@ -28,12 +29,22 @@ it('接口进程与 worker：存活与就绪检查都通过，带同一个构建
   }
 });
 
+it('服务用的是应用账号：不是超级用户，也不是表的属主，行级安全对它生效', async () => {
+  const { rows: [role] } = await db.query(`SELECT current_user AS name, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`);
+  expect(role).toMatchObject({ name: 'renderweave_app', rolsuper: false, rolbypassrls: false });
+  const { rows: owned } = await db.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tableowner = current_user`);
+  expect(owned).toEqual([]);
+});
+
 it('对象存储或数据库不可用时报未就绪（503），只给检查项与原因，不带凭据', async () => {
   const brokenS3 = s3Blobs(createS3Client({ ...config.s3, secretAccessKey: 'wrong-secret' }), config.s3.bucket);
-  const broken = createDb(databaseUrl('missing_database'));
+  const brokenDb = createDb(databaseUrl(config.databaseUrl, 'missing_database'));
   try {
-    for (const [deps, failing] of [[{ db, blobs: brokenS3 }, 'storage'], [{ db: broken, blobs }, 'database']] as const) {
-      const app = createApi({ ...deps, migrations, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'silent') });
+    for (const [backend, failing] of [
+      [createPostgresBackend({ db, blobs: brokenS3, migrations }), 'storage'],
+      [createPostgresBackend({ db: brokenDb, blobs, migrations }), 'database'],
+    ] as const) {
+      const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'silent') });
       const response = await app.inject({ method: 'GET', url: '/readyz' });
       await app.close();
       expect(response.statusCode).toBe(503);
@@ -42,13 +53,13 @@ it('对象存储或数据库不可用时报未就绪（503），只给检查项�
       expect(body.checks[failing]).not.toBe('ok');
       for (const secret of [config.s3.secretAccessKey, config.s3.accessKeyId, new URL(config.databaseUrl).password]) expect(response.body).not.toContain(secret);
     }
-  } finally { await broken.end(); }
+  } finally { await brokenDb.end(); }
 });
 
-it('日志每行是一个 JSON 对象，带时间、级别、服务名、构建标识与说明；请求头里的凭据被遮盖', async () => {
+it('日志每行是一个 JSON 对象，带时间、级别、服务名、构建标识与说明；请求头里的凭据不进日志', async () => {
   const lines: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { lines.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
-  const app = createApi({ db, blobs, migrations, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink) });
+  const app = createApi({ backend: createPostgresBackend({ db, blobs, migrations }), build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink) });
   await app.inject({ method: 'GET', url: '/not-found', headers: { authorization: 'Bearer secret-token' } });
   await app.close();
   expect(lines.length).toBeGreaterThan(0);

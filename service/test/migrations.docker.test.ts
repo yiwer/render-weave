@@ -5,17 +5,15 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { createDb, type Db } from '../src/db.js';
-import { checkMigrations, loadMigrations, migrate, type Migration } from '../src/migrate.js';
-import { waitForMigrations } from '../src/worker.js';
-import { createLogger } from '../src/log.js';
-import { connect, databaseUrl } from './support.js';
+import { createDb, type Db } from '../src/postgres/db.js';
+import { checkMigrations, loadMigrations, migrate, waitForMigrations, type Migration } from '../src/postgres/migrate.js';
+import { connectOwner, databaseUrl, ownerUrl } from './support.js';
 
 let admin: Db, dir: string;
 const created: string[] = [], pools: Db[] = [];
 
 beforeAll(async () => {
-  admin = connect();
+  admin = connectOwner();
   dir = await mkdtemp(join(tmpdir(), 'renderweave-migrations-'));
 });
 afterAll(async () => {
@@ -30,7 +28,7 @@ async function freshDatabase(): Promise<Db> {
   await admin.query(`DROP DATABASE IF EXISTS ${name}`);
   await admin.query(`CREATE DATABASE ${name}`);
   created.push(name);
-  const pool = createDb(databaseUrl(name));
+  const pool = createDb(databaseUrl(ownerUrl, name));
   pools.push(pool);
   return pool;
 }
@@ -43,7 +41,7 @@ async function migrationDir(files: Record<string, string>): Promise<string> {
 
 it('仓库里的迁移从 1 连续编号；空数据库上按顺序全部执行，再次启动不重复执行', async () => {
   const migrations = await loadMigrations();
-  expect(migrations.map((m) => m.version)).toEqual(migrations.map((_m, i) => i + 1));
+  expect(migrations.map((m: Migration) => m.version)).toEqual(migrations.map((_m: Migration, i: number) => i + 1));
   const db = await freshDatabase();
   expect((await checkMigrations(db, migrations)).pending).toEqual(migrations.map((m) => m.version));
   const first = await migrate(db, migrations);
@@ -88,16 +86,14 @@ it('启动时检查：已执行的迁移被改过，或数据库有代码不认�
   expect((await checkMigrations(db, edited)).problems[0]).toMatch(/被改动/);
   await expect(migrate(db, edited)).rejects.toThrow(/被改动/);
   expect((await checkMigrations(db, [])).problems[0]).toMatch(/不认识/);
-  const deps = { db, blobs: { put: async () => '', get: async () => new Uint8Array(), available: async () => true }, migrations: [], build: 'test', logger: createLogger('worker', 'test', 'silent') };
-  await expect(waitForMigrations(deps, 1_000)).rejects.toThrow(/不认识/);
+  await expect(waitForMigrations(db, [], 1_000)).rejects.toThrow(/不认识/);
 });
 
-it('worker 等接口进程执行迁移：迁移完成前等待，完成后启动', async () => {
+it('接口进程与 worker 等部署步骤执行迁移：迁移完成前等待，完成后启动', async () => {
   const set = await loadMigrations(await migrationDir({ '0001_a.sql': 'CREATE TABLE a (id integer);' }));
   const db = await freshDatabase();
-  const deps = { db, blobs: { put: async () => '', get: async () => new Uint8Array(), available: async () => true }, migrations: set, build: 'test', logger: createLogger('worker', 'test', 'silent') };
-  await expect(waitForMigrations(deps, 500)).rejects.toThrow(/等待迁移：1/);
-  const waiting = waitForMigrations(deps, 10_000);
+  await expect(waitForMigrations(db, set, 500)).rejects.toThrow(/等待迁移：1/);
+  const waiting = waitForMigrations(db, set, 10_000);
   await migrate(db, set);
   await expect(waiting).resolves.toBe(1);
 });

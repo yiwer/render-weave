@@ -2,11 +2,16 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成的是骨架（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
-- Compose 编排、数据库迁移与健康检查；
-- 工作区文档、版本化资源仓库与出图记录的 PostgreSQL 加 S3 实现。
+目前完成了两部分：
 
-开放 API、鉴权、任务队列与渲染子进程由后续票据加入。
+- **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
+  - Compose 编排、数据库迁移与健康检查；
+  - 工作区文档、版本化资源仓库与出图记录的 PostgreSQL 加 S3 实现。
+- **租户、账号与鉴权**（[票据 04](../.scratch/render-service-v1/issues/04-tenants-and-auth.md)，M261–M263）：
+  - 成员登录、API 密钥与代建令牌；
+  - 权限矩阵、行级安全与审计。
+
+代建推送、预览、交付等业务端点，以及任务队列与渲染子进程，由后续票据加入。
 
 ## 本机启动
 
@@ -18,11 +23,11 @@ node service/scripts/up.mjs
 
 这条命令做三件事：
 
-1. **生成凭据**：没有 `.env` 时，在仓库根生成随机凭据。`.env` 不进版本库，命令也不打印凭据。
-2. **构建并启动**：构建镜像，起 PostgreSQL、S3 兼容存储、建桶步骤、接口进程和一个 worker，等到全部就绪。
+1. **生成凭据**：在仓库根的 `.env` 里补上缺少的随机凭据：数据库属主、应用账号与对象存储各一项。已有的值不动，`.env` 不进版本库，命令也不打印凭据。
+2. **构建并启动**：构建镜像；起 PostgreSQL 与 S3 兼容存储；执行部署步骤 `setup`，包括迁移、应用账号与建桶；再起接口进程和一个 worker，等到全部就绪。
 3. **打标签**：用渲染器构建标识给镜像打标签，形如 `renderweave-service:sha256-<哈希>`。
 
-`.env` 生成之后，也可以直接用 `docker compose up -d --build --wait`。停止用 `docker compose down`；连数据一起清掉，加 `-v`。
+`.env` 齐全之后，也可以直接用 `docker compose up -d --build --wait`。停止用 `docker compose down`；连数据一起清掉，加 `-v`。
 
 | 组件 | Compose 服务 | 端口 |
 |---|---|---|
@@ -30,23 +35,31 @@ node service/scripts/up.mjs
 | 渲染 worker | `worker` | `8081`，可用 `RW_WORKER_PORT` 改 |
 | PostgreSQL 17 | `postgres` | 只在 Compose 网络内 |
 | S3 兼容存储（RustFS 1.0.3） | `s3` | 只在 Compose 网络内 |
-| 建桶 | `setup` | 建好桶后退出 |
+| 部署步骤 | `setup` | 迁移、设置应用账号、建桶后退出 |
+
+**第一个平台管理员**：服务起来后执行下面的命令。它建一个平台管理员账号，随机初始密码只在终端显示一次，然后用这个邮箱和密码登录。
+
+```bash
+docker compose exec api node service/dist/main.js platform-admin admin@example.com
+```
 
 ## 配置
 
 配置只从环境变量读取，镜像与仓库里没有凭据（M259）。缺少变量时，进程只报变量名，不输出取值。
 
-| 变量 | 含义 |
-|---|---|
-| `RW_DATABASE_URL` | PostgreSQL 连接串 |
-| `RW_S3_ENDPOINT`、`RW_S3_BUCKET` | 对象存储地址与桶名 |
-| `RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY` | 对象存储凭据 |
-| `RW_S3_REGION` | 缺省 `us-east-1` |
-| `RW_S3_FORCE_PATH_STYLE` | 缺省开启路径形式地址；写 `false` 关闭 |
-| `RW_PORT` | 监听端口，接口进程缺省 8080，worker 缺省 8081 |
-| `RW_LOG_LEVEL` | 缺省 `info` |
+| 变量 | 谁用 | 含义 |
+|---|---|---|
+| `RW_DATABASE_URL` | 接口进程、worker | 应用账号 `renderweave_app` 的连接串（M262） |
+| `RW_OWNER_DATABASE_URL` | `setup` | 属主账号的连接串，用来执行迁移 |
+| `RW_APP_DATABASE_PASSWORD` | `setup` | 应用账号的密码，至少 16 个字符 |
+| `RW_S3_ENDPOINT`、`RW_S3_BUCKET` | 全部 | 对象存储地址与桶名 |
+| `RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY` | 全部 | 对象存储凭据 |
+| `RW_S3_REGION` | 全部 | 缺省 `us-east-1` |
+| `RW_S3_FORCE_PATH_STYLE` | 全部 | 缺省开启路径形式地址；写 `false` 关闭 |
+| `RW_PORT` | 接口进程、worker | 监听端口，接口进程缺省 8080，worker 缺省 8081 |
+| `RW_LOG_LEVEL` | 全部 | 缺省 `info` |
 
-本机的 `.env` 只有三项：`RW_POSTGRES_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY`。Compose 用这三项拼出上面的变量。
+本机的 `.env` 有四项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY`。Compose 用这四项拼出上面的变量。
 
 ## 进程与命令
 
@@ -54,9 +67,10 @@ node service/scripts/up.mjs
 
 | 命令 | 作用 |
 |---|---|
-| `api` | 先执行数据库迁移，再启动接口进程 |
+| `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
+| `api` | 等迁移与代码一致，再启动接口进程 |
 | `worker` | 等迁移与代码一致，再启动渲染 worker 的调度进程；现在只提供健康检查 |
-| `setup` | 建桶，属于部署步骤。运行时的服务只用读、写、取头信息、列举 |
+| `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
 
 **健康检查**：接口进程与 worker 都有两个端点。
@@ -64,14 +78,87 @@ node service/scripts/up.mjs
 - `GET /healthz`：存活，返回服务名与构建标识。
 - `GET /readyz`：就绪。要求数据库可连、迁移与代码一致、对象存储可列举；否则返回 503，并列出没通过的检查项与原因，不带连接串或凭据。
 
-**日志**：每行一个 JSON 对象，带时间、级别、服务名（`api`、`worker`、`setup`）与构建标识；请求头里的凭据会被遮盖。
+**日志**：每行一个 JSON 对象，带时间、级别、服务名（`api`、`worker`、`setup`）与构建标识。请求体不进日志；请求头里的凭据会被遮盖。
+
+## 账号与鉴权
+
+五种身份（M247）。每个请求用 `Authorization: Bearer <令牌>`（M261）：
+
+| 身份 | 怎么得到令牌 | 能做什么 |
+|---|---|---|
+| 客户操作员 | 邮箱加密码登录 `POST /v1/sessions`，会话 12 小时 | 本租户的数据集、上传新资源、预览、交付、查记录 |
+| 客户管理员 | 同上 | 操作员的全部，另管成员与角色、API 密钥、webhook，替换已有资源，看用量与审计 |
+| API 密钥 | 客户管理员创建，只显示一次 | 操作员的全部加 webhook 管理；不能管成员与密钥，也不能替换已有资源 |
+| 代建工程师 | 平台管理员签发代建令牌，指定租户，缺省 30 天 | 只对被指定的租户读取、推送与预览 |
+| 平台管理员 | 邮箱加密码登录 | 租户、成员账号与重置密码、代建令牌、套餐 |
+
+- **密码**：用 scrypt 慢哈希保存，参数随哈希保存。初始密码与重置后的密码随机生成，只在响应里出现一次。
+- **登录失败**：不区分邮箱不存在与密码错误，邮箱不存在时也算一次哈希。
+- **不做的事**：自助注册、第三方登录与邮件找回；密码由平台管理员重置。
+- **令牌**：会话、API 密钥与代建令牌都是带前缀的随机串（`rws_`、`rwk_`、`rwa_`），服务端只存 SHA-256。
+- **立即失效**：
+  - 登出、过期、吊销后，令牌立即失效；
+  - 停用成员与重置密码都会吊销该成员的全部会话，重新启用后旧会话也不恢复。
+- **至少一个管理员**：租户至少保留一个启用的管理员，最后一个管理员不能降级或停用。
+
+| 端点 | 访问要求 |
+|---|---|
+| `POST /v1/sessions` | 公开 |
+| `DELETE /v1/sessions/current`、`GET /v1/me` | 持有会话；任何身份 |
+| `GET`、`POST /v1/platform/tenants` | 平台管理员 |
+| `GET`、`POST /v1/platform/tenants/{租户}/members`，`POST …/members/{成员}/password-reset` | 平台管理员 |
+| `GET`、`POST /v1/platform/authoring-tokens`，`DELETE …/{令牌}` | 平台管理员 |
+| `GET /v1/tenant` | 管理员、操作员、API 密钥 |
+| `GET /v1/members`，`PATCH /v1/members/{成员}` | 客户管理员 |
+| `GET`、`POST /v1/api-keys`，`DELETE /v1/api-keys/{密钥}` | 客户管理员 |
+| `GET /v1/audit-events` | 客户管理员；按时间倒序，`limit` 最多 500，`before` 翻页 |
+| `GET /v1/authoring/tenants/{租户}` | 代建工程师，只认被指定的租户 |
+
+**错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
+
+| 状态 | 问题码 |
+|---|---|
+| 400 | `request.invalid`（位置写到出错的字段） |
+| 401 | `auth.required`、`auth.invalidCredentials` |
+| 403 | `auth.forbidden` |
+| 404 | `request.notFound` |
+| 409 | `member.emailTaken`、`member.lastAdmin` |
+
+客户端点的租户由身份决定，路径里没有租户 ID。
+
+## 租户隔离
+
+两道防线（ADR-0018、M262）：
+
+1. **应用层**：鉴权之后只拿到本租户的句柄，对象键与查询条件都由句柄生成，客户端不能提交键或路径。对象不在本租户时，与不存在同样答 404，不泄露对象是否存在。
+2. **数据库**：每张带 `tenant_id` 的表都开了行级安全。
+   - **账号**：接口进程与 worker 用应用账号 `renderweave_app` 连库，它不是超级用户，也不是表的属主。
+   - **当前租户**：每个事务设置当前租户。漏写租户条件的查询只返回当前租户的行，没设置时什么也查不到。
+   - **平台模式**：只对账号、会话、审计、租户与代建令牌有效，对文档、资源、批次与密钥无效。
+   - **跨租户查找**：按邮箱登录、按令牌解析身份，由属主身份执行的两个函数完成。
+   - **权限**：应用账号不能改表结构；审计只能追加。
+
+**跨租户端点清单**在 `service/test/cross-tenant-endpoints.ts`。用例对清单里的每个端点，用另一租户的会话、API 密钥与代建令牌访问：
+
+- 带对象 ID 的，回答必须与访问随机 ID 完全相同；
+- 不带对象 ID 的，回答里不能出现另一租户的 ID。
+
+用例还核对已注册的路由：能触及租户数据的端点漏列时，测试失败。后续票据新增端点时要加进这张清单。
+
+## 审计
+
+写操作与跨租户操作都追加写入审计：
+
+- **记录内容**：人、租户、操作、对象与时间，不记业务数据内容、密码与令牌。
+- **跨租户标记**：平台管理员与代建工程师对客户租户的操作标为跨租户，记进目标租户的审计，客户管理员能看到。
+- **不属于任何租户的事件**：例如建平台用户、签发代建令牌，记在平台级。
 
 ## 数据库迁移
 
 - **写法**：迁移是 `service/migrations/NNNN_名称.sql`，版本号从 1 连续递增，只追加，不修改已执行的文件。
-- **执行**：接口进程启动时，在咨询锁下按版本号逐个执行，每个迁移一个事务，并记下文件的 SHA-256。
-- **检查**：worker 启动时只检查，等到迁移执行完再就绪。
-- **拒绝启动**：已执行的迁移被改过，或数据库有代码不认识的版本时，两种进程都拒绝启动。
+- **执行**：部署步骤 `setup` 用属主账号，在咨询锁下按版本号逐个执行，每个迁移一个事务，并记下文件的 SHA-256（M262）。
+- **检查**：接口进程与 worker 启动时只检查，等到迁移执行完再就绪。
+- **拒绝启动**：已执行的迁移被改过，或数据库有代码不认识的版本时，拒绝启动。
 
 ## 存储布局
 
@@ -87,7 +174,6 @@ node service/scripts/up.mjs
   - 一项的全部文件与完成清单在一个事务里登记，"批次加项序号"唯一，同一项不会登记两次；
   - 批次清单在全部项结束后登记；
   - 记录与批次的读取、重放用引擎的同一组函数。
-- **租户隔离**：每张租户表都带 `tenant_id`，存储句柄只生成本租户的键与查询条件。行级安全与应用账号随租户与鉴权一起开启。
 
 ## 构建标识与镜像
 
@@ -97,16 +183,29 @@ node service/scripts/up.mjs
 
 ## 测试
 
-- **`npm test`**：不需要 Docker。共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
-- **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
+两种后端跑同一组 API 用例（M263）：
+
+- **`npm test`**：不需要 Docker。
+  - 开放 API 用例跑内存后端（`service/test/api.test.ts`），覆盖权限矩阵、跨租户端点清单、审计与日志里不出现密钥。
+  - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
+  - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
+- **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
 
 ```bash
 node service/scripts/test-docker.mjs
 ```
 
 Docker 后端测试覆盖以下内容：
-- PostgreSQL 加 S3 实现跑同一组合同用例；
-- 对象键与去重、文档原文、事务提交点、并发提交与同一项只登记一次；
+
+- 同一组开放 API 用例跑 PostgreSQL 加 S3 后端；
+- 行级安全：
+  - 每张租户表都开启，漏写条件只返回当前租户；
+  - 没设置租户时查不到，平台模式看不到租户数据；
+  - 越权写入被拒，审计只能追加，应用账号不能改表结构；
+- 存储：
+  - PostgreSQL 加 S3 实现跑同一组合同用例；
+  - 对象键与去重、文档原文、事务提交点、并发提交与同一项只登记一次；
 - 迁移的顺序、回滚与启动检查；
-- 健康检查、未就绪时的响应与结构化日志；
-- 配置只从环境变量读取。
+- 健康检查、服务用的是应用账号、未就绪时的响应与结构化日志。
+
+服务的类型检查：先 `npm run build`，再 `npm run typecheck:service`。

@@ -63,18 +63,18 @@ npm test
 **Linux 全量测试**：把会进版本库的文件打成 tar，在容器里从空目录安装，不挂载宿主的 `node_modules`。Windows 上用 Git Bash 执行：
 
 ```bash
-mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=require('fs');const files=fs.readFileSync(0,'utf8').split('\n').filter(f=>f&&fs.existsSync(f)&&fs.statSync(f).isFile());fs.writeFileSync('out/linux/files.txt',files.join('\n')+'\n')" && tar -cf out/linux/snapshot.tar -T out/linux/files.txt && MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W)/out/linux:/fresh" node:22-alpine sh -c "mkdir /work && tar xf /fresh/snapshot.tar -C /work && cd /work && npm ci && npm run build && npm run typecheck && npm test"
+mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=require('fs');const files=fs.readFileSync(0,'utf8').split('\n').filter(f=>f&&fs.existsSync(f)&&fs.statSync(f).isFile());fs.writeFileSync('out/linux/files.txt',files.join('\n')+'\n')" && tar -cf out/linux/snapshot.tar -T out/linux/files.txt && MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W)/out/linux:/fresh" node:22-alpine sh -c "mkdir /work && tar xf /fresh/snapshot.tar -C /work && cd /work && npm ci && npm run build && npm run typecheck && npm run typecheck:service && npm test"
 ```
 
 在 Linux 或 macOS 上，把 `$(pwd -W)` 换成 `$(pwd)`，并去掉 `MSYS_NO_PATHCONV=1`。
 
-**Docker 后端测试**：出图服务的 PostgreSQL 加 S3 实现、迁移与健康检查，不进 `npm test`。脚本从空环境构建镜像、起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，结束后清空容器与数据卷：
+**Docker 后端测试**：出图服务的 PostgreSQL 加 S3 后端、行级安全、迁移与健康检查，不进 `npm test`。脚本从空环境构建镜像、起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，结束后清空容器与数据卷：
 
 ```bash
 node service/scripts/test-docker.mjs
 ```
 
-- 期望结果：4 个文件、23 项通过，最后打印"日志 N 行，不合格 0 行"。
+- 期望结果：5 个文件、39 项通过，最后打印"日志 N 行，不合格 0 行"。
 - 首次运行要下载镜像与字体，约几分钟。
 - 需要的凭据由脚本生成到仓库根的 `.env`（不进版本库），不用手工设置。本机起服务见[出图服务](service.md)。
 
