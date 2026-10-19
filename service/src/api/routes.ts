@@ -1,6 +1,6 @@
 /**
  * 账号、租户与鉴权的端点（M247、M261）。客户端点的租户由身份决定，路径里没有租户 ID；
- * 代建端点在路径里写目标租户，只认令牌被指定的租户。对象不在本租户时与不存在同样答 404。
+ * 代建端点在 authoring.ts，路径里写目标租户。对象不在本租户时与不存在同样答 404。
  */
 import type { FastifyInstance } from 'fastify';
 import { EmailTakenError, type Identity, type Member, type MemberRole, type NewAuditEvent, type TenantScope } from '../backend.js';
@@ -198,15 +198,5 @@ export function registerRoutes(app: FastifyInstance, context: ApiContext): void 
     const limit = Math.min(Number(query.limit ?? 100), 500);
     const events = await backend.tenant(ownTenant(identityOf(request))).listAudit({ limit, ...(query.before ? { before: query.before } : {}) });
     return { events, ...(events.length === limit ? { next: events.at(-1)!.id } : {}) };
-  });
-
-  // —— 代建工程师：只认令牌被指定的租户 ——
-  app.get('/v1/authoring/tenants/:tenantId', { config: { access: 'authoring.read' } }, async (request) => {
-    const identity = identityOf(request), tenantId = objectId((request.params as { tenantId: string }).tenantId);
-    if (identity.kind !== 'authoringToken' || !identity.tenantIds.includes(tenantId)) throw notFound();
-    const scope = backend.tenant(tenantId), tenant = await scope.get();
-    if (!tenant) throw notFound();
-    await audit(scope, identity, 'authoring.access', { type: 'tenant', id: tenantId });
-    return tenant;
   });
 }

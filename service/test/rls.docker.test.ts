@@ -8,7 +8,8 @@ import type { ServiceBackend } from '../src/backend.js';
 import { asPlatform, withTenant, type Db } from '../src/postgres/db.js';
 import { connectOwner, postgresBackend } from './support.js';
 
-const TENANT_TABLES = ['workspace_documents', 'resource_stores', 'resources', 'resource_versions', 'batches', 'batch_items', 'batch_item_files', 'api_keys', 'users', 'sessions', 'audit_events'];
+const TENANT_TABLES = ['workspace_documents', 'resource_stores', 'resources', 'resource_versions', 'batches', 'batch_items', 'batch_item_files', 'api_keys', 'users', 'sessions', 'audit_events',
+  'template_revisions', 'templates'];
 /** 平台模式下可见的表；其余租户数据表在平台模式下仍然只认当前租户。代建令牌的租户表只在平台模式下可见。 */
 const PLATFORM_VISIBLE = new Set(['users', 'sessions', 'audit_events', 'authoring_token_tenants']);
 const PLATFORM_ONLY = ['authoring_token_tenants'];
@@ -29,6 +30,9 @@ beforeAll(async () => {
     await scope.appendAudit({ actor: { kind: 'system', id: 'test', label: '测试' }, action: 'test.seed', object: { type: 'tenant', id }, crossTenant: false }, new Date());
     await scope.storage.putDocuments([{ source: `${name}.json`, bytes: bytes(`{"name":"${name}"}`) }]);
     expect((await scope.storage.resources.commit([{ type: 'create', id: 'logo', kind: 'image', bytes: bytes(name) }])).problems).toEqual([]);
+    const template = bytes(`{"dslVersion":"renderweave-template/1","name":"${name}"}`);
+    const sha256 = await scope.storage.contents.put(template);
+    await scope.storage.push(async () => ({ documents: [], templates: [{ name, sha256, byteLength: template.length }], resources: [] }), { pushedBy: '测试', now: new Date() });
     const batch = await scope.storage.createBatch();
     await batch.output.write(1, { files: new Map([['problems.json', bytes('[]\n')]]) });
     tenants.push({ id, email, keyId: key.id });

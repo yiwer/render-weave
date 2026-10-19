@@ -174,55 +174,25 @@ export async function readWorkspaceDocuments(source: WorkspaceDocumentSource): P
       problems.push(severe(ProblemCodes.inputUnreadable, location, `工作区文件无法读取：${describeError(error)}`));
       continue;
     }
-    if (!isRecord(document)) continue;
-
-    const dslVersion = document['dslVersion'];
-    if (typeof dslVersion === 'string' && dslVersion.startsWith('renderweave-schema/')) {
-      const ref = parseStaticSchemaRef(document);
-      if (!ref) {
-        problems.push(severe(ProblemCodes.inputUnreadable, location, '数据定义缺少名称或版本号'));
+    const found = classifyWorkspaceDocument(document);
+    if (found.kind === 'invalid') {
+      problems.push(severe(ProblemCodes.inputUnreadable, location, found.message));
+    } else if (found.kind === 'definition' || found.kind === 'compiled') {
+      const part = found.kind === 'definition' ? 'definition' : 'compiled';
+      const entry = definitions.get(formatStaticSchemaRef(found.ref)) ?? { ref: found.ref };
+      if (entry[part] !== undefined) {
+        problems.push(severe(ProblemCodes.inputDuplicate, location, `${part === 'definition' ? '静态数据定义' : '编译产物'}重复：${formatStaticSchemaRef(found.ref)}`));
         continue;
       }
-      const entry = definitions.get(formatStaticSchemaRef(ref)) ?? { ref };
-      if (entry.definition !== undefined) {
-        problems.push(severe(ProblemCodes.inputDuplicate, location, `静态数据定义重复：${formatStaticSchemaRef(ref)}`));
+      definitions.set(formatStaticSchemaRef(found.ref), { ...entry, [part]: document });
+    } else if (found.kind === 'template') {
+      if (templates.has(found.name)) {
+        problems.push(severe(ProblemCodes.inputDuplicate, location, `模板名称重复：${found.name}`));
         continue;
       }
-      definitions.set(formatStaticSchemaRef(ref), { ...entry, definition: document });
-    } else if (typeof dslVersion === 'string' && dslVersion.startsWith('renderweave-template/')) {
-      const name = document['name'];
-      if (typeof name !== 'string' || name === '') {
-        problems.push(severe(ProblemCodes.inputUnreadable, location, '模板缺少名称'));
-        continue;
-      }
-      if (templates.has(name)) {
-        problems.push(severe(ProblemCodes.inputDuplicate, location, `模板名称重复：${name}`));
-        continue;
-      }
-      templates.set(name, { name, document, source });
-    } else if ('x-renderweave-static-schema' in document) {
-      const ref = parseStaticSchemaRef(document['x-renderweave-static-schema']);
-      if (!ref) {
-        problems.push(severe(ProblemCodes.inputUnreadable, location, '编译产物的 x-renderweave-static-schema 缺少名称或版本号'));
-        continue;
-      }
-      const entry = definitions.get(formatStaticSchemaRef(ref)) ?? { ref };
-      if (entry.compiled !== undefined) {
-        problems.push(severe(ProblemCodes.inputDuplicate, location, `编译产物重复：${formatStaticSchemaRef(ref)}`));
-        continue;
-      }
-      definitions.set(formatStaticSchemaRef(ref), { ...entry, compiled: document });
-    } else if ('dataset' in document && 'data' in document) {
-      const parsed = parseDatasetDocument(document);
-      if (typeof parsed === 'string') {
-        problems.push(severe(ProblemCodes.inputUnreadable, location, parsed));
-        continue;
-      }
-      const id = parsed.dataset.id;
-      if (id === undefined) {
-        problems.push(severe(ProblemCodes.inputUnreadable, location, '工作区中的数据集必须有 dataset.id'));
-        continue;
-      }
+      templates.set(found.name, { name: found.name, document, source });
+    } else if (found.kind === 'dataset') {
+      const { id } = found;
       if (datasets.has(id)) {
         problems.push(severe(ProblemCodes.inputDuplicate, location, `数据集 ID 重复：${id}`));
         continue;
@@ -236,7 +206,7 @@ export async function readWorkspaceDocuments(source: WorkspaceDocumentSource): P
           ),
         );
       }
-      datasets.set(id, { id, document: parsed, source });
+      datasets.set(id, { id, document: found.document, source });
     }
   }
 
@@ -246,6 +216,44 @@ export async function readWorkspaceDocuments(source: WorkspaceDocumentSource): P
     datasets: [...datasets.values()],
     problems,
   };
+}
+
+/**
+ * 一份工作区文档的种类与身份（readWorkspaceDocuments 与代建推送共用）：
+ * 数据定义与编译产物以"名称@版本"为键，模板以名称为键，数据集以 dataset.id 为键；其他 JSON（如渲染请求）不属于工作区。
+ */
+export type WorkspaceDocumentClass =
+  | { readonly kind: 'definition' | 'compiled'; readonly key: string; readonly ref: StaticSchemaRef }
+  | { readonly kind: 'template'; readonly key: string; readonly name: string }
+  | { readonly kind: 'dataset'; readonly key: string; readonly id: string; readonly document: DatasetDocument }
+  | { readonly kind: 'invalid'; readonly message: string }
+  | { readonly kind: 'other' };
+
+/** 按内容归类一份已解析的工作区文档；规则见 loadWorkspace。 */
+export function classifyWorkspaceDocument(document: unknown): WorkspaceDocumentClass {
+  if (!isRecord(document)) return { kind: 'other' };
+  const dslVersion = document['dslVersion'];
+  const refKey = (ref: StaticSchemaRef) => `${ref.name}@${ref.version}`;
+  if (typeof dslVersion === 'string' && dslVersion.startsWith('renderweave-schema/')) {
+    const ref = parseStaticSchemaRef(document);
+    return ref ? { kind: 'definition', key: refKey(ref), ref } : { kind: 'invalid', message: '数据定义缺少名称或版本号' };
+  }
+  if (typeof dslVersion === 'string' && dslVersion.startsWith('renderweave-template/')) {
+    const name = document['name'];
+    return typeof name === 'string' && name !== '' ? { kind: 'template', key: name, name } : { kind: 'invalid', message: '模板缺少名称' };
+  }
+  if ('x-renderweave-static-schema' in document) {
+    const ref = parseStaticSchemaRef(document['x-renderweave-static-schema']);
+    return ref ? { kind: 'compiled', key: refKey(ref), ref } : { kind: 'invalid', message: '编译产物的 x-renderweave-static-schema 缺少名称或版本号' };
+  }
+  if ('dataset' in document && 'data' in document) {
+    const parsed = parseDatasetDocument(document);
+    if (typeof parsed === 'string') return { kind: 'invalid', message: parsed };
+    const id = parsed.dataset.id;
+    if (id === undefined) return { kind: 'invalid', message: '工作区中的数据集必须有 dataset.id' };
+    return { kind: 'dataset', key: id, id, document: parsed };
+  }
+  return { kind: 'other' };
 }
 
 /**

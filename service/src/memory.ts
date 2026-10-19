@@ -2,13 +2,13 @@
  * 内存后端：与 PostgreSQL 加 S3 后端语义相同，供 npm test 里的 API 用例使用（阶段 4 PRD「接缝」）。
  * 每个租户的数据按租户 ID 分开存放，租户句柄只能看到自己那一份。
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
-  EmailTakenError,
-  type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type Identity, type LoginRecord, type Member, type MemberRole, type NewAuditEvent,
-  type PlatformUser, type ServiceBackend, type Tenant, type TenantBatch, type TenantScope, type TenantStorage,
+  documentSource, EmailTakenError, parseDocumentSource,
+  type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type Identity, type LoginRecord, type Member, type MemberRole, type NewAuditEvent,
+  type PlatformUser, type ServiceBackend, type StoredTemplate, type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage,
 } from './backend.js';
-import { createMemoryBatch, createMemoryResourceBackend, memoryWorkspaceDocuments } from './engine.js';
+import { createMemoryBatch, memoryWorkspaceDocuments, resourceBackend, type ResourceManifestEntry } from './engine.js';
 
 interface UserRow { id: string; tenantId: string | null; email: string; role: MemberRole | 'platformAdmin'; passwordHash: string; active: boolean; createdAt: string }
 interface SessionRow { id: string; userId: string; tenantId: string | null; tokenHash: string; expiresAt: Date; revokedAt?: Date }
@@ -149,19 +149,62 @@ export function createMemoryBackend(): ServiceBackend {
   };
 }
 
-/** 一个租户的工作区文档、资源仓库与批次，全在内存里。 */
+/** 一个租户的工作区文档、模板修订、资源仓库与批次，全在内存里。 */
 function memoryStorage(): TenantStorage {
-  const documents = new Map<string, Uint8Array>();
+  /** 本租户的全部内容，按 SHA-256 存放：工作区文档、模板修订、资源内容版本，以及已上传还没登记的内容。 */
+  const contents = new Map<string, Uint8Array>();
+  /** 工作区文档：来源 → 内容。推送进来的文档来源是"种类:键"，模板那一行指向当前修订。 */
+  const documents = new Map<string, { sha256: string; byteLength: number }>();
+  const templates = new Map<string, { current: number; revisions: TemplateRevision[] }>();
+  let resources: readonly ResourceManifestEntry[] = [];
   const batches = new Map<string, TenantBatch>();
+  /** 资源提交、推送与改当前修订依次进行，与 PostgreSQL 后端锁住租户的一行相同。 */
+  let queue: Promise<unknown> = Promise.resolve();
+  const exclusive = <T>(work: () => Promise<T>): Promise<T> => {
+    const run = queue.then(work);
+    queue = run.catch(() => undefined);
+    return run;
+  };
+  const put = (bytes: Uint8Array) => {
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    if (!contents.has(hash)) contents.set(hash, new Uint8Array(bytes));
+    return hash;
+  };
+  const read = (hash: string) => {
+    const bytes = contents.get(hash);
+    if (!bytes) throw new Error(`内容不存在：${hash}`);
+    return new Uint8Array(bytes);
+  };
+  const template = (name: string, row: { current: number; revisions: TemplateRevision[] }): StoredTemplate =>
+    ({ name, currentRevision: row.current, revisions: structuredClone(row.revisions) });
+  const state = (): AuthoringState => ({
+    documents: [...documents].flatMap(([source, content]) => {
+      const parsed = parseDocumentSource(source);
+      return parsed ? [{ ...parsed, ...content }] : [];
+    }),
+    templates: [...templates].map(([name, row]) => template(name, row)),
+    resources: resources.map((entry) => ({
+      id: entry.id, kind: entry.kind, currentVersion: entry.currentVersion,
+      versions: entry.versions.map(({ version, sha256, byteLength }) => ({ version, sha256, byteLength })),
+    })),
+  });
   const open = (batchId: string): TenantBatch => {
     const batch = batches.get(batchId);
     if (!batch) throw new Error(`批次不存在：${batchId}`);
     return batch;
   };
   return {
-    async putDocuments(list) { for (const { source, bytes } of list) documents.set(source, new Uint8Array(bytes)); },
-    documents: { location: 'memory', list: () => memoryWorkspaceDocuments([...documents].map(([source, bytes]) => ({ source, bytes }))).list() },
-    resources: createMemoryResourceBackend(),
+    async putDocuments(list) { for (const { source, bytes } of list) documents.set(source, { sha256: put(bytes), byteLength: bytes.length }); },
+    documents: {
+      location: 'memory',
+      list: () => memoryWorkspaceDocuments([...documents].map(([source, { sha256 }]) => ({ source, bytes: read(sha256) }))).list(),
+    },
+    resources: resourceBackend({
+      location: 'memory',
+      snapshot: async () => ({ entries: structuredClone(resources), load: async (file) => read(file) }),
+      place: async (bytes) => put(bytes),
+      commit: (apply) => exclusive(async () => { resources = structuredClone(await apply(structuredClone(resources))); }),
+    }),
     async createBatch() {
       const batchId = randomUUID(), batch = createMemoryBatch(`batches/${batchId}`);
       const created: TenantBatch = { batchId, output: batch.output, source: batch.batch, record: (index) => batch.record(index) };
@@ -169,5 +212,41 @@ function memoryStorage(): TenantStorage {
       return created;
     },
     openBatch: open,
+    contents: {
+      put: async (bytes) => put(bytes),
+      has: async (hash) => contents.has(hash),
+      get: async (hash) => (contents.has(hash) ? read(hash) : undefined),
+    },
+    authoringState: async () => state(),
+    push: (prepare, { pushedBy, now }) => exclusive(async () => {
+      const writes = await prepare(state());
+      // prepare 之后不会再失败：一次改完，与事务提交相同。
+      for (const document of writes.documents) documents.set(documentSource(document.kind, document.key), { sha256: document.sha256, byteLength: document.byteLength });
+      const revisions = new Map<string, number>();
+      for (const { name, sha256, byteLength } of writes.templates) {
+        const row = templates.get(name) ?? { current: 0, revisions: [] };
+        const revision = Math.max(0, ...row.revisions.map((item) => item.revision)) + 1;
+        row.revisions.push({ revision, sha256, byteLength, createdAt: now.toISOString(), pushedBy });
+        row.current = revision;
+        templates.set(name, row);
+        documents.set(documentSource('template', name), { sha256, byteLength });
+        revisions.set(name, revision);
+      }
+      const entries = new Map(resources.map((entry) => [entry.id, entry]));
+      for (const { id, kind, versions } of writes.resources) {
+        const old = entries.get(id);
+        const added = versions.map((content) => ({ ...content, file: content.sha256 }));
+        entries.set(id, { id, kind, currentVersion: versions.at(-1)!.version, versions: [...(old?.versions ?? []), ...added] });
+      }
+      resources = [...entries.values()];
+      return { state: state(), revisions };
+    }),
+    setCurrentTemplate: (name, revision) => exclusive(async () => {
+      const row = templates.get(name), found = row?.revisions.find((item) => item.revision === revision);
+      if (!row || !found) return undefined;
+      row.current = revision;
+      documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
+      return template(name, row);
+    }),
   };
 }

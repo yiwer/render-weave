@@ -5,7 +5,8 @@
 1. 提取数据定义，审核后发布；
 2. 提取一份数据集，审核后保存；
 3. 设计模板，审核后保存，然后正式出图；
-4. 按客户意见修改模板。
+4. 按客户意见修改模板；
+5. 推送到客户在出图服务上的租户。
 
 全程只用 `renderweave` 命令与本机的审核页，不需要读代码，也不手工复制或改写工作区里的文件。各轮的用时见文末「用时与用量参考」。命令细节见 [业务 Agent 任务](agent-tasks.md)，交给 Agent 的资料见 [agent/README.md](../agent/README.md)。
 
@@ -200,6 +201,32 @@ node dist/bin.js agent apply out/build/r4-revision
 - **冲突**：如果这段时间里别人保存过同一个模板，应用会被拒绝，并列出别人的改动。由你选择：
   - 加 `--overwrite` 覆盖，别人的改动会丢失；
   - 用 `--from` 重做，候选从最新保存的内容开始。
+
+## 9. 推送到客户的租户
+
+客户在出图服务上出图（v1.0，ADR-0017），用的是推送到其租户里的数据定义、模板、数据集与资源。先在本机正式出图核对过（第 7 步），再推送。
+
+**令牌**：向平台管理员要一个指定给该客户租户的代建令牌（`rwa_` 开头，缺省 30 天有效），放进环境变量 `RENDERWEAVE_AUTHORING_TOKEN`。规矩与模型 key 相同：不写进命令行、脚本或文件。
+
+```powershell
+node dist/bin.js push --server <服务地址> --tenant <租户ID> --workspace out/build/workspace --resources out/build/resources --dry-run
+node dist/bin.js push --server <服务地址> --tenant <租户ID> --workspace out/build/workspace --resources out/build/resources
+```
+
+- **先看差异**：加 `--dry-run` 逐条列出新增、更新与冲突，不写任何东西；没有冲突再去掉它推送。
+- **推送什么**：工作区里的静态数据定义、编译产物、模板与数据集，以及资源版本仓库里的全部资源和内容版本。渲染请求等其他文件不推送。`--resources` 要指向第 7 步建的版本仓库。
+- **冲突**整体拒绝，服务端保持原样：
+  - 已发布的数据定义不可变：同名同版本内容不同就冲突。改了定义要发布为新版本（`agent apply` 就是这样做的），不要改已发布的文件。
+  - 数据集不覆盖：服务端已有同 ID 的数据集而内容不同时冲突，客户可能改过它。要换样例，另起一个数据集 ID。
+  - 资源只追加内容版本：种类不同，或同一内容版本两边字节不同时冲突。客户在服务端替换过的资源，本地落后时不覆盖。
+- **模板**每次推送改了内容就记一个新修订。推错了，可以把当前修订指回上一版：
+
+```powershell
+node dist/bin.js template-revisions --server <服务地址> --tenant <租户ID> --template 线路牌主模板
+node dist/bin.js template-revisions --server <服务地址> --tenant <租户ID> --template 线路牌主模板 --current 1
+```
+
+退出码：0 已推送（`--dry-run` 时为没有冲突），1 有冲突或被拒绝，2 用法错误或没设令牌。每次推送都记进客户租户的审计，客户管理员能看到。端点与规则的细节见[出图服务](service.md#代建推送)。
 
 ## 用时与用量参考
 

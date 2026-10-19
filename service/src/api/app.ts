@@ -8,6 +8,7 @@ import { hashToken, tokenShape, type PasswordCost } from '../credentials.js';
 import type { Logger } from '../log.js';
 import { can, type Access } from './permissions.js';
 import { ApiError, fail, problem, ServiceProblemCodes, validationProblems } from './problems.js';
+import { registerAuthoringRoutes } from './authoring.js';
 import { registerRoutes } from './routes.js';
 
 declare module 'fastify' {
@@ -53,7 +54,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
     if (!can(request.identity, access)) throw forbidden();
   });
   app.setErrorHandler((error: Error & { validation?: never[]; validationContext?: string; statusCode?: number; code?: string }, request, reply) => {
-    if (error instanceof ApiError) return reply.code(error.status).send({ problems: error.problems });
+    if (error instanceof ApiError) return reply.code(error.status).send({ problems: error.problems, ...error.extra });
     if (error.validation) return reply.code(400).send({ problems: validationProblems(error.validation, error.validationContext ?? 'body') });
     if (error.statusCode && error.statusCode < 500) {
       return reply.code(error.statusCode).send({ problems: [problem(ServiceProblemCodes.requestInvalid, 'request', `请求无法处理：${error.code ?? error.message}`)] });
@@ -72,6 +73,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
     return { status: result.ready ? 'ready' : 'unready', service: 'api', build: options.build, ...result };
   });
   registerRoutes(app, context);
+  registerAuthoringRoutes(app, context);
   return Object.assign(app, { routeTable });
 }
 

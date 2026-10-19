@@ -10,6 +10,12 @@ export const ServiceProblemCodes = {
   authForbidden: 'auth.forbidden',
   memberEmailTaken: 'member.emailTaken',
   memberLastAdmin: 'member.lastAdmin',
+  /** 代建推送（M264）：与服务端已有内容冲突，整体拒绝。 */
+  pushConflict: 'push.conflict',
+  /** 代建推送：要写入的内容还没有上传。 */
+  pushContentMissing: 'push.contentMissing',
+  /** 代建推送：上传的内容与哈希、字节数、种类或键的声明不符。 */
+  pushContentMismatch: 'push.contentMismatch',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];
@@ -21,8 +27,11 @@ export interface ServiceProblem {
   readonly message: string;
 }
 
+/** 错误响应：{ problems }，可以另带说明情况的字段（如推送冲突时的差异）。 */
 export class ApiError extends Error {
-  constructor(readonly status: number, readonly problems: readonly ServiceProblem[]) { super(problems.map((p) => p.message).join('；')); }
+  constructor(readonly status: number, readonly problems: readonly ServiceProblem[], readonly extra: Readonly<Record<string, unknown>> = {}) {
+    super(problems.map((p) => p.message).join('；'));
+  }
 }
 
 export const problem = (code: ServiceProblemCode, source: string, message: string): ServiceProblem =>

@@ -3,7 +3,10 @@
  * 对象键与查询条件都由句柄生成，客户端不能提交键或路径；每条查询都在 withTenant 里执行，行级安全再挡一道。
  * 每类写入都先写对象、再在一个数据库事务里登记；没登记的对象不会被任何读者看到。
  */
-import type { TenantBatch, TenantStorage } from '../backend.js';
+import {
+  documentSource, parseDocumentSource,
+  type AuthoringState, type StoredDocument, type StoredTemplate, type TemplateRevision, type TenantBatch, type TenantStorage,
+} from '../backend.js';
 import {
   itemDirectory, manifestBytes, resourceBackend,
   type BatchOutput, type BatchSource, type RecordSource, type ResourceManifestEntry, type ResourceVersionBackend, type WorkspaceDocumentSource,
@@ -24,7 +27,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         }
       });
     },
-    documents: documentSource(db, blobs, tenantId),
+    documents: workspaceDocuments(db, blobs, tenantId),
     resources: resourceStore(db, blobs, tenantId),
     async createBatch() {
       const { batch_id: batchId } = await withTenant(db, tenantId, async (client) =>
@@ -32,11 +35,91 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       return batchStore(db, blobs, tenantId, batchId);
     },
     openBatch: (batchId) => batchStore(db, blobs, tenantId, batchId),
+    contents: {
+      put: (bytes) => blobs.put(tenantId, bytes),
+      has: (sha256) => blobs.has(tenantId, sha256),
+      get: async (sha256) => ((await blobs.has(tenantId, sha256)) ? blobs.get(tenantId, sha256) : undefined),
+    },
+    authoringState: () => withTenant(db, tenantId, (client) => authoringState(client, tenantId)),
+    // 推送与资源提交锁住租户的同一行，依次进行；prepare 抛错即整个事务回滚。
+    push: (prepare, { pushedBy, now }) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const writes = await prepare(await authoringState(client, tenantId));
+      for (const document of writes.documents) {
+        await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)',
+          [tenantId, documentSource(document.kind, document.key), document.sha256, document.byteLength]);
+      }
+      const revisions = new Map<string, number>();
+      for (const { name, sha256, byteLength } of writes.templates) {
+        const { next } = (await client.query<{ next: number }>(
+          'SELECT coalesce(max(revision), 0) + 1 AS next FROM template_revisions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows[0]!;
+        await client.query(`INSERT INTO template_revisions (tenant_id, name, revision, sha256, byte_length, pushed_by, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`, [tenantId, name, next, sha256, byteLength, pushedBy, now]);
+        await client.query(`INSERT INTO templates (tenant_id, name, current_revision) VALUES ($1, $2, $3)
+          ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision`, [tenantId, name, next]);
+        await pointTemplate(client, tenantId, name, { sha256, byteLength });
+        revisions.set(name, next);
+      }
+      for (const { id, kind, create, versions } of writes.resources) {
+        if (create) await client.query('INSERT INTO resources (tenant_id, resource_id, kind) VALUES ($1, $2, $3)', [tenantId, id, kind]);
+        for (const content of versions) {
+          await client.query('INSERT INTO resource_versions (tenant_id, resource_id, version, sha256, byte_length) VALUES ($1, $2, $3, $4, $5)',
+            [tenantId, id, content.version, content.sha256, content.byteLength]);
+        }
+      }
+      return { state: await authoringState(client, tenantId), revisions };
+    }),
+    setCurrentTemplate: (name, revision) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const [found] = (await client.query<{ sha256: string; byte_length: string }>(
+        'SELECT sha256, byte_length FROM template_revisions WHERE tenant_id = $1 AND name = $2 AND revision = $3', [tenantId, name, revision])).rows;
+      if (!found) return undefined;
+      await client.query('UPDATE templates SET current_revision = $3 WHERE tenant_id = $1 AND name = $2', [tenantId, name, revision]);
+      await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
+      return (await authoringState(client, tenantId)).templates.find((template) => template.name === name);
+    }),
   };
 }
 
+/** 锁住租户的一行：资源提交、推送与改模板的当前修订依次进行（M260、M264）。 */
+async function lockTenant(client: DbClient, tenantId: string): Promise<void> {
+  await client.query('INSERT INTO resource_stores (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING', [tenantId]);
+  await client.query('SELECT tenant_id FROM resource_stores WHERE tenant_id = $1 FOR UPDATE', [tenantId]);
+}
+
+/** 工作区里模板那一行指向当前修订的内容，渲染读到的就是当前修订。 */
+async function pointTemplate(client: DbClient, tenantId: string, name: string, content: { sha256: string; byteLength: number }): Promise<void> {
+  await client.query(`INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)
+    ON CONFLICT (tenant_id, source) DO UPDATE SET sha256 = EXCLUDED.sha256, byte_length = EXCLUDED.byte_length, created_at = now()`,
+  [tenantId, documentSource('template', name), content.sha256, content.byteLength]);
+}
+
+/** 推送看到的当前状态：来源是"种类:键"的文档、模板修订与资源。 */
+async function authoringState(client: DbClient, tenantId: string): Promise<AuthoringState> {
+  const documents = (await client.query<{ source: string; sha256: string; byte_length: string }>(
+    'SELECT source, sha256, byte_length FROM workspace_documents WHERE tenant_id = $1', [tenantId])).rows.flatMap((row): StoredDocument[] => {
+    const parsed = parseDocumentSource(row.source);
+    return parsed ? [{ ...parsed, sha256: row.sha256, byteLength: Number(row.byte_length) }] : [];
+  });
+  const revisions = new Map<string, TemplateRevision[]>();
+  for (const row of (await client.query<{ name: string; revision: number; sha256: string; byte_length: string; pushed_by: string; created_at: Date }>(
+    'SELECT name, revision, sha256, byte_length, pushed_by, created_at FROM template_revisions WHERE tenant_id = $1 ORDER BY revision', [tenantId])).rows) {
+    const list = revisions.get(row.name) ?? [];
+    list.push({ revision: row.revision, sha256: row.sha256, byteLength: Number(row.byte_length), createdAt: new Date(row.created_at).toISOString(), pushedBy: row.pushed_by });
+    revisions.set(row.name, list);
+  }
+  const templates = (await client.query<{ name: string; current_revision: number }>(
+    'SELECT name, current_revision FROM templates WHERE tenant_id = $1', [tenantId])).rows.map((row): StoredTemplate =>
+    ({ name: row.name, currentRevision: row.current_revision, revisions: revisions.get(row.name) ?? [] }));
+  const resources = (await resourceEntries(client, tenantId)).map((entry) => ({
+    id: entry.id, kind: entry.kind, currentVersion: entry.currentVersion,
+    versions: entry.versions.map(({ version, sha256, byteLength }) => ({ version, sha256, byteLength })),
+  }));
+  return { documents, templates, resources };
+}
+
 /** 工作区文档：引擎不核对文档字节，这里按登记的哈希核对。 */
-function documentSource(db: Db, blobs: BlobStore, tenantId: string): WorkspaceDocumentSource {
+function workspaceDocuments(db: Db, blobs: BlobStore, tenantId: string): WorkspaceDocumentSource {
   return {
     location: `tenants/${tenantId}/documents`,
     async list() {
@@ -82,8 +165,7 @@ function resourceStore(db: Db, blobs: BlobStore, tenantId: string): ResourceVers
       return sha256;
     },
     commit: (apply) => withTenant(db, tenantId, async (client) => {
-      await client.query('INSERT INTO resource_stores (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING', [tenantId]);
-      await client.query('SELECT tenant_id FROM resource_stores WHERE tenant_id = $1 FOR UPDATE', [tenantId]);
+      await lockTenant(client, tenantId);
       const before = await resourceEntries(client, tenantId);
       await persistAppended(client, tenantId, before, await apply(before));
     }),

@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了两部分：
+目前完成了三部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -10,8 +10,11 @@
 - **租户、账号与鉴权**（[票据 04](../.scratch/render-service-v1/issues/04-tenants-and-auth.md)，M261–M263）：
   - 成员登录、API 密钥与代建令牌；
   - 权限矩阵、行级安全与审计。
+- **代建推送**（[票据 05](../.scratch/render-service-v1/issues/05-authoring-push.md)，M264、M265）：
+  - 命令行 `renderweave push` 把本地工作区与资源版本仓库推送到客户的租户：先列差异，有冲突整体拒绝；
+  - 模板记修订，可以把当前修订指回旧修订。
 
-代建推送、预览、交付等业务端点，以及任务队列与渲染子进程，由后续票据加入。
+预览、交付等业务端点，以及任务队列与渲染子进程，由后续票据加入。
 
 ## 本机启动
 
@@ -113,16 +116,19 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET`、`POST /v1/api-keys`，`DELETE /v1/api-keys/{密钥}` | 客户管理员 |
 | `GET /v1/audit-events` | 客户管理员；按时间倒序，`limit` 最多 500，`before` 翻页 |
 | `GET /v1/authoring/tenants/{租户}` | 代建工程师，只认被指定的租户 |
+| `GET …/authoring/tenants/{租户}/workspace`、`GET …/contents/{哈希}` | 代建工程师；推送的读回，见[代建推送](#代建推送) |
+| `POST …/push-plans`、`PUT …/contents/{哈希}`、`POST …/pushes`、`POST …/template-current` | 代建工程师；推送与改当前修订 |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
 | 状态 | 问题码 |
 |---|---|
-| 400 | `request.invalid`（位置写到出错的字段） |
+| 400 | `request.invalid`（位置写到出错的字段）、`push.contentMissing`、`push.contentMismatch` |
 | 401 | `auth.required`、`auth.invalidCredentials` |
 | 403 | `auth.forbidden` |
 | 404 | `request.notFound` |
-| 409 | `member.emailTaken`、`member.lastAdmin` |
+| 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict` |
+| 415 | `request.invalid`：上传内容不是 `application/octet-stream` |
 
 客户端点的租户由身份决定，路径里没有租户 ID。
 
@@ -153,6 +159,52 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 - **跨租户标记**：平台管理员与代建工程师对客户租户的操作标为跨租户，记进目标租户的审计，客户管理员能看到。
 - **不属于任何租户的事件**：例如建平台用户、签发代建令牌，记在平台级。
 
+## 代建推送
+
+代建工程师照[代建指南](agent-guide.md)在本机做好数据定义、模板与资源后，用一条命令推送到客户的租户（ADR-0017、M264）：
+
+```bash
+renderweave push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace <工作区> --resources <资源版本仓库> [--dry-run]
+```
+
+- **令牌**：代建令牌只经环境变量传入，缺省 `RENDERWEAVE_AUTHORING_TOKEN`，可用 `--token-env` 换名；不写进参数、日志与输出。令牌只能推送到被指定的租户，别的租户与不存在的租户同样答 404。
+- **推送什么**：
+  - 工作区里的静态数据定义、编译产物、模板与样例数据集，按原始字节；其他 JSON（如渲染请求）不推送，列在输出的 `skipped` 里；
+  - 资源版本仓库里的全部资源及其全部内容版本。
+- **推送前先检查本地**：工作区有严重问题（如模板重名、无法解析）时不推送；资源目录还不是版本仓库或是旧版目录时，问题说明与 `resources-list` 等命令一致（M239）。
+- **输出**：标准错误流逐条列出新增、更新与冲突，标准输出是 JSON 汇总（`summary`、逐项的 `documents` 与 `resources`）。退出码 0 已推送（`--dry-run` 时为没有冲突）；1 有冲突、本地有严重问题、连不上服务或请求被拒绝；2 用法错误或缺少令牌。
+
+**差异与冲突**由服务按它的当前状态判定（M264）：
+
+| 内容 | 身份 | 新增 | 更新 | 冲突 |
+|---|---|---|---|---|
+| 静态数据定义、编译产物 | 名称@版本 | 服务端没有 | 不会有 | 服务端已有而字节不同（ADR-0008） |
+| 数据集 | 数据集 ID | 服务端没有 | 不会有 | 服务端已有而字节不同：推送不覆盖租户里的数据集 |
+| 模板 | 模板名 | 服务端没有 | 与当前修订的字节不同，记一个新修订 | 不会有 |
+| 资源 | 资源 ID | 服务端没有 | 本地多出内容版本，追加 | 种类不同，或两边都有的内容版本字节不同 |
+
+- 字节相同是"不变"。服务端的资源已有更新的内容版本、本地落后时也是"不变"，不覆盖。
+- 推送只新增与更新，不删除服务端已有的内容。
+- 有冲突就整体拒绝，服务端保持原样；没有冲突就在一个事务里提交。
+
+**模板修订**（M265）：模板每次推送改了内容就记一个新修订，修订号逐个递增，旧修订保留。模板按名称指向当前修订，渲染读到的是当前修订。可以把当前修订指回旧修订，之后再推送，就相对当前修订比较：
+
+```bash
+renderweave template-revisions --server … --tenant <租户ID> --template <模板名> [--current <修订号>]
+```
+
+**协议**：命令行先把清单（每份文档与每个资源内容版本的身份、SHA-256 与字节数）交给 `POST …/push-plans` 算差异，返回差异与服务端还缺的内容；`--dry-run` 到此为止，不写任何东西。没有冲突时，按 `PUT …/contents/{哈希}` 上传缺的内容（单份最大 64 MiB），再 `POST …/pushes` 提交。提交时：
+
+- 锁住租户的一行，与资源提交、改当前修订依次进行；
+- 按最新状态重算差异：有冲突答 409 `push.conflict`，附差异；
+- 核对要写入的内容都已上传，字节数相符；文档的种类与键按内容核对，不信声明：不符答 400 `push.contentMissing` 或 `push.contentMismatch`。
+
+有冲突时命令行不上传内容，仍提交一次，由服务拒绝并记审计。
+
+**读回**：`GET …/workspace` 列出租户的文档（模板为当前修订）、模板的全部修订与资源的全部内容版本；`GET …/contents/{哈希}` 按 SHA-256 读回已登记的原始字节，只上传、没登记的内容答 404。
+
+**审计**：代建端点的每次调用都记进目标租户的审计，标为跨租户：`authoring.access`、`authoring.read`、`content.read`、`content.upload`、`push.plan`、`push.commit`、`push.reject`、`template.setCurrent`。
+
 ## 数据库迁移
 
 - **写法**：迁移是 `service/migrations/NNNN_名称.sql`，版本号从 1 连续递增，只追加，不修改已执行的文件。
@@ -167,6 +219,8 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 - **对象**：内容按 SHA-256 存在租户前缀下，键是 `tenants/<租户>/blobs/sha256/<哈希>`。同一租户内相同字节只存一份，跨批次也是；不同租户各存一份。
 - **提交**：先写对象，再在一个数据库事务里登记。没登记的对象不会被读到；v1.0 不回收它们。
 - **工作区文档**：按原始字节存，数据库只记来源、哈希与字节数。读出时按登记的哈希核对。
+  - 推送进来的文档，来源写成"种类:键"：`definition:名称@版本`、`compiled:名称@版本`、`template:模板名`、`dataset:数据集ID`。渲染问题里的位置就是它。
+  - 模板的修订另记一张表，只追加；另一张表按模板名记当前修订，工作区里模板那一行跟着指向当前修订的内容（M265）。
 - **资源仓库**：语义与 `renderweave-resources/1` 相同，由引擎的 `resourceBackend` 统一负责（M260）。
   - 同一租户的提交锁住一行依次进行，清单只追加；
   - 读取时引擎核对字节数与哈希。
@@ -187,6 +241,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 
 - **`npm test`**：不需要 Docker。
   - 开放 API 用例跑内存后端（`service/test/api.test.ts`），覆盖权限矩阵、跨租户端点清单、审计与日志里不出现密钥。
+  - 代建推送用例（`service/test/push.test.ts`）从 `src/cli.ts` 跑命令行，推送到本机端口上的内存后端，再经开放 API 读回核对。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
 - **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
@@ -197,7 +252,7 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API 用例跑 PostgreSQL 加 S3 后端；
+- 同一组开放 API 用例与代建推送用例跑 PostgreSQL 加 S3 后端；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；

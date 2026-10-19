@@ -2,7 +2,7 @@
  * 开放 API 用例：账号、租户与鉴权（票据 04，M247、M261）。只经 HTTP 请求驱动，断言响应、问题清单与经 API 可见的结果。
  * 同一组用例跑两种后端：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑。
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createApi } from '../src/api/app.js';
@@ -12,23 +12,31 @@ import { generatePassword, hashPassword } from '../src/credentials.js';
 import { createLogger } from '../src/log.js';
 import { CROSS_TENANT_ENDPOINTS, EXEMPT_ACCESS, type TenantObjects } from './cross-tenant-endpoints.js';
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
-interface Reply { status: number; body: any; raw: string }
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+/** body 是解析后的 JSON（响应是 JSON 时），raw 是响应文本，bytes 是原始字节。 */
+interface Reply { status: number; body: any; raw: string; bytes: Buffer }
 interface Person { id: string; email: string; password: string; token: string }
 interface TenantFixture { id: string; admin: Person; operator: Person; key: { id: string; token: string }; engineer: { id: string; token: string } }
 
 const email = (role: string) => `${role}-${randomUUID()}@example.test`;
+/** 上传内容的样例：几个字节与它的 SHA-256。 */
+const SAMPLE = new Uint8Array(Buffer.from('样例内容'));
+const SAMPLE_SHA256 = createHash('sha256').update(SAMPLE).digest('hex');
 const ids = (value: unknown) => JSON.stringify(value);
 
-/** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。 */
-async function createWorld(backend: ServiceBackend) {
+/** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。代建推送的用例也用它。 */
+export async function createWorld(backend: ServiceBackend) {
   const clock = { value: new Date() };
   const logs: string[] = [], secrets: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { logs.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
   const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test' });
+  /** 字节作为 application/octet-stream 发送，其他请求体作为 JSON 发送。 */
   const call = async (method: Method, url: string, token?: string, body?: unknown): Promise<Reply> => {
-    const response = await app.inject({ method, url, ...(token ? { headers: { authorization: `Bearer ${token}` } } : {}), ...(body === undefined ? {} : { payload: body as object }) });
-    return { status: response.statusCode, body: response.body ? JSON.parse(response.body) : undefined, raw: response.body };
+    const binary = body instanceof Uint8Array;
+    const headers = { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(binary ? { 'content-type': 'application/octet-stream' } : {}) };
+    const response = await app.inject({ method, url, headers, ...(body === undefined ? {} : { payload: binary ? Buffer.from(body) : body as object }) });
+    const json = String(response.headers['content-type'] ?? '').startsWith('application/json');
+    return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload };
   };
   const login = async (address: string, password: string) => {
     const reply = await call('POST', '/v1/sessions', undefined, { email: address, password });
@@ -61,7 +69,7 @@ async function createWorld(backend: ServiceBackend) {
   const a = await tenant('租户 A'), b = await tenant('租户 B');
   return { app, backend, clock, logs, secrets, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
 }
-type World = Awaited<ReturnType<typeof createWorld>>;
+export type World = Awaited<ReturnType<typeof createWorld>>;
 
 /** M247 的权限矩阵。 */
 const MATRIX: Record<IdentityRole, readonly string[]> = {
@@ -96,6 +104,17 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'DELETE /v1/api-keys/:keyId', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/api-keys/${randomUUID()}` }) },
   { route: 'GET /v1/audit-events', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/audit-events' }) },
   { route: 'GET /v1/authoring/tenants/:tenantId', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/workspace', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/workspace` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/push-plans', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/push-plans`, body: { documents: [], resources: [] } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/pushes', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/pushes`, body: { documents: [], resources: [] } }) },
+  { route: 'PUT /v1/authoring/tenants/:tenantId/contents/:sha256', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/contents/${SAMPLE_SHA256}`, body: SAMPLE }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/contents/:sha256', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/contents/${SAMPLE_SHA256}` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/template-current`, body: { template: '矩阵', revision: 1 } }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {

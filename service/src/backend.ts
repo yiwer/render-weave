@@ -111,6 +111,83 @@ export interface PlatformStore {
   appendAudit(event: NewAuditEvent, now: Date): Promise<void>;
 }
 
+/** 代建推送进来的工作区文档的种类（票据 05，M264）。 */
+export type DocumentKind = 'definition' | 'compiled' | 'template' | 'dataset';
+export const DOCUMENT_KINDS: readonly DocumentKind[] = ['definition', 'compiled', 'template', 'dataset'];
+
+/**
+ * 工作区文档在服务端的来源名："种类:键"，如 template:线路牌、definition:线路牌@1。
+ * 渲染时它就是问题里的位置；键是数据定义与编译产物的"名称@版本"、模板名或数据集 ID。
+ */
+export const documentSource = (kind: DocumentKind, key: string) => `${kind}:${key}`;
+export function parseDocumentSource(source: string): { kind: DocumentKind; key: string } | undefined {
+  const at = source.indexOf(':'), kind = source.slice(0, at) as DocumentKind;
+  return at > 0 && DOCUMENT_KINDS.includes(kind) && at < source.length - 1 ? { kind, key: source.slice(at + 1) } : undefined;
+}
+
+/** 服务端的一份工作区文档：种类加键，内容按 SHA-256 存放。模板是当前修订的内容。 */
+export interface StoredDocument {
+  readonly kind: DocumentKind;
+  readonly key: string;
+  readonly sha256: string;
+  readonly byteLength: number;
+}
+
+export interface TemplateRevision {
+  readonly revision: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly createdAt: string;
+  /** 推送者的标签（代建令牌的标签），不含令牌。 */
+  readonly pushedBy: string;
+}
+
+/** 模板按名称指向当前修订；推送改了内容就记一个新修订，旧修订保留，当前修订可以指回旧修订（M264）。 */
+export interface StoredTemplate {
+  readonly name: string;
+  readonly currentRevision: number;
+  readonly revisions: readonly TemplateRevision[];
+}
+
+export interface ContentVersion {
+  readonly version: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+}
+
+export interface StoredResource {
+  readonly id: string;
+  readonly kind: 'image' | 'font';
+  readonly currentVersion: number;
+  readonly versions: readonly ContentVersion[];
+}
+
+/** 推送看到的租户工作区：文档、模板修订与资源内容版本。 */
+export interface AuthoringState {
+  readonly documents: readonly StoredDocument[];
+  readonly templates: readonly StoredTemplate[];
+  readonly resources: readonly StoredResource[];
+}
+
+/** 一次推送要写入的内容，已按差异算好。 */
+export interface PushWrites {
+  /** 新的静态数据定义、编译产物与数据集：只新增，不覆盖。 */
+  readonly documents: readonly StoredDocument[];
+  /** 模板的新修订，写入后成为当前修订。 */
+  readonly templates: readonly { readonly name: string; readonly sha256: string; readonly byteLength: number }[];
+  /** 新资源（从 v1 起），或已有资源追加的后续内容版本。 */
+  readonly resources: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly create: boolean; readonly versions: readonly ContentVersion[] }[];
+}
+
+/** 本租户按 SHA-256 存放的内容（ADR-0018）：先写内容，再登记；没有登记的内容不会出现在任何读者面前。 */
+export interface ContentStore {
+  /** 写入一份内容，返回它的 SHA-256；相同字节只存一份。 */
+  put(bytes: Uint8Array): Promise<string>;
+  has(sha256: string): Promise<boolean>;
+  /** 读出一份内容（登记与否都读得到），不存在时 undefined。登记与否由调用方判断。 */
+  get(sha256: string): Promise<Uint8Array | undefined>;
+}
+
 export interface TenantStorage {
   /** 按原始字节保存工作区文档；同一来源再次保存时指向新内容。 */
   putDocuments(documents: readonly { readonly source: string; readonly bytes: Uint8Array }[]): Promise<void>;
@@ -118,6 +195,17 @@ export interface TenantStorage {
   readonly resources: ResourceVersionBackend;
   createBatch(): Promise<TenantBatch>;
   openBatch(batchId: string): TenantBatch;
+  readonly contents: ContentStore;
+  /** 推送看到的当前状态：来源是"种类:键"的文档、模板修订与资源。 */
+  authoringState(): Promise<AuthoringState>;
+  /**
+   * 一次推送：取得最新状态并排除其他推送与资源提交，交给 prepare 算出要写的内容，在一个事务里写入。
+   * prepare 抛错时什么也不写。返回写入后的状态与各模板新修订的编号。
+   */
+  push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date }):
+    Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number> }>;
+  /** 把模板的当前修订指向它已有的一个修订；模板或修订不存在时 undefined。 */
+  setCurrentTemplate(name: string, revision: number): Promise<StoredTemplate | undefined>;
 }
 
 export interface TenantBatch {

@@ -11,6 +11,8 @@ export interface BlobStore {
   put(tenant: string, bytes: Uint8Array): Promise<string>;
   /** 按哈希读出原始字节，不核对：核对由读取方负责，好让引擎报出各自的完整性问题。 */
   get(tenant: string, sha256: string): Promise<Uint8Array>;
+  /** 这份内容在不在。 */
+  has(tenant: string, sha256: string): Promise<boolean>;
   /** 存储可用：能列举租户前缀。 */
   available(): Promise<boolean>;
 }
@@ -59,6 +61,15 @@ export function s3Blobs(client: S3Client, bucket: string): BlobStore {
       const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: blobKey(tenant, sha256) }));
       if (!object.Body) throw new Error(`对象没有内容：${sha256}`);
       return object.Body.transformToByteArray();
+    },
+    async has(tenant, sha256) {
+      try {
+        await client.send(new HeadObjectCommand({ Bucket: bucket, Key: blobKey(tenant, sha256) }));
+        return true;
+      } catch (error) {
+        if (notFound(error)) return false;
+        throw error;
+      }
     },
     async available() {
       try {

@@ -17,6 +17,9 @@
  *   退出码：0 正常结束；1 轮次无法审核（没有 outcome.json、候选被改动）或端口被占用；2 用法错误。
  * - agent apply：把审核通过的一轮应用到工作区：数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。
  *   退出码：0 已应用；1 拒绝或失败（未审核、未通过、已应用过、工作区已变化、发布或写入失败），工作区保持原状；2 用法错误或工作区无法读取。
+ * - push：把本地工作区与资源版本仓库推送到出图服务上的一个租户（src/push.ts）；代建令牌只经环境变量传入。
+ *   退出码：0 已推送（只看差异时为没有冲突）；1 有冲突整体拒绝、本地有严重问题、连不上服务或请求被拒绝；2 用法错误或缺少令牌。
+ * - template-revisions：列出服务端一个模板的修订，或把当前修订指向某一修订。退出码：0 成功；1 模板或修订不存在、请求被拒绝；2 用法错误或缺少令牌。
  */
 import { spawn } from 'node:child_process';
 import { appendFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -39,6 +42,7 @@ import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
+import { DEFAULT_TOKEN_ENV, pushWorkspace, templateRevisions, type PushDiff, type PushTarget, type ReportedProblem } from './push.js';
 
 export interface CliIo {
   readonly stdout: (text: string) => void;
@@ -71,6 +75,8 @@ const USAGE = `用法：
   renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--claude …]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
+  renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--dry-run] [--token-env <环境变量名>]
+  renderweave template-revisions --server <服务地址> --tenant <租户ID> --template <模板名> [--current <修订号>] [--token-env <环境变量名>]
 
 render
   --workspace   工作区目录：静态数据定义、编译产物、模板与数据集的 JSON 文件
@@ -113,6 +119,19 @@ agent apply（只接受审核通过的轮次；数据定义发布为下一个版
   --workspace   可选，写入的工作区，缺省为发起本轮时的 --workspace
   --overwrite   可选，工作区自成果生成后已变化时仍然应用：按当前工作区发布为下一个版本；要改的模板已被他人保存时用工作副本覆盖
 
+push（代建推送：先列差异，有冲突整体拒绝，没有冲突在一个事务里提交）
+  --server      出图服务地址，如 http://127.0.0.1:8080
+  --tenant      目标租户 ID；代建令牌必须被指定给这个租户
+  --workspace   本地工作区：静态数据定义、编译产物、模板与样例数据集；其他 JSON（如渲染请求）不推送
+  --resources   资源版本仓库：全部资源及其内容版本
+  --dry-run     可选，只列差异，不提交
+  --token-env   可选，代建令牌所在的环境变量名，缺省 ${DEFAULT_TOKEN_ENV}；令牌只经环境变量传入，不写进参数与文件
+
+template-revisions（服务端模板的修订：每次推送改了内容的模板记一个新修订）
+  --template    模板名
+  --current     可选，把当前修订指向这个修订号，可以指回旧修订
+  --server、--tenant、--token-env  同 push
+
 publish
   --definition  数据定义 DSL 文件（renderweave-schema/1）
   --workspace   已发布的静态数据定义所在的工作区：确定下一个版本号，并解析引用
@@ -138,13 +157,15 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'agent run': ['out'],
   'agent review': [],
   'agent apply': [],
+  push: ['server', 'tenant', 'workspace', 'resources'],
+  'template-revisions': ['server', 'tenant', 'template'],
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
   'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
-const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'] };
+const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   // agent 带子命令：agent run、agent review、agent apply。
@@ -159,7 +180,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
     : command === 'mcp' ? ['tools', 'log', 'outcome-context'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
-    : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace'] : [];
+    : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
+    : command === 'push' ? ['token-env'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
   let positionals: string[];
   try {
@@ -193,6 +215,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'mcp') return await runMcp(options, io);
     if (command === 'agent run') return await runAgent(options, io);
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
+    if (command === 'push') return await runPush(options, values['dry-run'] === true, io);
+    if (command === 'template-revisions') return await runTemplateRevisions(options, io);
     return await runResources(command, options, io);
   } catch (error) {
     io.stderr(`命令执行失败：${describeError(error)}\n`);
@@ -572,7 +596,83 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
   return ExitCodes.ok;
 }
 
-function reportProblems(problems: readonly Problem[], io: CliIo): string {
+/** 服务地址与令牌：令牌只从环境变量读取，缺少时是用法错误。 */
+function pushTarget(options: Record<string, string>, io: CliIo): PushTarget | undefined {
+  let url: URL | undefined;
+  try { url = new URL(options.server!); } catch { url = undefined; }
+  if (!url || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
+    io.stderr('--server 必须是 http 或 https 地址\n');
+    return undefined;
+  }
+  const env = options['token-env'] ?? DEFAULT_TOKEN_ENV;
+  const token = process.env[env];
+  if (!token) {
+    io.stderr(`缺少环境变量 ${env}：代建令牌只经环境变量传入，不写进参数与文件\n`);
+    return undefined;
+  }
+  return { server: options.server!, tenant: options.tenant!, token };
+}
+
+const KIND_NAMES: Record<string, string> = { definition: '静态数据定义', compiled: '编译产物', template: '模板', dataset: '数据集', image: '图片', font: '字体' };
+const STATUS_NAMES: Record<string, string> = { added: '新增', updated: '更新', unchanged: '不变', conflict: '冲突' };
+
+/** 差异逐条写到标准错误流：新增、更新与冲突，以及服务端已有更新内容版本的资源。 */
+function reportDiff(diff: PushDiff, io: CliIo): void {
+  for (const item of diff.documents) {
+    if (item.status === 'unchanged') continue;
+    const revision = item.kind !== 'template' ? '' : item.revision !== undefined
+      ? `（修订 ${item.currentRevision !== undefined ? `${item.currentRevision} → ` : ''}${item.revision}）`
+      : item.currentRevision !== undefined ? `（当前修订 ${item.currentRevision}）` : '';
+    io.stderr(`${STATUS_NAMES[item.status] ?? item.status} ${KIND_NAMES[item.kind] ?? item.kind} ${item.key}${revision}${item.reason ? `：${item.reason}` : ''}\n`);
+  }
+  for (const item of diff.resources) {
+    if (item.status === 'unchanged') {
+      if (item.serverVersion !== undefined && item.serverVersion > item.localVersion) {
+        io.stderr(`不变 资源 ${item.id}：服务端已有 v${item.serverVersion}，本地只到 v${item.localVersion}，不覆盖\n`);
+      }
+      continue;
+    }
+    const versions = item.status === 'conflict' ? `本地 v${item.localVersion}，服务端 v${item.serverVersion}`
+      : item.serverVersion === undefined ? (item.localVersion === 1 ? 'v1' : `v1–v${item.localVersion}`) : `v${item.serverVersion} → v${item.localVersion}`;
+    io.stderr(`${STATUS_NAMES[item.status] ?? item.status} 资源 ${item.id}（${KIND_NAMES[item.kind] ?? item.kind}，${versions}）${item.reason ? `：${item.reason}` : ''}\n`);
+  }
+  const { added, updated, unchanged, conflicts } = diff.summary;
+  io.stderr(`差异：新增 ${added}，更新 ${updated}，不变 ${unchanged}，冲突 ${conflicts}\n`);
+}
+
+async function runPush(options: Record<string, string>, dryRun: boolean, io: CliIo): Promise<number> {
+  const target = pushTarget(options, io);
+  if (!target) return ExitCodes.usage;
+  const outcome = await pushWorkspace({ ...target, workspace: options.workspace!, resources: options.resources!, dryRun });
+  if (outcome.diff) reportDiff(outcome.diff, io);
+  reportProblems(outcome.problems, io);
+  if (outcome.diff) {
+    const { summary, documents, resources, pushId } = outcome.diff;
+    io.stdout(`${JSON.stringify({ tenant: target.tenant, dryRun, pushed: outcome.pushed, ...(pushId ? { pushId } : {}), summary, documents, resources, skipped: outcome.skipped }, null, 2)}\n`);
+  }
+  const conflicts = outcome.diff?.summary.conflicts ?? 0;
+  if (outcome.pushed) io.stderr(`已推送到租户 ${target.tenant}\n`);
+  else if (conflicts > 0) io.stderr(dryRun ? '有冲突：推送时会整体拒绝\n' : '有冲突，整体拒绝，服务端保持原样\n');
+  else if (dryRun && outcome.diff) io.stderr('只列差异，没有提交\n');
+  return outcome.pushed || (dryRun && outcome.diff && conflicts === 0) ? ExitCodes.ok : ExitCodes.failed;
+}
+
+async function runTemplateRevisions(options: Record<string, string>, io: CliIo): Promise<number> {
+  const current = options.current === undefined ? undefined : Number(options.current);
+  if (current !== undefined && (!/^[1-9]\d*$/.test(options.current!) || !Number.isSafeInteger(current))) {
+    io.stderr('--current 必须是正整数\n');
+    return ExitCodes.usage;
+  }
+  const target = pushTarget(options, io);
+  if (!target) return ExitCodes.usage;
+  const result = await templateRevisions({ ...target, template: options.template!, ...(current !== undefined ? { current } : {}) });
+  reportProblems(result.problems, io);
+  if (!result.template) return ExitCodes.failed;
+  io.stdout(`${JSON.stringify(result.template, null, 2)}\n`);
+  return ExitCodes.ok;
+}
+
+function reportProblems(problems: readonly (Problem | ReportedProblem)[], io: CliIo): string {
   for (const problem of problems) {
     const where = Object.values(problem.location).slice(1).join(' / ');
     io.stderr(`[${problem.level === 'severe' ? '严重' : '提示'}] ${problem.code} ${where}：${problem.message}\n`);

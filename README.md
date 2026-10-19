@@ -54,6 +54,15 @@ node dist/bin.js agent apply out/rounds/r1 --workspace path/to/workspace
 
 `agent review` 在本机打开审核页：对照示例图逐项处理待确认项（采纳候选、改值或标为空），其余内容整体确认一次，有出图请求时对照 RenderWeave 重新渲染的预览（模板辅助修改时是修改前后两张，另有相对已保存模板的改动表），然后通过或不通过；审核结果随时保存到轮次目录的 `review.json`。`agent apply` 只接受审核通过的轮次，把数据定义发布为下一个版本，数据集与模板保存为新文件，模板的工作副本替换已保存的模板，之后可用 `deliver` 正式出图；工作区自成果生成后变了，就列出差异（要改的模板已被他人保存时另列他人的改动）并拒绝，加 `--overwrite` 才按当前工作区写入，或用 `--from` 重做。轮次目录、成果格式、审核与应用见 [业务 Agent 任务](docs/agent-tasks.md)；从示例图走到出图与修改的整套操作见 [代建指南](docs/agent-guide.md)。
 
+## 推送到出图服务
+
+```powershell
+node dist/bin.js push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace path/to/workspace --resources path/to/versioned-resources --dry-run
+node dist/bin.js template-revisions --server http://127.0.0.1:8080 --tenant <租户ID> --template <模板名> --current 1
+```
+
+代建工程师把本地工作区（静态数据定义、编译产物、模板、数据集）与资源版本仓库推送到客户在出图服务上的租户：先列新增、更新与冲突，`--dry-run` 只看差异；有冲突整体拒绝，没有冲突一次提交。代建令牌只从环境变量读取，缺省 `RENDERWEAVE_AUTHORING_TOKEN`。模板每次推送改了内容就记一个新修订，`template-revisions --current` 可以把当前修订指回旧修订。服务的启动、端点与冲突规则见 [出图服务](docs/service.md)，代建流程里的这一步见 [代建指南](docs/agent-guide.md) 第 9 步。
+
 ## 验证与文档
 
 ```powershell
