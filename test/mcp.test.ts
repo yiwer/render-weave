@@ -56,9 +56,10 @@ beforeAll(async () => {
   await writeFile(join(outside, 'secret.json'), '{"dslVersion":"renderweave-template/1"}');
   await cp(join(resourcesDir, 'images/test/quadrants.png'), join(root, 'sample.png'));
   await writeFile(join(root, 'notes.txt'), '不是图片');
-  // 工作副本：站名颜色改成蓝色；另一份插槽变量拼错。
+  // 工作副本：站名颜色与地标单色重染改成蓝色；另一份插槽变量拼错。
   const stop = JSON.parse(await readFile(join(m402Dir, 'template-stop.json'), 'utf8'));
   stop.parameters.find((parameter: { name: string }) => parameter.name === 'nameColor').default = '#0000FF';
+  stop.artboard.children[1].children[1].tint = '#0000FF';
   await writeFile(join(root, 'candidates/template-stop.json'), JSON.stringify(stop));
   await writeFile(join(root, 'candidates/template-stop-typo.json'), JSON.stringify(stop).replace('"slot":"name"', '"slot":"nmae"'));
   // 数据定义候选：停靠站点不写版本，接在快照的 v1 之后；另一份写死 v1，与将分配的版本不符。
@@ -264,6 +265,11 @@ describe('草稿预览与元素检查', () => {
     expect(name.nodes).toHaveLength(1);
     expect(name.nodes[0]).toMatchObject({ type: 'text', visible: true,
       text: { content: '东门', fontSize: 10, writingMode: 'vertical', compression: 1, overflow: false, shrinkGroup: 'stopNames' } });
+    const tinted = await session.callJson('inspect_layout', {
+      request: REQUEST, templates: ['candidates/template-stop.json'],
+      elements: ['标准线路单边/站点面板/站点列[5]/名称区/地标'], depth: 0,
+    });
+    expect(tinted.nodes[0].image).toMatchObject({ source: 'res:landmark-3', fit: 'contain', tint: '#0000FFFF' });
     const missing = await session.callJson('inspect_layout', { request: REQUEST, elements: ['标准线路单边/站名'] });
     expect(missing.nodes).toEqual([]);
     expect(missing.notFound[0].suggestions[0]).toBe('标准线路单边/站点面板/站点列[1]/名称区/站名');
