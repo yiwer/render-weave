@@ -11,7 +11,7 @@
 
 另有三项首轮没看到，开了票据 22–24：
 
-1. MCP 文字结果超过 50,000 字符时，业务 Agent 实际拿不到。`dsl_reference` 的 `schema/template` 已经在 2/4 个模板评估轮里中招。
+1. MCP 文字结果超过 50,000 字符时被 Claude Code 转存，业务 Agent 要按路径另读（Haiku 用 Glob 找，没读到；Gemini 用 Read 读到了，2026-10-20 更正）。`dsl_reference` 的 `schema/template` 已经在 2/4 个模板评估轮里中招。
 2. 思考 token 占输出 token 的 74–87%，是最大的成本与用时来源，现在既不能设置也没有记录。
 3. 模板辅助修改与带反馈的下一轮没有自动评估。
 
@@ -72,7 +72,8 @@
 | 45,000 字符中文 | 全部，约 46k tokens | 回报了末行 |
 
 - **已验证**：转存按字符数算，阈值在 45,000 与 55,000 之间。Claude Code 2.1.296 二进制里的常量是 `p0=50000`（工具结果落盘阈值的上限），两者一致。`MAX_MCP_OUTPUT_TOKENS` 的缺省 25,000 没有截断 46k tokens 的中文结果。
-- **已验证**：业务 Agent 读不到转存的文件。`agent run` 把 `CLAUDE_CONFIG_DIR` 放在轮次的 `logs/` 下（`src/agent/run.ts:328`），`--restricted` 只允许读 `agent/`。评估里 Agent 用 Glob 去找转存文件，得到 "is outside … --restricted confines the file tools to the working directory"（`out/agent-eval/2026-10-18-check-outcome/run-1/m402-template/template/logs/stream.jsonl`）。
+- **已验证**：转存的文件在轮次的 `logs/` 下（`CLAUDE_CONFIG_DIR`，`src/agent/run.ts:328`），业务 Agent 用 Glob 搜不到：评估里 Agent 用 Glob 去找，得到 "is outside … --restricted confines the file tools to the working directory"（`out/agent-eval/2026-10-18-check-outcome/run-1/m402-template/template/logs/stream.jsonl`）。
+- **更正（2026-10-20 实测）**：按转存提示里的完整路径用 Read 读得到。阿拉伯文站牌试跑的两轮 Gemini 模板设计都这样读了 `schema/template`：第一次被 Read 的 25,000 tokens 上限拒绝，加 `allow_large` 后读回 103,823 字符；`check_templates` 的 121,601 字符问题清单也被整份读回（143,440 字符，`out/arabic-board/r5-template/logs/stream.jsonl`）。原先"读不到"的结论只对 Glob 成立。所以转存的代价是多绕 1–2 轮、再把整份结果读进上下文，读不读、怎么读取决于模型。
 
 ### 实测 3：工具输出的大小
 
@@ -191,6 +192,8 @@
 ### 新发现 1：MCP 输出超过 50,000 字符时 Agent 拿不到
 
 见实测 2、3。`schema/template` 已经在 2/4 个模板评估轮中被转存，两次 Agent 都没拿到 Schema。`inspect_layout` depth 20 已到 49,070 字符。
+
+> 2026-10-20 更正：标题的"拿不到"只对 Glob 成立。Gemini 按转存提示的路径用 Read（加 `allow_large`）读回了整份结果，见实测 2 的更正。票据 22 的理由改为：转存让 Agent 多绕 1–2 轮、把整份结果读进上下文，而且读不读取决于模型（Haiku 用 Glob 找，没读到；Gemini 用 Read，读到了）。
 
 `tools.jsonl` 不记输出大小，评估报告也不查转存，这类问题只有翻 `stream.jsonl` 才看得到。
 

@@ -11,7 +11,7 @@
 背景：
 
 - Claude Code 2.1.296 把超过 50,000 字符的工具文字结果转存到 `CLAUDE_CONFIG_DIR` 下的文件，只给模型约 2,000 字符的预览（实测：45,000 字符原样送达，55,000 字符转存；中文与 ASCII 一样按字符数算）。
-- 业务 Agent 的 `CLAUDE_CONFIG_DIR` 在轮次的 `logs/` 下（`src/agent/run.ts:328`），`--restricted` 只允许读 `agent/` 工作目录，所以转存的文件读不到，等于这次调用白做。
+- 业务 Agent 的 `CLAUDE_CONFIG_DIR` 在轮次的 `logs/` 下（`src/agent/run.ts:328`）。`--restricted` 下用 Glob 搜不到转存文件，但按转存提示里的完整路径用 Read（加 `allow_large`）读得到（2026-10-20 实测，见 Comments）。所以转存不是"白做"，而是多绕 1–2 轮、把整份结果读进上下文，且读不读取决于模型。
 - 已经发生：`dsl_reference` 的 `schema/template` 是 79,116 字符，4 次模板评估轮里有 2 次调了它，都被转存；其中一次 Agent 接着用 Glob 去找转存文件，被受限模式拒绝（`out/agent-eval/2026-10-18-check-outcome/run-1/m402-template/template/logs/stream.jsonl`）。两次都没拿到 Schema，Agent 只能凭参考文档写模板。
 - 快到线的：`inspect_layout` 在 M402 上 depth 3 是 30,193 字符，depth 20 是 49,070 字符（`INSPECT_MAX_NODES = 300` 只限元素数、不限字符数，`src/mcp/tools.ts:46`）。站数更多、站名更长的模板会超线。中文结果约 1 字符 1 token，4.5 万字符的一次结果就占约 4.6 万 tokens 上下文。
 - `tools.jsonl` 的摘要不记输出大小，评估报告也不查转存，这类问题只能翻 `stream.jsonl` 才看得到。
@@ -42,3 +42,7 @@
 ## Comments
 
 - 2026-10-19 二次复核新开。阈值来自两处：Claude Code 二进制中的常量 `p0=50000`（工具结果落盘阈值上限）与上面的实测；实测脚本 `out/probe-tooling-2/blob-test.mjs`（不进版本库）。升级 Claude Code 后要按 `docs/agent-eval.md` 跑评估，届时看报告里的转存计数。
+- 2026-10-20 阿拉伯文站牌试跑（Gemini 4 Argon，`out/arabic-board/r4-template`、`r5-template`，不进版本库）更正"读不到"：
+  - 两轮都转存了 `schema/template`（86.5KB），Agent 按提示路径 Read，先被 25,000 tokens 上限拒绝，再加 `allow_large` 读回 103,823 字符；
+  - 第 5 轮第一次 `check_templates` 有 714 个问题、121,601 字符，被转存后同样整份读回（143,440 字符）。
+  - 优先级不变：每次转存多 1–2 轮，并把 10 万字符级的结果读进上下文；问题清单上限 200 条正好覆盖这次的 714 条。
