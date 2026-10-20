@@ -23,8 +23,17 @@
 | 13 | [网格的比例列、跨行列元素与超出单元格不再静默重叠](issues/13-grid-overlap.md) | 无 | A01、A02、A03（验收后的后续，来自与 design-layout-draw 网格的对照） |
 | 14 | [模板声明自己的缩字下限，小尺寸标签可以缩到 5 mm 以下](issues/14-template-min-font-size.md) | 无 | A01、A02、A03、A10（验收后的后续，来自 Spec 审查第 3 项） |
 | 15 | [还不是版本仓库的目录提示先 resources-init](issues/15-uninitialized-resource-store.md) | 无 | A01（验收后的后续，第二阶段遗留） |
+| 16 | [`agent run` 精确校验任务需要的参数](issues/16-agent-run-task-options.md) | 无 | 2026-10-19 外围工具复核 P1-1 |
+| 17 | [`check_outcome` 返回模板修改的结构化差异](issues/17-check-outcome-revision.md) | 24 | 2026-10-19 外围工具复核 P1-2（二次复核降为 P2） |
+| 18 | [模板设计的主模板基准必须等于数据集选定的数据定义](issues/18-template-base-matches-dataset.md) | 无 | 2026-10-19 外围工具复核 P2-3（二次复核改写，P3） |
+| 19 | [`view_image` 缺省不再把小区域放大到 1400 像素](issues/19-view-image-multiple-regions.md) | 无 | 2026-10-19 外围工具复核 P2-4（二次复核改写） |
+| 20 | [修正模板参考里的数据定义示例指向](issues/20-template-reference-data-definition-pointer.md) | 无 | 2026-10-19 外围工具复核 P2-5（二次复核降为 P3） |
+| 21 | [评估把上游瞬时错误与模型失败分开](issues/21-eval-retry-transient-errors.md) | 无 | 2026-10-19 外围工具复核 P2-6（二次复核改写） |
+| 22 | [MCP 工具的文字结果不超过 Claude Code 的落盘阈值](issues/22-mcp-output-within-client-limits.md) | 无 | 2026-10-19 二次复核新发现 1 |
+| 23 | [业务 Agent 的思考预算可设置、有记录，并用评估定缺省](issues/23-agent-thinking-budget.md) | 21 | 2026-10-19 二次复核新发现 2 |
+| 24 | [评估加一个模板辅助修改场景](issues/24-eval-template-revision-scenario.md) | 21 | 2026-10-19 二次复核新发现 3 |
 
-已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。
+已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。16–21 来自 2026-10-19 的[外围工具复核](../../docs/agent-tooling-review.md)，22–24 来自同日的[二次复核](../../docs/agent-tooling-evaluation.md)，都不改变上面的验收映射。
 
 - 01、03 可以并行开始。
 - 03 的 DSL 参考工具返回 `agent/reference/` 与 `schemas/` 中的现有内容，01、02 完成后内容自然更新，所以 03 不依赖 01、02。

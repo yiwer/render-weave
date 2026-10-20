@@ -330,6 +330,7 @@
 - **模板声明缩字下限**（M238，[票据 14](../.scratch/agent-template-authoring/issues/14-template-min-font-size.md)）：Spec 审查第 3 项。画板新增可选键 `minFontSize`（缺省 5 mm，不低于 1.5 mm），元素与缩字组的下限缺省取它、只能更高；缩字停在下限时问题里写明下限与来源。价签约定包改为在画板上写 3 mm。用价签材料让 Haiku 重做模板：画板写了 3 mm，30 字的最长品名从 4 mm 缩到 3.556 mm 放下，三张交付 0 问题。
 - **未初始化的资源目录提示先初始化**（M239，[票据 15](../.scratch/agent-template-authoring/issues/15-uninitialized-resource-store.md)）：「后续」原第 3 条，第二阶段遗留。`resources-import` 等命令遇到不存在的目录、没有清单的目录或旧版资源目录时，问题说明写明先执行 `resources-init` 或从旧目录 `resources-import`，不再只报 `ENOENT`。
 - **Gemini 复跑评估门槛**（[2026-10-19-gemini-4-argon](agent-eval/reports/2026-10-19-gemini-4-argon.json)）：「后续」原第 1 条。资料与票据 14 的 Haiku 门槛相同，合同 0.5.0，三个场景各 2 次全部达线，见 [Agent 评估](agent-eval.md#历次评估)。
+- **外围工具复核**（2026-10-19）：第三阶段关闭后的只读复核，结论与证据见 [Agent 外围工具复核](agent-tooling-review.md)；P1/P2 已开票 16–21，P3 未开票。不改本阶段的验收结论。
 
 ## 复现与证据位置
 

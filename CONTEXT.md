@@ -35,6 +35,12 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）、03（服务骨架，M259、M260）、04（租户、账号与鉴权，M261–M263）、05（代建推送，M264、M265）、06（渲染 worker 与草稿预览，M266、M267）与 07（批量正式交付，M268、M269）已完成，下一步是 10（数据集与资源接口）、08（出图记录的查询与导出）与 09（计量与额度）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与 M251–M257 更新后的 Agent 参考上过评估门槛，Gemini 已在合同 0.5.0 与票据 14 的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
+- **Agent 外围工具复核（2026-10-19）**：首轮只读复核开了票据 16–21（[外围工具复核](docs/agent-tooling-review.md)）；同日的[二次复核与实测](docs/agent-tooling-evaluation.md)改了排序与方案，新开 22–24。
+  - P1 只剩票据 16：`agent run` 对 `--dataset` 的静默误用与 TypeError。
+  - 票据 19 的拼图方案被实测推翻（同样像素拼成一张，366 站名从 59 掉到 52–56），改为 `view_image` 缺省最多放大 2 倍。
+  - 票据 18 的判据会误伤被调模板，已改写。
+  - 新发现：MCP 文字结果过 50,000 字符时业务 Agent 拿不到（票据 22）；思考 token 占输出 74–87%（票据 23）；模板辅助修改没有评估场景（票据 24）。
+  - 落地顺序：16、21 → 24 → 22、17、18、19、20 一批发合同 0.6.0、跑一次评估 → 23。阶段 4 的票据顺序不变，16、21 插队，其余排在阶段 4 票据的间隙。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
@@ -79,6 +85,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/stage1-acceptance.md](docs/stage1-acceptance.md) | 阶段收尾审查、可靠性/鲁棒性/可用性、修复结果与 DSL 能力边界 |
 | [docs/stage2-acceptance.md](docs/stage2-acceptance.md) | 第二阶段全新环境复跑、跨平台比对、指南实测、两轴审查与服务前要求 |
 | [docs/stage3-acceptance.md](docs/stage3-acceptance.md) | 第三阶段验收矩阵 A01–A12、两张新示例图的端到端代建记录、模型对比、两轴审查与后续 |
+| [docs/agent-tooling-review.md](docs/agent-tooling-review.md) | 2026-10-19 的 Agent 外围工具复核：P1/P2/P3、证据、对应票据与未开票小账 |
+| [docs/agent-tooling-evaluation.md](docs/agent-tooling-evaluation.md) | 同日的二次复核与实测：看图倍数与拼图、Claude Code 的工具结果上限、工具输出大小、评估流日志统计、逐票意见、新发现与落地顺序 |
 | [docs/dev-setup.md](docs/dev-setup.md) | 换设备接续：软件版本与自检、key 与模型服务、不进版本库的材料、Linux 测试与 key 扫描、已知的坑 |
 | [docs/roadmap.md](docs/roadmap.md) | 产品定位、形态、v1.0 代建模式、阶段与稳定版本、待定的难逆转事项 |
 | [docs/agent-validation.md](docs/agent-validation.md) | M190 Agent 运行方式验证与阶段 3 首测：看图、工具闭环、数据定义候选、领域约定复测、模板生成、产品命令实跑、审核与应用走查、数据集与模板实跑、模板辅助修改与多轮实跑（M215 复现）、模型取舍与复现 |
