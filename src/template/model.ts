@@ -412,6 +412,8 @@ export interface ImageModel extends ElementBase {
   /** 图片资源 ID。 */
   readonly source?: string;
   readonly fit: 'contain' | 'cover' | 'fill';
+  /** 单色重染颜色（#RRGGBBAA，M245）。 */
+  readonly tint?: Color;
 }
 
 /** 二维码使用 UTF-8 文本，码区保留四模块留白；尺寸由布局决定，不提供自然尺寸。 */

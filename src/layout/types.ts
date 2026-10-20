@@ -35,6 +35,8 @@ export interface LayoutNode {
 export interface ImageSummary {
   readonly source: string;
   readonly fit: 'contain' | 'cover' | 'fill';
+  /** 单色重染颜色（#RRGGBBAA）；未设置时省略（M245）。 */
+  readonly tint?: string;
   /** 图片的像素尺寸。 */
   readonly naturalWidth: number;
   readonly naturalHeight: number;
@@ -185,6 +187,8 @@ export type DrawOp =
       readonly path: string;
       /** 图片资源 ID。 */
       readonly image: string;
+      /** 单色重染颜色（#RRGGBBAA，M245）。 */
+      readonly tint?: string;
       /** 取图片中的哪一块，像素。 */
       readonly src: Box;
       /** 画到哪里，毫米，相对画板。 */

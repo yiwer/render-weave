@@ -1865,6 +1865,9 @@
             "fill"
           ]
         },
+        "tint": {
+          "$ref": "#/$defs/colorOrVar"
+        },
         "states": {
           "type": "object",
           "additionalProperties": false,
@@ -1887,7 +1890,8 @@
                     "opacity",
                     "rotation",
                     "source",
-                    "fit"
+                    "fit",
+                    "tint"
                   ]
                 }
               }

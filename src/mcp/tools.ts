@@ -547,7 +547,7 @@ function nodeView(node: LayoutNode): Record<string, unknown> {
       ...(text.shrinkGroup ? { shrinkGroup: text.shrinkGroup } : {}), ...(text.fontFallback ? { fontFallback: true } : {}),
       ...(text.fragments.some((fragment) => fragment.placeholder) ? { placeholder: true } : {}),
     } } : {}),
-    ...(image ? { image: { source: image.source, fit: image.fit, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, drawn: image.drawn } } : {}),
+    ...(image ? { image: { source: image.source, fit: image.fit, ...(image.tint ? { tint: image.tint } : {}), naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, drawn: image.drawn } } : {}),
     ...(qrcode ? { qrcode: { errorCorrectionLevel: qrcode.errorCorrectionLevel, modules: qrcode.modules, drawn: qrcode.drawn, symbol: qrcode.symbol } } : {}),
     ...(barcode ? { barcode: { format: barcode.format, drawn: barcode.drawn, symbol: barcode.symbol, ...(barcode.label ? { label: barcode.label.text.content } : {}) } } : {}),
   };

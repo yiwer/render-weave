@@ -25,6 +25,7 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 | 2026-10-19 | 加法 | `path`、`polygon`、`line` 支持可选 `viewBox: [minX, minY, width, height]` 与 `fit: "fill" \| "contain" \| "cover"`，随元素框缩放且描边粗细均匀（[模板 · 元素](template.md#元素)） | M242 |
 | 2026-10-19 | 加法 | 文本元素可写 `letterSpacing`（正负毫米数或数值变量，缺省 0），横排 `fit.steps` 允许在 `compressGlyphs` 之前写 `"tightenSpacing"` 先将正字距收紧至 0（[模板 · 文字](template.md#文字)） | M243 |
 | 2026-10-19 | 加法 | 竖排文本（`writingMode: "vertical"`）的文本片段与变量插槽可单独写 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动顺时针旋转 90°（[模板 · 文字](template.md#文字)） | M244 |
+| 2026-10-19 | 加法 | 图片元素可写 `tint`（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，可在状态样式中覆盖），按目标颜色重染单色图标或地标并保留原图透明度（[模板 · 元素](template.md#元素)） | M245 |
 
 ## Schema 与引擎的分工
 

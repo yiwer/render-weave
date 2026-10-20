@@ -86,7 +86,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
     // 不支持，单独说明该怎么写（M115）。
     'fontWeight',
   ],
-  image: [...COMMON_KEYS, 'source', 'fit'],
+  image: [...COMMON_KEYS, 'source', 'fit', 'tint'],
   qrcode: [...COMMON_KEYS, 'content', 'errorCorrectionLevel', 'foreground', 'background'],
   barcode: [...COMMON_KEYS, 'content', 'format', 'foreground', 'background', 'showText', 'font', 'fontSize'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
@@ -492,7 +492,11 @@ class TemplateReader {
       case 'image': {
         const source = value['source'] === undefined ? null : this.readImageSource(value['source'], path);
         const fit = this.readEnum(value['fit'], ['contain', 'cover', 'fill'] as const, 'contain', path, 'fit');
-        element = base && source !== undefined && fit ? { ...base, type: 'image', ...(source !== null && { source }), fit } : undefined;
+        const tint = this.optional(value['tint'], (v) => this.readColor(v, path, 'tint'));
+        element =
+          base && source !== undefined && fit && tint !== null
+            ? { ...base, type: 'image', ...(source !== null && { source }), fit, ...(tint && { tint }) }
+            : undefined;
         break;
       }
       case 'barcode': {

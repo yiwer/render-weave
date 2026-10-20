@@ -81,7 +81,7 @@
 
 | 能绑定 | 属性 |
 |---|---|
-| 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、码的 `foreground` 与 `background` |
+| 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、图片 `tint`、码的 `foreground` 与 `background` |
 | 数值 | `fontSize` 与片段 `fontSize`、`letterSpacing`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`crossGap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`itemLayout.crossGap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
 | 布尔 | `visible`、`clip`、循环的 `reverse`、条形码 `showText` |
 | 图片 | 图片元素的 `source` |
@@ -144,7 +144,7 @@
 |---|---|---|
 | `container` | 容器 | `layout`、`padding`、`fill`、`stroke`、`cornerRadius`、`clip`、`children` |
 | `text` | 文字 | 见「文字」 |
-| `image` | 图片（S22） | `source`：`res:资源ID` 或图片变量；`fit`：`contain`（缺省，完整显示）、`cover`、`fill`。没有 `source` 时不画内容 |
+| `image` | 图片（S22、M245） | `source`：`res:资源ID` 或图片变量；`fit`：`contain`（缺省，完整显示）、`cover`、`fill`；`tint`?：`#RRGGBB`、`#RRGGBBAA` 或颜色变量（以 `srcIn` 颜色滤镜将原图像素 RGB 替换为目标颜色，并将 `tint` 的 Alpha 与原图 Alpha 相乘；未写 `tint` 时保持原图本色，绑定的颜色变量缺值时与其他颜色绑定一致按透明 `#00000000` 处理）。没有 `source` 时不画内容 |
 | `qrcode` | 二维码 | `content`（文本或文本变量，必填）、`errorCorrectionLevel`：`L`、`M`（缺省）、`Q`、`H`；`foreground`、`background`，见[二维码说明](../render-qrcode.md) |
 | `barcode` | 条形码 | `content`（必填）、`format`：`CODE128`、`EAN-13`、`EAN-8`、`UPC-A`（必填）、`foreground`、`background`、`showText`、`font`（显示文字时必填）、`fontSize`（缺省 3），见[条形码说明](../render-barcode.md)与 [EAN/UPC 说明](../render-retail-barcodes.md) |
 | `rect` | 矩形 | `fill`、`stroke`、`cornerRadius` |

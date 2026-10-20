@@ -42,10 +42,18 @@ export function recordImage(model: ImageModel, box: Box, image: LoadedImage | un
     const height = box.height / scale;
     src = { x: (iw - width) / 2, y: (ih - height) / 2, width, height };
   }
-  drawOps.push({ op: 'image', path: formatElementPath(model.path), image: model.source, src, dst });
+  drawOps.push({
+    op: 'image',
+    path: formatElementPath(model.path),
+    image: model.source,
+    ...(model.tint && { tint: model.tint }),
+    src,
+    dst,
+  });
   return {
     source: `res:${model.source}`,
     fit: model.fit,
+    ...(model.tint && { tint: model.tint }),
     naturalWidth: iw,
     naturalHeight: ih,
     drawn: { x: roundMm(dst.x), y: roundMm(dst.y), width: roundMm(dst.width), height: roundMm(dst.height) },

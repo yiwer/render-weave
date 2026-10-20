@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ProblemCodes, createMemoryResourceRepository, render, type LayoutNode, type RenderResult } from '../src/index.js';
-import { labRequest, loadSkeleton, withLabTemplate } from './support/fixtures.js';
+import { labRequest, loadSkeleton, textLab, textLabRequest, withLabTemplate } from './support/fixtures.js';
 import { expectMatchesGolden } from './support/golden.js';
-import { decodePixels, pixelAtMm, type Pixels } from './support/pixels.js';
+import { decodePixels, pixelAt, pixelAtMm, type Pixels } from './support/pixels.js';
 
 /** 254 DPI 下 1 mm 为 10 像素。 */
 const DPI = 254;
@@ -157,5 +157,128 @@ describe('图片元素', () => {
     expect(wrong.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid, ProblemCodes.renderExpansionBlocked]);
     expect(empty.problems).toEqual([]);
     expect(node(empty, '空图').image).toBeUndefined();
+  });
+
+  it('tint 单色重染：同一地标资源在原色、本站红色与已过站半透明灰色状态下的像素颜色、透明度与布局摘要', async () => {
+    const workspace = await textLab(
+      [{ name: 'status', displayName: '状态', type: 'text' }],
+      {
+        children: [
+          image('原色地标', 'res:landmark-1', at(0, 0, 10, 10)),
+          image('本站地标', 'res:landmark-1', at(10, 0, 10, 10), { tint: '#D2401E' }),
+          image('状态地标', 'res:landmark-1', at(20, 0, 10, 10), {
+            tint: { var: 'defaultTint' },
+            states: {
+              by: { var: 'status' },
+              cases: {
+                passed: { tint: '#80808080' },
+              },
+            },
+          }),
+        ],
+      },
+      {
+        parameters: [
+          { name: 'defaultTint', displayName: '默认重染色', visibility: 'public', type: 'color', default: '#D2401E' },
+        ],
+      },
+    );
+    const result = await render(workspace, textLabRequest({ status: 'passed' }, 30, 10, DPI));
+    expect(result.problems).toEqual([]);
+
+    const origSummary = node(result, '原色地标').image!;
+    const redSummary = node(result, '本站地标').image!;
+    const graySummary = node(result, '状态地标').image!;
+    expect('tint' in origSummary).toBe(false);
+    expect(redSummary.tint).toBe('#D2401EFF');
+    expect(graySummary.tint).toBe('#80808080');
+
+    const pixels = await decodePixels(result.image!.bytes);
+    // 10 mm 在 254 DPI 下为 100 像素；四角透明区域保持完全透明。
+    expect(pixelAt(pixels, 2, 2)).toEqual([0, 0, 0, 0]);
+    expect(pixelAt(pixels, 102, 2)).toEqual([0, 0, 0, 0]);
+    expect(pixelAt(pixels, 202, 2)).toEqual([0, 0, 0, 0]);
+
+    // 找出原色地标中的不透明墨迹像素与半透明边缘像素，核对同偏移处的重染颜色与 Alpha 乘算。
+    let opaqueOffset: [number, number] | undefined;
+    let edgeOffset: [number, number] | undefined;
+    for (let y = 0; y < 100; y++) {
+      for (let x = 0; x < 100; x++) {
+        const [, , , a] = pixelAt(pixels, x, y);
+        if (a === 255 && !opaqueOffset) opaqueOffset = [x, y];
+        if (a >= 80 && a <= 180 && !edgeOffset) edgeOffset = [x, y];
+      }
+    }
+    expect(opaqueOffset).toBeDefined();
+    expect(edgeOffset).toBeDefined();
+
+    const [ox, oy] = opaqueOffset!;
+    expect(pixelAt(pixels, ox, oy)).toEqual([34, 34, 34, 255]);
+    expect(pixelAt(pixels, 100 + ox, oy)).toEqual([210, 64, 30, 255]);
+    const [gr, gg, gb, ga] = pixelAt(pixels, 200 + ox, oy);
+    expect(Math.abs(gr - 128)).toBeLessThanOrEqual(2);
+    expect(Math.abs(gg - 128)).toBeLessThanOrEqual(2);
+    expect(Math.abs(gb - 128)).toBeLessThanOrEqual(2);
+    expect(Math.abs(ga - 128)).toBeLessThanOrEqual(1);
+
+    const [ex, ey] = edgeOffset!;
+    const [, , , origEdgeAlpha] = pixelAt(pixels, ex, ey);
+    const [, , , redEdgeAlpha] = pixelAt(pixels, 100 + ex, ey);
+    const [, , , grayEdgeAlpha] = pixelAt(pixels, 200 + ex, ey);
+    expect(redEdgeAlpha).toBe(origEdgeAlpha);
+    expect(Math.abs(grayEdgeAlpha - Math.round((origEdgeAlpha * 128) / 255))).toBeLessThanOrEqual(1);
+  });
+
+  it('栅格化后的 SVG 图片同样支持 tint 单色重染并保留透明背景', async () => {
+    const svgBytes = new TextEncoder().encode(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="6" fill="#000000"/></svg>',
+    );
+    const base = await loadSkeleton();
+    const original = base.resources;
+    const workspace = {
+      ...withLabTemplate(base, {
+        children: [image('矢量图标', 'res:svg-icon', at(0, 0, 10, 10), { tint: '#1F6FEB' })],
+      }),
+      resources: {
+        get: (id: string) => (id === 'svg-icon' ? { id, kind: 'image' as const } : original.get(id)),
+        read: (id: string) => (id === 'svg-icon' ? Promise.resolve(svgBytes) : original.read(id)),
+        list: () => original.list(),
+      },
+    };
+    const result = await render(workspace, labRequest(10, 10, DPI));
+    expect(result.problems).toEqual([]);
+    expect(node(result, '矢量图标').image!.tint).toBe('#1F6FEBFF');
+
+    const pixels = await decodePixels(result.image!.bytes);
+    expect(pixelAt(pixels, 2, 2)).toEqual([0, 0, 0, 0]);
+    expect(pixelAt(pixels, 50, 50)).toEqual([31, 111, 235, 255]);
+  });
+
+  it('tint 绑定非颜色变量时静态检查报类型不匹配；绑定的颜色变量缺值时按透明 #00000000 处理', async () => {
+    const mismatchWorkspace = await textLab(
+      [{ name: 'title', displayName: '标题', type: 'text' }],
+      { children: [image('图', 'res:landmark-1', at(0, 0, 10, 10), { tint: { var: 'title' } })] },
+    );
+    const mismatch = await render(mismatchWorkspace, textLabRequest({ title: '测试' }, 10, 10, DPI));
+    expect(mismatch.problems.map((p) => [p.code, p.location])).toEqual([
+      [ProblemCodes.templateTypeMismatch, { kind: 'element', path: '文字实验/图' }],
+    ]);
+
+    const missingColorWorkspace = await textLab(
+      [{ name: 'flag', displayName: '开关', type: 'boolean' }],
+      { children: [image('缺值图', 'res:landmark-1', at(0, 0, 10, 10), { tint: { var: 'tintColor' } })] },
+      {
+        parameters: [{ name: 'tintColor', displayName: '重染色', visibility: 'public', type: 'color' }],
+      },
+    );
+    const draft = await render(missingColorWorkspace, {
+      ...textLabRequest({ flag: true }, 10, 10, DPI),
+      mode: 'draft',
+    });
+    expect(draft.problems.map((p) => p.code)).toEqual([ProblemCodes.parameterMissing]);
+    expect(node(draft, '缺值图').image!.tint).toBe('#00000000');
+    const pixels = await decodePixels(draft.image!.bytes);
+    // 中心处原本是不透明地标像素，缺值重染为 #00000000 后完全透明（草稿预览未在此画问题红框）。
+    expect(pixelAt(pixels, 50, 50)).toEqual([0, 0, 0, 0]);
   });
 });

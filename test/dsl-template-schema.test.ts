@@ -214,6 +214,7 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['文字描边写虚线', on(ofType('text'), (e) => (e.stroke = { color: '#000000', width: 0.2, dash: [1] }))],
   ['图片来源不是资源引用', on(ofType('image'), (e) => (e.source = 'logo.png'))],
   ['图片适配未知', on(ofType('image'), (e) => (e.fit = 'stretch'))],
+  ['图片 tint 颜色写法不对', on(ofType('image'), (e) => (e.tint = '#12'))],
   ['循环缺 list', on(ofType('loop'), (e) => delete e.list)],
   ['循环 list 不是变量', on(ofType('loop'), (e) => (e.list = 'stops'))],
   ['循环缺 itemLayout', on(ofType('loop'), (e) => delete e.itemLayout)],
@@ -411,6 +412,35 @@ describe('Schema 之外的语义检查（只看一份文档）', () => {
         parameters: [
           { name: 'mainName', displayName: '主站名', visibility: 'public', type: 'text', default: '田贝' },
           { name: 'subSize', displayName: '副名号', visibility: 'public', type: 'number', default: 7 },
+        ],
+      },
+    );
+    expect(schemas.template(doc), JSON.stringify(schemas.template.errors)).toBe(true);
+    expect(checkDslDocument(doc).problems).toEqual([]);
+  });
+
+  it('图片 tint（字面值、变量绑定与状态样式覆盖）通过 Schema 与引擎检查', () => {
+    const doc = template(
+      {
+        children: [
+          { type: 'image', name: '固定重染', source: 'res:landmark-1', tint: '#D2401E' },
+          {
+            type: 'image',
+            name: '绑定与状态重染',
+            place: { top: 10 },
+            source: 'res:landmark-1',
+            tint: { var: 'tintColor' },
+            states: {
+              by: { var: 'status' },
+              cases: { passed: { tint: '#8C959FCC' } },
+            },
+          },
+        ],
+      },
+      {
+        parameters: [
+          { name: 'tintColor', displayName: '重染色', visibility: 'public', type: 'color', default: '#D2401E' },
+          { name: 'status', displayName: '状态', visibility: 'public', type: 'text', default: 'current' },
         ],
       },
     );

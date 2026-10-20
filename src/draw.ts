@@ -141,14 +141,21 @@ class Painter {
     if (!loaded?.image) return;
     this.paint.setStyle(this.ck.PaintStyle.Fill);
     this.paint.setColor(this.ck.BLACK);
-    this.canvas.drawImageRectOptions(
-      loaded.image,
-      this.ck.XYWHRect(op.src.x, op.src.y, op.src.width, op.src.height),
-      this.ck.XYWHRect(op.dst.x, op.dst.y, op.dst.width, op.dst.height),
-      this.ck.FilterMode.Linear,
-      this.ck.MipmapMode.Linear,
-      this.paint,
-    );
+    const filter = op.tint ? this.ck.ColorFilter.MakeBlend(this.toColor(op.tint), this.ck.BlendMode.SrcIn) : null;
+    this.paint.setColorFilter(filter);
+    try {
+      this.canvas.drawImageRectOptions(
+        loaded.image,
+        this.ck.XYWHRect(op.src.x, op.src.y, op.src.width, op.src.height),
+        this.ck.XYWHRect(op.dst.x, op.dst.y, op.dst.width, op.dst.height),
+        this.ck.FilterMode.Linear,
+        this.ck.MipmapMode.Linear,
+        this.paint,
+      );
+    } finally {
+      this.paint.setColorFilter(null);
+      filter?.delete();
+    }
   }
 
   private save(op: Extract<DrawOp, { op: 'save' }>): void {
@@ -293,8 +300,12 @@ class Painter {
   }
 
   private setColor(hex: string): void {
+    this.paint.setColor(this.toColor(hex));
+  }
+
+  private toColor(hex: string): Float32Array {
     const value = Number.parseInt(hex.slice(1), 16);
-    this.paint.setColor(this.ck.Color((value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, (value & 0xff) / 255));
+    return this.ck.Color((value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, (value & 0xff) / 255);
   }
 }
 

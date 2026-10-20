@@ -45,7 +45,7 @@
 
 ## 绑定与状态样式
 
-- 可绑定的属性直接把值写成运算数即为绑定，例如 `"source": {"var": "logo"}`、`"color": {"var": "accentColor"}`、`"visible": {"var": "hasPhoto"}`；尺寸写成 `{"fixed": {"var": "size"}}`。
+- 可绑定的属性直接把值写成运算数即为绑定，例如 `"source": {"var": "logo"}`、`"color": {"var": "accentColor"}`、`"tint": {"var": "landmarkColor"}`、`"visible": {"var": "hasPhoto"}`；尺寸写成 `{"fixed": {"var": "size"}}`。
 - 状态样式：`"states": {"by": {"var": 变量}, "cases": {"取值": {属性: 值}}}`。按变量取值覆盖元素属性；未列出的取值沿用元素自身属性；布尔取值写 `"true"`/`"false"`。不能覆盖 type、name、children、states、template。
 - 隐藏元素（`visible` 为 false）不占位。
 
@@ -78,7 +78,7 @@
     - 横排：`{"steps": ["tightenSpacing", "compressGlyphs", "shrink"], "compressMin": 0.6, "minFontSize": 5, "onFail": "severe" 或 "hint"}`，steps 可取 `[]`、`["tightenSpacing"]`、`["compressGlyphs"]`、`["tightenSpacing", "compressGlyphs"]`、`["compressGlyphs", "shrink"]` 或 `["tightenSpacing", "compressGlyphs", "shrink"]`，顺序不可颠倒（`letterSpacing > 0` 时先将字距线性收紧至 0，仍放不下再横向压缩字形、同比缩字；shrink 之前必须有 compressGlyphs）；minFontSize 缺省取画板的 minFontSize（画板没写时为 5 mm），只能调高。
     - 竖排：`{"steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.6}`，先收紧字距（两端分布或 `letterSpacing > 0`）再压缩字形。
     - 跨实例统一字号（例如同一张图上一组标签必须同字号）：`"widthOverflow": {"shrinkGroup": "组名", "minFontSize": 5}`；同名组在一次出图内共用，宽度不足时全组统一缩到同一字号（竖排文本内各片段的 `fontSize` 按比例同步缩放），最低是各成员下限中最高的，缺省取所在画板的 minFontSize。
-- **image**：`{"source": "res:资源ID" 或 {"var": 图片字段}, "fit": "contain"（缺省）| "cover" | "fill"}`；没有 source 时不画内容。
+- **image**：`{"source": "res:资源ID" 或 {"var": 图片字段}, "fit": "contain"（缺省）| "cover" | "fill", "tint"?: "#RRGGBB" | "#RRGGBBAA" 或 {"var": 颜色变量}}`；写了 `tint` 时按目标颜色重染图片像素 RGB 并保留原图透明度（与 `tint` 的 Alpha 相乘，可在 `states` 中覆盖；未写 `tint` 时保持原图本色，绑定的颜色变量缺值时按透明 `#00000000` 处理）；没有 source 时不画内容。
 - **rect**（fill、stroke、cornerRadius）、**ellipse**（fill、stroke）、**line**（from、to、stroke 必填，可选 viewBox、fit）、**polygon**（points 至少 3 个 `[x, y]` 顶点，可选 fill、stroke、viewBox、fit）、**path**（SVG 路径 d、fill、stroke、fillRule、viewBox、fit）。图形 stroke 为 `{"color", "width", "dash"?: [实, 空], "cap"?: butt/round/square}`。未写 `viewBox` 时，线条、多边形与路径的坐标以毫米计、相对元素框左上角，框变大时不拉伸；声明 `"viewBox": [minX, minY, width, height]`（width、height > 0）时，图形随元素框按 `"fit": "fill"（缺省，拉伸填满）| "contain"（等比居中完整显示）| "cover"（等比居中铺满并裁剪到元素框）` 缩放适配（仅声明了 `viewBox` 时可写 `fit`），随内容（`"hug"`）的自然尺寸取 `viewBox` 宽高（只固定一边且 `fit` 为 `contain`/`cover` 时另一边按宽高比换算），且描边宽度与虚线保持声明的毫米值不变形。
 - **qrcode**：二维码。属性如下：
   - `content`：文本或文本变量，必填；
