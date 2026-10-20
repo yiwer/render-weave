@@ -25,6 +25,8 @@ export const ServiceProblemCodes = {
   previewRateLimited: 'preview.rateLimited',
   /** 等不到 worker 完成渲染（503）。 */
   workerUnavailable: 'worker.unavailable',
+  /** 批量交付（票据 07）：同一个幂等键配了不同的请求（409）。 */
+  batchIdempotencyConflict: 'batch.idempotencyConflict',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

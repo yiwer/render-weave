@@ -9,7 +9,8 @@ import { capture, ensureEnv, root, run, up } from './docker.mjs';
 const keep = process.argv.includes('--keep');
 // worker 用极小的单项超时、内存上限与换新项数，稳定触发超时、内存超限与子进程换新（票据 06）。
 // 一般的预览远在这些值之内；1 亿像素的草稿在内存上限内放不下，6000 项的压力牌要好几秒但内存不多。
-Object.assign(process.env, { RW_RENDER_TIMEOUT_MS: '1500', RW_WORKER_MEMORY: '512m', RW_RENDER_RECYCLE_AFTER: '5' });
+// 停止时 worker 排空本构建排队的批次项（票据 07）；测试结束时队列已空，宽限给 60 秒就够。
+Object.assign(process.env, { RW_RENDER_TIMEOUT_MS: '1500', RW_WORKER_MEMORY: '512m', RW_RENDER_RECYCLE_AFTER: '5', RW_WORKER_STOP_GRACE: '60s' });
 ensureEnv();
 run('docker', ['compose', '--profile', 'test', 'down', '-v', '--remove-orphans']);
 let status = 1;

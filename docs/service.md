@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了四部分：
+目前完成了五部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -16,8 +16,11 @@
 - **渲染 worker 与草稿预览**（[票据 06](../.scratch/render-service-v1/issues/06-draft-preview-and-workers.md)，M266、M267）：
   - PostgreSQL 里的任务队列，worker 的调度进程与渲染子进程，单项超时与内存上限；
   - 模板列表与只读查看、同步的草稿预览，入队前的限制与按租户的并发、频率。
+- **批量正式交付**（[票据 07](../.scratch/render-service-v1/issues/07-batch-delivery.md)，M268、M269）：
+  - 接口进程固定批次、按项入队，worker 逐项交付出图记录，全部项结束后发布批次清单；
+  - 查询逐项进度与结果、取消、幂等键；批次只由接受它的构建交付，worker 停止前做完已接受的项。
 
-批量交付、出图记录、数据集与资源接口、计量与额度由后续票据加入。
+出图记录的查询与导出、数据集与资源接口、计量与额度由后续票据加入。
 
 ## 本机启动
 
@@ -68,6 +71,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `RW_RENDER_RECYCLE_AFTER` | worker | 渲染子进程做满这么多项后换新，缺省 500 |
 | `RW_WORKER_POLL_MS` | worker | 队列空时隔多久再看，缺省 100 |
 | `RW_WORKER_MEMORY` | Compose | worker 容器的内存上限，缺省 `2g`，不用交换分区 |
+| `RW_WORKER_STOP_GRACE` | Compose | worker 的停止宽限，缺省 `30m`：停止时做完本构建已接受的批次项再退出（M269） |
 
 本机的 `.env` 有四项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY`。Compose 用这四项拼出上面的变量。
 
@@ -79,13 +83,13 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 |---|---|
 | `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
 | `api` | 等迁移与代码一致，再启动接口进程 |
-| `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程（见[渲染 worker](#渲染-worker)） |
+| `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程；收到停止信号时排空（见[渲染 worker](#渲染-worker)） |
 | `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
 
 **健康检查**：接口进程与 worker 都有两个端点。
 
-- `GET /healthz`：存活，返回服务名与构建标识；worker 另带渲染器的计数（`renderer`：已做的任务、超时、内存超限、崩溃与子进程换新的次数）。
+- `GET /healthz`：存活，返回服务名与构建标识；worker 另带渲染器的计数（`renderer`：已做的任务、超时、内存超限、崩溃、取消时结束的项与子进程换新的次数）。
 - `GET /readyz`：就绪。要求数据库可连、迁移与代码一致、对象存储可列举；否则返回 503，并列出没通过的检查项与原因，不带连接串或凭据。
 
 **日志**：每行一个 JSON 对象，带时间、级别、服务名（`api`、`worker`、`setup`）与构建标识。请求体不进日志；请求头里的凭据会被遮盖。
@@ -128,16 +132,18 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/templates`、`GET /v1/templates/{模板名}` | 管理员、操作员、API 密钥；见[模板与草稿预览](#模板与草稿预览) |
 | `POST /v1/previews` | 管理员、操作员、API 密钥 |
 | `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
+| `POST /v1/batches`、`POST /v1/batches/{批次}/cancel` | 管理员、操作员、API 密钥；见[批量交付](#批量交付) |
+| `GET /v1/batches/{批次}` | 管理员、操作员、API 密钥 |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
 | 状态 | 问题码 |
 |---|---|
-| 400 | `request.invalid`（位置写到出错的字段）、`push.contentMissing`、`push.contentMismatch` |
+| 400 | `request.invalid`（位置写到出错的字段）、`push.contentMissing`、`push.contentMismatch`；批量交付整批拒绝时是引擎的问题清单（如 `input.templateNotFound`） |
 | 401 | `auth.required`、`auth.invalidCredentials` |
 | 403 | `auth.forbidden` |
 | 404 | `request.notFound` |
-| 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict` |
+| 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict` |
 | 413 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
 | 415 | `request.invalid`：上传内容不是 `application/octet-stream` |
 | 429 | `preview.rateLimited` |
@@ -248,15 +254,70 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 这些数值与单项超时、内存上限都是暂定的，容量基线（票据 15）实测后再定。
 
+## 批量交付
+
+正式图只走批量交付：单张也是一项的批次，所以每张正式图都有出图记录（M246、M268）。
+
+**提交**：`POST /v1/batches` 的请求体与本地 `renderweave deliver` 的批量请求相同：根模板与 `items`（1–1,000 项，每项带唯一 `id`、数据集、对外参数与出图参数）。不写 `mode` 或写 `final`；写 `draft` 答 400，草稿走预览。
+
+- **整批拒绝**：接口进程按本地的语义固定批次（M153）。外层非法、根模板无法准备时整批拒绝，答 400 与本地交付相同的问题清单，不建批次。
+- **入队**：固定好的批次快照存成本租户的内容，各项入队，立即答 202 与批次。
+- **单项的限制**：入队前逐项检查像素、展开规模与已保存数据集的字节数（数值同[预览](#模板与草稿预览)）。超限的项不渲染，直接失败，问题码与预览相同，位置写到 `request.items.{从 0 起的序号}`；其他项照常。请求体超过 8 MiB 整批答 413。
+- **幂等**：请求头 `Idempotency-Key`，1–200 个可见字符。同一租户内同一个键再提交同样的请求，答 200 与同一批次，不重复交付；请求不同答 409 `batch.idempotencyConflict`。
+
+**查询**：`GET /v1/batches/{批次}`。
+
+```json
+{ "id": "…", "template": "问候牌", "mode": "final", "build": "sha256:…", "status": "running", "cancelRequested": false,
+  "createdAt": "…", "progress": { "completed": 1, "total": 3 },
+  "summary": { "total": 3, "delivered": 1, "previewed": 0, "failed": 0, "notRun": 0, "severe": 0, "hints": 0 },
+  "items": [
+    { "index": 1, "id": "a", "status": "delivered", "files": { "image": "image.png", "problems": "problems.json", "layout": "layout.json", "record": "record.json" }, "severe": 0, "hints": 0, "problems": [] },
+    { "index": 2, "id": "b", "status": "running" },
+    { "index": 3, "id": "c", "status": "queued" } ],
+  "problems": [] }
+```
+
+- `status` 是 `running`（还有项没结束）或 `finished`（全部项结束，批次清单已发布）。
+- 每项先是 `queued`、`running`，结束后是 `delivered`、`failed` 或 `notRun`，带问题清单。失败项的问题清单与单次渲染相同（票据 02）；worker 没渲染完的项写 `worker.timeout`、`worker.memoryExceeded` 等，并写出问题清单文件。
+- 批次清单（`batch.json`）在最后一项结束时发布，语义与字节都与本地 `deliver` 的相同；结束后的 `summary` 与 `problems` 取自它。
+
+**取消**：`POST /v1/batches/{批次}/cancel`。
+
+- 还在排队的项立即标为未执行；
+- 正在渲染的一项由 worker 结束，也标为未执行；
+- 已交付的保留；
+- 批次清单带批次级问题 `delivery.cancelled`；
+- 已结束的批次再取消不改变什么。
+
+本地只能在项与项之间取消，服务端能结束正在渲染的一项（ADR-0017）。
+
+**交付与记录**（ADR-0019）：
+
+- **提交点**：渲染子进程按批次快照交付一项，先把文件按 SHA-256 写进对象存储，再在一个事务里登记这一项。"批次加项序号"唯一；登记之前，这一项对任何读者都不存在。
+- **去重**：同一租户内相同字节只存一份，跨批次也是；同样的批次再交一次，对象存储里不多一个对象。
+- **记录**：内容与本地 `deliver` 的相同，能用引擎的 `replayRecord` 重放；导出与下载在票据 08。
+
+**审计**：`batch.create`、`batch.cancel`。
+
 ## 渲染 worker
 
 一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
 
-- **领取**：调度进程用 `rw_claim_task` 领最早排队的一项（`SELECT … FOR UPDATE SKIP LOCKED`，跨租户，由属主身份执行），队列空时每 100 ms 再看。入队、查结果与写回结果都在租户的事务里，行级安全照常生效。
+- **领取**：调度进程用 `rw_claim_task` 领一项（`SELECT … FOR UPDATE SKIP LOCKED`，跨租户，由属主身份执行），队列空时每 100 ms 再看。入队、查结果与写回结果都在租户的事务里，行级安全照常生效。
+- **顺序**（M269）：预览优先；批次项按项序号轮转，各批次的第 1 项先于任何批次的第 2 项，小批次不被大批次堵住。
+- **构建固定**：批次记下接受它的构建标识，worker 只领本构建的批次项；预览哪个构建都可以领。
 - **渲染子进程**：调度进程 fork 它，经 IPC 一次交一项。子进程自己连数据库与对象存储读租户的工作区与资源，启动时先加载 CanvasKit，准备好才接任务；单项时限从交出任务起算。
 - **单项超时**：到时调度进程结束子进程，本项答 `worker.timeout`。
 - **内存超限**：内存上限是容器的限制（`mem_limit`，不用交换分区）。子进程启动时把自己的 `oom_score_adj` 调到最高，内存不够时内核先结束它；调度进程看本容器 cgroup 的 `memory.events` 里 `oom_kill` 增加了，本项答 `worker.memoryExceeded`。
-- **换新**：子进程在任务之间复用；做满 `RW_RENDER_RECYCLE_AFTER` 项、超时、内存超限或崩溃后换一个新的，换下后立即起新的预热。
+- **换新**：子进程在任务之间复用；做满 `RW_RENDER_RECYCLE_AFTER` 项、超时、内存超限、取消或崩溃后换一个新的，换下后立即起新的预热。
+- **取消**：渲染批次项时每 200 ms 查看一次批次是否已取消，取消了就结束子进程，本项标为未执行。
+- **没渲染完的批次项**：超时、内存超限或崩溃的项写出问题清单文件，标为失败，没有记录；这一项已登记时以登记的为准。
+- **租约与重领**：批次项的租约是单项超时加 60 秒。worker 中途退出（例如容器被杀）时，过了租约，同构建的 worker 重领。
+  - 重领前先看这一项是否已登记：已登记就沿用，不重渲染，记录只提交一次；
+  - 写回以领取次数作凭据，重领之后旧的写回不生效；
+  - 领了 3 次仍没做完，记 `worker.crashed`。
+- **排空**：收到 SIGTERM 时不再领预览，做完本构建排队的批次项再退出。发布新版本时，旧构建的 worker 就这样做完已接受的批次（Compose 的停止宽限缺省 30 分钟，`RW_WORKER_STOP_GRACE`）。旧构建的 worker 全都不在了，它接受的批次会停在排队中，要再起一个旧构建的 worker 才能做完。
 - **实测**（Windows，Node v24，问候牌草稿）：每像素约 13 字节，1 亿像素的草稿峰值约 1.3 GB、3 秒；只有一种字体的小图峰值约 210 MB。6,000 项文字的循环约 4 秒、峰值约 400 MB。缺省的 2 GB 内存上限放得下引擎上限的一张图。
 
 ## 数据库迁移
@@ -297,6 +358,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 开放 API 用例跑内存后端（`service/test/api.test.ts`），覆盖权限矩阵、跨租户端点清单、审计与日志里不出现密钥。
   - 代建推送用例（`service/test/push.test.ts`）从 `src/cli.ts` 跑命令行，推送到本机端口上的内存后端，再经开放 API 读回核对。
   - 模板与草稿预览用例（`service/test/preview.test.ts`）用进程内 worker；预览的图片与本机直接渲染的逐字节相同。
+  - 批量交付用例（`service/test/batch.test.ts`）用进程内 worker：批次清单与出图记录和引擎在本进程交付的逐字节相同，记录能重放；另测构建固定、排空、租约重领与过期的写回。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
 - **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
@@ -307,8 +369,10 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API、代建推送、模板与草稿预览的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；
+- 同一组开放 API、代建推送、模板与草稿预览、批量交付的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；
+- 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
+- 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；

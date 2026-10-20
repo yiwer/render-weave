@@ -2,7 +2,9 @@
  * 服务的后端（ADR-0018）：平台级的跨租户操作，与只触及一个租户的句柄。
  * 两种实现跑同一组 API 用例：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑（阶段 4 PRD「接缝」）。
  */
-import type { BatchOutput, BatchSource, LayoutSummary, Problem, ProblemLocation, RecordSource, ResourceVersionBackend, WorkspaceDocumentSource } from './engine.js';
+import type {
+  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ResourceVersionBackend, WorkspaceDocumentSource,
+} from './engine.js';
 
 export interface Tenant {
   readonly id: string;
@@ -213,6 +215,8 @@ export interface TenantBatch {
   readonly output: BatchOutput;
   readonly source: BatchSource;
   record(index: number): RecordSource;
+  /** 本项已登记的文件名（含完成清单）；还没登记时 undefined。 */
+  itemFiles(index: number): Promise<readonly string[] | undefined>;
 }
 
 /** 结果里的问题：引擎的问题，或 worker 的问题（worker.timeout 等）；格式相同。 */
@@ -223,6 +227,22 @@ export interface TaskResult {
   readonly image?: { readonly format: 'png' | 'jpeg'; readonly widthPx: number; readonly heightPx: number; readonly dpi: number; readonly bytes: Uint8Array };
   readonly problems: readonly ResultProblem[];
   readonly layout?: LayoutSummary;
+}
+
+/**
+ * 批量交付一项的结果（票据 07）：引擎 deliverBatchItem 的结果，或 worker 一侧没能做完时的问题；不含图片字节。
+ * directory 有值表示本项写了成果（问题清单，成功时还有记录），批次清单据此写项目录名。
+ */
+export interface ItemResult {
+  readonly index: number;
+  readonly id: string;
+  readonly status: 'delivered' | 'failed' | 'notRun';
+  readonly directory?: string;
+  readonly files?: BatchItemFiles;
+  readonly severe: number;
+  readonly hints: number;
+  readonly reason?: string;
+  readonly problems: readonly ResultProblem[];
 }
 
 /** 渲染任务的状态：排队、渲染中、完成，或因等不到 worker 而撤回。 */
@@ -238,6 +258,44 @@ export interface PreviewQuota {
   readonly staleAfterMs: number;
 }
 
+/** 新批次（票据 07）：接口进程固定好的批次，按项入队。 */
+export interface NewBatch {
+  /** 批次快照（renderweave-batch-snapshot/1）存成本租户的内容，这里是它的 SHA-256。 */
+  readonly snapshot: string;
+  /** 接受批次的构建：只由这个构建的 worker 交付。 */
+  readonly build: string;
+  readonly template: string;
+  readonly mode: RenderMode;
+  readonly items: readonly { readonly index: number; readonly id: string }[];
+  readonly idempotencyKey?: string;
+  /** 请求原文的 SHA-256：同一幂等键配不同的请求时拒绝。 */
+  readonly requestSha256: string;
+}
+
+/** 批次的一项：排队、渲染中，或已结束（有结果）。 */
+export interface BatchItemState {
+  readonly index: number;
+  readonly id: string;
+  readonly status: 'queued' | 'running' | 'ended';
+  readonly result?: ItemResult;
+}
+
+/** 批次的状态：逐项状态，全部结束后有批次清单。 */
+export interface BatchState {
+  readonly batchId: string;
+  readonly build: string;
+  readonly template: string;
+  readonly mode: RenderMode;
+  readonly idempotencyKey?: string;
+  readonly requestSha256: string;
+  readonly createdAt: string;
+  readonly cancelRequestedAt?: string;
+  readonly finishedAt?: string;
+  readonly items: readonly BatchItemState[];
+  /** 批次清单的摘要与批次级问题；全部项结束、清单发布后才有。 */
+  readonly manifest?: { readonly summary: BatchSummary; readonly problems: readonly ResultProblem[] };
+}
+
 /** 一个租户的渲染任务。 */
 export interface TenantTasks {
   /** 草稿预览入队；超过并发或频率时不入队，答 limited。 */
@@ -246,20 +304,64 @@ export interface TenantTasks {
   state(id: string): Promise<TaskState | undefined>;
   /** 取走结果之后清掉图片与布局；还在排队的撤回，不再占并发。 */
   release(id: string): Promise<void>;
+  /** 建批次并按项入队。同一幂等键已有批次时不建，返回已有的那个（created 为 false）。 */
+  createBatch(batch: NewBatch, now: Date): Promise<{ readonly batch: BatchState; readonly created: boolean }>;
+  /** 按幂等键找批次。 */
+  findBatch(idempotencyKey: string): Promise<BatchState | undefined>;
+  /** 批次不在本租户时 undefined。 */
+  batch(batchId: string): Promise<BatchState | undefined>;
+  /**
+   * 取消批次：还在排队的项标为未执行；正在渲染的一项由 worker 结束。没有正在渲染的项时随即发布批次清单。
+   * 批次已结束时不改变什么。批次不在本租户时 undefined。
+   */
+  cancelBatch(batchId: string, now: Date): Promise<BatchState | undefined>;
 }
 
-/** worker 领到的任务。 */
-export interface ClaimedTask {
+/** worker 领到的预览任务。 */
+export interface PreviewTask {
   readonly id: string;
   readonly tenantId: string;
   readonly kind: 'preview';
   readonly request: unknown;
 }
 
-/** 任务队列的 worker 一侧（ADR-0017）：领取最早排队的任务（跨租户，SKIP LOCKED），完成后写回结果。 */
+/** worker 领到的批次项（票据 07）。attempts 是第几次领取，写回结果时用它作凭据：重领之后，旧的写回不生效。 */
+export interface BatchItemTask {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly kind: 'batchItem';
+  readonly batchId: string;
+  readonly index: number;
+  readonly itemId: string;
+  /** 批次快照的 SHA-256。 */
+  readonly snapshot: string;
+  readonly attempts: number;
+}
+
+export type ClaimedTask = PreviewTask | BatchItemTask;
+
+/** 领取的条件：worker 只领自己构建的批次项（预览哪个构建都可以领）；停止前不再领预览。 */
+export interface ClaimOptions {
+  readonly build: string;
+  /** 批次项的租约：过了 now + leaseMs 还没写回，同构建的 worker 可以重领。 */
+  readonly leaseMs: number;
+  readonly previews: boolean;
+}
+
+/**
+ * 任务队列的 worker 一侧（ADR-0017）：领取任务（跨租户，SKIP LOCKED），完成后写回结果。
+ * 预览优先；批次项按项序号轮转，各批次的第 1 项先于任何批次的第 2 项。
+ */
 export interface TaskQueue {
-  claim(worker: string, now: Date): Promise<ClaimedTask | undefined>;
-  finish(task: ClaimedTask, result: TaskResult, now: Date): Promise<void>;
+  claim(worker: string, now: Date, options: ClaimOptions): Promise<ClaimedTask | undefined>;
+  finish(task: PreviewTask, result: TaskResult, now: Date): Promise<void>;
+  /**
+   * 写回批次项的结果；这一次领取已被重领时不生效（返回 false）。
+   * 与"批次的其余项都已结束"同一个事务里发布批次清单（锁住批次行，最后结束的那一项负责）。
+   */
+  finishItem(task: BatchItemTask, result: ItemResult, now: Date): Promise<boolean>;
+  /** 批次是否已请求取消：worker 渲染时定期查看，取消了就结束正在渲染的一项。 */
+  cancelRequested(task: BatchItemTask): Promise<boolean>;
 }
 
 /** 一个租户的句柄：其中每个操作都只触及这个租户的数据（ADR-0018 的应用层防线）。 */

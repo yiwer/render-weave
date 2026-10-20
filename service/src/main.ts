@@ -3,6 +3,7 @@
  * - setup：部署步骤。用属主账号执行数据库迁移、设置应用账号的密码，再建好对象存储的桶（M262）；
  * - api：等迁移与代码一致后启动接口进程，用应用账号连库；
  * - worker：等迁移与代码一致后启动渲染 worker 的调度进程：领取任务交给渲染子进程，超时结束子进程（ADR-0017）；
+ *   收到 SIGTERM 时排空：不再领预览，做完本构建已接受的批次项再退出（票据 07）；
  * - platform-admin <邮箱>：建平台管理员账号，随机初始密码只在标准输出显示一次；
  * - build-id：输出渲染器构建标识，镜像以它打标签（ADR-0019）。
  * 配置只从环境变量读取（M259）。日志是每行一个 JSON 对象。
@@ -85,12 +86,14 @@ async function main(): Promise<void> {
     } else {
       const worker = loadWorkerConfig(process.env);
       const runner = childRunner({ script: fileURLToPath(new URL('./worker/render-child.js', import.meta.url)), timeoutMs: worker.renderTimeoutMs, recycleAfter: worker.recycleAfter, logger });
-      const scheduler = startScheduler({ backend, runner, logger, pollMs: worker.pollMs, workerId: `${hostname()}:${process.pid}` });
+      // 批次项的租约比单项超时多一分钟：过了还没写回，说明这个 worker 中途退出了，同构建的 worker 可以重领。
+      const scheduler = startScheduler({ backend, runner, logger, pollMs: worker.pollMs, workerId: `${hostname()}:${process.pid}`, build, leaseMs: worker.renderTimeoutMs + 60_000 });
       const server = createWorkerHealthServer({ backend, build, logger, stats: runner.stats });
       await new Promise<void>((resolve) => server.listen(config.port, '0.0.0.0', resolve));
       logger.info({ schemaVersion, port: config.port, ...worker }, 'worker 就绪，等待任务');
       close = async () => {
-        await scheduler.stop();
+        logger.info('排空：不再领预览，做完本构建已接受的批次项再退出');
+        await scheduler.drain();
         await new Promise<void>((resolve) => server.close(() => resolve()));
       };
     }

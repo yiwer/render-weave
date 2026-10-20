@@ -13,6 +13,7 @@ export interface TenantObjects {
   readonly memberId: string;
   readonly apiKeyId: string;
   readonly templateName: string;
+  readonly batchId: string;
 }
 
 export interface CrossTenantEndpoint {
@@ -51,10 +52,16 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/template-current`, body: { template: '问候牌', revision: 1 } }) },
+  // 批量交付（票据 07）：提交的租户由身份决定；批次 ID 在路径里，别的租户的批次与不存在的同样答 404。
+  { route: 'POST /v1/batches', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/batches', body: batch(a.templateName) }) },
+  { route: 'GET /v1/batches/:batchId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}` }) },
+  { route: 'POST /v1/batches/:batchId/cancel', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/batches/${a.batchId}/cancel` }) },
 ];
 
 /** 用 A 的模板名预览；另一租户没有这个模板，入队前就答问题清单。 */
 const preview = (template: string) => ({ template, dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } });
+/** 用 A 的模板名提交批次；另一租户没有这个模板，整批拒绝。 */
+const batch = (template: string) => ({ template, items: [{ id: '1', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } }] });
 
 /** 上传内容的样例：几个字节与它的 SHA-256。 */
 const SAMPLE = new Uint8Array(Buffer.from('跨租户检查'));

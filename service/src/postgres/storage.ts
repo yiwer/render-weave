@@ -259,5 +259,14 @@ function batchStore(db: Db, blobs: BlobStore, tenantId: string, batchId: string)
       return blobs.get(tenantId, sha256);
     },
   });
-  return { batchId, output, source, record };
+  return {
+    batchId, output, source, record,
+    async itemFiles(index) {
+      return withTenant(db, tenantId, async (client) => {
+        if (!(await client.query('SELECT 1 FROM batch_items WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3', [tenantId, batchId, index])).rowCount) return undefined;
+        return (await client.query<{ name: string }>('SELECT name FROM batch_item_files WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3 ORDER BY name',
+          [tenantId, batchId, index])).rows.map((row) => row.name);
+      });
+    },
+  };
 }

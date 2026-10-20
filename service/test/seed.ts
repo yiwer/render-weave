@@ -39,8 +39,9 @@ export async function seedGreeting(storage: TenantStorage, options: { readonly w
 }
 
 /**
- * 压力牌：一个纵向循环，每项一行文字（只用 font-hei-medium）。项数多时排版费时、内存不大，用来触发单项超时。
- * 数据集写在请求里，见 stressRequest。
+ * 压力牌：一个纵向循环，每项一行文字（只用 font-hei-medium）。项数多时草稿要画很多问题边框，费时、内存不大，用来触发单项超时。
+ * 压力细牌同样排布，字号 0.6 mm：2,000 项排进 2,000 mm 高也放得下，正式模式没有严重问题，会画完整张图（本机约 0.7 秒），
+ * 批量交付的取消用它。数据集写在请求里，见 stressRequest。
  */
 export async function seedStress(storage: TenantStorage): Promise<void> {
   const item = publishStaticSchema({ dslVersion: 'renderweave-schema/1', name: '压力项', version: 1, displayName: '压力项',
@@ -57,15 +58,25 @@ export async function seedStress(storage: TenantStorage): Promise<void> {
     dslVersion: 'renderweave-template/1', name: '压力牌', base: { name: '压力', version: 1 },
     artboard: { sizeRange: range, layout: { mode: 'stack', direction: 'row' }, children: [
       { type: 'loop', name: '列', list: { var: 'items' }, template: '压力项卡', args: {}, itemLayout: { direction: 'column', heights: 'equal' }, place: { width: 'fill', height: 'fill' } }] },
+  }, {
+    dslVersion: 'renderweave-template/1', name: '压力细项卡', base: { name: '压力项', version: 1 },
+    artboard: { sizeRange: range, layout: { mode: 'stack', direction: 'row' }, children: [
+      { type: 'text', name: '标签', content: [{ slot: 'label' }], font: 'res:font-hei-medium', fontSize: 0.6, color: '#333333', place: { width: 'fill', height: 'fill' } }] },
+  }, {
+    dslVersion: 'renderweave-template/1', name: '压力细牌', base: { name: '压力', version: 1 },
+    artboard: { sizeRange: range, layout: { mode: 'stack', direction: 'row' }, children: [
+      { type: 'loop', name: '列', list: { var: 'items' }, template: '压力细项卡', args: {}, itemLayout: { direction: 'column', heights: 'equal' }, place: { width: 'fill', height: 'fill' } }] },
   }].map(bytesOf));
 }
 
-export function stressRequest(items: number): Record<string, unknown> {
+/** padding 是每项标签另加的字数：项数受展开上限约束时，用更长的标签拉长排版用时。 */
+export function stressRequest(items: number, options: { readonly padding?: number; readonly template?: '压力牌' | '压力细牌'; readonly height?: number } = {}): Record<string, unknown> {
+  const { padding = 0, template = '压力牌', height = 200 } = options;
   return {
-    template: '压力牌',
-    dataset: { inline: { dataset: { staticSchema: { name: '压力', version: 1 } }, data: { items: Array.from({ length: items }, (_, i) => ({ label: `第 ${i + 1} 项` })) } } },
+    template,
+    dataset: { inline: { dataset: { staticSchema: { name: '压力', version: 1 } }, data: { items: Array.from({ length: items }, (_, i) => ({ label: `第 ${i + 1} 项${'站'.repeat(padding)}` })) } } },
     parameters: {},
-    output: { width: 200, height: 200, dpi: 120, format: 'png' },
+    output: { width: 200, height, dpi: 120, format: 'png' },
   };
 }
 

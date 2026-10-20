@@ -12,6 +12,8 @@ import { createWorld, type World } from './api-suite.js';
 import { greetingPreview, seedGreeting, seedStress, SINGLE_TEXT, stressRequest } from './seed.js';
 
 const RESOURCES = fileURLToPath(new URL('../../fixtures/resources/', import.meta.url));
+/** 预览哪个构建的 worker 都可以领；批次项才看构建（票据 07）。 */
+const PREVIEW_BUILD = 'sha256:preview-suite';
 
 export interface PreviewSuiteOptions {
   /** 在测试进程里起 worker（内存后端）；否则由 Compose 里的 worker 渲染。 */
@@ -32,7 +34,7 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
       world = await createWorld(backend, { api: { limits: { maxElements: 100_000, maxLoopItems: 50_000 } } });
       await seedGreeting(backend.tenant(world.b.id).storage, { withFont: true });
       await seedStress(backend.tenant(world.b.id).storage);
-      if (options.inProcessWorker) scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process' });
+      if (options.inProcessWorker) scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process', build: PREVIEW_BUILD, leaseMs: 60_000 });
       const workspace = await loadWorkspace({ dir: SINGLE_TEXT, resourcesDir: RESOURCES });
       local = await render(workspace, { ...greetingPreview(), mode: 'draft' });
     });
@@ -45,7 +47,7 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
       const { call, b } = world;
       const listed = await call('GET', '/v1/templates', b.operator.token);
       expect(listed.status).toBe(200);
-      expect(listed.body.templates.map((t: { name: string }) => t.name).sort()).toEqual(['压力牌', '压力项卡', '问候牌'].sort());
+      expect(listed.body.templates.map((t: { name: string }) => t.name).sort()).toEqual(['压力牌', '压力项卡', '压力细牌', '压力细项卡', '问候牌'].sort());
       const greeting = { name: '问候牌', currentRevision: 1, base: { name: '问候', version: 1 },
         sizeRange: { width: { min: 50, max: 1500 }, height: { min: 20, max: 200 } }, parameters: [] };
       expect(listed.body.templates.find((t: { name: string }) => t.name === '问候牌')).toEqual(greeting);
@@ -111,7 +113,7 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
         expect(replies.map((reply) => reply.status).sort()).toEqual([429, 503, 503]);
         expect(replies.find((reply) => reply.status === 429)!.body.problems[0]).toMatchObject({ code: 'preview.rateLimited', message: expect.stringContaining('并发') });
         expect(replies.find((reply) => reply.status === 503)!.body.problems[0].code).toBe('worker.unavailable');
-        scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process' });
+        scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process', build: PREVIEW_BUILD, leaseMs: 60_000 });
         expect((await call()).status).toBe(200);
         // 撤回的两个不再渲染：新起的 worker 只做了这一项。
         expect(scheduler.stats.tasks).toBe(1);
@@ -138,11 +140,11 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
         await seedGreeting(backend.tenant(limited.b.id).storage, { withFont: true });
         await scheduler!.stop();
         // 领了任务却永远不交回：任务一直停在渲染中（这个调度器不停，它的循环永远等着）。
-        startScheduler({ backend, runner: { stats: emptyStats(), run: () => new Promise(() => undefined), close: async () => undefined }, logger: silentLogger, pollMs: 5, workerId: 'stuck' });
+        startScheduler({ backend, runner: { stats: emptyStats(), run: () => new Promise(() => undefined), close: async () => undefined }, logger: silentLogger, pollMs: 5, workerId: 'stuck', build: PREVIEW_BUILD, leaseMs: 60_000 });
         const call = () => limited.call('POST', '/v1/previews', limited.b.operator.token, greetingPreview());
         expect(await call()).toMatchObject({ status: 503, body: { problems: [{ code: 'worker.unavailable' }] } });
         expect(await call()).toMatchObject({ status: 429, body: { problems: [{ code: 'preview.rateLimited' }] } });
-        scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process' });
+        scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 5, workerId: 'in-process', build: PREVIEW_BUILD, leaseMs: 60_000 });
         clock.value = new Date(clock.value.getTime() + 1_000);
         expect((await call()).status).toBe(200);
         await limited.app.close();

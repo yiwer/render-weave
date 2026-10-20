@@ -3,12 +3,13 @@
  * - 单项超时：调度进程结束子进程，本项失败；
  * - 内存超限：容器的内存上限结束子进程（子进程把 oom_score_adj 调到最高，内核先选它），本项失败；
  *   是否是内存超限看本容器 cgroup 的 memory.events 里 oom_kill 有没有增加；
- * - 子进程在任务之间复用，做满 recycleAfter 项、超时、内存超限或崩溃后换新；换下后立即起一个新的预热。
+ * - 批次取消（票据 07）：调度进程中止 signal 时结束子进程，本项答 cancelled；
+ * - 子进程在任务之间复用，做满 recycleAfter 项、超时、内存超限、取消或崩溃后换新；换下后立即起一个新的预热。
  */
 import { fork, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
-import type { ClaimedTask, TaskResult } from '../backend.js';
+import type { ClaimedTask, ItemResult, TaskResult } from '../backend.js';
 import type { Logger } from '../log.js';
 import { emptyStats, workerProblem, WorkerProblemCodes, type Runner } from './scheduler.js';
 
@@ -28,7 +29,7 @@ interface Child {
   tasks: number;
 }
 
-type Outcome = { result: TaskResult } | { timeout: true } | { exit: { code: number | null; signal: NodeJS.Signals | null } };
+type Outcome = { result: TaskResult | ItemResult } | { timeout: true } | { cancelled: true } | { exit: { code: number | null; signal: NodeJS.Signals | null } };
 
 export function childRunner(options: ChildRunnerOptions): Runner {
   const { script, timeoutMs, recycleAfter, logger, memoryEvents = '/sys/fs/cgroup/memory.events' } = options;
@@ -69,28 +70,32 @@ export function childRunner(options: ChildRunnerOptions): Runner {
     catch { return undefined; }
   };
 
-  const dispatch = (current: Child, task: ClaimedTask) => new Promise<Outcome>((resolve) => {
+  const dispatch = (current: Child, task: ClaimedTask, signal?: AbortSignal) => new Promise<Outcome>((resolve) => {
     const { process } = current;
-    const onMessage = (message: { type?: string; id?: string; result?: TaskResult }) => {
+    const onMessage = (message: { type?: string; id?: string; result?: TaskResult | ItemResult }) => {
       if (message?.type === 'result' && message.id === task.id) done({ result: message.result! });
     };
     const onExit = (code: number | null, signal: NodeJS.Signals | null) => done({ exit: { code, signal } });
+    const onAbort = () => done({ cancelled: true });
     const timer = setTimeout(() => done({ timeout: true }), timeoutMs);
     const done = (outcome: Outcome) => {
       clearTimeout(timer);
       process.off('message', onMessage);
       process.off('exit', onExit);
+      signal?.removeEventListener('abort', onAbort);
       resolve(outcome);
     };
     process.on('message', onMessage);
     process.once('exit', onExit);
-    process.send({ type: 'task', id: task.id, tenantId: task.tenantId, request: task.request });
+    signal?.addEventListener('abort', onAbort, { once: true });
+    process.send({ type: 'task', task });
+    if (signal?.aborted) onAbort();
   });
 
   spawn();
   return {
     stats,
-    async run(task) {
+    async run(task, signal) {
       const current = child ?? spawn();
       try {
         await current.ready;
@@ -101,14 +106,19 @@ export function childRunner(options: ChildRunnerOptions): Runner {
         return workerProblem(WorkerProblemCodes.crashed, (error as Error).message);
       }
       const before = await oomKills();
-      const outcome = await dispatch(current, task);
+      const outcome = await dispatch(current, task, signal);
       stats.tasks++;
       if ('result' in outcome) {
         current.tasks++;
         if (current.tasks >= recycleAfter) await retire(current, 'recycle');
         return outcome.result;
       }
-      await retire(current, 'timeout' in outcome ? 'timeout' : 'exit');
+      await retire(current, 'timeout' in outcome ? 'timeout' : 'cancelled' in outcome ? 'cancel' : 'exit');
+      if ('cancelled' in outcome) {
+        stats.cancels++;
+        logger.info({ taskId: task.id, tenantId: task.tenantId }, '批次已取消，结束正在渲染的一项');
+        return { cancelled: true };
+      }
       if ('timeout' in outcome) {
         stats.timeouts++;
         logger.warn({ taskId: task.id, tenantId: task.tenantId, timeoutMs }, '渲染超时，已结束子进程');

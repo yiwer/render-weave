@@ -6,15 +6,17 @@
  */
 import type { FastifyInstance } from 'fastify';
 import type { TaskResult, TenantScope } from '../backend.js';
-import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem } from '../engine.js';
+import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem, type RenderMeasure } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
-import { ApiError, fail, notFound, problem, ServiceProblemCodes } from './problems.js';
+import { ApiError, fail, notFound, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
 
 /** 入队前的限制与预览的并发、频率。数值是暂定的，容量基线（票据 15）实测后再定。 */
 export interface ServiceLimits {
   /** 请求体的字节数，内联的数据集算在里面。 */
   readonly maxRequestBytes: number;
+  /** 批量交付请求体的字节数（票据 07）：一批最多 1,000 项，比单张的请求大。 */
+  readonly maxBatchRequestBytes: number;
   /** 引用的已保存数据集的字节数。 */
   readonly maxDatasetBytes: number;
   /** 单张图的像素总数：套餐上限（票据 09 之前取缺省值），且不超过引擎上限。 */
@@ -33,6 +35,7 @@ export interface ServiceLimits {
 
 export const DEFAULT_LIMITS: ServiceLimits = {
   maxRequestBytes: 1024 * 1024,
+  maxBatchRequestBytes: 8 * 1024 * 1024,
   maxDatasetBytes: 1024 * 1024,
   maxPixels: 100_000_000,
   maxElements: 20_000,
@@ -49,6 +52,28 @@ export interface PreviewReply {
   readonly layout?: TaskResult['layout'];
 }
 
+/** 引用的已保存数据集超出字节上限时的问题；source 是请求里数据集的位置。 */
+export async function datasetLimitProblems(limits: ServiceLimits, scope: TenantScope, dataset: unknown, source: string): Promise<ServiceProblem[]> {
+  const datasetId = (dataset as { id?: unknown } | undefined)?.id;
+  if (typeof datasetId !== 'string') return [];
+  const stored = (await scope.storage.authoringState()).documents.find((document) => document.kind === 'dataset' && document.key === datasetId);
+  return stored && stored.byteLength > limits.maxDatasetBytes
+    ? [problem(ServiceProblemCodes.limitDatasetTooLarge, source, `数据集 ${datasetId} 有 ${stored.byteLength} 字节，超出上限 ${limits.maxDatasetBytes} 字节`)] : [];
+}
+
+/** 量出的像素与展开规模超出上限时的问题（ADR-0017）；at 是这张图的请求在请求体里的位置。 */
+export function measureLimitProblems(limits: ServiceLimits, measure: RenderMeasure, at: string): { pixels: ServiceProblem[]; expansion: ServiceProblem[] } {
+  const { widthPx, heightPx, elements, loopItems } = measure;
+  return {
+    pixels: widthPx * heightPx > limits.maxPixels
+      ? [problem(ServiceProblemCodes.limitPixelsExceeded, `${at}.output`, `出图像素为 ${widthPx} × ${heightPx} = ${widthPx * heightPx}，超出单张上限 ${limits.maxPixels}`)] : [],
+    expansion: [
+      ...(loopItems > limits.maxLoopItems ? [problem(ServiceProblemCodes.limitExpansionExceeded, at, `展开后的循环项数为 ${loopItems}，超出上限 ${limits.maxLoopItems}`)] : []),
+      ...(elements > limits.maxElements ? [problem(ServiceProblemCodes.limitExpansionExceeded, at, `展开后的元素数为 ${elements}，超出上限 ${limits.maxElements}`)] : []),
+    ],
+  };
+}
+
 /** 一次草稿预览：检查、入队、等结果。客户与代建工程师的端点都走这里。 */
 export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown): Promise<PreviewReply> {
   const { limits, now } = context;
@@ -59,24 +84,13 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   }
   const request = { ...input, mode: 'draft' };
 
-  const datasetId = (input['dataset'] as { id?: unknown } | undefined)?.id;
-  if (typeof datasetId === 'string') {
-    const stored = (await scope.storage.authoringState()).documents.find((document) => document.kind === 'dataset' && document.key === datasetId);
-    if (stored && stored.byteLength > limits.maxDatasetBytes) {
-      throw fail(413, ServiceProblemCodes.limitDatasetTooLarge, 'request.dataset', `数据集 ${datasetId} 有 ${stored.byteLength} 字节，超出上限 ${limits.maxDatasetBytes} 字节`);
-    }
-  }
+  const dataset = await datasetLimitProblems(limits, scope, input['dataset'], 'request.dataset');
+  if (dataset.length) throw new ApiError(413, dataset);
 
   const measured = measureRender(await loadTenantWorkspace(scope.storage), request);
   if (!measured.measure) return { problems: measured.problems };
-  const { widthPx, heightPx, elements, loopItems } = measured.measure;
-  if (widthPx * heightPx > limits.maxPixels) {
-    throw fail(413, ServiceProblemCodes.limitPixelsExceeded, 'request.output', `出图像素为 ${widthPx} × ${heightPx} = ${widthPx * heightPx}，超出单张上限 ${limits.maxPixels}`);
-  }
-  const expansion = [
-    ...(loopItems > limits.maxLoopItems ? [problem(ServiceProblemCodes.limitExpansionExceeded, 'request', `展开后的循环项数为 ${loopItems}，超出上限 ${limits.maxLoopItems}`)] : []),
-    ...(elements > limits.maxElements ? [problem(ServiceProblemCodes.limitExpansionExceeded, 'request', `展开后的元素数为 ${elements}，超出上限 ${limits.maxElements}`)] : []),
-  ];
+  const { pixels, expansion } = measureLimitProblems(limits, measured.measure, 'request');
+  if (pixels.length) throw new ApiError(413, pixels);
   if (expansion.length) throw new ApiError(413, expansion);
 
   const queued = await scope.tasks.enqueuePreview(request, { concurrency: limits.previewConcurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());

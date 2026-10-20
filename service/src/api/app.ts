@@ -10,6 +10,7 @@ import type { Logger } from '../log.js';
 import { can, type Access } from './permissions.js';
 import { ApiError, fail, problem, ServiceProblemCodes, validationProblems } from './problems.js';
 import { registerAuthoringRoutes } from './authoring.js';
+import { registerBatchRoutes } from './batches.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
 import { registerRoutes } from './routes.js';
 
@@ -98,6 +99,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerRoutes(app, context);
   registerAuthoringRoutes(app, context);
   registerPreviewRoutes(app, context);
+  registerBatchRoutes(app, context);
   return Object.assign(app, { routeTable });
 }
 

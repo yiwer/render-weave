@@ -270,8 +270,9 @@ export async function deliverBatchItem(options: {
   return { item: written(draft ? 'previewed' : 'delivered', itemFiles, problems), writeFailed: false };
 }
 
-/** 由逐项结果与批次级问题汇总批次清单。 */
-export function summarizeBatch(snapshot: BatchSnapshot, items: readonly BatchItemResult[], problems: readonly Problem[]): BatchManifest {
+/** 由逐项结果与批次级问题汇总批次清单；批次只用到快照的构建标识、根模板与模式（服务端由批次行提供）。 */
+export function summarizeBatch(snapshot: { readonly build: string; readonly envelope: { readonly template: string; readonly mode: RenderMode } },
+  items: readonly BatchItemResult[], problems: readonly Problem[]): BatchManifest {
   const count = (status: BatchItemStatus) => items.filter((item) => item.status === status).length;
   const summary: BatchSummary = { total: items.length, delivered: count('delivered'), previewed: count('previewed'), failed: count('failed'), notRun: count('notRun'),
     severe: items.reduce((sum, item) => sum + item.severe, 0), hints: items.reduce((sum, item) => sum + item.hints, 0) };

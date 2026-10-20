@@ -4,9 +4,11 @@
  */
 import {
   EmailTakenError,
-  type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type Identity, type Member, type MemberRole, type NewAuditEvent,
+  type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
   type Readiness, type ServiceBackend, type TaskResult, type TaskState, type Tenant, type TenantScope,
 } from '../backend.js';
+import { batchManifest, NOT_STARTED, notRunItem } from '../batches.js';
+import { manifestBytes, type RenderMode } from '../engine.js';
 import type { BlobStore } from './blobs.js';
 import { asPlatform, isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
 import { checkMigrations, type Migration } from './migrate.js';
@@ -19,6 +21,58 @@ const memberRow = (row: { id: string; tenant_id: string; email: string; role: Me
 const keyRow = (row: { id: string; name: string; prefix: string; created_at: Date; revoked_at: Date | null }): ApiKeyInfo =>
   ({ id: row.id, name: row.name, prefix: row.prefix, createdAt: iso(row.created_at)!, ...(row.revoked_at ? { revokedAt: iso(row.revoked_at)! } : {}) });
 const MEMBER_COLUMNS = 'id, tenant_id, email, role, active, created_at';
+
+interface BatchRow {
+  batch_id: string; build: string; template: string; mode: RenderMode; idempotency_key: string | null; request_sha256: string; created_at: Date;
+  cancel_requested_at: Date | null; finished_at: Date | null; summary: NonNullable<BatchState['manifest']>['summary'] | null; problems: NonNullable<BatchState['manifest']>['problems'] | null;
+}
+const BATCH_COLUMNS = 'batch_id, build, template, mode, idempotency_key, request_sha256, created_at, cancel_requested_at, finished_at, summary, problems';
+
+/** 批次与逐项状态；只认接口进程建的批次（有快照）。 */
+async function batchState(client: DbClient, tenantId: string, where: { batchId: string } | { idempotencyKey: string }): Promise<BatchState | undefined> {
+  const [row] = (await client.query<BatchRow>(`SELECT ${BATCH_COLUMNS} FROM batches WHERE tenant_id = $1 AND snapshot_sha256 IS NOT NULL AND
+    ${'batchId' in where ? 'batch_id = $2::uuid' : 'idempotency_key = $2'}`,
+  [tenantId, 'batchId' in where ? where.batchId : where.idempotencyKey])).rows;
+  if (!row) return undefined;
+  const items = (await client.query<{ item_index: number; id: string; status: string; result: ItemResult | null }>(
+    `SELECT item_index, request->>'id' AS id, status, result FROM render_tasks WHERE tenant_id = $1 AND batch_id = $2 ORDER BY item_index`,
+    [tenantId, row.batch_id])).rows;
+  return {
+    batchId: row.batch_id, build: row.build, template: row.template, mode: row.mode,
+    ...(row.idempotency_key === null ? {} : { idempotencyKey: row.idempotency_key }), requestSha256: row.request_sha256,
+    createdAt: iso(row.created_at)!, ...(row.cancel_requested_at ? { cancelRequestedAt: iso(row.cancel_requested_at)! } : {}),
+    ...(row.finished_at ? { finishedAt: iso(row.finished_at)! } : {}),
+    items: items.map((item) => ({
+      index: item.item_index, id: item.id, status: item.result ? 'ended' : item.status === 'running' ? 'running' : 'queued',
+      ...(item.result ? { result: item.result } : {}),
+    })),
+    ...(row.summary && row.problems ? { manifest: { summary: row.summary, problems: row.problems } } : {}),
+  };
+}
+
+/** 锁住批次行：同一批次的写回与取消依次进行，最后结束的那一项看得到其余各项的结果。批次不在时 false。 */
+async function lockBatch(client: DbClient, tenantId: string, batchId: string): Promise<boolean> {
+  return (await client.query('SELECT 1 FROM batches WHERE tenant_id = $1 AND batch_id = $2 AND snapshot_sha256 IS NOT NULL FOR NO KEY UPDATE',
+    [tenantId, batchId])).rowCount === 1;
+}
+
+/**
+ * 全部项都结束了就发布批次清单（batch.json），与写回最后一项或取消在同一个事务里；调用方已锁住批次行。
+ * 先只数还没结束的项，最后一项才读全部结果，免得每写回一项都读一遍整批。
+ */
+async function finalizeBatch(client: DbClient, blobs: BlobStore, tenantId: string, batchId: string, now: Date): Promise<void> {
+  const { open } = (await client.query<{ open: string }>(`SELECT count(*) AS open FROM render_tasks
+    WHERE tenant_id = $1 AND batch_id = $2 AND status IN ('queued', 'running')`, [tenantId, batchId])).rows[0]!;
+  if (Number(open) > 0) return;
+  const state = (await batchState(client, tenantId, { batchId }))!;
+  if (state.manifest || state.items.some((item) => !item.result)) return;
+  const manifest = batchManifest({ build: state.build, template: state.template, mode: state.mode, cancelled: state.cancelRequestedAt !== undefined },
+    state.items.map((item) => item.result!));
+  const sha256 = await blobs.put(tenantId, manifestBytes(manifest));
+  await client.query(`UPDATE batches SET manifest_sha256 = $3, finished_at = $4, summary = $5, problems = $6
+    WHERE tenant_id = $1 AND batch_id = $2 AND manifest_sha256 IS NULL`,
+  [tenantId, state.batchId, sha256, now, JSON.stringify(manifest.summary), JSON.stringify(manifest.problems)]);
+}
 
 async function insertAudit(client: DbClient, tenantId: string | null, event: NewAuditEvent, now: Date): Promise<void> {
   await client.query(`INSERT INTO audit_events (tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant)
@@ -100,7 +154,7 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         }),
         state: (id) => run(async (client) => {
           const row = (await client.query<{ status: TaskState['status']; result: { problems: TaskResult['problems']; layout?: TaskResult['layout']; image?: Omit<NonNullable<TaskResult['image']>, 'bytes'> } | null; image: Buffer | null }>(
-            'SELECT status, result, image FROM render_tasks WHERE tenant_id = $1 AND id = $2', [tenantId, id])).rows[0];
+            `SELECT status, result, image FROM render_tasks WHERE tenant_id = $1 AND id = $2 AND kind = 'preview'`, [tenantId, id])).rows[0];
           if (!row) return undefined;
           if (row.status !== 'done') return { status: row.status } as TaskState;
           const { image, ...rest } = row.result!;
@@ -109,7 +163,35 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         release: (id) => run(async (client) => {
           await client.query(`UPDATE render_tasks SET status = CASE WHEN status = 'queued' THEN 'cancelled' ELSE status END, image = NULL,
               result = CASE WHEN result IS NULL THEN NULL ELSE jsonb_build_object('problems', result->'problems') END
-            WHERE tenant_id = $1 AND id = $2`, [tenantId, id]);
+            WHERE tenant_id = $1 AND id = $2 AND kind = 'preview'`, [tenantId, id]);
+        }),
+        createBatch: (batch, now) => run(async (client) => {
+          const created = (await client.query<{ batch_id: string }>(
+            `INSERT INTO batches (tenant_id, snapshot_sha256, build, template, mode, idempotency_key, request_sha256, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (tenant_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING RETURNING batch_id`,
+            [tenantId, batch.snapshot, batch.build, batch.template, batch.mode, batch.idempotencyKey ?? null, batch.requestSha256, now])).rows[0];
+          if (!created) return { batch: (await batchState(client, tenantId, { idempotencyKey: batch.idempotencyKey! }))!, created: false };
+          await client.query(`INSERT INTO render_tasks (tenant_id, kind, request, status, created_at, batch_id, item_index, build)
+            SELECT $1, 'batchItem', jsonb_build_object('snapshot', $2::text, 'id', item.id), 'queued', $3, $4, item.index, $5
+              FROM jsonb_to_recordset($6::jsonb) AS item(index integer, id text)`,
+          [tenantId, batch.snapshot, now, created.batch_id, batch.build, JSON.stringify(batch.items)]);
+          return { batch: (await batchState(client, tenantId, { batchId: created.batch_id }))!, created: true };
+        }),
+        findBatch: (key) => run((client) => batchState(client, tenantId, { idempotencyKey: key })),
+        batch: (batchId) => run((client) => batchState(client, tenantId, { batchId })),
+        cancelBatch: (batchId, now) => run(async (client) => {
+          if (!(await lockBatch(client, tenantId, batchId))) return undefined;
+          const state = (await batchState(client, tenantId, { batchId }))!;
+          if (state.manifest) return state;
+          await client.query('UPDATE batches SET cancel_requested_at = coalesce(cancel_requested_at, $3) WHERE tenant_id = $1 AND batch_id = $2', [tenantId, batchId, now]);
+          const queued = state.items.filter((item) => item.status === 'queued').map((item) => notRunItem(item.index, item.id, NOT_STARTED));
+          await client.query(`UPDATE render_tasks t SET status = 'cancelled', finished_at = $3, result = item.result
+              FROM jsonb_to_recordset($4::jsonb) AS item(index integer, result jsonb)
+             WHERE t.tenant_id = $1 AND t.batch_id = $2 AND t.item_index = item.index AND t.status = 'queued'`,
+          [tenantId, batchId, now, JSON.stringify(queued.map((result) => ({ index: result.index, result })))]);
+          await finalizeBatch(client, blobs, tenantId, batchId, now);
+          return batchState(client, tenantId, { batchId });
         }),
       },
     };
@@ -139,14 +221,29 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
     },
     tenant,
     queue: {
-      async claim(worker, now) {
-        const row = (await db.query<{ id: string; tenant_id: string; kind: 'preview'; request: unknown }>('SELECT * FROM rw_claim_task($1, $2)', [worker, now])).rows[0];
-        return row && { id: row.id, tenantId: row.tenant_id, kind: row.kind, request: row.request };
+      async claim(worker, now, { build, leaseMs, previews }) {
+        const row = (await db.query<{ id: string; tenant_id: string; kind: 'preview' | 'batchItem'; request: unknown; batch_id: string | null; item_index: number | null; attempts: number }>(
+          'SELECT * FROM rw_claim_task($1, $2, $3, $4, $5)', [worker, now, build, new Date(now.getTime() + leaseMs), previews])).rows[0];
+        if (!row) return undefined;
+        if (row.kind === 'preview') return { id: row.id, tenantId: row.tenant_id, kind: 'preview', request: row.request };
+        const request = row.request as { snapshot: string; id: string };
+        return { id: row.id, tenantId: row.tenant_id, kind: 'batchItem', batchId: row.batch_id!, index: row.item_index!, itemId: request.id, snapshot: request.snapshot, attempts: row.attempts };
       },
+      finishItem: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
+        if (!(await lockBatch(client, task.tenantId, task.batchId))) return false;
+        const updated = await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $5, result = $6, lease_until = NULL
+          WHERE tenant_id = $1 AND id = $2 AND batch_id = $3 AND status = 'running' AND attempts = $4`,
+        [task.tenantId, task.id, task.batchId, task.attempts, now, JSON.stringify(result)]);
+        if (updated.rowCount !== 1) return false;
+        await finalizeBatch(client, blobs, task.tenantId, task.batchId, now);
+        return true;
+      }),
+      cancelRequested: (task) => withTenant(db, task.tenantId, async (client) => (await client.query<{ cancelled: boolean }>(
+        'SELECT cancel_requested_at IS NOT NULL AS cancelled FROM batches WHERE tenant_id = $1 AND batch_id = $2', [task.tenantId, task.batchId])).rows[0]?.cancelled ?? false),
       finish: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
         const { image, ...rest } = result;
         const meta = image ? { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi } : undefined;
-        await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $3, result = $4, image = $5 WHERE tenant_id = $1 AND id = $2 AND status = 'running'`,
+        await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $3, result = $4, image = $5 WHERE tenant_id = $1 AND id = $2 AND kind = 'preview' AND status = 'running'`,
           [task.tenantId, task.id, now, JSON.stringify({ ...rest, ...(meta ? { image: meta } : {}) }), image ? Buffer.from(image.bytes) : null]);
       }),
     },
