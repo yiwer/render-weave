@@ -3,13 +3,14 @@
  * 数据字段来自数据集，参数来自渲染请求或缺省值，派生变量按需计算并缓存。
  * 缺值统一为 undefined；取项超出范围、路径上任何一级缺失都得到空值，不报错（M16、S12）。
  */
-import { addDecimal } from '../decimal.js';
+import { addDecimal, divideDecimal, modDecimal, multiplyDecimal } from '../decimal.js';
+import { displayValue } from '../display-format.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
 import { isRecord } from '../util.js';
 import type { VariableTable } from './check.js';
 import { checkParameterValue, normalizeColor } from './declarations.js';
-import type { CheckModel, Condition, DerivedModel, Operand, TemplateModel } from './model.js';
-import type { ValueType } from './types.js';
+import { comparisonsOf, type CheckModel, type Comparison, type Condition, type DerivedModel, type Operand, type TemplateModel } from './model.js';
+import { displayKind, type ValueType } from './types.js';
 
 export type ParameterValues = ReadonlyMap<string, string | number | boolean>;
 
@@ -91,15 +92,28 @@ export class Scope {
       case 'branch': {
         const dependencies: string[] = [];
         for (const branch of operation.branches) {
-          dependencies.push(...refs([branch.when.left, branch.when.right]));
+          for (const comparison of comparisonsOf(branch.when)) {
+            dependencies.push(...refs([comparison.left, comparison.right]));
+          }
           if (this.condition(branch.when)) return [...dependencies, ...refs([branch.then])];
         }
         return [...dependencies, ...refs([operation.otherwise])];
       }
       case 'pickItem': return [operation.list.var, ...refs([typeof operation.position === 'object' ? operation.position.index : undefined])];
+      case 'splitPart':
+        return [
+          operation.of.var,
+          ...refs([
+            typeof operation.delimiter === 'object' ? operation.delimiter : undefined,
+            typeof operation.position === 'object' ? operation.position.index : undefined,
+          ]),
+        ];
       case 'length': return [operation.of.var];
       case 'add':
-      case 'subtract': return refs([operation.left, operation.right]);
+      case 'subtract':
+      case 'multiply':
+      case 'divide':
+      case 'mod': return refs([operation.left, operation.right]);
     }
   }
 
@@ -170,6 +184,20 @@ export class Scope {
         // 序号从 1 开始；超出范围得空值（S12）。
         return typeof index === 'number' && Number.isInteger(index) && index >= 1 ? list[index - 1] : undefined;
       }
+      case 'splitPart': {
+        const resolved = this.table.typeOf(operation.of.var);
+        const kind = 'type' in resolved ? displayKind(resolved.type) : undefined;
+        if (!kind) return '';
+        const text = displayValue(this.value(operation.of.var), kind, operation.format);
+        const delimiter = typeof operation.delimiter === 'string' ? operation.delimiter : this.value(operation.delimiter.var);
+        if (text === '' || typeof delimiter !== 'string' || delimiter === '') return '';
+        const parts = text.split(delimiter);
+        if (operation.position === 'first') return parts[0] ?? '';
+        // 非空 delimiter 在非空文本中未出现时（parts.length === 1），只有第 1 段为原文本，其余位置为空文本（M239）。
+        if (operation.position === 'last') return parts.length > 1 ? parts.at(-1)! : '';
+        const index = this.operand(operation.position.index);
+        return typeof index === 'number' && Number.isInteger(index) && index >= 1 ? (parts[index - 1] ?? '') : '';
+      }
       case 'length': {
         const value = this.value(operation.of.var);
         if (typeof value === 'string') return Array.from(value).length;
@@ -187,6 +215,39 @@ export class Scope {
           `派生变量“${derived.displayName}”的加减无法得到有限且不超过 15 位有效数字的结果，按缺值处理`));
         return result;
       }
+      case 'multiply':
+      case 'mod': {
+        const left = this.operand(operation.left);
+        const right = this.operand(operation.right);
+        if (typeof left !== 'number' || typeof right !== 'number') return undefined;
+        if (operation.op === 'mod' && right === 0) {
+          this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
+            { kind: 'variable', template: this.template.name, name: derived.name },
+            `派生变量“${derived.displayName}”的取模除数为 0，按缺值处理`));
+          return undefined;
+        }
+        const result = operation.op === 'multiply' ? multiplyDecimal(left, right) : modDecimal(left, right);
+        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
+          { kind: 'variable', template: this.template.name, name: derived.name },
+          `派生变量“${derived.displayName}”的${operation.op === 'multiply' ? '乘法' : '取模'}无法得到有限且不超过 15 位有效数字的结果，按缺值处理`));
+        return result;
+      }
+      case 'divide': {
+        const left = this.operand(operation.left);
+        const right = this.operand(operation.right);
+        if (typeof left !== 'number' || typeof right !== 'number') return undefined;
+        if (right === 0) {
+          this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
+            { kind: 'variable', template: this.template.name, name: derived.name },
+            `派生变量“${derived.displayName}”的除法除数为 0，按缺值处理`));
+          return undefined;
+        }
+        const result = divideDecimal(left, right);
+        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
+          { kind: 'variable', template: this.template.name, name: derived.name },
+          `派生变量“${derived.displayName}”的除法无法得到有限数值结果，按缺值处理`));
+        return result;
+      }
     }
   }
 
@@ -194,11 +255,17 @@ export class Scope {
     return 'value' in operand ? operand.value : this.value(operand.var);
   }
 
+  private condition(condition: Condition): boolean {
+    if ('all' in condition) return condition.all.every((c) => this.comparison(c));
+    if ('any' in condition) return condition.any.some((c) => this.comparison(c));
+    return this.comparison(condition);
+  }
+
   /**
    * 结构化比较（S11）。empty：缺值、空文本或空列表；数值 0 不算空。
    * 有一侧缺值时：eq 只在两侧都缺值时成立，ne 取反，大小比较都不成立。
    */
-  private condition(condition: Condition): boolean {
+  private comparison(condition: Comparison): boolean {
     const left = this.operand(condition.left);
     if (condition.op === 'empty') return isEmpty(left);
     if (condition.op === 'notEmpty') return !isEmpty(left);
@@ -221,7 +288,7 @@ export class Scope {
     }
   }
 
-  private comparisonType(condition: Condition): ValueType | undefined {
+  private comparisonType(condition: Comparison): ValueType | undefined {
     for (const side of [condition.left, condition.right]) {
       if (side && 'var' in side) {
         const resolved = this.table.typeOf(side.var);

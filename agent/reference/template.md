@@ -36,9 +36,10 @@
 - **派生变量** `{"name", "displayName", "type", "ref"?, "op", ...}`，单步运算按名组合：
   - `branch`：`"branches": [{"when": 条件, "then": 运算数}], "otherwise": 运算数`
   - `pickItem`：`"list": {"var": 列表}, "position": "first" | "last" | {"index": 运算数}`（序号从 1 开始，越界得空值）；取出引用项时 type 写 `"ref"` 并写明 `"ref": {"name", "version"}`
+  - `splitPart`（`type` 写 `"text"`）：`"of": {"var": 文本/数值/日期/时刻/时间变量}, "format"?: 展示格式, "delimiter": 非空文本或 {"var": 文本变量}, "position": "first" | "last" | {"index": 运算数}`（按分隔符拆取文本，如拆分价格整数与角分、主副站名；缺值、越界或分隔符未出现时的非首段均得空文本 `""`）
   - `length`：`"of": {"var": 列表或文本}`
-  - `add` / `subtract`：`"left": 运算数, "right": 运算数`
-- **条件** `{"left": 运算数, "op": 比较, "right": 运算数}`，比较取 eq、ne、lt、le、gt、ge、empty、notEmpty（后两个不写 right）。
+  - `add` / `subtract` / `multiply` / `divide` / `mod`：`"left": 运算数, "right": 运算数`（十进制精确计算，除法四舍五入保留最多 15 位有效数字）
+- **条件** 写成单个比较 `{"left": 运算数, "op": 比较, "right": 运算数}`，或单层复合条件 `{"all": [比较…]}`（全部成立）、`{"any": [比较…]}`（任一成立）；比较取 eq、ne、lt、le、gt、ge、empty、notEmpty（后两个不写 right）。
 - **检查项** `{"name", "displayName"?, "problemWhen": {"var": 布尔变量}, "level": "severe" 或 "hint", "message"}`。
 - 一个派生变量只能写自己这种运算的键。
 

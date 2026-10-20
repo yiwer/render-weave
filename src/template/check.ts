@@ -12,8 +12,16 @@ import { formatElementPath } from '../element-path.js';
 import { plainNumber } from '../decimal.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode, type ProblemLocation } from '../problems.js';
 import { checkParameterValue } from './declarations.js';
-import type { CheckModel, Condition, DerivedModel, Operand, TemplateModel, VariableUse } from './model.js';
-import { displayKind, kindLabel, sameType, typeFromCompiled, typeLabel, type ValueType } from './types.js';
+import { comparisonsOf, type ArithmeticOp, type CheckModel, type Comparison, type Condition, type DerivedModel, type Operand, type TemplateModel, type VariableUse } from './model.js';
+import { displayKind, kindLabel, sameType, typeFromCompiled, typeLabel, type BasicKind, type ValueType } from './types.js';
+
+const ARITHMETIC_LABELS: Record<ArithmeticOp, string> = {
+  add: '加法',
+  subtract: '减法',
+  multiply: '乘法',
+  divide: '除法',
+  mod: '取模',
+};
 
 export interface Variable {
   readonly name: string;
@@ -231,6 +239,20 @@ class Checker implements VariableTable {
         if (typeof operation.position === 'object') this.expectOperand(operation.position.index, { kind: 'number' }, where, '取项的序号');
         return;
       }
+      case 'splitPart': {
+        const of = this.operandType(operation.of, where);
+        const kind = of ? displayKind(of) : undefined;
+        if (of && !kind) {
+          this.report(ProblemCodes.templateTypeMismatch, where, `splitPart 的 of ${operation.of.var} 的类型是${typeLabel(of)}，必须是文本、数值、日期、时刻或时间`);
+        } else if (kind && operation.format) {
+          const mismatch = kind === 'text' ? `文本类型不带展示格式"${operation.format.pattern}"` : formatMismatch(operation.format, kind);
+          if (mismatch) this.report(ProblemCodes.templateTypeMismatch, where, `splitPart 的 format：${mismatch}`);
+        }
+        if (typeof operation.delimiter === 'object') this.expectOperand(operation.delimiter, { kind: 'text' }, where, 'delimiter');
+        if (typeof operation.position === 'object') this.expectOperand(operation.position.index, { kind: 'number' }, where, 'splitPart 的序号');
+        this.expectResult(declared, 'text', where, 'splitPart');
+        return;
+      }
       case 'length': {
         const of = this.operandType(operation.of, where);
         if (of && of.kind !== 'text' && of.kind !== 'list') {
@@ -241,20 +263,27 @@ class Checker implements VariableTable {
       }
       case 'add':
       case 'subtract':
+      case 'multiply':
+      case 'divide':
+      case 'mod':
         this.expectOperand(operation.left, { kind: 'number' }, where, 'left');
         this.expectOperand(operation.right, { kind: 'number' }, where, 'right');
-        this.expectResult(declared, 'number', where, operation.op === 'add' ? '加法' : '减法');
+        this.expectResult(declared, 'number', where, ARITHMETIC_LABELS[operation.op]);
         return;
     }
   }
 
-  private expectResult(declared: ValueType, kind: 'number', where: ProblemLocation, what: string): void {
+  private expectResult(declared: ValueType, kind: BasicKind, where: ProblemLocation, what: string): void {
     if (declared.kind !== kind) {
       this.report(ProblemCodes.templateTypeMismatch, where, `${what}的结果是${kindLabel(kind)}，派生变量却声明为${typeLabel(declared)}`);
     }
   }
 
   private checkCondition(condition: Condition, where: ProblemLocation): void {
+    for (const comparison of comparisonsOf(condition)) this.checkComparison(comparison, where);
+  }
+
+  private checkComparison(condition: Comparison, where: ProblemLocation): void {
     const left = this.operandType(condition.left, where);
     if (condition.op === 'empty' || condition.op === 'notEmpty' || !condition.right) return;
     const right = this.operandType(condition.right, where);
@@ -364,8 +393,11 @@ function operandsOf(derived: DerivedModel): string[] {
   switch (operation.op) {
     case 'branch':
       for (const branch of operation.branches) {
-        operands.push(branch.when.left, branch.then);
-        if (branch.when.right) operands.push(branch.when.right);
+        for (const comparison of comparisonsOf(branch.when)) {
+          operands.push(comparison.left);
+          if (comparison.right) operands.push(comparison.right);
+        }
+        operands.push(branch.then);
       }
       operands.push(operation.otherwise);
       break;
@@ -373,11 +405,19 @@ function operandsOf(derived: DerivedModel): string[] {
       operands.push(operation.list);
       if (typeof operation.position === 'object') operands.push(operation.position.index);
       break;
+    case 'splitPart':
+      operands.push(operation.of);
+      if (typeof operation.delimiter === 'object') operands.push(operation.delimiter);
+      if (typeof operation.position === 'object') operands.push(operation.position.index);
+      break;
     case 'length':
       operands.push(operation.of);
       break;
     case 'add':
     case 'subtract':
+    case 'multiply':
+    case 'divide':
+    case 'mod':
       operands.push(operation.left, operation.right);
       break;
   }

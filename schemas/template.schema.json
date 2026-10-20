@@ -2966,6 +2966,45 @@
         ]
       }
     },
+    "branchWhen": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        }
+      ]
+    },
     "derived": {
       "type": "object",
       "required": [
@@ -3001,9 +3040,13 @@
           "enum": [
             "branch",
             "pickItem",
+            "splitPart",
             "length",
             "add",
-            "subtract"
+            "subtract",
+            "multiply",
+            "divide",
+            "mod"
           ]
         },
         "branches": {
@@ -3018,7 +3061,7 @@
             ],
             "properties": {
               "when": {
-                "$ref": "#/$defs/condition"
+                "$ref": "#/$defs/branchWhen"
               },
               "then": {
                 "$ref": "#/$defs/operand"
@@ -3056,6 +3099,19 @@
         },
         "of": {
           "$ref": "#/$defs/varOperand"
+        },
+        "format": {
+          "type": "string"
+        },
+        "delimiter": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            {
+              "$ref": "#/$defs/varOperand"
+            }
+          ]
         },
         "left": {
           "$ref": "#/$defs/operand"
@@ -3162,6 +3218,40 @@
             ],
             "properties": {
               "op": {
+                "const": "splitPart"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "of",
+              "delimiter",
+              "position"
+            ],
+            "propertyNames": {
+              "enum": [
+                "name",
+                "displayName",
+                "type",
+                "ref",
+                "op",
+                "of",
+                "format",
+                "delimiter",
+                "position"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
                 "const": "length"
               }
             }
@@ -3191,38 +3281,13 @@
             ],
             "properties": {
               "op": {
-                "const": "add"
-              }
-            }
-          },
-          "then": {
-            "type": "object",
-            "required": [
-              "left",
-              "right"
-            ],
-            "propertyNames": {
-              "enum": [
-                "name",
-                "displayName",
-                "type",
-                "ref",
-                "op",
-                "left",
-                "right"
-              ]
-            }
-          }
-        },
-        {
-          "if": {
-            "type": "object",
-            "required": [
-              "op"
-            ],
-            "properties": {
-              "op": {
-                "const": "subtract"
+                "enum": [
+                  "add",
+                  "subtract",
+                  "multiply",
+                  "divide",
+                  "mod"
+                ]
               }
             }
           },

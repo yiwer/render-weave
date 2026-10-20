@@ -59,10 +59,11 @@
 |---|---|---|
 | `branch` | `branches`：`[{ "when": 条件, "then": 运算数 }]`；`otherwise`：运算数（必填） | 条件分支，取第一个成立的分支 |
 | `pickItem` | `list`：`{ "var": 列表 }`；`position`：`"first"`、`"last"` 或 `{ "index": 运算数 }` | 取列表中的一项，序号从 1 开始；越界时结果为空，不报错（S12） |
+| `splitPart` | `of`：`{ "var": 变量 }`；`format`?：展示格式；`delimiter`：非空文本或 `{ "var": 文本变量 }`；`position`：`"first"`、`"last"` 或 `{ "index": 运算数 }` | 按分隔符拆取文本片段（如拆分价格整数与角分、主站名与括号副名），序号从 1 开始；`of` 为数值、日期、时刻或时间时先按 `format`（未写则按默认写法）格式化为文本；源值缺失、为空文本、`delimiter` 为空文本、序号越界，或非空 `delimiter` 未出现时的非第 1 段（如 `"last"`、`index: 2`），均返回空文本 `""`，不报错（M239） |
 | `length` | `of`：`{ "var": 列表或文本 }` | 列表项数，或文本的字符数 |
-| `add`、`subtract` | `left`、`right`：运算数 | 加、减 |
+| `add`、`subtract`、`multiply`、`divide`、`mod` | `left`、`right`：运算数 | 加、减、乘、除、取模（M239）。加、减、乘、取模按精确十进制整数缩放计算；`divide` 在除数非 0 时按十进制四舍五入保留最多 15 位有效数字（去除尾随 0）；除数为 0 或结果超出可表示范围时报严重问题 `template.evaluationInvalid` 并按缺值处理 |
 
-**条件**写成 `{ "left": 运算数, "op": 比较, "right": 运算数 }`。比较取 `eq`、`ne`、`lt`、`le`、`gt`、`ge`、`empty`、`notEmpty`；后两个只有左侧，不写 `right`。
+**条件**写成单个比较 `{ "left": 运算数, "op": 比较, "right": 运算数 }`，或单层复合条件 `{ "all": [比较…] }`（非空列表，全部成立为真）、`{ "any": [比较…] }`（非空列表，任一成立为真）（S11、M239）。比较取 `eq`、`ne`、`lt`、`le`、`gt`、`ge`、`empty`、`notEmpty`；后两个只有左侧，不写 `right`。
 
 一个派生变量只能写自己这种运算的键，例如 `branch` 不能同时写 `of`。
 
@@ -646,6 +647,94 @@
               "var": "photo"
             },
             "op": "empty"
+          },
+          "then": {
+            "value": true
+          }
+        }
+      ],
+      "otherwise": {
+        "value": false
+      }
+    },
+    {
+      "name": "firstTopic",
+      "displayName": "首场主题前缀",
+      "type": "text",
+      "op": "splitPart",
+      "of": {
+        "var": "firstSession.title"
+      },
+      "delimiter": "：",
+      "position": "first"
+    },
+    {
+      "name": "seatParity",
+      "displayName": "排号奇偶",
+      "type": "number",
+      "op": "mod",
+      "left": {
+        "var": "seat"
+      },
+      "right": {
+        "value": 2
+      }
+    },
+    {
+      "name": "priorityPass",
+      "displayName": "优先通道",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "all": [
+              {
+                "left": {
+                  "var": "hasSessions"
+                },
+                "op": "eq",
+                "right": {
+                  "value": true
+                }
+              },
+              {
+                "left": {
+                  "var": "vip"
+                },
+                "op": "eq",
+                "right": {
+                  "value": true
+                }
+              }
+            ]
+          },
+          "then": {
+            "value": true
+          }
+        },
+        {
+          "when": {
+            "any": [
+              {
+                "left": {
+                  "var": "role"
+                },
+                "op": "eq",
+                "right": {
+                  "value": "讲者"
+                }
+              },
+              {
+                "left": {
+                  "var": "role"
+                },
+                "op": "eq",
+                "right": {
+                  "value": "嘉宾"
+                }
+              }
+            ]
           },
           "then": {
             "value": true
@@ -1242,7 +1331,7 @@ DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按
 
 - **循环只排成一行或一列**：没有自动换行或两排；合并相邻同值项只支持横向（M236）。
 - **没有段落换行**：一个文字元素是一行（竖排是一列），放不下时按 `fit` 适配。
-- **没有文本表达式与脚本**：只有五种单步运算（ADR-0004）。拼接文字用多个片段。
+- **没有文本表达式与脚本**：只有单步具名运算（ADR-0004）。拼接文字用多个片段。
 - **没有动态模板**：被调模板名不能由数据决定，循环也没有过滤、反序或附加项。
 - **竖排文字的片段只能单独设颜色**，竖排不能倾斜。
 - **不能绑定**：字体、路径数据、多边形顶点、线条端点不能绑定变量。

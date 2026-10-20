@@ -2,11 +2,12 @@
  * 模板变量声明的解析：参数、派生变量与检查项的结构与写法（M90 S2、S11）。
  * 运算数的类型是否对得上要等知道基准数据定义之后，由模板静态检查（check.ts）完成。
  */
+import { parseDisplayFormat, type DisplayFormat } from '../display-format.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode, type ProblemLocation } from '../problems.js';
 import { DATE_PATTERN, DATETIME_PATTERN, RESOURCE_REF_PATTERN, TIME_PATTERN, isValidDate, isValidDatetime } from '../schema/formats.js';
 import { isRecord } from '../util.js';
 import { parseStaticSchemaRef } from '../workspace.js';
-import type { CheckModel, CompareOp, Condition, DerivedModel, Operand, Operation, ParameterConstraints, ParameterModel, VarOperand } from './model.js';
+import type { CheckModel, CompareOp, Comparison, Condition, DerivedModel, ItemPosition, Operand, Operation, ParameterConstraints, ParameterModel, VarOperand } from './model.js';
 import { BASIC_KINDS, type BasicKind } from './types.js';
 
 export interface Declarations {
@@ -23,9 +24,13 @@ const CONSTRAINT_KEYS: Partial<Record<BasicKind, readonly string[]>> = {
 const OPERATION_KEYS: Record<Operation['op'], readonly string[]> = {
   branch: ['branches', 'otherwise'],
   pickItem: ['list', 'position'],
+  splitPart: ['of', 'format', 'delimiter', 'position'],
   length: ['of'],
   add: ['left', 'right'],
   subtract: ['left', 'right'],
+  multiply: ['left', 'right'],
+  divide: ['left', 'right'],
+  mod: ['left', 'right'],
 };
 const COMPARE_OPS: readonly CompareOp[] = ['eq', 'ne', 'lt', 'le', 'gt', 'ge', 'empty', 'notEmpty'];
 const CHECK_KEYS = ['name', 'displayName', 'problemWhen', 'level', 'message'];
@@ -217,23 +222,44 @@ class DeclarationReader {
       }
       case 'pickItem': {
         const list = this.varOperand(value['list'], where, 'list');
-        const position = value['position'];
-        let parsed: 'first' | 'last' | { index: Operand } | undefined;
-        if (position === 'first' || position === 'last') parsed = position;
-        else if (isRecord(position) && Object.keys(position).length === 1 && 'index' in position) {
-          const index = this.operand(position['index'], where, 'position.index');
-          parsed = index && { index };
-        } else {
-          this.report(ProblemCodes.templateInvalid, where, '取项的 position 写成 "first"、"last" 或 { "index": 序号 }（从 1 开始）');
-        }
+        const parsed = this.itemPosition(value['position'], where, '取项');
         return list && parsed ? { op, list, position: parsed } : undefined;
+      }
+      case 'splitPart': {
+        const of = this.varOperand(value['of'], where, 'of');
+        let format: DisplayFormat | undefined;
+        let formatOk = true;
+        if (value['format'] !== undefined) {
+          const parsed = typeof value['format'] === 'string' ? parseDisplayFormat(value['format']) : '展示格式 format 必须是字符串，如 HH:mm、0.##';
+          if (typeof parsed === 'string') {
+            this.report(ProblemCodes.templateInvalid, where, `splitPart 的 format：${parsed}`);
+            formatOk = false;
+          } else {
+            format = parsed;
+          }
+        }
+        const rawDelimiter = value['delimiter'];
+        const delimiter =
+          typeof rawDelimiter === 'string' && rawDelimiter !== ''
+            ? rawDelimiter
+            : isVarOperand(rawDelimiter)
+              ? { var: rawDelimiter.var }
+              : undefined;
+        if (!delimiter) {
+          this.report(ProblemCodes.templateInvalid, where, 'splitPart 的 delimiter 必须是非空文本或 { "var": 文本变量路径 }');
+        }
+        const position = this.itemPosition(value['position'], where, 'splitPart');
+        return of && formatOk && delimiter && position ? { op, of, ...(format && { format }), delimiter, position } : undefined;
       }
       case 'length': {
         const of = this.varOperand(value['of'], where, 'of');
         return of && { op, of };
       }
       case 'add':
-      case 'subtract': {
+      case 'subtract':
+      case 'multiply':
+      case 'divide':
+      case 'mod': {
         const left = this.operand(value['left'], where, 'left');
         const right = this.operand(value['right'], where, 'right');
         return left && right ? { op, left, right } : undefined;
@@ -241,7 +267,37 @@ class DeclarationReader {
     }
   }
 
+  private itemPosition(position: unknown, where: ProblemLocation, what: string): ItemPosition | undefined {
+    if (position === 'first' || position === 'last') return position;
+    if (isRecord(position) && Object.keys(position).length === 1 && 'index' in position) {
+      const index = this.operand(position['index'], where, 'position.index');
+      return index && { index };
+    }
+    this.report(ProblemCodes.templateInvalid, where, `${what}的 position 写成 "first"、"last" 或 { "index": 序号 }（从 1 开始）`);
+    return undefined;
+  }
+
   private condition(value: unknown, where: ProblemLocation): Condition | undefined {
+    if (isRecord(value) && ('all' in value || 'any' in value)) {
+      const key = 'all' in value && !('any' in value) ? 'all' : 'any' in value && !('all' in value) ? 'any' : undefined;
+      if (!key) {
+        this.report(ProblemCodes.templateInvalid, where, '复合条件只能写 all 或 any 之一');
+        return undefined;
+      }
+      this.checkKeys(value, [key], where, '条件');
+      const list = value[key];
+      if (!Array.isArray(list) || list.length === 0) {
+        this.report(ProblemCodes.templateInvalid, where, `复合条件 ${key} 必须是非空条件列表`);
+        return undefined;
+      }
+      const items = list.map((item) => this.comparison(item, where));
+      if (items.some((item) => !item)) return undefined;
+      return key === 'all' ? { all: items as Comparison[] } : { any: items as Comparison[] };
+    }
+    return this.comparison(value, where);
+  }
+
+  private comparison(value: unknown, where: ProblemLocation): Comparison | undefined {
     if (!isRecord(value) || !COMPARE_OPS.includes(value['op'] as CompareOp)) {
       this.report(
         ProblemCodes.templateInvalid,

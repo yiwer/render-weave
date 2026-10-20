@@ -274,6 +274,176 @@ describe('派生变量', () => {
     expect(find(result, '无标签').visible).toBe(true);
     expect(contentOf(await run(3), '下一站')).toBe('');
   });
+
+  it('乘除取模、按分隔符拆取文本与 all/any 复合条件', async () => {
+    const extDeclarations = {
+      parameters: [
+        { name: 'rowIndex', displayName: '行号', visibility: 'public', type: 'number', default: 3 },
+        { name: 'partIndex', displayName: '段序号', visibility: 'public', type: 'number', default: 2 },
+        { name: 'sep', displayName: '分隔符', visibility: 'public', type: 'text', default: '-' },
+      ],
+      derived: [
+        derived('salePrice', 'number', { op: 'multiply', left: { var: 'fare' }, right: { value: 0.8 } }),
+        derived('discountRate', 'number', { op: 'divide', left: { var: 'salePrice' }, right: { var: 'fare' } }),
+        derived('oneThird', 'number', { op: 'divide', left: { value: 1 }, right: { value: 3 } }),
+        derived('twoThirds', 'number', { op: 'divide', left: { value: 2 }, right: { value: 3 } }),
+        derived('rowParity', 'number', { op: 'mod', left: { var: 'rowIndex' }, right: { value: 2 } }),
+        derived('decimalMod', 'number', { op: 'mod', left: { value: 5.5 }, right: { value: 0.2 } }),
+        derived('priceInt', 'text', { op: 'splitPart', of: { var: 'fare' }, format: '0.00', delimiter: '.', position: 'first' }),
+        derived('priceCents', 'text', { op: 'splitPart', of: { var: 'fare' }, format: '0.00', delimiter: '.', position: 'last' }),
+        derived('stopMain', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: '（', position: 'first' }),
+        derived('stopRest', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: '（', position: 'last' }),
+        derived('stopSub', 'text', { op: 'splitPart', of: { var: 'stopRest' }, delimiter: '）', position: 'first' }),
+        derived('byVarSep', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: { var: 'sep' }, position: { index: { var: 'partIndex' } } }),
+        derived('timeHour', 'text', { op: 'splitPart', of: { var: 'first' }, format: 'HH:mm', delimiter: ':', position: { index: { value: 1 } } }),
+        derived('promoTag', 'text', {
+          op: 'branch',
+          branches: [
+            {
+              when: {
+                all: [
+                  { left: { var: 'salePrice' }, op: 'lt', right: { value: 16 } },
+                  { left: { var: 'stopSub' }, op: 'notEmpty' },
+                ],
+              },
+              then: { value: '特惠副站' },
+            },
+            {
+              when: {
+                any: [
+                  { left: { var: 'rowParity' }, op: 'eq', right: { value: 0 } },
+                  { left: { var: 'first' }, op: 'eq', right: { value: '06:00' } },
+                ],
+              },
+              then: { value: '偶行或头班' },
+            },
+          ],
+          otherwise: { value: '常规' },
+        }),
+      ],
+    };
+    const extArtboard = column([
+      slot('折后价', 'salePrice'),
+      slot('折扣率', 'discountRate'),
+      slot('三分之一', 'oneThird'),
+      slot('三分之二', 'twoThirds'),
+      slot('奇偶', 'rowParity'),
+      slot('小数模', 'decimalMod'),
+      text('拆字价格', [
+        { text: '¥', fontSize: 3 },
+        { slot: 'priceInt', fontSize: 6 },
+        { text: '.', fontSize: 3 },
+        { slot: 'priceCents', fontSize: 3 },
+      ]),
+      slot('主站名', 'stopMain'),
+      slot('副站名', 'stopSub'),
+      slot('变量分隔', 'byVarSep'),
+      slot('首班小时', 'timeHour'),
+      slot('促销标签', 'promoTag'),
+    ]);
+    const workspace = await textLab(FIELDS, extArtboard, extDeclarations);
+    const exec = async (overrides: Record<string, unknown> = {}, params: Record<string, unknown> = {}) => {
+      const res = await render(workspace, textLabRequest({ label: '东门（老街）', fare: 19.9, first: '07:30', ...overrides }, 80, 120, 72, params));
+      expect(res.problems).toEqual([]);
+      return res;
+    };
+
+    const r1 = await exec();
+    expect(contentOf(r1, '折后价')).toBe('15.92');
+    expect(contentOf(r1, '折扣率')).toBe('0.8');
+    expect(contentOf(r1, '三分之一')).toBe('0.333333333333333');
+    expect(contentOf(r1, '三分之二')).toBe('0.666666666666667');
+    expect(contentOf(r1, '奇偶')).toBe('1');
+    expect(contentOf(r1, '小数模')).toBe('0.1');
+    expect(find(r1, '拆字价格').text).toMatchObject({
+      content: '¥19.90',
+      fragments: [
+        { text: '¥', fontSize: 3 },
+        { text: '19', fontSize: 6 },
+        { text: '.', fontSize: 3 },
+        { text: '90', fontSize: 3 },
+      ],
+    });
+    expect(contentOf(r1, '主站名')).toBe('东门');
+    expect(contentOf(r1, '副站名')).toBe('老街');
+    expect(contentOf(r1, '首班小时')).toBe('07');
+    expect(contentOf(r1, '促销标签')).toBe('特惠副站');
+
+    // 分隔符未出现时：first / index:1 为原文本，last 及其他序号为空文本；偶行命中 any 分支。
+    const r2 = await exec({ label: '东门-北口', fare: 25 }, { rowIndex: 4, partIndex: 2, sep: '-' });
+    expect(contentOf(r2, '主站名')).toBe('东门-北口');
+    expect(contentOf(r2, '副站名')).toBe('');
+    expect(contentOf(r2, '变量分隔')).toBe('北口');
+    expect(contentOf(r2, '奇偶')).toBe('0');
+    expect(contentOf(r2, '促销标签')).toBe('偶行或头班');
+
+    // 源值缺失、空文本、分隔符为空或序号越界时均返回空文本，不报错；all/any 均未命中时走 otherwise。
+    const r3 = await exec({ label: '东门-北口', fare: 25 }, { rowIndex: 3, partIndex: 5, sep: '' });
+    expect(contentOf(r3, '变量分隔')).toBe('');
+    expect(contentOf(r3, '促销标签')).toBe('常规');
+
+    const r4 = await exec({ label: undefined, fare: undefined, first: undefined });
+    expect(contentOf(r4, '主站名')).toBe('');
+    expect(contentOf(r4, '拆字价格')).toBe('¥.');
+  });
+
+  it('除零与精度或范围超限报 template.evaluationInvalid，草稿预览沿依赖链显示占位', async () => {
+    const errDeclarations = {
+      parameters: [{ name: 'zero', displayName: '零除数', visibility: 'public', type: 'number', default: 0 }],
+      derived: [
+        derived('divZero', 'number', { op: 'divide', left: { value: 10 }, right: { var: 'zero' } }),
+        derived('modZero', 'number', { op: 'mod', left: { value: 10 }, right: { var: 'zero' } }),
+        derived('mulPrecision', 'number', { op: 'multiply', left: { value: 123456789012345 }, right: { value: 123456789012345 } }),
+        derived('divOverflow', 'number', { op: 'divide', left: { value: 1e308 }, right: { value: 0.1 } }),
+        derived('splitFromBad', 'text', { op: 'splitPart', of: { var: 'divZero' }, format: '0.00', delimiter: '.', position: 'first' }),
+        derived('branchFromBad', 'text', {
+          op: 'branch',
+          branches: [
+            {
+              when: {
+                all: [
+                  { left: { var: 'modZero' }, op: 'eq', right: { value: 0 } },
+                  { left: { value: 1 }, op: 'eq', right: { value: 1 } },
+                ],
+              },
+              then: { value: '命中' },
+            },
+          ],
+          otherwise: { var: 'splitFromBad' },
+        }),
+      ],
+    };
+    const errArtboard = column([
+      slot('除零', 'divZero'),
+      slot('模零', 'modZero'),
+      slot('乘精度', 'mulPrecision'),
+      slot('除溢出', 'divOverflow'),
+      slot('拆坏值', 'splitFromBad'),
+      slot('分支坏值', 'branchFromBad'),
+    ]);
+    const workspace = await textLab(FIELDS, errArtboard, errDeclarations);
+    const final = await render(workspace, textLabRequest({}, 60, 80, 72));
+    const draft = await render(workspace, { ...textLabRequest({}, 60, 80, 72), mode: 'draft' });
+    const variable = (name: string) => ({ kind: 'variable', template: '文字实验', name });
+
+    expect(final.image).toBeUndefined();
+    expect(draft.image).toBeDefined();
+    expect(where(final.problems)).toEqual([
+      [ProblemCodes.templateEvaluationInvalid, variable('divZero'), '派生变量“divZero”的除法除数为 0，按缺值处理'],
+      [ProblemCodes.templateEvaluationInvalid, variable('modZero'), '派生变量“modZero”的取模除数为 0，按缺值处理'],
+      [ProblemCodes.templateEvaluationInvalid, variable('mulPrecision'), '派生变量“mulPrecision”的乘法无法得到有限且不超过 15 位有效数字的结果，按缺值处理'],
+      [ProblemCodes.templateEvaluationInvalid, variable('divOverflow'), '派生变量“divOverflow”的除法无法得到有限数值结果，按缺值处理'],
+    ]);
+    expect(draft.problems).toEqual(final.problems);
+    expect(['除零', '模零', '乘精度', '除溢出', '拆坏值', '分支坏值'].map((n) => contentOf(draft, n))).toEqual([
+      '〔divZero〕',
+      '〔modZero〕',
+      '〔mulPrecision〕',
+      '〔divOverflow〕',
+      '〔splitFromBad〕',
+      '〔branchFromBad〕',
+    ]);
+  });
 });
 
 describe('绑定与缺值', () => {
@@ -380,6 +550,57 @@ describe('模板静态检查', () => {
       [ProblemCodes.templateUnknownStateValue, element('状态'), '状态样式按 mood：列出的取值 "便宜" 不会出现，mood 只可能是 贵、1'],
       [ProblemCodes.templateTypeMismatch, element('列表状态'), '状态样式按 stops：列表[数据定义引用（站点实验 v1）]不能作为状态样式的依据'],
       [ProblemCodes.templateTypeMismatch, element('覆盖类型'), 'opacity 绑定的 first 的类型是时刻，opacity 需要数值（M71）'],
+    ]);
+  });
+
+  it('乘除取模、splitPart 与复合条件的静态类型与成环检查', async () => {
+    const declarations = {
+      derived: [
+        derived('cycle1', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: { var: 'cycle2' }, position: 'first' }),
+        derived('cycle2', 'text', {
+          op: 'branch',
+          branches: [{ when: { any: [{ left: { var: 'cycle1' }, op: 'notEmpty' }] }, then: { value: '-' } }],
+          otherwise: { value: ':' },
+        }),
+        derived('badMul', 'text', { op: 'multiply', left: { var: 'label' }, right: { value: 2 } }),
+        derived('badSplitOf', 'text', { op: 'splitPart', of: { var: 'stops' }, delimiter: '-', position: 'first' }),
+        derived('badSplitTextFormat', 'text', { op: 'splitPart', of: { var: 'label' }, format: '0.00', delimiter: '.', position: 'first' }),
+        derived('badSplitTimeFormat', 'text', { op: 'splitPart', of: { var: 'first' }, format: '0.00', delimiter: ':', position: 'first' }),
+        derived('badSplitDelimiter', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: { var: 'fare' }, position: 'first' }),
+        derived('badSplitIndex', 'text', { op: 'splitPart', of: { var: 'label' }, delimiter: '-', position: { index: { var: 'label' } } }),
+        derived('badSplitResult', 'number', { op: 'splitPart', of: { var: 'label' }, delimiter: '-', position: 'first' }),
+        derived('badAll', 'boolean', {
+          op: 'branch',
+          branches: [
+            {
+              when: {
+                all: [
+                  { left: { var: 'fare' }, op: 'gt', right: { value: 0 } },
+                  { left: { var: 'stops' }, op: 'eq', right: { value: '甲' } },
+                ],
+              },
+              then: { value: true },
+            },
+          ],
+          otherwise: { value: false },
+        }),
+      ],
+    };
+    const workspace = await textLab(FIELDS, column([slot('站名', 'label')]), declarations);
+    const result = await render(workspace, textLabRequest({ label: '甲' }, 40, 40, 72));
+    const variable = (name: string) => ({ kind: 'variable', template: '文字实验', name });
+
+    expect(where(result.problems)).toEqual([
+      [ProblemCodes.templateVariableCycle, variable('cycle1'), '派生变量之间的引用成环：cycle1 → cycle2 → cycle1'],
+      [ProblemCodes.templateTypeMismatch, variable('badMul'), 'left label 的类型是文本，需要数值'],
+      [ProblemCodes.templateTypeMismatch, variable('badMul'), '乘法的结果是数值，派生变量却声明为文本'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitOf'), 'splitPart 的 of stops 的类型是列表[数据定义引用（站点实验 v1）]，必须是文本、数值、日期、时刻或时间'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitTextFormat'), 'splitPart 的 format：文本类型不带展示格式"0.00"'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitTimeFormat'), 'splitPart 的 format：数值格式"0.00"不能用于时刻'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitDelimiter'), 'delimiter fare 的类型是数值，需要文本'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitIndex'), 'splitPart 的序号 label 的类型是文本，需要数值'],
+      [ProblemCodes.templateTypeMismatch, variable('badSplitResult'), 'splitPart的结果是文本，派生变量却声明为数值'],
+      [ProblemCodes.templateTypeMismatch, variable('badAll'), '比较 eq 只用于基本类型，这里是列表[数据定义引用（站点实验 v1）]'],
     ]);
   });
 

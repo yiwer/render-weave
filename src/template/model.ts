@@ -65,6 +65,9 @@ export interface DerivedModel {
   readonly operation: Operation;
 }
 
+export type ArithmeticOp = 'add' | 'subtract' | 'multiply' | 'divide' | 'mod';
+export type ItemPosition = 'first' | 'last' | { readonly index: Operand };
+
 export type Operation =
   | {
       /** 条件分支：按序取首个命中的分支，都不命中取"否则"。 */
@@ -76,18 +79,38 @@ export type Operation =
       /** 取项：首项、末项或第 N 项（从 1 开始），超出范围得空值。 */
       readonly op: 'pickItem';
       readonly list: VarOperand;
-      readonly position: 'first' | 'last' | { readonly index: Operand };
+      readonly position: ItemPosition;
+    }
+  | {
+      /** 按分隔符拆取文本片段（M239）：首段、末段或第 N 段（从 1 开始），越界、缺值或分隔符未出现时返回空文本。 */
+      readonly op: 'splitPart';
+      readonly of: VarOperand;
+      readonly format?: DisplayFormat;
+      readonly delimiter: string | VarOperand;
+      readonly position: ItemPosition;
     }
   | { readonly op: 'length'; readonly of: VarOperand }
-  | { readonly op: 'add' | 'subtract'; readonly left: Operand; readonly right: Operand };
+  | { readonly op: ArithmeticOp; readonly left: Operand; readonly right: Operand };
 
 export type CompareOp = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' | 'empty' | 'notEmpty';
 
 /** 结构化比较（S11）：empty、notEmpty 只有左侧。 */
-export interface Condition {
+export interface Comparison {
   readonly left: Operand;
   readonly op: CompareOp;
   readonly right?: Operand;
+}
+
+/** 分支条件：单个比较，或单层 all（全部成立）/ any（任一成立）复合条件（M239）。 */
+export type Condition =
+  | Comparison
+  | { readonly all: readonly Comparison[] }
+  | { readonly any: readonly Comparison[] };
+
+export function comparisonsOf(condition: Condition): readonly Comparison[] {
+  if ('all' in condition) return condition.all;
+  if ('any' in condition) return condition.any;
+  return [condition];
 }
 
 export interface VarOperand {
