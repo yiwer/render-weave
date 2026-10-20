@@ -184,6 +184,185 @@ describe('堆叠布局', () => {
     expect(result.problems[0]!.message).toContain('需要 45 mm，可用 30 mm');
     expect(result.image).toBeUndefined();
   });
+
+  it('横向与纵向流式折行（wrap: true）：按 crossGap（缺省等于 gap）分行/列，每行/列独立应用 justifyContent 与 alignItems', async () => {
+    const rowDefaultGap = await lab(
+      {
+        layout: { mode: 'stack', direction: 'row', wrap: true, gap: 4 },
+        children: [rect('甲', fixed(20, 8)), rect('乙', fixed(25, 12)), rect('丙', fixed(20, 6))],
+      },
+      50,
+      30,
+    );
+    expect(rowDefaultGap.problems).toEqual([]);
+    // 第一行：甲(20) + gap(4) + 乙(25) = 49 <= 50，行高 max(8, 12) = 12；丙折入第二行，y = 12 + crossGap(4) = 16。
+    expect(['甲', '乙', '丙'].map((name) => box(node(rowDefaultGap, `布局实验/${name}`)))).toEqual([
+      { x: 0, y: 0, width: 20, height: 8 },
+      { x: 24, y: 0, width: 25, height: 12 },
+      { x: 0, y: 16, width: 20, height: 6 },
+    ]);
+
+    const rowAligned = await lab(
+      {
+        layout: { mode: 'stack', direction: 'row', wrap: true, gap: 4, crossGap: 6, justifyContent: 'center', alignItems: 'center' },
+        children: [
+          rect('甲', fixed(16, 6)),
+          rect('乙', fixed(20, 10)),
+          rect('丙', fixed(30, 8, { alignSelf: 'end' })),
+        ],
+      },
+      50,
+      30,
+    );
+    expect(rowAligned.problems).toEqual([]);
+    // 第一行宽 16+4+20=40，居中起点 (50-40)/2=5，行高 10（甲 y=(10-6)/2=2）；第二行 y=10+6=16，丙居中 x=(50-30)/2=10。
+    expect(['甲', '乙', '丙'].map((name) => box(node(rowAligned, `布局实验/${name}`)))).toEqual([
+      { x: 5, y: 2, width: 16, height: 6 },
+      { x: 25, y: 0, width: 20, height: 10 },
+      { x: 10, y: 16, width: 30, height: 8 },
+    ]);
+
+    const colWrapped = await lab(
+      {
+        layout: { mode: 'stack', direction: 'column', wrap: true, gap: 2, crossGap: 5 },
+        children: [rect('一', fixed(10, 12)), rect('二', fixed(14, 12)), rect('三', fixed(8, 12))],
+      },
+      40,
+      30,
+    );
+    expect(colWrapped.problems).toEqual([]);
+    // 第一列高 12+2+12=26 <= 30，列宽 max(10, 14) = 14；三折入第二列 x = 14 + 5 = 19。
+    expect(['一', '二', '三'].map((name) => box(node(colWrapped, `布局实验/${name}`)))).toEqual([
+      { x: 0, y: 0, width: 10, height: 12 },
+      { x: 0, y: 14, width: 14, height: 12 },
+      { x: 19, y: 0, width: 8, height: 12 },
+    ]);
+  });
+
+  it('主方向 fill 的子元素在 wrap: true 下先按自然尺寸（hug）参与折行，再按权重分配所在行的剩余空间', async () => {
+    const fillChild = (name: string, naturalWidth: number, weight?: number) => ({
+      type: 'container',
+      name,
+      place: { width: weight ? { fill: weight } : 'fill', height: { fixed: 10 } },
+      children: [rect(`${name}内`, fixed(naturalWidth, 8))],
+    });
+    const result = await lab(
+      {
+        layout: { mode: 'stack', direction: 'row', wrap: true, gap: 10, crossGap: 4 },
+        children: [
+          rect('甲', fixed(40, 10)),
+          fillChild('乙', 30),
+          fillChild('丙', 30),
+          fillChild('丁', 20, 3),
+        ],
+      },
+      100,
+      30,
+    );
+    expect(result.problems).toEqual([]);
+    // 第一行：甲(40) + gap(10) + 乙(自然宽30) = 80 <= 100；丙(自然宽30)放不下，折入第二行。乙分得第一行剩余 100-40-10 = 50。
+    // 第二行：丙(自然宽30) + gap(10) + 丁(自然宽20) = 60 <= 100；丙(权重1)与丁(权重3)按 1:3 分 100-10 = 90，得 22.5 与 67.5。
+    expect(['甲', '乙', '丙', '丁'].map((name) => box(node(result, `布局实验/${name}`)))).toEqual([
+      { x: 0, y: 0, width: 40, height: 10 },
+      { x: 50, y: 0, width: 50, height: 10 },
+      { x: 0, y: 14, width: 22.5, height: 10 },
+      { x: 32.5, y: 14, width: 67.5, height: 10 },
+    ]);
+  });
+
+  it('wrap: true 的容器在交叉方向为 hug 时，结合 fixed、maxWidth 或父容器分配宽度计算折行高度；主方向无上限 hug 时不折行', async () => {
+    const tags = (prefix: string) => [
+      rect(`${prefix}1`, fixed(20, 6)),
+      rect(`${prefix}2`, fixed(22, 8)),
+      rect(`${prefix}3`, fixed(18, 10)),
+    ];
+    const result = await lab(
+      {
+        layout: { mode: 'stack', direction: 'column', gap: 5 },
+        children: [
+          {
+            type: 'container',
+            name: '定宽卡',
+            place: { width: { fixed: 50 }, height: 'hug' },
+            padding: 2,
+            layout: { mode: 'stack', direction: 'row', wrap: true, gap: 2, crossGap: 3 },
+            children: tags('定'),
+          },
+          {
+            type: 'container',
+            name: '限宽卡',
+            place: { width: 'hug', maxWidth: 46, height: 'hug' },
+            layout: { mode: 'stack', direction: 'row', wrap: true, gap: 2, crossGap: 3 },
+            children: tags('限'),
+          },
+          {
+            type: 'container',
+            name: '外层自适应卡',
+            place: { width: { fixed: 46 }, height: 'hug' },
+            padding: 1,
+            layout: { mode: 'stack', direction: 'column', gap: 2 },
+            children: [
+              rect('标题', fixed(20, 4)),
+              {
+                type: 'container',
+                name: '流式标签区',
+                place: { width: 'fill', height: 'hug' },
+                layout: { mode: 'stack', direction: 'row', wrap: true, gap: 2, crossGap: 3 },
+                children: tags('流'),
+              },
+            ],
+          },
+          {
+            type: 'container',
+            name: '无上限卡',
+            place: { width: 'hug', height: 'hug' },
+            layout: { mode: 'stack', direction: 'row', wrap: true, gap: 2, crossGap: 3 },
+            children: tags('无'),
+          },
+        ],
+      },
+      100,
+      120,
+    );
+    expect(result.problems).toEqual([]);
+    // 定宽卡：内容宽 46，第一行 20+2+22=44（高 8），第二行 18（高 10），内容高 8+3+10=21，加 padding 2*2 得 25。
+    expect(box(node(result, '布局实验/定宽卡'))).toEqual({ x: 0, y: 0, width: 50, height: 25 });
+    // 限宽卡：maxWidth 46，折两行，高 8+3+10=21，y = 25 + 5 = 30。
+    expect(box(node(result, '布局实验/限宽卡'))).toEqual({ x: 0, y: 30, width: 46, height: 21 });
+    // 外层自适应卡：宽 46（padding 1，内部可用宽 44，20+2+22=44 仍在第一行），流式标签区高 21，外层高 1 + 4 + 2 + 21 + 1 = 29。
+    expect(box(node(result, '布局实验/外层自适应卡'))).toEqual({ x: 0, y: 56, width: 46, height: 29 });
+    expect(box(node(result, '布局实验/外层自适应卡/流式标签区'))).toEqual({ x: 1, y: 63, width: 44, height: 21 });
+    // 无上限卡：主方向为无上限 hug，不发生折行，宽 20+2+22+2+18=64，高 max(6,8,10)=10。
+    expect(box(node(result, '布局实验/无上限卡'))).toEqual({ x: 0, y: 90, width: 64, height: 10 });
+  });
+
+  it('wrap: true 下交叉方向总跨度超出或单个元素主方向超出容器时报告 layout.contentOverflow', async () => {
+    const crossOverflow = await lab(
+      {
+        layout: { mode: 'stack', direction: 'row', wrap: true, gap: 4, crossGap: 4 },
+        children: [rect('甲', fixed(20, 10)), rect('乙', fixed(20, 10)), rect('丙', fixed(20, 10))],
+      },
+      50,
+      20,
+    );
+    expect(crossOverflow.problems.map((p) => [p.code, p.location])).toEqual([
+      [ProblemCodes.layoutContentOverflow, { kind: 'element', path: '布局实验' }],
+    ]);
+    expect(crossOverflow.problems[0]!.message).toContain('需要 24 mm，可用 20 mm');
+
+    const mainSingleOverflow = await lab(
+      {
+        layout: { mode: 'stack', direction: 'row', wrap: true, gap: 4 },
+        children: [rect('超宽', fixed(60, 8)), rect('次项', fixed(20, 8))],
+      },
+      50,
+      30,
+    );
+    expect(mainSingleOverflow.problems.map((p) => [p.code, p.location])).toEqual([
+      [ProblemCodes.layoutContentOverflow, { kind: 'element', path: '布局实验' }],
+    ]);
+    expect(mainSingleOverflow.problems[0]!.message).toContain('需要 60 mm，可用 50 mm');
+  });
 });
 
 describe('网格布局', () => {

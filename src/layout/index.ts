@@ -109,6 +109,14 @@ class Layouter {
     return size;
   }
 
+  private intrinsicAxis(node: EvaluatedNode, axis: Axis, knownOther?: number): number {
+    if (knownOther !== undefined && (node.model.type === 'artboard' || node.model.type === 'container')) {
+      const other: Axis = axis === 'width' ? 'height' : 'width';
+      return this.containerIntrinsic(node, node.model, { [other]: knownOther })[axis];
+    }
+    return this.intrinsic(node)[axis];
+  }
+
   private textMeasure(node: EvaluatedNode): TextMeasure {
     let measure = this.textMeasures.get(node);
     if (!measure && node.model.type === 'text') {
@@ -118,28 +126,78 @@ class Layouter {
     return measure!;
   }
 
-  private containerIntrinsic(node: EvaluatedNode, model: ArtboardModel | ContainerModel): Size {
+  private containerIntrinsic(
+    node: EvaluatedNode,
+    model: ArtboardModel | ContainerModel,
+    knownBox?: Partial<Record<Axis, number>>,
+  ): Size {
     const children = visibleChildren(node);
+    const knownContentWidth =
+      knownBox?.width !== undefined ? Math.max(0, knownBox.width - model.padding.left - model.padding.right) : undefined;
+    const knownContentHeight =
+      knownBox?.height !== undefined ? Math.max(0, knownBox.height - model.padding.top - model.padding.bottom) : undefined;
+    const knownContent: Partial<Record<Axis, number>> = {
+      ...(knownContentWidth !== undefined && { width: knownContentWidth }),
+      ...(knownContentHeight !== undefined && { height: knownContentHeight }),
+    };
     let content: Size;
     switch (model.layout.mode) {
       case 'free':
         content = {
-          width: Math.max(0, ...children.map((child) => place(child).horizontal.offset + this.hugSize(child, 'width'))),
-          height: Math.max(0, ...children.map((child) => place(child).vertical.offset + this.hugSize(child, 'height'))),
+          width: Math.max(
+            0,
+            ...children.map((child) => {
+              const { horizontal, vertical } = place(child);
+              const availH = knownContentHeight !== undefined ? Math.max(0, knownContentHeight - vertical.offset) : undefined;
+              return horizontal.offset + this.hugSize(child, 'width', availH);
+            }),
+          ),
+          height: Math.max(
+            0,
+            ...children.map((child) => {
+              const { horizontal, vertical } = place(child);
+              const availW = knownContentWidth !== undefined ? Math.max(0, knownContentWidth - horizontal.offset) : undefined;
+              return vertical.offset + this.hugSize(child, 'height', availW);
+            }),
+          ),
         };
         break;
       case 'stack': {
-        const main: Axis = model.layout.direction === 'row' ? 'width' : 'height';
-        const cross: Axis = main === 'width' ? 'height' : 'width';
+        const stackLayout = model.layout;
+        const row = stackLayout.direction === 'row';
+        const main: Axis = row ? 'width' : 'height';
+        const cross: Axis = row ? 'height' : 'width';
+        const crossBefore = (edges: Edges) => (row ? edges.top : edges.left);
+        const crossAfter = (edges: Edges) => (row ? edges.bottom : edges.right);
+        const knownMain = knownContent[main];
+        const knownCross = knownContent[cross];
         const mainTotal =
-          children.reduce((sum, child) => sum + this.outerHug(child, main), 0) + model.layout.gap * Math.max(0, children.length - 1);
-        const crossMax = Math.max(0, ...children.map((child) => this.outerHug(child, cross)));
-        content = main === 'width' ? { width: mainTotal, height: crossMax } : { width: crossMax, height: mainTotal };
+          children.reduce((sum, child) => {
+            const m = place(child).margin;
+            const childCrossAvail = knownCross !== undefined ? Math.max(0, knownCross - crossBefore(m) - crossAfter(m)) : undefined;
+            return sum + this.outerHug(child, main, childCrossAvail);
+          }, 0) +
+          stackLayout.gap * Math.max(0, children.length - 1);
+        const lines =
+          stackLayout.wrap && knownMain !== undefined
+            ? this.breakStackLines(stackLayout, children, knownMain)
+            : children.length > 0
+              ? [children]
+              : [];
+        const lineCrosses = lines.map((line) => {
+          const lineSizes =
+            knownMain !== undefined ? this.resolveStackLineSizes(stackLayout, line, knownMain, knownCross).sizes : undefined;
+          return Math.max(0, ...line.map((child) => this.outerHug(child, cross, lineSizes?.get(child))));
+        });
+        const crossTotal =
+          lineCrosses.reduce((sum, c) => sum + c, 0) +
+          (stackLayout.wrap ? stackLayout.crossGap * Math.max(0, lines.length - 1) : 0);
+        content = main === 'width' ? { width: mainTotal, height: crossTotal } : { width: crossTotal, height: mainTotal };
         break;
       }
       case 'grid': {
-        const columns = this.resolveTracks(model.layout.columns, model.layout.columnGap, children, 'width', undefined);
-        const rows = this.resolveTracks(model.layout.rows, model.layout.rowGap, children, 'height', undefined);
+        const columns = this.resolveTracks(model.layout.columns, model.layout.columnGap, children, 'width', knownContentWidth);
+        const rows = this.resolveTracks(model.layout.rows, model.layout.rowGap, children, 'height', knownContentHeight, columns);
         content = { width: columns.total, height: rows.total };
         break;
       }
@@ -160,15 +218,18 @@ class Layouter {
   }
 
   /** 随内容（填满按随内容算）时的尺寸，按最小最大尺寸限制。 */
-  private hugSize(node: EvaluatedNode, axis: Axis): number {
+  private hugSize(node: EvaluatedNode, axis: Axis, otherFillAvailable?: number, defaultKind: SizeSpec['kind'] = 'hug'): number {
     const spec = place(node)[axis];
-    const value = spec?.kind === 'fixed' ? spec.value : this.intrinsic(node)[axis];
+    if (spec?.kind === 'fixed') return clampSize(node, axis, spec.value);
+    const other: Axis = axis === 'width' ? 'height' : 'width';
+    const knownOther = knownBoxSize(node, other, otherFillAvailable, defaultKind);
+    const value = this.intrinsicAxis(node, axis, knownOther);
     return clampSize(node, axis, value);
   }
 
-  private outerHug(node: EvaluatedNode, axis: Axis): number {
+  private outerHug(node: EvaluatedNode, axis: Axis, otherFillAvailable?: number, defaultKind: SizeSpec['kind'] = 'hug'): number {
     const margin = place(node).margin;
-    return this.hugSize(node, axis) + (axis === 'width' ? margin.left + margin.right : margin.top + margin.bottom);
+    return this.hugSize(node, axis, otherFillAvailable, defaultKind) + (axis === 'width' ? margin.left + margin.right : margin.top + margin.bottom);
   }
 
   /** 路径的边界；路径数据不合法时为 undefined（问题在记录时上报）。 */
@@ -318,14 +379,79 @@ class Layouter {
 
   private freeBox(child: EvaluatedNode, content: Box): Box {
     const { horizontal, vertical } = place(child);
-    const width = this.resolveSize(child, 'width', 'hug', content.width - horizontal.offset);
-    const height = this.resolveSize(child, 'height', 'hug', content.height - vertical.offset);
+    const availW = content.width - horizontal.offset;
+    const availH = content.height - vertical.offset;
+    const width = this.resolveSize(child, 'width', 'hug', availW, availH);
+    const height = this.resolveSize(child, 'height', 'hug', availH, width);
     return {
       x: horizontal.edge === 'left' ? content.x + horizontal.offset : content.x + content.width - horizontal.offset - width,
       y: vertical.edge === 'top' ? content.y + vertical.offset : content.y + content.height - vertical.offset - height,
       width,
       height,
     };
+  }
+
+  private breakStackLines(
+    layout: Extract<Layout, { mode: 'stack' }>,
+    children: EvaluatedNode[],
+    available: number,
+  ): EvaluatedNode[][] {
+    const main: Axis = layout.direction === 'row' ? 'width' : 'height';
+    const lines: EvaluatedNode[][] = [];
+    let current: EvaluatedNode[] = [];
+    let used = 0;
+    for (const child of children) {
+      const itemSize = this.outerHug(child, main);
+      if (current.length === 0) {
+        current.push(child);
+        used = itemSize;
+      } else if (used + layout.gap + itemSize > available + EPSILON) {
+        lines.push(current);
+        current = [child];
+        used = itemSize;
+      } else {
+        current.push(child);
+        used += layout.gap + itemSize;
+      }
+    }
+    if (current.length > 0) lines.push(current);
+    return lines;
+  }
+
+  /** 单行/列的主方向尺寸计算：固定与随内容的元素先取尺寸，填满的元素按权重分配该行剩余空间。 */
+  private resolveStackLineSizes(
+    layout: Extract<Layout, { mode: 'stack' }>,
+    line: EvaluatedNode[],
+    available: number,
+    crossContent?: number,
+  ): { sizes: Map<EvaluatedNode, number>; fills: EvaluatedNode[]; remaining: number } {
+    const row = layout.direction === 'row';
+    const main: Axis = row ? 'width' : 'height';
+    const before = (edges: Edges) => (row ? edges.left : edges.top);
+    const after = (edges: Edges) => (row ? edges.right : edges.bottom);
+    const crossBefore = (edges: Edges) => (row ? edges.top : edges.left);
+    const crossAfter = (edges: Edges) => (row ? edges.bottom : edges.right);
+    const sizes = new Map<EvaluatedNode, number>();
+    const fills: EvaluatedNode[] = [];
+    let used = layout.gap * Math.max(0, line.length - 1);
+    for (const child of line) {
+      const margin = place(child).margin;
+      used += before(margin) + after(margin);
+      if (place(child)[main]?.kind === 'fill') {
+        fills.push(child);
+      } else {
+        const crossAvail = crossContent !== undefined ? Math.max(0, crossContent - crossBefore(margin) - crossAfter(margin)) : undefined;
+        const size = this.resolveSize(child, main, 'hug', undefined, crossAvail);
+        sizes.set(child, size);
+        used += size;
+      }
+    }
+    let remaining = available - used;
+    for (const [child, size] of distributeFill(fills, Math.max(0, remaining), main)) {
+      sizes.set(child, size);
+      remaining -= size;
+    }
+    return { sizes, fills, remaining };
   }
 
   private stackBoxes(
@@ -340,74 +466,83 @@ class Layouter {
     const available = content[main];
     const before = (edges: Edges) => (row ? edges.left : edges.top);
     const after = (edges: Edges) => (row ? edges.right : edges.bottom);
+    const crossBefore = (edges: Edges) => (row ? edges.top : edges.left);
+    const crossAfter = (edges: Edges) => (row ? edges.bottom : edges.right);
 
-    // 主方向：固定与随内容的元素先取尺寸，填满的元素按权重分剩余空间（受最小最大尺寸限制）。
-    const sizes = new Map<EvaluatedNode, number>();
-    const fills: EvaluatedNode[] = [];
-    let used = layout.gap * Math.max(0, children.length - 1);
-    for (const child of children) {
-      const margin = place(child).margin;
-      used += before(margin) + after(margin);
-      if (place(child)[main]?.kind === 'fill') {
-        fills.push(child);
-      } else {
-        const size = this.resolveSize(child, main, 'hug');
-        sizes.set(child, size);
-        used += size;
-      }
-    }
-    let remaining = available - used;
-    for (const [child, size] of distributeFill(fills, Math.max(0, remaining), main)) {
-      sizes.set(child, size);
-      remaining -= size;
-    }
-    if (remaining < -EPSILON) {
-      this.contentOverflow(model, `${row ? '横向' : '纵向'}堆叠的内容需要 ${fmt(available - remaining)} mm，可用 ${fmt(available)} mm`);
-    }
-
-    // 主方向分布：只在有剩余空间、且没有填满的元素时生效。
-    const free = Math.max(0, remaining);
-    const count = children.length;
-    let offset = 0;
-    let between = layout.gap;
-    if (fills.length === 0 && free > 0) {
-      switch (layout.justifyContent) {
-        case 'center':
-          offset = free / 2;
-          break;
-        case 'end':
-          offset = free;
-          break;
-        case 'spaceBetween':
-          if (count > 1) between += free / (count - 1);
-          break;
-        case 'spaceEvenly':
-          offset = free / (count + 1);
-          between += free / (count + 1);
-          break;
-      }
-    }
-
+    const lines = layout.wrap ? this.breakStackLines(layout, children, available) : [children];
     const boxes = new Map<EvaluatedNode, Box>();
-    let cursor = content[row ? 'x' : 'y'] + offset;
-    for (const child of children) {
-      const margin = place(child).margin;
-      const mainSize = sizes.get(child)!;
-      cursor += before(margin);
-      // 交叉方向：填满时撑满可用空间，否则按交叉方向对齐。
-      const crossBefore = row ? margin.top : margin.left;
-      const crossAfter = row ? margin.bottom : margin.right;
-      const crossAvailable = content[cross] - crossBefore - crossAfter;
-      const crossSize = this.resolveSize(child, cross, 'hug', crossAvailable);
-      const crossOffset = alignOffset(place(child).alignSelf ?? layout.alignItems, crossAvailable - crossSize);
-      const crossStart = content[row ? 'y' : 'x'] + crossBefore + crossOffset;
-      boxes.set(
-        child,
-        row
-          ? { x: cursor, y: crossStart, width: mainSize, height: crossSize }
-          : { x: crossStart, y: cursor, width: crossSize, height: mainSize },
+    let crossCursor = content[row ? 'y' : 'x'];
+    let maxMainNeed = 0;
+
+    for (const line of lines) {
+      const { sizes, fills, remaining } = this.resolveStackLineSizes(
+        layout,
+        line,
+        available,
+        layout.wrap ? undefined : content[cross],
       );
-      cursor += mainSize + after(margin) + between;
+      if (remaining < -EPSILON) {
+        maxMainNeed = Math.max(maxMainNeed, available - remaining);
+      }
+
+      const lineCross = layout.wrap
+        ? Math.max(0, ...line.map((child) => this.outerHug(child, cross, sizes.get(child))))
+        : content[cross];
+
+      // 主方向分布：只在有剩余空间、且没有填满的元素时生效。
+      const free = Math.max(0, remaining);
+      const count = line.length;
+      let offset = 0;
+      let between = layout.gap;
+      if (fills.length === 0 && free > 0) {
+        switch (layout.justifyContent) {
+          case 'center':
+            offset = free / 2;
+            break;
+          case 'end':
+            offset = free;
+            break;
+          case 'spaceBetween':
+            if (count > 1) between += free / (count - 1);
+            break;
+          case 'spaceEvenly':
+            offset = free / (count + 1);
+            between += free / (count + 1);
+            break;
+        }
+      }
+
+      let cursor = content[row ? 'x' : 'y'] + offset;
+      for (const child of line) {
+        const margin = place(child).margin;
+        const mainSize = sizes.get(child)!;
+        cursor += before(margin);
+        // 交叉方向：填满时撑满可用空间（折行时为行内交叉跨度），否则按交叉方向对齐。
+        const cBefore = crossBefore(margin);
+        const cAfter = crossAfter(margin);
+        const crossAvailable = lineCross - cBefore - cAfter;
+        const crossSize = this.resolveSize(child, cross, 'hug', crossAvailable, mainSize);
+        const crossOffset = alignOffset(place(child).alignSelf ?? layout.alignItems, crossAvailable - crossSize);
+        const crossStart = crossCursor + cBefore + crossOffset;
+        boxes.set(
+          child,
+          row
+            ? { x: cursor, y: crossStart, width: mainSize, height: crossSize }
+            : { x: crossStart, y: cursor, width: crossSize, height: mainSize },
+        );
+        cursor += mainSize + after(margin) + between;
+      }
+      crossCursor += lineCross + layout.crossGap;
+    }
+
+    if (maxMainNeed > available + EPSILON) {
+      this.contentOverflow(model, `${row ? '横向' : '纵向'}堆叠的内容需要 ${fmt(maxMainNeed)} mm，可用 ${fmt(available)} mm`);
+    }
+    if (layout.wrap && lines.length > 0) {
+      const totalCross = crossCursor - content[row ? 'y' : 'x'] - layout.crossGap;
+      if (totalCross > content[cross] + EPSILON) {
+        this.contentOverflow(model, `${row ? '横向' : '纵向'}堆叠折${row ? '行' : '列'}后需要 ${fmt(totalCross)} mm，可用 ${fmt(content[cross])} mm`);
+      }
     }
     return boxes;
   }
@@ -419,7 +554,7 @@ class Layouter {
     content: Box,
   ): Map<EvaluatedNode, Box> {
     const columns = this.resolveTracks(layout.columns, layout.columnGap, children, 'width', content.width);
-    const rows = this.resolveTracks(layout.rows, layout.rowGap, children, 'height', content.height);
+    const rows = this.resolveTracks(layout.rows, layout.rowGap, children, 'height', content.height, columns);
     if (columns.total > content.width + EPSILON) {
       this.contentOverflow(model, `网格各列共需 ${fmt(columns.total)} mm，可用宽 ${fmt(content.width)} mm`);
     }
@@ -435,8 +570,8 @@ class Layouter {
       const cellHeight = rows.starts[p.row - 1 + p.rowSpan - 1]! + rows.sizes[p.row - 1 + p.rowSpan - 1]! - rows.starts[p.row - 1]!;
       const availableWidth = cellWidth - p.margin.left - p.margin.right;
       const availableHeight = cellHeight - p.margin.top - p.margin.bottom;
-      const width = this.resolveSize(child, 'width', 'fill', availableWidth);
-      const height = this.resolveSize(child, 'height', 'fill', availableHeight);
+      const width = this.resolveSize(child, 'width', 'fill', availableWidth, availableHeight);
+      const height = this.resolveSize(child, 'height', 'fill', availableHeight, width);
       // 与堆叠放不下时一样报问题，免得元素悄悄画进相邻的单元格（M237）。
       if (width > availableWidth + EPSILON || height > availableHeight + EPSILON) {
         const { left, right, top, bottom } = p.margin;
@@ -464,6 +599,7 @@ class Layouter {
     children: EvaluatedNode[],
     axis: Axis,
     available: number | undefined,
+    otherTracks?: { sizes: number[]; starts: number[]; total: number },
   ): { sizes: number[]; starts: number[]; total: number } {
     const spans = children.map((child) => {
       const p = place(child);
@@ -472,7 +608,15 @@ class Layouter {
       const flexible = indexes.some((index) => tracks[index]!.kind === 'fraction');
       // 只在影响轨道尺寸时测量内容：占了随内容轨道，或测量随内容尺寸时占了比例轨道。
       const sizing = indexes.some((index) => tracks[index]!.kind === 'hug') || (available === undefined && flexible);
-      return { need: sizing ? this.outerHug(child, axis) : 0, indexes, flexible };
+      let otherAvailable: number | undefined;
+      if (sizing && otherTracks) {
+        const otherStart = (axis === 'width' ? p.row : p.column) - 1;
+        const otherEnd = otherStart + (axis === 'width' ? p.rowSpan : p.columnSpan) - 1;
+        const cellOther = otherTracks.starts[otherEnd]! + otherTracks.sizes[otherEnd]! - otherTracks.starts[otherStart]!;
+        const otherMargin = axis === 'width' ? p.margin.top + p.margin.bottom : p.margin.left + p.margin.right;
+        otherAvailable = Math.max(0, cellOther - otherMargin);
+      }
+      return { need: sizing ? this.outerHug(child, axis, otherAvailable, 'fill') : 0, indexes, flexible };
     });
     const sizes = tracks.map((track, index) => {
       if (track.kind !== 'hug') return track.kind === 'fixed' ? track.value : 0;
@@ -508,10 +652,18 @@ class Layouter {
   }
 
   /** 按尺寸方式取尺寸：固定、随内容，或填满给定的可用空间；再按最小最大尺寸限制，不小于 0。 */
-  private resolveSize(node: EvaluatedNode, axis: Axis, fallback: SizeSpec['kind'], fillAvailable?: number): number {
+  private resolveSize(
+    node: EvaluatedNode,
+    axis: Axis,
+    fallback: SizeSpec['kind'],
+    fillAvailable?: number,
+    otherFillAvailable?: number,
+  ): number {
     const spec = place(node)[axis];
     const kind = spec?.kind ?? fallback;
-    let value = spec?.kind === 'fixed' ? spec.value : kind === 'fill' ? (fillAvailable ?? 0) : this.intrinsic(node)[axis];
+    const other: Axis = axis === 'width' ? 'height' : 'width';
+    const knownOther = knownBoxSize(node, other, otherFillAvailable, fallback);
+    let value = spec?.kind === 'fixed' ? spec.value : kind === 'fill' ? (fillAvailable ?? 0) : this.intrinsicAxis(node, axis, knownOther);
     if (axis === 'width' && kind === 'hug' && fillAvailable !== undefined) {
       let grouped = this.grouped.get(node);
       if (grouped === undefined) { grouped = containsShrinkGroup(node); this.grouped.set(node, grouped); }
@@ -566,6 +718,19 @@ function clampSize(node: EvaluatedNode, axis: Axis, value: number): number {
   if (max !== undefined) size = Math.min(size, max);
   if (min !== undefined) size = Math.max(size, min);
   return Math.max(0, size);
+}
+
+/** 元素在给定轴上已知的可用框尺寸（来自 fixed、父容器分配的 fill，或 maxWidth/maxHeight 上限）；无上限 hug 时为 undefined。 */
+function knownBoxSize(node: EvaluatedNode, axis: Axis, fillAvailable: number | undefined, defaultKind: SizeSpec['kind']): number | undefined {
+  if (node.model.type === 'artboard') return fillAvailable;
+  const p = place(node);
+  const spec = p[axis];
+  const kind = spec?.kind ?? defaultKind;
+  if (spec?.kind === 'fixed') return clampSize(node, axis, spec.value);
+  if (kind === 'fill' && fillAvailable !== undefined) return clampSize(node, axis, fillAvailable);
+  const max = axis === 'width' ? p.maxWidth : p.maxHeight;
+  if (max !== undefined) return clampSize(node, axis, max);
+  return undefined;
 }
 
 function alignOffset(align: Align, free: number): number {

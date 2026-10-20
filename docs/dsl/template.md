@@ -82,7 +82,7 @@
 | 能绑定 | 属性 |
 |---|---|
 | 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、码的 `foreground` 与 `background` |
-| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
+| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`crossGap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`itemLayout.crossGap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
 | 布尔 | `visible`、`clip`、循环的 `reverse`、条形码 `showText` |
 | 图片 | 图片元素的 `source` |
 | 文本 | 码元素的 `content`；文字内容经插槽绑定 |
@@ -123,11 +123,11 @@
 | 布局 | `layout` | 子元素的 `place` |
 |---|---|---|
 | 自由（缺省） | `{ "mode": "free" }` | `left` 或 `right`、`top` 或 `bottom`（缺省为距左 0、距上 0），以及 `width`、`height` |
-| 堆叠 | `{ "mode": "stack", "direction": "row" \| "column", "gap"?, "justifyContent"?, "alignItems"? }` | `width`、`height`、`margin`、`alignSelf` |
+| 堆叠 | `{ "mode": "stack", "direction": "row" \| "column", "gap"?, "wrap"?: true \| false, "crossGap"?, "justifyContent"?, "alignItems"? }` | `width`、`height`、`margin`、`alignSelf` |
 | 网格 | `{ "mode": "grid", "rows": [轨道…], "columns": [轨道…], "rowGap"?, "columnGap"? }` | `row`、`column`（必填，从 1 开始，S10）、`rowSpan`、`columnSpan`、`width`、`height`、`margin`、`justifySelf`、`alignSelf` |
 
 - **三种布局通用**：都可以另写 `minWidth`、`maxWidth`、`minHeight`、`maxHeight`。
-- **堆叠的分布与对齐**：`justifyContent` 取 `start`、`center`、`end`、`spaceBetween`、`spaceEvenly`，缺省为 `start`；`alignItems` 取 `start`、`center`、`end`，缺省为 `start`。
+- **堆叠的分布、对齐与自动折行**（M241）：`justifyContent` 取 `start`、`center`、`end`、`spaceBetween`、`spaceEvenly`，缺省为 `start`；`alignItems` 取 `start`、`center`、`end`，缺省为 `start`。`wrap` 缺省为 `false`；设为 `true` 时，当前行/列剩余空间不足以放下下一个子元素（含外边距与 `gap`）且当前行/列已有至少一项时，自动开启新行/列，行/列之间间隔 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`）。每一行/列内独立应用 `justifyContent` 与 `alignItems`，主方向设为 `"fill"` 的子元素先按自然尺寸（`hug`）参与折行判定，再按权重分配所在行的剩余空间；容器交叉方向为 `"hug"` 时，结合主方向已知可用尺寸（`fixed`、`maxWidth`/`maxHeight` 或父容器分配的宽度/高度）计算折行后的总交叉尺寸（主方向为无上限 `"hug"` 时不折行）；交叉方向总跨度或单个元素主方向超出容器时报 `layout.contentOverflow`。
 - **网格轨道**：每项写 `{ "fixed": 毫米 }`、`{ "fraction": 比例 }` 或 `"hug"`（M237）。
   - 随内容轨道取只占这一条的元素中最大的；跨多条轨道的元素放不下时，把差额平均分给所跨的随内容轨道，跨度小的先算。跨了比例轨道的元素不撑开随内容轨道。
   - 比例轨道按份数分固定与随内容轨道之外的剩余空间。网格本身随内容时（例如放在随内容的调用框里），每份取刚好放得下各元素的尺寸，比例不变。
@@ -198,17 +198,17 @@
 ```text
 { "type": "loop", "name", "list": { "var": 列表 }, "reverse"?: true | false,
   "slice"?: { "start"?: 运算数, "end"?: 运算数 }, "template": 模板名, "args"?: { 参数名: 运算数 },
-  "itemLayout": { "direction"?: "row", "widths": 每项尺寸, "gap"?, "spanBy"? }
-              | { "direction": "column", "heights": 每项尺寸, "gap"?, "spanBy"? },
+  "itemLayout": { "direction"?: "row", "widths": 每项尺寸, "gap"?, "wrap"?: true | false, "crossGap"?, "spanBy"? }
+              | { "direction": "column", "heights": 每项尺寸, "gap"?, "wrap"?: true | false, "crossGap"?, "spanBy"? },
   "mergeBy"?: 字段路径, "padding"?, "fill"?, "stroke"?, "cornerRadius"?, "clip"? }
 ```
 
 - **被调模板的基准**：必须是列表元素的数据定义；基本类型列表用对应的单值数据定义，例如 `list<text>` 用 `单值·文本 v1`，字段为 `value`。
 - **方向**（S25、M236）：
-  - `direction` 缺省为 `row`，列表项从左往右排，`widths` 定每项宽度，高度填满循环区域；
-  - `column` 从上往下排，`heights` 定每项高度，宽度填满循环区域。竖排的列表用它，不必把横向循环旋转 90°；
+  - `direction` 缺省为 `row`，列表项从左往右排，`widths` 定每项宽度，高度填满循环区域（开启 `wrap: true` 时取被调模板的自然高度）；
+  - `column` 从上往下排，`heights` 定每项高度，宽度填满循环区域（开启 `wrap: true` 时取被调模板的自然宽度）。竖排的列表用它，不必把横向循环旋转 90°；
   - 横向写 `heights`、纵向写 `widths` 都是错误，提示该用哪个词。
-- **每项尺寸**：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。列表项连同间距的总长超出循环区域时报 `layout.contentOverflow`，两个方向相同。
+- **每项尺寸与自动折行**（M241）：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。`wrap` 缺省为 `false`；设为 `true` 时，放不下的循环项自动折入下一行或下一列，行/列间距为 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`），每项交叉方向尺寸取被调模板的自然尺寸（`hug`）。开启 `wrap: true` 时，`widths` / `heights` 只能取 `"content"` 或 `{ "fixed": … }`，不能取 `"equal"`，也不能与 `mergeBy` / `spanBy` 同时使用。列表项连同间距超出循环区域时报 `layout.contentOverflow`。
 - **区间切片与反序**（M240）：
   - `slice` 按 1-based 闭区间 `[start ?? 1, end ?? items.length]` 截取子列表，至少写 `start` 或 `end` 之一；可写正整数字面值（或 `{ "value": 正整数 }`）或绑定数值变量 `{ "var": … }`。静态字面值 `start > end` 报 `template.invalid`；绑定变量在求值时非正整数或 `start > end` 报 `template.bindingValueInvalid`；`start > items.length` 时结果为空列表，不报错（便于长列表分栏时后一栏自然留空）。
   - `reverse` 为布尔字面值或布尔变量绑定，缺省 `false`；为 `true` 时反序排列（如对向站牌反序站点列）。
@@ -1148,6 +1148,8 @@
           "mode": "stack",
           "direction": "row",
           "gap": 1,
+          "wrap": false,
+          "crossGap": 1,
           "alignItems": "center"
         },
         "children": [
@@ -1171,7 +1173,9 @@
             "itemLayout": {
               "direction": "row",
               "widths": "content",
-              "gap": 1
+              "gap": 1,
+              "wrap": false,
+              "crossGap": 1
             }
           },
           {
@@ -1344,7 +1348,7 @@
 
 DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按 ADR-0016 处理兼容。
 
-- **循环只排成一行或一列**：没有自动换行或两排。
+- **循环折行约束**：循环容器支持 `wrap: true` 自动折行/折列（M241），但开启 `wrap: true` 时 `widths` / `heights` 只能取 `content` 或 `{ "fixed": … }`，不能与 `equal` 或 `mergeBy` 合并同时使用。
 - **没有段落换行**：一个文字元素是一行（竖排是一列），放不下时按 `fit` 适配。
 - **没有文本表达式与脚本**：只有单步具名运算（ADR-0004）。拼接文字用多个片段。
 - **没有动态模板**：被调模板名不能由数据决定，循环也没有按条件过滤或附加项（支持 `reverse` 反序与 `slice` 区间切片，M240）。

@@ -235,6 +235,8 @@ export type Layout =
       readonly mode: 'stack';
       readonly direction: 'row' | 'column';
       readonly gap: number;
+      readonly wrap: boolean;
+      readonly crossGap: number;
       /** 主方向分布：靠前、居中、靠后、两端、均分。 */
       readonly justifyContent: 'start' | 'center' | 'end' | 'spaceBetween' | 'spaceEvenly';
       /** 交叉方向对齐。 */
@@ -296,16 +298,20 @@ export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' |
   readonly mergeBy?: string;
   readonly template: string;
   readonly args: Readonly<Record<string, CallArgument>>;
-  /** 横向用 widths 定每项宽度、高度填满；纵向用 heights 定每项高度、宽度填满（M236、M240）。 */
+  /** 横向用 widths 定每项宽度、高度填满（wrap 为 true 时取自然尺寸）；纵向用 heights 定每项高度、宽度填满（M236、M240、M241）。 */
   readonly itemLayout: {
     readonly direction: 'row';
     readonly widths: LoopItemSize;
     readonly gap: number;
+    readonly wrap: boolean;
+    readonly crossGap: number;
     readonly spanBy?: 'groupSize';
   } | {
     readonly direction: 'column';
     readonly heights: LoopItemSize;
     readonly gap: number;
+    readonly wrap: boolean;
+    readonly crossGap: number;
     readonly spanBy?: 'groupSize';
   };
 }

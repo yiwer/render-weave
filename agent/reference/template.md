@@ -56,10 +56,11 @@
 | 布局 | layout | 子元素 place |
 |---|---|---|
 | 自由（缺省） | `{"mode": "free"}` | left 或 right、top 或 bottom（缺省距左 0、距上 0）、width、height |
-| 堆叠 | `{"mode": "stack", "direction": "row" 或 "column", "gap", "justifyContent": start/center/end/spaceBetween/spaceEvenly, "alignItems": start/center/end}` | width、height、margin、alignSelf |
+| 堆叠 | `{"mode": "stack", "direction": "row" 或 "column", "gap", "wrap"?: true/false, "crossGap"?, "justifyContent": start/center/end/spaceBetween/spaceEvenly, "alignItems": start/center/end}` | width、height、margin、alignSelf |
 | 网格 | `{"mode": "grid", "rows": [轨道…], "columns": [轨道…], "rowGap", "columnGap"}`，轨道为 `{"fixed": 毫米}`、`{"fraction": 比例}` 或 `"hug"` | row、column（从 1 开始）、rowSpan、columnSpan、width、height、margin、justifySelf、alignSelf |
 
 - 宽高写 `{"fixed": 毫米}`、`"hug"`（随内容）、`"fill"` 或 `{"fill": 权重}`；三种布局都可另写 minWidth、maxWidth、minHeight、maxHeight。未写宽高时，网格中填满，堆叠与自由中随内容。
+- 堆叠流式换行：`wrap` 设为 `true` 时，放不下的子元素自动折入下一行或下一列，行/列间距为 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`）；每行/列内独立应用 `justifyContent` 与 `alignItems`，主方向 `"fill"` 的子元素先按自然尺寸参与折行判定再按权重分配所在行剩余空间；交叉方向为 `"hug"` 时结合主方向已知可用尺寸（`fixed`、`maxWidth`/`maxHeight` 或父容器分配尺寸）计算折行后的总交叉尺寸。
 - 网格轨道：fixed 取定值；hug 取放在这条轨道上的元素中最大的，跨多条轨道的元素会撑开所跨的 hug 轨道；fraction 按份数分剩余空间。元素连同 margin 比所在单元格大时报 `layout.contentOverflow`，要调整轨道或元素尺寸。
 - padding、margin 写一个毫米数或 `{top, right, bottom, left}` 中的若干项；cornerRadius 写一个毫米数或 `{topLeft, topRight, bottomRight, bottomLeft}` 中的若干项。
 
@@ -103,6 +104,7 @@
   - 被调模板的 base 必须是列表元素的数据定义；基本类型列表（如 list<time>）用对应的单值数据定义（如 `单值·时刻 v1`，字段 `value`）。
   - 方向：`"direction": "row"`（缺省）从左往右排，用 `widths` 定每项宽度，高度填满循环区域；`"direction": "column"` 从上往下排，用 `heights` 定每项高度，宽度填满循环区域。竖排的列表（如站台竖牌的站点）用 column，不要把横向循环旋转 90°。
   - `widths` / `heights` 取值相同：`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{"fixed": 毫米}`。横向写 heights、纵向写 widths 都是错误。
+  - 自动折行（可选）：`itemLayout` 可写 `"wrap": true | false`（缺省 false）与 `"crossGap": 毫米或数值变量`（缺省等于 `gap`）；开启 `wrap: true` 时放不下的循环项自动折入下一行/列，每项交叉方向尺寸取被调模板自然尺寸（`hug`），此时 `widths` / `heights` 只能取 `"content"` 或 `{"fixed": …}`（不能取 `"equal"`，也不能与 `mergeBy` 同时使用）。
   - 区间切片与反序（可选）：`"slice": {"start"?: 正整数或数值变量, "end"?: 正整数或数值变量}`（1-based 闭区间，至少写 start 或 end 之一；`start > items.length` 时结果为空列表且不报错，可用于长列表分两栏）；`"reverse": true | false`（布尔或布尔变量，缺省 false，用于对向站牌反序站点列等）。执行顺序固定为：标记原始 1-based 序号 → 按 `slice` 截取 → 按 `reverse` 排列 → 按 `mergeBy` 合并。
   - 列表项的总长（含 gap）超出循环区域会报问题；按数据的最大项数核对循环区域够不够。
   - 循环信息只能经 args 传给被调模板：`{"loop": "index" | "isFirst" | "isLast" | "count" | "groupSize"}`，被调模板要声明同名的 public 参数接收。`index` 与元素路径 `循环名[index]` 始终是该项（或合并组首项）在原始列表中的 1-based 序号（分栏切片或反序后仍可直接与本站序号比对）；`count` 为切片后参与本次循环的项数，`isFirst` / `isLast` 按本次排列顺序判定。

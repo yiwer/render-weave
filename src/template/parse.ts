@@ -337,9 +337,11 @@ class TemplateReader {
         this.checkKeys(value, ['mode'], path, '自由布局');
         return { mode: 'free' };
       case 'stack': {
-        this.checkKeys(value, ['mode', 'direction', 'gap', 'justifyContent', 'alignItems'], path, '堆叠布局');
+        this.checkKeys(value, ['mode', 'direction', 'gap', 'wrap', 'crossGap', 'justifyContent', 'alignItems'], path, '堆叠布局');
         const direction = this.readEnum(value['direction'], ['row', 'column'] as const, undefined, path, 'layout.direction');
         const gap = this.readNumber(value['gap'], 0, path, 'layout.gap', { min: 0 });
+        const wrap = this.readLiteralBoolean(value['wrap'], false, path, 'layout.wrap');
+        const crossGap = value['crossGap'] === undefined ? gap : this.readNumber(value['crossGap'], gap ?? 0, path, 'layout.crossGap', { min: 0 });
         const justifyContent = this.readEnum(
           value['justifyContent'],
           ['start', 'center', 'end', 'spaceBetween', 'spaceEvenly'] as const,
@@ -348,8 +350,8 @@ class TemplateReader {
           'layout.justifyContent',
         );
         const alignItems = this.readEnum(value['alignItems'], ALIGNS, 'start', path, 'layout.alignItems');
-        if (!direction || gap === undefined || !justifyContent || !alignItems) return undefined;
-        return { mode: 'stack', direction, gap, justifyContent, alignItems };
+        if (!direction || gap === undefined || wrap === undefined || crossGap === undefined || !justifyContent || !alignItems) return undefined;
+        return { mode: 'stack', direction, gap, wrap, crossGap, justifyContent, alignItems };
       }
       case 'grid': {
         this.checkKeys(value, ['mode', 'rows', 'columns', 'rowGap', 'columnGap'], path, '网格布局');
@@ -601,12 +603,14 @@ class TemplateReader {
     const slice = this.optional(value['slice'], (v) => this.readSlice(v, path));
     const item = value['itemLayout'];
     if (!isRecord(item)) return this.fail(path, '循环必须声明 itemLayout');
-    this.checkKeys(item, ['direction', 'widths', 'heights', 'gap', 'spanBy'], path, 'itemLayout');
+    this.checkKeys(item, ['direction', 'widths', 'heights', 'gap', 'wrap', 'crossGap', 'spanBy'], path, 'itemLayout');
     const spanBy = item['spanBy'];
     if (spanBy !== undefined && spanBy !== 'groupSize') return this.fail(path, 'itemLayout.spanBy 只能取 groupSize');
     const direction = this.readEnum(item['direction'], ['row', 'column'] as const, 'row', path, 'itemLayout.direction');
     if (!direction) return undefined;
     const gap = this.readNumber(item['gap'], 0, path, 'itemLayout.gap', { min: 0 });
+    const wrap = this.readLiteralBoolean(item['wrap'], false, path, 'itemLayout.wrap');
+    const crossGap = item['crossGap'] === undefined ? gap : this.readNumber(item['crossGap'], gap ?? 0, path, 'itemLayout.crossGap', { min: 0 });
     // 两个方向各用各的词：横向 widths、纵向 heights，写错方向的词时指明该用哪个（M236）。
     const [sizeKey, otherKey] = direction === 'row' ? ['widths', 'heights'] as const : ['heights', 'widths'] as const;
     if (item[otherKey] !== undefined) {
@@ -614,17 +618,25 @@ class TemplateReader {
     }
     const size = this.readLoopItemSize(item[sizeKey], path, sizeKey);
     if (!size) return undefined;
+    if (wrap) {
+      if (mergeBy !== undefined || spanBy !== undefined) {
+        return this.fail(path, '开启 wrap 的循环容器不能与 mergeBy 或 spanBy 同时使用');
+      }
+      if (size === 'equal') {
+        return this.fail(path, `开启 wrap 的循环容器 itemLayout.${sizeKey} 只能取 content 或 { fixed: 毫米 }，不能取 equal`);
+      }
+    }
     if (mergeBy !== undefined && (size !== 'equal' || spanBy !== 'groupSize')) {
       return this.fail(path, `合并循环必须使用 ${sizeKey}: equal、spanBy: groupSize，按原始项数分${direction === 'row' ? '列' : '行'}`);
     }
     if (spanBy !== undefined && mergeBy === undefined) return this.fail(path, 'spanBy: groupSize 需要同时指定 mergeBy');
     const body = this.readContainerBody({ ...value, layout: { mode: 'free' }, children: [] }, path);
-    if (!base || !body || gap === undefined || reverse === undefined || slice === null) return undefined;
+    if (!base || !body || gap === undefined || wrap === undefined || crossGap === undefined || reverse === undefined || slice === null) return undefined;
     const { children: _children, layout: _layout, ...appearance } = body;
     return { ...base, ...appearance, type, template, list, reverse, ...(slice && { slice }), args, ...(typeof mergeBy === 'string' && { mergeBy }),
       itemLayout: direction === 'row'
-        ? { direction, widths: size, gap, ...(spanBy && { spanBy }) }
-        : { direction, heights: size, gap, ...(spanBy && { spanBy }) } };
+        ? { direction, widths: size, gap, wrap, crossGap, ...(spanBy && { spanBy }) }
+        : { direction, heights: size, gap, wrap, crossGap, ...(spanBy && { spanBy }) } };
   }
 
   private readSlice(value: unknown, path: ElementPath): Read<LoopSlice> {
@@ -1129,6 +1141,13 @@ class TemplateReader {
     if (value === undefined) return fallback;
     if (typeof value === 'boolean') return value;
     if (isVarOperand(value)) return this.host.boolean(value.var, { path, label }, fallback);
+    this.fail(path, `${label} 必须是 true 或 false`);
+    return undefined;
+  }
+
+  private readLiteralBoolean(value: unknown, fallback: boolean, path: ElementPath, label: string): Read<boolean> {
+    if (value === undefined) return fallback;
+    if (typeof value === 'boolean') return value;
     this.fail(path, `${label} 必须是 true 或 false`);
     return undefined;
   }

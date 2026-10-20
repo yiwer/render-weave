@@ -442,6 +442,12 @@
             "gap": {
               "$ref": "#/$defs/nonNegativeOrVar"
             },
+            "wrap": {
+              "type": "boolean"
+            },
+            "crossGap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
             "justifyContent": {
               "enum": [
                 "start",
@@ -1170,6 +1176,12 @@
             "gap": {
               "$ref": "#/$defs/nonNegativeOrVar"
             },
+            "wrap": {
+              "type": "boolean"
+            },
+            "crossGap": {
+              "$ref": "#/$defs/nonNegativeOrVar"
+            },
             "spanBy": {
               "const": "groupSize"
             }
@@ -1317,9 +1329,60 @@
               "mergeBy"
             ]
           }
+        },
+        {
+          "if": {
+            "type": "object",
+            "required": [
+              "itemLayout"
+            ],
+            "properties": {
+              "itemLayout": {
+                "type": "object",
+                "required": [
+                  "wrap"
+                ],
+                "properties": {
+                  "wrap": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "not": {
+              "required": [
+                "mergeBy"
+              ]
+            },
+            "properties": {
+              "itemLayout": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "spanBy"
+                  ]
+                },
+                "properties": {
+                  "widths": {
+                    "not": {
+                      "const": "equal"
+                    }
+                  },
+                  "heights": {
+                    "not": {
+                      "const": "equal"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       ],
-      "description": "循环容器（S25、S28、M236、M240）：横向或纵向排列，可配置 reverse 与 slice；合并相邻同值项时 mergeBy、widths/heights: equal 与 spanBy: groupSize 同时出现"
+      "description": "循环容器（S25、S28、M236、M240、M241）：横向或纵向排列，可配置 reverse、slice、wrap 与 crossGap；合并相邻同值项时 mergeBy、widths/heights: equal 与 spanBy: groupSize 同时出现，且不能开启 wrap"
     },
     "sliceBound": {
       "anyOf": [

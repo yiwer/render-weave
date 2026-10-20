@@ -130,7 +130,7 @@ class Expander {
         const layout = model.itemLayout;
         const spec = layout.direction === 'row' ? layout.widths : layout.heights;
         const along: SizeSpec = spec === 'equal' ? { kind: 'fill', weight: 1 } : spec === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: spec.fixed };
-        const across: SizeSpec = { kind: 'fill', weight: 1 };
+        const across: SizeSpec = layout.wrap ? { kind: 'hug' } : { kind: 'fill', weight: 1 };
         const { count, groups } = groupLoopItems(items, {
           ...(model.slice && { slice: model.slice }),
           reverse: model.reverse,
@@ -148,7 +148,7 @@ class Expander {
         });
         return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { direction: layout.direction, count, gap: layout.gap } }),
           model: { ...model, type: 'container', children: [],
-          layout: { mode: 'stack', direction: layout.direction, gap: layout.gap, justifyContent: 'start', alignItems: 'start' } }, children };
+          layout: { mode: 'stack', direction: layout.direction, gap: layout.gap, wrap: layout.wrap, crossGap: layout.crossGap, justifyContent: 'start', alignItems: 'start' } }, children };
       }
       default: return { model };
     }

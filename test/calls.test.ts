@@ -216,6 +216,10 @@ describe('纵向循环（M236）', () => {
     [{ direction: 'column' }, {}, 'itemLayout.heights 写成 equal、content 或 { fixed: 毫米 }'],
     [{ direction: 'column', heights: 'content', spanBy: 'groupSize' }, { mergeBy: 'name' }, '合并循环必须使用 heights: equal、spanBy: groupSize，按原始项数分行'],
     [{ direction: 'column', heights: 'equal' }, { mergeBy: 'name' }, '合并循环必须使用 heights: equal、spanBy: groupSize，按原始项数分行'],
+    [{ direction: 'row', widths: 'equal', wrap: true }, {}, '开启 wrap 的循环容器 itemLayout.widths 只能取 content 或 { fixed: 毫米 }，不能取 equal'],
+    [{ direction: 'column', heights: 'equal', wrap: true }, {}, '开启 wrap 的循环容器 itemLayout.heights 只能取 content 或 { fixed: 毫米 }，不能取 equal'],
+    [{ direction: 'row', widths: 'content', wrap: true }, { mergeBy: 'name' }, '开启 wrap 的循环容器不能与 mergeBy 或 spanBy 同时使用'],
+    [{ direction: 'row', widths: 'content', wrap: true, spanBy: 'groupSize' }, {}, '开启 wrap 的循环容器不能与 mergeBy 或 spanBy 同时使用'],
   ])('写错方向的词或纵向合并配置不完整时报模板错误：%j %j', async (itemLayout, extra, message) => {
     const result = await render(await referenceLoop({ itemLayout, ...extra }), draft(stops, 20, 42));
     expect(result.problems).toContainEqual(expect.objectContaining({ code: ProblemCodes.templateInvalid, message }));
@@ -498,6 +502,143 @@ describe('反序与区间切片（M240）', () => {
       expect(codes(finalRes)).toContain(ProblemCodes.templateBindingValueInvalid);
       expect(finalRes.image).toBeUndefined();
     }
+  });
+});
+
+describe('循环流式折行（M241）', () => {
+  it('多枚宽度不一的标签自动折行，外层容器高度 hug 自适应撑高并支持 crossGap 变量绑定', async () => {
+    let workspace = await textLab(
+      [listField({ type: 'text' })],
+      {
+        fill: '#FFFFFF',
+        children: [
+          {
+            type: 'container',
+            name: '卡片',
+            place: { width: { fixed: 60 }, height: 'hug' },
+            padding: 2,
+            fill: '#F6F8FA',
+            layout: { mode: 'stack', direction: 'column', gap: 2 },
+            children: [
+              { type: 'rect', name: '标题条', fill: '#1F6FEB', place: { width: { fixed: 24 }, height: { fixed: 5 } } },
+              loop({
+                name: '标签区',
+                place: { width: 'fill', height: 'hug' },
+                template: '标签格',
+                itemLayout: { direction: 'row', widths: 'content', wrap: true, gap: 2, crossGap: { var: 'rowGap' } },
+              }),
+            ],
+          },
+        ],
+      },
+      { parameters: [param('rowGap', 'number', { default: 3 })] },
+    );
+    workspace = addTemplate(workspace, '标签格', '单值·文本', [text('文字', 'value', { fontSize: 4 })], {
+      artboard: {
+        size: 'hug',
+        sizeRange: range,
+        padding: { left: 2, right: 2, top: 1, bottom: 1 },
+        fill: '#FFF000',
+        layout: { mode: 'stack', direction: 'row', alignItems: 'center' },
+        children: [text('文字', 'value', { fontSize: 4 })],
+      },
+    });
+
+    const tags = ['地铁', '夜间专线', '大站快车', '空调', '有人售票'];
+    const result = await render(workspace, textLabRequest({ items: tags }, 60, 30));
+    expect(result.problems).toEqual([]);
+    expect(result.image).toBeDefined();
+
+    // 卡片内可用宽 56：第一行 12+2+20+2+20=56（高 6），第二行 12+2+20=34（高 6），标签区高 6+3+6=15，卡片总高 2+5+2+15+2=26。
+    const card = at(result, '文字实验/卡片');
+    const tagLoop = at(result, '文字实验/卡片/标签区');
+    expect({ x: card.x, y: card.y, width: card.width, height: card.height }).toEqual({ x: 0, y: 0, width: 60, height: 26 });
+    expect({ x: tagLoop.x, y: tagLoop.y, width: tagLoop.width, height: tagLoop.height }).toEqual({ x: 2, y: 9, width: 56, height: 15 });
+    expect(tagLoop.children!.map((item) => [item.path, item.x, item.y, item.width, item.height])).toEqual([
+      ['文字实验/卡片/标签区[1]', 2, 9, 12, 6],
+      ['文字实验/卡片/标签区[2]', 16, 9, 20, 6],
+      ['文字实验/卡片/标签区[3]', 38, 9, 20, 6],
+      ['文字实验/卡片/标签区[4]', 2, 18, 12, 6],
+      ['文字实验/卡片/标签区[5]', 16, 18, 20, 6],
+    ]);
+
+    const pixels = await decodePixels(result.image!.bytes);
+    expect(pixelAtMm(pixels, 3, 10, 120).slice(0, 3)).toEqual([255, 240, 0]);
+    expect(pixelAtMm(pixels, 17, 19, 120).slice(0, 3)).toEqual([255, 240, 0]);
+    await expect(`${JSON.stringify(result.layout, null, 2)}\n`).toMatchFileSnapshot('./snapshots/loop-wrap-tags-hug.layout.json');
+  });
+
+  it('固定格宽班次表多行折行、纵向循环多列折列，以及超出交叉方向高度报错', async () => {
+    let workspace = await textLab([listField({ type: 'time' })], {
+      fill: '#FFFFFF',
+      children: [
+        loop({
+          name: '班次表',
+          place: { width: { fixed: 46 }, height: 'hug' },
+          template: '班次格',
+          itemLayout: { direction: 'row', widths: { fixed: 14 }, wrap: true, gap: 2, crossGap: 2 },
+        }),
+      ],
+    });
+    workspace = addTemplate(workspace, '班次格', '单值·时刻', [], {
+      artboard: {
+        size: 'hug',
+        sizeRange: range,
+        padding: { top: 1, bottom: 1 },
+        fill: '#EAEEF2',
+        layout: { mode: 'stack', direction: 'row', justifyContent: 'center', alignItems: 'center' },
+        children: [text('时刻', 'value', { fontSize: 4 })],
+      },
+    });
+
+    const times = ['06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00'];
+    const result = await render(workspace, textLabRequest({ items: times }, 46, 24));
+    expect(result.problems).toEqual([]);
+    expect(result.image).toBeDefined();
+    const table = at(result, '文字实验/班次表');
+    expect({ x: table.x, y: table.y, width: table.width, height: table.height }).toEqual({ x: 0, y: 0, width: 46, height: 22 });
+    expect(table.children!.map((item) => [item.x, item.y, item.width, item.height])).toEqual([
+      [0, 0, 14, 6],
+      [16, 0, 14, 6],
+      [32, 0, 14, 6],
+      [0, 8, 14, 6],
+      [16, 8, 14, 6],
+      [32, 8, 14, 6],
+      [0, 16, 14, 6],
+    ]);
+    await expect(`${JSON.stringify(table, null, 2)}\n`).toMatchFileSnapshot('./snapshots/loop-wrap-departures-fixed.layout.json');
+
+    // 纵向循环开启 wrap: true：按列排布，满列后向右开启新列，每项宽度取被调模板自然尺寸。
+    const colWorkspace = withTemplate(workspace, '文字实验', (doc) => {
+      doc['artboard']['children'][0]['place'] = { width: 'hug', height: { fixed: 14 } };
+      doc['artboard']['children'][0]['itemLayout'] = { direction: 'column', heights: { fixed: 6 }, wrap: true, gap: 2, crossGap: 4 };
+    });
+    const colResult = await render(colWorkspace, textLabRequest({ items: times.slice(0, 3) }, 40, 14));
+    expect(colResult.problems).toEqual([]);
+    const colTable = at(colResult, '文字实验/班次表');
+    expect(colTable.children!.map((item) => [item.x, item.y, item.height])).toEqual([
+      [0, 0, 6],
+      [0, 8, 6],
+      [colTable.children![0]!.width + 4, 0, 6],
+    ]);
+
+    // 交叉方向高度不足（需要 22 mm，仅给 15 mm）时报告 layout.contentOverflow。
+    const overflowWorkspace = withTemplate(workspace, '文字实验', (doc) => {
+      doc['artboard']['children'][0]['place'] = { width: { fixed: 46 }, height: { fixed: 15 } };
+    });
+    const finalOverflow = await render(overflowWorkspace, textLabRequest({ items: times }, 46, 15));
+    expect(finalOverflow.problems.map((p) => [p.code, p.location])).toEqual([
+      [ProblemCodes.layoutContentOverflow, { kind: 'element', path: '文字实验/班次表' }],
+    ]);
+    expect(finalOverflow.problems[0]!.message).toContain('需要 22 mm，可用 15 mm');
+    expect(finalOverflow.image).toBeUndefined();
+
+    const draftOverflow = await render(overflowWorkspace, { ...textLabRequest({ items: times }, 46, 15), mode: 'draft' });
+    expect(draftOverflow.problems.map((p) => [p.code, p.location])).toEqual([
+      [ProblemCodes.layoutContentOverflow, { kind: 'element', path: '文字实验/班次表' }],
+    ]);
+    expect(draftOverflow.image).toBeDefined();
+    await expect(`${JSON.stringify(at(draftOverflow, '文字实验/班次表'), null, 2)}\n`).toMatchFileSnapshot('./snapshots/loop-wrap-overflow.layout.json');
   });
 });
 

@@ -1,0 +1,306 @@
+{
+  "path": "文字实验/班次表",
+  "name": "班次表",
+  "type": "loop",
+  "x": 0,
+  "y": 0,
+  "width": 46,
+  "height": 15,
+  "visible": true,
+  "children": [
+    {
+      "path": "文字实验/班次表[1]",
+      "name": "班次表",
+      "type": "call",
+      "x": 0,
+      "y": 0,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[1]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 1.844,
+          "y": 1,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "06:00",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "06:00",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[2]",
+      "name": "班次表",
+      "type": "call",
+      "x": 16,
+      "y": 0,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[2]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 17.844,
+          "y": 1,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "06:30",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "06:30",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[3]",
+      "name": "班次表",
+      "type": "call",
+      "x": 32,
+      "y": 0,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[3]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 33.844,
+          "y": 1,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "07:00",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "07:00",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[4]",
+      "name": "班次表",
+      "type": "call",
+      "x": 0,
+      "y": 8,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[4]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 1.844,
+          "y": 9,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "07:30",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "07:30",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[5]",
+      "name": "班次表",
+      "type": "call",
+      "x": 16,
+      "y": 8,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[5]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 17.844,
+          "y": 9,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "08:00",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "08:00",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[6]",
+      "name": "班次表",
+      "type": "call",
+      "x": 32,
+      "y": 8,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[6]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 33.844,
+          "y": 9,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "08:30",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "08:30",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "文字实验/班次表[7]",
+      "name": "班次表",
+      "type": "call",
+      "x": 0,
+      "y": 16,
+      "width": 14,
+      "height": 6,
+      "visible": true,
+      "children": [
+        {
+          "path": "文字实验/班次表[7]/时刻",
+          "name": "时刻",
+          "type": "text",
+          "x": 1.844,
+          "y": 17,
+          "width": 10.312,
+          "height": 4,
+          "visible": true,
+          "text": {
+            "content": "09:00",
+            "font": "res:font-hei-medium",
+            "writingMode": "horizontal",
+            "fontSize": 4,
+            "width": 10.312,
+            "height": 4,
+            "spacing": 0,
+            "compression": 1,
+            "overflow": false,
+            "fragments": [
+              {
+                "text": "09:00",
+                "font": "res:font-hei-medium",
+                "fontSize": 4,
+                "color": "#333333FF",
+                "slant": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

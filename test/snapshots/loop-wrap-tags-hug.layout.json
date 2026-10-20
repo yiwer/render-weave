@@ -1,0 +1,267 @@
+{
+  "template": "文字实验",
+  "output": {
+    "width": 60,
+    "height": 30,
+    "dpi": 120,
+    "widthPx": 283,
+    "heightPx": 142,
+    "format": "png"
+  },
+  "root": {
+    "path": "文字实验",
+    "name": "文字实验",
+    "type": "artboard",
+    "x": 0,
+    "y": 0,
+    "width": 60,
+    "height": 30,
+    "visible": true,
+    "children": [
+      {
+        "path": "文字实验/卡片",
+        "name": "卡片",
+        "type": "container",
+        "x": 0,
+        "y": 0,
+        "width": 60,
+        "height": 26,
+        "visible": true,
+        "children": [
+          {
+            "path": "文字实验/卡片/标题条",
+            "name": "标题条",
+            "type": "rect",
+            "x": 2,
+            "y": 2,
+            "width": 24,
+            "height": 5,
+            "visible": true
+          },
+          {
+            "path": "文字实验/卡片/标签区",
+            "name": "标签区",
+            "type": "loop",
+            "x": 2,
+            "y": 9,
+            "width": 56,
+            "height": 15,
+            "visible": true,
+            "children": [
+              {
+                "path": "文字实验/卡片/标签区[1]",
+                "name": "标签区",
+                "type": "call",
+                "x": 2,
+                "y": 9,
+                "width": 12,
+                "height": 6,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "文字实验/卡片/标签区[1]/文字",
+                    "name": "文字",
+                    "type": "text",
+                    "x": 4,
+                    "y": 10,
+                    "width": 8,
+                    "height": 4,
+                    "visible": true,
+                    "text": {
+                      "content": "地铁",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 4,
+                      "width": 8,
+                      "height": 4,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "地铁",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 4,
+                          "color": "#333333FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "文字实验/卡片/标签区[2]",
+                "name": "标签区",
+                "type": "call",
+                "x": 16,
+                "y": 9,
+                "width": 20,
+                "height": 6,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "文字实验/卡片/标签区[2]/文字",
+                    "name": "文字",
+                    "type": "text",
+                    "x": 18,
+                    "y": 10,
+                    "width": 16,
+                    "height": 4,
+                    "visible": true,
+                    "text": {
+                      "content": "夜间专线",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 4,
+                      "width": 16,
+                      "height": 4,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "夜间专线",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 4,
+                          "color": "#333333FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "文字实验/卡片/标签区[3]",
+                "name": "标签区",
+                "type": "call",
+                "x": 38,
+                "y": 9,
+                "width": 20,
+                "height": 6,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "文字实验/卡片/标签区[3]/文字",
+                    "name": "文字",
+                    "type": "text",
+                    "x": 40,
+                    "y": 10,
+                    "width": 16,
+                    "height": 4,
+                    "visible": true,
+                    "text": {
+                      "content": "大站快车",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 4,
+                      "width": 16,
+                      "height": 4,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "大站快车",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 4,
+                          "color": "#333333FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "文字实验/卡片/标签区[4]",
+                "name": "标签区",
+                "type": "call",
+                "x": 2,
+                "y": 18,
+                "width": 12,
+                "height": 6,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "文字实验/卡片/标签区[4]/文字",
+                    "name": "文字",
+                    "type": "text",
+                    "x": 4,
+                    "y": 19,
+                    "width": 8,
+                    "height": 4,
+                    "visible": true,
+                    "text": {
+                      "content": "空调",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 4,
+                      "width": 8,
+                      "height": 4,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "空调",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 4,
+                          "color": "#333333FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "path": "文字实验/卡片/标签区[5]",
+                "name": "标签区",
+                "type": "call",
+                "x": 16,
+                "y": 18,
+                "width": 20,
+                "height": 6,
+                "visible": true,
+                "children": [
+                  {
+                    "path": "文字实验/卡片/标签区[5]/文字",
+                    "name": "文字",
+                    "type": "text",
+                    "x": 18,
+                    "y": 19,
+                    "width": 16,
+                    "height": 4,
+                    "visible": true,
+                    "text": {
+                      "content": "有人售票",
+                      "font": "res:font-hei-medium",
+                      "writingMode": "horizontal",
+                      "fontSize": 4,
+                      "width": 16,
+                      "height": 4,
+                      "spacing": 0,
+                      "compression": 1,
+                      "overflow": false,
+                      "fragments": [
+                        {
+                          "text": "有人售票",
+                          "font": "res:font-hei-medium",
+                          "fontSize": 4,
+                          "color": "#333333FF",
+                          "slant": 0
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
