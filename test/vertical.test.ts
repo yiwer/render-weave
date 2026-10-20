@@ -221,7 +221,7 @@ describe('文字描边', () => {
   });
 });
 
-describe('竖排固定字间距 letterSpacing 与 tightenSpacing（M243）', () => {
+describe('竖排固定字间距 letterSpacing 与 tightenSpacing（M255）', () => {
   async function renderVertical(
     textProps: Record<string, unknown>,
     boxHeight = 73,
@@ -323,7 +323,7 @@ describe('竖排固定字间距 letterSpacing 与 tightenSpacing（M243）', () 
   });
 });
 
-describe('竖排片段独立字体字号与方向性标点旋转（M244）', () => {
+describe('竖排片段独立字体字号与方向性标点旋转（M256）', () => {
   const isInk = ([r, g, b]: [number, number, number, number]) => r + g + b < 700;
 
   it('主站名 10 mm 粗体 + （北门） 7 mm 常规体在同一竖排文本元素内两端分布、括号顺时针旋转 90°、并参与缩字组', async () => {

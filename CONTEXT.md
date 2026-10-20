@@ -24,7 +24,15 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
   - 模板在画板上声明缩字下限（票据 14，M238），价签一类小标签可以缩到 5 mm 以下。
   - 资源命令遇到还不是版本仓库的目录时，提示先 `resources-init` 或从旧目录导入（票据 15，M239）。
-- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）已完成，下一步是 02（问题码对齐）与 03（服务骨架）；部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+- **DSL 1.x 平面设计能力演进（P1/P2）**（[规格](.scratch/dsl-graphic-capabilities/spec.md)，[索引](.scratch/dsl-graphic-capabilities/README.md)）：7 张票据全部完成（M251–M257），已变基到阶段 4 票据 01（M250）之上并跑通全量测试（M249）：
+  - 票据 01（M251）：派生变量支持 `multiply`、`divide`、`mod`、`splitPart`（含 `format` 格式化后拆字）与 `branch` 条件中的 `all` / `any` 复合条件。
+  - 票据 02（M252）：循环容器支持 `reverse`（反序）、`slice`（1-based 闭区间切片）与纵向循环 `mergeBy` / `spanBy: "groupSize"`（`heights: "equal"`）。
+  - 票据 03（M253）：堆叠布局与循环容器 `itemLayout` 支持 `wrap` 自动流式换行与交叉方向行/列间距 `crossGap`（含交叉方向 `"hug"` 自适应撑高/撑宽）。
+  - 票据 04（M254）：矢量图形（`path`、`polygon`、`line`）支持可选 `viewBox` 与 `fit`（`fill` / `contain` / `cover`）随元素框缩放，通过变换路径几何顶点保持描边宽度与虚线不变形。
+  - 票据 05（M255）：文本支持常态字间距 `letterSpacing`（正负毫米数或数值变量）与横排 `fit.steps` 中的 `"tightenSpacing"`（在压缩字形前先将正字距线性收紧至 0）。
+  - 票据 06（M256）：竖排文本的文本片段与变量插槽支持独立设置 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动绕字格中心顺时针旋转 90°。
+  - 票据 07（M257）：图片元素支持可选 `tint` 单色重染（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，支持状态样式覆盖），以 `srcIn` 滤镜替换像素 RGB 并保留原图透明度。
+- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）已完成，下一步是 02（问题码对齐）与 03（服务骨架）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
   模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 与 Gemini 都已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。第二阶段审查转出的后续见 M203：批量项问题码与单次渲染对齐（Spec P2）。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
@@ -36,9 +44,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **DSL 1.0**：数据定义、数据集、模板、渲染请求与批次请求都有人读参考（[docs/dsl/](docs/dsl/README.md)）、JSON Schema（`schemas/`）与一致性测试，兼容策略见 ADR-0016；公开入口 `checkDslDocument`、`dslDocumentKind` 识别并检查单份文档。Agent 参考在 `agent/reference/`。
 - **入口**：渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，这是主接缝；发布静态数据定义是次接缝。CLI `renderweave render` / `publish` 把成果写到输出目录，用法见 [README](README.md)。
 - **数据**：数据定义发布为静态数据定义，并编译出 JSON Schema；数据集按全部字段类型与约束校验。
-- **元素与布局**：画板与容器（自由、堆叠、网格）；横排与竖排文本（片段样式、插槽展示格式、倾斜、描边）；PNG/JPEG/WebP/SVG 图片（三种适配，SVG 见 [SVG 说明](docs/render-svg.md)）；矩形、椭圆、线条、多边形、路径。
-- **模板**：模板参数、派生变量（条件分支、取项、长度、加减）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（横向或纵向排列，每项等分、随内容或固定尺寸，M236）与子模板调用（独立作用域）。
-- **线路牌适配**：合并相邻同值项与道路带；横排按墨迹分布，先压缩再缩字；竖排缩字组跨循环与子模板统一字号。缩字下限由模板在画板上声明，缺省 5 mm，价签一类小标签可低到 1.5 mm（M238）。
+- **元素与布局**：画板与容器（自由、堆叠及 `wrap`/`crossGap` 自动流式换行、网格，M253）；横排与竖排文本（横竖排片段独立字体与字号、插槽展示格式、常态字间距 `letterSpacing`、横排倾斜、文字描边、竖排方向性标点顺时针旋转 90°，M255、M256）；PNG/JPEG/WebP/SVG 图片（三种适配、可选 `tint` 单色重染，M257，SVG 见 [SVG 说明](docs/render-svg.md)）；矩形、椭圆、线条、多边形、路径（线条、多边形、路径支持 `viewBox` 与 `fit` 随框缩放，M254）。
+- **模板**：模板参数、派生变量（条件分支与 `all`/`any` 复合条件、取项、按分隔符拆取文本 `splitPart`、长度、加减乘除取模，M251）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（横向或纵向排列，每项等分、随内容或固定尺寸，支持 `reverse` 反序、`slice` 区间切片与 `wrap`/`crossGap` 自动流式换行，M236、M252、M253）与子模板调用（独立作用域）。
+- **线路牌适配**：横向或纵向合并相邻同值项与道路带（M252）；横排按墨迹分布，先收紧字距、再压缩字形、再缩字（M255）；竖排缩字组跨循环与子模板统一字号并按比例缩放片段字号（M256）。缩字下限由模板在画板上声明，缺省 5 mm，价签一类小标签可低到 1.5 mm（M238）。
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
 - **MCP 只读工具服务**：`renderweave mcp` 提供 11 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大（工作目录内的图片，或用 `res:资源ID` 看资源仓库中的图片，M234）、DSL 参考与交回前核对成果（`check_outcome`，M233）。工具合同 0.5.0 有快照测试，见 [MCP 工具服务](docs/mcp.md)。

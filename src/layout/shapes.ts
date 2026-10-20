@@ -1,7 +1,7 @@
 /**
  * 图形元素：矩形、椭圆、线条、多边形与路径。
  * 未声明 viewBox 时，线条、多边形与路径的坐标以毫米计、相对元素框左上角，框变化时不拉伸（M94），随内容尺寸取坐标最右与最下处；
- * 声明 viewBox 时，随内容尺寸取 viewBox 宽高（contain/cover 且单边固定时按宽高比换算），绘制时按 fit 映射变换路径顶点（M242）。
+ * 声明 viewBox 时，随内容尺寸取 viewBox 宽高（contain/cover 且单边固定时按宽高比换算），绘制时按 fit 映射变换路径顶点（M254）。
  */
 import type { Corners, ShapeModel } from '../template/model.js';
 import type { Box, DrawOp, Radii, Size } from './types.js';

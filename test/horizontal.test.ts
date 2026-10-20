@@ -287,7 +287,7 @@ describe('模板在画板上声明缩字下限（M238）', () => {
   });
 });
 
-describe('横排固定字间距 letterSpacing 与 tightenSpacing（M243）', () => {
+describe('横排固定字间距 letterSpacing 与 tightenSpacing（M255）', () => {
   const tightenFit = { steps: ['tightenSpacing', 'compressGlyphs', 'shrink'] };
 
   it('正负 letterSpacing 跨片段连续计算自然宽度、字形位置与 spacing 摘要；单字与空文本不加，下限为 0', async () => {

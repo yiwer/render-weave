@@ -82,7 +82,7 @@ export type Operation =
       readonly position: ItemPosition;
     }
   | {
-      /** 按分隔符拆取文本片段（M239）：首段、末段或第 N 段（从 1 开始），越界、缺值或分隔符未出现时返回空文本。 */
+      /** 按分隔符拆取文本片段（M251）：首段、末段或第 N 段（从 1 开始），越界、缺值或分隔符未出现时返回空文本。 */
       readonly op: 'splitPart';
       readonly of: VarOperand;
       readonly format?: DisplayFormat;
@@ -101,7 +101,7 @@ export interface Comparison {
   readonly right?: Operand;
 }
 
-/** 分支条件：单个比较，或单层 all（全部成立）/ any（任一成立）复合条件（M239）。 */
+/** 分支条件：单个比较，或单层 all（全部成立）/ any（任一成立）复合条件（M251）。 */
 export type Condition =
   | Comparison
   | { readonly all: readonly Comparison[] }
@@ -290,15 +290,15 @@ export interface LoopSlice {
 export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' | 'layout'> {
   readonly type: 'loop';
   readonly list: VarOperand;
-  /** 是否反序排列（缺省 false，M240）。 */
+  /** 是否反序排列（缺省 false，M252）。 */
   readonly reverse: boolean;
-  /** 1-based 闭区间切片（M240）。 */
+  /** 1-based 闭区间切片（M252）。 */
   readonly slice?: LoopSlice;
   /** 列表项中的基本类型字段路径，连续同值项合并，以首项作为被调模板的数据。 */
   readonly mergeBy?: string;
   readonly template: string;
   readonly args: Readonly<Record<string, CallArgument>>;
-  /** 横向用 widths 定每项宽度、高度填满（wrap 为 true 时取自然尺寸）；纵向用 heights 定每项高度、宽度填满（M236、M240、M241）。 */
+  /** 横向用 widths 定每项宽度、高度填满（wrap 为 true 时取自然尺寸）；纵向用 heights 定每项高度、宽度填满（M236、M252、M253）。 */
   readonly itemLayout: {
     readonly direction: 'row';
     readonly widths: LoopItemSize;
@@ -325,7 +325,7 @@ export interface TextElementModel extends ElementBase {
   readonly font: string;
   /** 字号，毫米（em 框的高度）。 */
   readonly fontSize: number;
-  /** 常态字间距，毫米，可正可负，缺省 0（M243）。 */
+  /** 常态字间距，毫米，可正可负，缺省 0（M255）。 */
   readonly letterSpacing: number;
   readonly color: Color;
   /** 倾斜角度，度；正值向右倾，以错切变换模拟（M80、M117）。只用于横排。 */
@@ -412,7 +412,7 @@ export interface ImageModel extends ElementBase {
   /** 图片资源 ID。 */
   readonly source?: string;
   readonly fit: 'contain' | 'cover' | 'fill';
-  /** 单色重染颜色（#RRGGBBAA，M245）。 */
+  /** 单色重染颜色（#RRGGBBAA，M257）。 */
   readonly tint?: Color;
 }
 
@@ -459,7 +459,7 @@ export interface EllipseModel extends ElementBase {
 export type ViewBox = readonly [number, number, number, number];
 export type ShapeFit = 'fill' | 'contain' | 'cover';
 
-/** 线条的起点与终点，毫米，相对元素框左上角；声明 viewBox 时随元素框缩放（M242）。 */
+/** 线条的起点与终点，毫米，相对元素框左上角；声明 viewBox 时随元素框缩放（M254）。 */
 export interface LineModel extends ElementBase {
   readonly type: 'line';
   readonly from: Point;
@@ -469,7 +469,7 @@ export interface LineModel extends ElementBase {
   readonly fit: ShapeFit;
 }
 
-/** 多边形的顶点，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M94），声明 viewBox 时随元素框缩放（M242）。 */
+/** 多边形的顶点，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M94），声明 viewBox 时随元素框缩放（M254）。 */
 export interface PolygonModel extends ElementBase {
   readonly type: 'polygon';
   readonly points: readonly Point[];
@@ -479,7 +479,7 @@ export interface PolygonModel extends ElementBase {
   readonly fit: ShapeFit;
 }
 
-/** 路径数据为 SVG 路径语法，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M76、M94），声明 viewBox 时随元素框缩放（M242）。 */
+/** 路径数据为 SVG 路径语法，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M76、M94），声明 viewBox 时随元素框缩放（M254）。 */
 export interface PathModel extends ElementBase {
   readonly type: 'path';
   readonly d: string;

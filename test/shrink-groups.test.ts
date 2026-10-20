@@ -34,7 +34,7 @@ describe('缩字组的两轮排版', () => {
     expect(result.image!.bytes).toEqual(expected.image!.bytes);
   });
 
-  it('竖排文本含不同字号片段时，缩字组按比例同步缩放各片段 fontSize（M244）', async () => {
+  it('竖排文本含不同字号片段时，缩字组按比例同步缩放各片段 fontSize（M256）', async () => {
     const mixedContent = [
       { text: '田贝', font: 'res:font-hei-bold', fontSize: 10 },
       { text: '（北门）', font: 'res:font-hei-regular', fontSize: 7 },
@@ -80,6 +80,37 @@ describe('缩字组的两轮排版', () => {
       73,
     );
     expect(shrunk.image!.bytes).toEqual(expected.image!.bytes);
+
+    // 片段字号均不大于可用宽时（model.fontSize=10，唯一片段 fontSize=7 <= 可用宽 8）不误缩字
+    const alreadyFits = await columns(
+      [label('单小片段', { fontSize: 10, content: [{ text: '东门', fontSize: 7 }] })],
+      [8],
+      73,
+    );
+    expect(alreadyFits.problems).toEqual([]);
+    expect(texts(alreadyFits)[0]!.text).toMatchObject({
+      fontSize: 10,
+      width: 7,
+      fragments: [{ text: '东门', fontSize: 7 }],
+    });
+
+    // 较小字号片段触及下限（7 mm 片段缩至 5 mm 下限）时停止继续缩小，不会跌破 5 mm
+    const hitFragmentFloor = await columns(
+      [label('主副触底', { content: mixedContent })],
+      [6],
+      73,
+      'draft',
+    );
+    expect(texts(hitFragmentFloor)[0]!.text).toMatchObject({
+      fontSize: 7.143,
+      width: 7.143,
+      overflow: true,
+      fragments: [
+        { text: '田贝', font: 'res:font-hei-bold', fontSize: 7.143 },
+        { text: '（北门）', font: 'res:font-hei-regular', fontSize: 5 },
+      ],
+    });
+    expect(hitFragmentFloor.problems[0]?.message).toContain('缩字组 站名 已到最小字号 5 mm');
   });
 
   it('同组取最高字号下限，低于下限仍放不下时报严重问题，即使 onFail 为 hint', async () => {

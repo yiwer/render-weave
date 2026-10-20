@@ -50,17 +50,22 @@ function fromScaledInt(value: bigint, places: number): number | undefined {
   return Number.isFinite(result) && (value === 0n || result !== 0) && significantDigits(text) <= MAX_SIGNIFICANT_DIGITS ? result : undefined;
 }
 
-/** 十进制加法（减法传入相反数）：两数按相同的小数位数化成整数相加，再按十进制写法转回数值。 */
-export function addDecimal(a: number, b: number): number | undefined {
-  if (!validOperands(a, b)) return undefined;
+function alignScaled(a: number, b: number): { readonly left: bigint; readonly right: bigint; readonly places: number } {
   const da = toDecimal(a);
   const db = toDecimal(b);
   const places = Math.max(da.fraction.length, db.fraction.length);
   const scaled = (d: Decimal) => (d.negative ? -1n : 1n) * BigInt(d.integer + d.fraction.padEnd(places, '0') || '0');
-  return fromScaledInt(scaled(da) + scaled(db), places);
+  return { left: scaled(da), right: scaled(db), places };
 }
 
-/** 十进制乘法：按精确十进制整数缩放相乘，结果须有限且不超过 15 位有效数字（M239）。 */
+/** 十进制加法（减法传入相反数）：两数按相同的小数位数化成整数相加，再按十进制写法转回数值。 */
+export function addDecimal(a: number, b: number): number | undefined {
+  if (!validOperands(a, b)) return undefined;
+  const { left, right, places } = alignScaled(a, b);
+  return fromScaledInt(left + right, places);
+}
+
+/** 十进制乘法：按精确十进制整数缩放相乘，结果须有限且不超过 15 位有效数字（M251）。 */
 export function multiplyDecimal(a: number, b: number): number | undefined {
   if (!validOperands(a, b)) return undefined;
   const da = toDecimal(a);
@@ -70,15 +75,11 @@ export function multiplyDecimal(a: number, b: number): number | undefined {
   return fromScaledInt(unscaled(da) * unscaled(db), places);
 }
 
-/** 十进制取模：按相同小数位数化成整数求余；除数为 0 或结果超过 15 位有效数字时返回 undefined（M239）。 */
+/** 十进制取模：按相同小数位数化成整数求余；除数为 0 或结果超过 15 位有效数字时返回 undefined（M251）。 */
 export function modDecimal(a: number, b: number): number | undefined {
   if (!validOperands(a, b) || b === 0) return undefined;
-  const da = toDecimal(a);
-  const db = toDecimal(b);
-  const places = Math.max(da.fraction.length, db.fraction.length);
-  const scaled = (d: Decimal) => (d.negative ? -1n : 1n) * BigInt(d.integer + d.fraction.padEnd(places, '0') || '0');
-  const divisor = scaled(db);
-  return divisor === 0n ? undefined : fromScaledInt(scaled(da) % divisor, places);
+  const { left, right, places } = alignScaled(a, b);
+  return right === 0n ? undefined : fromScaledInt(left % right, places);
 }
 
 function parseScaled(value: number): { readonly coeff: bigint; readonly exp: number } {
@@ -88,7 +89,7 @@ function parseScaled(value: number): { readonly coeff: bigint; readonly exp: num
   return raw === '' ? { coeff: 0n, exp: 0 } : { coeff: BigInt(raw), exp: Number(expPart) - fracPart.length };
 }
 
-/** 十进制除法：除数非 0 时按十进制四舍五入（远离零）保留最多 15 位有效数字，去除尾随 0（M239）。 */
+/** 十进制除法：除数非 0 时按十进制四舍五入（远离零）保留最多 15 位有效数字，去除尾随 0（M251）。 */
 export function divideDecimal(a: number, b: number): number | undefined {
   if (!validOperands(a, b) || b === 0) return undefined;
   if (a === 0) return 0;

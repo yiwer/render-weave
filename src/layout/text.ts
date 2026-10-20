@@ -108,7 +108,7 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
 }
 
 function measureVertical(model: TextElementModel, fragments: readonly EvaluatedFragment[], fonts: FontStore): Omit<MeasuredLines, 'intrinsic'> {
-  // 各片段按自身字体与字号算字格高度，整列宽度取有字片段中最大 fontSize（无字时取元素 fontSize）（M244）。
+  // 各片段按自身字体与字号算字格高度，整列宽度取有字片段中最大 fontSize（无字时取元素 fontSize）（M256）。
   const runs = fragments.map((fragment) => measureRun(fragment, fonts, 0, 0, true));
   const inked = runs.filter((run) => run.glyphs.length > 0);
   const { ascent, descent } = inked.length
@@ -292,36 +292,26 @@ function recordVertical(
     }
     if (vertical.columnWidth > content.width + EPSILON) {
       const group = model.fit.widthOverflow;
-      const floored = group && model.fontSize <= group.minFontSize + EPSILON ? `（缩字组 ${group.shrinkGroup} 已到最小字号 ${fmt(group.minFontSize)} mm）` : '';
+      const inkedSizes = measure.runs.filter((run) => run.glyphs.length > 0).map((run) => run.fragment.style.fontSize);
+      const minSize = inkedSizes.length > 0 ? Math.min(...inkedSizes) : model.fontSize;
+      const floored = group && minSize <= group.minFontSize + EPSILON ? `（缩字组 ${group.shrinkGroup} 已到最小字号 ${fmt(group.minFontSize)} mm）` : '';
       reasons.push(`字号 ${fmt(vertical.columnWidth)} mm 比可用宽 ${fmt(content.width)} mm 更宽${floored}`);
     }
     const level = model.fit.widthOverflow && vertical.columnWidth > content.width + EPSILON ? 'severe' : model.fit.onFail;
     problems.push(overflowProblem(model, `竖排文字"${text}"放不下：${reasons.join('；')}`, level));
   }
-  // 按片段与标点是否旋转把整列的字形位置分回去。
+  // 按片段与标点是否旋转把整列的字形位置分回去；相邻同样式且同方向的字形在 pushGlyphs 中合并。
   let index = 0;
-  const placed: PlacedRun[] = [];
-  for (const run of measure.runs) {
+  const placed: PlacedRun[] = measure.runs.flatMap((run) => {
     const origins = vertical.origins.slice(index, index + run.glyphs.length);
     index += run.glyphs.length;
-    for (let i = 0; i < run.glyphs.length; i++) {
-      const glyph = run.glyphs[i]!;
-      const origin = origins[i]!;
-      const rotated = glyph.rotated;
-      const last = placed.at(-1);
-      if (last && last.style === run.fragment.style && last.rotated === rotated) {
-        (last.glyphs as number[]).push(glyph.id);
-        (last.positions as number[]).push(content.x + origin.x, content.y + origin.y);
-      } else {
-        placed.push({
-          style: run.fragment.style,
-          ...(rotated && { rotated: true as const }),
-          glyphs: [glyph.id],
-          positions: [content.x + origin.x, content.y + origin.y],
-        });
-      }
-    }
-  }
+    return run.glyphs.map((glyph, i) => ({
+      style: run.fragment.style,
+      ...(glyph.rotated && { rotated: true as const }),
+      glyphs: [glyph.id],
+      positions: [content.x + origins[i]!.x, content.y + origins[i]!.y],
+    }));
+  });
   pushGlyphs(drawOps, model, placed, vertical.compression);
   return summarize(model, text, vertical.columnWidth, vertical.extent, vertical.spacing, vertical.compression, overflow);
 }

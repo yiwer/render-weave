@@ -255,7 +255,7 @@ describe('纵向循环（M236）', () => {
   });
 });
 
-describe('反序与区间切片（M240）', () => {
+describe('反序与区间切片（M252）', () => {
   it('对向站牌反序站点列：按反序排列，index、路径与缺值追溯仍用原始序号并与本站序号比对，isFirst/isLast 按排列顺序', async () => {
     let workspace = await textLab(
       [listField({ type: 'ref', ref: ref('站点实验') })],
@@ -505,7 +505,7 @@ describe('反序与区间切片（M240）', () => {
   });
 });
 
-describe('循环流式折行（M241）', () => {
+describe('循环流式折行（M253）', () => {
   it('多枚宽度不一的标签自动折行，外层容器高度 hug 自适应撑高并支持 crossGap 变量绑定', async () => {
     let workspace = await textLab(
       [listField({ type: 'text' })],

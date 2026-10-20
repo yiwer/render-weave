@@ -870,7 +870,7 @@ class TemplateReader {
 
   /**
    * 文本内容：文字片段 { "text" } 与变量插槽 { "slot", "format"? }，都可单独写 font、fontSize、color、slant，
-   * 未写的沿用文本元素的设置（M73）。竖排文字片段可写 font、fontSize、color，不能设倾斜 slant（M109、M244）。
+   * 未写的沿用文本元素的设置（M73）。竖排文字片段可写 font、fontSize、color，不能设倾斜 slant（M109、M256）。
    */
   private readContent(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<ContentItem[]> {
     if (!Array.isArray(value)) {

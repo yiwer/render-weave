@@ -19,13 +19,13 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 | 2026-10-18 | 加法 | 循环 `itemLayout` 可写 `"direction": "column"` 与 `heights`，列表项从上往下排（[模板 · 循环](template.md#循环)） | M236 |
 | 2026-10-18 | 缺陷修正 | 网格：随内容测量时比例轨道保持比例且放得下内容；跨多条轨道的元素撑开所跨的随内容轨道；元素超出单元格报 `layout.contentOverflow`（[模板 · 布局与位置](template.md#布局与位置)）。修正前统计现有语料与 Agent 成果，命中为零 | M237 |
 | 2026-10-18 | 加法 | 画板可写 `minFontSize`（不低于 1.5 mm），作为本模板缩字的下限；元素与缩字组的下限缺省取它，只能更高（[模板 · 画板](template.md#画板)） | M238 |
-| 2026-10-19 | 加法 | 派生变量增加数值 `multiply`、`divide`、`mod`，按分隔符拆取文本 `splitPart`，以及 `branch` 条件中的 `all` / `any` 复合条件（[模板 · 派生变量](template.md#派生变量)） | M239 |
-| 2026-10-19 | 加法 | 循环容器可写 `reverse`（反序）与 `slice`（`start`、`end` 1-based 闭区间切片），纵向循环（`direction: "column"`）支持 `mergeBy` 与 `spanBy: "groupSize"`（`heights: "equal"`）（[模板 · 循环](template.md#循环)） | M240 |
-| 2026-10-19 | 加法 | 堆叠布局（`mode: "stack"`）与循环容器 `itemLayout` 支持 `wrap: true \| false` 自动流式折行/折列与交叉方向行/列间距 `crossGap`（[模板 · 布局与位置](template.md#布局与位置)、[模板 · 循环](template.md#循环)） | M241 |
-| 2026-10-19 | 加法 | `path`、`polygon`、`line` 支持可选 `viewBox: [minX, minY, width, height]` 与 `fit: "fill" \| "contain" \| "cover"`，随元素框缩放且描边粗细均匀（[模板 · 元素](template.md#元素)） | M242 |
-| 2026-10-19 | 加法 | 文本元素可写 `letterSpacing`（正负毫米数或数值变量，缺省 0），横排 `fit.steps` 允许在 `compressGlyphs` 之前写 `"tightenSpacing"` 先将正字距收紧至 0（[模板 · 文字](template.md#文字)） | M243 |
-| 2026-10-19 | 加法 | 竖排文本（`writingMode: "vertical"`）的文本片段与变量插槽可单独写 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动顺时针旋转 90°（[模板 · 文字](template.md#文字)） | M244 |
-| 2026-10-19 | 加法 | 图片元素可写 `tint`（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，可在状态样式中覆盖），按目标颜色重染单色图标或地标并保留原图透明度（[模板 · 元素](template.md#元素)） | M245 |
+| 2026-10-19 | 加法 | 派生变量增加数值 `multiply`、`divide`、`mod`，按分隔符拆取文本 `splitPart`，以及 `branch` 条件中的 `all` / `any` 复合条件（[模板 · 派生变量](template.md#派生变量)） | M251 |
+| 2026-10-19 | 加法 | 循环容器可写 `reverse`（反序）与 `slice`（`start`、`end` 1-based 闭区间切片），纵向循环（`direction: "column"`）支持 `mergeBy` 与 `spanBy: "groupSize"`（`heights: "equal"`）（[模板 · 循环](template.md#循环)） | M252 |
+| 2026-10-19 | 加法 | 堆叠布局（`mode: "stack"`）与循环容器 `itemLayout` 支持 `wrap: true \| false` 自动流式折行/折列与交叉方向行/列间距 `crossGap`（[模板 · 布局与位置](template.md#布局与位置)、[模板 · 循环](template.md#循环)） | M253 |
+| 2026-10-19 | 加法 | `path`、`polygon`、`line` 支持可选 `viewBox: [minX, minY, width, height]` 与 `fit: "fill" \| "contain" \| "cover"`，随元素框缩放且描边粗细均匀（[模板 · 元素](template.md#元素)） | M254 |
+| 2026-10-19 | 加法 | 文本元素可写 `letterSpacing`（正负毫米数或数值变量，缺省 0），横排 `fit.steps` 允许在 `compressGlyphs` 之前写 `"tightenSpacing"` 先将正字距收紧至 0（[模板 · 文字](template.md#文字)） | M255 |
+| 2026-10-19 | 加法 | 竖排文本（`writingMode: "vertical"`）的文本片段与变量插槽可单独写 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动顺时针旋转 90°（[模板 · 文字](template.md#文字)） | M256 |
+| 2026-10-19 | 加法 | 图片元素可写 `tint`（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，可在状态样式中覆盖），按目标颜色重染单色图标或地标并保留原图透明度（[模板 · 元素](template.md#元素)） | M257 |
 
 ## Schema 与引擎的分工
 

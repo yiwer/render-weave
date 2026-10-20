@@ -35,7 +35,7 @@ export interface LayoutNode {
 export interface ImageSummary {
   readonly source: string;
   readonly fit: 'contain' | 'cover' | 'fill';
-  /** 单色重染颜色（#RRGGBBAA）；未设置时省略（M245）。 */
+  /** 单色重染颜色（#RRGGBBAA）；未设置时省略（M257）。 */
   readonly tint?: string;
   /** 图片的像素尺寸。 */
   readonly naturalWidth: number;
@@ -172,7 +172,7 @@ export type DrawOp =
       readonly fill?: string;
       /** 以轮廓为中线。 */
       readonly stroke?: ShapeStroke;
-      /** viewBox 映射到元素框的仿射参数：x' = sx * x + tx, y' = sy * y + ty（M242）。 */
+      /** viewBox 映射到元素框的仿射参数：x' = sx * x + tx, y' = sy * y + ty（M254）。 */
       readonly transform?: {
         readonly sx: number;
         readonly sy: number;
@@ -187,7 +187,7 @@ export type DrawOp =
       readonly path: string;
       /** 图片资源 ID。 */
       readonly image: string;
-      /** 单色重染颜色（#RRGGBBAA，M245）。 */
+      /** 单色重染颜色（#RRGGBBAA，M257）。 */
       readonly tint?: string;
       /** 取图片中的哪一块，像素。 */
       readonly src: Box;
@@ -204,7 +204,7 @@ export type DrawOp =
       readonly scaleY: number;
       /** 以基线为轴的错切：基线以上每单位高度向右移 skew；横排为 tan θ × scaleX（M117）。 */
       readonly skew: number;
-      /** 竖排方向性标点绕各自绘制起点顺时针旋转 90°（M244）。 */
+      /** 竖排方向性标点绕各自绘制起点顺时针旋转 90°（M256）。 */
       readonly rotated?: true;
       /** 填充色；没有时只画描边。一个文本的描边全部画完再画填充，免得后面片段的描边盖住前面的字（M108）。 */
       readonly color?: string;

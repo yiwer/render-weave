@@ -193,7 +193,7 @@ export class Scope {
         if (text === '' || typeof delimiter !== 'string' || delimiter === '') return '';
         const parts = text.split(delimiter);
         if (operation.position === 'first') return parts[0] ?? '';
-        // 非空 delimiter 在非空文本中未出现时（parts.length === 1），只有第 1 段为原文本，其余位置为空文本（M239）。
+        // 非空 delimiter 在非空文本中未出现时（parts.length === 1），只有第 1 段为原文本，其余位置为空文本（M251）。
         if (operation.position === 'last') return parts.length > 1 ? parts.at(-1)! : '';
         const index = this.operand(operation.position.index);
         return typeof index === 'number' && Number.isInteger(index) && index >= 1 ? (parts[index - 1] ?? '') : '';
@@ -205,50 +205,41 @@ export class Scope {
         return 0;
       }
       case 'add':
-      case 'subtract': {
-        const left = this.operand(operation.left);
-        const right = this.operand(operation.right);
-        if (typeof left !== 'number' || typeof right !== 'number') return undefined;
-        const result = addDecimal(left, operation.op === 'add' ? right : -right);
-        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
-          { kind: 'variable', template: this.template.name, name: derived.name },
-          `派生变量“${derived.displayName}”的加减无法得到有限且不超过 15 位有效数字的结果，按缺值处理`));
-        return result;
-      }
+      case 'subtract':
       case 'multiply':
-      case 'mod': {
-        const left = this.operand(operation.left);
-        const right = this.operand(operation.right);
-        if (typeof left !== 'number' || typeof right !== 'number') return undefined;
-        if (operation.op === 'mod' && right === 0) {
-          this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
-            { kind: 'variable', template: this.template.name, name: derived.name },
-            `派生变量“${derived.displayName}”的取模除数为 0，按缺值处理`));
-          return undefined;
-        }
-        const result = operation.op === 'multiply' ? multiplyDecimal(left, right) : modDecimal(left, right);
-        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
-          { kind: 'variable', template: this.template.name, name: derived.name },
-          `派生变量“${derived.displayName}”的${operation.op === 'multiply' ? '乘法' : '取模'}无法得到有限且不超过 15 位有效数字的结果，按缺值处理`));
-        return result;
-      }
-      case 'divide': {
-        const left = this.operand(operation.left);
-        const right = this.operand(operation.right);
-        if (typeof left !== 'number' || typeof right !== 'number') return undefined;
-        if (right === 0) {
-          this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
-            { kind: 'variable', template: this.template.name, name: derived.name },
-            `派生变量“${derived.displayName}”的除法除数为 0，按缺值处理`));
-          return undefined;
-        }
-        const result = divideDecimal(left, right);
-        if (result === undefined) this.problems.push(severe(ProblemCodes.templateEvaluationInvalid,
-          { kind: 'variable', template: this.template.name, name: derived.name },
-          `派生变量“${derived.displayName}”的除法无法得到有限数值结果，按缺值处理`));
-        return result;
-      }
+      case 'divide':
+      case 'mod':
+        return this.computeNumeric(derived, operation);
     }
+  }
+
+  private computeNumeric(
+    derived: DerivedModel,
+    operation: Extract<DerivedModel['operation'], { readonly op: 'add' | 'subtract' | 'multiply' | 'divide' | 'mod' }>,
+  ): number | undefined {
+    const left = this.operand(operation.left);
+    const right = this.operand(operation.right);
+    if (typeof left !== 'number' || typeof right !== 'number') return undefined;
+    const location = { kind: 'variable', template: this.template.name, name: derived.name } as const;
+    if ((operation.op === 'divide' || operation.op === 'mod') && right === 0) {
+      const label = operation.op === 'divide' ? '除法' : '取模';
+      this.problems.push(severe(ProblemCodes.templateEvaluationInvalid, location, `派生变量“${derived.displayName}”的${label}除数为 0，按缺值处理`));
+      return undefined;
+    }
+    const result =
+      operation.op === 'add' ? addDecimal(left, right)
+        : operation.op === 'subtract' ? addDecimal(left, -right)
+          : operation.op === 'multiply' ? multiplyDecimal(left, right)
+            : operation.op === 'mod' ? modDecimal(left, right)
+              : divideDecimal(left, right);
+    if (result === undefined) {
+      const detail =
+        operation.op === 'divide'
+          ? '除法无法得到有限数值结果'
+          : `${operation.op === 'multiply' ? '乘法' : operation.op === 'mod' ? '取模' : '加减'}无法得到有限且不超过 15 位有效数字的结果`;
+      this.problems.push(severe(ProblemCodes.templateEvaluationInvalid, location, `派生变量“${derived.displayName}”的${detail}，按缺值处理`));
+    }
+    return result;
   }
 
   private operand(operand: Operand): unknown {

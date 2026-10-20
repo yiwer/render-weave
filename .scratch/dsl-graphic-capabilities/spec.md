@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Category: enhancement
 
 # DSL 1.x 平面设计能力演进（P1 / P2）

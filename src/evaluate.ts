@@ -30,7 +30,7 @@ export interface EvaluatedNode {
   /** 被调画板的尺寸范围，在实际调用框确定后检查。 */
   readonly calledTemplate?: { readonly name: string; readonly sizeRange: ArtboardModel['sizeRange'] };
   /** 合并循环沿原始项划分空间，每组尺寸包含被合并的内部间距。 */
-  readonly loopColumns?: { readonly direction: 'row' | 'column'; readonly count: number; readonly gap: number };
+  readonly loopSlots?: { readonly direction: 'row' | 'column'; readonly count: number; readonly gap: number };
   readonly loopGroup?: { readonly index: number; readonly start: number; readonly size: number };
   /** 文本元素求值后的片段，样式已合并上文本元素的设置。 */
   readonly fragments?: readonly EvaluatedFragment[];
@@ -146,7 +146,7 @@ class Expander {
             { index, isFirst: start === 1, isLast: start + size - 1 === count, count, groupSize: size });
           return model.mergeBy ? { ...child, loopGroup: { index, start, size } } : child;
         });
-        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { direction: layout.direction, count, gap: layout.gap } }),
+        return { sourceType: 'loop', ...(model.mergeBy && { loopSlots: { direction: layout.direction, count, gap: layout.gap } }),
           model: { ...model, type: 'container', children: [],
           layout: { mode: 'stack', direction: layout.direction, gap: layout.gap, wrap: layout.wrap, crossGap: layout.crossGap, justifyContent: 'start', alignItems: 'start' } }, children };
       }

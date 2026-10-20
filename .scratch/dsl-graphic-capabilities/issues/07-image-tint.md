@@ -26,7 +26,7 @@
 ## Answer
 
 - **完成日期**：2026-10-19
-- **决定记录**：`M245`（`docs/discovery/requirements.md`）
+- **决定记录**：`M257`（`docs/discovery/requirements.md`）
 - **验证命令与结果**：
   - `npm run typecheck`：0 错误
   - `npm run build`：通过

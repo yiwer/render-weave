@@ -59,11 +59,11 @@
 |---|---|---|
 | `branch` | `branches`：`[{ "when": 条件, "then": 运算数 }]`；`otherwise`：运算数（必填） | 条件分支，取第一个成立的分支 |
 | `pickItem` | `list`：`{ "var": 列表 }`；`position`：`"first"`、`"last"` 或 `{ "index": 运算数 }` | 取列表中的一项，序号从 1 开始；越界时结果为空，不报错（S12） |
-| `splitPart` | `of`：`{ "var": 变量 }`；`format`?：展示格式；`delimiter`：非空文本或 `{ "var": 文本变量 }`；`position`：`"first"`、`"last"` 或 `{ "index": 运算数 }` | 按分隔符拆取文本片段（如拆分价格整数与角分、主站名与括号副名），序号从 1 开始；`of` 为数值、日期、时刻或时间时先按 `format`（未写则按默认写法）格式化为文本；源值缺失、为空文本、`delimiter` 为空文本、序号越界，或非空 `delimiter` 未出现时的非第 1 段（如 `"last"`、`index: 2`），均返回空文本 `""`，不报错（M239） |
+| `splitPart` | `of`：`{ "var": 变量 }`；`format`?：展示格式；`delimiter`：非空文本或 `{ "var": 文本变量 }`；`position`：`"first"`、`"last"` 或 `{ "index": 运算数 }` | 按分隔符拆取文本片段（如拆分价格整数与角分、主站名与括号副名），序号从 1 开始；`of` 为数值、日期、时刻或时间时先按 `format`（未写则按默认写法）格式化为文本；源值缺失、为空文本、`delimiter` 为空文本、序号越界，或非空 `delimiter` 未出现时的非第 1 段（如 `"last"`、`index: 2`），均返回空文本 `""`，不报错（M251） |
 | `length` | `of`：`{ "var": 列表或文本 }` | 列表项数，或文本的字符数 |
-| `add`、`subtract`、`multiply`、`divide`、`mod` | `left`、`right`：运算数 | 加、减、乘、除、取模（M239）。加、减、乘、取模按精确十进制整数缩放计算；`divide` 在除数非 0 时按十进制四舍五入保留最多 15 位有效数字（去除尾随 0）；除数为 0 或结果超出可表示范围时报严重问题 `template.evaluationInvalid` 并按缺值处理 |
+| `add`、`subtract`、`multiply`、`divide`、`mod` | `left`、`right`：运算数 | 加、减、乘、除、取模（M251）。加、减、乘、取模按精确十进制整数缩放计算；`divide` 在除数非 0 时按十进制四舍五入保留最多 15 位有效数字（去除尾随 0）；除数为 0 或结果超出可表示范围时报严重问题 `template.evaluationInvalid` 并按缺值处理 |
 
-**条件**写成单个比较 `{ "left": 运算数, "op": 比较, "right": 运算数 }`，或单层复合条件 `{ "all": [比较…] }`（非空列表，全部成立为真）、`{ "any": [比较…] }`（非空列表，任一成立为真）（S11、M239）。比较取 `eq`、`ne`、`lt`、`le`、`gt`、`ge`、`empty`、`notEmpty`；后两个只有左侧，不写 `right`。
+**条件**写成单个比较 `{ "left": 运算数, "op": 比较, "right": 运算数 }`，或单层复合条件 `{ "all": [比较…] }`（非空列表，全部成立为真）、`{ "any": [比较…] }`（非空列表，任一成立为真）（S11、M251）。比较取 `eq`、`ne`、`lt`、`le`、`gt`、`ge`、`empty`、`notEmpty`；后两个只有左侧，不写 `right`。
 
 一个派生变量只能写自己这种运算的键，例如 `branch` 不能同时写 `of`。
 
@@ -127,7 +127,7 @@
 | 网格 | `{ "mode": "grid", "rows": [轨道…], "columns": [轨道…], "rowGap"?, "columnGap"? }` | `row`、`column`（必填，从 1 开始，S10）、`rowSpan`、`columnSpan`、`width`、`height`、`margin`、`justifySelf`、`alignSelf` |
 
 - **三种布局通用**：都可以另写 `minWidth`、`maxWidth`、`minHeight`、`maxHeight`。
-- **堆叠的分布、对齐与自动折行**（M241）：`justifyContent` 取 `start`、`center`、`end`、`spaceBetween`、`spaceEvenly`，缺省为 `start`；`alignItems` 取 `start`、`center`、`end`，缺省为 `start`。`wrap` 缺省为 `false`；设为 `true` 时，当前行/列剩余空间不足以放下下一个子元素（含外边距与 `gap`）且当前行/列已有至少一项时，自动开启新行/列，行/列之间间隔 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`）。每一行/列内独立应用 `justifyContent` 与 `alignItems`，主方向设为 `"fill"` 的子元素先按自然尺寸（`hug`）参与折行判定，再按权重分配所在行的剩余空间；容器交叉方向为 `"hug"` 时，结合主方向已知可用尺寸（`fixed`、`maxWidth`/`maxHeight` 或父容器分配的宽度/高度）计算折行后的总交叉尺寸（主方向为无上限 `"hug"` 时不折行）；交叉方向总跨度或单个元素主方向超出容器时报 `layout.contentOverflow`。
+- **堆叠的分布、对齐与自动折行**（M253）：`justifyContent` 取 `start`、`center`、`end`、`spaceBetween`、`spaceEvenly`，缺省为 `start`；`alignItems` 取 `start`、`center`、`end`，缺省为 `start`。`wrap` 缺省为 `false`；设为 `true` 时，当前行/列剩余空间不足以放下下一个子元素（含外边距与 `gap`）且当前行/列已有至少一项时，自动开启新行/列，行/列之间间隔 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`）。每一行/列内独立应用 `justifyContent` 与 `alignItems`，主方向设为 `"fill"` 的子元素先按自然尺寸（`hug`）参与折行判定，再按权重分配所在行的剩余空间；容器交叉方向为 `"hug"` 时，结合主方向已知可用尺寸（`fixed`、`maxWidth`/`maxHeight` 或父容器分配的宽度/高度）计算折行后的总交叉尺寸（主方向为无上限 `"hug"` 时不折行）；交叉方向总跨度或单个元素主方向超出容器时报 `layout.contentOverflow`。
 - **网格轨道**：每项写 `{ "fixed": 毫米 }`、`{ "fraction": 比例 }` 或 `"hug"`（M237）。
   - 随内容轨道取只占这一条的元素中最大的；跨多条轨道的元素放不下时，把差额平均分给所跨的随内容轨道，跨度小的先算。跨了比例轨道的元素不撑开随内容轨道。
   - 比例轨道按份数分固定与随内容轨道之外的剩余空间。网格本身随内容时（例如放在随内容的调用框里），每份取刚好放得下各元素的尺寸，比例不变。
@@ -144,7 +144,7 @@
 |---|---|---|
 | `container` | 容器 | `layout`、`padding`、`fill`、`stroke`、`cornerRadius`、`clip`、`children` |
 | `text` | 文字 | 见「文字」 |
-| `image` | 图片（S22、M245） | `source`：`res:资源ID` 或图片变量；`fit`：`contain`（缺省，完整显示）、`cover`、`fill`；`tint`?：`#RRGGBB`、`#RRGGBBAA` 或颜色变量（以 `srcIn` 颜色滤镜将原图像素 RGB 替换为目标颜色，并将 `tint` 的 Alpha 与原图 Alpha 相乘；未写 `tint` 时保持原图本色，绑定的颜色变量缺值时与其他颜色绑定一致按透明 `#00000000` 处理）。没有 `source` 时不画内容 |
+| `image` | 图片（S22、M257） | `source`：`res:资源ID` 或图片变量；`fit`：`contain`（缺省，完整显示）、`cover`、`fill`；`tint`?：`#RRGGBB`、`#RRGGBBAA` 或颜色变量（以 `srcIn` 颜色滤镜将原图像素 RGB 替换为目标颜色，并将 `tint` 的 Alpha 与原图 Alpha 相乘；未写 `tint` 时保持原图本色，绑定的颜色变量缺值时与其他颜色绑定一致按透明 `#00000000` 处理）。没有 `source` 时不画内容 |
 | `qrcode` | 二维码 | `content`（文本或文本变量，必填）、`errorCorrectionLevel`：`L`、`M`（缺省）、`Q`、`H`；`foreground`、`background`，见[二维码说明](../render-qrcode.md) |
 | `barcode` | 条形码 | `content`（必填）、`format`：`CODE128`、`EAN-13`、`EAN-8`、`UPC-A`（必填）、`foreground`、`background`、`showText`、`font`（显示文字时必填）、`fontSize`（缺省 3），见[条形码说明](../render-barcode.md)与 [EAN/UPC 说明](../render-retail-barcodes.md) |
 | `rect` | 矩形 | `fill`、`stroke`、`cornerRadius` |
@@ -156,7 +156,7 @@
 | `call` | 子模板调用 | 见「调用」 |
 
 - **图形的描边**：写成 `{ "color", "width", "dash"?: [实, 空, …], "cap"?: "butt" | "round" | "square" }`。
-- **坐标与 `viewBox` 缩放**（M94、M242）：
+- **坐标与 `viewBox` 缩放**（M94、M254）：
   - 未写 `viewBox` 时，`line`、`polygon`、`path` 的坐标以毫米计、相对元素框左上角，元素框变大时图形不拉伸（M94），随内容（`"hug"`）的自然尺寸取图形坐标的最右与最下处；
   - 声明 `"viewBox": [minX, minY, width, height]`（4 个有限数值，`width > 0` 且 `height > 0`）时，可另写 `"fit": "fill" | "contain" | "cover"`（缺省 `"fill"`；未写 `viewBox` 时不能写 `fit`）。随内容（`"hug"`）的自然尺寸取 `viewBox` 的 `width` 与 `height`（若只固定了宽或高一边且 `fit` 为 `contain` 或 `cover`，另一边按 `viewBox` 宽高比换算）；绘制时将 `viewBox` 区域按 `fit`（`fill` 拉伸填满、`contain` 等比居中完整显示、`cover` 等比居中铺满并裁剪到元素框）映射变换到路径几何顶点上，描边宽度（`stroke.width`）与虚线（`stroke.dash`）始终保持声明的毫米值，不随非等比拉伸变形。
 
@@ -164,10 +164,10 @@
 
 | 键 | 写法 |
 |---|---|
-| `content` | 片段列表（必填）。文字片段 `{ "text": 文字 }`；变量插槽 `{ "slot": 变量路径, "format"?: 展示格式 }`。两种片段都可另写 `font`、`fontSize`、`color`、`slant`（竖排片段可写 `font`、`fontSize`、`color`，不能写 `slant`，S23、M244） |
+| `content` | 片段列表（必填）。文字片段 `{ "text": 文字 }`；变量插槽 `{ "slot": 变量路径, "format"?: 展示格式 }`。两种片段都可另写 `font`、`fontSize`、`color`、`slant`（竖排片段可写 `font`、`fontSize`、`color`，不能写 `slant`，S23、M256） |
 | `font` | 资源引用（必填）。字重靠换字体资源，不写 `fontWeight`（M115） |
 | `fontSize` | 毫米（必填） |
-| `letterSpacing` | 常态字间距，毫米或数值变量，缺省 0，可正可负。非分布对齐（横排 `start`/`center`/`end`，竖排 `top`/`center`/`bottom`）下加在相邻字形（跨片段连续计算）之间，单字或空文本不加，自然跨度对 0 取下限；两端分布（`distribute`、`spaceEvenly`）下不计入自然跨度（M243） |
+| `letterSpacing` | 常态字间距，毫米或数值变量，缺省 0，可正可负。非分布对齐（横排 `start`/`center`/`end`，竖排 `top`/`center`/`bottom`）下加在相邻字形（跨片段连续计算）之间，单字或空文本不加，自然跨度对 0 取下限；两端分布（`distribute`、`spaceEvenly`）下不计入自然跨度（M255） |
 | `color` | 缺省为黑色 |
 | `writingMode` | `horizontal`（缺省）或 `vertical`（S18） |
 | `horizontalAlign` | `start`（缺省）、`center`、`end`；横排另可用 `distribute`（两端分布，S29）与 `spaceEvenly`（同间隔分布，两侧留白与字间距相同，S30、M131） |
@@ -182,18 +182,18 @@
 - 数值用 `0` 与 `#`，例如 `0`、`0.##`、`0.00`，按十进制四舍五入；
 - 未写格式时，按类型的缺省写法输出。
 
-**竖排文字**（M109、M244）：各片段可单独写 `font`、`fontSize` 与 `color`（不能写 `slant`）。每个字形按所属片段的字体与字号计算各自字格高度（`ascent + descent`），整列宽度取有字片段中最大的 `fontSize`（无字时取元素的 `fontSize`），各字形在列宽内水平居中；两端分布、收紧字距与纵向压缩字形按各字形的实际字格高度之和计算。竖排常见方向性标点（全角括号 `（）〔〕【】《》〈〉「」『』`、破折号 `—`、省略号 `…`、波浪号 `～`、间隔号 `·` 等）自动绕字格中心顺时针旋转 90° 绘制，并按旋转后的墨迹边界参与竖排两端分布计算。
+**竖排文字**（M109、M256）：各片段可单独写 `font`、`fontSize` 与 `color`（不能写 `slant`）。每个字形按所属片段的字体与字号计算各自字格高度（`ascent + descent`），整列宽度取有字片段中最大的 `fontSize`（无字时取元素的 `fontSize`），各字形在列宽内水平居中；两端分布、收紧字距与纵向压缩字形按各字形的实际字格高度之和计算。竖排常见方向性标点（全角括号 `（）〔〕【】《》〈〉「」『』`、破折号 `—`、省略号 `…`、波浪号 `～`、间隔号 `·` 等）自动绕字格中心顺时针旋转 90° 绘制，并按旋转后的墨迹边界参与竖排两端分布计算。
 
 `fit` 写成 `{ "steps", "compressMin"?, "minFontSize"?, "onFail"?, "widthOverflow"? }`：
 
 | 书写方向 | `steps` 的写法 | 其他 |
 |---|---|---|
-| 横排 | `[]`、`["tightenSpacing"]`、`["compressGlyphs"]`、`["tightenSpacing", "compressGlyphs"]`、`["compressGlyphs", "shrink"]` 或 `["tightenSpacing", "compressGlyphs", "shrink"]`：`letterSpacing > 0` 且配置 `tightenSpacing` 时先将字距线性收紧至 0，仍放不下再横向压缩字形、同比缩小字号（M84、S29、M243） | `minFontSize` 只用于 `shrink`，缺省取画板的 `minFontSize`（画板不写时为 5），不能低于它（M86、M238） |
-| 竖排 | `[]`、`["tightenSpacing"]` 或 `["tightenSpacing", "compressGlyphs"]`：先收紧字距（两端分布或 `letterSpacing > 0`），字距收到 0 才压缩字形（M82、M243） | `widthOverflow`：`{ "shrinkGroup": 组名, "minFontSize"?: 毫米 }`，见下文 |
+| 横排 | `[]`、`["tightenSpacing"]`、`["compressGlyphs"]`、`["tightenSpacing", "compressGlyphs"]`、`["compressGlyphs", "shrink"]` 或 `["tightenSpacing", "compressGlyphs", "shrink"]`：`letterSpacing > 0` 且配置 `tightenSpacing` 时先将字距线性收紧至 0，仍放不下再横向压缩字形、同比缩小字号（M84、S29、M255） | `minFontSize` 只用于 `shrink`，缺省取画板的 `minFontSize`（画板不写时为 5），不能低于它（M86、M238） |
+| 竖排 | `[]`、`["tightenSpacing"]` 或 `["tightenSpacing", "compressGlyphs"]`：先收紧字距（两端分布或 `letterSpacing > 0`），字距收到 0 才压缩字形（M82、M255） | `widthOverflow`：`{ "shrinkGroup": 组名, "minFontSize"?: 毫米 }`，见下文 |
 
 - **`compressMin`**：压缩字形的下限，缺省 0.6，只能调高到 1 为止（M88）。
 - **`onFail`**：仍放不下时报 `severe`（缺省）或 `hint`。
-- **缩字组**（S31、M132–M134、M244）：同名的组在一次出图内共用，跨循环与子模板。宽度不足时，全组统一缩到同一字号，竖排文本内各片段的 `fontSize` 按比例同步缩放；组名首尾不能有空白。下限是各成员下限中最高的，每个成员缺省取所在模板画板的 `minFontSize`（M238）。
+- **缩字组**（S31、M132–M134、M256）：同名的组在一次出图内共用，跨循环与子模板。宽度不足时，全组统一缩到同一字号，竖排文本内各片段的 `fontSize` 按比例同步缩放；组名首尾不能有空白。下限是各成员下限中最高的，每个成员缺省取所在模板画板的 `minFontSize`（M238）。
 - **到了下限仍放不下**：`layout.textOverflow` 的说明写明下限的值与来源（缺省值、画板、元素或缩字组）。字号本来就不高于下限时，说明里写"没有缩字"。
 
 ### 循环
@@ -211,15 +211,15 @@
   - `direction` 缺省为 `row`，列表项从左往右排，`widths` 定每项宽度，高度填满循环区域（开启 `wrap: true` 时取被调模板的自然高度）；
   - `column` 从上往下排，`heights` 定每项高度，宽度填满循环区域（开启 `wrap: true` 时取被调模板的自然宽度）。竖排的列表用它，不必把横向循环旋转 90°；
   - 横向写 `heights`、纵向写 `widths` 都是错误，提示该用哪个词。
-- **每项尺寸与自动折行**（M241）：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。`wrap` 缺省为 `false`；设为 `true` 时，放不下的循环项自动折入下一行或下一列，行/列间距为 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`），每项交叉方向尺寸取被调模板的自然尺寸（`hug`）。开启 `wrap: true` 时，`widths` / `heights` 只能取 `"content"` 或 `{ "fixed": … }`，不能取 `"equal"`，也不能与 `mergeBy` / `spanBy` 同时使用。列表项连同间距超出循环区域时报 `layout.contentOverflow`。
-- **区间切片与反序**（M240）：
+- **每项尺寸与自动折行**（M253）：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。`wrap` 缺省为 `false`；设为 `true` 时，放不下的循环项自动折入下一行或下一列，行/列间距为 `crossGap`（非负毫米数或数值变量，缺省等于 `gap`），每项交叉方向尺寸取被调模板的自然尺寸（`hug`）。开启 `wrap: true` 时，`widths` / `heights` 只能取 `"content"` 或 `{ "fixed": … }`，不能取 `"equal"`，也不能与 `mergeBy` / `spanBy` 同时使用。列表项连同间距超出循环区域时报 `layout.contentOverflow`。
+- **区间切片与反序**（M252）：
   - `slice` 按 1-based 闭区间 `[start ?? 1, end ?? items.length]` 截取子列表，至少写 `start` 或 `end` 之一；可写正整数字面值（或 `{ "value": 正整数 }`）或绑定数值变量 `{ "var": … }`。静态字面值 `start > end` 报 `template.invalid`；绑定变量在求值时非正整数或 `start > end` 报 `template.bindingValueInvalid`；`start > items.length` 时结果为空列表，不报错（便于长列表分栏时后一栏自然留空）。
   - `reverse` 为布尔字面值或布尔变量绑定，缺省 `false`；为 `true` 时反序排列（如对向站牌反序站点列）。
   - 执行顺序固定为：先为原始列表每项标记原始 1-based 序号 → 按 `slice` 截取 → 按 `reverse` 决定排列顺序 → 按 `mergeBy` 合并相邻同值项（每组取排列顺序下的首项数据与首项原始序号）。
 - **循环信息**：只能经 `args` 传给被调模板，写成 `{ "loop": "index" | "isFirst" | "isLast" | "count" | "groupSize" }`，被调模板要声明同名的 public 参数来接收。
   - `{ "loop": "index" }`、元素路径 `循环名[index]` 以及草稿缺值追溯始终使用该项（或合并组首项）在原始列表中的 1-based 序号，分栏切片与反序列表仍可直接与本站序号比对；
   - `{ "loop": "count" }` 为截取后（合并前）参与本次循环的项数，`isFirst` 与 `isLast` 表示是否为本次排列顺序下的首项/末项（含合并组覆盖首尾项的情形）。
-- **合并相邻同值项**（S28、M127–M130、M240）：写 `"mergeBy": "字段路径"`，横向写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`，纵向写 `"itemLayout": { "direction": "column", "heights": "equal", "spanBy": "groupSize" }`。
+- **合并相邻同值项**（S28、M127–M130、M252）：写 `"mergeBy": "字段路径"`，横向写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`，纵向写 `"itemLayout": { "direction": "column", "heights": "equal", "spanBy": "groupSize" }`。
   - 相邻且取值严格相等的项合并成一组；缺值的项各自成组。
   - 横向按本次循环项数（`count`）等分可用宽度，组宽包含所跨项的内部列间距；纵向按 `count` 等分可用高度，组高包含所跨项的内部行间距；被调模板取排列顺序下组内首项的数据。
   - `{ "loop": "groupSize" }` 给出组内项数。
@@ -1360,11 +1360,11 @@
 
 DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按 ADR-0016 处理兼容。
 
-- **循环折行约束**：循环容器支持 `wrap: true` 自动折行/折列（M241），但开启 `wrap: true` 时 `widths` / `heights` 只能取 `content` 或 `{ "fixed": … }`，不能与 `equal` 或 `mergeBy` 合并同时使用。
+- **循环折行约束**：循环容器支持 `wrap: true` 自动折行/折列（M253），但开启 `wrap: true` 时 `widths` / `heights` 只能取 `content` 或 `{ "fixed": … }`，不能与 `equal` 或 `mergeBy` 合并同时使用。
 - **没有段落换行**：一个文字元素是一行（竖排是一列），放不下时按 `fit` 适配。
 - **没有文本表达式与脚本**：只有单步具名运算（ADR-0004）。拼接文字用多个片段。
-- **没有动态模板**：被调模板名不能由数据决定，循环也没有按条件过滤或附加项（支持 `reverse` 反序与 `slice` 区间切片，M240）。
-- **竖排文字不能倾斜**：元素与文本片段的 `slant` 只用于横排（竖排片段可单独设 `font`、`fontSize` 与 `color`，M244）。
+- **没有动态模板**：被调模板名不能由数据决定，循环也没有按条件过滤或附加项（支持 `reverse` 反序与 `slice` 区间切片，M252）。
+- **竖排文字不能倾斜**：元素与文本片段的 `slant` 只用于横排（竖排片段可单独设 `font`、`fontSize` 与 `color`，M256）。
 - **不能绑定**：字体、路径数据、多边形顶点、线条端点、图形 `viewBox` 不能绑定变量。
 - **URL 图片尚未支持**：不画内容并报问题（见[数据定义](data-definition.md#已知限制)）。
 

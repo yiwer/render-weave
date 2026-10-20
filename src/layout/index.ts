@@ -202,8 +202,8 @@ class Layouter {
         break;
       }
     }
-    if (node.loopColumns) {
-      const { direction, count, gap } = node.loopColumns;
+    if (node.loopSlots) {
+      const { direction, count, gap } = node.loopSlots;
       const main: Axis = direction === 'row' ? 'width' : 'height';
       const unit = Math.max(0, ...children.map((child) => {
         const size = child.loopGroup!.size;
@@ -345,8 +345,8 @@ class Layouter {
 
   private childBoxes(node: EvaluatedNode, model: ArtboardModel | ContainerModel, content: Box): Map<EvaluatedNode, Box> {
     const children = visibleChildren(node);
-    if (node.loopColumns) {
-      const { direction, count, gap } = node.loopColumns;
+    if (node.loopSlots) {
+      const { direction, count, gap } = node.loopSlots;
       if (count === 0) return new Map();
       const row = direction === 'row';
       const available = row ? content.width : content.height;
