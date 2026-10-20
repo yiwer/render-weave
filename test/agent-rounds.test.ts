@@ -1,8 +1,9 @@
 /**
  * 带反馈的下一轮与模板辅助修改（第三阶段票据 07、验收 A09）：用假执行器造出轮次，经公开入口审核、应用，断言
  * 下一轮拿到的素材、上一轮成果（含审核时的修改）与反馈，轮次链，模板辅助修改的工作副本、结构化差异与修改前后的预览，
- * 以及模板已被他人保存时的覆盖与重做（M49–M52、M58）。
+ * 以及模板已被他人保存时的覆盖与重做（M49–M52、M58）；另有 `agent run` 按任务校验 --definition 与 --dataset（票据 16）。
  */
+import { existsSync } from 'node:fs';
 import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -122,6 +123,18 @@ async function decide(dir: string, changes: unknown[]): Promise<ReviewView> {
   return view!;
 }
 
+/** 经命令行发起：返回退出码与标准错误；key 只在这次调用期间放进环境变量。 */
+async function cli(args: string[]): Promise<[number, string]> {
+  const stderr: string[] = [];
+  process.env['RW_TEST_KEY'] = KEY;
+  try {
+    const code = await runCli(['agent', 'run', ...args, '--key-env', 'RW_TEST_KEY'], { stdout: () => {}, stderr: (value) => stderr.push(value) });
+    return [code, stderr.join('')];
+  } finally {
+    delete process.env['RW_TEST_KEY'];
+  }
+}
+
 const codes = (problems: readonly { code: string }[]) => problems.map((problem) => problem.code);
 const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 const sha256 = async (path: string) => createHash('sha256').update(await readFile(path)).digest('hex');
@@ -218,20 +231,10 @@ describe('带反馈的下一轮（M58）', () => {
     await writeFile(join(first.roundDir, 'review.json'), '{"format":"renderweave-review/1"}');
     await expect(run(undefined, { from: first.roundDir, feedback })).rejects.toThrow('上一轮的审核结果不能使用');
 
-    process.env['RW_TEST_KEY'] = KEY;
-    try {
-      const cli = async (args: string[]) => {
-        const stderr: string[] = [];
-        const code = await runCli(['agent', 'run', ...args, '--key-env', 'RW_TEST_KEY'], { stdout: () => {}, stderr: (value) => stderr.push(value) });
-        return [code, stderr.join('')];
-      };
-      expect(await cli(['--from', first.roundDir, '--feedback', feedback, '--task', '模板辅助设计', '--out', join(base, 'cli-next')]))
-        .toEqual([2, expect.stringContaining('不能再给 --task')]);
-      expect(await cli(['--from', first.roundDir, '--out', join(base, 'cli-next')])).toEqual([2, expect.stringContaining('要用 --feedback')]);
-      expect(await cli(['--task', '模板辅助设计', '--out', join(base, 'cli-next')])).toEqual([2, expect.stringContaining('renderweave agent run --from')]);
-    } finally {
-      delete process.env['RW_TEST_KEY'];
-    }
+    expect(await cli(['--from', first.roundDir, '--feedback', feedback, '--task', '模板辅助设计', '--out', join(base, 'cli-next')]))
+      .toEqual([2, expect.stringContaining('不能再给 --task')]);
+    expect(await cli(['--from', first.roundDir, '--out', join(base, 'cli-next')])).toEqual([2, expect.stringContaining('要用 --feedback')]);
+    expect(await cli(['--task', '模板辅助设计', '--out', join(base, 'cli-next')])).toEqual([2, expect.stringContaining('renderweave agent run --from')]);
   });
 });
 
@@ -493,6 +496,67 @@ describe('模板辅助修改：审核与应用', () => {
       expect((await readdir(dir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     } finally {
       await chmod(join(dir, 'template-banner-words.json'), 0o644);
+    }
+  });
+});
+
+describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', () => {
+  const greetingRequest = join(singleTextDir, 'render-request-greeting.json');
+
+  it('不属于该任务或缺少的 --definition、--dataset 报用法错误，不创建轮次目录', async () => {
+    const dir = await workspace(false);
+    const banner = await file('banner-request.json', BANNER_REQUEST);
+    const cases: [Partial<AgentRunOptions>, string][] = [
+      [{ task: 'dataset-extraction', workspace: dir, dataset: 'ds-x' }, '数据集提取不用 --dataset：'],
+      // 以前这里在 readRequest 中解引用不存在的数据定义，抛 TypeError。
+      [{ task: 'dataset-extraction', workspace: dir, dataset: 'ds-x', request: greetingRequest }, '数据集提取不用 --dataset：'],
+      [{ task: 'dataset-extraction', workspace: dir, definition: '问候', dataset: 'ds-greeting' }, '数据集提取不用 --dataset：'],
+      [{ task: 'definition-extraction', definition: '问候' }, '数据定义提取不用 --definition：'],
+      [{ task: 'definition-extraction', workspace: dir, dataset: 'ds-x' }, '数据定义提取不用 --dataset：'],
+      [{ task: 'definition-extraction', definition: '问候', dataset: 'ds-x' }, '数据定义提取不用 --definition、--dataset：'],
+      [{ task: 'template-design', workspace: dir, request: banner }, '模板辅助设计要基于已保存的数据集'],
+      [{ task: 'template-design', workspace: dir, definition: '问候', request: banner }, '模板辅助设计要基于已保存的数据集'],
+    ];
+    for (const [options, message] of cases) {
+      const out = join(base, `rejected-${++count}`);
+      await expect(run(undefined, { ...options, out })).rejects.toThrow(AgentUsageError);
+      await expect(run(undefined, { ...options, out })).rejects.toThrow(message);
+      expect(existsSync(out)).toBe(false);
+    }
+
+    // 命令行：退出码 2，同样不创建轮次目录。
+    const inputs = ['--sample', join(resourcesDir, 'images/test/quadrants.png'), '--brief', join(base, 'brief.md'), '--resources', storeDir];
+    const commands: [string[], string][] = [
+      [['--task', '数据集提取', '--workspace', dir, '--dataset', 'ds-x'], '数据集提取不用 --dataset：'],
+      [['--task', '数据集提取', '--workspace', dir, '--dataset', 'ds-x', '--request', greetingRequest], '数据集提取不用 --dataset：'],
+      [['--task', '数据定义提取', '--definition', '问候'], '数据定义提取不用 --definition：'],
+      [['--task', '数据定义提取', '--workspace', dir, '--dataset', 'ds-x'], '数据定义提取不用 --dataset：'],
+    ];
+    for (const [args, message] of commands) {
+      const out = join(base, `cli-rejected-${++count}`);
+      expect(await cli([...args, ...inputs, '--out', out])).toEqual([2, expect.stringContaining(message)]);
+      expect(existsSync(out)).toBe(false);
+    }
+  });
+
+  it('该任务用得上的参数照常发起：数据集提取给 --definition；模板辅助设计 --definition 可省略；模板辅助修改 --dataset 可选', async () => {
+    const dir = await workspace(true);
+    const extraction = await run(undefined, { task: 'dataset-extraction', workspace: dir, definition: '问候', request: greetingRequest });
+    const greeting = { name: '问候', version: 1 };
+    expect(extraction.record.inputs).toMatchObject({ definition: greeting, dataset: null, request: { template: '问候牌' } });
+    expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: greeting, request: { template: '问候牌' } });
+    expect((await json(join(extraction.roundDir, 'agent/fake-run.json'))).prompt).toContain('按已发布的数据定义 问候 v1，');
+
+    const request = await file('banner-request.json', BANNER_REQUEST);
+    for (const definition of [undefined, '问候', '问候@1']) {
+      const design = await run(undefined, { task: 'template-design', workspace: dir, dataset: 'ds-greeting', request, ...(definition ? { definition } : {}) });
+      expect(design.record.inputs).toMatchObject({ definition: greeting, dataset: 'ds-greeting' });
+    }
+
+    const requirement = await file('requirement.md', REQUIREMENT);
+    for (const dataset of [undefined, 'ds-greeting']) {
+      const revision = await run(undefined, { task: 'template-revision', workspace: dir, request, requirement, ...(dataset ? { dataset } : {}) });
+      expect(revision.record.inputs).toMatchObject({ definition: null, dataset: 'ds-greeting', request: { template: '问候横幅' } });
     }
   });
 });

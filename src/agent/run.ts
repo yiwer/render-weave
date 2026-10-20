@@ -387,15 +387,20 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   return { roundDir, record, check, ...(outcome ? { outcome } : {}) };
 }
 
-/** 任务顺序（M43）与各任务需要的输入。 */
+/** 任务顺序（M43）与各任务需要的输入：--definition、--dataset 只接受该任务用得上的那些。 */
 function checkTaskOrder(task: AgentTask, options: AgentRunOptions): void {
-  if (task.requires === 'definition' || task.requires === 'dataset') {
-    if (options.definition === undefined && options.dataset === undefined) {
+  if (task.requires === 'none') {
+    const given = (['definition', 'dataset'] as const).filter((name) => options[name] !== undefined);
+    if (given.length > 0) throw new AgentUsageError(`${task.name}不用 ${given.map((name) => `--${name}`).join('、')}：它从示例图提取新的数据定义，不基于已有的数据定义或数据集`);
+  }
+  if (task.requires === 'definition') {
+    if (options.dataset !== undefined) throw new AgentUsageError(`${task.name}不用 --dataset：它基于已发布的数据定义提取新的数据集，用 --definition 指定数据定义`);
+    if (options.definition === undefined) {
       throw new AgentUsageError(`只给了示例图，没有指定数据定义：先做数据定义提取并发布（M43），例如 renderweave agent run --task 数据定义提取 …`);
     }
-    if (task.requires === 'dataset' && options.dataset === undefined) {
-      throw new AgentUsageError(`${task.name}要基于已保存的数据集：先做数据集提取并应用（M43），再用 --dataset 指定数据集 id`);
-    }
+  }
+  if (task.requires === 'dataset' && options.dataset === undefined) {
+    throw new AgentUsageError(`${task.name}要基于已保存的数据集：先做数据集提取并应用（M43），再用 --dataset 指定数据集 id`);
   }
   if (task.requires === 'template') {
     if (options.definition !== undefined) throw new AgentUsageError(`${task.name}不用 --definition：数据定义取主模板的基准`);
@@ -451,7 +456,11 @@ async function resolveBasis(requires: 'definition' | 'dataset', options: AgentRu
     }
     definition = { name, version: chosen };
   }
-  if (requires === 'definition') return { definition: definition!, dataset: null };
+  if (requires === 'definition') {
+    // checkTaskOrder 已要求数据集提取给出 --definition；走到这里说明校验漏了，不能带着空的基准往下走。
+    if (definition === undefined) throw new Error('数据集提取没有所基于的数据定义：--definition 的校验被绕过了');
+    return { definition, dataset: null };
+  }
   const entry = workspace.datasets.find((item) => item.id === options.dataset);
   if (!entry) throw new AgentUsageError(`工作区中没有数据集 ${options.dataset}：先做数据集提取并应用（M43）。${list(workspace.datasets.map((item) => item.id))}`);
   const ref = entry.document.dataset.staticSchema;
