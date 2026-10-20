@@ -24,7 +24,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
   - 模板在画板上声明缩字下限（票据 14，M238），价签一类小标签可以缩到 5 mm 以下。
   - 资源命令遇到还不是版本仓库的目录时，提示先 `resources-init` 或从旧目录导入（票据 15，M239）。
-- **DSL 1.x 平面设计能力演进（P1/P2）**（[规格](.scratch/dsl-graphic-capabilities/spec.md)，[索引](.scratch/dsl-graphic-capabilities/README.md)）：7 张票据全部完成（M251–M257），已变基到阶段 4 票据 01（M250）之上并跑通全量测试（M249）：
+- **DSL 1.x 平面设计能力演进（P1/P2）**（[规格](.scratch/dsl-graphic-capabilities/spec.md)，[索引](.scratch/dsl-graphic-capabilities/README.md)）：7 张票据全部完成（M251–M257），已变基到阶段 4 之上、跑通全量测试（M249），并在更新后的 `agent/reference/template.md` 上复跑通过 Haiku 5.5 评估门槛（[2026-10-19-dsl-graphic-capabilities](docs/agent-eval/reports/2026-10-19-dsl-graphic-capabilities.json)，A08）：
   - 票据 01（M251）：派生变量支持 `multiply`、`divide`、`mod`、`splitPart`（含 `format` 格式化后拆字）与 `branch` 条件中的 `all` / `any` 复合条件。
   - 票据 02（M252）：循环容器支持 `reverse`（反序）、`slice`（1-based 闭区间切片）与纵向循环 `mergeBy` / `spanBy: "groupSize"`（`heights: "equal"`）。
   - 票据 03（M253）：堆叠布局与循环容器 `itemLayout` 支持 `wrap` 自动流式换行与交叉方向行/列间距 `crossGap`（含交叉方向 `"hug"` 自适应撑高/撑宽）。
@@ -32,9 +32,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 票据 05（M255）：文本支持常态字间距 `letterSpacing`（正负毫米数或数值变量）与横排 `fit.steps` 中的 `"tightenSpacing"`（在压缩字形前先将正字距线性收紧至 0）。
   - 票据 06（M256）：竖排文本的文本片段与变量插槽支持独立设置 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动绕字格中心顺时针旋转 90°。
   - 票据 07（M257）：图片元素支持可选 `tint` 单色重染（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，支持状态样式覆盖），以 `srcIn` 滤镜替换像素 RGB 并保留原图透明度。
-- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）、03（服务骨架，M259、M260）、04（租户、账号与鉴权，M261–M263）、05（代建推送，M264、M265）、06（渲染 worker 与草稿预览，M266、M267）与 07（批量正式交付，M268、M269）已完成，下一步是 10（数据集与资源接口）、08（出图记录的查询与导出）与 09（计量与额度）；另有 `agent/reference/template.md` 同步了 M251–M257，在用 Agent 前按规格 A08 复跑一次 `npx tsx scripts/agent-eval/run.ts`（Haiku 5.5）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+- **下一步**：进入阶段 4（[路线图](docs/roadmap.md)）。开工前的 ADR 已定：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）、03（服务骨架，M259、M260）、04（租户、账号与鉴权，M261–M263）、05（代建推送，M264、M265）、06（渲染 worker 与草稿预览，M266、M267）与 07（批量正式交付，M268、M269）已完成，下一步是 10（数据集与资源接口）、08（出图记录的查询与导出）与 09（计量与额度）。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
 
-  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 与 Gemini 都已在合同 0.5.0 与票据 14 改过的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
+  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.5.0 与 M251–M257 更新后的 Agent 参考上过评估门槛，Gemini 已在合同 0.5.0 与票据 14 的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 ## 已实现能力
