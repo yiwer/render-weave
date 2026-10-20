@@ -11,13 +11,14 @@ import { preflight, preflightTemplate } from './preflight.js';
 import { draw, type EncodedImage } from './draw.js';
 import { formatElementPath } from './element-path.js';
 import { ImageStore } from './images.js';
-import { evaluate, walkVisible } from './evaluate.js';
+import { evaluate, walkVisible, type EvaluatedTemplate } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
 import { parseRenderRequest, type RenderRequest } from './request.js';
 import { Scope } from './template/scope.js';
 import type { TemplateModel } from './template/model.js';
 import { FontStore } from './text/fonts.js';
+import { mmToPx } from './units.js';
 import { resolveGlyphFallbacks } from './text/fallback.js';
 import type { Workspace } from './workspace.js';
 
@@ -63,7 +64,8 @@ export function templateBlocked(workspace: Workspace, template: string): Problem
   return problems;
 }
 
-export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
+/** 渲染的展开段（同步、不出图）：准备、尺寸范围与求值。无法展开时没有 evaluated，problems 是 render 会返回的完整问题清单。 */
+function expand(workspace: Workspace, requestInput: unknown): { request?: RenderRequest; evaluated?: EvaluatedTemplate; problems: Problem[] } {
   const { request, prepared, problems } = prepareRender(workspace, requestInput);
   if (!request || !prepared) return { problems };
   const { template, dataset, checked, parameters } = prepared;
@@ -71,8 +73,44 @@ export async function render(workspace: Workspace, requestInput: unknown, option
   const evaluation = evaluate(new Scope(template, checked.program.get(template.name)!.table, dataset.data, parameters.values),
     checked.program, problems, parameters.problems);
   problems.push(...evaluation.problems);
-  const evaluated = evaluation.evaluated;
-  if (!evaluated) return expansionBlocked(problems);
+  if (!evaluation.evaluated) expansionBlocked(problems);
+  return { request, ...(evaluation.evaluated && { evaluated: evaluation.evaluated }), problems };
+}
+
+/** 一次渲染的规模：出图像素，以及展开后会显示的元素数与循环项数。 */
+export interface RenderMeasure {
+  readonly widthPx: number;
+  readonly heightPx: number;
+  /** 展开后会显示的元素数，含画板、循环与调用展开成的容器。 */
+  readonly elements: number;
+  /** 会显示的循环展开出的项数，嵌套循环逐层累计。 */
+  readonly loopItems: number;
+}
+
+/**
+ * 不出图的度量（ADR-0017「进入队列前的限制」）：只解析、检查与求值，不加载 CanvasKit。
+ * 无法展开时没有 measure，problems 与 render 返回的完全相同；能展开时 problems 是排版之前的问题。
+ */
+export function measureRender(workspace: Workspace, requestInput: unknown): { measure?: RenderMeasure; problems: Problem[] } {
+  const { request, evaluated, problems } = expand(workspace, requestInput);
+  if (!request || !evaluated) return { problems };
+  let elements = 0, loopItems = 0;
+  for (const node of walkVisible(evaluated.root)) {
+    elements++;
+    if (node.sourceType === 'loop') loopItems += node.children?.length ?? 0;
+  }
+  const { width, height, dpi } = request.output;
+  return { measure: { widthPx: mmToPx(width, dpi), heightPx: mmToPx(height, dpi), elements, loopItems }, problems };
+}
+
+/** 预先加载绘制引擎（CanvasKit）。出图服务的渲染子进程启动时调用，第一项就不必等加载。 */
+export async function preloadRenderer(): Promise<void> {
+  await loadCanvasKit();
+}
+
+export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
+  const { request, evaluated, problems } = expand(workspace, requestInput);
+  if (!request || !evaluated) return { problems };
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources, options.fallbackFonts);
   const images = new ImageStore(ck, workspace.resources, options.svgFonts);

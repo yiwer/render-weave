@@ -5,7 +5,7 @@
 import {
   EmailTakenError,
   type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type Identity, type Member, type MemberRole, type NewAuditEvent,
-  type Readiness, type ServiceBackend, type Tenant, type TenantScope,
+  type Readiness, type ServiceBackend, type TaskResult, type TaskState, type Tenant, type TenantScope,
 } from '../backend.js';
 import type { BlobStore } from './blobs.js';
 import { asPlatform, isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
@@ -83,6 +83,35 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         (row): AuditEvent => ({ id: row.id, tenantId: row.tenant_id, at: iso(row.at)!, actor: { kind: row.actor_kind, id: row.actor_id, label: row.actor_label },
           action: row.action, object: { type: row.object_type, id: row.object_id }, crossTenant: row.cross_tenant }))),
       storage: tenantStorage(db, blobs, tenantId),
+      tasks: {
+        // 同一租户的入队依次进行，并发与频率的计数才准。
+        enqueuePreview: (request, quota, now) => run(async (client) => {
+          await client.query(`SELECT pg_advisory_xact_lock(hashtextextended('preview:' || $1, 0))`, [tenantId]);
+          const { active, recent } = (await client.query<{ active: string; recent: string }>(
+            `SELECT count(*) FILTER (WHERE status IN ('queued', 'running') AND created_at > $3) AS active, count(*) FILTER (WHERE created_at > $4) AS recent
+               FROM render_tasks WHERE tenant_id = $1 AND kind = $2`,
+            [tenantId, 'preview', new Date(now.getTime() - quota.staleAfterMs), new Date(now.getTime() - 60_000)])).rows[0]!;
+          if (Number(active) >= quota.concurrency) return { limited: 'concurrency' as const };
+          if (Number(recent) >= quota.perMinute) return { limited: 'rate' as const };
+          const { id } = (await client.query<{ id: string }>(
+            `INSERT INTO render_tasks (tenant_id, kind, request, status, created_at) VALUES ($1, 'preview', $2, 'queued', $3) RETURNING id`,
+            [tenantId, JSON.stringify(request), now])).rows[0]!;
+          return { id };
+        }),
+        state: (id) => run(async (client) => {
+          const row = (await client.query<{ status: TaskState['status']; result: { problems: TaskResult['problems']; layout?: TaskResult['layout']; image?: Omit<NonNullable<TaskResult['image']>, 'bytes'> } | null; image: Buffer | null }>(
+            'SELECT status, result, image FROM render_tasks WHERE tenant_id = $1 AND id = $2', [tenantId, id])).rows[0];
+          if (!row) return undefined;
+          if (row.status !== 'done') return { status: row.status } as TaskState;
+          const { image, ...rest } = row.result!;
+          return { status: 'done', result: { ...rest, ...(image && row.image ? { image: { ...image, bytes: new Uint8Array(row.image) } } : {}) } };
+        }),
+        release: (id) => run(async (client) => {
+          await client.query(`UPDATE render_tasks SET status = CASE WHEN status = 'queued' THEN 'cancelled' ELSE status END, image = NULL,
+              result = CASE WHEN result IS NULL THEN NULL ELSE jsonb_build_object('problems', result->'problems') END
+            WHERE tenant_id = $1 AND id = $2`, [tenantId, id]);
+        }),
+      },
     };
   };
 
@@ -109,6 +138,18 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
       return { ready: database === 'ok' && schema === 'ok' && storage === 'ok', ...(schemaVersion === undefined ? {} : { schemaVersion }), checks: { database, migrations: schema, storage } };
     },
     tenant,
+    queue: {
+      async claim(worker, now) {
+        const row = (await db.query<{ id: string; tenant_id: string; kind: 'preview'; request: unknown }>('SELECT * FROM rw_claim_task($1, $2)', [worker, now])).rows[0];
+        return row && { id: row.id, tenantId: row.tenant_id, kind: row.kind, request: row.request };
+      },
+      finish: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
+        const { image, ...rest } = result;
+        const meta = image ? { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi } : undefined;
+        await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $3, result = $4, image = $5 WHERE tenant_id = $1 AND id = $2 AND status = 'running'`,
+          [task.tenantId, task.id, now, JSON.stringify({ ...rest, ...(meta ? { image: meta } : {}) }), image ? Buffer.from(image.bytes) : null]);
+      }),
+    },
     platform: {
       createTenant: (name) => asPlatform(db, async (client) =>
         tenantRow((await client.query('INSERT INTO tenants (name) VALUES ($1) RETURNING id, name, created_at', [name])).rows[0])),

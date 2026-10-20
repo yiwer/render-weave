@@ -16,6 +16,15 @@ export const ServiceProblemCodes = {
   pushContentMissing: 'push.contentMissing',
   /** 代建推送：上传的内容与哈希、字节数、种类或键的声明不符。 */
   pushContentMismatch: 'push.contentMismatch',
+  /** 入队前的限制（ADR-0017，票据 06）：超限直接拒绝（413），不占 worker。 */
+  limitRequestTooLarge: 'limit.requestTooLarge',
+  limitDatasetTooLarge: 'limit.datasetTooLarge',
+  limitPixelsExceeded: 'limit.pixelsExceeded',
+  limitExpansionExceeded: 'limit.expansionExceeded',
+  /** 按租户的预览并发与频率（429）。 */
+  previewRateLimited: 'preview.rateLimited',
+  /** 等不到 worker 完成渲染（503）。 */
+  workerUnavailable: 'worker.unavailable',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

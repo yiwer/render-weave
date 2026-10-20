@@ -58,6 +58,27 @@ export function loadConfig(env: NodeJS.ProcessEnv, defaults: { readonly port: nu
   return config;
 }
 
+/** 渲染 worker 的数值（ADR-0017）：暂定的缺省值，容量基线（票据 15）实测后再定；内存上限是容器的限制，不在这里。 */
+export interface WorkerConfig {
+  /** 单项超时，毫秒：调度进程到时结束渲染子进程。 */
+  readonly renderTimeoutMs: number;
+  /** 渲染子进程做满这么多项后换新。 */
+  readonly recycleAfter: number;
+  /** 队列空时隔多久再看，毫秒。 */
+  readonly pollMs: number;
+}
+
+export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
+  const integer = (name: string, fallback: number, min: number) => {
+    const raw = env[name];
+    if (raw === undefined || raw === '') return fallback;
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < min) throw new ConfigError(`环境变量 ${name} 必须是不小于 ${min} 的整数`);
+    return value;
+  };
+  return { renderTimeoutMs: integer('RW_RENDER_TIMEOUT_MS', 30_000, 100), recycleAfter: integer('RW_RENDER_RECYCLE_AFTER', 500, 1), pollMs: integer('RW_WORKER_POLL_MS', 100, 5) };
+}
+
 export function loadSetupConfig(env: NodeJS.ProcessEnv): SetupConfig {
   const read = reader(env);
   const config = { ownerDatabaseUrl: read.required('RW_OWNER_DATABASE_URL'), appDatabasePassword: read.required('RW_APP_DATABASE_PASSWORD'), s3: read.s3(), logLevel: read.logLevel };

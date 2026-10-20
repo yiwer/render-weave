@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了三部分：
+目前完成了四部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -13,8 +13,11 @@
 - **代建推送**（[票据 05](../.scratch/render-service-v1/issues/05-authoring-push.md)，M264、M265）：
   - 命令行 `renderweave push` 把本地工作区与资源版本仓库推送到客户的租户：先列差异，有冲突整体拒绝；
   - 模板记修订，可以把当前修订指回旧修订。
+- **渲染 worker 与草稿预览**（[票据 06](../.scratch/render-service-v1/issues/06-draft-preview-and-workers.md)，M266、M267）：
+  - PostgreSQL 里的任务队列，worker 的调度进程与渲染子进程，单项超时与内存上限；
+  - 模板列表与只读查看、同步的草稿预览，入队前的限制与按租户的并发、频率。
 
-预览、交付等业务端点，以及任务队列与渲染子进程，由后续票据加入。
+批量交付、出图记录、数据集与资源接口、计量与额度由后续票据加入。
 
 ## 本机启动
 
@@ -61,6 +64,10 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `RW_S3_FORCE_PATH_STYLE` | 全部 | 缺省开启路径形式地址；写 `false` 关闭 |
 | `RW_PORT` | 接口进程、worker | 监听端口，接口进程缺省 8080，worker 缺省 8081 |
 | `RW_LOG_LEVEL` | 全部 | 缺省 `info` |
+| `RW_RENDER_TIMEOUT_MS` | worker | 单项超时，缺省 30000（M266） |
+| `RW_RENDER_RECYCLE_AFTER` | worker | 渲染子进程做满这么多项后换新，缺省 500 |
+| `RW_WORKER_POLL_MS` | worker | 队列空时隔多久再看，缺省 100 |
+| `RW_WORKER_MEMORY` | Compose | worker 容器的内存上限，缺省 `2g`，不用交换分区 |
 
 本机的 `.env` 有四项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY`。Compose 用这四项拼出上面的变量。
 
@@ -72,13 +79,13 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 |---|---|
 | `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
 | `api` | 等迁移与代码一致，再启动接口进程 |
-| `worker` | 等迁移与代码一致，再启动渲染 worker 的调度进程；现在只提供健康检查 |
+| `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程（见[渲染 worker](#渲染-worker)） |
 | `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
 
 **健康检查**：接口进程与 worker 都有两个端点。
 
-- `GET /healthz`：存活，返回服务名与构建标识。
+- `GET /healthz`：存活，返回服务名与构建标识；worker 另带渲染器的计数（`renderer`：已做的任务、超时、内存超限、崩溃与子进程换新的次数）。
 - `GET /readyz`：就绪。要求数据库可连、迁移与代码一致、对象存储可列举；否则返回 503，并列出没通过的检查项与原因，不带连接串或凭据。
 
 **日志**：每行一个 JSON 对象，带时间、级别、服务名（`api`、`worker`、`setup`）与构建标识。请求体不进日志；请求头里的凭据会被遮盖。
@@ -118,6 +125,9 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/authoring/tenants/{租户}` | 代建工程师，只认被指定的租户 |
 | `GET …/authoring/tenants/{租户}/workspace`、`GET …/contents/{哈希}` | 代建工程师；推送的读回，见[代建推送](#代建推送) |
 | `POST …/push-plans`、`PUT …/contents/{哈希}`、`POST …/pushes`、`POST …/template-current` | 代建工程师；推送与改当前修订 |
+| `GET /v1/templates`、`GET /v1/templates/{模板名}` | 管理员、操作员、API 密钥；见[模板与草稿预览](#模板与草稿预览) |
+| `POST /v1/previews` | 管理员、操作员、API 密钥 |
+| `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
@@ -128,7 +138,12 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 403 | `auth.forbidden` |
 | 404 | `request.notFound` |
 | 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict` |
+| 413 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
 | 415 | `request.invalid`：上传内容不是 `application/octet-stream` |
+| 429 | `preview.rateLimited` |
+| 503 | `worker.unavailable`：等不到 worker 渲染完 |
+
+JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真，一律答 400 `request.invalid`，与命令行一致（M112）。
 
 客户端点的租户由身份决定，路径里没有租户 ID。
 
@@ -205,6 +220,45 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 **审计**：代建端点的每次调用都记进目标租户的审计，标为跨租户：`authoring.access`、`authoring.read`、`content.read`、`content.upload`、`push.plan`、`push.commit`、`push.reject`、`template.setCurrent`。
 
+## 模板与草稿预览
+
+**模板**（M267）：`GET /v1/templates` 列出本租户的模板，`GET /v1/templates/{模板名}` 看一个。每项有名称、当前修订、所用的数据定义（`base`）、适用尺寸范围与对外参数（名称、显示名称、类型、约束与缺省值）；内部参数不列。读不了的模板只有问题清单。
+
+**草稿预览**：`POST /v1/previews` 的请求体就是渲染请求（模板、数据集、对外参数与出图参数），不写 `mode` 或写 `draft`；写 `final` 答 400，正式图只走批量交付。回答与引擎的 `render` 相同：
+
+```json
+{ "image": { "format": "png", "widthPx": 756, "heightPx": 189, "dpi": 120, "base64": "…" }, "problems": [], "layout": { … } }
+```
+
+- **同步**：接口进程入队后等 worker 渲染完再回答，最多等 60 秒；等不到答 503 `worker.unavailable`，还在排队的任务撤回。
+- **不入队就能答的**：请求无法展开（模板或数据集不存在、请求不合法等）时，接口进程直接答与单次渲染相同的问题清单，没有图片。
+- **worker 没能渲染完**：回答仍是 200，没有图片，问题清单写明原因：`worker.timeout`（超过单项时限）、`worker.memoryExceeded`（超出内存上限）、`worker.crashed`（子进程意外退出）或 `worker.failed`（读不到存储等）。
+- **不计额度**；按租户限制：同时排队与渲染中的预览最多 2 个，一分钟内最多入队 60 次（撤回的也算），超过答 429 `preview.rateLimited`。入队超过等待时长的任务不再占并发，worker 中途退出时不会一直卡住。
+- **代建工程师**用 `POST /v1/authoring/tenants/{租户}/previews`，以被指定租户的身份预览，同一套检查与限制，记审计 `authoring.preview`。
+
+**入队前的限制**（ADR-0017）：接口进程用引擎的 `measureRender` 量出像素与展开规模，不出图；超限答 413，不占 worker。
+
+| 限制 | 缺省 | 问题码 |
+|---|---|---|
+| 请求体字节数（内联的数据集算在里面） | 1 MiB | `limit.requestTooLarge` |
+| 引用的已保存数据集的字节数 | 1 MiB | `limit.datasetTooLarge` |
+| 单张图的像素总数 | 1 亿（引擎上限）；套餐（票据 09）出来后取套餐值 | `limit.pixelsExceeded` |
+| 展开后会显示的元素数 | 20,000 | `limit.expansionExceeded` |
+| 展开后的循环项数（嵌套逐层累计） | 2,000 | `limit.expansionExceeded` |
+
+这些数值与单项超时、内存上限都是暂定的，容量基线（票据 15）实测后再定。
+
+## 渲染 worker
+
+一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
+
+- **领取**：调度进程用 `rw_claim_task` 领最早排队的一项（`SELECT … FOR UPDATE SKIP LOCKED`，跨租户，由属主身份执行），队列空时每 100 ms 再看。入队、查结果与写回结果都在租户的事务里，行级安全照常生效。
+- **渲染子进程**：调度进程 fork 它，经 IPC 一次交一项。子进程自己连数据库与对象存储读租户的工作区与资源，启动时先加载 CanvasKit，准备好才接任务；单项时限从交出任务起算。
+- **单项超时**：到时调度进程结束子进程，本项答 `worker.timeout`。
+- **内存超限**：内存上限是容器的限制（`mem_limit`，不用交换分区）。子进程启动时把自己的 `oom_score_adj` 调到最高，内存不够时内核先结束它；调度进程看本容器 cgroup 的 `memory.events` 里 `oom_kill` 增加了，本项答 `worker.memoryExceeded`。
+- **换新**：子进程在任务之间复用；做满 `RW_RENDER_RECYCLE_AFTER` 项、超时、内存超限或崩溃后换一个新的，换下后立即起新的预热。
+- **实测**（Windows，Node v24，问候牌草稿）：每像素约 13 字节，1 亿像素的草稿峰值约 1.3 GB、3 秒；只有一种字体的小图峰值约 210 MB。6,000 项文字的循环约 4 秒、峰值约 400 MB。缺省的 2 GB 内存上限放得下引擎上限的一张图。
+
 ## 数据库迁移
 
 - **写法**：迁移是 `service/migrations/NNNN_名称.sql`，版本号从 1 连续递增，只追加，不修改已执行的文件。
@@ -242,6 +296,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **`npm test`**：不需要 Docker。
   - 开放 API 用例跑内存后端（`service/test/api.test.ts`），覆盖权限矩阵、跨租户端点清单、审计与日志里不出现密钥。
   - 代建推送用例（`service/test/push.test.ts`）从 `src/cli.ts` 跑命令行，推送到本机端口上的内存后端，再经开放 API 读回核对。
+  - 模板与草稿预览用例（`service/test/preview.test.ts`）用进程内 worker；预览的图片与本机直接渲染的逐字节相同。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
 - **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
@@ -252,7 +307,8 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API 用例与代建推送用例跑 PostgreSQL 加 S3 后端；
+- 同一组开放 API、代建推送、模板与草稿预览的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；
+- 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；

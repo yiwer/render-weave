@@ -226,7 +226,9 @@ node dist/bin.js template-revisions --server <服务地址> --tenant <租户ID> 
 node dist/bin.js template-revisions --server <服务地址> --tenant <租户ID> --template 线路牌主模板 --current 1
 ```
 
-退出码：0 已推送（`--dry-run` 时为没有冲突），1 有冲突或被拒绝，2 用法错误或没设令牌。每次推送都记进客户租户的审计，客户管理员能看到。端点与规则的细节见[出图服务](service.md#代建推送)。
+退出码：0 已推送（`--dry-run` 时为没有冲突），1 有冲突或被拒绝，2 用法错误或没设令牌。每次推送都记进客户租户的审计，客户管理员能看到。
+
+**推送后自查**：用同一个令牌以客户租户的身份看草稿预览，`POST /v1/authoring/tenants/<租户ID>/previews`，请求体就是出图请求（不写 `mode`）。回答里有图片（base64）、问题清单与布局摘要，应与本机的草稿一致。端点与规则的细节见[出图服务](service.md#代建推送)。
 
 ## 用时与用量参考
 

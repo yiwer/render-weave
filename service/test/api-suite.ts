@@ -5,12 +5,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createApi } from '../src/api/app.js';
+import { createApi, type ApiOptions } from '../src/api/app.js';
 import { ROLE_PERMISSIONS, type IdentityRole } from '../src/api/permissions.js';
 import type { ServiceBackend } from '../src/backend.js';
 import { generatePassword, hashPassword } from '../src/credentials.js';
 import { createLogger } from '../src/log.js';
 import { CROSS_TENANT_ENDPOINTS, EXEMPT_ACCESS, type TenantObjects } from './cross-tenant-endpoints.js';
+import { seedGreeting } from './seed.js';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 /** body 是解析后的 JSON（响应是 JSON 时），raw 是响应文本，bytes 是原始字节。 */
@@ -22,14 +23,16 @@ const email = (role: string) => `${role}-${randomUUID()}@example.test`;
 /** 上传内容的样例：几个字节与它的 SHA-256。 */
 const SAMPLE = new Uint8Array(Buffer.from('样例内容'));
 const SAMPLE_SHA256 = createHash('sha256').update(SAMPLE).digest('hex');
+/** 模板不存在的预览请求：入队前就答问题清单。 */
+const BLOCKED_PREVIEW = { template: '没有这个模板', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } };
 const ids = (value: unknown) => JSON.stringify(value);
 
 /** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。代建推送的用例也用它。 */
-export async function createWorld(backend: ServiceBackend) {
+export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions> } = {}) {
   const clock = { value: new Date() };
   const logs: string[] = [], secrets: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { logs.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
-  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test' });
+  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test', ...options.api });
   /** 字节作为 application/octet-stream 发送，其他请求体作为 JSON 发送。 */
   const call = async (method: Method, url: string, token?: string, body?: unknown): Promise<Reply> => {
     const binary = body instanceof Uint8Array;
@@ -67,6 +70,8 @@ export async function createWorld(backend: ServiceBackend) {
     return { id, admin, operator, key: { id: key.body.apiKey.id, token: key.body.key }, engineer: { id: engineer.body.authoringToken.id, token: engineer.body.token } };
   };
   const a = await tenant('租户 A'), b = await tenant('租户 B');
+  // 租户 A 有问候牌样例的文档，跨租户端点清单用它的模板名。
+  await seedGreeting(backend.tenant(a.id).storage);
   return { app, backend, clock, logs, secrets, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
 }
 export type World = Awaited<ReturnType<typeof createWorld>>;
@@ -113,6 +118,12 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/contents/${SAMPLE_SHA256}`, body: SAMPLE }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/contents/:sha256', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/contents/${SAMPLE_SHA256}` }) },
+  { route: 'GET /v1/templates', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/templates' }) },
+  { route: 'GET /v1/templates/:name', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent('问候牌')}` }) },
+  // 预览请求用不存在的模板：入队前就答问题清单，不需要 worker。
+  { route: 'POST /v1/previews', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/previews', body: BLOCKED_PREVIEW }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/template-current`, body: { template: '矩阵', revision: 1 } }) },
 ];
@@ -266,8 +277,8 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       const listed = new Set(CROSS_TENANT_ENDPOINTS.map((endpoint) => endpoint.route));
       const missing = app.routeTable.filter((route) => !EXEMPT_ACCESS.has(route.access) && !listed.has(`${route.method} ${route.url}`));
       expect(missing, '能触及租户数据的端点都要加进跨租户端点清单').toEqual([]);
-      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id };
-      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID() };
+      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌' };
+      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}` };
       const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {
         for (const [who, token] of [['B 的管理员', b.admin.token], ['B 的操作员', b.operator.token], ['B 的密钥', b.key.token], ['B 的代建令牌', b.engineer.token]] as const) {

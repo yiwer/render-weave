@@ -5,7 +5,7 @@
 import type { FastifyInstance } from 'fastify';
 import { EmailTakenError, type Identity, type Member, type MemberRole, type NewAuditEvent, type TenantScope } from '../backend.js';
 import { dummyVerify, generatePassword, generateToken, hashPassword, verifyPassword } from '../credentials.js';
-import { actorOf, identityOf, type ApiContext } from './app.js';
+import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
 /** 会话有效期 12 小时；代建令牌缺省 30 天，最长 365 天。 */
@@ -16,11 +16,6 @@ const role = { type: 'string', enum: ['admin', 'operator'] } as const;
 const body = (properties: Record<string, unknown>, required: string[] = Object.keys(properties)) =>
   ({ body: { type: 'object', properties, required, additionalProperties: false } });
 
-/** 成员与 API 密钥只属于一个租户；其他身份没有"本租户"。 */
-function ownTenant(identity: Identity): string {
-  if (identity.kind === 'member' || identity.kind === 'apiKey') return identity.tenantId;
-  throw fail(403, ServiceProblemCodes.authForbidden, 'request.authorization', '当前身份不属于任何租户');
-}
 
 const me = (identity: Identity) => {
   switch (identity.kind) {

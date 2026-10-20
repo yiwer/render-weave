@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   documentSource, EmailTakenError, parseDocumentSource,
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type Identity, type LoginRecord, type Member, type MemberRole, type NewAuditEvent,
-  type PlatformUser, type ServiceBackend, type StoredTemplate, type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage,
+  type PlatformUser, type ServiceBackend, type StoredTemplate, type TaskResult, type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage,
 } from './backend.js';
 import { createMemoryBatch, memoryWorkspaceDocuments, resourceBackend, type ResourceManifestEntry } from './engine.js';
 
@@ -14,6 +14,7 @@ interface UserRow { id: string; tenantId: string | null; email: string; role: Me
 interface SessionRow { id: string; userId: string; tenantId: string | null; tokenHash: string; expiresAt: Date; revokedAt?: Date }
 interface ApiKeyRow extends ApiKeyInfo { tenantId: string; tokenHash: string }
 interface AuthoringRow extends AuthoringTokenInfo { tokenHash: string }
+interface TaskRow { id: string; tenantId: string; kind: 'preview'; request: unknown; status: 'queued' | 'running' | 'done' | 'cancelled'; result?: TaskResult; createdAt: Date }
 
 export function createMemoryBackend(): ServiceBackend {
   const tenants = new Map<string, Tenant>();
@@ -23,6 +24,8 @@ export function createMemoryBackend(): ServiceBackend {
   const authoring = new Map<string, AuthoringRow>();
   const audit: AuditEvent[] = [];
   const storages = new Map<string, TenantStorage>();
+  /** 全部租户的渲染任务，按入队顺序。 */
+  const tasks: TaskRow[] = [];
   let sequence = 0;
 
   const member = (row: UserRow): Member => ({ id: row.id, tenantId: row.tenantId!, email: row.email, role: row.role as MemberRole, active: row.active, createdAt: row.createdAt });
@@ -89,12 +92,47 @@ export function createMemoryBackend(): ServiceBackend {
         if (!storage) storages.set(tenantId, storage = memoryStorage());
         return storage;
       },
+      tasks: {
+        async enqueuePreview(request, quota, now) {
+          const previews = tasks.filter((task) => own(task) && task.kind === 'preview');
+          const active = (task: TaskRow) => (task.status === 'queued' || task.status === 'running') && task.createdAt.getTime() > now.getTime() - quota.staleAfterMs;
+          if (previews.filter(active).length >= quota.concurrency) return { limited: 'concurrency' };
+          if (previews.filter((task) => task.createdAt.getTime() > now.getTime() - 60_000).length >= quota.perMinute) return { limited: 'rate' };
+          const row: TaskRow = { id: randomUUID(), tenantId, kind: 'preview', request: structuredClone(request), status: 'queued', createdAt: now };
+          tasks.push(row);
+          return { id: row.id };
+        },
+        async state(id) {
+          const row = tasks.find((task) => task.id === id && own(task));
+          if (!row) return undefined;
+          return row.status === 'done' ? { status: 'done', result: row.result! } : { status: row.status };
+        },
+        async release(id) {
+          const row = tasks.find((task) => task.id === id && own(task));
+          if (row?.status === 'queued') row.status = 'cancelled';
+          else if (row?.status === 'done') row.result = { problems: row.result!.problems };
+        },
+      },
     };
   };
 
   return {
     readiness: async () => ({ ready: true, checks: { memory: 'ok' } }),
     tenant,
+    queue: {
+      async claim() {
+        const row = tasks.find((task) => task.status === 'queued');
+        if (!row) return undefined;
+        row.status = 'running';
+        return { id: row.id, tenantId: row.tenantId, kind: row.kind, request: structuredClone(row.request) };
+      },
+      async finish(task, result) {
+        const row = tasks.find((item) => item.id === task.id && item.status === 'running');
+        if (!row) return;
+        row.status = 'done';
+        row.result = result;
+      },
+    },
     platform: {
       async createTenant(name) {
         const row: Tenant = { id: randomUUID(), name, createdAt: new Date().toISOString() };

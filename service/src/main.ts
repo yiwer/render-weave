@@ -2,15 +2,17 @@
  * 服务入口：node service/dist/main.js <命令>
  * - setup：部署步骤。用属主账号执行数据库迁移、设置应用账号的密码，再建好对象存储的桶（M262）；
  * - api：等迁移与代码一致后启动接口进程，用应用账号连库；
- * - worker：等迁移与代码一致后启动渲染 worker 的调度进程；
+ * - worker：等迁移与代码一致后启动渲染 worker 的调度进程：领取任务交给渲染子进程，超时结束子进程（ADR-0017）；
  * - platform-admin <邮箱>：建平台管理员账号，随机初始密码只在标准输出显示一次；
  * - build-id：输出渲染器构建标识，镜像以它打标签（ADR-0019）。
  * 配置只从环境变量读取（M259）。日志是每行一个 JSON 对象。
  */
+import { hostname } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { CreateBucketCommand, type S3Client } from '@aws-sdk/client-s3';
 import { createApi } from './api/app.js';
 import { EmailTakenError } from './backend.js';
-import { ConfigError, loadConfig, loadSetupConfig } from './config.js';
+import { ConfigError, loadConfig, loadSetupConfig, loadWorkerConfig } from './config.js';
 import { generatePassword, hashPassword } from './credentials.js';
 import { rendererBuildId } from './engine.js';
 import { createLogger, type Logger } from './log.js';
@@ -18,7 +20,9 @@ import { createPostgresBackend } from './postgres/backend.js';
 import { createS3Client, s3Blobs } from './postgres/blobs.js';
 import { createDb } from './postgres/db.js';
 import { loadMigrations, migrate, setAppRolePassword, waitForMigrations } from './postgres/migrate.js';
-import { createWorkerHealthServer } from './worker.js';
+import { childRunner } from './worker/child-runner.js';
+import { createWorkerHealthServer } from './worker/health.js';
+import { startScheduler } from './worker/scheduler.js';
 
 const [command, argument] = process.argv.slice(2);
 const COMMANDS = ['setup', 'api', 'worker', 'platform-admin'] as const;
@@ -79,10 +83,16 @@ async function main(): Promise<void> {
       logger.info({ schemaVersion, port: config.port }, '接口进程就绪');
       close = () => app.close();
     } else {
-      const server = createWorkerHealthServer({ backend, build, logger });
+      const worker = loadWorkerConfig(process.env);
+      const runner = childRunner({ script: fileURLToPath(new URL('./worker/render-child.js', import.meta.url)), timeoutMs: worker.renderTimeoutMs, recycleAfter: worker.recycleAfter, logger });
+      const scheduler = startScheduler({ backend, runner, logger, pollMs: worker.pollMs, workerId: `${hostname()}:${process.pid}` });
+      const server = createWorkerHealthServer({ backend, build, logger, stats: runner.stats });
       await new Promise<void>((resolve) => server.listen(config.port, '0.0.0.0', resolve));
-      logger.info({ schemaVersion, port: config.port }, 'worker 就绪，等待任务');
-      close = () => new Promise((resolve) => server.close(() => resolve()));
+      logger.info({ schemaVersion, port: config.port, ...worker }, 'worker 就绪，等待任务');
+      close = async () => {
+        await scheduler.stop();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      };
     }
     const stop = async (signal: string) => {
       logger.info({ signal }, '收到停止信号');

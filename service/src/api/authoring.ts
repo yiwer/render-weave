@@ -11,6 +11,7 @@ import {
   type PushDiff, type PushManifest,
 } from '../push.js';
 import { actorOf, identityOf, type ApiContext } from './app.js';
+import { runPreview } from './previews.js';
 import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
 /** 单份上传内容的上限；思源黑体一类的中文字体约 16 MB。 */
@@ -101,6 +102,13 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
         if (error instanceof ApiError) await audit(request, 'push.reject', { type: 'push', id: pushId });
         throw error;
       }
+    });
+
+    /** 用被指定租户的身份看草稿预览（票据 06）：与客户的预览同一套检查与限制。 */
+    scope.post('/v1/authoring/tenants/:tenantId/previews', { config: { access: 'authoring.preview' }, bodyLimit: context.limits.maxRequestBytes }, async (request) => {
+      const template = (request.body as { template?: unknown } | null)?.template;
+      await audit(request, 'authoring.preview', { type: 'template', id: typeof template === 'string' ? template : '' });
+      return runPreview(context, target(request), request.body);
     });
 
     /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订。 */

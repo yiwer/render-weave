@@ -74,12 +74,18 @@ services:
       <<: *readyz
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
-  # 渲染 worker 的调度进程：确认迁移与代码一致后就绪。
+  # 渲染 worker：调度进程领取任务交给渲染子进程，单项超时由调度进程结束子进程；内存上限是容器的限制，不用交换分区（ADR-0017）。
+  # 数值是暂定的缺省值，容量基线实测后再定；Docker 后端测试用极小的值（service/scripts/test-docker.mjs）。
   worker:
     image: renderweave-service:local
     pull_policy: never
     command: ["node", "service/dist/main.js", "worker"]
-    environment: *service-env
+    environment:
+      <<: *service-env
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
+    mem_limit: ${RW_WORKER_MEMORY:-2g}
+    memswap_limit: ${RW_WORKER_MEMORY:-2g}
     ports:
       - "${RW_WORKER_PORT:-8081}:8081"
     depends_on:
@@ -102,6 +108,8 @@ services:
       RW_OWNER_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}@postgres:5432/renderweave
       RW_API_URL: http://api:8080
       RW_WORKER_URL: http://worker:8081
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
     depends_on:
       worker:
         condition: service_healthy

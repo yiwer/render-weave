@@ -12,6 +12,7 @@ export interface TenantObjects {
   readonly tenantId: string;
   readonly memberId: string;
   readonly apiKeyId: string;
+  readonly templateName: string;
 }
 
 export interface CrossTenantEndpoint {
@@ -42,9 +43,18 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
     request: (a) => ({ method: 'PUT', url: `/v1/authoring/tenants/${a.tenantId}/contents/${SAMPLE_SHA256}`, body: SAMPLE }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/contents/:sha256', addressesObject: true,
     request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/contents/${SAMPLE_SHA256}` }) },
+  // 模板与草稿预览（票据 06）：客户端点的租户由身份决定；代建端点在路径里写目标租户。
+  { route: 'GET /v1/templates', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/templates' }) },
+  { route: 'GET /v1/templates/:name', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}` }) },
+  { route: 'POST /v1/previews', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/previews', body: preview(a.templateName) }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews', addressesObject: true,
+    request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/template-current`, body: { template: '问候牌', revision: 1 } }) },
 ];
+
+/** 用 A 的模板名预览；另一租户没有这个模板，入队前就答问题清单。 */
+const preview = (template: string) => ({ template, dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } });
 
 /** 上传内容的样例：几个字节与它的 SHA-256。 */
 const SAMPLE = new Uint8Array(Buffer.from('跨租户检查'));

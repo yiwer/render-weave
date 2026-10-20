@@ -1,4 +1,6 @@
-export { render, type RenderResult, type RenderOptions } from './render.js';
+export { render, measureRender, preloadRenderer, type RenderResult, type RenderOptions, type RenderMeasure } from './render.js';
+/** 模板的对外信息：名称、基准、适用尺寸范围与对外参数；不出图（出图服务的模板列表）。 */
+export { describeTemplate, type TemplateDescription } from './template/describe.js';
 export {
   deliverBatch, readOutputRecord, replayOutputRecord, MAX_BATCH_ITEMS,
   freezeBatch, deliverBatchItem, runFrozenBatch, summarizeBatch, readRecord, replayRecord,
