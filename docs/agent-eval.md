@@ -25,7 +25,7 @@ npx tsx scripts/agent-eval/run.ts
 | `--scenarios` | 只跑部分场景，逗号分隔，如 `m402-definition,366-transcription`；缺省全部 |
 | `--repeat` | 每个场景跑几次，缺省为配置中的连续达线次数（2） |
 | `--jobs` | 同时跑几个场景，缺省 3；同一场景内部的轮次按顺序 |
-| `--label` | 报告名称，缺省为开始时间，如 `2026-10-15-1930` |
+| `--label` | 报告名称，缺省为开始时间，如 `2026-10-15-1930`。同一个名称再跑时接着前一次：已有有效结果的单元跳过，`invalid` 的单元按轮次续跑，场景要与前一次相同 |
 | `--out` | 轮次目录的根，缺省 `out/agent-eval/<名称>/` |
 | `--reports` | 报告目录，缺省 `docs/agent-eval/reports/` |
 | `--model`、`--small-model`、`--endpoint`、`--key-env`、`--max-turns` | 传给 `renderweave agent run` |
@@ -34,9 +34,36 @@ npx tsx scripts/agent-eval/run.ts
 
 **模型**：缺省与 `renderweave agent run` 相同，即 OpenCode Go 上的 Claude Haiku 5.5。评估 Gemini 4 Argon 时加 `--model gemini-4-argon-contributor`：Gemini 只有 Google 接口，`agent run` 会在每轮里自动起本机转换代理（M232）。
 
-key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KEY`），评估命令只检查变量存在，不读取它的值。退出码：0 门槛通过；1 门槛未通过；2 用法错误。
+key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KEY`），评估命令只检查变量存在，不读取它的值。退出码：0 门槛通过；1 门槛未通过；2 用法错误；3 门槛未完成（有 `invalid` 或计划内没跑的次数，按打印的命令续跑，见[上游错误与续跑](#上游错误与续跑)）。
 
-每个场景的每一次在 `<out>/run-<第几次>/<场景>/` 下，含各轮的轮次目录（可以用 `renderweave agent review` 打开）与场景自己的工作区。
+每个场景的每一次（一个单元）在 `<out>/run-<第几次>/<场景>/` 下，含各轮的轮次目录（可以用 `renderweave agent review` 打开）与场景自己的工作区；重试过或拿不到有效结果时另有 `upstream-errors.json`，记每次重试的轮次与原因、`invalid` 的原因。
+
+## 上游错误与续跑
+
+模型服务的报错不是模型没做出来（票据 21）。评估读每轮 `round.json` 的 `run.error` 与发起失败的错误文字，大小写不敏感地分三类：
+
+| 分类 | 字样 | 处理 |
+|---|---|---|
+| 瞬时 | `500`、`502`、`503`、`529`、`overloaded`、`ECONNRESET`、`ETIMEDOUT`、`socket hang up` | 只删掉出错的那一个轮次目录（`agent run` 要求目录为空）再发起这一轮，最多 2 次，间隔 60、180 秒。366 单元里已完成、已应用的第一轮与工作区不动。重试用完仍是瞬时错误时，该单元记 `invalid` |
+| 额度 | `429`、`rate_limit`（也认 `rate limit`）、`quota`、`usage limit` | 不重试，该单元记 `invalid`；不再发起队列里还没开始的单元，已在跑的单元跑完。OpenCode Go 的 429 是 5 小时额度窗口，各模型共用一个池（M231），几分钟的退避等不到它恢复 |
+| 其他 | 400 参数错误、缺 key、执行器无法启动等 | 照旧：不重试，算未达线 |
+
+两类字样都有时按额度算。成果合格的轮次不看错误：模型已经交回了。500 的原文是 Claude Code 自己重试之后才报出来的，例如 `API Error: 500 status code (no body). This is a server-side issue, usually temporary`，所以外层只重试 2 次。
+
+**门槛**：`invalid` 不是一次观测，算连续达线时跳过它，不打断也不延长连续。计划内没跑的次数（额度熔断后没发起，或分段跑还没到）同样不是观测。
+
+- 有连续 2 次达线：通过。例如达线、`invalid`、达线。
+- 把 `invalid` 与没跑的次数都当作达线也凑不出连续 2 次：未通过。例如未达线、`invalid`。
+- 其余是**未完成**（`incomplete`，退出码 3），补跑之后才知道。例如达线、`invalid`；或分段跑的第一段 `--repetitions 1-1` 结束时。
+- 整体：有一个场景未通过就是未通过；否则有未完成的就是未完成；全部通过才通过。计划的次数取评估清单的次数，至少是连续达线次数。
+
+**续跑**：有 `invalid` 或没跑的次数时，命令结束前打印用同一个 `--label` 续跑的命令，带上本次的其他选项，例如：
+
+```bash
+npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --model gemini-4-argon-contributor
+```
+
+额度窗口恢复后照抄运行即可：已有有效结果的单元跳过；`invalid` 的单元只重新发起出错的轮次，366 已应用的第一轮保留；重试次数累计。`--rescore` 不知道原来的模型等选项，不打印续跑命令。
 
 ## 场景与通过线
 
@@ -104,7 +131,7 @@ key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KE
 
 ## 报告
 
-报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，格式 `renderweave-agent-eval/1`，只存摘要，不存图片与日志：
+报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，格式 `renderweave-agent-eval/2`（票据 21 起；之前的报告是 `/1`，没有单元的 `status` 与重试次数，`gate` 只有 `pass` 与各次的 `passes`），只存摘要，不存图片与日志：
 
 | 键 | 内容 |
 |---|---|
@@ -114,11 +141,11 @@ key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KE
 | `mcpContract` | MCP 工具合同版本 |
 | `materials` | `agent/` 下各资料文件的 SHA-256（前 12 位），判断两次评估之间资料是否变了 |
 | `consecutivePasses`、`passLines` | 门槛规则与通过线 |
-| `results` | 每个场景每一次：是否达线、没达线的原因、各轮的结论、用时、轮数、token、待确认项数、工具调用与错误数，以及全部检查结果 |
-| `gate` | 每个场景各次是否达线，以及门槛结论 |
+| `results` | 每个场景每一次：`status`（`pass`、`fail`、`invalid`）、上游瞬时错误的重试次数 `retries`、`invalid` 的原因（分类、轮次与错误原文，单列，不算没达线的原因）、没达线的原因、各轮的结论、用时、轮数、token、待确认项数、工具调用与错误数，以及全部检查结果 |
+| `gate` | 门槛结论 `status`（`pass`、`fail`、`incomplete`）；每个场景从第 1 次起各次的结果 `outcomes`（`pass`、`fail`、`invalid`、`not-run`）与结论 |
 | `totals` | 各轮用时、token 之和 |
 
-命令的标准输出是同样内容的文字摘要。
+命令的标准输出是同样内容的文字摘要；有 `invalid` 或没跑的次数时，最后是续跑命令。
 
 ## 历次评估
 

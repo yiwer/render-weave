@@ -4,10 +4,13 @@
  *
  * 366 场景要两轮：数据定义提取之后，模拟审核人全部采纳待确认项、审核通过并应用到场景自己的工作区，再做数据集提取。
  * 这只是评估中的模拟，产品本身不自动审核、不自动应用。
+ *
+ * 上游错误（票据 21）：模型服务的 500/529 与连接中断按轮次重试；额度窗口的 429 停止派发剩下的单元。
+ * 仍拿不到有效结果的单元记为 invalid：它不是一次观测，既不算达线，也不算模型没做出来。
  */
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
@@ -59,6 +62,45 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
   };
 }
 
+/** 上游错误的分类：transient 按轮次重试；quota 停止派发剩下的单元；other（参数错误、缺 key、执行器无法启动）照旧算未达线。 */
+export type ErrorKind = 'transient' | 'quota' | 'other';
+
+const QUOTA = /\b429\b|rate[_ ]?limit|quota|usage limit/i;
+const TRANSIENT = /\b(?:500|502|503|529)\b|overloaded|ECONNRESET|ETIMEDOUT|socket hang up/i;
+
+/** 按 round.json 的 run.error 或发起失败的文字分类，大小写不敏感。两类字样都有时按额度算，不在关着的额度窗口上重试。 */
+export function classifyError(text: string): ErrorKind {
+  if (QUOTA.test(text)) return 'quota';
+  if (TRANSIENT.test(text)) return 'transient';
+  return 'other';
+}
+
+/** 瞬时错误后每次重试前等多久；长度就是最多重试几次。Claude Code 自己已经重试过，外层两次就够。 */
+export const RETRY_DELAYS_MS: readonly number[] = [60_000, 180_000];
+
+export interface RetryOptions {
+  /** 按 RETRY_DELAYS_MS 等待；离线测试注入，不真的等。 */
+  readonly sleep?: (ms: number) => Promise<void>;
+  /** 进度输出（重试、跳过、额度熔断），缺省不输出。 */
+  readonly log?: (message: string) => void;
+}
+
+/** 单元拿不到有效结果的原因。 */
+export interface InvalidReason {
+  /** transient：瞬时错误重试用完；quota：额度限制，不重试。 */
+  readonly kind: 'transient' | 'quota';
+  readonly task: AgentTaskId;
+  readonly error: string;
+}
+
+/** 上游错误的记录，写在场景目录里，重新评分时读回：每次重试的轮次与原因，拿不到有效结果时的 invalid 原因。 */
+export const UPSTREAM_ERRORS = 'upstream-errors.json';
+
+interface UpstreamRecord {
+  readonly retries: { readonly task: AgentTaskId; readonly error: string }[];
+  invalid?: InvalidReason;
+}
+
 export interface RoundSummary {
   readonly task: AgentTaskId;
   /** 相对评估输出目录。 */
@@ -79,12 +121,21 @@ export interface RoundSummary {
   readonly error?: string;
 }
 
+/** 一个单元（场景的一次）的结论：达线、未达线，或因上游错误拿不到有效结果。 */
+export type UnitStatus = 'pass' | 'fail' | 'invalid';
+
 export interface ScenarioResult {
   readonly id: string;
   readonly name: string;
   readonly repetition: number;
+  readonly status: UnitStatus;
+  /** status 为 pass。 */
   readonly pass: boolean;
-  /** 没达线的原因，逐条。 */
+  /** 上游瞬时错误的重试次数，各轮之和。 */
+  readonly retries: number;
+  /** status 为 invalid 时的原因。 */
+  readonly invalid?: InvalidReason;
+  /** 没达线的原因，逐条；invalid 时为空，原因在 invalid 里。 */
   readonly failures: readonly string[];
   readonly rounds: readonly RoundSummary[];
   readonly checks: {
@@ -102,40 +153,174 @@ export function unitDir(outDir: string, scenario: Scenario, repetition: number):
   return join(outDir, `run-${repetition}`, scenario.id);
 }
 
-/** 跑一个场景的一次：发起所需的轮次，然后评分。 */
-export async function runScenario(config: EvalConfig, scenario: Scenario, repetition: number, outDir: string, launch: Launcher): Promise<ScenarioResult> {
+/**
+ * 跑一个场景的一次：发起所需的轮次，然后评分。
+ * 续跑 invalid 的单元时也用它：已有有效轮次记录的轮次不再发起，366 已应用的第一轮保留；重试次数累计。
+ */
+export async function runScenario(config: EvalConfig, scenario: Scenario, repetition: number, outDir: string, launch: Launcher, retry: RetryOptions = {}): Promise<ScenarioResult> {
   const unit = unitDir(outDir, scenario, repetition);
   await mkdir(unit, { recursive: true });
+  const upstream: UpstreamRecord = { retries: (await readUpstream(unit)).retries };
+  await rm(join(unit, LAUNCH_FAILURES), { force: true });
   const base = { sample: repoPath(scenario.sample), brief: repoPath(scenario.brief), resources: repoPath(config.resources), ...(scenario.domain ? { domain: scenario.domain } : {}) };
+  const round = (spec: RoundSpec) => launchRound(spec, launch, { ...retry, upstream, unit, label: `${scenario.name} 第 ${repetition} 次` });
   const failures: string[] = [];
   try {
     if (scenario.kind === 'definition') {
-      await launch({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
+      await round({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
     } else if (scenario.kind === 'template') {
       const workspace = join(unit, 'workspace');
       await mkdir(workspace, { recursive: true });
       for (const file of scenario.workspace.files) await copyFile(join(repoPath(scenario.workspace.from), file), join(workspace, file));
-      await launch({ ...base, task: 'template-design', out: join(unit, 'template'), workspace, dataset: scenario.dataset, request: repoPath(scenario.request) });
+      await round({ ...base, task: 'template-design', out: join(unit, 'template'), workspace, dataset: scenario.dataset, request: repoPath(scenario.request) });
     } else {
-      await launch({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
+      await round({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
       const definition = await approveDefinitions(join(unit, 'definition'), join(unit, 'workspace'));
-      await launch({ ...base, brief: repoPath(scenario.datasetBrief), task: 'dataset-extraction', out: join(unit, 'dataset'), workspace: join(unit, 'workspace'), definition });
+      await round({ ...base, brief: repoPath(scenario.datasetBrief), task: 'dataset-extraction', out: join(unit, 'dataset'), workspace: join(unit, 'workspace'), definition });
     }
   } catch (error) {
-    failures.push(error instanceof Error ? error.message : String(error));
-    // 重新评分时要带上发起阶段的失败。
-    await writeFile(join(unit, LAUNCH_FAILURES), `${JSON.stringify(failures, null, 2)}\n`);
+    if (error instanceof InvalidUnit) {
+      upstream.invalid = error.reason;
+    } else {
+      failures.push(error instanceof Error ? error.message : String(error));
+      // 重新评分时要带上发起阶段的失败。
+      await writeFile(join(unit, LAUNCH_FAILURES), `${JSON.stringify(failures, null, 2)}\n`);
+    }
   }
+  await writeUpstream(unit, upstream);
   return scoreScenario(config, scenario, repetition, outDir, failures);
 }
 
-/** 按已有的轮次目录评分；重新评分（--rescore）也用它，发起阶段的失败从 launch-failures.json 读回。 */
+/** 这个单元还要不要跑：没有目录，或上次是 invalid。同一个 --label 接着跑时，已有有效结果的单元跳过。 */
+async function unitPending(outDir: string, scenario: Scenario, repetition: number): Promise<boolean> {
+  const unit = unitDir(outDir, scenario, repetition);
+  return !(await exists(unit)) || (await readUpstream(unit)).invalid !== undefined;
+}
+
+export interface EvalUnit {
+  readonly scenario: Scenario;
+  readonly repetition: number;
+}
+
+export interface QueueResult {
+  /** 本次跑过的单元。 */
+  readonly results: readonly ScenarioResult[];
+  /** 已有有效结果、没有再跑的单元。 */
+  readonly skipped: readonly EvalUnit[];
+  /** 遇到额度限制之后没有发起的单元。 */
+  readonly held: readonly EvalUnit[];
+}
+
+/**
+ * 按 jobs 并行跑各单元，单元内部的轮次按顺序；已有有效结果的单元跳过。
+ * 某个单元遇到额度限制时不再发起队列里剩下的单元，已在跑的单元跑完：额度窗口是几个小时，退避等不到它恢复。
+ */
+export async function runUnits(config: EvalConfig, units: readonly EvalUnit[], outDir: string, launch: Launcher, options: RetryOptions & { readonly jobs?: number } = {}): Promise<QueueResult> {
+  const queue = [...units];
+  const results: ScenarioResult[] = [], skipped: EvalUnit[] = [];
+  let stopped = false;
+  await Promise.all(Array.from({ length: Math.min(options.jobs ?? 1, queue.length) }, async () => {
+    while (!stopped) {
+      const unit = queue.shift();
+      if (!unit) return;
+      const label = `${unit.scenario.name} 第 ${unit.repetition} 次`;
+      if (!(await unitPending(outDir, unit.scenario, unit.repetition))) {
+        skipped.push(unit);
+        options.log?.(`${label}：已有结果，跳过`);
+        continue;
+      }
+      const result = await runScenario(config, unit.scenario, unit.repetition, outDir, launch, options);
+      results.push(result);
+      options.log?.(`${label}：${result.status === 'pass' ? '达线' : result.status === 'fail' ? `未达线（${result.failures.join('；')}）` : `invalid（${invalidText(result.invalid!)}）`}`);
+      if (result.invalid?.kind === 'quota' && !stopped) {
+        stopped = true;
+        options.log?.(`额度限制：队列中还没开始的 ${queue.length} 个单元不再发起，已在跑的单元跑完`);
+      }
+    }
+  }));
+  return { results, skipped, held: queue };
+}
+
+/** 发起一轮时抛出：上游错误使这个单元拿不到有效结果。 */
+class InvalidUnit extends Error {
+  constructor(readonly reason: InvalidReason) {
+    super(reason.error);
+  }
+}
+
+/**
+ * 发起一轮。瞬时错误只删掉这一个轮次目录再发起（agent run 要求目录为空），单元里已完成的轮次与已应用的工作区不动；
+ * 重试用完或遇到额度限制时抛出 InvalidUnit。其他错误照旧：发起失败抛出原错误，轮次记录里的错误留给评分。
+ * 续跑时这一轮已有有效轮次记录就不再发起。
+ */
+async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOptions & { upstream: UpstreamRecord; unit: string; label: string }): Promise<void> {
+  if ((await roundError(spec.out)) === null) return;
+  for (let attempt = 0; ; attempt++) {
+    await rm(spec.out, { recursive: true, force: true });
+    let error: string | null | undefined, thrown: unknown;
+    try {
+      await launch(spec);
+      error = await roundError(spec.out);
+    } catch (caught) {
+      thrown = caught;
+      error = caught instanceof Error ? caught.message : String(caught);
+    }
+    const kind = error ? classifyError(error) : undefined;
+    if (kind === 'transient' && attempt < RETRY_DELAYS_MS.length) {
+      context.upstream.retries.push({ task: spec.task, error: error! });
+      await writeUpstream(context.unit, context.upstream);
+      context.log?.(`${context.label}${AGENT_TASKS[spec.task].name}：上游瞬时错误，${Math.round(RETRY_DELAYS_MS[attempt]! / 1000)} 秒后重试这一轮（${attempt + 1}/${RETRY_DELAYS_MS.length}）：${error!}`);
+      await (context.sleep ?? wait)(RETRY_DELAYS_MS[attempt]!);
+      continue;
+    }
+    if (kind === 'transient' || kind === 'quota') throw new InvalidUnit({ kind, task: spec.task, error: error! });
+    if (thrown !== undefined) throw thrown;
+    return;
+  }
+}
+
+/**
+ * 一轮的上游错误：null 表示已有有效的轮次记录（成果合格，或没有错误，或是其他错误）；
+ * undefined 表示没有轮次记录；否则是 run.error 的原文。成果合格时不看错误，模型已经交回了。
+ */
+async function roundError(dir: string): Promise<string | null | undefined> {
+  let record: RoundRecord;
+  try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; } catch { return undefined; }
+  const error = record.verdict === 'qualified' ? undefined : record.run.error;
+  return error !== undefined && classifyError(error) !== 'other' ? error : null;
+}
+
+async function readUpstream(unit: string): Promise<UpstreamRecord> {
+  try {
+    const saved = JSON.parse(await readFile(join(unit, UPSTREAM_ERRORS), 'utf8')) as UpstreamRecord;
+    return { retries: [...saved.retries], ...(saved.invalid ? { invalid: saved.invalid } : {}) };
+  } catch {
+    return { retries: [] };
+  }
+}
+
+/** 没有重试也没有 invalid 时不留文件。 */
+async function writeUpstream(unit: string, record: UpstreamRecord): Promise<void> {
+  if (record.retries.length === 0 && !record.invalid) await rm(join(unit, UPSTREAM_ERRORS), { force: true });
+  else await writeFile(join(unit, UPSTREAM_ERRORS), `${JSON.stringify(record, null, 2)}\n`);
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((done) => setTimeout(done, ms));
+}
+
+function invalidText(reason: InvalidReason): string {
+  return `${AGENT_TASKS[reason.task].name}一轮${reason.kind === 'quota' ? '遇到额度限制' : '上游瞬时错误重试用完'}：${reason.error}`;
+}
+
+/** 按已有的轮次目录评分；重新评分（--rescore）也用它，发起阶段的失败从 launch-failures.json 读回，上游错误从 upstream-errors.json 读回。 */
 export async function scoreScenario(config: EvalConfig, scenario: Scenario, repetition: number, outDir: string, earlier?: readonly string[]): Promise<ScenarioResult> {
   const unit = unitDir(outDir, scenario, repetition);
   let launched: readonly string[] = earlier ?? [];
   if (earlier === undefined) {
     try { launched = JSON.parse(await readFile(join(unit, LAUNCH_FAILURES), 'utf8')) as string[]; } catch { launched = []; }
   }
+  const upstream = await readUpstream(unit);
   const failures = [...launched];
   const names = scenario.kind === 'definition' ? ['definition'] : scenario.kind === 'template' ? ['template'] : ['definition', 'dataset'];
   const rounds: RoundSummary[] = [];
@@ -172,7 +357,12 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
     Object.assign(checks, { transcription: scoreTranscription(stopsOf(dataset), truth) });
   }
   failures.push(...judge(scenario, checks));
-  return { id: scenario.id, name: scenario.name, repetition, pass: failures.length === 0, failures, rounds, checks };
+  // invalid 时的成果不合格与缺评分都是上游错误的后果，不列为没达线的原因；各轮的结论与检查结果照样留作诊断。
+  const status: UnitStatus = upstream.invalid ? 'invalid' : failures.length === 0 ? 'pass' : 'fail';
+  return {
+    id: scenario.id, name: scenario.name, repetition, status, pass: status === 'pass', retries: upstream.retries.length,
+    ...(upstream.invalid ? { invalid: upstream.invalid } : {}), failures: status === 'invalid' ? [] : failures, rounds, checks,
+  };
 }
 
 /** 与通过线对照，返回没达线的原因；缺少评分（没有成果）也算没达线。 */
@@ -210,24 +400,71 @@ export function judge(scenario: Scenario, checks: ScenarioResult['checks']): str
   return failures;
 }
 
+/** 门槛结论：incomplete 表示有效次数还凑不出结论，补跑 invalid 与没跑的次数后才知道。 */
+export type GateStatus = 'pass' | 'fail' | 'incomplete';
+
+/** 某一次的结果；not-run：计划内但没有跑（额度熔断后没发起，或分段跑还没到）。 */
+export type RepetitionOutcome = UnitStatus | 'not-run';
+
 export interface GateResult {
+  readonly status: GateStatus;
+  /** status 为 pass。 */
   readonly pass: boolean;
-  readonly scenarios: readonly { readonly id: string; readonly name: string; readonly passes: readonly boolean[]; readonly pass: boolean }[];
+  readonly scenarios: readonly {
+    readonly id: string;
+    readonly name: string;
+    /** 从第 1 次起各次的结果。 */
+    readonly outcomes: readonly RepetitionOutcome[];
+    readonly status: GateStatus;
+  }[];
 }
 
-/** 门槛：每个场景在本次评估中有连续 consecutive 次达线。 */
-export function gate(config: EvalConfig, results: readonly ScenarioResult[]): GateResult {
-  const scenarios = config.scenarios.filter((scenario) => results.some((result) => result.id === scenario.id)).map((scenario) => {
-    const passes = results.filter((result) => result.id === scenario.id).sort((a, b) => a.repetition - b.repetition).map((result) => result.pass);
-    let streak = 0, best = 0;
-    for (const pass of passes) { streak = pass ? streak + 1 : 0; best = Math.max(best, streak); }
-    return { id: scenario.id, name: scenario.name, passes, pass: best >= config.consecutivePasses };
+/** 本次评估计划的场景与次数（评估清单）。 */
+export interface GatePlan {
+  readonly scenarios: readonly string[];
+  readonly repetitions: number;
+}
+
+/**
+ * 门槛：每个场景在本次评估中有连续 consecutivePasses 次达线。
+ * invalid 与没跑的次数不是观测，算连续时跳过，不打断也不延长连续。没有连续达线时，把它们都当作达线也凑不出来的是 fail，
+ * 凑得出来的是 incomplete。计划的次数至少是 consecutivePasses；缺省按结果中出现的场景与次数算。
+ * 整体：有 fail 是 fail；否则有 incomplete（或一个场景都没有）是 incomplete；全部 pass 才是 pass。
+ */
+export function gate(config: EvalConfig, results: readonly ScenarioResult[], plan?: GatePlan): GateResult {
+  const planned = (scenario: Scenario) => (plan ? plan.scenarios.includes(scenario.id) : results.some((result) => result.id === scenario.id));
+  const scenarios = config.scenarios.filter(planned).map((scenario) => {
+    const own = results.filter((result) => result.id === scenario.id);
+    const count = Math.max(config.consecutivePasses, plan?.repetitions ?? 0, ...own.map((result) => result.repetition));
+    const outcomes = Array.from({ length: count }, (_, index): RepetitionOutcome => own.find((result) => result.repetition === index + 1)?.status ?? 'not-run');
+    const longest = (unknownPasses: boolean) => {
+      let streak = 0, best = 0;
+      for (const outcome of outcomes) {
+        if (outcome === 'fail') streak = 0;
+        else if (outcome === 'pass' || unknownPasses) streak += 1;
+        best = Math.max(best, streak);
+      }
+      return best;
+    };
+    const status: GateStatus = longest(false) >= config.consecutivePasses ? 'pass' : longest(true) >= config.consecutivePasses ? 'incomplete' : 'fail';
+    return { id: scenario.id, name: scenario.name, outcomes, status };
   });
-  return { pass: scenarios.length > 0 && scenarios.every((scenario) => scenario.pass), scenarios };
+  const status: GateStatus = scenarios.some((scenario) => scenario.status === 'fail') ? 'fail'
+    : scenarios.length > 0 && scenarios.every((scenario) => scenario.status === 'pass') ? 'pass' : 'incomplete';
+  return { status, pass: status === 'pass', scenarios };
 }
 
+/** 门槛里 invalid 与没跑的次数；有的话返回用同一个 --label 续跑的命令，args 是要原样带上的其他选项。 */
+export function resumeCommand(label: string, result: GateResult, args: readonly string[] = []): string | undefined {
+  const open = result.scenarios.flatMap((scenario) => scenario.outcomes.flatMap((outcome, index) => (outcome === 'invalid' || outcome === 'not-run' ? [index + 1] : [])));
+  if (open.length === 0) return undefined;
+  const quote = (value: string) => (/^[\w./:@,=+-]+$/.test(value) ? value : `"${value}"`);
+  return ['npx tsx scripts/agent-eval/run.ts', ...['--label', label, '--repetitions', `${Math.min(...open)}-${Math.max(...open)}`, ...args].map(quote)].join(' ');
+}
+
+/** 报告格式。/2 起（票据 21）每个单元有 status 与重试次数，门槛有 incomplete，各次结果是 outcomes 而不是 /1 的 passes。 */
 export interface EvalReport {
-  readonly format: 'renderweave-agent-eval/1';
+  readonly format: 'renderweave-agent-eval/2';
   readonly label: string;
   readonly startedAt: string;
   readonly endedAt: string;
@@ -260,6 +497,8 @@ export async function buildReport(options: {
   readonly provenance?: Provenance;
   /** 跑完的时间；重新评分时沿用评估清单中的，缺省为现在。 */
   readonly endedAt?: string;
+  /** 评估清单中的场景与次数；缺省按结果算。 */
+  readonly plan?: GatePlan;
 }): Promise<EvalReport> {
   const origin = options.provenance ?? await provenance();
   const records: RoundRecord[] = [];
@@ -273,7 +512,7 @@ export async function buildReport(options: {
   const sum = (pick: (round: RoundSummary) => number | undefined) => rounds.reduce((total, round) => total + (pick(round) ?? 0), 0);
   const runtime = records[0]?.runtime;
   return {
-    format: 'renderweave-agent-eval/1', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
+    format: 'renderweave-agent-eval/2', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
     git: origin.git,
     runtime: {
       ...(runtime ? { model: runtime.model, smallModel: runtime.smallModel, endpoint: runtime.endpoint } : {}),
@@ -284,43 +523,52 @@ export async function buildReport(options: {
     consecutivePasses: options.config.consecutivePasses,
     passLines: Object.fromEntries(options.config.scenarios.map((scenario) => [scenario.id, scenario.pass])),
     results: options.results,
-    gate: gate(options.config, options.results),
+    gate: gate(options.config, options.results, options.plan),
     totals: { wallMs: sum((round) => round.wallMs), inputTokens: sum((round) => round.inputTokens), outputTokens: sum((round) => round.outputTokens), cacheReadTokens: sum((round) => round.cacheReadTokens) },
   };
 }
 
+const GATE_TEXT: Record<GateStatus, string> = { pass: '通过', fail: '未通过', incomplete: '未完成' };
+const OUTCOME_TEXT: Record<RepetitionOutcome, string> = { pass: '达线', fail: '未达线', invalid: 'invalid', 'not-run': '未跑' };
+
 /** 报告的文字摘要：门槛结论、各场景每次的结果与原因、用量。 */
 export function formatReport(report: EvalReport): string {
   const lines = [
-    `# Agent 评估 ${report.label}：门槛${report.gate.pass ? '通过' : '未通过'}`,
+    `# Agent 评估 ${report.label}：门槛${GATE_TEXT[report.gate.status]}`,
     '',
     `模型 ${report.runtime.model ?? '?'}（服务端 ${report.runtime.servedModels.join('、') || '?'}），Claude Code ${report.runtime.claudeCodeVersions.join('、') || '?'}，MCP 合同 ${report.mcpContract}，提交 ${report.git.commit}${report.git.dirty ? '（有未提交改动）' : ''}。`,
     '',
     '| 场景 | 各次结果 | 门槛 |',
     '|---|---|---|',
-    ...report.gate.scenarios.map((scenario) => `| ${scenario.name} | ${scenario.passes.map((pass) => (pass ? '达线' : '未达线')).join('、')} | ${scenario.pass ? '通过' : '未通过'} |`),
+    ...report.gate.scenarios.map((scenario) => `| ${scenario.name} | ${scenario.outcomes.map((outcome) => OUTCOME_TEXT[outcome]).join('、')} | ${GATE_TEXT[scenario.status]} |`),
     '',
   ];
   for (const result of report.results) {
     const usage = result.rounds.map((round) => `${AGENT_TASKS[round.task].name} ${((round.wallMs ?? 0) / 60000).toFixed(1)} 分钟 / ${round.turns ?? '?'} 轮 / 输出 ${round.outputTokens ?? '?'}`).join('；');
-    lines.push(`- ${result.name} 第 ${result.repetition} 次：${result.pass ? '达线' : '未达线'}。${usage}`);
+    lines.push(`- ${result.name} 第 ${result.repetition} 次：${OUTCOME_TEXT[result.status]}${result.retries > 0 ? `（重试 ${result.retries} 次）` : ''}。${usage}`);
+    if (result.invalid) lines.push(`  - ${invalidText(result.invalid)}`);
     for (const failure of result.failures) lines.push(`  - ${failure}`);
   }
   lines.push('', `合计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输出 ${report.totals.outputTokens} tokens。`);
   return lines.join('\n');
 }
 
-/** 评估中模拟审核人：待确认项全部采纳、整体确认、通过，并应用到 workspace。返回主数据定义（含站点列表的那份）的名称。 */
+/**
+ * 评估中模拟审核人：待确认项全部采纳、整体确认、通过，并应用到 workspace。返回主数据定义（含站点列表的那份）的名称。
+ * 续跑时这一轮已经应用过（第二轮因上游错误 invalid），不再审核与应用。
+ */
 async function approveDefinitions(roundDir: string, workspace: string): Promise<string> {
   await mkdir(workspace, { recursive: true });
   const opened = await readReview(roundDir);
   if (!opened.view) throw new Error(`数据定义一轮没有可审核的成果，不能接着做数据集提取：${opened.problems.map((problem) => problem.message).join('；')}`);
-  for (const item of opened.view.pending) await changeReview(roundDir, { type: 'decide', item: item.item, action: 'adopt' });
-  await changeReview(roundDir, { type: 'confirmRest', confirmed: true });
-  const approved = await changeReview(roundDir, { type: 'approve', comment: '评估：待确认项全部采纳' });
-  if (approved.problems.length > 0) throw new Error(`数据定义审核不能通过：${approved.problems.map((problem) => problem.message).join('；')}`);
-  const applied = await applyAgentRound({ roundDir, workspace });
-  if (!applied.applied) throw new Error(`数据定义应用失败：${applied.problems.map((problem) => problem.message).join('；')}`);
+  if (!opened.view.applied) {
+    for (const item of opened.view.pending) await changeReview(roundDir, { type: 'decide', item: item.item, action: 'adopt' });
+    await changeReview(roundDir, { type: 'confirmRest', confirmed: true });
+    const approved = await changeReview(roundDir, { type: 'approve', comment: '评估：待确认项全部采纳' });
+    if (approved.problems.length > 0) throw new Error(`数据定义审核不能通过：${approved.problems.map((problem) => problem.message).join('；')}`);
+    const applied = await applyAgentRound({ roundDir, workspace });
+    if (!applied.applied) throw new Error(`数据定义应用失败：${applied.problems.map((problem) => problem.message).join('；')}`);
+  }
   const route = opened.view.candidates.find((candidate) => candidate.kind === 'definition' && hasListOfRef(candidate.document));
   const name = route?.published?.name ?? route?.name;
   if (!name) throw new Error('成果中没有含站点列表的数据定义');
