@@ -82,8 +82,8 @@
 | 能绑定 | 属性 |
 |---|---|
 | 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、码的 `foreground` 与 `background` |
-| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`rowGap`、`columnGap`，循环的 `itemLayout.gap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
-| 布尔 | `visible`、`clip`、条形码 `showText` |
+| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
+| 布尔 | `visible`、`clip`、循环的 `reverse`、条形码 `showText` |
 | 图片 | 图片元素的 `source` |
 | 文本 | 码元素的 `content`；文字内容经插槽绑定 |
 
@@ -196,9 +196,10 @@
 ### 循环
 
 ```text
-{ "type": "loop", "name", "list": { "var": 列表 }, "template": 模板名, "args"?: { 参数名: 运算数 },
+{ "type": "loop", "name", "list": { "var": 列表 }, "reverse"?: true | false,
+  "slice"?: { "start"?: 运算数, "end"?: 运算数 }, "template": 模板名, "args"?: { 参数名: 运算数 },
   "itemLayout": { "direction"?: "row", "widths": 每项尺寸, "gap"?, "spanBy"? }
-              | { "direction": "column", "heights": 每项尺寸, "gap"? },
+              | { "direction": "column", "heights": 每项尺寸, "gap"?, "spanBy"? },
   "mergeBy"?: 字段路径, "padding"?, "fill"?, "stroke"?, "cornerRadius"?, "clip"? }
 ```
 
@@ -208,10 +209,16 @@
   - `column` 从上往下排，`heights` 定每项高度，宽度填满循环区域。竖排的列表用它，不必把横向循环旋转 90°；
   - 横向写 `heights`、纵向写 `widths` 都是错误，提示该用哪个词。
 - **每项尺寸**：`widths` 与 `heights` 取值相同，`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{ "fixed": 毫米 }`。列表项连同间距的总长超出循环区域时报 `layout.contentOverflow`，两个方向相同。
-- **循环信息**：只能经 `args` 传给被调模板，写成 `{ "loop": "index" | "isFirst" | "isLast" | "count" | "groupSize" }`，被调模板要声明同名的 public 参数来接收。序号从 1 开始。
-- **合并相邻同值项**（S28、M127–M130）：写 `"mergeBy": "字段路径"`，同时写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`。只支持横向，纵向循环写 `mergeBy` 或 `spanBy` 报错（M236）。
+- **区间切片与反序**（M240）：
+  - `slice` 按 1-based 闭区间 `[start ?? 1, end ?? items.length]` 截取子列表，至少写 `start` 或 `end` 之一；可写正整数字面值（或 `{ "value": 正整数 }`）或绑定数值变量 `{ "var": … }`。静态字面值 `start > end` 报 `template.invalid`；绑定变量在求值时非正整数或 `start > end` 报 `template.bindingValueInvalid`；`start > items.length` 时结果为空列表，不报错（便于长列表分栏时后一栏自然留空）。
+  - `reverse` 为布尔字面值或布尔变量绑定，缺省 `false`；为 `true` 时反序排列（如对向站牌反序站点列）。
+  - 执行顺序固定为：先为原始列表每项标记原始 1-based 序号 → 按 `slice` 截取 → 按 `reverse` 决定排列顺序 → 按 `mergeBy` 合并相邻同值项（每组取排列顺序下的首项数据与首项原始序号）。
+- **循环信息**：只能经 `args` 传给被调模板，写成 `{ "loop": "index" | "isFirst" | "isLast" | "count" | "groupSize" }`，被调模板要声明同名的 public 参数来接收。
+  - `{ "loop": "index" }`、元素路径 `循环名[index]` 以及草稿缺值追溯始终使用该项（或合并组首项）在原始列表中的 1-based 序号，分栏切片与反序列表仍可直接与本站序号比对；
+  - `{ "loop": "count" }` 为截取后（合并前）参与本次循环的项数，`isFirst` 与 `isLast` 表示是否为本次排列顺序下的首项/末项（含合并组覆盖首尾项的情形）。
+- **合并相邻同值项**（S28、M127–M130、M240）：写 `"mergeBy": "字段路径"`，横向写 `"itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" }`，纵向写 `"itemLayout": { "direction": "column", "heights": "equal", "spanBy": "groupSize" }`。
   - 相邻且取值严格相等的项合并成一组；缺值的项各自成组。
-  - 组宽是组内各项的列宽加上内部间距；被调模板取组内首项的数据。
+  - 横向按本次循环项数（`count`）等分可用宽度，组宽包含所跨项的内部列间距；纵向按 `count` 等分可用高度，组高包含所跨项的内部行间距；被调模板取排列顺序下组内首项的数据。
   - `{ "loop": "groupSize" }` 给出组内项数。
 
 ### 调用
@@ -1092,6 +1099,13 @@
         "list": {
           "var": "sessions"
         },
+        "reverse": false,
+        "slice": {
+          "start": 1,
+          "end": {
+            "var": "maxSessions"
+          }
+        },
         "template": "场次行",
         "args": {
           "isLast": {
@@ -1306,6 +1320,7 @@
 | 元素名称重复 | `template.duplicateElementName` | 两个元素同名 |
 | 网格行列越界 | `template.invalid` | 网格只有 3 行，元素占到第 4 行 |
 | 尺寸上下限颠倒 | `template.invalid` | `minWidth` 大于 `maxWidth`；`sizeRange` 的 `min` 大于 `max` |
+| 循环切片起止颠倒 | `template.invalid` | `slice.start` 大于 `slice.end` |
 | 参数约束或缺省值不合规 | `template.invalid` | `min` 大于 `max`；`pattern` 不是合法正则；缺省值违反约束，或不是真实存在的日期 |
 | 展示格式不合法 | `template.invalid` | `format` 不是可识别的日期时刻或数值格式 |
 | 缩字下限低于画板的值 | `template.invalid` | 画板写了 `"minFontSize": 3`，元素的 `fit.minFontSize` 写 2.5；画板没写时低于 5 |
@@ -1329,10 +1344,10 @@
 
 DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按 ADR-0016 处理兼容。
 
-- **循环只排成一行或一列**：没有自动换行或两排；合并相邻同值项只支持横向（M236）。
+- **循环只排成一行或一列**：没有自动换行或两排。
 - **没有段落换行**：一个文字元素是一行（竖排是一列），放不下时按 `fit` 适配。
 - **没有文本表达式与脚本**：只有单步具名运算（ADR-0004）。拼接文字用多个片段。
-- **没有动态模板**：被调模板名不能由数据决定，循环也没有过滤、反序或附加项。
+- **没有动态模板**：被调模板名不能由数据决定，循环也没有按条件过滤或附加项（支持 `reverse` 反序与 `slice` 区间切片，M240）。
 - **竖排文字的片段只能单独设颜色**，竖排不能倾斜。
 - **不能绑定**：字体、路径数据、多边形顶点、线条端点不能绑定变量。
 - **URL 图片尚未支持**：不画内容并报问题（见[数据定义](data-definition.md#已知限制)）。

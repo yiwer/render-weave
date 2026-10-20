@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadWorkspace, publishStaticSchema, render, ProblemCodes, type LayoutNode, type RenderResult, type Workspace } from '../src/index.js';
 import { m402Dir, resourcesDir, textLab, textLabRequest, withTemplate } from './support/fixtures.js';
 import { expectMatchesGolden } from './support/golden.js';
+import { decodePixels, pixelAtMm } from './support/pixels.js';
 
 const range = { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } };
 const ref = (name: string) => ({ name, version: 1 });
@@ -103,11 +104,166 @@ describe('合并相邻同值项', () => {
     { mergeBy: 'unknown' }, { mergeBy: 'name.unknown' }, { mergeBy: '' },
     { itemLayout: { direction: 'row', widths: 'content', spanBy: 'groupSize' } },
     { itemLayout: { direction: 'row', widths: 'equal' } },
+    { itemLayout: { direction: 'column', heights: 'content', spanBy: 'groupSize' } },
+    { itemLayout: { direction: 'column', heights: 'equal' } },
     { mergeBy: undefined },
   ])('非法合并规则静态报告，即使循环隐藏：%j', async (extra) => {
     const result = await render(await lab({ ...extra, visible: false }), textLabRequest({}, 40, 10));
     expect(result.problems.some((problem) => problem.code === ProblemCodes.templateInvalid || problem.code === ProblemCodes.templateTypeMismatch)).toBe(true);
     expect(result.layout).toBeUndefined();
+  });
+
+  it('竖版线路牌纵向道路带合并：按本次循环项数等分高度并跨内部行间距，与站点行对齐并正常出图', async () => {
+    const keys = ['index', 'count', 'groupSize', 'isFirst', 'isLast'];
+    let workspace = await textLab(
+      [{ name: 'items', displayName: '列表', type: 'list', items: { type: 'ref', ref: ref('站点实验') } }],
+      {
+        fill: '#FFFFFF',
+        layout: { mode: 'stack', direction: 'row', gap: 2 },
+        children: [
+          {
+            type: 'loop',
+            name: '道路带',
+            list: { var: 'items' },
+            template: '道路段',
+            mergeBy: 'name',
+            args: Object.fromEntries(keys.map((key) => [key, { loop: key }])),
+            itemLayout: { direction: 'column', heights: 'equal', spanBy: 'groupSize', gap: 2 },
+            place: { width: { fixed: 16 }, height: 'fill' },
+          },
+          {
+            type: 'loop',
+            name: '站点列',
+            list: { var: 'items' },
+            template: '站点行',
+            itemLayout: { direction: 'column', heights: 'equal', gap: 2 },
+            place: { width: 'fill', height: 'fill' },
+          },
+        ],
+      },
+    );
+    workspace = {
+      ...workspace,
+      templates: [
+        ...workspace.templates,
+        {
+          name: '道路段',
+          document: {
+            dslVersion: 'renderweave-template/1',
+            name: '道路段',
+            base: ref('站点实验'),
+            parameters: keys.map((key) => param(key, key.startsWith('is') ? 'boolean' : 'number')),
+            artboard: {
+              sizeRange: range,
+              fill: '#1F6FEB',
+              layout: { mode: 'stack', direction: 'column' },
+              children: [
+                text('道路名', 'name'),
+                ...keys.map((key) =>
+                  key.startsWith('is')
+                    ? { type: 'rect', name: key, visible: { var: key }, fill: '#FF0000', place: { width: { fixed: 1 }, height: { fixed: 1 } } }
+                    : text(key, key),
+                ),
+              ],
+            },
+          },
+        },
+        {
+          name: '站点行',
+          document: {
+            dslVersion: 'renderweave-template/1',
+            name: '站点行',
+            base: ref('站点实验'),
+            artboard: {
+              sizeRange: range,
+              fill: '#EAEEF2',
+              layout: { mode: 'stack', direction: 'row', alignItems: 'center' },
+              children: [text('站名', 'name')],
+            },
+          },
+        },
+      ],
+    };
+
+    const items = ['甲', '甲', '乙', '甲'].map((name) => ({ name }));
+    const result = await render(workspace, textLabRequest({ items }, 50, 206));
+    expect(result.problems).toEqual([]);
+    const roads = named(result, '道路带').children!;
+    const stops = named(result, '站点列').children!;
+    expect(roads.map((node) => [node.path, node.y, node.height])).toEqual([
+      ['文字实验/道路带[1]', 0, 102],
+      ['文字实验/道路带[3]', 104, 50],
+      ['文字实验/道路带[4]', 156, 50],
+    ]);
+    expect(roads[0]!.y).toBe(stops[0]!.y);
+    expect(roads[0]!.y + roads[0]!.height).toBe(stops[1]!.y + stops[1]!.height);
+    expect(roads[1]!.y).toBe(stops[2]!.y);
+    expect(roads[2]!.y).toBe(stops[3]!.y);
+    expect(roads.map((node) => node.children!.slice(1, 4).map((child) => child.text!.content))).toEqual([
+      ['1', '4', '2'],
+      ['3', '4', '1'],
+      ['4', '4', '1'],
+    ]);
+    expect(roads.map((node) => node.children![4]!.visible)).toEqual([true, false, false]);
+    expect(roads.map((node) => node.children![5]!.visible)).toEqual([false, false, true]);
+
+    const pixels = await decodePixels(result.image!.bytes);
+    // 第 1 段跨第 1、2 行及中间 2 mm 行距（y=51 处仍为蓝色道路带背景，而非白色画板底）。
+    expect(pixelAtMm(pixels, 15, 51, 120).slice(0, 3)).toEqual([0x1f, 0x6f, 0xeb]);
+    // 第 1 段与第 2 段之间的 2 mm 间隙（y=103 处）露出画板白色背景。
+    expect(pixelAtMm(pixels, 15, 103, 120).slice(0, 3)).toEqual([0xff, 0xff, 0xff]);
+
+    // 纵向合并随内容高度（hug）：按最长组折算单行高度。
+    const hugWs = await lab(
+      { itemLayout: { direction: 'column', heights: 'equal', spanBy: 'groupSize', gap: 2 }, place: { width: 'fill', height: 'hug' } },
+      [{ type: 'rect', name: '块', fill: '#000000', place: { width: { fixed: 5 }, height: { fixed: 12 } } }],
+    );
+    const hugRes = await render(hugWs, textLabRequest({ items: [{ name: '甲' }, { name: '甲' }, { name: '乙' }] }, 20, 100));
+    expect(hugRes.problems).toEqual([]);
+    const merged = named(hugRes, '合并');
+    // 单项组高 12 > 合并组 (12 - 2)/2 = 5，故单行高 12，总高 3 * 12 + 2 * 2 = 40。
+    expect(merged.height).toBeCloseTo(40, 2);
+    expect(merged.children![0]!.height).toBeCloseTo(26, 2);
+    expect(merged.children![1]!.height).toBeCloseTo(12, 2);
+  });
+
+  it('slice、reverse 与 mergeBy 组合时按 标记原始序号 → 切片 → 反序 → 合并 顺序执行', async () => {
+    const keys = ['index', 'count', 'groupSize', 'isFirst', 'isLast'];
+    const workspace = await lab(
+      {
+        slice: { start: 2, end: 5 },
+        reverse: true,
+        args: Object.fromEntries(keys.map((key) => [key, { loop: key }])),
+      },
+      [
+        text('组名', 'name'),
+        ...keys.map((key) =>
+          key.startsWith('is')
+            ? { type: 'rect', name: key, visible: { var: key }, fill: '#FF0000', place: { width: { fixed: 1 }, height: { fixed: 1 } } }
+            : text(key, key),
+        ),
+      ],
+      { parameters: keys.map((key) => param(key, key.startsWith('is') ? 'boolean' : 'number')) },
+    );
+    // 原始 1..6：甲(1), 乙(2), 乙(3), 丙(4), 丙(5), 丁(6)
+    // 切片 2..5：乙(2), 乙(3), 丙(4), 丙(5)（count=4）
+    // 反序：丙(5), 丙(4), 乙(3), 乙(2)
+    // 合并：第一组取首项 丙(index=5, size=2, start=1)，第二组取首项 乙(index=3, size=2, start=3)
+    const items = ['甲', '乙', '乙', '丙', '丙', '丁'].map((name) => ({ name }));
+    const result = await render(workspace, textLabRequest({ items }, 206, 15));
+    expect(result.problems).toEqual([]);
+    const groups = named(result, '合并').children!;
+    expect(groups.map((node) => [node.path, node.x, node.width])).toEqual([
+      ['文字实验/合并[5]', 0, 102],
+      ['文字实验/合并[3]', 104, 102],
+    ]);
+    expect(groups.map((node) => node.children![0]!.text!.content)).toEqual(['丙', '乙']);
+    expect(groups.map((node) => node.children!.slice(1, 4).map((c) => c.text!.content))).toEqual([
+      ['5', '4', '2'],
+      ['3', '4', '2'],
+    ]);
+    expect(groups.map((node) => node.children![4]!.visible)).toEqual([true, false]);
+    expect(groups.map((node) => node.children![5]!.visible)).toEqual([false, true]);
   });
 });
 

@@ -145,12 +145,13 @@ class Layouter {
       }
     }
     if (node.loopColumns) {
-      const { count, gap } = node.loopColumns;
-      const column = Math.max(0, ...children.map((child) => {
+      const { direction, count, gap } = node.loopColumns;
+      const main: Axis = direction === 'row' ? 'width' : 'height';
+      const unit = Math.max(0, ...children.map((child) => {
         const size = child.loopGroup!.size;
-        return (this.outerHug(child, 'width') - (size - 1) * gap) / size;
+        return (this.outerHug(child, main) - (size - 1) * gap) / size;
       }));
-      content = { ...content, width: count * column + Math.max(0, count - 1) * gap };
+      content = { ...content, [main]: count * unit + Math.max(0, count - 1) * gap };
     }
     return {
       width: content.width + model.padding.left + model.padding.right,
@@ -284,15 +285,25 @@ class Layouter {
   private childBoxes(node: EvaluatedNode, model: ArtboardModel | ContainerModel, content: Box): Map<EvaluatedNode, Box> {
     const children = visibleChildren(node);
     if (node.loopColumns) {
-      const { count, gap } = node.loopColumns;
+      const { direction, count, gap } = node.loopColumns;
       if (count === 0) return new Map();
+      const row = direction === 'row';
+      const available = row ? content.width : content.height;
       const gaps = gap * (count - 1);
-      const column = Math.max(0, content.width - gaps) / count;
-      if (gaps > content.width + EPSILON) this.contentOverflow(model, `原始列间距需要 ${fmt(gaps)} mm，可用 ${fmt(content.width)} mm`);
+      const unit = Math.max(0, available - gaps) / count;
+      if (gaps > available + EPSILON) {
+        this.contentOverflow(model, `原始${row ? '列' : '行'}间距需要 ${fmt(gaps)} mm，可用 ${fmt(available)} mm`);
+      }
       return new Map(children.map((child) => {
         const group = child.loopGroup!;
-        return [child, { x: content.x + (group.index - 1) * (column + gap), y: content.y,
-          width: group.size * column + (group.size - 1) * gap, height: content.height }];
+        const offset = (group.start - 1) * (unit + gap);
+        const span = group.size * unit + (group.size - 1) * gap;
+        return [
+          child,
+          row
+            ? { x: content.x + offset, y: content.y, width: span, height: content.height }
+            : { x: content.x, y: content.y + offset, width: content.width, height: span },
+        ];
       }));
     }
     switch (model.layout.mode) {

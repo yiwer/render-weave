@@ -54,6 +54,7 @@ import {
   type CallModel,
   type LoopItemSize,
   type LoopModel,
+  type LoopSlice,
 } from './model.js';
 
 const TEMPLATE_KEYS = ['dslVersion', 'name', 'base', 'parameters', 'derived', 'checks', 'artboard'];
@@ -64,7 +65,7 @@ const COMMON_KEYS = ['type', 'name', 'place', 'visible', 'opacity', 'rotation', 
 const STATE_FIXED_KEYS = ['type', 'name', 'children', 'states', 'template'];
 const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   container: [...COMMON_KEYS, ...CONTAINER_BODY_KEYS],
-  loop: [...COMMON_KEYS, 'list', 'template', 'args', 'itemLayout', 'padding', 'fill', 'stroke', 'cornerRadius', 'clip', 'mergeBy'],
+  loop: [...COMMON_KEYS, 'list', 'reverse', 'slice', 'template', 'args', 'itemLayout', 'padding', 'fill', 'stroke', 'cornerRadius', 'clip', 'mergeBy'],
   call: [...COMMON_KEYS, 'template', 'data', 'args'],
   text: [
     ...COMMON_KEYS,
@@ -596,6 +597,8 @@ class TemplateReader {
     }
     const list = value['list'];
     if (!isVarOperand(list)) return this.fail(path, '循环的 list 必须是 { var: 列表字段路径 }');
+    const reverse = this.readBoolean(value['reverse'], false, path, 'reverse');
+    const slice = this.optional(value['slice'], (v) => this.readSlice(v, path));
     const item = value['itemLayout'];
     if (!isRecord(item)) return this.fail(path, '循环必须声明 itemLayout');
     this.checkKeys(item, ['direction', 'widths', 'heights', 'gap', 'spanBy'], path, 'itemLayout');
@@ -609,20 +612,52 @@ class TemplateReader {
     if (item[otherKey] !== undefined) {
       return this.fail(path, `${direction === 'row' ? '横向' : '纵向'}循环用 itemLayout.${sizeKey} 指定每项${direction === 'row' ? '宽度' : '高度'}，不写 ${otherKey}`);
     }
-    if (direction === 'column' && (mergeBy !== undefined || spanBy !== undefined)) {
-      return this.fail(path, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环');
-    }
     const size = this.readLoopItemSize(item[sizeKey], path, sizeKey);
     if (!size) return undefined;
-    if (direction === 'row' && mergeBy !== undefined && (size !== 'equal' || spanBy !== 'groupSize')) {
-      return this.fail(path, '合并循环必须使用 widths: equal、spanBy: groupSize，按原始项数分列');
+    if (mergeBy !== undefined && (size !== 'equal' || spanBy !== 'groupSize')) {
+      return this.fail(path, `合并循环必须使用 ${sizeKey}: equal、spanBy: groupSize，按原始项数分${direction === 'row' ? '列' : '行'}`);
     }
     if (spanBy !== undefined && mergeBy === undefined) return this.fail(path, 'spanBy: groupSize 需要同时指定 mergeBy');
     const body = this.readContainerBody({ ...value, layout: { mode: 'free' }, children: [] }, path);
-    if (!base || !body || gap === undefined) return undefined;
+    if (!base || !body || gap === undefined || reverse === undefined || slice === null) return undefined;
     const { children: _children, layout: _layout, ...appearance } = body;
-    return { ...base, ...appearance, type, template, list, args, ...(typeof mergeBy === 'string' && { mergeBy }),
-      itemLayout: direction === 'row' ? { direction, widths: size, gap, ...(spanBy && { spanBy }) } : { direction, heights: size, gap } };
+    return { ...base, ...appearance, type, template, list, reverse, ...(slice && { slice }), args, ...(typeof mergeBy === 'string' && { mergeBy }),
+      itemLayout: direction === 'row'
+        ? { direction, widths: size, gap, ...(spanBy && { spanBy }) }
+        : { direction, heights: size, gap, ...(spanBy && { spanBy }) } };
+  }
+
+  private readSlice(value: unknown, path: ElementPath): Read<LoopSlice> {
+    if (!isRecord(value)) return this.fail(path, '循环的 slice 必须是对象');
+    this.checkKeys(value, ['start', 'end'], path, '循环的 slice');
+    const rawStart = value['start'];
+    const rawEnd = value['end'];
+    if (rawStart === undefined && rawEnd === undefined) {
+      return this.fail(path, '循环的 slice 至少要指定 start 或 end 之一');
+    }
+    const readBound = (raw: unknown, label: string): Read<number> => {
+      const unwrapped = isRecord(raw) && Object.keys(raw).length === 1 && 'value' in raw ? raw['value'] : raw;
+      return this.readNumber(unwrapped, undefined, path, label, { min: 1, integer: true });
+    };
+    const start = rawStart === undefined ? undefined : readBound(rawStart, 'slice.start');
+    const end = rawEnd === undefined ? undefined : readBound(rawEnd, 'slice.end');
+    if ((rawStart !== undefined && start === undefined) || (rawEnd !== undefined && end === undefined)) {
+      return undefined;
+    }
+    if (start !== undefined && end !== undefined && start > end) {
+      if (this.host.resolving) {
+        this.report(
+          ProblemCodes.templateBindingValueInvalid,
+          path,
+          `循环的 slice.start（${start}）不能大于 slice.end（${end}），该元素不显示（M119）`,
+        );
+        return undefined;
+      }
+      if (!isVarOperand(rawStart) && !isVarOperand(rawEnd)) {
+        return this.fail(path, '循环的 slice.start 不能大于 slice.end');
+      }
+    }
+    return { ...(start !== undefined && { start }), ...(end !== undefined && { end }) };
   }
 
   private readLoopItemSize(value: unknown, path: ElementPath, key: 'widths' | 'heights'): Read<LoopItemSize> {

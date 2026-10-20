@@ -29,9 +29,9 @@ export interface EvaluatedNode {
   readonly sourceType?: 'loop' | 'call';
   /** 被调画板的尺寸范围，在实际调用框确定后检查。 */
   readonly calledTemplate?: { readonly name: string; readonly sizeRange: ArtboardModel['sizeRange'] };
-  /** 合并循环沿原始列划分空间，组宽包含被合并的内部列间距。 */
-  readonly loopColumns?: { readonly count: number; readonly gap: number };
-  readonly loopGroup?: { readonly index: number; readonly size: number };
+  /** 合并循环沿原始项划分空间，每组尺寸包含被合并的内部间距。 */
+  readonly loopColumns?: { readonly direction: 'row' | 'column'; readonly count: number; readonly gap: number };
+  readonly loopGroup?: { readonly index: number; readonly start: number; readonly size: number };
   /** 文本元素求值后的片段，样式已合并上文本元素的设置。 */
   readonly fragments?: readonly EvaluatedFragment[];
   readonly children?: readonly EvaluatedNode[];
@@ -131,17 +131,22 @@ class Expander {
         const spec = layout.direction === 'row' ? layout.widths : layout.heights;
         const along: SizeSpec = spec === 'equal' ? { kind: 'fill', weight: 1 } : spec === 'content' ? { kind: 'hug' } : { kind: 'fixed', value: spec.fixed };
         const across: SizeSpec = { kind: 'fill', weight: 1 };
-        const children = groupLoopItems(items, model.mergeBy).map((group) => {
-          const { data: item, index, size } = group;
+        const { count, groups } = groupLoopItems(items, {
+          ...(model.slice && { slice: model.slice }),
+          reverse: model.reverse,
+          ...(model.mergeBy !== undefined && { mergeBy: model.mergeBy }),
+        });
+        const children = groups.map((group) => {
+          const { data: item, index, start, size } = group;
           const path = [...model.path.slice(0, -1), { name: model.name, index }];
           const place: Place = { ...EMPTY_PLACE, ...(layout.direction === 'row' ? { width: along, height: across } : { width: across, height: along }) };
           const listOrigin = fieldOrigin(origin, model.list.var);
           const child = this.invoke(model, scope, wrap ? { value: item } : item, path, place,
             listOrigin === undefined ? undefined : { path: `${listOrigin}[${index}]`, wrapped: wrap }, undefined,
-            { index, isFirst: index === 1, isLast: index + size - 1 === items.length, count: items.length, groupSize: size });
-          return model.mergeBy ? { ...child, loopGroup: { index, size } } : child;
+            { index, isFirst: start === 1, isLast: start + size - 1 === count, count, groupSize: size });
+          return model.mergeBy ? { ...child, loopGroup: { index, start, size } } : child;
         });
-        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { count: items.length, gap: layout.gap } }),
+        return { sourceType: 'loop', ...(model.mergeBy && { loopColumns: { direction: layout.direction, count, gap: layout.gap } }),
           model: { ...model, type: 'container', children: [],
           layout: { mode: 'stack', direction: layout.direction, gap: layout.gap, justifyContent: 'start', alignItems: 'start' } }, children };
       }

@@ -214,9 +214,9 @@ describe('纵向循环（M236）', () => {
     [{ direction: 'row', widths: 'equal', heights: 'equal' }, {}, '横向循环用 itemLayout.widths 指定每项宽度，不写 heights'],
     [{ heights: 'equal' }, {}, '横向循环用 itemLayout.widths 指定每项宽度，不写 heights'],
     [{ direction: 'column' }, {}, 'itemLayout.heights 写成 equal、content 或 { fixed: 毫米 }'],
-    [{ direction: 'column', heights: 'equal', spanBy: 'groupSize' }, { mergeBy: 'name' }, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环'],
-    [{ direction: 'column', heights: 'equal' }, { mergeBy: 'name' }, '合并相邻同值项（mergeBy、spanBy）目前只支持横向循环'],
-  ])('写错方向的词或纵向合并时报模板错误：%j %j', async (itemLayout, extra, message) => {
+    [{ direction: 'column', heights: 'content', spanBy: 'groupSize' }, { mergeBy: 'name' }, '合并循环必须使用 heights: equal、spanBy: groupSize，按原始项数分行'],
+    [{ direction: 'column', heights: 'equal' }, { mergeBy: 'name' }, '合并循环必须使用 heights: equal、spanBy: groupSize，按原始项数分行'],
+  ])('写错方向的词或纵向合并配置不完整时报模板错误：%j %j', async (itemLayout, extra, message) => {
     const result = await render(await referenceLoop({ itemLayout, ...extra }), draft(stops, 20, 42));
     expect(result.problems).toContainEqual(expect.objectContaining({ code: ProblemCodes.templateInvalid, message }));
     expect(result.image).toBeUndefined();
@@ -248,6 +248,256 @@ describe('纵向循环（M236）', () => {
     const current = items[2]!;
     expect(pixelAtMm(pixels, current.x + 0.5, current.y + current.height / 2, 120).slice(0, 3)).toEqual([255, 240, 0]);
     await expectMatchesGolden('loop-column-stops', result.image!.bytes);
+  });
+});
+
+describe('反序与区间切片（M240）', () => {
+  it('对向站牌反序站点列：按反序排列，index、路径与缺值追溯仍用原始序号并与本站序号比对，isFirst/isLast 按排列顺序', async () => {
+    let workspace = await textLab(
+      [listField({ type: 'ref', ref: ref('站点实验') })],
+      {
+        children: [
+          loop({
+            reverse: { var: 'opposite' },
+            args: {
+              index: { loop: 'index' },
+              count: { loop: 'count' },
+              first: { loop: 'isFirst' },
+              last: { loop: 'isLast' },
+              current: { var: 'currentIndex' },
+            },
+            itemLayout: { direction: 'row', widths: 'equal', gap: 2 },
+          }),
+        ],
+      },
+      {
+        parameters: [
+          param('opposite', 'boolean', { default: true }),
+          param('currentIndex', 'number', { default: 2 }),
+        ],
+      },
+    );
+    workspace = addTemplate(
+      workspace,
+      '子模板',
+      '站点实验',
+      [
+        text('站名', 'name', {
+          states: {
+            by: { var: 'status' },
+            cases: {
+              passed: { color: '#999999' },
+              current: { color: '#E60012' },
+              future: { color: '#333333' },
+            },
+          },
+        }),
+        text('序号', 'index'),
+        text('总数', 'count'),
+        { type: 'rect', name: '首标记', visible: { var: 'first' }, fill: '#00FF00', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+        { type: 'rect', name: '末标记', visible: { var: 'last' }, fill: '#0000FF', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+      ],
+      {
+        parameters: [param('index'), param('count'), param('first', 'boolean'), param('last', 'boolean'), param('current')],
+        derived: [
+          {
+            name: 'status',
+            displayName: '站点状态',
+            type: 'text',
+            op: 'branch',
+            branches: [
+              { when: { left: { var: 'index' }, op: 'lt', right: { var: 'current' } }, then: { value: 'passed' } },
+              { when: { left: { var: 'index' }, op: 'eq', right: { var: 'current' } }, then: { value: 'current' } },
+            ],
+            otherwise: { value: 'future' },
+          },
+        ],
+      },
+    );
+
+    const stops = ['东门', '人民路口', '腾昌花园', '四联路'].map((name) => ({ name }));
+    const result = await render(workspace, textLabRequest({ items: stops }, 126, 12));
+    expect(result.problems).toEqual([]);
+    const children = at(result, '文字实验/循环').children!;
+    expect(children.map((node) => [node.path, node.x, node.width])).toEqual([
+      ['文字实验/循环[4]', 0, 30],
+      ['文字实验/循环[3]', 32, 30],
+      ['文字实验/循环[2]', 64, 30],
+      ['文字实验/循环[1]', 96, 30],
+    ]);
+    expect(children.map((node) => at(result, `${node.path}/站名`).text?.content)).toEqual(['四联路', '腾昌花园', '人民路口', '东门']);
+    expect(children.map((node) => at(result, `${node.path}/序号`).text?.content)).toEqual(['4', '3', '2', '1']);
+    expect(children.map((node) => at(result, `${node.path}/总数`).text?.content)).toEqual(['4', '4', '4', '4']);
+    expect(children.map((node) => at(result, `${node.path}/站名`).text?.fragments[0]?.color)).toEqual([
+      '#333333FF',
+      '#333333FF',
+      '#E60012FF',
+      '#999999FF',
+    ]);
+    expect(children.map((node) => at(result, `${node.path}/首标记`).visible)).toEqual([true, false, false, false]);
+    expect(children.map((node) => at(result, `${node.path}/末标记`).visible)).toEqual([false, false, false, true]);
+
+    // 草稿下第 2 站（人民路口，反序排在第 3 列）字段报错缺值时，listOrigin 仍按原始序号 items[2] 追溯并显示占位。
+    const broken = await render(workspace, {
+      ...textLabRequest({ items: [{ name: '东门' }, { name: 123 }, { name: '腾昌花园' }, { name: '四联路' }] }, 126, 12),
+      mode: 'draft',
+    });
+    expect(at(broken, '文字实验/循环[2]/站名').text?.fragments[0]).toMatchObject({ placeholder: true, text: '〔站名〕' });
+    expect(at(broken, '文字实验/循环[3]/站名').text?.fragments[0]?.placeholder).toBeUndefined();
+  });
+
+  it('长列表分两栏切片：保留原始 1-based 序号与本站序号比对，count 为本栏项数，start 超过列表长度时正常留空', async () => {
+    let workspace = await textLab(
+      [listField({ type: 'ref', ref: ref('站点实验') })],
+      {
+        layout: { mode: 'stack', direction: 'row', gap: 4 },
+        children: [
+          loop({
+            name: '左栏',
+            slice: { start: 1, end: { var: 'leftEnd' } },
+            args: { index: { loop: 'index' }, count: { loop: 'count' }, first: { loop: 'isFirst' }, last: { loop: 'isLast' }, current: { var: 'currentIndex' } },
+            itemLayout: { direction: 'column', heights: { fixed: 8 }, gap: 1 },
+          }),
+          loop({
+            name: '右栏',
+            slice: { start: { var: 'rightStart' } },
+            args: { index: { loop: 'index' }, count: { loop: 'count' }, first: { loop: 'isFirst' }, last: { loop: 'isLast' }, current: { var: 'currentIndex' } },
+            itemLayout: { direction: 'column', heights: { fixed: 8 }, gap: 1 },
+          }),
+        ],
+      },
+      {
+        parameters: [
+          param('leftEnd', 'number', { default: 3 }),
+          param('rightStart', 'number', { default: 4 }),
+          param('currentIndex', 'number', { default: 4 }),
+        ],
+      },
+    );
+    workspace = addTemplate(
+      workspace,
+      '子模板',
+      '站点实验',
+      [
+        text('站名', 'name', {
+          states: { by: { var: 'isCurrent' }, cases: { true: { color: '#E60012' } } },
+        }),
+        text('序号', 'index'),
+        text('栏内数', 'count'),
+        { type: 'rect', name: '首', visible: { var: 'first' }, fill: '#00FF00', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+        { type: 'rect', name: '末', visible: { var: 'last' }, fill: '#0000FF', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+      ],
+      {
+        parameters: [param('index'), param('count'), param('first', 'boolean'), param('last', 'boolean'), param('current')],
+        derived: [
+          {
+            name: 'isCurrent',
+            displayName: '是否本站',
+            type: 'boolean',
+            op: 'branch',
+            branches: [{ when: { left: { var: 'index' }, op: 'eq', right: { var: 'current' } }, then: { value: true } }],
+            otherwise: { value: false },
+          },
+        ],
+      },
+    );
+
+    const fiveStops = ['东门', '人民路口', '腾昌花园', '四联路', '龙岗中心'].map((name) => ({ name }));
+    const full = await render(workspace, textLabRequest({ items: fiveStops }, 84, 30));
+    expect(full.problems).toEqual([]);
+    const left = at(full, '文字实验/左栏').children!;
+    const right = at(full, '文字实验/右栏').children!;
+    expect(left.map((n) => [n.path, n.y])).toEqual([
+      ['文字实验/左栏[1]', 0],
+      ['文字实验/左栏[2]', 9],
+      ['文字实验/左栏[3]', 18],
+    ]);
+    expect(right.map((n) => [n.path, n.y])).toEqual([
+      ['文字实验/右栏[4]', 0],
+      ['文字实验/右栏[5]', 9],
+    ]);
+    expect(right.map((n) => at(full, `${n.path}/序号`).text?.content)).toEqual(['4', '5']);
+    expect(right.map((n) => at(full, `${n.path}/栏内数`).text?.content)).toEqual(['2', '2']);
+    expect(at(full, '文字实验/右栏[4]/站名').text?.fragments[0]?.color).toBe('#E60012FF');
+    expect(at(full, '文字实验/右栏[5]/站名').text?.fragments[0]?.color).toBe('#333333FF');
+    expect(right.map((n) => at(full, `${n.path}/首`).visible)).toEqual([true, false]);
+    expect(right.map((n) => at(full, `${n.path}/末`).visible)).toEqual([false, true]);
+
+    // 只有 2 站时，右栏 start=4 > items.length=2，结果为空列表且不报错。
+    const short = await render(workspace, textLabRequest({ items: fiveStops.slice(0, 2) }, 84, 30));
+    expect(short.problems).toEqual([]);
+    expect(at(short, '文字实验/左栏').children!.map((n) => n.path)).toEqual(['文字实验/左栏[1]', '文字实验/左栏[2]']);
+    expect(at(short, '文字实验/左栏[2]/末').visible).toBe(true);
+    expect(at(short, '文字实验/右栏').children).toEqual([]);
+  });
+
+  it('先按 slice 截取再按 reverse 反序', async () => {
+    let workspace = await textLab([listField({ type: 'ref', ref: ref('站点实验') })], {
+      children: [
+        loop({
+          slice: { start: { value: 2 }, end: 4 },
+          reverse: true,
+          args: { index: { loop: 'index' }, count: { loop: 'count' }, first: { loop: 'isFirst' }, last: { loop: 'isLast' } },
+          itemLayout: { direction: 'row', widths: 'equal', gap: 2 },
+        }),
+      ],
+    });
+    workspace = addTemplate(
+      workspace,
+      '子模板',
+      '站点实验',
+      [
+        text('站名', 'name'),
+        text('序号', 'index'),
+        text('总数', 'count'),
+        { type: 'rect', name: '首', visible: { var: 'first' }, fill: '#00FF00', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+        { type: 'rect', name: '末', visible: { var: 'last' }, fill: '#0000FF', place: { width: { fixed: 1 }, height: { fixed: 1 } } },
+      ],
+      { parameters: [param('index'), param('count'), param('first', 'boolean'), param('last', 'boolean')] },
+    );
+    const stops = ['一', '二', '三', '四', '五'].map((name) => ({ name }));
+    const result = await render(workspace, textLabRequest({ items: stops }, 94, 10));
+    expect(result.problems).toEqual([]);
+    const children = at(result, '文字实验/循环').children!;
+    expect(children.map((n) => n.path)).toEqual(['文字实验/循环[4]', '文字实验/循环[3]', '文字实验/循环[2]']);
+    expect(children.map((n) => at(result, `${n.path}/站名`).text?.content)).toEqual(['四', '三', '二']);
+    expect(children.map((n) => at(result, `${n.path}/总数`).text?.content)).toEqual(['3', '3', '3']);
+    expect(children.map((n) => at(result, `${n.path}/首`).visible)).toEqual([true, false, false]);
+    expect(children.map((n) => at(result, `${n.path}/末`).visible)).toEqual([false, false, true]);
+  });
+
+  it('slice 与 reverse 的静态错误及求值期绑定错误分别报告 template.invalid 与 template.bindingValueInvalid', async () => {
+    for (const bad of [
+      { reverse: 'yes' },
+      { slice: '1..3' },
+      { slice: {} },
+      { slice: { start: 0 } },
+      { slice: { end: -1 } },
+      { slice: { start: 1.5 } },
+      { slice: { start: { value: 0 } } },
+      { slice: { start: 5, end: 3 } },
+      { slice: { start: { value: 5 }, end: { value: 3 } } },
+    ]) {
+      const result = await render(await referenceLoop(bad), { ...textLabRequest({ items: [] }, 40, 10), mode: 'draft' });
+      expect(codes(result)).toContain(ProblemCodes.templateInvalid);
+      expect(result.image).toBeUndefined();
+    }
+
+    // 绑定数值模板变量在求值期校验：非正整数或 start > end 报 template.bindingValueInvalid。
+    const dynamic = await textLab(
+      [listField({ type: 'ref', ref: ref('站点实验') })],
+      { children: [loop({ slice: { start: { var: 's' }, end: { var: 'e' } } })] },
+      { parameters: [param('s'), param('e')] },
+    );
+    const dynamicWs = addTemplate(dynamic, '子模板', '站点实验', [text('站名', 'name')]);
+    for (const params of [{ s: 0, e: 2 }, { s: 1.5, e: 2 }, { s: 5, e: 3 }]) {
+      const draftRes = await render(dynamicWs, { ...textLabRequest({ items: [{ name: '甲' }] }, 40, 10, 120, params), mode: 'draft' });
+      expect(codes(draftRes)).toContain(ProblemCodes.templateBindingValueInvalid);
+      expect(draftRes.image).toBeDefined();
+      const finalRes = await render(dynamicWs, textLabRequest({ items: [{ name: '甲' }] }, 40, 10, 120, params));
+      expect(codes(finalRes)).toContain(ProblemCodes.templateBindingValueInvalid);
+      expect(finalRes.image).toBeUndefined();
+    }
   });
 });
 

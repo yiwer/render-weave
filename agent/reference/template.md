@@ -96,16 +96,17 @@
 
 - **loop**：遍历列表，每项调用一次另一个模板。
   ```json
-  { "type": "loop", "name": "场次列", "list": {"var": "sessions"}, "template": "场次行",
+  { "type": "loop", "name": "场次列", "list": {"var": "sessions"}, "reverse": false, "slice": {"start": 1, "end": 6}, "template": "场次行",
     "args": { "index": {"loop": "index"}, "count": {"loop": "count"}, "accent": {"var": "accentColor"} },
     "itemLayout": { "direction": "row", "widths": "equal", "gap": 1 } }
   ```
   - 被调模板的 base 必须是列表元素的数据定义；基本类型列表（如 list<time>）用对应的单值数据定义（如 `单值·时刻 v1`，字段 `value`）。
   - 方向：`"direction": "row"`（缺省）从左往右排，用 `widths` 定每项宽度，高度填满循环区域；`"direction": "column"` 从上往下排，用 `heights` 定每项高度，宽度填满循环区域。竖排的列表（如站台竖牌的站点）用 column，不要把横向循环旋转 90°。
   - `widths` / `heights` 取值相同：`equal`（等分）、`content`（随内容，被调模板的画板写 `"size": "hug"`）或 `{"fixed": 毫米}`。横向写 heights、纵向写 widths 都是错误。
+  - 区间切片与反序（可选）：`"slice": {"start"?: 正整数或数值变量, "end"?: 正整数或数值变量}`（1-based 闭区间，至少写 start 或 end 之一；`start > items.length` 时结果为空列表且不报错，可用于长列表分两栏）；`"reverse": true | false`（布尔或布尔变量，缺省 false，用于对向站牌反序站点列等）。执行顺序固定为：标记原始 1-based 序号 → 按 `slice` 截取 → 按 `reverse` 排列 → 按 `mergeBy` 合并。
   - 列表项的总长（含 gap）超出循环区域会报问题；按数据的最大项数核对循环区域够不够。
-  - 循环信息只能经 args 传给被调模板：`{"loop": "index" | "isFirst" | "isLast" | "count" | "groupSize"}`，被调模板要声明同名的 public 参数接收。
-  - 合并相邻同值项：`"mergeBy": "字段路径"`，同时 `"itemLayout": {"direction": "row", "widths": "equal", "spanBy": "groupSize"}`。相邻且取值相同的项合并成一组，组宽为组内项数的列宽之和；被调模板取组内首项数据，`{"loop": "groupSize"}` 给出组内项数。合并只支持横向循环。
+  - 循环信息只能经 args 传给被调模板：`{"loop": "index" | "isFirst" | "isLast" | "count" | "groupSize"}`，被调模板要声明同名的 public 参数接收。`index` 与元素路径 `循环名[index]` 始终是该项（或合并组首项）在原始列表中的 1-based 序号（分栏切片或反序后仍可直接与本站序号比对）；`count` 为切片后参与本次循环的项数，`isFirst` / `isLast` 按本次排列顺序判定。
+  - 合并相邻同值项：`"mergeBy": "字段路径"`，横向写 `"itemLayout": {"direction": "row", "widths": "equal", "spanBy": "groupSize"}`，纵向写 `"itemLayout": {"direction": "column", "heights": "equal", "spanBy": "groupSize"}`。相邻且取值相同的项合并成一组，组宽/组高包含组内项及内部间距；被调模板取排列顺序下组内首项数据，`{"loop": "groupSize"}` 给出组内项数。
 - **call**：调用一个子模板一次，`{"type": "call", "template": "模板名", "data": {"var": "单引用字段"} | "current" | "none", "args": {...}}`。被调模板按调用框的实际尺寸重新排布，作用域不继承：需要的值都要经 data 或 args 传入。
 
 ## 渲染请求（草稿预览工具的参数）

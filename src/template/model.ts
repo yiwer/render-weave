@@ -280,14 +280,23 @@ export interface CallModel extends ElementBase {
   readonly args: Readonly<Record<string, CallArgument>>;
 }
 
+export interface LoopSlice {
+  readonly start?: number;
+  readonly end?: number;
+}
+
 export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' | 'layout'> {
   readonly type: 'loop';
   readonly list: VarOperand;
+  /** 是否反序排列（缺省 false，M240）。 */
+  readonly reverse: boolean;
+  /** 1-based 闭区间切片（M240）。 */
+  readonly slice?: LoopSlice;
   /** 列表项中的基本类型字段路径，连续同值项合并，以首项作为被调模板的数据。 */
   readonly mergeBy?: string;
   readonly template: string;
   readonly args: Readonly<Record<string, CallArgument>>;
-  /** 横向用 widths 定每项宽度、高度填满；纵向用 heights 定每项高度、宽度填满（M236）。合并只支持横向。 */
+  /** 横向用 widths 定每项宽度、高度填满；纵向用 heights 定每项高度、宽度填满（M236、M240）。 */
   readonly itemLayout: {
     readonly direction: 'row';
     readonly widths: LoopItemSize;
@@ -297,6 +306,7 @@ export interface LoopModel extends ElementBase, Omit<ContainerBody, 'children' |
     readonly direction: 'column';
     readonly heights: LoopItemSize;
     readonly gap: number;
+    readonly spanBy?: 'groupSize';
   };
 }
 

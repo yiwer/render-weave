@@ -1129,6 +1129,12 @@
         "list": {
           "$ref": "#/$defs/varOperand"
         },
+        "reverse": {
+          "$ref": "#/$defs/booleanOrVar"
+        },
+        "slice": {
+          "$ref": "#/$defs/loopSlice"
+        },
         "template": {
           "$ref": "#/$defs/nonBlank"
         },
@@ -1185,17 +1191,8 @@
               "heights"
             ],
             "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "widths"
-                  ]
-                },
-                {
-                  "required": [
-                    "spanBy"
-                  ]
-                }
+              "required": [
+                "widths"
               ]
             }
           },
@@ -1210,7 +1207,7 @@
               ]
             }
           },
-          "description": "横向（缺省）用 widths 定每项宽度，纵向（column）用 heights 定每项高度（M236）；spanBy 只用于横向"
+          "description": "横向（缺省）用 widths 定每项宽度，纵向（column）用 heights 定每项高度（M236、M240）"
         },
         "padding": {
           "$ref": "#/$defs/edges"
@@ -1253,6 +1250,8 @@
                     "opacity",
                     "rotation",
                     "list",
+                    "reverse",
+                    "slice",
                     "args",
                     "itemLayout",
                     "padding",
@@ -1289,8 +1288,8 @@
                   "widths": {
                     "const": "equal"
                   },
-                  "direction": {
-                    "const": "row"
+                  "heights": {
+                    "const": "equal"
                   }
                 }
               }
@@ -1320,7 +1319,45 @@
           }
         }
       ],
-      "description": "循环容器（S25、S28、M236）：横向或纵向排列；合并相邻同值项时 mergeBy、widths: equal 与 spanBy: groupSize 同时出现，只支持横向"
+      "description": "循环容器（S25、S28、M236、M240）：横向或纵向排列，可配置 reverse 与 slice；合并相邻同值项时 mergeBy、widths/heights: equal 与 spanBy: groupSize 同时出现"
+    },
+    "sliceBound": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/varOperand"
+        }
+      ]
+    },
+    "loopSlice": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/sliceBound"
+        },
+        "end": {
+          "$ref": "#/$defs/sliceBound"
+        }
+      },
+      "description": "1-based 闭区间切片，至少写 start 或 end 之一；静态字面值 start > end 由引擎语义检查（M240）"
     },
     "loopItemSize": {
       "anyOf": [
