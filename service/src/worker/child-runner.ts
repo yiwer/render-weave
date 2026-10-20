@@ -9,7 +9,7 @@
 import { fork, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
-import type { ClaimedTask, ItemResult, TaskResult } from '../backend.js';
+import type { ClaimedTask, ItemResult, ReplayResult, TaskResult } from '../backend.js';
 import type { Logger } from '../log.js';
 import { emptyStats, workerProblem, WorkerProblemCodes, type Runner } from './scheduler.js';
 
@@ -29,7 +29,7 @@ interface Child {
   tasks: number;
 }
 
-type Outcome = { result: TaskResult | ItemResult } | { timeout: true } | { cancelled: true } | { exit: { code: number | null; signal: NodeJS.Signals | null } };
+type Outcome = { result: TaskResult | ItemResult | ReplayResult } | { timeout: true } | { cancelled: true } | { exit: { code: number | null; signal: NodeJS.Signals | null } };
 
 export function childRunner(options: ChildRunnerOptions): Runner {
   const { script, timeoutMs, recycleAfter, logger, memoryEvents = '/sys/fs/cgroup/memory.events' } = options;
@@ -72,7 +72,7 @@ export function childRunner(options: ChildRunnerOptions): Runner {
 
   const dispatch = (current: Child, task: ClaimedTask, signal?: AbortSignal) => new Promise<Outcome>((resolve) => {
     const { process } = current;
-    const onMessage = (message: { type?: string; id?: string; result?: TaskResult | ItemResult }) => {
+    const onMessage = (message: { type?: string; id?: string; result?: TaskResult | ItemResult | ReplayResult }) => {
       if (message?.type === 'result' && message.id === task.id) done({ result: message.result! });
     };
     const onExit = (code: number | null, signal: NodeJS.Signals | null) => done({ exit: { code, signal } });

@@ -283,11 +283,15 @@ function batchStore(db: Db, blobs: BlobStore, tenantId: string, batchId: string)
   });
   return {
     batchId, output, source, record,
+    async manifestSha256() {
+      return (await query<{ manifest_sha256: string | null }>('SELECT manifest_sha256 FROM batches WHERE tenant_id = $1 AND batch_id = $2', [tenantId, batchId]))[0]?.manifest_sha256 ?? undefined;
+    },
     async itemFiles(index) {
       return withTenant(db, tenantId, async (client) => {
         if (!(await client.query('SELECT 1 FROM batch_items WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3', [tenantId, batchId, index])).rowCount) return undefined;
-        return (await client.query<{ name: string }>('SELECT name FROM batch_item_files WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3 ORDER BY name',
-          [tenantId, batchId, index])).rows.map((row) => row.name);
+        return (await client.query<{ name: string; sha256: string; byte_length: string }>(
+          'SELECT name, sha256, byte_length FROM batch_item_files WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3 ORDER BY name COLLATE "C"',
+          [tenantId, batchId, index])).rows.map((row) => ({ name: row.name, sha256: row.sha256, byteLength: Number(row.byte_length) }));
       });
     },
   };

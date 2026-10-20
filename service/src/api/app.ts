@@ -13,6 +13,7 @@ import { registerAuthoringRoutes } from './authoring.js';
 import { registerBatchRoutes } from './batches.js';
 import { registerDatasetRoutes } from './datasets.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
+import { registerRecordRoutes } from './records.js';
 import { registerResourceRoutes } from './resources.js';
 import { registerRoutes } from './routes.js';
 
@@ -104,6 +105,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerBatchRoutes(app, context);
   registerDatasetRoutes(app, context);
   registerResourceRoutes(app, context);
+  registerRecordRoutes(app, context);
   return Object.assign(app, { routeTable });
 }
 

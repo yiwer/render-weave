@@ -6,8 +6,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   documentSource, EmailTakenError, parseDocumentSource,
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type LoginRecord, type Member,
-  type MemberRole, type NewAuditEvent, type PlatformUser, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult, type TemplateRevision, type Tenant,
-  type TenantBatch, type TenantScope, type TenantStorage,
+  type MemberRole, type NewAuditEvent, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile, type ReplayResult,
+  type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult, type TemplateRevision, type Tenant, type TenantBatch, type TenantScope,
+  type TenantStorage,
 } from './backend.js';
 import { batchManifest, NOT_STARTED, notRunItem } from './batches.js';
 import { itemDirectory, manifestBytes, memoryWorkspaceDocuments, resourceBackend, type BatchSource, type RenderMode, type ResourceManifestEntry } from './engine.js';
@@ -17,8 +18,8 @@ interface SessionRow { id: string; userId: string; tenantId: string | null; toke
 interface ApiKeyRow extends ApiKeyInfo { tenantId: string; tokenHash: string }
 interface AuthoringRow extends AuthoringTokenInfo { tokenHash: string }
 interface TaskRow {
-  id: string; tenantId: string; kind: 'preview' | 'batchItem'; request: unknown; status: 'queued' | 'running' | 'done' | 'cancelled';
-  result?: TaskResult; item?: ItemResult; createdAt: Date; sequence: number;
+  id: string; tenantId: string; kind: 'preview' | 'batchItem' | 'replay'; request: unknown; status: 'queued' | 'running' | 'done' | 'cancelled';
+  result?: TaskResult; item?: ItemResult; replay?: ReplayResult; createdAt: Date; sequence: number;
   /** 批次项：所属批次、项序号与标识、接受它的构建、租约与领取次数。 */
   batchId?: string; index?: number; itemId?: string; build?: string; leaseUntil?: Date; attempts: number;
 }
@@ -26,8 +27,10 @@ interface BatchRow {
   tenantId: string; batchId: string; snapshot: string; build: string; template: string; mode: RenderMode; idempotencyKey?: string; requestSha256: string;
   createdAt: Date; cancelRequestedAt?: Date; finishedAt?: Date; manifest?: NonNullable<BatchState['manifest']>;
 }
-/** 内存存储另外提供：按批次 ID 建批次的成果去处（接口进程建批次时用）。 */
-type MemoryStorage = TenantStorage & { registerBatch(batchId: string): TenantBatch };
+/** 内存中的批次另外提供各项的登记时间与完成清单（查询出图记录用）。 */
+type MemoryBatch = TenantBatch & { registration(index: number): { readonly at: Date; readonly completion?: string } | undefined };
+/** 内存存储另外提供：按批次 ID 建批次的成果去处（接口进程建批次时用），以及按批次 ID 取内存中的批次。 */
+type MemoryStorage = TenantStorage & { registerBatch(batchId: string): MemoryBatch; memoryBatch(batchId: string): MemoryBatch };
 
 export function createMemoryBackend(): ServiceBackend {
   const tenants = new Map<string, Tenant>();
@@ -40,6 +43,8 @@ export function createMemoryBackend(): ServiceBackend {
   /** 全部租户的渲染任务，按入队顺序。 */
   const tasks: TaskRow[] = [];
   const batches = new Map<string, BatchRow>();
+  /** 在线的 worker：最近一次报到的时间与构建。 */
+  const workers = new Map<string, { build: string; seenAt: Date }>();
   let sequence = 0, taskSequence = 0;
   const storageOf = (tenantId: string) => {
     let storage = storages.get(tenantId);
@@ -83,6 +88,17 @@ export function createMemoryBackend(): ServiceBackend {
 
   const tenant = (tenantId: string): TenantScope => {
     const own = (row: { tenantId: string | null } | undefined) => row?.tenantId === tenantId;
+    /** 预览与重放入队：并发与频率按种类各算各的。 */
+    const enqueue = (kind: 'preview' | 'replay', request: unknown, quota: PreviewQuota, now: Date, build?: string) => {
+      const same = tasks.filter((task) => own(task) && task.kind === kind);
+      const active = (task: TaskRow) => (task.status === 'queued' || task.status === 'running') && task.createdAt.getTime() > now.getTime() - quota.staleAfterMs;
+      if (same.filter(active).length >= quota.concurrency) return { limited: 'concurrency' as const };
+      if (same.filter((task) => task.createdAt.getTime() > now.getTime() - 60_000).length >= quota.perMinute) return { limited: 'rate' as const };
+      const row: TaskRow = { id: randomUUID(), tenantId, kind, request: structuredClone(request), status: 'queued', createdAt: now, sequence: ++taskSequence, attempts: 0,
+        ...(build === undefined ? {} : { build }) };
+      tasks.push(row);
+      return { id: row.id };
+    };
     return {
       tenantId,
       get: async () => tenants.get(tenantId),
@@ -129,14 +145,32 @@ export function createMemoryBackend(): ServiceBackend {
       },
       get storage() { return storageOf(tenantId); },
       tasks: {
-        async enqueuePreview(request, quota, now) {
-          const previews = tasks.filter((task) => own(task) && task.kind === 'preview');
-          const active = (task: TaskRow) => (task.status === 'queued' || task.status === 'running') && task.createdAt.getTime() > now.getTime() - quota.staleAfterMs;
-          if (previews.filter(active).length >= quota.concurrency) return { limited: 'concurrency' };
-          if (previews.filter((task) => task.createdAt.getTime() > now.getTime() - 60_000).length >= quota.perMinute) return { limited: 'rate' };
-          const row: TaskRow = { id: randomUUID(), tenantId, kind: 'preview', request: structuredClone(request), status: 'queued', createdAt: now, sequence: ++taskSequence, attempts: 0 };
-          tasks.push(row);
-          return { id: row.id };
+        enqueuePreview: async (request, quota, now) => enqueue('preview', request, quota, now),
+        enqueueReplay: async ({ batchId, index, build }, quota, now) => enqueue('replay', { batchId, index }, quota, now, build),
+        async replayState(id) {
+          const row = tasks.find((task) => task.id === id && own(task) && task.kind === 'replay');
+          if (!row) return undefined;
+          return row.status === 'done' ? { status: 'done', result: structuredClone(row.replay!) } : { status: row.status };
+        },
+        async listRecords({ batchId, template, from, to, before, limit }) {
+          const storage = storageOf(tenantId);
+          const found: (RecordEntry & { cursor: RecordCursor })[] = [];
+          for (const row of batches.values()) {
+            if (row.tenantId !== tenantId || (batchId && row.batchId !== batchId) || (template !== undefined && row.template !== template)) continue;
+            const batch = storage.memoryBatch(row.batchId);
+            for (const task of batchItems(row.batchId)) {
+              const registered = batch.registration(task.index!);
+              if (registered?.completion !== 'record.json' || (from && registered.at < from) || (to && registered.at >= to)) continue;
+              const image = (await batch.itemFiles(task.index!))!.find((file) => file.name.startsWith('image.'))!.name;
+              const at = registered.at.toISOString();
+              found.push({ batchId: row.batchId, index: task.index!, id: task.itemId!, template: row.template, build: row.build, deliveredAt: at, image,
+                cursor: { at, batchId: row.batchId, index: task.index! } });
+            }
+          }
+          // 按登记时间、批次与项序号倒序；ISO 时间与定长的项序号按字符串比较就是按时间与数值比较。
+          const key = (cursor: RecordCursor) => `${cursor.at} ${cursor.batchId} ${String(cursor.index).padStart(4, '0')}`;
+          return found.filter((entry) => !before || key(entry.cursor) < key(before))
+            .sort((a, b) => (key(a.cursor) < key(b.cursor) ? 1 : -1)).slice(0, limit);
         },
         async state(id) {
           const row = tasks.find((task) => task.id === id && own(task));
@@ -144,9 +178,9 @@ export function createMemoryBackend(): ServiceBackend {
           return row.status === 'done' ? { status: 'done', result: row.result! } : { status: row.status };
         },
         async release(id) {
-          const row = tasks.find((task) => task.id === id && own(task) && task.kind === 'preview');
+          const row = tasks.find((task) => task.id === id && own(task) && (task.kind === 'preview' || task.kind === 'replay'));
           if (row?.status === 'queued') row.status = 'cancelled';
-          else if (row?.status === 'done') row.result = { problems: row.result!.problems };
+          else if (row?.status === 'done' && row.result) row.result = { problems: row.result.problems };
         },
         async createBatch(batch, now) {
           const existing = batch.idempotencyKey === undefined ? undefined
@@ -193,9 +227,9 @@ export function createMemoryBackend(): ServiceBackend {
     queue: {
       async claim(_worker, now, { build, leaseMs, previews }) {
         // 预览没有项序号，排在批次项前面；批次项按项序号轮转，再按入队先后。过了租约还在渲染中的批次项可以由同构建的 worker 重领。
-        const claimable = (task: TaskRow) => task.kind === 'preview'
-          ? previews && task.status === 'queued'
-          : task.build === build && (task.status === 'queued' || (task.status === 'running' && task.leaseUntil! < now));
+        const claimable = (task: TaskRow) => task.kind === 'preview' ? previews && task.status === 'queued'
+          : task.kind === 'replay' ? previews && task.status === 'queued' && task.build === build
+            : task.build === build && (task.status === 'queued' || (task.status === 'running' && task.leaseUntil! < now));
         const row = tasks.filter(claimable).sort((a, b) =>
           (a.index ?? 0) - (b.index ?? 0) ||
           a.createdAt.getTime() - b.createdAt.getTime() || a.sequence - b.sequence)[0];
@@ -203,6 +237,10 @@ export function createMemoryBackend(): ServiceBackend {
         row.status = 'running';
         row.attempts++;
         if (row.kind === 'preview') return { id: row.id, tenantId: row.tenantId, kind: 'preview', request: structuredClone(row.request) };
+        if (row.kind === 'replay') {
+          const { batchId, index } = row.request as { batchId: string; index: number };
+          return { id: row.id, tenantId: row.tenantId, kind: 'replay', batchId, index };
+        }
         row.leaseUntil = new Date(now.getTime() + leaseMs);
         return { id: row.id, tenantId: row.tenantId, kind: 'batchItem', batchId: row.batchId!, index: row.index!, itemId: row.itemId!,
           snapshot: (row.request as { snapshot: string }).snapshot, attempts: row.attempts };
@@ -212,6 +250,12 @@ export function createMemoryBackend(): ServiceBackend {
         if (!row) return;
         row.status = 'done';
         row.result = result;
+      },
+      async finishReplay(task, result) {
+        const row = tasks.find((item) => item.id === task.id && item.status === 'running');
+        if (!row) return;
+        row.status = 'done';
+        row.replay = structuredClone(result);
       },
       async finishItem(task, result, now) {
         const row = tasks.find((item) => item.id === task.id && item.status === 'running' && item.attempts === task.attempts);
@@ -275,6 +319,28 @@ export function createMemoryBackend(): ServiceBackend {
         return true;
       },
       appendAudit: async (event, now) => record(null, event, now),
+      async recordBuilds() {
+        const builds = new Map<string, { records: number; last: Date }>();
+        for (const row of batches.values()) {
+          const batch = storageOf(row.tenantId).memoryBatch(row.batchId);
+          for (const task of batchItems(row.batchId)) {
+            const registered = batch.registration(task.index!);
+            if (registered?.completion !== 'record.json') continue;
+            const entry = builds.get(row.build) ?? { records: 0, last: registered.at };
+            builds.set(row.build, { records: entry.records + 1, last: registered.at > entry.last ? registered.at : entry.last });
+          }
+        }
+        return [...builds].sort(([a], [b]) => (a < b ? -1 : 1)).map(([build, { records, last }]) => ({ build, records, lastDeliveredAt: last.toISOString() }));
+      },
+    },
+    workers: {
+      async heartbeat(worker, build, now) { workers.set(worker, { build, seenAt: now }); },
+      async leave(worker) { workers.delete(worker); },
+      async online(since) {
+        const counts = new Map<string, number>();
+        for (const { build, seenAt } of workers.values()) if (seenAt >= since) counts.set(build, (counts.get(build) ?? 0) + 1);
+        return counts;
+      },
     },
   };
 }
@@ -287,7 +353,7 @@ function memoryStorage(): MemoryStorage {
   const documents = new Map<string, { sha256: string; byteLength: number }>();
   const templates = new Map<string, { current: number; revisions: TemplateRevision[] }>();
   let resources: readonly ResourceManifestEntry[] = [];
-  const batches = new Map<string, TenantBatch>();
+  const batches = new Map<string, MemoryBatch>();
   /** 资源提交、推送与改当前修订依次进行，与 PostgreSQL 后端锁住租户的一行相同。 */
   let queue: Promise<unknown> = Promise.resolve();
   const exclusive = <T>(work: () => Promise<T>): Promise<T> => {
@@ -349,6 +415,11 @@ function memoryStorage(): MemoryStorage {
     async createBatch() { return registerBatch(randomUUID()); },
     openBatch: open,
     registerBatch,
+    memoryBatch: (batchId) => {
+      const batch = batches.get(batchId);
+      if (!batch) throw new Error(`批次不存在：${batchId}`);
+      return batch;
+    },
     contents: {
       put: async (bytes) => put(bytes),
       has: async (hash) => contents.has(hash),
@@ -399,10 +470,10 @@ function memoryStorage(): MemoryStorage {
  * 内存中的一个批次，与 PostgreSQL 后端相同：文件按 SHA-256 存进本租户的内容（同一租户内相同字节只存一份，跨批次也是），
  * 各项在一处登记，"批次加项序号"唯一；批次清单只发布一次。
  */
-function memoryBatch(batchId: string, put: (bytes: Uint8Array) => string, read: (sha256: string) => Uint8Array): TenantBatch {
+function memoryBatch(batchId: string, put: (bytes: Uint8Array) => string, read: (sha256: string) => Uint8Array): MemoryBatch {
   const location = `batches/${batchId}`;
   const itemLocation = (index: number) => `${location}/${itemDirectory(index)}`;
-  const items = new Map<number, { completion?: 'record.json' | 'preview.json'; files: Map<string, string> }>();
+  const items = new Map<number, { completion?: 'record.json' | 'preview.json'; files: Map<string, RegisteredFile>; at: Date }>();
   let manifest: string | undefined;
   const source: BatchSource = {
     location,
@@ -411,7 +482,7 @@ function memoryBatch(batchId: string, put: (bytes: Uint8Array) => string, read: 
     items: async () => [...items.keys()].sort((a, b) => a - b),
     async completion(index) {
       const item = items.get(index);
-      return item?.completion ? { name: item.completion, bytes: read(item.files.get(item.completion)!) } : undefined;
+      return item?.completion ? { name: item.completion, bytes: read(item.files.get(item.completion)!.sha256) } : undefined;
     },
   };
   return {
@@ -420,11 +491,12 @@ function memoryBatch(batchId: string, put: (bytes: Uint8Array) => string, read: 
     output: {
       location: itemLocation,
       async write(index, contents) {
-        const files = new Map<string, string>();
-        for (const [name, bytes] of contents.files) files.set(name, put(bytes));
-        if (contents.manifest) files.set(contents.manifest.name, put(manifestBytes(contents.manifest.value)));
+        const files = new Map<string, RegisteredFile>();
+        const add = (name: string, bytes: Uint8Array) => files.set(name, { name, sha256: put(bytes), byteLength: bytes.length });
+        for (const [name, bytes] of contents.files) add(name, bytes);
+        if (contents.manifest) add(contents.manifest.name, manifestBytes(contents.manifest.value));
         if (items.has(index)) throw new Error(`第 ${itemDirectory(index)} 项已有成果，不能覆盖`);
-        items.set(index, { ...(contents.manifest ? { completion: contents.manifest.name } : {}), files });
+        items.set(index, { ...(contents.manifest ? { completion: contents.manifest.name } : {}), files, at: new Date() });
       },
       available: async () => true,
       async finish(value) {
@@ -435,14 +507,19 @@ function memoryBatch(batchId: string, put: (bytes: Uint8Array) => string, read: 
     record: (index) => ({
       location: itemLocation(index),
       async read(file) {
-        const sha256 = items.get(index)?.files.get(file);
-        if (!sha256) throw new Error(`记录文件不存在：${file}`);
-        return read(sha256);
+        const registered = items.get(index)?.files.get(file);
+        if (!registered) throw new Error(`记录文件不存在：${file}`);
+        return read(registered.sha256);
       },
     }),
     async itemFiles(index) {
       const item = items.get(index);
-      return item && [...item.files.keys()];
+      return item && [...item.files.values()].sort((a, b) => (a.name < b.name ? -1 : 1));
+    },
+    manifestSha256: async () => manifest,
+    registration(index) {
+      const item = items.get(index);
+      return item && { at: item.at, ...(item.completion ? { completion: item.completion } : {}) };
     },
   };
 }

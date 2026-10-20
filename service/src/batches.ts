@@ -48,8 +48,9 @@ export function batchManifest(batch: { readonly build: string; readonly template
  * 还没登记时 undefined。
  */
 export async function committedItem(batch: TenantBatch, index: number, id: string): Promise<ItemResult | undefined> {
-  const names = await batch.itemFiles(index);
-  if (!names) return undefined;
+  const registered = await batch.itemFiles(index);
+  if (!registered) return undefined;
+  const names = registered.map((file) => file.name);
   const problems = JSON.parse(Buffer.from(await batch.record(index).read('problems.json')).toString('utf8')) as ResultProblem[];
   const delivered = names.includes('record.json');
   const image = names.find((name) => name === 'image.png' || name === 'image.jpg') as BatchItemFiles['image'];

@@ -77,6 +77,13 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
     request: (a) => ({ method: 'POST', url: `/v1/resources/${a.resourceId}/replacement-checks`, body: SAMPLE }) },
   { route: 'POST /v1/resources/:resourceId/replacements', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/resources/${a.resourceId}/replacements`, body: { check: replacementCheck(a.resourceId) } }) },
+  // 出图记录（票据 08）：查询的租户由身份决定；批次 ID 在路径里，别的租户的批次与不存在的同样答 404。
+  { route: 'GET /v1/records', addressesObject: false, request: (a) => ({ method: 'GET', url: `/v1/records?batchId=${a.batchId}` }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/files/:name', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/items/1/files/problems.json` }) },
+  { route: 'GET /v1/batches/:batchId/images.zip', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/images.zip` }) },
+  { route: 'GET /v1/batches/:batchId/export.zip', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/export.zip` }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/export.zip', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/items/1/export.zip` }) },
+  { route: 'POST /v1/batches/:batchId/items/:index/replay', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/batches/${a.batchId}/items/1/replay` }) },
 ];
 
 /** 用 A 的数据集 ID 写一份数据集；另一租户没有它的数据定义，保存答 400。 */

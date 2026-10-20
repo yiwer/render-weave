@@ -5,7 +5,8 @@
 import {
   EmailTakenError,
   type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
-  type Readiness, type ServiceBackend, type TaskResult, type TaskState, type Tenant, type TenantScope,
+  type PreviewQuota, type Readiness, type RecordCursor, type RecordEntry, type ReplayResult, type ReplayState, type ServiceBackend, type TaskResult, type TaskState,
+  type Tenant, type TenantScope,
 } from '../backend.js';
 import { batchManifest, NOT_STARTED, notRunItem } from '../batches.js';
 import { manifestBytes, type RenderMode } from '../engine.js';
@@ -85,6 +86,20 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
 
   const tenant = (tenantId: string): TenantScope => {
     const run = <T>(work: (client: DbClient) => Promise<T>) => withTenant(db, tenantId, work);
+    /** 预览与重放入队：同一租户同一种类的入队依次进行，并发与频率按种类各算各的，计数才准。 */
+    const enqueue = (kind: 'preview' | 'replay', request: unknown, quota: PreviewQuota, now: Date, build?: string) => run(async (client) => {
+      await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($2 || ':' || $1, 0))`, [tenantId, kind]);
+      const { active, recent } = (await client.query<{ active: string; recent: string }>(
+        `SELECT count(*) FILTER (WHERE status IN ('queued', 'running') AND created_at > $3) AS active, count(*) FILTER (WHERE created_at > $4) AS recent
+           FROM render_tasks WHERE tenant_id = $1 AND kind = $2`,
+        [tenantId, kind, new Date(now.getTime() - quota.staleAfterMs), new Date(now.getTime() - 60_000)])).rows[0]!;
+      if (Number(active) >= quota.concurrency) return { limited: 'concurrency' as const };
+      if (Number(recent) >= quota.perMinute) return { limited: 'rate' as const };
+      const { id } = (await client.query<{ id: string }>(
+        `INSERT INTO render_tasks (tenant_id, kind, request, status, created_at, build) VALUES ($1, $2, $3, 'queued', $4, $5) RETURNING id`,
+        [tenantId, kind, JSON.stringify(request), now, build ?? null])).rows[0]!;
+      return { id };
+    });
     return {
       tenantId,
       get: () => run(async (client) => {
@@ -138,20 +153,32 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
           action: row.action, object: { type: row.object_type, id: row.object_id }, crossTenant: row.cross_tenant }))),
       storage: tenantStorage(db, blobs, tenantId),
       tasks: {
-        // 同一租户的入队依次进行，并发与频率的计数才准。
-        enqueuePreview: (request, quota, now) => run(async (client) => {
-          await client.query(`SELECT pg_advisory_xact_lock(hashtextextended('preview:' || $1, 0))`, [tenantId]);
-          const { active, recent } = (await client.query<{ active: string; recent: string }>(
-            `SELECT count(*) FILTER (WHERE status IN ('queued', 'running') AND created_at > $3) AS active, count(*) FILTER (WHERE created_at > $4) AS recent
-               FROM render_tasks WHERE tenant_id = $1 AND kind = $2`,
-            [tenantId, 'preview', new Date(now.getTime() - quota.staleAfterMs), new Date(now.getTime() - 60_000)])).rows[0]!;
-          if (Number(active) >= quota.concurrency) return { limited: 'concurrency' as const };
-          if (Number(recent) >= quota.perMinute) return { limited: 'rate' as const };
-          const { id } = (await client.query<{ id: string }>(
-            `INSERT INTO render_tasks (tenant_id, kind, request, status, created_at) VALUES ($1, 'preview', $2, 'queued', $3) RETURNING id`,
-            [tenantId, JSON.stringify(request), now])).rows[0]!;
-          return { id };
+        enqueuePreview: (request, quota, now) => enqueue('preview', request, quota, now),
+        enqueueReplay: ({ batchId, index, build }, quota, now) => enqueue('replay', { batchId, index }, quota, now, build),
+        replayState: (id) => run(async (client) => {
+          const row = (await client.query<{ status: ReplayState['status']; result: ReplayResult | null }>(
+            `SELECT status, result FROM render_tasks WHERE tenant_id = $1 AND id = $2 AND kind = 'replay'`, [tenantId, id])).rows[0];
+          if (!row) return undefined;
+          return row.status === 'done' ? { status: 'done', result: row.result! } : { status: row.status } as ReplayState;
         }),
+        listRecords: ({ batchId, template, from, to, before, limit }) => run(async (client) => (await client.query<{
+          batch_id: string; item_index: number; id: string; template: string; build: string; at: string; delivered_at: Date; image: string;
+        }>(`SELECT i.batch_id, i.item_index, t.request->>'id' AS id, b.template, b.build, i.created_at::text AS at, i.created_at AS delivered_at,
+                   (SELECT f.name FROM batch_item_files f WHERE f.tenant_id = i.tenant_id AND f.batch_id = i.batch_id AND f.item_index = i.item_index
+                       AND f.name IN ('image.png', 'image.jpg')) AS image
+              FROM batch_items i
+              JOIN batches b ON b.tenant_id = i.tenant_id AND b.batch_id = i.batch_id
+              JOIN render_tasks t ON t.tenant_id = i.tenant_id AND t.batch_id = i.batch_id AND t.item_index = i.item_index AND t.kind = 'batchItem'
+             WHERE i.tenant_id = $1 AND i.completion = 'record.json'
+               AND ($2::uuid IS NULL OR i.batch_id = $2) AND ($3::text IS NULL OR b.template = $3)
+               AND ($4::timestamptz IS NULL OR i.created_at >= $4) AND ($5::timestamptz IS NULL OR i.created_at < $5)
+               AND ($6::timestamptz IS NULL OR (i.created_at, i.batch_id, i.item_index) < ($6::timestamptz, $7::uuid, $8::integer))
+             ORDER BY i.created_at DESC, i.batch_id DESC, i.item_index DESC LIMIT $9`,
+        [tenantId, batchId ?? null, template ?? null, from ?? null, to ?? null, before?.at ?? null, before?.batchId ?? null, before?.index ?? null, limit])).rows.map(
+          (row): RecordEntry & { cursor: RecordCursor } => ({
+            batchId: row.batch_id, index: row.item_index, id: row.id, template: row.template, build: row.build, deliveredAt: iso(row.delivered_at)!, image: row.image,
+            cursor: { at: row.at, batchId: row.batch_id, index: row.item_index },
+          }))),
         state: (id) => run(async (client) => {
           const row = (await client.query<{ status: TaskState['status']; result: { problems: TaskResult['problems']; layout?: TaskResult['layout']; image?: Omit<NonNullable<TaskResult['image']>, 'bytes'> } | null; image: Buffer | null }>(
             `SELECT status, result, image FROM render_tasks WHERE tenant_id = $1 AND id = $2 AND kind = 'preview'`, [tenantId, id])).rows[0];
@@ -162,8 +189,8 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         }),
         release: (id) => run(async (client) => {
           await client.query(`UPDATE render_tasks SET status = CASE WHEN status = 'queued' THEN 'cancelled' ELSE status END, image = NULL,
-              result = CASE WHEN result IS NULL THEN NULL ELSE jsonb_build_object('problems', result->'problems') END
-            WHERE tenant_id = $1 AND id = $2 AND kind = 'preview'`, [tenantId, id]);
+              result = CASE WHEN result IS NULL OR kind = 'replay' THEN result ELSE jsonb_build_object('problems', result->'problems') END
+            WHERE tenant_id = $1 AND id = $2 AND kind IN ('preview', 'replay')`, [tenantId, id]);
         }),
         createBatch: (batch, now) => run(async (client) => {
           const created = (await client.query<{ batch_id: string }>(
@@ -222,10 +249,14 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
     tenant,
     queue: {
       async claim(worker, now, { build, leaseMs, previews }) {
-        const row = (await db.query<{ id: string; tenant_id: string; kind: 'preview' | 'batchItem'; request: unknown; batch_id: string | null; item_index: number | null; attempts: number }>(
+        const row = (await db.query<{ id: string; tenant_id: string; kind: 'preview' | 'batchItem' | 'replay'; request: unknown; batch_id: string | null; item_index: number | null; attempts: number }>(
           'SELECT * FROM rw_claim_task($1, $2, $3, $4, $5)', [worker, now, build, new Date(now.getTime() + leaseMs), previews])).rows[0];
         if (!row) return undefined;
         if (row.kind === 'preview') return { id: row.id, tenantId: row.tenant_id, kind: 'preview', request: row.request };
+        if (row.kind === 'replay') {
+          const { batchId, index } = row.request as { batchId: string; index: number };
+          return { id: row.id, tenantId: row.tenant_id, kind: 'replay', batchId, index };
+        }
         const request = row.request as { snapshot: string; id: string };
         return { id: row.id, tenantId: row.tenant_id, kind: 'batchItem', batchId: row.batch_id!, index: row.item_index!, itemId: request.id, snapshot: request.snapshot, attempts: row.attempts };
       },
@@ -240,6 +271,10 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
       }),
       cancelRequested: (task) => withTenant(db, task.tenantId, async (client) => (await client.query<{ cancelled: boolean }>(
         'SELECT cancel_requested_at IS NOT NULL AS cancelled FROM batches WHERE tenant_id = $1 AND batch_id = $2', [task.tenantId, task.batchId])).rows[0]?.cancelled ?? false),
+      finishReplay: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
+        await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $3, result = $4 WHERE tenant_id = $1 AND id = $2 AND kind = 'replay' AND status = 'running'`,
+          [task.tenantId, task.id, now, JSON.stringify(result)]);
+      }),
       finish: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
         const { image, ...rest } = result;
         const meta = image ? { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi } : undefined;
@@ -295,6 +330,15 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         return true;
       }),
       appendAudit: (event, now) => asPlatform(db, (client) => insertAudit(client, null, event, now)),
+      recordBuilds: async () => (await db.query<{ build: string; records: string; last_delivered_at: Date }>('SELECT * FROM rw_record_builds()')).rows.map(
+        (row) => ({ build: row.build, records: Number(row.records), lastDeliveredAt: iso(row.last_delivered_at)! })),
+    },
+    workers: {
+      async heartbeat(worker, build, now) { await db.query('SELECT rw_worker_heartbeat($1, $2, $3)', [worker, build, now]); },
+      async leave(worker) { await db.query('SELECT rw_worker_leave($1)', [worker]); },
+      async online(since) {
+        return new Map((await db.query<{ build: string; workers: string }>('SELECT * FROM rw_online_workers($1)', [since])).rows.map((row) => [row.build, Number(row.workers)]));
+      },
     },
   };
 }

@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了六部分：
+目前完成了七部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -22,8 +22,11 @@
 - **数据集与资源接口**（[票据 10](../.scratch/render-service-v1/issues/10-datasets-and-resources-api.md)，M270、M271）：
   - 数据集的新建、读取、修改、复制、列出与只校验，按原始字节存，校验与渲染时对数据集的检查相同；
   - 图片与字体资源的上传、列出、读回，替换先检查影响、再凭报告按预期版本应用。
+- **出图记录**（[票据 08](../.scratch/render-service-v1/issues/08-records-export-replay.md)，M272、M273）：
+  - 按时间、模板与批次查询，下载单个文件与整批图片，按项或按批次导出，导出包能离线核对与重放；
+  - 重放按记录里的构建标识交给那个构建的 worker，没有那个构建的 worker 时拒绝；镜像按构建保留。
 
-出图记录的查询与导出、计量与额度由后续票据加入。
+计量与额度由后续票据加入。
 
 ## 本机启动
 
@@ -141,6 +144,8 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `POST /v1/datasets`、`PUT /v1/datasets/{数据集}`、`POST …/{数据集}/copies`、`POST /v1/dataset-checks` | 管理员、操作员、API 密钥 |
 | `POST /v1/resources` | 管理员、操作员、API 密钥；上传新资源 |
 | `POST /v1/resources/{资源}/replacement-checks`、`POST …/replacements` | 客户管理员；替换已有资源 |
+| `GET /v1/records`、`GET /v1/batches/{批次}/items/{序号}/files/{文件}`、`GET …/images.zip`、`GET …/export.zip`、`GET …/items/{序号}/export.zip`、`POST …/items/{序号}/replay` | 管理员、操作员、API 密钥；见[出图记录](#出图记录) |
+| `GET /v1/platform/builds` | 平台管理员；被记录引用的构建与在线的 worker |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
@@ -153,8 +158,9 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`；替换检查遇到工作区本身有严重问题时是引擎的问题清单 |
 | 413 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
 | 415 | `request.invalid`：上传内容不是 `application/octet-stream`，或数据集不是 `application/json` |
-| 429 | `preview.rateLimited` |
-| 503 | `worker.unavailable`：等不到 worker 渲染完 |
+| 429 | `preview.rateLimited`、`replay.rateLimited` |
+| 500 | `record.integrityMismatch`：读出的文件与登记的 SHA-256 或字节数不符；其他是 `service.internalError` |
+| 503 | `worker.unavailable`：等不到 worker 渲染完；`replay.buildUnavailable`：记录所属的构建没有在线的 worker |
 
 JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真，答 400 `request.invalid`，与命令行一致（M112）。写数据集的端点例外：请求体原文交给引擎，按原文报 `dataset.tooManyDigits`。
 
@@ -303,7 +309,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 - **提交点**：渲染子进程按批次快照交付一项，先把文件按 SHA-256 写进对象存储，再在一个事务里登记这一项。"批次加项序号"唯一；登记之前，这一项对任何读者都不存在。
 - **去重**：同一租户内相同字节只存一份，跨批次也是；同样的批次再交一次，对象存储里不多一个对象。
-- **记录**：内容与本地 `deliver` 的相同，能用引擎的 `replayRecord` 重放；导出与下载在票据 08。
+- **记录**：内容与本地 `deliver` 的相同，能用引擎的 `replayRecord` 重放；查询、下载、导出与重放见[出图记录](#出图记录)。
 
 **审计**：`batch.create`、`batch.cancel`。
 
@@ -361,13 +367,59 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 同一份报告只能用一次，同时应用两次也只有一次成功。
 - **审计**：`resource.upload`、`resource.replace`，只记资源 ID；检查是只读的，不记。
 
+## 出图记录
+
+出图记录是正式交付成功、已登记的项（ADR-0019，M272、M273）。
+
+**查询**：`GET /v1/records`，按登记时间倒序。
+
+| 参数 | 说明 |
+|---|---|
+| `batchId` | 只看这个批次 |
+| `template` | 只看这个根模板 |
+| `from`、`to` | 登记时间，ISO 8601 带时区；`from` 含、`to` 不含 |
+| `limit` | 1–500，缺省 100 |
+| `before` | 上一页回答里的 `next`，原样带回 |
+
+```json
+{ "records": [{ "batchId": "…", "index": 1, "id": "m402-01", "template": "标准线路单边", "build": "sha256:…", "deliveredAt": "…", "image": "image.png" }], "next": "…" }
+```
+
+**下载**：
+
+- `GET /v1/batches/{批次}/items/{序号}/files/{文件}`：一项登记的任一文件（`image.png`、`record.json`、资源副本等）。图片按图片类型、JSON 按 JSON、其他按字节回答，一律带 `nosniff`；失败项只有 `problems.json`。
+- `GET /v1/batches/{批次}/images.zip`：交付成功各项的图片，名字是项目录名加扩展名，如 `0001.png`。项标识只作数据，不进文件名，与本地一致。
+
+**导出**：
+
+- `GET /v1/batches/{批次}/export.zip`：解开是 `batch-{批次}/`，与本地 `deliver` 的批次目录逐字节相同：批次清单发布了就有 `batch.json`，各项目录（`0001/` 等）里是登记的全部文件。能直接交给 `renderweave batch-read`、`record-read` 与 `replay`。
+- `GET /v1/batches/{批次}/items/{序号}/export.zip`：解开是 `batch-{批次}-{项目录}/`，一项的目录，能直接交给 `record-read` 与 `replay`。
+- 离线重放要用产出记录的确切构建（ADR-0013）：服务交出的记录，用同一构建的引擎才能重放。
+
+**完整性**：下载与导出时，每个文件都按登记的 SHA-256 与字节数核对，不符答 500 `record.integrityMismatch`，位置写到文件。zip 先写进临时文件，每个文件写进去之前核对，全部写完才回答，所以损坏时回答的是问题清单，不是半个压缩包。文件按需读取，一大批图片不会同时留在内存里；超过 4 GiB 时用 ZIP64。
+
+**重放**：`POST /v1/batches/{批次}/items/{序号}/replay`，同步回答：
+
+```json
+{ "batchId": "…", "index": 1, "id": "m402-01", "build": "sha256:…", "matched": true,
+  "replay": { "format": "renderweave-replay/1", "build": "sha256:…", "itemId": "m402-01", "matched": true, "files": [ … ] }, "problems": [] }
+```
+
+- **按构建路由**：重放交给记录里的构建的 worker，引擎从记录本身重新渲染、与记录比对。重放成了 `matched` 为真；记录被改坏、或重新渲染与记录不一致时为假，问题清单写明原因（`record.integrityMismatch`、`record.replayMismatch`）。
+- **构建不在时拒绝**：worker 每 5 秒报到自己的构建，停止时离开，30 秒内报到过的算作在线。记录里的构建没有在线的 worker 时答 503 `replay.buildUnavailable`，说明写明缺哪个构建与它的镜像标签；起那个构建的 worker 见[构建标识与镜像](#构建标识与镜像)。
+- **限制**：不计额度；按租户限并发与频率，数值同预览、与预览各算各的，超过答 429 `replay.rateLimited`；等不到结果答 503 `worker.unavailable`。
+- 只有交付成功的项能重放，失败项与不存在的项答 404。
+
+查询、下载、导出与重放都是只读的，不记审计。
+
 ## 渲染 worker
 
 一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
 
 - **领取**：调度进程用 `rw_claim_task` 领一项（`SELECT … FOR UPDATE SKIP LOCKED`，跨租户，由属主身份执行），队列空时每 100 ms 再看。入队、查结果与写回结果都在租户的事务里，行级安全照常生效。
-- **顺序**（M269）：预览优先；批次项按项序号轮转，各批次的第 1 项先于任何批次的第 2 项，小批次不被大批次堵住。
-- **构建固定**：批次记下接受它的构建标识，worker 只领本构建的批次项；预览哪个构建都可以领。
+- **顺序**（M269）：预览与重放优先；批次项按项序号轮转，各批次的第 1 项先于任何批次的第 2 项，小批次不被大批次堵住。
+- **构建固定**：批次记下接受它的构建标识，worker 只领本构建的批次项与重放（M273）；预览哪个构建都可以领。
+- **报到**：调度进程每 5 秒报到自己的构建（另用定时器，渲染一项期间照样报到），停止时离开；接口进程据此判断重放的记录所属的构建有没有在线的 worker。
 - **渲染子进程**：调度进程 fork 它，经 IPC 一次交一项。子进程自己连数据库与对象存储读租户的工作区与资源，启动时先加载 CanvasKit，准备好才接任务；单项时限从交出任务起算。
 - **单项超时**：到时调度进程结束子进程，本项答 `worker.timeout`。
 - **内存超限**：内存上限是容器的限制（`mem_limit`，不用交换分区）。子进程启动时把自己的 `oom_score_adj` 调到最高，内存不够时内核先结束它；调度进程看本容器 cgroup 的 `memory.events` 里 `oom_kill` 增加了，本项答 `worker.memoryExceeded`。
@@ -378,7 +430,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 重领前先看这一项是否已登记：已登记就沿用，不重渲染，记录只提交一次；
   - 写回以领取次数作凭据，重领之后旧的写回不生效；
   - 领了 3 次仍没做完，记 `worker.crashed`。
-- **排空**：收到 SIGTERM 时不再领预览，做完本构建排队的批次项再退出。发布新版本时，旧构建的 worker 就这样做完已接受的批次（Compose 的停止宽限缺省 30 分钟，`RW_WORKER_STOP_GRACE`）。旧构建的 worker 全都不在了，它接受的批次会停在排队中，要再起一个旧构建的 worker 才能做完。
+- **排空**：收到 SIGTERM 时先离开、不再领预览与重放，做完本构建排队的批次项再退出。发布新版本时，旧构建的 worker 就这样做完已接受的批次（Compose 的停止宽限缺省 30 分钟，`RW_WORKER_STOP_GRACE`）。旧构建的 worker 全都不在了，它接受的批次会停在排队中，要再起一个旧构建的 worker 才能做完。
 - **实测**（Windows，Node v24，问候牌草稿）：每像素约 13 字节，1 亿像素的草稿峰值约 1.3 GB、3 秒；只有一种字体的小图峰值约 210 MB。6,000 项文字的循环约 4 秒、峰值约 400 MB。缺省的 2 GB 内存上限放得下引擎上限的一张图。
 
 ## 数据库迁移
@@ -410,6 +462,12 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **算法**：渲染器构建标识按引擎文件、锁文件与实际安装的生产依赖计算（ADR-0013）。
 - **镜像里的标识**：构建镜像时，把它写进 `/app/BUILD_ID`，启动脚本据此打标签。
 - **与本机一致**：2026-10-19 实测，Windows 本机构建的引擎与镜像里的引擎得到同一个构建标识。所以服务交出的记录导出后，能用本机的 `renderweave replay` 重放（ADR-0019）。
+- **保留规则**（M273）：只要还有记录引用某个构建，就不删它的镜像。发布新构建时旧标签照样保留；平台管理员用 `GET /v1/platform/builds` 看被记录引用的构建、各自的记录数、最近交付时间、镜像标签与在线的 worker 数，没有记录引用、也没有 worker 的构建才可以清理。
+- **重放旧构建的记录**：Compose 的 `replay` 配置用保留的镜像起一个 worker，它只领自己构建的批次项与重放：
+
+```bash
+RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compose --profile replay up -d replay-worker
+```
 
 ## 测试
 
@@ -419,6 +477,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 开放 API 用例跑内存后端（`service/test/api.test.ts`），覆盖权限矩阵、跨租户端点清单、审计与日志里不出现密钥。
   - 代建推送用例（`service/test/push.test.ts`）从 `src/cli.ts` 跑命令行，推送到本机端口上的内存后端，再经开放 API 读回核对。
   - 模板与草稿预览用例（`service/test/preview.test.ts`）用进程内 worker；预览的图片与本机直接渲染的逐字节相同。
+  - 出图记录用例（`service/test/records.test.ts`）用进程内 worker：查询与翻页；下载的文件与登记的相同；导出包解开后与引擎在本地 `deliver` 的批次目录逐字节相同，并用命令行的 `batch-read`、`record-read` 与 `replay` 离线通过；重放与构建不在时的拒绝。
   - 批量交付用例（`service/test/batch.test.ts`）用进程内 worker：批次清单与出图记录和引擎在本进程交付的逐字节相同，记录能重放；另测构建固定、排空、租约重领与过期的写回。
   - 数据集用例（`service/test/datasets.test.ts`）：读回的字节与保存的相同；校验的问题与引擎对同一份数据的 `checkDataset` 相同（引擎的 `test/dataset-check.test.ts` 再核对它与渲染时相同）；按 ID 预览与内联同一份数据的预览逐字节相同。
   - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
@@ -432,10 +491,11 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API、代建推送、模板与草稿预览、批量交付、数据集与资源的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；替换的提交与工作区指纹的核对在同一个事务里；
+- 同一组开放 API、代建推送、模板与草稿预览、批量交付、数据集与资源、出图记录的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；替换的提交与工作区指纹的核对在同一个事务里；
 - 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；
+- 出图记录：测试进程的 worker 与 Compose 里的 worker 是两个构建，各自交付的记录各自重放成功，镜像构建的记录在测试进程里离线重放被拒；直接改写对象存储里的一个对象，下载、整批图片、两种导出都答 `record.integrityMismatch`，重放报同样的问题；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；

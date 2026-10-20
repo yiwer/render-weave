@@ -3,7 +3,8 @@
  * 两种实现跑同一组 API 用例：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑（阶段 4 PRD「接缝」）。
  */
 import type {
-  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ResourceVersionBackend, WorkspaceDocumentSource,
+  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend,
+  WorkspaceDocumentSource,
 } from './engine.js';
 
 export interface Tenant {
@@ -111,6 +112,8 @@ export interface PlatformStore {
   revokeAuthoringToken(id: string, now: Date): Promise<boolean>;
   /** 不属于任何租户的事件，例如建平台用户、签发代建令牌。 */
   appendAudit(event: NewAuditEvent, now: Date): Promise<void>;
+  /** 被出图记录引用的构建（跨租户，票据 08）：记录数与最近一次交付的时间。只要还有记录引用，就保留那个构建的镜像。 */
+  recordBuilds(): Promise<readonly { readonly build: string; readonly records: number; readonly lastDeliveredAt: string }[]>;
 }
 
 /** 代建推送进来的工作区文档的种类（票据 05，M264）。 */
@@ -220,13 +223,22 @@ export interface TenantStorage {
   guardedResources(guard: (documents: readonly StoredDocument[]) => void | Promise<void>): ResourceVersionBackend;
 }
 
+/** 一项已登记的一个文件：读取时按登记的 SHA-256 与字节数核对（票据 08）。 */
+export interface RegisteredFile {
+  readonly name: string;
+  readonly sha256: string;
+  readonly byteLength: number;
+}
+
 export interface TenantBatch {
   readonly batchId: string;
   readonly output: BatchOutput;
   readonly source: BatchSource;
   record(index: number): RecordSource;
-  /** 本项已登记的文件名（含完成清单）；还没登记时 undefined。 */
-  itemFiles(index: number): Promise<readonly string[] | undefined>;
+  /** 本项已登记的文件（含完成清单），按文件名排列；还没登记时 undefined。 */
+  itemFiles(index: number): Promise<readonly RegisteredFile[] | undefined>;
+  /** 批次清单（batch.json）登记的 SHA-256；还没发布时 undefined。 */
+  manifestSha256(): Promise<string | undefined>;
 }
 
 /** 结果里的问题：引擎的问题，或 worker 的问题（worker.timeout 等）；格式相同。 */
@@ -259,6 +271,45 @@ export interface ItemResult {
 export type TaskState =
   | { readonly status: 'queued' | 'running' | 'cancelled' }
   | { readonly status: 'done'; readonly result: TaskResult };
+
+/** 重放一条记录的结果（票据 08）：引擎 replayRecord 的完成清单与问题；没重放成时只有问题。 */
+export interface ReplayResult {
+  readonly manifest?: ReplayManifest;
+  readonly problems: readonly ResultProblem[];
+}
+
+export type ReplayState =
+  | { readonly status: 'queued' | 'running' | 'cancelled' }
+  | { readonly status: 'done'; readonly result: ReplayResult };
+
+/** 一条出图记录（票据 08）：正式交付成功、已登记的一项。 */
+export interface RecordEntry {
+  readonly batchId: string;
+  readonly index: number;
+  readonly id: string;
+  readonly template: string;
+  readonly build: string;
+  /** 登记的时间，即这一项提交的时间。 */
+  readonly deliveredAt: string;
+  readonly image: string;
+}
+
+/** 记录的翻页位置：登记时间（后端自己的精度）、批次与项序号。 */
+export interface RecordCursor {
+  readonly at: string;
+  readonly batchId: string;
+  readonly index: number;
+}
+
+/** 查询出图记录：按登记时间倒序；from 含、to 不含；before 是上一页最后一条的位置。 */
+export interface RecordQuery {
+  readonly batchId?: string;
+  readonly template?: string;
+  readonly from?: Date;
+  readonly to?: Date;
+  readonly before?: RecordCursor;
+  readonly limit: number;
+}
 
 /** 预览入队的限制（ADR-0017）：同一租户同时排队与渲染中的任务数，以及一分钟内入队的次数（撤回的也算）。 */
 export interface PreviewQuota {
@@ -312,7 +363,7 @@ export interface TenantTasks {
   enqueuePreview(request: unknown, quota: PreviewQuota, now: Date): Promise<{ readonly id: string } | { readonly limited: 'concurrency' | 'rate' }>;
   /** 任务不在本租户时 undefined。 */
   state(id: string): Promise<TaskState | undefined>;
-  /** 取走结果之后清掉图片与布局；还在排队的撤回，不再占并发。 */
+  /** 取走结果之后清掉图片与布局；还在排队的撤回，不再占并发。预览与重放都适用。 */
   release(id: string): Promise<void>;
   /** 建批次并按项入队。同一幂等键已有批次时不建，返回已有的那个（created 为 false）。 */
   createBatch(batch: NewBatch, now: Date): Promise<{ readonly batch: BatchState; readonly created: boolean }>;
@@ -325,6 +376,13 @@ export interface TenantTasks {
    * 批次已结束时不改变什么。批次不在本租户时 undefined。
    */
   cancelBatch(batchId: string, now: Date): Promise<BatchState | undefined>;
+  /** 出图记录（票据 08）：每条带它的翻页位置。 */
+  listRecords(query: RecordQuery): Promise<readonly (RecordEntry & { readonly cursor: RecordCursor })[]>;
+  /** 重放入队：交给 build 的 worker；并发与频率的限制同预览，按种类各算各的。 */
+  enqueueReplay(record: { readonly batchId: string; readonly index: number; readonly build: string }, quota: PreviewQuota, now: Date):
+    Promise<{ readonly id: string } | { readonly limited: 'concurrency' | 'rate' }>;
+  /** 任务不在本租户、或不是重放时 undefined。 */
+  replayState(id: string): Promise<ReplayState | undefined>;
 }
 
 /** worker 领到的预览任务。 */
@@ -348,13 +406,23 @@ export interface BatchItemTask {
   readonly attempts: number;
 }
 
-export type ClaimedTask = PreviewTask | BatchItemTask;
+/** worker 领到的重放（票据 08）：只由记录所属构建的 worker 领取。 */
+export interface ReplayTask {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly kind: 'replay';
+  readonly batchId: string;
+  readonly index: number;
+}
 
-/** 领取的条件：worker 只领自己构建的批次项（预览哪个构建都可以领）；停止前不再领预览。 */
+export type ClaimedTask = PreviewTask | BatchItemTask | ReplayTask;
+
+/** 领取的条件：worker 只领自己构建的批次项与重放（预览哪个构建都可以领）；停止前不再领预览与重放。 */
 export interface ClaimOptions {
   readonly build: string;
   /** 批次项的租约：过了 now + leaseMs 还没写回，同构建的 worker 可以重领。 */
   readonly leaseMs: number;
+  /** 领不领预览与重放（有人在等的任务）。 */
   readonly previews: boolean;
 }
 
@@ -365,6 +433,7 @@ export interface ClaimOptions {
 export interface TaskQueue {
   claim(worker: string, now: Date, options: ClaimOptions): Promise<ClaimedTask | undefined>;
   finish(task: PreviewTask, result: TaskResult, now: Date): Promise<void>;
+  finishReplay(task: ReplayTask, result: ReplayResult, now: Date): Promise<void>;
   /**
    * 写回批次项的结果；这一次领取已被重领时不生效（返回 false）。
    * 与"批次的其余项都已结束"同一个事务里发布批次清单（锁住批次行，最后结束的那一项负责）。
@@ -397,9 +466,21 @@ export interface TenantScope {
   readonly tasks: TenantTasks;
 }
 
+/**
+ * 在线的 worker（票据 08）：worker 定期报到自己的构建，停止时离开。重放前据此判断记录所属的构建有没有 worker；
+ * 没有就拒绝，不排进一个没人领的队列。
+ */
+export interface WorkerRegistry {
+  heartbeat(worker: string, build: string, now: Date): Promise<void>;
+  leave(worker: string): Promise<void>;
+  /** since 之后报到过的 worker，按构建计数。 */
+  online(since: Date): Promise<ReadonlyMap<string, number>>;
+}
+
 export interface ServiceBackend {
   readiness(): Promise<Readiness>;
   readonly platform: PlatformStore;
   tenant(tenantId: string): TenantScope;
   readonly queue: TaskQueue;
+  readonly workers: WorkerRegistry;
 }

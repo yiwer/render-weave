@@ -97,6 +97,27 @@ services:
       <<: *readyz
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
+  # 重放旧构建的记录（票据 08，ADR-0019）：用按构建保留的镜像起一个 worker，它只领自己构建的批次项与重放。
+  # RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compose --profile replay up -d replay-worker
+  replay-worker:
+    profiles: ["replay"]
+    image: ${RW_REPLAY_IMAGE:-renderweave-service:local}
+    pull_policy: never
+    command: ["node", "service/dist/main.js", "worker"]
+    stop_grace_period: ${RW_WORKER_STOP_GRACE:-30m}
+    environment:
+      <<: *service-env
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
+    mem_limit: ${RW_WORKER_MEMORY:-2g}
+    memswap_limit: ${RW_WORKER_MEMORY:-2g}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      <<: *readyz
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+
   # Docker 后端测试，只在 test 配置下运行：docker compose --profile test run --rm --build tester
   tester:
     profiles: ["test"]

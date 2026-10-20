@@ -35,6 +35,10 @@ export const ServiceProblemCodes = {
   resourceReplacementInvalid: 'resource.replacementInvalid',
   /** 检查之后资源已有新版本，或工作区已变化（409，M152）。 */
   resourceReplacementStale: 'resource.replacementStale',
+  /** 重放（票据 08）：记录所属的构建没有在线的 worker（503）。 */
+  replayBuildUnavailable: 'replay.buildUnavailable',
+  /** 按租户的重放并发与频率（429）。 */
+  replayRateLimited: 'replay.rateLimited',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

@@ -157,6 +157,17 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacement-checks`, body: SAMPLE }) },
   { route: 'POST /v1/resources/:resourceId/replacements', allow: ['admin'],
     request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacements`, body: { check: replacementCheck(`r${randomUUID()}`) } }) },
+  // 出图记录（票据 08）：批次 ID 用随机值。
+  { route: 'GET /v1/records', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/records' }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/files/:name', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/items/1/files/image.png` }) },
+  { route: 'GET /v1/batches/:batchId/images.zip', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/images.zip` }) },
+  { route: 'GET /v1/batches/:batchId/export.zip', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/export.zip` }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/export.zip', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/items/1/export.zip` }) },
+  { route: 'POST /v1/batches/:batchId/items/:index/replay', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/items/1/replay` }) },
+  { route: 'GET /v1/platform/builds', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: '/v1/platform/builds' }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {
