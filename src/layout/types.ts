@@ -200,6 +200,8 @@ export type DrawOp =
       readonly scaleY: number;
       /** 以基线为轴的错切：基线以上每单位高度向右移 skew；横排为 tan θ × scaleX（M117）。 */
       readonly skew: number;
+      /** 竖排方向性标点绕各自绘制起点顺时针旋转 90°（M244）。 */
+      readonly rotated?: true;
       /** 填充色；没有时只画描边。一个文本的描边全部画完再画填充，免得后面片段的描边盖住前面的字（M108）。 */
       readonly color?: string;
       readonly stroke?: { readonly color: string; readonly width: number };

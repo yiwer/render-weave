@@ -129,27 +129,69 @@ describe('文字片段', () => {
     expect(summary(result, '票价').fragments.map((fragment) => fragment.text)).toEqual(['票价：', '', '元']);
   });
 
-  it('竖排文字的片段可单独设颜色', async () => {
+  it('竖排文字的片段可单独设颜色、字体与字号，按各自字格高度排列并在列宽内水平居中', async () => {
     const workspace = await textLab(FIELDS, {
       fill: '#FFFFFF',
       children: [
-        text('站名', [{ text: '东', color: '#E60012' }, { text: '门', color: '#333333' }], {
-          fontSize: 10,
-          writingMode: 'vertical',
-          place: { left: 0, top: 0, width: { fixed: 10 }, height: { fixed: 20 } },
-        }),
+        text(
+          '站名',
+          [
+            { text: '东', color: '#E60012', font: HEAVY, fontSize: 10 },
+            { text: '门', color: '#333333', font: MEDIUM, fontSize: 6 },
+          ],
+          {
+            fontSize: 8,
+            writingMode: 'vertical',
+            place: { left: 0, top: 0, width: 'hug', height: 'hug' },
+          },
+        ),
+        text(
+          '空片段不撑宽',
+          [
+            { slot: 'label', fontSize: 14 },
+            { text: '北', fontSize: 6 },
+          ],
+          {
+            fontSize: 10,
+            writingMode: 'vertical',
+            place: { left: 12, top: 0, width: 'hug', height: 'hug' },
+          },
+        ),
       ],
     });
-    const result = await render(workspace, textLabRequest({}, 10, 20, DPI));
+    const result = await render(workspace, textLabRequest({}, 20, 20, DPI));
     const pixels = await decodePixels(result.image!.bytes);
     const top = { x: 0, y: 0, width: 10, height: 10 };
-    const bottom = { x: 0, y: 10, width: 10, height: 10 };
+    const bottom = { x: 0, y: 10, width: 10, height: 6 };
 
     expect(result.problems).toEqual([]);
+    expect(node(result, '站名')).toMatchObject({
+      width: 10,
+      height: 16,
+      text: {
+        fontSize: 8,
+        width: 10,
+        height: 16,
+        fragments: [
+          { text: '东', font: HEAVY, fontSize: 10, color: '#E60012FF', slant: 0 },
+          { text: '门', font: MEDIUM, fontSize: 6, color: '#333333FF', slant: 0 },
+        ],
+      },
+    });
+    expect(node(result, '空片段不撑宽')).toMatchObject({
+      width: 6,
+      height: 6,
+      text: { fontSize: 10, width: 6, height: 6 },
+    });
     expect(countIn(pixels, top, (p) => near(p, [0xe6, 0x00, 0x12], 40))).toBeGreaterThan(500);
     expect(countIn(pixels, top, (p) => near(p, [0x33, 0x33, 0x33], 40))).toBe(0);
-    expect(countIn(pixels, bottom, (p) => near(p, [0x33, 0x33, 0x33], 40))).toBeGreaterThan(500);
+    expect(countIn(pixels, bottom, (p) => near(p, [0x33, 0x33, 0x33], 40))).toBeGreaterThan(200);
     expect(countIn(pixels, bottom, (p) => near(p, [0xe6, 0x00, 0x12], 40))).toBe(0);
+    // 6 mm 的“门”在 10 mm 列宽内水平居中（x: 2..8 mm，20..80 px），左右 0..2 mm 无墨迹。
+    const bottomInk = boundsIn(pixels, { left: 0, top: 100, right: 100, bottom: 160 }, isInk)!;
+    expect(bottomInk.left).toBeGreaterThanOrEqual(20);
+    expect(bottomInk.right).toBeLessThan(80);
+    expect(Math.abs(bottomInk.left + bottomInk.right - 100)).toBeLessThanOrEqual(3);
   });
 });
 
@@ -264,18 +306,18 @@ describe('插槽与展示格式的检查', () => {
     ]);
   });
 
-  it('竖排文字的片段只能单独设颜色，竖排不能倾斜', async () => {
+  it('竖排文字与竖排片段不能设倾斜 slant', async () => {
     const vertical = { writingMode: 'vertical', place: { left: 0, top: 0, width: { fixed: 10 }, height: { fixed: 30 } } };
     const workspace = await textLab(FIELDS, {
       children: [
-        text('站名', [{ text: '东门', fontSize: 8 }], vertical),
+        text('片段倾斜站名', [{ text: '东门', slant: 8 }], vertical),
         text('倾斜站名', [{ text: '东门' }], { ...vertical, name: '倾斜站名', slant: 12 }),
       ],
     });
     const result = await render(workspace, textLabRequest({}, 30, 30, 72));
 
     expect(result.problems.map((p) => [p.code, p.location.kind === 'element' && p.location.path, p.message])).toEqual([
-      [ProblemCodes.templateUnsupported, '文字实验/站名', '竖排文字的片段暂只能单独设颜色 color'],
+      [ProblemCodes.templateUnsupported, '文字实验/片段倾斜站名', '竖排文字的倾斜 slant 尚未支持'],
       [ProblemCodes.templateUnsupported, '文字实验/倾斜站名', '竖排文字的倾斜 slant 尚未支持'],
       [ProblemCodes.renderExpansionBlocked, false, '输入无法展开，草稿预览与正式出图均停止；具体原因见上述问题'],
     ]);

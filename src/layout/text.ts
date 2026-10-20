@@ -62,8 +62,8 @@ export function measureTextNode(model: TextElementModel, fragments: readonly Eva
   };
 }
 
-function measureRun(fragment: EvaluatedFragment, fonts: FontStore, x: number, inkSkew = 0): MeasuredRun {
-  const measured = measureText(fonts, fonts.get(fragment.style.font)!, fragment.text, fragment.style.fontSize, inkSkew);
+function measureRun(fragment: EvaluatedFragment, fonts: FontStore, x: number, inkSkew = 0, vertical = false): MeasuredRun {
+  const measured = measureText(fonts, fonts.get(fragment.style.font)!, fragment.text, fragment.style.fontSize, inkSkew, vertical);
   const advance = measured.glyphs.reduce((sum, glyph) => sum + glyph.advance, 0);
   return { fragment, glyphs: measured.glyphs, ascent: measured.ascent, descent: measured.descent, advance, x };
 }
@@ -108,20 +108,22 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
 }
 
 function measureVertical(model: TextElementModel, fragments: readonly EvaluatedFragment[], fonts: FontStore): Omit<MeasuredLines, 'intrinsic'> {
-  // 模板竖排片段只能单独设颜色；缺字替代后字体可不同，共用能容纳所有实际字体的行框。
-  const runs = fragments.map((fragment) => measureRun(fragment, fonts, 0));
+  // 各片段按自身字体与字号算字格高度，整列宽度取有字片段中最大 fontSize（无字时取元素 fontSize）（M244）。
+  const runs = fragments.map((fragment) => measureRun(fragment, fonts, 0, 0, true));
   const inked = runs.filter((run) => run.glyphs.length > 0);
   const { ascent, descent } = inked.length
     ? { ascent: Math.max(...inked.map((run) => run.ascent)), descent: Math.max(...inked.map((run) => run.descent)) }
     : ownLine(model, fonts);
+  const width = inked.length ? Math.max(...inked.map((run) => run.fragment.style.fontSize)) : model.fontSize;
   const glyphs = runs.flatMap((run) => run.glyphs);
   const gaps = Math.max(0, glyphs.length - 1);
-  const height = Math.max(0, glyphs.length * (ascent + descent) + (model.verticalAlign === 'distribute' ? 0 : gaps * model.letterSpacing));
+  const cellsHeight = glyphs.reduce((sum, glyph) => sum + glyph.ascent + glyph.descent, 0);
+  const height = Math.max(0, cellsHeight + (model.verticalAlign === 'distribute' ? 0 : gaps * model.letterSpacing));
   return {
     runs,
     ascent,
     descent,
-    width: model.fontSize,
+    width,
     height,
     lead: 0,
     column: { glyphs, ascent, descent },
@@ -271,7 +273,7 @@ function recordVertical(
   problems: Problem[],
 ): Summary {
   const vertical = layoutVertical(column, {
-    fontSize: model.fontSize,
+    fontSize: measure.width,
     boxWidth: content.width,
     boxHeight: content.height,
     horizontalAlign: model.horizontalAlign === 'distribute' || model.horizontalAlign === 'spaceEvenly' ? 'start' : model.horizontalAlign,
@@ -291,28 +293,42 @@ function recordVertical(
     if (vertical.columnWidth > content.width + EPSILON) {
       const group = model.fit.widthOverflow;
       const floored = group && model.fontSize <= group.minFontSize + EPSILON ? `（缩字组 ${group.shrinkGroup} 已到最小字号 ${fmt(group.minFontSize)} mm）` : '';
-      reasons.push(`字号 ${fmt(model.fontSize)} mm 比可用宽 ${fmt(content.width)} mm 更宽${floored}`);
+      reasons.push(`字号 ${fmt(vertical.columnWidth)} mm 比可用宽 ${fmt(content.width)} mm 更宽${floored}`);
     }
     const level = model.fit.widthOverflow && vertical.columnWidth > content.width + EPSILON ? 'severe' : model.fit.onFail;
     problems.push(overflowProblem(model, `竖排文字"${text}"放不下：${reasons.join('；')}`, level));
   }
-  // 按片段把整列的字形位置分回去，各片段只是颜色不同。
+  // 按片段与标点是否旋转把整列的字形位置分回去。
   let index = 0;
-  const placed = measure.runs.map((run) => {
+  const placed: PlacedRun[] = [];
+  for (const run of measure.runs) {
     const origins = vertical.origins.slice(index, index + run.glyphs.length);
     index += run.glyphs.length;
-    return {
-      style: run.fragment.style,
-      glyphs: run.glyphs.map((glyph) => glyph.id),
-      positions: origins.flatMap((origin) => [content.x + origin.x, content.y + origin.y]),
-    };
-  });
+    for (let i = 0; i < run.glyphs.length; i++) {
+      const glyph = run.glyphs[i]!;
+      const origin = origins[i]!;
+      const rotated = glyph.rotated;
+      const last = placed.at(-1);
+      if (last && last.style === run.fragment.style && last.rotated === rotated) {
+        (last.glyphs as number[]).push(glyph.id);
+        (last.positions as number[]).push(content.x + origin.x, content.y + origin.y);
+      } else {
+        placed.push({
+          style: run.fragment.style,
+          ...(rotated && { rotated: true as const }),
+          glyphs: [glyph.id],
+          positions: [content.x + origin.x, content.y + origin.y],
+        });
+      }
+    }
+  }
   pushGlyphs(drawOps, model, placed, vertical.compression);
   return summarize(model, text, vertical.columnWidth, vertical.extent, vertical.spacing, vertical.compression, overflow);
 }
 
 interface PlacedRun {
   readonly style: ResolvedStyle;
+  readonly rotated?: true;
   readonly glyphs: readonly number[];
   readonly positions: readonly number[];
 }
@@ -322,15 +338,15 @@ interface PlacedRun {
  * 有描边时先画全部片段的描边、再画全部填充（M108），免得后面片段的描边盖住前面的字。
  */
 function pushGlyphs(drawOps: DrawOp[], model: TextElementModel, runs: readonly PlacedRun[], compressionY: number, compressionX = 1): void {
-  const merged: { style: ResolvedStyle; glyphs: number[]; positions: number[] }[] = [];
+  const merged: { style: ResolvedStyle; rotated?: true; glyphs: number[]; positions: number[] }[] = [];
   for (const run of runs) {
     if (run.glyphs.length === 0) continue;
     const last = merged.at(-1);
-    if (last && sameStyle(last.style, run.style)) {
+    if (last && sameStyle(last.style, run.style) && last.rotated === run.rotated) {
       last.glyphs.push(...run.glyphs);
       last.positions.push(...run.positions);
     } else {
-      merged.push({ style: run.style, glyphs: [...run.glyphs], positions: [...run.positions] });
+      merged.push({ style: run.style, ...(run.rotated && { rotated: true as const }), glyphs: [...run.glyphs], positions: [...run.positions] });
     }
   }
   const op = (run: (typeof merged)[number]) => ({
@@ -338,9 +354,10 @@ function pushGlyphs(drawOps: DrawOp[], model: TextElementModel, runs: readonly P
     path: formatElementPath(model.path),
     font: run.style.font,
     fontSize: run.style.fontSize,
-    scaleX: compressionX,
-    scaleY: compressionY,
+    scaleX: run.rotated ? compressionY : compressionX,
+    scaleY: run.rotated ? compressionX : compressionY,
     skew: slantSkew(run.style.slant) * compressionX,
+    ...(run.rotated && { rotated: true as const }),
     glyphs: run.glyphs,
     positions: run.positions,
   });

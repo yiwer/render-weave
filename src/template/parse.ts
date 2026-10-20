@@ -866,7 +866,7 @@ class TemplateReader {
 
   /**
    * 文本内容：文字片段 { "text" } 与变量插槽 { "slot", "format"? }，都可单独写 font、fontSize、color、slant，
-   * 未写的沿用文本元素的设置（M73）。竖排文字按统一的字号与字格排列（M109），片段只能单独设颜色。
+   * 未写的沿用文本元素的设置（M73）。竖排文字片段可写 font、fontSize、color，不能设倾斜 slant（M109、M244）。
    */
   private readContent(value: unknown, writingMode: Read<TextElementModel['writingMode']>, path: ElementPath): Read<ContentItem[]> {
     if (!Array.isArray(value)) {
@@ -885,8 +885,8 @@ class TemplateReader {
       this.checkKeys(item, isText ? ['text', ...FRAGMENT_STYLE_KEYS] : ['slot', 'format', ...FRAGMENT_STYLE_KEYS], path, isText ? '文字片段' : '变量插槽');
       const style = this.readFragmentStyle(item, path);
       if (!style) return undefined;
-      if (writingMode === 'vertical' && (style.font !== undefined || style.fontSize !== undefined || style.slant !== undefined)) {
-        this.unsupported(path, '竖排文字的片段暂只能单独设颜色 color');
+      if (writingMode === 'vertical' && style.slant !== undefined) {
+        this.unsupported(path, '竖排文字的倾斜 slant 尚未支持');
         return undefined;
       }
       if (isText) {

@@ -237,6 +237,20 @@ class Painter {
     try {
       const glyphs = op.glyphs as number[];
       const positions = op.positions as number[];
+      const drawRun = () => {
+        if (!op.rotated) {
+          this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
+          return;
+        }
+        for (let i = 0; i < glyphs.length; i++) {
+          const x = positions[i * 2]!;
+          const y = positions[i * 2 + 1]!;
+          this.canvas.save();
+          this.canvas.rotate(90, x, y);
+          this.canvas.drawGlyphs([glyphs[i]!], [x, y], 0, 0, skFont, this.paint);
+          this.canvas.restore();
+        }
+      };
       if (op.stroke) {
         // 描边画在填充之下，画笔宽度取两倍，字形外侧可见的宽度即为 stroke.width（M108）。
         this.paint.setStyle(this.ck.PaintStyle.Stroke);
@@ -244,11 +258,11 @@ class Painter {
         this.paint.setStrokeJoin(this.ck.StrokeJoin.Round);
         this.paint.setStrokeCap(this.ck.StrokeCap.Butt);
         this.setColor(op.stroke.color);
-        this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
+        drawRun();
       }
       if (op.color) {
         this.useFill(op.color);
-        this.canvas.drawGlyphs(glyphs, positions, 0, 0, skFont, this.paint);
+        drawRun();
       }
     } finally {
       skFont.delete();

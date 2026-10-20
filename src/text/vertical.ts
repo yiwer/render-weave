@@ -45,7 +45,6 @@ const EPSILON = 1e-6;
 export function layoutVertical(text: MeasuredText, options: VerticalOptions): VerticalLayout {
   const { fontSize, boxWidth, boxHeight } = options;
   const n = text.glyphs.length;
-  const cell = text.ascent + text.descent;
   const columnWidth = fontSize;
   const columnX =
     options.horizontalAlign === 'start' ? 0 : options.horizontalAlign === 'center' ? (boxWidth - columnWidth) / 2 : boxWidth - columnWidth;
@@ -53,11 +52,15 @@ export function layoutVertical(text: MeasuredText, options: VerticalOptions): Ve
     return { origins: [], spacing: 0, compression: 1, columnWidth, extent: 0, naturalExtent: 0 };
   }
 
+  const cellOf = (glyph: MeasuredText['glyphs'][number]) => glyph.ascent + glyph.descent;
+  const cellsExtent = text.glyphs.reduce((sum, glyph) => sum + cellOf(glyph), 0);
+
   // 首字墨迹顶、末字墨迹底在各自字格中的位置（从字格顶量起）；没有墨迹的字按整个字格算。
   const first = text.glyphs[0]!;
   const last = text.glyphs[n - 1]!;
-  const inkTop = first.ink ? text.ascent + first.ink.top : 0;
-  const inkBottom = last.ink ? text.ascent + last.ink.bottom : cell;
+  const lastCell = cellOf(last);
+  const inkTop = first.ink ? first.ascent + first.ink.top : 0;
+  const inkBottom = last.ink ? last.ascent + last.ink.bottom : lastCell;
 
   let spacing = 0;
   let compression = 1;
@@ -72,7 +75,7 @@ export function layoutVertical(text: MeasuredText, options: VerticalOptions): Ve
 
   if (options.verticalAlign === 'distribute') {
     // 墨迹总高 = 首字墨迹顶到末字墨迹底，字距为 0、不压缩时。
-    naturalExtent = (n - 1) * cell + inkBottom - inkTop;
+    naturalExtent = cellsExtent - lastCell + inkBottom - inkTop;
     if (n === 1) {
       compression = naturalExtent > boxHeight + EPSILON ? compressTo(naturalExtent) : 1;
       extent = naturalExtent * compression;
@@ -89,7 +92,6 @@ export function layoutVertical(text: MeasuredText, options: VerticalOptions): Ve
     }
   } else {
     const gaps = Math.max(0, n - 1);
-    const cellsExtent = n * cell;
     const initialSpacing = n > 1 ? (options.letterSpacing ?? 0) : 0;
     naturalExtent = Math.max(0, cellsExtent + gaps * initialSpacing);
     spacing =
@@ -107,11 +109,22 @@ export function layoutVertical(text: MeasuredText, options: VerticalOptions): Ve
     firstCellTop = options.verticalAlign === 'top' || free < 0 ? 0 : options.verticalAlign === 'center' ? free / 2 : free;
   }
 
-  const pitch = cell * compression + spacing;
-  const origins = text.glyphs.map((glyph, i) => ({
-    x: columnX + (columnWidth - glyph.advance) / 2,
-    y: firstCellTop + i * pitch + text.ascent * compression,
-  }));
+  let cellTop = firstCellTop;
+  const origins = text.glyphs.map((glyph) => {
+    const cell = cellOf(glyph);
+    const cellLeft = columnX + (columnWidth - glyph.advance) / 2;
+    const origin = glyph.rotated
+      ? {
+          x: cellLeft + (glyph.advance + glyph.descent - glyph.ascent) / 2,
+          y: cellTop + ((cell - glyph.advance) / 2) * compression,
+        }
+      : {
+          x: cellLeft,
+          y: cellTop + glyph.ascent * compression,
+        };
+    cellTop += cell * compression + spacing;
+    return origin;
+  });
   return { origins, spacing, compression, columnWidth, extent, naturalExtent };
 }
 

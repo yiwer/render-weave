@@ -193,7 +193,7 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['书写方向未知', on(ofType('text'), (e) => (e.writingMode = 'diagonal'))],
   ['横排用 verticalAlign 两端分布', on(ofType('text', (e) => !isVertical(e)), (e) => (e.verticalAlign = 'distribute'))],
   ['竖排用 spaceEvenly', on(ofType('text', isVertical), (e) => (e.horizontalAlign = 'spaceEvenly'))],
-  ['竖排片段写字号', on(ofType('text', isVertical), (e) => (e.content[0] = { ...e.content[0], fontSize: 3 }))],
+  ['竖排片段写倾斜', on(ofType('text', isVertical), (e) => (e.content[0] = { ...e.content[0], slant: 10 }))],
   ['竖排倾斜', on(ofType('text', isVertical), (e) => (e.slant = 10))],
   ['fit 上未知键', on(ofType('text'), (e) => (e.fit = { ...e.fit, extra: 1 }))],
   ['fit 步骤未知', on(ofType('text'), (e) => (e.fit = { ...e.fit, steps: ['squeeze'] }))],
@@ -386,6 +386,31 @@ describe('Schema 之外的语义检查（只看一份文档）', () => {
         parameters: [
           { name: 'tracking', displayName: '字距', visibility: 'public', type: 'number', default: 1 },
           { name: 'flag', displayName: '开关', visibility: 'public', type: 'boolean', default: false },
+        ],
+      },
+    );
+    expect(schemas.template(doc), JSON.stringify(schemas.template.errors)).toBe(true);
+    expect(checkDslDocument(doc).problems).toEqual([]);
+  });
+
+  it('竖排文本的文字片段与变量插槽单独设 font、fontSize 与 color 通过 Schema 与引擎检查', () => {
+    const doc = template(
+      {
+        children: [
+          text('竖排混排', {
+            writingMode: 'vertical',
+            verticalAlign: 'distribute',
+            content: [
+              { slot: 'mainName', font: 'res:font-hei-bold', fontSize: 10, color: '#1F2328' },
+              { text: '（北门）', font: 'res:font-hei-regular', fontSize: { var: 'subSize' }, color: '#57606A' },
+            ],
+          }),
+        ],
+      },
+      {
+        parameters: [
+          { name: 'mainName', displayName: '主站名', visibility: 'public', type: 'text', default: '田贝' },
+          { name: 'subSize', displayName: '副名号', visibility: 'public', type: 'number', default: 7 },
         ],
       },
     );

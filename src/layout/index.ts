@@ -266,7 +266,7 @@ class Layouter {
         summary = { children: this.arrangeContainer(node, model, box) };
         break;
       case 'text': {
-        this.groups?.observe(model, box);
+        this.groups?.observe(model, node.fragments ?? [], box);
         const text = recordText(model, node.fragments ?? [], this.textMeasure(node), box, this.drawOps, this.problems);
         summary = text ? { text } : {};
         break;

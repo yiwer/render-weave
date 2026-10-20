@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ProblemCodes, render, type LayoutNode, type RenderResult } from '../src/index.js';
-import { loadStopName, stopNameRequest, withTemplate } from './support/fixtures.js';
+import { loadStopName, stopNameRequest, textLab, textLabRequest, withTemplate } from './support/fixtures.js';
 import { expectMatchesGolden } from './support/golden.js';
-import { decodePixels, inkRows, pixelAt, runsInColumn } from './support/pixels.js';
+import { boundsIn, decodePixels, inkRows, pixelAt, runsInColumn } from './support/pixels.js';
 
 const stopName = (result: RenderResult): LayoutNode => result.layout!.root.children![0]!;
 const isWhite = ([r, g, b]: number[]) => r! > 245 && g! > 245 && b! > 245;
@@ -320,5 +320,203 @@ describe('竖排固定字间距 letterSpacing 与 tightenSpacing（M243）', () 
     const overflowTightenOnly = await renderVertical({ letterSpacing: 3, fit: { steps: ['tightenSpacing'] } }, 35);
     expect(stopName(overflowTightenOnly).text).toMatchObject({ spacing: 0, compression: 1, height: 40, overflow: true });
     expect(overflowTightenOnly.problems.map((p) => p.code)).toEqual([ProblemCodes.layoutTextOverflow]);
+  });
+});
+
+describe('竖排片段独立字体字号与方向性标点旋转（M244）', () => {
+  const isInk = ([r, g, b]: [number, number, number, number]) => r + g + b < 700;
+
+  it('主站名 10 mm 粗体 + （北门） 7 mm 常规体在同一竖排文本元素内两端分布、括号顺时针旋转 90°、并参与缩字组', async () => {
+    const mixedContent = (main: string, sub = '（北门）') => [
+      { text: main, font: 'res:font-hei-bold', fontSize: 10, color: '#1F2328' },
+      { text: sub, font: 'res:font-hei-regular', fontSize: 7, color: '#57606A' },
+    ];
+
+    const singleWs = withTemplate(await loadStopName(), '竖排站名', (document) => {
+      document['artboard']['children'][0] = {
+        ...document['artboard']['children'][0],
+        font: 'res:font-hei-bold',
+        fontSize: 10,
+        content: mixedContent('田贝'),
+      };
+    });
+    const single = await render(singleWs, stopNameRequest('田贝'));
+    expect(single.problems).toEqual([]);
+    expect(stopName(single).text).toMatchObject({
+      content: '田贝（北门）',
+      writingMode: 'vertical',
+      fontSize: 10,
+      width: 10,
+      height: 73,
+      compression: 1,
+      overflow: false,
+      fragments: [
+        { text: '田贝', font: 'res:font-hei-bold', fontSize: 10, color: '#1F2328FF', slant: 0 },
+        { text: '（北门）', font: 'res:font-hei-regular', fontSize: 7, color: '#57606AFF', slant: 0 },
+      ],
+    });
+    // 6 个字格总高 10×2 + 7×4 = 48 mm（小于 6 个 10 mm 字格的 60 mm），首字“田”贴顶、末字旋转后的“）”贴底。
+    expect(stopName(single).text!.spacing).toBeGreaterThan(5);
+    const singlePixels = await decodePixels(single.image!.bytes);
+    expect(inkRows(singlePixels, isWhite)).toEqual({ top: 0, bottom: 344 });
+
+    // 末字“）”顺时针旋转 90° 后为向上开口的弧“︶”，位于底部区域，其墨迹宽大于高的 2 倍。
+    const closeBracketInk = boundsIn(
+      singlePixels,
+      { left: 0, top: 332, right: singlePixels.width, bottom: singlePixels.height },
+      isInk,
+    )!;
+    expect(closeBracketInk.right - closeBracketInk.left).toBeGreaterThan((closeBracketInk.bottom - closeBracketInk.top) * 2);
+
+    // 多列看板：第 1 列正常 10/7 mm、第 2 列长主站名 + 副站名纵向压缩、第 3–4 列因 8 mm 窄列触发缩字组按比例缩为 8/5.6 mm。
+    const boardWs = await textLab([], {
+      fill: '#FFFFFF',
+      padding: 2,
+      layout: { mode: 'grid', columns: [{ fixed: 14 }, { fixed: 14 }, { fixed: 14 }, { fixed: 8 }], rows: [{ fraction: 1 }], columnGap: 2 },
+      children: [
+        {
+          type: 'text',
+          name: '常规主副站名',
+          content: mixedContent('田贝'),
+          font: 'res:font-hei-bold',
+          fontSize: 10,
+          writingMode: 'vertical',
+          horizontalAlign: 'center',
+          verticalAlign: 'distribute',
+          fit: { steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.6 },
+          place: { column: 1, row: 1, width: 'fill', height: 'fill' },
+        },
+        {
+          type: 'text',
+          name: '长主副站名压缩',
+          content: mixedContent('李朗国际珠宝园'),
+          font: 'res:font-hei-bold',
+          fontSize: 10,
+          writingMode: 'vertical',
+          horizontalAlign: 'center',
+          verticalAlign: 'distribute',
+          fit: { steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.6 },
+          place: { column: 2, row: 1, width: 'fill', height: 'fill' },
+        },
+        {
+          type: 'text',
+          name: '缩字组主副站名',
+          content: mixedContent('翠竹'),
+          font: 'res:font-hei-bold',
+          fontSize: 10,
+          writingMode: 'vertical',
+          horizontalAlign: 'center',
+          verticalAlign: 'distribute',
+          fit: { steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.6, widthOverflow: { shrinkGroup: 'stopNames' } },
+          place: { column: 3, row: 1, width: 'fill', height: 'fill' },
+        },
+        {
+          type: 'text',
+          name: '缩字组窄列',
+          content: mixedContent('东门', '（南）'),
+          font: 'res:font-hei-bold',
+          fontSize: 10,
+          writingMode: 'vertical',
+          horizontalAlign: 'center',
+          verticalAlign: 'distribute',
+          fit: { steps: ['tightenSpacing', 'compressGlyphs'], compressMin: 0.6, widthOverflow: { shrinkGroup: 'stopNames' } },
+          place: { column: 4, row: 1, width: 'fill', height: 'fill' },
+        },
+      ],
+    });
+    const board = await render(boardWs, textLabRequest({}, 60, 77, 120));
+    expect(board.problems).toEqual([]);
+    const cols = board.layout!.root.children!;
+    expect(cols[0]!.text).toMatchObject({
+      fontSize: 10,
+      width: 10,
+      height: 73,
+      compression: 1,
+      fragments: [{ fontSize: 10 }, { fontSize: 7 }],
+    });
+    // 7 个 10 mm 字 + 4 个 7 mm 字（总字格 98 mm < 11 个 10 mm 字的 110 mm），压缩比高于纯 10 mm 的 11 字站名。
+    expect(cols[1]!.text).toMatchObject({
+      fontSize: 10,
+      width: 10,
+      height: 73,
+      spacing: 0,
+      overflow: false,
+      fragments: [{ fontSize: 10 }, { fontSize: 7 }],
+    });
+    expect(cols[1]!.text!.compression).toBeGreaterThan(0.75);
+    expect(cols[1]!.text!.compression).toBeLessThan(0.85);
+    expect(cols[2]!.text).toMatchObject({
+      shrinkGroup: 'stopNames',
+      fontSize: 8,
+      width: 8,
+      height: 73,
+      compression: 1,
+      fragments: [{ fontSize: 8 }, { fontSize: 5.6 }],
+    });
+    expect(cols[3]!.text).toMatchObject({
+      shrinkGroup: 'stopNames',
+      fontSize: 8,
+      width: 8,
+      height: 73,
+      compression: 1,
+      fragments: [{ fontSize: 8 }, { fontSize: 5.6 }],
+    });
+    await expectMatchesGolden('vertical-fragments-punctuation', board.image!.bytes);
+  });
+
+  it('常见方向性标点绕字格中心顺时针旋转 90° 绘制，首尾为括号时旋转后墨迹贴齐上下边界', async () => {
+    const distributed = await render(await loadStopName(), stopNameRequest('（北门）'));
+    expect(distributed.problems).toEqual([]);
+    const distPixels = await decodePixels(distributed.image!.bytes);
+    expect(inkRows(distPixels, isWhite)).toEqual({ top: 0, bottom: 344 });
+    // 首字“（”顺时针旋转 90° 后为向下开口的“︵”：中轴顶部有墨迹，左右两端向下延伸更深。
+    const centerX = Math.round(distPixels.width / 2);
+    const centerTopRun = runsInColumn(distPixels, centerX, (p) => !isWhite(p))[0]!;
+    const sideTopRun = runsInColumn(distPixels, centerX - 14, (p) => !isWhite(p))[0]!;
+    expect(centerTopRun.start).toBeLessThanOrEqual(2);
+    expect(sideTopRun.start + sideTopRun.length).toBeGreaterThanOrEqual(centerTopRun.start + centerTopRun.length + 2);
+
+    // 旋转标点参与纵向压缩并带文字描边时，描边宽度不随压缩变形。
+    const strokedRotated = withTemplate(await loadStopName(), '竖排站名', (document) => {
+      const text = document['artboard']['children'][0];
+      text['content'] = [
+        { text: '——', fontSize: 10 },
+        { text: '——', fontSize: 8 },
+      ];
+      text['verticalAlign'] = 'top';
+      text['color'] = '#000000';
+      text['stroke'] = { color: '#FF0000', width: 0.8 };
+      text['place'] = { left: 0, top: 2, width: { fixed: 20 }, height: { fixed: 24 } };
+    });
+    const strokedRes = await render(strokedRotated, stopNameRequest('一', { output: { width: 20, height: 73, dpi: 254, format: 'png' } }));
+    expect(strokedRes.problems).toEqual([]);
+    expect(stopName(strokedRes).text!.compression).toBeCloseTo(24 / 36, 3);
+
+    // 破折号“—”、省略号“…”、波浪号“～”旋转 90° 后变为竖向长条（墨迹高 > 墨迹宽 × 2）；各类括号旋转后宽 > 高。
+    const punctWs = await textLab([], {
+      fill: '#FFFFFF',
+      layout: { mode: 'stack', direction: 'row', gap: 0 },
+      children: ['—', '…', '～', '【', '《', '「', '〔'].map((ch, idx) => ({
+        type: 'text',
+        name: `标点${idx}`,
+        content: [{ text: ch }],
+        font: 'res:font-hei-regular',
+        fontSize: 10,
+        writingMode: 'vertical',
+        verticalAlign: 'top',
+        place: { width: { fixed: 10 }, height: { fixed: 10 } },
+      })),
+    });
+    const punctResult = await render(punctWs, textLabRequest({}, 70, 10, 254));
+    expect(punctResult.problems).toEqual([]);
+    const punctPixels = await decodePixels(punctResult.image!.bytes);
+    for (let idx = 0; idx < 3; idx++) {
+      const box = boundsIn(punctPixels, { left: idx * 100, top: 0, right: (idx + 1) * 100, bottom: 100 }, isInk)!;
+      expect(box.bottom - box.top).toBeGreaterThan((box.right - box.left) * 2);
+    }
+    for (let idx = 3; idx < 6; idx++) {
+      const box = boundsIn(punctPixels, { left: idx * 100, top: 0, right: (idx + 1) * 100, bottom: 100 }, isInk)!;
+      expect(box.right - box.left).toBeGreaterThan(box.bottom - box.top);
+    }
   });
 });

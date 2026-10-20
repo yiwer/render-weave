@@ -34,6 +34,54 @@ describe('缩字组的两轮排版', () => {
     expect(result.image!.bytes).toEqual(expected.image!.bytes);
   });
 
+  it('竖排文本含不同字号片段时，缩字组按比例同步缩放各片段 fontSize（M244）', async () => {
+    const mixedContent = [
+      { text: '田贝', font: 'res:font-hei-bold', fontSize: 10 },
+      { text: '（北门）', font: 'res:font-hei-regular', fontSize: 7 },
+    ];
+    const unshrunk = await columns([label('主副站名', { content: mixedContent }), label('普通站名')], [15, 15], 73);
+    expect(unshrunk.problems).toEqual([]);
+    expect(texts(unshrunk)[0]!.text).toMatchObject({
+      fontSize: 10,
+      width: 10,
+      fragments: [
+        { text: '田贝', font: 'res:font-hei-bold', fontSize: 10 },
+        { text: '（北门）', font: 'res:font-hei-regular', fontSize: 7 },
+      ],
+    });
+
+    const shrunk = await columns([label('主副站名', { content: mixedContent }), label('窄列')], [15, 8], 73);
+    expect(shrunk.problems).toEqual([]);
+    expect(texts(shrunk).map((node) => node.text!.fontSize)).toEqual([8, 8]);
+    expect(texts(shrunk)[0]!.text).toMatchObject({
+      shrinkGroup: '站名',
+      fontSize: 8,
+      width: 8,
+      overflow: false,
+      fragments: [
+        { text: '田贝', font: 'res:font-hei-bold', fontSize: 8 },
+        { text: '（北门）', font: 'res:font-hei-regular', fontSize: 5.6 },
+      ],
+    });
+
+    const expected = await columns(
+      [
+        label('主副站名', {
+          fontSize: 8,
+          content: [
+            { text: '田贝', font: 'res:font-hei-bold', fontSize: 8 },
+            { text: '（北门）', font: 'res:font-hei-regular', fontSize: 5.6 },
+          ],
+          fit: { steps: ['tightenSpacing', 'compressGlyphs'] },
+        }),
+        label('窄列', { fontSize: 8, fit: { steps: ['tightenSpacing', 'compressGlyphs'] } }),
+      ],
+      [15, 8],
+      73,
+    );
+    expect(shrunk.image!.bytes).toEqual(expected.image!.bytes);
+  });
+
   it('同组取最高字号下限，低于下限仍放不下时报严重问题，即使 onFail 为 hint', async () => {
     const result = await columns([label('窄列', { fit: { ...fit(), onFail: 'hint' } }), label('高下限', { fit: fit('站名', 7) })], [4, 20]);
     expect(texts(result).map((node) => node.text!.fontSize)).toEqual([7, 7]);

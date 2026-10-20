@@ -1715,22 +1715,8 @@
                 "items": {
                   "type": "object",
                   "not": {
-                    "anyOf": [
-                      {
-                        "required": [
-                          "font"
-                        ]
-                      },
-                      {
-                        "required": [
-                          "fontSize"
-                        ]
-                      },
-                      {
-                        "required": [
-                          "slant"
-                        ]
-                      }
+                    "required": [
+                      "slant"
                     ]
                   }
                 }
@@ -1834,7 +1820,7 @@
           }
         }
       ],
-      "description": "文字：竖排不能用 distribute/spaceEvenly 横向分布、倾斜与片段字体字号；横排不能用 verticalAlign: distribute 与 widthOverflow（M109、M115–M118、M132）"
+      "description": "文字：竖排不能用 distribute/spaceEvenly 横向分布与倾斜（含片段 slant）；横排不能用 verticalAlign: distribute 与 widthOverflow（M109、M115–M118、M132、M244）"
     },
     "imageElement": {
       "type": "object",
