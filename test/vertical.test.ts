@@ -220,3 +220,105 @@ describe('文字描边', () => {
     expect(isBlack(pixelAt(pixels, centerX, blackRun.start + Math.floor(blackRun.length / 2)))).toBe(true);
   });
 });
+
+describe('竖排固定字间距 letterSpacing 与 tightenSpacing（M243）', () => {
+  async function renderVertical(
+    textProps: Record<string, unknown>,
+    boxHeight = 73,
+    dpi = 254,
+  ): Promise<RenderResult> {
+    const workspace = withTemplate(await loadStopName(), '竖排站名', (document) => {
+      document['artboard']['children'][0] = {
+        ...document['artboard']['children'][0],
+        verticalAlign: 'top',
+        place: { left: 0, top: 0, width: { fixed: 20 }, height: { fixed: boxHeight } },
+        ...textProps,
+      };
+    });
+    return render(workspace, stopNameRequest('一一一一', { output: { width: 20, height: 73, dpi, format: 'png' } }));
+  }
+
+  it('非分布竖排正负 letterSpacing 跨片段计算自然高度、字形位置与 spacing；单字与空文本不加，下限为 0；两端分布忽略 letterSpacing', async () => {
+    const pos = await renderVertical({
+      content: [{ text: '一一', color: '#000000' }, { text: '一一', color: '#000000' }],
+      letterSpacing: 2,
+      fit: undefined,
+      place: { left: 0, top: 0, width: { fixed: 20 }, height: 'hug' },
+    });
+    expect(pos.problems).toEqual([]);
+    expect(stopName(pos).height).toBe(46);
+    expect(stopName(pos).text).toMatchObject({ height: 46, spacing: 2, compression: 1, overflow: false });
+    const posPixels = await decodePixels(pos.image!.bytes);
+    const basePixels = await decodePixels((await renderVertical({ fit: undefined })).image!.bytes);
+    const posRuns = runsInColumn(posPixels, 100, (p) => !isWhite(p));
+    const baseRuns = runsInColumn(basePixels, 100, (p) => !isWhite(p));
+    expect(posRuns).toHaveLength(4);
+    for (let k = 0; k < 4; k++) {
+      expect(Math.abs((posRuns[k]!.start - baseRuns[k]!.start) - k * 20)).toBeLessThanOrEqual(1);
+    }
+
+    const neg = await renderVertical({
+      letterSpacing: -1.5,
+      fit: undefined,
+      place: { left: 0, top: 0, width: { fixed: 20 }, height: 'hug' },
+    });
+    expect(neg.problems).toEqual([]);
+    expect(stopName(neg).height).toBe(35.5);
+    expect(stopName(neg).text).toMatchObject({ height: 35.5, spacing: -1.5, compression: 1, overflow: false });
+
+    const single = await renderVertical({
+      content: [{ text: '一' }],
+      letterSpacing: 4,
+      fit: undefined,
+      place: { left: 0, top: 0, width: { fixed: 20 }, height: 'hug' },
+    });
+    expect(stopName(single).height).toBe(10);
+    expect(stopName(single).text).toMatchObject({ height: 10, spacing: 0 });
+
+    const empty = await renderVertical({
+      content: [],
+      letterSpacing: 4,
+      fit: undefined,
+      place: { left: 0, top: 0, width: { fixed: 20 }, height: 'hug' },
+    });
+    expect(stopName(empty).height).toBe(0);
+    expect(stopName(empty).text).toMatchObject({ height: 0, spacing: 0 });
+
+    const clamped = await renderVertical({
+      content: [{ text: '一一' }],
+      letterSpacing: -25,
+      fit: undefined,
+      place: { left: 0, top: 0, width: { fixed: 20 }, height: 'hug' },
+    });
+    expect(stopName(clamped).height).toBe(0);
+    expect(stopName(clamped).text).toMatchObject({ height: 0, spacing: -25, overflow: false });
+
+    const distributed = await renderVertical({ verticalAlign: 'distribute', letterSpacing: 5 }, 73, 120);
+    const distributedZero = await renderVertical({ verticalAlign: 'distribute', letterSpacing: 0 }, 73, 120);
+    expect(stopName(distributed).text).toEqual(stopName(distributedZero).text);
+  });
+
+  it.each([
+    [49, 3, 1, 49, false],
+    [43, 1, 1, 43, false],
+    [40, 0, 1, 40, false],
+    [30, 0, 0.75, 30, false],
+    [20, 0, 0.6, 24, true],
+  ])('非分布竖排 tightenSpacing（可用高 %d mm）：先收紧字距到 %d mm，再压到 %d', async (boxHeight, spacing, compression, extent, overflow) => {
+    const result = await renderVertical(
+      { letterSpacing: 3, fit: { steps: ['tightenSpacing', 'compressGlyphs'] } },
+      boxHeight,
+    );
+    expect(stopName(result).text).toMatchObject({ spacing, compression, height: extent, overflow });
+    expect(result.problems.map((p) => p.code)).toEqual(overflow ? [ProblemCodes.layoutTextOverflow] : []);
+  });
+
+  it('非分布竖排仅配置 tightenSpacing 时收紧到 0 即止，不压缩字形', async () => {
+    const fitTightenOnly = await renderVertical({ letterSpacing: 3, fit: { steps: ['tightenSpacing'] } }, 43);
+    expect(stopName(fitTightenOnly).text).toMatchObject({ spacing: 1, compression: 1, height: 43, overflow: false });
+
+    const overflowTightenOnly = await renderVertical({ letterSpacing: 3, fit: { steps: ['tightenSpacing'] } }, 35);
+    expect(stopName(overflowTightenOnly).text).toMatchObject({ spacing: 0, compression: 1, height: 40, overflow: true });
+    expect(overflowTightenOnly.problems.map((p) => p.code)).toEqual([ProblemCodes.layoutTextOverflow]);
+  });
+});

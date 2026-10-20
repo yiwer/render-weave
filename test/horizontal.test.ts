@@ -81,7 +81,9 @@ describe('横排压缩与缩字', () => {
 
   it.each([
     { steps: ['shrink', 'compressGlyphs'] }, { steps: ['shrink'] }, { steps: ['compressGlyphs', 'compressGlyphs'] },
+    { steps: ['compressGlyphs', 'tightenSpacing'] }, { steps: ['tightenSpacing', 'shrink'] },
     { ...fit, compressMin: 0.59 }, { ...fit, minFontSize: 4.9 }, { steps: ['compressGlyphs'], minFontSize: 5 },
+    { steps: ['tightenSpacing', 'compressGlyphs'], minFontSize: 5 },
   ])('静态拒绝非法顺序或下限：%j', async (invalid) => {
     const result = await sample(40, { fit: invalid });
     expect(result.problems.map((problem) => problem.code)).toContain(ProblemCodes.templateInvalid);
@@ -282,5 +284,128 @@ describe('模板在画板上声明缩字下限（M238）', () => {
     expect(sizeOf('文字实验/主品名')).toBe(summary(await small(7.5, { minFontSize: 3 })).fontSize);
     expect(sizeOf('文字实验/调用/子品名')).toBe(3.4);
     expect(result.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.layoutTextOverflow, { kind: 'element', path: '文字实验/调用/子品名' }]]);
+  });
+});
+
+describe('横排固定字间距 letterSpacing 与 tightenSpacing（M243）', () => {
+  const tightenFit = { steps: ['tightenSpacing', 'compressGlyphs', 'shrink'] };
+
+  it('正负 letterSpacing 跨片段连续计算自然宽度、字形位置与 spacing 摘要；单字与空文本不加，下限为 0', async () => {
+    const fragments = [{ text: '田田' }, { text: '' }, { text: '田田' }];
+    const positive = await sample(60, {
+      content: fragments,
+      letterSpacing: 2,
+      fit: undefined,
+      place: { left: 0, top: 0, width: 'hug', height: { fixed: 20 } },
+    });
+    expect(positive.problems).toEqual([]);
+    expect(positive.layout!.root.children![0]!.width).toBe(46);
+    expect(summary(positive)).toMatchObject({ width: 46, spacing: 2, compression: 1, overflow: false });
+    const posCols = inkColumns(await decodePixels(positive.image!.bytes));
+    expect(posCols).toHaveLength(4);
+    const baseCols = inkColumns(await decodePixels((await sample(60, { content: fragments, fit: undefined })).image!.bytes));
+    // 第 k 个字（k = 0..3）相对无字距时整体右移 k × 2 mm（254 DPI 下为 20 px）。
+    for (let k = 0; k < 4; k++) {
+      expect(Math.abs((posCols[k]!.left - baseCols[k]!.left) - k * 20)).toBeLessThanOrEqual(1);
+    }
+
+    const negative = await sample(60, {
+      content: fragments,
+      letterSpacing: -1,
+      fit: undefined,
+      place: { left: 0, top: 0, width: 'hug', height: { fixed: 20 } },
+    });
+    expect(negative.problems).toEqual([]);
+    expect(negative.layout!.root.children![0]!.width).toBe(37);
+    expect(summary(negative)).toMatchObject({ width: 37, spacing: -1, compression: 1, overflow: false });
+
+    const single = await sample(40, {
+      content: [{ text: '田' }],
+      letterSpacing: 5,
+      fit: undefined,
+      place: { left: 0, top: 0, width: 'hug', height: { fixed: 20 } },
+    });
+    expect(single.layout!.root.children![0]!.width).toBe(10);
+    expect(summary(single)).toMatchObject({ width: 10, spacing: 0 });
+
+    const empty = await sample(40, {
+      content: [],
+      letterSpacing: 5,
+      fit: undefined,
+      place: { left: 0, top: 0, width: 'hug', height: { fixed: 20 } },
+    });
+    expect(empty.layout!.root.children![0]!.width).toBe(0);
+    expect(summary(empty)).toMatchObject({ width: 0, spacing: 0 });
+
+    const clamped = await sample(40, {
+      content: [{ text: '田田' }],
+      letterSpacing: -25,
+      fit: undefined,
+      place: { left: 0, top: 0, width: 'hug', height: { fixed: 20 } },
+    });
+    expect(clamped.layout!.root.children![0]!.width).toBe(0);
+    expect(summary(clamped)).toMatchObject({ width: 0, spacing: -25, overflow: false });
+  });
+
+  it('letterSpacing 支持变量绑定，缺值时按 0 回退并报告问题；两端分布忽略 letterSpacing', async () => {
+    const workspace = await textLab(
+      [{ name: 'gap', displayName: '字距', type: 'number' }],
+      {
+        fill: '#FFFFFF',
+        children: [
+          {
+            type: 'text',
+            name: '横排',
+            content: [{ text: '田田田' }],
+            font: 'res:font-hei-medium',
+            fontSize: 10,
+            letterSpacing: { var: 'gap' },
+            place: { width: 'hug', height: { fixed: 20 } },
+          },
+        ],
+      },
+    );
+    const bound = await render(workspace, textLabRequest({ gap: 1.5 }, 50, 20, 254));
+    expect(bound.problems).toEqual([]);
+    expect(summary(bound)).toMatchObject({ width: 33, spacing: 1.5 });
+
+    const missing = await render(workspace, { ...textLabRequest({}, 50, 20, 254), mode: 'draft' });
+    expect(missing.problems.map((p) => p.code)).toContain(ProblemCodes.templateBindingValueInvalid);
+    expect(summary(missing)).toMatchObject({ width: 30, spacing: 0 });
+
+    const distributed = await sample(60, { horizontalAlign: 'distribute', letterSpacing: 5 });
+    const distributedZero = await sample(60, { horizontalAlign: 'distribute', letterSpacing: 0 });
+    expect(summary(distributed)).toEqual(summary(distributedZero));
+
+    const evenly = await sample(60, { horizontalAlign: 'spaceEvenly', letterSpacing: -3 });
+    const evenlyZero = await sample(60, { horizontalAlign: 'spaceEvenly', letterSpacing: 0 });
+    expect(summary(evenly)).toEqual(summary(evenlyZero));
+  });
+
+  it.each([
+    [46, 2, 1, 10, 46, false],
+    [43, 1, 1, 10, 43, false],
+    [40, 0, 1, 10, 40, false],
+    [30, 0, 0.75, 10, 30, false],
+    [24, 0, 0.6, 10, 24, false],
+    [20, 0, 0.6, 8.333, 20, false],
+    [10, 0, 0.6, 5, 12, true],
+  ])('tightenSpacing 边界（可用宽 %d mm）：先收紧字距到 %d mm，再压到 %d、缩到 %d mm', async (width, spacing, compression, size, extent, overflow) => {
+    const result = await sample(width, { letterSpacing: 2, fit: tightenFit });
+    expect(summary(result)).toMatchObject({ spacing, compression, fontSize: size, width: extent, overflow });
+    expect(result.problems.map((p) => p.code)).toEqual(overflow ? [ProblemCodes.layoutTextOverflow] : []);
+  });
+
+  it('仅配置 tightenSpacing 时收紧到 0 即止；负字距下跳过收紧直接压缩字形', async () => {
+    const onlyTightenFit = await sample(43, { letterSpacing: 2, fit: { steps: ['tightenSpacing'] } });
+    expect(summary(onlyTightenFit)).toMatchObject({ spacing: 1, compression: 1, width: 43, overflow: false });
+
+    const onlyTightenOverflow = await sample(35, { letterSpacing: 2, fit: { steps: ['tightenSpacing'] } });
+    expect(summary(onlyTightenOverflow)).toMatchObject({ spacing: 0, compression: 1, width: 40, overflow: true });
+    expect(onlyTightenOverflow.problems.map((p) => p.code)).toEqual([ProblemCodes.layoutTextOverflow]);
+
+    const negativeCompressed = await sample(28, { letterSpacing: -2, fit: tightenFit });
+    expect(negativeCompressed.problems).toEqual([]);
+    expect(summary(negativeCompressed)).toMatchObject({ spacing: -2, compression: 0.85, fontSize: 10, width: 28, overflow: false });
   });
 });

@@ -1595,6 +1595,9 @@
         "fontSize": {
           "$ref": "#/$defs/positiveOrVar"
         },
+        "letterSpacing": {
+          "$ref": "#/$defs/numberOrVar"
+        },
         "color": {
           "$ref": "#/$defs/colorOrVar"
         },
@@ -1657,6 +1660,7 @@
                     "content",
                     "font",
                     "fontSize",
+                    "letterSpacing",
                     "color",
                     "writingMode",
                     "horizontalAlign",
@@ -1777,9 +1781,21 @@
                     "enum": [
                       [],
                       [
+                        "tightenSpacing"
+                      ],
+                      [
                         "compressGlyphs"
                       ],
                       [
+                        "tightenSpacing",
+                        "compressGlyphs"
+                      ],
+                      [
+                        "compressGlyphs",
+                        "shrink"
+                      ],
+                      [
+                        "tightenSpacing",
                         "compressGlyphs",
                         "shrink"
                       ]
@@ -1799,9 +1815,16 @@
                   ],
                   "properties": {
                     "steps": {
-                      "const": [
-                        "compressGlyphs",
-                        "shrink"
+                      "enum": [
+                        [
+                          "compressGlyphs",
+                          "shrink"
+                        ],
+                        [
+                          "tightenSpacing",
+                          "compressGlyphs",
+                          "shrink"
+                        ]
                       ]
                     }
                   }

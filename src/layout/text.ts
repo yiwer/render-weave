@@ -37,7 +37,9 @@ export interface MeasuredLines {
   /** 行框：基线以上与以下，毫米。 */
   readonly ascent: number;
   readonly descent: number;
-  /** 文字占用的宽与高（不计内边距），毫米；横排的宽包含倾斜外扩，竖排的高按字格相接计。 */
+  /** 横排字距为 0 时的原始字形跨度，毫米。 */
+  readonly baseWidth?: number;
+  /** 文字占用的宽与高（不计内边距），毫米；横排的宽包含倾斜外扩与常态字距，竖排的高按字格与常态字距计。 */
   readonly width: number;
   readonly height: number;
   /** 横排：首个片段的基线起点距文字左边的距离（左倾或下伸部分向左倾出的量），毫米。 */
@@ -93,13 +95,16 @@ function measureHorizontal(model: TextElementModel, fragments: readonly Evaluate
     left = Math.min(left, run.x + Math.min(-skew * run.descent, skew * run.ascent));
     right = Math.max(right, run.x + run.advance + Math.max(skew * run.ascent, -skew * run.descent));
   }
-  const width = distributesInk(model)
+  const count = runs.reduce((sum, run) => sum + run.glyphs.length, 0);
+  const gaps = Math.max(0, count - 1);
+  const baseWidth = distributesInk(model)
     ? runs.reduce((sum, run) => sum + run.glyphs.reduce((total, glyph) => {
       const ink = horizontalInk(glyph);
       return total + ink.right - ink.left;
     }, 0), 0)
     : right - left;
-  return { runs, ascent, descent, width, height: ascent + descent, lead: -left };
+  const width = distributesInk(model) ? baseWidth : Math.max(0, baseWidth + gaps * model.letterSpacing);
+  return { runs, ascent, descent, baseWidth, width, height: ascent + descent, lead: -left };
 }
 
 function measureVertical(model: TextElementModel, fragments: readonly EvaluatedFragment[], fonts: FontStore): Omit<MeasuredLines, 'intrinsic'> {
@@ -110,12 +115,14 @@ function measureVertical(model: TextElementModel, fragments: readonly EvaluatedF
     ? { ascent: Math.max(...inked.map((run) => run.ascent)), descent: Math.max(...inked.map((run) => run.descent)) }
     : ownLine(model, fonts);
   const glyphs = runs.flatMap((run) => run.glyphs);
+  const gaps = Math.max(0, glyphs.length - 1);
+  const height = Math.max(0, glyphs.length * (ascent + descent) + (model.verticalAlign === 'distribute' ? 0 : gaps * model.letterSpacing));
   return {
     runs,
     ascent,
     descent,
     width: model.fontSize,
-    height: glyphs.length * (ascent + descent),
+    height,
     lead: 0,
     column: { glyphs, ascent, descent },
   };
@@ -171,22 +178,32 @@ function recordHorizontal(
 ): Summary {
   const availableWidth = Math.max(0, content.width);
   const availableHeight = Math.max(0, content.height);
-  const compression = model.fit.compressGlyphs && measure.width > availableWidth
-    ? Math.max(model.fit.compressMin, availableWidth / measure.width) : 1;
+  const count = measure.runs.reduce((sum, run) => sum + run.glyphs.length, 0);
+  const gaps = Math.max(0, count - 1);
+  const distribute = distributesInk(model);
+  const baseWidth = measure.baseWidth ?? measure.width;
+  const initialSpacing = !distribute && count > 1 ? model.letterSpacing : 0;
+  const initialWidth = distribute ? baseWidth : Math.max(0, baseWidth + gaps * initialSpacing);
+  const fixedSpacing =
+    !distribute && model.fit.tightenSpacing && initialSpacing > 0 && initialWidth > availableWidth
+      ? Math.max(0, (availableWidth - baseWidth) / gaps)
+      : initialSpacing;
+  const widthAfterTighten = distribute ? baseWidth : Math.max(0, baseWidth + gaps * fixedSpacing);
+  const availableForGlyphs = distribute ? availableWidth : Math.max(0, availableWidth - gaps * fixedSpacing);
+  const compression = model.fit.compressGlyphs && widthAfterTighten > availableWidth && baseWidth > 0
+    ? Math.max(model.fit.compressMin, Math.min(1, availableForGlyphs / baseWidth)) : 1;
   const sizes = measure.runs.filter((run) => run.glyphs.length > 0).map((run) => run.fragment.style.fontSize);
   const floor = Math.min(1, Math.max(...(sizes.length ? sizes : [model.fontSize]).map((size) => model.fit.minFontSize / size)));
   const fontScale = model.fit.shrink ? Math.max(floor, Math.min(1,
-    measure.width > 0 ? availableWidth / (measure.width * compression) : 1,
+    widthAfterTighten > availableWidth && baseWidth > 0 ? availableForGlyphs / (baseWidth * compression) : 1,
     measure.height > 0 ? availableHeight / measure.height : 1)) : 1;
   const scaleX = compression * fontScale;
-  const naturalWidth = measure.width * scaleX;
+  const naturalWidth = baseWidth * scaleX;
   const height = measure.height * fontScale;
-  const count = measure.runs.reduce((sum, run) => sum + run.glyphs.length, 0);
-  const distribute = distributesInk(model);
   const evenly = model.horizontalAlign === 'spaceEvenly';
   const intervals = evenly ? count + 1 : count - 1;
-  const spacing = distribute && count > 0 && intervals > 0 ? Math.max(0, (availableWidth - naturalWidth) / intervals) : 0;
-  const width = naturalWidth + spacing * Math.max(0, count - 1);
+  const spacing = distribute ? (count > 0 && intervals > 0 ? Math.max(0, (availableWidth - naturalWidth) / intervals) : 0) : fixedSpacing;
+  const width = distribute ? naturalWidth + spacing * gaps : Math.max(0, naturalWidth + spacing * gaps);
   const offsetX =
     evenly ? spacing : distribute ? (count === 1 ? Math.max(0, (content.width - width) / 2) : 0)
       : model.horizontalAlign === 'start' ? 0 : model.horizontalAlign === 'center' ? (content.width - width) / 2 : content.width - width;
@@ -204,9 +221,10 @@ function recordHorizontal(
   const originX = content.x + offsetX;
   const baseline = content.y + offsetY + measure.ascent * fontScale;
   let cursor = originX;
+  let glyphIndex = 0;
   const placed = measure.runs.map((run) => {
     const positions: number[] = [];
-    let x = originX + (measure.lead + run.x) * scaleX;
+    let x = originX + (measure.lead + run.x) * scaleX + glyphIndex * spacing;
     for (const glyph of run.glyphs) {
       if (distribute) {
         const ink = horizontalInk(glyph);
@@ -214,7 +232,8 @@ function recordHorizontal(
         cursor += (ink.right - ink.left) * scaleX + spacing;
       } else {
         positions.push(x, baseline);
-        x += glyph.advance * scaleX;
+        x += glyph.advance * scaleX + spacing;
+        glyphIndex++;
       }
     }
     return { style: { ...run.fragment.style, fontSize: run.fragment.style.fontSize * fontScale }, glyphs: run.glyphs.map((glyph) => glyph.id), positions };
@@ -257,6 +276,8 @@ function recordVertical(
     boxHeight: content.height,
     horizontalAlign: model.horizontalAlign === 'distribute' || model.horizontalAlign === 'spaceEvenly' ? 'start' : model.horizontalAlign,
     verticalAlign: model.verticalAlign,
+    letterSpacing: model.letterSpacing,
+    tightenSpacing: model.fit.tightenSpacing,
     compressGlyphs: model.fit.compressGlyphs,
     compressMin: model.fit.compressMin,
   });

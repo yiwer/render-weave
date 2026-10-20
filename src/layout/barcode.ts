@@ -89,7 +89,7 @@ export function recordBarcode(
 function labelOf(model: BarcodeModel): TextElementModel | undefined {
   if (!model.showText || !model.font) return undefined;
   return { ...model, type: 'text', content: [{ kind: 'text', text: model.content, style: {} }], font: model.font,
-    fontSize: model.fontSize, color: model.foreground, slant: 0, writingMode: 'horizontal', horizontalAlign: 'center', verticalAlign: 'center',
+    fontSize: model.fontSize, letterSpacing: 0, color: model.foreground, slant: 0, writingMode: 'horizontal', horizontalAlign: 'center', verticalAlign: 'center',
     padding: { top: 0, right: 0, bottom: 0, left: 0 },
     fit: { tightenSpacing: false, compressGlyphs: false, compressMin: 1, shrink: false, minFontSize: model.fontSize, minFontSizeSource: 'element', onFail: 'severe' } };
 }
@@ -109,7 +109,7 @@ function encloseInk(measure: MeasuredLines): MeasuredLines {
       x += glyph.advance;
     }
   }
-  return { ...measure, lead: -left, width: right - left, height: ascent + descent, ascent, descent };
+  return { ...measure, lead: -left, baseWidth: right - left, width: right - left, height: ascent + descent, ascent, descent };
 }
 
 function rounded(box: Box): Box {

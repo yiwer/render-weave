@@ -82,7 +82,7 @@
 | 能绑定 | 属性 |
 |---|---|
 | 颜色 | `fill`、描边的 `color`、文字 `color` 与片段 `color`、码的 `foreground` 与 `background` |
-| 数值 | `fontSize` 与片段 `fontSize`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`crossGap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`itemLayout.crossGap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
+| 数值 | `fontSize` 与片段 `fontSize`、`letterSpacing`、`slant`、`opacity`、`rotation`、描边 `width`、`padding`、`margin`、`cornerRadius`、`place` 中的位置与行列、`{ "fixed": … }`、尺寸上下限、布局的 `gap`、`crossGap`、`rowGap`、`columnGap`，循环的 `slice.start`、`slice.end`、`itemLayout.gap`、`itemLayout.crossGap`、`widths.fixed` 与 `heights.fixed`，条形码 `fontSize` |
 | 布尔 | `visible`、`clip`、循环的 `reverse`、条形码 `showText` |
 | 图片 | 图片元素的 `source` |
 | 文本 | 码元素的 `content`；文字内容经插槽绑定 |
@@ -167,6 +167,7 @@
 | `content` | 片段列表（必填）。文字片段 `{ "text": 文字 }`；变量插槽 `{ "slot": 变量路径, "format"?: 展示格式 }`。两种片段都可另写 `font`、`fontSize`、`color`、`slant`（S23） |
 | `font` | 资源引用（必填）。字重靠换字体资源，不写 `fontWeight`（M115） |
 | `fontSize` | 毫米（必填） |
+| `letterSpacing` | 常态字间距，毫米或数值变量，缺省 0，可正可负。非分布对齐（横排 `start`/`center`/`end`，竖排 `top`/`center`/`bottom`）下加在相邻字形（跨片段连续计算）之间，单字或空文本不加，自然跨度对 0 取下限；两端分布（`distribute`、`spaceEvenly`）下不计入自然跨度（M243） |
 | `color` | 缺省为黑色 |
 | `writingMode` | `horizontal`（缺省）或 `vertical`（S18） |
 | `horizontalAlign` | `start`（缺省）、`center`、`end`；横排另可用 `distribute`（两端分布，S29）与 `spaceEvenly`（同间隔分布，两侧留白与字间距相同，S30、M131） |
@@ -187,8 +188,8 @@
 
 | 书写方向 | `steps` 的写法 | 其他 |
 |---|---|---|
-| 横排 | `[]`、`["compressGlyphs"]` 或 `["compressGlyphs", "shrink"]`：先横向压缩字形，再同比缩小字号（M84、S29） | `minFontSize` 只用于 `shrink`，缺省取画板的 `minFontSize`（画板不写时为 5），不能低于它（M86、M238） |
-| 竖排 | `[]`、`["tightenSpacing"]` 或 `["tightenSpacing", "compressGlyphs"]`：先收紧字距，字距收到 0 才压缩字形（M82） | `widthOverflow`：`{ "shrinkGroup": 组名, "minFontSize"?: 毫米 }`，见下文 |
+| 横排 | `[]`、`["tightenSpacing"]`、`["compressGlyphs"]`、`["tightenSpacing", "compressGlyphs"]`、`["compressGlyphs", "shrink"]` 或 `["tightenSpacing", "compressGlyphs", "shrink"]`：`letterSpacing > 0` 且配置 `tightenSpacing` 时先将字距线性收紧至 0，仍放不下再横向压缩字形、同比缩小字号（M84、S29、M243） | `minFontSize` 只用于 `shrink`，缺省取画板的 `minFontSize`（画板不写时为 5），不能低于它（M86、M238） |
+| 竖排 | `[]`、`["tightenSpacing"]` 或 `["tightenSpacing", "compressGlyphs"]`：先收紧字距（两端分布或 `letterSpacing > 0`），字距收到 0 才压缩字形（M82、M243） | `widthOverflow`：`{ "shrinkGroup": 组名, "minFontSize"?: 毫米 }`，见下文 |
 
 - **`compressMin`**：压缩字形的下限，缺省 0.6，只能调高到 1 为止（M88）。
 - **`onFail`**：仍放不下时报 `severe`（缺省）或 `hint`。
@@ -1049,11 +1050,13 @@
         ],
         "font": "res:font-hei-heavy",
         "fontSize": 8,
+        "letterSpacing": 0,
         "color": "#1F2328",
         "horizontalAlign": "center",
         "verticalAlign": "center",
         "fit": {
           "steps": [
+            "tightenSpacing",
             "compressGlyphs",
             "shrink"
           ],

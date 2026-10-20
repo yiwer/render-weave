@@ -74,6 +74,7 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
     'content',
     'font',
     'fontSize',
+    'letterSpacing',
     'color',
     'writingMode',
     'horizontalAlign',
@@ -828,6 +829,7 @@ class TemplateReader {
     const content = this.readContent(value['content'], writingMode, path);
     const font = this.readFont(value['font'], path, '文本的字体 font');
     const fontSize = this.readNumber(value['fontSize'], undefined, path, 'fontSize', { min: 0, exclusiveMin: true });
+    const letterSpacing = this.readNumber(value['letterSpacing'], 0, path, 'letterSpacing', {});
     const color = value['color'] === undefined ? '#000000FF' : this.readColor(value['color'], path, 'color');
     const slant = this.readSlant(value['slant'], path, 'slant');
     if (slant && writingMode === 'vertical') this.unsupported(path, '竖排文字的倾斜 slant 尚未支持');
@@ -842,7 +844,7 @@ class TemplateReader {
     const fit = this.readFit(value['fit'], writingMode, path);
     const stroke = this.optional(value['stroke'], (v) => this.readTextStroke(v, path));
     const padding = this.readEdges(value['padding'], path, 'padding');
-    if (!base || !content || !font || fontSize === undefined || !color || slant === undefined) return undefined;
+    if (!base || !content || !font || fontSize === undefined || letterSpacing === undefined || !color || slant === undefined) return undefined;
     if (!writingMode || !horizontalAlign || !verticalAlign || !fit || stroke === null || !padding) return undefined;
     return {
       ...base,
@@ -850,6 +852,7 @@ class TemplateReader {
       content,
       font,
       fontSize,
+      letterSpacing,
       color,
       slant,
       writingMode,
@@ -989,7 +992,7 @@ class TemplateReader {
       this.fail(path, 'fit.steps 必须是步骤名称的列表');
       return undefined;
     }
-    const supported = writingMode === 'vertical' ? ['tightenSpacing', 'compressGlyphs'] : ['compressGlyphs', 'shrink'];
+    const supported = writingMode === 'vertical' ? ['tightenSpacing', 'compressGlyphs'] : ['tightenSpacing', 'compressGlyphs', 'shrink'];
     for (const step of steps) {
       if (!supported.includes(step)) {
         this.unsupported(path, `${writingMode === 'vertical' ? '竖排' : '横排'}文字的适配步骤 ${step} 尚未支持`);
@@ -1001,8 +1004,8 @@ class TemplateReader {
       return undefined;
     }
     if (
-      writingMode === 'vertical' && steps.includes('compressGlyphs') &&
-      !(steps.includes('tightenSpacing') && steps.indexOf('tightenSpacing') < steps.indexOf('compressGlyphs'))
+      (writingMode === 'vertical' && steps.includes('compressGlyphs') && steps[0] !== 'tightenSpacing') ||
+      (steps.includes('tightenSpacing') && steps[0] !== 'tightenSpacing')
     ) {
       this.fail(path, '收紧字距必须排在压缩字形之前：字距收到 0 之前不压缩字形（M82）');
       return undefined;

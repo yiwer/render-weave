@@ -19,6 +19,8 @@ export interface VerticalOptions {
   readonly boxHeight: number;
   readonly horizontalAlign: 'start' | 'center' | 'end';
   readonly verticalAlign: 'top' | 'center' | 'bottom' | 'distribute';
+  readonly letterSpacing?: number;
+  readonly tightenSpacing?: boolean;
   readonly compressGlyphs: boolean;
   readonly compressMin: number;
 }
@@ -86,9 +88,21 @@ export function layoutVertical(text: MeasuredText, options: VerticalOptions): Ve
       firstCellTop = -inkTop * compression;
     }
   } else {
-    naturalExtent = n * cell;
-    compression = naturalExtent > boxHeight + EPSILON ? compressTo(naturalExtent) : 1;
-    extent = naturalExtent * compression;
+    const gaps = Math.max(0, n - 1);
+    const cellsExtent = n * cell;
+    const initialSpacing = n > 1 ? (options.letterSpacing ?? 0) : 0;
+    naturalExtent = Math.max(0, cellsExtent + gaps * initialSpacing);
+    spacing =
+      options.tightenSpacing && initialSpacing > 0 && naturalExtent > boxHeight + EPSILON
+        ? Math.max(0, (boxHeight - cellsExtent) / gaps)
+        : initialSpacing;
+    const extentAfterTighten = Math.max(0, cellsExtent + gaps * spacing);
+    const availableForCells = Math.max(0, boxHeight - gaps * spacing);
+    compression =
+      extentAfterTighten > boxHeight + EPSILON && options.compressGlyphs
+        ? Math.min(1, Math.max(availableForCells / cellsExtent, options.compressMin))
+        : 1;
+    extent = Math.max(0, cellsExtent * compression + gaps * spacing);
     const free = boxHeight - extent;
     firstCellTop = options.verticalAlign === 'top' || free < 0 ? 0 : options.verticalAlign === 'center' ? free / 2 : free;
   }

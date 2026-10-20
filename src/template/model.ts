@@ -325,6 +325,8 @@ export interface TextElementModel extends ElementBase {
   readonly font: string;
   /** 字号，毫米（em 框的高度）。 */
   readonly fontSize: number;
+  /** 常态字间距，毫米，可正可负，缺省 0（M243）。 */
+  readonly letterSpacing: number;
   readonly color: Color;
   /** 倾斜角度，度；正值向右倾，以错切变换模拟（M80、M117）。只用于横排。 */
   readonly slant: number;

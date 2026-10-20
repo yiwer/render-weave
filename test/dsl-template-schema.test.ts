@@ -197,13 +197,17 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['竖排倾斜', on(ofType('text', isVertical), (e) => (e.slant = 10))],
   ['fit 上未知键', on(ofType('text'), (e) => (e.fit = { ...e.fit, extra: 1 }))],
   ['fit 步骤未知', on(ofType('text'), (e) => (e.fit = { ...e.fit, steps: ['squeeze'] }))],
+  ['文字 letterSpacing 不是数', on(ofType('text'), (e) => (e.letterSpacing = '1'))],
   ['横排先缩字后压缩', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['shrink', 'compressGlyphs'] }))],
+  ['横排先压缩后收紧字距', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs', 'tightenSpacing'] }))],
+  ['横排收紧字距后跳过压缩直接缩字', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['tightenSpacing', 'shrink'] }))],
   ['竖排只压缩字形', on(ofType('text', isVertical), (e) => (e.fit = { steps: ['compressGlyphs'] }))],
   ['压缩下限低于 0.6', on(ofType('text'), (e) => (e.fit = { ...e.fit, compressMin: 0.5 }))],
   ['最小字号低于 1.5', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs', 'shrink'], minFontSize: 1 }))],
   ['画板最小字号低于 1.5', (d) => ((d.artboard.minFontSize = 1), true)],
   ['画板最小字号不是数', (d) => ((d.artboard.minFontSize = '3'), true)],
   ['没有 shrink 却写最小字号', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['compressGlyphs'], minFontSize: 6 }))],
+  ['收紧字距与压缩但没有 shrink 却写最小字号', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { steps: ['tightenSpacing', 'compressGlyphs'], minFontSize: 6 }))],
   ['缩字组用于横排', on(ofType('text', (e) => !isVertical(e)), (e) => (e.fit = { widthOverflow: { shrinkGroup: 'g' } }))],
   ['缩字组名首尾有空白', on(ofType('text', isVertical), (e) => (e.fit = { ...e.fit, widthOverflow: { shrinkGroup: ' g' } }))],
   ['倾斜超过 45 度', on(ofType('text', (e) => !isVertical(e)), (e) => (e.slant = 60))],
@@ -358,6 +362,35 @@ describe('Schema 之外的语义检查（只看一份文档）', () => {
 
   it('清单中的每一类都有用例', () => {
     expect(new Set(cases.map(([category]) => category))).toEqual(new Set(SEMANTIC_CHECKS.map((c) => c.name)));
+  });
+
+  it('letterSpacing（字面值与变量绑定）及横排 tightenSpacing 各步骤组合通过 Schema 与引擎检查', () => {
+    const doc = template(
+      {
+        children: [
+          text('正字距与仅收紧', { letterSpacing: 1.5, fit: { steps: ['tightenSpacing'] } }),
+          text('负字距与收紧加压缩', {
+            place: { top: 6 },
+            letterSpacing: -0.5,
+            fit: { steps: ['tightenSpacing', 'compressGlyphs'] },
+          }),
+          text('绑定字距与三步适配', {
+            place: { top: 12 },
+            letterSpacing: { var: 'tracking' },
+            fit: { steps: ['tightenSpacing', 'compressGlyphs', 'shrink'], minFontSize: 5 },
+            states: { by: { var: 'flag' }, cases: { true: { letterSpacing: 0.8 } } },
+          }),
+        ],
+      },
+      {
+        parameters: [
+          { name: 'tracking', displayName: '字距', visibility: 'public', type: 'number', default: 1 },
+          { name: 'flag', displayName: '开关', visibility: 'public', type: 'boolean', default: false },
+        ],
+      },
+    );
+    expect(schemas.template(doc), JSON.stringify(schemas.template.errors)).toBe(true);
+    expect(checkDslDocument(doc).problems).toEqual([]);
   });
 });
 
