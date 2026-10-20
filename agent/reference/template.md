@@ -79,7 +79,7 @@
     - 竖排：`{"steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.6}`，先收紧字距再压缩字形。
     - 跨实例统一字号（例如同一张图上一组标签必须同字号）：`"widthOverflow": {"shrinkGroup": "组名", "minFontSize": 5}`；同名组在一次出图内共用，宽度不足时全组统一缩到同一字号，最低是各成员下限中最高的，缺省取所在画板的 minFontSize。
 - **image**：`{"source": "res:资源ID" 或 {"var": 图片字段}, "fit": "contain"（缺省）| "cover" | "fill"}`；没有 source 时不画内容。
-- **rect**（fill、stroke、cornerRadius）、**ellipse**（fill、stroke）、**line**（from、to、stroke 必填，坐标写成 `[x, y]`，毫米、相对元素框左上角）、**polygon**（points 至少 3 个 `[x, y]` 顶点）、**path**（SVG 路径 d、fill、stroke、fillRule）。图形 stroke 为 `{"color", "width", "dash"?: [实, 空], "cap"?: butt/round/square}`。路径与多边形坐标以毫米计、相对元素框，框变大时不拉伸。
+- **rect**（fill、stroke、cornerRadius）、**ellipse**（fill、stroke）、**line**（from、to、stroke 必填，可选 viewBox、fit）、**polygon**（points 至少 3 个 `[x, y]` 顶点，可选 fill、stroke、viewBox、fit）、**path**（SVG 路径 d、fill、stroke、fillRule、viewBox、fit）。图形 stroke 为 `{"color", "width", "dash"?: [实, 空], "cap"?: butt/round/square}`。未写 `viewBox` 时，线条、多边形与路径的坐标以毫米计、相对元素框左上角，框变大时不拉伸；声明 `"viewBox": [minX, minY, width, height]`（width、height > 0）时，图形随元素框按 `"fit": "fill"（缺省，拉伸填满）| "contain"（等比居中完整显示）| "cover"（等比居中铺满并裁剪到元素框）` 缩放适配（仅声明了 `viewBox` 时可写 `fit`），随内容（`"hug"`）的自然尺寸取 `viewBox` 宽高（只固定一边且 `fit` 为 `contain`/`cover` 时另一边按宽高比换算），且描边宽度与虚线保持声明的毫米值不变形。
 - **qrcode**：二维码。属性如下：
   - `content`：文本或文本变量，必填；
   - `errorCorrectionLevel`：取 L、M（缺省）、Q、H；

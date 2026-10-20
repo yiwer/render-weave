@@ -196,12 +196,24 @@ class Painter {
   }
 
   private path(op: Extract<DrawOp, { op: 'path' }>): void {
-    const path = this.ck.Path.MakeFromSVGString(op.d);
-    if (!path) return;
+    const raw = this.ck.Path.MakeFromSVGString(op.d);
+    if (!raw) return;
+    const path = op.transform
+      ? (() => {
+          const transformed = new this.ck.PathBuilder(raw)
+            .transform(op.transform.sx, 0, op.transform.tx, 0, op.transform.sy, op.transform.ty, 0, 0, 1)
+            .detachAndDelete();
+          raw.delete();
+          return transformed;
+        })()
+      : raw;
     try {
       path.setFillType(op.fillRule === 'evenodd' ? this.ck.FillType.EvenOdd : this.ck.FillType.Winding);
       this.canvas.save();
       this.canvas.translate(op.x, op.y);
+      if (op.clip) {
+        this.canvas.clipRect(this.ck.XYWHRect(0, 0, op.clip.width, op.clip.height), this.ck.ClipOp.Intersect, true);
+      }
       if (op.fill) {
         this.useFill(op.fill);
         this.canvas.drawPath(path, this.paint);

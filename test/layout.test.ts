@@ -594,4 +594,221 @@ describe('外观与图形（254 DPI 下 1 mm 为 10 像素）', () => {
     expect(badPath.problems.map((p) => [p.code, p.location])).toEqual([[ProblemCodes.templateInvalid, { kind: 'element', path: '布局实验/坏路径' }]]);
     expect(noStroke.problems.map((p) => p.code)).toEqual([ProblemCodes.templateInvalid, ProblemCodes.renderExpansionBlocked]);
   });
+
+  it('声明 viewBox 时随内容（hug）取 viewBox 宽高；单边固定且 fit 为 contain/cover 时另一边按宽高比换算', async () => {
+    const result = await lab(
+      {
+        layout: { mode: 'stack', direction: 'column', gap: 2 },
+        children: [
+          { type: 'path', name: '自然路径', d: 'M2 2 L8 5', viewBox: [0, 0, 20, 10], fill: '#FF0000' },
+          { type: 'polygon', name: '等比定宽', points: [[0, 0], [8, 0], [4, 4]], viewBox: [-10, -5, 16, 8], fit: 'contain', fill: '#FF0000', place: { width: { fixed: 32 } } },
+          { type: 'polygon', name: '等比定高', points: [[0, 0], [8, 0], [4, 4]], viewBox: [0, 0, 16, 8], fit: 'cover', fill: '#FF0000', place: { height: { fixed: 24 } } },
+          { type: 'polygon', name: '拉伸定宽', points: [[0, 0], [8, 0], [4, 4]], viewBox: [0, 0, 16, 8], fill: '#FF0000', place: { width: { fixed: 32 } } },
+          { type: 'line', name: '自然线条', from: [0, 2], to: [10, 2], viewBox: [0, 0, 10, 4], stroke: { color: '#0000FF', width: 1 } },
+        ],
+      },
+      80,
+      80,
+      DPI,
+    );
+    expect(result.problems).toEqual([]);
+    expect(box(node(result, '布局实验/自然路径'))).toEqual({ x: 0, y: 0, width: 20, height: 10 });
+    expect(box(node(result, '布局实验/等比定宽'))).toEqual({ x: 0, y: 12, width: 32, height: 16 });
+    expect(box(node(result, '布局实验/等比定高'))).toEqual({ x: 0, y: 30, width: 48, height: 24 });
+    expect(box(node(result, '布局实验/拉伸定宽'))).toEqual({ x: 0, y: 56, width: 32, height: 8 });
+    expect(box(node(result, '布局实验/自然线条'))).toEqual({ x: 0, y: 66, width: 10, height: 4 });
+  });
+
+  it('声明 viewBox 时按 fill / contain / cover 映射顶点（含非零 minX/minY 与 cover 裁剪），且描边宽度与虚线不因非等比拉伸变形', async () => {
+    // 1. fill（缺省，含负 minX/minY）：[-5, -5, 10, 10] 映射到 30 × 20 框
+    const fillImg = await pixels(
+      await lab(
+        {
+          ...white,
+          children: [
+            {
+              type: 'polygon',
+              name: '负原点多边形',
+              points: [[-5, -5], [5, -5], [5, 5], [-5, 5]],
+              viewBox: [-5, -5, 10, 10],
+              fill: '#FF0000',
+              place: { left: 5, top: 5, ...fixed(30, 20) },
+            },
+          ],
+        },
+        40,
+        30,
+        DPI,
+      ),
+    );
+    expect(boundsOf(fillImg, isRed)).toEqual({ left: 50, top: 50, right: 349, bottom: 249 });
+
+    // 2. contain：10 × 10 在 40 × 20 框内等比放大 2 倍并水平居中到 x = 10..30
+    const containImg = await pixels(
+      await lab(
+        {
+          ...white,
+          children: [
+            {
+              type: 'path',
+              name: '居中路径',
+              d: 'M0 0 H10 V10 H0 Z',
+              viewBox: [0, 0, 10, 10],
+              fit: 'contain',
+              fill: '#FF0000',
+              place: { left: 0, top: 0, ...fixed(40, 20) },
+            },
+          ],
+        },
+        40,
+        20,
+        DPI,
+      ),
+    );
+    expect(boundsOf(containImg, isRed)).toEqual({ left: 100, top: 0, right: 299, bottom: 199 });
+
+    // 3. cover：10 × 10 菱形在 20 × 10 框内等比放大 2 倍（高 20，y = 5..25），并裁剪到元素框 y = 10..20
+    const coverImg = await pixels(
+      await lab(
+        {
+          ...white,
+          children: [
+            {
+              type: 'polygon',
+              name: '铺满菱形',
+              points: [[5, 0], [10, 5], [5, 10], [0, 5]],
+              viewBox: [0, 0, 10, 10],
+              fit: 'cover',
+              fill: '#FF0000',
+              place: { left: 10, top: 10, ...fixed(20, 10) },
+            },
+          ],
+        },
+        40,
+        30,
+        DPI,
+      ),
+    );
+    const coverBounds = boundsOf(coverImg, isRed)!;
+    expect(coverBounds.top).toBe(100);
+    expect(coverBounds.bottom).toBe(199);
+    expect(isWhite(pixelAtMm(coverImg, 20, 8, DPI))).toBe(true);
+    expect(isRed(pixelAtMm(coverImg, 20, 10.5, DPI))).toBe(true);
+    expect(isRed(pixelAtMm(coverImg, 20, 19.5, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(coverImg, 20, 22, DPI))).toBe(true);
+
+    // 4. 非等比拉伸（横向 4 倍、纵向 1 倍）时，描边宽度与虚线长度保持声明的毫米数
+    const strokeImg = await pixels(
+      await lab(
+        {
+          ...white,
+          children: [
+            {
+              type: 'path',
+              name: '拉伸框',
+              d: 'M2 2 H8 V8 H2 Z',
+              viewBox: [0, 0, 10, 10],
+              fit: 'fill',
+              stroke: { color: '#0000FF', width: 2 },
+              place: { left: 0, top: 0, ...fixed(40, 10) },
+            },
+            {
+              type: 'line',
+              name: '拉伸虚线',
+              from: [0, 5],
+              to: [10, 5],
+              viewBox: [0, 0, 10, 10],
+              stroke: { color: '#0000FF', width: 1, dash: [2, 2] },
+              place: { left: 0, top: 12, ...fixed(40, 10) },
+            },
+          ],
+        },
+        40,
+        24,
+        DPI,
+      ),
+    );
+    // 左竖边中心在 x = 2 * 4 = 8 mm，线宽 2 mm → 覆盖 x = 7..9 mm（而非被横向拉伸成 8 mm）
+    expect(isWhite(pixelAtMm(strokeImg, 6.5, 5, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 7.5, 5, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 8.5, 5, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(strokeImg, 9.5, 5, DPI))).toBe(true);
+    // 上横边中心在 y = 2 mm，线宽 2 mm → 覆盖 y = 1..3 mm
+    expect(isWhite(pixelAtMm(strokeImg, 20, 0.5, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 20, 1.5, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 20, 2.5, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(strokeImg, 20, 3.5, DPI))).toBe(true);
+    // 虚线总长拉伸到 40 mm，但实空仍为 2 mm 交替：x = 1、5、37 为蓝，x = 3、7、39 为白
+    expect(isBlue(pixelAtMm(strokeImg, 1, 17, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(strokeImg, 3, 17, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 5, 17, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(strokeImg, 7, 17, DPI))).toBe(true);
+    expect(isBlue(pixelAtMm(strokeImg, 37, 17, DPI))).toBe(true);
+    expect(isWhite(pixelAtMm(strokeImg, 39, 17, DPI))).toBe(true);
+  });
+
+  it('同一带 viewBox 的异形底框与箭头模板在 740 mm 与 1500 mm 画板宽度下自动拉伸适配且描边均匀', async () => {
+    const scalableArtboard = {
+      ...white,
+      layout: { mode: 'stack', direction: 'column', gap: 10 },
+      padding: 20,
+      children: [
+        {
+          type: 'path',
+          name: '异形底框',
+          d: 'M2 2 H98 V38 H2 Z',
+          viewBox: [0, 0, 100, 40],
+          fit: 'fill',
+          fill: '#FF0000',
+          stroke: { color: '#0000FF', width: 2 },
+          place: { width: 'fill', height: { fixed: 40 } },
+        },
+        {
+          type: 'polygon',
+          name: '导向箭头',
+          points: [[2, 6], [85, 6], [85, 2], [98, 8], [98, 12], [85, 18], [85, 14], [2, 14]],
+          viewBox: [0, 0, 100, 20],
+          fit: 'fill',
+          fill: '#FF0000',
+          stroke: { color: '#0000FF', width: 2 },
+          place: { width: 'fill', height: { fixed: 20 } },
+        },
+      ],
+    };
+
+    for (const width of [740, 1500]) {
+      const result = await lab(scalableArtboard, width, 165, 120);
+      expect(result.problems).toEqual([]);
+      const contentWidth = width - 40;
+      expect(box(node(result, '布局实验/异形底框'))).toEqual({ x: 20, y: 20, width: contentWidth, height: 40 });
+      expect(box(node(result, '布局实验/导向箭头'))).toEqual({ x: 20, y: 70, width: contentWidth, height: 20 });
+
+      const image = await pixels(result);
+      const scaleX = contentWidth / 100;
+      const leftEdgeX = 20 + 2 * scaleX;
+      const rightEdgeX = 20 + 98 * scaleX;
+      // 740 mm 与 1500 mm 下，异形底框左右竖边的蓝色描边都保持 2 mm 宽（中心 ±1 mm 内为蓝，外侧为白/红）
+      expect(isWhite(pixelAtMm(image, leftEdgeX - 1.5, 40, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, leftEdgeX - 0.5, 40, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, leftEdgeX + 0.5, 40, 120))).toBe(true);
+      expect(isRed(pixelAtMm(image, leftEdgeX + 1.5, 40, 120))).toBe(true);
+
+      expect(isRed(pixelAtMm(image, rightEdgeX - 1.5, 40, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, rightEdgeX - 0.5, 40, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, rightEdgeX + 0.5, 40, 120))).toBe(true);
+      expect(isWhite(pixelAtMm(image, rightEdgeX + 1.5, 40, 120))).toBe(true);
+
+      // 上横边（y = 20 + 2 = 22 mm）同样保持 2 mm 宽
+      expect(isWhite(pixelAtMm(image, width / 2, 20.5, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, width / 2, 21.5, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, width / 2, 22.5, 120))).toBe(true);
+      expect(isRed(pixelAtMm(image, width / 2, 23.5, 120))).toBe(true);
+
+      // 导向箭头拉伸到对应宽度（右端在 rightEdgeX，且右端竖向描边同样保持 2 mm 宽）
+      expect(isRed(pixelAtMm(image, rightEdgeX - 1.5, 80, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, rightEdgeX - 0.5, 80, 120))).toBe(true);
+      expect(isBlue(pixelAtMm(image, rightEdgeX + 0.5, 80, 120))).toBe(true);
+      expect(isWhite(pixelAtMm(image, rightEdgeX + 1.5, 80, 120))).toBe(true);
+    }
+  });
 });

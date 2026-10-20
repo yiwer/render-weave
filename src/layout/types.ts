@@ -170,6 +170,15 @@ export type DrawOp =
       readonly fill?: string;
       /** 以轮廓为中线。 */
       readonly stroke?: ShapeStroke;
+      /** viewBox 映射到元素框的仿射参数：x' = sx * x + tx, y' = sy * y + ty（M242）。 */
+      readonly transform?: {
+        readonly sx: number;
+        readonly sy: number;
+        readonly tx: number;
+        readonly ty: number;
+      };
+      /** cover 适配时裁剪到元素框（毫米，相对元素框左上角）。 */
+      readonly clip?: Size;
     }
   | {
       readonly op: 'image';

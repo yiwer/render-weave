@@ -21,7 +21,8 @@ DSL 1.0 是 RenderWeave 五种 JSON 文档的成文契约（M219）。它冻结�
 | 2026-10-18 | 加法 | 画板可写 `minFontSize`（不低于 1.5 mm），作为本模板缩字的下限；元素与缩字组的下限缺省取它，只能更高（[模板 · 画板](template.md#画板)） | M238 |
 | 2026-10-19 | 加法 | 派生变量增加数值 `multiply`、`divide`、`mod`，按分隔符拆取文本 `splitPart`，以及 `branch` 条件中的 `all` / `any` 复合条件（[模板 · 派生变量](template.md#派生变量)） | M239 |
 | 2026-10-19 | 加法 | 循环容器可写 `reverse`（反序）与 `slice`（`start`、`end` 1-based 闭区间切片），纵向循环（`direction: "column"`）支持 `mergeBy` 与 `spanBy: "groupSize"`（`heights: "equal"`）（[模板 · 循环](template.md#循环)） | M240 |
-| 2026-10-19 | 加法 | 堆叠布局（`mode: "stack"`）与循环容器 `itemLayout` 支持 `wrap: true | false` 自动流式折行/折列与交叉方向行/列间距 `crossGap`（[模板 · 布局与位置](template.md#布局与位置)、[模板 · 循环](template.md#循环)） | M241 |
+| 2026-10-19 | 加法 | 堆叠布局（`mode: "stack"`）与循环容器 `itemLayout` 支持 `wrap: true \| false` 自动流式折行/折列与交叉方向行/列间距 `crossGap`（[模板 · 布局与位置](template.md#布局与位置)、[模板 · 循环](template.md#循环)） | M241 |
+| 2026-10-19 | 加法 | `path`、`polygon`、`line` 支持可选 `viewBox: [minX, minY, width, height]` 与 `fit: "fill" \| "contain" \| "cover"`，随元素框缩放且描边粗细均匀（[模板 · 元素](template.md#元素)） | M242 |
 
 ## Schema 与引擎的分工
 

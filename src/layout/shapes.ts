@@ -1,7 +1,7 @@
 /**
  * 图形元素：矩形、椭圆、线条、多边形与路径。
- * 线条、多边形与路径的坐标以毫米计、相对元素框左上角，框变化时不拉伸（M94）；
- * 随内容时的尺寸取图形坐标的最右与最下处。
+ * 未声明 viewBox 时，线条、多边形与路径的坐标以毫米计、相对元素框左上角，框变化时不拉伸（M94），随内容尺寸取坐标最右与最下处；
+ * 声明 viewBox 时，随内容尺寸取 viewBox 宽高（contain/cover 且单边固定时按宽高比换算），绘制时按 fit 映射变换路径顶点（M242）。
  */
 import type { Corners, ShapeModel } from '../template/model.js';
 import type { Box, DrawOp, Radii, Size } from './types.js';
@@ -10,6 +10,16 @@ import type { Box, DrawOp, Radii, Size } from './types.js';
 export type PathBounds = (d: string) => { readonly right: number; readonly bottom: number } | undefined;
 
 export function shapeIntrinsic(model: ShapeModel, pathBounds: PathBounds): Size {
+  if (model.type !== 'rect' && model.type !== 'ellipse' && model.viewBox) {
+    const [, , vw, vh] = model.viewBox;
+    if (model.fit !== 'fill') {
+      const ratio = vh / vw;
+      const { width, height } = model.place;
+      if (width?.kind === 'fixed' && height?.kind !== 'fixed') return { width: width.value, height: width.value * ratio };
+      if (height?.kind === 'fixed' && width?.kind !== 'fixed') return { width: height.value / ratio, height: height.value };
+    }
+    return { width: vw, height: vh };
+  }
   switch (model.type) {
     case 'rect':
     case 'ellipse':
@@ -39,15 +49,41 @@ export function recordShape(model: ShapeModel, box: Box, drawOps: DrawOp[]): voi
       drawOps.push({ op: 'ellipse', ...box, ...fill, ...stroke });
       return;
     case 'line':
-      drawOps.push({ op: 'path', x: box.x, y: box.y, d: polyline([model.from, model.to], false), fillRule: 'nonzero', ...stroke });
-      return;
     case 'polygon':
-      drawOps.push({ op: 'path', x: box.x, y: box.y, d: polyline(model.points, true), fillRule: 'nonzero', ...fill, ...stroke });
+    case 'path': {
+      if (model.viewBox && (box.width <= 0 || box.height <= 0)) return;
+      const d =
+        model.type === 'line'
+          ? polyline([model.from, model.to], false)
+          : model.type === 'polygon'
+            ? polyline(model.points, true)
+            : model.d;
+      const fillRule = model.type === 'path' ? model.fillRule : 'nonzero';
+      const scaling = model.viewBox ? viewBoxTransform(model.viewBox, model.fit, box) : {};
+      drawOps.push({ op: 'path', x: box.x, y: box.y, d, fillRule, ...fill, ...stroke, ...scaling });
       return;
-    case 'path':
-      drawOps.push({ op: 'path', x: box.x, y: box.y, d: model.d, fillRule: model.fillRule, ...fill, ...stroke });
-      return;
+    }
   }
+}
+
+function viewBoxTransform(
+  viewBox: readonly [number, number, number, number],
+  fit: 'fill' | 'contain' | 'cover',
+  box: Box,
+): Pick<Extract<DrawOp, { op: 'path' }>, 'transform' | 'clip'> {
+  const [minX, minY, vw, vh] = viewBox;
+  if (fit === 'fill') {
+    const sx = box.width / vw;
+    const sy = box.height / vh;
+    return { transform: { sx, sy, tx: -minX * sx, ty: -minY * sy } };
+  }
+  const scale = fit === 'contain' ? Math.min(box.width / vw, box.height / vh) : Math.max(box.width / vw, box.height / vh);
+  const tx = (box.width - vw * scale) / 2 - minX * scale;
+  const ty = (box.height - vh * scale) / 2 - minY * scale;
+  return {
+    transform: { sx: scale, sy: scale, tx, ty },
+    ...(fit === 'cover' && { clip: { width: box.width, height: box.height } }),
+  };
 }
 
 export function radii(corners: Corners): Radii {

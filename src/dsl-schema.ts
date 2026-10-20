@@ -34,6 +34,7 @@ function describe(error: ErrorObject): string {
   const params = error.params as Record<string, unknown>;
   switch (error.keyword) {
     case 'required': return `${at} 缺少 ${String(params['missingProperty'])}`;
+    case 'dependentRequired': return `${at} 写了 ${String(params['property'])} 时必须同时写 ${(params['deps'] as unknown[]).map(String).join('、')}`;
     case 'additionalProperties': return `${at} 不能有 ${String(params['additionalProperty'])}`;
     case 'type': return `${at} 应为 ${String(params['type'])}`;
     case 'enum': return `${at} 只能取 ${(params['allowedValues'] as unknown[]).map((value) => JSON.stringify(value)).join('、')}`;

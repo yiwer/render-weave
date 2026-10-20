@@ -452,29 +452,38 @@ export interface EllipseModel extends ElementBase {
   readonly stroke?: ShapeStroke;
 }
 
-/** 线条的起点与终点，毫米，相对元素框左上角。 */
+export type ViewBox = readonly [number, number, number, number];
+export type ShapeFit = 'fill' | 'contain' | 'cover';
+
+/** 线条的起点与终点，毫米，相对元素框左上角；声明 viewBox 时随元素框缩放（M242）。 */
 export interface LineModel extends ElementBase {
   readonly type: 'line';
   readonly from: Point;
   readonly to: Point;
   readonly stroke: ShapeStroke;
+  readonly viewBox?: ViewBox;
+  readonly fit: ShapeFit;
 }
 
-/** 多边形的顶点，毫米，相对元素框左上角；框变化时不拉伸（M94）。 */
+/** 多边形的顶点，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M94），声明 viewBox 时随元素框缩放（M242）。 */
 export interface PolygonModel extends ElementBase {
   readonly type: 'polygon';
   readonly points: readonly Point[];
   readonly fill?: Color;
   readonly stroke?: ShapeStroke;
+  readonly viewBox?: ViewBox;
+  readonly fit: ShapeFit;
 }
 
-/** 路径数据为 SVG 路径语法，毫米，相对元素框左上角；框变化时不拉伸（M76、M94）。 */
+/** 路径数据为 SVG 路径语法，毫米，相对元素框左上角；未声明 viewBox 时框变化不拉伸（M76、M94），声明 viewBox 时随元素框缩放（M242）。 */
 export interface PathModel extends ElementBase {
   readonly type: 'path';
   readonly d: string;
   readonly fill?: Color;
   readonly stroke?: ShapeStroke;
   readonly fillRule: 'nonzero' | 'evenodd';
+  readonly viewBox?: ViewBox;
+  readonly fit: ShapeFit;
 }
 
 export type Point = readonly [number, number];

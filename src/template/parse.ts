@@ -42,6 +42,7 @@ import {
   type Place,
   type Point,
   type Range,
+  type ShapeFit,
   type ShapeStroke,
   type SizeSpec,
   type TemplateModel,
@@ -50,6 +51,7 @@ import {
   type TextStroke,
   type Track,
   type VariableUse,
+  type ViewBox,
   type CallArgument,
   type CallModel,
   type LoopItemSize,
@@ -88,9 +90,9 @@ const ELEMENT_KEYS: Record<ElementModel['type'], readonly string[]> = {
   barcode: [...COMMON_KEYS, 'content', 'format', 'foreground', 'background', 'showText', 'font', 'fontSize'],
   rect: [...COMMON_KEYS, 'fill', 'stroke', 'cornerRadius'],
   ellipse: [...COMMON_KEYS, 'fill', 'stroke'],
-  line: [...COMMON_KEYS, 'from', 'to', 'stroke'],
-  polygon: [...COMMON_KEYS, 'points', 'fill', 'stroke'],
-  path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule'],
+  line: [...COMMON_KEYS, 'from', 'to', 'stroke', 'viewBox', 'fit'],
+  polygon: [...COMMON_KEYS, 'points', 'fill', 'stroke', 'viewBox', 'fit'],
+  path: [...COMMON_KEYS, 'd', 'fill', 'stroke', 'fillRule', 'viewBox', 'fit'],
 };
 const SIZE_LIMIT_KEYS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 const PLACE_KEYS: Record<Layout['mode'], readonly string[]> = {
@@ -543,16 +545,18 @@ class TemplateReader {
         const from = this.readPoint(value['from'], path, 'from');
         const to = this.readPoint(value['to'], path, 'to');
         const stroke = value['stroke'] === undefined ? this.fail(path, '线条必须有描边 stroke') : this.readShapeStroke(value['stroke'], path);
-        element = base && from && to && stroke ? { ...base, type: 'line', from, to, stroke } : undefined;
+        const scaling = this.readShapeScaling(value, path);
+        element = base && from && to && stroke && scaling ? { ...base, type: 'line', from, to, stroke, ...scaling } : undefined;
         break;
       }
       case 'polygon': {
         const points = this.readPoints(value['points'], path);
         const fill = this.optional(value['fill'], (v) => this.readColor(v, path, 'fill'));
         const stroke = this.optional(value['stroke'], (v) => this.readShapeStroke(v, path));
+        const scaling = this.readShapeScaling(value, path);
         element =
-          base && points && fill !== null && stroke !== null
-            ? { ...base, type: 'polygon', points, ...(fill && { fill }), ...(stroke && { stroke }) }
+          base && points && fill !== null && stroke !== null && scaling
+            ? { ...base, type: 'polygon', points, ...(fill && { fill }), ...(stroke && { stroke }), ...scaling }
             : undefined;
         break;
       }
@@ -562,9 +566,10 @@ class TemplateReader {
         const fill = this.optional(value['fill'], (v) => this.readColor(v, path, 'fill'));
         const stroke = this.optional(value['stroke'], (v) => this.readShapeStroke(v, path));
         const fillRule = this.readEnum(value['fillRule'], ['nonzero', 'evenodd'] as const, 'nonzero', path, 'fillRule');
+        const scaling = this.readShapeScaling(value, path);
         element =
-          base && typeof d === 'string' && d.trim() !== '' && fill !== null && stroke !== null && fillRule
-            ? { ...base, type: 'path', d, fillRule, ...(fill && { fill }), ...(stroke && { stroke }) }
+          base && typeof d === 'string' && d.trim() !== '' && fill !== null && stroke !== null && fillRule && scaling
+            ? { ...base, type: 'path', d, fillRule, ...(fill && { fill }), ...(stroke && { stroke }), ...scaling }
             : undefined;
         break;
       }
@@ -1079,6 +1084,30 @@ class TemplateReader {
       points.push(parsed);
     }
     return points;
+  }
+
+  private readShapeScaling(value: Record<string, unknown>, path: ElementPath): Read<{ readonly viewBox?: ViewBox; readonly fit: ShapeFit }> {
+    const viewBox = this.optional(value['viewBox'], (v) => this.readViewBox(v, path));
+    if (value['fit'] !== undefined && value['viewBox'] === undefined) {
+      return this.fail(path, '图形的 fit 只能在声明了 viewBox 时使用');
+    }
+    const fit = this.readEnum(value['fit'], ['fill', 'contain', 'cover'] as const, 'fill', path, 'fit');
+    if (viewBox === null || !fit) return undefined;
+    return { ...(viewBox && { viewBox }), fit };
+  }
+
+  private readViewBox(value: unknown, path: ElementPath): Read<ViewBox> {
+    if (
+      Array.isArray(value) &&
+      value.length === 4 &&
+      isFiniteNumber(value[0]) &&
+      isFiniteNumber(value[1]) &&
+      isPositive(value[2]) &&
+      isPositive(value[3])
+    ) {
+      return [value[0], value[1], value[2], value[3]];
+    }
+    return this.fail(path, 'viewBox 必须写成 [minX, minY, width, height]（4 个数，且 width、height 大于 0）');
   }
 
   private readEdges(value: unknown, path: ElementPath, label: string): Read<Edges> {

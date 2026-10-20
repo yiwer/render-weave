@@ -243,6 +243,35 @@
       },
       "description": "[x, y]，毫米，相对元素框左上角"
     },
+    "viewBox": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      ],
+      "description": "[minX, minY, width, height]，4 个数且 width、height 大于 0（M242）"
+    },
+    "shapeFit": {
+      "enum": [
+        "fill",
+        "contain",
+        "cover"
+      ]
+    },
     "edges": {
       "anyOf": [
         {
@@ -2229,6 +2258,12 @@
         "stroke": {
           "$ref": "#/$defs/shapeStroke"
         },
+        "viewBox": {
+          "$ref": "#/$defs/viewBox"
+        },
+        "fit": {
+          "$ref": "#/$defs/shapeFit"
+        },
         "states": {
           "type": "object",
           "additionalProperties": false,
@@ -2252,7 +2287,9 @@
                     "rotation",
                     "from",
                     "to",
-                    "stroke"
+                    "stroke",
+                    "viewBox",
+                    "fit"
                   ]
                 }
               }
@@ -2260,6 +2297,11 @@
           },
           "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
         }
+      },
+      "dependentRequired": {
+        "fit": [
+          "viewBox"
+        ]
       }
     },
     "polygonElement": {
@@ -2302,6 +2344,12 @@
         "stroke": {
           "$ref": "#/$defs/shapeStroke"
         },
+        "viewBox": {
+          "$ref": "#/$defs/viewBox"
+        },
+        "fit": {
+          "$ref": "#/$defs/shapeFit"
+        },
         "states": {
           "type": "object",
           "additionalProperties": false,
@@ -2325,7 +2373,9 @@
                     "rotation",
                     "points",
                     "fill",
-                    "stroke"
+                    "stroke",
+                    "viewBox",
+                    "fit"
                   ]
                 }
               }
@@ -2333,6 +2383,11 @@
           },
           "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
         }
+      },
+      "dependentRequired": {
+        "fit": [
+          "viewBox"
+        ]
       }
     },
     "pathElement": {
@@ -2377,6 +2432,12 @@
             "evenodd"
           ]
         },
+        "viewBox": {
+          "$ref": "#/$defs/viewBox"
+        },
+        "fit": {
+          "$ref": "#/$defs/shapeFit"
+        },
         "states": {
           "type": "object",
           "additionalProperties": false,
@@ -2401,7 +2462,9 @@
                     "d",
                     "fill",
                     "stroke",
-                    "fillRule"
+                    "fillRule",
+                    "viewBox",
+                    "fit"
                   ]
                 }
               }
@@ -2409,6 +2472,11 @@
           },
           "description": "状态样式：按变量取值覆盖属性（M28、S5）；覆盖值按元素属性规则检查，由引擎完成"
         }
+      },
+      "dependentRequired": {
+        "fit": [
+          "viewBox"
+        ]
       }
     },
     "textFragment": {

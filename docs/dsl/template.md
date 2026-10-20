@@ -87,7 +87,7 @@
 | 图片 | 图片元素的 `source` |
 | 文本 | 码元素的 `content`；文字内容经插槽绑定 |
 
-**不能绑定**：`font`（需要按取值换字体时用状态样式）、路径的 `d`、多边形的 `points`、线条端点、各种枚举（对齐方式、书写方向、适配步骤）、网格轨道、虚线 `dash`、元素类型、被调模板名、展示格式、`sizeRange`。
+**不能绑定**：`font`（需要按取值换字体时用状态样式）、路径的 `d`、多边形的 `points`、线条端点、图形的 `viewBox`、各种枚举（对齐方式、书写方向、适配方式与步骤）、网格轨道、虚线 `dash`、元素类型、被调模板名、展示格式、`sizeRange`。
 
 **状态样式**（M28、S5）按变量的取值覆盖元素属性：
 
@@ -149,14 +149,16 @@
 | `barcode` | 条形码 | `content`（必填）、`format`：`CODE128`、`EAN-13`、`EAN-8`、`UPC-A`（必填）、`foreground`、`background`、`showText`、`font`（显示文字时必填）、`fontSize`（缺省 3），见[条形码说明](../render-barcode.md)与 [EAN/UPC 说明](../render-retail-barcodes.md) |
 | `rect` | 矩形 | `fill`、`stroke`、`cornerRadius` |
 | `ellipse` | 椭圆 | `fill`、`stroke` |
-| `line` | 线条 | `from`、`to`：`[x, y]`，相对元素框左上角；`stroke` 必填 |
-| `polygon` | 多边形 | `points`：至少 3 个 `[x, y]`；`fill`、`stroke` |
-| `path` | 路径 | `d`：SVG 路径数据，单位毫米；`fill`、`stroke`、`fillRule`：`nonzero`（缺省）或 `evenodd` |
+| `line` | 线条 | `from`、`to`：`[x, y]`；`stroke` 必填；`viewBox`?、`fit`? |
+| `polygon` | 多边形 | `points`：至少 3 个 `[x, y]`；`fill`、`stroke`、`viewBox`?、`fit`? |
+| `path` | 路径 | `d`：SVG 路径数据；`fill`、`stroke`、`fillRule`：`nonzero`（缺省）或 `evenodd`；`viewBox`?、`fit`? |
 | `loop` | 循环容器 | 见「循环」 |
 | `call` | 子模板调用 | 见「调用」 |
 
 - **图形的描边**：写成 `{ "color", "width", "dash"?: [实, 空, …], "cap"?: "butt" | "round" | "square" }`。
-- **坐标**：路径与多边形的坐标以毫米计，相对元素框，框变大时图形不拉伸（M94）。
+- **坐标与 `viewBox` 缩放**（M94、M242）：
+  - 未写 `viewBox` 时，`line`、`polygon`、`path` 的坐标以毫米计、相对元素框左上角，元素框变大时图形不拉伸（M94），随内容（`"hug"`）的自然尺寸取图形坐标的最右与最下处；
+  - 声明 `"viewBox": [minX, minY, width, height]`（4 个有限数值，`width > 0` 且 `height > 0`）时，可另写 `"fit": "fill" | "contain" | "cover"`（缺省 `"fill"`；未写 `viewBox` 时不能写 `fit`）。随内容（`"hug"`）的自然尺寸取 `viewBox` 的 `width` 与 `height`（若只固定了宽或高一边且 `fit` 为 `contain` 或 `cover`，另一边按 `viewBox` 宽高比换算）；绘制时将 `viewBox` 区域按 `fit`（`fill` 拉伸填满、`contain` 等比居中完整显示、`cover` 等比居中铺满并裁剪到元素框）映射变换到路径几何顶点上，描边宽度（`stroke.width`）与虚线（`stroke.dash`）始终保持声明的毫米值，不随非等比拉伸变形。
 
 ### 文字
 
@@ -902,6 +904,13 @@
               }
             },
             "d": "M0 2 C 20 0, 40 4, 60 2 S 80 0, 84 2",
+            "viewBox": [
+              0,
+              0,
+              84,
+              3
+            ],
+            "fit": "fill",
             "stroke": {
               "color": "#FFFFFF66",
               "width": 0.4,
@@ -1353,7 +1362,7 @@ DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，并按
 - **没有文本表达式与脚本**：只有单步具名运算（ADR-0004）。拼接文字用多个片段。
 - **没有动态模板**：被调模板名不能由数据决定，循环也没有按条件过滤或附加项（支持 `reverse` 反序与 `slice` 区间切片，M240）。
 - **竖排文字的片段只能单独设颜色**，竖排不能倾斜。
-- **不能绑定**：字体、路径数据、多边形顶点、线条端点不能绑定变量。
+- **不能绑定**：字体、路径数据、多边形顶点、线条端点、图形 `viewBox` 不能绑定变量。
 - **URL 图片尚未支持**：不画内容并报问题（见[数据定义](data-definition.md#已知限制)）。
 
 ## 与起草约定的对应

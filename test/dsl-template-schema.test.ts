@@ -244,10 +244,19 @@ const TEMPLATE_MUTATIONS: readonly Mutation[] = [
   ['二维码内容不是文本', on(ofType('qrcode'), (e) => (e.content = 5))],
   ['线条缺描边', on(ofType('line'), (e) => delete e.stroke)],
   ['线条端点不是点', on(ofType('line'), (e) => (e.from = [1]))],
+  ['线条未写 viewBox 却写 fit', on(ofType('line', (e) => e.viewBox === undefined), (e) => (e.fit = 'fill'))],
   ['多边形少于 3 点', on(ofType('polygon'), (e) => (e.points = e.points.slice(0, 2)))],
+  ['多边形未写 viewBox 却写 fit', on(ofType('polygon', (e) => e.viewBox === undefined), (e) => (e.fit = 'contain'))],
   ['路径 d 为空白', on(ofType('path'), (e) => (e.d = '  '))],
   ['路径填充规则未知', on(ofType('path'), (e) => (e.fillRule = 'winding'))],
+  ['路径未写 viewBox 却写 fit', on(ofType('path', (e) => e.viewBox === undefined), (e) => (e.fit = 'cover'))],
+  ['图形 viewBox 少于 4 项', on(ofType('path', (e) => e.viewBox !== undefined), (e) => (e.viewBox = [0, 0, 10]))],
+  ['图形 viewBox 宽度为 0', on(ofType('path', (e) => e.viewBox !== undefined), (e) => (e.viewBox = [0, 0, 0, 10]))],
+  ['图形 viewBox 高度为负', on(ofType('path', (e) => e.viewBox !== undefined), (e) => (e.viewBox = [0, 0, 10, -1]))],
+  ['图形 viewBox 项不是数', on(ofType('path', (e) => e.viewBox !== undefined), (e) => (e.viewBox = [0, 0, '10', 10]))],
+  ['图形 fit 未知', on(ofType('path', (e) => e.viewBox !== undefined), (e) => (e.fit = 'stretch'))],
   ['椭圆写圆角', on(ofType('ellipse'), (e) => (e.cornerRadius = 1))],
+  ['矩形写 viewBox', on(ofType('rect'), (e) => (e.viewBox = [0, 0, 10, 10]))],
 ];
 
 const REQUEST_MUTATIONS: readonly Mutation[] = [
