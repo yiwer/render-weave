@@ -27,7 +27,7 @@ npm test
 ```
 
 - `fetch-fonts` 要联网，按 `scripts/fonts.json` 固定的版本与 SHA-256 下载到 `fixtures/resources/fonts/`。
-- 期望结果：Windows 上 47 个文件、929 项全部通过（引擎 42 个文件 888 项，出图服务的内存后端 5 个文件 41 项）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上另有 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
+- 期望结果：Windows 上 47 个文件、931 项全部通过（引擎 42 个文件 890 项，出图服务的内存后端 5 个文件 41 项）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上另有 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
 
 ## 3. key 与模型服务
 
