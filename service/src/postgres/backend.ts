@@ -3,15 +3,16 @@
  * 按邮箱登录与按令牌解析身份调用属主身份执行的函数（迁移 0002）。
  */
 import {
-  EmailTakenError,
+  EmailTakenError, periodOf,
   type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
   type PreviewQuota, type Readiness, type RecordCursor, type RecordEntry, type ReplayResult, type ReplayState, type ServiceBackend, type TaskResult, type TaskState,
-  type Tenant, type TenantScope,
+  type Tenant, type TenantScope, type UsageEvent, type UsageKind,
 } from '../backend.js';
 import { batchManifest, NOT_STARTED, notRunItem } from '../batches.js';
 import { manifestBytes, type RenderMode } from '../engine.js';
 import type { BlobStore } from './blobs.js';
 import { asPlatform, isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
+import { lockCounter, readPlan, releaseReserved, usageCounts } from './metering.js';
 import { checkMigrations, type Migration } from './migrate.js';
 import { tenantStorage } from './storage.js';
 
@@ -73,6 +74,8 @@ async function finalizeBatch(client: DbClient, blobs: BlobStore, tenantId: strin
   await client.query(`UPDATE batches SET manifest_sha256 = $3, finished_at = $4, summary = $5, problems = $6
     WHERE tenant_id = $1 AND batch_id = $2 AND manifest_sha256 IS NULL`,
   [tenantId, state.batchId, sha256, now, JSON.stringify(manifest.summary), JSON.stringify(manifest.problems)]);
+  // 批次结束时退回剩下的预占（ADR-0020）。
+  await releaseReserved(client, tenantId, state.batchId, 'all');
 }
 
 async function insertAudit(client: DbClient, tenantId: string | null, event: NewAuditEvent, now: Date): Promise<void> {
@@ -151,6 +154,24 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
           WHERE tenant_id = $1 AND ($2::bigint IS NULL OR id < $2::bigint) ORDER BY id DESC LIMIT $3`, [tenantId, before ?? null, limit])).rows.map(
         (row): AuditEvent => ({ id: row.id, tenantId: row.tenant_id, at: iso(row.at)!, actor: { kind: row.actor_kind, id: row.actor_id, label: row.actor_label },
           action: row.action, object: { type: row.object_type, id: row.object_id }, crossTenant: row.cross_tenant }))),
+      plan: () => run((client) => readPlan(client, tenantId)),
+      setPlan: (plan, now) => run(async (client) => {
+        await client.query(`INSERT INTO tenant_plans (tenant_id, monthly_images, max_pixels, concurrency, updated_at) VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (tenant_id) DO UPDATE SET monthly_images = EXCLUDED.monthly_images, max_pixels = EXCLUDED.max_pixels,
+            concurrency = EXCLUDED.concurrency, updated_at = EXCLUDED.updated_at`, [tenantId, plan.monthlyImages, plan.maxPixels, plan.concurrency, now]);
+        await client.query('UPDATE usage_counters SET image_limit = $3 WHERE tenant_id = $1 AND period = $2', [tenantId, periodOf(now), plan.monthlyImages]);
+      }),
+      usage: (period) => run((client) => usageCounts(client, tenantId, period)),
+      listUsageEvents: ({ period, kind, before, limit }) => run(async (client) => (await client.query<{
+        id: string; at: Date; period: string; kind: UsageKind; quantity: string; batch_id: string | null; item_index: number | null;
+        round_sha256: string | null; round_task: string | null; round_number: number | null;
+      }>(`SELECT id, at, period, kind, quantity, batch_id, item_index, round_sha256, round_task, round_number FROM usage_events
+           WHERE tenant_id = $1 AND period = $2 AND ($3::text IS NULL OR kind = $3) AND ($4::bigint IS NULL OR id < $4::bigint)
+           ORDER BY id DESC LIMIT $5`, [tenantId, period, kind ?? null, before ?? null, limit])).rows.map((row): UsageEvent => ({
+        id: row.id, at: iso(row.at)!, period: row.period, kind: row.kind, quantity: Number(row.quantity),
+        ...(row.batch_id === null ? {} : { batchId: row.batch_id, index: row.item_index! }),
+        ...(row.round_sha256 === null ? {} : { round: { sha256: row.round_sha256, task: row.round_task!, round: row.round_number! } }),
+      }))),
       storage: tenantStorage(db, blobs, tenantId),
       tasks: {
         enqueuePreview: (request, quota, now) => enqueue('preview', request, quota, now),
@@ -193,12 +214,20 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
             WHERE tenant_id = $1 AND id = $2 AND kind IN ('preview', 'replay')`, [tenantId, id]);
         }),
         createBatch: (batch, now) => run(async (client) => {
+          // 锁住当期计数行：同一租户的建批次依次进行，幂等键的查重与额度的检查都在锁里（ADR-0020）。
+          const period = periodOf(now), counter = await lockCounter(client, tenantId, period), requested = batch.items.length;
+          if (batch.idempotencyKey !== undefined) {
+            const existing = await batchState(client, tenantId, { idempotencyKey: batch.idempotencyKey });
+            if (existing) return { batch: existing, created: false };
+          }
+          if (counter.used + counter.reserved + requested > counter.limit) return { shortfall: { period, ...counter, requested } };
           const created = (await client.query<{ batch_id: string }>(
-            `INSERT INTO batches (tenant_id, snapshot_sha256, build, template, mode, idempotency_key, request_sha256, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO batches (tenant_id, snapshot_sha256, build, template, mode, idempotency_key, request_sha256, created_at, period, reserved)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              ON CONFLICT (tenant_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING RETURNING batch_id`,
-            [tenantId, batch.snapshot, batch.build, batch.template, batch.mode, batch.idempotencyKey ?? null, batch.requestSha256, now])).rows[0];
+            [tenantId, batch.snapshot, batch.build, batch.template, batch.mode, batch.idempotencyKey ?? null, batch.requestSha256, now, period, requested])).rows[0];
           if (!created) return { batch: (await batchState(client, tenantId, { idempotencyKey: batch.idempotencyKey! }))!, created: false };
+          await client.query('UPDATE usage_counters SET reserved = reserved + $3 WHERE tenant_id = $1 AND period = $2', [tenantId, period, requested]);
           await client.query(`INSERT INTO render_tasks (tenant_id, kind, request, status, created_at, batch_id, item_index, build)
             SELECT $1, 'batchItem', jsonb_build_object('snapshot', $2::text, 'id', item.id), 'queued', $3, $4, item.index, $5
               FROM jsonb_to_recordset($6::jsonb) AS item(index integer, id text)`,
@@ -213,10 +242,12 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
           if (state.manifest) return state;
           await client.query('UPDATE batches SET cancel_requested_at = coalesce(cancel_requested_at, $3) WHERE tenant_id = $1 AND batch_id = $2', [tenantId, batchId, now]);
           const queued = state.items.filter((item) => item.status === 'queued').map((item) => notRunItem(item.index, item.id, NOT_STARTED));
-          await client.query(`UPDATE render_tasks t SET status = 'cancelled', finished_at = $3, result = item.result
+          const cancelled = await client.query(`UPDATE render_tasks t SET status = 'cancelled', finished_at = $3, result = item.result
               FROM jsonb_to_recordset($4::jsonb) AS item(index integer, result jsonb)
              WHERE t.tenant_id = $1 AND t.batch_id = $2 AND t.item_index = item.index AND t.status = 'queued'`,
           [tenantId, batchId, now, JSON.stringify(queued.map((result) => ({ index: result.index, result })))]);
+          // 未执行的项退回预占。
+          await releaseReserved(client, tenantId, batchId, cancelled.rowCount ?? 0);
           await finalizeBatch(client, blobs, tenantId, batchId, now);
           return batchState(client, tenantId, { batchId });
         }),
@@ -266,6 +297,9 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
           WHERE tenant_id = $1 AND id = $2 AND batch_id = $3 AND status = 'running' AND attempts = $4`,
         [task.tenantId, task.id, task.batchId, task.attempts, now, JSON.stringify(result)]);
         if (updated.rowCount !== 1) return false;
+        // 没登记就结束的项（未执行，或连问题清单都没写成）在这里退回预占；登记了的已在登记时结算。
+        const registered = await client.query('SELECT 1 FROM batch_items WHERE tenant_id = $1 AND batch_id = $2 AND item_index = $3', [task.tenantId, task.batchId, task.index]);
+        if (!registered.rowCount) await releaseReserved(client, task.tenantId, task.batchId, 1);
         await finalizeBatch(client, blobs, task.tenantId, task.batchId, now);
         return true;
       }),
@@ -333,6 +367,9 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
       recordBuilds: async () => (await db.query<{ build: string; records: string; last_delivered_at: Date }>('SELECT * FROM rw_record_builds()')).rows.map(
         (row) => ({ build: row.build, records: Number(row.records), lastDeliveredAt: iso(row.last_delivered_at)! })),
     },
+    reconcileReservations: async ({ onlineSince, idleBefore }) =>
+      (await db.query<{ tenant_id: string; batch_id: string; released: number }>('SELECT * FROM rw_reconcile_reservations($1, $2)', [onlineSince, idleBefore])).rows.map(
+        (row) => ({ tenantId: row.tenant_id, batchId: row.batch_id, released: row.released })),
     workers: {
       async heartbeat(worker, build, now) { await db.query('SELECT rw_worker_heartbeat($1, $2, $3)', [worker, build, now]); },
       async leave(worker) { await db.query('SELECT rw_worker_leave($1)', [worker]); },

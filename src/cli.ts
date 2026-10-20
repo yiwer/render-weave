@@ -75,7 +75,7 @@ const USAGE = `用法：
   renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--claude …]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
-  renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--dry-run] [--token-env <环境变量名>]
+  renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--rounds <轮次目录>] [--dry-run] [--token-env <环境变量名>]
   renderweave template-revisions --server <服务地址> --tenant <租户ID> --template <模板名> [--current <修订号>] [--token-env <环境变量名>]
 
 render
@@ -124,6 +124,7 @@ push（代建推送：先列差异，有冲突整体拒绝，没有冲突在一�
   --tenant      目标租户 ID；代建令牌必须被指定给这个租户
   --workspace   本地工作区：静态数据定义、编译产物、模板与样例数据集；其他 JSON（如渲染请求）不推送
   --resources   资源版本仓库：全部资源及其内容版本
+  --rounds      可选，这一单代建的轮次目录（含 round.json），或其下一层的各轮目录：各轮的 token 用量与推送一起记到该租户，只记不拦；同一轮只记一次
   --dry-run     可选，只列差异，不提交
   --token-env   可选，代建令牌所在的环境变量名，缺省 ${DEFAULT_TOKEN_ENV}；令牌只经环境变量传入，不写进参数与文件
 
@@ -181,7 +182,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
     : command === 'mcp' ? ['tools', 'log', 'outcome-context'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
     : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
-    : command === 'push' ? ['token-env'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
+    : command === 'push' ? ['token-env', 'rounds'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
   let positionals: string[];
   try {
@@ -643,12 +644,14 @@ function reportDiff(diff: PushDiff, io: CliIo): void {
 async function runPush(options: Record<string, string>, dryRun: boolean, io: CliIo): Promise<number> {
   const target = pushTarget(options, io);
   if (!target) return ExitCodes.usage;
-  const outcome = await pushWorkspace({ ...target, workspace: options.workspace!, resources: options.resources!, dryRun });
+  const outcome = await pushWorkspace({ ...target, workspace: options.workspace!, resources: options.resources!, dryRun, ...(options.rounds === undefined ? {} : { rounds: options.rounds }) });
   if (outcome.diff) reportDiff(outcome.diff, io);
   reportProblems(outcome.problems, io);
   if (outcome.diff) {
-    const { summary, documents, resources, pushId } = outcome.diff;
-    io.stdout(`${JSON.stringify({ tenant: target.tenant, dryRun, pushed: outcome.pushed, ...(pushId ? { pushId } : {}), summary, documents, resources, skipped: outcome.skipped }, null, 2)}\n`);
+    const { summary, documents, resources, pushId, usage } = outcome.diff;
+    io.stdout(`${JSON.stringify({ tenant: target.tenant, dryRun, pushed: outcome.pushed, ...(pushId ? { pushId } : {}), summary, documents, resources, skipped: outcome.skipped,
+      ...(usage ? { usage } : {}) }, null, 2)}\n`);
+    if (usage?.rounds) io.stderr(`代建 token：附 ${usage.rounds} 轮，新记 ${usage.recorded} 轮${usage.recorded < usage.rounds ? '（其余已记过）' : ''}\n`);
   }
   const conflicts = outcome.diff?.summary.conflicts ?? 0;
   if (outcome.pushed) io.stderr(`已推送到租户 ${target.tenant}\n`);

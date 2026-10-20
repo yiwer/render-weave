@@ -13,6 +13,7 @@ import {
 } from '../engine.js';
 import { sha256Hex, type BlobStore } from './blobs.js';
 import { isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
+import { recordRounds, settleItem } from './metering.js';
 
 export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): TenantStorage {
   return {
@@ -68,7 +69,8 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
             [tenantId, id, content.version, content.sha256, content.byteLength]);
         }
       }
-      return { state: await authoringState(client, tenantId), revisions };
+      const recordedRounds = await recordRounds(client, tenantId, writes.rounds ?? [], now);
+      return { state: await authoringState(client, tenantId), revisions, recordedRounds };
     }),
     async saveDataset(id, bytes, mode) {
       const sha256 = await blobs.put(tenantId, bytes), source = documentSource('dataset', id);
@@ -238,6 +240,8 @@ function batchStore(db: Db, blobs: BlobStore, tenantId: string, batchId: string)
           await client.query('INSERT INTO batch_item_files (tenant_id, batch_id, item_index, name, sha256, byte_length) VALUES ($1, $2, $3, $4, $5, $6)',
             [tenantId, batchId, index, name, sha256, byteLength]);
         }
+        // 登记与结算同一个事务（ADR-0020）：交付成功与计费要么都发生，要么都不发生。
+        await settleItem(client, tenantId, batchId, index, contents.manifest?.name === 'record.json');
       });
     },
     async available() {

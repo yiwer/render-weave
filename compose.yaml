@@ -59,12 +59,15 @@ services:
       s3:
         condition: service_started
 
-  # 接口进程：等迁移与代码一致后启动。
+  # 接口进程：等迁移与代码一致后启动。定期对账（票据 09）：批次的构建没有 worker、闲置超过宽限时间，退回它遗留的预占。
   api:
     image: renderweave-service:local
     pull_policy: never
     command: ["node", "service/dist/main.js", "api"]
-    environment: *service-env
+    environment:
+      <<: *service-env
+      RW_RECONCILE_MS: ${RW_RECONCILE_MS:-60000}
+      RW_RESERVATION_GRACE_MS: ${RW_RESERVATION_GRACE_MS:-600000}
     ports:
       - "${RW_API_PORT:-8080}:8080"
     depends_on:

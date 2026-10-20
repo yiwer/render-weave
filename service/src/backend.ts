@@ -95,6 +95,83 @@ export interface Readiness {
 
 export class EmailTakenError extends Error {}
 
+/**
+ * 套餐（M242、ADR-0020）：每月出图张数、单张最大像素与并发数，由平台管理员设置。
+ * 并发数限的是预览与重放同时排队与渲染中的任务数（按种类各算各的）；批次项不按租户限并发，按项序号轮转（M269）。
+ */
+export interface Plan {
+  readonly monthlyImages: number;
+  readonly maxPixels: number;
+  readonly concurrency: number;
+}
+
+/** 引擎的单张像素上限（单边 20,000 px、总数 1 亿，ADR-0017）：套餐的单张最大像素不超过它。 */
+export const ENGINE_MAX_PIXELS = 100_000_000;
+
+/** 新租户没设套餐时的缺省值：每月 0 张，先由平台管理员设置套餐才能正式交付。 */
+export const DEFAULT_PLAN: Plan = { monthlyImages: 0, maxPixels: ENGINE_MAX_PIXELS, concurrency: 2 };
+
+/** 用量的种类：正式交付成功的一张，或代建一轮的四种 token（RoundUsage）。 */
+export const TOKEN_KINDS = ['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheCreationTokens'] as const;
+export type TokenKind = (typeof TOKEN_KINDS)[number];
+export type UsageKind = 'image' | TokenKind;
+export const USAGE_KINDS: readonly UsageKind[] = ['image', ...TOKEN_KINDS];
+
+/** 计费周期按 UTC+8 切分的自然月（ADR-0020），写作 YYYY-MM。 */
+const PERIOD_OFFSET_MS = 8 * 3_600_000;
+export const PERIOD = /^(\d{4})-(0[1-9]|1[0-2])$/;
+export const periodOf = (at: Date): string => new Date(at.getTime() + PERIOD_OFFSET_MS).toISOString().slice(0, 7);
+/** 周期的起止（含起、不含止）。 */
+export function periodRange(period: string): { readonly start: Date; readonly end: Date } {
+  const [, year, month] = PERIOD.exec(period)!;
+  return { start: new Date(Date.UTC(Number(year), Number(month) - 1, 1) - PERIOD_OFFSET_MS), end: new Date(Date.UTC(Number(year), Number(month), 1) - PERIOD_OFFSET_MS) };
+}
+
+/** 一条用量事件：追加写入，不改不删。出处是批次与项，或代建的一轮（round.json 的 SHA-256、任务与轮次）。 */
+export interface UsageEvent {
+  readonly id: string;
+  readonly at: string;
+  readonly period: string;
+  readonly kind: UsageKind;
+  readonly quantity: number;
+  readonly batchId?: string;
+  readonly index?: number;
+  readonly round?: { readonly sha256: string; readonly task: string; readonly round: number };
+}
+
+/** 一个周期的计数：出图张数的限额、已用与预占，以及各种 token 的合计。 */
+export interface UsageCounts {
+  readonly period: string;
+  readonly limit: number;
+  readonly used: number;
+  readonly reserved: number;
+  readonly tokens: Readonly<Record<TokenKind, number>>;
+}
+
+/** 代建一轮的 token 用量（推送时随附，票据 09）：同一轮（round.json 字节相同）在一个租户只记一次。 */
+export interface RoundUsageEntry {
+  readonly sha256: string;
+  readonly task: string;
+  readonly round: number;
+  readonly tokens: Readonly<Partial<Record<TokenKind, number>>>;
+}
+
+/** 额度不够时的计数：本期限额、已用、预占与本批要预占的项数。 */
+export interface QuotaShortfall {
+  readonly period: string;
+  readonly limit: number;
+  readonly used: number;
+  readonly reserved: number;
+  readonly requested: number;
+}
+
+/** 对账退回的预占：批次已结束、或接受它的构建已没有 worker 且闲置超过宽限时间。 */
+export interface ReleasedReservation {
+  readonly tenantId: string;
+  readonly batchId: string;
+  readonly released: number;
+}
+
 export interface PlatformStore {
   createTenant(name: string): Promise<Tenant>;
   listTenants(): Promise<Tenant[]>;
@@ -182,6 +259,8 @@ export interface PushWrites {
   readonly templates: readonly { readonly name: string; readonly sha256: string; readonly byteLength: number }[];
   /** 新资源（从 v1 起），或已有资源追加的后续内容版本。 */
   readonly resources: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly create: boolean; readonly versions: readonly ContentVersion[] }[];
+  /** 随推送附带的代建轮次：与推送同一事务记为用量事件，已记过的轮次跳过（票据 09）。 */
+  readonly rounds?: readonly RoundUsageEntry[];
 }
 
 /** 本租户按 SHA-256 存放的内容（ADR-0018）：先写内容，再登记；没有登记的内容不会出现在任何读者面前。 */
@@ -208,7 +287,7 @@ export interface TenantStorage {
    * prepare 抛错时什么也不写。返回写入后的状态与各模板新修订的编号。
    */
   push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date }):
-    Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number> }>;
+    Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number>; readonly recordedRounds: readonly string[] }>;
   /** 把模板的当前修订指向它已有的一个修订；模板或修订不存在时 undefined。 */
   setCurrentTemplate(name: string, revision: number): Promise<StoredTemplate | undefined>;
   /**
@@ -365,8 +444,11 @@ export interface TenantTasks {
   state(id: string): Promise<TaskState | undefined>;
   /** 取走结果之后清掉图片与布局；还在排队的撤回，不再占并发。预览与重放都适用。 */
   release(id: string): Promise<void>;
-  /** 建批次并按项入队。同一幂等键已有批次时不建，返回已有的那个（created 为 false）。 */
-  createBatch(batch: NewBatch, now: Date): Promise<{ readonly batch: BatchState; readonly created: boolean }>;
+  /**
+   * 建批次并按项入队，同一个事务里锁住当期计数行预占本批项数（ADR-0020）：已用 + 预占 + 本批项数超过限额时整批不建，答 shortfall。
+   * 同一幂等键已有批次时不建、不预占，返回已有的那个（created 为 false）。批次的计费周期按 now 定，结算都记在这个周期。
+   */
+  createBatch(batch: NewBatch, now: Date): Promise<{ readonly batch: BatchState; readonly created: boolean } | { readonly shortfall: QuotaShortfall }>;
   /** 按幂等键找批次。 */
   findBatch(idempotencyKey: string): Promise<BatchState | undefined>;
   /** 批次不在本租户时 undefined。 */
@@ -462,6 +544,14 @@ export interface TenantScope {
   appendAudit(event: NewAuditEvent, now: Date): Promise<void>;
   /** 按时间倒序；before 是上一页最后一条的 ID。 */
   listAudit(options: { limit: number; before?: string }): Promise<AuditEvent[]>;
+  /** 租户的套餐；没设过时是 DEFAULT_PLAN。 */
+  plan(): Promise<Plan>;
+  /** 设置套餐；当期计数行已有时一并改它的限额，以后的周期按新套餐。 */
+  setPlan(plan: Plan, now: Date): Promise<void>;
+  /** 一个周期的计数；这个周期还没有计数行时，限额取当前套餐。 */
+  usage(period: string): Promise<UsageCounts>;
+  /** 一个周期的用量事件，按 ID 倒序；before 是上一页最后一条的 ID。 */
+  listUsageEvents(options: { readonly period: string; readonly kind?: UsageKind; readonly before?: string; readonly limit: number }): Promise<UsageEvent[]>;
   readonly storage: TenantStorage;
   readonly tasks: TenantTasks;
 }
@@ -483,4 +573,10 @@ export interface ServiceBackend {
   tenant(tenantId: string): TenantScope;
   readonly queue: TaskQueue;
   readonly workers: WorkerRegistry;
+  /**
+   * 对账（跨租户，ADR-0020）：退回崩溃后遗留的预占。批次已结束还有预占的，全部退回；没结束的，接受它的构建在 onlineSince 之后
+   * 没有 worker 报到、批次在 idleBefore 之后也没有动静（建批次、领取、写回），视为没人再交付，退回剩余预占。
+   * 这样的批次以后若又有那个构建的 worker 交付，成功的项照样计已用。
+   */
+  reconcileReservations(options: { readonly onlineSince: Date; readonly idleBefore: Date }): Promise<readonly ReleasedReservation[]>;
 }

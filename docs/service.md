@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了七部分：
+目前完成了八部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -25,8 +25,9 @@
 - **出图记录**（[票据 08](../.scratch/render-service-v1/issues/08-records-export-replay.md)，M272、M273）：
   - 按时间、模板与批次查询，下载单个文件与整批图片，按项或按批次导出，导出包能离线核对与重放；
   - 重放按记录里的构建标识交给那个构建的 worker，没有那个构建的 worker 时拒绝；镜像按构建保留。
-
-计量与额度由后续票据加入。
+- **计量与额度**（[票据 09](../.scratch/render-service-v1/issues/09-metering-and-quotas.md)，M274、M275）：
+  - 平台管理员设置套餐（每月出图张数、单张最大像素、并发数）；提交批次先预占，额度不够整批拒绝，逐项结算，对账退回崩溃后遗留的预占；
+  - 推送可以附带代建轮次，各轮的 token 记为用量事件；客户管理员与平台管理员看已用、预占、剩余与明细。
 
 ## 本机启动
 
@@ -76,6 +77,8 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `RW_RENDER_TIMEOUT_MS` | worker | 单项超时，缺省 30000（M266） |
 | `RW_RENDER_RECYCLE_AFTER` | worker | 渲染子进程做满这么多项后换新，缺省 500 |
 | `RW_WORKER_POLL_MS` | worker | 队列空时隔多久再看，缺省 100 |
+| `RW_RECONCILE_MS` | 接口进程 | 对账任务隔多久做一次，缺省 60000（M275） |
+| `RW_RESERVATION_GRACE_MS` | 接口进程 | 批次闲置多久、又没有它的构建的 worker 时退回预占，缺省 600000（10 分钟） |
 | `RW_WORKER_MEMORY` | Compose | worker 容器的内存上限，缺省 `2g`，不用交换分区 |
 | `RW_WORKER_STOP_GRACE` | Compose | worker 的停止宽限，缺省 `30m`：停止时做完本构建已接受的批次项再退出（M269） |
 
@@ -88,7 +91,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 命令 | 作用 |
 |---|---|
 | `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
-| `api` | 等迁移与代码一致，再启动接口进程 |
+| `api` | 等迁移与代码一致，再启动接口进程；启动时与之后定期对账，退回崩溃后遗留的预占（见[计量与额度](#计量与额度)） |
 | `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程；收到停止信号时排空（见[渲染 worker](#渲染-worker)） |
 | `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
@@ -125,7 +128,8 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 |---|---|
 | `POST /v1/sessions` | 公开 |
 | `DELETE /v1/sessions/current`、`GET /v1/me` | 持有会话；任何身份 |
-| `GET`、`POST /v1/platform/tenants` | 平台管理员 |
+| `GET`、`POST /v1/platform/tenants` | 平台管理员；建租户时可以一并设套餐 |
+| `GET`、`PUT /v1/platform/tenants/{租户}/plan`，`GET …/{租户}/usage`、`GET …/{租户}/usage/events` | 平台管理员；见[计量与额度](#计量与额度) |
 | `GET`、`POST /v1/platform/tenants/{租户}/members`，`POST …/members/{成员}/password-reset` | 平台管理员 |
 | `GET`、`POST /v1/platform/authoring-tokens`，`DELETE …/{令牌}` | 平台管理员 |
 | `GET /v1/tenant` | 管理员、操作员、API 密钥 |
@@ -146,6 +150,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `POST /v1/resources/{资源}/replacement-checks`、`POST …/replacements` | 客户管理员；替换已有资源 |
 | `GET /v1/records`、`GET /v1/batches/{批次}/items/{序号}/files/{文件}`、`GET …/images.zip`、`GET …/export.zip`、`GET …/items/{序号}/export.zip`、`POST …/items/{序号}/replay` | 管理员、操作员、API 密钥；见[出图记录](#出图记录) |
 | `GET /v1/platform/builds` | 平台管理员；被记录引用的构建与在线的 worker |
+| `GET /v1/usage`、`GET /v1/usage/events` | 客户管理员；本租户的用量与明细 |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
@@ -158,7 +163,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`；替换检查遇到工作区本身有严重问题时是引擎的问题清单 |
 | 413 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
 | 415 | `request.invalid`：上传内容不是 `application/octet-stream`，或数据集不是 `application/json` |
-| 429 | `preview.rateLimited`、`replay.rateLimited` |
+| 429 | `quota.exceeded`：本月额度不够这一批，整批拒绝；`preview.rateLimited`、`replay.rateLimited` |
 | 500 | `record.integrityMismatch`：读出的文件与登记的 SHA-256 或字节数不符；其他是 `service.internalError` |
 | 503 | `worker.unavailable`：等不到 worker 渲染完；`replay.buildUnavailable`：记录所属的构建没有在线的 worker |
 
@@ -176,7 +181,7 @@ JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真�
    - **当前租户**：每个事务设置当前租户。漏写租户条件的查询只返回当前租户的行，没设置时什么也查不到。
    - **平台模式**：只对账号、会话、审计、租户与代建令牌有效，对文档、资源、批次与密钥无效。
    - **跨租户查找**：按邮箱登录、按令牌解析身份，由属主身份执行的两个函数完成。
-   - **权限**：应用账号不能改表结构；审计只能追加。
+   - **权限**：应用账号不能改表结构；审计与用量事件只能追加。
 
 **跨租户端点清单**在 `service/test/cross-tenant-endpoints.ts`。用例对清单里的每个端点，用另一租户的会话、API 密钥与代建令牌访问：
 
@@ -198,7 +203,7 @@ JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真�
 代建工程师照[代建指南](agent-guide.md)在本机做好数据定义、模板与资源后，用一条命令推送到客户的租户（ADR-0017、M264）：
 
 ```bash
-renderweave push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace <工作区> --resources <资源版本仓库> [--dry-run]
+renderweave push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace <工作区> --resources <资源版本仓库> [--rounds <轮次目录>] [--dry-run]
 ```
 
 - **令牌**：代建令牌只经环境变量传入，缺省 `RENDERWEAVE_AUTHORING_TOKEN`，可用 `--token-env` 换名；不写进参数、日志与输出。令牌只能推送到被指定的租户，别的租户与不存在的租户同样答 404。
@@ -206,7 +211,8 @@ renderweave push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace 
   - 工作区里的静态数据定义、编译产物、模板与样例数据集，按原始字节；其他 JSON（如渲染请求）不推送，列在输出的 `skipped` 里；
   - 资源版本仓库里的全部资源及其全部内容版本。
 - **推送前先检查本地**：工作区有严重问题（如模板重名、无法解析）时不推送；资源目录还不是版本仓库或是旧版目录时，问题说明与 `resources-list` 等命令一致（M239）。
-- **输出**：标准错误流逐条列出新增、更新与冲突，标准输出是 JSON 汇总（`summary`、逐项的 `documents` 与 `resources`）。退出码 0 已推送（`--dry-run` 时为没有冲突）；1 有冲突、本地有严重问题、连不上服务或请求被拒绝；2 用法错误或缺少令牌。
+- **代建的 token**（M275）：`--rounds` 给这一单的轮次目录（`agent run --out` 的目录，有 `round.json`），或它下面一层的各轮目录。各轮 `round.json` 里的输入、输出、缓存读、缓存写 token 随清单交给服务，与推送同一事务记为该租户的用量事件，只记不拦；同一轮（`round.json` 字节相同）只记一次。只看差异、有冲突被拒绝时不记。`round.json` 读不到或不是 `renderweave-round/1` 时本地就报问题，不推送。
+- **输出**：标准错误流逐条列出新增、更新与冲突，标准输出是 JSON 汇总（`summary`、逐项的 `documents` 与 `resources`；附了轮次时另有 `usage`：附了几轮、新记几轮与新记的 token 合计）。退出码 0 已推送（`--dry-run` 时为没有冲突）；1 有冲突、本地有严重问题、连不上服务或请求被拒绝；2 用法错误或缺少令牌。
 
 **差异与冲突**由服务按它的当前状态判定（M264）：
 
@@ -252,7 +258,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **同步**：接口进程入队后等 worker 渲染完再回答，最多等 60 秒；等不到答 503 `worker.unavailable`，还在排队的任务撤回。
 - **不入队就能答的**：请求无法展开（模板或数据集不存在、请求不合法等）时，接口进程直接答与单次渲染相同的问题清单，没有图片。
 - **worker 没能渲染完**：回答仍是 200，没有图片，问题清单写明原因：`worker.timeout`（超过单项时限）、`worker.memoryExceeded`（超出内存上限）、`worker.crashed`（子进程意外退出）或 `worker.failed`（读不到存储等）。
-- **不计额度**；按租户限制：同时排队与渲染中的预览最多 2 个，一分钟内最多入队 60 次（撤回的也算），超过答 429 `preview.rateLimited`。入队超过等待时长的任务不再占并发，worker 中途退出时不会一直卡住。
+- **不计额度**；按租户限制：同时排队与渲染中的预览数不超过套餐的并发数（缺省 2），一分钟内最多入队 60 次（撤回的也算），超过答 429 `preview.rateLimited`。入队超过等待时长的任务不再占并发，worker 中途退出时不会一直卡住。
 - **代建工程师**用 `POST /v1/authoring/tenants/{租户}/previews`，以被指定租户的身份预览，同一套检查与限制，记审计 `authoring.preview`。
 
 **入队前的限制**（ADR-0017）：接口进程用引擎的 `measureRender` 量出像素与展开规模，不出图；超限答 413，不占 worker。
@@ -261,7 +267,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 |---|---|---|
 | 请求体字节数（内联的数据集算在里面） | 1 MiB | `limit.requestTooLarge` |
 | 引用的已保存数据集的字节数 | 1 MiB | `limit.datasetTooLarge` |
-| 单张图的像素总数 | 1 亿（引擎上限）；套餐（票据 09）出来后取套餐值 | `limit.pixelsExceeded` |
+| 单张图的像素总数 | 套餐的单张最大像素（缺省 1 亿，不超过引擎上限） | `limit.pixelsExceeded` |
 | 展开后会显示的元素数 | 20,000 | `limit.expansionExceeded` |
 | 展开后的循环项数（嵌套逐层累计） | 2,000 | `limit.expansionExceeded` |
 
@@ -274,9 +280,10 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 **提交**：`POST /v1/batches` 的请求体与本地 `renderweave deliver` 的批量请求相同：根模板与 `items`（1–1,000 项，每项带唯一 `id`、数据集、对外参数与出图参数）。不写 `mode` 或写 `final`；写 `draft` 答 400，草稿走预览。
 
 - **整批拒绝**：接口进程按本地的语义固定批次（M153）。外层非法、根模板无法准备时整批拒绝，答 400 与本地交付相同的问题清单，不建批次。
+- **预占额度**（M274）：建批次时预占本批项数，额度不够整批拒绝，答 429 `quota.exceeded`，不建批次；见[计量与额度](#计量与额度)。
 - **入队**：固定好的批次快照存成本租户的内容，各项入队，立即答 202 与批次。
 - **单项的限制**：入队前逐项检查像素、展开规模与已保存数据集的字节数（数值同[预览](#模板与草稿预览)）。超限的项不渲染，直接失败，问题码与预览相同，位置写到 `request.items.{从 0 起的序号}`；其他项照常。请求体超过 8 MiB 整批答 413。
-- **幂等**：请求头 `Idempotency-Key`，1–200 个可见字符。同一租户内同一个键再提交同样的请求，答 200 与同一批次，不重复交付；请求不同答 409 `batch.idempotencyConflict`。
+- **幂等**：请求头 `Idempotency-Key`，1–200 个可见字符。同一租户内同一个键再提交同样的请求，答 200 与同一批次，不重复交付、不重复预占与计费，额度用完后也一样；请求不同答 409 `batch.idempotencyConflict`。
 
 **查询**：`GET /v1/batches/{批次}`。
 
@@ -307,7 +314,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 **交付与记录**（ADR-0019）：
 
-- **提交点**：渲染子进程按批次快照交付一项，先把文件按 SHA-256 写进对象存储，再在一个事务里登记这一项。"批次加项序号"唯一；登记之前，这一项对任何读者都不存在。
+- **提交点**：渲染子进程按批次快照交付一项，先把文件按 SHA-256 写进对象存储，再在一个事务里登记这一项，并在同一个事务里结算额度（ADR-0020）。"批次加项序号"唯一；登记之前，这一项对任何读者都不存在。
 - **去重**：同一租户内相同字节只存一份，跨批次也是；同样的批次再交一次，对象存储里不多一个对象。
 - **记录**：内容与本地 `deliver` 的相同，能用引擎的 `replayRecord` 重放；查询、下载、导出与重放见[出图记录](#出图记录)。
 
@@ -407,10 +414,64 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 - **按构建路由**：重放交给记录里的构建的 worker，引擎从记录本身重新渲染、与记录比对。重放成了 `matched` 为真；记录被改坏、或重新渲染与记录不一致时为假，问题清单写明原因（`record.integrityMismatch`、`record.replayMismatch`）。
 - **构建不在时拒绝**：worker 每 5 秒报到自己的构建，停止时离开，30 秒内报到过的算作在线。记录里的构建没有在线的 worker 时答 503 `replay.buildUnavailable`，说明写明缺哪个构建与它的镜像标签；起那个构建的 worker 见[构建标识与镜像](#构建标识与镜像)。
-- **限制**：不计额度；按租户限并发与频率，数值同预览、与预览各算各的，超过答 429 `replay.rateLimited`；等不到结果答 503 `worker.unavailable`。
+- **限制**：不计额度；按租户限并发（套餐的并发数）与频率，数值同预览、与预览各算各的，超过答 429 `replay.rateLimited`；等不到结果答 503 `worker.unavailable`。
 - 只有交付成功的项能重放，失败项与不存在的项答 404。
 
 查询、下载、导出与重放都是只读的，不记审计。
+
+## 计量与额度
+
+按月额度计量正式交付的张数与代建的 token（M242、ADR-0020、M274、M275）。
+
+**套餐**由平台管理员设置，不接在线支付：
+
+| 项 | 取值 | 作用 |
+|---|---|---|
+| `monthlyImages` | 0–10 亿 | 每月可正式交付的张数 |
+| `maxPixels` | 1–1 亿 | 单张最大像素，预览与批次项入队前检查（ADR-0017） |
+| `concurrency` | 1–64 | 预览与重放同时排队与渲染中的任务数，按种类各算各的；批次项不按租户限并发，按项序号轮转（M269） |
+
+- `POST /v1/platform/tenants` 可以带 `plan` 一并设；不设就是缺省套餐：每月 0 张、1 亿像素、并发 2，正式交付前要先设。
+- `PUT /v1/platform/tenants/{租户}/plan` 整份设置，三项都要写；当期计数的限额随之改变，以后的周期按新套餐。
+- 设置与读取都记进该租户的审计，标为跨租户（`plan.update`、`plan.read`、`usage.read`）。
+
+**计费周期**是按 UTC+8 切分的自然月，写作 `YYYY-MM`，不结转。
+
+**计什么**：
+
+| 用量 | 计入 | 说明 |
+|---|---|---|
+| 正式交付成功的一项 | 1 张 | 记一条用量事件（批次与项序号） |
+| 失败项、未执行的项 | 不计 | 退回预占 |
+| 草稿预览、记录重放 | 不计 | 只限并发与频率 |
+| 代建的 token | 只记不拦 | 推送时随附，按输入、输出、缓存读、缓存写各记一条（轮次的 `round.json` 哈希、任务与轮次） |
+
+**批量交付先预占，再逐项结算**：
+
+1. **提交**：在一个事务里锁住当期计数行，"已用 + 预占 + 本批项数"超过限额就整批拒绝，答 429 `quota.exceeded`，说明里写限额、已用、预占、剩余与本批项数，响应另带 `quota` 对象；不做"能交几项交几项"。够就预占本批项数，记在批次上。批次的周期按接受它的时间定，结算都记在这个周期，跨过月底才交付完的也是。
+2. **每项成功**：与登记这一项同一个事务，已用加 1、预占减 1，记一条用量事件。"批次加项序号"唯一，同一幂等键重试、worker 重领同一项都只计一次。
+3. **失败与未执行**：登记失败项时退回 1；没登记就结束的项（取消时还在排队的、被结束的）在写回或取消时退回。
+4. **批次结束**：与发布批次清单同一个事务，退回剩下的预占。退回的总数不超过预占的总数。
+
+**对账**：接口进程启动时与之后每 `RW_RECONCILE_MS` 对一次账（跨租户，属主函数 `rw_reconcile_reservations`）。
+
+- **何时退回**：批次已结束还有预占的，全部退回。没结束的，接受它的构建 30 秒内没有 worker 报到、批次在 `RW_RESERVATION_GRACE_MS` 内也没有动静（建批次、领取、写回），视为没人再交付，退回剩余预占，记一行日志（租户、批次与数目）。
+- **何时会遗留**：worker 被强杀、滚动发布时旧 worker 没排空就没了。worker 单独崩溃不会遗留，同构建的 worker 过了租约会重领。
+- **之后又交付**：那个构建的 worker 回来把批次交付完时，成功的项照样计已用；限额因此最多超出这一批的剩余项数。
+
+**查询**：剩余 = 限额 − 已用 − 预占，不小于 0。
+
+```json
+{ "period": "2026-10", "start": "2026-09-30T16:00:00.000Z", "end": "2026-10-31T16:00:00.000Z",
+  "plan": { "monthlyImages": 1000, "maxPixels": 100000000, "concurrency": 2 },
+  "images": { "limit": 1000, "used": 120, "reserved": 30, "remaining": 850 },
+  "tokens": { "inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0, "cacheCreationTokens": 0 } }
+```
+
+- `GET /v1/usage?period=YYYY-MM`：客户管理员看本租户的，缺省当前周期；`plan` 是当前套餐，`images.limit` 是那个周期的限额。
+- `GET /v1/usage/events?period&kind&limit&before`：用量事件，按 ID 倒序，`kind` 是 `image` 或四种 token 之一，`limit` 1–500，`before` 带上一页的 `next`。
+- 平台管理员用 `GET /v1/platform/tenants/{租户}/usage` 与 `…/usage/events` 看任一租户的，回答相同。
+- 用量事件只追加，应用账号不能改、不能删。
 
 ## 渲染 worker
 
@@ -419,7 +480,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **领取**：调度进程用 `rw_claim_task` 领一项（`SELECT … FOR UPDATE SKIP LOCKED`，跨租户，由属主身份执行），队列空时每 100 ms 再看。入队、查结果与写回结果都在租户的事务里，行级安全照常生效。
 - **顺序**（M269）：预览与重放优先；批次项按项序号轮转，各批次的第 1 项先于任何批次的第 2 项，小批次不被大批次堵住。
 - **构建固定**：批次记下接受它的构建标识，worker 只领本构建的批次项与重放（M273）；预览哪个构建都可以领。
-- **报到**：调度进程每 5 秒报到自己的构建（另用定时器，渲染一项期间照样报到），停止时离开；接口进程据此判断重放的记录所属的构建有没有在线的 worker。
+- **报到**：调度进程每 5 秒报到自己的构建（另用定时器，渲染一项期间照样报到，一次接一次），停止时等进行中的报到写完再离开，否则报到晚于离开落库，停下的 worker 会显得在线 30 秒；接口进程据此判断重放的记录所属的构建有没有在线的 worker，对账也据此判断批次还有没有人交付。
 - **渲染子进程**：调度进程 fork 它，经 IPC 一次交一项。子进程自己连数据库与对象存储读租户的工作区与资源，启动时先加载 CanvasKit，准备好才接任务；单项时限从交出任务起算。
 - **单项超时**：到时调度进程结束子进程，本项答 `worker.timeout`。
 - **内存超限**：内存上限是容器的限制（`mem_limit`，不用交换分区）。子进程启动时把自己的 `oom_score_adj` 调到最高，内存不够时内核先结束它；调度进程看本容器 cgroup 的 `memory.events` 里 `oom_kill` 增加了，本项答 `worker.memoryExceeded`。
@@ -480,6 +541,7 @@ RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compos
   - 出图记录用例（`service/test/records.test.ts`）用进程内 worker：查询与翻页；下载的文件与登记的相同；导出包解开后与引擎在本地 `deliver` 的批次目录逐字节相同，并用命令行的 `batch-read`、`record-read` 与 `replay` 离线通过；重放与构建不在时的拒绝。
   - 批量交付用例（`service/test/batch.test.ts`）用进程内 worker：批次清单与出图记录和引擎在本进程交付的逐字节相同，记录能重放；另测构建固定、排空、租约重领与过期的写回。
   - 数据集用例（`service/test/datasets.test.ts`）：读回的字节与保存的相同；校验的问题与引擎对同一份数据的 `checkDataset` 相同（引擎的 `test/dataset-check.test.ts` 再核对它与渲染时相同）；按 ID 预览与内联同一份数据的预览逐字节相同。
+  - 计量与额度用例（`service/test/metering.test.ts`）用进程内 worker：套餐的设置与校验；预占、整批拒绝与剩余额度；逐项结算与失败项退回；同一幂等键重试与 worker 重领只计一次；取消退回；草稿与重放不计；单张最大像素；UTC+8 的周期与不结转；对账；明细的筛选、翻页与可见范围。代建 token 的记账在推送用例里，从命令行附带轮次目录。
   - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
@@ -495,11 +557,12 @@ Docker 后端测试覆盖以下内容：
 - 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；
+- 崩溃后对账：在 tester 里用镜像里编译好的服务（另加一个标记文件，构建标识与 Compose 里的不同）起接口进程与 worker 进程，批次进行中把两个进程都强杀，只起接口进程：被强杀的 worker 30 秒后不再算在线，对账退回遗留的预占；再起 worker 交付完，每项只计一次；
 - 出图记录：测试进程的 worker 与 Compose 里的 worker 是两个构建，各自交付的记录各自重放成功，镜像构建的记录在测试进程里离线重放被拒；直接改写对象存储里的一个对象，下载、整批图片、两种导出都答 `record.integrityMismatch`，重放报同样的问题；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；
-  - 越权写入被拒，审计只能追加，应用账号不能改表结构；
+  - 越权写入被拒，审计与用量事件只能追加，应用账号不能改表结构；
 - 存储：
   - PostgreSQL 加 S3 实现跑同一组合同用例；
   - 对象键与去重、文档原文、事务提交点、并发提交与同一项只登记一次；

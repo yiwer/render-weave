@@ -84,6 +84,9 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/batches/:batchId/export.zip', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/export.zip` }) },
   { route: 'GET /v1/batches/:batchId/items/:index/export.zip', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}/items/1/export.zip` }) },
   { route: 'POST /v1/batches/:batchId/items/:index/replay', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/batches/${a.batchId}/items/1/replay` }) },
+  // 计量与额度（票据 09）：用量的租户由身份决定，回答里不能有另一租户的批次与 ID。
+  { route: 'GET /v1/usage', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/usage' }) },
+  { route: 'GET /v1/usage/events', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/usage/events' }) },
 ];
 
 /** 用 A 的数据集 ID 写一份数据集；另一租户没有它的数据定义，保存答 400。 */

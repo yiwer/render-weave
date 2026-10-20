@@ -1,7 +1,7 @@
 /**
  * 服务入口：node service/dist/main.js <命令>
  * - setup：部署步骤。用属主账号执行数据库迁移、设置应用账号的密码，再建好对象存储的桶（M262）；
- * - api：等迁移与代码一致后启动接口进程，用应用账号连库；
+ * - api：等迁移与代码一致后启动接口进程，用应用账号连库；定期对账，退回崩溃后遗留的预占（票据 09）；
  * - worker：等迁移与代码一致后启动渲染 worker 的调度进程：领取任务交给渲染子进程，超时结束子进程（ADR-0017）；
  *   收到 SIGTERM 时排空：不再领预览，做完本构建已接受的批次项再退出（票据 07）；
  * - platform-admin <邮箱>：建平台管理员账号，随机初始密码只在标准输出显示一次；
@@ -13,10 +13,11 @@ import { fileURLToPath } from 'node:url';
 import { CreateBucketCommand, type S3Client } from '@aws-sdk/client-s3';
 import { createApi } from './api/app.js';
 import { EmailTakenError } from './backend.js';
-import { ConfigError, loadConfig, loadSetupConfig, loadWorkerConfig } from './config.js';
+import { ConfigError, loadConfig, loadReconcileConfig, loadSetupConfig, loadWorkerConfig } from './config.js';
 import { generatePassword, hashPassword } from './credentials.js';
 import { rendererBuildId } from './engine.js';
 import { createLogger, type Logger } from './log.js';
+import { startReconciler } from './metering.js';
 import { createPostgresBackend } from './postgres/backend.js';
 import { createS3Client, s3Blobs } from './postgres/blobs.js';
 import { createDb } from './postgres/db.js';
@@ -79,10 +80,15 @@ async function main(): Promise<void> {
 
     let close: () => Promise<void>;
     if (command === 'api') {
+      const reconcile = loadReconcileConfig(process.env);
       const app = createApi({ backend, build, logger });
       await app.listen({ host: '0.0.0.0', port: config.port });
-      logger.info({ schemaVersion, port: config.port }, '接口进程就绪');
-      close = () => app.close();
+      const reconciler = startReconciler({ backend, logger, ...reconcile });
+      logger.info({ schemaVersion, port: config.port, ...reconcile }, '接口进程就绪');
+      close = async () => {
+        await reconciler.stop();
+        await app.close();
+      };
     } else {
       const worker = loadWorkerConfig(process.env);
       const runner = childRunner({ script: fileURLToPath(new URL('./worker/render-child.js', import.meta.url)), timeoutMs: worker.renderTimeoutMs, recycleAfter: worker.recycleAfter, logger });

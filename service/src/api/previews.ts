@@ -2,16 +2,16 @@
  * 模板与草稿预览的端点（票据 06，ADR-0017）。
  * - 模板列表与只读查看：名称、当前修订、所用的数据定义、适用尺寸范围与对外参数；
  * - 草稿预览：接口进程先在本进程里做入队前的检查（不出图），过了才入队，等 worker 渲染完同步返回。
- *   无法展开的请求不入队，直接答与单次渲染相同的问题清单；预览不计额度，按租户限制并发与频率。
+ *   无法展开的请求不入队，直接答与单次渲染相同的问题清单；预览不计额度，按租户限制并发（套餐的并发数）与频率。
  */
 import type { FastifyInstance } from 'fastify';
-import type { TaskResult, TenantScope } from '../backend.js';
+import type { Plan, TaskResult, TenantScope } from '../backend.js';
 import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem, type RenderMeasure } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
 import { ApiError, fail, notFound, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
 
-/** 入队前的限制与预览的并发、频率。数值是暂定的，容量基线（票据 15）实测后再定。 */
+/** 入队前的限制与预览的频率。数值是暂定的，容量基线（票据 15）实测后再定；并发数与单张最大像素另由套餐定（票据 09）。 */
 export interface ServiceLimits {
   /** 请求体的字节数，内联的数据集算在里面。 */
   readonly maxRequestBytes: number;
@@ -19,14 +19,12 @@ export interface ServiceLimits {
   readonly maxBatchRequestBytes: number;
   /** 引用的已保存数据集的字节数。 */
   readonly maxDatasetBytes: number;
-  /** 单张图的像素总数：套餐上限（票据 09 之前取缺省值），且不超过引擎上限。 */
+  /** 单张图的像素总数的服务上限（引擎上限）；实际取它与套餐值中小的那个。 */
   readonly maxPixels: number;
   /** 展开后会显示的元素数。 */
   readonly maxElements: number;
   /** 展开后的循环项数，嵌套循环逐层累计。 */
   readonly maxLoopItems: number;
-  /** 同一租户同时排队与渲染中的预览数。 */
-  readonly previewConcurrency: number;
   /** 同一租户一分钟内入队的预览数。 */
   readonly previewPerMinute: number;
   /** 接口进程等 worker 渲染完的时间；过了答 503，还在排队的撤回。 */
@@ -40,7 +38,6 @@ export const DEFAULT_LIMITS: ServiceLimits = {
   maxPixels: 100_000_000,
   maxElements: 20_000,
   maxLoopItems: 2_000,
-  previewConcurrency: 2,
   previewPerMinute: 60,
   previewWaitMs: 60_000,
 };
@@ -61,12 +58,15 @@ export async function datasetLimitProblems(limits: ServiceLimits, scope: TenantS
     ? [problem(ServiceProblemCodes.limitDatasetTooLarge, source, `数据集 ${datasetId} 有 ${stored.byteLength} 字节，超出上限 ${limits.maxDatasetBytes} 字节`)] : [];
 }
 
+/** 单张最大像素：套餐值，且不超过服务上限（ADR-0017、M242）。 */
+export const maxPixelsOf = (limits: ServiceLimits, plan: Plan) => Math.min(limits.maxPixels, plan.maxPixels);
+
 /** 量出的像素与展开规模超出上限时的问题（ADR-0017）；at 是这张图的请求在请求体里的位置。 */
-export function measureLimitProblems(limits: ServiceLimits, measure: RenderMeasure, at: string): { pixels: ServiceProblem[]; expansion: ServiceProblem[] } {
-  const { widthPx, heightPx, elements, loopItems } = measure;
+export function measureLimitProblems(limits: ServiceLimits, plan: Plan, measure: RenderMeasure, at: string): { pixels: ServiceProblem[]; expansion: ServiceProblem[] } {
+  const { widthPx, heightPx, elements, loopItems } = measure, maxPixels = maxPixelsOf(limits, plan);
   return {
-    pixels: widthPx * heightPx > limits.maxPixels
-      ? [problem(ServiceProblemCodes.limitPixelsExceeded, `${at}.output`, `出图像素为 ${widthPx} × ${heightPx} = ${widthPx * heightPx}，超出单张上限 ${limits.maxPixels}`)] : [],
+    pixels: widthPx * heightPx > maxPixels
+      ? [problem(ServiceProblemCodes.limitPixelsExceeded, `${at}.output`, `出图像素为 ${widthPx} × ${heightPx} = ${widthPx * heightPx}，超出单张上限 ${maxPixels}`)] : [],
     expansion: [
       ...(loopItems > limits.maxLoopItems ? [problem(ServiceProblemCodes.limitExpansionExceeded, at, `展开后的循环项数为 ${loopItems}，超出上限 ${limits.maxLoopItems}`)] : []),
       ...(elements > limits.maxElements ? [problem(ServiceProblemCodes.limitExpansionExceeded, at, `展开后的元素数为 ${elements}，超出上限 ${limits.maxElements}`)] : []),
@@ -89,14 +89,15 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
 
   const measured = measureRender(await loadTenantWorkspace(scope.storage), request);
   if (!measured.measure) return { problems: measured.problems };
-  const { pixels, expansion } = measureLimitProblems(limits, measured.measure, 'request');
+  const plan = await scope.plan();
+  const { pixels, expansion } = measureLimitProblems(limits, plan, measured.measure, 'request');
   if (pixels.length) throw new ApiError(413, pixels);
   if (expansion.length) throw new ApiError(413, expansion);
 
-  const queued = await scope.tasks.enqueuePreview(request, { concurrency: limits.previewConcurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
+  const queued = await scope.tasks.enqueuePreview(request, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
   if ('limited' in queued) {
     throw fail(429, ServiceProblemCodes.previewRateLimited, 'request', queued.limited === 'concurrency'
-      ? `本租户同时进行的预览已达并发上限 ${limits.previewConcurrency} 个，请等前面的完成`
+      ? `本租户同时进行的预览已达并发上限 ${plan.concurrency} 个，请等前面的完成`
       : `本租户一分钟内的预览已达每分钟上限 ${limits.previewPerMinute} 次，请稍后再试`);
   }
   const deadline = Date.now() + limits.previewWaitMs;

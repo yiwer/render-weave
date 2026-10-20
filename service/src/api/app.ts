@@ -16,6 +16,7 @@ import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './pre
 import { registerRecordRoutes } from './records.js';
 import { registerResourceRoutes } from './resources.js';
 import { registerRoutes } from './routes.js';
+import { registerUsageRoutes } from './usage.js';
 
 declare module 'fastify' {
   interface FastifyContextConfig { access?: Access }
@@ -29,7 +30,7 @@ export interface ApiOptions {
   /** 当前时间；测试用它控制会话与令牌的过期。 */
   readonly now?: () => Date;
   readonly passwordCost?: PasswordCost;
-  /** 入队前的限制与预览的并发、频率（ADR-0017）；缺省值见 DEFAULT_LIMITS。 */
+  /** 入队前的限制与预览、重放的频率（ADR-0017）；缺省值见 DEFAULT_LIMITS。并发数与单张最大像素另由套餐定。 */
   readonly limits?: Partial<ServiceLimits>;
 }
 
@@ -106,6 +107,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerDatasetRoutes(app, context);
   registerResourceRoutes(app, context);
   registerRecordRoutes(app, context);
+  registerUsageRoutes(app, context);
   return Object.assign(app, { routeTable });
 }
 

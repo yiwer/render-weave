@@ -1,6 +1,6 @@
 /**
  * 服务的问题：格式与引擎的问题一致（问题码、等级、位置、说明），错误响应一律是 { problems: [...] }。
- * HTTP 状态按类别映射：请求不合法 400、未鉴权 401、无权限 403、不存在 404、冲突 409（阶段 4 PRD「开放 API」）。
+ * HTTP 状态按类别映射：请求不合法 400、未鉴权 401、无权限 403、不存在 404、冲突 409、额度不足或限频 429（阶段 4 PRD「开放 API」）。
  */
 import type { Problem } from '../engine.js';
 
@@ -39,6 +39,8 @@ export const ServiceProblemCodes = {
   replayBuildUnavailable: 'replay.buildUnavailable',
   /** 按租户的重放并发与频率（429）。 */
   replayRateLimited: 'replay.rateLimited',
+  /** 计量与额度（票据 09，ADR-0020）：本月额度不够这一批，整批拒绝（429）。 */
+  quotaExceeded: 'quota.exceeded',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

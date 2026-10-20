@@ -263,6 +263,11 @@ export function describeRecords(name: string, makeBackend: () => Promise<Service
         expect(await workersOf()).toEqual({ build: other, image: `renderweave-service:sha256-${'0'.repeat(64)}`, records: 0, workers: 1 });
       } finally { await visiting.stop(); }
       expect(await workersOf()).toBeUndefined();
+      // 刚起就停：第一次报到还没写完就停下，也要等它写完再离开，否则停下的 worker 还会显得在线 30 秒。
+      for (let i = 0; i < 5; i++) {
+        await startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 50, workerId: `brief-${i}-${Math.random()}`, build: other, leaseMs: 60_000 }).stop();
+      }
+      expect(await workersOf()).toBeUndefined();
     });
 
     if (options.realWorker) {

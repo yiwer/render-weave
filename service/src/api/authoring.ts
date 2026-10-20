@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { NewAuditEvent, TenantScope } from '../backend.js';
 import {
-  checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushWrites, registeredContents, sortedState, verifyContents, writtenContents,
+  checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
   type PushDiff, type PushManifest,
 } from '../push.js';
 import { actorOf, identityOf, type ApiContext } from './app.js';
@@ -81,13 +81,16 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       return { ...diff, uploads };
     });
 
-    /** 提交：在一个事务里按最新状态重算差异；有冲突整体拒绝（409），内容没上传或不符也拒绝（400），服务端保持原样。 */
+    /**
+     * 提交：在一个事务里按最新状态重算差异；有冲突整体拒绝（409），内容没上传或不符也拒绝（400），服务端保持原样。
+     * 随附的代建轮次在同一事务里记为用量事件（票据 09）：usage 写明附了几轮、这次新记了几轮与新记的 token 合计。
+     */
     scope.post('/v1/authoring/tenants/:tenantId/pushes', { config: { access: 'authoring.push' }, bodyLimit: MAX_MANIFEST_BYTES, schema: { body: MANIFEST_SCHEMA } }, async (request) => {
       const manifest = validManifest(request.body);
       const storage = target(request).storage, pushId = randomUUID();
       let diff: PushDiff | undefined;
       try {
-        const { revisions } = await storage.push(async (state) => {
+        const { revisions, recordedRounds } = await storage.push(async (state) => {
           diff = diffPush(manifest, state);
           if (diff.summary.conflicts) throw new ApiError(409, conflictProblems(diff), { diff });
           const writes = pushWrites(manifest, diff);
@@ -97,7 +100,8 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
         }, { pushedBy: actorOf(identityOf(request)).label, now: now() });
         const result = { ...diff!, documents: diff!.documents.map((item) => (revisions.has(item.key) && item.kind === 'template' ? { ...item, revision: revisions.get(item.key)! } : item)) };
         await audit(request, 'push.commit', { type: 'push', id: pushId });
-        return { pushId, ...result };
+        const usage = { rounds: manifest.rounds?.length ?? 0, recorded: recordedRounds.length, tokens: roundTokens(manifest, recordedRounds) };
+        return { pushId, ...result, usage };
       } catch (error) {
         if (error instanceof ApiError) await audit(request, 'push.reject', { type: 'push', id: pushId });
         throw error;

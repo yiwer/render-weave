@@ -7,7 +7,7 @@ import { Writable } from 'node:stream';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createApi, type ApiOptions } from '../src/api/app.js';
 import { ROLE_PERMISSIONS, type IdentityRole } from '../src/api/permissions.js';
-import type { ServiceBackend } from '../src/backend.js';
+import { ENGINE_MAX_PIXELS, type Plan, type ServiceBackend } from '../src/backend.js';
 import { generatePassword, hashPassword } from '../src/credentials.js';
 import { createLogger } from '../src/log.js';
 import { CROSS_TENANT_ENDPOINTS, EXEMPT_ACCESS, type TenantObjects } from './cross-tenant-endpoints.js';
@@ -37,8 +37,11 @@ const replacementCheck = (id: string) => ({
   impact: { workspaceFingerprint: SAMPLE_SHA256, renderOptions: { fallbackFonts: [], svgFonts: [] }, references: [], configuration: [], scope: '' },
 });
 
+/** 环境里两个租户的缺省套餐：额度宽裕，不妨碍别的用例；额度的用例另设。 */
+export const WORLD_PLAN: Plan = { monthlyImages: 100_000, maxPixels: ENGINE_MAX_PIXELS, concurrency: 2 };
+
 /** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。代建推送的用例也用它。 */
-export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions> } = {}) {
+export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions>; readonly plan?: Plan } = {}) {
   const clock = { value: new Date() };
   const logs: string[] = [], secrets: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { logs.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
@@ -71,7 +74,7 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
     return { id: created.body.member.id, email: address, password: created.body.initialPassword, token: await login(address, created.body.initialPassword) };
   };
   const tenant = async (name: string): Promise<TenantFixture> => {
-    const created = await call('POST', '/v1/platform/tenants', platform, { name });
+    const created = await call('POST', '/v1/platform/tenants', platform, { name, plan: options.plan ?? WORLD_PLAN });
     expect(created.status).toBe(201);
     const id = created.body.id, admin = await member(id, 'admin'), operator = await member(id, 'operator');
     const key = await call('POST', '/v1/api-keys', admin.token, { name: `${name} 的密钥` });
@@ -168,6 +171,15 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/batches/:batchId/items/:index/replay', allow: ['admin', 'operator', 'apiKey'],
     request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/items/1/replay` }) },
   { route: 'GET /v1/platform/builds', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: '/v1/platform/builds' }) },
+  // 计量与额度（票据 09）：客户管理员看本租户的用量；平台管理员设套餐、看任一租户的用量，租户 ID 用随机值。
+  { route: 'GET /v1/usage', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage' }) },
+  { route: 'GET /v1/usage/events', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage/events' }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/plan` }) },
+  { route: 'PUT /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'],
+    request: () => ({ method: 'PUT', url: `/v1/platform/tenants/${randomUUID()}/plan`, body: { monthlyImages: 1, maxPixels: 1, concurrency: 1 } }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/usage', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage` }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/usage/events', allow: ['platformAdmin'],
+    request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage/events` }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {
@@ -379,8 +391,8 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       const { call, platform } = world;
       const empty = await call('POST', '/v1/sessions', undefined, {});
       expect(empty).toMatchObject({ status: 400, body: { problems: [{ level: 'severe', code: 'request.invalid', location: { kind: 'input', source: 'request.body' } }] } });
-      const extra = await call('POST', '/v1/platform/tenants', platform, { name: 'x', plan: 'gold' });
-      expect(extra.body.problems[0]).toMatchObject({ code: 'request.invalid', message: expect.stringContaining('plan') });
+      const extra = await call('POST', '/v1/platform/tenants', platform, { name: 'x', tier: 'gold' });
+      expect(extra.body.problems[0]).toMatchObject({ code: 'request.invalid', message: expect.stringContaining('tier') });
       expect(await call('GET', '/v1/nothing', platform)).toMatchObject({ status: 404, body: { problems: [{ code: 'request.notFound' }] } });
     });
 

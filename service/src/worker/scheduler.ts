@@ -110,10 +110,13 @@ export const WORKER_STALE_MS = 30_000;
 export function startScheduler(options: SchedulerOptions): Scheduler {
   const { backend, runner, logger, pollMs, workerId, build, leaseMs, cancelPollMs = 200, heartbeatMs = 5_000 } = options;
   let stopped = false, draining = false;
-  // 报到不放在领取的循环里：渲染一项要好一阵子，期间也要算在线。
-  const heartbeat = () => backend.workers.heartbeat(workerId, build, new Date()).catch((error) => logger.warn({ err: error }, '报到失败'));
-  void heartbeat();
-  const beating = setInterval(() => void heartbeat(), heartbeatMs);
+  // 报到不放在领取的循环里：渲染一项要好一阵子，期间也要算在线。报到一次接一次，停下时等最后一次写完再离开。
+  let beat: Promise<void> = Promise.resolve();
+  const heartbeat = () => {
+    beat = beat.then(() => backend.workers.heartbeat(workerId, build, new Date())).catch((error) => logger.warn({ err: error }, '报到失败'));
+  };
+  heartbeat();
+  const beating = setInterval(heartbeat, heartbeatMs);
   let wake: (() => void) | undefined;
   const sleep = () => new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, pollMs);
@@ -190,9 +193,13 @@ export function startScheduler(options: SchedulerOptions): Scheduler {
       } catch (error) { logger.error({ err: error, taskId: task.id }, '写回任务结果失败'); }
     }
   })();
-  /** 停下之前先离开：不再算在线，接口进程不再把重放交给它。 */
+  /**
+   * 停下之前先离开：不再算在线，接口进程不再把重放交给它，对账也不再等它。
+   * 先等进行中的报到写完：报到晚于离开落库时，停下的 worker 会显得在线 30 秒。
+   */
   const finish = async () => {
     clearInterval(beating);
+    await beat;
     await backend.workers.leave(workerId).catch((error) => logger.warn({ err: error }, '离开失败'));
     wake?.();
     await loop;

@@ -163,11 +163,12 @@ export function registerRecordRoutes(app: FastifyInstance, context: ApiContext):
       throw fail(503, ServiceProblemCodes.replayBuildUnavailable, 'request.path', `这条记录由构建 ${build} 产出，现在没有这个构建的 worker。`
         + `记录只由确切构建重放：用保留的镜像 renderweave-service:${build.replace(':', '-')} 起一个 worker 后再重放`);
     }
+    const { concurrency } = await scope.plan();
     const queued = await scope.tasks.enqueueReplay({ batchId: state.batchId, index, build },
-      { concurrency: limits.previewConcurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
+      { concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
     if ('limited' in queued) {
       throw fail(429, ServiceProblemCodes.replayRateLimited, 'request', queued.limited === 'concurrency'
-        ? `本租户同时进行的重放已达并发上限 ${limits.previewConcurrency} 个，请等前面的完成`
+        ? `本租户同时进行的重放已达并发上限 ${concurrency} 个，请等前面的完成`
         : `本租户一分钟内的重放已达每分钟上限 ${limits.previewPerMinute} 次，请稍后再试`);
     }
     const deadline = Date.now() + limits.previewWaitMs;
