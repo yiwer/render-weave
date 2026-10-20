@@ -29,6 +29,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
     },
     documents: workspaceDocuments(db, blobs, tenantId),
     resources: resourceStore(db, blobs, tenantId),
+    guardedResources: (guard) => resourceStore(db, blobs, tenantId, guard),
     async createBatch() {
       const { batch_id: batchId } = await withTenant(db, tenantId, async (client) =>
         (await client.query<{ batch_id: string }>('INSERT INTO batches (tenant_id) VALUES ($1) RETURNING batch_id', [tenantId])).rows[0]!);
@@ -69,6 +70,18 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       }
       return { state: await authoringState(client, tenantId), revisions };
     }),
+    async saveDataset(id, bytes, mode) {
+      const sha256 = await blobs.put(tenantId, bytes), source = documentSource('dataset', id);
+      return withTenant(db, tenantId, async (client) => {
+        await lockTenant(client, tenantId);
+        const exists = (await client.query('SELECT 1 FROM workspace_documents WHERE tenant_id = $1 AND source = $2', [tenantId, source])).rowCount === 1;
+        if (exists !== (mode === 'update')) return undefined;
+        await client.query(`INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)
+          ON CONFLICT (tenant_id, source) DO UPDATE SET sha256 = EXCLUDED.sha256, byte_length = EXCLUDED.byte_length, created_at = now()`,
+        [tenantId, source, sha256, bytes.length]);
+        return { kind: 'dataset' as const, key: id, sha256, byteLength: bytes.length };
+      });
+    },
     setCurrentTemplate: (name, revision) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [found] = (await client.query<{ sha256: string; byte_length: string }>(
@@ -81,7 +94,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
   };
 }
 
-/** 锁住租户的一行：资源提交、推送与改模板的当前修订依次进行（M260、M264）。 */
+/** 锁住租户的一行：资源提交、推送、改模板的当前修订与保存数据集依次进行（M260、M264、M270）。 */
 async function lockTenant(client: DbClient, tenantId: string): Promise<void> {
   await client.query('INSERT INTO resource_stores (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING', [tenantId]);
   await client.query('SELECT tenant_id FROM resource_stores WHERE tenant_id = $1 FOR UPDATE', [tenantId]);
@@ -96,11 +109,7 @@ async function pointTemplate(client: DbClient, tenantId: string, name: string, c
 
 /** 推送看到的当前状态：来源是"种类:键"的文档、模板修订与资源。 */
 async function authoringState(client: DbClient, tenantId: string): Promise<AuthoringState> {
-  const documents = (await client.query<{ source: string; sha256: string; byte_length: string }>(
-    'SELECT source, sha256, byte_length FROM workspace_documents WHERE tenant_id = $1', [tenantId])).rows.flatMap((row): StoredDocument[] => {
-    const parsed = parseDocumentSource(row.source);
-    return parsed ? [{ ...parsed, sha256: row.sha256, byteLength: Number(row.byte_length) }] : [];
-  });
+  const documents = await storedDocuments(client, tenantId);
   const revisions = new Map<string, TemplateRevision[]>();
   for (const row of (await client.query<{ name: string; revision: number; sha256: string; byte_length: string; pushed_by: string; created_at: Date }>(
     'SELECT name, revision, sha256, byte_length, pushed_by, created_at FROM template_revisions WHERE tenant_id = $1 ORDER BY revision', [tenantId])).rows) {
@@ -116,6 +125,15 @@ async function authoringState(client: DbClient, tenantId: string): Promise<Autho
     versions: entry.versions.map(({ version, sha256, byteLength }) => ({ version, sha256, byteLength })),
   }));
   return { documents, templates, resources };
+}
+
+/** 工作区文档的登记：来源是"种类:键"的文档。 */
+async function storedDocuments(client: DbClient, tenantId: string): Promise<StoredDocument[]> {
+  return (await client.query<{ source: string; sha256: string; byte_length: string }>(
+    'SELECT source, sha256, byte_length FROM workspace_documents WHERE tenant_id = $1', [tenantId])).rows.flatMap((row): StoredDocument[] => {
+    const parsed = parseDocumentSource(row.source);
+    return parsed ? [{ ...parsed, sha256: row.sha256, byteLength: Number(row.byte_length) }] : [];
+  });
 }
 
 /** 工作区文档：引擎不核对文档字节，这里按登记的哈希核对。 */
@@ -153,8 +171,11 @@ async function resourceEntries(client: DbClient, tenantId: string): Promise<Reso
   return [...entries.values()];
 }
 
-/** 版本化资源仓库（M260）：提交点是事务；同一租户的提交锁住 resource_stores 的一行依次进行，新清单只追加。 */
-function resourceStore(db: Db, blobs: BlobStore, tenantId: string): ResourceVersionBackend {
+/**
+ * 版本化资源仓库（M260）：提交点是事务；同一租户的提交锁住 resource_stores 的一行依次进行，新清单只追加。
+ * guard 在加锁之后、同一个事务里核对工作区文档的登记（替换资源，M152），不另占连接。
+ */
+function resourceStore(db: Db, blobs: BlobStore, tenantId: string, guard?: (documents: readonly StoredDocument[]) => void | Promise<void>): ResourceVersionBackend {
   return resourceBackend({
     location: `tenants/${tenantId}/resources`,
     async snapshot() {
@@ -166,6 +187,7 @@ function resourceStore(db: Db, blobs: BlobStore, tenantId: string): ResourceVers
     },
     commit: (apply) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
+      if (guard) await guard(await storedDocuments(client, tenantId));
       const before = await resourceEntries(client, tenantId);
       await persistAppended(client, tenantId, before, await apply(before));
     }),

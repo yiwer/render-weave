@@ -176,6 +176,8 @@
 | 图片引用的资源不存在，或引用的是字体 | `dataset.resourceNotFound`、`dataset.resourceKindMismatch` |
 | 数据中的数值超过 15 位有效数字 | `dataset.tooManyDigits` |
 
+数据集一侧的问题也能单独检查一份数据集：公开入口 `checkDataset(字节, 工作区)` 与渲染入口共用同一段检查，问题相同；它另按原文报告超过 15 位有效数字的数值（`dataset.tooManyDigits`）。出图服务保存数据集与只校验的接口用它（M270）。
+
 ## 已知限制
 
 DSL 1.0 照实记录以下能力边界；改变它们需要新的决定，按 ADR-0016 处理兼容。

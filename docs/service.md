@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了五部分：
+目前完成了六部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -19,8 +19,11 @@
 - **批量正式交付**（[票据 07](../.scratch/render-service-v1/issues/07-batch-delivery.md)，M268、M269）：
   - 接口进程固定批次、按项入队，worker 逐项交付出图记录，全部项结束后发布批次清单；
   - 查询逐项进度与结果、取消、幂等键；批次只由接受它的构建交付，worker 停止前做完已接受的项。
+- **数据集与资源接口**（[票据 10](../.scratch/render-service-v1/issues/10-datasets-and-resources-api.md)，M270、M271）：
+  - 数据集的新建、读取、修改、复制、列出与只校验，按原始字节存，校验与渲染时对数据集的检查相同；
+  - 图片与字体资源的上传、列出、读回，替换先检查影响、再凭报告按预期版本应用。
 
-出图记录的查询与导出、数据集与资源接口、计量与额度由后续票据加入。
+出图记录的查询与导出、计量与额度由后续票据加入。
 
 ## 本机启动
 
@@ -134,22 +137,26 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
 | `POST /v1/batches`、`POST /v1/batches/{批次}/cancel` | 管理员、操作员、API 密钥；见[批量交付](#批量交付) |
 | `GET /v1/batches/{批次}` | 管理员、操作员、API 密钥 |
+| `GET /v1/datasets`、`GET /v1/datasets/{数据集}`、`GET /v1/resources`、`GET /v1/resources/{资源}`、`GET …/{资源}/versions/{版本}/content` | 管理员、操作员、API 密钥；见[数据集与资源](#数据集与资源) |
+| `POST /v1/datasets`、`PUT /v1/datasets/{数据集}`、`POST …/{数据集}/copies`、`POST /v1/dataset-checks` | 管理员、操作员、API 密钥 |
+| `POST /v1/resources` | 管理员、操作员、API 密钥；上传新资源 |
+| `POST /v1/resources/{资源}/replacement-checks`、`POST …/replacements` | 客户管理员；替换已有资源 |
 
 **错误**一律是 `{ "problems": [...] }`，格式与引擎的问题一致：
 
 | 状态 | 问题码 |
 |---|---|
-| 400 | `request.invalid`（位置写到出错的字段）、`push.contentMissing`、`push.contentMismatch`；批量交付整批拒绝时是引擎的问题清单（如 `input.templateNotFound`） |
+| 400 | `request.invalid`（位置写到出错的字段）、`push.contentMissing`、`push.contentMismatch`、`resource.replacementInvalid`；批量交付整批拒绝、数据集校验不过时是引擎的问题清单（如 `input.templateNotFound`、`dataset.requiredMissing`） |
 | 401 | `auth.required`、`auth.invalidCredentials` |
 | 403 | `auth.forbidden` |
 | 404 | `request.notFound` |
-| 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict` |
+| 409 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`；替换检查遇到工作区本身有严重问题时是引擎的问题清单 |
 | 413 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
-| 415 | `request.invalid`：上传内容不是 `application/octet-stream` |
+| 415 | `request.invalid`：上传内容不是 `application/octet-stream`，或数据集不是 `application/json` |
 | 429 | `preview.rateLimited` |
 | 503 | `worker.unavailable`：等不到 worker 渲染完 |
 
-JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真，一律答 400 `request.invalid`，与命令行一致（M112）。
+JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真，答 400 `request.invalid`，与命令行一致（M112）。写数据集的端点例外：请求体原文交给引擎，按原文报 `dataset.tooManyDigits`。
 
 客户端点的租户由身份决定，路径里没有租户 ID。
 
@@ -300,6 +307,60 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 **审计**：`batch.create`、`batch.cancel`。
 
+## 数据集与资源
+
+**数据集**（M270）：
+
+| 端点 | 说明 |
+|---|---|
+| `GET /v1/datasets` | 按 ID 排列：ID、名称、所选的静态数据定义、SHA-256 与字节数 |
+| `GET /v1/datasets/{数据集}` | 读回保存时的原始字节（`application/json`） |
+| `POST /v1/datasets` | 新建；请求体就是数据集文档，要写 `dataset.id`；已有答 409 `input.duplicate` |
+| `PUT /v1/datasets/{数据集}` | 整份替换；正文的 `dataset.id` 要与路径一致，不存在答 404 |
+| `POST /v1/datasets/{数据集}/copies` | 复制：`{ "id": "新 ID", "name": "可选的新名称" }`，答 201 |
+| `POST /v1/dataset-checks` | 只校验、不保存，供表单实时提示；不要求 `dataset.id`；答 200 与 `{ "problems": [...] }` |
+
+- **按原始字节存**：写数据集的请求体不经 JSON 解析就交给引擎，存的就是原文，读回逐字节相同。超过 15 位有效数字的数值按原文报 `dataset.tooManyDigits`（M112）。
+- **保存时校验**：引擎的 `checkDataset` 按所选静态数据定义的编译产物与本租户的资源校验，与渲染时对同一数据集的检查是同一段代码，字段问题定位到字段路径（如 `stops[4].landmark`）。有严重问题答 400 与问题清单，什么也不存；只有提示时照常保存，回答里带上提示。保存成功的回答是 `{ "dataset": { id, name, staticSchema, sha256, byteLength }, "problems": [...] }`。
+- **ID**：经接口保存的数据集 ID 有 1–200 个字符，不能有控制字符，首尾不能是空白；推送进来的数据集沿用本地的 ID。路径里的中文 ID 按 URL 编码写。
+- **复制**：副本只改身份部分的 ID 与名称，重新写成缩进 2 格的 JSON；先按原件校验，原件有严重问题时不复制。
+- **上限**：请求体不超过已保存数据集的字节上限（缺省 1 MiB，与预览的 `limit.datasetTooLarge` 同一个值），超过答 413 `limit.requestTooLarge`。
+- **与推送的关系**：保存数据集与推送、资源提交锁住同一行，依次进行。客户改过的数据集，代建工程师再推送本地的旧内容时是冲突，整体拒绝（M264）。
+- **没做**：删除（v1.0 不删）；并发修改的版本条件，后写的覆盖先写的。
+- **审计**：`dataset.create`、`dataset.update`、`dataset.copy`，只记数据集 ID，不记内容。
+
+**资源**（M271）：
+
+| 端点 | 说明 |
+|---|---|
+| `GET /v1/resources`、`GET /v1/resources/{资源}` | 资源 ID、种类、当前版本与全部内容版本（版本号、SHA-256、字节数） |
+| `GET /v1/resources/{资源}/versions/{版本}/content` | 读回一个内容版本的原始字节，经引擎按登记的哈希核对；一律 `application/octet-stream` 加 `nosniff` |
+| `POST /v1/resources?kind=image\|font&id=资源ID` | 上传新资源，请求体是 `application/octet-stream`，最大 64 MiB；不写 `id` 时由服务生成（如 `image-1a2b3c4d5e6f`）。答 201 与 v1 的元信息 |
+| `POST /v1/resources/{资源}/replacement-checks` | 替换检查（客户管理员），请求体是候选内容 |
+| `POST /v1/resources/{资源}/replacements` | 应用替换（客户管理员），请求体是 `{ "check": 检查报告 }` |
+
+- **新资源**：资源 ID 的写法与资源引用 `res:资源ID` 相同。同一 ID 已有答 409 `input.duplicate`，换种类也一样，ID 与种类创建后不变。字体不做授权确认（M241）。内容按原始字节存，能不能用于绘制由渲染器在预览里报告，与本地资源仓库相同。上传的图片随即可以写进数据集的图片字段，保存时核对资源存在、是图片。
+- **替换检查**（M152）：只读，不改资源。候选内容先存成本租户还没登记的内容，返回检查报告：
+
+```json
+{ "check": {
+    "resource": { "id": "landmark-2", "kind": "image", "version": 1, "sha256": "…", "byteLength": 5120 },
+    "replacement": { "sha256": "…", "byteLength": 1266 },
+    "impact": { "workspaceFingerprint": "…", "renderOptions": { "fallbackFonts": ["font-hei-regular", "…"], "svgFonts": ["…"] },
+      "references": [{ "kind": "datasetImage", "document": "ds-m402-wanguocheng", "source": "dataset:ds-m402-wanguocheng", "path": "/data/stops/3/landmark" }],
+      "configuration": [], "scope": "…" } },
+  "problems": [] }
+```
+
+  - 影响由引擎的 `resourceImpact` 算，与本地 `resources-check` 对同一工作区的结果相同：模板（当前修订）与数据集里的直接引用（JSON Pointer，含隐藏元素与所有状态分支），以及字体配置。服务用引擎的缺省后备字体，替换其中的字体时列在 `configuration` 里。
+  - 工作区本身有严重问题、或数据集缺少编译产物时检查不了，答 409 与问题清单。
+- **应用替换**：
+  - 按报告里的资源版本、哈希与字节数提交，得到下一个内容版本，旧版本的内容保留；
+  - 工作区指纹（全部文档的来源、哈希与字节数，加字体配置）在资源提交的同一个事务、同一把锁里核对。检查之后资源已有新版本、或模板与数据集变了，答 409 `resource.replacementStale`，资源不变；
+  - 报告不属于路径里的资源、种类不符、候选内容不在服务端，答 400 `resource.replacementInvalid`；
+  - 同一份报告只能用一次，同时应用两次也只有一次成功。
+- **审计**：`resource.upload`、`resource.replace`，只记资源 ID；检查是只读的，不记。
+
 ## 渲染 worker
 
 一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
@@ -332,12 +393,12 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 依据 ADR-0018、ADR-0019：
 
 - **对象**：内容按 SHA-256 存在租户前缀下，键是 `tenants/<租户>/blobs/sha256/<哈希>`。同一租户内相同字节只存一份，跨批次也是；不同租户各存一份。
-- **提交**：先写对象，再在一个数据库事务里登记。没登记的对象不会被读到；v1.0 不回收它们。
+- **提交**：先写对象，再在一个数据库事务里登记。没登记的对象不会被读到；v1.0 不回收它们（包括替换检查存下、最后没应用的候选内容）。
 - **工作区文档**：按原始字节存，数据库只记来源、哈希与字节数。读出时按登记的哈希核对。
-  - 推送进来的文档，来源写成"种类:键"：`definition:名称@版本`、`compiled:名称@版本`、`template:模板名`、`dataset:数据集ID`。渲染问题里的位置就是它。
+  - 推送进来的文档与经接口保存的数据集，来源写成"种类:键"：`definition:名称@版本`、`compiled:名称@版本`、`template:模板名`、`dataset:数据集ID`。渲染问题里的位置就是它。
   - 模板的修订另记一张表，只追加；另一张表按模板名记当前修订，工作区里模板那一行跟着指向当前修订的内容（M265）。
 - **资源仓库**：语义与 `renderweave-resources/1` 相同，由引擎的 `resourceBackend` 统一负责（M260）。
-  - 同一租户的提交锁住一行依次进行，清单只追加；
+  - 同一租户的资源提交、推送、改模板的当前修订与保存数据集锁住同一行依次进行，清单只追加；
   - 读取时引擎核对字节数与哈希。
 - **出图记录**：
   - 一项的全部文件与完成清单在一个事务里登记，"批次加项序号"唯一，同一项不会登记两次；
@@ -359,6 +420,8 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 代建推送用例（`service/test/push.test.ts`）从 `src/cli.ts` 跑命令行，推送到本机端口上的内存后端，再经开放 API 读回核对。
   - 模板与草稿预览用例（`service/test/preview.test.ts`）用进程内 worker；预览的图片与本机直接渲染的逐字节相同。
   - 批量交付用例（`service/test/batch.test.ts`）用进程内 worker：批次清单与出图记录和引擎在本进程交付的逐字节相同，记录能重放；另测构建固定、排空、租约重领与过期的写回。
+  - 数据集用例（`service/test/datasets.test.ts`）：读回的字节与保存的相同；校验的问题与引擎对同一份数据的 `checkDataset` 相同（引擎的 `test/dataset-check.test.ts` 再核对它与渲染时相同）；按 ID 预览与内联同一份数据的预览逐字节相同。
+  - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
 - **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
@@ -369,7 +432,7 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API、代建推送、模板与草稿预览、批量交付的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；
+- 同一组开放 API、代建推送、模板与草稿预览、批量交付、数据集与资源的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；替换的提交与工作区指纹的核对在同一个事务里；
 - 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；

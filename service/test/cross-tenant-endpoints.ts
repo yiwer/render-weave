@@ -14,6 +14,8 @@ export interface TenantObjects {
   readonly apiKeyId: string;
   readonly templateName: string;
   readonly batchId: string;
+  readonly datasetId: string;
+  readonly resourceId: string;
 }
 
 export interface CrossTenantEndpoint {
@@ -56,7 +58,35 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'POST /v1/batches', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/batches', body: batch(a.templateName) }) },
   { route: 'GET /v1/batches/:batchId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}` }) },
   { route: 'POST /v1/batches/:batchId/cancel', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/batches/${a.batchId}/cancel` }) },
+  // 数据集与资源（票据 10）：租户由身份决定；数据集 ID 与资源 ID 在路径里，别的租户的与不存在的同样答 404。
+  { route: 'GET /v1/datasets', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/datasets' }) },
+  { route: 'POST /v1/datasets', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/datasets', body: dataset(a.datasetId) }) },
+  { route: 'POST /v1/dataset-checks', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/dataset-checks', body: dataset(a.datasetId) }) },
+  { route: 'GET /v1/datasets/:datasetId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/datasets/${encodeURIComponent(a.datasetId)}` }) },
+  { route: 'PUT /v1/datasets/:datasetId', addressesObject: true,
+    request: (a) => ({ method: 'PUT', url: `/v1/datasets/${encodeURIComponent(a.datasetId)}`, body: dataset(a.datasetId) }) },
+  { route: 'POST /v1/datasets/:datasetId/copies', addressesObject: true,
+    request: (a) => ({ method: 'POST', url: `/v1/datasets/${encodeURIComponent(a.datasetId)}/copies`, body: { id: 'ds-cross-tenant-copy' } }) },
+  { route: 'GET /v1/resources', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/resources' }) },
+  // 上传新资源不指定 ID：用 A 的资源 ID 会在另一租户建一个同名资源，之后按 ID 访问就不再是"不存在"。
+  { route: 'POST /v1/resources', addressesObject: false, request: () => ({ method: 'POST', url: '/v1/resources?kind=image', body: SAMPLE }) },
+  { route: 'GET /v1/resources/:resourceId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/resources/${a.resourceId}` }) },
+  { route: 'GET /v1/resources/:resourceId/versions/:version/content', addressesObject: true,
+    request: (a) => ({ method: 'GET', url: `/v1/resources/${a.resourceId}/versions/1/content` }) },
+  { route: 'POST /v1/resources/:resourceId/replacement-checks', addressesObject: true,
+    request: (a) => ({ method: 'POST', url: `/v1/resources/${a.resourceId}/replacement-checks`, body: SAMPLE }) },
+  { route: 'POST /v1/resources/:resourceId/replacements', addressesObject: true,
+    request: (a) => ({ method: 'POST', url: `/v1/resources/${a.resourceId}/replacements`, body: { check: replacementCheck(a.resourceId) } }) },
 ];
+
+/** 用 A 的数据集 ID 写一份数据集；另一租户没有它的数据定义，保存答 400。 */
+const dataset = (id: string) => ({ dataset: { id, staticSchema: { name: '问候', version: 1 } }, data: { message: '跨租户检查' } });
+/** 结构完整的替换检查报告：资源不在本租户时答 404。 */
+const replacementCheck = (id: string) => ({
+  resource: { id, kind: 'image', version: 1, sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  replacement: { sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  impact: { workspaceFingerprint: SAMPLE_SHA256, renderOptions: { fallbackFonts: [], svgFonts: [] }, references: [], configuration: [], scope: '' },
+});
 
 /** 用 A 的模板名预览；另一租户没有这个模板，入队前就答问题清单。 */
 const preview = (template: string) => ({ template, dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } });

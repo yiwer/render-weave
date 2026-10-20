@@ -15,7 +15,7 @@ import { seedGreeting } from './seed.js';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 /** body 是解析后的 JSON（响应是 JSON 时），raw 是响应文本，bytes 是原始字节。 */
-interface Reply { status: number; body: any; raw: string; bytes: Buffer }
+interface Reply { status: number; body: any; raw: string; bytes: Buffer; headers: Record<string, unknown> }
 interface Person { id: string; email: string; password: string; token: string }
 interface TenantFixture { id: string; admin: Person; operator: Person; key: { id: string; token: string }; engineer: { id: string; token: string } }
 
@@ -28,6 +28,14 @@ const BLOCKED_PREVIEW = { template: '没有这个模板', dataset: { id: 'ds-gre
 /** 根模板不存在的批次：整批拒绝，不建批次。 */
 const BLOCKED_BATCH = { template: '没有这个模板', items: [{ id: '1', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } }] };
 const ids = (value: unknown) => JSON.stringify(value);
+/** 权限矩阵用的数据集：数据定义不在租户里，保存答 400，校验答问题清单。 */
+const MATRIX_DATASET = { dataset: { id: 'ds-matrix', staticSchema: { name: '矩阵', version: 1 } }, data: {} };
+/** 结构完整的替换检查报告：资源不在租户里，应用答 404。 */
+const replacementCheck = (id: string) => ({
+  resource: { id, kind: 'image', version: 1, sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  replacement: { sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  impact: { workspaceFingerprint: SAMPLE_SHA256, renderOptions: { fallbackFonts: [], svgFonts: [] }, references: [], configuration: [], scope: '' },
+});
 
 /** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。代建推送的用例也用它。 */
 export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions> } = {}) {
@@ -41,7 +49,7 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
     const headers = { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(binary ? { 'content-type': 'application/octet-stream' } : {}), ...extra };
     const response = await app.inject({ method, url, headers, ...(body === undefined ? {} : { payload: binary ? Buffer.from(body) : body as object }) });
     const json = String(response.headers['content-type'] ?? '').startsWith('application/json');
-    return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload };
+    return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload, headers: response.headers };
   };
   const login = async (address: string, password: string) => {
     const reply = await call('POST', '/v1/sessions', undefined, { email: address, password });
@@ -132,6 +140,23 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/batches', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/batches', body: BLOCKED_BATCH }) },
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
   { route: 'POST /v1/batches/:batchId/cancel', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/cancel` }) },
+  // 数据集与资源（票据 10）：对象 ID 用随机值；数据集的请求体按 JSON 原文发送。
+  { route: 'GET /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/datasets' }) },
+  { route: 'GET /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/datasets/ds-${randomUUID()}` }) },
+  { route: 'POST /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/datasets', body: MATRIX_DATASET }) },
+  { route: 'PUT /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'PUT', url: '/v1/datasets/ds-matrix', body: MATRIX_DATASET }) },
+  { route: 'POST /v1/datasets/:datasetId/copies', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'POST', url: `/v1/datasets/ds-${randomUUID()}/copies`, body: { id: 'ds-matrix-copy' } }) },
+  { route: 'POST /v1/dataset-checks', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/dataset-checks', body: MATRIX_DATASET }) },
+  { route: 'GET /v1/resources', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/resources' }) },
+  { route: 'GET /v1/resources/:resourceId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/resources/r${randomUUID()}` }) },
+  { route: 'GET /v1/resources/:resourceId/versions/:version/content', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/resources/r${randomUUID()}/versions/1/content` }) },
+  { route: 'POST /v1/resources', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: `/v1/resources?kind=image&id=r${randomUUID()}`, body: SAMPLE }) },
+  { route: 'POST /v1/resources/:resourceId/replacement-checks', allow: ['admin'],
+    request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacement-checks`, body: SAMPLE }) },
+  { route: 'POST /v1/resources/:resourceId/replacements', allow: ['admin'],
+    request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacements`, body: { check: replacementCheck(`r${randomUUID()}`) } }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {
@@ -286,8 +311,11 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       // A 的一个批次：没有 worker 时停在排队中，照样能查、能取消。
       const batch = await call('POST', '/v1/batches', a.key.token, { ...BLOCKED_BATCH, template: '问候牌' });
       expect(batch.status, batch.raw.slice(0, 300)).toBe(202);
-      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id };
-      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, batchId: randomUUID() };
+      // A 的一个资源（数据集用推送进来的 ds-greeting）。
+      expect((await call('POST', '/v1/resources?kind=image&id=a-logo', a.operator.token, SAMPLE)).status).toBe(201);
+      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo' };
+      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, batchId: randomUUID(),
+        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}` };
       const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {
         for (const [who, token] of [['B 的管理员', b.admin.token], ['B 的操作员', b.operator.token], ['B 的密钥', b.key.token], ['B 的代建令牌', b.engineer.token]] as const) {
@@ -303,9 +331,11 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
           }
         }
       }
-      // A 的对象没有被另一租户改动：A 的密钥仍然有效，A 的操作员仍是操作员。
+      // A 的对象没有被另一租户改动：A 的密钥仍然有效，A 的操作员仍是操作员，A 的数据集与资源照旧。
       expect((await call('GET', '/v1/tenant', a.key.token)).status).toBe(200);
       expect((await call('GET', '/v1/me', a.operator.token)).body.role).toBe('operator');
+      expect((await call('GET', '/v1/datasets/ds-greeting', a.operator.token)).body.data).toEqual({ message: '欢迎乘坐 M402 路' });
+      expect((await call('GET', '/v1/resources/a-logo', a.operator.token)).body.currentVersion).toBe(1);
     });
 
     it('审计：写操作与跨租户操作追加写入，不记密钥；客户管理员只能看本租户；可以分页', async () => {

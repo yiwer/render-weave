@@ -54,7 +54,9 @@ export {
   type ResourceManifestEntry, type ResourceManifestStorage,
   type VersionedResourceStore, type VersionedResourceInfo, type ResourceVersionMap, type PinnedResources,
 } from './versioned-resources.js';
-export type { ResourceImpact, ResourceConfigurationImpact, ResourceWorkspaceImpact } from './resource-impact.js';
+export { resourceImpact, type ResourceImpact, type ResourceConfigurationImpact, type ResourceWorkspaceImpact } from './resource-impact.js';
+/** 校验一份数据集的原始字节，问题与渲染时对数据集的检查相同（出图服务保存数据集与表单实时提示）。 */
+export { checkDataset, type DatasetCheck } from './dataset-validation.js';
 export { ProblemCodes, type Problem, type ProblemCode, type ProblemLevel, type ProblemLocation } from './problems.js';
 export { formatElementPath, type ElementPath, type ElementPathSegment } from './element-path.js';
 export type { LayoutSummary, LayoutNode, TextSummary, QrCodeSummary, BarcodeSummary } from './layout/index.js';

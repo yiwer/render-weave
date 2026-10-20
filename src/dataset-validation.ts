@@ -6,9 +6,11 @@
 import { Ajv2020, type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
 import { ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
 import { parseResourceRef, type ResourceRepository } from './resources.js';
+import { findStaticSchema } from './schema/builtins.js';
 import { TIME_PATTERN, isValidDate, isValidDatetime, significantDigits } from './schema/formats.js';
 import { MAX_SIGNIFICANT_DIGITS } from './schema/model.js';
-import { isRecord } from './util.js';
+import { describeError, isRecord } from './util.js';
+import { formatStaticSchemaRef, parseDatasetDocument, parseJsonKeepingPrecision, type DatasetDocument, type Workspace } from './workspace.js';
 
 function createAjv(): Ajv2020 {
   const ajv = new Ajv2020({ allErrors: true, verbose: true, strict: true });
@@ -30,6 +32,48 @@ export class CompiledSchemaError extends Error {}
 
 export function validateDataset(compiled: Record<string, unknown>, data: unknown, resources: ResourceRepository): Problem[] {
   return [...validateAgainstSchema(compiled, data), ...checkTypes(compiled, data, '', resources)];
+}
+
+/**
+ * 按数据集选定的静态数据定义校验数据：找不到可用的编译产物、或编译产物无法使用时，问题在 dataset.staticSchema，且无法展开。
+ * 渲染入口与 checkDataset 共用这一处，两边对同一数据集给出相同的问题。
+ */
+export function checkDatasetData(workspace: Pick<Workspace, 'staticSchemas' | 'resources'>, dataset: DatasetDocument): { problems: Problem[]; blocked: boolean } {
+  const where = { kind: 'input', source: 'dataset.staticSchema' } as const;
+  const entry = findStaticSchema(workspace, dataset.dataset.staticSchema);
+  if (!entry?.compiled) {
+    return { blocked: true, problems: [severe(entry ? ProblemCodes.compiledSchemaMissing : ProblemCodes.staticSchemaNotFound,
+      where, `数据集选定的静态数据定义“${formatStaticSchemaRef(dataset.dataset.staticSchema)}”没有可用的编译产物`)] };
+  }
+  try { return { blocked: false, problems: validateDataset(entry.compiled, dataset.data, workspace.resources) }; }
+  catch (error) {
+    if (!(error instanceof CompiledSchemaError)) throw error;
+    return { blocked: true, problems: [severe(ProblemCodes.inputUnreadable, where, `编译产物无法使用：${error.message}`)] };
+  }
+}
+
+export interface DatasetCheck {
+  /** 解析出的数据集；不是合法的 JSON、或不是数据集文档时省略。 */
+  readonly dataset?: DatasetDocument;
+  readonly problems: readonly Problem[];
+}
+
+/**
+ * 校验一份数据集的原始字节（票据 10）：JSON 与数值精度（M112）、身份部分、所选静态数据定义的编译产物与资源引用。
+ * 问题与工作区读取加渲染时对数据集的检查相同：整份文档的问题在 dataset，字段问题定位到字段路径（M107）。
+ * 出图服务保存数据集与表单实时提示都用它。
+ */
+export function checkDataset(bytes: Uint8Array, workspace: Pick<Workspace, 'staticSchemas' | 'resources'>): DatasetCheck {
+  const where = { kind: 'input', source: 'dataset' } as const;
+  const tooPrecise: string[] = [];
+  let document: unknown;
+  try { document = parseJsonKeepingPrecision(Buffer.from(bytes).toString('utf8'), tooPrecise); }
+  catch (error) { return { problems: [severe(ProblemCodes.inputUnreadable, where, `数据集不是合法的 JSON：${describeError(error)}`)] }; }
+  const dataset = parseDatasetDocument(document);
+  if (typeof dataset === 'string') return { problems: [severe(ProblemCodes.datasetInvalid, where, dataset)] };
+  const problems = tooPrecise.map((literal) =>
+    severe(ProblemCodes.datasetTooManyDigits, where, `数据集中的数值 ${literal} 超过 ${MAX_SIGNIFICANT_DIGITS} 位有效数字，按双精度读取会失真（M112）`));
+  return { dataset, problems: [...problems, ...checkDatasetData(workspace, dataset).problems] };
 }
 
 function validateAgainstSchema(compiled: Record<string, unknown>, data: unknown): Problem[] {

@@ -11,7 +11,7 @@ import { parseTemplate } from './template/parse.js';
 import type { TemplateModel } from './template/model.js';
 import { DEFAULT_FALLBACK_FONTS } from './text/fonts.js';
 import { describeError, isRecord } from './util.js';
-import { loadWorkspaceDocuments } from './workspace.js';
+import { loadWorkspaceDocuments, type Workspace } from './workspace.js';
 
 export interface ResourceImpact {
   readonly kind: ResourceReferenceKind;
@@ -61,38 +61,49 @@ export async function inspectResourceWorkspace(dir: string, id: string, options:
     const root = await realpath(dir);
     const renderOptions = normalizeOptions(options);
     const before = await resourceWorkspaceFingerprint(root, renderOptions);
-    const documents = await loadWorkspaceDocuments(root);
-    const problems = [...documents.problems];
-    const models = new Map<string, TemplateModel>();
-    for (const template of documents.templates) {
-      const parsed = parseTemplate(template.name, template.document);
-      problems.push(...parsed.problems);
-      if (parsed.model) models.set(template.name, parsed.model);
-    }
-    if (problems.some((issue) => issue.level === 'severe')) return { problems };
-    const references: ResourceImpact[] = [];
-    const ref = `res:${id}`;
-    for (const template of documents.templates) {
-      for (const { value, kind, path } of templateResourceReferences(template.name, template.document as Record<string, unknown>, (name) => models.get(name))) {
-        if (value === ref) references.push({ kind, document: template.name, source: template.source!, path });
-      }
-    }
-    for (const dataset of documents.datasets) {
-      const compiled = findStaticSchema(documents, dataset.document.dataset.staticSchema)?.compiled;
-      if (!compiled) throw new Error(`数据集 ${dataset.id} 缺少编译产物，无法完整检查图片字段`);
-      for (const { value, kind, path } of datasetResourceReferences(compiled, dataset.document.data)) {
-        if (value === ref) references.push({ kind, document: dataset.id, source: dataset.source!, path });
-      }
-    }
-    const configuration: ResourceConfigurationImpact[] = [];
-    for (const kind of ['fallbackFonts', 'svgFonts'] as const) renderOptions[kind].forEach((candidate, i) => {
-      if (candidate === id) configuration.push({ kind, path: `/${kind}/${i}` });
-    });
+    const { impact, problems } = resourceImpact(await loadWorkspaceDocuments(root), id, renderOptions);
+    if (!impact) return { problems };
     const after = await resourceWorkspaceFingerprint(root, renderOptions);
     if (before !== after) return { problems: [severe(ProblemCodes.resourceReplacementStale, { kind: 'input', source: root }, '检查期间工作区已变化，请重新检查')] };
-    return { problems, impact: { workspaceDirectory: root, workspaceFingerprint: before, renderOptions, references, configuration,
+    return { problems, impact: { workspaceDirectory: root, workspaceFingerprint: before, ...impact,
       scope: '仅覆盖指定工作区的直接引用及所提供的字体配置；包含隐藏元素与所有状态分支，不覆盖其他工作区或调用时临时参数。' } };
   } catch (error) {
     return { problems: [severe(ProblemCodes.inputUnreadable, { kind: 'input', source: dir }, `资源影响检查失败：${describeError(error)}`)] };
   }
+}
+
+/**
+ * 替换资源的影响（M152）：一份已读出的工作区里直接引用该资源的模板与数据集位置（JSON Pointer），以及字体配置里的位置。
+ * 不读文件，本地检查与出图服务共用；工作区本身有严重问题时只有问题。字体配置不合规、或数据集缺少编译产物时抛错。
+ */
+export function resourceImpact(documents: Omit<Workspace, 'resources'>, id: string, options: RenderOptions = {}):
+  { impact?: Pick<ResourceWorkspaceImpact, 'renderOptions' | 'references' | 'configuration'>; problems: Problem[] } {
+  const renderOptions = normalizeOptions(options);
+  const problems = [...documents.problems];
+  const models = new Map<string, TemplateModel>();
+  for (const template of documents.templates) {
+    const parsed = parseTemplate(template.name, template.document);
+    problems.push(...parsed.problems);
+    if (parsed.model) models.set(template.name, parsed.model);
+  }
+  if (problems.some((issue) => issue.level === 'severe')) return { problems };
+  const references: ResourceImpact[] = [];
+  const ref = `res:${id}`;
+  for (const template of documents.templates) {
+    for (const { value, kind, path } of templateResourceReferences(template.name, template.document as Record<string, unknown>, (name) => models.get(name))) {
+      if (value === ref) references.push({ kind, document: template.name, source: template.source!, path });
+    }
+  }
+  for (const dataset of documents.datasets) {
+    const compiled = findStaticSchema(documents, dataset.document.dataset.staticSchema)?.compiled;
+    if (!compiled) throw new Error(`数据集 ${dataset.id} 缺少编译产物，无法完整检查图片字段`);
+    for (const { value, kind, path } of datasetResourceReferences(compiled, dataset.document.data)) {
+      if (value === ref) references.push({ kind, document: dataset.id, source: dataset.source!, path });
+    }
+  }
+  const configuration: ResourceConfigurationImpact[] = [];
+  for (const kind of ['fallbackFonts', 'svgFonts'] as const) renderOptions[kind].forEach((candidate, i) => {
+    if (candidate === id) configuration.push({ kind, path: `/${kind}/${i}` });
+  });
+  return { problems, impact: { renderOptions, references, configuration } };
 }

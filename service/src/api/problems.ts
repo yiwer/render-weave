@@ -2,6 +2,8 @@
  * 服务的问题：格式与引擎的问题一致（问题码、等级、位置、说明），错误响应一律是 { problems: [...] }。
  * HTTP 状态按类别映射：请求不合法 400、未鉴权 401、无权限 403、不存在 404、冲突 409（阶段 4 PRD「开放 API」）。
  */
+import type { Problem } from '../engine.js';
+
 export const ServiceProblemCodes = {
   requestInvalid: 'request.invalid',
   notFound: 'request.notFound',
@@ -27,6 +29,12 @@ export const ServiceProblemCodes = {
   workerUnavailable: 'worker.unavailable',
   /** 批量交付（票据 07）：同一个幂等键配了不同的请求（409）。 */
   batchIdempotencyConflict: 'batch.idempotencyConflict',
+  /** 数据集与资源（票据 10）：与引擎相同的问题码。新建的 ID 已有（409）。 */
+  inputDuplicate: 'input.duplicate',
+  /** 替换检查报告与路径里的资源不符、替换内容不在服务端（400）。 */
+  resourceReplacementInvalid: 'resource.replacementInvalid',
+  /** 检查之后资源已有新版本，或工作区已变化（409，M152）。 */
+  resourceReplacementStale: 'resource.replacementStale',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];
@@ -38,9 +46,9 @@ export interface ServiceProblem {
   readonly message: string;
 }
 
-/** 错误响应：{ problems }，可以另带说明情况的字段（如推送冲突时的差异）。 */
+/** 错误响应：{ problems }，服务的问题或引擎的问题，可以另带说明情况的字段（如推送冲突时的差异）。 */
 export class ApiError extends Error {
-  constructor(readonly status: number, readonly problems: readonly ServiceProblem[], readonly extra: Readonly<Record<string, unknown>> = {}) {
+  constructor(readonly status: number, readonly problems: readonly (ServiceProblem | Problem)[], readonly extra: Readonly<Record<string, unknown>> = {}) {
     super(problems.map((p) => p.message).join('；'));
   }
 }

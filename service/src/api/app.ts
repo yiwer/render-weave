@@ -11,7 +11,9 @@ import { can, type Access } from './permissions.js';
 import { ApiError, fail, problem, ServiceProblemCodes, validationProblems } from './problems.js';
 import { registerAuthoringRoutes } from './authoring.js';
 import { registerBatchRoutes } from './batches.js';
+import { registerDatasetRoutes } from './datasets.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
+import { registerResourceRoutes } from './resources.js';
 import { registerRoutes } from './routes.js';
 
 declare module 'fastify' {
@@ -100,6 +102,8 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerAuthoringRoutes(app, context);
   registerPreviewRoutes(app, context);
   registerBatchRoutes(app, context);
+  registerDatasetRoutes(app, context);
+  registerResourceRoutes(app, context);
   return Object.assign(app, { routeTable });
 }
 

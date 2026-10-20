@@ -208,6 +208,16 @@ export interface TenantStorage {
     Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number> }>;
   /** 把模板的当前修订指向它已有的一个修订；模板或修订不存在时 undefined。 */
   setCurrentTemplate(name: string, revision: number): Promise<StoredTemplate | undefined>;
+  /**
+   * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
+   * 与推送、资源提交依次进行。
+   */
+  saveDataset(id: string, bytes: Uint8Array, mode: 'create' | 'update'): Promise<StoredDocument | undefined>;
+  /**
+   * 资源仓库，每次提交前在同一个事务、同一把锁里先把工作区文档的登记交给 guard 核对（替换资源，M152）；guard 抛错即整批不提交。
+   * 推送、数据集保存与资源提交依次进行，所以核对之后、提交之前工作区不会变。
+   */
+  guardedResources(guard: (documents: readonly StoredDocument[]) => void | Promise<void>): ResourceVersionBackend;
 }
 
 export interface TenantBatch {

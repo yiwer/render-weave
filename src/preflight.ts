@@ -1,5 +1,5 @@
 /** 按各自输入独立执行静态检查与数据检查，汇总后才决定是否能展开（M102）。 */
-import { CompiledSchemaError, validateDataset } from './dataset-validation.js';
+import { checkDatasetData } from './dataset-validation.js';
 import { ProblemCodes, severe, type Problem } from './problems.js';
 import type { RenderRequest } from './request.js';
 import { findStaticSchema } from './schema/builtins.js';
@@ -14,23 +14,13 @@ export function preflight(workspace: Workspace, request: RenderRequest, problems
   const dataset = resolveDataset(workspace, request, problems);
   let blocked = !template || !dataset;
 
-  const datasetSchema = dataset && findStaticSchema(workspace, dataset.dataset.staticSchema);
   const side = template && checkTemplateSide(workspace, template, problems, dataset?.dataset.staticSchema);
   if (side?.blocked) blocked = true;
   const checked = side?.checked;
   if (dataset) {
-    if (!datasetSchema?.compiled) {
-      problems.push(severe(datasetSchema ? ProblemCodes.compiledSchemaMissing : ProblemCodes.staticSchemaNotFound,
-        { kind: 'input', source: 'dataset.staticSchema' }, `数据集选定的静态数据定义“${formatStaticSchemaRef(dataset.dataset.staticSchema)}”没有可用的编译产物`));
-      blocked = true;
-    } else {
-      try { problems.push(...validateDataset(datasetSchema.compiled, dataset.data, workspace.resources)); }
-      catch (error) {
-        if (!(error instanceof CompiledSchemaError)) throw error;
-        problems.push(severe(ProblemCodes.inputUnreadable, { kind: 'input', source: 'dataset.staticSchema' }, `编译产物无法使用：${error.message}`));
-        blocked = true;
-      }
-    }
+    const data = checkDatasetData(workspace, dataset);
+    problems.push(...data.problems);
+    if (data.blocked) blocked = true;
   }
   if (template && dataset && !sameStaticSchema(template.base, dataset.dataset.staticSchema)) {
     problems.push(severe(ProblemCodes.datasetStaticSchemaMismatch, { kind: 'input', source: 'dataset.staticSchema' },

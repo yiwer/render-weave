@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   documentSource, EmailTakenError, parseDocumentSource,
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type LoginRecord, type Member,
-  type MemberRole, type NewAuditEvent, type PlatformUser, type ServiceBackend, type StoredTemplate, type TaskResult, type TemplateRevision, type Tenant,
+  type MemberRole, type NewAuditEvent, type PlatformUser, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult, type TemplateRevision, type Tenant,
   type TenantBatch, type TenantScope, type TenantStorage,
 } from './backend.js';
 import { batchManifest, NOT_STARTED, notRunItem } from './batches.js';
@@ -323,6 +323,16 @@ function memoryStorage(): MemoryStorage {
     if (!batch) throw new Error(`批次不存在：${batchId}`);
     return batch;
   };
+  /** 资源仓库；guard 在提交的同一段独占里先核对工作区文档。 */
+  const resourcesGuardedBy = (guard?: (documents: readonly StoredDocument[]) => void | Promise<void>) => resourceBackend({
+    location: 'memory',
+    snapshot: async () => ({ entries: structuredClone(resources), load: async (file) => read(file) }),
+    place: async (bytes) => put(bytes),
+    commit: (apply) => exclusive(async () => {
+      await guard?.(state().documents);
+      resources = structuredClone(await apply(structuredClone(resources)));
+    }),
+  });
   const registerBatch = (batchId: string) => {
     const batch = memoryBatch(batchId, put, read);
     batches.set(batchId, batch);
@@ -334,12 +344,8 @@ function memoryStorage(): MemoryStorage {
       location: 'memory',
       list: () => memoryWorkspaceDocuments([...documents].map(([source, { sha256 }]) => ({ source, bytes: read(sha256) }))).list(),
     },
-    resources: resourceBackend({
-      location: 'memory',
-      snapshot: async () => ({ entries: structuredClone(resources), load: async (file) => read(file) }),
-      place: async (bytes) => put(bytes),
-      commit: (apply) => exclusive(async () => { resources = structuredClone(await apply(structuredClone(resources))); }),
-    }),
+    resources: resourcesGuardedBy(),
+    guardedResources: resourcesGuardedBy,
     async createBatch() { return registerBatch(randomUUID()); },
     openBatch: open,
     registerBatch,
@@ -371,6 +377,13 @@ function memoryStorage(): MemoryStorage {
       }
       resources = [...entries.values()];
       return { state: state(), revisions };
+    }),
+    saveDataset: (id, bytes, mode) => exclusive(async () => {
+      const source = documentSource('dataset', id);
+      if (documents.has(source) !== (mode === 'update')) return undefined;
+      const stored = { sha256: put(bytes), byteLength: bytes.length };
+      documents.set(source, stored);
+      return { kind: 'dataset' as const, key: id, ...stored };
     }),
     setCurrentTemplate: (name, revision) => exclusive(async () => {
       const row = templates.get(name), found = row?.revisions.find((item) => item.revision === revision);

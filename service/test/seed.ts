@@ -29,6 +29,30 @@ export async function seedDocuments(storage: TenantStorage, documents: readonly 
   }), { pushedBy: '测试准备', now: new Date() });
 }
 
+export const M402_DIR = fileURLToPath(new URL('../../docs/examples/m402-dsl/', import.meta.url));
+export const RESOURCES_DIR = fileURLToPath(new URL('../../fixtures/resources/', import.meta.url));
+/** M402 样例工作区的文档：两个数据定义、两份编译产物、五个模板与一个数据集。 */
+export const M402_FILES = [
+  'schema-route-sign-v1.json', 'compiled-route-sign-v1.schema.json', 'schema-stop-v1.json', 'compiled-stop-v1.schema.json',
+  'template-route-sign.json', 'template-stop.json', 'template-stop-badge.json', 'template-road-segment.json', 'template-departure-time.json', 'dataset-m402.json',
+];
+/** M402 数据集与模板引用的图片，以及模板用的字体 font-hei-medium（也是引擎的后备字体之一）。 */
+export const M402_RESOURCES: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly file: string }[] = [
+  { id: 'route-no-m402', kind: 'image', file: 'images/m402/route-no-m402.png' },
+  ...[1, 2, 3, 4].map((n) => ({ id: `landmark-${n}`, kind: 'image' as const, file: `images/m402/landmark-${n}.png` })),
+  { id: 'icon-metro', kind: 'image', file: 'images/m402/icon-metro.png' },
+  { id: 'icon-hospital', kind: 'image', file: 'images/m402/icon-hospital.png' },
+  { id: 'font-hei-medium', kind: 'font', file: 'fonts/SourceHanSansCN-Medium.otf' },
+];
+
+/** M402 样例：十份文档与它引用的图片、字体，效果与代建推送相同。 */
+export async function seedM402(storage: TenantStorage): Promise<void> {
+  await seedDocuments(storage, await Promise.all(M402_FILES.map(async (file) => new Uint8Array(await readFile(`${M402_DIR}${file}`)))));
+  const committed = await storage.resources.commit(await Promise.all(M402_RESOURCES.map(async ({ id, kind, file }) =>
+    ({ type: 'create' as const, id, kind, bytes: new Uint8Array(await readFile(`${RESOURCES_DIR}${file}`)) }))));
+  if (committed.problems.length) throw new Error(JSON.stringify(committed.problems));
+}
+
 /** 问候牌样例：四份文档；withFont 时另放入它用的字体 font-hei-medium。 */
 export async function seedGreeting(storage: TenantStorage, options: { readonly withFont?: boolean } = {}): Promise<void> {
   await seedDocuments(storage, await Promise.all(GREETING_FILES.map(async (file) => new Uint8Array(await readFile(`${SINGLE_TEXT}${file}`)))));
