@@ -1,0 +1,6998 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RenderWeave 出图服务开放 API",
+    "version": "1.0.0",
+    "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "运维"
+    },
+    {
+      "name": "账号"
+    },
+    {
+      "name": "平台管理"
+    },
+    {
+      "name": "租户"
+    },
+    {
+      "name": "模板与预览"
+    },
+    {
+      "name": "批量交付"
+    },
+    {
+      "name": "数据集"
+    },
+    {
+      "name": "资源"
+    },
+    {
+      "name": "出图记录"
+    },
+    {
+      "name": "用量"
+    },
+    {
+      "name": "webhook"
+    },
+    {
+      "name": "代建"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealthz",
+        "tags": [
+          "运维"
+        ],
+        "summary": "存活检查",
+        "x-access": "public",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "service",
+                    "build"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "build": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "getReadyz",
+        "tags": [
+          "运维"
+        ],
+        "summary": "就绪检查：数据库、迁移与对象存储",
+        "x-access": "public",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "就绪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "service",
+                    "build",
+                    "ready",
+                    "checks"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ready"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "build": {
+                      "type": "string"
+                    },
+                    "ready": {
+                      "const": true
+                    },
+                    "schemaVersion": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "checks": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "未就绪：checks 写明哪一项",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "service",
+                    "build",
+                    "ready",
+                    "checks"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unready"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "build": {
+                      "type": "string"
+                    },
+                    "ready": {
+                      "const": false
+                    },
+                    "schemaVersion": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "checks": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api-keys": {
+      "get": {
+        "operationId": "getV1ApiKeys",
+        "tags": [
+          "租户"
+        ],
+        "summary": "本租户的 API 密钥",
+        "x-access": "apiKeys.manage",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "apiKeys"
+                  ],
+                  "properties": {
+                    "apiKeys": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ApiKey"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1ApiKeys",
+        "tags": [
+          "租户"
+        ],
+        "summary": "创建 API 密钥，密钥只出现一次",
+        "x-access": "apiKeys.manage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "apiKey"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "description": "API 密钥，只出现这一次"
+                    },
+                    "apiKey": {
+                      "$ref": "#/components/schemas/ApiKey"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/api-keys/{keyId}": {
+      "delete": {
+        "operationId": "deleteV1ApiKeysKeyId",
+        "tags": [
+          "租户"
+        ],
+        "summary": "吊销 API 密钥",
+        "x-access": "apiKeys.manage",
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "API 密钥 ID"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已吊销"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/audit-events": {
+      "get": {
+        "operationId": "getV1AuditEvents",
+        "tags": [
+          "租户"
+        ],
+        "summary": "本租户的审计日志，按时间倒序",
+        "x-access": "audit.read",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,2}$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,18}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "events"
+                  ],
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuditEvent"
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "description": "下一页的 before"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantId",
+        "tags": [
+          "代建"
+        ],
+        "summary": "被指定的租户",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tenant"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/contents/{sha256}": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdContentsSha256",
+        "tags": [
+          "代建"
+        ],
+        "summary": "按 SHA-256 读回已登记的内容",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "内容的 SHA-256，64 位小写十六进制"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "内容",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putV1AuthoringTenantsTenantIdContentsSha256",
+        "tags": [
+          "代建"
+        ],
+        "summary": "上传一份内容，按路径里的 SHA-256 核对",
+        "x-access": "authoring.push",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "sha256",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "内容的 SHA-256，64 位小写十六进制"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "原始字节",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "已上传"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/previews": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdPreviews",
+        "tags": [
+          "代建"
+        ],
+        "summary": "用被指定租户的身份看草稿预览",
+        "x-access": "authoring.preview",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/push-plans": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdPushPlans",
+        "tags": [
+          "代建"
+        ],
+        "summary": "推送前的差异，不写任何东西",
+        "x-access": "authoring.push",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushManifest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "summary",
+                    "documents",
+                    "resources",
+                    "uploads"
+                  ],
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "added",
+                        "updated",
+                        "unchanged",
+                        "conflicts"
+                      ],
+                      "properties": {
+                        "added": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "updated": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "conflicts": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "key",
+                          "status"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "definition",
+                              "compiled",
+                              "template",
+                              "dataset"
+                            ]
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "currentRevision": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "提交后新记的修订"
+                          }
+                        }
+                      }
+                    },
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "localVersion"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "image",
+                              "font"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "localVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "serverVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        }
+                      }
+                    },
+                    "uploads": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$",
+                        "description": "内容的 SHA-256，64 位小写十六进制"
+                      },
+                      "description": "提交前要上传的内容"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/pushes": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdPushes",
+        "tags": [
+          "代建"
+        ],
+        "summary": "提交推送：有冲突整体拒绝",
+        "x-access": "authoring.push",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushManifest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "pushId",
+                    "summary",
+                    "documents",
+                    "resources",
+                    "usage"
+                  ],
+                  "properties": {
+                    "pushId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "推送 ID"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "added",
+                        "updated",
+                        "unchanged",
+                        "conflicts"
+                      ],
+                      "properties": {
+                        "added": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "updated": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "conflicts": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "key",
+                          "status"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "definition",
+                              "compiled",
+                              "template",
+                              "dataset"
+                            ]
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "currentRevision": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "提交后新记的修订"
+                          }
+                        }
+                      }
+                    },
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "localVersion"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "image",
+                              "font"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "localVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "serverVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        }
+                      }
+                    },
+                    "usage": {
+                      "type": "object",
+                      "required": [
+                        "rounds",
+                        "recorded",
+                        "tokens"
+                      ],
+                      "properties": {
+                        "rounds": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "附了几轮"
+                        },
+                        "recorded": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "这次新记了几轮"
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "required": [],
+                          "properties": {
+                            "inputTokens": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "outputTokens": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "cacheReadTokens": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "cacheCreationTokens": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/template-current": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdTemplateCurrent",
+        "tags": [
+          "代建"
+        ],
+        "summary": "把模板的当前修订指向已有的一个修订",
+        "x-access": "authoring.push",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "template",
+                  "revision"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "template": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/workspace": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdWorkspace",
+        "tags": [
+          "代建"
+        ],
+        "summary": "租户工作区的当前状态",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthoringState"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/batches": {
+      "post": {
+        "operationId": "postV1Batches",
+        "tags": [
+          "批量交付"
+        ],
+        "summary": "提交批量正式交付：固定批次后按项异步交付",
+        "description": "请求是 DSL 1.0 的批次请求（mode 只能省略或为 final）。外层不合法整批拒绝；单项超限只让这一项失败。带 Idempotency-Key 时重试拿回同一批次（200）。本月额度不够整批拒绝（429 quota.exceeded，回答带 quota）。",
+        "x-access": "deliver",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "幂等键：1–200 个可见字符；同一个键配不同的请求答 409",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的批次请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "同一个幂等键的重试：返回原来的批次",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "已接受",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}": {
+      "get": {
+        "operationId": "getV1BatchesBatchId",
+        "tags": [
+          "批量交付"
+        ],
+        "summary": "批次的进度与逐项结果",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/cancel": {
+      "post": {
+        "operationId": "postV1BatchesBatchIdCancel",
+        "tags": [
+          "批量交付"
+        ],
+        "summary": "取消：排队的项标为未执行，正在渲染的一项被结束",
+        "x-access": "deliver",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/export.zip": {
+      "get": {
+        "operationId": "getV1BatchesBatchIdExportZip",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "按批次导出：与本地 deliver 的批次目录相同，能离线重放",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "压缩包",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/zip"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/images.zip": {
+      "get": {
+        "operationId": "getV1BatchesBatchIdImagesZip",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "整批图片的压缩包",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "压缩包",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/zip"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/items/{index}/export.zip": {
+      "get": {
+        "operationId": "getV1BatchesBatchIdItemsIndexExportZip",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "按项导出",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,3}$",
+              "description": "项序号（从 1 起）"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "压缩包",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/zip"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/items/{index}/files/{name}": {
+      "get": {
+        "operationId": "getV1BatchesBatchIdItemsIndexFilesName",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "下载一项的一个文件（图片、问题清单、布局摘要或出图记录）",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,3}$",
+              "description": "项序号（从 1 起）"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文件内容；读取时按登记的哈希核对",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "image/png"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "image/jpeg"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/json"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        }
+      }
+    },
+    "/v1/batches/{batchId}/items/{index}/replay": {
+      "post": {
+        "operationId": "postV1BatchesBatchIdItemsIndexReplay",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "重放：交给记录所属构建的 worker，与记录逐字节比对",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "批次 ID"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,3}$",
+              "description": "项序号（从 1 起）"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/dataset-checks": {
+      "post": {
+        "operationId": "postV1DatasetChecks",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "只校验、不保存",
+        "x-access": "datasets.write",
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的数据集文档，按原始字节保存",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "problems"
+                  ],
+                  "properties": {
+                    "problems": {
+                      "$ref": "#/components/schemas/ProblemList"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/datasets": {
+      "get": {
+        "operationId": "getV1Datasets",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "本租户的数据集",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "datasets"
+                  ],
+                  "properties": {
+                    "datasets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DatasetEntry"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1Datasets",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "新建数据集：按原始字节保存，按所选静态数据定义校验",
+        "x-access": "datasets.write",
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的数据集文档，按原始字节保存",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/datasets/{datasetId}": {
+      "get": {
+        "operationId": "getV1DatasetsDatasetId",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "读回保存时的原始字节",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "datasetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "数据集 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "数据集文档（保存时的字节）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetDocument"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putV1DatasetsDatasetId",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "修改数据集",
+        "x-access": "datasets.write",
+        "parameters": [
+          {
+            "name": "datasetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "数据集 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的数据集文档，按原始字节保存",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/datasets/{datasetId}/copies": {
+      "post": {
+        "operationId": "postV1DatasetsDatasetIdCopies",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "复制数据集：只换 ID 与名称",
+        "x-access": "datasets.write",
+        "parameters": [
+          {
+            "name": "datasetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "数据集 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}](?:[^\\p{Cc}]*[^\\s\\p{Cc}])?$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "getV1Me",
+        "tags": [
+          "账号"
+        ],
+        "summary": "当前身份",
+        "x-access": "authenticated",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          }
+        }
+      }
+    },
+    "/v1/members": {
+      "get": {
+        "operationId": "getV1Members",
+        "tags": [
+          "租户"
+        ],
+        "summary": "本租户的成员",
+        "x-access": "members.manage",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "members"
+                  ],
+                  "properties": {
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Member"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/members/{memberId}": {
+      "patch": {
+        "operationId": "patchV1MembersMemberId",
+        "tags": [
+          "租户"
+        ],
+        "summary": "改成员的角色或停用、启用；至少保留一个启用的管理员",
+        "x-access": "members.manage",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "成员 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "operator"
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "minProperties": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/openapi.json": {
+      "get": {
+        "operationId": "getV1OpenapiJson",
+        "tags": [
+          "运维"
+        ],
+        "summary": "本描述（OpenAPI 3.1）",
+        "x-access": "public",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "OpenAPI 描述"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/authoring-tokens": {
+      "get": {
+        "operationId": "getV1PlatformAuthoringTokens",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "列出代建令牌",
+        "x-access": "platform.authoringTokens",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tokens"
+                  ],
+                  "properties": {
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuthoringToken"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1PlatformAuthoringTokens",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "签发代建令牌，令牌只出现一次；指定的租户不存在时答 404",
+        "x-access": "platform.authoringTokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tenantIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "expiresInDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365
+                  }
+                },
+                "required": [
+                  "label",
+                  "tenantIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "token",
+                    "authoringToken"
+                  ],
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "代建令牌，只出现这一次"
+                    },
+                    "authoringToken": {
+                      "$ref": "#/components/schemas/AuthoringToken"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/platform/authoring-tokens/{tokenId}": {
+      "delete": {
+        "operationId": "deleteV1PlatformAuthoringTokensTokenId",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "吊销代建令牌",
+        "x-access": "platform.authoringTokens",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "代建令牌 ID"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已吊销"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/platform/builds": {
+      "get": {
+        "operationId": "getV1PlatformBuilds",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "被出图记录引用的构建与在线的 worker",
+        "x-access": "platform.tenants",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "builds"
+                  ],
+                  "properties": {
+                    "builds": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Build"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants": {
+      "get": {
+        "operationId": "getV1PlatformTenants",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "列出租户",
+        "x-access": "platform.tenants",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tenants"
+                  ],
+                  "properties": {
+                    "tenants": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Tenant"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1PlatformTenants",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "开通租户，可一并设套餐",
+        "x-access": "platform.tenants",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "plan": {
+                    "$ref": "#/components/schemas/PlanInput"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantWithPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/members": {
+      "get": {
+        "operationId": "getV1PlatformTenantsTenantIdMembers",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "列出租户的成员",
+        "x-access": "platform.members",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "members"
+                  ],
+                  "properties": {
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Member"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1PlatformTenantsTenantIdMembers",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "建成员账号，初始密码只出现一次",
+        "x-access": "platform.members",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 254,
+                    "pattern": "^[^@\\s]+@[^@\\s]+$"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "operator"
+                    ]
+                  }
+                },
+                "required": [
+                  "email",
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "member",
+                    "initialPassword"
+                  ],
+                  "properties": {
+                    "member": {
+                      "$ref": "#/components/schemas/Member"
+                    },
+                    "initialPassword": {
+                      "type": "string",
+                      "description": "初始密码，只出现这一次"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/members/{memberId}/password-reset": {
+      "post": {
+        "operationId": "postV1PlatformTenantsTenantIdMembersMemberIdPasswordReset",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "重置成员密码：新密码只出现一次，旧会话失效",
+        "x-access": "platform.members",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "成员 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "password"
+                  ],
+                  "properties": {
+                    "password": {
+                      "type": "string",
+                      "description": "新密码，只出现这一次"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/plan": {
+      "get": {
+        "operationId": "getV1PlatformTenantsTenantIdPlan",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "租户的套餐",
+        "x-access": "platform.plans",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putV1PlatformTenantsTenantIdPlan",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "设置套餐；当期限额随之改变",
+        "x-access": "platform.plans",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/usage": {
+      "get": {
+        "operationId": "getV1PlatformTenantsTenantIdUsage",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "租户一个计费周期的用量",
+        "x-access": "platform.plans",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/usage/events": {
+      "get": {
+        "operationId": "getV1PlatformTenantsTenantIdUsageEvents",
+        "tags": [
+          "平台管理"
+        ],
+        "summary": "租户的用量明细",
+        "x-access": "platform.plans",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "inputTokens",
+                "outputTokens",
+                "cacheReadTokens",
+                "cacheCreationTokens"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^([1-9][0-9]?|[1-4][0-9]{2}|500)$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,17}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "period",
+                    "events"
+                  ],
+                  "properties": {
+                    "period": {
+                      "type": "string"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UsageEvent"
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "description": "下一页的 before"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/previews": {
+      "post": {
+        "operationId": "postV1Previews",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "草稿预览：同步返回图片与问题清单，不计额度",
+        "description": "请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。",
+        "x-access": "preview",
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/records": {
+      "get": {
+        "operationId": "getV1Records",
+        "tags": [
+          "出图记录"
+        ],
+        "summary": "查询出图记录：按登记时间倒序，可按批次、模板与时间筛选",
+        "x-access": "records.read",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          },
+          {
+            "name": "template",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:\\d{2})$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:\\d{2})$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^([1-9][0-9]?|[1-4][0-9]{2}|500)$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "records"
+                  ],
+                  "properties": {
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RecordEntry"
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "description": "下一页的 before，原样带回"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/resources": {
+      "get": {
+        "operationId": "getV1Resources",
+        "tags": [
+          "资源"
+        ],
+        "summary": "本租户的图片与字体资源",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "resources"
+                  ],
+                  "properties": {
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Resource"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1Resources",
+        "tags": [
+          "资源"
+        ],
+        "summary": "上传新的图片或字体，从 v1 开始",
+        "x-access": "resources.upload",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "font"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "原始字节",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/resources/{resourceId}": {
+      "get": {
+        "operationId": "getV1ResourcesResourceId",
+        "tags": [
+          "资源"
+        ],
+        "summary": "一个资源与它的内容版本",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+              "description": "资源 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/resources/{resourceId}/replacement-checks": {
+      "post": {
+        "operationId": "postV1ResourcesResourceIdReplacementChecks",
+        "tags": [
+          "资源"
+        ],
+        "summary": "替换检查：只读，返回受影响的模板、数据集与字体配置",
+        "x-access": "resources.replace",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+              "description": "资源 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "原始字节",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "check",
+                    "problems"
+                  ],
+                  "properties": {
+                    "check": {
+                      "$ref": "#/components/schemas/ReplacementCheck"
+                    },
+                    "problems": {
+                      "$ref": "#/components/schemas/ProblemList"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          }
+        }
+      }
+    },
+    "/v1/resources/{resourceId}/replacements": {
+      "post": {
+        "operationId": "postV1ResourcesResourceIdReplacements",
+        "tags": [
+          "资源"
+        ],
+        "summary": "凭检查报告应用替换：按预期版本追加内容版本",
+        "x-access": "resources.replace",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+              "description": "资源 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "check"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "check": {
+                    "type": "object",
+                    "required": [
+                      "resource",
+                      "replacement",
+                      "impact"
+                    ],
+                    "properties": {
+                      "resource": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "version",
+                          "sha256",
+                          "byteLength"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "image",
+                              "font"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "byteLength": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "replacement": {
+                        "type": "object",
+                        "required": [
+                          "sha256",
+                          "byteLength"
+                        ],
+                        "properties": {
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "byteLength": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "impact": {
+                        "type": "object",
+                        "required": [
+                          "workspaceFingerprint"
+                        ],
+                        "properties": {
+                          "workspaceFingerprint": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/resources/{resourceId}/versions/{version}/content": {
+      "get": {
+        "operationId": "getV1ResourcesResourceIdVersionsVersionContent",
+        "tags": [
+          "资源"
+        ],
+        "summary": "读回一个内容版本的字节",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+              "description": "资源 ID"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,8}$",
+              "description": "内容版本"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "内容",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/sessions": {
+      "post": {
+        "operationId": "postV1Sessions",
+        "tags": [
+          "账号"
+        ],
+        "summary": "登录：邮箱加密码换会话令牌（12 小时）",
+        "x-access": "public",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 254,
+                    "pattern": "^[^@\\s]+@[^@\\s]+$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "token",
+                    "expiresAt",
+                    "identity"
+                  ],
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "会话令牌，只出现这一次"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "过期时间"
+                    },
+                    "identity": {
+                      "$ref": "#/components/schemas/Identity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          }
+        }
+      }
+    },
+    "/v1/sessions/current": {
+      "delete": {
+        "operationId": "deleteV1SessionsCurrent",
+        "tags": [
+          "账号"
+        ],
+        "summary": "登出当前会话",
+        "x-access": "session",
+        "responses": {
+          "204": {
+            "description": "已登出"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/templates": {
+      "get": {
+        "operationId": "getV1Templates",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "本租户的模板：适用尺寸范围、所用的数据定义与对外参数",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "templates"
+                  ],
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Template"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/templates/{name}": {
+      "get": {
+        "operationId": "getV1TemplatesName",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "一个模板",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Template"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/tenant": {
+      "get": {
+        "operationId": "getV1Tenant",
+        "tags": [
+          "租户"
+        ],
+        "summary": "本租户",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tenant"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getV1Usage",
+        "tags": [
+          "用量"
+        ],
+        "summary": "本租户一个计费周期的用量与剩余额度",
+        "x-access": "usage.read",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/usage/events": {
+      "get": {
+        "operationId": "getV1UsageEvents",
+        "tags": [
+          "用量"
+        ],
+        "summary": "用量明细，按 ID 倒序",
+        "x-access": "usage.read",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "inputTokens",
+                "outputTokens",
+                "cacheReadTokens",
+                "cacheCreationTokens"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^([1-9][0-9]?|[1-4][0-9]{2}|500)$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,17}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "period",
+                    "events"
+                  ],
+                  "properties": {
+                    "period": {
+                      "type": "string"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UsageEvent"
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "description": "下一页的 before"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "get": {
+        "operationId": "getV1Webhooks",
+        "tags": [
+          "webhook"
+        ],
+        "summary": "本租户的 webhook",
+        "x-access": "webhooks.manage",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "webhooks"
+                  ],
+                  "properties": {
+                    "webhooks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Webhook"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1Webhooks",
+        "tags": [
+          "webhook"
+        ],
+        "summary": "注册 webhook；签名密钥只在这里出现一次",
+        "description": "生产只收 https 与公网地址。缺省订阅 batch.finished。每个租户最多同时启用 10 个。",
+        "x-access": "webhooks.manage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "events": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "batch.finished"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "webhook",
+                    "secret"
+                  ],
+                  "properties": {
+                    "webhook": {
+                      "$ref": "#/components/schemas/Webhook"
+                    },
+                    "secret": {
+                      "type": "string",
+                      "description": "签名密钥（whsec_ 开头），只出现这一次"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{webhookId}": {
+      "get": {
+        "operationId": "getV1WebhooksWebhookId",
+        "tags": [
+          "webhook"
+        ],
+        "summary": "一个 webhook",
+        "x-access": "webhooks.manage",
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "webhook ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Webhook"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchV1WebhooksWebhookId",
+        "tags": [
+          "webhook"
+        ],
+        "summary": "停用、重新启用或改说明",
+        "x-access": "webhooks.manage",
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "webhook ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Webhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{webhookId}/deliveries": {
+      "get": {
+        "operationId": "getV1WebhooksWebhookIdDeliveries",
+        "tags": [
+          "webhook"
+        ],
+        "summary": "投递记录：各次尝试的时间、耗时与 HTTP 状态或原因",
+        "x-access": "webhooks.manage",
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "webhook ID"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^([1-9][0-9]?|100)$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,17}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "deliveries"
+                  ],
+                  "properties": {
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WebhookDelivery"
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "description": "下一页的 before"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "batch.finished": {
+      "post": {
+        "summary": "批次结束（完成、部分失败、全部失败或取消）时，向每个启用、订阅了它的 webhook 投递一次",
+        "description": "请求头 RenderWeave-Signature: t=<Unix 秒>,v1=<HMAC-SHA256(签名密钥, \"<t>.<正文>\") 的十六进制>；另带 RenderWeave-Event-Id、RenderWeave-Event-Type、RenderWeave-Delivery-Id 与 RenderWeave-Attempt。2xx 算成功，其余按指数退避重试有限次。接收端按事件 ID 去重。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchFinishedEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "任何 2xx 都算收到"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "会话令牌（rws_）、API 密钥（rwk_）或代建令牌（rwa_）"
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "level",
+          "code",
+          "location",
+          "message"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "severe",
+              "hint"
+            ],
+            "description": "严重（severe）或提示（hint）"
+          },
+          "code": {
+            "type": "string",
+            "description": "问题码：服务的问题码见 docs/api.md，引擎的问题码与命令行相同"
+          },
+          "location": {
+            "description": "问题的位置：字段、对外参数、元素、检查项、派生变量、数据定义或请求的输入（source 是请求里的位置，如 request.body.url）",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "field"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "字段路径"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "parameter"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "参数名"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "element"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "元素路径"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "template",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "check"
+                  },
+                  "template": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "template",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "variable"
+                  },
+                  "template": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "schema",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "definition"
+                  },
+                  "schema": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "source"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "input"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "中文说明"
+          }
+        }
+      },
+      "ProblemList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Problem"
+        },
+        "description": "问题清单：格式与命令行、引擎的问题清单相同"
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "problems"
+        ],
+        "properties": {
+          "problems": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          },
+          "quota": {
+            "$ref": "#/components/schemas/QuotaShortfall",
+            "description": "额度不足（429 quota.exceeded）时：本期的限额、已用、预占、剩余与本批项数"
+          },
+          "diff": {
+            "$ref": "#/components/schemas/PushDiff",
+            "description": "推送冲突（409 push.conflict）时：逐项差异"
+          }
+        },
+        "description": "错误回答：问题清单，额度不足与推送冲突时另带说明情况的字段"
+      },
+      "QuotaShortfall": {
+        "type": "object",
+        "required": [
+          "period",
+          "limit",
+          "used",
+          "reserved",
+          "remaining",
+          "requested"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "计费周期 YYYY-MM"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reserved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "requested": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Tenant": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "租户 ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        }
+      },
+      "TenantWithPlan": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "plan"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "租户 ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenantId",
+          "email",
+          "role",
+          "active",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "成员 ID"
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "租户 ID"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "operator"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "API 密钥 ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string",
+            "description": "密钥的前几个字符"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "吊销时间"
+          }
+        }
+      },
+      "AuthoringToken": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "prefix",
+          "tenantIds",
+          "createdAt",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "代建令牌 ID"
+          },
+          "label": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "tenantIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "description": "被指定的租户"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "签发时间"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "过期时间"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "吊销时间"
+          }
+        }
+      },
+      "Identity": {
+        "description": "当前身份",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "role",
+              "userId",
+              "email",
+              "tenantId"
+            ],
+            "properties": {
+              "kind": {
+                "const": "member"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "admin",
+                  "operator"
+                ]
+              },
+              "userId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "成员 ID"
+              },
+              "email": {
+                "type": "string"
+              },
+              "tenantId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "租户 ID"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "role",
+              "userId",
+              "email"
+            ],
+            "properties": {
+              "kind": {
+                "const": "platformUser"
+              },
+              "role": {
+                "const": "platformAdmin"
+              },
+              "userId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "平台用户 ID"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "role",
+              "keyId",
+              "name",
+              "tenantId"
+            ],
+            "properties": {
+              "kind": {
+                "const": "apiKey"
+              },
+              "role": {
+                "const": "apiKey"
+              },
+              "keyId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "API 密钥 ID"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tenantId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "租户 ID"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "role",
+              "tokenId",
+              "label",
+              "tenantIds"
+            ],
+            "properties": {
+              "kind": {
+                "const": "authoringToken"
+              },
+              "role": {
+                "const": "authoringEngineer"
+              },
+              "tokenId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "代建令牌 ID"
+              },
+              "label": {
+                "type": "string"
+              },
+              "tenantIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "被指定的租户"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenantId",
+          "at",
+          "actor",
+          "action",
+          "object",
+          "crossTenant"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "事件 ID，按时间递增"
+          },
+          "tenantId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "租户 ID；平台级事件为 null"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "时间"
+          },
+          "actor": {
+            "type": "object",
+            "required": [
+              "kind",
+              "id",
+              "label"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "member",
+                  "platformUser",
+                  "apiKey",
+                  "authoringToken",
+                  "system"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "action": {
+            "type": "string",
+            "description": "操作，如 batch.create"
+          },
+          "object": {
+            "type": "object",
+            "required": [
+              "type",
+              "id"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "crossTenant": {
+            "type": "boolean",
+            "description": "平台管理员或代建工程师的跨租户操作"
+          }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "required": [
+          "monthlyImages",
+          "maxPixels",
+          "concurrency"
+        ],
+        "properties": {
+          "monthlyImages": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "每月出图张数"
+          },
+          "maxPixels": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "单张最大像素"
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "预览与重放的并发数"
+          }
+        },
+        "description": "套餐（M274）"
+      },
+      "Usage": {
+        "type": "object",
+        "required": [
+          "period",
+          "start",
+          "end",
+          "plan",
+          "images",
+          "tokens"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "计费周期 YYYY-MM（按 UTC+8 切分的自然月）"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "description": "周期开始"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "description": "周期结束（不含）"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "images": {
+            "type": "object",
+            "required": [
+              "limit",
+              "used",
+              "reserved",
+              "remaining"
+            ],
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "限额"
+              },
+              "used": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "已用"
+              },
+              "reserved": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "预占"
+              },
+              "remaining": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "剩余 = 限额 − 已用 − 预占，不小于 0"
+              }
+            }
+          },
+          "tokens": {
+            "type": "object",
+            "required": [
+              "inputTokens",
+              "outputTokens",
+              "cacheReadTokens",
+              "cacheCreationTokens"
+            ],
+            "properties": {
+              "inputTokens": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "outputTokens": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cacheReadTokens": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cacheCreationTokens": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "UsageEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "period",
+          "kind",
+          "quantity"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "事件 ID"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "时间"
+          },
+          "period": {
+            "type": "string",
+            "description": "计费周期"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "inputTokens",
+              "outputTokens",
+              "cacheReadTokens",
+              "cacheCreationTokens"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "数量"
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "正式交付成功的一张：所属批次"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "项序号"
+          },
+          "round": {
+            "type": "object",
+            "required": [
+              "sha256",
+              "task",
+              "round"
+            ],
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "内容的 SHA-256，64 位小写十六进制"
+              },
+              "task": {
+                "type": "string",
+                "description": "代建任务"
+              },
+              "round": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "轮次"
+              }
+            },
+            "description": "代建的一轮：round.json 的 SHA-256、任务与轮次"
+          }
+        }
+      },
+      "Template": {
+        "type": "object",
+        "required": [
+          "name",
+          "currentRevision"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "模板名称"
+          },
+          "currentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前修订"
+          },
+          "base": {
+            "type": "object",
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "静态数据定义名称"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "版本"
+              }
+            },
+            "description": "所用的数据定义"
+          },
+          "sizeRange": {
+            "type": "object",
+            "required": [
+              "width",
+              "height"
+            ],
+            "properties": {
+              "width": {
+                "type": "object",
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                }
+              },
+              "height": {
+                "type": "object",
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "description": "适用尺寸范围，毫米"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "displayName",
+                "type",
+                "constraints"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "number",
+                    "date",
+                    "time",
+                    "datetime",
+                    "boolean",
+                    "image",
+                    "color"
+                  ]
+                },
+                "constraints": {
+                  "type": "object",
+                  "required": [],
+                  "properties": {
+                    "integer": {
+                      "type": "boolean"
+                    },
+                    "min": {
+                      "type": "number"
+                    },
+                    "max": {
+                      "type": "number"
+                    },
+                    "minLength": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "maxLength": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "pattern": {
+                      "type": "string"
+                    },
+                    "enum": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "default": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                }
+              }
+            },
+            "description": "对外参数"
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "模板读不了时只有名称、当前修订与问题清单"
+          }
+        }
+      },
+      "PreviewResult": {
+        "type": "object",
+        "required": [
+          "problems"
+        ],
+        "properties": {
+          "image": {
+            "type": "object",
+            "required": [
+              "format",
+              "widthPx",
+              "heightPx",
+              "dpi",
+              "base64"
+            ],
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "png",
+                  "jpeg"
+                ]
+              },
+              "widthPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "heightPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "dpi": {
+                "type": "number"
+              },
+              "base64": {
+                "type": "string",
+                "description": "图片字节的 base64"
+              }
+            }
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList"
+          },
+          "layout": {
+            "type": "object",
+            "description": "布局摘要：元素路径、位置与尺寸（docs/render-modes.md）",
+            "additionalProperties": true
+          }
+        },
+        "description": "草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单"
+      },
+      "RenderRequest": {
+        "$id": "urn:renderweave:dsl:1:render-request",
+        "title": "RenderWeave 渲染请求（DSL 1.0）",
+        "description": "一次出图：模板、数据集、对外参数、出图参数与模式。像素上限、模板与数据集是否存在、参数是否符合模板声明由引擎检查，见 docs/dsl/requests.md。",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template",
+          "dataset",
+          "output",
+          "mode"
+        ],
+        "properties": {
+          "template": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "dataset": {
+            "$ref": "#/$defs/datasetSelection"
+          },
+          "parameters": {
+            "$ref": "#/$defs/parameters"
+          },
+          "output": {
+            "$ref": "#/$defs/output"
+          },
+          "mode": {
+            "$ref": "#/$defs/mode"
+          }
+        },
+        "$defs": {
+          "nonEmpty": {
+            "type": "string",
+            "minLength": 1
+          },
+          "datasetDocument": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dataset",
+              "data"
+            ],
+            "properties": {
+              "dataset": {
+                "type": "object",
+                "required": [
+                  "staticSchema"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "数据集 ID；工作区中的数据集必须有，内联在渲染请求中时可省略"
+                  },
+                  "staticSchema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "description": "所选静态数据定义的确切版本（ADR-0008）"
+                  }
+                },
+                "description": "身份部分。除 id 与 staticSchema 外，可写名称（name）、来源（origin）等说明性内容，引擎不作要求"
+              },
+              "data": {
+                "description": "业务数据，按所选静态数据定义的编译产物校验"
+              }
+            }
+          },
+          "datasetSelection": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/nonEmpty"
+                  }
+                },
+                "description": "引用工作区中的数据集"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "inline"
+                ],
+                "properties": {
+                  "inline": {
+                    "$ref": "#/$defs/datasetDocument"
+                  }
+                },
+                "description": "附带一份数据集文档，dataset.id 可省略"
+              }
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "description": "对外参数名到取值；取值是否符合参数类型与约束由引擎按模板检查"
+          },
+          "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "width",
+              "height",
+              "dpi",
+              "format"
+            ],
+            "properties": {
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "实际宽度，毫米"
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "实际高度，毫米"
+              },
+              "dpi": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "format": {
+                "enum": [
+                  "png",
+                  "jpg",
+                  "jpeg"
+                ]
+              }
+            }
+          },
+          "mode": {
+            "enum": [
+              "draft",
+              "final"
+            ],
+            "description": "draft 草稿预览；final 正式出图"
+          }
+        }
+      },
+      "BatchRequest": {
+        "$id": "urn:renderweave:dsl:1:batch-request",
+        "title": "RenderWeave 批次请求（DSL 1.0）",
+        "description": "一个根模板、统一的模式与 1–1,000 个渲染项。渲染项标识不能重复、像素上限等由引擎检查，见 docs/dsl/requests.md。交付后生成的批次清单 batch.json 另有格式标识 renderweave-batch/1，不是请求。",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template",
+          "mode",
+          "items"
+        ],
+        "properties": {
+          "template": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "mode": {
+            "$ref": "#/$defs/mode"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "dataset",
+                "output"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/nonEmpty",
+                  "description": "批次内唯一的渲染项标识，只作数据保存，不直接用作文件名"
+                },
+                "dataset": {
+                  "$ref": "#/$defs/datasetSelection"
+                },
+                "parameters": {
+                  "$ref": "#/$defs/parameters"
+                },
+                "output": {
+                  "$ref": "#/$defs/output"
+                }
+              }
+            }
+          }
+        },
+        "$defs": {
+          "nonEmpty": {
+            "type": "string",
+            "minLength": 1
+          },
+          "datasetDocument": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dataset",
+              "data"
+            ],
+            "properties": {
+              "dataset": {
+                "type": "object",
+                "required": [
+                  "staticSchema"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "数据集 ID；工作区中的数据集必须有，内联在渲染请求中时可省略"
+                  },
+                  "staticSchema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "description": "所选静态数据定义的确切版本（ADR-0008）"
+                  }
+                },
+                "description": "身份部分。除 id 与 staticSchema 外，可写名称（name）、来源（origin）等说明性内容，引擎不作要求"
+              },
+              "data": {
+                "description": "业务数据，按所选静态数据定义的编译产物校验"
+              }
+            }
+          },
+          "datasetSelection": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/nonEmpty"
+                  }
+                },
+                "description": "引用工作区中的数据集"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "inline"
+                ],
+                "properties": {
+                  "inline": {
+                    "$ref": "#/$defs/datasetDocument"
+                  }
+                },
+                "description": "附带一份数据集文档，dataset.id 可省略"
+              }
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "description": "对外参数名到取值；取值是否符合参数类型与约束由引擎按模板检查"
+          },
+          "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "width",
+              "height",
+              "dpi",
+              "format"
+            ],
+            "properties": {
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "实际宽度，毫米"
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "实际高度，毫米"
+              },
+              "dpi": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "format": {
+                "enum": [
+                  "png",
+                  "jpg",
+                  "jpeg"
+                ]
+              }
+            }
+          },
+          "mode": {
+            "enum": [
+              "draft",
+              "final"
+            ],
+            "description": "draft 草稿预览；final 正式出图"
+          }
+        }
+      },
+      "BatchSummary": {
+        "type": "object",
+        "required": [
+          "total",
+          "delivered",
+          "previewed",
+          "failed",
+          "notRun",
+          "severe",
+          "hints"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "delivered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previewed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notRun": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "severe": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hints": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "description": "批次清单的汇总：项数、交付、草稿、失败、未执行，以及严重问题与提示的个数"
+      },
+      "BatchOutcome": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partiallyFailed",
+          "failed",
+          "cancelled"
+        ],
+        "description": "结束时的结果：全部交付、部分失败、全部失败、已取消（请求过取消的批次一律是 cancelled）"
+      },
+      "BatchItem": {
+        "description": "一项：还没结束时只有状态；结束后有结果与问题清单",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "index",
+              "id",
+              "status"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "项序号"
+              },
+              "id": {
+                "type": "string",
+                "description": "渲染项标识"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "index",
+              "id",
+              "status",
+              "severe",
+              "hints",
+              "problems"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "项序号"
+              },
+              "id": {
+                "type": "string",
+                "description": "渲染项标识"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "delivered",
+                  "failed",
+                  "notRun"
+                ]
+              },
+              "files": {
+                "type": "object",
+                "required": [
+                  "problems"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "enum": [
+                      "image.png",
+                      "image.jpg"
+                    ]
+                  },
+                  "problems": {
+                    "const": "problems.json"
+                  },
+                  "layout": {
+                    "const": "layout.json"
+                  },
+                  "record": {
+                    "const": "record.json"
+                  },
+                  "preview": {
+                    "const": "preview.json"
+                  }
+                },
+                "description": "这一项登记的文件，用 files 端点下载"
+              },
+              "severe": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "hints": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reason": {
+                "type": "string",
+                "description": "未执行的原因"
+              },
+              "problems": {
+                "$ref": "#/components/schemas/ProblemList"
+              }
+            }
+          }
+        ]
+      },
+      "BatchHeader": {
+        "type": "object",
+        "required": [
+          "id",
+          "template",
+          "mode",
+          "build",
+          "cancelRequested",
+          "createdAt",
+          "summary",
+          "problems"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "批次 ID"
+          },
+          "template": {
+            "type": "string",
+            "description": "根模板"
+          },
+          "mode": {
+            "const": "final"
+          },
+          "build": {
+            "type": "string",
+            "description": "接受批次的构建标识"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "提交时的幂等键"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/BatchOutcome"
+          },
+          "cancelRequested": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "接受时间"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "结束时间"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BatchSummary"
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "批次级问题，如取消"
+          }
+        },
+        "description": "批次的摘要（webhook 事件里的批次）"
+      },
+      "Batch": {
+        "type": "object",
+        "required": [
+          "id",
+          "template",
+          "mode",
+          "build",
+          "status",
+          "cancelRequested",
+          "createdAt",
+          "progress",
+          "summary",
+          "items",
+          "problems"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "批次 ID"
+          },
+          "template": {
+            "type": "string",
+            "description": "根模板"
+          },
+          "mode": {
+            "const": "final"
+          },
+          "build": {
+            "type": "string",
+            "description": "接受批次的构建标识"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "description": "提交时的幂等键"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "finished"
+            ],
+            "description": "finished：全部项结束，批次清单已发布"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/BatchOutcome",
+            "description": "结束后才有"
+          },
+          "cancelRequested": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "接受时间"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "结束时间"
+          },
+          "progress": {
+            "type": "object",
+            "required": [
+              "completed",
+              "total"
+            ],
+            "properties": {
+              "completed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "已结束的项"
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "项数"
+              }
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BatchSummary"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchItem"
+            }
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "批次级问题，如取消"
+          }
+        }
+      },
+      "DatasetDocument": {
+        "$id": "urn:renderweave:dsl:1:dataset",
+        "title": "RenderWeave 数据集文档（DSL 1.0）",
+        "description": "数据集由身份（dataset）与业务数据（data）组成。本 Schema 只检查外层结构；data 按所选静态数据定义的编译产物校验（ADR-0006），由引擎完成，见 docs/dsl/data-definition.md「Schema 之外的检查」。",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dataset",
+          "data"
+        ],
+        "properties": {
+          "dataset": {
+            "type": "object",
+            "required": [
+              "staticSchema"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "数据集 ID；工作区中的数据集必须有，内联在渲染请求中时可省略"
+              },
+              "staticSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "version"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "description": "所选静态数据定义的确切版本（ADR-0008）"
+              }
+            },
+            "description": "身份部分。除 id 与 staticSchema 外，可写名称（name）、来源（origin）等说明性内容，引擎不作要求"
+          },
+          "data": {
+            "description": "业务数据，按所选静态数据定义的编译产物校验"
+          }
+        }
+      },
+      "DatasetEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "sha256",
+          "byteLength"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "数据集 ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "staticSchema": {
+            "type": "object",
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "静态数据定义名称"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "版本"
+              }
+            },
+            "description": "所选的静态数据定义"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "内容的 SHA-256，64 位小写十六进制"
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "字节数"
+          }
+        }
+      },
+      "DatasetSaved": {
+        "type": "object",
+        "required": [
+          "dataset",
+          "problems"
+        ],
+        "properties": {
+          "dataset": {
+            "$ref": "#/components/schemas/DatasetEntry"
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "保存时的提示"
+          }
+        }
+      },
+      "ContentVersion": {
+        "type": "object",
+        "required": [
+          "version",
+          "sha256",
+          "byteLength"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "内容版本"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "内容的 SHA-256，64 位小写十六进制"
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "字节数"
+          }
+        }
+      },
+      "Resource": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "currentVersion",
+          "versions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "资源 ID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "font"
+            ]
+          },
+          "currentVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前内容版本"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentVersion"
+            }
+          }
+        }
+      },
+      "ResourceVersion": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "version",
+          "sha256",
+          "byteLength"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "资源 ID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "font"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "内容版本"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "内容的 SHA-256，64 位小写十六进制"
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "字节数"
+          }
+        }
+      },
+      "ReplacementCheck": {
+        "type": "object",
+        "required": [
+          "resource",
+          "replacement",
+          "impact"
+        ],
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "replacement": {
+            "type": "object",
+            "required": [
+              "sha256",
+              "byteLength"
+            ],
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "内容的 SHA-256，64 位小写十六进制"
+              },
+              "byteLength": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "impact": {
+            "type": "object",
+            "required": [
+              "workspaceFingerprint",
+              "renderOptions",
+              "references",
+              "configuration",
+              "scope"
+            ],
+            "properties": {
+              "workspaceFingerprint": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "内容的 SHA-256，64 位小写十六进制"
+              },
+              "renderOptions": {
+                "type": "object",
+                "required": [
+                  "fallbackFonts",
+                  "svgFonts"
+                ],
+                "properties": {
+                  "fallbackFonts": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "svgFonts": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "document",
+                    "source",
+                    "path"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "templateFixed",
+                        "stateStyle",
+                        "parameterDefault",
+                        "derivedValue",
+                        "callArgument",
+                        "datasetImage"
+                      ]
+                    },
+                    "document": {
+                      "type": "string",
+                      "description": "文档"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "JSON Pointer"
+                    }
+                  }
+                },
+                "description": "受影响的模板与数据集里的引用"
+              },
+              "configuration": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "path"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fallbackFonts",
+                        "svgFonts"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "description": "受影响的字体配置"
+              },
+              "scope": {
+                "type": "string",
+                "description": "检查范围的说明"
+              }
+            }
+          }
+        },
+        "description": "替换检查报告：应用替换时原样交回"
+      },
+      "RecordEntry": {
+        "type": "object",
+        "required": [
+          "batchId",
+          "index",
+          "id",
+          "template",
+          "build",
+          "deliveredAt",
+          "image"
+        ],
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "批次 ID"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "项序号"
+          },
+          "id": {
+            "type": "string",
+            "description": "渲染项标识"
+          },
+          "template": {
+            "type": "string"
+          },
+          "build": {
+            "type": "string",
+            "description": "构建标识"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "登记时间"
+          },
+          "image": {
+            "type": "string",
+            "enum": [
+              "image.png",
+              "image.jpg"
+            ]
+          }
+        }
+      },
+      "ReplayResult": {
+        "type": "object",
+        "required": [
+          "batchId",
+          "index",
+          "id",
+          "build",
+          "matched",
+          "problems"
+        ],
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "批次 ID"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "项序号"
+          },
+          "id": {
+            "type": "string",
+            "description": "渲染项标识"
+          },
+          "build": {
+            "type": "string",
+            "description": "记录所属的构建"
+          },
+          "matched": {
+            "type": "boolean",
+            "description": "重新渲染的成果与记录逐字节相同"
+          },
+          "replay": {
+            "type": "object",
+            "required": [
+              "format",
+              "build",
+              "itemId",
+              "matched",
+              "files"
+            ],
+            "properties": {
+              "format": {
+                "const": "renderweave-replay/1"
+              },
+              "build": {
+                "type": "string"
+              },
+              "itemId": {
+                "type": "string"
+              },
+              "matched": {
+                "const": true
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "file",
+                    "sha256",
+                    "byteLength"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "内容的 SHA-256，64 位小写十六进制"
+                    },
+                    "byteLength": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList"
+          }
+        }
+      },
+      "Build": {
+        "type": "object",
+        "required": [
+          "build",
+          "image",
+          "records",
+          "workers"
+        ],
+        "properties": {
+          "build": {
+            "type": "string",
+            "description": "构建标识"
+          },
+          "image": {
+            "type": "string",
+            "description": "镜像标签"
+          },
+          "records": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "引用它的出图记录数"
+          },
+          "lastDeliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近一次登记"
+          },
+          "workers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "在线的 worker"
+          }
+        }
+      },
+      "StoredDocument": {
+        "type": "object",
+        "required": [
+          "kind",
+          "key",
+          "sha256",
+          "byteLength"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "definition",
+              "compiled",
+              "template",
+              "dataset"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "内容的 SHA-256，64 位小写十六进制"
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "TemplateRevisions": {
+        "type": "object",
+        "required": [
+          "name",
+          "currentRevision",
+          "revisions"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "模板名称"
+          },
+          "currentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前修订"
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "revision",
+                "sha256",
+                "byteLength",
+                "createdAt",
+                "pushedBy"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "修订号"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "内容的 SHA-256，64 位小写十六进制"
+                },
+                "byteLength": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "推送时间"
+                },
+                "pushedBy": {
+                  "type": "string",
+                  "description": "推送人"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AuthoringState": {
+        "type": "object",
+        "required": [
+          "documents",
+          "templates",
+          "resources"
+        ],
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoredDocument"
+            }
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateRevisions"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Resource"
+            }
+          }
+        }
+      },
+      "PushDiff": {
+        "type": "object",
+        "required": [
+          "summary",
+          "documents",
+          "resources"
+        ],
+        "properties": {
+          "summary": {
+            "type": "object",
+            "required": [
+              "added",
+              "updated",
+              "unchanged",
+              "conflicts"
+            ],
+            "properties": {
+              "added": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "updated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unchanged": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conflicts": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "key",
+                "status"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "definition",
+                    "compiled",
+                    "template",
+                    "dataset"
+                  ]
+                },
+                "key": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "added",
+                    "updated",
+                    "unchanged",
+                    "conflict"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "currentRevision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "提交后新记的修订"
+                }
+              }
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "kind",
+                "status",
+                "localVersion"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "font"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "added",
+                    "updated",
+                    "unchanged",
+                    "conflict"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "localVersion": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "serverVersion": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "events",
+          "secretPrefix",
+          "active",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "webhook ID"
+          },
+          "url": {
+            "type": "string",
+            "description": "接收地址"
+          },
+          "description": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "batch.finished"
+              ]
+            },
+            "description": "订阅的事件"
+          },
+          "secretPrefix": {
+            "type": "string",
+            "description": "签名密钥的前几个字符"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "注册时间"
+          },
+          "disabledAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "停用时间"
+          }
+        }
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "required": [
+          "id",
+          "webhookId",
+          "eventId",
+          "eventType",
+          "batchId",
+          "status",
+          "createdAt",
+          "attempts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "投递 ID"
+          },
+          "webhookId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "webhook ID"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "事件 ID"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "batch.finished"
+            ]
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "批次 ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed"
+            ],
+            "description": "pending 还会再试；succeeded 收到 2xx；failed 试满次数仍没成功"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "记下的时间"
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "下一次尝试"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "成功或放弃的时间"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "attempt",
+                "at",
+                "durationMs"
+              ],
+              "properties": {
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "第几次"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "开始时间"
+                },
+                "durationMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "耗时，毫秒"
+                },
+                "statusCode": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "description": "收到的 HTTP 状态"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "没收到回答的原因"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BatchFinishedEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "createdAt",
+          "tenantId",
+          "data"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "事件 ID：同一事件重试时不变，接收端按它去重"
+          },
+          "type": {
+            "const": "batch.finished"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "批次结束的时间"
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "租户 ID"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "batch"
+            ],
+            "properties": {
+              "batch": {
+                "$ref": "#/components/schemas/BatchHeader"
+              }
+            }
+          }
+        },
+        "description": "批次结束事件的正文"
+      },
+      "PushManifest": {
+        "type": "object",
+        "required": [
+          "documents",
+          "resources"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "documents": {
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "key",
+                "sha256",
+                "byteLength"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "definition",
+                    "compiled",
+                    "template",
+                    "dataset"
+                  ]
+                },
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byteLength": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          },
+          "resources": {
+            "type": "array",
+            "maxItems": 5000,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "kind",
+                "versions"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "font"
+                  ]
+                },
+                "versions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "version",
+                      "sha256",
+                      "byteLength"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "byteLength": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "rounds": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "type": "object",
+              "required": [
+                "sha256",
+                "task",
+                "round"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "task": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "round": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "inputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000000
+                },
+                "outputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000000
+                },
+                "cacheReadTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000000
+                },
+                "cacheCreationTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000000
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlanInput": {
+        "type": "object",
+        "required": [
+          "monthlyImages",
+          "maxPixels",
+          "concurrency"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "monthlyImages": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "maxPixels": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000000
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "请求不合法：问题清单定位到请求的位置",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "未鉴权：缺少、过期或吊销的会话、API 密钥或代建令牌",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "当前身份没有这项操作的权限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "不存在；别的租户的对象同样答 404",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "与已有内容冲突",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "请求、数据集、像素或展开规模超出上限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error415": {
+        "description": "请求体的类型不对",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "额度不足或超出频率与并发",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error500": {
+        "description": "服务内部错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "暂时无法完成，稍后再试",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

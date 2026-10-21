@@ -8,12 +8,13 @@ import { fileURLToPath } from 'node:url';
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const hex = (bytes) => randomBytes(bytes).toString('hex');
 
-/** 本机服务需要的凭据：数据库属主、应用账号与对象存储。 */
+/** 本机服务需要的凭据：数据库属主、应用账号、对象存储，与加密 webhook 签名密钥的服务密钥（票据 11）。 */
 const CREDENTIALS = {
   RW_POSTGRES_PASSWORD: () => hex(24),
   RW_APP_DB_PASSWORD: () => hex(24),
   RW_S3_ACCESS_KEY_ID: () => `rw${hex(8)}`,
   RW_S3_SECRET_ACCESS_KEY: () => hex(24),
+  RW_SECRET_KEY: () => hex(32),
 };
 
 /** 没有 .env 时生成随机凭据；已有时只补上缺少的项，不改已有的值。凭据只写进这个文件，不打印。返回补上的变量名。 */

@@ -9,7 +9,7 @@ import { asPlatform, withTenant, type Db } from '../src/postgres/db.js';
 import { connectOwner, postgresBackend } from './support.js';
 
 const TENANT_TABLES = ['workspace_documents', 'resource_stores', 'resources', 'resource_versions', 'batches', 'batch_items', 'batch_item_files', 'api_keys', 'users', 'sessions', 'audit_events',
-  'template_revisions', 'templates', 'render_tasks', 'tenant_plans', 'usage_counters', 'usage_events'];
+  'template_revisions', 'templates', 'render_tasks', 'tenant_plans', 'usage_counters', 'usage_events', 'webhooks', 'webhook_events', 'webhook_deliveries', 'webhook_attempts'];
 /** 平台模式下可见的表；其余租户数据表在平台模式下仍然只认当前租户。代建令牌的租户表只在平台模式下可见。 */
 const PLATFORM_VISIBLE = new Set(['users', 'sessions', 'audit_events', 'authoring_token_tenants']);
 const PLATFORM_ONLY = ['authoring_token_tenants'];
@@ -37,8 +37,18 @@ beforeAll(async () => {
       rounds: [{ sha256: sha256.replace(/^./, 'a'), task: 'rls', round: 1, tokens: { inputTokens: 1 } }] }), { pushedBy: '测试', now: new Date() });
     // 套餐与当期计数：设套餐，再建一个一项的批次预占额度。
     await scope.setPlan({ monthlyImages: 5, maxPixels: 1_000, concurrency: 1 }, new Date());
-    expect(await scope.tasks.createBatch({ snapshot: sha256, build: 'sha256:rls', template: name, mode: 'final', items: [{ index: 1, id: '1' }], requestSha256: sha256 }, new Date()))
-      .toMatchObject({ created: true });
+    // webhook（票据 11）：注册一个，取消批次让它结束，记下事件与投递；Compose 里接口进程的投递任务会来投（连不上），记下尝试。
+    const hook = await scope.createWebhook({ url: 'http://127.0.0.1:9/rls', events: ['batch.finished'], secretSealed: 'v1.x', secretPrefix: 'whsec_xxxxxx' }, new Date());
+    expect(hook).toMatchObject({ active: true });
+    const created = await scope.tasks.createBatch({ snapshot: sha256, build: 'sha256:rls', template: name, mode: 'final', items: [{ index: 1, id: '1' }], requestSha256: sha256 }, new Date());
+    expect(created).toMatchObject({ created: true });
+    await scope.tasks.cancelBatch((created as { batch: { batchId: string } }).batch.batchId, new Date());
+    const deadline = Date.now() + 30_000, hookId = (hook as { id: string }).id;
+    while (!(await scope.listWebhookDeliveries(hookId, { limit: 1 }))[0]?.attempts.length) {
+      if (Date.now() > deadline) throw new Error('等不到接口进程的投递任务记下尝试');
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    await scope.updateWebhook(hookId, { active: false }, new Date());
     await scope.tasks.enqueuePreview({ template: '不存在' }, { concurrency: 9, perMinute: 9, staleAfterMs: 60_000 }, new Date());
     const batch = await scope.storage.createBatch();
     await batch.output.write(1, { files: new Map([['problems.json', bytes('[]\n')]]) });
@@ -88,8 +98,12 @@ it('写别的租户的行被拒绝；漏写条件的更新只改到当前租户'
   expect(names).toEqual(['乙']);
 });
 
-it('审计与用量事件只能追加；应用账号不能改表结构', async () => {
+it('审计、用量事件与 webhook 的事件、尝试只能追加；webhook 不能删；应用账号不能改表结构', async () => {
   const [a] = tenants;
+  for (const statement of [`UPDATE webhook_events SET body = '{}'`, 'DELETE FROM webhook_events', 'UPDATE webhook_attempts SET status_code = 200', 'DELETE FROM webhook_attempts',
+    'DELETE FROM webhook_deliveries', 'DELETE FROM webhooks']) {
+    await expect(withTenant(db, a!.id, (client) => client.query(statement)), statement).rejects.toThrow(/permission denied/);
+  }
   await expect(withTenant(db, a!.id, (client) => client.query(`UPDATE audit_events SET action = 'x'`))).rejects.toThrow(/permission denied/);
   await expect(withTenant(db, a!.id, (client) => client.query(`DELETE FROM audit_events`))).rejects.toThrow(/permission denied/);
   await expect(withTenant(db, a!.id, (client) => client.query(`UPDATE usage_events SET quantity = 0`))).rejects.toThrow(/permission denied/);

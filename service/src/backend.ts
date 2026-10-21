@@ -172,6 +172,83 @@ export interface ReleasedReservation {
   readonly released: number;
 }
 
+/** webhook 能订阅的事件（票据 11）：v1.0 只有批次结束；以后新增的种类要显式订阅，已注册的 webhook 收到的事件不变。 */
+export const WEBHOOK_EVENT_TYPES = ['batch.finished'] as const;
+export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
+/** 一个租户同时启用的 webhook 上限：每个批次结束时每个 webhook 各投递一次，不让一个租户放大出站请求。 */
+export const MAX_ACTIVE_WEBHOOKS = 10;
+
+/** 一个 webhook：签名密钥只在注册时显示一次，之后只给前缀，用来认出是哪一个。 */
+export interface Webhook {
+  readonly id: string;
+  readonly url: string;
+  readonly description?: string;
+  readonly events: readonly WebhookEventType[];
+  readonly secretPrefix: string;
+  readonly active: boolean;
+  readonly createdAt: string;
+  readonly disabledAt?: string;
+}
+
+export interface NewWebhook {
+  readonly url: string;
+  readonly description?: string;
+  readonly events: readonly WebhookEventType[];
+  /** 用服务密钥加密后的签名密钥（webhooks.ts 的 sealSecret）。 */
+  readonly secretSealed: string;
+  readonly secretPrefix: string;
+}
+
+/** 一次投递尝试：收到的 HTTP 状态，或没收到回答的原因。 */
+export interface WebhookAttempt {
+  readonly attempt: number;
+  readonly at: string;
+  readonly durationMs: number;
+  readonly statusCode?: number;
+  readonly error?: string;
+}
+
+/** 一个事件对一个 webhook 的投递：pending 还会再试，succeeded 收到 2xx，failed 试满次数仍没成功。 */
+export interface WebhookDelivery {
+  readonly id: string;
+  readonly webhookId: string;
+  readonly eventId: string;
+  readonly eventType: WebhookEventType;
+  readonly batchId: string;
+  readonly status: 'pending' | 'succeeded' | 'failed';
+  readonly createdAt: string;
+  readonly nextAttemptAt?: string;
+  readonly finishedAt?: string;
+  readonly attempts: readonly WebhookAttempt[];
+}
+
+/** 投递任务领到的一次投递；attempts 是此前已记下的尝试次数。 */
+export interface ClaimedDelivery {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly webhookId: string;
+  readonly url: string;
+  readonly secretSealed: string;
+  readonly eventId: string;
+  readonly eventType: WebhookEventType;
+  /** 事件正文：记事件时定下的字节，每次尝试原样发送。 */
+  readonly body: string;
+  readonly attempts: number;
+}
+
+export type DeliveryOutcome = { readonly status: 'succeeded' } | { readonly status: 'pending'; readonly nextAttemptAt: Date } | { readonly status: 'failed' };
+
+/**
+ * webhook 的出站队列（跨租户，票据 11）：批次结束时与批次清单同一个事务记下事件与投递，接口进程的投递任务领取到期的投递发送。
+ * 领取带租约：投递任务中途退出时，租约过了别的投递任务再领，所以接收端可能收到同一事件不止一次，按事件 ID 去重。
+ */
+export interface WebhookOutbox {
+  /** 领取到期、所属 webhook 仍启用的投递，最多 limit 条，租约到 leaseUntil。 */
+  claim(now: Date, leaseUntil: Date, limit: number): Promise<readonly ClaimedDelivery[]>;
+  /** 记下一次尝试与之后的状态；这次领取之后别人已记过时不生效（返回 false）。 */
+  record(delivery: ClaimedDelivery, attempt: WebhookAttempt, outcome: DeliveryOutcome): Promise<boolean>;
+}
+
 export interface PlatformStore {
   createTenant(name: string): Promise<Tenant>;
   listTenants(): Promise<Tenant[]>;
@@ -552,6 +629,15 @@ export interface TenantScope {
   usage(period: string): Promise<UsageCounts>;
   /** 一个周期的用量事件，按 ID 倒序；before 是上一页最后一条的 ID。 */
   listUsageEvents(options: { readonly period: string; readonly kind?: UsageKind; readonly before?: string; readonly limit: number }): Promise<UsageEvent[]>;
+  /** 注册 webhook；已启用 MAX_ACTIVE_WEBHOOKS 个时不注册。 */
+  createWebhook(webhook: NewWebhook, now: Date): Promise<Webhook | { readonly limitReached: true }>;
+  /** 按注册时间排列。 */
+  listWebhooks(): Promise<Webhook[]>;
+  getWebhook(id: string): Promise<Webhook | undefined>;
+  /** 停用或重新启用、改说明；重新启用时已启用 MAX_ACTIVE_WEBHOOKS 个则不改。不存在时 undefined。 */
+  updateWebhook(id: string, change: { readonly active?: boolean; readonly description?: string }, now: Date): Promise<Webhook | { readonly limitReached: true } | undefined>;
+  /** 一个 webhook 的投递，按 ID 倒序；before 是上一页最后一条的 ID。 */
+  listWebhookDeliveries(webhookId: string, options: { readonly limit: number; readonly before?: string }): Promise<WebhookDelivery[]>;
   readonly storage: TenantStorage;
   readonly tasks: TenantTasks;
 }
@@ -579,4 +665,5 @@ export interface ServiceBackend {
    * 这样的批次以后若又有那个构建的 worker 交付，成功的项照样计已用。
    */
   reconcileReservations(options: { readonly onlineSince: Date; readonly idleBefore: Date }): Promise<readonly ReleasedReservation[]>;
+  readonly webhooks: WebhookOutbox;
 }

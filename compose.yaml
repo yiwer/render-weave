@@ -12,6 +12,16 @@ x-service-env: &service-env
   RW_S3_SECRET_ACCESS_KEY: ${RW_S3_SECRET_ACCESS_KEY:?缺少 RW_S3_SECRET_ACCESS_KEY，先运行 node service/scripts/up.mjs 生成 .env}
   RW_LOG_LEVEL: ${RW_LOG_LEVEL:-info}
 
+# webhook 投递（票据 11）：服务密钥加密各 webhook 的签名密钥。接口进程按这些值投递；Docker 后端测试的 tester 用同一个密钥与同样的数值。
+# 本机开发要投给本机或内网的接收端时设 RW_WEBHOOK_ALLOW_PRIVATE=true；生产只投 https 与公网地址。
+x-webhook-env: &webhook-env
+  RW_SECRET_KEY: ${RW_SECRET_KEY:?缺少 RW_SECRET_KEY，先运行 node service/scripts/up.mjs 补全 .env}
+  RW_WEBHOOK_ALLOW_PRIVATE: ${RW_WEBHOOK_ALLOW_PRIVATE:-false}
+  RW_WEBHOOK_POLL_MS: ${RW_WEBHOOK_POLL_MS:-1000}
+  RW_WEBHOOK_RETRY_BASE_MS: ${RW_WEBHOOK_RETRY_BASE_MS:-60000}
+  RW_WEBHOOK_MAX_ATTEMPTS: ${RW_WEBHOOK_MAX_ATTEMPTS:-8}
+  RW_WEBHOOK_TIMEOUT_MS: ${RW_WEBHOOK_TIMEOUT_MS:-10000}
+
 x-readyz: &readyz
   interval: 3s
   timeout: 5s
@@ -60,12 +70,13 @@ services:
         condition: service_started
 
   # 接口进程：等迁移与代码一致后启动。定期对账（票据 09）：批次的构建没有 worker、闲置超过宽限时间，退回它遗留的预占。
+  # 投递 webhook（票据 11）：批次结束的事件签名后发给各 webhook，失败按指数退避重试。
   api:
     image: renderweave-service:local
     pull_policy: never
     command: ["node", "service/dist/main.js", "api"]
     environment:
-      <<: *service-env
+      <<: [*service-env, *webhook-env]
       RW_RECONCILE_MS: ${RW_RECONCILE_MS:-60000}
       RW_RESERVATION_GRACE_MS: ${RW_RESERVATION_GRACE_MS:-600000}
     ports:
@@ -130,7 +141,7 @@ services:
       target: test
     image: renderweave-service-test:local
     environment:
-      <<: *service-env
+      <<: [*service-env, *webhook-env]
       RW_OWNER_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}@postgres:5432/renderweave
       RW_API_URL: http://api:8080
       RW_WORKER_URL: http://worker:8081

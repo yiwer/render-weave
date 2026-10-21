@@ -8,6 +8,8 @@ COPY package.json package-lock.json tsconfig.json tsconfig.build.json ./
 RUN npm ci
 COPY src ./src
 RUN npm run build
+# DSL 的 JSON Schema：开放 API 的描述把批次请求、渲染请求与数据集的 Schema 原样收进来（票据 11）。
+COPY schemas ./schemas
 
 # 服务：只经 service/src/engine.ts 引用引擎的公开入口；编译用引擎同一版本的 TypeScript。
 FROM engine AS service
@@ -36,6 +38,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=engine /app/dist dist
+COPY --from=engine /app/schemas schemas
 COPY service/package.json service/package-lock.json service/
 RUN cd service && npm ci --omit=dev && npm cache clean --force
 COPY --from=service /app/service/dist service/dist

@@ -41,6 +41,10 @@ export const ServiceProblemCodes = {
   replayRateLimited: 'replay.rateLimited',
   /** 计量与额度（票据 09，ADR-0020）：本月额度不够这一批，整批拒绝（429）。 */
   quotaExceeded: 'quota.exceeded',
+  /** webhook（票据 11）：URL 不是 https，或指向本机、内网与保留地址（400）。 */
+  webhookUrlNotAllowed: 'webhook.urlNotAllowed',
+  /** 本租户启用的 webhook 已达上限（409）。 */
+  webhookLimitReached: 'webhook.limitReached',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

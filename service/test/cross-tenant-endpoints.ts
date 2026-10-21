@@ -16,6 +16,7 @@ export interface TenantObjects {
   readonly batchId: string;
   readonly datasetId: string;
   readonly resourceId: string;
+  readonly webhookId: string;
 }
 
 export interface CrossTenantEndpoint {
@@ -87,6 +88,12 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   // 计量与额度（票据 09）：用量的租户由身份决定，回答里不能有另一租户的批次与 ID。
   { route: 'GET /v1/usage', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/usage' }) },
   { route: 'GET /v1/usage/events', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/usage/events' }) },
+  // webhook（票据 11）：租户由身份决定；webhook ID 在路径里，别的租户的与不存在的同样答 404。
+  { route: 'GET /v1/webhooks', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/webhooks' }) },
+  { route: 'POST /v1/webhooks', addressesObject: false, request: () => ({ method: 'POST', url: '/v1/webhooks', body: { url: 'https://example.com/cross-tenant' } }) },
+  { route: 'GET /v1/webhooks/:webhookId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/webhooks/${a.webhookId}` }) },
+  { route: 'PATCH /v1/webhooks/:webhookId', addressesObject: true, request: (a) => ({ method: 'PATCH', url: `/v1/webhooks/${a.webhookId}`, body: { active: false } }) },
+  { route: 'GET /v1/webhooks/:webhookId/deliveries', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/webhooks/${a.webhookId}/deliveries` }) },
 ];
 
 /** 用 A 的数据集 ID 写一份数据集；另一租户没有它的数据定义，保存答 400。 */

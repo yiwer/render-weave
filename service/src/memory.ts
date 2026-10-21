@@ -4,13 +4,14 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  DEFAULT_PLAN, documentSource, EmailTakenError, parseDocumentSource, periodOf, TOKEN_KINDS,
+  DEFAULT_PLAN, documentSource, EmailTakenError, MAX_ACTIVE_WEBHOOKS, parseDocumentSource, periodOf, TOKEN_KINDS,
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type LoginRecord, type Member,
   type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
   type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
+  type ClaimedDelivery, type Webhook, type WebhookAttempt, type WebhookDelivery, type WebhookEventType,
 } from './backend.js';
-import { batchManifest, NOT_STARTED, notRunItem } from './batches.js';
+import { batchFinishedEvent, batchManifest, NOT_STARTED, notRunItem } from './batches.js';
 import { itemDirectory, manifestBytes, memoryWorkspaceDocuments, resourceBackend, type BatchSource, type RenderMode, type ResourceManifestEntry } from './engine.js';
 
 interface UserRow { id: string; tenantId: string | null; email: string; role: MemberRole | 'platformAdmin'; passwordHash: string; active: boolean; createdAt: string }
@@ -30,6 +31,13 @@ interface BatchRow {
   createdAt: Date; cancelRequestedAt?: Date; finishedAt?: Date; manifest?: NonNullable<BatchState['manifest']>;
   /** 计费周期与剩余预占（票据 09）。 */
   period: string; reserved: number;
+}
+/** webhook（票据 11）：另存加密的签名密钥。 */
+type WebhookRow = { -readonly [K in keyof Webhook]: Webhook[K] } & { tenantId: string; secretSealed: string };
+/** 一个事件对一个 webhook 的投递：事件正文、租约与各次尝试。 */
+interface DeliveryRow {
+  id: string; tenantId: string; webhookId: string; eventId: string; eventType: WebhookEventType; batchId: string; body: string;
+  status: WebhookDelivery['status']; createdAt: Date; nextAttemptAt?: Date; finishedAt?: Date; leaseUntil?: Date; attempts: WebhookAttempt[];
 }
 /** 当期计数：限额、已用与预占。 */
 interface CounterRow { limit: number; used: number; reserved: number }
@@ -60,7 +68,12 @@ export function createMemoryBackend(): ServiceBackend {
   const plans = new Map<string, Plan>();
   const counters = new Map<string, CounterRow>();
   const usageEvents: (UsageEvent & { tenantId: string })[] = [];
-  let sequence = 0, taskSequence = 0, usageSequence = 0;
+  /** webhook、已记事件的批次（每个批次只记一次）与投递。 */
+  const webhooks: WebhookRow[] = [];
+  const eventBatches = new Set<string>();
+  const deliveries: DeliveryRow[] = [];
+  let sequence = 0, taskSequence = 0, usageSequence = 0, deliverySequence = 0;
+  const webhookOf = ({ tenantId: _t, secretSealed: _s, ...webhook }: WebhookRow): Webhook => structuredClone(webhook);
   const planOf = (tenantId: string) => plans.get(tenantId) ?? DEFAULT_PLAN;
   const counter = (tenantId: string, period: string) => {
     const key = `${tenantId}|${period}`;
@@ -127,6 +140,16 @@ export function createMemoryBackend(): ServiceBackend {
     row.finishedAt = now;
     // 批次结束时退回剩下的预占（ADR-0020）。
     release(row, 'all');
+    // 批次结束的 webhook 事件（票据 11）：给启用、订阅了它的每个 webhook 各记一条投递；每个批次只记一次。
+    const hooks = webhooks.filter((hook) => hook.tenantId === row.tenantId && hook.active && hook.events.includes('batch.finished'));
+    if (hooks.length && !eventBatches.has(row.batchId)) {
+      eventBatches.add(row.batchId);
+      const eventId = randomUUID(), body = batchFinishedEvent({ id: eventId, tenantId: row.tenantId, createdAt: now }, batchState(row));
+      for (const hook of hooks) {
+        deliveries.push({ id: String(++deliverySequence), tenantId: row.tenantId, webhookId: hook.id, eventId, eventType: 'batch.finished', batchId: row.batchId, body,
+          status: 'pending', createdAt: now, nextAttemptAt: now, attempts: [] });
+      }
+    }
     await storageOf(row.tenantId).openBatch(row.batchId).output.finish(manifest);
   };
 
@@ -215,6 +238,32 @@ export function createMemoryBackend(): ServiceBackend {
       async listUsageEvents({ period, kind, before, limit }) {
         return usageEvents.filter((event) => event.tenantId === tenantId && event.period === period && (!kind || event.kind === kind) && (!before || Number(event.id) < Number(before)))
           .reverse().slice(0, limit).map(({ tenantId: _t, ...event }) => structuredClone(event));
+      },
+      async createWebhook(webhook, now) {
+        if (webhooks.filter((hook) => own(hook) && hook.active).length >= MAX_ACTIVE_WEBHOOKS) return { limitReached: true };
+        const row: WebhookRow = { tenantId, id: randomUUID(), url: webhook.url, ...(webhook.description === undefined ? {} : { description: webhook.description }),
+          events: [...webhook.events], secretSealed: webhook.secretSealed, secretPrefix: webhook.secretPrefix, active: true, createdAt: now.toISOString() };
+        webhooks.push(row);
+        return webhookOf(row);
+      },
+      listWebhooks: async () => webhooks.filter(own).map(webhookOf),
+      getWebhook: async (id) => { const row = webhooks.find((hook) => hook.id === id && own(hook)); return row && webhookOf(row); },
+      async updateWebhook(id, change, now) {
+        const row = webhooks.find((hook) => hook.id === id && own(hook));
+        if (!row) return undefined;
+        if (change.active === true && !row.active && webhooks.filter((hook) => own(hook) && hook.active).length >= MAX_ACTIVE_WEBHOOKS) return { limitReached: true };
+        if (change.description !== undefined) row.description = change.description;
+        if (change.active === true && !row.active) { row.active = true; delete row.disabledAt; }
+        if (change.active === false && row.active) { row.active = false; row.disabledAt = now.toISOString(); }
+        return webhookOf(row);
+      },
+      async listWebhookDeliveries(webhookId, { limit, before }) {
+        return deliveries.filter((row) => own(row) && row.webhookId === webhookId && (!before || Number(row.id) < Number(before))).reverse().slice(0, limit)
+          .map((row): WebhookDelivery => ({
+            id: row.id, webhookId: row.webhookId, eventId: row.eventId, eventType: row.eventType, batchId: row.batchId, status: row.status,
+            createdAt: row.createdAt.toISOString(), ...(row.nextAttemptAt ? { nextAttemptAt: row.nextAttemptAt.toISOString() } : {}),
+            ...(row.finishedAt ? { finishedAt: row.finishedAt.toISOString() } : {}), attempts: structuredClone(row.attempts),
+          }));
       },
       get storage() { return storageOf(tenantId); },
       tasks: {
@@ -305,6 +354,29 @@ export function createMemoryBackend(): ServiceBackend {
   return {
     readiness: async () => ({ ready: true, checks: { memory: 'ok' } }),
     tenant,
+    webhooks: {
+      async claim(now, leaseUntil, limit) {
+        const active = (row: DeliveryRow) => webhooks.some((hook) => hook.id === row.webhookId && hook.active);
+        return deliveries.filter((row) => row.status === 'pending' && row.nextAttemptAt! <= now && (!row.leaseUntil || row.leaseUntil < now) && active(row))
+          .sort((a, b) => a.nextAttemptAt!.getTime() - b.nextAttemptAt!.getTime() || Number(a.id) - Number(b.id)).slice(0, limit)
+          .map((row): ClaimedDelivery => {
+            row.leaseUntil = leaseUntil;
+            const hook = webhooks.find((candidate) => candidate.id === row.webhookId)!;
+            return { id: row.id, tenantId: row.tenantId, webhookId: row.webhookId, url: hook.url, secretSealed: hook.secretSealed, eventId: row.eventId,
+              eventType: row.eventType, body: row.body, attempts: row.attempts.length };
+          });
+      },
+      async record(delivery, attempt, outcome) {
+        const row = deliveries.find((candidate) => candidate.id === delivery.id && candidate.tenantId === delivery.tenantId);
+        if (!row || row.status !== 'pending' || row.attempts.length !== delivery.attempts) return false;
+        row.attempts.push(structuredClone(attempt));
+        row.status = outcome.status;
+        delete row.leaseUntil;
+        if (outcome.status === 'pending') row.nextAttemptAt = outcome.nextAttemptAt;
+        else { delete row.nextAttemptAt; row.finishedAt = new Date(attempt.at); }
+        return true;
+      },
+    },
     queue: {
       async claim(_worker, now, { build, leaseMs, previews }) {
         // 预览没有项序号，排在批次项前面；批次项按项序号轮转，再按入队先后。过了租约还在渲染中的批次项可以由同构建的 worker 重领。

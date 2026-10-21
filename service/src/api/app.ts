@@ -7,6 +7,7 @@ import type { Actor, Identity, ServiceBackend } from '../backend.js';
 import { hashToken, tokenShape, type PasswordCost } from '../credentials.js';
 import { parseJsonKeepingPrecision } from '../engine.js';
 import type { Logger } from '../log.js';
+import { buildOpenApi } from './openapi.js';
 import { can, type Access } from './permissions.js';
 import { ApiError, fail, problem, ServiceProblemCodes, validationProblems } from './problems.js';
 import { registerAuthoringRoutes } from './authoring.js';
@@ -17,6 +18,7 @@ import { registerRecordRoutes } from './records.js';
 import { registerResourceRoutes } from './resources.js';
 import { registerRoutes } from './routes.js';
 import { registerUsageRoutes } from './usage.js';
+import { registerWebhookRoutes } from './webhooks.js';
 
 declare module 'fastify' {
   interface FastifyContextConfig { access?: Access }
@@ -32,6 +34,10 @@ export interface ApiOptions {
   readonly passwordCost?: PasswordCost;
   /** 入队前的限制与预览、重放的频率（ADR-0017）；缺省值见 DEFAULT_LIMITS。并发数与单张最大像素另由套餐定。 */
   readonly limits?: Partial<ServiceLimits>;
+  /** 服务密钥（RW_SECRET_KEY，32 字节）：加密 webhook 的签名密钥，投递任务用同一个解开。 */
+  readonly secretKey: Uint8Array;
+  /** webhook 允许 http 与内网、回环地址：只用于本机开发与测试（RW_WEBHOOK_ALLOW_PRIVATE）。 */
+  readonly allowPrivateWebhooks?: boolean;
 }
 
 export interface ApiContext {
@@ -39,15 +45,19 @@ export interface ApiContext {
   readonly now: () => Date;
   readonly passwordCost: PasswordCost;
   readonly limits: ServiceLimits;
+  readonly secretKey: Uint8Array;
+  readonly allowPrivateWebhooks: boolean;
 }
 
-/** 已注册的路由与访问要求，供跨租户端点清单的测试核对。 */
-export interface RouteEntry { readonly method: string; readonly url: string; readonly access: Access }
+/** 已注册的路由、访问要求与请求的 JSON Schema：生成 OpenAPI 描述，也供跨租户端点清单的测试核对。 */
+export interface RouteEntry { readonly method: string; readonly url: string; readonly access: Access; readonly schema?: { readonly body?: unknown; readonly querystring?: unknown } }
 
 export function createApi(options: ApiOptions): FastifyInstance & { routeTable: RouteEntry[] } {
   const context: ApiContext = {
     backend: options.backend, now: options.now ?? (() => new Date()), passwordCost: options.passwordCost ?? 'production', limits: { ...DEFAULT_LIMITS, ...options.limits },
+    secretKey: options.secretKey, allowPrivateWebhooks: options.allowPrivateWebhooks ?? false,
   };
+  if (context.secretKey.length !== 32) throw new Error('服务密钥要有 32 字节');
   const app = Fastify({ loggerInstance: options.logger as FastifyBaseLogger, ajv: { customOptions: { allErrors: false, removeAdditional: false, coerceTypes: false } } });
   const routeTable: RouteEntry[] = [];
   app.decorateRequest('identity', null);
@@ -64,7 +74,8 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
     done(null, value);
   });
   app.addHook('onRoute', (route) => {
-    for (const method of [route.method].flat()) if (method !== 'HEAD') routeTable.push({ method, url: route.url, access: route.config?.access ?? 'public' });
+    const schema = route.schema ? { ...(route.schema.body ? { body: route.schema.body } : {}), ...(route.schema.querystring ? { querystring: route.schema.querystring } : {}) } : undefined;
+    for (const method of [route.method].flat()) if (method !== 'HEAD') routeTable.push({ method, url: route.url, access: route.config?.access ?? 'public', ...(schema ? { schema } : {}) });
   });
   app.addHook('onRequest', async (request) => {
     const access = request.routeOptions.config?.access;
@@ -108,6 +119,10 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerResourceRoutes(app, context);
   registerRecordRoutes(app, context);
   registerUsageRoutes(app, context);
+  registerWebhookRoutes(app, context);
+  // 机器可读的 API 描述（票据 11）：按已注册的路由生成，第一次请求时生成一次。
+  let openapi: Record<string, unknown> | undefined;
+  app.get('/v1/openapi.json', { config: { access: 'public' } }, async () => (openapi ??= buildOpenApi(routeTable)));
   return Object.assign(app, { routeTable });
 }
 

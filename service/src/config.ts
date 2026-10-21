@@ -3,6 +3,8 @@
  * 缺少或不合法时只列出变量名，从不输出取值。
  * 接口进程与 worker 用应用账号连库；部署步骤 setup 用属主账号执行迁移，并设置应用账号的密码（M262）。
  */
+import { DEFAULT_WEBHOOK_CONFIG, SECRET_KEY_SHAPE, type WebhookConfig } from './webhooks.js';
+
 export interface S3Config {
   readonly endpoint: string;
   readonly region: string;
@@ -98,4 +100,23 @@ export function loadSetupConfig(env: NodeJS.ProcessEnv): SetupConfig {
   read.done();
   if (config.appDatabasePassword.length < 16) throw new ConfigError('环境变量 RW_APP_DATABASE_PASSWORD 至少要 16 个字符');
   return config;
+}
+
+/** 接口进程的 webhook 投递（票据 11）：服务密钥加密各 webhook 的签名密钥；数值缺省见 DEFAULT_WEBHOOK_CONFIG。 */
+export function loadWebhookConfig(env: NodeJS.ProcessEnv): { readonly secretKey: Uint8Array; readonly config: WebhookConfig } {
+  const read = reader(env), raw = read.required('RW_SECRET_KEY');
+  read.done();
+  if (!SECRET_KEY_SHAPE.test(raw)) throw new ConfigError('环境变量 RW_SECRET_KEY 必须是 64 位小写十六进制（32 字节）');
+  const integer = integerReader(env), flag = env['RW_WEBHOOK_ALLOW_PRIVATE'] ?? 'false';
+  if (flag !== 'true' && flag !== 'false') throw new ConfigError('环境变量 RW_WEBHOOK_ALLOW_PRIVATE 只能是 true 或 false');
+  return {
+    secretKey: new Uint8Array(Buffer.from(raw, 'hex')),
+    config: {
+      pollMs: integer('RW_WEBHOOK_POLL_MS', DEFAULT_WEBHOOK_CONFIG.pollMs, 5),
+      retryBaseMs: integer('RW_WEBHOOK_RETRY_BASE_MS', DEFAULT_WEBHOOK_CONFIG.retryBaseMs, 1),
+      maxAttempts: integer('RW_WEBHOOK_MAX_ATTEMPTS', DEFAULT_WEBHOOK_CONFIG.maxAttempts, 1),
+      timeoutMs: integer('RW_WEBHOOK_TIMEOUT_MS', DEFAULT_WEBHOOK_CONFIG.timeoutMs, 100),
+      allowPrivate: flag === 'true',
+    },
+  };
 }

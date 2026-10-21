@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了八部分：
+目前完成了九部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -28,6 +28,9 @@
 - **计量与额度**（[票据 09](../.scratch/render-service-v1/issues/09-metering-and-quotas.md)，M274、M275）：
   - 平台管理员设置套餐（每月出图张数、单张最大像素、并发数）；提交批次先预占，额度不够整批拒绝，逐项结算，对账退回崩溃后遗留的预占；
   - 推送可以附带代建轮次，各轮的 token 记为用量事件；客户管理员与平台管理员看已用、预占、剩余与明细。
+- **开放 API 合同与 webhook**（[票据 11](../.scratch/render-service-v1/issues/11-api-contract-and-webhooks.md)，M276、M277）：
+  - `GET /v1/openapi.json` 返回 OpenAPI 3.1 描述，有快照与 1.0.0 基线，1.x 只做加法；错误回答按类别映射状态，用例逐个端点核对。客户开发者的使用说明见[开放 API](api.md)；
+  - 批次结束时向客户注册的 webhook 投递带签名的事件，失败按指数退避重试，投递记录可查。
 
 ## 本机启动
 
@@ -39,7 +42,7 @@ node service/scripts/up.mjs
 
 这条命令做三件事：
 
-1. **生成凭据**：在仓库根的 `.env` 里补上缺少的随机凭据：数据库属主、应用账号与对象存储各一项。已有的值不动，`.env` 不进版本库，命令也不打印凭据。
+1. **生成凭据**：在仓库根的 `.env` 里补上缺少的随机凭据：数据库属主、应用账号、对象存储，以及加密 webhook 签名密钥的服务密钥。已有的值不动，`.env` 不进版本库，命令也不打印凭据。
 2. **构建并启动**：构建镜像；起 PostgreSQL 与 S3 兼容存储；执行部署步骤 `setup`，包括迁移、应用账号与建桶；再起接口进程和一个 worker，等到全部就绪。
 3. **打标签**：用渲染器构建标识给镜像打标签，形如 `renderweave-service:sha256-<哈希>`。
 
@@ -79,10 +82,15 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `RW_WORKER_POLL_MS` | worker | 队列空时隔多久再看，缺省 100 |
 | `RW_RECONCILE_MS` | 接口进程 | 对账任务隔多久做一次，缺省 60000（M275） |
 | `RW_RESERVATION_GRACE_MS` | 接口进程 | 批次闲置多久、又没有它的构建的 worker 时退回预占，缺省 600000（10 分钟） |
+| `RW_SECRET_KEY` | 接口进程 | 服务密钥：64 位小写十六进制（32 字节），加密各 webhook 的签名密钥；必填，各接口进程用同一个（M277） |
+| `RW_WEBHOOK_POLL_MS` | 接口进程 | 投递任务隔多久看一次到期的投递，缺省 1000 |
+| `RW_WEBHOOK_RETRY_BASE_MS`、`RW_WEBHOOK_MAX_ATTEMPTS` | 接口进程 | 第一次重试前等多久（之后每次翻倍）与最多试几次，缺省 60000 与 8 |
+| `RW_WEBHOOK_TIMEOUT_MS` | 接口进程 | 一次投递等回答的时间，缺省 10000 |
+| `RW_WEBHOOK_ALLOW_PRIVATE` | 接口进程 | `true` 时允许 http 与本机、内网地址，只用于本机开发与测试；缺省 `false` |
 | `RW_WORKER_MEMORY` | Compose | worker 容器的内存上限，缺省 `2g`，不用交换分区 |
 | `RW_WORKER_STOP_GRACE` | Compose | worker 的停止宽限，缺省 `30m`：停止时做完本构建已接受的批次项再退出（M269） |
 
-本机的 `.env` 有四项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY`。Compose 用这四项拼出上面的变量。
+本机的 `.env` 有五项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY` 与 `RW_SECRET_KEY`。Compose 用这几项拼出上面的变量；票据 11 之前生成的 `.env` 没有 `RW_SECRET_KEY`，再运行一次 `up.mjs` 会补上。
 
 ## 进程与命令
 
@@ -91,7 +99,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 命令 | 作用 |
 |---|---|
 | `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
-| `api` | 等迁移与代码一致，再启动接口进程；启动时与之后定期对账，退回崩溃后遗留的预占（见[计量与额度](#计量与额度)） |
+| `api` | 等迁移与代码一致，再启动接口进程；启动时与之后定期对账，退回崩溃后遗留的预占（见[计量与额度](#计量与额度)）；投递 webhook（见 [webhook](#webhook)） |
 | `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程；收到停止信号时排空（见[渲染 worker](#渲染-worker)） |
 | `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
@@ -299,6 +307,13 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 ```
 
 - `status` 是 `running`（还有项没结束）或 `finished`（全部项结束，批次清单已发布）。
+- 结束后另有 `outcome`（M276）：
+  - `completed`：全部交付；
+  - `partiallyFailed`：部分失败；
+  - `failed`：全部失败；
+  - `cancelled`：请求过取消。
+
+  它与 webhook 事件里的相同。
 - 每项先是 `queued`、`running`，结束后是 `delivered`、`failed` 或 `notRun`，带问题清单。失败项的问题清单与单次渲染相同（票据 02）；worker 没渲染完的项写 `worker.timeout`、`worker.memoryExceeded` 等，并写出问题清单文件。
 - 批次清单（`batch.json`）在最后一项结束时发布，语义与字节都与本地 `deliver` 的相同；结束后的 `summary` 与 `problems` 取自它。
 
@@ -473,6 +488,40 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - 平台管理员用 `GET /v1/platform/tenants/{租户}/usage` 与 `…/usage/events` 看任一租户的，回答相同。
 - 用量事件只追加，应用账号不能改、不能删。
 
+## 开放 API 描述
+
+给客户开发者的说明在[开放 API](api.md)：鉴权、错误与状态、常用流程、webhook 的接收与校验、1.x 兼容策略与变更记录。这里只写维护时要知道的（M276）。
+
+- **生成**：`GET /v1/openapi.json` 按已注册的路由生成 OpenAPI 3.1 描述，第一次请求时生成一次。
+  - 路径、方法与请求的 JSON Schema 取自路由的声明；
+  - 说明、回答与错误状态写在 `service/src/api/openapi.ts` 的 `ROUTE_DOCS`；
+  - 加端点时要一并写说明，否则生成时报错。
+- **错误状态**：每个端点会有的错误状态，由访问要求（401、403）、请求体与查询串（400）、路径里的对象（404）自动列出，再加上说明里列的。问题码与状态的对应在 `PROBLEM_STATUS`。
+- **核对**：测试里 `createWorld` 的每个回答都按描述核对（`service/test/openapi-check.ts`）。改了回答的形状却没改描述，用例就失败。
+- **快照与基线**：
+  - 描述的快照是 `docs/api/openapi.json`，有意改动时用 `npx vitest run -u` 更新；
+  - 1.0.0 基线是 `docs/api/openapi-1.0.0.json`，`service/test/openapi-compat.ts` 列出相对它不是加法的改动；
+  - 描述变了要升 `API_VERSION`，并在 `docs/api.md` 的变更记录里写一行。
+- **DSL 的 Schema**：批次请求、渲染请求与数据集的请求体引用 `schemas/` 里的 JSON Schema，镜像里因此带着 `schemas/`。
+
+## webhook
+
+客户管理员与 API 密钥注册 webhook，批次结束时接口进程把带签名的事件投递过去（M277）。接收端怎样校验见[开放 API](api.md#webhook)。
+
+- **注册**：`POST /v1/webhooks`，回答里的签名密钥只出现这一次。
+  - 库里存的是用服务密钥 `RW_SECRET_KEY` 以 AES-256-GCM 加密、绑定租户的密文，列表只给前缀；
+  - 各接口进程用同一个服务密钥。它丢了，已有的 webhook 只能重新注册。
+- **URL 检查**：只收 https 与公网地址，`RW_WEBHOOK_ALLOW_PRIVATE=true` 时放开。每个租户最多同时启用 10 个。
+- **事件**：批次结束时，在发布批次清单的同一个事务里记一个 `batch.finished` 事件，并给当时启用、订阅了它的每个 webhook 各记一条投递。没有这样的 webhook 就不记。
+- **投递任务**：在接口进程里，与对账任务并列。
+  - 每 `RW_WEBHOOK_POLL_MS` 用属主函数 `rw_claim_webhook_deliveries` 领取到期的投递（跨租户，`FOR NO KEY UPDATE SKIP LOCKED`，带租约），并行发送；
+  - 连接前再查解析出的地址，指向本机、内网或保留地址的不投；
+  - 2xx 算成功，其余按 `RW_WEBHOOK_RETRY_BASE_MS` 起翻倍退避，试满 `RW_WEBHOOK_MAX_ATTEMPTS` 次记失败。每次尝试记一行，只记时间、耗时与状态码或原因；
+  - 多个接口进程同时投递时，一条投递只被一个领走；投递任务中途退出，租约过了别人再领。
+- **日志**：投递失败时记一行警告：租户、webhook、投递、第几次与原因，不记 URL、正文与密钥。
+- **表**：`webhooks`、`webhook_events`、`webhook_deliveries`、`webhook_attempts`，都开行级安全。事件与尝试只追加，webhook 只能停用、不能删。
+- **审计**：`webhook.create`、`webhook.update`。
+
 ## 渲染 worker
 
 一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
@@ -542,6 +591,15 @@ RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compos
   - 批量交付用例（`service/test/batch.test.ts`）用进程内 worker：批次清单与出图记录和引擎在本进程交付的逐字节相同，记录能重放；另测构建固定、排空、租约重领与过期的写回。
   - 数据集用例（`service/test/datasets.test.ts`）：读回的字节与保存的相同；校验的问题与引擎对同一份数据的 `checkDataset` 相同（引擎的 `test/dataset-check.test.ts` 再核对它与渲染时相同）；按 ID 预览与内联同一份数据的预览逐字节相同。
   - 计量与额度用例（`service/test/metering.test.ts`）用进程内 worker：套餐的设置与校验；预占、整批拒绝与剩余额度；逐项结算与失败项退回；同一幂等键重试与 worker 重领只计一次；取消退回；草稿与重放不计；单张最大像素；UTC+8 的周期与不结转；对账；明细的筛选、翻页与可见范围。代建 token 的记账在推送用例里，从命令行附带轮次目录。
+  - webhook 用例（`service/test/webhooks.test.ts`）在测试进程里起投递任务，接收端在本机：
+    - 注册、停用与上限；签名按文档独立核对；
+    - 四种结果的事件各投递一次；500、超时、断开之后的退避重试；试满次数记失败；
+    - 重定向不跟随；停用后不再投递；投递时挡住解析到回环的地址；日志里没有密钥与 URL。
+  - OpenAPI 合同用例（`service/test/openapi.test.ts`）：
+    - 描述覆盖全部端点，与快照相同，Schema 在严格模式下都能编译；
+    - 相对 1.0.0 基线只做了加法，兼容检查本身另有不兼容与加法的例子；
+    - 逐个端点探查 401、404 与 400。
+    - 其余 API 用例的每个回答都按描述核对。
   - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
@@ -557,12 +615,14 @@ Docker 后端测试覆盖以下内容：
 - 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；
+- webhook：投递由 Compose 里真实的接口进程完成。它与 tester 用同一个服务密钥，脚本把退避与超时缩短，并放开内网地址；接收端在 tester 容器里。另核对库里只存签名密钥的密文；
+- 开放 API 描述：Compose 里的接口进程返回的描述与测试进程按同一份代码生成的相同，镜像里带着 DSL 的 JSON Schema；
 - 崩溃后对账：在 tester 里用镜像里编译好的服务（另加一个标记文件，构建标识与 Compose 里的不同）起接口进程与 worker 进程，批次进行中把两个进程都强杀，只起接口进程：被强杀的 worker 30 秒后不再算在线，对账退回遗留的预占；再起 worker 交付完，每项只计一次；
 - 出图记录：测试进程的 worker 与 Compose 里的 worker 是两个构建，各自交付的记录各自重放成功，镜像构建的记录在测试进程里离线重放被拒；直接改写对象存储里的一个对象，下载、整批图片、两种导出都答 `record.integrityMismatch`，重放报同样的问题；
 - 行级安全：
   - 每张租户表都开启，漏写条件只返回当前租户；
   - 没设置租户时查不到，平台模式看不到租户数据；
-  - 越权写入被拒，审计与用量事件只能追加，应用账号不能改表结构；
+  - 越权写入被拒，审计、用量事件与 webhook 的事件、尝试只能追加，webhook 不能删，应用账号不能改表结构；
 - 存储：
   - PostgreSQL 加 S3 实现跑同一组合同用例；
   - 对象键与去重、文档原文、事务提交点、并发提交与同一项只登记一次；

@@ -2,7 +2,7 @@
  * 开放 API 用例：账号、租户与鉴权（票据 04，M247、M261）。只经 HTTP 请求驱动，断言响应、问题清单与经 API 可见的结果。
  * 同一组用例跑两种后端：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑。
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createApi, type ApiOptions } from '../src/api/app.js';
@@ -11,6 +11,7 @@ import { ENGINE_MAX_PIXELS, type Plan, type ServiceBackend } from '../src/backen
 import { generatePassword, hashPassword } from '../src/credentials.js';
 import { createLogger } from '../src/log.js';
 import { CROSS_TENANT_ENDPOINTS, EXEMPT_ACCESS, type TenantObjects } from './cross-tenant-endpoints.js';
+import { openApiChecker } from './openapi-check.js';
 import { seedGreeting } from './seed.js';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -37,6 +38,9 @@ const replacementCheck = (id: string) => ({
   impact: { workspaceFingerprint: SAMPLE_SHA256, renderOptions: { fallbackFonts: [], svgFonts: [] }, references: [], configuration: [], scope: '' },
 });
 
+/** 按 OpenAPI 描述核对回答的检查器：描述由路由生成，与后端无关，同一进程里只建一次。 */
+let checker: ReturnType<typeof openApiChecker> | undefined;
+
 /** 环境里两个租户的缺省套餐：额度宽裕，不妨碍别的用例；额度的用例另设。 */
 export const WORLD_PLAN: Plan = { monthlyImages: 100_000, maxPixels: ENGINE_MAX_PIXELS, concurrency: 2 };
 
@@ -45,13 +49,29 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
   const clock = { value: new Date() };
   const logs: string[] = [], secrets: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { logs.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
-  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test', ...options.api });
+  // 测试里的 webhook 接收端在本机或测试容器里：放开内网地址。服务密钥与投递任务用同一个：
+  // Docker 后端测试用 Compose 里接口进程的密钥（它的投递任务也会领到这里记的投递），其余每套环境随机生成。
+  const secretKey = new Uint8Array(process.env['RW_SECRET_KEY'] ? Buffer.from(process.env['RW_SECRET_KEY'], 'hex') : randomBytes(32));
+  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test',
+    secretKey, allowPrivateWebhooks: true, ...options.api });
+  // 每个回答都按 OpenAPI 描述核对（票据 11）：记下匹配到的路由模板，回答与描述不符时这次调用就失败。
+  const routes = new WeakMap<object, string>();
+  app.addHook('onSend', async (request, _reply, payload) => {
+    if (request.routeOptions.url) routes.set(request.raw, request.routeOptions.url);
+    return payload;
+  });
   /** 字节作为 application/octet-stream 发送，其他请求体作为 JSON 发送；extra 是另加的请求头（如幂等键）。 */
   const call = async (method: Method, url: string, token?: string, body?: unknown, extra: Record<string, string> = {}): Promise<Reply> => {
     const binary = body instanceof Uint8Array;
     const headers = { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(binary ? { 'content-type': 'application/octet-stream' } : {}), ...extra };
     const response = await app.inject({ method, url, headers, ...(body === undefined ? {} : { payload: binary ? Buffer.from(body) : body as object }) });
-    const json = String(response.headers['content-type'] ?? '').startsWith('application/json');
+    const contentType = String(response.headers['content-type'] ?? '');
+    const route = routes.get(response.raw.req);
+    const violations = (checker ??= openApiChecker(JSON.parse((await app.inject({ method: 'GET', url: '/v1/openapi.json' })).body)))({
+      method, ...(route ? { route } : {}), status: response.statusCode, contentType, body: contentType.startsWith('application/json') ? response.body : '',
+    });
+    if (violations.length) throw new Error(`回答与 OpenAPI 描述不符：\n${violations.join('\n')}\n回答：${response.body.slice(0, 500)}`);
+    const json = contentType.startsWith('application/json');
     return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload, headers: response.headers };
   };
   const login = async (address: string, password: string) => {
@@ -85,7 +105,7 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
   const a = await tenant('租户 A'), b = await tenant('租户 B');
   // 租户 A 有问候牌样例的文档，跨租户端点清单用它的模板名。
   await seedGreeting(backend.tenant(a.id).storage);
-  return { app, backend, clock, logs, secrets, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
+  return { app, backend, clock, logs, sink, secrets, secretKey, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
 }
 export type World = Awaited<ReturnType<typeof createWorld>>;
 
@@ -180,6 +200,12 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/platform/tenants/:tenantId/usage', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage` }) },
   { route: 'GET /v1/platform/tenants/:tenantId/usage/events', allow: ['platformAdmin'],
     request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage/events` }) },
+  // webhook（票据 11）：客户管理员与 API 密钥；注册用不合规的 URL，允许的身份答 400，不留下 webhook。
+  { route: 'GET /v1/webhooks', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/webhooks' }) },
+  { route: 'POST /v1/webhooks', allow: ['admin', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/webhooks', body: { url: 'ftp://example.com/matrix' } }) },
+  { route: 'GET /v1/webhooks/:webhookId', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/webhooks/${randomUUID()}` }) },
+  { route: 'PATCH /v1/webhooks/:webhookId', allow: ['admin', 'apiKey'], request: () => ({ method: 'PATCH', url: `/v1/webhooks/${randomUUID()}`, body: { active: false } }) },
+  { route: 'GET /v1/webhooks/:webhookId/deliveries', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/webhooks/${randomUUID()}/deliveries` }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {
@@ -336,10 +362,16 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       expect(batch.status, batch.raw.slice(0, 300)).toBe(202);
       // A 的一个资源（数据集用推送进来的 ds-greeting）。
       expect((await call('POST', '/v1/resources?kind=image&id=a-logo', a.operator.token, SAMPLE)).status).toBe(201);
-      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo' };
+      // A 的一个 webhook（停用的，不会投递）。
+      const hook = await call('POST', '/v1/webhooks', a.admin.token, { url: 'https://example.com/a-hook' });
+      expect(hook.status, hook.raw.slice(0, 300)).toBe(201);
+      world.secrets.push(hook.body.secret);
+      expect((await call('PATCH', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token, { active: false })).status).toBe(200);
+      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
+        webhookId: hook.body.webhook.id };
       const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, batchId: randomUUID(),
-        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}` };
-      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id];
+        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}`, webhookId: randomUUID() };
+      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id, hook.body.webhook.id];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {
         for (const [who, token] of [['B 的管理员', b.admin.token], ['B 的操作员', b.operator.token], ['B 的密钥', b.key.token], ['B 的代建令牌', b.engineer.token]] as const) {
           const request = endpoint.request(objects);
@@ -359,6 +391,7 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       expect((await call('GET', '/v1/me', a.operator.token)).body.role).toBe('operator');
       expect((await call('GET', '/v1/datasets/ds-greeting', a.operator.token)).body.data).toEqual({ message: '欢迎乘坐 M402 路' });
       expect((await call('GET', '/v1/resources/a-logo', a.operator.token)).body.currentVersion).toBe(1);
+      expect((await call('GET', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token)).body).toMatchObject({ url: 'https://example.com/a-hook', active: false });
     });
 
     it('审计：写操作与跨租户操作追加写入，不记密钥；客户管理员只能看本租户；可以分页', async () => {

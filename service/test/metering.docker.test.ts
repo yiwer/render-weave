@@ -33,13 +33,17 @@ const slowItem = (id: string) => {
   return { id, ...rest };
 };
 
-/** 服务代码的副本：引擎与服务的 dist、迁移与包描述，外加一个标记文件，构建标识因此与镜像里的不同。依赖仍用测试镜像里装好的。 */
+/**
+ * 服务代码的副本：引擎与服务的 dist、DSL 的 JSON Schema（开放 API 描述在启动时读它）、迁移与包描述，
+ * 外加一个标记文件，构建标识因此与镜像里的不同。依赖仍用测试镜像里装好的。
+ */
 async function copyBuild(dir: string): Promise<string> {
   await rm(dir, { recursive: true, force: true });
   await mkdir(join(dir, 'service'), { recursive: true });
   await cp(join(REPO, 'dist'), join(dir, 'dist'), { recursive: true });
   await writeFile(join(dir, 'dist', 'crash-test-marker.js'), '// 只为让构建标识与镜像里的不同\n');
   await cp(join(REPO, 'service', 'dist'), join(dir, 'service', 'dist'), { recursive: true });
+  await cp(join(REPO, 'schemas'), join(dir, 'schemas'), { recursive: true });
   await cp(join(REPO, 'service', 'migrations'), join(dir, 'service', 'migrations'), { recursive: true });
   for (const file of ['package.json', 'package-lock.json']) await cp(join(REPO, file), join(dir, file));
   await cp(join(REPO, 'service', 'package.json'), join(dir, 'service', 'package.json'));
@@ -56,11 +60,12 @@ function start(main: string, command: 'api' | 'worker', env: Record<string, stri
   return { process: child, logs };
 }
 
-async function ready(url: string, timeoutMs = 60_000): Promise<void> {
+/** 等进程就绪；等不到时带上它最后几行日志，看得出为什么没起来。 */
+async function ready(url: string, child: Child, timeoutMs = 60_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     try { if ((await fetch(url)).ok) return; } catch { /* 还没起来 */ }
-    if (Date.now() > deadline) throw new Error(`等不到就绪：${url}`);
+    if (Date.now() > deadline) throw new Error(`等不到就绪：${url}\n${child.logs.slice(-5).join('\n')}`);
     await sleep(200);
   }
 }
@@ -101,8 +106,8 @@ describe('崩溃后对账（PostgreSQL 加 S3，真实进程）', () => {
 
     const firstApi = start(main, 'api', apiEnv), firstWorker = start(main, 'worker', workerEnv);
     children.push(firstApi, firstWorker);
-    await ready(`${api}/readyz`);
-    await ready(`${worker}/readyz`);
+    await ready(`${api}/readyz`, firstApi);
+    await ready(`${worker}/readyz`, firstWorker);
     const build = (await (await fetch(`${api}/healthz`)).json() as { build: string }).build;
     const submitted = await call('POST', '/v1/batches', { template: '压力细牌', items: ['s1', 's2', 's3', 's4'].map(slowItem) });
     expect(submitted.status, JSON.stringify(submitted.body).slice(0, 300)).toBe(202);
@@ -132,7 +137,7 @@ describe('崩溃后对账（PostgreSQL 加 S3，真实进程）', () => {
     // 只起接口进程：被强杀的 worker 没有离开，30 秒后才不算在线；之后批次闲置过了宽限，预占退回。
     const secondApi = start(main, 'api', apiEnv);
     children.push(secondApi);
-    await ready(`${api}/readyz`);
+    await ready(`${api}/readyz`, secondApi);
     const reconcileBy = Date.now() + 90_000;
     while ((await usage()).reserved > 0) {
       if (Date.now() > reconcileBy) throw new Error(`预占迟迟没有退回：${JSON.stringify(await usage())}`);

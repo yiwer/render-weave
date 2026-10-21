@@ -15,6 +15,7 @@ import { asPlatform, isUniqueViolation, withTenant, type Db, type DbClient } fro
 import { lockCounter, readPlan, releaseReserved, usageCounts } from './metering.js';
 import { checkMigrations, type Migration } from './migrate.js';
 import { tenantStorage } from './storage.js';
+import { enqueueBatchFinished, tenantWebhooks, webhookOutbox } from './webhooks.js';
 
 const iso = (value: Date | string | null | undefined) => (value ? new Date(value).toISOString() : undefined);
 const tenantRow = (row: { id: string; name: string; created_at: Date }): Tenant => ({ id: row.id, name: row.name, createdAt: iso(row.created_at)! });
@@ -76,6 +77,8 @@ async function finalizeBatch(client: DbClient, blobs: BlobStore, tenantId: strin
   [tenantId, state.batchId, sha256, now, JSON.stringify(manifest.summary), JSON.stringify(manifest.problems)]);
   // 批次结束时退回剩下的预占（ADR-0020）。
   await releaseReserved(client, tenantId, state.batchId, 'all');
+  // 批次结束的 webhook 事件（票据 11）：与批次清单同一个事务，每个批次只记一次。
+  await enqueueBatchFinished(client, tenantId, { ...state, finishedAt: now.toISOString(), manifest: { summary: manifest.summary, problems: manifest.problems } }, now);
 }
 
 async function insertAudit(client: DbClient, tenantId: string | null, event: NewAuditEvent, now: Date): Promise<void> {
@@ -172,6 +175,7 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         ...(row.batch_id === null ? {} : { batchId: row.batch_id, index: row.item_index! }),
         ...(row.round_sha256 === null ? {} : { round: { sha256: row.round_sha256, task: row.round_task!, round: row.round_number! } }),
       }))),
+      ...tenantWebhooks(db, tenantId),
       storage: tenantStorage(db, blobs, tenantId),
       tasks: {
         enqueuePreview: (request, quota, now) => enqueue('preview', request, quota, now),
@@ -370,6 +374,7 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
     reconcileReservations: async ({ onlineSince, idleBefore }) =>
       (await db.query<{ tenant_id: string; batch_id: string; released: number }>('SELECT * FROM rw_reconcile_reservations($1, $2)', [onlineSince, idleBefore])).rows.map(
         (row) => ({ tenantId: row.tenant_id, batchId: row.batch_id, released: row.released })),
+    webhooks: webhookOutbox(db),
     workers: {
       async heartbeat(worker, build, now) { await db.query('SELECT rw_worker_heartbeat($1, $2, $3)', [worker, build, now]); },
       async leave(worker) { await db.query('SELECT rw_worker_leave($1)', [worker]); },
