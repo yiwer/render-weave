@@ -61,4 +61,3 @@
 | 38 | [P1 · 额度恢复后复跑原场景并补齐真实模型验收](issues/38-retest-after-quota-recovery.md) | 31、32 | 同图复跑：原问题验收 |
 | 36 | [P2 · 实测 OCR 对文字覆盖与位置测量的收益，再决定正式接入](issues/36-ocr-measurement-trial.md) | 34 | 同图复跑：OCR 收益 |
 | 37 | [P2 · 减少文本列表与缺省展示产生的重复派生变量](issues/37-text-list-and-fallback-display.md) | 无 | 同图复跑：原问题验收 |
-| 39 | [P2 · 核实免费模型的运行时限制与业务适用性](issues/39-free-model-runtime-feasibility.md) | 无 | 同图复跑：原问题验收 |
