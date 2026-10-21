@@ -1,0 +1,213 @@
+{
+  "format": "renderweave-agent-eval/2",
+  "label": "2026-10-20-ticket17-definition",
+  "startedAt": "2026-10-21T04:11:12.085Z",
+  "endedAt": "2026-10-21T04:15:33.526Z",
+  "git": {
+    "commit": "826f422",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.7.0",
+  "materials": {
+    "agent/README.md": "7b68a94d90b6",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/price-tag.md": "f4b21a3d7618",
+    "agent/domains/route-sign.md": "a63c5a6b3352",
+    "agent/guide.md": "a3319c0d5923",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "6929b7772708",
+    "agent/reference/template.md": "10134146dc9a",
+    "agent/tasks/dataset-extraction.md": "63e4926f78de",
+    "agent/tasks/definition-extraction.md": "9e85d70fdb88",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "a598599b69c1",
+    "agent/tasks/template-revision.md": "f037017fd9e0"
+  },
+  "consecutivePasses": 2,
+  "passLines": {
+    "m402-definition": {
+      "conventions": 6,
+      "expertFields": 14
+    },
+    "m402-template": {
+      "stress": 10,
+      "layoutChecks": 2
+    },
+    "m402-revision": {
+      "stress": 6,
+      "layoutChecks": 2,
+      "scopeViolations": 0
+    },
+    "366-transcription": {
+      "names": 57,
+      "landmarks": 14,
+      "facilities": 17
+    }
+  },
+  "results": [
+    {
+      "id": "m402-definition",
+      "name": "M402 数据定义",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-1/m402-definition/definition",
+          "verdict": "qualified",
+          "wallMs": 260972,
+          "turns": 33,
+          "inputTokens": 30,
+          "outputTokens": 32301,
+          "thinkingTokens": 23713,
+          "cacheReadTokens": 582579,
+          "cacheCreationTokens": 53638,
+          "endedBy": "success",
+          "pending": 5,
+          "toolCalls": 19,
+          "toolErrors": 0,
+          "persistedResults": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 14,
+            "of": 15,
+            "missing": [
+              "班车类型"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareType",
+              "fare": "公交线路牌.fare",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.scheduleNote",
+              "departureTimes": "公交线路牌.scheduledTimes",
+              "stops": "公交线路牌.stops",
+              "name": "线路站点.name",
+              "road": "线路站点.road",
+              "badges": "线路站点.facilities",
+              "landmark": "线路站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    },
+    {
+      "id": "m402-definition",
+      "name": "M402 数据定义",
+      "repetition": 2,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "definition-extraction",
+          "dir": "run-2/m402-definition/definition",
+          "verdict": "qualified",
+          "wallMs": 129823,
+          "turns": 27,
+          "inputTokens": 18,
+          "outputTokens": 24176,
+          "thinkingTokens": 17653,
+          "cacheReadTokens": 245129,
+          "cacheCreationTokens": 43443,
+          "endedBy": "success",
+          "pending": 5,
+          "toolCalls": 15,
+          "toolErrors": 0,
+          "persistedResults": 0
+        }
+      ],
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 14,
+            "of": 15,
+            "missing": [
+              "班车类型"
+            ],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.fareAmount",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.serviceNote",
+              "departureTimes": "公交线路牌.timetable",
+              "stops": "公交线路牌.stations",
+              "name": "公交站点.stationName",
+              "road": "公交站点.road",
+              "badges": "公交站点.facilities",
+              "landmark": "公交站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    }
+  ],
+  "gate": {
+    "status": "pass",
+    "pass": true,
+    "scenarios": [
+      {
+        "id": "m402-definition",
+        "name": "M402 数据定义",
+        "outcomes": [
+          "pass",
+          "pass"
+        ],
+        "status": "pass"
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 390795,
+    "inputTokens": 48,
+    "outputTokens": 56477,
+    "thinkingTokens": 41366,
+    "cacheReadTokens": 827708,
+    "persistedResults": 0
+  }
+}
