@@ -19,18 +19,18 @@
 - `check_outcome` 的每个候选增加 `revision: { status, changes: [...] }`，只在上下文有 `revision` 时出现（模板辅助修改）。
 - `changes` 只返回范围：`path`、`target`（`element`/`template`）、`change`（`added`/`removed`/`changed`）、`properties` 的键名；默认不带 `before`/`after`，避免大段内容占上下文。
 - `status` 为 `unchanged` 时也返回，让 Agent 知道“这一轮什么都没改”。
-- description（`src/mcp/tools.ts:361-363`）与 `docs/mcp.md` 的「交回前核对」同步；按 `docs/mcp.md:109` 改变输出结构，合同升 0.6.0，复跑评估。
+- description 与 `docs/mcp.md` 的「交回前核对」同步；改变输出结构，合同从已发布的 0.6.0 升到 0.7.0，复跑评估。
 - 不在本票给 `check_templates` 加 `revision`（可选后续，另开票）。
 - `changes` 最多返回 100 条，超出时给 `truncated: true` 与总数：大改动（例如重排 30 个元素）时整份输出仍要远低于 Claude Code 的 50,000 字符落盘阈值（票据 22）。
-- 合同升级与票据 22 同批发 0.6.0，只跑一次评估；评估要包含票据 24 的模板辅助修改场景，否则现有三个场景都不经过模板辅助修改，看不到本票的效果。
+- 票据 22 已随 0.6.0 发布，本票单独发 0.7.0；评估跑全部四个场景，包含票据 24 的模板辅助修改场景，否则其他三个场景都不经过模板辅助修改，看不到本票的效果。
 
 - [ ] 模板辅助修改的 `check_outcome` 返回 `revision`，其他任务不返回。
 - [ ] `status` 的 `modified`/`unchanged`/`added` 三种状态都有用例。
 - [ ] `changes` 包含路径与属性键，不含 `before`/`after`（断言序列化结果里没有这两个键）。
-- [ ] 工具说明与 `docs/mcp.md` 更新，合同版本升 0.6.0。
+- [ ] 工具说明与 `docs/mcp.md` 更新，合同版本升 0.7.0。
 - [ ] `npm test` 通过；按门槛跑评估，含票据 24 的模板辅助修改场景，记录改动范围评分与改前相比的变化。
 
-**测试接缝：** `test/mcp.test.ts` 经 JSON-RPC 调 `check_outcome`；差异 fixture 复用 `test/agent-review.test.ts` 的模板工作副本。
+**测试接缝：** `test/mcp.test.ts` 经 JSON-RPC 调 `check_outcome`；复用现有 M402 站点工作副本与审核测试使用的问候牌模板。
 
 **不在本票：** 模板辅助修改的自动评估场景，在票据 24。
 

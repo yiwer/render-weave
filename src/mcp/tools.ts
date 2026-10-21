@@ -2,7 +2,7 @@
  * `renderweave mcp` 的工具（第三阶段 PRD 第 5、6 条）：读取、校验、草稿预览、元素检查、局部放大、资源列表、DSL 参考与交回前核对成果。
  * 全部只读（M53）：不写工作区、资源仓库或工作目录，也没有发布、删除与正式出图的途径。
  * 工作区是服务启动时读入的快照；工作目录内的文件按路径读取（files.ts），资源仓库只按 res:资源ID 经资源仓库接口读取。工作副本只在本次调用的内存中代替已保存模板（M49、M50）。
- * 工具名称、输入 Schema 与输出结构是 v0.6 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
+ * 工具名称、输入 Schema 与输出结构是 v0.7 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
  * 文字结果不超过 MAX_TEXT_CHARS（票据 22）：问题清单、元素检查与 Schema 各自按预算截断，服务层再兜底。
  */
 import { readFile } from 'node:fs/promises';
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
+import type { RevisionDiff } from '../agent/diff.js';
 import { loadCanvasKit } from '../canvaskit.js';
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
 import { loadResourceImage, type LoadedImage } from '../images.js';
@@ -30,7 +31,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.6.0';
+export const MCP_CONTRACT_VERSION = '0.7.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -50,6 +51,9 @@ const INSPECT_MAX_CHARS = 30_000;
 /** 问题清单最多列出的条数与字符预算；超出时另给按问题代码的计数（票据 22）。 */
 const PROBLEMS_MAX = 200;
 const PROBLEMS_MAX_CHARS = 25_000;
+/** 每个模板候选的差异只给范围，不带值；同时限制条数与长路径的字符占用（票据 17）。 */
+const REVISION_MAX_CHANGES = 100;
+const REVISION_MAX_CHARS = 20_000;
 /** Schema 整份返回的字符上限；超出时不带 pointer 返回目录（票据 22）。 */
 const SCHEMA_WHOLE_MAX_CHARS = 30_000;
 /** 字体覆盖的文字种类：探测字中能显示的比例不低于此值即算覆盖（票据 29）。 */
@@ -426,7 +430,9 @@ export function createTools(context: ToolContext): McpTool[] {
       name: 'check_outcome',
       description: '交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。' +
         '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
-        '返回结论 verdict（qualified 合格、unqualified 不合格）、outcome.json 的问题 problems 与每个候选的问题；数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。不写任何文件。',
+        '返回结论 verdict（qualified 合格、unqualified 不合格）、outcome.json 的问题 problems 与每个候选的问题；数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。' +
+        '模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。' +
+        `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。不写任何文件。`,
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       async call() {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
@@ -435,8 +441,9 @@ export function createTools(context: ToolContext): McpTool[] {
         return json({
           verdict: check.verdict,
           ...listed(check.problems),
-          candidates: check.candidates.map(({ sha256: _sha256, revision: _revision, problems, deferred, ...candidate }) => ({
+          candidates: check.candidates.map(({ sha256: _sha256, revision, problems, deferred, ...candidate }) => ({
             ...candidate, ...listed(problems), ...(deferred ? listed(deferred, 'deferred') : {}),
+            ...(revision ? { revision: summarizedRevision(revision) } : {}),
           })),
         }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
@@ -568,6 +575,21 @@ export function createTools(context: ToolContext): McpTool[] {
         ...(modeDowngraded ? { modeDowngraded: true } : {}) },
     };
   }
+}
+
+/** 与审核页共用差异，只投影 Agent 核对修改范围需要的键。 */
+function summarizedRevision(revision: RevisionDiff) {
+  const changes = [];
+  let chars = 0;
+  for (const { path, target, change, properties } of revision.changes) {
+    const summary = { path, target, change, ...(properties ? { properties: properties.map(({ key }) => key) } : {}) };
+    chars += JSON.stringify(summary).length + 1;
+    if (changes.length >= REVISION_MAX_CHANGES || chars > REVISION_MAX_CHARS) break;
+    changes.push(summary);
+  }
+  return { status: revision.status, changes,
+    ...(changes.length < revision.changes.length ? { truncated: true, total: revision.changes.length } : {}),
+  };
 }
 
 interface Region { readonly x: number; readonly y: number; readonly width: number; readonly height: number }

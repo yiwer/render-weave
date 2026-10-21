@@ -95,7 +95,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.6.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.7.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
@@ -387,10 +387,106 @@ describe('局部放大与路径限制', () => {
 });
 
 describe('交回前核对成果', () => {
+  it('模板辅助修改返回改动范围、未改动与新增状态；模板设计不返回差异', async () => {
+    const dir = join(base, 'revision');
+    await mkdir(join(dir, 'candidates'), { recursive: true });
+    await cp(join(root, 'candidates/template-stop.json'), join(dir, 'candidates/modified.json'));
+    await cp(join(m402Dir, 'template-route-sign.json'), join(dir, 'candidates/unchanged.json'));
+    const added = JSON.parse(await readFile(join(m402Dir, 'template-stop.json'), 'utf8'));
+    added.name = '新站点';
+    await writeFile(join(dir, 'candidates/added.json'), JSON.stringify(added));
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({
+      candidates: ['candidates/modified.json', 'candidates/unchanged.json', 'candidates/added.json'], pending: [], notes: '调整站点颜色。',
+    }));
+    const contextFile = join(base, 'revision-context.json');
+    await writeFile(contextFile, JSON.stringify({ task: 'template-revision', request: { template: '标准线路单边' }, revision: { templates: ['标准线路单边', '站点'] } }));
+    const handoff = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', dir, '--outcome-context', contextFile]);
+    try {
+      const beforeCall = await fingerprint(dir, m402Dir);
+      const result = await handoff.callJson('check_outcome');
+      expect(result.verdict).toBe('qualified');
+      expect(result.candidates.map((candidate: any) => candidate.revision)).toEqual([
+        { status: 'modified', changes: [
+          { path: 'parameters', target: 'template', change: 'changed', properties: ['nameColor'] },
+          { path: '站点/名称区/地标', target: 'element', change: 'changed', properties: ['tint'] },
+        ] },
+        { status: 'unchanged', changes: [] },
+        { status: 'added', changes: [] },
+      ]);
+      expect(JSON.stringify(result)).not.toMatch(/"(?:before|after|sha256)":/);
+      expect([...(await fingerprint(dir, m402Dir))]).toEqual([...beforeCall]);
+    } finally { expect(await handoff.close()).toBe(0); }
+
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({ candidates: ['candidates/added.json'], pending: [], notes: '新建站点。' }));
+    await writeFile(contextFile, JSON.stringify({ task: 'template-design', request: { template: '新站点' } }));
+    const design = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', dir, '--outcome-context', contextFile]);
+    try {
+      const result = await design.callJson('check_outcome');
+      expect(result.verdict).toBe('qualified');
+      expect(result.candidates.every((candidate: any) => !('revision' in candidate))).toBe(true);
+    } finally { expect(await design.close()).toBe(0); }
+  });
+
   it('启动时没有给出本轮任务，check_outcome 作为工具错误返回', async () => {
     const result = await session.call('check_outcome', {});
     expect(result.isError).toBe(true);
     expect(text(result)).toContain('--outcome-context');
+  });
+
+  it('大批修改最多返回 100 条范围并给出总数；长路径也按字符预算截断', async () => {
+    const workspace = join(base, 'revision-many-workspace'), dir = join(base, 'revision-many');
+    await cp(singleTextDir, workspace, { recursive: true });
+    await mkdir(join(dir, 'candidates'), { recursive: true });
+    const saved = JSON.parse(await readFile(join(workspace, 'template-greeting.json'), 'utf8'));
+    saved.artboard.children = Array.from({ length: 120 }, (_, i) => ({
+      type: 'rect', name: `块${i}`, fill: '#000000', place: { left: 0, top: 0, width: { fixed: 1 }, height: { fixed: 1 } },
+    }));
+    const contextFile = join(base, 'revision-many-context.json');
+    await writeFile(contextFile, JSON.stringify({ task: 'template-revision', revision: { templates: ['问候牌'] } }));
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({ candidates: ['candidates/template.json'], pending: [], notes: '改变所有块的颜色。' }));
+    for (const longPaths of [false, true]) {
+      if (longPaths) for (const child of saved.artboard.children) child.name += '很长的元素名称'.repeat(80);
+      await writeFile(join(workspace, 'template-greeting.json'), JSON.stringify(saved));
+      const changed = structuredClone(saved);
+      for (const child of changed.artboard.children) child.fill = '#FFFFFF';
+      await writeFile(join(dir, 'candidates/template.json'), JSON.stringify(changed));
+      const handoff = startMcp(['--workspace', workspace, '--resources', resourcesDir, '--root', dir, '--outcome-context', contextFile]);
+      try {
+        const result = await handoff.call('check_outcome');
+        expect(result.isError).toBe(false);
+        expect(text(result).length).toBeLessThan(30_000);
+        const checked = JSON.parse(text(result));
+        expect(checked.verdict).toBe('qualified');
+        const revision = checked.candidates[0].revision;
+        expect(revision).toMatchObject({ status: 'modified', truncated: true, total: 120 });
+        expect(revision.changes.length).toBeGreaterThan(0);
+        if (longPaths) expect(revision.changes.length).toBeLessThan(100);
+        else expect(revision.changes).toHaveLength(100);
+        expect(JSON.stringify(checked)).not.toMatch(/"(?:before|after)":/);
+      } finally { expect(await handoff.close()).toBe(0); }
+    }
+  });
+
+  it('新增、删去元素仅返回路径与类型，不泄漏整段元素内容', async () => {
+    const dir = join(base, 'revision-replace');
+    await mkdir(join(dir, 'candidates'), { recursive: true });
+    const candidate = JSON.parse(await readFile(join(singleTextDir, 'template-greeting.json'), 'utf8'));
+    candidate.artboard.children[0].name = '新问候语';
+    candidate.artboard.children[0].content = [{ text: '不应返回的长内容'.repeat(1000) }];
+    await writeFile(join(dir, 'candidates/template.json'), JSON.stringify(candidate));
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({ candidates: ['candidates/template.json'], pending: [], notes: '替换问候语。' }));
+    const contextFile = join(base, 'revision-replace-context.json');
+    await writeFile(contextFile, JSON.stringify({ task: 'template-revision', revision: { templates: ['问候牌'] } }));
+    const handoff = startMcp(['--workspace', singleTextDir, '--resources', resourcesDir, '--root', dir, '--outcome-context', contextFile]);
+    try {
+      const result = await handoff.callJson('check_outcome');
+      expect(result.verdict).toBe('qualified');
+      expect(result.candidates[0].revision).toEqual({ status: 'modified', changes: [
+        { path: '问候牌/新问候语', target: 'element', change: 'added' },
+        { path: '问候牌/问候语', target: 'element', change: 'removed' },
+      ] });
+      expect(JSON.stringify(result)).not.toMatch(/"(?:before|after)":|不应返回的长内容/);
+    } finally { expect(await handoff.close()).toBe(0); }
   });
 
   it('按交回后的同一套规则核对：待确认项的路径对不上时不合格，改对后合格；不写任何文件', async () => {

@@ -45,7 +45,7 @@ Claude Code 的配置示例（`--mcp-config`）：
 | `inspect_layout` | `request`、`templates`、`datasetPath`、`elements`、`depth` | 元素的布局摘要与这些元素上的问题 |
 | `view_image` | `path`（工作目录内的图片，或 `res:资源ID`）、`region`（像素）、`scale`（1–4） | 原图尺寸、裁切区域、倍数与缩放后的 PNG |
 | `dsl_reference` | `name`、`pointer`（只用于 `schema/*`） | `agent/reference/` 中的参考，或 `schemas/` 中的 JSON Schema 原文；Schema 超过 30,000 字符且不带 `pointer` 时返回目录 |
-| `check_outcome` | 无 | 按交回后的同一套规则核对工作目录根上的 `outcome.json` 与候选：结论 `verdict`、`outcome.json` 的问题，以及每个候选的问题与 `deferred` |
+| `check_outcome` | 无 | 按交回后的同一套规则核对工作目录根上的 `outcome.json` 与候选：结论 `verdict`、`outcome.json` 的问题，以及每个候选的问题与 `deferred`；模板辅助修改另有 `revision` 范围摘要 |
 
 工具结果是一段 JSON 文本，预览类工具再加一个图片内容块。`tools/list` 给每个工具标注 `annotations: { readOnlyHint: true, openWorldHint: false }`。
 
@@ -55,6 +55,7 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 - **问题清单**：`render_draft`、`inspect_layout`、`check_*` 与 `list_documents` 最多列 200 条、约 25,000 字符。截断时另有 `problemsTruncated`：已列条数、总数与按问题代码的计数（`check_outcome` 的 `deferred` 同样有 `deferredTruncated`）。
 - **元素检查**：`inspect_layout` 按约 30,000 字符的预算收集元素，用完时返回 `truncated: true`、`returned`（已返回）与 `total`（这次请求范围内的元素总数）。
+- **模板修改差异**：`check_outcome` 的每个候选最多返回 100 条差异、约 20,000 字符，只列范围。截断时 `revision` 中另给 `truncated: true` 与 `total`（该候选的差异总条数），已返回条数是 `changes.length`。
 - **Schema**：`dsl_reference` 的 `schema/*` 可以写 `pointer`（JSON Pointer，如 `/$defs/textElement`）只取一段；整份超过 30,000 字符的（目前只有 `schema/template`）不带 `pointer` 时返回目录：顶层各键，以及 `properties`、`$defs` 中各项的字符数。`pointer` 找不到时是工具错误，列出那一层可用的名称。`read_document` 也可以写 `pointer`。
 - **兜底**：工具结果仍超过 40,000 字符时，服务层不交出，改为工具错误，提示缩小范围。
 - **观测**：调用日志每条记 `chars`（文字结果字符数）与 `imageBytes`（图片字节数）；评估报告统计被转存或拒收的工具结果（`persistedResults`），非零时在文字摘要里提示。
@@ -78,7 +79,10 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
   | `revision` | 否 | `{templates}`，模板辅助修改可以改的已保存模板 |
 
   `agent run` 每轮写到 `logs/outcome-context.json`，在 Agent 工作目录之外。
-- **返回**：与 `check.json` 相同，只是候选不带 `sha256` 与模板修改的结构化差异 `revision`。
+- **返回**：与 `check.json` 使用同一份校验结果，候选不带 `sha256`，问题清单按上述预算截断。有 `revision` 上下文时，模板候选另给结构化差异的范围摘要（M276），其他任务不返回：
+  - `revision.status`：`modified`（改了已保存模板）、`unchanged`（原样，应用时不写入）或 `added`（新模板）。后两者的 `changes` 是空列表。
+  - `revision.changes`：每条有 `path`、`target`（`element` / `template`）、`change`（`added` / `removed` / `changed`）；有属性差异时，`properties` 是属性键名数组，如 `["color", "place"]`。参数、派生变量与检查项用各项的名称。没有 `before` / `after`，新增、删除元素也不返回元素正文。
+  - Agent 可对照修改要求核对范围；这不改变校验结论，不自动判断是否满足修改要求，仍由审核人决定。审核页与 `check.json` 保留完整差异。
 
 ### 查看资源图片
 
@@ -120,7 +124,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.6.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.7.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.7.0 在 0.6.0 上让 `check_outcome` 返回模板辅助修改的差异范围摘要（票据 17，M276），工具输入与其他任务的输出不变；
   - 0.6.0 在 0.5.0 上（票据 19、22、29）：`view_image` 缺省最多放大 2 倍并新增 `scale`；`dsl_reference`、`read_document` 新增 `pointer`，`schema/template` 不带 `pointer` 时返回目录；问题清单与元素检查有上限并给出截断信息；`render_draft`、`inspect_layout` 把 `mode: "final"` 按草稿处理；`list_resources` 给字体加 `weight` 与 `scripts`；工具带 `annotations`；文字结果超过 40,000 字符时改为工具错误；
   - 0.5.0 在 0.4.0 上让 `view_image` 的 `path` 接受 `res:资源ID`，工具清单只变了 `view_image` 的说明与 `path` 描述（M234）；
   - 0.4.0 在 0.3.0 上新增 `check_outcome` 与 `--outcome-context`，原有工具不变（M233）。
