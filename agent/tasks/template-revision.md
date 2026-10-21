@@ -18,7 +18,9 @@
 3. 改之前先用 render_draft 出一次修改前的草稿（request 用 request.json 的内容，不传 templates），对照示例图与修改要求，用 inspect_layout 找到问题所在的元素与实际尺寸。
 4. 修改后用 check_templates 做静态检查，再用 render_draft 出草稿：templates 列出 candidates/ 中的全部模板文件。
    - 用 inspect_layout 核对修改要求中的每一条，不靠目测；
-   - 再按通用做法验证极端情况，可用内联数据集；
-   - 直到修改要求全部满足、没有严重问题。
-5. 第一次没有严重问题时就按 outcome.md 写 outcome.json 并用 check_outcome 核对，之后每轮改完都更新它。outcome.json 的 candidates 只列改过的模板文件与新建的模板文件；locations 写改动的元素在图上的位置；拿不准的写成待确认项。说明里逐条对应修改要求，写改了什么、怎么核对的。
-6. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件，包括待确认项与图上位置中的元素路径是否还在模板里。结论是 unqualified 时按问题修改，再核对，直到 qualified。
+   - 再按通用做法验证极端情况，可用内联数据集；与修改要求无关的既有问题只记入 notes，不顺手修复；
+   - 直到修改要求全部满足、本轮改动没有引入严重问题。
+5. 修改要求满足后就按 outcome.md 写 outcome.json 并用 check_outcome 核对，之后每轮改完都更新它。outcome.json 的 candidates 只列改过的模板文件与新建的模板文件；locations 写改动的元素在图上的位置；拿不准的写成待确认项。说明里逐条对应修改要求，写改了什么、怎么核对的。
+6. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件，包括待确认项与图上位置中的元素路径是否还在模板里。结论是 unqualified 时按问题修改，再核对，直到 qualified。qualified 只表示成果校验通过，不表示修改范围符合要求。
+   - 逐项对照 revision 中的模板、元素路径与属性键，撤销无法对应修改要求的差异，再更新 outcome.json 并核对；
+   - revision 截断时，用 read_document 读取已保存模板并与工作副本核对剩余差异，不能把未返回的部分当作没有改动。
