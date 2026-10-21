@@ -104,14 +104,15 @@
     - 导航里没有"管理"；直接打开四个管理标签只看到说明，没有请求管理端点；
     - 直接请求接口进程的 12 个管理端点都答 403 `auth.forbidden`：成员、密钥、审计、webhook、用量明细、替换检查与应用。
 - **本机快速版**（`console.browser.test.ts`，内存后端、进程内 worker、本机 Edge）：12 项通过，取消那项按设计跳过。投递任务现在在测试进程里起，可以注册内网地址。最终代码连跑 3 遍都通过。变异检查的一轮里，票据 12 的主路径失败过一次，与变异无关，之后 3 遍都没再出现。
-- **Docker 后端：没跑成，是本票据对验收的偏差。**
-  - 原因是本机 Docker 的网络，与本票据的改动无关（本票据没改依赖与 Dockerfile）：
-    - 先是缺 `rustfs/rustfs:1.0.3`（S3 兼容存储）：从 Docker Hub 拉取每分钟约 1 MB，拉了约 16 MB 后停在 "Pulling fs layer"；
-    - 随后 Docker Desktop 自行重启了一次（不是本会话操作的），重启后镜像拉到了；
-    - 但构建服务镜像时 `npm ci` 两次都在约 70 秒处报 "Exit handler never called!"。单独起 `node:22-alpine` 容器执行 `npm view yazl version`，71 秒后报代理错误；宿主机访问 registry.npmjs.org 2 秒返回 200。容器经 Docker Desktop 的代理连不上 npm 源。
-  - Docker Desktop 的网络与代理是本机系统配置，没有动。
-  - 新增的 5 项用例与内存后端同一份代码，已在本机快速版通过。Docker 里另有的只是：Compose 里真实的接口进程与 worker、tester 容器里的 Chromium，以及由 Compose 的接口进程投递 webhook（`console.docker.test.ts` 已按 tester 容器的地址起接收端）。
-  - 下一步：拉到镜像之后跑 `node service/scripts/test-docker.mjs`，看 `console.docker.test.ts` 的 13 项（新增 5 项）与其余文件都通过。
+- **Docker 后端**：`node service/scripts/test-docker.mjs` 从空环境起服务，在全部改动之后跑：
+  - 15 个文件、135 项通过；`console.docker.test.ts` 13 项（新增 5 项，含快速版跳过的取消）；
+  - Compose 里的接口进程把 webhook 投递给 tester 容器里的接收端，投递记录与签名都核得上；
+  - 服务日志 653 行都是合格的 JSON。
+  - 本机 Docker 的网络让这一组拖到最后才跑成，与本票据的改动无关：
+    - Docker Desktop 中途自行重启了一次；
+    - 用户 `~/.docker/config.json` 里的 `proxies` 指向 `127.0.0.1:10808`。Docker 把它注入容器，可容器里的 127.0.0.1 是容器自己，`npm ci` 连不上源。
+    - 没有改用户的配置：这一次用 `DOCKER_CONFIG` 指向一份去掉 `proxies` 的临时副本。直连的 Alpine 源很慢，tester 镜像装 Chromium 一步用了约 4.6 小时（16,439 秒）。
+    - 以后在本机跑 Docker 后端测试，要先让容器的代理可用，或用同样的临时配置。
 - **Windows**：
   - `npm run build`、`npm run typecheck`、`npm run typecheck:service`（含控制台）通过；
   - `npm test` 56 个文件、1030 项通过、13 项跳过（本机快速版，未设 `RW_BROWSER`）。
