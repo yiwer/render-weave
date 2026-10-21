@@ -4,7 +4,7 @@
  *
  * - 只绑定 127.0.0.1，端口由系统分配，随本轮结束关闭。只接受带本轮令牌的请求：Claude Code 拿到的是令牌，
  *   上游 key 只在本进程内存里。Host 必须是本机地址加本端口（防 DNS 重绑定），拒绝带 Origin 的网页请求与非 JSON 请求。
- * - 上游走流式 streamGenerateContent（M270）：代理收齐各分块、合并成完整结果，再拼成 Anthropic 的流式事件；等待期间每 15 秒发一次 ping。
+ * - 上游走流式 streamGenerateContent（M287）：代理收齐各分块、合并成完整结果，再拼成 Anthropic 的流式事件；等待期间每 15 秒发一次 ping。
  *   上游失败按阶段（连接、状态码、流中）记日志并带底层原因；上游回 200 之前出错按上游状态码交回，之后在流里发 error 事件。
  * - 工具结果中的图片放在同一轮的 inlineData 里。
  * - Gemini 的 thoughtSignature 按工具调用 id 记在本代理里，下一次请求时补回对应的 functionCall（多轮工具调用必需）。
@@ -146,7 +146,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
   }
 
   /**
-   * 上游走流式（票据 25，M270）：streamGenerateContent?alt=sse，按顺序收集各分块的 parts，用量与结束原因取最后出现的值，
+   * 上游走流式（票据 25，M287）：streamGenerateContent?alt=sse，按顺序收集各分块的 parts，用量与结束原因取最后出现的值，
    * 合并后交给 fromGoogle。用 node:http(s) 而不是全局 fetch：fetch 的响应头与响应体各有固定的 300 秒超时，改不了。
    */
   async function callUpstream(body: AnthropicRequest, session: string, trace: Trace, streaming: () => void): Promise<Translated> {

@@ -6,7 +6,7 @@
 
 **Status:** resolved
 
-**Trace:** M274（推理力度缺省不改）、M232（模型与成本）、ADR-0015；[票据 23](23-agent-thinking-budget.md) 的 Answer；验收 A10。
+**Trace:** M291（推理力度缺省不改）、M232（模型与成本）、ADR-0015；[票据 23](23-agent-thinking-budget.md) 的 Answer；验收 A10。
 
 背景：
 
@@ -24,7 +24,7 @@
   - `src/agent/tasks.ts` 给任务加缺省力度：数据定义提取、数据集提取为 `low`，模板辅助设计与修改不设。
   - `agent run` 不给 `--effort` 时用任务缺省，给了就以命令行为准；带反馈的下一轮按它自己的任务取缺省。`round.json` 的 `runtime.effort` 记实际传给 Claude Code 的值（不传为 `null`）。
   - 评估不传 `--effort` 时，各轮按任务缺省；报告的 `runtime.effort` 仍是评估命令给的值，各轮实际值看轮次的 `round.json`。
-  - 记 M 编号（修订 M274），改 `docs/agent-tasks.md`；改了缺省行为，按 `docs/agent-eval.md` 再跑一次三场景门槛。
+  - 记 M 编号（修订 M291），改 `docs/agent-tasks.md`；改了缺省行为，按 `docs/agent-eval.md` 再跑一次三场景门槛。
 - **不满足时**：缺省不改，只在本票与 `docs/agent-eval.md`「历次评估」记结果。
 
 - [x] 跑 low 下的两个提取场景，报告存档，按三条切换条件逐条对照，结论写进本票 `## Answer`。
@@ -39,7 +39,7 @@
 
 ## Answer
 
-2026-10-20 完成。**切换条件不满足，缺省不改**：门槛通过、成绩不低于近三份最低值，但两个提取场景的输出只降 24.8%，没到 30%。结果记在 M274 的后续与 `docs/agent-eval.md`「历次评估」，代码不动。
+2026-10-20 完成。**切换条件不满足，缺省不改**：门槛通过、成绩不低于近三份最低值，但两个提取场景的输出只降 24.8%，没到 30%。结果记在 M291 的后续与 `docs/agent-eval.md`「历次评估」，代码不动。
 
 **评估**：`npx tsx scripts/agent-eval/run.ts --label 2026-10-20-effort-low-extraction --scenarios m402-definition,366-transcription --effort low`，退出码 0，报告 [2026-10-20-effort-low-extraction](../../../docs/agent-eval/reports/2026-10-20-effort-low-extraction.json)。提交 6b65b35 加本票文件（未提交），`agent/` 资料哈希与 contract-060 逐文件相同，合同 0.6.0，Claude Code 2.1.296，服务端模型 `claude-haiku-5-5`，没有上游错误与重试。
 
@@ -71,11 +71,11 @@
 
 **对票据的偏差**：
 
-- 改了 M274 的"后续"一句（原文说"要先补 M402 数据定义在 low 下的评估再定"，现在评估补上了），没有新增 M 编号。
+- 改了 M291 的"后续"一句（原文说"要先补 M402 数据定义在 low 下的评估再定"，现在评估补上了），没有新增 M 编号。
 - 评估跑的时候预写过任务缺省力度的代码、用例与文档（只改源码，没有重新构建 `dist`，不影响正在跑的评估）（`tasks.ts` 加 `effort`、`agent run` 不给时取任务缺省、报告按任务记力度），条件不满足后全部撤回，工作区只剩本票、报告与文档里的记录。
 
 **验证**：`node scripts/scan-keys.mjs out/agent-eval/2026-10-20-effort-low-extraction docs/agent-eval/reports/2026-10-20-effort-low-extraction.json docs src scripts test .scratch` 扫描 594 个文件，命中 0；全量 `npm test` 47 个文件、951 项通过；`npm run typecheck` 通过。
 
 ## Comments
 
-- 2026-10-20 开票，来自票据 23 Answer 的观察与 M274 的后续。
+- 2026-10-20 开票，来自票据 23 Answer 的观察与 M291 的后续。

@@ -50,7 +50,7 @@
   - `agent/tasks/template-design.md` 改为骨架 → 分段加内容 → 第一次合格即写 `outcome.json` → 继续改并更新 → 最终核对，并说明问题多时看 `problemsTruncated`；`template-revision.md`、`definition-extraction.md`、`dataset-extraction.md` 加"第一次合格即写成果"；
   - `agent/domains/route-sign.md` 开头写明示例图上没有的元素不建字段；
   - `agent/reference/template.md` 新增"常见错误"一节，列阿拉伯文试跑首次检查最多的六类。
-- **决定**：不加 MCP 写工具（M273）。
+- **决定**：不加 MCP 写工具（M290）。
 - **评估** [2026-10-20-contract-060](../../../docs/agent-eval/reports/2026-10-20-contract-060.json)，门槛通过，模板轮对比上一份（2026-10-20-ticket21）：
 
   | | 上一份 | 本次 |

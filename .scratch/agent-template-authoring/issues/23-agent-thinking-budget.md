@@ -35,7 +35,7 @@
 
 ## Answer
 
-2026-10-20 完成。按"不生效就停"的规则，`MAX_THINKING_TOKENS` 这条路停下了，改用 `--effort` 做对照评估；缺省不改（M274）。
+2026-10-20 完成。按"不生效就停"的规则，`MAX_THINKING_TOKENS` 这条路停下了，改用 `--effort` 做对照评估；缺省不改（M291）。
 
 **MAX_THINKING_TOKENS 不生效（已验证）**
 

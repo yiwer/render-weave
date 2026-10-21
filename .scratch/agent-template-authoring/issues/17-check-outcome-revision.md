@@ -36,7 +36,7 @@
 
 ## Answer
 
-2026-10-20 完成（M276）。实现提交 `ec010ef`；实测后的提示词修正 `6dea80a`、`826f422`。合同 0.7.0，Haiku 5.5、Claude Code 2.1.296、缺省推理力度。
+2026-10-20 完成（M293）。实现提交 `ec010ef`；实测后的提示词修正 `6dea80a`、`826f422`。合同 0.7.0，Haiku 5.5、Claude Code 2.1.296、缺省推理力度。
 
 **实现与验证**
 
@@ -52,7 +52,7 @@
 运行前仅给当前进程的 PATH 加入 npm 全局安装中的 `@anthropic-ai/claude-code/bin`。三个完整报告均保留，未删除未达线单元、未降低通过线：
 
 1. `npx tsx scripts/agent-eval/run.ts --repeat 2 --jobs 3 --label 2026-10-20-ticket17-contract-070`，退出码 1，[完整批次报告](../../../docs/agent-eval/reports/2026-10-20-ticket17-contract-070.json)。从干净 `ec010ef` 启动；M402 模板和 366 连续两次达线。修改第 1 次虽收到完整差异仍主动修改主模板的 `idxLow` 与检查提示，范围违例 1，第 2 次范围 0；数据定义第 2 次缺运营说明、班车类型，13/15 未达线。
-2. 只修改 `agent/tasks/template-revision.md`：无关的既有问题只记说明，逐项核对差异并撤销无关改动，截断部分读取已保存模板核对；保留 M273 的尽早写成果。`npx tsx scripts/agent-eval/run.ts --scenarios m402-definition,m402-revision --repeat 2 --jobs 2 --label 2026-10-20-ticket17-scope-final`，退出码 1，[修正后报告](../../../docs/agent-eval/reports/2026-10-20-ticket17-scope-final.json)。从干净 `826f422` 启动；修改两次均达线，数据定义 13、14，仍未连续达线。
+2. 只修改 `agent/tasks/template-revision.md`：无关的既有问题只记说明，逐项核对差异并撤销无关改动，截断部分读取已保存模板核对；保留 M290 的尽早写成果。`npx tsx scripts/agent-eval/run.ts --scenarios m402-definition,m402-revision --repeat 2 --jobs 2 --label 2026-10-20-ticket17-scope-final`，退出码 1，[修正后报告](../../../docs/agent-eval/reports/2026-10-20-ticket17-scope-final.json)。从干净 `826f422` 启动；修改两次均达线，数据定义 13、14，仍未连续达线。
 3. 数据定义输入资料没有改动，单独确认：`npx tsx scripts/agent-eval/run.ts --scenarios m402-definition --repeat 2 --jobs 2 --label 2026-10-20-ticket17-definition`，退出码 0，[定义确认报告](../../../docs/agent-eval/reports/2026-10-20-ticket17-definition.json)。专家字段两次 14/15、约定两次 6/6。报告的 dirty 为 true，仅因为前一份评估报告尚未提交，代码与资料仍为 `826f422`。
 
 按 M230 核对资料哈希：原批次与修正后批次只有修改任务提示词不同，模板设计与 366 不读它；最后定义确认与修正后批次全部资料哈希相同。因此采用如下四场景结果，门槛通过：

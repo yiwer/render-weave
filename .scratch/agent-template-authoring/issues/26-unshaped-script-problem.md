@@ -44,6 +44,6 @@
 - **用例**：`test/glyph-fallback.test.ts`「需要塑形或从右往左的文字（票据 26）」两项：
   - 阿拉伯文报一条，列出"阿拉伯文（ح د ي ق ة ا ل ن …）"，不含东阿拉伯数字，正式出图无图；
   - 希伯来文加阿拉伯文混排只报一条、两种都列出；中文、拉丁文与东阿拉伯数字不报。
-- **文档**：M271；`docs/render-fonts.md`「结果」。
+- **文档**：M288；`docs/render-fonts.md`「结果」。
 - **验证**：全量 `npm test` 47 个文件、951 项通过，`npm run typecheck` 通过。
 - **偏差**：`render_draft` 与 `renderweave render` 走同一个渲染入口，没有另写 MCP 用例。问题代码表只在 `docs/render-fonts.md`，仓库里没有单独的代码表。

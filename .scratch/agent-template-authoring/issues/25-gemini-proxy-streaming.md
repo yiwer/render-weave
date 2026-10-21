@@ -6,7 +6,7 @@
 
 **Status:** resolved
 
-**Trace:** M232（转换代理）；本票决定记 M270；票据 21（评估按错误文字给上游错误分类，依赖 429 的 `rate_limit_error` 与"429"字样）。
+**Trace:** M232（转换代理）；本票决定记 M287；票据 21（评估按错误文字给上游错误分类，依赖 429 的 `rate_limit_error` 与"429"字样）。
 
 背景：2026-10-20 用一张阿拉伯文公交站牌走完整 Agent 流程（`out/arabic-board/`，不进版本库），Gemini 4 Argon 的模板辅助设计轮反复在约 300 秒处失败。临时中继把上游改成流式后跑通。
 
@@ -39,7 +39,7 @@
 
   所以在 Claude Code 一侧，合并后再交回足以支撑超过 300 秒的调用；300 秒的限制只在代理连上游的那一段。
 
-**决定**（M270）：
+**决定**（M287）：
 
 - **上游走流式**：发 `:streamGenerateContent?alt=sse`。解析 SSE 的 `data:` 行：网络分块可能截断在行中间（包括多字节字符中间），按行缓冲；按事件合并多行 data。按顺序收集各分块的 parts，`usageMetadata` 与 `finishReason` 取最后出现的值，合并后交给不变的 `fromGoogle`。
 - **连上游用 `node:http`/`node:https`，不用全局 fetch**：fetch 的两个 300 秒超时改不了。代理自己的连接池随本轮关闭。
@@ -91,7 +91,7 @@
 - `test/agent.test.ts`「选 Gemini 时经本机转换代理」从 2 项增加到 3 项：
   - 原有一项改成假上游按 17 字节一段写 SSE（截断在行中间与汉字中间、CRLF），文字与工具调用分在 4 个分块里，用量先给中间值；另一个回复用 LF。
   - 新增一项覆盖：思考耗尽 32k 输出的 `MAX_TOKENS`；按 9 字节一段写、写到第三块中间断开；没有结束原因；流里报 503；流式请求遇到 429；非流式请求遇到断开；连不上上游（端口刚关掉）。
-- 文档：`docs/agent-tasks.md` 的 `--model`/`--endpoint` 与 `logs/` 两处；M270，M232 末尾加指向；`CODING_STANDARDS.md` 引擎边界一条；`docs/dev-setup.md` 期望测试数；索引加一行。
+- 文档：`docs/agent-tasks.md` 的 `--model`/`--endpoint` 与 `logs/` 两处；M287，M232 末尾加指向；`CODING_STANDARDS.md` 引擎边界一条；`docs/dev-setup.md` 期望测试数；索引加一行。
 
 **验证**
 

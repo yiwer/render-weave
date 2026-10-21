@@ -47,7 +47,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--requirement` | 模板辅助修改的修改要求（Markdown），见[模板辅助修改](#模板辅助修改) |
 | `--from`、`--feedback` | 带反馈发起下一轮，见[下一轮](#下一轮) |
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
-| `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M270） |
+| `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M287） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
 | `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
@@ -189,7 +189,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 3. **渲染**：有完整出图请求时，覆盖候选后实际渲染草稿。模板的渲染严重问题使结论为不合格；数据集提取的预览仍只作参考。`assessment` 分开记录 `structure`、`candidates`、`content: needsReview` 与 `render`；缺完整请求记 `render.status: notChecked`，可渲染记 `renderable`，受阻记 `blocked`。`capabilityBlocked` 表示包含已知引擎能力问题。
 4. **结论**：结构、候选和模板的渲染检查通过时为"合格"，内容与样式仍须审核。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
 
-**交回前核对**（M233、M277）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`。已知能力受阻时交回候选与说明，结束本轮，不以修改模板解决引擎能力缺失。
+**交回前核对**（M233、M294）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`。已知能力受阻时交回候选与说明，结束本轮，不以修改模板解决引擎能力缺失。
 - 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
 - 这个文件在 Agent 工作目录之外，Agent 改不了。
 - 交回后的校验与它是同一份实现、同样的上下文，所以 Agent 交回前看到的结论与问题和 `check.json` 一致。
@@ -218,7 +218,7 @@ renderweave agent review <轮次目录> [--port <端口>] [--no-open]
 
 只有 `draft.json` 的轮次可查看候选与预览，页面注明宿主抢救、完成度未知；审核操作与应用拒绝。用 `--from`、`--feedback` 发起下一轮，继承原工作目录的候选；Agent 完成说明后再交回正式成果。已有 outcome 损坏时不会退回读取草稿掩盖错误。
 
-**硬额度停止（M278）**：Google 转换代理识别 `GoUsageLimitError`（如 weekly）、`insufficient_quota`、`credit_balance_too_low` 后封住后续上游请求，宿主终止本轮执行器进程树。直连运行时的错误事件明确带出相同类型时也停止；只有一般 `rate_limit` / 429、5xx 不误判。`round.json` 的 `run.stopped` 记 `reason: hardQuota`、`type`、`limit`；命令退出失败并给出 `--from` 续跑入口，仍保存 outcome 或恢复草稿。没有结果消息的 token/轮数保持未知。额度恢复后由用户发起接续。
+**硬额度停止（M295）**：Google 转换代理识别 `GoUsageLimitError`（如 weekly）、`insufficient_quota`、`credit_balance_too_low` 后封住后续上游请求，宿主终止本轮执行器进程树。直连运行时的错误事件明确带出相同类型时也停止；只有一般 `rate_limit` / 429、5xx 不误判。`round.json` 的 `run.stopped` 记 `reason: hardQuota`、`type`、`limit`；命令退出失败并给出 `--from` 续跑入口，仍保存 outcome 或恢复草稿。没有结果消息的 token/轮数保持未知。额度恢复后由用户发起接续。
 
 **页面内容**：
 

@@ -20,7 +20,7 @@
 
 ## Answer
 
-2026-10-21：按 M278 实施。`src/agent/quota.ts` 只分类明确硬额度类型；Google 代理在 HTTP 错误与 SSE 错误中识别并锁住后续调用。宿主停止本轮进程树、保存候选，`round.json.run.stopped` 记录 reason/type/limit；CLI 给出草稿路径和 --from 接续入口。只有普通 rate_limit 的运行时事件仍由原运行时处理。
+2026-10-21：按 M295 实施。`src/agent/quota.ts` 只分类明确硬额度类型；Google 代理在 HTTP 错误与 SSE 错误中识别并锁住后续调用。宿主停止本轮进程树、保存候选，`round.json.run.stopped` 记录 reason/type/limit；CLI 给出草稿路径和 --from 接续入口。只有普通 rate_limit 的运行时事件仍由原运行时处理。
 
 - `test/agent.test.ts` 通过公开 runAgentTask 加真实 localhost HTTP 驱动：HTTP 和 SSE 两种硬额度响应各只收到一次上游请求；普通 429、503 后第三次 200；直连明确错误事件后假执行器的继续执行标记未出现；原凭据隔离检查通过。
 - 评估队列 `scripts/agent-eval/eval.ts` 优先读取结构化 `run.stopped`，避免中文错误说明绕过旧文本分类；经假执行器验证第一个单元因硬额度 invalid 后，第 2、3 个单元不再启动。

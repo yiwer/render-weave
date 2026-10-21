@@ -150,7 +150,7 @@ candidates: check.candidates.map(({ sha256: _sha256, revision: _revision, proble
 ## 未决
 
 - **模板辅助修改没有自动评估场景**：`scripts/agent-eval/config.json` 只有 definition/template/transcription 三个场景，`scripts/agent-eval/scenarios.ts:20-35` 也没有 revision kind。现成的修改要求还在（`scripts/agent-eval/scenarios/price-tag/requirement-revision.md`、`scripts/agent-eval/scenarios/366/requirement-revision.md`）。这次改 `check_outcome` 的 revision 输出，建议同时补一个 revision 场景，否则回归只能靠手工验收。（二次复核：已开[票据 24](../.scratch/agent-template-authoring/issues/24-eval-template-revision-scenario.md)，用库里已校准的 `fixtures/agent-eval/templates/first-test/` 与 M215 修改要求，票据 17 排在它之后。）
-- **M 编号未预占**：P1/P2 落地、决定达成后按 `AGENTS.md` 从 M270 起记；本文件不替 `docs/discovery/requirements.md` 做决定。
+- **M 编号未预占**：P1/P2 落地、决定达成后按 `AGENTS.md` 从 M287 起记；本文件不替 `docs/discovery/requirements.md` 做决定。
 
 ## 证据位置
 
