@@ -22,6 +22,7 @@ await render(workspace, request, {
 
 - 成功替代：`text.glyphFallback`，等级 `hint`，允许正式出图。
 - 仍缺字：`text.glyphMissing`，等级 `severe`，正式出图无图片；草稿可查看当前字体的缺字符号与问题边框，见[草稿预览与正式出图](render-modes.md)。
+- 需要字形塑形或从右往左排版的文字（阿拉伯文、希伯来文、印度系文字、泰文等）：`text.unshapedScript`，等级 `severe`。引擎逐字从左往右排，这类文字出来与原文不一致；东阿拉伯数字不算（M271）。
 - 每个文本元素分别合并成功替代与仍缺字的问题，字符去重、按首次出现顺序列出，并附 Unicode 码点。问题以元素路径定位，循环实例含序号；缩字组两轮布局不会重复报告。
 - 文本布局摘要在有替代时增加 `fontFallback: true`；`fragments` 按实际字体拆分，`font` 是实际资源引用，替代片段另有 `sourceFont` 记录原字体。未替代文本不增加这两个属性，原有片段边界保留。模板和数据集内容不被改写。
 

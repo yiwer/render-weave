@@ -2,6 +2,7 @@
  * MCP 服务的协议层：stdio 上按行分隔的 JSON-RPC 2.0（MCP 2025-06-18 的 stdio 传输）。
  * 只实现初始化、工具列表、工具调用与 ping；标准输出只写协议消息。
  * 工具输入先按各自的输入 Schema 校验；工具调用逐个执行，避免并发出图占满内存。
+ * 文字结果超过 MAX_TEXT_CHARS 时不交给客户端（Claude Code 会把超过 50,000 字符的结果转存成文件），改为工具错误（票据 22）。
  */
 import { createInterface } from 'node:readline';
 import { Ajv2020, type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
@@ -9,6 +10,11 @@ import { describeError, isRecord } from '../util.js';
 import { ToolInputError } from './files.js';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'] as const;
+
+/** 一次工具结果的文字字符数上限，给客户端 50,000 字符的转存阈值留余量（票据 22）。 */
+export const MAX_TEXT_CHARS = 40_000;
+/** 全部工具只读、不访问外部（tools/list 的 annotations）。 */
+const READ_ONLY_ANNOTATIONS = { readOnlyHint: true, openWorldHint: false } as const;
 
 export type ContentBlock =
   | { readonly type: 'text'; readonly text: string }
@@ -55,7 +61,7 @@ export async function serveMcp(input: NodeJS.ReadableStream, options: McpServerO
     } else if (method === 'ping') {
       send({ id, result: {} });
     } else if (method === 'tools/list') {
-      send({ id, result: { tools: [...tools.values()].map(({ tool }) => ({ name: tool.name, description: tool.description, inputSchema: tool.inputSchema })) } });
+      send({ id, result: { tools: [...tools.values()].map(({ tool }) => ({ name: tool.name, description: tool.description, inputSchema: tool.inputSchema, annotations: READ_ONLY_ANNOTATIONS })) } });
     } else if (method === 'tools/call') {
       const name = isRecord(params) ? params['name'] : undefined;
       const entry = typeof name === 'string' ? tools.get(name) : undefined;
@@ -66,8 +72,10 @@ export async function serveMcp(input: NodeJS.ReadableStream, options: McpServerO
       const args = isRecord(params) && params['arguments'] !== undefined ? params['arguments'] : {};
       const started = Date.now();
       const result = await callTool(entry.tool, entry.validate, args);
+      const chars = result.content.reduce((sum, block) => sum + (block.type === 'text' ? block.text.length : 0), 0);
+      const imageBytes = result.content.reduce((sum, block) => sum + (block.type === 'image' ? Math.floor((block.data.length * 3) / 4) : 0), 0);
       await options.log?.({ at: new Date().toISOString(), tool: entry.tool.name, arguments: args, ms: Date.now() - started,
-        isError: result.isError === true, ...result.summary });
+        isError: result.isError === true, ...result.summary, chars, imageBytes });
       send({ id, result: { content: result.content, isError: result.isError === true } });
     } else {
       send({ id, error: { code: ErrorCodes.methodNotFound, message: `不支持的方法：${String(method)}` } });
@@ -105,7 +113,12 @@ async function callTool(tool: McpTool, validate: ValidateFunction, args: unknown
     return { content: [{ type: 'text', text }], isError: true, summary: { error: text } };
   }
   try {
-    return await tool.call(args as Record<string, unknown>);
+    const result = await tool.call(args as Record<string, unknown>);
+    const chars = result.content.reduce((sum, block) => sum + (block.type === 'text' ? block.text.length : 0), 0);
+    if (chars <= MAX_TEXT_CHARS) return result;
+    // 工具各自按预算截断后仍超出：不交出超长结果，提示缩小范围（票据 22）。
+    const text = `结果有 ${chars} 字符，超过一次返回的上限 ${MAX_TEXT_CHARS}：请缩小范围再调用，例如只给一部分文件、用 pointer 只取一段，或用 elements 与 depth 只看一部分元素`;
+    return { content: [{ type: 'text', text }], isError: true, summary: { error: text, oversizedChars: chars } };
   } catch (error) {
     const text = error instanceof ToolInputError ? error.message : `工具出错：${describeError(error)}`;
     return { content: [{ type: 'text', text }], isError: true, summary: { error: text } };

@@ -4,7 +4,7 @@
 
 **Blocked by:** 无
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** M225（只读工具）、ADR-0015（受限模式的 Claude Code）；2026-10-19 [二次复核](../../../docs/agent-tooling-evaluation.md#新发现-1mcp-输出超过-50000-字符时-agent-拿不到)；验收 A09、A10。
 
@@ -28,16 +28,40 @@
   - `tools/list` 给 11 个工具加 `annotations: { readOnlyHint: true, openWorldHint: false }`（复核文档 P3）。
 - 合同升 0.6.0，与票据 17、18、19 同批，只跑一次评估。
 
-- [ ] 每个工具在仓库现有夹具上的最大输出都在 40,000 字符以内；服务层对超长结果有用例。
-- [ ] `dsl_reference` 的 `schema/template` 不带 `pointer` 返回目录，带 `pointer` 返回那一段；`pointer` 不存在时是工具错误并列出可用的顶层名称。
-- [ ] `inspect_layout` 在 M402 上 `depth: 20` 返回 `truncated` 与总数，结果不超过上限。
-- [ ] `mode: "final"` 的请求能出草稿，结果带 `modeDowngraded`。
-- [ ] `tools.jsonl` 有 `chars` 与 `imageBytes`；评估报告有转存/截断计数，离线用例用一段含 `<persisted-output>` 的假 `stream.jsonl`。
-- [ ] 工具清单快照、`docs/mcp.md` 与合同版本更新；全量 `npm test` 通过；同批评估门槛通过，且转存计数为 0。
+- [x] 每个工具在仓库现有夹具上的最大输出都在 40,000 字符以内；服务层对超长结果有用例。
+- [x] `dsl_reference` 的 `schema/template` 不带 `pointer` 返回目录，带 `pointer` 返回那一段；`pointer` 不存在时是工具错误并列出可用的顶层名称。
+- [x] `inspect_layout` 在 M402 上 `depth: 20` 返回 `truncated` 与总数，结果不超过上限。
+- [x] `mode: "final"` 的请求能出草稿，结果带 `modeDowngraded`。
+- [x] `tools.jsonl` 有 `chars` 与 `imageBytes`；评估报告有转存/截断计数，离线用例用一段含 `<persisted-output>` 的假 `stream.jsonl`。
+- [x] 工具清单快照、`docs/mcp.md` 与合同版本更新；全量 `npm test` 通过；同批评估门槛通过，且转存计数为 0。
 
 **测试接缝：** `test/mcp.test.ts` 经 JSON-RPC 驱动；输出大小的检查放在服务层（`src/mcp/server.ts`），用一个返回超长文字的假工具测。
 
 **不在本票：** 把转存文件放进 Agent 能读的目录（会把 Claude Code 的配置目录暴露给 Agent）；靠调 Claude Code 的阈值绕过（阈值随版本变，工具自己守住上限更稳；`MAX_MCP_OUTPUT_TOKENS` 是否影响按字符的转存未测）。
+
+## Answer
+
+2026-10-20 完成，合同 0.6.0（M272）。
+
+- **服务层**（`src/mcp/server.ts`）：
+  - 文字结果超过 40,000 字符（`MAX_TEXT_CHARS`）时不交给客户端，改为工具错误，提示缩小范围；
+  - 调用日志每条记 `chars` 与 `imageBytes`，超限时另记 `oversizedChars`；
+  - `tools/list` 给每个工具加 `annotations: { readOnlyHint: true, openWorldHint: false }`。
+- **工具**（`src/mcp/tools.ts`）：
+  - 问题清单（`render_draft`、`inspect_layout`、`check_*`、`list_documents`、`check_outcome` 含 `deferred`）最多 200 条、约 25,000 字符，截断时给 `problemsTruncated: {shown, total, byCode, hint}`；
+  - `inspect_layout` 按约 30,000 字符收集，用完时返回 `truncated`、`returned`、`total` 与提示；
+  - `dsl_reference` 新增 `pointer`（只用于 `schema/*`）：超过 30,000 字符的 Schema 不带 `pointer` 时返回目录；`pointer` 找不到时是工具错误，列出那一层可用的名称；`read_document` 也可以写 `pointer`；
+  - `mode: "final"` 按草稿出图，结果注明 `modeDowngraded: true`。
+- **评估**（`scripts/agent-eval/eval.ts`）：`countPersisted` 数 `stream.jsonl` 里含 `<persisted-output>` 或"exceeds maximum allowed tokens"的工具结果。轮次摘要带 `persistedResults`，报告 `totals.persistedResults` 非零时文字摘要提示；顺带记 `firstCheckProblems`（票据 27）。
+- **用例**：
+  - `test/mcp.test.ts`「文字结果的上限（票据 22）」：320 个问题截到 200 条以内并给计数；M402 `depth: 20` 截断；假工具返回 50,000 字符时服务层改为错误；读不了的字体（票据 29）；
+  - 目录与 `pointer`；`mode: "final"` 降级；会话结束时所有调用的 `chars` ≤ 40,000；
+  - `test/agent-eval.test.ts` 用假 `stream.jsonl` 数转存。
+- **同批评估** [2026-10-20-contract-060](../../../docs/agent-eval/reports/2026-10-20-contract-060.json)：门槛通过，转存 0 次。上一次阿拉伯文试跑里，`schema/template`（79,116 字符）与 714 条问题（121,601 字符）都被转存过。
+- **偏差**：
+  - "读不到"的前提已在 2026-10-20 更正（见 Comments）；
+  - 例子写的是 `/$defs/textElement`，模板 Schema 里没有 `$defs/text`；
+  - 同批的 17、18 没做，见票据 19 的偏差。
 
 ## Comments
 

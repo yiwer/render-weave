@@ -2,7 +2,8 @@
  * `renderweave mcp` 的工具（第三阶段 PRD 第 5、6 条）：读取、校验、草稿预览、元素检查、局部放大、资源列表、DSL 参考与交回前核对成果。
  * 全部只读（M53）：不写工作区、资源仓库或工作目录，也没有发布、删除与正式出图的途径。
  * 工作区是服务启动时读入的快照；工作目录内的文件按路径读取（files.ts），资源仓库只按 res:资源ID 经资源仓库接口读取。工作副本只在本次调用的内存中代替已保存模板（M49、M50）。
- * 工具名称、输入 Schema 与输出结构是 v0.5 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
+ * 工具名称、输入 Schema 与输出结构是 v0.6 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
+ * 文字结果不超过 MAX_TEXT_CHARS（票据 22）：问题清单、元素检查与 Schema 各自按预算截断，服务层再兜底。
  */
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -22,28 +23,49 @@ import { publishStaticSchema } from '../schema/publish.js';
 import { rasterizeSvg, SvgLoader } from '../svg.js';
 import { parseTemplate } from '../template/parse.js';
 import { prepareTemplates } from '../template/program.js';
-import { DEFAULT_FALLBACK_FONTS } from '../text/fonts.js';
+import { DEFAULT_FALLBACK_FONTS, FontStore } from '../text/fonts.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, parseDatasetDocument, parseStaticSchemaRef, type StaticSchemaEntry, type TemplateEntry, type Workspace } from '../workspace.js';
 import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.5.0';
+export const MCP_CONTRACT_VERSION = '0.6.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
 export const DRAFT_MAX_SIDE_PX = 2000;
 /** 局部预览先按提高后的 DPI 出整图再裁切，整图像素数以此为限。 */
 const DRAFT_REGION_MAX_TOTAL_PX = 40_000_000;
-/** 局部放大的输出最长边与最大倍数。 */
+/** 局部放大的输出最长边、缺省最大倍数与可指定的最大倍数（票据 19）。 */
 const VIEW_MAX_SIDE_PX = 1400;
+const VIEW_DEFAULT_MAX_SCALE = 2;
 const VIEW_MAX_SCALE = 4;
 /** SVG 资源整图栅格化的单边与像素总数上限。 */
 const VIEW_SVG_MAX_SIDE_PX = 8000;
 const VIEW_SVG_MAX_TOTAL_PX = 16_000_000;
-/** 元素检查一次最多返回的元素数。 */
+/** 元素检查一次最多返回的元素数与字符预算（票据 22）。 */
 const INSPECT_MAX_NODES = 300;
+const INSPECT_MAX_CHARS = 30_000;
+/** 问题清单最多列出的条数与字符预算；超出时另给按问题代码的计数（票据 22）。 */
+const PROBLEMS_MAX = 200;
+const PROBLEMS_MAX_CHARS = 25_000;
+/** Schema 整份返回的字符上限；超出时不带 pointer 返回目录（票据 22）。 */
+const SCHEMA_WHOLE_MAX_CHARS = 30_000;
+/** 字体覆盖的文字种类：探测字中能显示的比例不低于此值即算覆盖（票据 29）。 */
+const SCRIPT_COVERAGE = 0.95;
+const SCRIPT_PROBES: Readonly<Record<string, string>> = {
+  latin: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+  cjk: '的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去',
+  kana: 'あいうえおかきくけこさしすせそアイウエオカキクケコサシスセソ',
+  hangul: '가나다라마바사아자차카타파하',
+  cyrillic: 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯабвгдежзий',
+  greek: 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθ',
+  arabic: 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي',
+  hebrew: 'אבגדהוזחטיכלמנסעפצקרשת',
+  devanagari: 'अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह',
+  thai: 'กขคงจฉชซญดตถทธนบปผพฟภมยรลวศษสหอฮ',
+};
 
 export interface ToolContext {
   readonly workingDirectory: WorkingDirectory;
@@ -76,6 +98,23 @@ const DRAFT_INPUT = {
 export function createTools(context: ToolContext): McpTool[] {
   const { workingDirectory: files, workspace } = context;
   const shown = (problems: readonly Problem[]) => problems.map((problem) => displayProblem(problem, context));
+  /** 问题清单：最多 PROBLEMS_MAX 条且不超过字符预算；截断时给出总数与按问题代码的计数（票据 22）。 */
+  const listed = (problems: readonly Problem[], key = 'problems') => {
+    const all = shown(problems);
+    const kept: Problem[] = [];
+    let chars = 0;
+    for (const problem of all) {
+      chars += JSON.stringify(problem).length + 1;
+      if (kept.length >= PROBLEMS_MAX || chars > PROBLEMS_MAX_CHARS) break;
+      kept.push(problem);
+    }
+    if (kept.length === all.length) return { [key]: all };
+    const byCode: Record<string, number> = {};
+    for (const problem of all) byCode[problem.code] = (byCode[problem.code] ?? 0) + 1;
+    return { [key]: kept, [`${key}Truncated`]: { shown: kept.length, total: all.length, byCode,
+      hint: '只列出前面的问题：先按问题代码成批修改，再检查；也可以只检查一部分文件' } };
+  };
+  let fontStore: Promise<FontStore> | undefined;
 
   const tools: McpTool[] = [
     {
@@ -88,7 +127,7 @@ export function createTools(context: ToolContext): McpTool[] {
           definitions: workspace.staticSchemas.map((entry) => ({ ...entry.ref, displayName: displayName(entry), definition: entry.definition !== undefined, compiled: entry.compiled !== undefined })),
           templates: workspace.templates.map((entry) => ({ name: entry.name, base: isRecord(entry.document) ? parseStaticSchemaRef(entry.document['base']) ?? null : null })),
           datasets: workspace.datasets.map((entry) => ({ id: entry.id, staticSchema: entry.document.dataset.staticSchema })),
-          problems: shown(workspace.problems),
+          ...listed(workspace.problems),
         }, { documents: workspace.staticSchemas.length + workspace.templates.length + workspace.datasets.length });
       },
     },
@@ -101,6 +140,7 @@ export function createTools(context: ToolContext): McpTool[] {
         name: { type: 'string', minLength: 1, description: '静态数据定义或模板的名称' },
         version: { type: 'integer', minimum: 1, description: '静态数据定义的版本' },
         id: { type: 'string', minLength: 1, description: '数据集 ID' },
+        pointer: { type: 'string', description: 'JSON Pointer，只取文档的一部分，如 /artboard/children/0；文档很大时用' },
       } },
       async call(args) {
         const kind = args['kind'] as string, name = args['name'] as string | undefined, version = args['version'] as number | undefined, id = args['id'] as string | undefined;
@@ -118,15 +158,18 @@ export function createTools(context: ToolContext): McpTool[] {
           return kind === 'compiled' ? entry?.compiled : entry?.definition;
         })();
         if (document === undefined) throw new ToolInputError(`工作区快照中没有这份文档：${JSON.stringify(args)}；可先用 list_documents 查看`);
-        return json(document, { kind });
+        const pointer = args['pointer'] as string | undefined;
+        return json(pointer === undefined ? document : resolvePointer(document, pointer), { kind, ...(pointer !== undefined ? { pointer } : {}) });
       },
     },
     {
       name: 'list_resources',
-      description: '列出资源仓库中可引用的资源：资源 ID 与种类（image 或 font）。数据集与模板中写成 res:资源ID。',
+      description: '列出资源仓库中可引用的资源：资源 ID 与种类（image 或 font）。数据集与模板中写成 res:资源ID。' +
+        '字体另有 weight（OS/2 字重）与 scripts（能显示的文字种类：latin、cjk、kana、hangul、cyrillic、greek、arabic、hebrew、devanagari、thai）；' +
+        'scripts 是在每种文字的常用字上抽样判断的，具体的字以草稿的缺字问题为准。读不了的字体带 error。',
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       async call() {
-        const resources = workspace.resources.list();
+        const resources = await Promise.all(workspace.resources.list().map(async (resource) => (resource.kind === 'font' ? { ...resource, ...await fontInfo(resource.id) } : resource)));
         return json({ resources }, { count: resources.length });
       },
     },
@@ -142,7 +185,7 @@ export function createTools(context: ToolContext): McpTool[] {
         const { results } = await publishCandidates(args['paths'] as string[]);
         const includeCompiled = args['includeCompiled'] === true;
         return json({ results: results.map(({ entry, ...result }) => ({
-          ...result, problems: shown(result.problems), ...(includeCompiled && entry ? { compiled: entry.compiled } : {}),
+          ...result, ...listed(result.problems), ...(includeCompiled && entry ? { compiled: entry.compiled } : {}),
         })) }, { published: results.filter((result) => result.published).length, of: results.length });
       },
     },
@@ -185,8 +228,8 @@ export function createTools(context: ToolContext): McpTool[] {
           problems.push(severe(ProblemCodes.inputUnreadable, where, error.message));
         }
         return json({
-          ...(candidates ? { definitions: candidates.results.map(({ entry: _entry, ...result }) => ({ ...result, problems: shown(result.problems) })) } : {}),
-          dataset: { path, staticSchema, problems: shown(problems) },
+          ...(candidates ? { definitions: candidates.results.map(({ entry: _entry, ...result }) => ({ ...result, ...listed(result.problems) })) } : {}),
+          dataset: { path, staticSchema, ...listed(problems) },
         }, { datasetProblems: problems.length });
       },
     },
@@ -219,12 +262,12 @@ export function createTools(context: ToolContext): McpTool[] {
           problems.push(...prepareTemplates(overlay.workspace, parsed.model, schema.compiled).problems);
         }
         const unique = [...new Map(problems.map((problem) => [JSON.stringify(problem), problem])).values()];
-        return json({ templates: overlay.copies, problems: shown(unique) }, { templates: copies.length, problems: unique.length });
+        return json({ templates: overlay.copies, ...listed(unique) }, { templates: copies.length, problems: unique.length });
       },
     },
     {
       name: 'render_draft',
-      description: `按渲染请求出一张草稿预览图（PNG），返回问题清单与图片。request 是渲染请求（template、dataset、parameters、output）；mode 只能是 draft 或省略，output.format 只能是 png 或省略。` +
+      description: `按渲染请求出一张草稿预览图（PNG），返回问题清单与图片。request 是渲染请求（template、dataset、parameters、output）；mode 写 final 时也按草稿出图并在结果中注明 modeDowngraded，output.format 只能是 png 或省略。` +
         `DPI 上限 ${DRAFT_MAX_DPI}，且图片最长边不超过 ${DRAFT_MAX_SIDE_PX} 像素，超出时自动降低并在结果中注明；省略 dpi 时取上限。` +
         'templates 列出工作目录内的模板文件作为工作副本，代替同名的已保存模板（也可以是新模板）；datasetPath 用工作目录内的数据集文件代替 request.dataset。' +
         'region 只返回画板上的一块区域（毫米，相对画板左上角），DPI 按区域大小提高，用于放大核对预览中的小字与标记。不写任何文件。',
@@ -246,7 +289,7 @@ export function createTools(context: ToolContext): McpTool[] {
         const content: ContentBlock[] = [{ type: 'text', text: JSON.stringify({
           ...draft.info,
           image: encoded ? { widthPx: encoded.widthPx, heightPx: encoded.heightPx, dpi: encoded.dpi } : null,
-          problems: shown(result.problems),
+          ...listed(result.problems),
         }) }];
         if (encoded) content.push({ type: 'image', data: Buffer.from(encoded.bytes).toString('base64'), mimeType: 'image/png' });
         return { content, summary: { problems: result.problems.length, image: encoded !== undefined, ...(draft.region ? { region: true } : {}) } };
@@ -256,7 +299,7 @@ export function createTools(context: ToolContext): McpTool[] {
       name: 'inspect_layout',
       description: '按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；' +
         '文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。' +
-        `elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 ${INSPECT_MAX_NODES} 个元素。结果同时给出这些元素上的问题。不写任何文件。`,
+        `elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 ${INSPECT_MAX_NODES} 个元素、约 ${INSPECT_MAX_CHARS} 字符，超出时返回 truncated 与总元素数，再用 elements 指定子树或减小 depth。结果同时给出这些元素上的问题。不写任何文件。`,
       inputSchema: { type: 'object', additionalProperties: false, required: ['request'], properties: {
         ...DRAFT_INPUT,
         elements: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 }, description: '元素路径' },
@@ -265,17 +308,22 @@ export function createTools(context: ToolContext): McpTool[] {
       async call(args) {
         const draft = await prepareDraft(args);
         const result = await render(draft.workspace, draft.request);
-        if (!result.layout) return json({ ...draft.info, layout: null, problems: shown(result.problems) }, { problems: result.problems.length, layout: false });
+        if (!result.layout) return json({ ...draft.info, layout: null, ...listed(result.problems) }, { problems: result.problems.length, layout: false });
         const byPath = new Map<string, LayoutNode>();
         const index = (node: LayoutNode) => { byPath.set(node.path, node); node.children?.forEach(index); };
         index(result.layout.root);
         const requested = (args['elements'] as string[] | undefined) ?? [result.layout.root.path];
         const depth = (args['depth'] as number | undefined) ?? 1;
         const nodes: Record<string, unknown>[] = [], notFound: { path: string; suggestions: string[] }[] = [];
-        let truncated = false;
+        let truncated = false, total = 0, chars = 0;
         const collect = (node: LayoutNode, remaining: number) => {
-          if (nodes.length >= INSPECT_MAX_NODES) { truncated = true; return; }
-          nodes.push(nodeView(node));
+          total++;
+          if (!truncated) {
+            const view = roundNumbers(nodeView(node));
+            chars += JSON.stringify(view).length + 1;
+            if (nodes.length >= INSPECT_MAX_NODES || chars > INSPECT_MAX_CHARS) truncated = true;
+            else nodes.push(view);
+          }
           if (remaining > 0) node.children?.forEach((child) => collect(child, remaining - 1));
         };
         for (const path of requested) {
@@ -289,20 +337,22 @@ export function createTools(context: ToolContext): McpTool[] {
           return args['elements'] === undefined || (path !== undefined && under(path));
         });
         return json({
-          ...draft.info, output: result.layout.output, nodes: roundNumbers(nodes),
-          ...(truncated ? { truncated: true } : {}), ...(notFound.length ? { notFound } : {}),
-          problems: shown(problems),
-        }, { nodes: nodes.length, notFound: notFound.length });
+          ...draft.info, output: result.layout.output, nodes,
+          ...(truncated ? { truncated: true, returned: nodes.length, total, hint: '用 elements 指定子树或减小 depth 查看其余元素' } : {}),
+          ...(notFound.length ? { notFound } : {}),
+          ...listed(problems),
+        }, { nodes: nodes.length, notFound: notFound.length, ...(truncated ? { truncated: true } : {}) });
       },
     },
     {
       name: 'view_image',
-      description: `局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切，放大到最长边约 ${VIEW_MAX_SIDE_PX} 像素（最多 ${VIEW_MAX_SCALE} 倍），返回 PNG 与原图尺寸。` +
+      description: `局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切后缩放，输出最长边不超过 ${VIEW_MAX_SIDE_PX} 像素：缺省最多放大 ${VIEW_DEFAULT_MAX_SCALE} 倍；小字仍看不清时用 scale 指定倍数（1–${VIEW_MAX_SCALE}）。返回 PNG 与原图尺寸。` +
         '用于核对小字、密排列表、图标与小标记，以及把示例图上的图标、标记与资源图片对照后再引用。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。',
       inputSchema: { type: 'object', additionalProperties: false, required: ['path'], properties: {
         path: { type: 'string', minLength: 1, description: '工作目录内的图片，如 sample.png；或 res:资源ID，如 res:landmark-1（只能是图片资源，可先用 list_resources 查看）' },
         region: { type: 'object', additionalProperties: false, required: ['x', 'y', 'width', 'height'], description: '原图像素区域，左上角为原点',
           properties: { x: { type: 'number', minimum: 0 }, y: { type: 'number', minimum: 0 }, width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 } } },
+        scale: { type: 'number', minimum: 1, maximum: VIEW_MAX_SCALE, description: `放大倍数，缺省时最多 ${VIEW_DEFAULT_MAX_SCALE} 倍；输出最长边仍不超过 ${VIEW_MAX_SIDE_PX} 像素` },
       } },
       async call(args) {
         const ck = await loadCanvasKit();
@@ -314,7 +364,7 @@ export function createTools(context: ToolContext): McpTool[] {
           const region = args['region'] as Record<string, number> | undefined;
           const x = Math.min(W - 1, Math.round(region?.['x'] ?? 0)), y = Math.min(H - 1, Math.round(region?.['y'] ?? 0));
           const w = Math.max(1, Math.min(W - x, Math.round(region?.['width'] ?? W))), h = Math.max(1, Math.min(H - y, Math.round(region?.['height'] ?? H)));
-          const scale = Math.min(VIEW_MAX_SCALE, VIEW_MAX_SIDE_PX / Math.max(w, h));
+          const scale = Math.min((args['scale'] as number | undefined) ?? VIEW_DEFAULT_MAX_SCALE, VIEW_MAX_SIDE_PX / Math.max(w, h));
           const ow = Math.max(1, Math.round(w * scale)), oh = Math.max(1, Math.round(h * scale));
           // SVG 按放大后的尺寸栅格化整图，区域换算到栅格上；位图的换算比是 1。
           let image = source.image;
@@ -348,12 +398,28 @@ export function createTools(context: ToolContext): McpTool[] {
     {
       name: 'dsl_reference',
       description: '返回 DSL 参考或 JSON Schema 原文。name 取 reference/data-definition（数据定义与数据集参考）、reference/template（模板参考），' +
-        '或 schema/data-definition、schema/dataset、schema/template、schema/render-request、schema/batch-request（JSON Schema 2020-12）。',
-      inputSchema: { type: 'object', additionalProperties: false, required: ['name'], properties: { name: { enum: Object.keys(REFERENCE_FILES) } } },
+        '或 schema/data-definition、schema/dataset、schema/template、schema/render-request、schema/batch-request（JSON Schema 2020-12）。' +
+        `schema/* 可用 pointer（JSON Pointer，如 /$defs/textElement）只取一段；整份超过 ${SCHEMA_WHOLE_MAX_CHARS} 字符的 Schema（如 schema/template）不带 pointer 时返回目录：各部分的名称与字符数。`,
+      inputSchema: { type: 'object', additionalProperties: false, required: ['name'], properties: {
+        name: { enum: Object.keys(REFERENCE_FILES) },
+        pointer: { type: 'string', description: 'JSON Pointer，只用于 schema/*，如 /$defs/textElement' },
+      } },
       async call(args) {
-        const file = REFERENCE_FILES[args['name'] as keyof typeof REFERENCE_FILES];
-        const text = await readFile(join(REPO_ROOT, file), 'utf8');
-        return { content: [{ type: 'text', text }], summary: { name: args['name'], chars: text.length } };
+        const name = args['name'] as keyof typeof REFERENCE_FILES;
+        const text = await readFile(join(REPO_ROOT, REFERENCE_FILES[name]), 'utf8');
+        const pointer = args['pointer'] as string | undefined;
+        if (!name.startsWith('schema/')) {
+          if (pointer !== undefined) throw new ToolInputError('pointer 只用于 schema/*；参考文档整份返回');
+          return { content: [{ type: 'text', text }], summary: { name, chars: text.length } };
+        }
+        const schema = JSON.parse(text) as unknown;
+        if (pointer !== undefined) {
+          const part = JSON.stringify(resolvePointer(schema, pointer), null, 1);
+          return { content: [{ type: 'text', text: part }], summary: { name, pointer, chars: part.length } };
+        }
+        if (text.length <= SCHEMA_WHOLE_MAX_CHARS) return { content: [{ type: 'text', text }], summary: { name, chars: text.length } };
+        const toc = JSON.stringify(schemaContents(name, schema, text.length));
+        return { content: [{ type: 'text', text: toc }], summary: { name, chars: toc.length, contents: true } };
       },
     },
     {
@@ -368,9 +434,9 @@ export function createTools(context: ToolContext): McpTool[] {
         const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
         return json({
           verdict: check.verdict,
-          problems: shown(check.problems),
+          ...listed(check.problems),
           candidates: check.candidates.map(({ sha256: _sha256, revision: _revision, problems, deferred, ...candidate }) => ({
-            ...candidate, problems: shown(problems), ...(deferred ? { deferred: shown(deferred) } : {}),
+            ...candidate, ...listed(problems), ...(deferred ? listed(deferred, 'deferred') : {}),
           })),
         }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
@@ -398,6 +464,20 @@ export function createTools(context: ToolContext): McpTool[] {
       }
     }
     return { published, results };
+  }
+
+  /** 字体的字重与覆盖的文字种类；服务内缓存一个 FontStore，资源仓库是启动时固定的（票据 29）。 */
+  async function fontInfo(id: string): Promise<{ weight?: number; scripts?: string[]; error?: string }> {
+    fontStore ??= loadCanvasKit().then((ck) => new FontStore(ck, workspace.resources, []));
+    const store = await fontStore;
+    const problem = await store.load(id, [{ name: 'list_resources' }]);
+    const font = store.get(id);
+    if (problem || !font) return { error: problem?.message ?? `字体资源 res:${id} 无法读取` };
+    const scripts = Object.entries(SCRIPT_PROBES).filter(([, probe]) => {
+      const ids = store.glyphIds(font, probe);
+      return ids.filter((glyph) => glyph !== 0).length >= SCRIPT_COVERAGE * ids.length;
+    }).map(([script]) => script);
+    return { weight: font.weight, scripts };
   }
 
   async function readImageFile(ck: CanvasKit, path: string): Promise<LoadedImage> {
@@ -444,7 +524,9 @@ export function createTools(context: ToolContext): McpTool[] {
   /** 草稿预览与元素检查共用：叠加工作副本，换入数据集文件，固定为草稿并限制 DPI；局部预览按区域大小定 DPI。 */
   async function prepareDraft(args: Record<string, unknown>, region?: Region) {
     const request = { ...(args['request'] as Record<string, unknown>) };
-    if (request['mode'] !== undefined && request['mode'] !== 'draft') throw new ToolInputError('只能草稿预览：request.mode 只能是 draft 或省略');
+    // docs/request.json 带着 "mode": "final"，照抄时按草稿出图并注明，不报错（票据 22）。
+    const modeDowngraded = request['mode'] === 'final';
+    if (request['mode'] !== undefined && request['mode'] !== 'draft' && !modeDowngraded) throw new ToolInputError('只能草稿预览：request.mode 只能是 draft、final（按草稿出图）或省略');
     const copies: { path: string; entry: TemplateEntry }[] = [];
     for (const path of (args['templates'] as string[] | undefined) ?? []) copies.push({ path, entry: await readWorkingCopy(path) });
     const overlay = withWorkingCopies(copies);
@@ -482,7 +564,8 @@ export function createTools(context: ToolContext): McpTool[] {
       workspace: overlay.workspace,
       request,
       region: clipped,
-      info: { workingCopies: overlay.copies, ...(datasetPath !== undefined ? { datasetPath } : {}), ...dpiNote, ...(clipped ? { region: roundNumbers(clipped) } : {}) },
+      info: { workingCopies: overlay.copies, ...(datasetPath !== undefined ? { datasetPath } : {}), ...dpiNote, ...(clipped ? { region: roundNumbers(clipped) } : {}),
+        ...(modeDowngraded ? { modeDowngraded: true } : {}) },
     };
   }
 }
@@ -512,6 +595,38 @@ async function crop(bytes: Uint8Array, left: number, top: number, width: number,
   } finally {
     paint.delete(); surface?.delete(); image?.delete();
   }
+}
+
+/** JSON Pointer（RFC 6901）；找不到时是工具错误，列出该层可用的名称。 */
+function resolvePointer(document: unknown, pointer: string): unknown {
+  if (pointer === '') return document;
+  if (!pointer.startsWith('/')) throw new ToolInputError(`pointer 要以 / 开头，如 /$defs/textElement；收到 ${pointer}`);
+  let current: unknown = document;
+  let at = '';
+  for (const raw of pointer.slice(1).split('/')) {
+    const key = raw.replaceAll('~1', '/').replaceAll('~0', '~');
+    const index = Array.isArray(current) && /^(0|[1-9]\d*)$/.test(key) ? Number(key) : undefined;
+    const next = Array.isArray(current) ? (index === undefined ? undefined : current[index]) : isRecord(current) ? current[key] : undefined;
+    if (next === undefined) {
+      const available = Array.isArray(current) ? `0–${current.length - 1}` : isRecord(current) ? Object.keys(current).join('、') : '（这一层不是对象或数组）';
+      throw new ToolInputError(`pointer 在 ${at || '/'} 下找不到 ${key}；可用：${available}`);
+    }
+    current = next;
+    at += `/${raw}`;
+  }
+  return current;
+}
+
+/** 大 Schema 的目录：顶层各键，以及 properties 与 $defs 中各项的字符数。 */
+function schemaContents(name: string, schema: unknown, chars: number): Record<string, unknown> {
+  const size = (value: unknown) => JSON.stringify(value).length;
+  const record = isRecord(schema) ? schema : {};
+  const contents = Object.fromEntries(Object.entries(record).map(([key, value]) => [key,
+    (key === 'properties' || key === '$defs') && isRecord(value)
+      ? Object.fromEntries(Object.entries(value).map(([item, part]) => [item, size(part)]))
+      : size(value)]));
+  return { name, chars, contents,
+    hint: `整份 ${chars} 字符，超过一次返回的上限。用 pointer 取需要的一段，如 /$defs/<名称> 或 /properties/<名称>；数字是各段的字符数` };
 }
 
 function json(value: unknown, summary?: Record<string, unknown>): ToolResult {

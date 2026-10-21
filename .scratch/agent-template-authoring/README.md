@@ -33,8 +33,12 @@
 | 23 | [业务 Agent 的思考预算可设置、有记录，并用评估定缺省](issues/23-agent-thinking-budget.md) | 21 | 2026-10-19 二次复核新发现 2 |
 | 24 | [评估加一个模板辅助修改场景](issues/24-eval-template-revision-scenario.md) | 21 | 2026-10-19 二次复核新发现 3 |
 | 25 | [Gemini 的长调用不再在约 300 秒处失败](issues/25-gemini-proxy-streaming.md) | 无 | 2026-10-20 阿拉伯文站牌实跑 |
+| 26 | [需要塑形或从右往左的文字，出图时报问题而不是静默画错](issues/26-unshaped-script-problem.md) | 无 | 2026-10-20 阿拉伯文站牌试跑 |
+| 27 | [Agent 资料补齐必填判断、领域约定的适用条件与模板的分段写法](issues/27-materials-schema-judgement-and-incremental-templates.md) | 26、29 | 2026-10-20 阿拉伯文站牌试跑；A10 |
+| 28 | [`agent run` 先校验出图请求再开始，用满轮数时不打印空的报错](issues/28-agent-run-request-and-error-messages.md) | 无 | 2026-10-20 阿拉伯文站牌试跑 |
+| 29 | [`list_resources` 给出字体的字重与覆盖的文字](issues/29-list-resources-font-coverage.md) | 无 | 2026-10-20 阿拉伯文站牌试跑；A04 |
 
-已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。16–21 来自 2026-10-19 的[外围工具复核](../../docs/agent-tooling-review.md)，22–24 来自同日的[二次复核](../../docs/agent-tooling-evaluation.md)，25 来自 2026-10-20 用 Gemini 4 Argon 实跑一张阿拉伯文站牌，都不改变上面的验收映射。
+已检查：35 条用户故事全部覆盖；A01–A12 全覆盖；依赖编号有效、无环、无冗余的传递边。16–21 来自 2026-10-19 的[外围工具复核](../../docs/agent-tooling-review.md)，22–24 来自同日的[二次复核](../../docs/agent-tooling-evaluation.md)，25–29 来自 2026-10-20 实跑一张阿拉伯文站牌，都不改变上面的验收映射。
 
 - 01、03 可以并行开始。
 - 03 的 DSL 参考工具返回 `agent/reference/` 与 `schemas/` 中的现有内容，01、02 完成后内容自然更新，所以 03 不依赖 01、02。

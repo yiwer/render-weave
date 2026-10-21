@@ -20,5 +20,5 @@
    - 用 inspect_layout 核对修改要求中的每一条，不靠目测；
    - 再按通用做法验证极端情况，可用内联数据集；
    - 直到修改要求全部满足、没有严重问题。
-5. 按 outcome.md 写 outcome.json：candidates 只列改过的模板文件与新建的模板文件；locations 写改动的元素在图上的位置；拿不准的写成待确认项。说明里逐条对应修改要求，写改了什么、怎么核对的。
+5. 第一次没有严重问题时就按 outcome.md 写 outcome.json 并用 check_outcome 核对，之后每轮改完都更新它。outcome.json 的 candidates 只列改过的模板文件与新建的模板文件；locations 写改动的元素在图上的位置；拿不准的写成待确认项。说明里逐条对应修改要求，写改了什么、怎么核对的。
 6. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件，包括待确认项与图上位置中的元素路径是否还在模板里。结论是 unqualified 时按问题修改，再核对，直到 qualified。

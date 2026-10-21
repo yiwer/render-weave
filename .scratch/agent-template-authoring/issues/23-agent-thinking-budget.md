@@ -4,7 +4,7 @@
 
 **Blocked by:** 21
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** M232（模型与成本）、ADR-0015；2026-10-19 [二次复核](../../../docs/agent-tooling-evaluation.md#新发现-2思考-token-是最大的成本与耗时来源)；验收 A10。
 
@@ -23,15 +23,53 @@
 - 对照评估：`m402-template` 与 `366-transcription` 各 2 次，预算取 16,000 与 8,000 两档（缺省的成绩用最近的报告）。
 - **切换条件**：某一档门槛通过、各项成绩不低于近三份报告的最低值，且两个场景的输出 token 合计下降 30% 以上，就把它定为缺省，记 M 编号；否则维持不设，在 `docs/agent-eval.md` 记下结果。Gemini 走转换代理，不在本票。
 
-- [ ] `--max-thinking-tokens` 传到子进程环境；不给时环境里没有这个变量。
-- [ ] `round.json` 记预算与 `thinkingTokens`；评估报告带上它们。离线用例用 `test/support/fake-claude.mjs` 输出带 `output_tokens_details` 的结果消息。
-- [ ] 价签数据定义提取一轮，确认预算生效与否，结论写进本票 `## Answer`。
-- [ ] 生效时跑对照评估，按切换条件定缺省，报告存档并写进 `docs/agent-eval.md`「历次评估」。
-- [ ] 全量 `npm test` 通过。
+- [x] `--max-thinking-tokens` 传到子进程环境；不给时环境里没有这个变量。
+- [x] `round.json` 记预算与 `thinkingTokens`；评估报告带上它们。离线用例用 `test/support/fake-claude.mjs` 输出带 `output_tokens_details` 的结果消息。
+- [x] 价签数据定义提取一轮，确认预算生效与否，结论写进本票 `## Answer`。
+- [x] 生效时跑对照评估，按切换条件定缺省，报告存档并写进 `docs/agent-eval.md`「历次评估」。
+- [x] 全量 `npm test` 通过。
 
 **测试接缝：** `runAgentTask` 的子进程环境与 `readUsage`；评估报告用 `buildReport` 的离线用例。
 
 **不在本票：** Claude Code 的 effort 一类设置；模型选择（M232）。
+
+## Answer
+
+2026-10-20 完成。按"不生效就停"的规则，`MAX_THINKING_TOKENS` 这条路停下了，改用 `--effort` 做对照评估；缺省不改（M274）。
+
+**MAX_THINKING_TOKENS 不生效（已验证）**
+
+- 价签数据定义提取，预算 8,000 与不设各一轮：思考 5,378 与 7,647。但不设那一轮全程才 7,647，单次请求碰不到 8,000，这组对比说明不了什么。
+- 换成看请求本身：在本机起一个记录中继（`--endpoint` 指向它，只记请求的 `thinking`、`output_config`、`max_tokens` 与响应用量，key 只在内存中经过）。
+  - 预算 2,000 与不设各一轮，Claude Code 2.1.296 发出的请求完全相同：`thinking: {"type":"adaptive","display":"updates"}`、`max_tokens: 128000`，没有 `budget_tokens`。
+  - Haiku 5.5 是自适应思考，这个变量被忽略；预算 2,000 那轮思考反而更多（7,225 对 4,797），是波动。
+- `claude --help` 有 `--effort <level>`（low、medium、high、xhigh、max）。经同一个中继，`--effort low` 的请求带 `output_config: {"effort":"low"}`，不给时 Claude Code 发 `"medium"`。价签一轮的思考 2,016 对 8,333，输出 5,549 对 13,575。
+
+**改成 effort（对票据的偏差）**
+
+- `agent run --effort <low|medium|high|xhigh|max>` 传给 Claude Code 的 `--effort`；不给时不传。`round.json` 的 `runtime.effort` 记它，没给为 `null`。
+- `run.thinkingTokens` 记结果消息的 `output_tokens_details.thinking_tokens`。
+- 评估命令透传 `--effort`；报告 `runtime.effort`、轮次摘要与 `totals.thinkingTokens`，文字摘要写思考合计。
+- 用例：`test/agent-rounds.test.ts`「推理力度与思考 token（票据 23）」两项。假执行器收到 `--effort low`、不给时不收到；`round.json` 记力度与思考 token；取值不对是用法错误。`test/agent-eval.test.ts` 断言报告的 `totals.thinkingTokens`。
+
+**对照评估**
+
+- [2026-10-20-effort-low](../../../docs/agent-eval/reports/2026-10-20-effort-low.json)（low）对比同一资料与合同的门槛评估 [2026-10-20-contract-060](../../../docs/agent-eval/reports/2026-10-20-contract-060.json)（medium）：
+
+  | | medium | low |
+  |---|---|---|
+  | 门槛 | 通过 | 通过 |
+  | 两个场景输出 tokens | 309,401 | 212,946（−31.2%） |
+  | 其中 366 / M402 模板 | 145,171 / 164,230 | 94,959（−35%）/ 117,987（−28%） |
+  | 思考 tokens | 228,775 | 140,685 |
+  | 用时（各轮之和） | 60.4 分钟 | 54.7 分钟 |
+  | M402 模板压测、地标底线 | 10、10；2、2 mm | 10、10；0、0 mm |
+  | M402 模板相似度 | 0.898、0.936 | 0.870、0.908 |
+  | 366 站名、地标、设施 | 58/15/18、59/15/18 | 59/15/18、58/15/18 |
+
+- **切换条件不满足**：相似度 0.870 低于近三份报告的最低值 0.898（Gemini 2026-10-19 是 0.921、0.907，2026-10-20-ticket21 是 0.913、0.902）。其余各项都满足，输出降 31.2%，刚过 30%。缺省维持 Claude Code 的 medium。
+- **观察**：提取类任务降得多、成绩不降，模板任务降得少、相似度下降。"只对提取类任务用 low"可能成立，但 M402 数据定义场景没在 low 下跑过，不能据此定，留作后续。
+- **验证**：全量 `npm test` 通过，`npm run typecheck` 通过；两次评估的轮次目录与报告经 `scripts/scan-keys.mjs` 扫描，key 命中 0。
 
 ## Comments
 

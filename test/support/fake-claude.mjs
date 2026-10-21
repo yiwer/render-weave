@@ -2,6 +2,7 @@
 // 用法：node fake-claude.mjs <预置成果目录|none> [Claude Code 参数…]；提示词从标准输入读。
 // 它把预置成果复制进工作目录，记录收到的参数、环境变量名（不记值）与提示词，再输出流式日志的初始化与结果消息。
 // 预置目录里有 .api-error 时，模拟模型服务报错：结果消息带 is_error 与这段文字（Claude Code 的结束方式仍是 success）。
+// 预置目录里有 .max-turns 时，模拟用满轮数：结束方式 error_max_turns、is_error 为真、没有结果文字，轮数取文件内容。
 // 预置目录里有 .model-calls.json 时，像 Claude Code 一样依次向 ANTHROPIC_BASE_URL 发 Messages 请求，响应写进 model-calls-result.json。
 // 每项是 { body, token?, headers? }：token 为 "wrong" 时换一个错的令牌；body 中的 "{{tool_use_id}}" 换成上一次响应里第一个工具调用的 id。
 import { createHash } from 'node:crypto';
@@ -53,6 +54,8 @@ if (calls.length > 0) await writeFile('model-calls-result.json', JSON.stringify(
 const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
 write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
 const apiError = preset !== 'none' && existsSync(join(preset, '.api-error')) ? readFileSync(join(preset, '.api-error'), 'utf8') : undefined;
-if (apiError) write({ type: 'result', subtype: 'success', is_error: true, num_turns: 1, duration_ms: 300, result: apiError, usage: { input_tokens: 0, output_tokens: 0 } });
+const maxTurns = preset !== 'none' && existsSync(join(preset, '.max-turns')) ? Number(readFileSync(join(preset, '.max-turns'), 'utf8')) : undefined;
+if (maxTurns !== undefined) write({ type: 'result', subtype: 'error_max_turns', is_error: true, num_turns: maxTurns, duration_ms: 900, usage: { input_tokens: 5, output_tokens: 50 } });
+else if (apiError) write({ type: 'result', subtype: 'success', is_error: true, num_turns: 1, duration_ms: 300, result: apiError, usage: { input_tokens: 0, output_tokens: 0 } });
 else write({ type: 'result', subtype: 'success', is_error: false, num_turns: 7, duration_ms: 1200,
-  usage: { input_tokens: 11, output_tokens: 222, cache_read_input_tokens: 33, cache_creation_input_tokens: 44 } });
+  usage: { input_tokens: 11, output_tokens: 222, output_tokens_details: { thinking_tokens: 150 }, cache_read_input_tokens: 33, cache_creation_input_tokens: 44 } });

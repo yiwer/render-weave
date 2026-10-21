@@ -43,6 +43,8 @@ export interface RuntimeOptions {
   readonly endpoint?: string;
   readonly keyEnv?: string;
   readonly maxTurns?: number;
+  /** 推理力度，透传给 agent run 的 --effort（票据 23）。 */
+  readonly effort?: string;
 }
 
 /** 缺省的发起方式：调用构建好的命令行 node dist/bin.js agent run，key 由命令行从环境变量读取。输出写在轮次目录旁的 .log。 */
@@ -54,7 +56,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
       '--resources', spec.resources, '--out', spec.out, ...flag('domain', spec.domain), ...flag('workspace', spec.workspace),
       ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
-      ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns),
+      ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('effort', runtime.effort),
     ];
     const result = await execute(process.execPath, args);
     await writeFile(`${spec.out}.log`, `${result.stdout}\n${result.stderr}`);
@@ -111,12 +113,17 @@ export interface RoundSummary {
   readonly turns?: number;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
+  readonly thinkingTokens?: number;
   readonly cacheReadTokens?: number;
   readonly cacheCreationTokens?: number;
   readonly endedBy?: string;
   readonly pending?: number;
   readonly toolCalls?: number;
   readonly toolErrors?: number;
+  /** 被 Claude Code 转存（<persisted-output>）或因过大拒收的工具结果数（票据 22）。 */
+  readonly persistedResults?: number;
+  /** 第一次 check_templates 的问题数（票据 27）。 */
+  readonly firstCheckProblems?: number;
   /** 执行器无法启动或模型服务报错（如额度用完）。 */
   readonly error?: string;
 }
@@ -470,7 +477,7 @@ export interface EvalReport {
   readonly endedAt: string;
   readonly git: { readonly commit: string; readonly dirty: boolean };
   /** 实际运行的模型、端点与 Claude Code 版本，取自各轮的 round.json。 */
-  readonly runtime: { readonly model?: string; readonly smallModel?: string; readonly endpoint?: string; readonly servedModels: readonly string[]; readonly claudeCodeVersions: readonly string[] };
+  readonly runtime: { readonly model?: string; readonly smallModel?: string; readonly endpoint?: string; readonly effort?: string | null; readonly servedModels: readonly string[]; readonly claudeCodeVersions: readonly string[] };
   readonly mcpContract: string;
   /** agent/ 下各资料文件的 SHA-256（前 12 位），用来判断两次评估之间资料是否变了。 */
   readonly materials: Readonly<Record<string, string>>;
@@ -478,7 +485,7 @@ export interface EvalReport {
   readonly passLines: Readonly<Record<string, unknown>>;
   readonly results: readonly ScenarioResult[];
   readonly gate: GateResult;
-  readonly totals: { readonly wallMs: number; readonly inputTokens: number; readonly outputTokens: number; readonly cacheReadTokens: number };
+  readonly totals: { readonly wallMs: number; readonly inputTokens: number; readonly outputTokens: number; readonly thinkingTokens: number; readonly cacheReadTokens: number; readonly persistedResults: number };
 }
 
 /** 评估开始时的状态：提交与资料哈希。记进评估清单，重新评分时沿用，不按评分时的工作区算。 */
@@ -515,7 +522,7 @@ export async function buildReport(options: {
     format: 'renderweave-agent-eval/2', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
     git: origin.git,
     runtime: {
-      ...(runtime ? { model: runtime.model, smallModel: runtime.smallModel, endpoint: runtime.endpoint } : {}),
+      ...(runtime ? { model: runtime.model, smallModel: runtime.smallModel, endpoint: runtime.endpoint, effort: runtime.effort ?? null } : {}),
       servedModels: unique(records.map((record) => record.run.servedModel)), claudeCodeVersions: unique(records.map((record) => record.run.claudeCodeVersion)),
     },
     mcpContract: MCP_CONTRACT_VERSION,
@@ -524,7 +531,9 @@ export async function buildReport(options: {
     passLines: Object.fromEntries(options.config.scenarios.map((scenario) => [scenario.id, scenario.pass])),
     results: options.results,
     gate: gate(options.config, options.results, options.plan),
-    totals: { wallMs: sum((round) => round.wallMs), inputTokens: sum((round) => round.inputTokens), outputTokens: sum((round) => round.outputTokens), cacheReadTokens: sum((round) => round.cacheReadTokens) },
+    totals: { wallMs: sum((round) => round.wallMs), inputTokens: sum((round) => round.inputTokens), outputTokens: sum((round) => round.outputTokens),
+      thinkingTokens: sum((round) => round.thinkingTokens), cacheReadTokens: sum((round) => round.cacheReadTokens),
+      persistedResults: sum((round) => round.persistedResults) },
   };
 }
 
@@ -544,12 +553,14 @@ export function formatReport(report: EvalReport): string {
     '',
   ];
   for (const result of report.results) {
-    const usage = result.rounds.map((round) => `${AGENT_TASKS[round.task].name} ${((round.wallMs ?? 0) / 60000).toFixed(1)} 分钟 / ${round.turns ?? '?'} 轮 / 输出 ${round.outputTokens ?? '?'}`).join('；');
+    const usage = result.rounds.map((round) => `${AGENT_TASKS[round.task].name} ${((round.wallMs ?? 0) / 60000).toFixed(1)} 分钟 / ${round.turns ?? '?'} 轮 / 输出 ${round.outputTokens ?? '?'}` +
+      `${round.firstCheckProblems !== undefined ? ` / 首次模板检查 ${round.firstCheckProblems} 个问题` : ''}${round.persistedResults ? ` / 转存 ${round.persistedResults} 次` : ''}`).join('；');
     lines.push(`- ${result.name} 第 ${result.repetition} 次：${OUTCOME_TEXT[result.status]}${result.retries > 0 ? `（重试 ${result.retries} 次）` : ''}。${usage}`);
     if (result.invalid) lines.push(`  - ${invalidText(result.invalid)}`);
     for (const failure of result.failures) lines.push(`  - ${failure}`);
   }
-  lines.push('', `合计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输出 ${report.totals.outputTokens} tokens。`);
+  lines.push('', `合计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输出 ${report.totals.outputTokens} tokens，其中思考 ${report.totals.thinkingTokens}。`);
+  if (report.totals.persistedResults) lines.push(`有 ${report.totals.persistedResults} 次工具结果超过 Claude Code 的上限被转存或拒收：MCP 工具的输出应在 40,000 字符以内（票据 22）。`);
   return lines.join('\n');
 }
 
@@ -584,19 +595,40 @@ async function summarize(dir: string, outDir: string): Promise<RoundSummary | un
   }
   let outcome: RoundOutcome | undefined;
   try { outcome = JSON.parse(await readFile(join(dir, 'outcome.json'), 'utf8')) as RoundOutcome; } catch { outcome = undefined; }
-  let toolCalls: number | undefined, toolErrors: number | undefined;
+  let toolCalls: number | undefined, toolErrors: number | undefined, firstCheckProblems: number | undefined;
   try {
-    const calls = (await readFile(join(dir, 'logs/tools.jsonl'), 'utf8')).split('\n').filter(Boolean).map((line) => JSON.parse(line) as { isError?: boolean });
+    const calls = (await readFile(join(dir, 'logs/tools.jsonl'), 'utf8')).split('\n').filter(Boolean)
+      .map((line) => JSON.parse(line) as { tool?: string; isError?: boolean; problems?: number });
     toolCalls = calls.length;
     toolErrors = calls.filter((call) => call.isError).length;
+    firstCheckProblems = calls.find((call) => call.tool === 'check_templates' && !call.isError)?.problems;
   } catch { /* 没有工具调用日志 */ }
+  const persistedResults = await countPersisted(join(dir, 'logs/stream.jsonl'));
   const run = record.run;
   const pick = <K extends keyof typeof run>(key: K) => (run[key] === undefined ? {} : { [key]: run[key] });
   return {
     task: record.task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: record.verdict,
-    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'),
-    ...(outcome ? { pending: outcome.pending.length } : {}), ...(toolCalls !== undefined ? { toolCalls, toolErrors } : {}), ...(run.error ? { error: run.error } : {}),
+    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'),
+    ...(outcome ? { pending: outcome.pending.length } : {}), ...(toolCalls !== undefined ? { toolCalls, toolErrors } : {}),
+    ...(persistedResults !== undefined ? { persistedResults } : {}), ...(firstCheckProblems !== undefined ? { firstCheckProblems } : {}),
+    ...(run.error ? { error: run.error } : {}),
   } as RoundSummary;
+}
+
+/** 流式日志里被 Claude Code 转存成文件、或因过大被拒收的工具结果数；没有日志时为 undefined（票据 22）。 */
+export async function countPersisted(file: string): Promise<number | undefined> {
+  let text: string;
+  try { text = await readFile(file, 'utf8'); } catch { return undefined; }
+  let count = 0;
+  for (const line of text.split('\n')) {
+    let message: { type?: string; message?: { content?: unknown } };
+    try { message = JSON.parse(line) as typeof message; } catch { continue; }
+    if (message.type !== 'user' || !Array.isArray(message.message?.content)) continue;
+    for (const block of message.message.content as { type?: string; content?: unknown }[]) {
+      if (block.type === 'tool_result' && /<persisted-output>|exceeds maximum allowed tokens/.test(JSON.stringify(block.content ?? ''))) count++;
+    }
+  }
+  return count;
 }
 
 async function candidates(roundDir: string): Promise<{ kind: string; document: unknown }[]> {

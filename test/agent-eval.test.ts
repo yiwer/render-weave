@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  buildReport, classifyError, formatReport, gate, judge, resumeCommand, runScenario, runUnits, scoreScenario, unitDir,
+  buildReport, classifyError, countPersisted, formatReport, gate, judge, resumeCommand, runScenario, runUnits, scoreScenario, unitDir,
   type Launcher, type RoundSpec, type ScenarioResult, type UnitStatus,
 } from '../scripts/agent-eval/eval.js';
 import { readConfig, type EvalConfig, type Scenario } from '../scripts/agent-eval/scenarios.js';
@@ -229,11 +229,13 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const results = [m402, template, transcription];
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
-      format: 'renderweave-agent-eval/2', mcpContract: '0.5.0', consecutivePasses: 2,
+      format: 'renderweave-agent-eval/2', mcpContract: '0.6.0', consecutivePasses: 2,
       runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       results: [{ status: 'fail', retries: 0 }, { status: 'pass', retries: 0 }, { status: 'pass', retries: 0 }],
-      gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4 },
+      gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4, thinkingTokens: 150 * 4, persistedResults: 0 },
     });
+    expect(report.results.flatMap((result) => result.rounds).every((round) => round.persistedResults === 0)).toBe(true);
+    expect(formatReport(report)).not.toContain('转存');
     expect(Object.keys(report.materials)).toEqual(expect.arrayContaining(['agent/guide.md', 'agent/domains/route-sign.md', 'agent/tasks/template-design.md']));
     const text = JSON.stringify(report);
     expect(text).not.toMatch(/data:image|iVBORw0KGgo|"bytes"/);
@@ -286,6 +288,23 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
       delete process.env['RW_EVAL_TEST_KEY'];
     }
   }, 60_000);
+});
+
+describe('转存的工具结果计数（票据 22）', () => {
+  it('数出被 Claude Code 转存或因过大拒收的工具结果；没有日志时为 undefined', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'rw-persisted-'));
+    const result = (content: unknown) => JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't', content }] } });
+    await writeFile(join(dir, 'stream.jsonl'), [
+      JSON.stringify({ type: 'system', subtype: 'init' }),
+      result('<persisted-output>\nOutput too large (86.5KB). Full output saved to …\n</persisted-output>'),
+      result([{ type: 'text', text: 'Error: result (121,601 characters across 1 line) exceeds maximum allowed tokens. Output has been saved to …' }]),
+      result([{ type: 'text', text: '{"problems":[]}' }]),
+      '不是 JSON',
+    ].join('\n'));
+    expect(await countPersisted(join(dir, 'stream.jsonl'))).toBe(2);
+    expect(await countPersisted(join(dir, 'nope.jsonl'))).toBeUndefined();
+    await rm(dir, { recursive: true, force: true });
+  });
 });
 
 describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21）', () => {

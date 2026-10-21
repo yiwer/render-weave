@@ -43,12 +43,13 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--workspace` | 工作区目录，复制为本轮的只读快照。数据定义提取可选，其余三种任务必须给 |
 | `--definition` | 数据集提取所基于的已发布数据定义：`名称` 或 `名称@版本`，只写名称时取最新版本 |
 | `--dataset` | 模板辅助设计所基于的已保存数据集 id，数据定义取它选定的那一份；模板辅助修改可用它代替出图请求中的数据集 |
-| `--request` | 示例图对应的出图请求（主模板名、对外参数与输出尺寸）。模板辅助设计与模板辅助修改必须给；数据集提取可选，给了就用工作区已有的模板预览候选数据集 |
+| `--request` | 示例图对应的出图请求（主模板名、对外参数、输出尺寸与 `mode`；`mode` 必填，取 `draft` 或 `final`，与渲染请求相同）。模板辅助设计与模板辅助修改必须给；数据集提取可选，给了就用工作区已有的模板预览候选数据集 |
 | `--requirement` | 模板辅助修改的修改要求（Markdown），见[模板辅助修改](#模板辅助修改) |
 | `--from`、`--feedback` | 带反馈发起下一轮，见[下一轮](#下一轮) |
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
 | `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M270） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
+| `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
 
 **三种任务**：
@@ -73,8 +74,8 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | 退出码 | 含义 |
 |---|---|
 | 0 | 成果合格 |
-| 1 | 成果不合格，问题清单在 `check.json` 并写到标准错误流。是否带着问题重跑由人决定，不自动重试（M48） |
-| 2 | 用法错误，或输入无法读取，或任务顺序不对。此时不创建轮次目录 |
+| 1 | 成果不合格，问题清单在 `check.json` 并写到标准错误流。是否带着问题重跑由人决定，不自动重试（M48）。用满轮数上限时标准错误流写明轮数，没有交回成果可以用 `--from` 带反馈接着做 |
+| 2 | 用法错误，或输入无法读取，或任务顺序不对。此时不打印"开始……"，也不创建轮次目录 |
 
 **标准输出**是一段 JSON 摘要：轮次目录、第几轮与上一轮、结论、候选（数据定义的发布版本，模板辅助修改的改动情况与改动处数）、待确认项数、用时与轮数。
 

@@ -157,6 +157,8 @@ export const ProblemCodes = {
   textGlyphFallback: 'text.glyphFallback',
   /** 原字体与后备字体均不能显示某些码点，严重。 */
   textGlyphMissing: 'text.glyphMissing',
+  /** 文字需要字形塑形或从右往左排版（如阿拉伯文），逐字从左往右排出来与原文不一致，严重（票据 26）。 */
+  textUnshapedScript: 'text.unshapedScript',
   /** 资源的文件格式不受支持（图片支持 PNG、JPEG、WebP、SVG）。 */
   resourceUnsupportedFormat: 'resource.unsupportedFormat',
 

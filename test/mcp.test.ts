@@ -73,6 +73,10 @@ beforeAll(async () => {
   await writeFile(join(root, 'candidates/dataset-m402.json'), JSON.stringify(dataset));
   dataset.data.stops[2].name = 123;
   await writeFile(join(root, 'candidates/dataset-m402-broken.json'), JSON.stringify(dataset));
+  // 问题很多的模板：每个矩形的宽、高写法都不对，用来测问题清单的上限（票据 22）。
+  await writeFile(join(root, 'candidates/template-many.json'), JSON.stringify({ dslVersion: 'renderweave-template/1', name: '问题很多', base: { name: '空数据定义', version: 1 },
+    artboard: { sizeRange: { width: { min: 10, max: 100 }, height: { min: 10, max: 100 } }, layout: { mode: 'free' },
+      children: Array.from({ length: 160 }, (_, i) => ({ type: 'rect', name: `块${i}`, fill: '#000000', place: { left: 0, top: 0, width: 'wide', height: 'tall' } })) } }));
   // 目录联接（Windows 无需管理员权限）把工作目录外的目录挂进来。
   await symlink(outside, join(root, 'link'), 'junction');
 
@@ -91,7 +95,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.5.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.6.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
@@ -103,8 +107,12 @@ describe('协议与工具清单', () => {
     const tools: { name: string; description: string }[] = (await session.request('tools/list')).result.tools;
     expect(tools.map((tool) => tool.name)).toEqual(READ_ONLY_TOOLS);
     expect(tools.filter((tool) => /write|save|publish|delete|remove|apply|deliver|final/i.test(tool.name))).toEqual([]);
-    expect(text(await session.call('render_draft', { request: { ...REQUEST, mode: 'final' } }))).toContain('只能草稿预览');
-    expect(text(await session.call('inspect_layout', { request: { ...REQUEST, mode: 'final' } }))).toContain('只能草稿预览');
+    // 照抄 docs/request.json 的 "mode": "final" 时按草稿出图并注明（票据 22），其他取值仍是工具错误。
+    const final = await session.call('render_draft', { request: { ...REQUEST, mode: 'final' } });
+    expect([final.isError, JSON.parse(text(final)).modeDowngraded, image(final) !== undefined]).toEqual([false, true, true]);
+    expect((await session.callJson('inspect_layout', { request: { ...REQUEST, mode: 'final' } })).modeDowngraded).toBe(true);
+    expect(text(await session.call('render_draft', { request: { ...REQUEST, mode: 'preview' } }))).toContain('只能草稿预览');
+    expect(text(await session.call('inspect_layout', { request: { ...REQUEST, mode: 'preview' } }))).toContain('只能草稿预览');
     expect(text(await session.call('render_draft', { request: { ...REQUEST, output: { ...REQUEST.output, format: 'jpg' } } }))).toContain('只输出 PNG');
   });
 
@@ -146,18 +154,33 @@ describe('读取', () => {
     expect(text(await session.call('read_document', { kind: 'definition', name: '线路牌' }))).toContain('要写 name 与 version');
 
     const { resources } = await session.callJson('list_resources');
-    expect(resources).toContainEqual({ id: 'font-hei-regular', kind: 'font' });
+    // 字体另有字重与覆盖的文字种类；图片资源不变（票据 29）。
+    expect(resources).toContainEqual({ id: 'font-hei-regular', kind: 'font', weight: 400, scripts: expect.arrayContaining(['latin', 'cjk']) });
+    expect(resources).toContainEqual({ id: 'font-hei-bold', kind: 'font', weight: 700, scripts: expect.arrayContaining(['latin', 'cjk']) });
+    expect(resources.find((resource: { id: string }) => resource.id === 'font-hei-regular').scripts).not.toContain('arabic');
     expect(resources).toContainEqual({ id: 'route-no-m402', kind: 'image' });
   });
 
-  it('DSL 参考与 JSON Schema 原样返回', async () => {
+  it('DSL 参考与 JSON Schema 原样返回；模板 Schema 太大，不带 pointer 时返回目录（票据 22）', async () => {
     const files = { 'reference/data-definition': 'agent/reference/data-definition.md', 'reference/template': 'agent/reference/template.md',
       'schema/data-definition': 'schemas/data-definition.schema.json', 'schema/dataset': 'schemas/dataset.schema.json',
-      'schema/template': 'schemas/template.schema.json', 'schema/render-request': 'schemas/render-request.schema.json',
-      'schema/batch-request': 'schemas/batch-request.schema.json' };
+      'schema/render-request': 'schemas/render-request.schema.json', 'schema/batch-request': 'schemas/batch-request.schema.json' };
     for (const [name, file] of Object.entries(files)) {
       expect(text(await session.call('dsl_reference', { name }))).toBe(await readFile(join(repoRoot, file), 'utf8'));
     }
+    const schema = JSON.parse(await readFile(join(repoRoot, 'schemas/template.schema.json'), 'utf8'));
+    const contents = await session.call('dsl_reference', { name: 'schema/template' });
+    expect(text(contents).length).toBeLessThan(40_000);
+    const toc = JSON.parse(text(contents));
+    expect(Object.keys(toc.contents.$defs)).toEqual(Object.keys(schema.$defs));
+    expect(toc.hint).toContain('pointer');
+    const first = Object.keys(schema.$defs)[0]!;
+    expect(JSON.parse(text(await session.call('dsl_reference', { name: 'schema/template', pointer: `/$defs/${first}` })))).toEqual(schema.$defs[first]);
+    expect(JSON.parse(text(await session.call('dsl_reference', { name: 'schema/dataset', pointer: '/type' })))).toBe('object');
+    const missing = await session.call('dsl_reference', { name: 'schema/template', pointer: '/$defs/没有这一项' });
+    expect([missing.isError, text(missing)]).toEqual([true, expect.stringContaining(`可用：${first}`)]);
+    expect(text(await session.call('dsl_reference', { name: 'reference/template', pointer: '/x' }))).toContain('pointer 只用于 schema/*');
+    expect(await session.callJson('read_document', { kind: 'template', name: '站点', pointer: '/base' })).toEqual({ name: '停靠站点', version: 1 });
   });
 });
 
@@ -288,9 +311,18 @@ describe('草稿预览与元素检查', () => {
 describe('局部放大与路径限制', () => {
   it('按像素区域裁切放大，并返回原图尺寸；省略区域时返回整图', async () => {
     const crop = await session.call('view_image', { path: 'sample.png', region: { x: 150, y: 50, width: 100, height: 100 } });
-    expect(JSON.parse(text(crop))).toEqual({ original: { width: 200, height: 100 }, region: { x: 150, y: 50, width: 50, height: 50 }, scale: 4, output: { width: 200, height: 200 } });
-    expect(readPngInfo(Buffer.from(image(crop)!.data, 'base64'))).toMatchObject({ width: 200, height: 200 });
-    expect(JSON.parse(text(await session.call('view_image', { path: 'sample.png' })))).toMatchObject({ region: { x: 0, y: 0, width: 200, height: 100 }, output: { width: 800, height: 400 } });
+    // 缺省最多放大 2 倍（票据 19）。
+    expect(JSON.parse(text(crop))).toEqual({ original: { width: 200, height: 100 }, region: { x: 150, y: 50, width: 50, height: 50 }, scale: 2, output: { width: 100, height: 100 } });
+    expect(readPngInfo(Buffer.from(image(crop)!.data, 'base64'))).toMatchObject({ width: 100, height: 100 });
+    expect(JSON.parse(text(await session.call('view_image', { path: 'sample.png' })))).toMatchObject({ region: { x: 0, y: 0, width: 200, height: 100 }, output: { width: 400, height: 200 } });
+    // 写 scale 时按它放大，输出最长边仍不超过 1400 像素；越界是工具错误。
+    const zoomed = await session.call('view_image', { path: 'sample.png', region: { x: 150, y: 50, width: 50, height: 50 }, scale: 4 });
+    expect(JSON.parse(text(zoomed))).toMatchObject({ scale: 4, output: { width: 200, height: 200 } });
+    expect(JSON.parse(text(await session.call('view_image', { path: 'sample.png', scale: 1 })))).toMatchObject({ scale: 1, output: { width: 200, height: 100 } });
+    for (const scale of [0.5, 5]) {
+      const result = await session.call('view_image', { path: 'sample.png', scale });
+      expect([scale, result.isError, text(result)]).toEqual([scale, true, expect.stringContaining('参数不合规：scale')]);
+    }
     expect(text(await session.call('view_image', { path: 'notes.txt' }))).toBe('无法解码图片：notes.txt');
   });
 
@@ -301,11 +333,11 @@ describe('局部放大与路径限制', () => {
     expect(fromResource.isError).toBeFalsy();
     expect(JSON.parse(text(fromResource))).toEqual(JSON.parse(text(fromFile)));
     expect(image(fromResource)!.data).toBe(image(fromFile)!.data);
-    expect(JSON.parse(text(await session.call('view_image', { path: 'res:landmark-2' })))).toMatchObject({ original: { width: 96, height: 96 }, scale: 4, output: { width: 384, height: 384 } });
+    expect(JSON.parse(text(await session.call('view_image', { path: 'res:landmark-2' })))).toMatchObject({ original: { width: 96, height: 96 }, scale: 2, output: { width: 192, height: 192 } });
     // SVG 的区域按原始尺寸写，栅格化后放大。
     const svg = await session.call('view_image', { path: 'res:test-vector-svg' });
-    expect(JSON.parse(text(svg))).toEqual({ original: { width: 80, height: 40 }, region: { x: 0, y: 0, width: 80, height: 40 }, scale: 4, output: { width: 320, height: 160 } });
-    expect(readPngInfo(Buffer.from(image(svg)!.data, 'base64'))).toMatchObject({ width: 320, height: 160 });
+    expect(JSON.parse(text(svg))).toEqual({ original: { width: 80, height: 40 }, region: { x: 0, y: 0, width: 80, height: 40 }, scale: 2, output: { width: 160, height: 80 } });
+    expect(readPngInfo(Buffer.from(image(svg)!.data, 'base64'))).toMatchObject({ width: 160, height: 80 });
   });
 
   it('res: 后面只能是资源 ID：未知 ID、字体资源与写法不对的引用作为工具错误返回', async () => {
@@ -405,6 +437,51 @@ describe('交回前核对成果', () => {
   });
 });
 
+describe('文字结果的上限（票据 22）', () => {
+  it('问题清单最多列 200 条，另给总数与按问题代码的计数', async () => {
+    const result = await session.call('check_templates', { paths: ['candidates/template-many.json'] });
+    expect(text(result).length).toBeLessThanOrEqual(40_000);
+    const checked = JSON.parse(text(result));
+    expect(checked.problems.length).toBeLessThanOrEqual(200);
+    expect(checked.problemsTruncated).toMatchObject({ shown: checked.problems.length, total: 320, byCode: { 'template.invalid': 320 } });
+  });
+
+  it('元素检查按字符预算截断，返回已返回与总元素数', async () => {
+    const result = await session.call('inspect_layout', { request: REQUEST, depth: 20 });
+    expect(text(result).length).toBeLessThanOrEqual(40_000);
+    const inspected = JSON.parse(text(result));
+    expect(inspected).toMatchObject({ truncated: true, returned: inspected.nodes.length, hint: expect.stringContaining('elements') });
+    expect(inspected.total).toBeGreaterThan(inspected.returned);
+  });
+
+  it('服务层兜底：工具结果超过 40,000 字符时改为工具错误，不交给客户端', async () => {
+    const { serveMcp } = await import('../src/mcp/server.js');
+    const { Readable } = await import('node:stream');
+    const lines: string[] = [];
+    const logs: Record<string, unknown>[] = [];
+    const input = Readable.from([`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'big', arguments: {} } })}\n`]);
+    await serveMcp(input, { version: 'test', write: (line) => lines.push(line), log: async (entry) => { logs.push(entry); },
+      tools: [{ name: 'big', description: '返回 50,000 字符', inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+        call: async () => ({ content: [{ type: 'text', text: 'x'.repeat(50_000) }] }) }] });
+    const reply = JSON.parse(lines[0]!).result;
+    expect(reply.isError).toBe(true);
+    expect(reply.content[0].text).toContain('结果有 50000 字符');
+    expect(logs[0]).toMatchObject({ tool: 'big', isError: true, oversizedChars: 50_000 });
+  });
+
+  it('读不了的字体在资源列表里带 error，其余资源照常返回（票据 29）', async () => {
+    const resources = join(base, 'bad-fonts');
+    await mkdir(resources, { recursive: true });
+    await writeFile(join(resources, 'bad.ttf'), '不是字体');
+    await cp(join(resourcesDir, 'images/test/quadrants.png'), join(resources, 'p.png'));
+    await writeFile(join(resources, 'resources.json'), JSON.stringify({ resources: [{ id: 'bad-font', kind: 'font', file: 'bad.ttf' }, { id: 'pic', kind: 'image', file: 'p.png' }] }));
+    const other = startMcp(['--workspace', singleTextDir, '--resources', resources, '--root', root]);
+    const listed = await other.callJson('list_resources');
+    expect(listed.resources).toEqual([{ id: 'bad-font', kind: 'font', error: expect.stringContaining('bad-font') }, { id: 'pic', kind: 'image' }]);
+    expect(await other.close()).toBe(0);
+  });
+});
+
 describe('会话结束', () => {
   it('读完标准输入后正常退出；工作区、资源仓库与工作目录都没有变化；每次调用都记入日志', async () => {
     expect(await session.close()).toBe(0);
@@ -412,7 +489,10 @@ describe('会话结束', () => {
     expect([...after.entries()]).toEqual([...before.entries()]);
     const entries = (await readFile(logFile, 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
     expect(entries.length).toBeGreaterThan(30);
-    expect(entries[0]).toMatchObject({ tool: expect.any(String), ms: expect.any(Number), isError: expect.any(Boolean) });
+    expect(entries[0]).toMatchObject({ tool: expect.any(String), ms: expect.any(Number), isError: expect.any(Boolean), chars: expect.any(Number), imageBytes: expect.any(Number) });
+    // 每次调用记下文字字符数与图片字节数；这一轮所有结果都在上限之内（票据 22）。
+    expect(entries.every((entry) => entry.chars <= 40_000)).toBe(true);
+    expect(entries.find((entry) => entry.tool === 'view_image' && !entry.isError).imageBytes).toBeGreaterThan(0);
   });
 });
 

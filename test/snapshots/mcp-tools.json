@@ -7,6 +7,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
@@ -41,17 +45,29 @@
             "type": "string",
             "minLength": 1,
             "description": "数据集 ID"
+          },
+          "pointer": {
+            "type": "string",
+            "description": "JSON Pointer，只取文档的一部分，如 /artboard/children/0；文档很大时用"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
       "name": "list_resources",
-      "description": "列出资源仓库中可引用的资源：资源 ID 与种类（image 或 font）。数据集与模板中写成 res:资源ID。",
+      "description": "列出资源仓库中可引用的资源：资源 ID 与种类（image 或 font）。数据集与模板中写成 res:资源ID。字体另有 weight（OS/2 字重）与 scripts（能显示的文字种类：latin、cjk、kana、hangul、cyrillic、greek、arabic、hebrew、devanagari、thai）；scripts 是在每种文字的常用字上抽样判断的，具体的字以草稿的缺字问题为准。读不了的字体带 error。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
         "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
@@ -78,6 +94,10 @@
             "description": "附上编译产物 JSON Schema，缺省为 false"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
@@ -105,6 +125,10 @@
             "description": "工作目录内的候选数据定义文件，被引用的放前面"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
@@ -127,11 +151,15 @@
             "description": "工作目录内的模板文件"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
       "name": "render_draft",
-      "description": "按渲染请求出一张草稿预览图（PNG），返回问题清单与图片。request 是渲染请求（template、dataset、parameters、output）；mode 只能是 draft 或省略，output.format 只能是 png 或省略。DPI 上限 300，且图片最长边不超过 2000 像素，超出时自动降低并在结果中注明；省略 dpi 时取上限。templates 列出工作目录内的模板文件作为工作副本，代替同名的已保存模板（也可以是新模板）；datasetPath 用工作目录内的数据集文件代替 request.dataset。region 只返回画板上的一块区域（毫米，相对画板左上角），DPI 按区域大小提高，用于放大核对预览中的小字与标记。不写任何文件。",
+      "description": "按渲染请求出一张草稿预览图（PNG），返回问题清单与图片。request 是渲染请求（template、dataset、parameters、output）；mode 写 final 时也按草稿出图并在结果中注明 modeDowngraded，output.format 只能是 png 或省略。DPI 上限 300，且图片最长边不超过 2000 像素，超出时自动降低并在结果中注明；省略 dpi 时取上限。templates 列出工作目录内的模板文件作为工作副本，代替同名的已保存模板（也可以是新模板）；datasetPath 用工作目录内的数据集文件代替 request.dataset。region 只返回画板上的一块区域（毫米，相对画板左上角），DPI 按区域大小提高，用于放大核对预览中的小字与标记。不写任何文件。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -187,11 +215,15 @@
             }
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
       "name": "inspect_layout",
-      "description": "按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 300 个元素。结果同时给出这些元素上的问题。不写任何文件。",
+      "description": "按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 300 个元素、约 30000 字符，超出时返回 truncated 与总元素数，再用 elements 指定子树或减小 depth。结果同时给出这些元素上的问题。不写任何文件。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -233,11 +265,15 @@
             "description": "向下展开的层数，0 只看元素本身，缺省 1"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
       "name": "view_image",
-      "description": "局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切，放大到最长边约 1400 像素（最多 4 倍），返回 PNG 与原图尺寸。用于核对小字、密排列表、图标与小标记，以及把示例图上的图标、标记与资源图片对照后再引用。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。",
+      "description": "局部放大查看图片：工作目录内的图片（如示例图），或写 res:资源ID 查看资源仓库中图片资源的当前版本。按像素区域裁切后缩放，输出最长边不超过 1400 像素：缺省最多放大 2 倍；小字仍看不清时用 scale 指定倍数（1–4）。返回 PNG 与原图尺寸。用于核对小字、密排列表、图标与小标记，以及把示例图上的图标、标记与资源图片对照后再引用。省略 region 时返回整图；区域超出原图时按原图边界裁切。不写任何文件。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -278,13 +314,23 @@
                 "exclusiveMinimum": 0
               }
             }
+          },
+          "scale": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "放大倍数，缺省时最多 2 倍；输出最长边仍不超过 1400 像素"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
       "name": "dsl_reference",
-      "description": "返回 DSL 参考或 JSON Schema 原文。name 取 reference/data-definition（数据定义与数据集参考）、reference/template（模板参考），或 schema/data-definition、schema/dataset、schema/template、schema/render-request、schema/batch-request（JSON Schema 2020-12）。",
+      "description": "返回 DSL 参考或 JSON Schema 原文。name 取 reference/data-definition（数据定义与数据集参考）、reference/template（模板参考），或 schema/data-definition、schema/dataset、schema/template、schema/render-request、schema/batch-request（JSON Schema 2020-12）。schema/* 可用 pointer（JSON Pointer，如 /$defs/textElement）只取一段；整份超过 30000 字符的 Schema（如 schema/template）不带 pointer 时返回目录：各部分的名称与字符数。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -302,8 +348,16 @@
               "schema/render-request",
               "schema/batch-request"
             ]
+          },
+          "pointer": {
+            "type": "string",
+            "description": "JSON Pointer，只用于 schema/*，如 /$defs/textElement"
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     },
     {
@@ -313,6 +367,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
       }
     }
   ]

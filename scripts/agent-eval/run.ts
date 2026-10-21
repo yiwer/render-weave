@@ -3,7 +3,7 @@
  *
  *   npm run build
  *   npx tsx scripts/agent-eval/run.ts [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
- *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数]
+ *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数] [--effort 力度]
  *   npx tsx scripts/agent-eval/run.ts --rescore <评估输出目录>     只按已有的轮次目录重新评分，不调用模型
  *   分段跑（某个模型的额度窗口装不下一整遍）：用同一个 --label，先加 --repetitions 1-1，额度恢复后加 --repetitions 2-2；
  *   后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛。
@@ -30,7 +30,7 @@ const MANIFEST = 'eval.json';
 const { values } = parseArgs({
   options: {
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
-    model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' },
+    model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
     rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
   },
   strict: true,
@@ -56,6 +56,8 @@ if (!process.env[keyEnv]) fail(`缺少环境变量 ${keyEnv}：key 只经环境�
 try { await stat(join(REPO, 'dist/bin.js')); } catch { fail('没有 dist/bin.js：先运行 npm run build'); }
 const jobs = positive(values.jobs, 3, '--jobs');
 const maxTurns = values['max-turns'] === undefined ? undefined : positive(values['max-turns'], 0, '--max-turns');
+const effort = values.effort;
+if (effort !== undefined && !['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) fail('--effort 只能取 low、medium、high、xhigh、max');
 const scenarios = pick(values.scenarios);
 const segment = /^(\d+)(?:-(\d+))?$/.exec(values.repetitions ?? '');
 if (values.repetitions !== undefined && (!segment || Number(segment[1]) < 1 || Number(segment[2] ?? segment[1]) < Number(segment[1]))) fail('--repetitions 写成 起-止，如 1-1 或 2-2');
@@ -76,7 +78,7 @@ const manifest: Manifest = { label, startedAt, scenarios: scenarios.map((scenari
 await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
 const launch = cliLauncher({
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
-  ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}),
+  ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(effort ? { effort } : {}),
 });
 
 // 场景 × 次数，按 --jobs 并行；每个场景内部的轮次按顺序。
@@ -117,7 +119,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

@@ -31,7 +31,7 @@ import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-rec
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
-import { AgentUsageError, DEFAULT_KEY_ENV, runAgentTask } from './agent/run.js';
+import { AGENT_EFFORTS, AgentUsageError, DEFAULT_KEY_ENV, runAgentTask, type AgentEffort } from './agent/run.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
 import { parseOutcomeTarget, type OutcomeTarget } from './agent/outcome.js';
@@ -71,8 +71,8 @@ const USAGE = `用法：
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>] [--outcome-context <本轮任务.json>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
                         [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>] [--requirement <修改要求.md>]
-                        [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--claude <可执行文件>]
-  renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--claude …]
+                        [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--effort <力度>] [--claude <可执行文件>]
+  renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--effort …] [--claude …]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
   renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--dry-run] [--token-env <环境变量名>]
@@ -110,6 +110,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --key-env     可选，key 所在的环境变量名，缺省 OPEN_CODE_API_KEY；key 只经环境变量传入，不写任何文件
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
+  --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
 
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配
@@ -162,7 +163,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'claude'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -348,12 +349,16 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     io.stderr(`缺少环境变量 ${keyEnv}：key 只经环境变量传入\n`);
     return ExitCodes.usage;
   }
+  const effort = options.effort as AgentEffort | undefined;
+  if (effort !== undefined && !AGENT_EFFORTS.includes(effort)) {
+    io.stderr(`--effort 只能取 ${AGENT_EFFORTS.join('、')}\n`);
+    return ExitCodes.usage;
+  }
   const maxTurns = options['max-turns'] === undefined ? undefined : Number(options['max-turns']);
   if (maxTurns !== undefined && (!Number.isSafeInteger(maxTurns) || maxTurns < 1)) {
     io.stderr('--max-turns 必须是正整数\n');
     return ExitCodes.usage;
   }
-  io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`);
   try {
     const result = await runAgentTask({
       out: options.out!, key, keyEnv,
@@ -373,7 +378,10 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
       ...(maxTurns !== undefined ? { maxTurns } : {}),
+      ...(effort !== undefined ? { effort } : {}),
       ...(options.claude !== undefined ? { claude: { command: options.claude } } : {}),
+      // 输入校验通过后才打印，用法错误时第一行就是错误（票据 28）。
+      onStart: () => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
     });
     const { check, record } = result;
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems)], io);

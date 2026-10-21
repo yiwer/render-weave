@@ -3,6 +3,7 @@ import { formatElementPath } from '../element-path.js';
 import type { EvaluatedFragment, EvaluatedNode } from '../evaluate.js';
 import { hint, ProblemCodes, severe, type Problem } from '../problems.js';
 import type { FontStore } from './fonts.js';
+import { unshapedScripts } from './scripts.js';
 
 export async function resolveGlyphFallbacks(node: EvaluatedNode, fonts: FontStore, problems: Problem[]): Promise<EvaluatedNode> {
   if (node.model.type !== 'artboard' && !node.model.visible) return node;
@@ -46,6 +47,10 @@ export async function resolveGlyphFallbacks(node: EvaluatedNode, fonts: FontStor
     `缺字已按字重用后备字体逐字替代：${describe(replaced)}`));
   if (missing.size) problems.push(severe(ProblemCodes.textGlyphMissing, location,
     `原字体与配置的后备字体无法显示这些字（没有可用后备字体或替代后仍缺字）：${describe(missing)}`));
+  const unshaped = unshapedScripts((node.fragments ?? []).map((fragment) => fragment.text).join(''));
+  if (unshaped.size) problems.push(severe(ProblemCodes.textUnshapedScript, location,
+    `这些文字需要字形塑形或从右往左排版，RenderWeave 按字逐个从左往右排，出图与原文不一致：${
+      [...unshaped].map(([script, chars]) => `${script}（${[...chars].slice(0, 8).join(' ')}${chars.size > 8 ? ' …' : ''}）`).join('；')}`));
   return { ...node, fragments };
 }
 

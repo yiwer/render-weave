@@ -72,15 +72,25 @@ export interface AgentRunOptions {
   readonly smallModel?: string;
   readonly endpoint?: string;
   readonly maxTurns?: number;
+  /** 推理力度：传给 Claude Code 的 --effort；不给时不传，用 Claude Code 的缺省（票据 23）。 */
+  readonly effort?: AgentEffort;
   /** Claude Code 可执行文件与前置参数；测试用假执行器代替。 */
   readonly claude?: { readonly command: string; readonly args?: readonly string[] };
+  /** 输入全部校验通过、创建轮次目录之前调用；命令行在这里打印"开始……"（票据 28）。 */
+  readonly onStart?: (roundDir: string) => void;
 }
+
+/** Claude Code 的 --effort 取值。自适应思考的模型（如 Haiku 5.5）只认它，不认 MAX_THINKING_TOKENS（票据 23）。 */
+export const AGENT_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+export type AgentEffort = (typeof AGENT_EFFORTS)[number];
 
 export interface RoundUsage {
   readonly wallMs: number;
   readonly turns?: number;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
+  /** 输出 token 中的思考部分（结果消息的 output_tokens_details.thinking_tokens，票据 23）。 */
+  readonly thinkingTokens?: number;
   readonly cacheReadTokens?: number;
   readonly cacheCreationTokens?: number;
   readonly servedModel?: string;
@@ -100,6 +110,8 @@ export interface RoundRecord {
   readonly runtime: {
     /** google：模型只提供 Google 接口，本轮经本机转换代理连接 endpoint（M232）。 */
     readonly model: string; readonly smallModel: string; readonly protocol: 'anthropic' | 'google'; readonly endpoint: string; readonly maxTurns: number;
+    /** 推理力度；没设为 null（票据 23）。 */
+    readonly effort: AgentEffort | null;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
   readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[] };
@@ -229,6 +241,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (await exists(roundDir) && (!(await isDirectory(roundDir)) || (await readdir(roundDir)).length > 0)) {
     throw new AgentUsageError(`轮次目录必须不存在或为空：${options.out}`);
   }
+  options.onStart?.(roundDir);
 
   const startedAt = new Date().toISOString();
   const round = previous ? previous.round + 1 : 1;
@@ -332,7 +345,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   });
   const args = ['-p', '--output-format', 'stream-json', '--verbose', '--model', model, '--restricted', '--tools', task.tools,
     '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
-    '--max-turns', String(maxTurns), '--no-session-persistence'];
+    '--max-turns', String(maxTurns), '--no-session-persistence', ...(options.effort ? ['--effort', options.effort] : [])];
 
   const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
@@ -379,7 +392,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
   const record: RoundRecord = {
     format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
-    runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
+    runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, effort: options.effort ?? null,
+      keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
     run: { ...usage, exitCode: executed.exitCode, ...(executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };
@@ -573,15 +587,25 @@ async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { m
   const number = (value: unknown) => (typeof value === 'number' ? value : undefined);
   const fields = {
     turns: number(result?.['num_turns']), inputTokens: number(usage?.['input_tokens']), outputTokens: number(usage?.['output_tokens']),
+    thinkingTokens: number((usage?.['output_tokens_details'] as Record<string, unknown> | undefined)?.['thinking_tokens']),
     cacheReadTokens: number(usage?.['cache_read_input_tokens']), cacheCreationTokens: number(usage?.['cache_creation_input_tokens']),
     servedModel: typeof init?.['model'] === 'string' ? init['model'] : undefined,
     claudeCodeVersion: typeof init?.['claude_code_version'] === 'string' ? init['claude_code_version'] : undefined,
     endedBy: typeof result?.['subtype'] === 'string' ? result['subtype'] : undefined,
     mcp: Array.isArray(init?.['mcp_servers']) ? init['mcp_servers'].map((server: Record<string, unknown>) => `${String(server['name'])}:${String(server['status'])}`) : undefined,
-    // 模型服务报错（如额度用完的 429）时，Claude Code 的结束方式仍是 success，只另带 is_error。
-    apiError: result?.['is_error'] === true ? `模型服务报错：${String(result['result'] ?? '').slice(0, 300)}` : undefined,
+    // 模型服务报错（如额度用完的 429）时，Claude Code 的结束方式仍是 success，只另带 is_error；
+    // 用满轮数时 is_error 也为真，但没有报错文字（票据 28）。
+    apiError: result?.['is_error'] === true ? resultError(result) : undefined,
   };
   return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
+}
+
+function resultError(result: Record<string, any>): string {
+  const text = String(result['result'] ?? '').trim();
+  if (result['subtype'] === 'error_max_turns') {
+    return `用满了轮数上限（${String(result['num_turns'] ?? '?')} 轮）${text ? `：${text.slice(0, 300)}` : ''}；没有交回成果时，可以用 --from 带反馈接着做`;
+  }
+  return text ? `模型服务报错：${text.slice(0, 300)}` : `Claude Code 以 ${String(result['subtype'] ?? '错误')} 结束，没有给出原因`;
 }
 
 function imageExtension(bytes: Uint8Array): string | undefined {

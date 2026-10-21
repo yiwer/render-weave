@@ -162,3 +162,26 @@ describe('缺字逐字替代', () => {
     ]);
   });
 });
+
+describe('需要塑形或从右往左的文字（票据 26）', () => {
+  it('阿拉伯文报严重问题，列出文字种类与字；东阿拉伯数字不算', async () => {
+    const result = await render(await workspace([label({ content: [{ text: 'حديقة النخيل ٢٠٤٨' }] })]), request);
+    const unshaped = result.problems.filter((p) => p.code === ProblemCodes.textUnshapedScript);
+    expect(unshaped).toHaveLength(1);
+    expect(unshaped[0]).toMatchObject({ level: 'severe', location: { kind: 'element', path: '文字实验/站名' } });
+    expect(unshaped[0]!.message).toContain('阿拉伯文（ح د ي ق ة ا ل ن …）');
+    expect(unshaped[0]!.message).not.toContain('٢');
+    // 夹具字体没有阿拉伯字形，缺字照常另报；正式出图因严重问题无图。
+    expect(codes(result)).toContain(ProblemCodes.textGlyphMissing);
+    expect(result.image).toBeUndefined();
+  });
+
+  it('同一元素混有多种这类文字只报一条；中文、拉丁文与东阿拉伯数字不报', async () => {
+    const mixed = await render(await workspace([label({ content: [{ text: 'שלום' }, { text: ' سلام' }] })]), request);
+    const unshaped = mixed.problems.filter((p) => p.code === ProblemCodes.textUnshapedScript);
+    expect(unshaped).toHaveLength(1);
+    expect(unshaped[0]!.message).toMatch(/希伯来文（ש ל ו ם）；阿拉伯文（س ل ا م）$/);
+    const plain = await render(await workspace([label({ content: [{ text: 'A深田圳B ٠١٢' }] })]), request);
+    expect(codes(plain)).not.toContain(ProblemCodes.textUnshapedScript);
+  });
+});

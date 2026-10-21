@@ -560,3 +560,46 @@ describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', 
     }
   });
 });
+
+describe('agent run 先校验出图请求再开始，用满轮数时说明原因（票据 28）', () => {
+  it('出图请求缺 mode：第一行就是用法错误，没有"开始"，不建轮次目录', async () => {
+    const dir = await workspace(false);
+    const { mode: _mode, ...noMode } = BANNER_REQUEST;
+    const out = join(base, `round-${++count}`);
+    const [code, stderr] = await cli(['--task', '模板辅助设计', '--sample', join(resourcesDir, 'images/test/quadrants.png'), '--brief', join(base, 'brief.md'),
+      '--resources', storeDir, '--workspace', dir, '--dataset', 'ds-greeting', '--request', await file('no-mode.json', noMode), '--out', out]);
+    expect(code).toBe(2);
+    expect(stderr.startsWith('出图请求不合格')).toBe(true);
+    expect(stderr).not.toContain('开始');
+    expect(existsSync(out)).toBe(false);
+  });
+
+  it('用满轮数：run.error 说明轮数上限与 --from，不是空的"模型服务报错："', async () => {
+    const result = await designRound(await workspace(false), { '.max-turns': '80' });
+    expect(result.record.run.endedBy).toBe('error_max_turns');
+    expect(result.record.run.error).toBe('用满了轮数上限（80 轮）；没有交回成果时，可以用 --from 带反馈接着做');
+    expect(result.check.verdict).toBe('unqualified');
+  });
+});
+
+describe('推理力度与思考 token（票据 23）', () => {
+  it('--effort 传给 Claude Code，round.json 记力度与思考 token；不给时不传', async () => {
+    const given = await designRound(await workspace(false));
+    const low = await run({ 'outcome.json': DESIGN_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: WORDS },
+      { task: 'template-design', workspace: await workspace(false), dataset: 'ds-greeting', request: await file('banner-request.json', BANNER_REQUEST), effort: 'low' });
+    const args = async (dir: string): Promise<string[]> => (await json(join(dir, 'agent/fake-run.json'))).args;
+    const effortOf = (list: string[]) => (list.includes('--effort') ? list[list.indexOf('--effort') + 1] : undefined);
+    expect(effortOf(await args(low.roundDir))).toBe('low');
+    expect(low.record.runtime.effort).toBe('low');
+    expect(low.record.run.thinkingTokens).toBe(150);
+    expect(effortOf(await args(given.roundDir))).toBeUndefined();
+    expect(given.record.runtime.effort).toBeNull();
+    expect(given.record.run.thinkingTokens).toBe(150);
+  });
+
+  it('--effort 取值不对时是用法错误', async () => {
+    const [code, stderr] = await cli(['--task', '数据定义提取', '--sample', join(resourcesDir, 'images/test/quadrants.png'), '--brief', join(base, 'brief.md'),
+      '--resources', storeDir, '--out', join(base, `round-${++count}`), '--effort', 'tiny']);
+    expect([code, stderr]).toEqual([2, '--effort 只能取 low、medium、high、xhigh、max\n']);
+  });
+});
