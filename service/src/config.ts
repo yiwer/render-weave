@@ -3,6 +3,8 @@
  * 缺少或不合法时只列出变量名，从不输出取值。
  * 接口进程与 worker 用应用账号连库；部署步骤 setup 用属主账号执行迁移，并设置应用账号的密码（M262）。
  */
+import { DEFAULT_WEBHOOK_CONFIG, SECRET_KEY_SHAPE, type WebhookConfig } from './webhooks.js';
+
 export interface S3Config {
   readonly endpoint: string;
   readonly region: string;
@@ -68,15 +70,28 @@ export interface WorkerConfig {
   readonly pollMs: number;
 }
 
+const integerReader = (env: NodeJS.ProcessEnv) => (name: string, fallback: number, min: number) => {
+  const raw = env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < min) throw new ConfigError(`环境变量 ${name} 必须是不小于 ${min} 的整数`);
+  return value;
+};
+
 export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
-  const integer = (name: string, fallback: number, min: number) => {
-    const raw = env[name];
-    if (raw === undefined || raw === '') return fallback;
-    const value = Number(raw);
-    if (!Number.isSafeInteger(value) || value < min) throw new ConfigError(`环境变量 ${name} 必须是不小于 ${min} 的整数`);
-    return value;
-  };
+  const integer = integerReader(env);
   return { renderTimeoutMs: integer('RW_RENDER_TIMEOUT_MS', 30_000, 100), recycleAfter: integer('RW_RENDER_RECYCLE_AFTER', 500, 1), pollMs: integer('RW_WORKER_POLL_MS', 100, 5) };
+}
+
+/** 接口进程的对账任务（票据 09，ADR-0020）：隔多久对一次账，批次闲置多久、又没有它的构建的 worker 时退回预占。 */
+export interface ReconcileConfig {
+  readonly intervalMs: number;
+  readonly graceMs: number;
+}
+
+export function loadReconcileConfig(env: NodeJS.ProcessEnv): ReconcileConfig {
+  const integer = integerReader(env);
+  return { intervalMs: integer('RW_RECONCILE_MS', 60_000, 100), graceMs: integer('RW_RESERVATION_GRACE_MS', 600_000, 0) };
 }
 
 export function loadSetupConfig(env: NodeJS.ProcessEnv): SetupConfig {
@@ -85,4 +100,23 @@ export function loadSetupConfig(env: NodeJS.ProcessEnv): SetupConfig {
   read.done();
   if (config.appDatabasePassword.length < 16) throw new ConfigError('环境变量 RW_APP_DATABASE_PASSWORD 至少要 16 个字符');
   return config;
+}
+
+/** 接口进程的 webhook 投递（票据 11）：服务密钥加密各 webhook 的签名密钥；数值缺省见 DEFAULT_WEBHOOK_CONFIG。 */
+export function loadWebhookConfig(env: NodeJS.ProcessEnv): { readonly secretKey: Uint8Array; readonly config: WebhookConfig } {
+  const read = reader(env), raw = read.required('RW_SECRET_KEY');
+  read.done();
+  if (!SECRET_KEY_SHAPE.test(raw)) throw new ConfigError('环境变量 RW_SECRET_KEY 必须是 64 位小写十六进制（32 字节）');
+  const integer = integerReader(env), flag = env['RW_WEBHOOK_ALLOW_PRIVATE'] ?? 'false';
+  if (flag !== 'true' && flag !== 'false') throw new ConfigError('环境变量 RW_WEBHOOK_ALLOW_PRIVATE 只能是 true 或 false');
+  return {
+    secretKey: new Uint8Array(Buffer.from(raw, 'hex')),
+    config: {
+      pollMs: integer('RW_WEBHOOK_POLL_MS', DEFAULT_WEBHOOK_CONFIG.pollMs, 5),
+      retryBaseMs: integer('RW_WEBHOOK_RETRY_BASE_MS', DEFAULT_WEBHOOK_CONFIG.retryBaseMs, 1),
+      maxAttempts: integer('RW_WEBHOOK_MAX_ATTEMPTS', DEFAULT_WEBHOOK_CONFIG.maxAttempts, 1),
+      timeoutMs: integer('RW_WEBHOOK_TIMEOUT_MS', DEFAULT_WEBHOOK_CONFIG.timeoutMs, 100),
+      allowPrivate: flag === 'true',
+    },
+  };
 }

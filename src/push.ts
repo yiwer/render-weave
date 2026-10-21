@@ -2,11 +2,13 @@
  * 代建推送的命令行一侧（票据 05，M264）：把本地工作区与资源版本仓库推送到出图服务上的一个租户。
  * 命令行只是客户端：列出本地文档与资源内容版本的身份和 SHA-256，交给服务算差异，上传服务缺少的内容，
  * 再请服务在一个事务里提交。新增、更新、冲突由服务按它的当前状态判定。
+ * 可以附带代建的轮次目录（票据 09）：各轮 round.json 里的 token 用量随清单交给服务，与推送同一事务记到该租户名下，只记不拦。
  * 代建令牌由调用方从环境变量取得，只放进请求头，不写进任何输出。
  */
 import { createHash } from 'node:crypto';
-import { basename } from 'node:path';
-import type { Problem } from './problems.js';
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { basename, join } from 'node:path';
+import { ProblemCodes, type Problem } from './problems.js';
 import { describeError } from './util.js';
 import { openVersionedResourceStore } from './versioned-resources.js';
 import { classifyWorkspaceDocument, localWorkspaceDocuments, memoryWorkspaceDocuments, parseJsonKeepingPrecision, readWorkspaceDocuments } from './workspace.js';
@@ -16,7 +18,14 @@ export const DEFAULT_TOKEN_ENV = 'RENDERWEAVE_AUTHORING_TOKEN';
 
 export type PushDocumentKind = 'definition' | 'compiled' | 'template' | 'dataset';
 
-/** 推送清单：每份文档与每个资源内容版本的身份、SHA-256 与字节数。内容另行上传。 */
+/** round.json 里的四种 token（RoundUsage）。 */
+const TOKEN_FIELDS = ['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheCreationTokens'] as const;
+type TokenField = (typeof TOKEN_FIELDS)[number];
+
+/** 一轮代建的 token 用量：round.json 的 SHA-256 是这一轮的身份，同一轮在一个租户只记一次。 */
+export type PushRound = { readonly sha256: string; readonly task: string; readonly round: number } & Readonly<Partial<Record<TokenField, number>>>;
+
+/** 推送清单：每份文档与每个资源内容版本的身份、SHA-256 与字节数。内容另行上传。可以附带代建轮次的 token 用量。 */
 export interface PushManifest {
   readonly documents: readonly { readonly kind: PushDocumentKind; readonly key: string; readonly sha256: string; readonly byteLength: number }[];
   readonly resources: readonly {
@@ -24,6 +33,7 @@ export interface PushManifest {
     readonly kind: 'image' | 'font';
     readonly versions: readonly { readonly version: number; readonly sha256: string; readonly byteLength: number }[];
   }[];
+  readonly rounds?: readonly PushRound[];
 }
 
 /** 引擎的问题，或服务回答的问题；两者格式一致（问题码、等级、位置、说明）。 */
@@ -41,6 +51,8 @@ export interface PushDiff {
   readonly resources: readonly { readonly id: string; readonly kind: string; readonly status: string; readonly reason?: string; readonly localVersion: number; readonly serverVersion?: number }[];
   readonly uploads?: readonly string[];
   readonly pushId?: string;
+  /** 提交后：附了几轮、这次新记了几轮（其余已记过），以及新记的 token 合计。 */
+  readonly usage?: { readonly rounds: number; readonly recorded: number; readonly tokens: Readonly<Record<TokenField, number>> };
 }
 
 export interface PushTarget {
@@ -111,6 +123,49 @@ async function collect(workspaceDir: string, resourcesDir: string): Promise<Loca
   return { manifest: { documents, resources }, contents, skipped, problems: workspace.problems };
 }
 
+const roundProblem = (source: string, message: string): Problem =>
+  ({ level: 'severe', code: ProblemCodes.inputUnreadable, location: { kind: 'input', source }, message } as Problem);
+
+/**
+ * 读出要附带的代建轮次：给的目录本身是一轮（有 round.json），或它下面一层的各个子目录各是一轮。
+ * round.json 要是 renderweave-round/1 轮次记录；token 缺了按 0 计。读不到或不是轮次记录时报问题，整次推送不进行。
+ */
+export async function readRounds(dir: string): Promise<{ rounds: PushRound[]; problems: Problem[] }> {
+  const isFile = async (path: string) => (await stat(path).catch(() => undefined))?.isFile() ?? false;
+  let dirs: string[];
+  if (await isFile(join(dir, 'round.json'))) dirs = [dir];
+  else {
+    let entries;
+    try { entries = await readdir(dir, { withFileTypes: true }); }
+    catch (error) { return { rounds: [], problems: [roundProblem(dir, `轮次目录无法读取：${describeError(error)}`)] }; }
+    dirs = [];
+    for (const entry of entries.filter((item) => item.isDirectory()).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      if (await isFile(join(dir, entry.name, 'round.json'))) dirs.push(join(dir, entry.name));
+    }
+    if (!dirs.length) return { rounds: [], problems: [roundProblem(dir, '目录里没有轮次：既没有 round.json，下一层的子目录里也没有')] };
+  }
+  const rounds: PushRound[] = [], problems: Problem[] = [];
+  for (const roundDir of dirs) {
+    const file = join(roundDir, 'round.json');
+    let bytes: Buffer, record: any;
+    try {
+      bytes = await readFile(file);
+      record = JSON.parse(bytes.toString('utf8'));
+    } catch (error) {
+      problems.push(roundProblem(file, `round.json 无法读取：${describeError(error)}`));
+      continue;
+    }
+    const counts = TOKEN_FIELDS.filter((field) => record?.run?.[field] !== undefined);
+    if (record?.format !== 'renderweave-round/1' || typeof record.task !== 'string' || !Number.isSafeInteger(record.round) || record.round < 1 ||
+      counts.some((field) => !Number.isSafeInteger(record.run[field]) || record.run[field] < 0)) {
+      problems.push(roundProblem(file, 'round.json 不是 renderweave-round/1 轮次记录，或 token 用量不是非负整数'));
+      continue;
+    }
+    rounds.push({ sha256: sha256(bytes), task: record.task, round: record.round, ...Object.fromEntries(counts.map((field) => [field, record.run[field]])) });
+  }
+  return { rounds, problems };
+}
+
 class Unreachable extends Error {}
 
 /** 调用出图服务。连不上时抛 Unreachable；回答不是 JSON 时 body 为 undefined。 */
@@ -148,11 +203,17 @@ const unreachable = (error: unknown): ReportedProblem[] => {
  * 推送：先请服务算差异；只看差异时到此为止。否则上传服务缺少的内容，再请服务提交。
  * 有冲突时不上传内容，仍交给服务判定：服务整体拒绝，保持原样，并记审计。
  */
-export async function pushWorkspace(options: PushTarget & { readonly workspace: string; readonly resources: string; readonly dryRun: boolean }): Promise<PushOutcome> {
+export async function pushWorkspace(options: PushTarget & { readonly workspace: string; readonly resources: string; readonly dryRun: boolean; readonly rounds?: string }): Promise<PushOutcome> {
   const local = await collect(options.workspace, options.resources);
   if (!local.manifest) return { pushed: false, skipped: local.skipped, problems: local.problems };
+  let manifest: PushManifest = local.manifest;
+  if (options.rounds !== undefined) {
+    const read = await readRounds(options.rounds);
+    if (read.problems.length) return { pushed: false, skipped: local.skipped, problems: read.problems };
+    manifest = { ...manifest, rounds: read.rounds };
+  }
   try {
-    const plan = await call(options, 'POST', '/push-plans', local.manifest);
+    const plan = await call(options, 'POST', '/push-plans', manifest);
     if (plan.status !== 200) return { pushed: false, skipped: local.skipped, problems: answerProblems(plan) };
     const planned = plan.body as PushDiff;
     if (options.dryRun) return { diff: planned, pushed: false, skipped: local.skipped, problems: [] };
@@ -164,7 +225,7 @@ export async function pushWorkspace(options: PushTarget & { readonly workspace: 
         if (uploaded.status !== 204) return { diff: planned, pushed: false, skipped: local.skipped, problems: answerProblems(uploaded) };
       }
     }
-    const commit = await call(options, 'POST', '/pushes', local.manifest);
+    const commit = await call(options, 'POST', '/pushes', manifest);
     if (commit.status === 200) return { diff: commit.body as PushDiff, pushed: true, skipped: local.skipped, problems: [] };
     return { ...(commit.body?.diff ? { diff: commit.body.diff as PushDiff } : {}), pushed: false, skipped: local.skipped, problems: answerProblems(commit) };
   } catch (error) {

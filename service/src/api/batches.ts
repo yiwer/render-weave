@@ -3,17 +3,18 @@
  * - 提交：接口进程固定批次（引擎 freezeBatch），把快照存成本租户的内容，按项入队，立即返回批次；
  *   外层非法整批拒绝；单项超出像素、展开规模或数据集字节数只让这一项失败，不渲染；
  * - 幂等：带 Idempotency-Key 时，重试返回同一批次，同一个键配不同的请求答 409；
- * - 查询逐项进度与结果；取消：排队的项标为未执行，正在渲染的一项由 worker 结束。
+ * - 查询逐项进度与结果；取消：排队的项标为未执行，正在渲染的一项由 worker 结束；
+ * - 额度（票据 09，ADR-0020）：建批次时预占本批项数，本月额度不够就整批拒绝（429 quota.exceeded，说明里写剩余额度）。
  */
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { BatchState } from '../backend.js';
+import type { BatchState, QuotaShortfall } from '../backend.js';
 import { batchView } from '../batches.js';
 import { freezeBatch, measureRender, type BatchSnapshot, type Problem } from '../engine.js';
 import { openTenantWorkspace } from '../preview.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { datasetLimitProblems, measureLimitProblems } from './previews.js';
-import { ApiError, fail, notFound, objectId, ServiceProblemCodes, type ServiceProblem } from './problems.js';
+import { ApiError, fail, notFound, objectId, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
 
 const KEY_HEADER = 'idempotency-key';
 /** 幂等键：1–200 个可见字符。 */
@@ -32,6 +33,13 @@ export function registerBatchRoutes(app: FastifyInstance, context: ApiContext): 
   const audit = (request: FastifyRequest, action: string, batchId: string) => {
     const identity = identityOf(request);
     return scopeOf(request).appendAudit({ actor: actorOf(identity), action, object: { type: 'batch', id: batchId }, crossTenant: false }, now());
+  };
+  /** 额度不够：整批拒绝，不建批次、不预占。 */
+  const exceeded = (shortfall: QuotaShortfall) => {
+    const remaining = Math.max(shortfall.limit - shortfall.used - shortfall.reserved, 0);
+    return new ApiError(429, [problem(ServiceProblemCodes.quotaExceeded, 'request.items',
+      `本月（${shortfall.period}）额度不够这一批：限额 ${shortfall.limit} 张，已用 ${shortfall.used}、预占 ${shortfall.reserved}，剩余 ${remaining} 张，本批 ${shortfall.requested} 项。`
+      + '整批未提交；额度由平台管理员按套餐设置，下个月重新计算')], { quota: { ...shortfall, remaining } });
   };
   /** 幂等键已有批次：同一个请求返回它，不同的请求答 409。 */
   const replay = (state: BatchState, requestSha256: string) => {
@@ -62,7 +70,7 @@ export function registerBatchRoutes(app: FastifyInstance, context: ApiContext): 
     if (!frozen.snapshot) throw new ApiError(400, frozen.problems as unknown as ServiceProblem[]);
 
     // 入队前的限制（ADR-0017）：只让超限的那一项失败，问题写进快照里这一项的准备问题，worker 不渲染它。
-    const envelope = frozen.snapshot.envelope;
+    const envelope = frozen.snapshot.envelope, plan = await scope.plan();
     const items: BatchSnapshot['items'][number][] = [];
     for (const item of frozen.snapshot.items) {
       if (item.problems.length) { items.push(item); continue; }
@@ -71,7 +79,7 @@ export function registerBatchRoutes(app: FastifyInstance, context: ApiContext): 
       if (!problems.length) {
         const measured = measureRender(opened.workspace, { template: envelope.template, mode: envelope.mode, dataset: raw['dataset'], parameters: raw['parameters'], output: raw['output'] });
         if (measured.measure) {
-          const { pixels, expansion } = measureLimitProblems(limits, measured.measure, at);
+          const { pixels, expansion } = measureLimitProblems(limits, plan, measured.measure, at);
           problems.push(...pixels, ...expansion);
         }
       }
@@ -83,6 +91,7 @@ export function registerBatchRoutes(app: FastifyInstance, context: ApiContext): 
       snapshot: sha256, build: snapshot.build, template: envelope.template, mode: envelope.mode,
       items: items.map(({ index, id }) => ({ index, id })), ...(key === undefined ? {} : { idempotencyKey: key }), requestSha256,
     }, now());
+    if ('shortfall' in created) throw exceeded(created.shortfall);
     // 同一个键的另一次提交先建成了批次：按重试处理。
     if (!created.created) return replay(created.batch, requestSha256);
     await audit(request, 'batch.create', created.batch.batchId);

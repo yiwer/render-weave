@@ -4,18 +4,26 @@
  * - 数据集：同 ID 只能新增；已有而字节不同是冲突，推送不覆盖租户里的数据集。
  * - 模板：按名称对比当前修订，字节不同就记一个新修订。
  * - 资源：按 ID 对比；种类不同、或两边都有的内容版本字节不同是冲突；本地多出的内容版本追加，服务端多出的不动。
+ * - 代建轮次（票据 09）：可选，各轮 round.json 的 token 用量，与推送同一事务记为该租户的用量事件；已记过的轮次跳过，只记不拦。
  */
 import { problem, ServiceProblemCodes, type ServiceProblem } from './api/problems.js';
-import { DOCUMENT_KINDS, documentSource, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites, type StoredDocument } from './backend.js';
+import {
+  DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites, type StoredDocument, type TokenKind,
+} from './backend.js';
 import { classifyWorkspaceDocument, parseJsonKeepingPrecision, parseResourceRef } from './engine.js';
+
+/** 清单里的一轮代建：round.json 的 SHA-256 是这一轮的身份，四种 token 缺了按 0 计。 */
+export type ManifestRound = { readonly sha256: string; readonly task: string; readonly round: number } & Readonly<Partial<Record<TokenKind, number>>>;
 
 export interface PushManifest {
   readonly documents: readonly StoredDocument[];
   readonly resources: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly versions: readonly { readonly version: number; readonly sha256: string; readonly byteLength: number }[] }[];
+  readonly rounds?: readonly ManifestRound[];
 }
 
 const sha256 = { type: 'string', pattern: '^[0-9a-f]{64}$' } as const;
 const byteLength = { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER } as const;
+const tokens = { type: 'integer', minimum: 0, maximum: 1_000_000_000_000 } as const;
 /** 推送清单的 JSON Schema；同键重复、内容版本不连续等规则由 checkManifest 判断。 */
 export const MANIFEST_SCHEMA = {
   type: 'object',
@@ -43,6 +51,13 @@ export const MANIFEST_SCHEMA = {
         },
       },
     },
+    rounds: {
+      type: 'array', maxItems: 1000,
+      items: {
+        type: 'object', required: ['sha256', 'task', 'round'], additionalProperties: false,
+        properties: { sha256, task: { type: 'string', minLength: 1, maxLength: 100 }, round: { type: 'integer', minimum: 1, maximum: 100_000 }, ...Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, tokens])) },
+      },
+    },
   },
 } as const;
 
@@ -64,6 +79,11 @@ export function checkManifest(manifest: PushManifest): ServiceProblem[] {
     if (resource.versions.some((content, j) => content.version !== j + 1)) {
       problems.push(problem(ServiceProblemCodes.requestInvalid, `${where}.versions`, `资源 ${resource.id} 的内容版本必须从 v1 连续排列`));
     }
+  });
+  const rounds = new Set<string>();
+  (manifest.rounds ?? []).forEach((round, i) => {
+    if (rounds.has(round.sha256)) problems.push(problem(ServiceProblemCodes.requestInvalid, `request.body.rounds.${i}`, `清单里轮次 ${round.sha256} 出现了不止一次`));
+    rounds.add(round.sha256);
   });
   return problems;
 }
@@ -162,7 +182,15 @@ export function pushWrites(manifest: PushManifest, diff: PushDiff): PushWrites {
       if (!changed(item.status)) return [];
       return [{ id: resource.id, kind: resource.kind, create: item.status === 'added', versions: resource.versions.slice(item.serverVersion ?? 0) }];
     }),
+    rounds: (manifest.rounds ?? []).map(({ sha256: hash, task, round, ...counts }) => ({ sha256: hash, task, round, tokens: counts })),
   };
+}
+
+/** 这次新记的轮次的 token 合计。 */
+export function roundTokens(manifest: PushManifest, recorded: readonly string[]): Record<TokenKind, number> {
+  const totals = Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, 0])) as Record<TokenKind, number>;
+  for (const round of manifest.rounds ?? []) if (recorded.includes(round.sha256)) for (const kind of TOKEN_KINDS) totals[kind] += round[kind] ?? 0;
+  return totals;
 }
 
 /** 要写入的全部内容的 SHA-256（去重）。 */

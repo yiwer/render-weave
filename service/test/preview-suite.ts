@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { loadWorkspace, render } from '../src/engine.js';
 import { emptyStats, inProcessRunner, startScheduler, type Scheduler } from '../src/worker/scheduler.js';
-import { createWorld, type World } from './api-suite.js';
+import { createWorld, WORLD_PLAN, type World } from './api-suite.js';
 import { greetingPreview, seedGreeting, seedStress, SINGLE_TEXT, stressRequest } from './seed.js';
 
 const RESOURCES = fileURLToPath(new URL('../../fixtures/resources/', import.meta.url));
@@ -102,7 +102,7 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
       const clock = { value: new Date() };
       // 进程内 worker 停下时只等 300 ms 就答 503；真实的 worker 要轮询队列、读字体，等得长一些。
       const previewWaitMs = options.inProcessWorker ? 300 : 10_000;
-      const limited = await createWorld(backend, { api: { now: () => clock.value, limits: { previewConcurrency: 2, previewPerMinute: 4, previewWaitMs } } });
+      const limited = await createWorld(backend, { api: { now: () => clock.value, limits: { previewPerMinute: 4, previewWaitMs } }, plan: { ...WORLD_PLAN, concurrency: 2 } });
       const tenant = limited.b;
       await seedGreeting(backend.tenant(tenant.id).storage, { withFont: true });
       const call = () => limited.call('POST', '/v1/previews', tenant.operator.token, greetingPreview());
@@ -136,7 +136,7 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
     if (options.inProcessWorker) {
       it('worker 中途卡住：等不到结果答 503；入队超过等待时长的任务不再占并发', async () => {
         const clock = { value: new Date() };
-        const limited = await createWorld(backend, { api: { now: () => clock.value, limits: { previewConcurrency: 1, previewWaitMs: 200 } } });
+        const limited = await createWorld(backend, { api: { now: () => clock.value, limits: { previewWaitMs: 200 } }, plan: { ...WORLD_PLAN, concurrency: 1 } });
         await seedGreeting(backend.tenant(limited.b.id).storage, { withFont: true });
         await scheduler!.stop();
         // 领了任务却永远不交回：任务一直停在渲染中（这个调度器不停，它的循环永远等着）。

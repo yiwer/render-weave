@@ -1,7 +1,9 @@
 /**
  * 服务的问题：格式与引擎的问题一致（问题码、等级、位置、说明），错误响应一律是 { problems: [...] }。
- * HTTP 状态按类别映射：请求不合法 400、未鉴权 401、无权限 403、不存在 404、冲突 409（阶段 4 PRD「开放 API」）。
+ * HTTP 状态按类别映射：请求不合法 400、未鉴权 401、无权限 403、不存在 404、冲突 409、额度不足或限频 429（阶段 4 PRD「开放 API」）。
  */
+import type { Problem } from '../engine.js';
+
 export const ServiceProblemCodes = {
   requestInvalid: 'request.invalid',
   notFound: 'request.notFound',
@@ -27,6 +29,26 @@ export const ServiceProblemCodes = {
   workerUnavailable: 'worker.unavailable',
   /** 批量交付（票据 07）：同一个幂等键配了不同的请求（409）。 */
   batchIdempotencyConflict: 'batch.idempotencyConflict',
+  /** 数据集与资源（票据 10）：与引擎相同的问题码。新建的 ID 已有（409）。 */
+  inputDuplicate: 'input.duplicate',
+  /** 替换检查报告与路径里的资源不符、替换内容不在服务端（400）。 */
+  resourceReplacementInvalid: 'resource.replacementInvalid',
+  /** 检查之后资源已有新版本，或工作区已变化（409，M152）。 */
+  resourceReplacementStale: 'resource.replacementStale',
+  /** 重放（票据 08）：记录所属的构建没有在线的 worker（503）。 */
+  replayBuildUnavailable: 'replay.buildUnavailable',
+  /** 按租户的重放并发与频率（429）。 */
+  replayRateLimited: 'replay.rateLimited',
+  /** 计量与额度（票据 09，ADR-0020）：本月额度不够这一批，整批拒绝（429）。 */
+  quotaExceeded: 'quota.exceeded',
+  /** webhook（票据 11）：URL 不是 https，或指向本机、内网与保留地址（400）。 */
+  webhookUrlNotAllowed: 'webhook.urlNotAllowed',
+  /** 本租户启用的 webhook 已达上限（409）。 */
+  webhookLimitReached: 'webhook.limitReached',
+  /** Excel 导入（票据 13）：不是 .xlsx，损坏，或是旧版 .xls、加了打开密码的工作簿（400）。 */
+  importWorkbookUnreadable: 'import.workbookUnreadable',
+  /** Excel 导入：文件、解压后的大小、单元格数或主表行数超出上限，整份拒绝（413）。 */
+  limitWorkbookTooLarge: 'limit.workbookTooLarge',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];
@@ -38,9 +60,9 @@ export interface ServiceProblem {
   readonly message: string;
 }
 
-/** 错误响应：{ problems }，可以另带说明情况的字段（如推送冲突时的差异）。 */
+/** 错误响应：{ problems }，服务的问题或引擎的问题，可以另带说明情况的字段（如推送冲突时的差异）。 */
 export class ApiError extends Error {
-  constructor(readonly status: number, readonly problems: readonly ServiceProblem[], readonly extra: Readonly<Record<string, unknown>> = {}) {
+  constructor(readonly status: number, readonly problems: readonly (ServiceProblem | Problem)[], readonly extra: Readonly<Record<string, unknown>> = {}) {
     super(problems.map((p) => p.message).join('；'));
   }
 }

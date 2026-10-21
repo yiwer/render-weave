@@ -11,6 +11,8 @@ const keep = process.argv.includes('--keep');
 // 一般的预览远在这些值之内；1 亿像素的草稿在内存上限内放不下，6000 项的压力牌要好几秒但内存不多。
 // 停止时 worker 排空本构建排队的批次项（票据 07）；测试结束时队列已空，宽限给 60 秒就够。
 Object.assign(process.env, { RW_RENDER_TIMEOUT_MS: '1500', RW_WORKER_MEMORY: '512m', RW_RENDER_RECYCLE_AFTER: '5', RW_WORKER_STOP_GRACE: '60s' });
+// 接口进程投递 webhook 给 tester 容器里的接收端（票据 11）：放开内网地址，退避与超时缩短，与用例的 TEST_WEBHOOK_CONFIG 一致。
+Object.assign(process.env, { RW_WEBHOOK_ALLOW_PRIVATE: 'true', RW_WEBHOOK_POLL_MS: '20', RW_WEBHOOK_RETRY_BASE_MS: '150', RW_WEBHOOK_MAX_ATTEMPTS: '4', RW_WEBHOOK_TIMEOUT_MS: '600' });
 ensureEnv();
 run('docker', ['compose', '--profile', 'test', 'down', '-v', '--remove-orphans']);
 let status = 1;

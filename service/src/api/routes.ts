@@ -3,10 +3,11 @@
  * 代建端点在 authoring.ts，路径里写目标租户。对象不在本租户时与不存在同样答 404。
  */
 import type { FastifyInstance } from 'fastify';
-import { EmailTakenError, type Identity, type Member, type MemberRole, type NewAuditEvent, type TenantScope } from '../backend.js';
+import { EmailTakenError, type Identity, type Member, type MemberRole, type NewAuditEvent, type Plan, type TenantScope } from '../backend.js';
 import { dummyVerify, generatePassword, generateToken, hashPassword, verifyPassword } from '../credentials.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
+import { PLAN_SCHEMA } from './usage.js';
 
 /** 会话有效期 12 小时；代建令牌缺省 30 天，最长 365 天。 */
 const SESSION_HOURS = 12;
@@ -69,11 +70,18 @@ export function registerRoutes(app: FastifyInstance, context: ApiContext): void 
   // —— 平台管理员：租户、成员账号与代建令牌 ——
   app.get('/v1/platform/tenants', { config: { access: 'platform.tenants' } }, async () => ({ tenants: await backend.platform.listTenants() }));
 
-  app.post('/v1/platform/tenants', { config: { access: 'platform.tenants' }, schema: body({ name }) }, async (request, reply) => {
-    const tenant = await backend.platform.createTenant((request.body as { name: string }).name);
-    await audit(backend.tenant(tenant.id), identityOf(request), 'tenant.create', { type: 'tenant', id: tenant.id });
+  // 建租户时可以一并设套餐（票据 09）；不设就是缺省套餐，每月 0 张，正式交付前要先设。
+  app.post('/v1/platform/tenants', { config: { access: 'platform.tenants' }, schema: body({ name, plan: PLAN_SCHEMA }, ['name']) }, async (request, reply) => {
+    const { name: tenantName, plan } = request.body as { name: string; plan?: Plan };
+    const tenant = await backend.platform.createTenant(tenantName);
+    const scope = backend.tenant(tenant.id);
+    await audit(scope, identityOf(request), 'tenant.create', { type: 'tenant', id: tenant.id });
+    if (plan) {
+      await scope.setPlan({ monthlyImages: plan.monthlyImages, maxPixels: plan.maxPixels, concurrency: plan.concurrency }, now());
+      await audit(scope, identityOf(request), 'plan.update', { type: 'tenant', id: tenant.id });
+    }
     reply.code(201);
-    return tenant;
+    return { ...tenant, plan: await scope.plan() };
   });
 
   app.get('/v1/platform/tenants/:tenantId/members', { config: { access: 'platform.members' } }, async (request) => {

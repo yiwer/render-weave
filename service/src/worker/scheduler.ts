@@ -7,13 +7,16 @@
  * - 渲染中定期查看批次是否已取消，取消了就结束正在渲染的一项，标为未执行；
  * - 没渲染完（超时、内存超限、崩溃）的项写问题清单，标为失败；这一项已登记时以登记的为准；
  * - 领取有租约，worker 中途退出时同构建的 worker 过了租约重领；领了 MAX_ATTEMPTS 次仍没做完记失败。
+ *
+ * 重放（票据 08）只领自己构建的，停止时不再领；worker 定期报到自己的构建，接口进程据此判断有没有那个构建的 worker。
  */
-import type { BatchItemTask, ClaimedTask, ItemResult, ServiceBackend, TaskResult } from '../backend.js';
+import type { BatchItemTask, ClaimedTask, ItemResult, ReplayResult, ServiceBackend, TaskResult } from '../backend.js';
 import { committedItem, KILLED, NOT_STARTED, notRunItem } from '../batches.js';
 import { itemDeliverer } from '../delivery.js';
 import { manifestBytes } from '../engine.js';
 import type { Logger } from '../log.js';
 import { renderPreview } from '../preview.js';
+import { replayItem } from '../records.js';
 
 /** 渲染器的计数，经 worker 的健康检查可见。 */
 export interface RunnerStats {
@@ -28,8 +31,8 @@ export interface RunnerStats {
   restarts: number;
 }
 
-/** 渲染器的结果：预览的结果、批次项的结果，或取消时被结束。 */
-export type RunOutcome = TaskResult | ItemResult | { readonly cancelled: true };
+/** 渲染器的结果：预览的结果、批次项的结果、重放的结果，或取消时被结束。 */
+export type RunOutcome = TaskResult | ItemResult | ReplayResult | { readonly cancelled: true };
 
 export interface Runner {
   /** 做一项；超时、内存超限与崩溃都变成结果里的问题，不抛错。signal 中止时能结束的渲染器结束正在做的一项，答 cancelled。 */
@@ -65,7 +68,10 @@ export function inProcessRunner(backend: ServiceBackend): Runner {
     stats,
     async run(task) {
       const storage = backend.tenant(task.tenantId).storage;
-      try { return task.kind === 'preview' ? await renderPreview(storage, task.request) : await deliver(storage, task); }
+      try {
+        if (task.kind === 'preview') return await renderPreview(storage, task.request);
+        return task.kind === 'replay' ? await replayItem(storage, task) : await deliver(storage, task);
+      }
       catch (error) { return failedResult(error); }
       finally { stats.tasks++; }
     },
@@ -93,12 +99,24 @@ export interface SchedulerOptions {
   readonly leaseMs: number;
   /** 渲染批次项时隔多久查看一次批次是否已取消，毫秒。 */
   readonly cancelPollMs?: number;
+  /** 隔多久报到一次自己的构建，毫秒；接口进程把 WORKER_STALE_MS 内报到过的算作在线。 */
+  readonly heartbeatMs?: number;
 }
+
+/** 多久没报到就不算在线：比报到间隔长得多，偶尔一次报到失败不影响重放。 */
+export const WORKER_STALE_MS = 30_000;
 
 /** 循环领取任务；队列空时每隔 pollMs 再看。 */
 export function startScheduler(options: SchedulerOptions): Scheduler {
-  const { backend, runner, logger, pollMs, workerId, build, leaseMs, cancelPollMs = 200 } = options;
+  const { backend, runner, logger, pollMs, workerId, build, leaseMs, cancelPollMs = 200, heartbeatMs = 5_000 } = options;
   let stopped = false, draining = false;
+  // 报到不放在领取的循环里：渲染一项要好一阵子，期间也要算在线。报到一次接一次，停下时等最后一次写完再离开。
+  let beat: Promise<void> = Promise.resolve();
+  const heartbeat = () => {
+    beat = beat.then(() => backend.workers.heartbeat(workerId, build, new Date())).catch((error) => logger.warn({ err: error }, '报到失败'));
+  };
+  heartbeat();
+  const beating = setInterval(heartbeat, heartbeatMs);
   let wake: (() => void) | undefined;
   const sleep = () => new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, pollMs);
@@ -160,6 +178,12 @@ export function startScheduler(options: SchedulerOptions): Scheduler {
           const result = await runner.run(task) as TaskResult;
           await backend.queue.finish(task, result, new Date());
           logger.info({ taskId: task.id, tenantId: task.tenantId, kind: task.kind, ms: Date.now() - started, problems: result.problems.length, image: Boolean(result.image) }, '任务完成');
+        } else if (task.kind === 'replay') {
+          // 超时、内存超限与崩溃时渲染器交回的是只有问题清单的结果，照样写回。
+          const result = await runner.run(task) as ReplayResult;
+          await backend.queue.finishReplay(task, { ...(result.manifest ? { manifest: result.manifest } : {}), problems: result.problems }, new Date());
+          logger.info({ taskId: task.id, tenantId: task.tenantId, kind: task.kind, batchId: task.batchId, index: task.index, ms: Date.now() - started,
+            matched: Boolean(result.manifest), problems: result.problems.length }, '重放完成');
         } else {
           const item = await runItem(task);
           const written = await backend.queue.finishItem(task, item, new Date());
@@ -169,7 +193,14 @@ export function startScheduler(options: SchedulerOptions): Scheduler {
       } catch (error) { logger.error({ err: error, taskId: task.id }, '写回任务结果失败'); }
     }
   })();
+  /**
+   * 停下之前先离开：不再算在线，接口进程不再把重放交给它，对账也不再等它。
+   * 先等进行中的报到写完：报到晚于离开落库时，停下的 worker 会显得在线 30 秒。
+   */
   const finish = async () => {
+    clearInterval(beating);
+    await beat;
+    await backend.workers.leave(workerId).catch((error) => logger.warn({ err: error }, '离开失败'));
     wake?.();
     await loop;
     await runner.close();

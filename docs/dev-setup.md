@@ -27,7 +27,7 @@ npm test
 ```
 
 - `fetch-fonts` 要联网，按 `scripts/fonts.json` 固定的版本与 SHA-256 下载到 `fixtures/resources/fonts/`。
-- 期望结果：Windows 上 47 个文件、951 项全部通过（引擎 42 个文件 910 项，出图服务的内存后端 5 个文件 41 项）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上另有 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
+- 期望结果：Windows 上 56 个文件、1030 项通过（引擎 43 个文件 930 项，出图服务的内存后端 13 个文件 100 项）。另有 1 个文件 8 项跳过：出图控制台浏览器用例的本机快速版，设了 `RW_BROWSER` 才跑（见[出图服务](service.md#测试)）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上再多 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
 
 ## 3. key 与模型服务
 
@@ -74,7 +74,7 @@ mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=re
 node service/scripts/test-docker.mjs
 ```
 
-- 期望结果：8 个文件、69 项通过，最后打印"日志 N 行，不合格 0 行"。
+- 期望结果：15 个文件、130 项通过，最后打印"日志 N 行，不合格 0 行"。tester 镜像里装了 Chromium，跑出图控制台的浏览器用例。
 - 首次运行要下载镜像与字体，约几分钟。
 - 需要的凭据由脚本生成到仓库根的 `.env`（不进版本库），不用手工设置。本机起服务见[出图服务](service.md)。
 

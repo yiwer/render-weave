@@ -44,7 +44,7 @@ it('对象存储或数据库不可用时报未就绪（503），只给检查项�
       [createPostgresBackend({ db, blobs: brokenS3, migrations }), 'storage'],
       [createPostgresBackend({ db: brokenDb, blobs, migrations }), 'database'],
     ] as const) {
-      const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'silent') });
+      const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'silent'), secretKey: new Uint8Array(32) });
       const response = await app.inject({ method: 'GET', url: '/readyz' });
       await app.close();
       expect(response.statusCode).toBe(503);
@@ -59,7 +59,7 @@ it('对象存储或数据库不可用时报未就绪（503），只给检查项�
 it('日志每行是一个 JSON 对象，带时间、级别、服务名、构建标识与说明；请求头里的凭据不进日志', async () => {
   const lines: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { lines.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
-  const app = createApi({ backend: createPostgresBackend({ db, blobs, migrations }), build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink) });
+  const app = createApi({ backend: createPostgresBackend({ db, blobs, migrations }), build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), secretKey: new Uint8Array(32) });
   await app.inject({ method: 'GET', url: '/not-found', headers: { authorization: 'Bearer secret-token' } });
   await app.close();
   expect(lines.length).toBeGreaterThan(0);
@@ -71,4 +71,14 @@ it('日志每行是一个 JSON 对象，带时间、级别、服务名、构建�
     expect(typeof entry.msg).toBe('string');
   }
   expect(lines.join('\n')).not.toContain('secret-token');
+});
+
+it('Compose 里的接口进程提供 OpenAPI 描述，与测试进程按同一份代码生成的相同（镜像里带着 DSL 的 JSON Schema）', async () => {
+  const served = await get(`${apiUrl}/v1/openapi.json`);
+  expect(served.status).toBe(200);
+  const app = createApi({ backend: createPostgresBackend({ db, blobs, migrations }), build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'silent'), secretKey: new Uint8Array(32) });
+  const local = (await app.inject({ method: 'GET', url: '/v1/openapi.json' })).json();
+  await app.close();
+  expect(served.body).toEqual(local);
+  expect(served.body['components'].schemas.BatchRequest.$id).toBe('urn:renderweave:dsl:1:batch-request');
 });

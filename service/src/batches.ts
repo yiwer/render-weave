@@ -48,8 +48,9 @@ export function batchManifest(batch: { readonly build: string; readonly template
  * 还没登记时 undefined。
  */
 export async function committedItem(batch: TenantBatch, index: number, id: string): Promise<ItemResult | undefined> {
-  const names = await batch.itemFiles(index);
-  if (!names) return undefined;
+  const registered = await batch.itemFiles(index);
+  if (!registered) return undefined;
+  const names = registered.map((file) => file.name);
   const problems = JSON.parse(Buffer.from(await batch.record(index).read('problems.json')).toString('utf8')) as ResultProblem[];
   const delivered = names.includes('record.json');
   const image = names.find((name) => name === 'image.png' || name === 'image.jpg') as BatchItemFiles['image'];
@@ -58,6 +59,18 @@ export async function committedItem(batch: TenantBatch, index: number, id: strin
     : { problems: 'problems.json', ...(names.includes('layout.json') ? { layout: 'layout.json' as const } : {}) };
   const severe = severeCount(problems);
   return { index, id, status: delivered ? 'delivered' : 'failed', directory: batch.output.location(index), files, severe, hints: problems.length - severe, problems };
+}
+
+/**
+ * 批次结束的结果（票据 11）：请求过取消的是 cancelled；否则全部交付是 completed，一项也没交付是 failed，其余是 partiallyFailed。
+ * 取消请求晚于最后一项开始时，各项可能都已交付，仍记 cancelled，与批次清单里的 delivery.cancelled 一致。
+ */
+export type BatchOutcome = 'completed' | 'partiallyFailed' | 'failed' | 'cancelled';
+
+export function batchOutcome(summary: BatchManifest['summary'], cancelled: boolean): BatchOutcome {
+  if (cancelled) return 'cancelled';
+  if (summary.delivered === summary.total) return 'completed';
+  return summary.delivered === 0 ? 'failed' : 'partiallyFailed';
 }
 
 /** 接口回答里的批次。 */
@@ -69,6 +82,8 @@ export interface BatchView {
   readonly idempotencyKey?: string;
   /** running：还有项没结束；finished：全部项结束，批次清单已发布。 */
   readonly status: 'running' | 'finished';
+  /** 结束时才有（票据 11）：全部交付、部分失败、全部失败或已取消。 */
+  readonly outcome?: BatchOutcome;
   readonly cancelRequested: boolean;
   readonly createdAt: string;
   readonly finishedAt?: string;
@@ -88,7 +103,9 @@ export function batchView(state: BatchState): BatchView {
   return {
     id: state.batchId, template: state.template, mode: state.mode, build: state.build,
     ...(state.idempotencyKey === undefined ? {} : { idempotencyKey: state.idempotencyKey }),
-    status: state.manifest ? 'finished' : 'running', cancelRequested: state.cancelRequestedAt !== undefined,
+    status: state.manifest ? 'finished' : 'running',
+    ...(state.manifest ? { outcome: batchOutcome(state.manifest.summary, state.cancelRequestedAt !== undefined) } : {}),
+    cancelRequested: state.cancelRequestedAt !== undefined,
     createdAt: state.createdAt, ...(state.finishedAt ? { finishedAt: state.finishedAt } : {}),
     progress: { completed: ended.length, total: state.items.length }, summary,
     items: state.items.map((item) => {
@@ -98,4 +115,10 @@ export function batchView(state: BatchState): BatchView {
     }),
     problems: state.manifest?.problems ?? [],
   };
+}
+
+/** 批次结束事件的正文（票据 11）：批次的摘要，不含逐项结果；接收端要逐项结果时用 GET /v1/batches/{batchId} 取。 */
+export function batchFinishedEvent(event: { readonly id: string; readonly tenantId: string; readonly createdAt: Date }, state: BatchState): string {
+  const { items: _items, progress: _progress, status: _status, ...batch } = batchView(state);
+  return JSON.stringify({ id: event.id, type: 'batch.finished', createdAt: event.createdAt.toISOString(), tenantId: event.tenantId, data: { batch } });
 }

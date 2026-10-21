@@ -280,6 +280,73 @@ export function describePush(name: string, makeBackend: () => Promise<ServiceBac
       expect((await content(target, document.sha256)).bytes.equals(template)).toBe(true);
     });
 
+    it('推送可以附带代建轮次目录：各轮 round.json 的 token 记为该租户的用量事件，只记不拦；同一轮只记一次，只看差异与被拒绝的推送不记', async () => {
+      const target = await tenant(), dirs = await local();
+      const order = join(root, randomUUID());
+      /** 一轮代建的 round.json（只写推送要读的字段）；usage 缺了的 token 按 0 计。 */
+      const round = async (name: string, task: string, number: number, usage: Record<string, number>) => {
+        await mkdir(join(order, name), { recursive: true });
+        const bytes = Buffer.from(`${JSON.stringify({ format: 'renderweave-round/1', task, round: number, run: { wallMs: 1000, ...usage, exitCode: 0 } }, null, 2)}\n`);
+        await writeFile(join(order, name, 'round.json'), bytes);
+        return sha256(bytes);
+      };
+      const first = await round('r1', 'definitionExtraction', 1, { inputTokens: 1200, outputTokens: 300, cacheReadTokens: 5000, cacheCreationTokens: 800 });
+      const second = await round('r2', 'definitionExtraction', 2, { inputTokens: 100, outputTokens: 40 });
+      await mkdir(join(order, '不是轮次'));
+      const events = async () => {
+        const reply = await world.call('GET', `/v1/platform/tenants/${target.id}/usage/events?limit=500`, world.platform);
+        expect(reply.status).toBe(200);
+        return (reply.body.events as { kind: string; quantity: number; round?: { sha256: string; task: string; round: number } }[])
+          .map((event) => `${event.round?.sha256 === first ? 'r1' : event.round?.sha256 === second ? 'r2' : '?'} ${event.round?.task} ${event.round?.round} ${event.kind} ${event.quantity}`).sort();
+      };
+
+      // 只看差异：不记。
+      expect((await push(target, dirs, '--rounds', order, '--dry-run')).code).toBe(0);
+      expect(await events()).toEqual([]);
+      const pushed = await push(target, dirs, '--rounds', order);
+      expect(pushed.code, pushed.stderr).toBe(0);
+      expect(JSON.parse(pushed.stdout).usage).toEqual({ rounds: 2, recorded: 2, tokens: { inputTokens: 1300, outputTokens: 340, cacheReadTokens: 5000, cacheCreationTokens: 800 } });
+      expect(pushed.stderr).toContain('新记 2 轮');
+      const recorded = [
+        'r1 definitionExtraction 1 cacheCreationTokens 800', 'r1 definitionExtraction 1 cacheReadTokens 5000', 'r1 definitionExtraction 1 inputTokens 1200',
+        'r1 definitionExtraction 1 outputTokens 300', 'r2 definitionExtraction 2 inputTokens 100', 'r2 definitionExtraction 2 outputTokens 40',
+      ];
+      expect(await events()).toEqual(recorded);
+      const usage = (await world.call('GET', `/v1/platform/tenants/${target.id}/usage`, world.platform)).body;
+      expect(usage.tokens).toEqual({ inputTokens: 1300, outputTokens: 340, cacheReadTokens: 5000, cacheCreationTokens: 800 });
+      // 只记不拦：套餐的出图额度是 0（没设套餐），token 照样记。
+      expect(usage.images).toMatchObject({ limit: 0, used: 0 });
+
+      // 再推一次、或只推其中一轮：已记过的不重复记。
+      const again = await push(target, dirs, '--rounds', order);
+      expect(JSON.parse(again.stdout).usage).toMatchObject({ rounds: 2, recorded: 0 });
+      expect(again.stderr).toContain('其余已记过');
+      expect(JSON.parse((await push(target, dirs, '--rounds', join(order, 'r1'))).stdout).usage).toMatchObject({ rounds: 1, recorded: 0 });
+      // 新的一轮只记它自己。
+      const third = await round('r3', 'templateDesign', 1, { outputTokens: 7 });
+      expect(JSON.parse((await push(target, dirs, '--rounds', order)).stdout).usage).toEqual({
+        rounds: 3, recorded: 1, tokens: { inputTokens: 0, outputTokens: 7, cacheReadTokens: 0, cacheCreationTokens: 0 } });
+      expect((await events()).filter((line) => line.startsWith('?'))).toEqual(['? templateDesign 1 outputTokens 7']);
+      expect(third).toMatch(/^[0-9a-f]{64}$/);
+
+      // 推送有冲突整体拒绝：轮次也不记。
+      await round('r4', 'templateDesign', 2, { inputTokens: 9 });
+      await edit(dirs, FILES.definition, '问候（渲染骨架样例）', '问候（改过）');
+      const before = await events();
+      expect((await push(target, dirs, '--rounds', order)).code).toBe(1);
+      expect(await events()).toEqual(before);
+
+      // 不是轮次记录：本地就报问题，不连服务。
+      await writeFile(join(order, 'r4', 'round.json'), '{"format":"renderweave-round/1","task":"x","round":1,"run":{"inputTokens":-1}}');
+      const bad = await push(target, dirs, '--rounds', order);
+      expect(bad.code).toBe(1);
+      expect(bad.stderr).toContain('不是 renderweave-round/1 轮次记录');
+      const empty = join(root, randomUUID());
+      await mkdir(empty);
+      expect((await push(target, dirs, '--rounds', empty)).stderr).toContain('目录里没有轮次');
+      expect(await events()).toEqual(before);
+    });
+
     it('令牌只经环境变量传入，不出现在参数、日志和输出里；只能推送到被指定的租户；每次推送记审计', async () => {
       const target = await tenant(), other = await tenant(), dirs = await local();
       const args = ['push', '--server', server, '--tenant', target.id, '--workspace', dirs.workspace, '--resources', dirs.resources];

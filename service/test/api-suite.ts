@@ -2,20 +2,21 @@
  * 开放 API 用例：账号、租户与鉴权（票据 04，M247、M261）。只经 HTTP 请求驱动，断言响应、问题清单与经 API 可见的结果。
  * 同一组用例跑两种后端：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑。
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createApi, type ApiOptions } from '../src/api/app.js';
 import { ROLE_PERMISSIONS, type IdentityRole } from '../src/api/permissions.js';
-import type { ServiceBackend } from '../src/backend.js';
+import { ENGINE_MAX_PIXELS, type Plan, type ServiceBackend } from '../src/backend.js';
 import { generatePassword, hashPassword } from '../src/credentials.js';
 import { createLogger } from '../src/log.js';
 import { CROSS_TENANT_ENDPOINTS, EXEMPT_ACCESS, type TenantObjects } from './cross-tenant-endpoints.js';
+import { openApiChecker } from './openapi-check.js';
 import { seedGreeting } from './seed.js';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 /** body 是解析后的 JSON（响应是 JSON 时），raw 是响应文本，bytes 是原始字节。 */
-interface Reply { status: number; body: any; raw: string; bytes: Buffer }
+interface Reply { status: number; body: any; raw: string; bytes: Buffer; headers: Record<string, unknown> }
 interface Person { id: string; email: string; password: string; token: string }
 interface TenantFixture { id: string; admin: Person; operator: Person; key: { id: string; token: string }; engineer: { id: string; token: string } }
 
@@ -27,21 +28,53 @@ const SAMPLE_SHA256 = createHash('sha256').update(SAMPLE).digest('hex');
 const BLOCKED_PREVIEW = { template: '没有这个模板', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } };
 /** 根模板不存在的批次：整批拒绝，不建批次。 */
 const BLOCKED_BATCH = { template: '没有这个模板', items: [{ id: '1', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } }] };
+/** 模板不存在的 Excel 导入：读工作簿之前就答问题清单。 */
+const BLOCKED_IMPORT = { template: '没有这个模板', workbook: 'UEsDBA==', output: { width: 160, height: 40, dpi: 120, format: 'png' } };
 const ids = (value: unknown) => JSON.stringify(value);
+/** 权限矩阵用的数据集：数据定义不在租户里，保存答 400，校验答问题清单。 */
+const MATRIX_DATASET = { dataset: { id: 'ds-matrix', staticSchema: { name: '矩阵', version: 1 } }, data: {} };
+/** 结构完整的替换检查报告：资源不在租户里，应用答 404。 */
+const replacementCheck = (id: string) => ({
+  resource: { id, kind: 'image', version: 1, sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  replacement: { sha256: SAMPLE_SHA256, byteLength: SAMPLE.length },
+  impact: { workspaceFingerprint: SAMPLE_SHA256, renderOptions: { fallbackFonts: [], svgFonts: [] }, references: [], configuration: [], scope: '' },
+});
+
+/** 按 OpenAPI 描述核对回答的检查器：描述由路由生成，与后端无关，同一进程里只建一次。 */
+let checker: ReturnType<typeof openApiChecker> | undefined;
+
+/** 环境里两个租户的缺省套餐：额度宽裕，不妨碍别的用例；额度的用例另设。 */
+export const WORLD_PLAN: Plan = { monthlyImages: 100_000, maxPixels: ENGINE_MAX_PIXELS, concurrency: 2 };
 
 /** 一套环境：平台管理员、两个租户（各有管理员、操作员、API 密钥，与只指定给该租户的代建令牌）。代建推送的用例也用它。 */
-export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions> } = {}) {
+export async function createWorld(backend: ServiceBackend, options: { readonly api?: Partial<ApiOptions>; readonly plan?: Plan } = {}) {
   const clock = { value: new Date() };
   const logs: string[] = [], secrets: string[] = [];
   const sink = new Writable({ write(chunk, _encoding, done) { logs.push(...String(chunk).split('\n').filter(Boolean)); done(); } });
-  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test', ...options.api });
+  // 测试里的 webhook 接收端在本机或测试容器里：放开内网地址。服务密钥与投递任务用同一个：
+  // Docker 后端测试用 Compose 里接口进程的密钥（它的投递任务也会领到这里记的投递），其余每套环境随机生成。
+  const secretKey = new Uint8Array(process.env['RW_SECRET_KEY'] ? Buffer.from(process.env['RW_SECRET_KEY'], 'hex') : randomBytes(32));
+  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', sink), now: () => clock.value, passwordCost: 'test',
+    secretKey, allowPrivateWebhooks: true, ...options.api });
+  // 每个回答都按 OpenAPI 描述核对（票据 11）：记下匹配到的路由模板，回答与描述不符时这次调用就失败。
+  const routes = new WeakMap<object, string>();
+  app.addHook('onSend', async (request, _reply, payload) => {
+    if (request.routeOptions.url) routes.set(request.raw, request.routeOptions.url);
+    return payload;
+  });
   /** 字节作为 application/octet-stream 发送，其他请求体作为 JSON 发送；extra 是另加的请求头（如幂等键）。 */
   const call = async (method: Method, url: string, token?: string, body?: unknown, extra: Record<string, string> = {}): Promise<Reply> => {
     const binary = body instanceof Uint8Array;
     const headers = { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(binary ? { 'content-type': 'application/octet-stream' } : {}), ...extra };
     const response = await app.inject({ method, url, headers, ...(body === undefined ? {} : { payload: binary ? Buffer.from(body) : body as object }) });
-    const json = String(response.headers['content-type'] ?? '').startsWith('application/json');
-    return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload };
+    const contentType = String(response.headers['content-type'] ?? '');
+    const route = routes.get(response.raw.req);
+    const violations = (checker ??= openApiChecker(JSON.parse((await app.inject({ method: 'GET', url: '/v1/openapi.json' })).body)))({
+      method, ...(route ? { route } : {}), status: response.statusCode, contentType, body: contentType.startsWith('application/json') ? response.body : '',
+    });
+    if (violations.length) throw new Error(`回答与 OpenAPI 描述不符：\n${violations.join('\n')}\n回答：${response.body.slice(0, 500)}`);
+    const json = contentType.startsWith('application/json');
+    return { status: response.statusCode, body: json && response.body ? JSON.parse(response.body) : undefined, raw: response.body, bytes: response.rawPayload, headers: response.headers };
   };
   const login = async (address: string, password: string) => {
     const reply = await call('POST', '/v1/sessions', undefined, { email: address, password });
@@ -63,7 +96,7 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
     return { id: created.body.member.id, email: address, password: created.body.initialPassword, token: await login(address, created.body.initialPassword) };
   };
   const tenant = async (name: string): Promise<TenantFixture> => {
-    const created = await call('POST', '/v1/platform/tenants', platform, { name });
+    const created = await call('POST', '/v1/platform/tenants', platform, { name, plan: options.plan ?? WORLD_PLAN });
     expect(created.status).toBe(201);
     const id = created.body.id, admin = await member(id, 'admin'), operator = await member(id, 'operator');
     const key = await call('POST', '/v1/api-keys', admin.token, { name: `${name} 的密钥` });
@@ -74,7 +107,7 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
   const a = await tenant('租户 A'), b = await tenant('租户 B');
   // 租户 A 有问候牌样例的文档，跨租户端点清单用它的模板名。
   await seedGreeting(backend.tenant(a.id).storage);
-  return { app, backend, clock, logs, secrets, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
+  return { app, backend, clock, logs, sink, secrets, secretKey, call, login, member, platform, platformLogin: { email: platformEmail, password: platformPassword }, a, b };
 }
 export type World = Awaited<ReturnType<typeof createWorld>>;
 
@@ -132,6 +165,56 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/batches', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/batches', body: BLOCKED_BATCH }) },
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
   { route: 'POST /v1/batches/:batchId/cancel', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/cancel` }) },
+  // 数据集与资源（票据 10）：对象 ID 用随机值；数据集的请求体按 JSON 原文发送。
+  { route: 'GET /v1/static-schemas', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/static-schemas' }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent('问候')}/versions/1` }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version/workbook', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent('问候')}/versions/1/workbook` }) },
+  // Excel 导入（票据 13）：用不存在的模板，读工作簿之前就答问题清单。
+  { route: 'POST /v1/excel-imports', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/excel-imports', body: BLOCKED_IMPORT }) },
+  { route: 'GET /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/datasets' }) },
+  { route: 'GET /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/datasets/ds-${randomUUID()}` }) },
+  { route: 'POST /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/datasets', body: MATRIX_DATASET }) },
+  { route: 'PUT /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'PUT', url: '/v1/datasets/ds-matrix', body: MATRIX_DATASET }) },
+  { route: 'POST /v1/datasets/:datasetId/copies', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'POST', url: `/v1/datasets/ds-${randomUUID()}/copies`, body: { id: 'ds-matrix-copy' } }) },
+  { route: 'POST /v1/dataset-checks', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/dataset-checks', body: MATRIX_DATASET }) },
+  { route: 'GET /v1/resources', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/resources' }) },
+  { route: 'GET /v1/resources/:resourceId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/resources/r${randomUUID()}` }) },
+  { route: 'GET /v1/resources/:resourceId/versions/:version/content', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/resources/r${randomUUID()}/versions/1/content` }) },
+  { route: 'POST /v1/resources', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: `/v1/resources?kind=image&id=r${randomUUID()}`, body: SAMPLE }) },
+  { route: 'POST /v1/resources/:resourceId/replacement-checks', allow: ['admin'],
+    request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacement-checks`, body: SAMPLE }) },
+  { route: 'POST /v1/resources/:resourceId/replacements', allow: ['admin'],
+    request: () => ({ method: 'POST', url: `/v1/resources/r${randomUUID()}/replacements`, body: { check: replacementCheck(`r${randomUUID()}`) } }) },
+  // 出图记录（票据 08）：批次 ID 用随机值。
+  { route: 'GET /v1/records', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/records' }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/files/:name', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/items/1/files/image.png` }) },
+  { route: 'GET /v1/batches/:batchId/images.zip', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/images.zip` }) },
+  { route: 'GET /v1/batches/:batchId/export.zip', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/export.zip` }) },
+  { route: 'GET /v1/batches/:batchId/items/:index/export.zip', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}/items/1/export.zip` }) },
+  { route: 'POST /v1/batches/:batchId/items/:index/replay', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/items/1/replay` }) },
+  { route: 'GET /v1/platform/builds', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: '/v1/platform/builds' }) },
+  // 计量与额度（票据 09）：客户管理员看本租户的用量；平台管理员设套餐、看任一租户的用量，租户 ID 用随机值。
+  { route: 'GET /v1/usage', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage' }) },
+  { route: 'GET /v1/usage/events', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage/events' }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/plan` }) },
+  { route: 'PUT /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'],
+    request: () => ({ method: 'PUT', url: `/v1/platform/tenants/${randomUUID()}/plan`, body: { monthlyImages: 1, maxPixels: 1, concurrency: 1 } }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/usage', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage` }) },
+  { route: 'GET /v1/platform/tenants/:tenantId/usage/events', allow: ['platformAdmin'],
+    request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/usage/events` }) },
+  // webhook（票据 11）：客户管理员与 API 密钥；注册用不合规的 URL，允许的身份答 400，不留下 webhook。
+  { route: 'GET /v1/webhooks', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/webhooks' }) },
+  { route: 'POST /v1/webhooks', allow: ['admin', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/webhooks', body: { url: 'ftp://example.com/matrix' } }) },
+  { route: 'GET /v1/webhooks/:webhookId', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/webhooks/${randomUUID()}` }) },
+  { route: 'PATCH /v1/webhooks/:webhookId', allow: ['admin', 'apiKey'], request: () => ({ method: 'PATCH', url: `/v1/webhooks/${randomUUID()}`, body: { active: false } }) },
+  { route: 'GET /v1/webhooks/:webhookId/deliveries', allow: ['admin', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/webhooks/${randomUUID()}/deliveries` }) },
 ];
 
 export function describeApi(name: string, makeBackend: () => Promise<ServiceBackend>): void {
@@ -286,9 +369,18 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       // A 的一个批次：没有 worker 时停在排队中，照样能查、能取消。
       const batch = await call('POST', '/v1/batches', a.key.token, { ...BLOCKED_BATCH, template: '问候牌' });
       expect(batch.status, batch.raw.slice(0, 300)).toBe(202);
-      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id };
-      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, batchId: randomUUID() };
-      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id];
+      // A 的一个资源（数据集用推送进来的 ds-greeting）。
+      expect((await call('POST', '/v1/resources?kind=image&id=a-logo', a.operator.token, SAMPLE)).status).toBe(201);
+      // A 的一个 webhook（停用的，不会投递）。
+      const hook = await call('POST', '/v1/webhooks', a.admin.token, { url: 'https://example.com/a-hook' });
+      expect(hook.status, hook.raw.slice(0, 300)).toBe(201);
+      world.secrets.push(hook.body.secret);
+      expect((await call('PATCH', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token, { active: false })).status).toBe(200);
+      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', staticSchemaName: '问候', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
+        webhookId: hook.body.webhook.id };
+      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, staticSchemaName: `定义-${randomUUID()}`, batchId: randomUUID(),
+        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}`, webhookId: randomUUID() };
+      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id, hook.body.webhook.id];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {
         for (const [who, token] of [['B 的管理员', b.admin.token], ['B 的操作员', b.operator.token], ['B 的密钥', b.key.token], ['B 的代建令牌', b.engineer.token]] as const) {
           const request = endpoint.request(objects);
@@ -303,9 +395,12 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
           }
         }
       }
-      // A 的对象没有被另一租户改动：A 的密钥仍然有效，A 的操作员仍是操作员。
+      // A 的对象没有被另一租户改动：A 的密钥仍然有效，A 的操作员仍是操作员，A 的数据集与资源照旧。
       expect((await call('GET', '/v1/tenant', a.key.token)).status).toBe(200);
       expect((await call('GET', '/v1/me', a.operator.token)).body.role).toBe('operator');
+      expect((await call('GET', '/v1/datasets/ds-greeting', a.operator.token)).body.data).toEqual({ message: '欢迎乘坐 M402 路' });
+      expect((await call('GET', '/v1/resources/a-logo', a.operator.token)).body.currentVersion).toBe(1);
+      expect((await call('GET', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token)).body).toMatchObject({ url: 'https://example.com/a-hook', active: false });
     });
 
     it('审计：写操作与跨租户操作追加写入，不记密钥；客户管理员只能看本租户；可以分页', async () => {
@@ -338,8 +433,8 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       const { call, platform } = world;
       const empty = await call('POST', '/v1/sessions', undefined, {});
       expect(empty).toMatchObject({ status: 400, body: { problems: [{ level: 'severe', code: 'request.invalid', location: { kind: 'input', source: 'request.body' } }] } });
-      const extra = await call('POST', '/v1/platform/tenants', platform, { name: 'x', plan: 'gold' });
-      expect(extra.body.problems[0]).toMatchObject({ code: 'request.invalid', message: expect.stringContaining('plan') });
+      const extra = await call('POST', '/v1/platform/tenants', platform, { name: 'x', tier: 'gold' });
+      expect(extra.body.problems[0]).toMatchObject({ code: 'request.invalid', message: expect.stringContaining('tier') });
       expect(await call('GET', '/v1/nothing', platform)).toMatchObject({ status: 404, body: { problems: [{ code: 'request.notFound' }] } });
     });
 

@@ -28,3 +28,23 @@ it('缺少凭据时报出全部缺少的变量名，不带任何取值', () => {
   expect(() => loadConfig({ ...complete, RW_PORT: '70000' }, { port: 8080 })).toThrow(/RW_PORT/);
   expect(() => loadConfig({ ...complete, RW_PORT: '70000' }, { port: 8080 })).not.toThrow(/s3-secret|db-secret/);
 });
+
+it('接口进程的 webhook 配置：服务密钥必填、是 64 位十六进制，缺少与不合规时只报变量名；其余有缺省值', async () => {
+  const { loadWebhookConfig } = await import('../src/config.js');
+  const key = 'ab'.repeat(32);
+  expect(loadWebhookConfig({ RW_SECRET_KEY: key })).toEqual({
+    secretKey: new Uint8Array(Buffer.from(key, 'hex')),
+    config: { pollMs: 1_000, retryBaseMs: 60_000, maxAttempts: 8, timeoutMs: 10_000, allowPrivate: false },
+  });
+  expect(loadWebhookConfig({ RW_SECRET_KEY: key, RW_WEBHOOK_POLL_MS: '50', RW_WEBHOOK_RETRY_BASE_MS: '100', RW_WEBHOOK_MAX_ATTEMPTS: '3',
+    RW_WEBHOOK_TIMEOUT_MS: '2000', RW_WEBHOOK_ALLOW_PRIVATE: 'true' }).config).toEqual({ pollMs: 50, retryBaseMs: 100, maxAttempts: 3, timeoutMs: 2000, allowPrivate: true });
+  expect(() => loadWebhookConfig({})).toThrow('缺少环境变量：RW_SECRET_KEY');
+  for (const bad of ['ab'.repeat(31), `${'ab'.repeat(31)}zz`, 'AB'.repeat(32)]) {
+    let error: unknown;
+    try { loadWebhookConfig({ RW_SECRET_KEY: bad }); } catch (caught) { error = caught; }
+    expect(error).toBeInstanceOf(ConfigError);
+    expect((error as Error).message).toBe('环境变量 RW_SECRET_KEY 必须是 64 位小写十六进制（32 字节）');
+  }
+  expect(() => loadWebhookConfig({ RW_SECRET_KEY: key, RW_WEBHOOK_MAX_ATTEMPTS: '0' })).toThrow(/RW_WEBHOOK_MAX_ATTEMPTS/);
+  expect(() => loadWebhookConfig({ RW_SECRET_KEY: key, RW_WEBHOOK_ALLOW_PRIVATE: 'yes' })).toThrow(/RW_WEBHOOK_ALLOW_PRIVATE/);
+});

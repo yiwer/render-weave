@@ -8,6 +8,8 @@ COPY package.json package-lock.json tsconfig.json tsconfig.build.json ./
 RUN npm ci
 COPY src ./src
 RUN npm run build
+# DSL 的 JSON Schema：开放 API 的描述把批次请求、渲染请求与数据集的 Schema 原样收进来（票据 11）。
+COPY schemas ./schemas
 
 # 服务：只经 service/src/engine.ts 引用引擎的公开入口；编译用引擎同一版本的 TypeScript。
 FROM engine AS service
@@ -16,9 +18,15 @@ RUN cd service && npm ci
 COPY service/tsconfig.json service/tsconfig.build.json service/
 COPY service/src service/src
 RUN cd service && ../node_modules/.bin/tsc -p tsconfig.build.json
+# 出图控制台（票据 12）：React 加 Vite 的单页应用，构建到 service/dist/console，由接口进程在 /console/ 下提供。
+COPY service/console service/console
+RUN cd service && ../node_modules/.bin/tsc --noEmit -p console && node_modules/.bin/vite build console
 
 # Docker 后端测试：引擎源码、共用的存储合同用例与测试夹具；字体由准备脚本下载并核对哈希。
+# 控制台的浏览器测试用 Alpine 的 Chromium，由 playwright-core 驱动（票据 12）。
 FROM service AS test
+RUN apk add --no-cache chromium
+ENV RW_CHROMIUM=/usr/bin/chromium
 COPY scripts/fetch-fonts.mjs scripts/fonts.json scripts/
 COPY fixtures fixtures
 RUN node scripts/fetch-fonts.mjs
@@ -36,6 +44,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=engine /app/dist dist
+COPY --from=engine /app/schemas schemas
 COPY service/package.json service/package-lock.json service/
 RUN cd service && npm ci --omit=dev && npm cache clean --force
 COPY --from=service /app/service/dist service/dist
