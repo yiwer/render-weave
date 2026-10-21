@@ -16,6 +16,7 @@ import { randomBytes } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
 import { Agent as HttpAgent, createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
 import { Agent as HttpsAgent, request as httpsRequest } from 'node:https';
+import { hardQuota, type QuotaStop } from './quota.js';
 
 type Json = Record<string, unknown>;
 type Block = Json & { type: string };
@@ -47,6 +48,7 @@ export interface ModelProxyOptions {
   readonly key: string;
   /** 调用日志（JSON Lines），只记用时、状态、token、内容块类型与失败的阶段和原因，不记内容。 */
   readonly log?: string;
+  readonly onHardQuota?: (stop: QuotaStop) => void;
 }
 
 export interface ModelProxy {
@@ -72,6 +74,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
   const signatures = new Map<string, string>();
   let counter = 0;
   let port = 0;
+  let stopped: QuotaStop | undefined;
   // 上游连接由本代理自己的连接池持有，随本轮关闭。
   const https = new URL(options.upstream).protocol === 'https:';
   const agent = https ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
@@ -96,6 +99,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
     }
     if (url.pathname === '/v1/messages/count_tokens') return json(response, 200, { input_tokens: Math.ceil(JSON.stringify(body).length / 4) });
     if (typeof body.model !== 'string' || !/^[\w.-]+$/.test(body.model)) return json(response, 400, error('invalid_request_error', '模型名不合法'));
+    if (stopped) return json(response, 429, error('rate_limit_error', `硬额度已耗尽（${stopped.limit}），本轮已停止上游调用`));
 
     const session = String(request.headers['x-claude-code-session-id'] ?? body.metadata?.user_id ?? 'renderweave');
     const started = Date.now();
@@ -127,13 +131,15 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
       const kind = status === 429 ? 'rate_limit_error' : status === 400 ? 'invalid_request_error' : status === 401 || status === 403 ? 'authentication_error' : 'api_error';
       const message = failure instanceof Error ? failure.message : String(failure);
       const cause = upstream ? upstream.reason : causeOf(failure);
+      if (upstream?.quota && !stopped) stopped = upstream.quota;
       // 日志分清失败在哪个阶段、底层原因，以及失败前多久没收到上游的数据。
       await log({ model: body.model, ms: Date.now() - started, status, phase: upstream?.phase ?? trace.phase, error: message.slice(0, 300),
-        ...(cause ? { cause } : {}), events: trace.events, idleMs: Date.now() - trace.lastDataAt });
+        ...(cause ? { cause } : {}), ...(upstream?.quota ? { stopped: upstream.quota } : {}), events: trace.events, idleMs: Date.now() - trace.lastDataAt });
       if (opened) {
         sse(response, 'error', error(kind, message));
         response.end();
       } else json(response, status, error(kind, message));
+      if (upstream?.quota) options.onHardQuota?.(upstream.quota);
     } finally {
       clearInterval(heartbeat);
     }
@@ -171,7 +177,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
       try {
         text = await readText(response, 4096);
       } catch { /* 状态码已经够用，读不完正文不影响 */ }
-      throw new UpstreamError(status, 'status', `上游 ${status}：${text.slice(0, 500)}`);
+      throw new UpstreamError(status, 'status', `上游 ${status}：${text.slice(0, 500)}`, undefined, hardQuota(text));
     }
     trace.phase = 'stream';
     streaming();
@@ -186,7 +192,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
       const upstreamError = chunk['error'] as Json | undefined;
       if (upstreamError) {
         const code = Number(upstreamError['code']);
-        throw new UpstreamError(code >= 400 && code < 600 ? code : 502, 'stream', `上游在流中报错：${String(upstreamError['message'] ?? JSON.stringify(upstreamError)).slice(0, 500)}`);
+        throw new UpstreamError(code >= 400 && code < 600 ? code : 502, 'stream', `上游在流中报错：${String(upstreamError['message'] ?? JSON.stringify(upstreamError)).slice(0, 500)}`, undefined, hardQuota(chunk));
       }
       trace.events++;
       const candidate = (chunk['candidates'] as Json[] | undefined)?.[0];
@@ -332,7 +338,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
 }
 
 class UpstreamError extends Error {
-  constructor(readonly status: number, readonly phase: Phase, message: string, readonly reason?: { code?: string; message: string }) { super(message); }
+  constructor(readonly status: number, readonly phase: Phase, message: string, readonly reason?: { code?: string; message: string }, readonly quota?: QuotaStop) { super(message); }
 }
 
 /** 底层原因：node:http 的错误自带 code（ECONNRESET、ENOTFOUND、证书错误等）；包了一层的取 cause。 */

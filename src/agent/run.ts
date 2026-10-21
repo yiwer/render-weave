@@ -15,13 +15,15 @@ import { createWriteStream } from 'node:fs';
 import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dslDocumentKind } from '../dsl.js';
 import { parseRenderRequest } from '../request.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
 import { isGoogleModel, startModelProxy } from './model-proxy.js';
-import { OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type OutcomeTarget, type PendingItem } from './outcome.js';
+import { DRAFT_FILE, OUTCOME_FILE, checkAgentOutcome, normalizeCandidatePath, type FieldLocation, type OutcomeCheck, type OutcomeContext, type OutcomeTarget, type PendingItem, type SubmittedOutcome } from './outcome.js';
+import { runtimeQuota, type QuotaStop } from './quota.js';
 import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
@@ -114,7 +116,7 @@ export interface RoundRecord {
     readonly effort: AgentEffort | null;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
-  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[] };
+  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: QuotaStop };
   readonly verdict: OutcomeCheck['verdict'];
 }
 
@@ -185,6 +187,8 @@ export interface AgentRunResult {
   readonly record: RoundRecord;
   readonly check: OutcomeCheck;
   readonly outcome?: RoundOutcome;
+  /** 宿主恢复草稿，相对轮次目录；不作为正式 outcome 返回。 */
+  readonly draft?: string;
 }
 
 /** 下一轮的候选从哪里开始：写进提示词。 */
@@ -322,7 +326,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。
   const context: OutcomeContext = {
     ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
-    ...(request ? { request: { template: request.template } } : {}),
+    ...(request ? { request: { ...request.document, template: request.template } } : {}),
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
   };
   const outcomeContext = join(logsDir, 'outcome-context.json');
@@ -336,7 +340,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
   // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
-  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl') }) : undefined;
+  const controller = new AbortController();
+  let stopped: QuotaStop | undefined;
+  const stop = (reason: QuotaStop) => { stopped ??= reason; controller.abort(); };
+  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : undefined;
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
     ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
@@ -350,7 +357,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop });
   } finally {
     await proxy?.close();
   }
@@ -358,11 +365,16 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
-  const check = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
+  const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
+  const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
+  const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);
+  const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
+  const deliverable = draftCheck ?? check;
+  const submission = recovered ?? check.submission;
   let outcome: RoundOutcome | undefined;
-  if (check.submission) {
+  if (submission && deliverable.candidates.length > 0) {
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
-    for (const candidate of check.candidates) {
+    for (const candidate of deliverable.candidates) {
       await mkdir(dirname(join(roundDir, candidate.path)), { recursive: true });
       await copyFile(join(agentDir, candidate.path), join(roundDir, candidate.path));
     }
@@ -373,7 +385,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
         previous: previous ? { dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256 } : null,
         ...(feedback ? { feedbackSha256: feedback.sha256 } : {}),
       },
-      candidates: check.candidates.map((candidate) => {
+      candidates: deliverable.candidates.map((candidate) => {
         const basisOf = candidate.kind === 'template' ? revision?.find((entry) => entry.name === candidate.name) : undefined;
         return {
           path: candidate.path, kind: candidate.kind!, ...(candidate.name !== undefined ? { name: candidate.name } : {}),
@@ -381,12 +393,16 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
           ...(basisOf ? { revises: { file: basisOf.file, sha256: basisOf.sha256 } } : {}),
         };
       }),
-      locations: (check.submission.locations ?? []).map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
-      pending: check.submission.pending.map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
-      notes: check.submission.notes,
+      locations: (submission.locations ?? []).map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
+      pending: submission.pending.map((item) => ({ ...item, file: normalizeCandidatePath(item.file) })),
+      notes: submission.notes,
       usage,
     };
-    await writeFile(join(roundDir, OUTCOME_FILE), `${JSON.stringify(outcome, null, 2)}\n`);
+    if (recovered) {
+      const { submission: _recovered, ...assessment } = deliverable;
+      await writeFile(join(roundDir, DRAFT_FILE), `${JSON.stringify({ format: 'renderweave-draft/1', source: 'hostRecovery', outcome, check: assessment }, null, 2)}\n`);
+      outcome = undefined;
+    } else await writeFile(join(roundDir, OUTCOME_FILE), `${JSON.stringify(outcome, null, 2)}\n`);
   }
   const { submission: _submission, ...checkRecord } = check;
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
@@ -394,11 +410,13 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
     runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, effort: options.effort ?? null,
       keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
-    run: { ...usage, exitCode: executed.exitCode, ...(executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
+    run: { ...usage, exitCode: executed.exitCode,
+      ...(stopped ? { stopped, error: `硬额度耗尽（${stopped.limit}），已停止本轮。额度恢复后用 --from "${roundDir}" --feedback <反馈文件> 续跑` }
+        : executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };
   await writeFile(join(roundDir, 'round.json'), `${JSON.stringify(record, null, 2)}\n`);
-  return { roundDir, record, check, ...(outcome ? { outcome } : {}) };
+  return { roundDir, record, check, ...(outcome ? { outcome } : {}), ...(recovered && deliverable.candidates.length > 0 ? { draft: DRAFT_FILE } : {}) };
 }
 
 /** 任务顺序（M43）与各任务需要的输入：--definition、--dataset 只接受该任务用得上的那些。 */
@@ -560,20 +578,59 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void }): Promise<{ exitCode: number | null; error?: string }> {
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
-    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
+    const stop = () => {
+      if (!child.pid) return;
+      // 只终止本轮的进程树，连同它启动的 MCP；不碰其他 Claude Code 会话。
+      if (process.platform === 'win32') {
+        const killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
+        killer.on('error', () => child.kill());
+        killer.on('close', (code) => { if (code !== 0) child.kill(); });
+      } else { try { process.kill(-child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); } }
+    };
+    context.signal.addEventListener('abort', stop, { once: true });
+    if (context.signal.aborted) stop();
+    let buffer = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk: string) => {
+      buffer += chunk;
+      for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
+        const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
+        try { const quota = runtimeQuota(JSON.parse(line)); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+      }
+    });
     child.on('error', (error) => done({ exitCode: null, error: `无法启动 ${claude.command}：${error.message}` }));
     child.stdout.pipe(log);
     child.stderr.pipe(errors);
     child.stdin.on('error', () => {});
     child.stdin.end(context.prompt);
-    child.on('close', (code) => done({ exitCode: code }));
+    child.on('close', (code) => { context.signal.removeEventListener('abort', stop); done({ exitCode: code }); });
   });
   await Promise.all([new Promise((done) => log.end(done)), new Promise((done) => errors.end(done))]);
   return result;
+}
+
+/** 抢救已写完整的候选 JSON；不跟随符号链接，不补写 Agent 自述的成果。 */
+async function recoverCandidates(agentDir: string, task: AgentTask): Promise<SubmittedOutcome | undefined> {
+  const candidates: string[] = [];
+  const walk = async (path: string): Promise<void> => {
+    for (const entry of await readdir(join(agentDir, path), { withFileTypes: true })) {
+      const child = `${path}/${entry.name}`;
+      if (entry.isDirectory()) await walk(child);
+      else if (entry.isFile() && entry.name.endsWith('.json')) {
+        try {
+          const kind = dslDocumentKind(JSON.parse(await readFile(join(agentDir, child), 'utf8')));
+          if (task.candidateKinds.includes(kind as CandidateKind)) candidates.push(child);
+        } catch { /* 半写文件保留在 agent/candidates，不当作可读候选 */ }
+      }
+    }
+  };
+  await walk('candidates');
+  return candidates.length ? { candidates: candidates.sort(), pending: [], notes: '宿主抢救的中断草稿：Agent 未交回有效成果；内容、待确认项与完成度未知。只能查看，不能批准或应用；请带反馈续跑。' } : undefined;
 }
 
 /** 从 Claude Code 的流式输出中取用量：初始化消息给出模型、版本与 MCP 状态，结果消息给出轮数与 token。 */

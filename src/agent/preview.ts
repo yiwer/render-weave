@@ -12,6 +12,7 @@ import { render } from '../render.js';
 import { rendererBuildId } from '../renderer-build.js';
 import { isRecord } from '../util.js';
 import type { Workspace } from '../workspace.js';
+import { assessRendering, type RenderAssessment } from './assessment.js';
 
 export const PREVIEW_DIR = 'previews';
 const MAX_DPI = 300;
@@ -29,6 +30,7 @@ export interface PreviewView {
   readonly problems: readonly Problem[];
   /** 严重问题是否阻止审核通过：模板辅助设计是；数据集提取的预览用已保存的模板，只作参考。 */
   readonly blocking: boolean;
+  readonly assessment?: RenderAssessment;
 }
 
 let build: Promise<string> | undefined;
@@ -55,7 +57,8 @@ export async function renderPreview(options: {
   const image = `${PREVIEW_DIR}/${key}.png`, meta = join(options.roundDir, PREVIEW_DIR, `${key}.json`);
   try {
     const cached = JSON.parse(await readFile(meta, 'utf8')) as Omit<PreviewView, 'request' | 'blocking'>;
-    return { request: options.shown, ...cached, blocking: options.blocking };
+    return { request: options.shown, ...cached, blocking: options.blocking,
+      assessment: assessRendering(cached.problems, !!cached.image, options.blocking) };
   } catch {
     // 没有缓存：渲染一次。
   }
@@ -67,7 +70,8 @@ export async function renderPreview(options: {
   await mkdir(join(options.roundDir, PREVIEW_DIR), { recursive: true });
   if (result.image) await writeFile(join(options.roundDir, image), result.image.bytes);
   await writeFile(meta, `${JSON.stringify(view, null, 2)}\n`);
-  return { request: options.shown, ...view, blocking: options.blocking };
+  return { request: options.shown, ...view, blocking: options.blocking,
+    assessment: assessRendering(view.problems, !!view.image, options.blocking) };
 }
 
 /** 让预览与示例图的像素宽度相近：按示例图宽度折算 DPI，不低于 50，不超过 300，最长边不超过 4000 像素。 */

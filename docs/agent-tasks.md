@@ -134,6 +134,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `round.json` | 轮次记录：输入（含所基于的数据定义、数据集、出图请求、资源仓库、模板辅助修改的基准与修改要求、上一轮与反馈）、运行参数、用量与结论，无论成果是否合格都写出 |
 | `check.json` | 校验结果：结构问题与每个候选的问题 |
 | `outcome.json` | 轮次成果，结构合格时才写出 |
+| `draft.json` | 未交回有效成果时，宿主抢救的完整候选、哈希与评估；标为 hostRecovery，只能查看与接续 |
 | `candidates/` | 候选文件的副本，之后审核与应用都读这里 |
 | `previews/` | 审核页的预览图与问题清单，按输入的哈希缓存 |
 | `review.json` | 审核结果，由审核页写出（见[审核](#审核)） |
@@ -185,10 +186,11 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
    - **模板**：先按 `schemas/template.schema.json` 做 Schema 前置校验；再把全部候选作为工作副本做静态检查（M49、M50），同名的代替已保存的模板。模板辅助设计只新建模板，名称不能与工作区已有的模板重复；模板辅助修改只能改主模板调用树中的已保存模板，新建的模板同样不能与工作区重名。
 
    Schema 不通过时只报 Schema 的问题，不再做引擎校验。
-3. **结论**：结构合格，且候选没有严重问题时为"合格"。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
+3. **渲染**：有完整出图请求时，覆盖候选后实际渲染草稿。模板的渲染严重问题使结论为不合格；数据集提取的预览仍只作参考。`assessment` 分开记录 `structure`、`candidates`、`content: needsReview` 与 `render`；缺完整请求记 `render.status: notChecked`，可渲染记 `renderable`，受阻记 `blocked`。`capabilityBlocked` 表示包含已知引擎能力问题。
+4. **结论**：结构、候选和模板的渲染检查通过时为"合格"，内容与样式仍须审核。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
 
-**交回前核对**（M233）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`，任务提示词要求交回前核对到合格。
-- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、出图请求的主模板、模板辅助修改可以改的模板。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
+**交回前核对**（M233、M277）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`。已知能力受阻时交回候选与说明，结束本轮，不以修改模板解决引擎能力缺失。
+- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
 - 这个文件在 Agent 工作目录之外，Agent 改不了。
 - 交回后的校验与它是同一份实现、同样的上下文，所以 Agent 交回前看到的结论与问题和 `check.json` 一致。
 
@@ -213,6 +215,10 @@ renderweave agent review <轮次目录> [--port <端口>] [--no-open]
 ```
 
 命令在 `127.0.0.1` 上启动审核页，打开默认浏览器，并把地址打印到标准输出；按 Ctrl+C 结束。有 `outcome.json` 的轮次都能审核，成果校验不合格的也可以，处理后没有严重问题才能通过。
+
+只有 `draft.json` 的轮次可查看候选与预览，页面注明宿主抢救、完成度未知；审核操作与应用拒绝。用 `--from`、`--feedback` 发起下一轮，继承原工作目录的候选；Agent 完成说明后再交回正式成果。已有 outcome 损坏时不会退回读取草稿掩盖错误。
+
+**硬额度停止（M278）**：Google 转换代理识别 `GoUsageLimitError`（如 weekly）、`insufficient_quota`、`credit_balance_too_low` 后封住后续上游请求，宿主终止本轮执行器进程树。直连运行时的错误事件明确带出相同类型时也停止；只有一般 `rate_limit` / 429、5xx 不误判。`round.json` 的 `run.stopped` 记 `reason: hardQuota`、`type`、`limit`；命令退出失败并给出 `--from` 续跑入口，仍保存 outcome 或恢复草稿。没有结果消息的 token/轮数保持未知。额度恢复后由用户发起接续。
 
 **页面内容**：
 

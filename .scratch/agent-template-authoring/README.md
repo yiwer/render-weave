@@ -46,3 +46,19 @@
 - 06 起，数据集与模板候选使用 01、02 的 Schema 做前置校验。06 不直接列 01，是因为 01 未完成时，候选仍可只经引擎校验；Schema 前置校验在 01、02 完成后接入，09 汇总时核对。
 
 按阻塞关系领取票据：直接阻塞票全部 resolved 后才能开始。
+
+## 同图复跑后续（2026-10-21，按执行优先级）
+
+用户指定本批先实施 31、32；原有票据 18、20 与阶段 4 的顺序保持不变。真实模型验收集中在 38，额度恢复前不派发。
+
+| 编号 | 标题 | 直接阻塞 | 验收映射 |
+|---|---|---|---|
+| 31 | [P0 · 成果评估区分静态合法与可出图，受阻轮次交回可查看草稿](issues/31-assess-and-preserve-blocked-drafts.md) | 无 | 同图复跑：成果与运行退出 |
+| 32 | [P0 · 明确额度耗尽时终止本轮，不反复请求上游](issues/32-stop-hard-quota-retries.md) | 无 | 同图复跑：成果与运行退出 |
+| 33 | [P1 · 提取成果保留全部业务信息并正确表达未知值](issues/33-extraction-coverage-and-required-fields.md) | 无 | 同图复跑：原问题验收 |
+| 34 | [P1 · 按参考基准核查所有独立样式和状态，自动扫描重复实例](issues/34-verify-element-styles.md) | 31 | 同图复跑：视觉质量 |
+| 35 | [P1 · 普通轮次保存可复现资料，修复用原失败场景验收](issues/35-reproducible-runs-and-acceptance.md) | 无 | 同图复跑：原问题验收 |
+| 38 | [P1 · 额度恢复后复跑原场景并补齐真实模型验收](issues/38-retest-after-quota-recovery.md) | 31、32 | 同图复跑：原问题验收 |
+| 36 | [P2 · 实测 OCR 对文字覆盖与位置测量的收益，再决定正式接入](issues/36-ocr-measurement-trial.md) | 34 | 同图复跑：OCR 收益 |
+| 37 | [P2 · 减少文本列表与缺省展示产生的重复派生变量](issues/37-text-list-and-fallback-display.md) | 无 | 同图复跑：原问题验收 |
+| 39 | [P2 · 核实免费模型的运行时限制与业务适用性](issues/39-free-model-runtime-feasibility.md) | 无 | 同图复跑：原问题验收 |

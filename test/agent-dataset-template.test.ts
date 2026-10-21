@@ -182,7 +182,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(fake.prompt).not.toMatch(/\{|线路|站名|M402/);
     expect(await readFile(join(dataset.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/data-definition.md'), 'utf8'));
     expect((await json(join(dataset.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1)).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft,check_outcome');
-    expect(await json(join(dataset.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: { name: '胸牌', version: 1 }, request: { template: '胸牌卡' } });
+    expect(await json(join(dataset.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: { name: '胸牌', version: 1 }, request: withoutDataset });
 
     const template = await templateRound(dir);
     expect(template.record.inputs).toMatchObject({ definition: { name: '问候', version: 1 }, dataset: 'ds-greeting', request: { template: '问候横幅' } });
@@ -193,7 +193,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
     expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
       .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome');
-    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: { template: '问候横幅' } });
+    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')) });
   });
 });
 
@@ -363,10 +363,11 @@ describe('模板辅助设计的成果与审核', () => {
     expect(removed.candidates.find((candidate) => candidate.path === BANNER_FILE)!.elements!.map((element) => [element.path, element.state]))
       .toEqual([['问候横幅/文字区', 'kept'], ['问候横幅/底色', 'removed']]);
 
-    // 画板尺寸范围装不下出图请求：静态检查看不出，预览报严重问题，不能通过。
+    // 画板尺寸范围装不下出图请求：静态检查看不出，交回检查和预览都报严重问题。
     const narrow = { ...BANNER, artboard: { ...BANNER.artboard, sizeRange: { ...BANNER.artboard.sizeRange, width: { min: 100, max: 150 } } } };
     const small = await templateRound(dir, TEMPLATE_SUBMISSION, narrow);
-    expect(small.check.verdict).toBe('qualified');
+    expect(small.check.verdict).toBe('unqualified');
+    expect(small.check.assessment.render.status).toBe('blocked');
     const blocked = await decide(small.roundDir, [{ type: 'decide', item: 1, action: 'adopt' }, { type: 'confirmRest', confirmed: true }]);
     expect(codes(blocked.preview!.problems)).toContain('render.sizeOutOfRange');
     expect(blocked.canApprove).toBe(false);

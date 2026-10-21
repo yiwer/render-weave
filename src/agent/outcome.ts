@@ -11,6 +11,7 @@ import { ProblemCodes, hint, severe, type Problem } from '../problems.js';
 import { isRecord } from '../util.js';
 import type { StaticSchemaRef, Workspace } from '../workspace.js';
 import { checkCandidates, type CandidateContext } from './candidates.js';
+import { assessCandidates, type RenderAssessment } from './assessment.js';
 import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
@@ -97,18 +98,25 @@ export interface CandidateCheck {
 }
 
 export interface OutcomeCheck {
-  /** 合格：结构合格，且候选没有严重问题（待确认位置上的问题除外）。 */
+  /** 技术检查合格：结构、候选及指定请求的模板渲染通过；内容与样式仍需审核。 */
   readonly verdict: 'qualified' | 'unqualified';
   /** 结构问题：没有 outcome.json、结构不合格、候选文件或待确认项不对。 */
   readonly problems: readonly Problem[];
   readonly candidates: readonly CandidateCheck[];
+  readonly assessment: {
+    readonly structure: 'valid' | 'invalid';
+    readonly candidates: 'valid' | 'invalid' | 'notChecked';
+    /** 没有待确认项也不代表内容已核实。 */
+    readonly content: 'needsReview';
+    readonly render: RenderAssessment;
+  };
   /** 结构合格时才有。 */
   readonly submission?: SubmittedOutcome;
 }
 
 /** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）；模板辅助修改可以改的模板。 */
 export interface OutcomeContext extends CandidateContext {
-  readonly request?: { readonly template: string };
+  readonly request?: { readonly template: string; readonly [key: string]: unknown };
 }
 
 /** 交回前核对（MCP 工具 check_outcome）要的本轮任务与已知输入：agent run 写到 Agent 工作目录之外，经 --outcome-context 交给 MCP 服务。 */
@@ -123,7 +131,7 @@ const OUTCOME_TARGET_SCHEMA = {
     definition: { type: 'object', additionalProperties: false, required: ['name', 'version'], properties: {
       name: { type: 'string', minLength: 1 }, version: { type: 'integer', minimum: 1 },
     } },
-    request: { type: 'object', additionalProperties: false, required: ['template'], properties: { template: { type: 'string', minLength: 1 } } },
+    request: { type: 'object', required: ['template'], properties: { template: { type: 'string', minLength: 1 } } },
     revision: { type: 'object', additionalProperties: false, required: ['templates'], properties: {
       templates: { type: 'array', items: { type: 'string', minLength: 1 } },
     } },
@@ -131,6 +139,7 @@ const OUTCOME_TARGET_SCHEMA = {
 } as const;
 
 export const OUTCOME_FILE = 'outcome.json';
+export const DRAFT_FILE = 'draft.json';
 const CANDIDATE_DIR = 'candidates';
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validateSubmission = ajv.compile(SUBMITTED_OUTCOME_SCHEMA);
@@ -148,17 +157,21 @@ export async function checkAgentOutcome(options: {
   readonly agentDir: string;
   readonly workspace: Workspace;
   readonly context?: OutcomeContext;
+  /** 宿主抢救中断的候选时提供清单；不写入、不冒充 Agent 的 outcome.json。 */
+  readonly recovered?: SubmittedOutcome;
 }): Promise<OutcomeCheck> {
   const task = AGENT_TASKS[options.task];
   const context = options.context ?? {};
   const files = await WorkingDirectory.open(options.agentDir);
   const problems: Problem[] = [];
   const at = (source: string) => ({ kind: 'input', source: source === '' ? OUTCOME_FILE : `${OUTCOME_FILE}#${source}` }) as const;
-  const unqualified = (candidates: CandidateCheck[] = []): OutcomeCheck => ({ verdict: 'unqualified', problems, candidates });
+  const unqualified = (candidates: CandidateCheck[] = []): OutcomeCheck => ({ verdict: 'unqualified', problems, candidates,
+    assessment: { structure: 'invalid', candidates: 'notChecked', content: 'needsReview',
+      render: { status: 'notChecked', problems: [], hasImage: false, capabilityBlocked: false, blocking: false } } });
 
   let submitted: unknown;
   try {
-    submitted = (await files.readJson(OUTCOME_FILE)).document;
+    submitted = options.recovered ?? (await files.readJson(OUTCOME_FILE)).document;
   } catch (error) {
     if (!(error instanceof ToolInputError)) throw error;
     problems.push(severe(ProblemCodes.outcomeInvalid, at(''), `没有交回可读的 outcome.json：${error.message}`));
@@ -262,9 +275,14 @@ export async function checkAgentOutcome(options: {
       problems: result.problems.filter((problem) => !deferred.includes(problem)), ...(deferred.length > 0 ? { deferred } : {}),
     };
   });
-  const severeFound = problems.some((problem) => problem.level === 'severe') ||
-    final.some((candidate) => candidate.problems.some((problem) => problem.level === 'severe'));
-  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final, ...(problems.every((problem) => problem.level !== 'severe') ? { submission } : {}) };
+  const structureValid = problems.every((problem) => problem.level !== 'severe');
+  const candidatesValid = final.every((candidate) => candidate.problems.every((problem) => problem.level !== 'severe'));
+  const rendering = await assessCandidates(options.workspace, documents, structureValid ? context.request : undefined,
+    task.id === 'template-design' || task.id === 'template-revision');
+  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked');
+  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final,
+    assessment: { structure: structureValid ? 'valid' : 'invalid', candidates: candidatesValid ? 'valid' : 'invalid', content: 'needsReview', render: rendering },
+    ...(structureValid ? { submission } : {}) };
 }
 
 /** 数据集中带候选值的待确认项：把候选值写到该位置。找不到的位置已在结构检查中报过。 */

@@ -252,13 +252,13 @@ function problemList(problems) {
 
 function render() {
   const { round, review, applied } = view;
-  const editable = review.status === 'inProgress' && !applied;
+  const editable = review.status === 'inProgress' && !applied && round.source !== 'hostRecovery';
   document.title = `审核 · ${round.taskName}`;
   $('title').textContent = `审核 · ${round.taskName}`;
   const [label, tone] = applied ? ['已应用', 'accent'] : STATUS[review.status];
   $('status').textContent = label;
   $('status').className = `chip ${tone}`;
-  $('verdict').textContent = round.verdict === 'qualified' ? '成果合格' : '成果不合格';
+  $('verdict').textContent = round.source === 'hostRecovery' ? '中断草稿 · 完成度未知' : round.verdict === 'qualified' ? '技术检查通过 · 待审核' : '受阻成果 · 待处理';
   $('verdict').className = `chip ${round.verdict === 'qualified' ? 'ok' : 'bad'}`;
   $('dir').textContent = round.dir;
   $('round').textContent = `第 ${round.round} 轮`;

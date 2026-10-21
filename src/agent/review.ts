@@ -28,9 +28,10 @@ import { publishedFileNames } from '../schema/publish-files.js';
 import { describeError, isRecord } from '../util.js';
 import { loadWorkspace, loadWorkspaceDocuments, type StaticSchemaEntry, type StaticSchemaRef, type Workspace } from '../workspace.js';
 import { checkCandidates, type CandidateContext, type CandidateResult } from './candidates.js';
+import { assessCandidates } from './assessment.js';
 import { canonical, diffTemplate, revisionDiff, type RevisionDiff, type TemplateChange } from './diff.js';
 import { applyChanges, flattenData, flattenElements, fullElementPath, locate, overlaps, read, within, type Change } from './locations.js';
-import { OUTCOME_FILE, SUBMITTED_OUTCOME_SCHEMA, candidateName, type FieldLocation, type PendingItem, type PendingReason } from './outcome.js';
+import { DRAFT_FILE, OUTCOME_FILE, SUBMITTED_OUTCOME_SCHEMA, candidateName, type FieldLocation, type PendingItem, type PendingReason } from './outcome.js';
 import { renderPreview, type PreviewView } from './preview.js';
 import { AgentUsageError, exists, jsonFileHashes, sha256, workspaceFingerprint } from './round-files.js';
 import type { RoundOutcome, RoundRecord, RoundUsage } from './run.js';
@@ -88,6 +89,7 @@ export interface ReviewView {
     readonly taskName: string;
     /** 成果校验的结论；不合格的成果也可以审核，改好后才能通过。 */
     readonly verdict: RoundRecord['verdict'];
+    readonly source: 'agent' | 'hostRecovery';
     /** 示例图在轮次目录中的位置。 */
     readonly sample: string;
     /** 本轮基于的工作区，应用时缺省写到这里。 */
@@ -340,6 +342,7 @@ interface RoundCandidate {
 
 /** 读入并核对过的轮次：成果、运行记录、候选、工作区快照与出图请求。 */
 interface AgentRound {
+  readonly recovered: boolean;
   readonly dir: string;
   readonly outcome: RoundOutcome;
   readonly outcomeSha256: string;
@@ -377,6 +380,7 @@ export async function changeReview(roundDir: string, change: unknown): Promise<{
   const refuse = async (message: string, code: Problem['code'] = ProblemCodes.reviewInvalid) =>
     ({ view: await view(), problems: [severe(code, { kind: 'input', source: join(round.dir, REVIEW_FILE) }, message)] });
 
+  if (round.recovered) return refuse('宿主抢救的中断草稿只能查看；请用 --from 带反馈续跑后再审核');
   if (round.applied) return refuse('本轮已经应用，审核结果不再修改');
   if (current.problems.length > 0) return refuse(`review.json 不能继续使用：${current.problems.map((problem) => problem.message).join('；')}`);
   if (!isRecord(change) || typeof change['type'] !== 'string') return refuse('审核操作必须是带 type 的对象');
@@ -532,6 +536,12 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
       `在当前工作区上校验不通过，工作区未改动：${severeFound.map(({ path, problem }) => `${path}：${problem.message}`).join('；')}`)]);
   }
 
+  const rendering = await assessCandidates(current, saved.map((candidate) => ({ path: candidate.path, kind: candidate.kind, document: state.documents.get(candidate.path) })),
+    round.request, round.outcome.task === 'template-design' || round.outcome.task === 'template-revision');
+  if (rendering.blocking && rendering.status === 'blocked') return failed([
+    severe(ProblemCodes.applyFailed, { kind: 'input', source: workspace }, '在当前工作区上渲染受阻，工作区未改动'), ...rendering.problems,
+  ]);
+
   type Entry = { candidate: string; kind: CandidateKind; name: string; version?: number; replaced?: boolean; files: JsonFileWrite[] };
   const entries: Entry[] = published.map(({ candidate, entry }) => {
     const names = publishedFileNames(candidate, entry.ref.version);
@@ -596,10 +606,13 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     }
   };
 
-  const outcomeFile = await readJson(OUTCOME_FILE);
+  const recovered = !(await exists(join(root, OUTCOME_FILE))) && await exists(join(root, DRAFT_FILE));
+  const outcomeFile = await readJson(recovered ? DRAFT_FILE : OUTCOME_FILE);
   if (typeof outcomeFile === 'string') return fail(OUTCOME_FILE, `没有可审核的轮次成果：${outcomeFile}。结构不合格的轮次没有 outcome.json，不能审核`);
-  if (!validateRoundOutcome(outcomeFile.value)) return fail(OUTCOME_FILE, 'outcome.json 不是 renderweave-outcome/1 轮次成果');
-  const stored = outcomeFile.value as unknown as RoundOutcome;
+  if (recovered && (!isRecord(outcomeFile.value) || outcomeFile.value['format'] !== 'renderweave-draft/1' || outcomeFile.value['source'] !== 'hostRecovery')) return fail(DRAFT_FILE, 'draft.json 不是宿主保存的中断草稿');
+  const value = recovered ? (outcomeFile.value as Record<string, unknown>)['outcome'] : outcomeFile.value;
+  if (!validateRoundOutcome(value)) return fail(recovered ? DRAFT_FILE : OUTCOME_FILE, '不是有效的轮次候选清单');
+  const stored = value as unknown as RoundOutcome;
   let outcome: RoundOutcome = { ...stored, locations: stored.locations ?? [] };
   const recordFile = await readJson('round.json');
   if (typeof recordFile === 'string') return fail('round.json', `轮次记录无法读取：${recordFile}`);
@@ -654,7 +667,7 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   else if (await exists(join(root, APPLIED_FILE))) return fail(APPLIED_FILE, `应用记录无法读取：${appliedFile}`);
   return {
     round: {
-      dir: root, outcome, outcomeSha256: sha256(outcomeFile.bytes), record, candidates, workspace,
+      dir: root, recovered, outcome, outcomeSha256: sha256(outcomeFile.bytes), record, candidates, workspace,
       ...(resourcesDir ? { resourcesDir } : {}),
       context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition }
         : outcome.task === 'template-revision' ? { revision: { templates: (record.inputs.templates ?? []).map((entry) => entry.name) } } : {},
@@ -814,6 +827,8 @@ function reviewState(round: AgentRound, record: ReviewRecord): ReviewState {
 async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean, recordProblems: readonly Problem[], computed?: ReviewState): Promise<ReviewView> {
   const state = computed ?? reviewState(round, record);
   const problems: Problem[] = [...recordProblems, ...state.problems];
+  if (round.recovered) problems.push(severe(ProblemCodes.outcomeInvalid, { kind: 'input', source: DRAFT_FILE },
+    '宿主抢救的中断草稿：Agent 未交回有效成果，完成度未知；只能查看，不能批准或应用。请用 --from 带反馈续跑。'));
   const decisions = new Map(record.decisions.map((decision) => [decision.item, decision]));
   const locationsOf = (file: string) => round.outcome.locations.filter((location) => location.file === file);
   const pending: PendingView[] = round.outcome.pending.map((item, index) => {
@@ -876,7 +891,7 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
   const previewBefore = round.outcome.task === 'template-revision' ? await previewBeforeOf(round) : undefined;
   const view: Omit<ReviewView, 'canApprove'> = {
     round: {
-      dir: round.dir, task: round.outcome.task, taskName: AGENT_TASKS[round.outcome.task].name, verdict: round.record.verdict,
+      dir: round.dir, source: round.recovered ? 'hostRecovery' : 'agent', task: round.outcome.task, taskName: AGENT_TASKS[round.outcome.task].name, verdict: round.record.verdict,
       sample: round.record.inputs.sample.file, workspace: round.record.inputs.workspace?.source ?? null, notes: round.outcome.notes, usage: round.outcome.usage,
       round: round.outcome.round, chain: await readRoundChain(round.dir),
       ...(round.requirement !== undefined ? { requirement: round.requirement } : {}), ...(round.feedback !== undefined ? { feedback: round.feedback } : {}),
@@ -1174,7 +1189,7 @@ export async function readPreviousRound(dir: string): Promise<PreviousRound> {
     throw new AgentUsageError(`上一轮的 round.json 不是 renderweave-round/1 轮次记录：${root}`);
   }
   const files: { name: string; bytes: Uint8Array }[] = [];
-  for (const name of [OUTCOME_FILE, REVIEW_FILE, 'check.json']) {
+  for (const name of [OUTCOME_FILE, DRAFT_FILE, REVIEW_FILE, 'check.json']) {
     if (await exists(join(root, name))) files.push({ name, bytes: await readFile(join(root, name)) });
   }
   const resources = record.inputs.resources ?? await resourcesFromMcpConfig(root);

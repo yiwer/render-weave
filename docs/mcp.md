@@ -75,10 +75,11 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
   |---|---|---|
   | `task` | 是 | `definition-extraction`、`dataset-extraction`、`template-design` 或 `template-revision`，决定允许的候选种类 |
   | `definition` | 否 | `{name, version}`，数据集提取所选的数据定义，候选数据集必须选定它 |
-  | `request` | 否 | `{template}`，出图请求的主模板，模板辅助设计时必须在候选中 |
+  | `request` | 否 | 完整出图请求，模板辅助设计的主模板必须在候选中；兼容旧的 `{template}`，但只能静态检查 |
   | `revision` | 否 | `{templates}`，模板辅助修改可以改的已保存模板 |
 
   `agent run` 每轮写到 `logs/outcome-context.json`，在 Agent 工作目录之外。
+- **成果评估（合同 0.8.0，M277）**：返回 `assessment.structure`、`candidates`、`content: needsReview` 与 `render`。渲染包含 `status`（`notChecked` / `renderable` / `blocked`）、`hasImage`、`capabilityBlocked`、`blocking` 和按预算截断的问题清单。有完整请求时覆盖候选做实际草稿渲染；模板存在严重出图问题时 `verdict` 为 `unqualified`。已知能力受阻应保留候选和说明后交回，严重问题仍阻止审核通过与应用。
 - **返回**：与 `check.json` 使用同一份校验结果，候选不带 `sha256`，问题清单按上述预算截断。有 `revision` 上下文时，模板候选另给结构化差异的范围摘要（M276），其他任务不返回：
   - `revision.status`：`modified`（改了已保存模板）、`unchanged`（原样，应用时不写入）或 `added`（新模板）。后两者的 `changes` 是空列表。
   - `revision.changes`：每条有 `path`、`target`（`element` / `template`）、`change`（`added` / `removed` / `changed`）；有属性差异时，`properties` 是属性键名数组，如 `["color", "place"]`。参数、派生变量与检查项用各项的名称。没有 `before` / `after`，新增、删除元素也不返回元素正文。
@@ -124,7 +125,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.7.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.8.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.8.0 加入成果分层评估和指定请求的实际渲染；受阻交回与正式交付分开（票据 31，M277）；
   - 0.7.0 在 0.6.0 上让 `check_outcome` 返回模板辅助修改的差异范围摘要（票据 17，M276），工具输入与其他任务的输出不变；
   - 0.6.0 在 0.5.0 上（票据 19、22、29）：`view_image` 缺省最多放大 2 倍并新增 `scale`；`dsl_reference`、`read_document` 新增 `pointer`，`schema/template` 不带 `pointer` 时返回目录；问题清单与元素检查有上限并给出截断信息；`render_draft`、`inspect_layout` 把 `mode: "final"` 按草稿处理；`list_resources` 给字体加 `weight` 与 `scripts`；工具带 `annotations`；文字结果超过 40,000 字符时改为工具错误；
   - 0.5.0 在 0.4.0 上让 `view_image` 的 `path` 接受 `res:资源ID`，工具清单只变了 `view_image` 的说明与 `path` 描述（M234）；

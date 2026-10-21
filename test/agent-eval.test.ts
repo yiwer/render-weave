@@ -288,7 +288,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const results = [m402, template, transcription];
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
-      format: 'renderweave-agent-eval/2', mcpContract: '0.7.0', consecutivePasses: 2,
+      format: 'renderweave-agent-eval/2', mcpContract: '0.8.0', consecutivePasses: 2,
       runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       results: [{ status: 'fail', retries: 0 }, { status: 'pass', retries: 0 }, { status: 'pass', retries: 0 }],
       gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4, thinkingTokens: 150 * 4, persistedResults: 0 },
@@ -451,6 +451,20 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(thrown).toMatchObject({ status: 'fail', retries: 0, failures: ['无法启动 claude：spawn claude ENOENT', '没有可评分的数据定义'] });
     expect(calls).toHaveLength(2);
     expect(slept).toEqual([]);
+  });
+
+  it('宿主硬额度停止记录让评估队列立即停止派发，不依赖错误文本语言', async () => {
+    const calls: AgentTaskId[] = [];
+    const launch: Launcher = async (spec) => {
+      calls.push(spec.task);
+      await fakeRound(spec, {}, 'API Error: 429 {"type":"error","error":{"type":"GoUsageLimitError","message":"Go usage limit exceeded"},"metadata":{"limitName":"weekly"}}');
+    };
+    const units = [1, 2, 3].map((repetition) => ({ scenario: scenario('m402-definition'), repetition }));
+    const queue = await runUnits(config, units, join(base, 'eval-hard-quota'), launch, { jobs: 1 });
+    expect(calls).toEqual(['definition-extraction']);
+    expect(queue.results).toHaveLength(1);
+    expect(queue.results[0]).toMatchObject({ status: 'invalid', retries: 0, invalid: { kind: 'quota', error: expect.stringContaining('硬额度耗尽') } });
+    expect(queue.held.map((unit) => unit.repetition)).toEqual([2, 3]);
   });
 
   it('429：该单元 invalid、不重试；队列中还没开始的单元不再发起，已在跑的跑完；同一个 --label 续跑时跳过已有有效结果的单元', async () => {

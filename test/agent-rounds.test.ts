@@ -16,6 +16,7 @@ import {
   openVersionedResourceStore, readReview, render, runAgentTask, type AgentRunOptions, type ReviewView, type VersionedResourceStore,
 } from '../src/index.js';
 import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { startMcp } from './support/mcp-client.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const KEY = `rw-test-key-${Math.random().toString(36).slice(2)}`;
@@ -140,6 +141,65 @@ const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 const sha256 = async (path: string) => createHash('sha256').update(await readFile(path)).digest('hex');
 const approveRevision = (dir: string) => decide(dir, [{ type: 'decide', item: 1, action: 'adopt' }, { type: 'confirmRest', confirmed: true }, { type: 'approve' }]);
 
+describe('受阻成果与中断草稿（票据 31）', () => {
+  it('交回检查与 MCP 都识别渲染能力阻塞；可看草稿，确认全部内容仍不能批准或应用；修正后重新评估', async () => {
+    const dir = await workspace(false);
+    const arabic = withChildren(WORDS, [{ ...WORDS.artboard.children[0], content: [{ text: 'سلام' }] }]);
+    const round = await designRound(dir, { 'outcome.json': DESIGN_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: arabic });
+    expect(round.outcome).toBeDefined();
+    expect(round.check).toMatchObject({ verdict: 'unqualified', assessment: { structure: 'valid', candidates: 'valid', content: 'needsReview',
+      render: { status: 'blocked', hasImage: true, capabilityBlocked: true, blocking: true } } });
+    expect(round.check.assessment.render.problems).toContainEqual(expect.objectContaining({ code: 'text.unshapedScript', level: 'severe' }));
+    const mcp = await startMcp(['--workspace', join(round.roundDir, 'snapshot'), '--resources', storeDir, '--root', join(round.roundDir, 'agent'),
+      '--outcome-context', join(round.roundDir, 'logs/outcome-context.json')]);
+    try {
+      expect((await mcp.callJson('check_outcome', {})).assessment).toEqual(round.check.assessment);
+      await writeFile(join(round.roundDir, 'agent', WORDS_FILE), JSON.stringify(WORDS));
+      expect(await mcp.callJson('check_outcome', {})).toMatchObject({ verdict: 'qualified', assessment: { render: { status: 'renderable', capabilityBlocked: false } } });
+    } finally { await mcp.close(); }
+    const view = await decide(round.roundDir, [{ type: 'decide', item: 1, action: 'adopt' }, { type: 'confirmRest', confirmed: true }]);
+    expect(view.preview?.image).toBeDefined();
+    expect(view.preview?.assessment).toMatchObject({ status: 'blocked', capabilityBlocked: true });
+    expect(view.canApprove).toBe(false);
+    expect((await changeReview(round.roundDir, { type: 'approve' })).problems.length).toBeGreaterThan(0);
+    expect((await applyAgentRound({ roundDir: round.roundDir, workspace: dir })).applied).toBeUndefined();
+    const next = await run({ 'outcome.json': { ...DESIGN_SUBMISSION, pending: [] }, [WORDS_FILE]: WORDS },
+      { from: round.roundDir, feedback: await file('feedback.md', '改成支持的文字以验证恢复路径。') });
+    expect(next.check.assessment.render.status).toBe('renderable');
+  });
+
+  it('没有成果时单独抢救候选与哈希，可预览但不允许审核操作；损坏候选仍留在原目录', async () => {
+    const dir = await workspace(false);
+    const round = await designRound(dir, { [BANNER_FILE]: BANNER, [WORDS_FILE]: WORDS, 'candidates/partial.json': '{' });
+    expect(existsSync(join(round.roundDir, 'outcome.json'))).toBe(false);
+    const draft = await json(join(round.roundDir, 'draft.json'));
+    expect(draft).toMatchObject({ format: 'renderweave-draft/1', source: 'hostRecovery', check: { assessment: { render: { status: 'renderable' } } } });
+    expect(draft.outcome.candidates).toHaveLength(2);
+    for (const candidate of draft.outcome.candidates) expect(candidate.sha256).toBe(await sha256(join(round.roundDir, candidate.path)));
+    const { view } = await readReview(round.roundDir);
+    expect(view).toMatchObject({ round: { source: 'hostRecovery' }, canApprove: false });
+    expect(view?.preview?.image).toBeDefined();
+    expect((await changeReview(round.roundDir, { type: 'confirmRest', confirmed: true })).problems[0]?.message).toContain('只能查看');
+    expect((await applyAgentRound({ roundDir: round.roundDir, workspace: dir })).applied).toBeUndefined();
+    await writeFile(join(round.roundDir, WORDS_FILE), JSON.stringify({ ...WORDS, name: '篡改' }));
+    expect((await readReview(round.roundDir)).problems[0]?.message).toContain('被改动');
+  });
+
+  it('审核后当前工作区数据引入能力阻塞时，overwrite 也不能应用', async () => {
+    const dir = await workspace(true);
+    const round = await revisionRound(dir);
+    await approveRevision(round.roundDir);
+    const dataFile = (await readdir(dir)).find((name) => name.startsWith('dataset'))!;
+    const dataset = await json(join(dir, dataFile));
+    dataset.data.message = 'سلام';
+    await writeFile(join(dir, dataFile), JSON.stringify(dataset));
+    const applied = await applyAgentRound({ roundDir: round.roundDir, workspace: dir, overwrite: true });
+    expect(applied.applied).toBeUndefined();
+    expect(applied.problems).toContainEqual(expect.objectContaining({ code: 'text.unshapedScript', level: 'severe' }));
+    expect(await json(join(dir, 'template-banner.json'))).toEqual(BANNER);
+  });
+});
+
 describe('带反馈的下一轮（M58）', () => {
   it('下一轮拿到素材、上一轮成果（含审核时的修改）与反馈；工作区重新取快照；轮次链可查', async () => {
     const dir = await workspace(false);
@@ -207,7 +267,7 @@ describe('带反馈的下一轮（M58）', () => {
     const agent = join(second.roundDir, 'agent');
     expect(await json(join(agent, BANNER_FILE))).toEqual(BANNER);
     expect(await json(join(agent, 'candidates/drafts/extra.json'))).toEqual({ note: '草稿' });
-    expect((await readdir(join(agent, 'previous'))).sort()).toEqual(['candidates', 'check.json']);
+    expect((await readdir(join(agent, 'previous'))).sort()).toEqual(['candidates', 'check.json', 'draft.json']);
     expect((await json(join(agent, 'previous/check.json'))).verdict).toBe('unqualified');
     expect((await json(join(agent, 'fake-run.json'))).prompt).toContain('上一轮的成果结构不合格');
   });
@@ -283,7 +343,7 @@ describe('模板辅助修改：发起与成果', () => {
       .replaceAll('{templates}', '问候横幅（candidates/template-banner.json）、横幅文字（candidates/template-banner-words.json）'));
     expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'] });
     expect(await json(join(round.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'template-revision', request: { template: '问候横幅' }, revision: { templates: ['问候横幅', '横幅文字'] },
+      task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] },
     });
     expect(await readFile(join(agent, 'docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
   });
@@ -401,7 +461,7 @@ describe('模板辅助修改：审核与应用', () => {
     expect(next.record.inputs.previous).toMatchObject({ round: 1, reviewStatus: 'approved', basisChanged: true });
     expect(await json(join(next.roundDir, 'agent', BANNER_FILE))).toEqual(PINK_BANNER);
     expect((await json(join(next.roundDir, 'agent/fake-run.json'))).prompt).toContain('上一轮的成果已经应用');
-    expect((await readReview(next.roundDir)).view === undefined).toBe(true);
+    expect((await readReview(next.roundDir)).view).toMatchObject({ round: { source: 'hostRecovery' }, canApprove: false });
   });
 
   it('修改要求只在第 1 轮核对元素路径：上一轮把元素改了名并应用后，下一轮照样沿用修改要求', async () => {
@@ -544,7 +604,7 @@ describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', 
     const extraction = await run(undefined, { task: 'dataset-extraction', workspace: dir, definition: '问候', request: greetingRequest });
     const greeting = { name: '问候', version: 1 };
     expect(extraction.record.inputs).toMatchObject({ definition: greeting, dataset: null, request: { template: '问候牌' } });
-    expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: greeting, request: { template: '问候牌' } });
+    expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: greeting, request: await json(join(extraction.roundDir, 'request.json')) });
     expect((await json(join(extraction.roundDir, 'agent/fake-run.json'))).prompt).toContain('按已发布的数据定义 问候 v1，');
 
     const request = await file('banner-request.json', BANNER_REQUEST);

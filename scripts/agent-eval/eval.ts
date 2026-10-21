@@ -272,15 +272,16 @@ async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOpti
   if ((await roundError(spec.out)) === null) return;
   for (let attempt = 0; ; attempt++) {
     await rm(spec.out, { recursive: true, force: true });
-    let error: string | null | undefined, thrown: unknown;
+    let failure: { kind: ErrorKind; error: string } | null | undefined, thrown: unknown;
     try {
       await launch(spec);
-      error = await roundError(spec.out);
+      failure = await roundError(spec.out);
     } catch (caught) {
       thrown = caught;
-      error = caught instanceof Error ? caught.message : String(caught);
+      const error = caught instanceof Error ? caught.message : String(caught);
+      failure = { kind: classifyError(error), error };
     }
-    const kind = error ? classifyError(error) : undefined;
+    const kind = failure?.kind, error = failure?.error;
     if (kind === 'transient' && attempt < RETRY_DELAYS_MS.length) {
       context.upstream.retries.push({ task: spec.task, error: error! });
       await writeUpstream(context.unit, context.upstream);
@@ -296,13 +297,15 @@ async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOpti
 
 /**
  * 一轮的上游错误：null 表示已有有效的轮次记录（成果合格，或没有错误，或是其他错误）；
- * undefined 表示没有轮次记录；否则是 run.error 的原文。成果合格时不看错误，模型已经交回了。
+ * undefined 表示没有轮次记录；否则给出类型与 run.error。硬额度先读结构化停止原因，旧记录才按文字分类。
  */
-async function roundError(dir: string): Promise<string | null | undefined> {
+async function roundError(dir: string): Promise<{ kind: ErrorKind; error: string } | null | undefined> {
   let record: RoundRecord;
   try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; } catch { return undefined; }
+  if (record.run.stopped?.reason === 'hardQuota') return { kind: 'quota', error: record.run.error ?? `硬额度耗尽（${record.run.stopped.limit}）` };
   const error = record.verdict === 'qualified' ? undefined : record.run.error;
-  return error !== undefined && classifyError(error) !== 'other' ? error : null;
+  const kind = error !== undefined ? classifyError(error) : 'other';
+  return error !== undefined && kind !== 'other' ? { kind, error } : null;
 }
 
 async function readUpstream(unit: string): Promise<UpstreamRecord> {

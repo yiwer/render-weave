@@ -21,6 +21,15 @@ await writeFile('fake-run.json', JSON.stringify({
   hasToken: Boolean(token), tokenSha256: token ? createHash('sha256').update(token).digest('hex') : null,
 }));
 if (preset !== 'none') await cp(preset, process.cwd(), { recursive: true });
+const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
+write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
+// 错误事件后仍尝试继续运行，用于验证宿主主动停止，而不是假执行器自行退出。
+if (existsSync('.runtime-error.json')) {
+  const event = JSON.parse(readFileSync('.runtime-error.json', 'utf8'));
+  write(event);
+  await new Promise((done) => setTimeout(done, event.waitMs ?? 20000));
+  await writeFile('continued-after-error', '运行时仍在继续');
+}
 
 const calls = preset !== 'none' && existsSync(join(preset, '.model-calls.json')) ? JSON.parse(readFileSync(join(preset, '.model-calls.json'), 'utf8')) : [];
 const results = [];
@@ -51,8 +60,6 @@ for (const call of calls) {
 }
 if (calls.length > 0) await writeFile('model-calls-result.json', JSON.stringify(results, null, 2));
 
-const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
-write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
 const apiError = preset !== 'none' && existsSync(join(preset, '.api-error')) ? readFileSync(join(preset, '.api-error'), 'utf8') : undefined;
 const maxTurns = preset !== 'none' && existsSync(join(preset, '.max-turns')) ? Number(readFileSync(join(preset, '.max-turns'), 'utf8')) : undefined;
 if (maxTurns !== undefined) write({ type: 'result', subtype: 'error_max_turns', is_error: true, num_turns: maxTurns, duration_ms: 900, usage: { input_tokens: 5, output_tokens: 50 } });

@@ -15,10 +15,10 @@
    - 先写主模板的骨架（画板与几大区块），用 check_templates 做静态检查，再用 render_draft 出草稿：request 用 request.json 的内容，templates 列出你写的全部模板文件；
    - 再一段一段加内容，内容多的区块拆成被调模板；每加一段就检查、出草稿；
    - 问题很多时，结果只列前面一部分，另有按问题代码的计数（problemsTruncated）：先按问题代码成批修改。
-4. 骨架与主要区块都没有严重问题时，就按 outcome.md 写 outcome.json 并用 check_outcome 核对；之后继续修改，每轮改完都更新它。
+4. 写出可读骨架后就按 outcome.md 保存 outcome.json，并用 check_outcome 核对；每轮改完都更新它。
 5. 对照示例图与问题清单修改：
    - 元素的位置、字号与压缩比用 inspect_layout 查；
    - 再按通用做法验证极端情况，可用内联数据集；
-   - 直到没有严重问题、版面与示例图基本一致。
+   - 以没有严重问题、版面与示例图基本一致为目标；遇到已知能力阻塞时按 outcome.md 交回草稿。
 6. outcome.json 列出全部模板文件、元素在图上的位置、待确认项与说明。与示例图仍有的差异写在说明里。
-7. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件，包括待确认项与图上位置中的元素路径是否还在模板里。结论是 unqualified 时按问题修改，再核对，直到 qualified。
+7. 交回前用 check_outcome 核对，按 outcome.md 中的评估分支决定修正或交回受阻草稿；在 notes 中如实列出仍未核实的内容与样式。

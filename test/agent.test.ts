@@ -77,6 +77,17 @@ async function filesUnder(dir: string): Promise<string[]> {
 }
 
 describe('发起一轮数据定义提取', () => {
+  it('直连运行时明确报告硬额度时主动停止；普通 rate_limit 事件仍可继续', async () => {
+    const error = { type: 'GoUsageLimitError', message: 'Go usage limit exceeded', metadata: { limitName: 'weekly' } };
+    const stopped = await run(await preset({ 'candidates/schema-session.json': SESSION,
+      '.runtime-error.json': { type: 'system', subtype: 'api_retry', error } }));
+    expect(stopped.record.run.stopped).toEqual({ reason: 'hardQuota', type: 'GoUsageLimitError', limit: 'weekly' });
+    expect(await readdir(join(stopped.roundDir, 'agent'))).not.toContain('continued-after-error');
+    const continued = await run(await preset({ ...QUALIFIED, '.runtime-error.json': { type: 'system', subtype: 'api_retry', error: 'rate_limit', error_status: 429, waitMs: 1 } }));
+    expect(continued.record.run.stopped).toBeUndefined();
+    expect(await readdir(join(continued.roundDir, 'agent'))).toContain('continued-after-error');
+    expect(continued.check.verdict).toBe('qualified');
+  });
   it('轮次目录组装三层资料、DSL 参考、示例图与工作区快照；提示词不含具体业务', async () => {
     const result = await run(await qualified(), { domain: 'route-sign', workspace: singleTextDir });
     const agent = join(result.roundDir, 'agent');
@@ -197,7 +208,7 @@ describe('发起一轮数据定义提取', () => {
     const record = JSON.parse(await readFile(join(result.roundDir, 'check.json'), 'utf8'));
     expect(record.verdict).toBe('unqualified');
     expect(record.problems[0].message).toContain('没有字段 rank');
-    expect(checked).toEqual({ verdict: record.verdict, problems: record.problems,
+    expect(checked).toEqual({ verdict: record.verdict, assessment: record.assessment, problems: record.problems,
       candidates: record.candidates.map(({ sha256: _sha256, ...candidate }: Record<string, unknown>) => candidate) });
   });
 });
@@ -248,6 +259,34 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
   afterAll(() => close());
 
   const proxyLog = async (roundDir: string) => (await readFile(join(roundDir, 'logs/model-proxy.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+
+  it.each(['status', 'stream'])('明确每周硬额度（%s）首次响应即停止，上游只收到一次调用并保留草稿', async (phase) => {
+    requests.length = 0; replies.length = 0;
+    const error = { type: 'error', error: { type: 'GoUsageLimitError', code: 429, message: 'Go usage limit exceeded' }, metadata: { limitName: 'weekly' } };
+    replies.push(phase === 'status' ? { status: 429, body: error } : { sse: sse([error]) });
+    const call = { body: { model: 'gemini-test', max_tokens: 30, stream: true, messages: [{ role: 'user', content: 'test' }] } };
+    const result = await run(await preset({ 'candidates/schema-session.json': SESSION, '.model-calls.json': Array.from({ length: 8 }, () => call) }), { model: 'gemini-test', endpoint: upstream });
+    expect(requests).toHaveLength(1);
+    expect(result.record).toMatchObject({ verdict: 'unqualified', run: { stopped: { reason: 'hardQuota', type: 'GoUsageLimitError', limit: 'weekly' } } });
+    expect(result.record.run.error).toContain('--from');
+    expect(result.outcome).toBeUndefined();
+    expect(JSON.parse(await readFile(join(result.roundDir, 'draft.json'), 'utf8'))).toMatchObject({ source: 'hostRecovery' });
+    expect((await proxyLog(result.roundDir))[0]).toMatchObject({ stopped: { limit: 'weekly' } });
+    for (const path of await filesUnder(result.roundDir)) expect((await readFile(path)).includes(KEY)).toBe(false);
+  });
+
+  it('普通 429 与 5xx 不误判硬额度，后续请求可以恢复', async () => {
+    requests.length = 0; replies.length = 0;
+    replies.push({ status: 429, body: { error: { type: 'rate_limit_error', message: 'temporarily busy' } } },
+      { status: 503, body: { error: 'busy' } }, { sse: sse([{ candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }] }]) });
+    const call = { body: { model: 'gemini-test', max_tokens: 30, messages: [{ role: 'user', content: 'test' }] } };
+    const result = await run(await preset({ ...QUALIFIED, '.model-calls.json': [call, call, call] }), { model: 'gemini-test', endpoint: upstream });
+    expect(requests).toHaveLength(3);
+    expect(result.record.run.stopped).toBeUndefined();
+    expect(result.check.verdict).toBe('qualified');
+    const responses = JSON.parse(await readFile(join(result.roundDir, 'agent/model-calls-result.json'), 'utf8'));
+    expect(responses.map((response: { status: number }) => response.status)).toEqual([429, 503, 200]);
+  });
 
   it('Claude Code 只拿到本轮令牌；请求转成 Google 格式带上游 key 以流式转发，各分块合并后转回 Anthropic 格式；别的来源被拒绝；产物中没有 key', async () => {
     replies.length = 0;

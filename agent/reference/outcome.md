@@ -1,6 +1,14 @@
 # 成果的交回格式
 
-任务结束前，在工作目录根上写 `outcome.json`。RenderWeave 先校验它的结构，再用引擎校验其中列出的候选文件；不合格的成果交给人决定是否重做。交回前用 `check_outcome` 按同一套规则核对，结论为 `qualified` 再结束。
+第一次写出可读候选后，就在工作目录根上写 `outcome.json`，之后每次修改都同步更新。交回前用 `check_outcome` 核对结构、候选与实际渲染；`qualified` 表示这些技术检查通过，内容与样式仍需审核。
+
+按 `assessment` 决定下一步：
+- `structure` 或 `candidates` 为 `invalid`：按问题修正文件或引用后重新核对。
+- `render.status` 为 `notChecked`：本轮缺少完整出图请求，说明未验证的范围。
+- `render.capabilityBlocked` 为 `true`（例如 `text.unshapedScript`）：保留原文与候选，在 notes 中记录阻塞、已完成部分和剩余差异，交回受阻草稿并结束本轮。能力边界仍是严重问题，正式出图与审核通过继续受阻。
+- 其他渲染严重问题：修正本轮可修的问题；重复同一修复没有进展时，记录尝试与剩余问题，交回草稿由人决定下一步。
+
+轮数或额度将尽时，优先更新成果清单、待确认项与 notes。中断后宿主可能抢救 `draft.json`，但其完成度未知，只能查看，不能批准或应用。
 
 ```json
 {
