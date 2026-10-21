@@ -28,6 +28,27 @@
       "pass": { "stress": 10, "layoutChecks": 2 }
     },
     {
+      "id": "m402-revision",
+      "name": "M402 模板辅助修改",
+      "kind": "revision",
+      "sample": "docs/examples/materials/m402-route-sign.jpg",
+      "brief": "scripts/agent-eval/scenarios/m402/brief-template.md",
+      "domain": "route-sign",
+      "workspace": {
+        "from": "docs/examples/m402-dsl",
+        "files": ["schema-route-sign-v1.json", "schema-stop-v1.json", "compiled-route-sign-v1.schema.json", "compiled-stop-v1.schema.json", "dataset-m402.json"]
+      },
+      "savedTemplates": {
+        "from": "fixtures/agent-eval/templates/first-test",
+        "files": ["template-badge-icon.json", "template-road-segment.json", "template-route-sign-main.json", "template-stop-cell.json", "template-time-item.json"]
+      },
+      "dataset": "ds-m402-wanguocheng",
+      "request": "scripts/agent-eval/scenarios/m402/request-template.json",
+      "requirement": "scripts/agent-eval/scenarios/m402/requirement-m215.md",
+      "allowedTemplates": ["站点格", "道路段"],
+      "pass": { "stress": 6, "layoutChecks": 2, "scopeViolations": 0 }
+    },
+    {
       "id": "366-transcription",
       "name": "366 数据定义与转录",
       "kind": "transcription",

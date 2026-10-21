@@ -12,12 +12,12 @@ import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { AGENT_TASKS, applyAgentRound, changeReview, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
+import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
 import {
-  CONVENTIONS, scoreDefinitions, scoreTemplates, scoreTranscription, stopsOf,
-  type ConventionId, type DefinitionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
+  CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
+  type ConventionId, type DefinitionScore, type RevisionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
 } from './score.js';
 
 export interface RoundSpec {
@@ -32,6 +32,7 @@ export interface RoundSpec {
   readonly definition?: string;
   readonly dataset?: string;
   readonly request?: string;
+  readonly requirement?: string;
 }
 
 /** 发起一轮：结束后轮次目录里有 round.json，结构合格时另有 outcome.json。用法错误时抛出。 */
@@ -54,7 +55,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
     const args = [
       join(REPO, 'dist/bin.js'), 'agent', 'run', '--task', spec.task, '--sample', spec.sample, '--brief', spec.brief,
       '--resources', spec.resources, '--out', spec.out, ...flag('domain', spec.domain), ...flag('workspace', spec.workspace),
-      ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request),
+      ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('effort', runtime.effort),
     ];
@@ -148,6 +149,7 @@ export interface ScenarioResult {
   readonly checks: {
     readonly definition?: DefinitionScore;
     readonly template?: TemplateScore;
+    readonly revision?: RevisionScore;
     readonly transcription?: TranscriptionScore;
   };
 }
@@ -175,11 +177,17 @@ export async function runScenario(config: EvalConfig, scenario: Scenario, repeti
   try {
     if (scenario.kind === 'definition') {
       await round({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
-    } else if (scenario.kind === 'template') {
+    } else if (scenario.kind === 'template' || scenario.kind === 'revision') {
       const workspace = join(unit, 'workspace');
       await mkdir(workspace, { recursive: true });
       for (const file of scenario.workspace.files) await copyFile(join(repoPath(scenario.workspace.from), file), join(workspace, file));
-      await round({ ...base, task: 'template-design', out: join(unit, 'template'), workspace, dataset: scenario.dataset, request: repoPath(scenario.request) });
+      if (scenario.kind === 'revision') {
+        for (const file of scenario.savedTemplates.files) await copyFile(join(repoPath(scenario.savedTemplates.from), file), join(workspace, file));
+        await round({ ...base, task: 'template-revision', out: join(unit, 'revision'), workspace, dataset: scenario.dataset,
+          request: repoPath(scenario.request), requirement: repoPath(scenario.requirement) });
+      } else {
+        await round({ ...base, task: 'template-design', out: join(unit, 'template'), workspace, dataset: scenario.dataset, request: repoPath(scenario.request) });
+      }
     } else {
       await round({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
       const definition = await approveDefinitions(join(unit, 'definition'), join(unit, 'workspace'));
@@ -329,7 +337,7 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
   }
   const upstream = await readUpstream(unit);
   const failures = [...launched];
-  const names = scenario.kind === 'definition' ? ['definition'] : scenario.kind === 'template' ? ['template'] : ['definition', 'dataset'];
+  const names = scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
   const rounds: RoundSummary[] = [];
   for (const name of names) {
     const summary = await summarize(join(unit, name), outDir);
@@ -338,19 +346,26 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
   for (const round of rounds) {
     if (round.verdict !== 'qualified') failures.push(`${AGENT_TASKS[round.task].name}一轮的成果不合格${round.error ? `（${round.error}）` : ''}${await severeReasons(join(outDir, round.dir))}`);
   }
+  if (scenario.kind === 'revision' && rounds.length === 0) failures.push('缺少模板辅助修改的轮次记录');
   const checks: ScenarioResult['checks'] = {};
   const definitionRound = join(unit, 'definition');
-  if (scenario.kind !== 'template') {
+  if (scenario.kind === 'definition' || scenario.kind === 'transcription') {
     // 结构不合格时没有轮次成果：仍按 Agent 交回的原样文件评分，只作诊断，结论照样不合格。
     const documents = await exists(join(definitionRound, 'outcome.json'))
       ? (await candidates(definitionRound)).filter((entry) => entry.kind === 'definition').map((entry) => entry.document)
       : await submittedDefinitions(join(definitionRound, 'agent/candidates'));
     if (documents.length > 0) Object.assign(checks, { definition: scoreDefinitions(documents) });
   }
-  if (scenario.kind === 'template' && await exists(join(unit, 'template', 'outcome.json'))) {
-    const request = JSON.parse(await readFile(join(unit, 'template', 'request.json'), 'utf8')) as { template: string };
-    const templates = (await candidates(join(unit, 'template'))).filter((entry) => entry.kind === 'template')
+  if ((scenario.kind === 'template' || scenario.kind === 'revision') && await exists(join(unit, scenario.kind, 'outcome.json'))) {
+    const request = JSON.parse(await readFile(join(unit, scenario.kind, 'request.json'), 'utf8')) as { template: string };
+    let templates = (await candidates(join(unit, scenario.kind))).filter((entry) => entry.kind === 'template')
       .map((entry) => ({ name: String((entry.document as { name: unknown }).name), document: entry.document }));
+    if (scenario.kind === 'revision') {
+      const saved = (await loadWorkspace({ dir: join(unit, 'workspace'), resourcesDir: repoPath(config.resources) })).templates;
+      Object.assign(checks, { revision: scoreRevision(saved, templates, scenario.allowedTemplates) });
+      const names = new Set(templates.map((entry) => entry.name));
+      templates = [...saved.filter((entry) => !names.has(entry.name)), ...templates];
+    }
     Object.assign(checks, { template: await scoreTemplates({
       workspaceDir: join(unit, 'workspace'), resourcesDir: repoPath(config.resources), templates, mainTemplate: request.template,
       datasetId: scenario.dataset, sample: await readFile(repoPath(scenario.sample)),
@@ -385,9 +400,16 @@ export function judge(scenario: Scenario, checks: ScenarioResult['checks']): str
     if (score.expertFields.matched < scenario.pass.expertFields) {
       failures.push(`专家字段 ${score.expertFields.matched}/${score.expertFields.of}，要求至少 ${scenario.pass.expertFields}（缺：${score.expertFields.missing.join('、')}）`);
     }
-  } else if (scenario.kind === 'template') {
+  } else if (scenario.kind === 'template' || scenario.kind === 'revision') {
+    if (scenario.kind === 'revision') {
+      const scope = checks.revision;
+      if (!scope) failures.push('没有可评分的模板修改范围');
+      else if (scope.violations.length > scenario.pass.scopeViolations) {
+        failures.push(`修改范围违例 ${scope.violations.length}，最多 ${scenario.pass.scopeViolations}（${scope.violations.join('、')}）`);
+      }
+    }
     const score = checks.template;
-    if (!score) return ['没有可评分的模板'];
+    if (!score) return [...failures, '没有可评分的模板'];
     if (score.stressPassed < scenario.pass.stress) {
       failures.push(`压测 ${score.stressPassed}/${score.stress.length}，要求至少 ${scenario.pass.stress}（有严重问题：${score.stress.filter((row) => row.severe > 0).map((row) => row.label).join('、')}）`);
     }
@@ -556,6 +578,10 @@ export function formatReport(report: EvalReport): string {
     const usage = result.rounds.map((round) => `${AGENT_TASKS[round.task].name} ${((round.wallMs ?? 0) / 60000).toFixed(1)} 分钟 / ${round.turns ?? '?'} 轮 / 输出 ${round.outputTokens ?? '?'}` +
       `${round.firstCheckProblems !== undefined ? ` / 首次模板检查 ${round.firstCheckProblems} 个问题` : ''}${round.persistedResults ? ` / 转存 ${round.persistedResults} 次` : ''}`).join('；');
     lines.push(`- ${result.name} 第 ${result.repetition} 次：${OUTCOME_TEXT[result.status]}${result.retries > 0 ? `（重试 ${result.retries} 次）` : ''}。${usage}`);
+    if (result.checks.revision && result.checks.template) {
+      const { revision, template } = result.checks;
+      lines.push(`  - 压测 ${template.stressPassed}/${template.stress.length}；版面 ${template.layoutPassed}/2；修改范围违例 ${revision.violations.length}；改动元素 ${revision.changedElements}`);
+    }
     if (result.invalid) lines.push(`  - ${invalidText(result.invalid)}`);
     for (const failure of result.failures) lines.push(`  - ${failure}`);
   }

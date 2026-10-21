@@ -30,6 +30,15 @@ export interface TemplateScenario extends ScenarioBase {
   readonly pass: { readonly stress: number; readonly layoutChecks: number };
 }
 
+/** 模板辅助修改一轮：从固定的已保存模板出发，只允许修改要求点名的模板。 */
+export interface RevisionScenario extends Omit<TemplateScenario, 'kind' | 'pass'> {
+  readonly kind: 'revision';
+  readonly savedTemplates: { readonly from: string; readonly files: readonly string[] };
+  readonly requirement: string;
+  readonly allowedTemplates: readonly string[];
+  readonly pass: { readonly stress: number; readonly layoutChecks: number; readonly scopeViolations: number };
+}
+
 /** 数据定义提取、模拟审核（全部采纳）并应用，再做数据集提取；按人工转录评分。 */
 export interface TranscriptionScenario extends ScenarioBase {
   readonly kind: 'transcription';
@@ -38,7 +47,7 @@ export interface TranscriptionScenario extends ScenarioBase {
   readonly pass: { readonly names: number; readonly landmarks: number; readonly facilities: number };
 }
 
-export type Scenario = DefinitionScenario | TemplateScenario | TranscriptionScenario;
+export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario;
 
 export interface EvalConfig {
   readonly format: 'renderweave-agent-eval-config/1';

@@ -76,6 +76,6 @@ export {
   type CompiledSummary, type WorkspaceDrift, type NewerDefinition, type AppliedRecord,
   type AgentApplyOptions, type AgentApplyResult, type RoundLink, type RevisionView, type TemplateConflict, type PreviousRound,
 } from './agent/review.js';
-export { diffTemplate, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
+export { diffTemplate, revisionDiff, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';

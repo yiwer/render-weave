@@ -1,6 +1,6 @@
 /**
  * Agent 评估（第三阶段票据 08、验收 A10）：评分函数用存档的历史成果离线校准，与当年的记录对照；
- * 编排用假执行器走完三种场景（数据定义、模板、366 的两轮），断言评分、判定、门槛、报告与重新评分。
+ * 编排用假执行器走完四种场景（数据定义、模板、模板辅助修改、366 的两轮），断言评分、判定、门槛、报告与重新评分。
  * 上游错误（票据 21）用假执行器模拟模型服务报错与发起失败：分类、按轮次重试、额度熔断与续跑、invalid 的门槛语义。不调用模型。
  */
 import { spawn } from 'node:child_process';
@@ -136,6 +136,7 @@ describe('判定与门槛', () => {
     expect(Object.fromEntries(config.scenarios.map((item) => [item.id, item.pass]))).toEqual({
       'm402-definition': { conventions: 6, expertFields: 14 },
       'm402-template': { stress: 10, layoutChecks: 2 },
+      'm402-revision': { stress: 6, layoutChecks: 2, scopeViolations: 0 },
       '366-transcription': { names: 57, landmarks: 14, facilities: 17 },
     });
     expect(judge(scenario('m402-definition'), {})).toEqual(['没有可评分的数据定义']);
@@ -189,13 +190,71 @@ describe('判定与门槛', () => {
 });
 
 describe('编排：经产品路径发起轮次（假执行器）', () => {
-  const templateFiles = async (set: string) => {
-    const files = await readdir(join(FIXTURES, 'templates', set));
+  const templateFiles = async (set: string, selected?: readonly string[]) => {
+    const files = (await readdir(join(FIXTURES, 'templates', set))).filter((file) => selected === undefined || selected.includes(file));
     return {
       ...Object.fromEntries(await Promise.all(files.map(async (file) => [`candidates/${file}`, await read(join(FIXTURES, 'templates', set, file))] as const))),
       'outcome.json': { candidates: files.map((file) => `candidates/${file}`), pending: [], notes: '评估夹具。' },
     };
   };
+
+  it('模板辅助修改：只交回站点格与道路段，叠加首测已保存模板，一轮合格且版面达线，可重新评分', async () => {
+    const outDir = join(base, 'eval-revision');
+    const files = await templateFiles('t07-round2', ['template-stop-cell.json', 'template-road-segment.json']);
+    const result = await runScenario(config, scenario('m402-revision'), 1, outDir, launcher({ 'template-revision': files }));
+    expect(result).toMatchObject({ status: 'pass', failures: [],
+      rounds: [{ task: 'template-revision', verdict: 'qualified', dir: 'run-1/m402-revision/revision' }],
+      checks: { template: { stressPassed: 7, layoutPassed: 2, landmarkBaseline: { deltaMm: 0 }, roadAlign: { aligns: ['spaceEvenly'] } },
+        revision: { violations: [], changedElements: 11, templates: [
+          { name: '站点标识', status: 'unchanged' }, { name: '道路段', status: 'modified' }, { name: '线路牌主模板', status: 'unchanged' },
+          { name: '站点格', status: 'modified' }, { name: '时刻项', status: 'unchanged' },
+        ] } },
+    });
+    expect(result.rounds).toHaveLength(1);
+    expect(await scoreScenario(config, scenario('m402-revision'), 1, outDir)).toEqual(result);
+    const second = await runScenario(config, scenario('m402-revision'), 2, outDir, launcher({ 'template-revision': files }));
+    const report = await buildReport({ config, label: 'revision', startedAt: '2026-10-20T00:00:00.000Z', outDir, results: [result, second] });
+    expect(report.gate).toMatchObject({ status: 'pass', scenarios: [{ id: 'm402-revision', outcomes: ['pass', 'pass'] }] });
+    expect(report.totals).toMatchObject({ inputTokens: 22, outputTokens: 444 });
+    expect(formatReport(report)).toContain('压测 7/10；版面 2/2；修改范围违例 0；改动元素 11');
+    await rm(join(unitDir(outDir, scenario('m402-revision'), 1), 'revision/round.json'));
+    const missingRound = await scoreScenario(config, scenario('m402-revision'), 1, outDir);
+    expect(missingRound).toMatchObject({ status: 'fail', failures: ['缺少模板辅助修改的轮次记录'] });
+  });
+
+  it('模板辅助修改：完整第二轮成果虽版面与压测全过，但改动主模板超出要求，不能达线', async () => {
+    const outDir = join(base, 'eval-revision-scope');
+    const result = await runScenario(config, scenario('m402-revision'), 1, outDir, launcher({ 'template-revision': await templateFiles('t07-round2') }));
+    expect(result).toMatchObject({ status: 'fail', failures: ['修改范围违例 1，最多 0（线路牌主模板）'],
+      checks: { template: { stressPassed: 10, layoutPassed: 2 }, revision: { violations: ['线路牌主模板'], changedElements: 14 } },
+    });
+    expect(await scoreScenario(config, scenario('m402-revision'), 1, outDir)).toEqual(result);
+  });
+
+  it('模板辅助修改：原样交回首测模板时轮次合格、范围未越界，但两项版面都不过', async () => {
+    const result = await runScenario(config, scenario('m402-revision'), 1, join(base, 'eval-revision-unchanged'),
+      launcher({ 'template-revision': await templateFiles('first-test') }));
+    expect(result).toMatchObject({ status: 'fail', rounds: [{ verdict: 'qualified' }],
+      checks: { template: { stressPassed: 6, layoutPassed: 0 }, revision: { violations: [], changedElements: 0 } },
+    });
+    expect(result.failures).toEqual([expect.stringContaining('版面检查 0/2，要求至少 2')]);
+  });
+
+  it('模板辅助修改：只改时刻项，范围违例与版面未达线分别报告；缺少评分也不能达线', async () => {
+    const document = await read(join(FIXTURES, 'templates/first-test/template-time-item.json')) as { artboard: { children: { color: string }[] } };
+    document.artboard.children[0]!.color = '#1B1B1B';
+    const result = await runScenario(config, scenario('m402-revision'), 1, join(base, 'eval-revision-time'), launcher({
+      'template-revision': { 'candidates/time.json': document, 'outcome.json': { candidates: ['candidates/time.json'], pending: [], notes: '只改时刻项文字颜色。' } },
+    }));
+    expect(result).toMatchObject({ status: 'fail', rounds: [{ verdict: 'qualified' }],
+      checks: { template: { stressPassed: 6, layoutPassed: 0, roadAlign: { aligns: ['distribute'] } }, revision: { violations: ['时刻项'], changedElements: 1 } },
+    });
+    expect(result.failures).toEqual(['修改范围违例 1，最多 0（时刻项）', expect.stringContaining('版面检查 0/2')]);
+    expect(judge(scenario('m402-revision'), { template: result.checks.template })).toContain('没有可评分的模板修改范围');
+    expect(judge(scenario('m402-revision'), { revision: result.checks.revision })).toContain('没有可评分的模板');
+    expect(judge(scenario('m402-revision'), { ...result.checks, template: { ...result.checks.template!, stressPassed: 5 } }))
+      .toEqual(expect.arrayContaining([expect.stringContaining('压测 5/10，要求至少 6')]));
+  });
 
   it('三种场景各跑一次：数据定义按专家字段判为未达线；模板与 366（两轮）达线；报告只存摘要，可重新评分', async () => {
     const outDir = join(base, 'eval-1');

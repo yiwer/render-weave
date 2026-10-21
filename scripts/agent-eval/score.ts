@@ -6,7 +6,7 @@
  * - 模板（M402）：10 个压测场景（M213）与 M215 的两项版面检查；另记示例请求的问题数与相似度，只作参考。
  */
 import { loadCanvasKit } from '../../src/canvaskit.js';
-import { loadWorkspace, render, type Workspace } from '../../src/index.js';
+import { loadWorkspace, render, revisionDiff, type RevisionDiff, type Workspace } from '../../src/index.js';
 
 /** 站名旁的 ①②③④ 是地标图片（M77），转录时常被并进站名；比对时去掉。 */
 const CIRCLED = /[①②③④⑤⑥⑦⑧⑨]$/u;
@@ -169,6 +169,25 @@ export interface TemplateScore {
   /** M215 约定二：绑定 road 的文字为同间隔分布。 */
   readonly roadAlign: { readonly aligns: readonly string[]; readonly pass: boolean };
   readonly layoutPassed: number;
+}
+
+export interface RevisionScore {
+  readonly templates: readonly { readonly name: string; readonly status: RevisionDiff['status'] }[];
+  /** 修改要求没有点名、却被改动的已保存模板。 */
+  readonly violations: readonly string[];
+  /** 已保存模板中发生增删改的元素路径数（含画板，不含模板层参数等），只作参考。 */
+  readonly changedElements: number;
+}
+
+/** 按模板名比较工作副本；没交回的模板保留已保存内容。新增模板不属于本场景的已保存模板范围检查。 */
+export function scoreRevision(saved: Workspace['templates'], candidates: Workspace['templates'], allowed: readonly string[]): RevisionScore {
+  const byName = new Map(candidates.map((entry) => [entry.name, entry.document]));
+  const diffs = saved.map((entry) => ({ name: entry.name, ...revisionDiff(entry.document, byName.get(entry.name) ?? entry.document) }));
+  return {
+    templates: diffs.map(({ name, status }) => ({ name, status })),
+    violations: diffs.filter((entry) => entry.status !== 'unchanged' && !allowed.includes(entry.name)).map((entry) => entry.name),
+    changedElements: diffs.reduce((total, entry) => total + entry.changes.filter((change) => change.target === 'element').length, 0),
+  };
 }
 
 /**
