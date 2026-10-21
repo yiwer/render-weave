@@ -47,7 +47,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--requirement` | 模板辅助修改的修改要求（Markdown），见[模板辅助修改](#模板辅助修改) |
 | `--from`、`--feedback` | 带反馈发起下一轮，见[下一轮](#下一轮) |
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
-| `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232） |
+| `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M270） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
 
@@ -127,7 +127,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `agent/scratch/` | Agent 的自查草稿，不是成果 |
 | `agent/outcome.json` | Agent 交回的成果 |
 | `snapshot/` | 工作区快照，MCP 服务启动时读入 |
-| `logs/` | `mcp.json`、`outcome-context.json`（交回前核对用的本轮任务与已知输入，见[校验](#校验)）、`stream.jsonl`（Claude Code 流式输出）、`stderr.txt`、`tools.jsonl`（工具调用日志）、`claude-config/` |
+| `logs/` | `mcp.json`、`outcome-context.json`（交回前核对用的本轮任务与已知输入，见[校验](#校验)）、`stream.jsonl`（Claude Code 流式输出）、`stderr.txt`、`tools.jsonl`（工具调用日志）、`claude-config/`；选 Gemini 时还有 `model-proxy.jsonl`（每次模型调用的用时、状态、token 与内容块类型，失败时的阶段 `phase`、底层原因 `cause` 与失败前没有数据的时长 `idleMs`，不记内容） |
 | `request.json` | 规范化后的出图请求，审核时按它重新渲染预览；Agent 改不到 |
 | `requirement.md`、`feedback.md` | 修改要求与反馈的副本，审核页显示；下一轮沿用修改要求 |
 | `round.json` | 轮次记录：输入（含所基于的数据定义、数据集、出图请求、资源仓库、模板辅助修改的基准与修改要求、上一轮与反馈）、运行参数、用量与结论，无论成果是否合格都写出 |

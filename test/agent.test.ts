@@ -206,9 +206,12 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
   const IMAGE = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } };
   const TOOL = { name: 'view_image', description: '看图', input_schema: { type: 'object', properties: { path: { type: 'string' } } } };
   const HELLO = { model: 'gemini-test', max_tokens: 10, messages: [{ role: 'user', content: '你好' }] };
-  // 假的 Google 上游：记录收到的请求，按顺序回放预置的响应。
+  // 假的 Google 上游：记录收到的请求，按顺序回放预置的响应。sse 按 piece 字节一段段写出（会截断在行中间与多字节字符中间），
+  // cut 时写完不发结束块就断开连接。
+  interface Reply { status?: number; body?: unknown; sse?: string; piece?: number; cut?: boolean }
   const requests: { path: string; headers: Record<string, unknown>; body: any }[] = [];
-  const replies: { status?: number; body: unknown }[] = [];
+  const replies: Reply[] = [];
+  const sse = (chunks: unknown[], newline = '\r\n') => chunks.map((chunk) => `data: ${JSON.stringify(chunk)}${newline}${newline}`).join('');
   let upstream: string;
   let close: () => Promise<void>;
 
@@ -217,11 +220,24 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
       let text = '';
       request.setEncoding('utf8');
       request.on('data', (chunk: string) => { text += chunk; });
-      request.on('end', () => {
+      request.on('end', async () => {
         requests.push({ path: request.url ?? '', headers: request.headers, body: JSON.parse(text) });
         const reply = replies.shift() ?? { status: 500, body: { error: '没有预置响应' } };
-        response.writeHead(reply.status ?? 200, { 'content-type': 'application/json' });
-        response.end(JSON.stringify(reply.body));
+        if (reply.sse === undefined) {
+          response.writeHead(reply.status ?? 200, { 'content-type': 'application/json' });
+          response.end(JSON.stringify(reply.body));
+          return;
+        }
+        response.writeHead(200, { 'content-type': 'text/event-stream' });
+        const bytes = Buffer.from(reply.sse);
+        const piece = reply.piece ?? bytes.length;
+        for (let at = 0; at < bytes.length; at += piece) {
+          response.write(bytes.subarray(at, at + piece));
+          await new Promise((done) => setTimeout(done, 1));
+        }
+        // 不写结束块就关掉连接，客户端看到的是响应没收完。
+        if (reply.cut) response.socket?.end();
+        else response.end();
       });
     });
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
@@ -231,13 +247,21 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
 
   afterAll(() => close());
 
-  it('Claude Code 只拿到本轮令牌；请求转成 Google 格式带上游 key 转发，结果转回 Anthropic 格式；别的来源被拒绝；产物中没有 key', async () => {
+  const proxyLog = async (roundDir: string) => (await readFile(join(roundDir, 'logs/model-proxy.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+
+  it('Claude Code 只拿到本轮令牌；请求转成 Google 格式带上游 key 以流式转发，各分块合并后转回 Anthropic 格式；别的来源被拒绝；产物中没有 key', async () => {
+    replies.length = 0;
+    requests.length = 0;
     replies.push(
-      { body: { candidates: [{ finishReason: 'STOP', content: { parts: [
-        { text: '想一想', thought: true }, { text: '我来看图。' },
-        { functionCall: { name: 'view_image', args: { path: 'sample.png' } }, thoughtSignature: 'sig-123' }] } }],
-        usageMetadata: { promptTokenCount: 3000, cachedContentTokenCount: 2000, candidatesTokenCount: 60, thoughtsTokenCount: 40 } } },
-      { body: { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '是四色方块。' }] } }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 3 } } },
+      // 文字与工具调用分在几个分块里；用量先给一个中间值，以最后一块为准。
+      { piece: 17, sse: sse([
+        { candidates: [{ content: { role: 'model', parts: [{ text: '想一想', thought: true }] } }] },
+        { candidates: [{ content: { role: 'model', parts: [{ text: '我来' }] } }], usageMetadata: { promptTokenCount: 3000 } },
+        { candidates: [{ content: { role: 'model', parts: [{ text: '看图。' }] } }] },
+        { candidates: [{ finishReason: 'STOP', content: { role: 'model', parts: [{ functionCall: { name: 'view_image', args: { path: 'sample.png' } }, thoughtSignature: 'sig-123' }] } }],
+          usageMetadata: { promptTokenCount: 3000, cachedContentTokenCount: 2000, candidatesTokenCount: 60, thoughtsTokenCount: 40 } },
+      ]) },
+      { sse: sse([{ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '是四色方块。' }] } }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 3 } }], '\n') },
       { status: 429, body: { error: { message: 'Go usage limit exceeded' } } },
     );
     const calls = [
@@ -261,7 +285,7 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
     const responses = JSON.parse(await readFile(join(result.roundDir, 'agent/model-calls-result.json'), 'utf8'));
     expect(responses.map((response: { status: number }) => response.status)).toEqual([200, 200, 429, 401, 403, 403, 415]);
     const events = responses[0].events;
-    // 思考部分不转给 Claude Code；缓存命中与思考 token 按 Anthropic 的口径换算。
+    // 思考部分不转给 Claude Code；分在几块里的文字合成一段；缓存命中与思考 token 按 Anthropic 的口径换算。
     expect(events.filter((event: any) => event.type === 'content_block_delta' && event.delta.type === 'text_delta').map((event: any) => event.delta.text)).toEqual(['我来看图。']);
     expect(events[0].message.usage).toMatchObject({ input_tokens: 1000, cache_read_input_tokens: 2000 });
     expect(events.find((event: any) => event.type === 'message_delta')).toMatchObject({ delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 100 } });
@@ -270,15 +294,15 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
 
     expect(requests).toHaveLength(3);
     for (const request of requests) {
-      expect(request.path).toBe('/google/v1beta/models/gemini-test:generateContent');
-      expect(request.headers).toMatchObject({ 'x-goog-api-key': KEY, 'x-opencode-session': 'fake-session' });
+      expect(request.path).toBe('/google/v1beta/models/gemini-test:streamGenerateContent?alt=sse');
+      expect(request.headers).toMatchObject({ 'x-goog-api-key': KEY, 'x-opencode-session': 'fake-session', accept: 'text/event-stream' });
       expect(request.headers['authorization']).toBeUndefined();
     }
     expect(requests[0]!.body).toEqual({
       contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } }, { text: '看图' }] }],
       systemInstruction: { parts: [{ text: '你是助手。' }] },
       tools: [{ functionDeclarations: [{ name: 'view_image', description: '看图', parametersJsonSchema: TOOL.input_schema }] }],
-      generationConfig: { maxOutputTokens: 64000 },
+      generationConfig: { maxOutputTokens: 64000, thinkingConfig: { includeThoughts: true } },
     });
     // 工具调用的 thoughtSignature 在下一次请求中补回。
     expect(requests[1]!.body.contents).toEqual([
@@ -292,14 +316,69 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
     expect(fake.tokenSha256).not.toBe(createHash('sha256').update(KEY).digest('hex'));
     await expect(fetch(`${fake.baseUrl}/v1/models`)).rejects.toThrow();
     expect(result.record.runtime).toMatchObject({ model: 'gemini-test', smallModel: 'gemini-test', protocol: 'google', endpoint: upstream, keyEnv: 'RW_TEST_KEY' });
-    const log = (await readFile(join(result.roundDir, 'logs/model-proxy.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+    const log = await proxyLog(result.roundDir);
     expect(log.map((entry) => entry.status)).toEqual([200, 200, 429]);
-    expect(log[0]).toMatchObject({ model: 'gemini-test', blocks: ['text', 'tool_use'], stop: 'tool_use' });
+    expect(log[0]).toMatchObject({ model: 'gemini-test', blocks: ['text', 'tool_use'], stop: 'tool_use', events: 4 });
+    expect(log[0].maxGapMs).toBeGreaterThanOrEqual(0);
+    expect(log[2]).toMatchObject({ phase: 'status', error: expect.stringContaining('上游 429'), events: 0 });
 
     const leaks = [];
     for (const file of await filesUnder(result.roundDir)) if ((await readFile(file)).includes(KEY)) leaks.push(file);
     expect(leaks).toEqual([]);
   });
+
+  it('输出到上限记 max_tokens；上游回 200 之后流中断、没给结束原因或在流里报错，用 SSE error 事件交回；之前出错照上游状态码交回；日志分清阶段与原因', async () => {
+    replies.length = 0;
+    requests.length = 0;
+    const STREAM = { ...HELLO, stream: true };
+    const text = (value: string) => ({ candidates: [{ content: { role: 'model', parts: [{ text: value }] } }] });
+    replies.push(
+      // 32k 输出全耗在思考上。
+      { sse: sse([{ candidates: [{ content: { parts: [{ text: '想了很久', thought: true }] } }] },
+        { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [] } }], usageMetadata: { promptTokenCount: 50, thoughtsTokenCount: 32000 } }]) },
+      // 两块之后在第三块中间断开。
+      { piece: 9, cut: true, sse: `${sse([text('第一段'), text('第二段')])}data: {"candidates":[{"content":` },
+      { sse: sse([text('没有结束原因')]) },
+      { sse: sse([text('开头'), { error: { code: 503, message: 'The model is overloaded.', status: 'UNAVAILABLE' } }]) },
+      { status: 429, body: { error: { code: 429, message: 'Go usage limit exceeded' } } },
+      { cut: true, sse: sse([text('非流式')]) },
+    );
+    const calls = [{ body: STREAM }, { body: STREAM }, { body: STREAM }, { body: STREAM }, { body: STREAM }, { body: HELLO }];
+    const result = await run(await preset({ ...QUALIFIED, '.model-calls.json': calls }), { model: 'gemini-test', endpoint: upstream });
+    const responses = JSON.parse(await readFile(join(result.roundDir, 'agent/model-calls-result.json'), 'utf8'));
+    expect(responses.map((response: { status: number }) => response.status)).toEqual([200, 200, 200, 200, 429, 502]);
+    expect(responses[0].events.find((event: any) => event.type === 'message_delta')).toMatchObject({ delta: { stop_reason: 'max_tokens' }, usage: { output_tokens: 32000 } });
+    expect(responses[0].events.filter((event: any) => event.type === 'content_block_start').map((event: any) => event.content_block)).toEqual([{ type: 'text', text: '' }]);
+    const streamError = (index: number) => responses[index].events.map((event: any) => event.type === 'error' ? event.error : event.type);
+    expect(streamError(1)).toEqual([{ type: 'api_error', message: '上游的流中途断开' }]);
+    expect(streamError(2)).toEqual([{ type: 'api_error', message: '上游的流在给出结束原因之前结束' }]);
+    expect(streamError(3)).toEqual([{ type: 'api_error', message: '上游在流中报错：The model is overloaded.' }]);
+    expect(responses[4].json).toMatchObject({ type: 'error', error: { type: 'rate_limit_error', message: expect.stringContaining('上游 429') } });
+    expect(responses[5].json).toEqual({ type: 'error', error: { type: 'api_error', message: '上游的流中途断开' } });
+
+    const log = await proxyLog(result.roundDir);
+    expect(log.map(({ status, phase, events }) => ({ status, phase, events }))).toEqual([
+      { status: 200, phase: undefined, events: 2 },
+      { status: 502, phase: 'stream', events: 2 },
+      { status: 502, phase: 'stream', events: 1 },
+      { status: 503, phase: 'stream', events: 1 },
+      { status: 429, phase: 'status', events: 0 },
+      { status: 502, phase: 'stream', events: 1 },
+    ]);
+    expect(log[0]).toMatchObject({ stop: 'max_tokens', output_tokens: 32000, blocks: ['text'] });
+    expect(log[1].cause).toMatchObject({ code: 'ECONNRESET' });
+    for (const entry of log.slice(1)) expect(entry.idleMs).toBeGreaterThanOrEqual(0);
+
+    // 连不上上游：连接阶段，带底层错误码。
+    const closed = createServer();
+    await new Promise<void>((done) => closed.listen(0, '127.0.0.1', done));
+    const port = (closed.address() as AddressInfo).port;
+    await new Promise((done) => closed.close(done));
+    const refused = await run(await preset({ ...QUALIFIED, '.model-calls.json': [{ body: STREAM }] }), { model: 'gemini-test', endpoint: `http://127.0.0.1:${port}/google/v1beta` });
+    const [refusedResponse] = JSON.parse(await readFile(join(refused.roundDir, 'agent/model-calls-result.json'), 'utf8'));
+    expect(refusedResponse).toEqual({ status: 502, json: { type: 'error', error: { type: 'api_error', message: '没有收到上游的响应' } } });
+    expect(await proxyLog(refused.roundDir)).toEqual([expect.objectContaining({ status: 502, phase: 'connect', cause: expect.objectContaining({ code: 'ECONNREFUSED' }), events: 0 })]);
+  }, 30_000);
 
   it('端点缺省为 OpenCode Go 的 Google 接口；模型与轻量任务模型不同为 Gemini 时报用法错误', async () => {
     const result = await run(await qualified(), { model: 'gemini-test' });

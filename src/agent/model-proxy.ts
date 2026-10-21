@@ -1,19 +1,21 @@
 /**
- * 模型协议转换（M232）：Claude Code 只会发 Anthropic Messages 请求，Gemini 只提供 Google generateContent 接口。
+ * 模型协议转换（M232）：Claude Code 只会发 Anthropic Messages 请求，Gemini 只提供 Google 的 generateContent 一类接口。
  * 发起 Gemini 的轮次时，agent run 在本进程里起这个转换代理，Claude Code 连它，它再连上游。
  *
  * - 只绑定 127.0.0.1，端口由系统分配，随本轮结束关闭。只接受带本轮令牌的请求：Claude Code 拿到的是令牌，
  *   上游 key 只在本进程内存里。Host 必须是本机地址加本端口（防 DNS 重绑定），拒绝带 Origin 的网页请求与非 JSON 请求。
- * - 上游一次性返回完整结果，代理再拼成 Anthropic 的流式事件；等待期间每 15 秒发一次 ping。
+ * - 上游走流式 streamGenerateContent（M270）：代理收齐各分块、合并成完整结果，再拼成 Anthropic 的流式事件；等待期间每 15 秒发一次 ping。
+ *   上游失败按阶段（连接、状态码、流中）记日志并带底层原因；上游回 200 之前出错按上游状态码交回，之后在流里发 error 事件。
  * - 工具结果中的图片放在同一轮的 inlineData 里。
  * - Gemini 的 thoughtSignature 按工具调用 id 记在本代理里，下一次请求时补回对应的 functionCall（多轮工具调用必需）。
- * - 带稳定的 x-opencode-session（取 Claude Code 的会话头）。日志只记用时、状态、token 与内容块类型，不记内容。
+ * - 带稳定的 x-opencode-session（取 Claude Code 的会话头）。日志只记用时、状态、token、内容块类型与失败的阶段和原因，不记内容。
  *
  * 它与审核页一样是命令行附带的本机服务：只用 node:http，不是阶段 4 的 HTTP 服务外壳。
  */
 import { randomBytes } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { Agent as HttpAgent, createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
+import { Agent as HttpsAgent, request as httpsRequest } from 'node:https';
 
 type Json = Record<string, unknown>;
 type Block = Json & { type: string };
@@ -29,6 +31,10 @@ interface AnthropicRequest {
   stream?: boolean;
   metadata?: { user_id?: string };
 }
+/** 上游失败的阶段：连接（含等响应头）、状态码、流中。 */
+type Phase = 'connect' | 'status' | 'stream';
+/** 一次上游调用的进度，供日志区分失败阶段与流中的停顿。 */
+interface Trace { phase: Phase; events: number; lastDataAt: number; maxGapMs: number }
 interface Translated {
   content: ({ type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: unknown })[];
   stopReason: 'end_turn' | 'tool_use' | 'max_tokens';
@@ -36,10 +42,10 @@ interface Translated {
 }
 
 export interface ModelProxyOptions {
-  /** 上游的 Google API 基址，如 https://opencode.ai/inference/go/google/v1beta；请求发到 <基址>/models/<模型>:generateContent。 */
+  /** 上游的 Google API 基址，如 https://opencode.ai/inference/go/google/v1beta；请求发到 <基址>/models/<模型>:streamGenerateContent?alt=sse。 */
   readonly upstream: string;
   readonly key: string;
-  /** 调用日志（JSON Lines），只记用时、状态、token 与内容块类型。 */
+  /** 调用日志（JSON Lines），只记用时、状态、token、内容块类型与失败的阶段和原因，不记内容。 */
   readonly log?: string;
 }
 
@@ -53,7 +59,7 @@ export interface ModelProxy {
 
 const USER_AGENT = 'renderweave-model-proxy/1';
 const MAX_BODY_BYTES = 64 * 1024 * 1024;
-const UPSTREAM_TIMEOUT_MS = 600_000;
+const UPSTREAM_IDLE_MS = 600_000;
 
 /** 只提供 Google 接口、要经转换代理连接的模型。 */
 export function isGoogleModel(model: string): boolean {
@@ -66,6 +72,9 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
   const signatures = new Map<string, string>();
   let counter = 0;
   let port = 0;
+  // 上游连接由本代理自己的连接池持有，随本轮关闭。
+  const https = new URL(options.upstream).protocol === 'https:';
+  const agent = https ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
 
   const server = createServer((request, response) => { void handle(request, response); });
 
@@ -90,15 +99,22 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
 
     const session = String(request.headers['x-claude-code-session-id'] ?? body.metadata?.user_id ?? 'renderweave');
     const started = Date.now();
-    let heartbeat: NodeJS.Timeout | undefined;
-    if (body.stream) {
+    const trace: Trace = { phase: 'connect', events: 0, lastDataAt: started, maxGapMs: 0 };
+    // 流式请求的响应头等上游回了 200 才发，最迟到第一次 ping（15 秒）。在此之前出错（连不上、上游非 200），按上游的状态码交回，
+    // Claude Code 照 HTTP 状态退避重试、仍走流式；之后出错（流中断）只能发 SSE error 事件，Claude Code 随即改发非流式请求重试（票据 25 实测）。
+    let opened = false;
+    const open = () => {
+      if (opened) return;
+      opened = true;
       response.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
-      heartbeat = setInterval(() => sse(response, 'ping', { type: 'ping' }), 15_000);
-    }
+    };
+    const heartbeat = body.stream ? setInterval(() => { open(); sse(response, 'ping', { type: 'ping' }); }, 15_000) : undefined;
     try {
-      const result = await callUpstream(body, session);
-      await log({ model: body.model, ms: Date.now() - started, status: 200, ...result.usage, stop: result.stopReason, blocks: result.content.map((block) => block.type) });
+      const result = await callUpstream(body, session, trace, () => { if (body.stream) open(); });
+      await log({ model: body.model, ms: Date.now() - started, status: 200, events: trace.events, maxGapMs: trace.maxGapMs,
+        ...result.usage, stop: result.stopReason, blocks: result.content.map((block) => block.type) });
       if (body.stream) {
+        open();
         streamMessage(response, body.model, result);
         response.end();
       } else {
@@ -106,29 +122,92 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
           stop_reason: result.stopReason, stop_sequence: null, usage: result.usage });
       }
     } catch (failure) {
-      const status = failure instanceof UpstreamError ? failure.status : 502;
+      const upstream = failure instanceof UpstreamError ? failure : undefined;
+      const status = upstream?.status ?? 502;
       const kind = status === 429 ? 'rate_limit_error' : status === 400 ? 'invalid_request_error' : status === 401 || status === 403 ? 'authentication_error' : 'api_error';
       const message = failure instanceof Error ? failure.message : String(failure);
-      await log({ model: body.model, ms: Date.now() - started, status, error: message.slice(0, 300) });
-      if (body.stream) {
+      const cause = upstream ? upstream.reason : causeOf(failure);
+      // 日志分清失败在哪个阶段、底层原因，以及失败前多久没收到上游的数据。
+      await log({ model: body.model, ms: Date.now() - started, status, phase: upstream?.phase ?? trace.phase, error: message.slice(0, 300),
+        ...(cause ? { cause } : {}), events: trace.events, idleMs: Date.now() - trace.lastDataAt });
+      if (opened) {
         sse(response, 'error', error(kind, message));
         response.end();
       } else json(response, status, error(kind, message));
     } finally {
-      if (heartbeat) clearInterval(heartbeat);
+      clearInterval(heartbeat);
     }
   }
 
-  async function callUpstream(body: AnthropicRequest, session: string): Promise<Translated> {
-    const response = await fetch(`${options.upstream.replace(/\/+$/, '')}/models/${body.model}:generateContent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'user-agent': USER_AGENT, 'x-opencode-session': session, 'x-goog-api-key': options.key },
-      body: JSON.stringify(toGoogle(body)),
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  /**
+   * 上游走流式（票据 25，M270）：streamGenerateContent?alt=sse，按顺序收集各分块的 parts，用量与结束原因取最后出现的值，
+   * 合并后交给 fromGoogle。用 node:http(s) 而不是全局 fetch：fetch 的响应头与响应体各有固定的 300 秒超时，改不了。
+   */
+  async function callUpstream(body: AnthropicRequest, session: string, trace: Trace, streaming: () => void): Promise<Translated> {
+    const url = new URL(`${options.upstream.replace(/\/+$/, '')}/models/${body.model}:streamGenerateContent?alt=sse`);
+    const payload = Buffer.from(JSON.stringify(toGoogle(body)));
+    const send = https ? httpsRequest : httpRequest;
+    const request = send(url, { method: 'POST', agent, headers: {
+      'content-type': 'application/json', 'content-length': payload.length, accept: 'text/event-stream', 'accept-encoding': 'identity',
+      'user-agent': USER_AGENT, 'x-opencode-session': session, 'x-goog-api-key': options.key,
+    } });
+    // 套接字上 UPSTREAM_IDLE_MS 没有任何数据就放弃：连接、等响应头与流中的停顿都算。
+    let idle = false;
+    request.setTimeout(UPSTREAM_IDLE_MS, () => { idle = true; request.destroy(); });
+    const failed = (cause: unknown) => idle
+      ? new UpstreamError(502, trace.phase, `上游 ${UPSTREAM_IDLE_MS / 1000} 秒没有数据`, { code: 'IDLE_TIMEOUT', message: `${UPSTREAM_IDLE_MS} ms` })
+      : new UpstreamError(502, trace.phase, trace.phase === 'stream' ? '上游的流中途断开' : '没有收到上游的响应', causeOf(cause));
+    const response = await new Promise<IncomingMessage>((done, fail) => {
+      request.once('response', done);
+      // 收到响应之后的套接字错误由读响应体的一侧报出，这里只吞掉，避免没有监听者的 error 事件。
+      request.on('error', (cause) => fail(failed(cause)));
+      request.end(payload);
     });
-    const text = await response.text();
-    if (!response.ok) throw new UpstreamError(response.status, `上游 ${response.status}：${text.slice(0, 500)}`);
-    return fromGoogle(JSON.parse(text) as Json);
+    trace.lastDataAt = Date.now();
+    if (response.statusCode !== 200) {
+      trace.phase = 'status';
+      const status = response.statusCode ?? 502;
+      let text = '';
+      try {
+        text = await readText(response, 4096);
+      } catch { /* 状态码已经够用，读不完正文不影响 */ }
+      throw new UpstreamError(status, 'status', `上游 ${status}：${text.slice(0, 500)}`);
+    }
+    trace.phase = 'stream';
+    streaming();
+    const merged: { parts: Json[]; finishReason?: string; usage?: Json } = { parts: [] };
+    const take = (data: string) => {
+      let chunk: Json;
+      try {
+        chunk = JSON.parse(data) as Json;
+      } catch {
+        throw new UpstreamError(502, 'stream', `上游的流里有不完整的分块（${data.length} 字符）`);
+      }
+      const upstreamError = chunk['error'] as Json | undefined;
+      if (upstreamError) {
+        const code = Number(upstreamError['code']);
+        throw new UpstreamError(code >= 400 && code < 600 ? code : 502, 'stream', `上游在流中报错：${String(upstreamError['message'] ?? JSON.stringify(upstreamError)).slice(0, 500)}`);
+      }
+      trace.events++;
+      const candidate = (chunk['candidates'] as Json[] | undefined)?.[0];
+      merged.parts.push(...((((candidate?.['content'] ?? {}) as Json)['parts'] as Json[] | undefined) ?? []));
+      if (typeof candidate?.['finishReason'] === 'string') merged.finishReason = candidate['finishReason'];
+      // 提示词被拦下时没有候选，也不会再有结束原因。
+      else if (typeof (chunk['promptFeedback'] as Json | undefined)?.['blockReason'] === 'string') merged.finishReason ??= 'OTHER';
+      if (chunk['usageMetadata']) merged.usage = chunk['usageMetadata'] as Json;
+    };
+    try {
+      await readSse(response, take, () => {
+        const now = Date.now();
+        trace.maxGapMs = Math.max(trace.maxGapMs, now - trace.lastDataAt);
+        trace.lastDataAt = now;
+      });
+    } catch (cause) {
+      throw cause instanceof UpstreamError ? cause : failed(cause);
+    }
+    if (idle) throw failed(undefined);
+    if (merged.finishReason === undefined) throw new UpstreamError(502, 'stream', '上游的流在给出结束原因之前结束');
+    return fromGoogle({ candidates: [{ content: { parts: merged.parts }, finishReason: merged.finishReason }], usageMetadata: merged.usage ?? {} });
   }
 
   function toGoogle(body: AnthropicRequest): Json {
@@ -171,6 +250,8 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
         ? { mode: 'ANY', ...(choice.type === 'tool' ? { allowedFunctionNames: [choice.name] } : {}) } : { mode: choice.type === 'none' ? 'NONE' : 'AUTO' } } } : {}),
       generationConfig: {
         maxOutputTokens: body.max_tokens ?? 8192,
+        // 思考摘要随流送达，上游链路在长思考时也有数据；fromGoogle 照旧丢掉思考部分（票据 25）。
+        thinkingConfig: { includeThoughts: true },
         ...(body.temperature !== undefined ? { temperature: body.temperature } : {}),
         ...(body.stop_sequences?.length ? { stopSequences: body.stop_sequences } : {}),
       },
@@ -245,12 +326,56 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
     close: () => new Promise<void>((done) => {
       server.close(() => done());
       server.closeAllConnections();
+      agent.destroy();
     }),
   };
 }
 
 class UpstreamError extends Error {
-  constructor(readonly status: number, message: string) { super(message); }
+  constructor(readonly status: number, readonly phase: Phase, message: string, readonly reason?: { code?: string; message: string }) { super(message); }
+}
+
+/** 底层原因：node:http 的错误自带 code（ECONNRESET、ENOTFOUND、证书错误等）；包了一层的取 cause。 */
+function causeOf(failure: unknown): { code?: string; message: string } {
+  const inner = failure instanceof Error && failure.cause instanceof Error ? failure.cause : failure;
+  if (!(inner instanceof Error)) return { message: String(inner) };
+  const code = (inner as NodeJS.ErrnoException).code;
+  return { ...(code ? { code } : {}), message: inner.message.slice(0, 200) };
+}
+
+/** 读 SSE：网络分块可能截断在行中间；data 行按事件合并（空行结束一个事件），其他字段与注释行忽略。 */
+async function readSse(response: IncomingMessage, onEvent: (data: string) => void, onData: () => void): Promise<void> {
+  response.setEncoding('utf8');
+  let buffer = '';
+  let data: string[] = [];
+  const line = (text: string) => {
+    if (text === '') {
+      if (data.length > 0) onEvent(data.join('\n'));
+      data = [];
+    } else if (text.startsWith('data:')) data.push(text.slice(text.startsWith('data: ') ? 6 : 5));
+  };
+  for await (const chunk of response) {
+    onData();
+    buffer += chunk as string;
+    for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
+      line(buffer.slice(0, end).replace(/\r$/, ''));
+      buffer = buffer.slice(end + 1);
+    }
+  }
+  // 最后一个事件后面没有空行时也交出去；不完整的 JSON 由调用方按流中断处理。
+  line(buffer.replace(/\r$/, ''));
+  line('');
+}
+
+async function readText(response: IncomingMessage, limit: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of response) {
+    chunks.push(chunk as Buffer);
+    size += (chunk as Buffer).length;
+    if (size >= limit) break;
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 function systemText(system: AnthropicRequest['system']): string {
