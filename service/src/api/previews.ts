@@ -29,6 +29,16 @@ export interface ServiceLimits {
   readonly previewPerMinute: number;
   /** 接口进程等 worker 渲染完的时间；过了答 503，还在排队的撤回。 */
   readonly previewWaitMs: number;
+  /** Excel 导入（票据 13，M286）：上传的 .xlsx 的字节数。 */
+  readonly maxWorkbookBytes: number;
+  /** 解压后用到的 XML 部件的总字节数，按 zip 里登记的大小在解开之前累计。读的时候整份在内存里（字符串约是字节数的两倍），所以比文件上限宽得有限。 */
+  readonly maxWorkbookUnzippedBytes: number;
+  /** 全部工作表的非空单元格数。 */
+  readonly maxWorkbookCells: number;
+  /** 主表的数据行数，与一批最多的项数相同。 */
+  readonly maxImportRows: number;
+  /** 各行引用展开的行数合计（几行共用一个关联值时重复计）：1,000 行各 50 个站点。 */
+  readonly maxImportReferenceRows: number;
 }
 
 export const DEFAULT_LIMITS: ServiceLimits = {
@@ -40,6 +50,11 @@ export const DEFAULT_LIMITS: ServiceLimits = {
   maxLoopItems: 2_000,
   previewPerMinute: 60,
   previewWaitMs: 60_000,
+  maxWorkbookBytes: 5 * 1024 * 1024,
+  maxWorkbookUnzippedBytes: 32 * 1024 * 1024,
+  maxWorkbookCells: 500_000,
+  maxImportRows: 1_000,
+  maxImportReferenceRows: 50_000,
 };
 
 /** 预览的回答：引擎的结果，图片以 base64 放进 JSON。 */

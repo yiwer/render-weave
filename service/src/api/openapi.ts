@@ -56,6 +56,8 @@ export const PROBLEM_STATUS: Readonly<Record<ServiceProblemCode, readonly number
   [ServiceProblemCodes.quotaExceeded]: [429],
   [ServiceProblemCodes.webhookUrlNotAllowed]: [400],
   [ServiceProblemCodes.webhookLimitReached]: [409],
+  [ServiceProblemCodes.importWorkbookUnreadable]: [400],
+  [ServiceProblemCodes.limitWorkbookTooLarge]: [413],
   [ServiceProblemCodes.internalError]: [500],
 };
 
@@ -198,6 +200,35 @@ const SCHEMAS: Record<string, unknown> = {
 
   // 数据集与资源
   DatasetDocument: dslSchema('dataset.schema.json'),
+  StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str() },
+    ['name', 'version', 'displayName']),
+  StaticSchema: object({
+    name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str(),
+    definition: freeform('静态数据定义的原文（DSL 1.0，schemas/data-definition.schema.json）'),
+    compiled: freeform('编译产物：JSON Schema 2020-12，title 是显示名称，x-renderweave-type 标明日期、时刻、时间与图片，数据定义引用已内联（ADR-0006）'),
+  }, ['name', 'version', 'displayName', 'definition', 'compiled']),
+  WorkbookCell: object({ sheet: str('工作表'), row: int('行号（Excel 里看到的，从 1 起）', 1), column: str('列号，如 C；整行的问题没有'), header: str('这一列的表头') },
+    ['sheet', 'row'], { description: '工作簿里的位置' }),
+  ImportProblem: object({
+    level: { type: 'string', enum: ['severe', 'hint'], description: '严重（severe）或提示（hint）' },
+    code: { type: 'string', description: '引擎的问题码（与保存数据集时相同），或导入的问题码（import.*，见 docs/api.md）' },
+    location: PROBLEM_LOCATION,
+    message: str('中文说明'),
+    cell: ref('WorkbookCell'),
+  }, ['level', 'code', 'location', 'message'], { description: '导入的问题：格式与问题清单相同，另带它在工作簿里的位置' }),
+  ExcelImportRow: object({
+    row: int('主表的行号', 1), itemId: str('渲染项 ID：渲染项 ID 列的值，没有时是"第 N 行"'),
+    status: { type: 'string', enum: ['accepted', 'rejected'], description: '没有严重问题的行进批量请求（accepted），有的不进（rejected）' },
+    dataset: { ...ref('DatasetDocument'), description: '这一行读出的数据集；身份部分的 origin 写明工作表与行号' },
+    problems: array(ref('ImportProblem'), '这一行的问题：与保存数据集时相同的检查，加上导入的问题'),
+  }),
+  ExcelImport: object({
+    template: str('模板名称'), staticSchema: { ...staticSchemaRef, description: '模板所用的数据定义，各行按它读取与校验' }, sheet: str('主表：一行一个渲染项'),
+    summary: object({ rows: int('数据行'), accepted: int('能提交的行'), rejected: int('有严重问题、不进批次的行') }),
+    rows: array(ref('ExcelImportRow')),
+    problems: array(ref('ImportProblem'), '整份的问题：不认识的列、没人引用的行、没有数据行等'),
+    batch: { ...ref('BatchRequest'), description: '只含能提交的行的批量请求，数据集内联；确认后原样提交到 POST /v1/batches。没有能提交的行或整份有严重问题时没有' },
+  }, ['template', 'staticSchema', 'sheet', 'summary', 'rows', 'problems']),
   DatasetEntry: object({ id: str('数据集 ID'), name: str(), staticSchema: { ...staticSchemaRef, description: '所选的静态数据定义' }, sha256, byteLength: int('字节数') },
     ['id', 'sha256', 'byteLength']),
   DatasetSaved: object({ dataset: ref('DatasetEntry'), problems: { ...ref('ProblemList'), description: '保存时的提示' } }),
@@ -351,6 +382,16 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/batches/:batchId': { tag: '批量交付', summary: '批次的进度与逐项结果', replies: [ok(ref('Batch'))] },
   'POST /v1/batches/:batchId/cancel': { tag: '批量交付', summary: '取消：排队的项标为未执行，正在渲染的一项被结束', replies: [ok(ref('Batch'))] },
 
+  'GET /v1/static-schemas': { tag: '数据集', summary: '本租户的静态数据定义：名称、版本与显示名称', replies: [ok(list('staticSchemas', 'StaticSchemaSummary'))] },
+  'GET /v1/static-schemas/:name/versions/:version': { tag: '数据集', summary: '一个静态数据定义的原文与编译产物；按编译产物生成数据集表单',
+    replies: [ok(ref('StaticSchema'))] },
+  'GET /v1/static-schemas/:name/versions/:version/workbook': { tag: '数据集', summary: 'Excel 导入的空白表：按数据定义生成表头，引用与引用列表各一张表',
+    replies: [{ status: 200, description: '空白的 .xlsx', binary: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] }] },
+  'POST /v1/excel-imports': { tag: '批量交付', summary: 'Excel 导入预览：逐行的数据集与问题，以及只含能提交的行的批量请求；不保存任何东西', errors: [413],
+    description: '一行一个渲染项，列对应顶层字段（显示名称或字段名称），简单类型的列表用顿号、逗号、分号或换行分开写在一格，'
+      + '引用与引用列表另起一张以字段显示名称命名的工作表，用关联值对应主表的行。文件、解压后的大小、单元格数、主表行数与引用展开的行数超出上限整份拒绝（413 limit.workbookTooLarge），'
+      + '读不了的文件答 400 import.workbookUnreadable。出图参数与对外参数不合规时列在整份的 problems 里，回答没有 batch。确认后把回答里的 batch 提交到 POST /v1/batches。',
+    replies: [ok(ref('ExcelImport'))] },
   'GET /v1/datasets': { tag: '数据集', summary: '本租户的数据集', replies: [ok(list('datasets', 'DatasetEntry'))] },
   'POST /v1/datasets': { tag: '数据集', summary: '新建数据集：按原始字节保存，按所选静态数据定义校验', body: 'datasetDocument', errors: [409, 413, 415],
     replies: [created(ref('DatasetSaved'))] },

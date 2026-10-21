@@ -18,9 +18,15 @@ RUN cd service && npm ci
 COPY service/tsconfig.json service/tsconfig.build.json service/
 COPY service/src service/src
 RUN cd service && ../node_modules/.bin/tsc -p tsconfig.build.json
+# 出图控制台（票据 12）：React 加 Vite 的单页应用，构建到 service/dist/console，由接口进程在 /console/ 下提供。
+COPY service/console service/console
+RUN cd service && ../node_modules/.bin/tsc --noEmit -p console && node_modules/.bin/vite build console
 
 # Docker 后端测试：引擎源码、共用的存储合同用例与测试夹具；字体由准备脚本下载并核对哈希。
+# 控制台的浏览器测试用 Alpine 的 Chromium，由 playwright-core 驱动（票据 12）。
 FROM service AS test
+RUN apk add --no-cache chromium
+ENV RW_CHROMIUM=/usr/bin/chromium
 COPY scripts/fetch-fonts.mjs scripts/fonts.json scripts/
 COPY fixtures fixtures
 RUN node scripts/fetch-fonts.mjs

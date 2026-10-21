@@ -12,16 +12,20 @@ import { can, type Access } from './permissions.js';
 import { ApiError, fail, problem, ServiceProblemCodes, validationProblems } from './problems.js';
 import { registerAuthoringRoutes } from './authoring.js';
 import { registerBatchRoutes } from './batches.js';
+import { registerConsoleRoutes } from './console.js';
 import { registerDatasetRoutes } from './datasets.js';
+import { registerExcelImportRoutes } from './excel-imports.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
 import { registerRecordRoutes } from './records.js';
 import { registerResourceRoutes } from './resources.js';
 import { registerRoutes } from './routes.js';
+import { registerStaticSchemaRoutes } from './static-schemas.js';
 import { registerUsageRoutes } from './usage.js';
 import { registerWebhookRoutes } from './webhooks.js';
 
 declare module 'fastify' {
-  interface FastifyContextConfig { access?: Access }
+  /** openapi: false 的路由不属于开放 API（出图控制台的静态文件），不进路由表与描述。 */
+  interface FastifyContextConfig { access?: Access; openapi?: false }
   interface FastifyRequest { identity: Identity | null }
 }
 
@@ -38,6 +42,8 @@ export interface ApiOptions {
   readonly secretKey: Uint8Array;
   /** webhook 允许 http 与内网、回环地址：只用于本机开发与测试（RW_WEBHOOK_ALLOW_PRIVATE）。 */
   readonly allowPrivateWebhooks?: boolean;
+  /** 构建好的出图控制台所在目录，在 /console/ 下作为静态文件提供（票据 12）；不给或没构建时那些路径答 404。 */
+  readonly consoleDir?: string;
 }
 
 export interface ApiContext {
@@ -49,7 +55,7 @@ export interface ApiContext {
   readonly allowPrivateWebhooks: boolean;
 }
 
-/** 已注册的路由、访问要求与请求的 JSON Schema：生成 OpenAPI 描述，也供跨租户端点清单的测试核对。 */
+/** 开放 API 已注册的路由、访问要求与请求的 JSON Schema：生成 OpenAPI 描述，也供跨租户端点清单的测试核对。控制台的静态文件不在其中。 */
 export interface RouteEntry { readonly method: string; readonly url: string; readonly access: Access; readonly schema?: { readonly body?: unknown; readonly querystring?: unknown } }
 
 export function createApi(options: ApiOptions): FastifyInstance & { routeTable: RouteEntry[] } {
@@ -74,6 +80,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
     done(null, value);
   });
   app.addHook('onRoute', (route) => {
+    if (route.config?.openapi === false) return;
     const schema = route.schema ? { ...(route.schema.body ? { body: route.schema.body } : {}), ...(route.schema.querystring ? { querystring: route.schema.querystring } : {}) } : undefined;
     for (const method of [route.method].flat()) if (method !== 'HEAD') routeTable.push({ method, url: route.url, access: route.config?.access ?? 'public', ...(schema ? { schema } : {}) });
   });
@@ -120,9 +127,12 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerRecordRoutes(app, context);
   registerUsageRoutes(app, context);
   registerWebhookRoutes(app, context);
+  registerStaticSchemaRoutes(app, context);
+  registerExcelImportRoutes(app, context);
   // 机器可读的 API 描述（票据 11）：按已注册的路由生成，第一次请求时生成一次。
   let openapi: Record<string, unknown> | undefined;
   app.get('/v1/openapi.json', { config: { access: 'public' } }, async () => (openapi ??= buildOpenApi(routeTable)));
+  registerConsoleRoutes(app, options.consoleDir);
   return Object.assign(app, { routeTable });
 }
 

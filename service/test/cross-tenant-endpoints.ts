@@ -13,6 +13,8 @@ export interface TenantObjects {
   readonly memberId: string;
   readonly apiKeyId: string;
   readonly templateName: string;
+  /** 静态数据定义的名称（版本 1）。 */
+  readonly staticSchemaName: string;
   readonly batchId: string;
   readonly datasetId: string;
   readonly resourceId: string;
@@ -60,6 +62,15 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/batches/:batchId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/batches/${a.batchId}` }) },
   { route: 'POST /v1/batches/:batchId/cancel', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/batches/${a.batchId}/cancel` }) },
   // 数据集与资源（票据 10）：租户由身份决定；数据集 ID 与资源 ID 在路径里，别的租户的与不存在的同样答 404。
+  // 静态数据定义（票据 12）：只读；别的租户的与不存在的同样答 404。
+  { route: 'GET /v1/static-schemas', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/static-schemas' }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version', addressesObject: true,
+    request: (a) => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent(a.staticSchemaName)}/versions/1` }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version/workbook', addressesObject: true,
+    request: (a) => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent(a.staticSchemaName)}/versions/1/workbook` }) },
+  // Excel 导入（票据 13）：租户由身份决定，模板名写在请求体里；另一租户没有这个模板，答问题清单。
+  { route: 'POST /v1/excel-imports', addressesObject: false,
+    request: (a) => ({ method: 'POST', url: '/v1/excel-imports', body: { template: a.templateName, workbook: 'UEsDBA==', output: { width: 160, height: 40, dpi: 120, format: 'png' } } }) },
   { route: 'GET /v1/datasets', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/datasets' }) },
   { route: 'POST /v1/datasets', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/datasets', body: dataset(a.datasetId) }) },
   { route: 'POST /v1/dataset-checks', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/dataset-checks', body: dataset(a.datasetId) }) },

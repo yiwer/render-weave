@@ -1,0 +1,25 @@
+{
+  "dataset": {
+    "id": "badge-zhang",
+    "name": "张三的胸牌",
+    "staticSchema": { "name": "胸牌", "version": 1 },
+    "origin": { "kind": "manual", "note": "出图控制台的样例数据集" }
+  },
+  "data": {
+    "fullName": "张三",
+    "organization": "示例科技有限公司",
+    "role": "讲者",
+    "badgeNo": "SP0001",
+    "photo": "res:photo-sample",
+    "seat": 12,
+    "eventDate": "2026-11-20",
+    "issuedAt": "2026-11-01 09:30:00",
+    "vip": false,
+    "mainSession": { "title": "主旨演讲", "startsAt": "09:30", "room": "一号厅" },
+    "sessions": [
+      { "title": "主旨演讲", "startsAt": "09:30", "room": "一号厅" },
+      { "title": "分论坛：出图自动化", "startsAt": "14:00" }
+    ],
+    "tags": ["首次", "讲者"]
+  }
+}

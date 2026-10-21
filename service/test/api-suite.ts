@@ -28,6 +28,8 @@ const SAMPLE_SHA256 = createHash('sha256').update(SAMPLE).digest('hex');
 const BLOCKED_PREVIEW = { template: '没有这个模板', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } };
 /** 根模板不存在的批次：整批拒绝，不建批次。 */
 const BLOCKED_BATCH = { template: '没有这个模板', items: [{ id: '1', dataset: { id: 'ds-greeting' }, output: { width: 160, height: 40, dpi: 120, format: 'png' } }] };
+/** 模板不存在的 Excel 导入：读工作簿之前就答问题清单。 */
+const BLOCKED_IMPORT = { template: '没有这个模板', workbook: 'UEsDBA==', output: { width: 160, height: 40, dpi: 120, format: 'png' } };
 const ids = (value: unknown) => JSON.stringify(value);
 /** 权限矩阵用的数据集：数据定义不在租户里，保存答 400，校验答问题清单。 */
 const MATRIX_DATASET = { dataset: { id: 'ds-matrix', staticSchema: { name: '矩阵', version: 1 } }, data: {} };
@@ -164,6 +166,13 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
   { route: 'POST /v1/batches/:batchId/cancel', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/cancel` }) },
   // 数据集与资源（票据 10）：对象 ID 用随机值；数据集的请求体按 JSON 原文发送。
+  { route: 'GET /v1/static-schemas', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/static-schemas' }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent('问候')}/versions/1` }) },
+  { route: 'GET /v1/static-schemas/:name/versions/:version/workbook', allow: ['admin', 'operator', 'apiKey'],
+    request: () => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent('问候')}/versions/1/workbook` }) },
+  // Excel 导入（票据 13）：用不存在的模板，读工作簿之前就答问题清单。
+  { route: 'POST /v1/excel-imports', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/excel-imports', body: BLOCKED_IMPORT }) },
   { route: 'GET /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/datasets' }) },
   { route: 'GET /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/datasets/ds-${randomUUID()}` }) },
   { route: 'POST /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/datasets', body: MATRIX_DATASET }) },
@@ -367,9 +376,9 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       expect(hook.status, hook.raw.slice(0, 300)).toBe(201);
       world.secrets.push(hook.body.secret);
       expect((await call('PATCH', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token, { active: false })).status).toBe(200);
-      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
+      const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', staticSchemaName: '问候', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
         webhookId: hook.body.webhook.id };
-      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, batchId: randomUUID(),
+      const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, staticSchemaName: `定义-${randomUUID()}`, batchId: randomUUID(),
         datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}`, webhookId: randomUUID() };
       const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id, hook.body.webhook.id];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {

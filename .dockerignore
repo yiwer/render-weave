@@ -13,6 +13,7 @@ service/dist
 !fixtures/resources
 fixtures/resources/fonts
 !fixtures/workspaces
+!fixtures/excel
 !docs/examples/m402-dsl
 !scripts/fetch-fonts.mjs
 !scripts/fonts.json

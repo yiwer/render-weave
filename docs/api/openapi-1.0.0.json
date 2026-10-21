@@ -1934,6 +1934,78 @@
         }
       }
     },
+    "/v1/excel-imports": {
+      "post": {
+        "operationId": "postV1ExcelImports",
+        "tags": [
+          "批量交付"
+        ],
+        "summary": "Excel 导入预览：逐行的数据集与问题，以及只含能提交的行的批量请求；不保存任何东西",
+        "description": "一行一个渲染项，列对应顶层字段（显示名称或字段名称），简单类型的列表用顿号、逗号、分号或换行分开写在一格，引用与引用列表另起一张以字段显示名称命名的工作表，用关联值对应主表的行。文件、解压后的大小、单元格数、主表行数与引用展开的行数超出上限整份拒绝（413 limit.workbookTooLarge），读不了的文件答 400 import.workbookUnreadable。出图参数与对外参数不合规时列在整份的 problems 里，回答没有 batch。确认后把回答里的 batch 提交到 POST /v1/batches。",
+        "x-access": "deliver",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "template",
+                  "workbook",
+                  "output"
+                ],
+                "properties": {
+                  "template": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "模板名称：按它所用的静态数据定义读取各行"
+                  },
+                  "workbook": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": ".xlsx 文件内容的 base64"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "description": "对外参数，原样写进批量请求的每一项"
+                  },
+                  "output": {
+                    "type": "object",
+                    "description": "出图参数，原样写进批量请求的每一项"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExcelImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "getV1Me",
@@ -3523,6 +3595,150 @@
           },
           "403": {
             "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/static-schemas": {
+      "get": {
+        "operationId": "getV1StaticSchemas",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "本租户的静态数据定义：名称、版本与显示名称",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "staticSchemas"
+                  ],
+                  "properties": {
+                    "staticSchemas": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StaticSchemaSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/static-schemas/{name}/versions/{version}": {
+      "get": {
+        "operationId": "getV1StaticSchemasNameVersionsVersion",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "一个静态数据定义的原文与编译产物；按编译产物生成数据集表单",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,8}$",
+              "description": "内容版本"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaticSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/static-schemas/{name}/versions/{version}/workbook": {
+      "get": {
+        "operationId": "getV1StaticSchemasNameVersionsVersionWorkbook",
+        "tags": [
+          "数据集"
+        ],
+        "summary": "Excel 导入的空白表：按数据定义生成表头，引用与引用列表各一张表",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,8}$",
+              "description": "内容版本"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "空白的 .xlsx",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
           }
         }
       }
@@ -5809,6 +6025,384 @@
           },
           "data": {
             "description": "业务数据，按所选静态数据定义的编译产物校验"
+          }
+        }
+      },
+      "StaticSchemaSummary": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "displayName"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "静态数据定义名称"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "版本"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名称"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "StaticSchema": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "displayName",
+          "definition",
+          "compiled"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "静态数据定义名称"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "版本"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名称"
+          },
+          "description": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "object",
+            "description": "静态数据定义的原文（DSL 1.0，schemas/data-definition.schema.json）",
+            "additionalProperties": true
+          },
+          "compiled": {
+            "type": "object",
+            "description": "编译产物：JSON Schema 2020-12，title 是显示名称，x-renderweave-type 标明日期、时刻、时间与图片，数据定义引用已内联（ADR-0006）",
+            "additionalProperties": true
+          }
+        }
+      },
+      "WorkbookCell": {
+        "type": "object",
+        "required": [
+          "sheet",
+          "row"
+        ],
+        "properties": {
+          "sheet": {
+            "type": "string",
+            "description": "工作表"
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "行号（Excel 里看到的，从 1 起）"
+          },
+          "column": {
+            "type": "string",
+            "description": "列号，如 C；整行的问题没有"
+          },
+          "header": {
+            "type": "string",
+            "description": "这一列的表头"
+          }
+        },
+        "description": "工作簿里的位置"
+      },
+      "ImportProblem": {
+        "type": "object",
+        "required": [
+          "level",
+          "code",
+          "location",
+          "message"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "severe",
+              "hint"
+            ],
+            "description": "严重（severe）或提示（hint）"
+          },
+          "code": {
+            "type": "string",
+            "description": "引擎的问题码（与保存数据集时相同），或导入的问题码（import.*，见 docs/api.md）"
+          },
+          "location": {
+            "description": "问题的位置：字段、对外参数、元素、检查项、派生变量、数据定义或请求的输入（source 是请求里的位置，如 request.body.url）",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "field"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "字段路径"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "parameter"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "参数名"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "element"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "元素路径"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "template",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "check"
+                  },
+                  "template": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "template",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "variable"
+                  },
+                  "template": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "schema",
+                  "path"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "definition"
+                  },
+                  "schema": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "source"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "input"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "中文说明"
+          },
+          "cell": {
+            "$ref": "#/components/schemas/WorkbookCell"
+          }
+        },
+        "description": "导入的问题：格式与问题清单相同，另带它在工作簿里的位置"
+      },
+      "ExcelImportRow": {
+        "type": "object",
+        "required": [
+          "row",
+          "itemId",
+          "status",
+          "dataset",
+          "problems"
+        ],
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "主表的行号"
+          },
+          "itemId": {
+            "type": "string",
+            "description": "渲染项 ID：渲染项 ID 列的值，没有时是\"第 N 行\""
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "description": "没有严重问题的行进批量请求（accepted），有的不进（rejected）"
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/DatasetDocument",
+            "description": "这一行读出的数据集；身份部分的 origin 写明工作表与行号"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportProblem"
+            },
+            "description": "这一行的问题：与保存数据集时相同的检查，加上导入的问题"
+          }
+        }
+      },
+      "ExcelImport": {
+        "type": "object",
+        "required": [
+          "template",
+          "staticSchema",
+          "sheet",
+          "summary",
+          "rows",
+          "problems"
+        ],
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "模板名称"
+          },
+          "staticSchema": {
+            "type": "object",
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "静态数据定义名称"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "版本"
+              }
+            },
+            "description": "模板所用的数据定义，各行按它读取与校验"
+          },
+          "sheet": {
+            "type": "string",
+            "description": "主表：一行一个渲染项"
+          },
+          "summary": {
+            "type": "object",
+            "required": [
+              "rows",
+              "accepted",
+              "rejected"
+            ],
+            "properties": {
+              "rows": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "数据行"
+              },
+              "accepted": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "能提交的行"
+              },
+              "rejected": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "有严重问题、不进批次的行"
+              }
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExcelImportRow"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportProblem"
+            },
+            "description": "整份的问题：不认识的列、没人引用的行、没有数据行等"
+          },
+          "batch": {
+            "$ref": "#/components/schemas/BatchRequest",
+            "description": "只含能提交的行的批量请求，数据集内联；确认后原样提交到 POST /v1/batches。没有能提交的行或整份有严重问题时没有"
           }
         }
       },

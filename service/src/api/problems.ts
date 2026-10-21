@@ -45,6 +45,10 @@ export const ServiceProblemCodes = {
   webhookUrlNotAllowed: 'webhook.urlNotAllowed',
   /** 本租户启用的 webhook 已达上限（409）。 */
   webhookLimitReached: 'webhook.limitReached',
+  /** Excel 导入（票据 13）：不是 .xlsx，损坏，或是旧版 .xls、加了打开密码的工作簿（400）。 */
+  importWorkbookUnreadable: 'import.workbookUnreadable',
+  /** Excel 导入：文件、解压后的大小、单元格数或主表行数超出上限，整份拒绝（413）。 */
+  limitWorkbookTooLarge: 'limit.workbookTooLarge',
   internalError: 'service.internalError',
 } as const;
 export type ServiceProblemCode = (typeof ServiceProblemCodes)[keyof typeof ServiceProblemCodes];

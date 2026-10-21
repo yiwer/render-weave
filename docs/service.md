@@ -2,7 +2,7 @@
 
 阶段 4 的出图服务（ADR-0017）由三部分组成：接口进程、PostgreSQL 里的任务队列、渲染 worker。代码在 `service/`，不进引擎的 `src/`，只经 `service/src/engine.ts` 调用引擎的公开入口。
 
-目前完成了九部分：
+目前完成了十一部分：
 
 - **骨架**（[票据 03](../.scratch/render-service-v1/issues/03-service-skeleton.md)，M259、M260）：
   - Compose 编排、数据库迁移与健康检查；
@@ -31,6 +31,12 @@
 - **开放 API 合同与 webhook**（[票据 11](../.scratch/render-service-v1/issues/11-api-contract-and-webhooks.md)，M276、M277）：
   - `GET /v1/openapi.json` 返回 OpenAPI 3.1 描述，有快照与 1.0.0 基线，1.x 只做加法；错误回答按类别映射状态，用例逐个端点核对。客户开发者的使用说明见[开放 API](api.md)；
   - 批次结束时向客户注册的 webhook 投递带签名的事件，失败按指数退避重试，投递记录可查。
+- **出图控制台的第一条纵切**（[票据 12](../.scratch/render-service-v1/issues/12-console-form-preview-delivery.md)，M278–M282）：
+  - 客户的管理员与操作员登录网页，以数据集为中心：按数据定义生成的表单填数据，看草稿预览、调对外参数，问题叠加在图上；
+  - 正式出图在侧栏里进行，可以按一个整数参数的范围出多张，逐项看进度、能取消，下载单张图片与整批压缩包。见下文[出图控制台](#出图控制台)。
+- **Excel 导入**（[票据 13](../.scratch/render-service-v1/issues/13-console-excel-import.md)，M283–M286）：
+  - 服务端解析 `.xlsx`，一行一个渲染项，答导入预览：逐行的数据集与问题（定位到工作表、行与列），以及只含能提交的行的批量请求；确认后照常提交批次；
+  - 按数据定义下载空白表；控制台在数据集页的侧栏里导入、预览与提交。见下文[Excel 导入](#excel-导入)。
 
 ## 本机启动
 
@@ -55,6 +61,8 @@ node service/scripts/up.mjs
 | PostgreSQL 17 | `postgres` | 只在 Compose 网络内 |
 | S3 兼容存储（RustFS 1.0.3） | `s3` | 只在 Compose 网络内 |
 | 部署步骤 | `setup` | 迁移、设置应用账号、建桶后退出 |
+
+**出图控制台**：浏览器打开 <http://localhost:8080/console/>，用租户成员（客户管理员或操作员）的账号登录。
 
 **第一个平台管理员**：服务起来后执行下面的命令。它建一个平台管理员账号，随机初始密码只在终端显示一次，然后用这个邮箱和密码登录。
 
@@ -347,6 +355,9 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 | `PUT /v1/datasets/{数据集}` | 整份替换；正文的 `dataset.id` 要与路径一致，不存在答 404 |
 | `POST /v1/datasets/{数据集}/copies` | 复制：`{ "id": "新 ID", "name": "可选的新名称" }`，答 201 |
 | `POST /v1/dataset-checks` | 只校验、不保存，供表单实时提示；不要求 `dataset.id`；答 200 与 `{ "problems": [...] }` |
+| `GET /v1/static-schemas` | 本租户的静态数据定义：名称、版本、显示名称与说明（M278）；引擎内置的与没有编译产物的不列 |
+| `GET /v1/static-schemas/{名称}/versions/{版本}` | 一个静态数据定义的原文与编译产物；表单按编译产物生成 |
+| `GET /v1/static-schemas/{名称}/versions/{版本}/workbook` | Excel 导入的空白表（M285），见下文[Excel 导入](#excel-导入) |
 
 - **按原始字节存**：写数据集的请求体不经 JSON 解析就交给引擎，存的就是原文，读回逐字节相同。超过 15 位有效数字的数值按原文报 `dataset.tooManyDigits`（M112）。
 - **保存时校验**：引擎的 `checkDataset` 按所选静态数据定义的编译产物与本租户的资源校验，与渲染时对同一数据集的检查是同一段代码，字段问题定位到字段路径（如 `stops[4].landmark`）。有严重问题答 400 与问题清单，什么也不存；只有提示时照常保存，回答里带上提示。保存成功的回答是 `{ "dataset": { id, name, staticSchema, sha256, byteLength }, "problems": [...] }`。
@@ -522,6 +533,40 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **表**：`webhooks`、`webhook_events`、`webhook_deliveries`、`webhook_attempts`，都开行级安全。事件与尝试只追加，webhook 只能停用、不能删。
 - **审计**：`webhook.create`、`webhook.update`。
 
+## 出图控制台
+
+客户的管理员与操作员用的网页（M248、M279）。它是开放 API 的客户端，没有自己的后端接口；接口进程把构建好的文件放在 `/console/` 下提供。结构与视觉按原型方案一（M282），一次性原型存档在分支 `prototype/console-v1`。
+
+- **页面**：
+  - **数据集**是首页：列出本租户的数据集，可以勾几份同一数据定义的一起出图；本标签页提交过的出图任务列在底部。
+  - **编辑一份数据集**：左边是按编译产物生成的表单，字段用显示名称；右边是草稿预览、对外参数与尺寸。
+    - 边填边经 `POST /v1/dataset-checks` 校验，问题显示在字段下面；预览的问题定位到元素的，按布局摘要叠加在图上。
+    - 顶层简单字段排成网格；对象的列表能放进单元格时排成表格（一行一项，如停靠站点）；简单值的列表是一排小输入框。
+    - 图片字段从本租户的资源中选，或上传新图（`POST /v1/resources?kind=image`）。
+  - **出图**：侧栏里选模板、对外参数与尺寸，可以按一个整数对外参数的范围出多张，项 ID 写成"数据集/参数=值"。提交带幂等键；提交后侧栏显示逐项进度，点一项看图、下载或看问题说明，能取消；结束后下载整批压缩包。
+  - **模板**：只读。缩略预览、适用尺寸范围、数据定义与对外参数；调参看草稿预览，按模板新建数据集。
+- **出图参数**：缺省取模板适用尺寸的下限、120 DPI、PNG。预览与正式交付用同样的尺寸与分辨率，因为低分辨率的草稿会给条码报假问题（M280）。
+- **身份**：只有客户管理员与操作员能用，令牌只放在本标签页的 sessionStorage。客户管理员的顶栏显示本月剩余张数，操作员读不到用量（M247），不显示。
+- **静态文件**：启动时读进内存，只回答构建目录里认识的类型。index.html 不缓存，带内容哈希的文件长期缓存；内容安全策略只许同源的脚本、样式、请求与字体，图片另许 `blob:` 与 `data:`。这些路由不属于开放 API，不在 OpenAPI 描述里。没有构建时 `/console/` 答 404 并说明怎样构建。
+- **构建**：源码在 `service/console/`（React 加 Vite），镜像构建时做类型检查并构建到 `service/dist/console`。本机构建在 `service/` 下执行 `npm run build`。
+- **本机开发**：先 `node service/scripts/up.mjs` 起服务，再在 `service/` 下执行 `npx vite console`，开放 API 的请求转给 8080。
+
+## Excel 导入
+
+一批数据从 Excel 导入，确认后作为一批正式交付（M248、M283–M286）。写法与问题码见[开放 API](api.md#excel-导入)。
+
+| 端点 | 说明 |
+|---|---|
+| `GET /v1/static-schemas/{名称}/versions/{版本}/workbook` | 空白表：主表一行表头，引用与引用列表各一张表；文字类的列是文本格式，单值的可选值有下拉选择 |
+| `POST /v1/excel-imports` | 导入预览：`{ template, workbook（base64）, parameters?, output }`，答逐行的数据集与问题、整份的问题与批量请求；不保存任何东西 |
+
+- **解析**：`service/src/xlsx.ts` 用 yauzl 在内存里解压，分三遍只解开关系、工作簿、共享字符串与选中的工作表（主表与引用表），按登记的解压大小累计、超限即停，实际字节多于登记的读不了；工作表、共享字符串与关系由本文件的 XML 扫描器读取，不接受 DTD，部件按 BOM 认 UTF-8 或 UTF-16。只取单元格的值，不读样式（M284）。空白表也在这里写出，用 yazl 打包，只写 DOS 时间戳。
+- **写法**：`service/src/excel-import.ts` 按编译产物把工作簿换成逐行的数据，记下每个字段路径来自哪个单元格；引擎的问题按字段路径找回单元格，找不到就往上一级找，都没有就是整行（M285）。
+- **校验**：每行的数据集由引擎的 `checkDataset` 按租户的工作区校验，与保存数据集时相同；出图参数与对外参数由 `measureRender` 按第一行能提交的数据检查一次。数据集内联在批量请求里，不另存（M283）。
+- **上限**：`DEFAULT_LIMITS` 里的 `maxWorkbookBytes`（5 MiB）、`maxWorkbookUnzippedBytes`（32 MiB）、`maxWorkbookCells`（50 万）、`maxImportRows`（1,000）与 `maxImportReferenceRows`（5 万），超出答 413 `limit.workbookTooLarge`（M286）。
+- **控制台**：数据集页的"从 Excel 导入…"打开侧栏，选模板、对外参数与尺寸，下载空白表，上传文件；逐行显示能不能提交与问题所在的单元格；提交后转到出图任务的进度页。对外参数与尺寸只写进批量请求，改了不用重新导入。
+- **样例**：`fixtures/excel/` 里有两份样例及导入后应得到的数据：`price-tags.xlsx`（商品价签，字段扁平）与 `route-signs.xlsx`（M402 线路牌，停靠站点在另一张表）。它们用 openpyxl 生成（`make-samples.py`），与服务写空白表的代码无关。价签的数据定义与模板在 `fixtures/workspaces/price-tag/`。
+
 ## 渲染 worker
 
 一个 worker 容器有一个调度进程和一个渲染子进程，一次只做一项（ADR-0017、M266）：
@@ -600,6 +645,14 @@ RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compos
     - 相对 1.0.0 基线只做了加法，兼容检查本身另有不兼容与加法的例子；
     - 逐个端点探查 401、404 与 400。
     - 其余 API 用例的每个回答都按描述核对。
+  - Excel 导入用例（`service/test/imports.test.ts`）用测试进程里的 worker：
+    - 两份样例读出的数据与样例的 JSON 相同，线路牌的第一行与 M402 数据集逐字段相同；按预览提交后全部交付；
+    - 问题定位到工作表、行与列，有问题的行不进批量请求；引用的各种问题；
+    - 共享字符串、内联字符串、富文本与注音、公式、命名空间前缀、省略坐标、1904 日期系统都读出同样的数据；
+    - 空白表的结构，原样导回去表头全都认得；
+    - 上限与读不了的文件。测试用的工作簿由 `service/test/xlsx-fixture.ts` 按 Excel 与其他程序的写法拼出。
+  - 出图控制台的静态文件（`service/test/console.test.ts`）：缓存与内容安全策略的响应头、只回答构建目录里认识的文件、没有构建时的说明、不进路由表与 OpenAPI 描述。
+  - 出图控制台的浏览器用例另有本机快速版（`service/test/console.browser.test.ts`）：内存后端、进程内 worker，设了 `RW_BROWSER`（本机 Chromium 内核浏览器的可执行文件）并先构建控制台才运行，否则跳过；取消的用例在快速版里跳过（M281）。
   - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
@@ -611,12 +664,22 @@ node service/scripts/test-docker.mjs
 
 Docker 后端测试覆盖以下内容：
 
-- 同一组开放 API、代建推送、模板与草稿预览、批量交付、数据集与资源、出图记录的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；替换的提交与工作区指纹的核对在同一个事务里；
+- 同一组开放 API、代建推送、模板与草稿预览、批量交付、数据集与资源、出图记录、Excel 导入的用例跑 PostgreSQL 加 S3 后端；预览由 Compose 里真实的 worker 进程渲染；替换的提交与工作区指纹的核对在同一个事务里；
 - 构建固定：tester 跑的是引擎源码，构建标识与镜像里的不同。tester 里的接口进程接受的批次由 tester 里同构建的 worker 交付，Compose 里的 worker 不领；成果与引擎在本进程交付的逐字节相同，也就证明别的构建没有插手。经 Compose 里的接口进程提交的批次由真实的 worker 交付；
 - 执行隔离：脚本给 worker 设极小的值（单项超时 1.5 秒、内存上限 512 MB、做满 5 项换新）。6,000 项的循环触发超时，1 亿像素的草稿触发内存超限，之后的预览照常；做满 5 项的子进程换新；
 - 批量交付（经真实的接口进程与 worker）：批次中内存超限的一项失败、同批其他项照常交付；取消时正在渲染的一项被结束；同样的批次再交一次不多一个对象。正式模式有严重问题时不画图、很快结束，能画完的正式图在缺省限值内又都在 1 秒左右，所以批次里的超时不在这里测；超时结束子进程由预览的用例覆盖，结束之后标失败、写问题清单的处理与内存超限相同；
 - webhook：投递由 Compose 里真实的接口进程完成。它与 tester 用同一个服务密钥，脚本把退避与超时缩短，并放开内网地址；接收端在 tester 容器里。另核对库里只存签名密钥的密文；
 - 开放 API 描述：Compose 里的接口进程返回的描述与测试进程按同一份代码生成的相同，镜像里带着 DSL 的 JSON Schema；
+- 出图控制台（M281）：tester 容器里的 Chromium 由 playwright-core 驱动，打开 Compose 里接口进程提供的 `/console/`，像客户操作员一样走完以下流程，每一步再经开放 API 核对：
+  - 登录、看模板、调参；
+  - 按表单填一份覆盖九种字段类型的数据，选图与上传，保存、修改、复制；
+  - 问题叠加在图上；
+  - 线路牌按本站序号 1–6 出 6 张，下载单张与整批压缩包，与开放 API 读到的字节相同；
+  - 几份数据集一起出图时失败项的问题说明；
+  - Excel 导入：下载的空白表与开放 API 给的相同；上传一份价签表，逐行预览，问题定位到单元格，提交能提交的行；
+  - 取消进行中的批次；退出。
+
+  整个过程没有脚本错误，也没有被内容安全策略拦下的资源；
 - 崩溃后对账：在 tester 里用镜像里编译好的服务（另加一个标记文件，构建标识与 Compose 里的不同）起接口进程与 worker 进程，批次进行中把两个进程都强杀，只起接口进程：被强杀的 worker 30 秒后不再算在线，对账退回遗留的预占；再起 worker 交付完，每项只计一次；
 - 出图记录：测试进程的 worker 与 Compose 里的 worker 是两个构建，各自交付的记录各自重放成功，镜像构建的记录在测试进程里离线重放被拒；直接改写对象存储里的一个对象，下载、整批图片、两种导出都答 `record.integrityMismatch`，重放报同样的问题；
 - 行级安全：
@@ -629,4 +692,4 @@ Docker 后端测试覆盖以下内容：
 - 迁移的顺序、回滚与启动检查；
 - 健康检查、服务用的是应用账号、未就绪时的响应与结构化日志。
 
-服务的类型检查：先 `npm run build`，再 `npm run typecheck:service`。
+服务的类型检查：先 `npm run build`，再 `npm run typecheck:service`，它也检查控制台的源码。

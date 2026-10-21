@@ -38,12 +38,12 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 | 状态 | 类别 | 问题码 |
 |---|---|---|
-| 400 | 请求不合法 | `request.invalid`、`webhook.urlNotAllowed`、`push.contentMissing`、`push.contentMismatch`、`resource.replacementInvalid`，以及数据集、模板、批次请求检查出的引擎问题码 |
+| 400 | 请求不合法 | `request.invalid`、`import.workbookUnreadable`、`webhook.urlNotAllowed`、`push.contentMissing`、`push.contentMismatch`、`resource.replacementInvalid`，以及数据集、模板、批次请求检查出的引擎问题码 |
 | 401 | 未鉴权 | `auth.required`、`auth.invalidCredentials` |
 | 403 | 无权限 | `auth.forbidden` |
 | 404 | 不存在；别的租户的对象也答 404 | `request.notFound` |
 | 409 | 与已有内容冲突 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`、`webhook.limitReached` |
-| 413 | 超出大小或规模 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded` |
+| 413 | 超出大小或规模 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded`、`limit.workbookTooLarge` |
 | 415 | 请求体的类型不对 | `request.invalid` |
 | 429 | 额度不足，或超出频率与并发 | `quota.exceeded`、`preview.rateLimited`、`replay.rateLimited` |
 | 500 | 服务内部错误 | `service.internalError`；出图记录与对象存储里的内容不符时是 `record.integrityMismatch` |
@@ -55,6 +55,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 1. **看模板**：`GET /v1/templates` 列出模板。每个模板带适用尺寸范围、所用的数据定义与对外参数。
 2. **写数据**：`POST /v1/datasets` 保存数据集。保存时按所选的静态数据定义校验，有严重问题答 400 与问题清单。只想校验、不保存，用 `POST /v1/dataset-checks`。
+   - 要按数据定义生成表单或核对字段，`GET /v1/static-schemas` 列出本租户的静态数据定义，`GET /v1/static-schemas/{name}/versions/{version}` 给出原文与编译产物（JSON Schema 2020-12，`title` 是显示名称）。出图控制台的表单就由它生成。
 3. **预览**：`POST /v1/previews` 同步返回草稿图（base64）与问题清单。预览不计额度，按套餐的并发数与每分钟次数限流。
 4. **交付**：`POST /v1/batches` 提交批次，答 202。
    - 带上 `Idempotency-Key`：网络抖动时重试，拿回的是同一批次（200），不重复交付，也不重复计费。
@@ -68,6 +69,44 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
    - 单张图：`GET /v1/batches/{batchId}/items/{index}/files/image.png`；
    - 整批图片：`GET /v1/batches/{batchId}/images.zip`；
    - 留档：`GET /v1/batches/{batchId}/export.zip`。导出包能用命令行 `renderweave replay` 离线重放。
+
+## Excel 导入
+
+一批简单数据（如几百张价签）可以从 Excel 导入，一行一个渲染项（M283–M286）。导入只做预览，确认后再提交批次。
+
+1. **空白表**：`GET /v1/static-schemas/{name}/versions/{version}/workbook` 按数据定义生成一份只有表头的 `.xlsx`。
+   - 主表以数据定义的显示名称命名，先是可选的"渲染项 ID"列，再是各字段，表头是字段的显示名称；
+   - 引用与引用列表（如停靠站点）各另起一张表，第一列是关联值；
+   - 文字类的列是文本格式，可选值固定的列有下拉选择，选中单元格时提示怎么填。
+2. **填写**：
+   - 表头写显示名称或字段名称都可以，不计空白与大小写；不认识的列提示后忽略。表头上方可以有标题行：前 5 行里第一个认得出列的行是表头。
+   - 简单类型的列表写在一格里，用换行、顿号、逗号或分号分开。
+   - 引用列表：主表这一列写关联值，引用表里同名的列写同一个值，几行按先后组成列表；主表的几行可以共用一个关联值。单个引用只能对应一行。
+   - 日期、时刻可以是 Excel 的日期，也可以写 `2026/1/2`、`8:30` 这类文字；是否写 是/否、TRUE/FALSE 或 1/0；图片可以只写资源 ID。
+   - 不写"渲染项 ID"时，项 ID 是"第 N 行"。
+3. **预览**：`POST /v1/excel-imports`，请求体是 `{ template, workbook, parameters?, output }`，`workbook` 是文件内容的 base64。回答：
+   - `rows`：逐行的 `itemId`、`status`（`accepted` 能提交，`rejected` 有严重问题）、读出的 `dataset` 与 `problems`；
+   - `problems`：整份的问题，如不认识的列、没被引用的行；
+   - `batch`：只含能提交的行的批量请求，数据集内联在各项里。
+   每个问题与问题清单同一格式，另带 `cell`（工作表、行、列与表头）。各行的检查与保存数据集时相同，引擎的问题码照旧；导入自己的问题码如下：
+
+   | 问题码 | 等级 | 说明 |
+   |---|---|---|
+   | `import.noRows` | 严重 | 主表在表头下面没有数据行 |
+   | `import.columnUnknown` | 提示 | 表头不对应任何字段，这一列忽略 |
+   | `import.columnDuplicate` | 严重 | 两列对应同一个字段（或两列渲染项 ID、两列关联值） |
+   | `import.columnMissing` | 提示 | 必填字段没有对应的列，或引用表缺关联值的列 |
+   | `import.fieldUnsupported` | 提示 | 字段是第二层引用，不能从 Excel 导入 |
+   | `import.cellError` | 严重 | 单元格是 Excel 的错误值，如 `#N/A` |
+   | `import.itemIdDuplicate` | 严重 | 渲染项 ID 与前面的行重复 |
+   | `import.referenceNotFound` | 严重 | 关联值在引用表里没有对应的行，或没有那张表 |
+   | `import.referenceTooManyRows` | 严重 | 单个引用的关联值对应了不止一行 |
+   | `import.rowOrphan` | 提示 | 引用表里的行没被主表引用 |
+   | `import.batchTooLarge` | 严重 | 能提交的行合起来超过批量请求的字节上限 |
+
+   出图参数与对外参数按第一行能提交的数据检查一次，不合规的问题（如 `parameter.unknown`、`render.sizeOutOfRange`）列在整份的 `problems` 里。有严重问题的行不进 `batch`；整份有严重问题或没有能提交的行时，回答里没有 `batch`。
+4. **提交**：确认后把 `batch` 原样提交到 `POST /v1/batches`（带上 `Idempotency-Key`），之后与常用流程相同。
+5. **上限**：文件 5 MiB、解压后 32 MiB、非空单元格 50 万个、主表 1,000 行、引用展开 5 万行（几行共用一个关联值时重复计），超出整份拒绝，答 413 `limit.workbookTooLarge`。只解开用得到的部件与工作表，样式、图形与别的工作表不算。不是 `.xlsx`、文件损坏、旧版 `.xls` 或加了打开密码，答 400 `import.workbookUnreadable`。
 
 ## webhook
 
@@ -169,10 +208,10 @@ function verify(secret, header, rawBody, now = Date.now()) {
 - 用例把描述与 [docs/api/openapi.json](api/openapi.json) 快照比对。描述有变化时测试失败，要用 `npx vitest run -u` 显式更新快照，并在下面的变更记录里写明改了什么、是否兼容。
 - 用例另把描述与 1.0.0 的基线 [docs/api/openapi-1.0.0.json](api/openapi-1.0.0.json) 比较，列出不是加法的改动，比如删端点、新增必填、回答删属性。有这样的改动时测试失败。
 - 描述与基线不同时，版本号要升：只做加法升次版本号（1.1.0），并在变更记录里写一行。
-- 基线在阶段 4 验收（[票据 15](../.scratch/render-service-v1/issues/15-capacity-and-acceptance.md)）时定稿。在那之前没有对外发布，不兼容的改动可以重写基线，但要在变更记录里注明。
+- 基线在阶段 4 验收（[票据 15](../.scratch/render-service-v1/issues/15-capacity-and-acceptance.md)）时定稿。在那之前没有对外发布：新增的端点并入 1.0.0 并重写基线；不兼容的改动也可以重写基线。两种都要在变更记录里注明。
 
 ## 变更记录
 
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
-| 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome` | — |
+| 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13） | — |

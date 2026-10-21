@@ -3,6 +3,7 @@
  * - setup：部署步骤。用属主账号执行数据库迁移、设置应用账号的密码，再建好对象存储的桶（M262）；
  * - api：等迁移与代码一致后启动接口进程，用应用账号连库；定期对账，退回崩溃后遗留的预占（票据 09）；
  *   投递 webhook：批次结束的事件签名后发给各 webhook，失败按退避重试（票据 11）；
+ *   在 /console/ 下提供构建好的出图控制台（票据 12）；
  * - worker：等迁移与代码一致后启动渲染 worker 的调度进程：领取任务交给渲染子进程，超时结束子进程（ADR-0017）；
  *   收到 SIGTERM 时排空：不再领预览，做完本构建已接受的批次项再退出（票据 07）；
  * - platform-admin <邮箱>：建平台管理员账号，随机初始密码只在标准输出显示一次；
@@ -83,7 +84,11 @@ async function main(): Promise<void> {
     let close: () => Promise<void>;
     if (command === 'api') {
       const reconcile = loadReconcileConfig(process.env), webhooks = loadWebhookConfig(process.env);
-      const app = createApi({ backend, build, logger, secretKey: webhooks.secretKey, allowPrivateWebhooks: webhooks.config.allowPrivate });
+      // 出图控制台（票据 12）：service/dist/console，由 service 的 npm run build 构建。
+      const app = createApi({
+        backend, build, logger, secretKey: webhooks.secretKey, allowPrivateWebhooks: webhooks.config.allowPrivate,
+        consoleDir: fileURLToPath(new URL('./console/', import.meta.url)),
+      });
       await app.listen({ host: '0.0.0.0', port: config.port });
       const reconciler = startReconciler({ backend, logger, ...reconcile });
       const dispatcher = startWebhookDispatcher({ backend, logger, secretKey: webhooks.secretKey, config: webhooks.config });

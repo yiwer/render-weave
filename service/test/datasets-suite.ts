@@ -36,6 +36,40 @@ export function describeDatasets(name: string, makeBackend: () => Promise<Servic
     /** 数据集按原文发送：JSON 文本加 application/json。 */
     const send = (method: 'POST' | 'PUT', url: string, token: string, body: string) => world.call(method, url, token, body, { 'content-type': 'application/json' });
 
+    it('静态数据定义只读（票据 12）：列出本租户的名称、版本与显示名称；原文与编译产物就是推送的内容；别的租户的与不存在的答 404', async () => {
+      const { call, a, b } = world;
+      const list = await call('GET', '/v1/static-schemas', b.operator.token);
+      expect(list.status).toBe(200);
+      expect(list.body).toEqual({ staticSchemas: [
+        { name: '停靠站点', version: 1, displayName: '停靠站点', description: '线路在一个行驶方向上依次停靠的站点' },
+        { name: '线路牌', version: 1, displayName: '线路牌（单线路单方向）' },
+      ] });
+      expect((await call('GET', '/v1/static-schemas', a.key.token)).body).toEqual({ staticSchemas: [expect.objectContaining({ name: '问候', version: 1 })] });
+
+      const detail = await call('GET', `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/1`, b.key.token);
+      expect(detail.status).toBe(200);
+      expect(detail.body).toEqual({
+        name: '线路牌', version: 1, displayName: '线路牌（单线路单方向）',
+        definition: JSON.parse(await readFile(`${M402_DIR}schema-route-sign-v1.json`, 'utf8')),
+        compiled: JSON.parse(await readFile(`${M402_DIR}compiled-route-sign-v1.schema.json`, 'utf8')),
+      });
+
+      // 只有原文、没有编译产物的定义（推送不会产生，存储层可以）：不列，查看答 404。
+      const orphan = JSON.parse(await readFile(`${M402_DIR}schema-stop-v1.json`, 'utf8'));
+      await seedDocuments(backend.tenant(b.id).storage, [new Uint8Array(Buffer.from(text({ ...orphan, name: '孤立' })))]);
+      expect((await call('GET', '/v1/static-schemas', b.operator.token)).body.staticSchemas.map((schema: { name: string }) => schema.name)).toEqual(['停靠站点', '线路牌']);
+      expect((await call('GET', `/v1/static-schemas/${encodeURIComponent('孤立')}/versions/1`, b.operator.token)).status).toBe(404);
+
+      const missing = await call('GET', `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/9`, b.operator.token);
+      expect(missing.status).toBe(404);
+      for (const url of [`/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/0`, `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/v1`,
+        `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/1`]) {
+        const reply = await call('GET', url, url.endsWith('/1') ? a.operator.token : b.operator.token);
+        expect(reply.status, url).toBe(404);
+        expect(reply.raw, url).toBe(missing.raw);
+      }
+    });
+
     it('新建、读取、列出、修改与复制；读回的是保存时的原始字节；审计只记对象，不记内容', async () => {
       const { call, a } = world;
       const raw = `{"dataset":{"id":"ds-hello","name":"你好","staticSchema":{"name":"问候","version":1}},\n    "data":{"message":"你好"}}  \n`;

@@ -1,0 +1,11 @@
+{
+  "staticSchema": { "name": "商品价签", "version": 1 },
+  "rows": [
+    { "itemId": "0012345", "data": { "productName": "天然饮用水", "spec": "550ml", "unit": "瓶", "origin": "浙江杭州", "itemNo": "0012345", "retailPrice": 2, "memberPrice": 1.8, "onSale": true, "saleEnds": "2026-11-30", "features": ["天然", "弱碱"] } },
+    { "itemId": "0088012", "data": { "productName": "冰糖心红富士苹果礼盒", "spec": "12枚", "unit": "盒", "origin": "新疆阿克苏", "itemNo": "0088012", "retailPrice": 128, "memberPrice": 118, "onSale": false, "features": ["礼盒", "节日"] } },
+    { "itemId": "0300417", "data": { "productName": "云南小粒咖啡豆", "unit": "千克", "origin": "云南普洱", "itemNo": "0300417", "retailPrice": 168, "features": ["中度烘焙"] } },
+    { "itemId": "0201133", "data": { "productName": "五常大米", "spec": "5kg", "unit": "袋", "origin": "黑龙江五常", "itemNo": "0201133", "retailPrice": 69.9, "memberPrice": 64.9, "onSale": false } },
+    { "itemId": "0400025", "data": { "productName": "鲜鸡蛋", "spec": "30枚", "unit": "盒", "itemNo": "0400025", "retailPrice": 23.8, "onSale": true, "saleEnds": "2026-11-05" } },
+    { "itemId": "0500311", "data": { "productName": "进口香蕉", "unit": "千克", "origin": "菲律宾", "itemNo": "0500311", "retailPrice": 7.98, "memberPrice": 6.98, "onSale": true, "saleEnds": "2026-11-12", "features": ["当季", "香甜", "软糯"] } }
+  ]
+}
