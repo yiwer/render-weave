@@ -145,3 +145,27 @@ it('宿主计划进入成果和审核检查，接续保留；改计划被拒绝'
   expect((await readReview(first.roundDir)).problems[0]?.message).toContain('核查计划已变化');
   await expect(runAgentTask({ ...runtime, from: first.roundDir, feedback: join(dir, 'feedback.md'), out: join(dir, 'round3') })).rejects.toThrow('核查计划已变化');
 });
+
+it('长名称与24个用例仍能经MCP返回有界结论，并按用例取详情', async () => {
+  const root = join(dir, 'large'); await mkdir(join(root, 'candidates'), { recursive: true });
+  const main = structuredClone(workspace.templates[0]!.document) as any; main.name = '长名称核查';
+  main.artboard.children = Array.from({ length: 12 }, (_, i) => ({ type: 'rect', name: String(i) + '长'.repeat(300), fill: '#000000',
+    place: { left: i, top: 0, width: { fixed: 1 }, height: { fixed: 1 } } }));
+  await writeFile(join(root, 'candidates/main.json'), JSON.stringify(main));
+  await writeFile(join(root, 'outcome.json'), JSON.stringify({ candidates: ['candidates/main.json'], pending: [], notes: '有界摘要' }));
+  await writeFile(join(root, 'sample.png'), sample);
+  const p = { ...empty, cases: Array.from({ length: 23 }, (_, i) => ({ id: 'c' + i })) };
+  const context = join(dir, 'large-context.json');
+  await writeFile(context, JSON.stringify({ task: 'template-design', request: greetingRequest({ template: main.name }),
+    designChecks: { plan: p, sampleFile: join(root, 'sample.png') } }));
+  const mcp = startMcp(['--workspace', singleTextDir, '--resources', resourcesDir, '--root', root, '--outcome-context', context]);
+  try {
+    const summary = await mcp.callJson('check_outcome');
+    expect(summary.verdict).toBe('qualified');
+    expect(summary.assessment.design).toMatchObject({ status: 'passed', caseCount: 24, passedCases: 24 });
+    expect(JSON.stringify(summary.assessment.design).length).toBeLessThanOrEqual(8000);
+    const detail = await mcp.callJson('check_outcome', { designCase: 'c22' });
+    expect(detail.assessment.design.cases).toHaveLength(1);
+    expect(detail.assessment.design.cases[0].uncovered).toHaveLength(12);
+  } finally { await mcp.close(); }
+});

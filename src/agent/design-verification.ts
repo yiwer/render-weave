@@ -92,9 +92,32 @@ export interface DesignVerification {
   readonly failures: readonly { readonly case: string; readonly style?: string; readonly path?: string; readonly message: string }[];
   readonly visual?: ImageDifference;
   readonly content: 'needsReview';
+  readonly detailsTruncated: boolean;
 }
 
 export interface DesignCheckInput { readonly plan: DesignCheckPlan; readonly sampleFile: string }
+
+/** 模型工具只拿独立预算内的摘要；完整证据仍在宿主 check.json。 */
+export function summarizeDesign(report: DesignVerification, caseId?: string): Record<string, unknown> {
+  const selected = caseId === undefined ? report.cases : report.cases.filter((c) => c.id === caseId);
+  if (!selected.length) throw new Error(`没有核查用例：${caseId}`);
+  const result = { status: report.status, fingerprint: report.fingerprint, planSha256: report.planSha256, content: report.content,
+    caseCount: report.cases.length, passedCases: report.cases.filter((c) => c.passed).length, failureCount: report.failureCount,
+    cases: [] as unknown[], failures: [] as unknown[], visual: report.visual ? { ...report.visual, worstRegions: [] as unknown[] } : undefined,
+    truncated: report.detailsTruncated, hint: '用 check_outcome({designCase: 用例ID}) 按需取该用例详情；轮次结束后的 check.json 保存宿主报告，细节截断由 detailsTruncated 标记。' };
+  const keep = (target: unknown[], item: unknown) => {
+    target.push(item);
+    if (JSON.stringify(result).length > 8000) { target.pop(); result.truncated = true; }
+  };
+  for (const failure of report.failures.filter((f) => caseId === undefined || f.case === caseId)) keep(result.failures, failure);
+  for (const c of selected) {
+    const { problems: _problems, uncovered: _uncovered, ...counts } = c;
+    keep(result.cases, caseId === undefined ? counts : c);
+  }
+  for (const region of report.visual?.worstRegions ?? []) keep(result.visual!.worstRegions, region);
+  if (report.failureCount > report.failures.length) result.truncated = true;
+  return result;
+}
 
 /** 成果、审核和应用共用；核查本身不可用也不能绕过声明的要求。 */
 export async function assessDesign(workspace: Workspace, candidates: readonly CandidateDocument[], request: Record<string, unknown> | undefined,
@@ -188,7 +211,8 @@ export async function verifyTemplateDesign(options: {
       visibleInstances: nodes.length, uncoveredCount: uncovered.length, uncovered: uncovered.slice(0, 12) });
   }
   return { report: { status: failures.length ? 'failed' : 'passed', fingerprint, planSha256, cases,
-    failureCount: failures.length, failures: failures.slice(0, 40), ...(visual ? { visual } : {}), content: 'needsReview' }, ...(heatmap ? { heatmap } : {}) };
+    failureCount: failures.length, failures: failures.slice(0, 40), ...(visual ? { visual } : {}), content: 'needsReview',
+    detailsTruncated: failures.length > 40 || cases.some((c) => c.uncoveredCount > c.uncovered.length) }, ...(heatmap ? { heatmap } : {}) };
 }
 
 export function withCandidateTemplates(workspace: Workspace, candidates: readonly CandidateDocument[]): Workspace {

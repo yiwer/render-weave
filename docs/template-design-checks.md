@@ -2,7 +2,7 @@
 
 `agent run --checks <计划.json>` 给本轮指定宿主核查计划。StaticSchema、数据集与示例图仍是已有输入。计划保存在 Agent 工作目录之外；Agent 只能读取副本。`check_outcome`、轮次结束、审核修改与应用共用核查实现，每次从当前候选重新计算。
 
-完整结果在 `check.json` 的 `assessment.design`，包含候选/计划/请求/数据/资源/示例图内容绑定指纹。声明的边界或样式失败使成果不合格；`passed` 仅表示计划里的检查通过，`uncoveredCount` 和 `content: needsReview` 继续说明未覆盖要求。接续沿用原计划，计划被改动时拒绝继续。
+宿主报告在 `check.json` 的 `assessment.design`，包含候选/计划/请求/数据/资源/示例图内容绑定指纹。失败保留总数及前 40 项、每例未覆盖保留总数及前 12 项，细节截断由 detailsTruncated 标记。声明的边界或样式失败使成果不合格；`passed` 仅表示计划里的检查通过，`uncoveredCount` 和 `content: needsReview` 继续说明未覆盖要求。接续沿用原计划，计划被改动时拒绝继续。
 
 ## 核查计划
 
@@ -46,7 +46,7 @@ SSIM 使用 7×7 均匀窗口、总体协方差、亮度范围 255、K1=.01、K2
 
 这些分数用于定位和比较修复前后，不证明文字正确、信息完整或模板泛化。大片相同背景仍会抬高全图分数，所以同时保留局部指标、毫米要求和未覆盖情况。只有原始数据对应的 reference 用例做像素对照；变更站数或状态后不与原图强行逐像素比。
 
-Agent 默认收到有限文字摘要，通过已有 `view_image` 和 `render_draft` 的区域参数按需查看局部。完整报告和热图可在轮次结束后生成：
+Agent 默认收到最多 8000 字符的 design 摘要（状态、总数、失败与低分区域），`check_outcome({"designCase":"用例ID"})` 按需取单用例详情；截断时有 truncated 标记。通过已有 `view_image` 和 `render_draft` 的区域参数按需查看局部。完整报告和热图可在轮次结束后生成：
 
 ```powershell
 npm run build
