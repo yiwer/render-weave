@@ -50,6 +50,14 @@ it('短入口保留客户与基准，完整参考逐章无损可取，领域适�
   expect(await readFile(join(docs, 'brief.md'), 'utf8')).toBe('客户原文：保留问候字段，整体对齐示例图。');
   expect(await readdir(docs)).not.toContain('dsl-reference.md');
   expect(await readdir(docs)).not.toContain('guide.md');
+  const core = await readFile(join(docs, 'core.md'), 'utf8');
+  expect(core.length).toBeLessThan(1200);
+  expect(core).toContain('template-guide.md');
+  const guide = (await readFile(join(repoRoot, 'agent/guide.md'), 'utf8')).replaceAll('\r\n', '\n');
+  const templateGuide = await readFile(join(docs, 'template-guide.md'), 'utf8');
+  expect(templateGuide).toContain(guide.split('\n## 模板\n')[1]!.split('\n## ')[0]);
+  expect(templateGuide).not.toContain('## 拆分');
+  expect(templateGuide).not.toContain('## 转录');
   const index = await readFile(join(docs, 'dsl-index.md'), 'utf8');
   expect(index).toMatch(/SHA-256：[a-f0-9]{64}/);
   const chapters = (await readdir(join(docs, 'dsl'))).sort();

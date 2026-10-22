@@ -24,17 +24,27 @@ export async function writeTemplateReference(materials: string, docs: string): P
     index.push(`| ${section.title} | [${file}](${file}) | ${section.text.length} |`);
   }
   await writeFile(join(docs, 'dsl-index.md'), index.join('\n') + '\n');
+  const guide = (await readFile(join(materials, 'guide.md'), 'utf8')).replaceAll('\r\n', '\n');
+  await writeFile(join(docs, 'template-guide.md'), '# 模板设计指导\n\n' +
+    `来源：agent/guide.md 的模板章节；SHA-256：${sha256(guide)}\n\n` +
+    (templateSection(guide) ?? '此资料包没有模板章节；以项目说明和模板任务核心为准。') + '\n');
+}
+
+function templateSection(text: string): string | undefined {
+  const start = text.indexOf('\n## 模板\n');
+  if (start < 0) return undefined;
+  const end = text.indexOf('\n## ', start + 1);
+  return text.slice(start + 1, end < 0 ? undefined : end);
 }
 
 /** 领域包的模板章节是现有权威来源；提取阶段的规则不复制进模板任务。 */
 export async function writeTemplateDomain(source: string, target: string): Promise<void> {
   const text = (await readFile(source, 'utf8')).replaceAll('\r\n', '\n');
-  const start = text.indexOf('\n## 模板\n');
-  if (start < 0) {
+  const section = templateSection(text);
+  if (!section) {
     await writeFile(target, '# 领域模板约定\n\n此领域包没有模板章节；以项目说明为准。\n');
     return;
   }
-  const end = text.indexOf('\n## ', start + 1);
   const introduction = text.slice(0, text.indexOf('\n## '));
-  await writeFile(target, introduction + '\n\n' + text.slice(start + 1, end < 0 ? undefined : end) + '\n');
+  await writeFile(target, introduction + '\n\n' + section + '\n');
 }

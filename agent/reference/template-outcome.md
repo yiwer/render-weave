@@ -7,7 +7,7 @@
 ```
 
 candidates 是本轮交付的模板文件。设计任务列全部模板；修改任务只列实际改过或新建的模板。文件必须在 candidates/ 下，模板名与文件引用完整。
-pending 无待确认项时写 []；有时每项写 file、可选 path、reason（inferred、unreadable、conflicting 或 requiredMissing）、note，可选 candidate。path 为该模板内真实元素路径，用 / 分隔，可带模板名。
+不确定的值或设计推断写入 pending，注明原因并供人确认。无待确认项时写 []；有时每项写 file、可选 path、reason（inferred、unreadable、conflicting 或 requiredMissing）、note，可选 candidate。path 为该模板内真实元素路径，用 / 分隔，可带模板名。
 locations 可省略；需要定位时写 file、path、where，可选原图像素 region（x/y/width/height）。图上位置是自述，不是识别证据。根对象只有 candidates、pending、notes、可选 locations。
 
 按 check_outcome 的 assessment 决定：
