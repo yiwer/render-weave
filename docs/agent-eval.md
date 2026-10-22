@@ -19,6 +19,8 @@
 
 `--design-checks <计划.json>` 只给新建模板轮次传入宿主核查计划，修改任务继续遵守原有修改范围。计划内容随轮次保存，最终报告的固定质量评分不因此改变。受控交接对照用 `scripts/agent-handoff-eval.mjs --baseline <本版无阈值模板轮次> --limit <输入token> --out <新目录>`：只在阈值停止后接续一次，另存每轮峰值和耗时，不重试质量失败。
 
+P1 的边界与区域像素核查见[实测记录](template-design-p1-acceptance.md)及[五组历史候选交互对照](agent-eval/figures/template-design-p1/index.html)。合同 0.9.0 的[真实 Haiku 评估](agent-eval/reports/2026-10-22-template-design-p1-incomplete.json)首请求遇到额度 429，0 有效样本，门槛 incomplete；离线回放不代表 P1 生成质量提升，真实交接对照仍待运行。
+
 上下文 P0 的本地体积、真实 Haiku 5.5 对照与初版失败记录见 [验收记录](template-design-p0-acceptance.md)。`context.json` 的单请求峰值与本文件的累计计费用量分开看；脚本端点的合成 usage 不计入模型质量或上下文 token 对照。显式禁用 skills 的初版已跑四场景各两次；补回模板指导后重跑受影响的两个模板场景，沿用未变的提取场景结果，M230 门槛通过。原始报告：[改前](agent-eval/reports/2026-10-22-template-design-p0-before.json)、[初版](agent-eval/reports/2026-10-22-template-design-p0-initial.json)、[修订后](agent-eval/reports/2026-10-22-template-design-p0-final.json)。
 
 ```bash
