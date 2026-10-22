@@ -21,6 +21,8 @@
 
 P1 的边界与区域像素核查见[实测记录](template-design-p1-acceptance.md)及[五组历史候选交互对照](agent-eval/figures/template-design-p1/index.html)。合同 0.9.0 的[真实 Haiku 评估](agent-eval/reports/2026-10-22-template-design-p1-incomplete.json)首请求遇到额度 429，0 有效样本，门槛 incomplete；离线回放不代表 P1 生成质量提升，真实交接对照仍待运行。
 
+2026-10-22 10:17 PDT 在 5352393 上[复查并补跑最终版](agent-eval/reports/2026-10-22-template-design-p1-final-incomplete.json)，首请求仍遇到 Go usage limit exceeded（429），0 有效样本，其余 7 个单元停止派发。使用 template-design-p1-final / out/p1-live-final 保留续跑位置，未启动交接实验。
+
 上下文 P0 的本地体积、真实 Haiku 5.5 对照与初版失败记录见 [验收记录](template-design-p0-acceptance.md)。`context.json` 的单请求峰值与本文件的累计计费用量分开看；脚本端点的合成 usage 不计入模型质量或上下文 token 对照。显式禁用 skills 的初版已跑四场景各两次；补回模板指导后重跑受影响的两个模板场景，沿用未变的提取场景结果，M230 门槛通过。原始报告：[改前](agent-eval/reports/2026-10-22-template-design-p0-before.json)、[初版](agent-eval/reports/2026-10-22-template-design-p0-initial.json)、[修订后](agent-eval/reports/2026-10-22-template-design-p0-final.json)。
 
 ```bash

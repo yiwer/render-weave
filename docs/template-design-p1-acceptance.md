@@ -70,7 +70,20 @@ node scripts/verify-template-design.mjs --round out/p0-after/run-1/m402-template
 
 第一个 M402 数据定义请求即返回 `Request rejected (429) · Go usage limit exceeded`，0 输出 tokens、0 有效样本；评估器停止派发其余 7 个单元，gate 为 incomplete。未更换模型或凭据绕过额度。P0 合同 0.8.0 的通过结果不能替代本次 0.9.0 门槛；真实阈值停止及接续峰值对照也尚未执行。
 
-下一步在额度恢复后，用新 label/out 评估最终代码，避免混用 229fd2c 的 provenance：
+**额度复查（2026-10-22 10:17 PDT，America/Los_Angeles）：** 用户要求复查并继续，因此在干净的 5352393 上重新 build 后，执行下列最终版命令。首请求仍报相同额度 429，单轮 2310 ms、0 输出 tokens，评估器停止其余 7 个单元；[本次原始报告](agent-eval/reports/2026-10-22-template-design-p1-final-incomplete.json)为 incomplete，没有有效样本。2310 ms 只是失败调用耗时，不能算模板设计耗时；上下文峰值与新像素相似度均未测得。真实交接对照没有启动。
+
+本次可复用的历史对照是下面这组 P0 新建模板结果，每组两次的算术平均。上下文与耗时来自[真实模型记录](template-design-p0-model-eval.json)，像素分数来自同批候选用最终核查器的[离线回放](template-design-p1-evidence.json)。这组数据不替代 P1 或交接实验：
+
+| 指标 | P0 改前 8f845f8 | P0 修订后 c2aac1f |
+|---|---:|---:|
+| SSIM（2048 × 457，越高越接近） | 0.6601 | 0.5607 |
+| RGB 相似度（相同采样） | 0.9234 | 0.8848 |
+| 单请求上下文峰值 tokens | 125,601.5 | 120,896.5 |
+| 单次模板设计耗时，分钟 | 8.40 | 7.63 |
+
+上下文峰值下降 3.75%，耗时下降 9.11%，像素相似度下降。两次样本和历史运行的环境波动不支持稳定效果推断。额度恢复时间未由本次错误提供。
+
+额度恢复后，沿用以下最终版 label/out 续跑即可；当前仅增加文档与报告，不改变运行代码或资料。若后续修改运行代码或资料，则重新建立 label/out，保留每批真实 provenance：
 
 ```powershell
 npm run build
