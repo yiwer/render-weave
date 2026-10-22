@@ -1,6 +1,7 @@
 /**
  * 计量与额度的端点（票据 09，ADR-0020、M242）。
- * - 客户管理员看本租户一个计费周期的用量：出图张数的限额、已用、预占与剩余，各种 token 的合计，以及用量事件的明细；
+ * - 本租户一个计费周期的用量：出图张数的限额、已用、预占与剩余，各种 token 的合计；客户成员与 API 密钥都能看（M300）；
+ * - 用量事件的明细只给客户管理员；
  * - 平台管理员设置租户的套餐（每月出图张数、单张最大像素、并发数），并看任一租户的用量与明细，记进该租户的审计。
  * 周期是按 UTC+8 切分的自然月，写作 YYYY-MM，缺省是当前周期。
  */
@@ -55,7 +56,7 @@ export function registerUsageRoutes(app: FastifyInstance, context: ApiContext): 
     return scope;
   };
 
-  app.get('/v1/usage', { config: { access: 'usage.read' }, schema: USAGE_QUERY }, async (request) => usage(ownScope(request), periodOfQuery(request)));
+  app.get('/v1/usage', { config: { access: 'usage.summary' }, schema: USAGE_QUERY }, async (request) => usage(ownScope(request), periodOfQuery(request)));
   app.get('/v1/usage/events', { config: { access: 'usage.read' }, schema: EVENTS_QUERY }, async (request) => events(ownScope(request), request));
 
   app.get('/v1/platform/tenants/:tenantId/plan', { config: { access: 'platform.plans' } }, async (request) => (await platformScope(request, 'plan.read')).plan());

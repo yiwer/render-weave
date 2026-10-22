@@ -327,7 +327,7 @@ export function describeMetering(name: string, makeBackend: () => Promise<Servic
       expect((await imageEvents()).filter((event) => event.batchId === id)).toHaveLength(2);
     });
 
-    it('用量明细按 ID 倒序、可按种类筛选与翻页；只有本租户的客户管理员与平台管理员看得到', async () => {
+    it('用量明细按 ID 倒序、可按种类筛选与翻页；只有本租户的客户管理员与平台管理员看得到，合计操作员与 API 密钥也看得到', async () => {
       const { call, platform } = world;
       const all = await imageEvents();
       const page = await call('GET', '/v1/usage/events?kind=image&limit=2', tenant().admin.token);
@@ -336,7 +336,11 @@ export function describeMetering(name: string, makeBackend: () => Promise<Servic
       expect(next.body.events).toEqual(all.slice(2, 4));
       expect(all[0]).toEqual({ id: expect.any(String), at: expect.any(String), period: periodOf(world.clock.value), kind: 'image', quantity: 1, batchId: expect.any(String), index: expect.any(Number) });
       expect((await call('GET', `/v1/platform/tenants/${tenant().id}/usage/events?kind=image&limit=500`, platform)).body.events).toEqual(all);
-      for (const token of [tenant().operator.token, tenant().key.token, tenant().engineer.token]) expect((await call('GET', '/v1/usage', token)).status).toBe(403);
+      for (const token of [tenant().operator.token, tenant().key.token, tenant().engineer.token]) expect((await call('GET', '/v1/usage/events', token)).status).toBe(403);
+      // 合计（已用、预占、剩余）操作员与 API 密钥看到的与管理员相同（M300）：提交批次额度不够时，429 本来就告诉提交者这些数。
+      const summary = await call('GET', '/v1/usage', tenant().admin.token);
+      for (const token of [tenant().operator.token, tenant().key.token]) expect(await call('GET', '/v1/usage', token)).toMatchObject({ status: 200, body: summary.body });
+      expect((await call('GET', '/v1/usage', tenant().engineer.token)).status).toBe(403);
       // 另一个租户的管理员只看到自己的（没有用量）。
       const other = await call('GET', '/v1/usage/events?limit=500', world.a.admin.token);
       expect(other.body.events).toEqual([]);

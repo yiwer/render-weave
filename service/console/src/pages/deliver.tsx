@@ -169,7 +169,9 @@ export function DeliverSheet(props: {
 }
 
 const STATUS: Readonly<Record<ItemStatus, string>> = { queued: '排队', running: '渲染中', delivered: '已交付', failed: '失败', notRun: '未执行' };
-const fileSafe = (text: string) => text.replace(/[^\p{L}\p{N}._=-]+/gu, '_').slice(0, 80);
+export const fileSafe = (text: string) => text.replace(/[^\p{L}\p{N}._=-]+/gu, '_').slice(0, 80);
+/** 下载一项图片时的文件名：项序号加项 ID，如 0003-ds-m402_currentIndex=3.png；出图记录页同样命名。 */
+export const imageFileName = (index: number, id: string, file: string) => `${String(index).padStart(4, '0')}-${fileSafe(id)}${file.slice(file.lastIndexOf('.'))}`;
 
 /** 按参数出多张时，项 ID 是"数据集/参数=值"，格子上显示值。 */
 const tileLabel = (item: BatchItem) => /=(-?\d+)$/.exec(item.id)?.[1] ?? String(item.index);
@@ -201,7 +203,7 @@ function useBatch(id: string) {
 function itemFile(batchId: string, item: BatchItem) {
   const file = item.files?.image;
   if (!file) return undefined;
-  return { path: `/v1/batches/${batchId}/items/${item.index}/files/${file}`, filename: `${String(item.index).padStart(4, '0')}-${fileSafe(item.id)}${file.slice(file.lastIndexOf('.'))}` };
+  return { path: `/v1/batches/${batchId}/items/${item.index}/files/${file}`, filename: imageFileName(item.index, item.id, file) };
 }
 
 /** 选中的一项：图片、下载与问题说明。 */

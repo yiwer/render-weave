@@ -111,12 +111,12 @@ export async function createWorld(backend: ServiceBackend, options: { readonly a
 }
 export type World = Awaited<ReturnType<typeof createWorld>>;
 
-/** M247 的权限矩阵。 */
+/** M247 的权限矩阵；本期用量的合计操作员也能看（M300），明细仍只给客户管理员。 */
 const MATRIX: Record<IdentityRole, readonly string[]> = {
-  operator: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read'],
-  admin: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read',
+  operator: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary'],
+  admin: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary',
     'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read'],
-  apiKey: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'webhooks.manage'],
+  apiKey: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary', 'webhooks.manage'],
   authoringEngineer: ['authoring.read', 'authoring.push', 'authoring.preview'],
   platformAdmin: ['platform.tenants', 'platform.members', 'platform.authoringTokens', 'platform.plans'],
 };
@@ -200,8 +200,9 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/batches/:batchId/items/:index/replay', allow: ['admin', 'operator', 'apiKey'],
     request: () => ({ method: 'POST', url: `/v1/batches/${randomUUID()}/items/1/replay` }) },
   { route: 'GET /v1/platform/builds', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: '/v1/platform/builds' }) },
-  // 计量与额度（票据 09）：客户管理员看本租户的用量；平台管理员设套餐、看任一租户的用量，租户 ID 用随机值。
-  { route: 'GET /v1/usage', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage' }) },
+  // 计量与额度（票据 09）：本租户一个周期的用量合计客户成员与 API 密钥都能看（M300），明细只给客户管理员；
+  // 平台管理员设套餐、看任一租户的用量，租户 ID 用随机值。
+  { route: 'GET /v1/usage', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/usage' }) },
   { route: 'GET /v1/usage/events', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/usage/events' }) },
   { route: 'GET /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'], request: () => ({ method: 'GET', url: `/v1/platform/tenants/${randomUUID()}/plan` }) },
   { route: 'PUT /v1/platform/tenants/:tenantId/plan', allow: ['platformAdmin'],

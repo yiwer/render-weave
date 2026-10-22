@@ -3858,8 +3858,8 @@
         "tags": [
           "用量"
         ],
-        "summary": "本租户一个计费周期的用量与剩余额度",
-        "x-access": "usage.read",
+        "summary": "本租户一个计费周期的用量与剩余额度；客户成员与 API 密钥都能看",
+        "x-access": "usage.summary",
         "parameters": [
           {
             "name": "period",
@@ -3900,7 +3900,7 @@
         "tags": [
           "用量"
         ],
-        "summary": "用量明细，按 ID 倒序",
+        "summary": "用量明细，按 ID 倒序；只给客户管理员",
         "x-access": "usage.read",
         "parameters": [
           {

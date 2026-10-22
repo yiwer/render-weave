@@ -237,3 +237,23 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .slider { display: flex; align-items: center; gap: 12px; }
 .slider input[type="range"] { flex: 1; }
 .slider input[type="text"] { width: 72px; }
+
+/* 出图记录、用量、资源与管理（票据 14） */
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; padding: 18px 20px; }
+.filters .field { flex: 0 1 180px; }
+.filters .wide-field { flex: 1 1 320px; }
+.batch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; padding: 14px 20px; background: var(--accent-soft); border-color: var(--accent-soft); box-shadow: none; }
+.summary.stats dd .big-number { font-size: 28px; }
+.progress .reserved { background: var(--mark); }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.tabs button { min-height: 40px; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 0 16px; color: var(--muted); }
+.tabs button:hover:not(:disabled) { background: none; color: var(--ink); }
+.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.secret { margin-top: 16px; padding: 16px 18px; border-radius: var(--r); border: 1px solid var(--warn); background: var(--warn-soft); display: flex; flex-direction: column; gap: 10px; }
+.secret-value { display: block; padding: 10px 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; word-break: break-all; user-select: all; }
+.font-thumb { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; color: var(--muted); }
+.compare { display: flex; flex-wrap: wrap; gap: 16px; }
+.compare figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.compare .thumb { width: 96px; height: 96px; }
+.impact li { padding: 8px 0; border-top: 1px solid var(--hair); }
+.impact li:first-child { border-top: none; }

@@ -418,8 +418,8 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'POST /v1/batches/:batchId/items/:index/replay': { tag: '出图记录', summary: '重放：交给记录所属构建的 worker，与记录逐字节比对', errors: [429, 500, 503],
     replies: [ok(ref('ReplayResult'))] },
 
-  'GET /v1/usage': { tag: '用量', summary: '本租户一个计费周期的用量与剩余额度', replies: [ok(ref('Usage'))] },
-  'GET /v1/usage/events': { tag: '用量', summary: '用量明细，按 ID 倒序', replies: [ok(object({ period: str(), events: array(ref('UsageEvent')), next: str('下一页的 before') }, ['period', 'events']))] },
+  'GET /v1/usage': { tag: '用量', summary: '本租户一个计费周期的用量与剩余额度；客户成员与 API 密钥都能看', replies: [ok(ref('Usage'))] },
+  'GET /v1/usage/events': { tag: '用量', summary: '用量明细，按 ID 倒序；只给客户管理员', replies: [ok(object({ period: str(), events: array(ref('UsageEvent')), next: str('下一页的 before') }, ['period', 'events']))] },
 
   'POST /v1/webhooks': { tag: 'webhook', summary: '注册 webhook；签名密钥只在这里出现一次', errors: [409],
     description: '生产只收 https 与公网地址。缺省订阅 batch.finished。每个租户最多同时启用 10 个。',

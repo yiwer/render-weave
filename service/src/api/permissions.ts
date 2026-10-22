@@ -5,19 +5,22 @@
 import type { Identity } from '../backend.js';
 
 export type Permission =
-  | 'tenant.read' | 'datasets.write' | 'resources.upload' | 'preview' | 'deliver' | 'records.read'
+  | 'tenant.read' | 'datasets.write' | 'resources.upload' | 'preview' | 'deliver' | 'records.read' | 'usage.summary'
   | 'members.manage' | 'apiKeys.manage' | 'webhooks.manage' | 'resources.replace' | 'usage.read' | 'audit.read'
   | 'authoring.read' | 'authoring.push' | 'authoring.preview'
   | 'platform.tenants' | 'platform.members' | 'platform.authoringTokens' | 'platform.plans';
 
 export type IdentityRole = 'admin' | 'operator' | 'apiKey' | 'authoringEngineer' | 'platformAdmin';
 
-/** 客户操作员：管理数据集，上传新的图片与字体资源，预览、交付与查询记录。 */
-const OPERATOR: readonly Permission[] = ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read'];
+/**
+ * 客户操作员：管理数据集，上传新的图片与字体资源，预览、交付与查询记录；
+ * 另看本租户一个周期的用量合计（已用、预占、剩余，M300），用量明细（usage.read）仍只给客户管理员。
+ */
+const OPERATOR: readonly Permission[] = ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary'];
 
 export const ROLE_PERMISSIONS: Readonly<Record<IdentityRole, readonly Permission[]>> = {
   operator: OPERATOR,
-  /** 客户管理员：操作员的全部权限，另管成员、API 密钥与 webhook，替换已有资源，查看用量与审计。 */
+  /** 客户管理员：操作员的全部权限，另管成员、API 密钥与 webhook，替换已有资源，查看用量明细与审计。 */
   admin: [...OPERATOR, 'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read'],
   /** API 密钥：操作员的全部权限加 webhook 管理；不能管成员与密钥，也不能替换已有资源。 */
   apiKey: [...OPERATOR, 'webhooks.manage'],

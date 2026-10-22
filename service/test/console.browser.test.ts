@@ -12,8 +12,10 @@ import { createApi } from '../src/api/app.js';
 import { rendererBuildId } from '../src/engine.js';
 import { createLogger } from '../src/log.js';
 import { createMemoryBackend } from '../src/memory.js';
+import { startWebhookDispatcher } from '../src/webhooks.js';
 import { inProcessRunner, startScheduler } from '../src/worker/scheduler.js';
 import { describeConsole } from './console-suite.js';
+import { TEST_WEBHOOK_CONFIG } from './webhooks-suite.js';
 
 const CONSOLE_DIR = fileURLToPath(new URL('../dist/console/', import.meta.url));
 const browser = process.env['RW_BROWSER'];
@@ -25,11 +27,15 @@ describeConsole('内存后端', async () => createMemoryBackend(), {
   skip: !browser,
   inProcessWorker: true,
   start: async (backend) => {
-    const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', silent), passwordCost: 'test', secretKey: randomBytes(32), consoleDir: CONSOLE_DIR });
+    const secretKey = randomBytes(32), logger = createLogger('api', 'sha256:test', 'info', silent);
+    const app = createApi({ backend, build: 'sha256:test', logger, passwordCost: 'test', secretKey, consoleDir: CONSOLE_DIR, allowPrivateWebhooks: true });
     // 批次项按引擎的构建标识领取（ADR-0019）：进程内 worker 用本进程引擎的构建标识。
     const scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 20, workerId: 'console-browser', build: await rendererBuildId(), leaseMs: 120_000 });
+    // webhook 的投递任务与接口进程同一个服务密钥（票据 14 的投递记录），接收端在本机。
+    const dispatcher = startWebhookDispatcher({ backend, logger, secretKey, config: TEST_WEBHOOK_CONFIG });
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
-    return { baseUrl: address, stop: async () => { await scheduler.stop(); await app.close(); } };
+    return { baseUrl: address, stop: async () => { await dispatcher.stop(); await scheduler.stop(); await app.close(); } };
   },
   launch: { executablePath: browser ?? '', headless: true },
+  receiverHost: { bind: '127.0.0.1', advertise: '127.0.0.1' },
 });

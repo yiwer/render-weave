@@ -21,7 +21,11 @@ function imageResources(): Promise<ResourceInfo[]> {
   return resources;
 }
 
-function thumbnail(resource: ResourceInfo): Promise<string> {
+/** 资源上传或替换之后（资源页，票据 14）：下次选图时重新读列表。缩略图按"ID@版本"缓存，新版本自然换新。 */
+export function forgetResources(): void { resources = undefined; }
+
+/** 一个资源当前版本的缩略图（blob: 地址）。 */
+export function thumbnail(resource: ResourceInfo): Promise<string> {
   const key = `${resource.id}@${resource.currentVersion}`;
   let url = thumbnails.get(key);
   if (!url) {

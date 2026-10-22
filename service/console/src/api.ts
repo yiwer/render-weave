@@ -4,7 +4,8 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  BatchView, DatasetEntry, ExcelImport, Identity, PreviewReply, Problem, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Usage,
+  ApiKeyInfo, AuditEvent, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
+  StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
@@ -62,12 +63,39 @@ async function send(method: string, path: string, options: RequestOptions = {}):
 
 const json = async <T>(method: string, path: string, options?: RequestOptions) => (await send(method, path, options)).json() as Promise<T>;
 const enc = encodeURIComponent;
+/** 查询串：略去空值。 */
+const search = (query: Record<string, string | number | undefined>) => {
+  const text = new URLSearchParams(Object.entries(query).flatMap(([key, value]) => (value === undefined || value === '' ? [] : [[key, String(value)]]))).toString();
+  return text ? `?${text}` : '';
+};
+/** 翻页的回答：列表在 key 下，next 原样带回。 */
+const page = async <T>(path: string, key: string): Promise<PageOf<T>> => {
+  const reply = await json<Record<string, unknown>>('GET', path);
+  return { items: reply[key] as T[], ...(typeof reply['next'] === 'string' ? { next: reply['next'] } : {}) };
+};
+
+export interface RecordQuery { readonly batchId?: string; readonly template?: string; readonly from?: string; readonly to?: string; readonly before?: string }
 
 export const api = {
   login: (email: string, password: string) => json<{ token: string; identity: Identity }>('POST', '/v1/sessions', { json: { email, password } }),
   logout: async () => { await send('DELETE', '/v1/sessions/current'); },
   me: () => json<Identity>('GET', '/v1/me'),
-  usage: () => json<Usage>('GET', '/v1/usage'),
+  usage: (period?: string) => json<Usage>('GET', `/v1/usage${search({ period })}`),
+  usageEvents: (query: { readonly period?: string; readonly kind?: UsageKind; readonly before?: string }) =>
+    page<UsageEvent>(`/v1/usage/events${search({ ...query, limit: 50 })}`, 'events'),
+
+  records: (query: RecordQuery) => page<RecordEntry>(`/v1/records${search({ ...query, limit: 50 })}`, 'records'),
+
+  members: () => json<{ members: Member[] }>('GET', '/v1/members'),
+  updateMember: (id: string, change: { role?: Member['role']; active?: boolean }) => json<Member>('PATCH', `/v1/members/${enc(id)}`, { json: change }),
+  apiKeys: () => json<{ apiKeys: ApiKeyInfo[] }>('GET', '/v1/api-keys'),
+  createApiKey: (name: string) => json<{ key: string; apiKey: ApiKeyInfo }>('POST', '/v1/api-keys', { json: { name } }),
+  revokeApiKey: async (id: string) => { await send('DELETE', `/v1/api-keys/${enc(id)}`); },
+  auditEvents: (before?: string) => page<AuditEvent>(`/v1/audit-events${search({ limit: 50, before })}`, 'events'),
+  webhooks: () => json<{ webhooks: Webhook[] }>('GET', '/v1/webhooks'),
+  createWebhook: (body: { url: string; description?: string }) => json<{ webhook: Webhook; secret: string }>('POST', '/v1/webhooks', { json: body }),
+  updateWebhook: (id: string, change: { active?: boolean; description?: string }) => json<Webhook>('PATCH', `/v1/webhooks/${enc(id)}`, { json: change }),
+  webhookDeliveries: (id: string, before?: string) => page<WebhookDelivery>(`/v1/webhooks/${enc(id)}/deliveries${search({ limit: 50, before })}`, 'deliveries'),
 
   templates: () => json<{ templates: TemplateInfo[] }>('GET', '/v1/templates'),
   template: (name: string) => json<TemplateInfo>('GET', `/v1/templates/${enc(name)}`),
@@ -85,6 +113,10 @@ export const api = {
   resources: () => json<{ resources: ResourceInfo[] }>('GET', '/v1/resources'),
   resourceBytes: async (id: string, version: number) => (await send('GET', `/v1/resources/${enc(id)}/versions/${version}/content`)).arrayBuffer(),
   uploadImage: (file: Blob) => json<{ id: string; kind: 'image'; version: number }>('POST', '/v1/resources?kind=image', { bytes: file }),
+  uploadResource: (kind: 'image' | 'font', file: Blob, id?: string) =>
+    json<{ id: string; kind: 'image' | 'font'; version: number }>('POST', `/v1/resources${search({ kind, id })}`, { bytes: file }),
+  checkReplacement: (id: string, file: Blob) => json<{ check: ReplacementCheck; problems: Problem[] }>('POST', `/v1/resources/${enc(id)}/replacement-checks`, { bytes: file }),
+  applyReplacement: (id: string, check: ReplacementCheck) => json<{ id: string; version: number }>('POST', `/v1/resources/${enc(id)}/replacements`, { json: { check } }),
 
   importExcel: (request: { template: string; workbook: string; parameters: unknown; output: unknown }) => json<ExcelImport>('POST', '/v1/excel-imports', { json: request }),
 

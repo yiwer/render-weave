@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from './api.js';
-import type { PreviewReply, Problem } from './types.js';
+import type { PageOf, PreviewReply, Problem } from './types.js';
 
 export interface Route { readonly path: readonly string[]; readonly query: URLSearchParams }
 
@@ -50,6 +50,38 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
     return () => { live = false; };
   }, [key, round]);
   return { ...state, reload: useCallback(() => setRound((value) => value + 1), []) };
+}
+
+export interface Paged<T> {
+  readonly items: readonly T[];
+  readonly next?: string;
+  readonly problems?: readonly Problem[];
+  readonly loading: boolean;
+  readonly more: () => void;
+  readonly reload: () => void;
+}
+
+/** 翻页加载（出图记录、用量明细、审计日志、投递记录）：key 变了从第一页重来，"加载更多"接在后面；先到的旧结果不覆盖新的。 */
+export function usePaged<T>(load: (before?: string) => Promise<PageOf<T>>, key: string): Paged<T> {
+  const [state, setState] = useState<{ items: readonly T[]; next?: string; problems?: readonly Problem[]; loading: boolean }>({ items: [], loading: true });
+  const loader = useRef(load), ticket = useRef(0);
+  loader.current = load;
+  const fetchPage = useCallback((before: string | undefined) => {
+    const mine = ++ticket.current;
+    setState((previous) => ({ ...(before ? previous : { items: [] }), loading: true }));
+    loader.current(before).then(
+      (page) => { if (mine === ticket.current) setState((previous) => ({ items: [...(before ? previous.items : []), ...page.items], ...(page.next ? { next: page.next } : {}), loading: false })); },
+      // 加载更多失败时保留已有的与 next，可以再点一次。
+      (error: unknown) => { if (mine === ticket.current) setState((previous) => ({ items: before ? previous.items : [], ...(before && previous.next ? { next: previous.next } : {}), problems: problemsOf(error), loading: false })); },
+    );
+  }, []);
+  useEffect(() => { fetchPage(undefined); }, [key, fetchPage]);
+  useEffect(() => () => { ticket.current++; }, []);
+  return {
+    ...state,
+    more: useCallback(() => { if (state.next) fetchPage(state.next); }, [state.next, fetchPage]),
+    reload: useCallback(() => fetchPage(undefined), [fetchPage]),
+  };
 }
 
 export function problemsOf(error: unknown): readonly Problem[] {
