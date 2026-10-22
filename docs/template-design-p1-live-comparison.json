@@ -1,0 +1,1004 @@
+{
+  "format": "renderweave-p1-live-comparison/1",
+  "date": "2026-10-22",
+  "codeCommit": "9b4a832",
+  "implementationCommit": "c780e52",
+  "handoffCommit": "d906463",
+  "credentials": {
+    "source": "Windows User OPEN_CODE_API_KEY → child process",
+    "matchedUserProvided": true,
+    "priorInheritedProcessMatched": false
+  },
+  "protocol": "docs/template-design-p1-live-protocol.md",
+  "model": "claude-haiku-5-5",
+  "currentMcpContract": "0.9.0",
+  "threshold": 60000,
+  "comparableInputs": true,
+  "inputFields": [
+    "sample",
+    "brief",
+    "workspace",
+    "dataset",
+    "request"
+  ],
+  "resourceEvidence": {
+    "currentHashesEqual": true,
+    "historicalRunContents": "unknown; reports did not snapshot a separate resource-content digest"
+  },
+  "currentPlansEqual": true,
+  "groups": {
+    "before": {
+      "n": 2,
+      "measured": 2,
+      "peak": 125601.5,
+      "wallMs": 503892,
+      "requests": 26,
+      "outputTokens": 73076.5,
+      "ssim": 0.6600637322747103,
+      "rgb": 0.9234185772770704
+    },
+    "p0": {
+      "n": 2,
+      "measured": 2,
+      "peak": 120896.5,
+      "wallMs": 457992,
+      "requests": 29.5,
+      "outputTokens": 70998.5,
+      "ssim": 0.5607374088754177,
+      "rgb": 0.8847970960639105
+    },
+    "unlimited": {
+      "n": 2,
+      "measured": 2,
+      "peak": 93877,
+      "wallMs": 301581,
+      "requests": 26.5,
+      "outputTokens": 48434.5,
+      "ssim": 0.5407332601179227,
+      "rgb": 0.8645921372141668
+    },
+    "handoff": {
+      "n": 2,
+      "measured": 2,
+      "peak": 66196,
+      "wallMs": 325578,
+      "requests": 30.5,
+      "outputTokens": null,
+      "ssim": 0.5419606664668415,
+      "rgb": 0.8694185551538802
+    }
+  },
+  "rows": [
+    {
+      "id": "before-1",
+      "group": "before",
+      "sourceCommit": "8f845f8",
+      "mcpContract": "0.8.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "round": "out/p0-baseline/out/p0-before-native/run-1/m402-template/template",
+      "peak": 130106,
+      "wallMs": 542712,
+      "requests": 19,
+      "outputTokens": 72940,
+      "ssim": 0.689852538134936,
+      "rgb": 0.9272900314505251,
+      "casesPassed": 8,
+      "cases": 8,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p0-baseline\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.309Z",
+          "historicalRunContentHash": null
+        },
+        "checks": null
+      }
+    },
+    {
+      "id": "before-2",
+      "group": "before",
+      "sourceCommit": "8f845f8",
+      "mcpContract": "0.8.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "round": "out/p0-baseline/out/p0-before-native/run-2/m402-template/template",
+      "peak": 121097,
+      "wallMs": 465072,
+      "requests": 33,
+      "outputTokens": 73213,
+      "ssim": 0.6302749264144846,
+      "rgb": 0.9195471231036159,
+      "casesPassed": 8,
+      "cases": 8,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p0-baseline\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.328Z",
+          "historicalRunContentHash": null
+        },
+        "checks": null
+      }
+    },
+    {
+      "id": "initial-failure",
+      "group": "initial-failure",
+      "sourceCommit": "0b6140f",
+      "mcpContract": "0.8.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "round": "out/p0-after/run-1/m402-template/template",
+      "peak": 103989,
+      "wallMs": 423018,
+      "requests": 26,
+      "outputTokens": 65601,
+      "ssim": 0.5608191582145394,
+      "rgb": 0.8909304619232788,
+      "casesPassed": 7,
+      "cases": 8,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.346Z",
+          "historicalRunContentHash": null
+        },
+        "checks": null
+      }
+    },
+    {
+      "id": "final-1",
+      "group": "p0",
+      "sourceCommit": "c2aac1f",
+      "mcpContract": "0.8.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "round": "out/p0-after-boundaries/run-1/m402-template/template",
+      "peak": 99111,
+      "wallMs": 375363,
+      "requests": 21,
+      "outputTokens": 63286,
+      "ssim": 0.5585092029587513,
+      "rgb": 0.8896756277841934,
+      "casesPassed": 8,
+      "cases": 8,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.365Z",
+          "historicalRunContentHash": null
+        },
+        "checks": null
+      }
+    },
+    {
+      "id": "final-2",
+      "group": "p0",
+      "sourceCommit": "c2aac1f",
+      "mcpContract": "0.8.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "round": "out/p0-after-boundaries/run-2/m402-template/template",
+      "peak": 142682,
+      "wallMs": 540621,
+      "requests": 38,
+      "outputTokens": 78711,
+      "ssim": 0.5629656147920841,
+      "rgb": 0.8799185643436277,
+      "casesPassed": 8,
+      "cases": 8,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.382Z",
+          "historicalRunContentHash": null
+        },
+        "checks": null
+      }
+    },
+    {
+      "id": "unlimited-1",
+      "group": "unlimited",
+      "sourceCommit": "9b4a832",
+      "implementationCommit": "c780e52",
+      "mcpContract": "0.9.0",
+      "round": "out/p1-live-key-verified/run-1/m402-template/template",
+      "firstRound": "out/p1-live-key-verified/run-1/m402-template/template",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "verdict": "qualified",
+      "peak": 87378,
+      "wallMs": 269560,
+      "requests": 29,
+      "outputTokens": 44497,
+      "runtimeStartup": [
+        {
+          "round": "out/p1-live-key-verified/run-1/m402-template/template",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "outputUsage": [
+        {
+          "round": "out/p1-live-key-verified/run-1/m402-template/template",
+          "complete": true,
+          "outputTokens": 44497,
+          "observedOutputTokensLowerBound": 270,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        }
+      ],
+      "outputUsageComplete": true,
+      "observedOutputTokensLowerBound": 270,
+      "visualStatus": "compared",
+      "ssim": 0.5422693375717308,
+      "rgb": 0.863912107056215,
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.409Z",
+          "historicalRunContentHash": null
+        },
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "planHash": "48ecada52260346d396dd0aaf285423b7362010fd5e58ac37bbb319ccdd1d8c0",
+      "fingerprint": "d62734c45d167ee03479b62281b22894e83dfa9d2acfa699ab7da1faf919030f",
+      "compactions": 0,
+      "report": "docs/agent-eval/reports/template-design-p1-live-unlimited-1.json",
+      "scoreUnavailableReason": ""
+    },
+    {
+      "id": "unlimited-2",
+      "group": "unlimited",
+      "sourceCommit": "9b4a832",
+      "implementationCommit": "c780e52",
+      "mcpContract": "0.9.0",
+      "round": "out/p1-live-key-verified/run-2/m402-template/template",
+      "firstRound": "out/p1-live-key-verified/run-2/m402-template/template",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "verdict": "qualified",
+      "peak": 100376,
+      "wallMs": 333602,
+      "requests": 24,
+      "outputTokens": 52372,
+      "runtimeStartup": [
+        {
+          "round": "out/p1-live-key-verified/run-2/m402-template/template",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "outputUsage": [
+        {
+          "round": "out/p1-live-key-verified/run-2/m402-template/template",
+          "complete": true,
+          "outputTokens": 52372,
+          "observedOutputTokensLowerBound": 271,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        }
+      ],
+      "outputUsageComplete": true,
+      "observedOutputTokensLowerBound": 271,
+      "visualStatus": "compared",
+      "ssim": 0.5391971826641146,
+      "rgb": 0.8652721673721187,
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.437Z",
+          "historicalRunContentHash": null
+        },
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "planHash": "48ecada52260346d396dd0aaf285423b7362010fd5e58ac37bbb319ccdd1d8c0",
+      "fingerprint": "dfa6abc1b46350ff994c60e95400a84b15f0ab360926a0db11f8c0b32ba5a87f",
+      "compactions": 0,
+      "report": "docs/agent-eval/reports/template-design-p1-live-unlimited-2.json",
+      "scoreUnavailableReason": ""
+    },
+    {
+      "id": "handoff-1",
+      "group": "handoff",
+      "sourceCommit": "d906463",
+      "implementationCommit": "c780e52",
+      "mcpContract": "0.9.0",
+      "round": "out\\p1-handoff-key-verified-1\\resumed",
+      "firstRound": "out\\p1-handoff-key-verified-1\\stopped",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "verdict": "qualified",
+      "peak": 68539,
+      "wallMs": 316980,
+      "requests": 32,
+      "outputTokens": null,
+      "runtimeStartup": [
+        {
+          "round": "out\\p1-handoff-key-verified-1\\stopped",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-1\\resumed",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "outputUsage": [
+        {
+          "round": "out\\p1-handoff-key-verified-1\\stopped",
+          "complete": false,
+          "outputTokens": null,
+          "observedOutputTokensLowerBound": 61,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-1\\resumed",
+          "complete": true,
+          "outputTokens": 24291,
+          "observedOutputTokensLowerBound": 201,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        }
+      ],
+      "outputUsageComplete": false,
+      "observedOutputTokensLowerBound": 262,
+      "visualStatus": "compared",
+      "ssim": 0.5348348337548674,
+      "rgb": 0.8687215164031156,
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.471Z",
+          "historicalRunContentHash": null
+        },
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "planHash": "48ecada52260346d396dd0aaf285423b7362010fd5e58ac37bbb319ccdd1d8c0",
+      "fingerprint": "5524c750ede427cdb753eff0a20045c25085e4d42bec5e2299c8e2762fd4dfb6",
+      "compactions": 0,
+      "handoff": {
+        "baseline": {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-live-key-verified\\run-1\\m402-template\\template",
+          "verdict": "qualified",
+          "peakInputTokens": 87378,
+          "requests": 29,
+          "outputTokens": 44497,
+          "wallMs": 269560,
+          "stopped": null
+        },
+        "limit": 60000,
+        "first": {
+          "verdict": "unqualified",
+          "peakInputTokens": 64559,
+          "requests": 8,
+          "wallMs": 156100,
+          "stopped": {
+            "reason": "contextLimit",
+            "limit": 60000,
+            "observedInputTokens": 64559
+          }
+        },
+        "resumed": {
+          "verdict": "qualified",
+          "peakInputTokens": 68539,
+          "requests": 24,
+          "outputTokens": 24291,
+          "wallMs": 160880,
+          "stopped": null
+        },
+        "note": "单次受控实验；各轮峰值取最大，计费用量与时间相加。接续不等于质量通过，须另外运行原场景评分。",
+        "rounds": [
+          {
+            "round": "out\\p1-handoff-key-verified-1\\stopped",
+            "run": {
+              "wallMs": 156100,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "context": {
+                "requests": 8,
+                "peakInputTokens": 64559,
+                "compactions": 0
+              },
+              "exitCode": 1,
+              "contextStopped": {
+                "reason": "contextLimit",
+                "limit": 60000,
+                "observedInputTokens": 64559
+              },
+              "handoffSha256": "37776d1ae91f65a6f2ffdc0c7be48c1d243360ad88b8030d22cb630d298503e2",
+              "error": "有效输入达到交接阈值 60000（观测 64559）。已保存本轮；用 --from \"C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-1\\stopped\" --feedback \"C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-1\\stopped\\handoff-feedback.md\" --out <新轮次目录> 续跑；新一轮预算需显式指定。",
+              "mcp": [
+                "rw:connected"
+              ]
+            }
+          },
+          {
+            "round": "out\\p1-handoff-key-verified-1\\resumed",
+            "run": {
+              "wallMs": 160880,
+              "turns": 48,
+              "inputTokens": 48,
+              "outputTokens": 24291,
+              "thinkingTokens": 12481,
+              "cacheReadTokens": 1006379,
+              "cacheCreationTokens": 60777,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 24,
+                "peakInputTokens": 68539,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "fef16c8f4ba53c9be848d64eacc9468095103a81d5acfe2e7bdf799ef80e760c",
+              "mcp": [
+                "rw:connected"
+              ]
+            }
+          }
+        ],
+        "triggered": true,
+        "didResume": true,
+        "saved": {
+          "source": "agent",
+          "reason": "contextLimit",
+          "candidates": 4,
+          "workingCandidates": 4,
+          "progressWarning": "Agent 未保存进度，按候选与原始要求继续"
+        }
+      },
+      "report": "docs/agent-eval/reports/template-design-p1-live-handoff-1.json",
+      "scoreUnavailableReason": ""
+    },
+    {
+      "id": "handoff-2",
+      "group": "handoff",
+      "sourceCommit": "d906463",
+      "implementationCommit": "c780e52",
+      "mcpContract": "0.9.0",
+      "round": "out\\p1-handoff-key-verified-2\\resumed",
+      "firstRound": "out\\p1-handoff-key-verified-2\\stopped",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "verdict": "qualified",
+      "peak": 63853,
+      "wallMs": 334176,
+      "requests": 29,
+      "outputTokens": null,
+      "runtimeStartup": [
+        {
+          "round": "out\\p1-handoff-key-verified-2\\stopped",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-2\\resumed",
+          "skills": [],
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "outputUsage": [
+        {
+          "round": "out\\p1-handoff-key-verified-2\\stopped",
+          "complete": false,
+          "outputTokens": null,
+          "observedOutputTokensLowerBound": 104,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-2\\resumed",
+          "complete": true,
+          "outputTokens": 21602,
+          "observedOutputTokensLowerBound": 113,
+          "source": "按 message ID 去重的 context.json usage；只有完整 result usage 才记完整输出总量"
+        }
+      ],
+      "outputUsageComplete": false,
+      "observedOutputTokensLowerBound": 217,
+      "visualStatus": "compared",
+      "ssim": 0.5490864991788155,
+      "rgb": 0.870115593904645,
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "resources": {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+          "currentContentHash": "61b3827c2e1f3cafb54a9e4c923856b3c114e6f76759ba8c5764c1ad40871792",
+          "measuredAt": "2026-10-22T19:42:41.501Z",
+          "historicalRunContentHash": null
+        },
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "planHash": "48ecada52260346d396dd0aaf285423b7362010fd5e58ac37bbb319ccdd1d8c0",
+      "fingerprint": "3d49061c12bf88f15f88e85631161a99b9994340e16b41981e4ba597d4c99e36",
+      "compactions": 0,
+      "handoff": {
+        "baseline": {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-live-key-verified\\run-2\\m402-template\\template",
+          "verdict": "qualified",
+          "peakInputTokens": 100376,
+          "requests": 24,
+          "outputTokens": 52372,
+          "wallMs": 333602,
+          "stopped": null
+        },
+        "limit": 60000,
+        "first": {
+          "verdict": "unqualified",
+          "peakInputTokens": 60458,
+          "requests": 11,
+          "wallMs": 163269,
+          "stopped": {
+            "reason": "contextLimit",
+            "limit": 60000,
+            "observedInputTokens": 60458
+          }
+        },
+        "resumed": {
+          "verdict": "qualified",
+          "peakInputTokens": 63853,
+          "requests": 18,
+          "outputTokens": 21602,
+          "wallMs": 170907,
+          "stopped": null
+        },
+        "note": "单次受控实验；各轮峰值取最大，计费用量与时间相加。接续不等于质量通过，须另外运行原场景评分。",
+        "rounds": [
+          {
+            "round": "out\\p1-handoff-key-verified-2\\stopped",
+            "run": {
+              "wallMs": 163269,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 60458,
+                "compactions": 0
+              },
+              "exitCode": 1,
+              "contextStopped": {
+                "reason": "contextLimit",
+                "limit": 60000,
+                "observedInputTokens": 60458
+              },
+              "handoffSha256": "4a60b067e93ac2bc8eaeac78d32468f397be7316fdcd0797347260e8a8fc7d0f",
+              "error": "有效输入达到交接阈值 60000（观测 60458）。已保存本轮；用 --from \"C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-2\\stopped\" --feedback \"C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-2\\stopped\\handoff-feedback.md\" --out <新轮次目录> 续跑；新一轮预算需显式指定。",
+              "mcp": [
+                "rw:connected"
+              ]
+            }
+          },
+          {
+            "round": "out\\p1-handoff-key-verified-2\\resumed",
+            "run": {
+              "wallMs": 170907,
+              "turns": 43,
+              "inputTokens": 36,
+              "outputTokens": 21602,
+              "thinkingTokens": 8845,
+              "cacheReadTokens": 647922,
+              "cacheCreationTokens": 56091,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 18,
+                "peakInputTokens": 63853,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "ae9dcd6354fdf70745d2a9a2aad1b4b95d58e592f3169ef2086db484345ce7b3",
+              "mcp": [
+                "rw:connected"
+              ]
+            }
+          }
+        ],
+        "triggered": true,
+        "didResume": true,
+        "saved": {
+          "source": "agent",
+          "reason": "contextLimit",
+          "candidates": 4,
+          "workingCandidates": 4,
+          "progressWarning": "Agent 未保存进度，按候选与原始要求继续"
+        }
+      },
+      "report": "docs/agent-eval/reports/template-design-p1-live-handoff-2.json",
+      "scoreUnavailableReason": ""
+    }
+  ],
+  "note": "每组两次；历史时段与当前时段不同。无阈值和交接组串行。峰值取单请求有效输入最大值，交接两轮耗时/输出相加；像素是同一核查器离线重放，不构成语义或视觉合格线。"
+}

@@ -1,0 +1,139 @@
+{
+  "round": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-1\\resumed",
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "protocol": "anthropic",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "maxTurns": 80,
+    "effort": null,
+    "contextLimit": null,
+    "skills": "disabled",
+    "keyEnv": "OPEN_CODE_API_KEY",
+    "tools": "Read,Write,Edit,Glob",
+    "mcpTools": [
+      "list_documents",
+      "read_document",
+      "list_resources",
+      "check_templates",
+      "render_draft",
+      "inspect_layout",
+      "view_image",
+      "dsl_reference",
+      "check_outcome"
+    ]
+  },
+  "verdict": "qualified",
+  "source": {
+    "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\p1-handoff-key-verified-1\\stopped",
+    "round": 1,
+    "outcomeSha256": "2d1b112822696b562fc70c8e93d3cd11ae0f1978e8551ec245cb22d002709e18",
+    "reviewSha256": null,
+    "reviewStatus": null
+  },
+  "run": {
+    "wallMs": 160880,
+    "turns": 48,
+    "inputTokens": 48,
+    "outputTokens": 24291,
+    "thinkingTokens": 12481,
+    "cacheReadTokens": 1006379,
+    "cacheCreationTokens": 60777,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 24,
+      "peakInputTokens": 68539,
+      "compactions": 0
+    },
+    "exitCode": 0,
+    "handoffSha256": "fef16c8f4ba53c9be848d64eacc9468095103a81d5acfe2e7bdf799ef80e760c",
+    "mcp": [
+      "rw:connected"
+    ]
+  },
+  "checks": {
+    "sample": {
+      "severe": 0,
+      "hint": 0,
+      "similarity": 0.8671
+    },
+    "stress": [
+      {
+        "label": "35 站本站 5",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "本站 0",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "本站 1",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "本站 35",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "2 站",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "20 站",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "50 站 740",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "50 站 1500",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "35 站 1500",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      },
+      {
+        "label": "12 字站名",
+        "severe": 0,
+        "hint": 0,
+        "codes": []
+      }
+    ],
+    "stressPassed": 10,
+    "landmarkBaseline": {
+      "found": true,
+      "deltaMm": 0,
+      "pass": true
+    },
+    "roadAlign": {
+      "aligns": [
+        "spaceEvenly"
+      ],
+      "pass": true
+    },
+    "layoutPassed": 2
+  },
+  "qualityPass": true
+}

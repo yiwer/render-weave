@@ -51,7 +51,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
 - **模板设计上下文 P0（2026-10-22）**：在 template-design 分支落实短任务核心、DSL 与设计指导按需读取、逐请求上下文观测、显式阈值停止及恢复交接、业务 skills 隔离（M305、ADR-0023）。实施范围见[规格](.scratch/template-design-context/spec.md)，实测与 review 见[验收记录](docs/template-design-p0-acceptance.md)；原方案见[架构评审](docs/template-design-harness-review.md)。Haiku 5.5 对照已完成：初版发现子模板边界规则遗漏，补回后按 M230 通过四场景门槛，失败样本保留。后续边界与视觉核查进入下述 P1；票据 34、35、38 的其他验收项和阶段 4 的其余排期不由本批关闭。
-- **模板设计核查 P1（2026-10-22）**：加入可选宿主核查计划、原数据边界组合、逐实例样式规则、局部 SSIM/RGB 与区域/元素定位、候选内容指纹及有界摘要（M306，MCP 0.9.0）。范围与未完成项见[票据](.scratch/template-design-verification/issues/01-boundaries-and-visual-evidence.md)，测试、review 及历史候选对照见[实测记录](docs/template-design-p1-acceptance.md)。下一步在 OpenCode Go 额度恢复后补跑当前合同的 Haiku 5.5 门槛，再做真实阈值停止/交接对照；项目样式须另行核准，语义信息覆盖仍待后续实现。
+- **模板设计核查 P1（2026-10-22）**：加入可选宿主核查计划、原数据边界组合、逐实例样式规则、局部 SSIM/RGB 与区域/元素定位、候选内容指纹及有界摘要（M306，MCP 0.9.0）。范围见[票据](.scratch/template-design-verification/issues/01-boundaries-and-visual-evidence.md)，实现验证见[验收](docs/template-design-p1-acceptance.md)。纠正 Process 旧凭据后，指定 User 密钥通过 Haiku 5.5 完整门槛；真实两组交接及改前改后对照见[结果](docs/template-design-p1-live-results.md)。实测上下文降低但像素相似度未提高；下一步优先核准项目样式与区域纠偏，并补检查点进度交接（本批恢复了候选，但两组均缺 Agent 进度说明）。语义信息覆盖仍待后续实现；本机调用前按[开发环境](docs/dev-setup.md)同步 User 值。
 
 ## 已实现能力
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 无
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** [规格](../spec.md) A01–A06；用户 2026-10-22 指示。
 
@@ -13,9 +13,21 @@
 - [x] SSIM、RGB 差异、热图与区域/元素定位。
 - [x] 候选绑定、接续、审核及应用重核。
 - [x] 短摘要与按需资料。
-- [ ] 测试、两轴 review、真实模型及交接对照。
+- [x] 测试、两轴 review、真实模型及交接对照。
 
 **测试接缝：** src/index.ts 公开核查入口、runAgentTask、check_outcome、审核及应用。
+
+## Answer
+
+2026-10-22 完成。实现与离线验证见[实现验收](../../../docs/template-design-p1-acceptance.md)，补跑的真实证据见[最终结果](../../../docs/template-design-p1-live-results.md)、[完整门槛报告](../../../docs/agent-eval/reports/2026-10-22-template-design-p1-key-verified.json)、[逐组对照 JSON](../../../docs/template-design-p1-live-comparison.json)与[交互页](../../../docs/agent-eval/figures/template-design-p1-live/index.html)。
+
+- `npm run typecheck`、`npm run build` 通过；`npx vitest run --project engine` 为 45 文件、957 测试通过。核查器自 c780e52 未变，本次仅补证据与文档。
+- 显式从 Windows User 作用域载入 OPEN_CODE_API_KEY 后，`npx tsx scripts/agent-eval/run.ts --repeat 2 --jobs 1 --model claude-haiku-5-5 --small-model claude-haiku-5-5 --key-env OPEN_CODE_API_KEY --design-checks scripts/agent-eval/scenarios/m402/design-checks.json --label template-design-p1-key-verified --out out/p1-live-key-verified --reports out/reports`：8/8 门槛通过。先前旧 Process 值的 429 不适用于用户指定密钥。
+- 对两份同版基线分别运行 `node scripts/agent-handoff-eval.mjs --baseline <原轮次> --limit 60000 --out <新目录>`，各停止并接续一次；最终均为 10/10 压测、2/2 版面断言、8/8 组合。平均峰值 66,196 tokens、两轮合计 5.43 分钟、SSIM 0.5420。每组只有两次，效果不作稳定性推断。
+- 新增四组成果分别用 `verify-template-design.mjs` 和原 `scoreTemplates` 核对；汇总均值对回 round/context 日志，未知资源历史和中断输出不记为零。Playwright 检查 9 候选 × 5 区域、1440/390 宽度通过，0 页面脚本错误；链接与凭据扫描通过。
+- 代码的两轴 review 已无剩余 finding。本轮证据 review 另修正工具数量的任务范围：13 个仅指模板会话，不能泛指提取任务。复核后 Standards 硬问题 0、possible smell 0；Spec finding 0。
+
+验收偏差与边界：无遗漏的 A01–A06 项；实测不支持像素质量提升，M402 未核准样式仍不作通过承诺。两次交接保存了候选，但 Agent 未保存进度说明；这是恢复能力的实际限制，后续需补检查点进度。票据 34、35、38 的其他要求不随本票关闭。
 
 ## Comments
 

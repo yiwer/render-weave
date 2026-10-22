@@ -2,7 +2,7 @@
 
 日期：2026-10-22。分支：`template-design`。改前基线：`1a4740b`；核查器最终代码：`c780e52`。范围见[规格](../.scratch/template-design-verification/spec.md)，验收状态以[票据 01](../.scratch/template-design-verification/issues/01-boundaries-and-visual-evidence.md)为准。
 
-**判断：应该引入像素比对，并把低分区域连到模板元素。实现已通过离线测试与两轴 review；它能定位已知问题，但尚无证据证明 P1 使真实 Agent 生成的模板更好。** Haiku 5.5 的首个请求被 OpenCode Go 额度 429 拒绝，模型门槛及真实交接对照未完成。
+**判断：应该引入像素比对，并把低分区域连到模板元素。实现已通过离线测试与两轴 review；它能定位已知问题，但实测没有显示 P1 提高了像素相似度。** 纠正本机凭据作用域后，Haiku 5.5 / MCP 0.9.0 的完整模型门槛已 8/8 通过。改前改后与真实交接的最终数据见[真实评估结果](template-design-p1-live-results.md)及[扩展交互页](agent-eval/figures/template-design-p1-live/index.html)。下文保留实现验收和早期失败经过。
 
 先看[交互对照页](agent-eval/figures/template-design-p1/index.html)：五组历史候选可以切换，点击最差区域后，参考图、候选局部、差异热图与元素路径同步定位。原始数据在[回放汇总](template-design-p1-evidence.json)，每份宿主报告由其中的 report 路径指向。
 
@@ -64,7 +64,7 @@ node scripts/verify-template-design.mjs --round out/p0-after/run-1/m402-template
 
 交互页用本机 Playwright/Chromium 检查五个候选各五个区域、图片加载、单一区域选择与标注框；1440 px 桌面和 390 px 手机宽度无横向溢出，无页面脚本错误，并查看截图核对局部图及标注。
 
-## 真实模型与交接的未完成项
+## 早期模型调用失败与凭据纠正
 
 真实调用使用 OPEN_CODE_API_KEY 环境变量、主/小模型均 claude-haiku-5-5、Claude Code 2.1.296、MCP 0.9.0、jobs=1。[原始失败报告](agent-eval/reports/2026-10-22-template-design-p1-incomplete.json)保留当时提交 **229fd2c**；不把它改写成最终 c780e52。
 
@@ -74,22 +74,4 @@ node scripts/verify-template-design.mjs --round out/p0-after/run-1/m402-template
 
 **凭据纠正：** 随后按用户要求逐作用域核对，发现 Process 作用域仍继承旧值，User 作用域才与用户指定密钥相同。因此前述 429 不能用来判断用户指定密钥的额度。显式从 User 读取到评估子进程后，Haiku 已正常返回输出；新批次改用 template-design-p1-key-verified，协议和凭据链路见[真实评估口径](template-design-p1-live-protocol.md)。旧失败报告不改写。
 
-本次可复用的历史对照是下面这组 P0 新建模板结果，每组两次的算术平均。上下文与耗时来自[真实模型记录](template-design-p0-model-eval.json)，像素分数来自同批候选用最终核查器的[离线回放](template-design-p1-evidence.json)。这组数据不替代 P1 或交接实验：
-
-| 指标 | P0 改前 8f845f8 | P0 修订后 c2aac1f |
-|---|---:|---:|
-| SSIM（2048 × 457，越高越接近） | 0.6601 | 0.5607 |
-| RGB 相似度（相同采样） | 0.9234 | 0.8848 |
-| 单请求上下文峰值 tokens | 125,601.5 | 120,896.5 |
-| 单次模板设计耗时，分钟 | 8.40 | 7.63 |
-
-上下文峰值下降 3.75%，耗时下降 9.11%，像素相似度下降。两次样本和历史运行的环境波动不支持稳定效果推断。额度恢复时间未由本次错误提供。
-
-额度恢复后，沿用以下最终版 label/out 续跑即可；当前仅增加文档与报告，不改变运行代码或资料。若后续修改运行代码或资料，则重新建立 label/out，保留每批真实 provenance：
-
-```powershell
-npm run build
-npx tsx scripts/agent-eval/run.ts --repeat 2 --jobs 1 --model claude-haiku-5-5 --small-model claude-haiku-5-5 --key-env OPEN_CODE_API_KEY --design-checks scripts/agent-eval/scenarios/m402/design-checks.json --label template-design-p1-final --out out/p1-live-final --reports out/reports
-```
-
-再从同版无阈值模板轮次选基线，预先登记阈值及选择依据，运行 `node scripts/agent-handoff-eval.mjs --baseline <该轮次> --limit <输入tokens> --out <新目录>`。仅在阈值停止后接续一次，峰值取各轮最大值，计费用量与时间相加，并用原场景评分单独核对质量；发生质量失败照实保留。脚本就绪不等于这项实验通过。
+后续使用指定 User 凭据完成新批次，完整报告、统一像素重算、上下文峰值、耗时和交接代价集中在[真实评估结果](template-design-p1-live-results.md)。旧失败报告和时间线保留；它们不代表指定密钥的额度，也不再作为下一步续跑入口。

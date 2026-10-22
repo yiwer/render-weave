@@ -19,9 +19,9 @@
 
 `--design-checks <计划.json>` 只给新建模板轮次传入宿主核查计划，修改任务继续遵守原有修改范围。计划内容随轮次保存，最终报告的固定质量评分不因此改变。受控交接对照用 `scripts/agent-handoff-eval.mjs --baseline <本版无阈值模板轮次> --limit <输入token> --out <新目录>`：只在阈值停止后接续一次，另存每轮峰值和耗时，不重试质量失败。
 
-P1 的边界与区域像素核查见[实测记录](template-design-p1-acceptance.md)及[五组历史候选交互对照](agent-eval/figures/template-design-p1/index.html)。合同 0.9.0 的[真实 Haiku 评估](agent-eval/reports/2026-10-22-template-design-p1-incomplete.json)首请求遇到额度 429，0 有效样本，门槛 incomplete；离线回放不代表 P1 生成质量提升，真实交接对照仍待运行。
+P1 的边界与区域像素核查见[实现验收](template-design-p1-acceptance.md)。纠正本机凭据作用域后，Haiku 5.5 / MCP 0.9.0 的[完整评估](agent-eval/reports/2026-10-22-template-design-p1-key-verified.json)四场景各两次全部通过。统一像素比对、上下文峰值、耗时和 60k 交接的对照见[真实评估结果](template-design-p1-live-results.md)、[对照 JSON](template-design-p1-live-comparison.json)与[交互页](agent-eval/figures/template-design-p1-live/index.html)；每组两次不构成稳定效果证明。
 
-2026-10-22 10:17 PDT 在 5352393 上[复查并补跑最终版](agent-eval/reports/2026-10-22-template-design-p1-final-incomplete.json)，首请求仍遇到 Go usage limit exceeded（429），0 有效样本，其余 7 个单元停止派发。使用 template-design-p1-final / out/p1-live-final 保留续跑位置，未启动交接实验。
+早期两次失败报告（[初次](agent-eval/reports/2026-10-22-template-design-p1-incomplete.json)、[最终代码复查](agent-eval/reports/2026-10-22-template-design-p1-final-incomplete.json)）均用到了进程继承的旧 OPEN_CODE_API_KEY，首请求为额度 429、0 有效样本。用户指定值实际保存在 Windows User 作用域；显式读取后真实调用成功。因此旧 429 不能用来判断指定密钥的额度。新批次和交接按[预登记口径](template-design-p1-live-protocol.md)执行，原失败报告不改写。
 
 上下文 P0 的本地体积、真实 Haiku 5.5 对照与初版失败记录见 [验收记录](template-design-p0-acceptance.md)。`context.json` 的单请求峰值与本文件的累计计费用量分开看；脚本端点的合成 usage 不计入模型质量或上下文 token 对照。显式禁用 skills 的初版已跑四场景各两次；补回模板指导后重跑受影响的两个模板场景，沿用未变的提取场景结果，M230 门槛通过。原始报告：[改前](agent-eval/reports/2026-10-22-template-design-p0-before.json)、[初版](agent-eval/reports/2026-10-22-template-design-p0-initial.json)、[修订后](agent-eval/reports/2026-10-22-template-design-p0-final.json)。
 
