@@ -17,6 +17,8 @@
 
 ## 运行
 
+上下文 P0 的本地体积对照与真实模型阻塞记录见 [验收记录](template-design-p0-acceptance.md)。`context.json` 的单请求峰值与本文件的累计计费用量分开看；脚本端点的合成 usage 不计入模型质量或上下文 token 对照。显式禁用 skills 影响所有任务的运行时，因此这批最终启用前仍需四场景各连续两次通过；模板两个场景用于有针对性的改前/改后比较。
+
 ```bash
 npm run build
 npx tsx scripts/agent-eval/run.ts

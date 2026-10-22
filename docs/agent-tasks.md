@@ -49,10 +49,11 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
 | `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M287） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
+| `--context-limit` | 可选，正整数；观测到单请求有效输入 token（包括缓存）达到阈值后停止并保存。不指定时仅观测；不是请求前硬上限，也不继承上一轮值 |
 | `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
 
-**三种任务**：
+**四种任务**：
 
 | 任务 | 前提（M43） | 成果 | DSL 参考 | MCP 工具 | 轮数上限 |
 |---|---|---|---|---|---|
@@ -103,14 +104,31 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
   - `candidates/` 放好上一轮成果，作为本轮的起点；
   - `previous/` 是上一轮的原样记录：`candidates/`（含审核时的修改）、`outcome.json`、`review.json`、`check.json`（有哪些给哪些）；
   - `docs/feedback.md` 是反馈，也存进轮次目录的 `feedback.md`；
-  - 提示词在任务提示词之后接上 `agent/tasks/next-round.md`：第几轮、各文件的用途、候选从哪里开始，以及反馈优先于其余资料。
+  - 提取任务接上 `agent/tasks/next-round.md`；模板任务用更短的 `template-next-round.md`，先取交接与反馈，其余历史按问题回读。
 - **模板辅助修改的下一轮**：已保存的模板自上一轮之后没变时，候选从上一轮的工作副本继续；变了，候选从最新保存的内容开始，`inputs.previous.basisChanged` 为 `true`。变了有两种情况，提示词分别说明：上一轮已经应用，最新内容就含上一轮的修改；别人保存过（例如应用时发现冲突、选择重做），上一轮的工作副本只放在 `previous/` 作参考。
 - **轮次链**：`round.json` 的 `inputs.previous` 记录上一轮的目录、轮次、成果与审核结果的 SHA-256 及审核状态，`round` 为上一轮加 1。审核视图的 `round.chain` 沿它追溯到第 1 轮，列出每轮的结论、审核状态与是否应用；某一轮的目录读不到时，链在那里断开并标出。公开入口 `readRoundChain` 给出同样的链。
+
+## 上下文观测与恢复交接（M305）
+
+模板设计/修改先读项目输入与 `docs/core.md`，语法先查 `docs/dsl-index.md` 再读对应章节。章节从权威 `agent/reference/template.md` 生成；完整参考和示例没有删掉，也不预先整篇注入。客户说明与修改要求不被摘要替代。
+
+每轮有 `context.json`：按 assistant message ID 去重的请求 usage、有效输入峰值、压缩边界、工具结果文字字符数/图片数/编码字符数及运行时 skills/plugins/tools。有效输入是新输入加缓存读取和缓存创建；未报告输入时为未知，峰值为 `null`。结果末尾的累计 usage 仍按原计费口径保留，不能当作窗口占用。字符数不是 token，图片编码长度也不是视觉 token。某个运行时不输出 usage/压缩事件时，宿主无法补出该观测；它既不证明占用为零，也不证明未发生压缩。
+
+缺省只观测。给 `--context-limit 60000` 表示观测到有效输入至少 60,000 后停止本轮，这个数字只是参数示例，**不是推荐的注意力阈值**。它在收到响应 usage 后生效，不能拦住已经发出的超大请求，且可能中断下一次文件写入；宿主只恢复能读取的候选，不自动重试。
+
+模板 Agent 在骨架与阶段结束保存 `outcome.json` 和短 `state.json`。宿主结束后在 Agent 目录之外写 `handoff.json`、`handoff-feedback.md`，记录来源、候选哈希、项目/工作区/资料/资源内容指纹和进度自述；记录的交接哈希保存在 `round.json`。接续时校验交接、输入和候选，审核修改或内容变化会让旧摘要失效。未知/不合格/过大的 state 不进入交接。旧核查从不充当本轮通过凭据。
+
+```bash
+renderweave agent run --from <上一轮目录> --feedback <上一轮目录>/handoff-feedback.md --out <新轮次目录> [--context-limit <本轮阈值>] [--model …]
+```
+
+仍要显式选择本轮模型与预算；全历史不自动重放，`previous/` 按问题读取。已有有效成果继续按正常审核规则处理；缺少有效成果时保存的 `draft.json` 仍是 hostRecovery，只能查看和接续，不能批准或应用。
 
 ## 隔离
 
 - **环境**：子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 `CLAUDE_*`、`ANTHROPIC_*` 变量与登录凭据。
 - **配置目录**：独立，放在轮次目录的 `logs/claude-config/`。
+- **skills**：始终传 `--disable-slash-commands`，在业务运行时禁用技能发现，不修改开发者个人插件配置。实际登记清单见 `context.json` 的 runtime；内建插件元数据仍可能出现，不能把“skills 为空”说成“没有插件”。
 - **key**：只从环境变量读取，只在内存中传给子进程。轮次目录的任何文件里都没有 key，`round.json` 只记录变量名。
 - **权限**：
   - 以 `--restricted` 运行，没有执行代码的工具，文件工具限于 Agent 工作目录；

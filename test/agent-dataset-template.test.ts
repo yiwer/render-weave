@@ -189,8 +189,8 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(template.record.runtime.maxTurns).toBe(80);
     const prompt = (await json(join(template.roundDir, 'agent/fake-run.json'))).prompt;
     expect(prompt).toContain('主模板名 问候横幅');
-    expect(prompt).toContain('已保存的 ds-greeting');
-    expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
+    expect(prompt).toContain('已有数据集 ds-greeting');
+    expect(await readFile(join(template.roundDir, 'agent/docs/dsl-index.md'), 'utf8')).toContain('完整示例');
     expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
       .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome');
     expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')) });

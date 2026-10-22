@@ -8,9 +8,13 @@
 |---|---|---|---|
 | 项目说明 | 每次发起时用 `--brief` 给出，模板见 [briefs/_template.md](briefs/_template.md) | 这一单的事实：尺寸、目标范围、命名、客户说明 | `docs/brief.md` |
 | 领域约定 | [domains/](domains/)`<领域>.md`，用 `--domain` 选，模板见 [domains/_template.md](domains/_template.md) | 只在某个行业成立、跨项目都适用的约定 | `docs/domain-<领域>.md` |
-| 通用做法 | [guide.md](guide.md)，每次都给 | 任何"示例图 → 数据定义 → 模板"都适用的做法 | `docs/guide.md` |
+| 通用做法 | 提取用 [guide.md](guide.md)，模板设计/修改用 [template-core.md](template-core.md) | 当前任务必需的通用做法 | 提取为 `docs/guide.md`，模板为 `docs/core.md` |
 
 三者冲突时：项目说明 > 领域约定 > 通用做法。模板辅助修改的修改要求、下一轮的反馈另有更高的优先级，见任务提示词。
+
+模板任务只复制领域包的开头适用条件及“模板”章节。完整客户原文保持不变。DSL 从 `reference/template.md` 自动生成 `docs/dsl-index.md` 与 `docs/dsl/section-*.md`，索引带原文哈希和章节大小；按当前需要读取，完整示例也可取回。模板成果格式使用 `reference/template-outcome.md`，提取沿用 `reference/outcome.md`。不再要求先读完全部资料。
+
+模板下一轮用 `tasks/template-next-round.md`；先读短交接和反馈，旧轮文件按问题回读。业务执行器用 `--disable-slash-commands` 禁用技能发现，不加载开发者的 Matt Pocock 等个人编码 skills；开发本项目时使用的 skills 不受影响。
 
 ## 归属规则
 

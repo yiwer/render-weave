@@ -23,6 +23,12 @@ await writeFile('fake-run.json', JSON.stringify({
 if (preset !== 'none') await cp(preset, process.cwd(), { recursive: true });
 const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
 write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
+// 逐条发运行时事件；等待期间仍存活，供宿主停止/交接测试使用。
+if (existsSync('.events.json')) for (const event of JSON.parse(readFileSync('.events.json', 'utf8'))) write(event);
+if (existsSync('.wait-after-events')) {
+  await new Promise((done) => setTimeout(done, 20000));
+  await writeFile('continued-after-events', '运行时仍在继续');
+}
 // 错误事件后仍尝试继续运行，用于验证宿主主动停止，而不是假执行器自行退出。
 if (existsSync('.runtime-error.json')) {
   const event = JSON.parse(readFileSync('.runtime-error.json', 'utf8'));

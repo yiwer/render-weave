@@ -236,8 +236,8 @@ describe('带反馈的下一轮（M58）', () => {
     expect(await readFile(join(agent, 'docs/feedback.md'), 'utf8')).toBe(await readFile(feedback, 'utf8'));
     expect(await readFile(join(second.roundDir, 'feedback.md'), 'utf8')).toBe(await readFile(feedback, 'utf8'));
     const prompt = (await json(join(agent, 'fake-run.json'))).prompt as string;
-    const nextRound = (await readFile(join(repoRoot, 'agent/tasks/next-round.md'), 'utf8')).replaceAll('{round}', '2');
-    expect(prompt.startsWith((await readFile(join(repoRoot, 'agent/tasks/template-design.md'), 'utf8')).replaceAll('{sample}', 'sample.png').slice(0, 20))).toBe(true);
+    const nextRound = (await readFile(join(repoRoot, 'agent/tasks/template-next-round.md'), 'utf8')).replaceAll('{round}', '2');
+    expect(prompt).toContain('为已发布的 问候 v1 设计模板');
     expect(prompt).toContain(nextRound.split('{seeds}')[0]);
     expect(prompt).toContain('candidates/ 中已放好上一轮的成果（含审核时的修改）');
     expect(prompt).not.toMatch(/\{(round|seeds|sample|template|dataset)\}/);
@@ -345,7 +345,7 @@ describe('模板辅助修改：发起与成果', () => {
     expect(await json(join(round.roundDir, 'logs/outcome-context.json'))).toEqual({
       task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] },
     });
-    expect(await readFile(join(agent, 'docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
+    expect(await readFile(join(agent, 'docs/dsl-index.md'), 'utf8')).toContain('完整示例');
   });
 
   it('成果带相对已保存模板的结构化差异；没改的只记提示；可以新建模板，调用树以外的已保存模板不能改', async () => {

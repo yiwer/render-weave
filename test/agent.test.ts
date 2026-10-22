@@ -128,7 +128,7 @@ describe('发起一轮数据定义提取', () => {
     expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: 'https://endpoint.example/anthropic', configDir: join(logs, 'claude-config') });
     expect(fake.args).toEqual(['-p', '--output-format', 'stream-json', '--verbose', '--model', 'model-x', '--restricted', '--tools', 'Read,Write,Edit,Glob',
       '--mcp-config', join(logs, 'mcp.json'), '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
-      '--max-turns', '9', '--no-session-persistence']);
+      '--max-turns', '9', '--no-session-persistence', '--disable-slash-commands']);
     const mcp = JSON.parse(await readFile(join(logs, 'mcp.json'), 'utf8'));
     expect(Object.keys(mcp.mcpServers)).toEqual(['rw']);
     expect(mcp.mcpServers.rw.args.slice(1)).toEqual(['mcp', '--workspace', join(result.roundDir, 'snapshot'), '--resources', resourcesDir, '--root', agent,
