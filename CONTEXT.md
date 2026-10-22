@@ -50,6 +50,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **Gemini 长调用（2026-10-20）**：用 Gemini 4 Argon 实跑阿拉伯文站牌时，模板轮 5 次在约 300 秒处失败，根因是转换代理自己用的全局 fetch 有固定 300 秒超时。票据 25 已完成（M287）：代理改走流式 `streamGenerateContent`、连上游改用 `node:http(s)`，失败日志分连接、状态码、流中三个阶段并带底层原因。Gemini 评估门槛没有重跑，按 M232 的先例用真实模型跑一轮数据定义提取核对链路，下一次 Gemini 评估一并覆盖。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
+- **模板设计质量方案（2026-10-22）**：以 StaticSchema、示例数据集和示例图均已提供为前提，梳理了现有 harness/context、设计目标与核查闭环、优先级、验收矩阵及方案 review，见[架构评审](docs/template-design-harness-review.md)与[证据附录](docs/template-design-evidence.md)。首批建议复用票据 34、35；属于后续实施建议，不改变当前阶段排期或已接受决定。
+
 ## 已实现能力
 
 领域模型文档含未来设计，当前可执行的能力以本节为准。
