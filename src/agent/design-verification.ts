@@ -87,13 +87,15 @@ export interface DesignVerification {
   readonly fingerprint: string;
   readonly planSha256: string;
   readonly cases: readonly { readonly id: string; readonly passed: boolean; readonly problems: readonly string[];
-    readonly checkedInstances: number; readonly visibleInstances: number; readonly uncoveredCount: number; readonly uncovered: readonly string[] }[];
+    readonly checkedInstances: number; readonly visibleInstances: number; readonly uncoveredCount: number; readonly uncovered: readonly string[];
+    readonly failureCount: number; readonly failures: readonly DesignFailure[] }[];
   readonly failureCount: number;
-  readonly failures: readonly { readonly case: string; readonly style?: string; readonly path?: string; readonly message: string }[];
+  readonly failures: readonly DesignFailure[];
   readonly visual?: ImageDifference;
   readonly content: 'needsReview';
   readonly detailsTruncated: boolean;
 }
+interface DesignFailure { readonly case: string; readonly style?: string; readonly path?: string; readonly message: string }
 
 export interface DesignCheckInput { readonly plan: DesignCheckPlan; readonly sampleFile: string }
 
@@ -105,16 +107,20 @@ export function summarizeDesign(report: DesignVerification, caseId?: string): Re
     caseCount: report.cases.length, passedCases: report.cases.filter((c) => c.passed).length, failureCount: report.failureCount,
     cases: [] as unknown[], failures: [] as unknown[], visual: report.visual ? { ...report.visual, worstRegions: [] as unknown[] } : undefined,
     truncated: report.detailsTruncated, hint: '用 check_outcome({designCase: 用例ID}) 按需取该用例详情；轮次结束后的 check.json 保存宿主报告，细节截断由 detailsTruncated 标记。' };
-  const keep = (target: unknown[], item: unknown) => {
+  const keep = (target: unknown[], item: unknown): boolean => {
     target.push(item);
-    if (JSON.stringify(result).length > 8000) { target.pop(); result.truncated = true; }
+    if (JSON.stringify(result).length > 8000) { target.pop(); result.truncated = true; return false; }
+    return true;
   };
-  for (const failure of report.failures.filter((f) => caseId === undefined || f.case === caseId)) keep(result.failures, failure);
+  const details: { target: unknown[]; paths: readonly string[] }[] = [];
   for (const c of selected) {
-    const { problems: _problems, uncovered: _uncovered, ...counts } = c;
-    keep(result.cases, caseId === undefined ? counts : c);
+    const { problems: _problems, uncovered, failures: _failures, ...counts } = c;
+    const item = { ...counts, ...(caseId !== undefined ? { uncovered: [] as unknown[] } : {}) };
+    if (keep(result.cases, item) && item.uncovered) details.push({ target: item.uncovered, paths: uncovered });
   }
+  for (const failure of caseId === undefined ? report.failures : selected[0]!.failures) keep(result.failures, failure);
   for (const region of report.visual?.worstRegions ?? []) keep(result.visual!.worstRegions, region);
+  for (const detail of details) for (const path of detail.paths) keep(detail.target, path);
   if (report.failureCount > report.failures.length) result.truncated = true;
   return result;
 }
@@ -149,7 +155,7 @@ export async function verifyTemplateDesign(options: {
   const planSha256 = sha256(canonical(plan));
   const fingerprint = sha256(canonical({ plan, request: options.request, base, templates: workspace.templates,
     candidates: options.candidates, schemas: workspace.staticSchemas, resources, sample: options.sample ? sha256(options.sample) : null }));
-  const failures: { case: string; style?: string; path?: string; message: string }[] = [];
+  const failures: DesignFailure[] = [];
   const cases = [];
   let visual: ImageDifference | undefined, heatmap: Uint8Array | undefined;
   for (const c of [{ id: 'reference' }, ...plan.cases] as readonly CheckCase[]) {
@@ -208,11 +214,12 @@ export async function verifyTemplateDesign(options: {
     nodes = nodes.filter((n) => !n.children?.length);
     const uncovered = nodes.filter((n) => !covered.has(n.path)).map((n) => n.path);
     cases.push({ id: c.id, passed: before === failures.length, problems: problems.slice(0, 10), checkedInstances: covered.size,
-      visibleInstances: nodes.length, uncoveredCount: uncovered.length, uncovered: uncovered.slice(0, 12) });
+      visibleInstances: nodes.length, uncoveredCount: uncovered.length, uncovered: uncovered.slice(0, 12),
+      failureCount: failures.length - before, failures: failures.slice(before, before + 12) });
   }
   return { report: { status: failures.length ? 'failed' : 'passed', fingerprint, planSha256, cases,
     failureCount: failures.length, failures: failures.slice(0, 40), ...(visual ? { visual } : {}), content: 'needsReview',
-    detailsTruncated: failures.length > 40 || cases.some((c) => c.uncoveredCount > c.uncovered.length) }, ...(heatmap ? { heatmap } : {}) };
+    detailsTruncated: failures.length > 40 || cases.some((c) => c.uncoveredCount > c.uncovered.length || c.failureCount > c.failures.length) }, ...(heatmap ? { heatmap } : {}) };
 }
 
 export function withCandidateTemplates(workspace: Workspace, candidates: readonly CandidateDocument[]): Workspace {

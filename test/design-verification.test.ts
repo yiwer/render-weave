@@ -167,5 +167,18 @@ it('长名称与24个用例仍能经MCP返回有界结论，并按用例取详�
     const detail = await mcp.callJson('check_outcome', { designCase: 'c22' });
     expect(detail.assessment.design.cases).toHaveLength(1);
     expect(detail.assessment.design.cases[0].uncovered).toHaveLength(12);
+    // 前面用例耗尽全局40项后，后面的样式失败仍可按用例取回。
+    const failing = { ...p, styles: [{ id: '尺寸', path: '长名称核查/*', expect: { width: { min: 2, max: 3 } } }] };
+    await writeFile(context, JSON.stringify({ task: 'template-design', request: greetingRequest({ template: main.name }),
+      designChecks: { plan: failing, sampleFile: join(root, 'sample.png') } }));
   } finally { await mcp.close(); }
+  const failingMcp = startMcp(['--workspace', singleTextDir, '--resources', resourcesDir, '--root', root, '--outcome-context', context]);
+  try {
+    const last = await failingMcp.callJson('check_outcome', { designCase: 'c22' });
+    expect(last.assessment.design).toMatchObject({ status: 'failed', failureCount: 288 });
+    expect(last.assessment.design.cases[0]).toMatchObject({ id: 'c22', passed: false, failureCount: 12 });
+    expect(last.assessment.design.failures.length).toBeGreaterThan(0);
+    expect(last.assessment.design.failures.every((f: { case: string; message: string }) => f.case === 'c22' && f.message.includes('width'))).toBe(true);
+    expect(JSON.stringify(last.assessment.design).length).toBeLessThanOrEqual(8000);
+  } finally { await failingMcp.close(); }
 });

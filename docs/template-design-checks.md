@@ -2,7 +2,7 @@
 
 `agent run --checks <计划.json>` 给本轮指定宿主核查计划。StaticSchema、数据集与示例图仍是已有输入。计划保存在 Agent 工作目录之外；Agent 只能读取副本。`check_outcome`、轮次结束、审核修改与应用共用核查实现，每次从当前候选重新计算。
 
-宿主报告在 `check.json` 的 `assessment.design`，包含候选/计划/请求/数据/资源/示例图内容绑定指纹。失败保留总数及前 40 项、每例未覆盖保留总数及前 12 项，细节截断由 detailsTruncated 标记。声明的边界或样式失败使成果不合格；`passed` 仅表示计划里的检查通过，`uncoveredCount` 和 `content: needsReview` 继续说明未覆盖要求。接续沿用原计划，计划被改动时拒绝继续。
+宿主报告在 `check.json` 的 `assessment.design`，包含候选/计划/请求/数据/资源/示例图内容绑定指纹。失败保留总数及全局前 40 项，每例另保留自己的失败总数及前 12 项；每例未覆盖也保留总数及前 12 项，细节截断由 detailsTruncated 标记。声明的边界或样式失败使成果不合格；`passed` 仅表示计划里的检查通过，`uncoveredCount` 和 `content: needsReview` 继续说明未覆盖要求。接续沿用原计划，计划被改动时拒绝继续。
 
 ## 核查计划
 
