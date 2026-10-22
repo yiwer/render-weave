@@ -11,7 +11,7 @@ import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import type { ClaimedTask, ItemResult, ReplayResult, TaskResult } from '../backend.js';
 import type { Logger } from '../log.js';
-import { emptyStats, workerProblem, WorkerProblemCodes, type Runner } from './scheduler.js';
+import { countRender, emptyStats, workerProblem, WorkerProblemCodes, type Runner } from './scheduler.js';
 
 export interface ChildRunnerOptions {
   /** 子进程脚本（render-child.js）。 */
@@ -105,9 +105,10 @@ export function childRunner(options: ChildRunnerOptions): Runner {
         await retire(current, 'startFailed');
         return workerProblem(WorkerProblemCodes.crashed, (error as Error).message);
       }
-      const before = await oomKills();
+      const before = await oomKills(), started = Date.now();
       const outcome = await dispatch(current, task, signal);
       stats.tasks++;
+      countRender(stats, started);
       if ('result' in outcome) {
         current.tasks++;
         if (current.tasks >= recycleAfter) await retire(current, 'recycle');

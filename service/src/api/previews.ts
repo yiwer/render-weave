@@ -5,13 +5,13 @@
  *   无法展开的请求不入队，直接答与单次渲染相同的问题清单；预览不计额度，按租户限制并发（套餐的并发数）与频率。
  */
 import type { FastifyInstance } from 'fastify';
-import type { Plan, TaskResult, TenantScope } from '../backend.js';
+import type { Plan, StoredDocument, TaskResult, TenantScope } from '../backend.js';
 import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem, type RenderMeasure } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
 import { ApiError, fail, notFound, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
 
-/** 入队前的限制与预览的频率。数值是暂定的，容量基线（票据 15）实测后再定；并发数与单张最大像素另由套餐定（票据 09）。 */
+/** 入队前的限制与预览的频率，数值按容量基线定（票据 15，M302）；并发数与单张最大像素另由套餐定（票据 09）。 */
 export interface ServiceLimits {
   /** 请求体的字节数，内联的数据集算在里面。 */
   readonly maxRequestBytes: number;
@@ -64,11 +64,13 @@ export interface PreviewReply {
   readonly layout?: TaskResult['layout'];
 }
 
-/** 引用的已保存数据集超出字节上限时的问题；source 是请求里数据集的位置。 */
-export async function datasetLimitProblems(limits: ServiceLimits, scope: TenantScope, dataset: unknown, source: string): Promise<ServiceProblem[]> {
+/**
+ * 引用的已保存数据集超出字节上限时的问题；documents 是租户的文档清单（一个请求读一次，批次的各项共用），source 是请求里数据集的位置。
+ */
+export function datasetLimitProblems(limits: ServiceLimits, documents: readonly StoredDocument[], dataset: unknown, source: string): ServiceProblem[] {
   const datasetId = (dataset as { id?: unknown } | undefined)?.id;
   if (typeof datasetId !== 'string') return [];
-  const stored = (await scope.storage.authoringState()).documents.find((document) => document.kind === 'dataset' && document.key === datasetId);
+  const stored = documents.find((document) => document.kind === 'dataset' && document.key === datasetId);
   return stored && stored.byteLength > limits.maxDatasetBytes
     ? [problem(ServiceProblemCodes.limitDatasetTooLarge, source, `数据集 ${datasetId} 有 ${stored.byteLength} 字节，超出上限 ${limits.maxDatasetBytes} 字节`)] : [];
 }
@@ -99,7 +101,7 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   }
   const request = { ...input, mode: 'draft' };
 
-  const dataset = await datasetLimitProblems(limits, scope, input['dataset'], 'request.dataset');
+  const dataset = datasetLimitProblems(limits, (await scope.storage.authoringState()).documents, input['dataset'], 'request.dataset');
   if (dataset.length) throw new ApiError(413, dataset);
 
   const measured = measureRender(await loadTenantWorkspace(scope.storage), request);

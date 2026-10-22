@@ -89,7 +89,9 @@ services:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
   # 渲染 worker：调度进程领取任务交给渲染子进程，单项超时由调度进程结束子进程；内存上限是容器的限制，不用交换分区（ADR-0017）。
-  # 数值是暂定的缺省值，容量基线实测后再定；Docker 后端测试用极小的值（service/scripts/test-docker.mjs）。
+  # 数值按容量基线定（票据 15，M302，docs/stage4-acceptance.md）：每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒、做满 500 项换新。
+  # 渲染是单线程的，多给 CPU 不变快，要加吞吐就多起 worker：RW_WORKERS 个，宿主端口给一段，如 RW_WORKER_PORT=8081-8088。
+  # Docker 后端测试用极小的值（service/scripts/test-docker.mjs）。
   # 停止时排空：不再领预览，做完本构建已接受的批次项再退出（票据 07），所以停止宽限要够做完排队的批次。
   worker:
     image: renderweave-service:local
@@ -98,8 +100,11 @@ services:
     stop_grace_period: ${RW_WORKER_STOP_GRACE:-30m}
     environment:
       <<: *service-env
-      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-60000}
       RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
+    deploy:
+      replicas: ${RW_WORKERS:-1}
+    cpus: ${RW_WORKER_CPUS:-1}
     mem_limit: ${RW_WORKER_MEMORY:-2g}
     memswap_limit: ${RW_WORKER_MEMORY:-2g}
     ports:
@@ -121,8 +126,9 @@ services:
     stop_grace_period: ${RW_WORKER_STOP_GRACE:-30m}
     environment:
       <<: *service-env
-      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-60000}
       RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
+    cpus: ${RW_WORKER_CPUS:-1}
     mem_limit: ${RW_WORKER_MEMORY:-2g}
     memswap_limit: ${RW_WORKER_MEMORY:-2g}
     depends_on:
@@ -139,13 +145,15 @@ services:
       context: .
       dockerfile: service/Dockerfile
       target: test
+      args:
+        ALPINE_MIRROR: ${RW_ALPINE_MIRROR:-}
     image: renderweave-service-test:local
     environment:
       <<: [*service-env, *webhook-env]
       RW_OWNER_DATABASE_URL: postgres://renderweave:${RW_POSTGRES_PASSWORD:?缺少 RW_POSTGRES_PASSWORD}@postgres:5432/renderweave
       RW_API_URL: http://api:8080
       RW_WORKER_URL: http://worker:8081
-      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-30000}
+      RW_RENDER_TIMEOUT_MS: ${RW_RENDER_TIMEOUT_MS:-60000}
       RW_RENDER_RECYCLE_AFTER: ${RW_RENDER_RECYCLE_AFTER:-500}
     depends_on:
       worker:

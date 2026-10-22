@@ -27,6 +27,12 @@ it('接口进程与 worker：存活与就绪检查都通过，带同一个构建
     expect(await get(`${url}/readyz`)).toMatchObject({ status: 200, body: {
       status: 'ready', ready: true, schemaVersion: migrations.length, checks: { database: 'ok', migrations: 'ok', storage: 'ok' } } });
   }
+  // 票据 15：worker 的就绪检查另带队列积压（各种类排队与渲染中的任务数，排队最久的等了多久），存活检查带渲染用时；
+  // 接口进程的就绪检查对外公开，不带积压。
+  const counts = { preview: expect.any(Number), batchItem: expect.any(Number), replay: expect.any(Number) };
+  expect((await get(`${workerUrl}/readyz`)).body.queue).toEqual({ queued: counts, running: counts, oldestQueuedMs: expect.any(Number) });
+  expect((await get(`${apiUrl}/readyz`)).body).not.toHaveProperty('queue');
+  expect(worker.body.renderer).toMatchObject({ renderMs: expect.any(Number), maxRenderMs: expect.any(Number) });
 });
 
 it('服务用的是应用账号：不是超级用户，也不是表的属主，行级安全对它生效', async () => {

@@ -6,6 +6,7 @@
  */
 import type { ReleasedReservation, ServiceBackend } from './backend.js';
 import type { Logger } from './log.js';
+import { every } from './periodic.js';
 import { WORKER_STALE_MS } from './worker/scheduler.js';
 
 /** 对账一次：接受批次的构建在 WORKER_STALE_MS 内没有 worker 报到、批次闲置超过 graceMs，就退回它的预占。 */
@@ -20,20 +21,9 @@ export interface Reconciler {
 /** 定期对账；每退回一个批次的预占记一行日志（租户、批次与数目，不含业务内容）。 */
 export function startReconciler(options: { readonly backend: ServiceBackend; readonly logger: Logger; readonly intervalMs: number; readonly graceMs: number }): Reconciler {
   const { backend, logger, intervalMs, graceMs } = options;
-  let running: Promise<void> = Promise.resolve();
-  const tick = () => {
-    running = running.then(async () => {
-      try {
-        for (const entry of await reconcileReservations(backend, new Date(), graceMs)) logger.info(entry, '对账：退回遗留的预占');
-      } catch (error) { logger.warn({ err: error }, '对账失败，下次再试'); }
-    });
-  };
-  tick();
-  const timer = setInterval(tick, intervalMs);
-  return {
-    async stop() {
-      clearInterval(timer);
-      await running;
-    },
-  };
+  return every(intervalMs, async () => {
+    try {
+      for (const entry of await reconcileReservations(backend, new Date(), graceMs)) logger.info(entry, '对账：退回遗留的预占');
+    } catch (error) { logger.warn({ err: error }, '对账失败，下次再试'); }
+  });
 }

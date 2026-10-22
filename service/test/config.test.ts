@@ -48,3 +48,11 @@ it('接口进程的 webhook 配置：服务密钥必填、是 64 位十六进制
   expect(() => loadWebhookConfig({ RW_SECRET_KEY: key, RW_WEBHOOK_MAX_ATTEMPTS: '0' })).toThrow(/RW_WEBHOOK_MAX_ATTEMPTS/);
   expect(() => loadWebhookConfig({ RW_SECRET_KEY: key, RW_WEBHOOK_ALLOW_PRIVATE: 'yes' })).toThrow(/RW_WEBHOOK_ALLOW_PRIVATE/);
 });
+
+it('worker 与任务行清理的缺省值按容量基线（票据 15，M302）：单项超时 60 秒、做满 500 项换新；预览与重放的任务行保留 1 小时，至少 2 分钟', async () => {
+  const { loadTaskRetentionMs, loadWorkerConfig } = await import('../src/config.js');
+  expect(loadWorkerConfig({})).toEqual({ renderTimeoutMs: 60_000, recycleAfter: 500, pollMs: 100 });
+  expect(loadTaskRetentionMs({})).toBe(3_600_000);
+  expect(loadTaskRetentionMs({ RW_TASK_RETENTION_MS: '120000' })).toBe(120_000);
+  expect(() => loadTaskRetentionMs({ RW_TASK_RETENTION_MS: '60000' })).toThrow('环境变量 RW_TASK_RETENTION_MS 必须是不小于 120000 的整数');
+});

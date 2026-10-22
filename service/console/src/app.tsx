@@ -5,7 +5,7 @@
  * 登录后按 # 路由切换页面；界面只做中文。
  */
 import { useEffect, useState } from 'react';
-import { api, onUnauthorized, session } from './api.js';
+import { api, onUnauthorized, onUsageChanged, session } from './api.js';
 import { Logo } from './components/logo.js';
 import { href, useRoute } from './hooks.js';
 import { AdminPage } from './pages/admin.js';
@@ -51,16 +51,21 @@ export function App() {
   return <Shell identity={identity} onLogout={() => void logout()} />;
 }
 
-/** 本月剩余张数：客户管理员与操作员都看得到（M300）。 */
-function Quota() {
+/**
+ * 本月剩余张数：客户管理员与操作员都看得到（M300）。提交、取消批次与批次结束时重新读取；
+ * 换页时也读一次，别的成员或 API 密钥出的图在这里看得到。
+ */
+function Quota(props: { readonly page: string }) {
   const [text, setText] = useState<string>();
+  const [version, setVersion] = useState(0);
+  useEffect(() => onUsageChanged(() => setVersion((value) => value + 1)), []);
   useEffect(() => {
     let live = true;
     api.usage().then((usage) => {
       if (live) setText(`本月剩余 ${usage.images.remaining.toLocaleString('zh-CN')} / ${usage.images.limit.toLocaleString('zh-CN')} 张`);
     }, () => undefined);
     return () => { live = false; };
-  }, []);
+  }, [props.page, version]);
   return text ? <span className="quota" data-testid="quota">{text}</span> : null;
 }
 
@@ -105,7 +110,7 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
           {props.identity.role === 'admin' && tab('admin', '管理')}
         </nav>
         <div className="account">
-          <Quota />
+          <Quota page={path.join('/')} />
           <span className="who" title={props.identity.email}>{props.identity.email} · {ROLE[props.identity.role] ?? props.identity.role}</span>
           <button type="button" className="small quiet" onClick={props.onLogout}>退出</button>
         </div>

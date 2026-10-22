@@ -5,7 +5,7 @@
  * - 进度：逐项格子显示状态，点一项看图、下载或看问题说明；进行中能取消；结束后下载整批压缩包（票据 07、08）。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { api, saveBlob } from '../api.js';
+import { api, saveBlob, usageChanged } from '../api.js';
 import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, type ParameterValues } from '../components/parameters.js';
 import { ErrorBox, locationText } from '../components/problems.js';
 import { href, problemsOf } from '../hooks.js';
@@ -188,6 +188,8 @@ function useBatch(id: string) {
         setBatch(view);
         setProblems(undefined);
         if (view.status === 'running') timer = window.setTimeout(() => void poll(), 1000);
+        // 结束时失败与未执行的项退回预占：顶栏的本月剩余跟着更新。
+        else usageChanged();
       } catch (error) {
         if (!live) return;
         setProblems(problemsOf(error));

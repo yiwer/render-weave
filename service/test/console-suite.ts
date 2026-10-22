@@ -313,6 +313,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await page.getByTestId('batch-status').textContent()).toBe('已完成');
       expect(await tileStatuses()).toEqual(Array(6).fill('delivered'));
       expect(await tiles().evaluateAll((items) => items.map((item) => item.querySelector('.n')!.textContent))).toEqual(['1', '2', '3', '4', '5', '6']);
+      // 顶栏的本月剩余随出图更新，与开放 API 的相同（阶段 4 真人走查发现它停在登录时的数）。
+      const { images: quota } = (await adminApi('GET', '/v1/usage')).body as { images: { limit: number; remaining: number } };
+      await expect.poll(() => page.getByTestId('quota').textContent()).toBe(`本月剩余 ${quota.remaining.toLocaleString('zh-CN')} / ${quota.limit.toLocaleString('zh-CN')} 张`);
 
       const view = await api('GET', `/v1/batches/${batchId}`);
       expect(view.body).toMatchObject({ template: ROUTE, status: 'finished', cancelRequested: false, outcome: 'completed', summary: { total: 6, delivered: 6, failed: 0 } });

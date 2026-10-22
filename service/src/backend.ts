@@ -600,6 +600,24 @@ export interface TaskQueue {
   finishItem(task: BatchItemTask, result: ItemResult, now: Date): Promise<boolean>;
   /** 批次是否已请求取消：worker 渲染时定期查看，取消了就结束正在渲染的一项。 */
   cancelRequested(task: BatchItemTask): Promise<boolean>;
+  /** 队列积压（跨租户，只有计数）：经接口进程与 worker 的就绪检查可见（票据 15）。 */
+  backlog(now: Date): Promise<QueueBacklog>;
+  /**
+   * 删掉 before 之前入队的预览与重放任务行，返回删了几行（票据 15）。它们的结果由接口进程同步取走，之后没人再读；
+   * 批次项的行是批次逐项状态与出图记录列表的来源，不删。
+   */
+  purge(before: Date): Promise<number>;
+}
+
+/** 各种类的任务数。 */
+export interface TaskCounts { readonly preview: number; readonly batchItem: number; readonly replay: number }
+
+export interface QueueBacklog {
+  readonly queued: TaskCounts;
+  /** 领了还没写回的，含过了租约等着重领的批次项。 */
+  readonly running: TaskCounts;
+  /** 排队最久的一项已经等了多久，毫秒；没有排队的任务时是 0。 */
+  readonly oldestQueuedMs: number;
 }
 
 /** 一个租户的句柄：其中每个操作都只触及这个租户的数据（ADR-0018 的应用层防线）。 */

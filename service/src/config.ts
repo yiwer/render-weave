@@ -60,7 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv, defaults: { readonly port: nu
   return config;
 }
 
-/** 渲染 worker 的数值（ADR-0017）：暂定的缺省值，容量基线（票据 15）实测后再定；内存上限是容器的限制，不在这里。 */
+/** 渲染 worker 的数值（ADR-0017）：缺省值按容量基线定（票据 15，M302）；内存上限与 CPU 是容器的限制，不在这里。 */
 export interface WorkerConfig {
   /** 单项超时，毫秒：调度进程到时结束渲染子进程。 */
   readonly renderTimeoutMs: number;
@@ -80,7 +80,7 @@ const integerReader = (env: NodeJS.ProcessEnv) => (name: string, fallback: numbe
 
 export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
   const integer = integerReader(env);
-  return { renderTimeoutMs: integer('RW_RENDER_TIMEOUT_MS', 30_000, 100), recycleAfter: integer('RW_RENDER_RECYCLE_AFTER', 500, 1), pollMs: integer('RW_WORKER_POLL_MS', 100, 5) };
+  return { renderTimeoutMs: integer('RW_RENDER_TIMEOUT_MS', 60_000, 100), recycleAfter: integer('RW_RENDER_RECYCLE_AFTER', 500, 1), pollMs: integer('RW_WORKER_POLL_MS', 100, 5) };
 }
 
 /** 接口进程的对账任务（票据 09，ADR-0020）：隔多久对一次账，批次闲置多久、又没有它的构建的 worker 时退回预占。 */
@@ -92,6 +92,11 @@ export interface ReconcileConfig {
 export function loadReconcileConfig(env: NodeJS.ProcessEnv): ReconcileConfig {
   const integer = integerReader(env);
   return { intervalMs: integer('RW_RECONCILE_MS', 60_000, 100), graceMs: integer('RW_RESERVATION_GRACE_MS', 600_000, 0) };
+}
+
+/** 接口进程清理预览与重放的任务行（票据 15）：保留多久；至少两分钟，比预览的等待时长与频率窗口都长。 */
+export function loadTaskRetentionMs(env: NodeJS.ProcessEnv): number {
+  return integerReader(env)('RW_TASK_RETENTION_MS', 3_600_000, 120_000);
 }
 
 export function loadSetupConfig(env: NodeJS.ProcessEnv): SetupConfig {

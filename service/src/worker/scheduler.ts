@@ -29,6 +29,9 @@ export interface RunnerStats {
   cancels: number;
   /** 渲染子进程换新的次数（超时、内存超限、崩溃、取消或做满项数）。 */
   restarts: number;
+  /** 渲染用时（票据 15）：各项从交给渲染器到交回的毫秒数之和，与最慢的一项；逐项的用时在日志里。 */
+  renderMs: number;
+  maxRenderMs: number;
 }
 
 /** 渲染器的结果：预览的结果、批次项的结果、重放的结果，或取消时被结束。 */
@@ -41,7 +44,14 @@ export interface Runner {
   readonly stats: RunnerStats;
 }
 
-export const emptyStats = (): RunnerStats => ({ tasks: 0, timeouts: 0, memoryKills: 0, crashes: 0, cancels: 0, restarts: 0 });
+export const emptyStats = (): RunnerStats => ({ tasks: 0, timeouts: 0, memoryKills: 0, crashes: 0, cancels: 0, restarts: 0, renderMs: 0, maxRenderMs: 0 });
+
+/** 记下一项的渲染用时。 */
+export function countRender(stats: RunnerStats, started: number): void {
+  const ms = Date.now() - started;
+  stats.renderMs += ms;
+  stats.maxRenderMs = Math.max(stats.maxRenderMs, ms);
+}
 
 /** worker 的问题码（票据 06）：本项没有渲染完，原因在 worker 一侧。 */
 export const WorkerProblemCodes = {
@@ -67,13 +77,16 @@ export function inProcessRunner(backend: ServiceBackend): Runner {
   return {
     stats,
     async run(task) {
-      const storage = backend.tenant(task.tenantId).storage;
+      const storage = backend.tenant(task.tenantId).storage, started = Date.now();
       try {
         if (task.kind === 'preview') return await renderPreview(storage, task.request);
         return task.kind === 'replay' ? await replayItem(storage, task) : await deliver(storage, task);
       }
       catch (error) { return failedResult(error); }
-      finally { stats.tasks++; }
+      finally {
+        stats.tasks++;
+        countRender(stats, started);
+      }
     },
     async close() {},
   };
