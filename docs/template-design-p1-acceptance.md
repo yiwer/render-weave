@@ -72,6 +72,8 @@ node scripts/verify-template-design.mjs --round out/p0-after/run-1/m402-template
 
 **额度复查（2026-10-22 10:17 PDT，America/Los_Angeles）：** 用户要求复查并继续，因此在干净的 5352393 上重新 build 后，执行下列最终版命令。首请求仍报相同额度 429，单轮 2310 ms、0 输出 tokens，评估器停止其余 7 个单元；[本次原始报告](agent-eval/reports/2026-10-22-template-design-p1-final-incomplete.json)为 incomplete，没有有效样本。2310 ms 只是失败调用耗时，不能算模板设计耗时；上下文峰值与新像素相似度均未测得。真实交接对照没有启动。
 
+**凭据纠正：** 随后按用户要求逐作用域核对，发现 Process 作用域仍继承旧值，User 作用域才与用户指定密钥相同。因此前述 429 不能用来判断用户指定密钥的额度。显式从 User 读取到评估子进程后，Haiku 已正常返回输出；新批次改用 template-design-p1-key-verified，协议和凭据链路见[真实评估口径](template-design-p1-live-protocol.md)。旧失败报告不改写。
+
 本次可复用的历史对照是下面这组 P0 新建模板结果，每组两次的算术平均。上下文与耗时来自[真实模型记录](template-design-p0-model-eval.json)，像素分数来自同批候选用最终核查器的[离线回放](template-design-p1-evidence.json)。这组数据不替代 P1 或交接实验：
 
 | 指标 | P0 改前 8f845f8 | P0 修订后 c2aac1f |
