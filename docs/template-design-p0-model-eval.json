@@ -1,22 +1,438 @@
 {
   "date": "2026-10-22",
-  "baseline": "8f845f8",
   "model": "claude-haiku-5-5",
+  "smallModel": "claude-haiku-5-5",
   "runtime": "Claude Code 2.1.296",
   "mcpContract": "0.8.0",
-  "scenarios": ["m402-template", "m402-revision"],
-  "repetitionsPerScenario": 2,
-  "before": {
-    "status": "blocked",
-    "invalidUnits": 1,
-    "notStartedUnits": 3,
-    "error": "API Error: Request rejected (429) · Go usage limit exceeded",
-    "report": "out/p0-baseline/out/reports/p0-before-native.json"
+  "baselines": {
+    "before": {
+      "commit": "8f845f8",
+      "dirty": false
+    },
+    "after": {
+      "commit": "0b6140f",
+      "dirty": false
+    },
+    "final": {
+      "commit": "c2aac1f",
+      "dirty": false
+    }
   },
-  "after": {
-    "status": "notStarted",
-    "reason": "上游额度已明确耗尽，不继续调用付费模型"
+  "inputHashesEqual": true,
+  "changedMaterialsAfterInitialRun": [
+    "agent/reference/template-outcome.md",
+    "agent/template-core.md"
+  ],
+  "reports": {
+    "before": "agent-eval/reports/2026-10-22-template-design-p0-before.json",
+    "after": "agent-eval/reports/2026-10-22-template-design-p0-initial.json",
+    "final": "agent-eval/reports/2026-10-22-template-design-p0-final.json"
   },
-  "validComparisons": 0,
-  "claim": "只完成本地流程、隔离与体积实测；没有真实模型质量、token 峰值或成功率改善结论"
+  "gate": {
+    "status": "pass",
+    "note": "模板设计/修改采用修订后两次；未受本次资料修订影响的提取任务采用初版两次。初版失败另存，不覆写、不择优。",
+    "outcomes": [
+      {
+        "scenario": "m402-definition",
+        "repetition": 1,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "366-transcription",
+        "repetition": 1,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "m402-definition",
+        "repetition": 2,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "366-transcription",
+        "repetition": 2,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "m402-template",
+        "repetition": 1,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "m402-revision",
+        "repetition": 1,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "m402-template",
+        "repetition": 2,
+        "status": "pass",
+        "failures": []
+      },
+      {
+        "scenario": "m402-revision",
+        "repetition": 2,
+        "status": "pass",
+        "failures": []
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "scenario": "m402-template",
+      "variants": {
+        "before": {
+          "n": 2,
+          "passed": 2,
+          "means": {
+            "initialInputTokens": 9595,
+            "firstCandidateWriteInputTokens": 56749.5,
+            "peakInputTokens": 125601.5,
+            "requests": 26,
+            "outputTokens": 73076.5,
+            "thinkingTokens": 49080.5,
+            "wallMs": 503892
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "pass",
+              "initialInputTokens": 9595,
+              "firstCandidateWriteInputTokens": 44439,
+              "peakInputTokens": 130106,
+              "requests": 19,
+              "outputTokens": 72940,
+              "thinkingTokens": 49052,
+              "wallMs": 542712,
+              "dslChaptersRead": 0,
+              "templateGuideRead": false,
+              "skills": 16,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": null
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9595,
+              "firstCandidateWriteInputTokens": 69060,
+              "peakInputTokens": 121097,
+              "requests": 33,
+              "outputTokens": 73213,
+              "thinkingTokens": 49109,
+              "wallMs": 465072,
+              "dslChaptersRead": 0,
+              "templateGuideRead": false,
+              "skills": 16,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": null
+            }
+          ]
+        },
+        "after": {
+          "n": 2,
+          "passed": 1,
+          "means": {
+            "initialInputTokens": 9041,
+            "firstCandidateWriteInputTokens": 44059.5,
+            "peakInputTokens": 92844,
+            "requests": 19.5,
+            "outputTokens": 57321.5,
+            "thinkingTokens": 39799,
+            "wallMs": 356974.5
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "fail",
+              "initialInputTokens": 9041,
+              "firstCandidateWriteInputTokens": 61144,
+              "peakInputTokens": 103989,
+              "requests": 26,
+              "outputTokens": 65601,
+              "thinkingTokens": 45995,
+              "wallMs": 423018,
+              "dslChaptersRead": 9,
+              "templateGuideRead": false,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9041,
+              "firstCandidateWriteInputTokens": 26975,
+              "peakInputTokens": 81699,
+              "requests": 13,
+              "outputTokens": 49042,
+              "thinkingTokens": 33603,
+              "wallMs": 290931,
+              "dslChaptersRead": 8,
+              "templateGuideRead": false,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            }
+          ]
+        },
+        "final": {
+          "n": 2,
+          "passed": 2,
+          "means": {
+            "initialInputTokens": 9120.5,
+            "firstCandidateWriteInputTokens": 44223,
+            "peakInputTokens": 120896.5,
+            "requests": 29.5,
+            "outputTokens": 70998.5,
+            "thinkingTokens": 46097.5,
+            "wallMs": 457992
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "pass",
+              "initialInputTokens": 9033,
+              "firstCandidateWriteInputTokens": 28741,
+              "peakInputTokens": 99111,
+              "requests": 21,
+              "outputTokens": 63286,
+              "thinkingTokens": 43081,
+              "wallMs": 375363,
+              "dslChaptersRead": 7,
+              "templateGuideRead": true,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9208,
+              "firstCandidateWriteInputTokens": 59705,
+              "peakInputTokens": 142682,
+              "requests": 38,
+              "outputTokens": 78711,
+              "thinkingTokens": 49114,
+              "wallMs": 540621,
+              "dslChaptersRead": 8,
+              "templateGuideRead": true,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "m402-revision",
+      "variants": {
+        "before": {
+          "n": 2,
+          "passed": 2,
+          "means": {
+            "initialInputTokens": 9770,
+            "firstCandidateWriteInputTokens": 43883.5,
+            "peakInputTokens": 68524.5,
+            "requests": 19,
+            "outputTokens": 18841,
+            "thinkingTokens": 8582,
+            "wallMs": 153733
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "pass",
+              "initialInputTokens": 9770,
+              "firstCandidateWriteInputTokens": 43543,
+              "peakInputTokens": 63273,
+              "requests": 17,
+              "outputTokens": 14554,
+              "thinkingTokens": 5643,
+              "wallMs": 141928,
+              "dslChaptersRead": 0,
+              "templateGuideRead": false,
+              "skills": 16,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": null
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9770,
+              "firstCandidateWriteInputTokens": 44224,
+              "peakInputTokens": 73776,
+              "requests": 21,
+              "outputTokens": 23128,
+              "thinkingTokens": 11521,
+              "wallMs": 165538,
+              "dslChaptersRead": 0,
+              "templateGuideRead": false,
+              "skills": 16,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": null
+            }
+          ]
+        },
+        "after": {
+          "n": 2,
+          "passed": 2,
+          "means": {
+            "initialInputTokens": 9117,
+            "firstCandidateWriteInputTokens": 31377.5,
+            "peakInputTokens": 57044.5,
+            "requests": 17.5,
+            "outputTokens": 20039.5,
+            "thinkingTokens": 11904.5,
+            "wallMs": 143525.5
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "pass",
+              "initialInputTokens": 9117,
+              "firstCandidateWriteInputTokens": 30958,
+              "peakInputTokens": 61138,
+              "requests": 19,
+              "outputTokens": 23251,
+              "thinkingTokens": 13525,
+              "wallMs": 160280,
+              "dslChaptersRead": 3,
+              "templateGuideRead": false,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9117,
+              "firstCandidateWriteInputTokens": 31797,
+              "peakInputTokens": 52951,
+              "requests": 16,
+              "outputTokens": 16828,
+              "thinkingTokens": 10284,
+              "wallMs": 126771,
+              "dslChaptersRead": 2,
+              "templateGuideRead": false,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            }
+          ]
+        },
+        "final": {
+          "n": 2,
+          "passed": 2,
+          "means": {
+            "initialInputTokens": 9283.5,
+            "firstCandidateWriteInputTokens": 36006,
+            "peakInputTokens": 47031.5,
+            "requests": 15.5,
+            "outputTokens": 13937.5,
+            "thinkingTokens": 7236,
+            "wallMs": 95602.5
+          },
+          "repetitions": [
+            {
+              "repetition": 1,
+              "quality": "pass",
+              "initialInputTokens": 9261,
+              "firstCandidateWriteInputTokens": 33628,
+              "peakInputTokens": 45146,
+              "requests": 14,
+              "outputTokens": 13648,
+              "thinkingTokens": 7156,
+              "wallMs": 90706,
+              "dslChaptersRead": 0,
+              "templateGuideRead": false,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            },
+            {
+              "repetition": 2,
+              "quality": "pass",
+              "initialInputTokens": 9306,
+              "firstCandidateWriteInputTokens": 38384,
+              "peakInputTokens": 48917,
+              "requests": 17,
+              "outputTokens": 14227,
+              "thinkingTokens": 7316,
+              "wallMs": 100499,
+              "dslChaptersRead": 2,
+              "templateGuideRead": true,
+              "skills": 0,
+              "registeredTools": 13,
+              "compactions": 0,
+              "handoff": {
+                "source": "agent",
+                "reason": "roundEnd",
+                "hasProgress": true,
+                "candidates": 5
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "limits": [
+    "每场景两次，不能估计稳定成功率或证明改动的因果效果。",
+    "峰值为每轮单请求有效输入最大值，包含缓存，不是累计计费用量。",
+    "首次候选落盘前输入受实际探索路径影响，不等同静态资料体积。",
+    "改前和初版两个作业曾重叠运行，耗时仅描述观测，不是隔离性能基准。",
+    "真实模型未设置显式上下文阈值；观测到 0 次压缩事件。强制停止与恢复由公开入口回归覆盖。"
+  ]
 }

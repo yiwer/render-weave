@@ -1,0 +1,617 @@
+{
+  "format": "renderweave-agent-eval/2",
+  "label": "p0-after-boundaries",
+  "startedAt": "2026-10-22T11:52:40.734Z",
+  "endedAt": "2026-10-22T12:11:16.396Z",
+  "git": {
+    "commit": "c2aac1f",
+    "dirty": false
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.8.0",
+  "materials": {
+    "agent/README.md": "fdfb0b0dd267",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/price-tag.md": "f4b21a3d7618",
+    "agent/domains/route-sign.md": "a63c5a6b3352",
+    "agent/guide.md": "4ae9b7b0d777",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "c2dc56174fda",
+    "agent/reference/template-outcome.md": "d8da64ab89ff",
+    "agent/reference/template.md": "10134146dc9a",
+    "agent/tasks/dataset-extraction.md": "63e4926f78de",
+    "agent/tasks/definition-extraction.md": "9e85d70fdb88",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "7ac09b1eb803",
+    "agent/tasks/template-next-round.md": "b7f9fc5bcd68",
+    "agent/tasks/template-revision.md": "420b01e39bcc",
+    "agent/template-core.md": "6714fe1c02fb"
+  },
+  "consecutivePasses": 2,
+  "passLines": {
+    "m402-definition": {
+      "conventions": 6,
+      "expertFields": 14
+    },
+    "m402-template": {
+      "stress": 10,
+      "layoutChecks": 2
+    },
+    "m402-revision": {
+      "stress": 6,
+      "layoutChecks": 2,
+      "scopeViolations": 0
+    },
+    "366-transcription": {
+      "names": 57,
+      "landmarks": 14,
+      "facilities": 17
+    }
+  },
+  "results": [
+    {
+      "id": "m402-template",
+      "name": "M402 模板",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/m402-template/template",
+          "verdict": "qualified",
+          "wallMs": 375363,
+          "turns": 57,
+          "inputTokens": 42,
+          "outputTokens": 63286,
+          "thinkingTokens": 43081,
+          "cacheReadTokens": 1240957,
+          "cacheCreationTokens": 99109,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 20,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8891
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "id": "m402-revision",
+      "name": "M402 模板辅助修改",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-revision",
+          "dir": "run-1/m402-revision/revision",
+          "verdict": "qualified",
+          "wallMs": 90706,
+          "turns": 31,
+          "inputTokens": 28,
+          "outputTokens": 13648,
+          "thinkingTokens": 7156,
+          "cacheReadTokens": 411253,
+          "cacheCreationTokens": 37539,
+          "endedBy": "success",
+          "pending": 0,
+          "toolCalls": 11,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "revision": {
+          "templates": [
+            {
+              "name": "站点标识",
+              "status": "unchanged"
+            },
+            {
+              "name": "道路段",
+              "status": "modified"
+            },
+            {
+              "name": "线路牌主模板",
+              "status": "unchanged"
+            },
+            {
+              "name": "站点格",
+              "status": "modified"
+            },
+            {
+              "name": "时刻项",
+              "status": "unchanged"
+            }
+          ],
+          "violations": [],
+          "changedElements": 3
+        },
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9156
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "check.failed"
+              ]
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 1,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 6,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "id": "m402-template",
+      "name": "M402 模板",
+      "repetition": 2,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-2/m402-template/template",
+          "verdict": "qualified",
+          "wallMs": 540621,
+          "turns": 87,
+          "inputTokens": 76,
+          "outputTokens": 78711,
+          "thinkingTokens": 49114,
+          "cacheReadTokens": 3178216,
+          "cacheCreationTokens": 135075,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 32,
+          "toolErrors": 1,
+          "persistedResults": 0,
+          "firstCheckProblems": 5
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8808
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "id": "m402-revision",
+      "name": "M402 模板辅助修改",
+      "repetition": 2,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-revision",
+          "dir": "run-2/m402-revision/revision",
+          "verdict": "qualified",
+          "wallMs": 100499,
+          "turns": 30,
+          "inputTokens": 34,
+          "outputTokens": 14227,
+          "thinkingTokens": 7316,
+          "cacheReadTokens": 533756,
+          "cacheCreationTokens": 41310,
+          "endedBy": "success",
+          "pending": 0,
+          "toolCalls": 8,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "revision": {
+          "templates": [
+            {
+              "name": "站点标识",
+              "status": "unchanged"
+            },
+            {
+              "name": "道路段",
+              "status": "modified"
+            },
+            {
+              "name": "线路牌主模板",
+              "status": "unchanged"
+            },
+            {
+              "name": "站点格",
+              "status": "modified"
+            },
+            {
+              "name": "时刻项",
+              "status": "unchanged"
+            }
+          ],
+          "violations": [],
+          "changedElements": 7
+        },
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9141
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "check.failed"
+              ]
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 1,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 6,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    }
+  ],
+  "gate": {
+    "status": "pass",
+    "pass": true,
+    "scenarios": [
+      {
+        "id": "m402-template",
+        "name": "M402 模板",
+        "outcomes": [
+          "pass",
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "m402-revision",
+        "name": "M402 模板辅助修改",
+        "outcomes": [
+          "pass",
+          "pass"
+        ],
+        "status": "pass"
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 1107189,
+    "inputTokens": 180,
+    "outputTokens": 169872,
+    "thinkingTokens": 106667,
+    "cacheReadTokens": 5364182,
+    "persistedResults": 0
+  }
+}

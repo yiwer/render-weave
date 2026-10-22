@@ -50,11 +50,11 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **Gemini 长调用（2026-10-20）**：用 Gemini 4 Argon 实跑阿拉伯文站牌时，模板轮 5 次在约 300 秒处失败，根因是转换代理自己用的全局 fetch 有固定 300 秒超时。票据 25 已完成（M287）：代理改走流式 `streamGenerateContent`、连上游改用 `node:http(s)`，失败日志分连接、状态码、流中三个阶段并带底层原因。Gemini 评估门槛没有重跑，按 M232 的先例用真实模型跑一轮数据定义提取核对链路，下一次 Gemini 评估一并覆盖。
 - 接入服务前，须先补资源隔离、执行隔离与容量等验证，清单见[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)。
 
-- **模板设计上下文 P0（2026-10-22）**：在 template-design 分支落实短任务核心、DSL 按需章节、逐请求上下文观测、显式阈值停止及恢复交接、业务 skills 隔离（M305、ADR-0023）。实施范围见[规格](.scratch/template-design-context/spec.md)，实测与 review 见[验收记录](docs/template-design-p0-acceptance.md)；原方案见[架构评审](docs/template-design-harness-review.md)。下一步是额度恢复后完成改前/改后真实模型对照与 M230 门槛，再接信息覆盖/样式核查；票据 34、35、38 和阶段 4 的其余排期不由本次关闭。
+- **模板设计上下文 P0（2026-10-22）**：在 template-design 分支落实短任务核心、DSL 与设计指导按需读取、逐请求上下文观测、显式阈值停止及恢复交接、业务 skills 隔离（M305、ADR-0023）。实施范围见[规格](.scratch/template-design-context/spec.md)，实测与 review 见[验收记录](docs/template-design-p0-acceptance.md)；原方案见[架构评审](docs/template-design-harness-review.md)。Haiku 5.5 对照已完成：初版发现子模板边界规则遗漏，补回后按 M230 通过四场景门槛，失败样本保留。下一步做与候选绑定的边界组合、信息覆盖及样式核查，并验证主动交接对长任务峰值的效果；票据 34、35、38 的其他验收项和阶段 4 的其余排期不由本次关闭。
 
 ## 已实现能力
 
-- **模板任务上下文与接续**：短核心及可追溯 DSL 章节；context.json 记录单请求有效输入、压缩事件与工具体积；--context-limit 显式停止并保存，--from 通过候选/输入指纹接续，历轮反馈原文按索引回读；业务 Claude Code 禁用技能发现。真实模型质量门槛仍需额度恢复后验证，见[验收记录](docs/template-design-p0-acceptance.md)。
+- **模板任务上下文与接续**：短核心及可追溯 DSL 章节；context.json 记录单请求有效输入、压缩事件与工具体积；--context-limit 显式停止并保存，--from 通过候选/输入指纹接续，历轮反馈原文按索引回读；业务 Claude Code 禁用技能发现。实测口径与效果边界见[验收记录](docs/template-design-p0-acceptance.md)。
 
 领域模型文档含未来设计，当前可执行的能力以本节为准。
 
