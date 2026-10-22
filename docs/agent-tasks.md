@@ -116,7 +116,9 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 
 缺省只观测。给 `--context-limit 60000` 表示观测到有效输入至少 60,000 后停止本轮，这个数字只是参数示例，**不是推荐的注意力阈值**。它在收到响应 usage 后生效，不能拦住已经发出的超大请求，且可能中断下一次文件写入；宿主只恢复能读取的候选，不自动重试。
 
-模板 Agent 在骨架与阶段结束保存 `outcome.json` 和短 `state.json`。宿主结束后在 Agent 目录之外写 `handoff.json`、`handoff-feedback.md`，记录来源、候选哈希、项目/工作区/资料/资源内容指纹和进度自述；记录的交接哈希保存在 `round.json`。接续时校验交接、输入和候选，审核修改或内容变化会让旧摘要失效。未知/不合格/过大的 state 不进入交接。旧核查从不充当本轮通过凭据。
+模板 Agent 在骨架与阶段结束保存 `outcome.json` 和短 `state.json`。宿主结束后在 Agent 目录之外写 `handoff.json`、`handoff-feedback.md`，记录来源、完整工作候选集合与哈希、项目/工作区/资料/资源内容指纹和进度自述；记录的交接哈希保存在 `round.json`。接续时校验交接、输入和候选，审核修改、候选新增或内容变化会让旧摘要失效。未知/不合格/过大的 state 不进入交接，无法读取完整候选快照时保留轮次并提示进度不可复用。旧核查从不充当本轮通过凭据。
+
+后续轮的 `docs/feedback-history.md` 索引指向历轮反馈原文。未被新反馈取代的客户约束持续生效，不能由 Agent 的 state 摘要替代；某一旧轮或反馈文件缺失时明确提示。历史原文保存在磁盘供回读，不整段放进任务提示词。
 
 ```bash
 renderweave agent run --from <上一轮目录> --feedback <上一轮目录>/handoff-feedback.md --out <新轮次目录> [--context-limit <本轮阈值>] [--model …]
@@ -145,6 +147,9 @@ renderweave agent run --from <上一轮目录> --feedback <上一轮目录>/hand
 | `agent/previous/` | 下一轮才有：上一轮的原样记录 |
 | `agent/scratch/` | Agent 的自查草稿，不是成果 |
 | `agent/outcome.json` | Agent 交回的成果 |
+| `agent/state.json` | 模板任务的短进度自述，有长度上限，不是通过凭证 |
+| `context.json` | 宿主记录的逐请求占用、压缩、工具体积与运行时清单 |
+| `handoff.json`、`handoff-feedback.md` | 模板任务的宿主交接清单与通用续跑反馈 |
 | `snapshot/` | 工作区快照，MCP 服务启动时读入 |
 | `logs/` | `mcp.json`、`outcome-context.json`（交回前核对用的本轮任务与已知输入，见[校验](#校验)）、`stream.jsonl`（Claude Code 流式输出）、`stderr.txt`、`tools.jsonl`（工具调用日志）、`claude-config/`；选 Gemini 时还有 `model-proxy.jsonl`（每次模型调用的用时、状态、token 与内容块类型，失败时的阶段 `phase`、底层原因 `cause` 与失败前没有数据的时长 `idleMs`，不记内容） |
 | `request.json` | 规范化后的出图请求，审核时按它重新渲染预览；Agent 改不到 |
@@ -158,13 +163,13 @@ renderweave agent run --from <上一轮目录> --feedback <上一轮目录>/hand
 | `review.json` | 审核结果，由审核页写出（见[审核](#审核)） |
 | `applied.json` | 应用记录，应用成功后写出；有它就不能再应用（见[应用](#应用)） |
 
-提示词取 `agent/tasks/<任务>.md`，只写三层资料的优先级与做事步骤，不含具体业务；所选的数据定义、数据集、主模板名与可修改的模板由命令填入。下一轮另接 `agent/tasks/next-round.md`。
+提示词取 `agent/tasks/<任务>.md`，只写资料优先级与做事步骤，不含具体业务；所选的数据定义、数据集、主模板名与可修改的模板由命令填入。下一轮另接模板专用或提取通用的 next-round 提示词。
 
 ## 成果
 
 ### Agent 交回的 outcome.json
 
-格式写在 [agent/reference/outcome.md](../agent/reference/outcome.md)，它同时是交给 Agent 的资料。要点如下：
+格式写在 [agent/reference/outcome.md](../agent/reference/outcome.md)，模板任务使用其中的精简版本 [template-outcome.md](../agent/reference/template-outcome.md)。要点如下：
 
 - `candidates`：候选文件列表，必须在 `candidates/` 下，种类符合任务（M43）。数据定义提取时，按示例图写的数据集只能作为 `scratch/` 中的自查草稿。
 - `locations`：可选，候选中的位置在示例图上对应哪一部分，供审核人对照。

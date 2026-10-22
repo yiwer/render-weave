@@ -56,9 +56,9 @@
         {
           "index": 0,
           "systemChars": 6520,
-          "messageChars": 4734,
+          "messageChars": 4207,
           "toolDefinitionChars": 10511,
-          "totalTextEnvelopeChars": 21765,
+          "totalTextEnvelopeChars": 21238,
           "tools": [
             "Edit",
             "Glob",
@@ -81,9 +81,9 @@
         {
           "index": 1,
           "systemChars": 6520,
-          "messageChars": 37523,
+          "messageChars": 37032,
           "toolDefinitionChars": 10511,
-          "totalTextEnvelopeChars": 54554,
+          "totalTextEnvelopeChars": 54063,
           "tools": [
             "Edit",
             "Glob",
@@ -143,9 +143,9 @@
         {
           "index": 0,
           "systemChars": 6520,
-          "messageChars": 4086,
+          "messageChars": 3559,
           "toolDefinitionChars": 10511,
-          "totalTextEnvelopeChars": 21117,
+          "totalTextEnvelopeChars": 20590,
           "tools": [
             "Edit",
             "Glob",
@@ -168,9 +168,9 @@
         {
           "index": 1,
           "systemChars": 6520,
-          "messageChars": 10005,
+          "messageChars": 9530,
           "toolDefinitionChars": 10511,
-          "totalTextEnvelopeChars": 27036,
+          "totalTextEnvelopeChars": 26561,
           "tools": [
             "Edit",
             "Glob",
@@ -193,9 +193,9 @@
         {
           "index": 2,
           "systemChars": 6520,
-          "messageChars": 13001,
+          "messageChars": 12544,
           "toolDefinitionChars": 10511,
-          "totalTextEnvelopeChars": 30032,
+          "totalTextEnvelopeChars": 29575,
           "tools": [
             "Edit",
             "Glob",

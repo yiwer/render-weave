@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-22",
+  "baseline": "8f845f8",
+  "model": "claude-haiku-5-5",
+  "runtime": "Claude Code 2.1.296",
+  "mcpContract": "0.8.0",
+  "scenarios": ["m402-template", "m402-revision"],
+  "repetitionsPerScenario": 2,
+  "before": {
+    "status": "blocked",
+    "invalidUnits": 1,
+    "notStartedUnits": 3,
+    "error": "API Error: Request rejected (429) · Go usage limit exceeded",
+    "report": "out/p0-baseline/out/reports/p0-before-native.json"
+  },
+  "after": {
+    "status": "notStarted",
+    "reason": "上游额度已明确耗尽，不继续调用付费模型"
+  },
+  "validComparisons": 0,
+  "claim": "只完成本地流程、隔离与体积实测；没有真实模型质量、token 峰值或成功率改善结论"
+}

@@ -29,7 +29,7 @@ import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerpr
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { writeTemplateDomain, writeTemplateReference } from './materials.js';
 import { observeContext, type ContextStop } from './context-usage.js';
-import { materialFingerprint, resourceFingerprint, restoreHandoff, saveHandoff } from './handoff.js';
+import { materialFingerprint, resourceFingerprint, restoreHandoff, saveHandoff, writeFeedbackHistory } from './handoff.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -343,7 +343,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   const binding = templateTask ? sha256(JSON.stringify({ workspace: inputs.workspace.fingerprint, sample: inputs.sample.sha256,
     materials: await materialFingerprint(join(agentDir, 'docs')), resources: await resourceFingerprint(options.resources) })) : '';
-  if (previous && templateTask) await restoreHandoff(previous.dir, previous.record.run.handoffSha256, binding, seeds, join(agentDir, 'docs/handoff.md'));
+  if (previous && templateTask) {
+    await writeFeedbackHistory(previous.dir, join(agentDir, 'docs'));
+    await restoreHandoff(previous.dir, previous.record.run.handoffSha256, binding, seeds, join(agentDir, 'docs/handoff.md'));
+  }
   await writeFile(join(logsDir, 'prompt.md'), prompt);
 
   // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。

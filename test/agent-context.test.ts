@@ -170,3 +170,33 @@ it('资源内容替换而清单未变时，旧进度失效', async () => {
   const second = await run({}, { from: first.roundDir, feedback: join(first.roundDir, 'handoff-feedback.md') });
   expect(await readFile(join(second.roundDir, 'agent/docs/handoff.md'), 'utf8')).toContain('失效或损坏');
 });
+
+it('第三轮交接仍能读回第二轮反馈原文，约束不依赖 state', async () => {
+  const first = await run({ [candidate]: template, 'outcome.json': outcome });
+  const feedback = join(base, 'customer-feedback.md');
+  await writeFile(feedback, '客户新增约束：标题字号固定 12 mm；不得改动底色。');
+  const second = await run({ 'outcome.json': outcome, '.events.json': [response('stop-round2', { input_tokens: 100 })], '.wait-after-events': '' },
+    { from: first.roundDir, feedback, contextLimit: 100 });
+  expect(second.record.run.contextStopped).toBeDefined();
+  const third = await run({}, { from: second.roundDir, feedback: join(second.roundDir, 'handoff-feedback.md') });
+  expect(await readFile(join(third.roundDir, 'agent/docs/feedback-history/round-2.md'), 'utf8')).toBe(await readFile(feedback, 'utf8'));
+  expect(await readFile(join(third.roundDir, 'agent/docs/feedback-history.md'), 'utf8')).toContain('未被取代的历史约束仍有效');
+  expect(await readFile(join(third.roundDir, 'logs/prompt.md'), 'utf8')).toContain('docs/feedback-history.md');
+});
+
+it.each([true, false])('恢复草稿新增候选后旧进度失效；原本有候选=%s', async (hadCandidate) => {
+  const first = await run({ 'state.json': state, ...(hadCandidate ? { [candidate]: template } : {}) });
+  await writeFile(join(first.roundDir, 'agent/candidates/added.json'), JSON.stringify({ ...(template as object), name: '新增牌' }));
+  const second = await run({}, { from: first.roundDir, feedback: join(first.roundDir, 'handoff-feedback.md') });
+  expect(await readFile(join(second.roundDir, 'agent/docs/handoff.md'), 'utf8')).toContain('失效或损坏');
+});
+
+it('候选位于 .json 后缀目录仍保存轮次并可接续', async () => {
+  const nested = 'candidates/nested.json/main.json';
+  const first = await run({ [nested]: template, 'outcome.json': { ...outcome, candidates: [nested] }, 'state.json': state });
+  expect(first.check.verdict).toBe('qualified');
+  expect((await json(join(first.roundDir, 'handoff.json'))).workingCandidates).toEqual([{ path: nested, sha256: expect.any(String) }]);
+  expect((await json(join(first.roundDir, 'round.json'))).run.handoffSha256).toBeTruthy();
+  const second = await run({}, { from: first.roundDir, feedback: join(first.roundDir, 'handoff-feedback.md') });
+  expect(await readFile(join(second.roundDir, 'agent/docs/handoff.md'), 'utf8')).toContain(state.summary);
+});
