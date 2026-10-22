@@ -30,6 +30,7 @@ import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } fro
 import { writeTemplateDomain, writeTemplateReference } from './materials.js';
 import { observeContext, type ContextStop } from './context-usage.js';
 import { materialFingerprint, resourceFingerprint, restoreHandoff, saveHandoff, writeFeedbackHistory } from './handoff.js';
+import { parseDesignCheckPlan, type DesignCheckPlan } from './design-verification.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -64,6 +65,8 @@ export interface AgentRunOptions {
   readonly dataset?: string;
   /** 示例图对应的出图请求文件：主模板名、参数与输出尺寸；审核页按它重新渲染预览（M52）。模板辅助修改时，主模板就是要修改的已保存模板。 */
   readonly request?: string;
+  /** 宿主指定的边界、样式及参考图核查计划。下一轮沿用，不由 Agent 修改。 */
+  readonly checks?: string;
   /** 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在。 */
   readonly requirement?: string;
   /** 上一轮的轮次目录：下一轮沿用它的输入，拿到它的成果（含审核时的修改）与反馈（M58）。 */
@@ -142,6 +145,7 @@ export interface RoundInputs {
   readonly dataset?: string | null;
   /** 示例图对应的出图请求：原文件与规范化后存在轮次目录的 request.json。 */
   readonly request?: { readonly source: string; readonly file: 'request.json'; readonly template: string } | null;
+  readonly checks?: { readonly source: string; readonly file: 'design-checks.json'; readonly sha256: string };
   /** 模板辅助修改可以改的已保存模板（主模板的调用树），以及各自所基于的保存内容：工作区中的文件名与内容哈希（M51）。 */
   readonly templates?: readonly TemplateBasis[];
   /** 模板辅助修改的修改要求，存在轮次目录的 requirement.md。 */
@@ -240,6 +244,15 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
   const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
   const dataset = request?.dataset ?? basis.dataset;
+  let designPlan: DesignCheckPlan | undefined;
+  if (options.checks !== undefined) {
+    if (!templateTask) throw new AgentUsageError('--checks 只用于模板设计或修改');
+    try {
+      designPlan = parseDesignCheckPlan(JSON.parse(await readFile(options.checks, 'utf8')));
+      if (designPlan.reference && designPlan.reference.sha256 !== sha256(await readFile(options.sample))) throw new Error('示例图与核查计划的 SHA-256 不符');
+      if (previous?.record.inputs.checks && sha256(await readFile(options.checks)) !== previous.record.inputs.checks.sha256) throw new Error('上一轮核查计划已变化；不能沿用旧输入');
+    } catch (error) { throw new AgentUsageError(`核查计划不可用：${error instanceof Error ? error.message : String(error)}`); }
+  }
   const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
   // 元素路径只在第 1 轮核对：沿用到下一轮时，上一轮可能已经把那些元素改名或移走并应用了。
   if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
@@ -281,6 +294,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
   }
+  if (designPlan) {
+    await writeFile(join(roundDir, 'design-checks.json'), `${JSON.stringify(designPlan, null, 2)}\n`);
+    await copyFile(join(roundDir, 'design-checks.json'), join(agentDir, 'docs/design-checks.json'));
+  }
   for (const [file, name] of [[options.requirement, 'requirement.md'], [options.feedback, 'feedback.md']] as const) {
     if (file === undefined) continue;
     await copyFile(file, join(agentDir, 'docs', name));
@@ -312,6 +329,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', templateTask ? 'template-next-round.md' : 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
+  if (designPlan) prompt += '\n本轮有宿主核查计划 docs/design-checks.json：按需读取涉及的边界与样式要求。check_outcome 自动执行原数据组合与样式核查，assessment.design 给失败、未覆盖与最差图像区域；用现有看图/局部预览工具核对这些区域后修正。相似度仅诊断，不代表内容正确。\n';
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
@@ -333,6 +351,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     resources: resolve(options.resources),
     definition: basis.definition, dataset,
     request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
+    ...(designPlan ? { checks: { source: resolve(options.checks!), file: 'design-checks.json', sha256: sha256(await readFile(join(roundDir, 'design-checks.json'))) } } : {}),
     ...(revision ? { templates: revision.map(({ name, file, sha256: digest }) => ({ name, file, sha256: digest })), requirement } : {}),
     ...(previous ? { feedback } : {}),
     previous: previous ? {
@@ -351,6 +370,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。
   const context: OutcomeContext = {
+    ...(designPlan ? { designChecks: { plan: designPlan, sampleFile: join(agentDir, sampleFile) } } : {}),
     ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
     ...(request ? { request: { ...request.document, template: request.template } } : {}),
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
@@ -484,7 +504,7 @@ function checkTaskOrder(task: AgentTask, options: AgentRunOptions): void {
 
 /** 下一轮只给反馈与运行参数：任务、素材、基准、出图请求与修改要求都沿用上一轮。 */
 function checkNextRound(given: AgentRunOptions): void {
-  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement'] as const;
+  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'checks'] as const;
   const repeated = fixed.filter((name) => given[name] !== undefined);
   if (repeated.length > 0) {
     throw new AgentUsageError(`带 --from 发起下一轮时沿用上一轮的输入，不能再给 ${repeated.map((name) => `--${name}`).join('、')}；要换输入就重新发起第 1 轮`);
@@ -503,6 +523,7 @@ function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptio
     ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
     ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
     ...(inputs.request ? { request: join(dir, 'request.json') } : {}),
+    ...(inputs.checks ? { checks: join(dir, 'design-checks.json') } : {}),
     ...(inputs.requirement ? { requirement: join(dir, 'requirement.md') } : {}),
   };
 }

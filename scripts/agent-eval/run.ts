@@ -31,7 +31,7 @@ const { values } = parseArgs({
   options: {
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
-    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
+    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'design-checks': { type: 'string' },
   },
   strict: true,
 });
@@ -77,6 +77,7 @@ const origin = earlier?.provenance ?? await provenance();
 const manifest: Manifest = { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat: Math.max(repeat, earlier?.repeat ?? 0), provenance: origin };
 await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
 const launch = cliLauncher({
+  ...(values['design-checks'] ? { designChecks: resolve(values['design-checks']) } : {}),
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
   ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(effort ? { effort } : {}),
 });
@@ -119,7 +120,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'design-checks'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

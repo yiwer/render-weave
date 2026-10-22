@@ -81,3 +81,5 @@ export {
 export { diffTemplate, revisionDiff, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';
+export { parseDesignCheckPlan, verifyTemplateDesign, type DesignCheckPlan, type DesignVerification } from './agent/design-verification.js';
+export { compareDesignImages, type ImageDifference, type ImageRegion } from './agent/image-comparison.js';

@@ -15,6 +15,7 @@ import { assessCandidates, type RenderAssessment } from './assessment.js';
 import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
+import { assessDesign, DESIGN_CHECK_SCHEMA, type DesignCheckInput, type DesignVerification } from './design-verification.js';
 
 /** 待确认项的四类原因（M44）：看不清、推测、来源冲突、必填未提供。 */
 export const PENDING_REASONS = ['unreadable', 'inferred', 'conflicting', 'requiredMissing'] as const;
@@ -109,6 +110,7 @@ export interface OutcomeCheck {
     /** 没有待确认项也不代表内容已核实。 */
     readonly content: 'needsReview';
     readonly render: RenderAssessment;
+    readonly design?: DesignVerification;
   };
   /** 结构合格时才有。 */
   readonly submission?: SubmittedOutcome;
@@ -117,6 +119,7 @@ export interface OutcomeCheck {
 /** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）；模板辅助修改可以改的模板。 */
 export interface OutcomeContext extends CandidateContext {
   readonly request?: { readonly template: string; readonly [key: string]: unknown };
+  readonly designChecks?: DesignCheckInput;
 }
 
 /** 交回前核对（MCP 工具 check_outcome）要的本轮任务与已知输入：agent run 写到 Agent 工作目录之外，经 --outcome-context 交给 MCP 服务。 */
@@ -132,6 +135,9 @@ const OUTCOME_TARGET_SCHEMA = {
       name: { type: 'string', minLength: 1 }, version: { type: 'integer', minimum: 1 },
     } },
     request: { type: 'object', required: ['template'], properties: { template: { type: 'string', minLength: 1 } } },
+    designChecks: { type: 'object', additionalProperties: false, required: ['plan', 'sampleFile'], properties: {
+      plan: DESIGN_CHECK_SCHEMA, sampleFile: { type: 'string', minLength: 1 },
+    } },
     revision: { type: 'object', additionalProperties: false, required: ['templates'], properties: {
       templates: { type: 'array', items: { type: 'string', minLength: 1 } },
     } },
@@ -279,9 +285,12 @@ export async function checkAgentOutcome(options: {
   const candidatesValid = final.every((candidate) => candidate.problems.every((problem) => problem.level !== 'severe'));
   const rendering = await assessCandidates(options.workspace, documents, structureValid ? context.request : undefined,
     task.id === 'template-design' || task.id === 'template-revision');
-  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked');
+  const design = structureValid && candidatesValid ? await assessDesign(options.workspace, documents, context.request, context.designChecks) : { problems: [] };
+  problems.push(...design.problems);
+  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || design.problems.length > 0;
   return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final,
-    assessment: { structure: structureValid ? 'valid' : 'invalid', candidates: candidatesValid ? 'valid' : 'invalid', content: 'needsReview', render: rendering },
+    assessment: { structure: structureValid ? 'valid' : 'invalid', candidates: candidatesValid ? 'valid' : 'invalid', content: 'needsReview', render: rendering,
+      ...(design.report ? { design: design.report } : {}) },
     ...(structureValid ? { submission } : {}) };
 }
 

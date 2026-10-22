@@ -39,6 +39,8 @@ export interface RoundSpec {
 export type Launcher = (spec: RoundSpec) => Promise<void>;
 
 export interface RuntimeOptions {
+  /** 只给新建模板场景增加宿主核查；修改场景仍遵守原有修改范围。 */
+  readonly designChecks?: string;
   readonly model?: string;
   readonly smallModel?: string;
   readonly endpoint?: string;
@@ -58,6 +60,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
       ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('effort', runtime.effort),
+        ...flag('checks', spec.task === 'template-design' ? runtime.designChecks : undefined),
     ];
     const result = await execute(process.execPath, args);
     await writeFile(`${spec.out}.log`, `${result.stdout}\n${result.stderr}`);

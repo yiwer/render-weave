@@ -37,6 +37,7 @@ import { AgentUsageError, exists, jsonFileHashes, sha256, workspaceFingerprint }
 import type { RoundOutcome, RoundRecord, RoundUsage } from './run.js';
 import { replaceFile, writeJsonFiles, type JsonFileWrite } from './write-files.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
+import { assessDesign, parseDesignCheckPlan, type DesignCheckInput, type DesignVerification } from './design-verification.js';
 
 export const REVIEW_FILE = 'review.json';
 export const APPLIED_FILE = 'applied.json';
@@ -83,6 +84,7 @@ export type ReviewChange =
   | { readonly type: 'reopen' };
 
 export interface ReviewView {
+  readonly design?: DesignVerification;
   readonly round: {
     readonly dir: string;
     readonly task: AgentTaskId;
@@ -342,6 +344,7 @@ interface RoundCandidate {
 
 /** 读入并核对过的轮次：成果、运行记录、候选、工作区快照与出图请求。 */
 interface AgentRound {
+  readonly designChecks?: DesignCheckInput;
   readonly recovered: boolean;
   readonly dir: string;
   readonly outcome: RoundOutcome;
@@ -541,6 +544,9 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
   if (rendering.blocking && rendering.status === 'blocked') return failed([
     severe(ProblemCodes.applyFailed, { kind: 'input', source: workspace }, '在当前工作区上渲染受阻，工作区未改动'), ...rendering.problems,
   ]);
+  const design = await assessDesign(current, saved.map((candidate) => ({ path: candidate.path, kind: candidate.kind, document: state.documents.get(candidate.path) })),
+    round.request, round.designChecks);
+  if (design.problems.length) return failed(design.problems);
 
   type Entry = { candidate: string; kind: CandidateKind; name: string; version?: number; replaced?: boolean; files: JsonFileWrite[] };
   const entries: Entry[] = published.map(({ candidate, entry }) => {
@@ -645,6 +651,14 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   };
   outcome = { ...outcome, pending: outcome.pending.map(full), locations: outcome.locations.map(full) };
   let request: Record<string, unknown> | undefined;
+  let designChecks: DesignCheckInput | undefined;
+  if (record.inputs.checks) {
+    try {
+      const bytes = await readFile(join(root, 'design-checks.json'));
+      if (sha256(bytes) !== record.inputs.checks.sha256) return fail('design-checks.json', '核查计划已变化');
+      designChecks = { plan: parseDesignCheckPlan(JSON.parse(bytes.toString('utf8'))), sampleFile: join(root, record.inputs.sample.file) };
+    } catch { return fail('design-checks.json', '核查计划无法读取'); }
+  }
   if (record.inputs.request) {
     const requestFile = await readJson('request.json');
     if (typeof requestFile === 'string' || !isRecord(requestFile.value)) return fail('request.json', '出图请求无法读取');
@@ -672,6 +686,7 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
       context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition }
         : outcome.task === 'template-revision' ? { revision: { templates: (record.inputs.templates ?? []).map((entry) => entry.name) } } : {},
       ...(request ? { request } : {}), ...texts, ...(applied ? { applied } : {}),
+      ...(designChecks ? { designChecks } : {}),
     },
     problems: [],
   };
@@ -888,6 +903,9 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
     };
   });
   const preview = await previewOf(round, state);
+  const design = await assessDesign(round.workspace, round.candidates.filter((c) => state.documents.has(c.path)).map((c) =>
+    ({ path: c.path, kind: c.kind, document: state.documents.get(c.path) })), round.request, round.designChecks);
+  problems.push(...design.problems);
   const previewBefore = round.outcome.task === 'template-revision' ? await previewBeforeOf(round) : undefined;
   const view: Omit<ReviewView, 'canApprove'> = {
     round: {
@@ -897,6 +915,7 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
       ...(round.requirement !== undefined ? { requirement: round.requirement } : {}), ...(round.feedback !== undefined ? { feedback: round.feedback } : {}),
     },
     review: record, saved, pending, candidates, ...(preview ? { preview } : {}), ...(previewBefore ? { previewBefore } : {}), problems,
+    ...(design.report ? { design: design.report } : {}),
     ...(round.applied ? { applied: round.applied } : {}),
   };
   return { ...view, canApprove: blockingProblems(view).length === 0 };

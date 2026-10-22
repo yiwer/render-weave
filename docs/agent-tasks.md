@@ -24,6 +24,8 @@ Agent 只连本仓库的 [MCP 只读工具服务](mcp.md)。结束后，RenderWe
 
 ## 发起一轮
 
+已有 StaticSchema、数据集和示例图的模板任务可加 `--checks <计划.json>`，让宿主在交回、审核和应用时执行[边界与视觉核查](template-design-checks.md)。计划按需读取，下一轮沿用；未提供时没有额外任务资料。
+
 ```bash
 renderweave agent run --task 数据定义提取 --sample <示例图> --brief <项目说明.md> --resources <资源仓库> --out <新轮次目录> [--domain route-sign] [--workspace <工作区>]
 renderweave agent run --task 数据集提取 --definition <名称[@版本]> --workspace <工作区> [--request <出图请求.json>] …

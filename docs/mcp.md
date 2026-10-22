@@ -33,6 +33,8 @@ Claude Code 的配置示例（`--mcp-config`）：
 
 工具名、输入 Schema 与说明以 `tools/list` 为准，快照见 [test/snapshots/mcp-tools.json](../test/snapshots/mcp-tools.json)。
 
+合同 0.9.0：宿主核查计划存在时，`check_outcome` 的 `assessment.design` 返回边界组合、逐实例样式、未覆盖情况与像素低分区域。声明的边界/样式失败阻止合格；像素分数不作质量门槛。仍为原有工具集合，见[模板核查](template-design-checks.md)。
+
 | 工具 | 输入 | 返回 |
 |---|---|---|
 | `list_documents` | 无 | 快照中的静态数据定义、模板、数据集，以及读取工作区时发现的问题 |

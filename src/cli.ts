@@ -111,6 +111,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
   --context-limit  可选的单请求有效输入交接阈值（正整数，包含缓存）；默认只观测，达到后停止并保存。不是请求前硬上限。
+  --checks         模板任务可选的宿主核查计划 JSON；声明边界用例、毫米样式范围和参考图，下一轮沿用。
   --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
 
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
@@ -165,7 +166,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'context-limit', 'effort', 'claude'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'context-limit', 'effort', 'claude', 'checks'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -376,6 +377,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options.definition !== undefined ? { definition: options.definition } : {}),
       ...(options.dataset !== undefined ? { dataset: options.dataset } : {}),
       ...(options.request !== undefined ? { request: options.request } : {}),
+      ...(options.checks !== undefined ? { checks: options.checks } : {}),
       ...(options.model !== undefined ? { model: options.model } : {}),
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
