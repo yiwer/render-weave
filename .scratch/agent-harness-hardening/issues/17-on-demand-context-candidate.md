@@ -4,7 +4,7 @@
 
 **Blocked by:** 14
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** [父规格](../spec.md) H6、D15–D16；US58–59；A18 的资料策略候选、自动指针检查和配对输入准备子项。配对实跑与收益判定归票据 18。
 
@@ -74,4 +74,18 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 
 本次只调整 `agent/tasks/next-round.md` 与 `agent/tasks/template-revision.md` 的操作顺序：修改前显式传入全部预置模板工作副本，在相同字节上从目录首页续取到null，再补取必修/截断详情；修改后重查并终检。无核准参考与unknown如实保留，outcome仍按各任务原有规则交回。默认full、MCP合同0.17.0、评分器、预算、校准夹具与可信答案均未改。候选2与其历史观测保持原字节，后续验证需另冻结候选及计划绑定。
 
-已读TDD与writing-for-agents技能，沿已核准公开Agent/CLI/MCP接缝验证。实际公开失败作为改前缺口证据；本次资料变更不新增逐字匹配提示词或让假执行器按新句子分支的镜像测试。现有回归只证明资料传递、分页能力和身份守卫，不证明真实模型遵循。验证记录待本轮回归完成后补齐。
+已读TDD与writing-for-agents技能，沿已核准公开Agent/CLI/MCP接缝验证。实际公开失败作为改前缺口证据；本次资料变更不新增逐字匹配提示词或让假执行器按新句子分支的镜像测试。现有回归只证明资料传递、分页能力和身份守卫，不证明真实模型遵循。双平台公开回归已完成，资料责任缺口闭合后重新关闭本票；21的真实有效失败仍由该票保留并继续处理。
+
+实现固定在 `d9ebe44`；独立只读审查指出旧接续句“不能只列本轮新改文件”可能与模板修改规则混读，`e4b2d1e` 将其明确为相对本轮已保存模板有改动的工作副本与新建模板，保留原交回范围。测试结束后合入最新集成 `42a2bfe` 为 `12e5ca4`，仅吸收21/原38结果与审核资料，没有改变被测执行内容。CONTEXT由独立集成任务统一更新。
+
+验证命令与结果：
+
+- Windows Node24.12.0 与 Linux Node22.23.3：`npm run build`、`npm run typecheck` 通过；工作树 `git diff --check` 通过。
+- 在 `d9ebe44` 固定资料上运行 `node node_modules/vitest/vitest.mjs run test/agent-rounds.test.ts test/agent-context-policy.test.ts test/agent-style-verification.test.ts test/agent-eval-feedback-cli.test.ts --maxWorkers=1`：Windows四文件48项通过，510.72秒；Linux四文件47项通过、1项跳过，303.52秒。跳过项是原有 `test/agent-rounds.test.ts:545` 的Windows模板替换阻断用例，Windows已通过。
+- `node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t '同一实验固定派发条件|实验来源保留可定位' --maxWorkers=1`：两平台各3项通过（19.30/14.84秒）；`-t '续跑逐项拒绝实际构建'`：两平台各1项通过（19.29/15.96秒），覆盖资料/构建/输入/资源等变化在派发前拒绝、旧实验字节不变。未选取的用例不计本轮通过。
+- 对 `e4b2d1e` 最后一句消歧，用现有 `agent-rounds.test.ts -t '下一轮拿到素材'` 和 `agent-eval-identity.test.ts -t '实验来源保留可定位'` 再验证公开提示词传递及full/on-demand来源：Windows各1+2项通过（12.66/11.84秒），Linux各1+2项通过（8.88/7.71秒）。这是已通过关联回归后的最小资料补验，不冒称最终字节再跑过整套全量。
+- Linux使用本地 `renderweave-service-test:local`、`docker run --rm --init`，把冻结源码tar和四个真实字体复制到独立 `/tested`，依赖从镜像 `/app/node_modules` 独立复制；没有共享工作树node_modules联接。
+
+改前两份任务原件、固定源码包、全部日志与SHA保存于 `F:/GenCode/render-weave/out/harness-feedback-order-fix/`。`validation.json` 保留首轮结果，`validation-final.json` 固定最终3322个共同执行文件摘要及两份资料前后SHA；与候选2逐项比较，仅 `agent/tasks/next-round.md`、`agent/tasks/template-revision.md` 改变，其余3320个文件相同。候选2清单及两份原任务字节仍匹配旧身份。`linux-run.sh`、`linux-drift-run.sh`、`linux-final-run.sh` 记录可复现命令。
+
+本修复没有调用真实模型；52项Windows及51项Linux关联通过（另1项原平台跳过）与最后各3项补验，只证明公开资料/分页/身份流程仍可执行。真实反馈顺序是否更稳定必须由新候选、新绑定和新观测判断，不能用受控执行器通过覆盖票21的6次失败，也不以本次修改关闭21或原38。
