@@ -1,0 +1,3998 @@
+{
+  "format": "renderweave-original38-en-inventory-draft/1",
+  "preparedAt": "2026-10-23T16:15:46.405Z",
+  "status": "pending-operator-fact-and-measurement-approval",
+  "purpose": "20后原样旧候选的英文及几何局部独立审核准备；不是当前引擎报告或核准基准",
+  "originalTicket": "38",
+  "overallScope": "partial",
+  "realModelObservations": 0,
+  "newRenders": 0,
+  "newCandidates": 0,
+  "holdoutImagesUsed": false,
+  "sources": {
+    "sample": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\sample.png",
+      "sha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+      "widthPx": 3200,
+      "heightPx": 3600
+    },
+    "reference": {
+      "file": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+      "sha256": "c831bbbb7a898d2b586121b9a2ed86ec8059c17e8e491953a0e82af06f84fe02",
+      "complete": false,
+      "approvedRegionsFieldIsNotHumanApproval": true
+    },
+    "annotation": {
+      "file": "F:\\GenCode\\render-weave\\out\\agent-reference-annotation\\annotation-evidence.json",
+      "sha256": "aed57453ce499af807639a9d6dc674f27698767dba475a6e8c5abcd20e976785",
+      "provenance": "独立 coding agent 按原图圈定 ROI，像素扫描取前景边界与主色；未用候选尺寸生成参考，未冒充客户审核"
+    },
+    "historicalReport": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-reference-comparison\\original\\report.json",
+      "sha256": "1d3a6b1c727cfe962c15c8403b25ee7d45bf5dda031469efd84811efa7b0c5e0",
+      "format": "renderweave-style-verification/2",
+      "reportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+      "status": "needsWork"
+    },
+    "historicalSummary": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-reference-comparison\\summary.json",
+      "sha256": "b77b9495f956a88d349d8cf815b46723909d3c586340a813a572ce8d28a4cbc8"
+    },
+    "historicalContentPreview": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-reference-comparison\\original\\content.png",
+      "sha256": "b39969e61a6ad527538f932b955115a4f0891f4dd7ab19fac09d58332343fa84"
+    }
+  },
+  "legacyCandidate": {
+    "kind": "unaltered-historical-candidate",
+    "round": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\round.json",
+      "sha256": "6583ae2afedefacbed7a0bdb4ab00e6eb76f6c913d1f49d03478a7dede888ef0"
+    },
+    "roundVerdict": "unqualified",
+    "outcomePresent": false,
+    "hasNoApprovedDeliverableClaim": true,
+    "candidates": [
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json",
+        "sha256": "4f2923bff8b236f15de0518118315c8eb73571ac416197de43164936d4fd7cbe",
+        "name": "站牌主模板",
+        "matchesHistoricalRecordedSha256": true
+      },
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json",
+        "sha256": "acc5a3c353be13023c3086d31d03b59db90568a65da2f7f18c808625d4439291",
+        "name": "站点行",
+        "matchesHistoricalRecordedSha256": true
+      },
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\transfer-badge.json",
+        "sha256": "db801a2100a28b0f6ed677945515114859ddbb8e1e1c0c57c8dce2cc82bde9eb",
+        "name": "换乘线路标",
+        "matchesHistoricalRecordedSha256": true
+      }
+    ],
+    "snapshotWorkspace": {
+      "directory": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot",
+      "files": [
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot\\compiled-route-sign-v1.schema.json",
+          "sha256": "22595c4a2b2f9df875542bac738e74a1fe9f91f1f5b9d95eb0f8a1fd0cc4f69f",
+          "legacyWorkspaceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\workspace\\compiled-route-sign-v1.schema.json",
+          "legacyWorkspaceBytesEqual": true
+        },
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot\\compiled-stop-v1.schema.json",
+          "sha256": "88953883b2259d94f1ff78a2f49d20b2afcbe31d6709edd720a569ddff764760",
+          "legacyWorkspaceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\workspace\\compiled-stop-v1.schema.json",
+          "legacyWorkspaceBytesEqual": true
+        },
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot\\dataset-ds-line12-port.json",
+          "sha256": "bc2486660dab710ea8c9792586dd4f87eaf3e837dda5fdc1dd4aae5aa7cfa7a1",
+          "legacyWorkspaceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\workspace\\dataset-ds-line12-port.json",
+          "legacyWorkspaceBytesEqual": true
+        },
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot\\schema-route-sign-v1.json",
+          "sha256": "15933e1eb41ac2d82dbb18ad6bb1ff579c5f881639ea3c279f53eef0d34f1f13",
+          "legacyWorkspaceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\workspace\\schema-route-sign-v1.json",
+          "legacyWorkspaceBytesEqual": true
+        },
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\snapshot\\schema-stop-v1.json",
+          "sha256": "53213a6a96e0ff99b90452cee2836cb28da0943111f2edcf7e08c2f7bb8ef1f6",
+          "legacyWorkspaceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\workspace\\schema-stop-v1.json",
+          "legacyWorkspaceBytesEqual": true
+        }
+      ]
+    },
+    "request": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\request.json",
+      "sha256": "06d1d3d37daecc3250631467c132b82a92edcbbacedde90489c9626e5fae8297",
+      "value": {
+        "template": "站牌主模板",
+        "dataset": {
+          "id": "ds-line12-port"
+        },
+        "parameters": {
+          "currentIndex": 6
+        },
+        "output": {
+          "width": 800,
+          "height": 900,
+          "dpi": 50,
+          "format": "png"
+        },
+        "mode": "final"
+      }
+    },
+    "resourceManifest": {
+      "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\resources\\resources.json",
+      "sha256": "9511e573bfb98442c0551e6c7cf3d47f41cf8e136630bde746ed91c14a442871"
+    },
+    "resources": [
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\resources\\fonts\\segoeui.ttf",
+        "sha256": "704eada12961a27fd271f7d3b09e2066520e758390c1776744eff430fee30f6e",
+        "id": "font-ar-regular",
+        "usedInHistoricalReport": true
+      },
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\resources\\fonts\\seguisb.ttf",
+        "sha256": "6c3fd894b19950b10c34bf64069ef821eaf2f58f959146306fee5b367472e501",
+        "id": "font-ar-semibold",
+        "usedInHistoricalReport": true
+      },
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\resources\\fonts\\segoeuib.ttf",
+        "sha256": "b169e636719880976a97e94e3b1cb3dbe5f4a38eabc037bf9f2a9165154c3ad2",
+        "id": "font-ar-bold",
+        "usedInHistoricalReport": true
+      },
+      {
+        "file": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\resources\\fonts\\seguibl.ttf",
+        "sha256": "bdf29c9b7484c631f19d6ef436a63d15f8a1a82bc856f1a0f6906c41a097d2b1",
+        "id": "font-ar-black",
+        "usedInHistoricalReport": false
+      }
+    ],
+    "note": "历史轮次无最终outcome；明确使用旧诊断中指定的三个原样候选，不伪造审核批准、应用、正式交付或新模型观测"
+  },
+  "candidate20Binding": {
+    "candidateId": null,
+    "engineIdentity": null,
+    "toolContract": null,
+    "newReportId": null,
+    "requiredBeforeReplay": true
+  },
+  "counts": {
+    "total": 41,
+    "pureEnglishStop": 13,
+    "pureEnglishTitleOrInstruction": 3,
+    "mixedEnglishLocal": 19,
+    "geometryAnchor": 6
+  },
+  "coordinateSystem": {
+    "unit": "source-image-pixel",
+    "origin": "top-left",
+    "artboardFromHistoricalRequest": {
+      "widthMm": 800,
+      "heightMm": 900
+    },
+    "scaleMmPerPixel": {
+      "x": 0.25,
+      "y": 0.25
+    },
+    "physicalDimensionsIndependentlyApproved": false
+  },
+  "stateCoverage": {
+    "passed": {
+      "sourceEvidence": [
+        "stop-2-en",
+        "stop-3-en",
+        "stop-4-en",
+        "stop-5-en",
+        "stop-1-en",
+        "marker-first",
+        "marker-passed"
+      ],
+      "independentApproval": "pending",
+      "candidateCoverageVerified": false
+    },
+    "current": {
+      "sourceEvidence": [
+        "stop-6-en",
+        "current-badge",
+        "marker-current",
+        "highlight-current"
+      ],
+      "independentApproval": "pending",
+      "candidateCoverageVerified": false
+    },
+    "normal": {
+      "sourceEvidence": [
+        "stop-7-en",
+        "stop-9-en",
+        "stop-10-en",
+        "stop-11-en",
+        "stop-12-en",
+        "stop-13-en",
+        "stop-14-en",
+        "stop-15-en",
+        "stop-8-en",
+        "marker-normal"
+      ],
+      "independentApproval": "pending",
+      "candidateCoverageVerified": false
+    },
+    "terminal": {
+      "sourceEvidence": [
+        "stop-16-en",
+        "marker-terminal"
+      ],
+      "independentApproval": "pending",
+      "candidateCoverageVerified": false
+    },
+    "longestText": {
+      "sourceEvidence": [],
+      "status": "unknown",
+      "reason": "尚未独立量测3个混排站名中的英文子段，不继承longest-stop-ar；13纯英文子集中stop-10-en历史ROI最宽仅说明子集排名"
+    }
+  },
+  "entries": [
+    {
+      "id": "stop-2-en",
+      "kind": "pureEnglishStop",
+      "label": "第 2 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Martyrs' Square",
+        "appearance": null,
+        "stopIndex": 2,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2705,
+          "y": 1256,
+          "width": 222,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-2-en",
+        "referenceRegionIndex": 25,
+        "boxKind": "ink",
+        "foregroundColor": "#5F6C82",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1251,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[2]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[2]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-3-en",
+      "kind": "pureEnglishStop",
+      "label": "第 3 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "City Market",
+        "appearance": null,
+        "stopIndex": 3,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2767,
+          "y": 1408,
+          "width": 160,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-3-en",
+        "referenceRegionIndex": 27,
+        "boxKind": "ink",
+        "foregroundColor": "#5F6C82",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1404,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[3]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[3]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-4-en",
+      "kind": "pureEnglishStop",
+      "label": "第 4 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "University",
+        "appearance": null,
+        "stopIndex": 4,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2787,
+          "y": 1560,
+          "width": 140,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-4-en",
+        "referenceRegionIndex": 29,
+        "boxKind": "ink",
+        "foregroundColor": "#5F6C82",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1555,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[4]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[4]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-5-en",
+      "kind": "pureEnglishStop",
+      "label": "第 5 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "General Hospital",
+        "appearance": null,
+        "stopIndex": 5,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2690,
+          "y": 1712,
+          "width": 237,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-5-en",
+        "referenceRegionIndex": 31,
+        "boxKind": "ink",
+        "foregroundColor": "#5F6C82",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1711,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[5]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[5]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-6-en",
+      "kind": "pureEnglishStop",
+      "label": "第 6 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Palm Park",
+        "appearance": null,
+        "stopIndex": 6,
+        "observedState": "current",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2786,
+          "y": 1888,
+          "width": 141,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-6-en",
+        "referenceRegionIndex": 33,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1881,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[6]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[6]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/current",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-7-en",
+      "kind": "pureEnglishStop",
+      "label": "第 7 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Clock Roundabout",
+        "appearance": null,
+        "stopIndex": 7,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2667,
+          "y": 2056,
+          "width": 260,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-7-en",
+        "referenceRegionIndex": 35,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 2051,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[7]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[7]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-9-en",
+      "kind": "pureEnglishStop",
+      "label": "第 9 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Public Library",
+        "appearance": null,
+        "stopIndex": 9,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1231,
+          "y": 1104,
+          "width": 192,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-9-en",
+        "referenceRegionIndex": 39,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1098,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[9]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[9]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-10-en",
+      "kind": "pureEnglishStop",
+      "label": "第 10 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Ministries Complex",
+        "appearance": null,
+        "stopIndex": 10,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1153,
+          "y": 1256,
+          "width": 270,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-10-en",
+        "referenceRegionIndex": 41,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1251,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[10]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[10]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-11-en",
+      "kind": "pureEnglishStop",
+      "label": "第 11 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "National Museum",
+        "appearance": null,
+        "stopIndex": 11,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1175,
+          "y": 1408,
+          "width": 246,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-11-en",
+        "referenceRegionIndex": 43,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1404,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[11]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[11]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-12-en",
+      "kind": "pureEnglishStop",
+      "label": "第 12 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Corniche",
+        "appearance": null,
+        "stopIndex": 12,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1298,
+          "y": 1560,
+          "width": 125,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-12-en",
+        "referenceRegionIndex": 45,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1555,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[12]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[12]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-13-en",
+      "kind": "pureEnglishStop",
+      "label": "第 13 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Fish Market",
+        "appearance": null,
+        "stopIndex": 13,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1260,
+          "y": 1712,
+          "width": 163,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-13-en",
+        "referenceRegionIndex": 47,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1709,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[13]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[13]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-14-en",
+      "kind": "pureEnglishStop",
+      "label": "第 14 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Free Zone",
+        "appearance": null,
+        "stopIndex": 14,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1283,
+          "y": 1866,
+          "width": 140,
+          "height": 22
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-14-en",
+        "referenceRegionIndex": 49,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 1862,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[14]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[14]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-15-en",
+      "kind": "pureEnglishStop",
+      "label": "第 15 站副标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Old Harbour",
+        "appearance": null,
+        "stopIndex": 15,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1251,
+          "y": 2016,
+          "width": 173,
+          "height": 24
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-15-en",
+        "referenceRegionIndex": 51,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 2015,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[15]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[15]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "header-en",
+      "kind": "pureEnglishTitleOrInstruction",
+      "label": "本站英文标题",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Palm Park",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1824,
+          "y": 202,
+          "width": 237,
+          "height": 39
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "header-en",
+        "referenceRegionIndex": 2,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1809,
+          "y": 189,
+          "width": 266,
+          "height": 66
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/本站名称行/本站英文名",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/顶栏/本站标题组/本站名称行/本站英文名",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/顶栏/本站标题组/本站名称行/本站英文名"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "header-en",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "destination-en",
+      "kind": "pureEnglishTitleOrInstruction",
+      "label": "方向英文",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Port",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2082,
+          "y": 591,
+          "width": 123,
+          "height": 48
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "destination-en",
+        "referenceRegionIndex": 7,
+        "boxKind": "ink",
+        "foregroundColor": "#C9D3E3",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2064,
+          "y": 574,
+          "width": 160,
+          "height": 81
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/终点站名称行/终点站英文名",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/方向横幅/开往方向组/终点站名称行/终点站英文名",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/方向横幅/开往方向组/终点站名称行/终点站英文名"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "destination-en",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "footer-sms-en",
+      "kind": "pureEnglishTitleOrInstruction",
+      "label": "短信英文说明",
+      "scope": "entire-english-node",
+      "sourceFacts": {
+        "englishText": "Scan for live arrivals · SMS stop code 2048",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2101,
+          "y": 3354,
+          "width": 605,
+          "height": 30
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "footer-sms-en",
+        "referenceRegionIndex": 77,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2026,
+          "y": 3338,
+          "width": 696,
+          "height": 62
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/短信查询英文说明",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/底部卡片区/实时到站卡片/实时到站文字组/短信查询英文说明",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/底部卡片区/实时到站卡片/实时到站文字组/短信查询英文说明"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "footer-sms-en",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后整英文节点比较，读取全部实例与明确未知范围",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-1-en",
+      "kind": "mixedEnglishLocal",
+      "label": "Central Station（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Central Station",
+        "appearance": null,
+        "stopIndex": 1,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2528,
+          "y": 1106,
+          "width": 399,
+          "height": 32
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-1-en",
+        "referenceRegionIndex": 23,
+        "boxKind": "ink",
+        "foregroundColor": "#5F6C82",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 1100,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[1]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[1]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-8-en",
+      "kind": "mixedEnglishLocal",
+      "label": "Courthouse（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Courthouse",
+        "appearance": null,
+        "stopIndex": 8,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2656,
+          "y": 2208,
+          "width": 268,
+          "height": 34
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-8-en",
+        "referenceRegionIndex": 37,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2272,
+          "y": 2206,
+          "width": 666,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[8]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[8]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "stop-16-en",
+      "kind": "mixedEnglishLocal",
+      "label": "Port（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Port",
+        "appearance": null,
+        "stopIndex": 16,
+        "observedState": "terminal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1217,
+          "y": 2170,
+          "width": 206,
+          "height": 33
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "stop-16-en",
+        "referenceRegionIndex": 53,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 851,
+          "y": 2168,
+          "width": 589,
+          "height": 49
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[16]/*/站点副标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[16]/行内容区/站名文字组/站点副标题",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/站名文字组/站点副标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "stop-subtitle/terminal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "header-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Bus Stop（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Bus Stop",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2347,
+          "y": 81,
+          "width": 459,
+          "height": 46
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "header-label",
+        "referenceRegionIndex": 0,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2319,
+          "y": 68,
+          "width": 511,
+          "height": 62
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/本站栏目标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/顶栏/本站标题组/本站栏目标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/顶栏/本站标题组/本站栏目标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "header-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "code-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Stop code（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Stop code",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 162,
+          "y": 77,
+          "width": 338,
+          "height": 36
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "code-label",
+        "referenceRegionIndex": 3,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 149,
+          "y": 64,
+          "width": 394,
+          "height": 64
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/站点编号标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/顶栏/站点编号组/站点编号标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/顶栏/站点编号组/站点编号标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "code-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "towards-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Towards（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Towards",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2333,
+          "y": 448,
+          "width": 334,
+          "height": 46
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "towards-label",
+        "referenceRegionIndex": 5,
+        "boxKind": "ink",
+        "foregroundColor": "#F2A900",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2315,
+          "y": 430,
+          "width": 366,
+          "height": 74
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/开往标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/方向横幅/开往方向组/开往标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/方向横幅/开往方向组/开往标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "towards-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "count-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Stops（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Stops",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 365,
+          "y": 423,
+          "width": 293,
+          "height": 36
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "count-label",
+        "referenceRegionIndex": 12,
+        "boxKind": "ink",
+        "foregroundColor": "#C9D3E3",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 345,
+          "y": 404,
+          "width": 330,
+          "height": 64
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/站数标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/方向横幅/全程统计组/站数标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/方向横幅/全程统计组/站数标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "count-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "trip-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Full trip（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Full trip",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 271,
+          "y": 621,
+          "width": 386,
+          "height": 36
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "trip-label",
+        "referenceRegionIndex": 14,
+        "boxKind": "ink",
+        "foregroundColor": "#C9D3E3",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 251,
+          "y": 606,
+          "width": 423,
+          "height": 64
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/全程时长标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/方向横幅/全程统计组/全程时长标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/方向横幅/全程统计组/全程时长标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "trip-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "table-右-transfer",
+      "kind": "mixedEnglishLocal",
+      "label": "Other routes（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Other routes",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1890,
+          "y": 921,
+          "width": 413,
+          "height": 42
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "table-右-transfer",
+        "referenceRegionIndex": 17,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1872,
+          "y": 913,
+          "width": 436,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏表头换乘",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏表头换乘",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/站点列表区/右栏站点区/右栏表头换乘"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "table-header/other-routes",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "table-右-stops",
+      "kind": "mixedEnglishLocal",
+      "label": "Stops（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Stops",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2798,
+          "y": 926,
+          "width": 240,
+          "height": 37
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "table-右-stops",
+        "referenceRegionIndex": 18,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2777,
+          "y": 913,
+          "width": 272,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏表头站点",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏表头站点",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/站点列表区/右栏站点区/右栏表头站点"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "table-header/stops",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "table-左-transfer",
+      "kind": "mixedEnglishLocal",
+      "label": "Other routes（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Other routes",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 386,
+          "y": 921,
+          "width": 413,
+          "height": 42
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "table-左-transfer",
+        "referenceRegionIndex": 20,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 368,
+          "y": 913,
+          "width": 436,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏表头换乘",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏表头换乘",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/站点列表区/左栏站点区/左栏表头换乘"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "table-header/other-routes",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "table-左-stops",
+      "kind": "mixedEnglishLocal",
+      "label": "Stops（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Stops",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1294,
+          "y": 926,
+          "width": 240,
+          "height": 37
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "table-左-stops",
+        "referenceRegionIndex": 21,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1272,
+          "y": 913,
+          "width": 272,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏表头站点",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏表头站点",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/站点列表区/左栏站点区/左栏表头站点"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "table-header/stops",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "current-badge",
+      "kind": "mixedEnglishLocal",
+      "label": "You are here（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "You are here",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "current",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1696,
+          "y": 1849,
+          "width": 331,
+          "height": 31
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "current-badge",
+        "referenceRegionIndex": 54,
+        "boxKind": "ink",
+        "foregroundColor": "#FFFFFF",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1685,
+          "y": 1840,
+          "width": 347,
+          "height": 53
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[6]/*/本站提示文字",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[6]/行内容区/到站与换乘区/本站位置标/本站提示文字",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/到站与换乘区/本站位置标/本站提示文字"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "current-badge",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "legend-time",
+      "kind": "mixedEnglishLocal",
+      "label": "Times are approximate（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Times are approximate",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1268,
+          "y": 2345,
+          "width": 828,
+          "height": 39
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "legend-time",
+        "referenceRegionIndex": 57,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1251,
+          "y": 2336,
+          "width": 855,
+          "height": 55
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/时间近似说明",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/图例栏/时间近似说明",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/站点列表区/图例栏/时间近似说明"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "legend-time",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "service-access-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Accessibility（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Accessibility",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 365,
+          "y": 2519,
+          "width": 459,
+          "height": 36
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "service-access-label",
+        "referenceRegionIndex": 61,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 340,
+          "y": 2502,
+          "width": 500,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/无障碍标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/服务信息区/无障碍设施栏/无障碍标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/服务信息区/无障碍设施栏/无障碍标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "service-access-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "service-fare-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Fare（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Fare",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1280,
+          "y": 2514,
+          "width": 282,
+          "height": 43
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "service-fare-label",
+        "referenceRegionIndex": 63,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1255,
+          "y": 2502,
+          "width": 326,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/票价标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/服务信息区/票价与支付栏/票价标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/服务信息区/票价与支付栏/票价标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "service-fare-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "service-frequency-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Frequency（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Frequency",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1910,
+          "y": 2518,
+          "width": 393,
+          "height": 37
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "service-frequency-label",
+        "referenceRegionIndex": 66,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 1889,
+          "y": 2502,
+          "width": 430,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/发车间隔标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/服务信息区/发车间隔栏/发车间隔标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/服务信息区/发车间隔栏/发车间隔标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "service-frequency-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "service-hours-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Hours（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Hours",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2705,
+          "y": 2513,
+          "width": 335,
+          "height": 42
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "service-hours-label",
+        "referenceRegionIndex": 70,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 2681,
+          "y": 2502,
+          "width": 374,
+          "height": 60
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/运营时间标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/服务信息区/运营时间栏/运营时间标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/服务信息区/运营时间栏/运营时间标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "service-hours-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "footer-customer-label",
+      "kind": "mixedEnglishLocal",
+      "label": "Customer service（混排中的英文局部）",
+      "scope": "english-substring-only",
+      "sourceFacts": {
+        "englishText": "Customer service",
+        "appearance": null,
+        "stopIndex": null,
+        "observedState": "not-applicable",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 839,
+          "y": 3159,
+          "width": 676,
+          "height": 36
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": true,
+        "subregionStatus": "英文子段尚未独立量测；现框包含整条混排"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "footer-customer-label",
+        "referenceRegionIndex": 72,
+        "boxKind": "ink",
+        "foregroundColor": "#4A5A73",
+        "toleranceRatio": {
+          "min": 0.8,
+          "max": 1.2
+        },
+        "positionToleranceMm": 2,
+        "annotationRoi": {
+          "x": 819,
+          "y": 3145,
+          "width": 713,
+          "height": 64
+        },
+        "touchesRoiEdge": false,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/客服标题",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/底部卡片区/客服信息卡片/客服文字组/客服标题",
+            "sourceLocation": {
+              "template": "站牌主模板",
+              "path": "站牌主模板/底部卡片区/客服信息卡片/客服文字组/客服标题"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\main-board.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "footer-customer-label",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": false,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "人工对照原图与原样候选中的英文局部；不对全混排节点套英文子框",
+        "prohibit": "禁止以整混排节点ink框与缩小的英文ROI自动对比；不删除或重排其他文字"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "marker-first",
+      "kind": "geometryAnchor",
+      "label": "首站方标",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "首站为圆角实心方标，图中属于已过站状态",
+        "stopIndex": null,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2968,
+          "y": 1055,
+          "width": 64,
+          "height": 66
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "marker-first",
+        "referenceRegionIndex": 80,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[1]/*/首末站方标",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[1]/行内容区/线路轴容器/首末站方标",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/线路轴容器/首末站方标"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "marker-first",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "marker-passed",
+      "kind": "geometryAnchor",
+      "label": "过站圆标",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "已过站圆标为浅色外环、白色圆心",
+        "stopIndex": null,
+        "observedState": "passed",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2972,
+          "y": 1213,
+          "width": 55,
+          "height": 55
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "marker-passed",
+        "referenceRegionIndex": 81,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[2]/*/途经站圆标",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[2]/行内容区/线路轴容器/途经站圆标",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/线路轴容器/途经站圆标"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "marker-passed",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "marker-current",
+      "kind": "geometryAnchor",
+      "label": "本站圆标",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "本站圆标为深色外环、黄色圆心",
+        "stopIndex": null,
+        "observedState": "current",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 2960,
+          "y": 1828,
+          "width": 81,
+          "height": 81
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "marker-current",
+        "referenceRegionIndex": 82,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[6]/*/本站圆标",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[6]/行内容区/线路轴容器/本站圆标",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/线路轴容器/本站圆标"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "marker-current",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "marker-normal",
+      "kind": "geometryAnchor",
+      "label": "普通圆标",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "普通后续站圆标为深色外环、白色圆心",
+        "stopIndex": null,
+        "observedState": "normal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1468,
+          "y": 1060,
+          "width": 55,
+          "height": 55
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "marker-normal",
+        "referenceRegionIndex": 83,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[9]/*/途经站圆标",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[9]/行内容区/线路轴容器/途经站圆标",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/线路轴容器/途经站圆标"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "marker-normal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "marker-terminal",
+      "kind": "geometryAnchor",
+      "label": "终点方标",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "终点为深色圆角实心方标",
+        "stopIndex": null,
+        "observedState": "terminal",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1464,
+          "y": 2121,
+          "width": 64,
+          "height": 64
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "marker-terminal",
+        "referenceRegionIndex": 84,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/左栏站点列表[16]/*/首末站方标",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/左栏站点区/左栏站点列表[16]/行内容区/线路轴容器/首末站方标",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/行内容区/线路轴容器/首末站方标"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "marker-terminal",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    },
+    {
+      "id": "highlight-current",
+      "kind": "geometryAnchor",
+      "label": "本站高亮底块",
+      "scope": "geometry-only",
+      "sourceFacts": {
+        "englishText": null,
+        "appearance": "本站一行有浅黄色圆角高亮底块",
+        "stopIndex": null,
+        "observedState": "current",
+        "basis": "原图目视读取；历史标注仅辅助定位",
+        "observedBy": "coding-agent",
+        "operatorApproval": "pending",
+        "approvedAt": null
+      },
+      "location": {
+        "sourceImageSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+        "contextRegionPx": {
+          "x": 1640,
+          "y": 1781,
+          "width": 1426,
+          "height": 177
+        },
+        "englishSubregionPx": null,
+        "contextIncludesOtherScript": false,
+        "subregionStatus": "整节点/锚点历史定位框；仍待核准"
+      },
+      "historicalMeasurement": {
+        "status": "unapproved",
+        "referenceFile": "F:\\GenCode\\render-weave\\docs\\examples\\arabic-reference\\reference.json",
+        "referenceRegionId": "highlight-current",
+        "referenceRegionIndex": 85,
+        "boxKind": "layout",
+        "foregroundColor": null,
+        "toleranceRatio": null,
+        "positionToleranceMm": 2,
+        "annotationRoi": null,
+        "touchesRoiEdge": null,
+        "fontSizeMm": null,
+        "limits": [
+          "尺寸、主色与历史诊断容差未获用户核准",
+          "墨迹高度不换算为字体字号",
+          "不是业务通过阈值，不能用于把未知改判通过"
+        ]
+      },
+      "targetMapping": {
+        "status": "historical-location-only",
+        "targetPathPattern": "*/右栏站点列表[6]/本站高亮底块",
+        "legacyReportId": "19247dab9744de64e8e296fd2043378f811f9c9c5bda61186ebd3d9abaed545c",
+        "instances": [
+          {
+            "path": "站牌主模板/站点列表区/右栏站点区/右栏站点列表[6]/本站高亮底块",
+            "sourceLocation": {
+              "template": "站点行",
+              "path": "站点行/本站高亮底块"
+            },
+            "sourceFile": "F:\\GenCode\\render-weave\\out\\arabic-board-retest-2026-10-20\\r3-template\\agent\\candidates\\stop-row.json"
+          }
+        ],
+        "refreshedOnCandidate20": false,
+        "usesCandidateAsTruth": false
+      },
+      "independentStyleReviewGroup": "highlight-current",
+      "automation": {
+        "eligibleAfterFactAndMeasurementApproval": true,
+        "readyNow": false,
+        "currentConclusion": "unknown",
+        "method": "核准后仅比较几何及支持范围；颜色、层级、语义与复杂可见性仍独立列未知",
+        "prohibit": "禁止用旧零诊断或模板自身参数当独立真值"
+      },
+      "review": {
+        "status": "not-reviewed",
+        "reviewer": null,
+        "reviewedAt": null,
+        "content": null,
+        "style": null,
+        "position": null,
+        "visibility": null,
+        "state": null,
+        "conclusion": null,
+        "minutes": null,
+        "evidence": null
+      }
+    }
+  ],
+  "exclusions": [
+    "阿拉伯文语义、塑形及整体混排正确性",
+    "新生成或修订阿文模板",
+    "其他语种与完整英文线路泛化",
+    "QR目标、图标业务语义、线路数字作为英文文字",
+    "整图正确、正式可交付或客户自助上线判断"
+  ],
+  "unknowns": [
+    "原图字体与真实字号",
+    "历史颜色/容差的业务可接受性",
+    "19个混排节点英文子段的独立几何",
+    "全16站英文最长项",
+    "新候选20下全部实例映射与最终可见性",
+    "独立人工事实核准、样式状态审核及用时"
+  ],
+  "readiness": {
+    "canPrepareManualPanelsFromExistingBytes": true,
+    "canClaimApprovedTruth": false,
+    "canDeclareAutomaticPass": false,
+    "canCloseTicket38": false,
+    "canCountAsNewRealModelCorrection": false
+  },
+  "nextSteps": [
+    "20固定后重新核对本库存全部源字节并绑定候选身份；原件有差异须新库存，不覆盖旧记录",
+    "仅以原样候选+快照+原请求+原资源建立离线局部包；不执行包含arabic-double的旧脚本",
+    "先由独立审核者核准英文事实、ROI、状态与容差；未核准项继续unknown",
+    "纯英文16项与几何6项核准后方可转成局部compareReference依据，分页/实例读取完整；19个混排英文局部保持人工项",
+    "人工先看源图和原样候选面板再看自动结论；结果另存observations，空值不补通过或0分钟"
+  ]
+}
