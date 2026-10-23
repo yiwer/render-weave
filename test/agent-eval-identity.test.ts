@@ -304,7 +304,7 @@ it('串联定义与数据集轮次允许动态提示词变化并保留实际上�
   await writeFile(e.executor, source.replace("process.argv.splice", `
 const provenance = JSON.parse(await readFile(join(dirname(process.cwd()), 'logs/provenance.json'), 'utf8'));
 await appendFile(${JSON.stringify(evidence)}, JSON.stringify(provenance) + '\\n');
-const preset = dirname(process.cwd()).endsWith('dataset') ? ${JSON.stringify(dataset)} : ${JSON.stringify(definition)};
+const preset = provenance.inputs.definition ? ${JSON.stringify(dataset)} : ${JSON.stringify(definition)};
 process.argv.splice`));
   const args = [...e.args, '--repetitions', '1-1']; args[args.indexOf('--scenarios') + 1] = '366-transcription';
   const result = await cli(args);

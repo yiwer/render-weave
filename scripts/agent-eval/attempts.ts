@@ -68,6 +68,27 @@ async function list(unit: string): Promise<SavedAttempt[]> {
 }
 export async function savedAttempts(unit: string): Promise<SavedAttempt[]> {return list(unit);}
 
+export async function evaluationTiming(outDir: string, attempts: readonly {elapsedMs: number | null}[]) {
+  const directory = join(outDir, 'segments');
+  const files = await readdir(directory).catch((error: NodeJS.ErrnoException) => {if (error.code === 'ENOENT') return []; throw error;});
+  const starts = files.filter(file => file.endsWith('.started.json'));
+  const intervals: [number, number][] = [];
+  let incompleteSessions = 0;
+  for (const file of starts) {
+    const begin = await readJson<{startedAt: string}>(join(directory, file));
+    const end = await readJson<{endedAt: string}>(join(directory, file.replace('.started.json', '.completed.json')));
+    const a = Date.parse(begin?.startedAt ?? ''), b = Date.parse(end?.endedAt ?? '');
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) incompleteSessions++;
+    else intervals.push([a, b]);
+  }
+  let knownWallMs = 0, previousEnd = -Infinity;
+  for (const [start, end] of intervals.sort((a, b) => a[0] - b[0])) {
+    knownWallMs += Math.max(0, end - Math.max(previousEnd, start)); previousEnd = Math.max(previousEnd, end);
+  }
+  return {sessions: starts.length, incompleteSessions, actualWallMs: starts.length && !incompleteSessions ? knownWallMs : null, knownWallMs,
+    attemptsElapsedMs: attempts.reduce((total, attempt) => total + (attempt.elapsedMs ?? 0), 0), unknownAttemptDurations: attempts.filter(attempt => attempt.elapsedMs === null).length};
+}
+
 async function publish(attempt: SavedAttempt, stage: string): Promise<void> {
   const original = join(attempt.dir, 'round');
   try {await readdir(original);} catch (error) {if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error;}

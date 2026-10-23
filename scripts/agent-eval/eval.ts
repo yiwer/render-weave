@@ -15,7 +15,7 @@ import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
-import {executeAttempt, restoreAttempt, savedAttempts} from './attempts.js';
+import {evaluationTiming, executeAttempt, restoreAttempt, savedAttempts} from './attempts.js';
 import {
   CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
   type ConventionId, type DefinitionScore, type RevisionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
@@ -537,6 +537,7 @@ export interface EvalReport {
   readonly results: readonly ScenarioResult[];
   readonly gate: GateResult;
   readonly attempts: readonly AttemptSummary[];
+  readonly timing: Awaited<ReturnType<typeof evaluationTiming>>;
   readonly totals: { readonly wallMs: number; readonly inputTokens: number; readonly outputTokens: number; readonly thinkingTokens: number; readonly cacheReadTokens: number;
     readonly cacheCreationTokens: number; readonly persistedResults: number; readonly toolCalls: number; readonly unknownUsageAttempts: number;
     readonly unknownByMetric: Readonly<Record<string, number>>; readonly usageComplete: boolean; readonly legacyHistoryUnknown: boolean };
@@ -616,6 +617,7 @@ export async function buildReport(options: {
     passLines: Object.fromEntries(options.config.scenarios.map((scenario) => [scenario.id, scenario.pass])),
     results: options.results,
     attempts,
+    timing: await evaluationTiming(options.outDir, attempts),
     gate: gate(options.config, options.results, options.plan),
     totals: { wallMs: sum('wallMs'), inputTokens: sum('inputTokens'), outputTokens: sum('outputTokens'), thinkingTokens: sum('thinkingTokens'),
       cacheReadTokens: sum('cacheReadTokens'), cacheCreationTokens: sum('cacheCreationTokens'), toolCalls: sum('toolCalls'), persistedResults: sum('persistedResults'),
@@ -659,6 +661,7 @@ export function formatReport(report: EvalReport): string {
   }
   lines.push('', `全部尝试已知小计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输入 ${report.totals.inputTokens}、输出 ${report.totals.outputTokens} tokens，其中思考 ${report.totals.thinkingTokens}（不再加到输出）；缓存读/写 ${report.totals.cacheReadTokens}/${report.totals.cacheCreationTokens}。`,
     `用量有未知字段的已保存尝试 ${report.totals.unknownUsageAttempts} 个；${report.totals.usageComplete ? '已保存尝试的token用量完整' : '不能把已知小计当成完整成本'}${report.totals.legacyHistoryUnknown ? '；历史已删除尝试的数量和用量未知' : ''}。`);
+  lines.push(`实际派发会话墙钟 ${report.timing.actualWallMs === null ? '未知' : (report.timing.actualWallMs / 60000).toFixed(1) + ' 分钟'}；尝试耗时已知求和 ${(report.timing.attemptsElapsedMs / 60000).toFixed(1)} 分钟，${report.timing.unknownAttemptDurations} 个尝试耗时未知。`);
   if (report.totals.persistedResults) lines.push(`有 ${report.totals.persistedResults} 次工具结果超过 Claude Code 的上限被转存或拒收：MCP 工具的输出应在 40,000 字符以内（票据 22）。`);
   return lines.join('\n');
 }
