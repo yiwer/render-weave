@@ -119,7 +119,7 @@ async function publish(attempt: SavedAttempt, stage: string): Promise<void> {
   try {await readdir(original);} catch (error) {if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error;}
   const unit = resolve(attempt.dir, '../..');
   // 只替换本单元的派生视图；原始尝试目录永不删除。
-  if (resolve(stage, '..') !== unit || basename(stage) !== attempt.record.stage || !['definition', 'dataset', 'template', 'revision'].includes(basename(stage))) throw new Error('尝试阶段路径不合法');
+  if (resolve(stage, '..') !== unit || basename(stage) !== attempt.record.stage || !['definition', 'dataset', 'template', 'revision', 'feedback'].includes(basename(stage))) throw new Error('尝试阶段路径不合法');
   const next = join(unit, `.view-${randomUUID()}`), previous = join(unit, `.old-view-${randomUUID()}`);
   await cp(original, next, {recursive: true});
   await writeNew(join(next, '.attempt.json'), {id: attempt.record.id, source: relative(unit, attempt.dir).replaceAll('\\', '/')});

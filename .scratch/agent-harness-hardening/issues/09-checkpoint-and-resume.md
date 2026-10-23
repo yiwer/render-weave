@@ -39,6 +39,13 @@
 3. `npx vitest run test/agent-checkpoint.test.ts test/agent-eval-attempts-cli.test.ts test/agent-eval-attempts.test.ts test/mcp.test.ts --maxWorkers=1`：合入 05/07 后 **57/57 通过**（检查点当时 13 条，后新增上述失败后重试 2 条另作红绿并纳入最终 15 条）。强退评估保留 3 次真实工具调用、转存和原用量，重复续跑不重复计量。
 4. 原 Agent 任务、执行状态、正常接续与数据集/模板五文件回归曾 **86/86 通过**；后续交叉发现重复 `outcome.invalid` 后修复，`test/agent.test.ts` 的 **30/30 通过**。资源身份、可见性、样式、审核、评估及实验身份六文件共 **80 条通过**；未把交叉中曾失败的夹具或旧断言算作通过。
 
+集成复核（2026-10-23）：主实现以 `1918a35` 非压缩合并；Linux 强退夹具修正 `c2cebbc` 以 `2f2c181` 合入。只读复核覆盖不可变候选、固定输入、恢复竞争、终检字节与恢复失败后释放拥有权。
+
+- Windows：`npm run build`、`npm run typecheck` 通过；`npx vitest run test/agent-checkpoint.test.ts test/agent-execution.test.ts test/agent-eval-attempts-cli.test.ts test/mcp.test.ts --maxWorkers=1` **63/63 通过**（93.03 秒）。强退夹具修正后检查点全套另 **15/15 通过**（54.20 秒），路径分隔符修正后 `-t '终检固定'` 定向 **1/1 通过**（其余 14 项未执行）。
+- Linux Node 22.23.3：在 `renderweave-service-test:local` 中使用 `docker run --rm --init`，只读挂载仓库并复制到容器工作目录，执行 `npm run build` 及 `vitest run test/agent-checkpoint.test.ts test/agent-eval-attempts-cli.test.ts --maxWorkers=1`，最终 **17/17 通过**（63.18 秒）。
+- 跨平台首次运行暴露两处测试夹具差异：故障注入把检查点路径分隔符写死为反斜杠；Linux 强退只杀宿主进程组，实际执行器因独立进程组继续存活。现分别使用平台分隔符，以及核对本次公开 `execution.json` 的宿主 PID 后终止对应执行器组；容器用 `--init` 回收孤儿进程。实测存活执行器时产品返回 `pendingRecovery` 正确，未放宽死亡证明或改动产品恢复逻辑。
+- 最终 `npm run typecheck`、`git diff --check` 通过。两份预存未跟踪评估报告原样保留。
+
 关键修复均有红灯证据再转绿：保存状态缺失、检查点接续缺失、并发恢复放行、语义错误遮住缺依赖、终检复制未检查工作副本、采集变化误作正式成果、合法相对路径、固定资料篡改、Windows EOF 丢回复，以及失败接续遗留恢复权。
 
 范围无偏差：本票只保证完整检查点、保存完成信号、可验证新轮次接续和恢复拥有权；预算/取消边界归 10、较好候选选择归 11、停滞归 12。未运行真实模型，真实模型效果由统一验收活动提供；进程强退保证不扩展为断电或网络共享文件系统事务。`CONTEXT.md` 由集成方统一更新。

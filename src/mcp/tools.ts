@@ -34,7 +34,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.13.0';
+export const MCP_CONTRACT_VERSION = '0.13.1';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -340,7 +340,7 @@ export function createTools(context: ToolContext): McpTool[] {
         previousComparison = report;
         return { content: [{ type: 'text', text: JSON.stringify({ ...summarizeVisual(report, regions, regions ? undefined : offset ?? 0), changes,
           panels: result.panels.map(({ regionId, transform }) => ({ regionId, transform })), ...listed(result.render.problems) }) },
-          ...result.panels.map((panel) => ({ type: 'image' as const, mimeType: 'image/png' as const, data: Buffer.from(panel.bytes).toString('base64') }))], summary: { status: report.status, reportId: report.reportId } };
+          ...result.panels.map((panel) => ({ type: 'image' as const, mimeType: 'image/png' as const, data: Buffer.from(panel.bytes).toString('base64') }))], summary: { status: report.status, reportId: report.reportId, ...(regions ? {requestedRegions: regions} : visualRegionPage(report.regions, offset)), regionIssues: report.anomalies.filter(item => (regions ?? visualRegionPage(report.regions, offset).regionCatalog.map(region => region.id)).includes(item.regionId)).map(item => item.regionId) } };
       },
     },
     {
@@ -499,7 +499,7 @@ export function createTools(context: ToolContext): McpTool[] {
         });
         let budget = PROBLEMS_MAX_CHARS, result = response(budget);
         while (JSON.stringify(result).length > 39000 && budget > 200) { budget = Math.floor(budget / 2); result = response(budget); }
-        return json(result, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
+        return json(result, { contentIdentity: check.contentIdentity?.id, verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
     },
   ];

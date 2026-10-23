@@ -133,7 +133,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.13.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.13.1`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.13.1 的宿主工具日志为 `check_outcome` 增加实际内容身份，为 `compare_reference` 增加本页区域目录、续取位置及本页异常区域。评估可以核对后续页实际取得和末次工具检查/终检的关联；不改变候选、参考或工具只读权限。
   - 0.13.0 为受管 `check_outcome` 增加 `checkpoint` 保存完成状态、ID 与内容身份，或 `notSaved` 原因。宿主固定完整字节后检查并原子保存，MCP 工具仍只读；独立 MCP 不保存。保存不代表业务合格或人工批准，见[检查点与接续](agent-checkpoints.md)。
   - 0.12.1 将本地应用读取接入提交恢复：相关工作区未完成应用时先恢复或明确返回 `apply.recoveryRequired`，不把混合输入作为工具初始状态。Agent 新应用记录为 `renderweave-applied/2`，公开应用结果带可核对的 `commitId` 与重复结果标记，旧 `/1` 成功记录仍读取。工具参数与只读能力不变；恢复和同宿主 Windows/Linux 边界见[应用恢复](agent-tasks.md#应用强退与恢复)。
   - 0.12.0 为 `compare_reference` 和 `check_outcome` 的视觉结果增加 `contentInvisible`、`imageContentMismatch`，每个实例可返回 `visibility` 与 `imageContent`。基准新增操作者核准的 `expectedImageSha256`；实际绘制的透明、完全裁掉和有限实心矩形遮挡证据与宿主终检一致，图片按实际资源字节核对。未知不计通过，合同不承诺整体可读性或全样式验收；完整边界见[视觉反馈](agent-visual-feedback.md)。分页和总预算不变。
