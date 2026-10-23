@@ -145,7 +145,7 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     let drawOps = rasterized.drawOps;
     const evidence = options.comparisonEvidence && request.mode === 'draft' ? {
       image: draw(ck, { fonts, images }, drawOps, request.output), layout: result.summary,
-      nodes: evidenceNodes(root, drawOps, fonts),
+      nodes: evidenceNodes(root, drawOps, fonts, result.summary),
     } : undefined;
     if (request.mode === 'draft') {
       const preview = withDraftPlaceholders(root);
