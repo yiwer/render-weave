@@ -141,3 +141,22 @@ it('完成元数据被改写时拒绝重评分，不能降低耗时或抹去错�
   await writeFile(file, JSON.stringify(completion));
   await expect(buildReport({config, label: 'completion', startedAt, outDir: out, results: [result]})).rejects.toThrow('尝试完成记录已改变');
 });
+
+it('应用锁初始化释放和回收残留不改变尝试证据，普通同前缀文件仍受封存保护', async () => {
+  const out = join(root, 'coordination'), startedAt = new Date().toISOString();
+  const result = await runScenario(config, scenario(), 1, out, launch([]));
+  const report = () => buildReport({config, label: 'coordination', startedAt, outDir: out, results: [result]});
+  const before = await report(), round = join(out, before.attempts[0]!.dir, 'round');
+  // 模拟整个本地协调边界在目录发布/清理时退出，残留的拥有者与租约不是业务字节。
+  const directories = ['.write-lock-', '.write-released-', '.write-abandoned-'].map(name => join(round, name + '00000000-0000-0000-0000-000000000007'));
+  for (const directory of directories) {
+    await mkdir(directory);
+    await writeFile(join(directory, 'owner.json'), '{"interrupted":true}');
+    await writeFile(join(directory, 'lease'), 'first');
+  }
+  expect((await report()).totals).toEqual(before.totals);
+  for (const directory of directories) await writeFile(join(directory, 'lease'), 'later');
+  expect((await report()).attempts).toEqual(before.attempts);
+  await writeFile(join(round, '.write-released-business.json'), '{"business":"changed"}');
+  await expect(report()).rejects.toThrow('尝试原件已改变');
+});

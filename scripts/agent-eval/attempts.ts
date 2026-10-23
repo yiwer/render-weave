@@ -42,7 +42,9 @@ async function hashes(dir: string, prefix = ''): Promise<Record<string, string>>
   const result: Record<string, string> = {};
   for (const entry of (await readdir(dir, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
     if (entry.isSymbolicLink()) throw new Error(`尝试原件包含不能固定的链接：${prefix + entry.name}`);
-    if (entry.name === '.write-lock' || !prefix && (['completed.json', 'completed.seal.json'].includes(entry.name) || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
+    // 与资料身份共用协调目录口径；进入前排除初始化、释放和回收残留，普通同前缀文件仍需核对。
+    if (entry.isDirectory() && /^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) continue;
+    if (!prefix && (['completed.json', 'completed.seal.json'].includes(entry.name) || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
     const name = prefix + entry.name, path = join(dir, entry.name);
     if (entry.isDirectory()) Object.assign(result, await hashes(path, name + '/'));
     else result[name] = sha(await readFile(path));
