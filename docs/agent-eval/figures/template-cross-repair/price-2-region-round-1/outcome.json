@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f",
+    "workspaceFingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-price-tag.json",
+      "kind": "template",
+      "name": "商品价签",
+      "sha256": "18d46fc651ebed743a856a5259202682e9367dce189343dd6d013a2900081280",
+      "revises": {
+        "file": "template-price-tag.json",
+        "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "修改范围：商品价签 价格容器与页脚容器的 padding.left 删除（原 5 与 2），其余未改。修正宿主测量的两处布局偏移，会员价与促销截止对齐示例图。样例数据草稿已通过（problems 为空），check_templates 无问题。未验证参数不选、列表极值与 sizeRange 边界。价签卖点模板未改动。",
+  "usage": {
+    "wallMs": 90386,
+    "turns": 24,
+    "inputTokens": 16,
+    "outputTokens": 6865,
+    "thinkingTokens": 2469,
+    "cacheReadTokens": 140913,
+    "cacheCreationTokens": 19602,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 8,
+      "peakInputTokens": 27490,
+      "compactions": 0
+    }
+  }
+}

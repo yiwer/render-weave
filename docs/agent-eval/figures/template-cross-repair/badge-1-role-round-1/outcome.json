@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d",
+    "workspaceFingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-badge.json",
+      "kind": "template",
+      "name": "会议胸牌",
+      "sha256": "11f411accdf138dfecdb78465652a6b7906042fc337ecb822b56d9e7d32a66d5",
+      "revises": {
+        "file": "template-badge.json",
+        "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "会议胸牌：仅将「信息」容器的 padding.left 从 6 去掉，使证件号、会议日期、主场次列左缘移至 x=4mm（与示例图及场次列对齐），座位、发证时间列移至 x=48.5mm（示例图约 48.6mm）。宿主测量给出中心偏移 4.5mm，实际移动 6mm，以示例图为准。未改：标签行（首次/讲者）左缘仍在约 7mm，示例图约 4mm，属信息区外的既有差异，未在本次范围内修改。已核查：render_draft 无问题，inspect_layout 信息区无问题。未核查：showSeat 关闭等参数分支与长文本边界。",
+  "usage": {
+    "wallMs": 71091,
+    "turns": 19,
+    "inputTokens": 14,
+    "outputTokens": 8605,
+    "thinkingTokens": 5026,
+    "cacheReadTokens": 118441,
+    "cacheCreationTokens": 21294,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 7,
+      "peakInputTokens": 29182,
+      "compactions": 0
+    }
+  }
+}

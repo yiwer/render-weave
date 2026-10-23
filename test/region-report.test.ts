@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 const dirs: string[] = [];
@@ -35,6 +35,31 @@ async function fixture() {
 }
 function run(root: string) { execFileSync(process.execPath, ['scripts/agent-eval/region-report.mjs', '--root', root, '--out', join(root, 'archive')], { cwd: resolve(import.meta.dirname, '..'), stdio: 'pipe' }); }
 describe('区域实验报告公开命令', () => {
+  it('跨模板分别归档与汇总，同次重复的不同模板不能凑成一对', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'rw-cross-report-')); dirs.push(root);
+    const order = [], rows = [];
+    for (const [caseId, arm] of [['price', 'role'], ['badge', 'region']] as const) {
+      const source = await fixture(), base = join(root, caseId);
+      await mkdir(base);
+      for (const file of ['control', 'control-score', 'reference.png', 'brief.md', 'request.json']) await cp(join(source, file), join(base, file), { recursive: true });
+      await cp(join(source, 'c/initial'), join(base, 'initial'), { recursive: true });
+      await writeFile(join(base, arm + '.md'), caseId + '反馈');
+      const live = JSON.parse(await readFile(join(source, 'live-report.json'), 'utf8'));
+      const unit = { id: caseId + '-1-' + arm, caseId, repetition: 1, arm };
+      order.push(unit); rows.push({ ...live.rows[0], ...unit });
+    }
+    const manifestSha256 = await save(join(root, 'manifest.json'), { comparison: 'cross-template', head: 'fixture', cases: [{ id: 'price' }, { id: 'badge' }], order });
+    await save(join(root, 'live-report.json'), { manifestSha256, rows }); run(root);
+    const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
+    expect(report.byCase.price.role.fixed.measured).toBe(1);
+    expect(report.byCase.price.region.fixed.measured).toBe(0);
+    expect(report.byCase.badge.region.fixed.measured).toBe(1);
+    expect(report.pairedGroups.role.fixed.measured).toBe(0);
+    expect(report.baselines.badge.reference).toBe('badge-reference.png');
+    expect(report.rows[1].rounds[0].feedback).toBe('badge反馈');
+    expect(await readFile(join(root, 'archive/inputs/price/brief.md'), 'utf8')).toBe('fixture');
+    expect(await readFile(join(root, 'archive/index.html'), 'utf8')).toContain('id="case"');
+  });
   it('固定续跑的回退与共享前缀停止成本分别保留', async () => {
     const root = await fixture(); run(root);
     const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
@@ -49,6 +74,22 @@ describe('区域实验报告公开命令', () => {
     const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
     expect(report.groups.role.fixed).toMatchObject({ unknownRepair: 1, unknownAdded: 1, unknownAllPassed: 1, unknownRegressions: 1 });
     expect(report.groups.role.stopped.allPassed).toBe(1);
+  });
+  it('一侧最终不可测不能进入成对可测集合，但保留已知停止前缀', async () => {
+    const root = await fixture(), other = await fixture();
+    const live = JSON.parse(await readFile(join(root, 'live-report.json'), 'utf8'));
+    const right = JSON.parse(await readFile(join(other, 'live-report.json'), 'utf8')).rows[0];
+    right.id = 'c-1-region'; right.arm = 'region'; live.rows.push(right);
+    await writeFile(join(root, 'c/region.md'), '区域反馈');
+    for (const file of ['report.json', 'stop-decision.json']) await rm(join(other, 'round-2/repair-score', file));
+    live.manifestSha256 = await save(join(root, 'manifest.json'), { comparison: 'role-region', head: 'fixture', order: live.rows.map(({ id, caseId, arm, repetition }: any) => ({ id, caseId, arm, repetition })) });
+    await save(join(root, 'live-report.json'), live); run(root);
+    const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
+    expect(report.groups.region.fixed).toMatchObject({ measured: 1, unknownRepair: 1 });
+    expect(report.pairedKeys.fixed).toEqual([]);
+    expect(report.pairedGroups.role.fixed.measured).toBe(0);
+    expect(report.pairedKeys.stopped).toEqual(['c-1']);
+    expect(report.pairedGroups.region.stopped).toMatchObject({ measured: 1, repaired: 2 });
   });
   it('影子续跑失败也保留已登记的首轮停止成果，配对覆盖另列', async () => {
     const root = await fixture(), p = join(root, 'live-report.json');

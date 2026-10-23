@@ -1,0 +1,28 @@
+{
+  "dataset": {
+    "id": "cross-price",
+    "name": "跨模板价签对照",
+    "staticSchema": {
+      "name": "商品价签",
+      "version": 1
+    },
+    "origin": {
+      "kind": "manual"
+    }
+  },
+  "data": {
+    "productName": "天然饮用水",
+    "spec": "550ml",
+    "unit": "瓶",
+    "origin": "浙江杭州",
+    "itemNo": "0012345",
+    "retailPrice": 2,
+    "memberPrice": 1.8,
+    "onSale": true,
+    "saleEnds": "2026-11-30",
+    "features": [
+      "天然",
+      "弱碱"
+    ]
+  }
+}

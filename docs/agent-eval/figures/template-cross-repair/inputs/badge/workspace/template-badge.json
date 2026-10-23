@@ -1,0 +1,404 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "会议胸牌",
+  "base": {
+    "name": "胸牌",
+    "version": 1
+  },
+  "parameters": [
+    {
+      "name": "eventName",
+      "displayName": "会议名称",
+      "visibility": "public",
+      "type": "text",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "default": "2026 出图技术大会"
+    },
+    {
+      "name": "accentColor",
+      "displayName": "主色",
+      "visibility": "public",
+      "type": "color",
+      "default": "#B4532A"
+    },
+    {
+      "name": "nameSize",
+      "displayName": "姓名字号",
+      "visibility": "public",
+      "type": "number",
+      "constraints": {
+        "min": 6,
+        "max": 12
+      },
+      "default": 9
+    },
+    {
+      "name": "showSeat",
+      "displayName": "显示座位",
+      "visibility": "public",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "artboard": {
+    "sizeRange": {
+      "width": {
+        "min": 90,
+        "max": 100
+      },
+      "height": {
+        "min": 130,
+        "max": 140
+      }
+    },
+    "minFontSize": 2,
+    "fill": "#FFFDF9",
+    "padding": 4,
+    "layout": {
+      "mode": "stack",
+      "direction": "column",
+      "gap": 1.5,
+      "alignItems": "center"
+    },
+    "children": [
+      {
+        "type": "container",
+        "name": "页眉",
+        "fill": {
+          "var": "accentColor"
+        },
+        "cornerRadius": 1.5,
+        "padding": 2,
+        "layout": {
+          "mode": "stack",
+          "direction": "row",
+          "justifyContent": "center"
+        },
+        "place": {
+          "width": "fill",
+          "height": {
+            "fixed": 10
+          }
+        },
+        "children": [
+          {
+            "type": "text",
+            "name": "会议名称",
+            "content": [
+              {
+                "slot": "eventName"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 4.5,
+            "color": "#FFFFFF",
+            "verticalAlign": "center",
+            "place": {
+              "height": "fill"
+            }
+          }
+        ]
+      },
+      {
+        "type": "image",
+        "name": "照片",
+        "source": {
+          "var": "photo"
+        },
+        "fit": "contain",
+        "place": {
+          "width": {
+            "fixed": 24
+          },
+          "height": {
+            "fixed": 24
+          }
+        }
+      },
+      {
+        "type": "text",
+        "name": "姓名",
+        "content": [
+          {
+            "slot": "fullName"
+          }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": {
+          "var": "nameSize"
+        },
+        "color": "#2B2824",
+        "horizontalAlign": "center",
+        "place": {
+          "width": {
+            "fixed": 50
+          }
+        },
+        "fit": {
+          "steps": [
+            "compressGlyphs"
+          ],
+          "onFail": "severe"
+        }
+      },
+      {
+        "type": "text",
+        "name": "单位",
+        "content": [
+          {
+            "slot": "organization"
+          }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 4,
+        "color": "#7A7166",
+        "horizontalAlign": "center",
+        "place": {
+          "width": "fill"
+        },
+        "fit": {
+          "steps": [
+            "compressGlyphs",
+            "shrink"
+          ],
+          "onFail": "hint"
+        }
+      },
+      {
+        "type": "text",
+        "name": "身份",
+        "content": [
+          {
+            "slot": "role"
+          }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 5,
+        "color": "#2B2824",
+        "states": {
+          "by": {
+            "var": "role"
+          },
+          "cases": {
+            "讲者": {
+              "color": "#B4532A"
+            },
+            "嘉宾": {
+              "color": "#7A3EB1"
+            }
+          }
+        }
+      },
+      {
+        "type": "container",
+        "name": "信息",
+        "place": {
+          "width": "fill"
+        },
+        "layout": {
+          "mode": "grid",
+          "rows": [
+            "hug",
+            "hug",
+            "hug"
+          ],
+          "columns": [
+            {
+              "fraction": 1
+            },
+            {
+              "fraction": 1
+            }
+          ],
+          "rowGap": 1,
+          "columnGap": 2
+        },
+        "children": [
+          {
+            "type": "text",
+            "name": "证件号",
+            "content": [
+              {
+                "text": "证件号 "
+              },
+              {
+                "slot": "badgeNo"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "place": {
+              "row": 1,
+              "column": 1
+            }
+          },
+          {
+            "type": "text",
+            "name": "座位",
+            "visible": {
+              "var": "showSeat"
+            },
+            "content": [
+              {
+                "text": "座位 "
+              },
+              {
+                "slot": "seat",
+                "format": "0"
+              },
+              {
+                "text": " 排"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "place": {
+              "row": 1,
+              "column": 2
+            }
+          },
+          {
+            "type": "text",
+            "name": "会议日期",
+            "content": [
+              {
+                "slot": "eventDate",
+                "format": "yyyy年M月d日"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "place": {
+              "row": 2,
+              "column": 1
+            }
+          },
+          {
+            "type": "text",
+            "name": "发证时间",
+            "content": [
+              {
+                "text": "发证 "
+              },
+              {
+                "slot": "issuedAt",
+                "format": "yyyy-MM-dd HH:mm"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "place": {
+              "row": 2,
+              "column": 2
+            },
+            "fit": {
+              "steps": [
+                "compressGlyphs"
+              ],
+              "onFail": "hint"
+            }
+          },
+          {
+            "type": "text",
+            "name": "主场次",
+            "content": [
+              {
+                "text": "主场次 "
+              },
+              {
+                "slot": "mainSession.title"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "place": {
+              "row": 3,
+              "column": 1
+            },
+            "fit": {
+              "steps": [
+                "compressGlyphs",
+                "shrink"
+              ],
+              "onFail": "hint"
+            }
+          },
+          {
+            "type": "text",
+            "name": "贵宾通道",
+            "visible": {
+              "var": "vip"
+            },
+            "content": [
+              {
+                "text": "贵宾通道"
+              }
+            ],
+            "font": "res:font-hei-medium",
+            "fontSize": 3.2,
+            "color": {
+              "var": "accentColor"
+            },
+            "place": {
+              "row": 3,
+              "column": 2
+            }
+          }
+        ],
+        "padding": {
+          "left": 6
+        }
+      },
+      {
+        "type": "loop",
+        "name": "场次列",
+        "list": {
+          "var": "sessions"
+        },
+        "template": "场次条",
+        "itemLayout": {
+          "direction": "column",
+          "heights": {
+            "fixed": 5
+          }
+        },
+        "place": {
+          "width": "fill",
+          "height": {
+            "fixed": 30
+          }
+        }
+      },
+      {
+        "type": "loop",
+        "name": "标签行",
+        "list": {
+          "var": "tags"
+        },
+        "template": "标签块",
+        "args": {
+          "accent": {
+            "var": "accentColor"
+          }
+        },
+        "itemLayout": {
+          "direction": "row",
+          "widths": "content",
+          "gap": 1.5
+        },
+        "place": {
+          "width": "fill",
+          "height": {
+            "fixed": 6
+          },
+          "margin": {
+            "left": 3
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 2,
+  "inputs": {
+    "sampleSha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d",
+    "workspaceFingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+    "previous": {
+      "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1",
+      "round": 1,
+      "outcomeSha256": "d69decc2867507d5484139b71acb2e43f310ceca8cba3175b7c8debfbb55b747",
+      "reviewSha256": null
+    },
+    "feedbackSha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-badge.json",
+      "kind": "template",
+      "name": "会议胸牌",
+      "sha256": "d27f13243cccbb2900c0a925a5c47e0625a9f59c0878ec5304aac2bd626796d6",
+      "revises": {
+        "file": "template-badge.json",
+        "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "第2轮复核：本轮无新的宿主测量（feedback 为空列表），候选沿用第1轮修改，未做修改。会议胸牌主模板：信息区与标签行去掉左侧缩进（信息 padding 6mm、标签行 margin 3mm），证件号、会议日期、发证时间、主场次与标签文字左缘统一为 x=4mm，与示例图左缘对齐；元素名称与数据绑定未变。已核查：saved 与 candidates 基线对比；候选出图 95×135 无问题；90×130 出图无问题；inspect_layout 显示会议日期中心偏移与标签文字偏移与宿主测量一致（修正后 会议日期 box 4–46.5，标签文字 x=5.5）；示例图对照：照片、姓名、单位、身份、场次行、标签块 x/y 与示例图吻合。场次条、标签块未改。未核查：100×140 出图（第1轮已验证，本轮未重复）；参数不选、列表最少/最多项的重新验证本轮未做；示例图整体层级仅凭出图目视对比，未做像素比对。",
+  "usage": {
+    "wallMs": 326461,
+    "turns": 31,
+    "inputTokens": 24,
+    "outputTokens": 14828,
+    "thinkingTokens": 9583,
+    "cacheReadTokens": 383947,
+    "cacheCreationTokens": 47563,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 12,
+      "peakInputTokens": 56588,
+      "compactions": 0
+    }
+  }
+}

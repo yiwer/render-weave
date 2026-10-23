@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f",
+    "workspaceFingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-price-tag.json",
+      "kind": "template",
+      "name": "商品价签",
+      "sha256": "3a467f7a7dfd17d6e56f2371234d48e9417f08b1d91694e894201946e21e2269",
+      "revises": {
+        "file": "template-price-tag.json",
+        "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "按示例图修复商品价签的价格区水平偏移：删除 价格 容器的 padding.left=5，零售价与会员价回到 x=3mm 与 x=36.9mm，与示例图一致。其余元素、字段绑定、参数未改。已用 render_draft 与 inspect_layout 验证，check_templates 无问题。未核查：sizeRange 边界、参数不选与列表极值下的出图；页脚 促销截止 与 货号 间距（示例约 1.4mm，当前 3mm）属非反馈项，未改动，待审核。价签卖点 未修改。",
+  "usage": {
+    "wallMs": 134909,
+    "turns": 21,
+    "inputTokens": 18,
+    "outputTokens": 7065,
+    "thinkingTokens": 3165,
+    "cacheReadTokens": 157871,
+    "cacheCreationTokens": 17929,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 9,
+      "peakInputTokens": 26730,
+      "compactions": 0
+    }
+  }
+}

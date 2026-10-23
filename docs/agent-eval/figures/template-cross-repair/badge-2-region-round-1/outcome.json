@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d",
+    "workspaceFingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-badge.json",
+      "kind": "template",
+      "name": "会议胸牌",
+      "sha256": "d27f13243cccbb2900c0a925a5c47e0625a9f59c0878ec5304aac2bd626796d6",
+      "revises": {
+        "file": "template-badge.json",
+        "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "局部修改：会议胸牌 信息 容器删除 padding.left=6，标签行 place 删除 margin.left=3，使信息区与标签行左缘对齐页边 x=4mm，与示例图一致。元素名称、数据绑定、参数未改。已核查：render_draft 基线与修改后对比、inspect_layout（证件号/会议日期 x 10→4，标签文字 x 8.5→5.5 与示例图对齐）、check_templates 无问题、sizeRange 两端 90×130 与 100×140 出图无问题。未改标签块、场次条。未做像素级比对。",
+  "usage": {
+    "wallMs": 163162,
+    "turns": 24,
+    "inputTokens": 20,
+    "outputTokens": 7061,
+    "thinkingTokens": 2786,
+    "cacheReadTokens": 198449,
+    "cacheCreationTokens": 22072,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 10,
+      "peakInputTokens": 30892,
+      "compactions": 0
+    }
+  }
+}

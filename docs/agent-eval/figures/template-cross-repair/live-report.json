@@ -1,0 +1,2157 @@
+{
+  "manifestSha256": "50323e4d3451c5cc2b64afb8c028c0094fcb71d1b80fca12060a74ed8087eca3",
+  "rows": [
+    {
+      "id": "price-1-role",
+      "caseId": "price",
+      "repetition": 1,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:31:22.815Z",
+            "endedAt": "2026-10-23T06:32:20.145Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\role.md",
+                "file": "requirement.md",
+                "sha256": "1b991f9f8072f36a8b4550e9881731cf477a2b6b99b352650662eb4c256fa2e3"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 57045,
+              "turns": 26,
+              "inputTokens": 26,
+              "outputTokens": 8809,
+              "thinkingTokens": 3324,
+              "cacheReadTokens": 250824,
+              "cacheCreationTokens": 30382,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 13,
+                "peakInputTokens": 30384,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "5f802c250aa60a05e7558a3e38961cce24abb6907fd5a34db04a8c3d4b64106f",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/商品价签/页脚/货号:position",
+              "base/商品价签/页脚/促销截止:position",
+              "base/商品价签/页脚/门店:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:32:20.970Z",
+            "templateSha256": "bd0f9b99ee43b4e64448ec9fa299c1e81d445d92aea61e6c965f128bff9e5a2c",
+            "measurementSha256": "0a3eb9d9428e17f833c1edb2da0a15bc0b5c256da0d291c7cfb478fa4280cd2c"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:32:21.013Z",
+            "endedAt": "2026-10-23T06:33:17.015Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "1b991f9f8072f36a8b4550e9881731cf477a2b6b99b352650662eb4c256fa2e3"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "fec851586808c5f23af44dd3efbe7fc8a97cd5aa752afff52654b1c838d17643"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "50a0a2a7a42e73cb15f7bd7c3d045f238864c6a55cbab935685fc8bf6efea0a5",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 55843,
+              "turns": 24,
+              "inputTokens": 20,
+              "outputTokens": 6525,
+              "thinkingTokens": 1858,
+              "cacheReadTokens": 184237,
+              "cacheCreationTokens": 19256,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 10,
+                "peakInputTokens": 27144,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "41b9648c1a97454c9cfac98db0edb3e3a7ab7ceb8864850232c65d417377e3c1",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:33:19.075Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "1dd5db90f36269c1dca59c2a85722364c55ddf46d6f45a6f1cd48e947ea1d8ec"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "price-1-region",
+      "caseId": "price",
+      "repetition": 1,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:33:19.165Z",
+            "endedAt": "2026-10-23T06:34:37.825Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\region.md",
+                "file": "requirement.md",
+                "sha256": "30eda696d6a7c2b13f3d195229f56c9dae12228fe1056d4655417c5ef7751a56"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 78493,
+              "turns": 23,
+              "inputTokens": 20,
+              "outputTokens": 6357,
+              "thinkingTokens": 2057,
+              "cacheReadTokens": 188915,
+              "cacheCreationTokens": 19900,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 10,
+                "peakInputTokens": 27788,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "7366262d504f091d3145f1188e88ad7a3cc3872e1b4508acf80a22f5320cea35",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:34:38.643Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "f5848bf747649986840e602dabe529c1ce63b1bf72fc64feda9b17ec72b4a7a5"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:34:38.679Z",
+            "endedAt": "2026-10-23T06:36:31.911Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "30eda696d6a7c2b13f3d195229f56c9dae12228fe1056d4655417c5ef7751a56"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-1-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "5486cc4ab5a120246a0420d171d31e1d765321aea268d15526810ea17855128b",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 113144,
+              "turns": 30,
+              "inputTokens": 24,
+              "outputTokens": 9271,
+              "thinkingTokens": 3008,
+              "cacheReadTokens": 269878,
+              "cacheCreationTokens": 28031,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 12,
+                "peakInputTokens": 35919,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "68f012be8fbc5a545063da4bf0e110183a3496080c267ffccc4e615e9819afda",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:36:32.741Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "69ea80b7bd2f56410be368d66e29a013f691f7149c621c2423dcbd690514293c"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "badge-1-region",
+      "caseId": "badge",
+      "repetition": 1,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:36:32.776Z",
+            "endedAt": "2026-10-23T06:39:23.312Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\region.md",
+                "file": "requirement.md",
+                "sha256": "f2c74efe5e0c1e1c7d5601ab2d6dafbf4271cb79b74124f0e505abfc6ade8197"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 170341,
+              "turns": 24,
+              "inputTokens": 22,
+              "outputTokens": 10595,
+              "thinkingTokens": 5755,
+              "cacheReadTokens": 261614,
+              "cacheCreationTokens": 27367,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 35255,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "f49e541bce1eb454d3b43687989f57a3dfcaa1bba2716c53f3c1868968098fce",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:39:25.129Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "d1370267b137efb151fb1a06c3f3fb6d1cbb104ab5124eb2a248c81e98d5f2d7"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:39:25.194Z",
+            "endedAt": "2026-10-23T06:42:38.002Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "f2c74efe5e0c1e1c7d5601ab2d6dafbf4271cb79b74124f0e505abfc6ade8197"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "b6e17a21da4114f6f2f3edeb1206df2d084527b202f46948e4ce0fe02eeeb77c",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 192662,
+              "turns": 27,
+              "inputTokens": 22,
+              "outputTokens": 9985,
+              "thinkingTokens": 3523,
+              "cacheReadTokens": 280885,
+              "cacheCreationTokens": 32504,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 40392,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "a82ddabb46528b092c30b893815735656f64f7a2b42b4ccdd992a30b95cfd61e",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:42:38.892Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "ee058ee82346ebd77f3b4027c19cf512b62e4f65de2950dd365f2994b7fee665"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "badge-1-role",
+      "caseId": "badge",
+      "repetition": 1,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:42:38.918Z",
+            "endedAt": "2026-10-23T06:43:50.101Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\role.md",
+                "file": "requirement.md",
+                "sha256": "7f8ddd05be174cb53de77e1f6abfe7937e0e8b4e2643d862bf7f9ff23e54c8be"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 71091,
+              "turns": 19,
+              "inputTokens": 14,
+              "outputTokens": 8605,
+              "thinkingTokens": 5026,
+              "cacheReadTokens": 118441,
+              "cacheCreationTokens": 21294,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 7,
+                "peakInputTokens": 29182,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "d0695e797e4bd1ebb60a6ec40e48fbad13a4aa4f089caf72cd20d917dea6fa64",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/会议胸牌/标签行[1]/标签文字:position",
+              "base/会议胸牌/标签行[2]/标签文字:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:43:50.994Z",
+            "templateSha256": "bf8819afcad83b5ad66497f32658c086af1c90558fd3b23b86b7236698126dd3",
+            "measurementSha256": "cc86894d3af280b75f6af7e1ca9a6e0572e2c331bd9c65f1a40313eaec648b71"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:43:51.031Z",
+            "endedAt": "2026-10-23T06:45:49.977Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "7f8ddd05be174cb53de77e1f6abfe7937e0e8b4e2643d862bf7f9ff23e54c8be"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "9f82255c1143f3d54a15d91b84abd31da5e53ed6b1757fc0909c931eb03d690a"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-1-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "fd0b4e2e1e8947036504117d620df7efa118b7eb0be85190d84da472ac60f479",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 118808,
+              "turns": 27,
+              "inputTokens": 22,
+              "outputTokens": 8104,
+              "thinkingTokens": 3194,
+              "cacheReadTokens": 248132,
+              "cacheCreationTokens": 24741,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 33766,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "cef49c9cf5b5453556cc9efb6b9e65e679006f527ff1a542dfc87a7b542246d5",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:45:50.872Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "081920a5040d3a3576c9c1354b950dc8d722e1d14dc533b58ac63b00648f66c2"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "price-2-region",
+      "caseId": "price",
+      "repetition": 2,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:45:50.924Z",
+            "endedAt": "2026-10-23T06:47:21.455Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\region.md",
+                "file": "requirement.md",
+                "sha256": "30eda696d6a7c2b13f3d195229f56c9dae12228fe1056d4655417c5ef7751a56"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 90386,
+              "turns": 24,
+              "inputTokens": 16,
+              "outputTokens": 6865,
+              "thinkingTokens": 2469,
+              "cacheReadTokens": 140913,
+              "cacheCreationTokens": 19602,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 8,
+                "peakInputTokens": 27490,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "eb3b4f33a2363d22983effa7ac9afb3ea59f98bf7d8adf1d1d54149a53e8d60f",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:47:22.310Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "b9b1e6efebf90a1ee47c7b3f43d952dc014c7785f6577c0ae0783d20f2864f8d"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:47:22.358Z",
+            "endedAt": "2026-10-23T06:50:10.699Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "30eda696d6a7c2b13f3d195229f56c9dae12228fe1056d4655417c5ef7751a56"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "07ae96ff90a52dd641bf9e998762d8afde3cf2e9399477cbf21f9143c5ee1592",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 168187,
+              "turns": 33,
+              "inputTokens": 24,
+              "outputTokens": 9983,
+              "thinkingTokens": 3685,
+              "cacheReadTokens": 286521,
+              "cacheCreationTokens": 29780,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 12,
+                "peakInputTokens": 37668,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "7aeeb6a6f4a00da4f1421dcc647451135ad8c24645e1ac669cc4683519600128",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:50:11.648Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "1e81771dc5484ed52878b67ae4e7f45fd7d3da7102526357057c2ff49c842b73"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "price-2-role",
+      "caseId": "price",
+      "repetition": 2,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:50:11.738Z",
+            "endedAt": "2026-10-23T06:52:26.775Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\role.md",
+                "file": "requirement.md",
+                "sha256": "1b991f9f8072f36a8b4550e9881731cf477a2b6b99b352650662eb4c256fa2e3"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 134909,
+              "turns": 21,
+              "inputTokens": 18,
+              "outputTokens": 7065,
+              "thinkingTokens": 3165,
+              "cacheReadTokens": 157871,
+              "cacheCreationTokens": 17929,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 9,
+                "peakInputTokens": 26730,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "c1f3bafd363b600af1c6adee4da550e35922037716d6ed8acec0f93fc47ef21c",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/商品价签/页脚/货号:position",
+              "base/商品价签/页脚/促销截止:position",
+              "base/商品价签/页脚/门店:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:52:27.622Z",
+            "templateSha256": "bd0f9b99ee43b4e64448ec9fa299c1e81d445d92aea61e6c965f128bff9e5a2c",
+            "measurementSha256": "a0a6da5398368e06b7295372bd39578563ff566c18f38f5ab0135a1ad96eab13"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T06:52:27.665Z",
+            "endedAt": "2026-10-23T06:57:13.768Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "1dab69c57e78c7c87c08910a0b29703072cafb9b9ea45c0dfba3127883a72fa5"
+              },
+              "domain": "price-tag",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\price\\workspace",
+                "fingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+                "documents": 5
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "cross-price",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "商品价签"
+              },
+              "templates": [
+                {
+                  "name": "商品价签",
+                  "file": "template-price-tag.json",
+                  "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+                },
+                {
+                  "name": "价签卖点",
+                  "file": "template-feature-chip.json",
+                  "sha256": "d5e5c9ce42d52ff7452328cd6f8a634b22edadf2d7241b1c193286b2399d4b11"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "1b991f9f8072f36a8b4550e9881731cf477a2b6b99b352650662eb4c256fa2e3"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "fec851586808c5f23af44dd3efbe7fc8a97cd5aa752afff52654b1c838d17643"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "b843b3306da1edbe112112d3e919a49df02e117d37b8d575865e62df76719125",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 286014,
+              "turns": 32,
+              "inputTokens": 28,
+              "outputTokens": 11470,
+              "thinkingTokens": 5327,
+              "cacheReadTokens": 327684,
+              "cacheCreationTokens": 26098,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 14,
+                "peakInputTokens": 35104,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "df71fce33444c42c68ed044bc6d515029f7ad7e2ea8447ff4183c797552eda35",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/商品价签/价格/零售价:position",
+              "base/商品价签/页脚/货号:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T06:57:14.601Z",
+            "templateSha256": "ba53436f8374aa552acb5d9bec988dc470bc9d4e843f5117d8e52072ab682c8f",
+            "measurementSha256": "928ba4d40a11e5d7c10ce2bf8af19a39e9fdf603e732aeef88dc873ee2c9591e"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "badge-2-role",
+      "caseId": "badge",
+      "repetition": 2,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T06:57:14.634Z",
+            "endedAt": "2026-10-23T07:00:37.571Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\role.md",
+                "file": "requirement.md",
+                "sha256": "7f8ddd05be174cb53de77e1f6abfe7937e0e8b4e2643d862bf7f9ff23e54c8be"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 202798,
+              "turns": 22,
+              "inputTokens": 20,
+              "outputTokens": 10199,
+              "thinkingTokens": 6160,
+              "cacheReadTokens": 206719,
+              "cacheCreationTokens": 25947,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 10,
+                "peakInputTokens": 33835,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "1352864bc2d8dd82b2dd61cfb21142c2c8a96b02c09a0d96762057cffd78ae09",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T07:00:38.477Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "d1075a00e9f600a6abcc5cd28ea5745517879d73b382499a5c7aa587b030c0f5"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T07:00:38.525Z",
+            "endedAt": "2026-10-23T07:02:55.614Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "7f8ddd05be174cb53de77e1f6abfe7937e0e8b4e2643d862bf7f9ff23e54c8be"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "c3a611df65a6c44c46d8a6085dff9b48312fc64345183ec896a16bae59283bf2",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 136948,
+              "turns": 23,
+              "inputTokens": 18,
+              "outputTokens": 6456,
+              "thinkingTokens": 2568,
+              "cacheReadTokens": 174853,
+              "cacheCreationTokens": 22875,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 9,
+                "peakInputTokens": 30763,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "65850a88d0b7bd2033136efe48da96b8e3a5fae32777ea82cfe36c42365d5ce5",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T07:02:56.516Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "a7de80c3ecbaab8e5a3d828a265d6670baf3413ff1975ded048e4198afa9a87a"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "badge-2-region",
+      "caseId": "badge",
+      "repetition": 2,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T07:02:56.548Z",
+            "endedAt": "2026-10-23T07:05:39.861Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\region.md",
+                "file": "requirement.md",
+                "sha256": "f2c74efe5e0c1e1c7d5601ab2d6dafbf4271cb79b74124f0e505abfc6ade8197"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 163162,
+              "turns": 24,
+              "inputTokens": 20,
+              "outputTokens": 7061,
+              "thinkingTokens": 2786,
+              "cacheReadTokens": 198449,
+              "cacheCreationTokens": 22072,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 10,
+                "peakInputTokens": 30892,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "05da839419d75c1f649c8509900282e13cd46bd3f3feef2c312b05d6bbf59f0d",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T07:05:40.787Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "e99c31b6cbcd1f2d00f18e91b79bb49de66e1846a9006c02801191f2cb82e921"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T07:05:40.830Z",
+            "endedAt": "2026-10-23T07:11:07.491Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "457dd30a5635d7e7c337d8d2058cc31be23adfc3471f93a5fe715a57ace10777"
+              },
+              "domain": null,
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\badge\\workspace",
+                "fingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+                "documents": 8
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "badge-zhang",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "会议胸牌"
+              },
+              "templates": [
+                {
+                  "name": "会议胸牌",
+                  "file": "template-badge.json",
+                  "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+                },
+                {
+                  "name": "场次条",
+                  "file": "template-session-row.json",
+                  "sha256": "e9e8a9861c8d667b7097933c54f9bc2ee8ea65bd897bc80341533e34e9deea8b"
+                },
+                {
+                  "name": "标签块",
+                  "file": "template-tag-chip.json",
+                  "sha256": "f6da6fac0d97a3486dc1851ea59b2cb43d64610782d05006b8b39cf43855b09e"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "f2c74efe5e0c1e1c7d5601ab2d6dafbf4271cb79b74124f0e505abfc6ade8197"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "0cefefa6e282af7268ed88bdd59534a6ca138334e4c8b23f40a1a9be09cc09b7"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\badge-2-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "d69decc2867507d5484139b71acb2e43f310ceca8cba3175b7c8debfbb55b747",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 326461,
+              "turns": 31,
+              "inputTokens": 24,
+              "outputTokens": 14828,
+              "thinkingTokens": 9583,
+              "cacheReadTokens": 383947,
+              "cacheCreationTokens": 47563,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 12,
+                "peakInputTokens": 56588,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "6ae5de19b4e276b6a875dd442d6dc54dc871c7865a5f7cd730601b094a8d204c",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/会议胸牌/信息/证件号:position",
+              "base/会议胸牌/标签行[1]/标签文字:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T07:11:08.427Z",
+            "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+            "measurementSha256": "9412e1a968aa62db169ca40a58fc586485740b4a481c340d5065878e080cec76"
+          }
+        }
+      ],
+      "status": "completed"
+    }
+  ]
+}

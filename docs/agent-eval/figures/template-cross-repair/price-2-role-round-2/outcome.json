@@ -1,0 +1,48 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 2,
+  "inputs": {
+    "sampleSha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f",
+    "workspaceFingerprint": "sha256:2e803d1237d69fda29329f43844c439da57c209ca415f7b0b5043fa6e72418f8",
+    "previous": {
+      "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\cross-repair-live\\live\\price-2-role\\round-1",
+      "round": 1,
+      "outcomeSha256": "b843b3306da1edbe112112d3e919a49df02e117d37b8d575865e62df76719125",
+      "reviewSha256": null
+    },
+    "feedbackSha256": "fec851586808c5f23af44dd3efbe7fc8a97cd5aa752afff52654b1c838d17643"
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-price-tag.json",
+      "kind": "template",
+      "name": "商品价签",
+      "sha256": "18d46fc651ebed743a856a5259202682e9367dce189343dd6d013a2900081280",
+      "revises": {
+        "file": "template-price-tag.json",
+        "sha256": "2c4d63139f69f533f8bac9e27f60f6bb8ac8dfdcd0fe71c484ba36f823e4722c"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "第2轮：按反馈删除 商品价签/页脚 的 padding.left=2，货号 x=3mm、促销截止 x=21.5mm，与示例图一致（示例实测货号约 3mm、促销截止约 21.5mm）。上轮的 商品价签/价格 padding.left=5 删除保留。revision 仅含 价格、页脚 两处 padding 差异，无其他改动；价签卖点未改（被调模板，不列入候选）。已核查：check_outcome 结论 qualified，structure/candidates valid，render renderable 无问题；100x52 与 80x40 出图无溢出。未核查：120x60 最大端、卖点行列表极值（0 条与多条）、storeName 长文本。内容需人工审核。",
+  "usage": {
+    "wallMs": 286014,
+    "turns": 32,
+    "inputTokens": 28,
+    "outputTokens": 11470,
+    "thinkingTokens": 5327,
+    "cacheReadTokens": 327684,
+    "cacheCreationTokens": 26098,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 14,
+      "peakInputTokens": 35104,
+      "compactions": 0
+    }
+  }
+}

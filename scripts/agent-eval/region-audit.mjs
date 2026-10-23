@@ -1,7 +1,7 @@
 /** 对已完成真实批次独立复算关键指标与时间顺序；只读输入，输出审计摘要。 */
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
 import { loadWorkspace } from '../../dist/index.js';
@@ -19,11 +19,15 @@ for (const [dir, files] of [['', manifest.scripts], ['src', manifest.engine], ['
   for (const f of files) assert.equal(await hash(join(repo, dir, f.path)), f.sha256, dir + '/' + f.path);
 }
 for (const f of manifest.inputs) assert.equal(await hash(join(root, f.path)), f.sha256, f.path);
-const expected = (await json(join(root, 'control-score/report.json'))).checks.map(c => c.id).sort();
-const initial = (await json(join(root, 'c/initial/report.json'))).checks;
-const targets = manifest.cases[0].targets.map(t => 'base/' + t);
+const cross = manifest.comparison === 'cross-template', baselines = new Map();
+for (const c of manifest.cases) {
+  const expected = (await json(join(root, ...(cross ? [c.id] : []), 'control-score/report.json'))).checks.map(x => x.id).sort();
+  const initial = (await json(join(root, c.id, 'initial/report.json'))).checks;
+  baselines.set(c.id, { expected, initial, targets: c.targets.map(t => 'base/' + t), spec: c });
+}
 const verified = []; let requests = 0, maxFeedbackChars = 0;
 for (const item of live.rows) {
+  const { expected, initial, targets, spec } = baselines.get(item.caseId);
   const rounds = [];
   for (const [i, round] of item.rounds.entries()) {
     const rec = await json(join(round.dir, 'round.json')), context = await json(join(round.dir, 'context.json'));
@@ -55,42 +59,61 @@ for (const item of live.rows) {
       assert.equal(digest, score.measurement.templateSha256, '实际候选必须匹配评分与停止决定');
     }
     const complete = !!checks && new Set(checks.map(c => c.id)).size === checks.length && JSON.stringify(checks.map(c => c.id).sort()) === JSON.stringify(expected);
-    assert.equal(decision.stop, rec.verdict === 'qualified' && complete && checks.every(c => c.pass));
+    assert.equal(decision.stop, rec.verdict === 'qualified' && complete && checks.every(c => c.pass && (!c.status || c.status === 'measured')));
     assert.equal(decision.measurementSha256, await hash(join(round.dir, 'repair-score/report.json')));
     assert.equal(decision.templateSha256, score.measurement?.templateSha256 ?? null);
     assert.deepEqual(decision, round.stopDecision);
+    assert(Date.parse(decision.decidedAt) >= Date.parse(rec.startedAt));
     if (i === 0) assert(Date.parse(decision.decidedAt) < Date.parse(item.rounds[1].record.startedAt));
     assert.deepEqual(score.repaired, targets.filter(id => checks?.find(c => c.id === id)?.pass));
     assert.deepEqual(score.addedFailures, checks ? initial.filter(c => c.pass && checks.find(x => x.id === c.id)?.pass !== true).map(c => c.id) : null);
-    const feedback = await readFile(i === 0 ? join(root, 'c', item.arm + '.md') : join(round.dir, 'feedback.md'), 'utf8');
+    const feedback = await readFile(i === 0 ? join(root, item.caseId, item.arm + '.md') : join(round.dir, 'feedback.md'), 'utf8');
+    const presented = await readFile(join(round.dir, 'agent/docs', i === 0 ? 'requirement.md' : 'feedback.md'), 'utf8');
+    assert(presented.includes(feedback.trim()), '反馈必须实际进入 Agent 可读资料');
     const start = feedback.indexOf('宿主元素测量');
     if (start < 0) assert(i === 1 && !rounds[0].checks && feedback.includes('当前没有可用的交回布局证据'));
     const packet = start >= 0 ? feedback.slice(start).trim() : '', entries = start >= 0 ? JSON.parse(packet.split('\n')[1]) : [];
     assert(entries.length <= 2); assert(packet.length <= 1200); maxFeedbackChars = Math.max(maxFeedbackChars, packet.length);
-    if (item.arm === 'region') assert.equal(new Set(entries.map(e => manifest.regions[e.role] ?? e.role)).size, entries.length);
+    if (item.arm === 'region') assert.equal(new Set(entries.map(e => {
+      if (!cross) return manifest.regions[e.role] ?? e.role;
+      const section = e.role.split('/')[1];
+      return spec.regions.includes(section) ? spec.template + '/' + section : e.role;
+    })).size, entries.length);
     const archived = report.rows.find(r => r.id === item.id).rounds[i];
     for (const file of Object.values(archived.archived)) assert.equal(await hash(join(out, file.file)), file.sha256);
     const calls = new Map(); for (const e of events) for (const b of e.message?.content ?? []) if (b.type === 'tool_use') calls.set(b.id, b);
+    const outsideReads = [...calls.values()].filter(c => c.name === 'Read').map(c => resolve(round.dir, 'agent', c.input.file_path)).filter(p => {
+      const path = relative(join(round.dir, 'agent'), p); return path === '..' || path.startsWith('..' + (process.platform === 'win32' ? '\\' : '/')) || isAbsolute(path);
+    });
+    assert.deepEqual(outsideReads, [], '不能读取 Agent 工作目录之外的正确 DSL 或评分证据');
     rounds.push({ iteration: i + 1, peak, wallMs: rec.run.wallMs, stop: decision.stop, repaired: checks ? score.repaired.length : null, added: score.addedFailures,
       checks: checks ?? null, promptSha256: await hash(join(round.dir, 'logs/prompt.md')), mcpConfigSha256: await hash(join(round.dir, 'logs/mcp.json')),
-      tools: calls.size, layoutCalls: [...calls.values()].filter(c => c.name === 'mcp__rw__inspect_layout').length });
+      tools: calls.size, outsideReads, layoutCalls: [...calls.values()].filter(c => c.name === 'mcp__rw__inspect_layout').length });
   }
-  verified.push({ id: item.id, arm: item.arm, rounds });
+  verified.push({ id: item.id, caseId: item.caseId, repetition: item.repetition, arm: item.arm, rounds });
 }
-for (const repetition of [1, 2]) {
-  const pair = ['role', 'region'].map(arm => live.rows.find(r => r.repetition === repetition && r.arm === arm).rounds[0]);
+for (const policy of ['first', 'fixed', 'stopped']) {
+  const measurable = r => {
+    const prefix = r.rounds.slice(0, policy === 'first' || policy === 'stopped' && r.rounds[0].stop ? 1 : 2);
+    return prefix[0].checks && prefix.at(-1).checks && prefix.every(x => Number.isFinite(x.peak) && Number.isFinite(x.wallMs));
+  };
+  const keys = verified.filter(r => r.arm === 'role' && measurable(r) && verified.some(p => p.arm === 'region' && p.caseId === r.caseId && p.repetition === r.repetition && measurable(p))).map(r => r.caseId + '-' + r.repetition);
+  assert.deepEqual(report.pairedKeys[policy], keys);
+}
+for (const c of manifest.cases) for (const repetition of [1, 2]) {
+  const pair = ['role', 'region'].map(arm => live.rows.find(r => r.caseId === c.id && r.repetition === repetition && r.arm === arm).rounds[0]);
   for (const key of ['workspace', 'templates', 'dataset', 'domain', 'resources']) assert.deepEqual(pair[0].record.inputs[key], pair[1].record.inputs[key]);
   for (const key of ['sample', 'brief']) assert.equal(pair[0].record.inputs[key].sha256, pair[1].record.inputs[key].sha256);
   assert.equal(await hash(join(pair[0].dir, 'request.json')), await hash(join(pair[1].dir, 'request.json')));
 }
-for (const arm of ['role', 'region']) for (const policy of ['first', 'fixed', 'stopped']) {
-  const units = verified.filter(r => r.arm === arm).map(r => {
+for (const caseId of [null, ...manifest.cases.map(c => c.id)]) for (const arm of ['role', 'region']) for (const policy of ['first', 'fixed', 'stopped']) {
+  const units = verified.filter(r => r.arm === arm && (!caseId || r.caseId === caseId)).map(r => {
     const prefix = r.rounds.slice(0, policy === 'first' || policy === 'stopped' && r.rounds[0].stop ? 1 : 2), last = prefix.at(-1);
     return { repaired: last.repaired, allPassed: last.checks ? last.stop : null, added: last.added?.length ?? null,
       regressions: prefix[0].checks && last.checks ? prefix[0].checks.filter(c => c.pass && last.checks.find(f => f.id === c.id)?.pass !== true).length : null,
       peak: Math.max(...prefix.map(x => x.peak)), wallMs: prefix.reduce((s, x) => s + x.wallMs, 0), rounds: prefix.length };
   });
-  const g = report.groups[arm][policy];
+  const g = (caseId ? report.byCase[caseId] : report.groups)[arm][policy];
   assert.equal(g.repaired, units.reduce((s, r) => s + r.repaired, 0));
   assert.equal(g.allPassed, units.filter(r => r.allPassed).length);
   assert.equal(g.addedFailures, units.reduce((s, r) => s + r.added, 0));

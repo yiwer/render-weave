@@ -1,0 +1,12 @@
+{
+  "stop": true,
+  "qualified": true,
+  "complete": true,
+  "missing": [],
+  "failed": [],
+  "unexpected": [],
+  "scope": "仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+  "decidedAt": "2026-10-23T06:39:25.129Z",
+  "templateSha256": "e2a0fe37dcc145338ac3314b7726fed6b21d39301b531fb1ff43c441f9d7693f",
+  "measurementSha256": "d1370267b137efb151fb1a06c3f3fb6d1cbb104ab5124eb2a248c81e98d5f2d7"
+}

@@ -1,0 +1,33 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "场次",
+  "version": 1,
+  "displayName": "参会场次",
+  "fields": [
+    {
+      "name": "title",
+      "displayName": "场次名称",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "startsAt",
+      "displayName": "开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "room",
+      "displayName": "会场",
+      "type": "text",
+      "constraints": {
+        "maxLength": 10
+      }
+    }
+  ]
+}

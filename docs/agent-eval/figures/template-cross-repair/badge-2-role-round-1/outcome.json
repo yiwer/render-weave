@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d",
+    "workspaceFingerprint": "sha256:a16676c09f55a0a935ed84a4623faa2c9ab3917164442f7aac22a83c69004f25",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-badge.json",
+      "kind": "template",
+      "name": "会议胸牌",
+      "sha256": "d27f13243cccbb2900c0a925a5c47e0625a9f59c0878ec5304aac2bd626796d6",
+      "revises": {
+        "file": "template-badge.json",
+        "sha256": "05a083ada36171c23bc0127ef03c7bd5525fc8462c9f12892439e116eae16edd"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "修改主模板会议胸牌：信息容器去掉 padding.left 6，证件号/会议日期移至 x=4，座位/发证移至 x=48.5（与示例图及两列 42.5mm 布局一致）；标签行去掉 margin.left 3，标签移至 x=4（示例图对齐）。已用 render_draft（会议胸牌 badge-zhang，95x135，含 showSeat=false 的 90x130，及 100x140）验证，无问题；check_templates 无问题。未改场次条、标签块子模板。未逐项测量字号与颜色。",
+  "usage": {
+    "wallMs": 202798,
+    "turns": 22,
+    "inputTokens": 20,
+    "outputTokens": 10199,
+    "thinkingTokens": 6160,
+    "cacheReadTokens": 206719,
+    "cacheCreationTokens": 25947,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 10,
+      "peakInputTokens": 33835,
+      "compactions": 0
+    }
+  }
+}

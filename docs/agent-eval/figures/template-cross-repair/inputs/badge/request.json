@@ -1,0 +1,14 @@
+{
+  "template": "会议胸牌",
+  "dataset": {
+    "id": "badge-zhang"
+  },
+  "parameters": {},
+  "mode": "final",
+  "output": {
+    "width": 95,
+    "height": 135,
+    "dpi": 150,
+    "format": "png"
+  }
+}
