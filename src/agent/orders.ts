@@ -178,7 +178,7 @@ function quality(plans:readonly OrderPlan[],attempts:Attempt[],events:StoredEven
     assessments:assessments.map(e=>({id:e.input.id,at:e.at,phase:(e.input as HumanEvent).phase,result:(e.input as HumanEvent).result,binding:e.binding}))};
 }
 const metrics=['inputTokens','outputTokens','thinkingTokens','cacheReadTokens','cacheCreationTokens','toolCalls','persistedResults'] as const;
-function totals(attempts:Attempt[]){return {usage:Object.fromEntries(metrics.map(key=>[key,{known:attempts.reduce((n,a)=>n+(a.usage?.[key]??0),0),unknownAttempts:attempts.filter(a=>a.usage?.[key]===undefined).length}]))};}
+function totals(attempts:Attempt[]){return {usage:Object.fromEntries(metrics.map(key=>[key,{known:attempts.reduce((n,a)=>n+(a.usage?.[key]??0),0),unknownAttempts:attempts.filter(a=>a.usage?.[key]===undefined||(key.endsWith('Tokens')&&a.usage?.usageSource==='messages')).length}]))};}
 type DeliverySummary={delivery:string}&Awaited<ReturnType<typeof bindDelivery>>;
 interface OrderResult {events:StoredEvent[];history:ReturnType<typeof history>;totals:ReturnType<typeof totals>;timing:ReturnType<typeof timing>;id:string;status:string;labor:ReturnType<typeof laborTotals>;quality:ReturnType<typeof quality>;attempts:{evidence:ReturnType<typeof evidence>;elapsedMs?:number;startedAt:string|null;endedAt:string|null;attemptId?:string;experiment?:string|null;id:string;plan:string;dir:string;usage?:RoundMetrics;original:string;originalIdentity:string|null;execution?:string;previous:string|null;checkpoint?:NonNullable<RoundRecord['inputs']['previous']>['checkpoint']}[];commits:string[];deliveries:DeliverySummary[]}
 function evidence(attempt:Attempt){
@@ -205,7 +205,7 @@ function amount(attempts:Attempt[],pricing?:OrderPricing,complete=true){
   if(!pricing)return {value:null,reason:'pricing-unavailable'};
   const info={currency:pricing.currency,pricingIdentity:hash(pricing),basis:pricing.basis};
   if(!complete)return {...info,value:null,reason:'history-incomplete'};
-  if(!attempts.length||attempts.some(a=>!a.record||a.record.runtime.endpoint!==pricing.endpoint||a.record.run.servedModel!==pricing.model||pricedMetrics.some(k=>a.usage?.[k]===undefined)))return {...info,value:null,reason:'usage-or-provider-unknown'};
+  if(!attempts.length||attempts.some(a=>!a.record||a.usage?.usageSource==='messages'||a.record.runtime.endpoint!==pricing.endpoint||a.record.run.servedModel!==pricing.model||pricedMetrics.some(k=>a.usage?.[k]===undefined)))return {...info,value:null,reason:'usage-or-provider-unknown'};
   return {...info,value:attempts.reduce((sum,a)=>sum+pricedMetrics.reduce((n,k)=>n+a.usage![k]!*pricing.perMillion[k],0),0)/1_000_000};
 }
 export async function reportOrders(dir:string){
@@ -252,7 +252,7 @@ export async function shareOrders(dir:string){
   return {format:'renderweave-order-share/1',reproductionBundle:false,scopeIdentity:report.scopeIdentity,counts:report.counts,history:report.history,model:report.model,timing:report.timing,totals:report.totals,costPerSuccessfulOrder:report.costPerSuccessfulOrder,amount:report.amount,
     orders:report.orders.map(order=>({id:hash(order.id),status:order.status,history:order.history,labor:order.labor,totals:order.totals,timing:order.timing,
       quality:{original:order.quality.original,corrected:order.quality.corrected,agentFirstSuccess:order.quality.agentFirstSuccess},
-      attempts:order.attempts.map(attempt=>({id:hash(attempt.id),plan:hash(attempt.plan),original:attempt.original,originalIdentity:attempt.originalIdentity,reviewIdentity:attempt.evidence.reviewIdentity,recordIdentity:attempt.evidence.recordIdentity,execution:attempt.execution??null,stopped:attempt.usage?.stopped?.reason??null,
+      attempts:order.attempts.map(attempt=>({id:hash(attempt.id),plan:hash(attempt.plan),original:attempt.original,originalIdentity:attempt.originalIdentity,reviewIdentity:attempt.evidence.reviewIdentity,recordIdentity:attempt.evidence.recordIdentity,execution:attempt.execution??null,stopped:attempt.usage?.stopped?.reason??null,usageSource:attempt.usage?.usageSource??null,
         usage:Object.fromEntries(metrics.map(key=>[key,attempt.usage?.[key]??null])),diagnostic:classifyError(attempt.usage?.error??'') })),
       commits:order.commits.map(hash),deliveries:order.deliveries.map(d=>({delivery:hash(d.delivery),round:hash(d.round),commit:hash(d.commit),contentIdentity:d.contentIdentity,record:d.record}))}))};
 }

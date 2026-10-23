@@ -45,3 +45,8 @@
 边界：散列用于内容完整性，不是本机操作者认证；当前费率支持明确的四类互不重复token口径，不猜订阅分摊、复杂提供方计价或远端停止计费时间。交付应在应用后、下一次工作区修改前登记；已登记结果按原件复核。未完成订单的端到端结束时间保持未知。受控执行器和真实MCP用来验证机制，不计真实模型质量或后续留出/真人验收。CONTEXT由集成任务同步更新。
 
 集成复核（2026-10-23）：合入含票10监督层与票16信任边界的主集成后，`npm run typecheck`、`npm run build` 通过；`test/agent-orders.test.ts --maxWorkers=1` **17/17 通过**。保留 MCP 0.15.0 和运行预算，不改变分享白名单与完整历史判定。
+### 与票10的最终用量联动复核
+
+合入票10后，新增两个真实CLI强退反例：未生成 `round.json` 时，只收到去重消息累计，或收到稀疏/空 `result`，公开订单报告原先把已知 output=12 抹为0。现在 `round-metrics.ts` 共用 `usageCollector`，按消息ID合并稀疏用量，空result不覆盖已知字段；消息来源保留 `usageSource=messages`，已知小计与未知尝试数同时展示，不允许据此估算完整金额。Linux强退夹具同步核对监督进程与工作进程拥有关系后回收本轮进程组。
+
+红→绿：两个强退公开订单反例先均失败（0≠12），修复后均通过。最终 Windows `npm run build` + `npx vitest run test/agent-orders.test.ts test/agent-eval-attempts.test.ts test/agent-eval-attempts-cli.test.ts --maxWorkers=1`：31项通过，145.21秒；Linux Node22.23.3相同只读镜像路径重建后 `test/agent-orders.test.ts --maxWorkers=1`：19项通过，69.42秒。`npm run typecheck`、`git diff --check`通过。

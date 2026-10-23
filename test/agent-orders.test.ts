@@ -141,7 +141,9 @@ async function waitFile(file:string){for(let i=0;i<1000;i++){try{return JSON.par
 async function killOwned(child:ChildProcess,out:string){
   if(!child.pid||child.exitCode!==null)return;
   if(process.platform==='win32'){const killed=spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});await once(killed,'close');}
-  else{const state=await waitFile(join(out,'execution.json'));expect(state.owner.pid).toBe(child.pid);
+  else{const state=await waitFile(join(out,'execution.json'));
+    const host=state.owner.supervisorPid===child.pid?state.owner.pid:undefined;expect(host?state.owner.supervisorPid:state.owner.pid).toBe(child.pid);
+    if(host)try{process.kill(-host,'SIGKILL');}catch{}
     if(state.executorPid)try{process.kill(-state.executorPid,'SIGKILL');}catch{}
     try{process.kill(-child.pid,'SIGKILL');}catch{}
     for(let i=0;i<100;i++){try{process.kill(state.executorPid,0);}catch{break;}await new Promise(r=>setTimeout(r,20));}}
@@ -274,4 +276,20 @@ it('并行执行的墙钟取区间并集，各轮耗时求和保留实际投入'
   expect(r.value().counts.attempts).toBe(3);expect(r.value().timing.executionWallMs).toBeGreaterThan(1200);
   expect(r.value().timing.executionWallMs).toBeLessThan(r.value().timing.attemptsElapsedMs);
   expect(r.value().timing.unknownAttemptDurations).toBe(0);
+},60000);
+it.each(['partial','sparse'])('强退时尚无round记录也保留%s消息用量，重复消息与空result不丢已知部分',async mode=>{
+  const f=await setup('usage-'+mode),out=join(f.rounds,'interrupted');
+  const child=spawn(process.execPath,[join(repoRoot,'dist/bin.js'),'agent','run','--task','definition-extraction','--sample',join(resourcesDir,'images/test/quadrants.png'),'--brief',join(f.dir,'brief.md'),'--resources',resourcesDir,'--out',out,'--key-env','RW_ORDER_KEY','--claude',process.execPath,'--claude-args',JSON.stringify([join(repoRoot,'test/support/budget-claude.mjs'),mode])],{cwd:repoRoot,env:{...process.env,RW_ORDER_KEY:'test'},windowsHide:true,detached:process.platform!=='win32',stdio:'pipe'});
+  child.stdout!.resume();child.stderr!.resume();const ended=once(child,'close');
+  try{await waitFile(join(out,'agent/budget-processes.json'));
+    const deadline=Date.now()+20000;let ready=false;
+    while(Date.now()<deadline){const text=await readFile(join(out,'logs/stream.jsonl'),'utf8').catch(()=>'');if(text.includes(mode==='sparse'?'"type":"result"':'"id":"two"')){ready=true;break;}await new Promise(r=>setTimeout(r,20));}
+    expect(ready).toBe(true);
+  }finally{await killOwned(child,out);await ended;}
+  await expect(readFile(join(out,'round.json'),'utf8')).rejects.toMatchObject({code:'ENOENT'});
+  const scope=await initialize('partial-scope-'+mode,[{id:'a',plans:[{id:'definition',task:'definition-extraction',root:out}],deliveries:[]}]);
+  const r=await cli(['agent','order-report','--order',scope]);expect(r.code,r.stderr).toBe(0);
+  expect(r.value().totals.usage.outputTokens).toEqual({known:12,unknownAttempts:1});
+  expect(r.value().totals.usage.inputTokens).toEqual({known:mode==='sparse'?31:30,unknownAttempts:1});
+  expect(r.value().orders[0].attempts[0].usage.usageSource).toBe('messages');
 },60000);
