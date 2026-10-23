@@ -1,0 +1,126 @@
+{
+  "format": "renderweave-context/1",
+  "source": "runtime-events",
+  "limit": null,
+  "peakInputTokens": 58991,
+  "requests": [
+    {
+      "id": "msg_011CgJXwqC66diAsCUkXo5PM",
+      "inputTokens": 2,
+      "cacheReadTokens": 7886,
+      "cacheCreationTokens": 1544,
+      "outputTokens": 8,
+      "effectiveInputTokens": 9432
+    },
+    {
+      "id": "msg_011CgJXwzRxc4QLYXAUVYTxi",
+      "inputTokens": 2,
+      "cacheReadTokens": 9430,
+      "cacheCreationTokens": 2209,
+      "outputTokens": 21,
+      "effectiveInputTokens": 11641
+    },
+    {
+      "id": "msg_011CgJXx66Gy5APeHptxxcJr",
+      "inputTokens": 2,
+      "cacheReadTokens": 11639,
+      "cacheCreationTokens": 673,
+      "outputTokens": 16,
+      "effectiveInputTokens": 12314
+    },
+    {
+      "id": "msg_011CgJXxKVg7hAz51QYmcNhB",
+      "inputTokens": 2,
+      "cacheReadTokens": 12312,
+      "cacheCreationTokens": 11282,
+      "outputTokens": 5,
+      "effectiveInputTokens": 23596
+    },
+    {
+      "id": "msg_011CgJXxf6PvJ3Wy6Jz7DTBb",
+      "inputTokens": 2,
+      "cacheReadTokens": 23594,
+      "cacheCreationTokens": 19811,
+      "outputTokens": 3,
+      "effectiveInputTokens": 43407
+    },
+    {
+      "id": "msg_011CgJXyiounKkkhix2uYgMk",
+      "inputTokens": 2,
+      "cacheReadTokens": 43405,
+      "cacheCreationTokens": 5789,
+      "outputTokens": 5,
+      "effectiveInputTokens": 49196
+    },
+    {
+      "id": "msg_011CgJY16zBn7k7jKXPhMCdw",
+      "inputTokens": 2,
+      "cacheReadTokens": 49194,
+      "cacheCreationTokens": 3819,
+      "outputTokens": 32,
+      "effectiveInputTokens": 53015
+    },
+    {
+      "id": "msg_011CgJY1SQVEZUceT7RphLK8",
+      "inputTokens": 2,
+      "cacheReadTokens": 53013,
+      "cacheCreationTokens": 2037,
+      "outputTokens": 7,
+      "effectiveInputTokens": 55052
+    },
+    {
+      "id": "msg_011CgJY2Ab1fGP9zMrLALmrR",
+      "inputTokens": 2,
+      "cacheReadTokens": 55050,
+      "cacheCreationTokens": 1663,
+      "outputTokens": 24,
+      "effectiveInputTokens": 56715
+    },
+    {
+      "id": "msg_011CgJY2S6AFoLjhtk2QvC4E",
+      "inputTokens": 2,
+      "cacheReadTokens": 56713,
+      "cacheCreationTokens": 303,
+      "outputTokens": 5,
+      "effectiveInputTokens": 57018
+    },
+    {
+      "id": "msg_011CgJY3eKebzUfyKKQKQCyW",
+      "inputTokens": 2,
+      "cacheReadTokens": 57016,
+      "cacheCreationTokens": 1973,
+      "outputTokens": 8,
+      "effectiveInputTokens": 58991
+    }
+  ],
+  "compactions": [],
+  "tools": {
+    "calls": 26,
+    "results": 26,
+    "textChars": 69589,
+    "images": 5,
+    "encodedImageChars": 870656
+  },
+  "runtime": {
+    "skills": [],
+    "tools": [
+      "Edit",
+      "Glob",
+      "Read",
+      "Write",
+      "mcp__rw__check_outcome",
+      "mcp__rw__check_templates",
+      "mcp__rw__dsl_reference",
+      "mcp__rw__inspect_layout",
+      "mcp__rw__list_documents",
+      "mcp__rw__list_resources",
+      "mcp__rw__read_document",
+      "mcp__rw__render_draft",
+      "mcp__rw__view_image"
+    ],
+    "plugins": [
+      "cc-plugin-agents-md",
+      "cc-plugin-plugin-authoring"
+    ]
+  }
+}

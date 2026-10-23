@@ -1,0 +1,102 @@
+{
+  "format": "renderweave-context/1",
+  "source": "runtime-events",
+  "limit": null,
+  "peakInputTokens": 40397,
+  "requests": [
+    {
+      "id": "msg_011CgJY4KFTYy5nPZVNxf2Yz",
+      "inputTokens": 2,
+      "cacheReadTokens": 7886,
+      "cacheCreationTokens": 1749,
+      "outputTokens": 8,
+      "effectiveInputTokens": 9637
+    },
+    {
+      "id": "msg_011CgJY4ezMsFBnKyAq2aHgg",
+      "inputTokens": 2,
+      "cacheReadTokens": 9635,
+      "cacheCreationTokens": 4481,
+      "outputTokens": 8,
+      "effectiveInputTokens": 14118
+    },
+    {
+      "id": "msg_011CgJY4zRQmLCnMYrdZ3LzS",
+      "inputTokens": 2,
+      "cacheReadTokens": 14116,
+      "cacheCreationTokens": 1583,
+      "outputTokens": 16,
+      "effectiveInputTokens": 15701
+    },
+    {
+      "id": "msg_011CgJY5DQkuSmgurunSVJ43",
+      "inputTokens": 2,
+      "cacheReadTokens": 15699,
+      "cacheCreationTokens": 17415,
+      "outputTokens": 8,
+      "effectiveInputTokens": 33116
+    },
+    {
+      "id": "msg_011CgJY5knPQaxhbmsDCuwAC",
+      "inputTokens": 2,
+      "cacheReadTokens": 33114,
+      "cacheCreationTokens": 2022,
+      "outputTokens": 5,
+      "effectiveInputTokens": 35138
+    },
+    {
+      "id": "msg_011CgJY6hnqoTJk2jZ3E5q9a",
+      "inputTokens": 2,
+      "cacheReadTokens": 35136,
+      "cacheCreationTokens": 3607,
+      "outputTokens": 8,
+      "effectiveInputTokens": 38745
+    },
+    {
+      "id": "msg_011CgJY7BAdHx1xfqqCaVPrd",
+      "inputTokens": 2,
+      "cacheReadTokens": 38743,
+      "cacheCreationTokens": 1308,
+      "outputTokens": 24,
+      "effectiveInputTokens": 40053
+    },
+    {
+      "id": "msg_011CgJY7LrXngh2bduwQKYgV",
+      "inputTokens": 2,
+      "cacheReadTokens": 40051,
+      "cacheCreationTokens": 344,
+      "outputTokens": 10,
+      "effectiveInputTokens": 40397
+    }
+  ],
+  "compactions": [],
+  "tools": {
+    "calls": 23,
+    "results": 23,
+    "textChars": 53456,
+    "images": 4,
+    "encodedImageChars": 613248
+  },
+  "runtime": {
+    "skills": [],
+    "tools": [
+      "Edit",
+      "Glob",
+      "Read",
+      "Write",
+      "mcp__rw__check_outcome",
+      "mcp__rw__check_templates",
+      "mcp__rw__dsl_reference",
+      "mcp__rw__inspect_layout",
+      "mcp__rw__list_documents",
+      "mcp__rw__list_resources",
+      "mcp__rw__read_document",
+      "mcp__rw__render_draft",
+      "mcp__rw__view_image"
+    ],
+    "plugins": [
+      "cc-plugin-agents-md",
+      "cc-plugin-plugin-authoring"
+    ]
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "passed": true,
+  "scriptSha256": "b5d8b83c5cc91b9b027b98bb5efaa59a1fcfae73bf4ef26bf24457cc57affb72",
+  "manifestSha256": "1d29d0ab24d3b1077ae81dc8b66711202195ecd40a438bb55e4dbb61f4d8eb45",
+  "units": 12,
+  "rounds": 24,
+  "requests": 319,
+  "feedbackPackets": 12,
+  "maxFeedbackItems": 2,
+  "maxFeedbackChars": 449,
+  "inputPairsIdentical": 6,
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "maxTurns": 20,
+    "tools": 13,
+    "skills": [],
+    "mcp": [
+      "rw"
+    ]
+  },
+  "aggregates": {
+    "image": {
+      "completed": 6,
+      "repaired": 9,
+      "targets": 12,
+      "addedFailures": 0,
+      "unknownAddedUnits": 0,
+      "qualified": 6,
+      "cleanSuccess": 4,
+      "meanPeak": 60687.833333333336,
+      "maximumPeak": 74651,
+      "meanWallMs": 320710.1666666667,
+      "totalWallMs": 1924261,
+      "exploratoryAllChecks": {
+        "allPassedUnits": 2,
+        "remainingFailures": 6,
+        "unknownRemainingUnits": 0,
+        "regressedFromFirst": 1,
+        "unknownRegressionUnits": 0
+      }
+    },
+    "evidence": {
+      "completed": 6,
+      "repaired": 12,
+      "targets": 12,
+      "addedFailures": 0,
+      "unknownAddedUnits": 0,
+      "qualified": 6,
+      "cleanSuccess": 6,
+      "meanPeak": 55318.666666666664,
+      "maximumPeak": 83715,
+      "meanWallMs": 213751.83333333334,
+      "totalWallMs": 1282511,
+      "exploratoryAllChecks": {
+        "allPassedUnits": 6,
+        "remainingFailures": 0,
+        "unknownRemainingUnits": 0,
+        "regressedFromFirst": 0,
+        "unknownRegressionUnits": 0
+      }
+    }
+  },
+  "checks": [
+    "冻结源代码/运行构建/资料/输入/资源指纹",
+    "成对首轮输入相同（额外反馈除外）",
+    "24轮真实运行记录与模型/技能/工具配置",
+    "逐请求有效输入加总与峰值",
+    "新增反馈条数和字符界限",
+    "归档分数等于原记录，目标恢复及新增失败独立复算",
+    "两轮总耗时和峰值、全样本及成对汇总独立复算"
+  ]
+}

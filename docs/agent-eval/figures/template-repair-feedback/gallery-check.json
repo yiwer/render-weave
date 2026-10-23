@@ -1,0 +1,14 @@
+{
+  "pass": true,
+  "cases": [
+    "a",
+    "b",
+    "c"
+  ],
+  "combinations": 24,
+  "viewports": [
+    1440,
+    390
+  ],
+  "pageErrors": []
+}

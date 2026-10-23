@@ -1,0 +1,110 @@
+{
+  "format": "renderweave-context/1",
+  "source": "runtime-events",
+  "limit": null,
+  "peakInputTokens": 41708,
+  "requests": [
+    {
+      "id": "msg_011CgJYSJkJV72LdGKNVKSaf",
+      "inputTokens": 2,
+      "cacheReadTokens": 9016,
+      "cacheCreationTokens": 617,
+      "outputTokens": 8,
+      "effectiveInputTokens": 9635
+    },
+    {
+      "id": "msg_011CgJYSYCCQ9uxxm9FkSUpd",
+      "inputTokens": 2,
+      "cacheReadTokens": 9633,
+      "cacheCreationTokens": 2983,
+      "outputTokens": 17,
+      "effectiveInputTokens": 12618
+    },
+    {
+      "id": "msg_011CgJYSkKChZBU2jP43kyNR",
+      "inputTokens": 2,
+      "cacheReadTokens": 12616,
+      "cacheCreationTokens": 3189,
+      "outputTokens": 5,
+      "effectiveInputTokens": 15807
+    },
+    {
+      "id": "msg_011CgJYSye8vip6jheXhxAY7",
+      "inputTokens": 2,
+      "cacheReadTokens": 15805,
+      "cacheCreationTokens": 1988,
+      "outputTokens": 7,
+      "effectiveInputTokens": 17795
+    },
+    {
+      "id": "msg_011CgJYTHfM9rSVgX92iBpDz",
+      "inputTokens": 2,
+      "cacheReadTokens": 17793,
+      "cacheCreationTokens": 12531,
+      "outputTokens": 6,
+      "effectiveInputTokens": 30326
+    },
+    {
+      "id": "msg_011CgJYTxSyNyVqLupm5qH55",
+      "inputTokens": 2,
+      "cacheReadTokens": 30324,
+      "cacheCreationTokens": 4330,
+      "outputTokens": 8,
+      "effectiveInputTokens": 34656
+    },
+    {
+      "id": "msg_011CgJYUgtscanzMk5FoWtW3",
+      "inputTokens": 2,
+      "cacheReadTokens": 34654,
+      "cacheCreationTokens": 2326,
+      "outputTokens": 4,
+      "effectiveInputTokens": 36982
+    },
+    {
+      "id": "msg_011CgJYV7zzTwoj4G8w8xePg",
+      "inputTokens": 2,
+      "cacheReadTokens": 36980,
+      "cacheCreationTokens": 1306,
+      "outputTokens": 3,
+      "effectiveInputTokens": 38288
+    },
+    {
+      "id": "msg_011CgJYVia72mRLpQ3wjy72x",
+      "inputTokens": 2,
+      "cacheReadTokens": 38286,
+      "cacheCreationTokens": 3420,
+      "outputTokens": 7,
+      "effectiveInputTokens": 41708
+    }
+  ],
+  "compactions": [],
+  "tools": {
+    "calls": 30,
+    "results": 30,
+    "textChars": 51204,
+    "images": 3,
+    "encodedImageChars": 549016
+  },
+  "runtime": {
+    "skills": [],
+    "tools": [
+      "Edit",
+      "Glob",
+      "Read",
+      "Write",
+      "mcp__rw__check_outcome",
+      "mcp__rw__check_templates",
+      "mcp__rw__dsl_reference",
+      "mcp__rw__inspect_layout",
+      "mcp__rw__list_documents",
+      "mcp__rw__list_resources",
+      "mcp__rw__read_document",
+      "mcp__rw__render_draft",
+      "mcp__rw__view_image"
+    ],
+    "plugins": [
+      "cc-plugin-agents-md",
+      "cc-plugin-plugin-authoring"
+    ]
+  }
+}
