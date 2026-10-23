@@ -30,6 +30,10 @@ for (const action of actions) {
     const path = resolve('candidates/schema.json'), content = JSON.stringify({ dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
     const id = begin('Write', { file_path: path, content });
     await writeFile(path, content); end(id, `File created successfully at: ${path}`);
+  } else if (action.kind === 'finish') {
+    mcp.stdin.end();
+    console.log(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: toolSequence }));
+    process.exit(0);
   }
 }
 await new Promise(() => {});

@@ -43,7 +43,7 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
       if (!checkpoint || checkpoint.contentIdentity !== delivered.checkpoint.contentIdentity) { reset(); continue; }
       const required = checkpoint.check.coverageVerification?.status !== 'notChecked'
         ? checkpoint.check.coverageVerification?.missingItems.map(item => `coverage.missing:${item}`) ?? [] : [];
-      if (previous && repairs.length && required.length) {
+      if (previous && previous.check.coverageVerification?.missingItems.length && repairs.length && required.length) {
         const comparison = compareCandidates(previous, checkpoint);
         if (comparison.status === 'incomparable' || comparison.improved.length || comparison.unknownAdded.length) cycles = [];
         else {
