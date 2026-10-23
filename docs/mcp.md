@@ -133,7 +133,9 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.13.1`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.15.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.15.0 固定本地素材/核准事实权限边界，模型上游凭据由宿主持有，运行及失败诊断持久化前脱敏；工具仍只读，版本与平台证据见[信任边界](agent-trust-boundary.md)。
+  - 0.14.0 明确 Agent 整轮预算、取消、停止保存与已知用量合同；新增停止凭据及可选生效 runtime 字段，工具仍只读，见[整轮预算](agent-budgets.md)。
   - 0.13.1 的宿主工具日志为 `check_outcome` 增加实际内容身份，为 `compare_reference` 增加本页区域目录、续取位置及本页异常区域。评估可以核对后续页实际取得和末次工具检查/终检的关联；不改变候选、参考或工具只读权限。
   - 0.13.0 为受管 `check_outcome` 增加 `checkpoint` 保存完成状态、ID 与内容身份，或 `notSaved` 原因。宿主固定完整字节后检查并原子保存，MCP 工具仍只读；独立 MCP 不保存。保存不代表业务合格或人工批准，见[检查点与接续](agent-checkpoints.md)。
   - 0.12.1 将本地应用读取接入提交恢复：相关工作区未完成应用时先恢复或明确返回 `apply.recoveryRequired`，不把混合输入作为工具初始状态。Agent 新应用记录为 `renderweave-applied/2`，公开应用结果带可核对的 `commitId` 与重复结果标记，旧 `/1` 成功记录仍读取。工具参数与只读能力不变；恢复和同宿主 Windows/Linux 边界见[应用恢复](agent-tasks.md#应用强退与恢复)。

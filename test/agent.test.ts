@@ -125,7 +125,8 @@ describe('发起一轮数据定义提取', () => {
       'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL',
       'ANTHROPIC_MODEL', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', 'CLAUDE_CODE_SUBAGENT_MODEL', 'CLAUDE_CONFIG_DIR',
     ]);
-    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: 'https://endpoint.example/anthropic', configDir: join(logs, 'claude-config') });
+    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/), configDir: join(logs, 'claude-config') });
+    expect(fake.tokenSha256).not.toBe(createHash('sha256').update(KEY).digest('hex'));
     expect(fake.args).toEqual(['-p', '--output-format', 'stream-json', '--verbose', '--model', 'model-x', '--restricted', '--tools', 'Read,Write,Edit,Glob',
       '--mcp-config', join(logs, 'mcp.json'), '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
       '--max-turns', '9', '--no-session-persistence']);
@@ -270,7 +271,7 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
     const result = await run(await preset({ 'candidates/schema-session.json': SESSION, '.model-calls.json': Array.from({ length: 8 }, () => call) }), { model: 'gemini-test', endpoint: upstream });
     expect(requests).toHaveLength(1);
     expect(result.record).toMatchObject({ verdict: 'unqualified', run: { stopped: { reason: 'hardQuota', type: 'GoUsageLimitError', limit: 'weekly' } } });
-    expect(result.record.run.error).toContain('--from');
+    expect(result.record.run.error).toContain('仅可查看诊断');
     expect(result.outcome).toBeUndefined();
     expect(JSON.parse(await readFile(join(result.roundDir, 'draft.json'), 'utf8'))).toMatchObject({ source: 'hostRecovery' });
     expect((await proxyLog(result.roundDir))[0]).toMatchObject({ stopped: { limit: 'weekly' } });
