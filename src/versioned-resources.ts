@@ -8,10 +8,10 @@ import { parseResourceRef, ResourceReadError, sortedInfos, type ResourceInfo, ty
 import { describeError, isRecord } from './util.js';
 import { inspectResourceWorkspace, resourceWorkspaceFingerprint, type ResourceWorkspaceImpact } from './resource-impact.js';
 import type { RenderOptions } from './render.js';
+import { LocalAccessBusy, withLocalAccess } from './local-access.js';
 
 const FORMAT = 'renderweave-resources/1';
 const MANIFEST = 'resources.json';
-const LOCK = '.write-lock';
 
 export interface VersionedResourceInfo extends ResourceInfo {
   readonly version: number;
@@ -40,6 +40,7 @@ class StoreError extends Error {
   constructor(readonly code: ProblemCode, readonly source: string, message: string) { super(message); }
 }
 function problem(error: unknown, source: string): Problem {
+  if (error instanceof LocalAccessBusy) return severe(ProblemCodes.resourceStoreBusy, { kind: 'input', source: error.directory }, error.message);
   return severe(error instanceof StoreError || error instanceof ResourceReadError ? error.code : ProblemCodes.resourceWriteFailed,
     { kind: 'input', source: error instanceof StoreError ? error.source : source }, describeError(error));
 }
@@ -67,6 +68,10 @@ async function replacementBytes(file: string): Promise<Uint8Array> {
 
 /** 只读检查，报告覆盖指定工作区；源字节哈希也固定，避免检查后换错文件。 */
 export async function checkResourceReplacement(options: ReplacementContext & { id: string; kind: ResourceInfo['kind'] }): Promise<{ check?: ResourceReplacementCheck; problems: Problem[] }> {
+  try { await storeRoot(options.dir); return await withLocalAccess([options.dir, options.workspaceDir], () => checkReplacementLocked(options)); }
+  catch (error) { return { problems: [problem(error, options.dir)] }; }
+}
+async function checkReplacementLocked(options: ReplacementContext & { id: string; kind: ResourceInfo['kind'] }): Promise<{ check?: ResourceReplacementCheck; problems: Problem[] }> {
   try {
     const root = await storeRoot(options.dir);
     const store = fileStore(root, await loadManifest(root));
@@ -141,7 +146,7 @@ export async function applyResourceReplacement(options: ReplacementContext & { c
   }, async () => {
     // 内容和临时清单均写完后再核对，变化则撤回本次文件，不发布当前指针。
     if (await resourceWorkspaceFingerprint(workspaceToVerify, renderOptions) !== checked.impact.workspaceFingerprint) stale(workspaceDir, '提交前工作区已变化');
-  });
+  }, [workspaceDir]);
   return { replaced: problems.some((issue) => issue.level === 'severe') ? undefined : replaced, problems };
 }
 
@@ -456,11 +461,29 @@ export function createMemoryResourceBackend(options: { readonly contents?: Map<s
 async function writeTransaction(dir: string, initialize: boolean,
   prepare: (root: string, write: (file: string, bytes: Uint8Array) => Promise<void>) => Promise<Manifest>,
   beforeCommit?: () => Promise<void>,
+  relatedDirectories: readonly string[] = [],
+): Promise<Problem[]> {
+  let completed: Problem[] | undefined;
+  try {
+    if (initialize) await fs.mkdir(dir, { recursive: true });
+    else await storeRoot(dir);
+    return await withLocalAccess([dir, ...relatedDirectories], async () => {
+      completed = await writeTransactionLocked(dir, initialize, prepare, beforeCommit);
+      return completed;
+    });
+  } catch (error) {
+    // 保留原资源 API：事务结果已确定时，释放约束失败只附加清理提示，不能把已发布版本报成未提交。
+    return completed ? [...completed, hint(ProblemCodes.resourceWriteFailed, { kind: 'input', source: dir }, `写锁清理失败：${describeError(error)}`)] : [problem(error, dir)];
+  }
+}
+
+async function writeTransactionLocked(dir: string, initialize: boolean,
+  prepare: (root: string, write: (file: string, bytes: Uint8Array) => Promise<void>) => Promise<Manifest>,
+  beforeCommit?: () => Promise<void>,
 ): Promise<Problem[]> {
   const problems: Problem[] = [];
   const owned: string[] = [];
   let root = resolve(dir);
-  let locked = false;
   let committed = false;
   let temporary: string | undefined;
   try {
@@ -468,11 +491,6 @@ async function writeTransaction(dir: string, initialize: boolean,
       await fs.mkdir(root, { recursive: true });
       root = await fs.realpath(root);
     } else root = await storeRoot(dir);
-    try { await fs.mkdir(join(root, LOCK)); locked = true; }
-    catch (error) {
-      if (isRecord(error) && error.code === 'EEXIST') fail(join(root, LOCK), '资源仓库正在写入；稍后重试，勿删除活动写锁', ProblemCodes.resourceStoreBusy);
-      throw error;
-    }
     const write = async (file: string, bytes: Uint8Array) => {
       const path = join(root, file);
       const handle = await fs.open(path, 'wx');
@@ -505,10 +523,6 @@ async function writeTransaction(dir: string, initialize: boolean,
     for (const path of cleanup) {
       try { await fs.rm(path, { force: true }); }
       catch (error) { problems.push(hint(ProblemCodes.resourceWriteFailed, { kind: 'input', source: path }, `临时文件清理失败：${describeError(error)}`)); }
-    }
-    if (locked) {
-      try { await fs.rmdir(join(root, LOCK)); }
-      catch (error) { problems.push(hint(ProblemCodes.resourceWriteFailed, { kind: 'input', source: join(root, LOCK) }, `写锁清理失败：${describeError(error)}`)); }
     }
   }
   return problems;
@@ -551,7 +565,7 @@ export async function importResources(options: { sourceDir: string; dir: string 
       imported.push(metadata(entry, content));
     }
     return manifest;
-  });
+  }, undefined, [options.sourceDir]);
   if (problems.some((issue) => issue.level === 'severe')) imported = [];
   return { imported, problems };
 }

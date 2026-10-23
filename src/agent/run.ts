@@ -35,6 +35,7 @@ import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerpr
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
 import { claimExecution, writeAtomicJson } from './execution.js';
+import { withLocalAccess } from '../local-access.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -252,8 +253,12 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (options.workspace !== undefined && !(await isDirectory(options.workspace))) throw new AgentUsageError(`工作区目录无法读取：${options.workspace}`);
   if (task.requires !== 'none' && options.workspace === undefined) throw new AgentUsageError(`${task.name}要用 --workspace 指定已发布的数据定义与已保存的数据集、模板所在的工作区`);
   if (!(await isFile(join(options.resources, 'resources.json')))) throw new AgentUsageError(`资源仓库缺少 resources.json：${options.resources}`);
-  const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
-  const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
+  const { basis, request, revision, initialFingerprint } = await withLocalAccess(options.workspace ? [options.workspace] : [], async () => {
+    const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
+    const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
+    const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
+    return { basis, request, revision, initialFingerprint: options.workspace ? await workspaceFingerprint(options.workspace) : undefined };
+  });
   const dataset = request?.dataset ?? basis.dataset;
   let baseline: ReferenceBaseline | undefined, contentBaseline: BusinessContentBaseline | undefined;
   if (options.reference) {
@@ -274,7 +279,6 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     if (!validateContentBaseline(input)) throw new AgentUsageError('内容基准字段不合法');
     contentBaseline = input;
   }
-  const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
   // 元素路径只在第 1 轮核对：沿用到下一轮时，上一轮可能已经把那些元素改名或移走并应用了。
   if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
   if (options.feedback !== undefined) await requireFile(options.feedback, '反馈');
@@ -347,17 +351,20 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
-  if (options.workspace !== undefined) {
-    for (const file of (await readdir(options.workspace)).filter((name) => name.endsWith('.json')).sort()) {
-      await copyFile(join(options.workspace, file), join(snapshotDir, file));
-      documents++;
+  const resourceSnapshot = await withLocalAccess([...(options.workspace ? [options.workspace] : []), options.resources], async () => {
+    if (options.workspace !== undefined) {
+      if (await workspaceFingerprint(options.workspace) !== initialFingerprint) throw new AgentUsageError('准备期间工作区已变化，请重新发起轮次');
+      for (const file of (await readdir(options.workspace)).filter((name) => name.endsWith('.json')).sort()) {
+        await copyFile(join(options.workspace, file), join(snapshotDir, file));
+        documents++;
+      }
     }
-  }
+    return captureResources(roundDir, options.resources!);
+  });
   const textInput = async <T extends 'requirement.md' | 'feedback.md'>(file: string | undefined, name: T) =>
     (file === undefined ? null : { source: resolve(file), file: name, sha256: sha256(await readFile(file)) });
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
-  const resourceSnapshot = await captureResources(roundDir, options.resources);
   const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
   const inputs: RoundInputs = {
     resourceSnapshot,

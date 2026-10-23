@@ -9,6 +9,7 @@ import { rendererBuildId } from '../renderer-build.js';
 import type { Workspace } from '../workspace.js';
 import { canonical } from './diff.js';
 import { sha256 } from './round-files.js';
+import { LocalAccessBusy, withLocalAccess } from '../local-access.js';
 
 export interface ResourceIdentity {
   readonly id: string; readonly kind: ResourceKind; readonly sha256: string | null; readonly byteLength: number | null;
@@ -26,6 +27,9 @@ const digest = (value: unknown) => sha256(canonical(value));
 
 /** 固定目录只由宿主写入；每次重新检查另建目录，旧检查的字节一直可复查。 */
 export async function captureResources(roundDir: string, source: string): Promise<ResourceSnapshotRef> {
+  return withLocalAccess([source], () => captureResourcesLocked(roundDir, source), 1000);
+}
+async function captureResourcesLocked(roundDir: string, source: string): Promise<ResourceSnapshotRef> {
   const { repository, problems } = await openResourceRepository(source);
   if (problems.some(p => p.level === 'severe')) throw new Error(problems.map(p => p.message).join('；'));
   const manifest = JSON.parse(await readFile(join(source, 'resources.json'), 'utf8'));
@@ -108,6 +112,13 @@ export async function contentIdentity(options: { workspace: Workspace; candidate
 
 /** 只核对本次使用的映射、种类、版本和实际字节；不受无关资源或任意目录文件影响。 */
 export async function resourceDifferences(source: string, identities: readonly ResourceIdentity[]): Promise<Problem[]> {
+  try { return await withLocalAccess([source], () => resourceDifferencesLocked(source, identities)); }
+  catch (error) {
+    if (error instanceof LocalAccessBusy) throw error;
+    return [severe(ProblemCodes.applyResourcesChanged, { kind: 'input', source }, `当前资源无法核对：${String(error)}；请修复资源后重新审核`)];
+  }
+}
+async function resourceDifferencesLocked(source: string, identities: readonly ResourceIdentity[]): Promise<Problem[]> {
   const result: Problem[] = [];
   if (!identities.length) return result;
   try {
@@ -125,6 +136,6 @@ export async function resourceDifferences(source: string, identities: readonly R
           `资源 ${expected.id} 已变化或无法核对：版本 ${expected.version ?? '旧目录'} → ${version ?? '旧目录'}；字节 ${expected.sha256 ?? '缺失'} → ${actual ?? '缺失'}；映射 ${expected.file ?? '-'} → ${file ?? '-'}${reason ? `；${reason}` : ''}。请在 agent review 撤回结论，重新检查预览、整体确认并核准；--overwrite 不能跳过资源核对`));
       }
     }
-  } catch (error) { result.push(severe(ProblemCodes.applyResourcesChanged, { kind: 'input', source }, `当前资源无法核对：${String(error)}；请修复资源后重新审核`)); }
+  } catch (error) { if (error instanceof LocalAccessBusy) throw error; result.push(severe(ProblemCodes.applyResourcesChanged, { kind: 'input', source }, `当前资源无法核对：${String(error)}；请修复资源后重新审核`)); }
   return result;
 }

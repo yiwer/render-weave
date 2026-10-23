@@ -1,8 +1,10 @@
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import {
   createMemoryResourceRepository,
   loadWorkspace,
+  localWorkspaceDocuments,
   openResourceRepository,
   publishStaticSchema,
   type ResourceRepository,
@@ -16,6 +18,13 @@ export const singleTextDir = join(repoRoot, 'fixtures', 'workspaces', 'single-te
 export const stopNameDir = join(repoRoot, 'fixtures', 'workspaces', 'stop-name');
 export const skeletonDir = join(repoRoot, 'fixtures', 'workspaces', 'm402-skeleton');
 export const m402Dir = join(repoRoot, 'docs', 'examples', 'm402-dsl');
+
+/** 用公开文档来源复制完整夹具；协调元数据不属于工作区输入，不复制活动 .write-lock。 */
+export async function copyWorkspaceFixture(source: string, destination: string): Promise<void> {
+  const documents = await localWorkspaceDocuments(source).list();
+  await mkdir(destination, { recursive: true });
+  for (const document of documents) await writeFile(join(destination, basename(document.source)), await document.read());
+}
 
 export function loadSingleText(): Promise<Workspace> {
   return loadWorkspace({ dir: singleTextDir, resourcesDir });
