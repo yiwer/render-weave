@@ -1,8 +1,9 @@
 /** 本机模型协议夹具：仅发预登记工具调用，实际权限判断由未修改的 Claude CLI 执行。 */
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 export interface NativeTool { name: string; input: Record<string, unknown> }
-export async function nativeModelFixture(plan: readonly (readonly NativeTool[])[], failure?: string) {
-  const requests: any[] = [];
+export async function nativeModelFixture(plan: readonly (readonly NativeTool[])[], failure?: string, splitAfter?: string) {
+  const requests: any[] = [], authorizationHashes: string[] = [];
   let turn = 0;
   const server = createServer(async (request, response) => {
     let raw = '';
@@ -10,8 +11,8 @@ export async function nativeModelFixture(plan: readonly (readonly NativeTool[])[
     let body: any;
     try { body = JSON.parse(raw); } catch { response.writeHead(400).end(); return; }
     if (request.url?.includes('count_tokens')) { response.setHeader('content-type', 'application/json'); response.end('{"input_tokens":100}'); return; }
-    requests.push(body);
-    if (failure) { response.writeHead(400, { 'content-type': 'application/json' }); response.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: failure } })); return; }
+    requests.push(body); authorizationHashes.push(createHash('sha256').update(request.headers.authorization ?? '').digest('hex'));
+    if (failure) { response.writeHead(400, { 'content-type': 'application/json' }); const encoded = JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: failure } }); if (splitAfter) { const at = encoded.indexOf(splitAfter) + splitAfter.length; response.write(encoded.slice(0, at)); await new Promise(resolve => setTimeout(resolve, 40)); response.end(encoded.slice(at)); } else response.end(encoded); return; }
     const tools = plan[turn++] ?? [];
     const content = tools.length ? tools.map((tool, i) => ({ type: 'tool_use', id: `tool_${turn}_${i}`, ...tool })) : [{ type: 'text', text: '受控协议计划已结束。' }];
     const reason = tools.length ? 'tool_use' : 'end_turn';
@@ -31,5 +32,5 @@ export async function nativeModelFixture(plan: readonly (readonly NativeTool[])[
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('没有本机测试端口');
-  return { endpoint: `http://127.0.0.1:${address.port}`, requests, async close() { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); } };
+  return { endpoint: `http://127.0.0.1:${address.port}`, requests, authorizationHashes, async close() { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); } };
 }

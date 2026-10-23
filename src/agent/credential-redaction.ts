@@ -13,9 +13,9 @@ export function credentialRedactor(values: readonly string[]) {
       const take = (final: boolean) => {
         let offset = 0, output = '';
         while (offset < pending.length) {
+          if (!final && secrets.some(secret => secret.length > pending.length - offset && secret.startsWith(pending.slice(offset)))) break;
           const match = secrets.find(secret => pending.startsWith(secret, offset));
           if (match) { output += '[REDACTED]'; offset += match.length; continue; }
-          if (!final && secrets.some(secret => secret.startsWith(pending.slice(offset)))) break;
           output += pending[offset++];
         }
         pending = pending.slice(offset); return output;      };

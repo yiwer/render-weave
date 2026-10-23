@@ -3,8 +3,8 @@
  * 在独占的轮次目录里组装三层资料、DSL 参考、示例图与工作区快照，按受限模式启动一次 Claude Code 无头运行，
  * 只连本仓库的 `renderweave mcp`；结束后校验 Agent 交回的 outcome.json，写出轮次记录、成果与校验结果。
  *
- * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；key 只经环境变量传入，不写任何文件。
- * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 时在本进程起转换代理，Claude Code 只拿到本轮令牌（M232）。
+ * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；上游 key 只留在宿主内存，执行器环境只传入本轮代理令牌。
+ * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；两种协议均经本机代理，Claude Code 只拿到本轮令牌（M232、M321）。
  *
  * 多轮（M58）：带 from 发起下一轮时，沿用上一轮的任务、素材、基准、出图请求与修改要求，工作区重新取快照；
  * 上一轮成果（含审核时的修改）放进 candidates/ 作为起点，原样记录放进 previous/，反馈放进 docs/feedback.md。
@@ -84,7 +84,7 @@ export interface AgentRunOptions {
   readonly from?: string;
   /** 给下一轮的反馈（Markdown）；带 from 时必须给。 */
   readonly feedback?: string;
-  /** key 的值只在内存中传给子进程；keyEnv 是它所在的环境变量名，只用于记录。 */
+  /** key 的值只留在宿主内存；keyEnv 是它所在的环境变量名，只用于记录。 */
   readonly key: string;
   readonly keyEnv: string;
   readonly model?: string;
@@ -424,14 +424,14 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
-  // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
+  // 两种模型协议都只给执行器本轮令牌；上游 key 留在宿主。
   const controller = new AbortController();
   let stopped: QuotaStop | undefined;
   const stop = (reason: QuotaStop) => { stopped ??= reason; controller.abort(); };
   const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
-    ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
+    ANTHROPIC_BASE_URL: proxy.url, ANTHROPIC_AUTH_TOKEN: proxy.token, ANTHROPIC_MODEL: model,
     ANTHROPIC_DEFAULT_OPUS_MODEL: model, ANTHROPIC_DEFAULT_SONNET_MODEL: model, ANTHROPIC_DEFAULT_HAIKU_MODEL: smallModel,
     CLAUDE_CODE_SUBAGENT_MODEL: model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
   });
@@ -444,7 +444,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   try {
     executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token] });
   } finally {
-    await proxy?.close();
+    await proxy.close();
     await checkpoints.idle();
     await managedMcp.close();
   }
