@@ -49,3 +49,5 @@
 - 在新独立恢复副本公开 --rescore 另存新评分身份报告，严格 gate 仍 fail、7 pass/1 fail/8 not-run；原始报告 SHA 13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47 不变。新评分器 sha256:99439a81470a6fe374f8902bfd0654ad032c8a298981ec332f4c6cbe106121ed 的三个独立守卫为 true，仅目标/非目标范围 false。原始与恢复各5172文件/977目录经完整集合/SHA前后比较无新增缺改，8轮公开只读审核通过。新报告与完整证明位于 F:/GenCode/render-weave/out/harness-feedback-diagnostics/historical-rescore-readonly-v2/ 和同根 historical-rescore-readonly-v2-verification.json。
 - 旧恢复件默认审核新增缓存的更正另存，旧失败日志、缓存及历史报告不删除不改写；新的只读证明不沿用仅检查 manifest 已列文件的边界。详见 docs/agent-eval/feedback-diagnostics/README.md。
 - 无模型调用、无留出素材、无历史结果回写；不宣称票21或候选4通过。CONTEXT由独立集成者更新，本轮无新政策决定。
+
+独立集成：以 `d6214f25` 合入最终 `8b6f3b3`。已对 `abacbd9` 独立守卫与 `6d0ccc2` 完整不持久化审核作固定源码审查，未见阻塞；原始与新恢复的完整集合/字节20,730项只读核验通过，最终26证据原件及源码固定后的3份记录差异64项核验通过。Windows/Linux各54项最终结果与日志一致，未重复测试或模型。外部 `harness14-readonly-prereview.md` SHA `15757c9454952cb0b2fffbf7a98f971dd1fd3d336b209f55888f15d8cea787f3`；`harness14-final-evidence-audit.json` SHA `c38710927d3ea1ae3e0f366082f1c40b6e9dce74f0043965f5e28cbd342f8c11`，均在 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/`。集成diff-check通过，历史原件保持。
