@@ -7,7 +7,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ProblemCodes, severe, type Problem } from './problems.js';
-import { openResourceRepository, type ResourceRepository } from './resources.js';
+import { createMemoryResourceRepository, openResourceRepository, snapshotResourceRepository, type ResourceRepository } from './resources.js';
+import { localAccessProblem, withLocalAccess } from './local-access.js';
 import { significantDigits } from './schema/formats.js';
 import { MAX_SIGNIFICANT_DIGITS } from './schema/model.js';
 import { describeError, isRecord } from './util.js';
@@ -102,9 +103,18 @@ export function parseDatasetDocument(value: unknown): DatasetDocument | string {
  * 资源仓库是另一个目录，因为同一个资源仓库常被多个工作区共用。
  */
 export async function loadWorkspace(options: { dir: string; resourcesDir: string }): Promise<Workspace> {
-  const documents = await loadWorkspaceDocuments(options.dir);
-  const { repository, problems } = await openResourceRepository(options.resourcesDir);
-  return { ...documents, resources: repository, problems: [...documents.problems, ...problems] };
+  try {
+    const captured = await withLocalAccess([options.dir, options.resourcesDir], async () => {
+      const entries = await localWorkspaceDocuments(options.dir).list();
+      const { repository, problems } = await openResourceRepository(options.resourcesDir);
+      return { entries, resources: await snapshotResourceRepository(repository), problems };
+    }, 1000);
+    const documents = await readWorkspaceDocuments({ location: options.dir, list: async () => captured.entries });
+    return { ...documents, resources: captured.resources, problems: [...documents.problems, ...captured.problems] };
+  } catch (error) {
+    return { staticSchemas: [], templates: [], datasets: [], resources: createMemoryResourceRepository([]),
+      problems: [localAccessProblem(error) ?? severe(ProblemCodes.inputUnreadable, { kind: 'input', source: options.dir }, `工作区无法读取：${describeError(error)}`)] };
+  }
 }
 
 /** 工作区中的一份文档：来源说明（本地是文件路径）与按需读取的原始字节。 */
@@ -128,10 +138,15 @@ export interface WorkspaceDocumentSource {
 export function localWorkspaceDocuments(dir: string): WorkspaceDocumentSource {
   return {
     location: dir,
-    list: async () => (await readdir(dir)).filter((file) => file.endsWith('.json')).sort().map((file) => {
-      const source = join(dir, file);
-      return { source, read: async () => new Uint8Array(await readFile(source)) };
-    }),
+    list: () => withLocalAccess([dir], async () => {
+      const entries: WorkspaceDocumentEntry[] = [];
+      for (const file of (await readdir(dir)).filter(file => file.endsWith('.json')).sort()) {
+        const source = join(dir, file);
+        try { const bytes = await readFile(source); entries.push({ source, read: async () => Uint8Array.from(bytes) }); }
+        catch (error) { entries.push({ source, read: async () => { throw error; } }); }
+      }
+      return entries;
+    }, 1000),
   };
 }
 
@@ -159,7 +174,7 @@ export async function readWorkspaceDocuments(source: WorkspaceDocumentSource): P
     entries = await source.list();
   } catch (error) {
     problems.push(
-      severe(ProblemCodes.inputUnreadable, { kind: 'input', source: source.location }, `工作区目录无法读取：${describeError(error)}`),
+      localAccessProblem(error) ?? severe(ProblemCodes.inputUnreadable, { kind: 'input', source: source.location }, `工作区目录无法读取：${describeError(error)}`),
     );
   }
 

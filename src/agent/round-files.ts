@@ -4,6 +4,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { withLocalAccess } from '../local-access.js';
 
 /** 参数、输入文件或任务顺序不对：命令行报用法错误，不创建轮次目录。 */
 export class AgentUsageError extends Error {}
@@ -17,6 +18,9 @@ export async function workspaceFingerprint(dir: string): Promise<string> {
 
 /** 目录顶层 JSON 文件的内容哈希，按文件名排序。 */
 export async function jsonFileHashes(dir: string): Promise<Map<string, string>> {
+  return withLocalAccess([dir], () => jsonFileHashesLocked(dir), 1000);
+}
+async function jsonFileHashesLocked(dir: string): Promise<Map<string, string>> {
   const hashes = new Map<string, string>();
   for (const file of (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()) {
     hashes.set(file, sha256(await readFile(join(dir, file))));

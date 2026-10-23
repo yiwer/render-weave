@@ -3,7 +3,7 @@
  * 经公开入口审核、应用，断言 RenderWeave 重新渲染的预览、待确认项未处理完之前不能写入数据集（M46）、
  * 写入工作区的内容，以及之后经交付入口正式出图。
  */
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import {
   publishStaticSchema, readOutputRecord, readReview, render, runAgentTask, startReviewServer,
   type AgentRunOptions, type ReviewView, type StaticSchemaEntry, type VersionedResourceStore,
 } from '../src/index.js';
-import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const KEY = `rw-test-key-${Math.random().toString(36).slice(2)}`;
@@ -92,7 +92,7 @@ afterAll(async () => {
 /** 工作区：single-text 的问候，加上已发布的场次 v1、胸牌 v1 与模板胸牌卡。 */
 async function workspace(): Promise<string> {
   const dir = join(base, `workspace-${++count}`);
-  await cp(singleTextDir, dir, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, dir);
   const published: StaticSchemaEntry[] = [];
   for (const [stem, definition] of [['session', SESSION], ['badge', BADGE]] as const) {
     const result = publishStaticSchema(definition, published);
