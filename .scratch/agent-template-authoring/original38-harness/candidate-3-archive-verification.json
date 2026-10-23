@@ -1,0 +1,86 @@
+{
+  "format": "renderweave-original38-restore-verification/1",
+  "verifiedAt": "2026-10-23T20:10:01.137Z",
+  "archive": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-archive",
+  "restored": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored",
+  "manifestSha256": "2d3eb7017e87a5a6f3c37b8a14f5ba7a614cfe598baa65f2e00f6a07f54fe485",
+  "filesVerifiedAfterReview": 4286,
+  "directoriesVerified": 649,
+  "logicalBytes": 627709268,
+  "sourceFilesVerified": 4286,
+  "views": [
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "definition",
+      "attemptId": "5ccd4853-d8ce-49c5-a6df-548d19006c5f",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\5ccd4853-d8ce-49c5-a6df-548d19006c5f\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "dataset",
+      "attemptId": "f647aeca-d42b-43ac-8af8-22e12b043e96",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\f647aeca-d42b-43ac-8af8-22e12b043e96\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-definition",
+      "stage": "definition",
+      "attemptId": "8c3b19e0-d0ee-4420-a3d5-ff4db8db02cb",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored\\original38\\evaluation\\run-1\\m402-definition\\attempts\\8c3b19e0-d0ee-4420-a3d5-ff4db8db02cb\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-revision",
+      "stage": "revision",
+      "attemptId": "983acecc-3718-493b-bdb6-a4511fdc626a",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored\\original38\\evaluation\\run-1\\m402-revision\\attempts\\983acecc-3718-493b-bdb6-a4511fdc626a\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-template",
+      "stage": "template",
+      "attemptId": "a7c709c4-e52f-45e2-8e3c-0dc080712634",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3-evidence-restored\\original38\\evaluation\\run-1\\m402-template\\attempts\\a7c709c4-e52f-45e2-8e3c-0dc080712634\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "reader": {
+    "candidate": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d",
+    "module": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content\\dist\\index.js",
+    "moduleSha256": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4",
+    "options": {
+      "persistArtifacts": false
+    },
+    "publicCandidateVerificationExit": 0
+  },
+  "completePathSetsVerifiedBeforeAndAfter": true,
+  "limitations": [
+    "4个业务观测/5个阶段原件可读，不改变业务评分失败、4not-run和人工未审状态。",
+    "用独立固定的新reader读取旧候选3轮次，不声称旧candidate3自身已有无持久化读取选项，也不把读取记作新模型观测。",
+    "恢复后公开readReview(persistArtifacts:false)读取，再核恢复文件和目录完整集合及全部字节；原始根同样完整核对，不仅遍历清单内文件。",
+    "原始绝对路径不改写，不证明任意迁移后可以直接接续运行；不批准、不应用、不调用模型。"
+  ]
+}

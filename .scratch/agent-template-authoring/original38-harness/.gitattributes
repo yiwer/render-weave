@@ -11,3 +11,13 @@ candidate-2-*.log -text
 
 registration-candidate-3.json -text
 conditional-english-reference.candidate-3.json -text
+
+registration-candidate-4.json -text
+
+candidate-3-*.json -text
+candidate-3-*.log -text
+conditional-english-reference.candidate-4.json -text
+# 保全已执行预演脚本的原始字节及其末尾空行；其他空白检查照常。
+prepare-review-v3.mjs -text whitespace=-blank-at-eof
+zh-style-inventory-v2.md -text
+review-generator-v3-preflight.json -text

@@ -1,0 +1,971 @@
+{
+  "format": "renderweave-independent-live-source-usage-audit/1",
+  "snapshotStartedAt": "2026-10-23T19:41:44.592Z",
+  "snapshotFinishedAt": "2026-10-23T19:41:45.640Z",
+  "plans": [
+    {
+      "name": "original38",
+      "root": "F:/GenCode/render-weave/out/harness-original38-candidate-3/evaluation",
+      "experiment": "sha256:e5a34ac2e8ff6a3569de10e28f5b4e5d49ba5b2ab69fbe28dc40e684762b0ee1",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:9bfc3abb4823e882ffa460f564978e17d76c2e0ddb723b450079d24c597fada0",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "manifestSha256": "a1a075bb50c3ab93a9752259b367ee8278f4b7b6550583966c4aef8d10fc982d",
+      "plannedObservations": 8,
+      "plannedModelStages": 10,
+      "attemptsAtSnapshot": 5,
+      "sealedAttempts": 5,
+      "pendingAttempts": 0,
+      "notStartedStages": 5,
+      "totals": {
+        "inputTokens": {
+          "sealedKnown": 204,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "cacheReadTokens": {
+          "sealedKnown": 6518446,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "cacheCreationTokens": {
+          "sealedKnown": 475382,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "outputTokens": {
+          "sealedKnown": 262057,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        }
+      },
+      "timing": {
+        "segments": 1,
+        "incompleteSegments": 0,
+        "actualWallMs": 2330901,
+        "knownCompletedSegmentsWallMs": 2330901,
+        "knownSealedAttemptElapsedMs": 2310931,
+        "unknownSealedAttemptDurations": 0,
+        "knownSealedRoundWallMs": 2295543
+      },
+      "segments": [
+        {
+          "file": "0a57024d-f9a7-43ed-99ad-b572892beeac.started.json",
+          "startedAt": "2026-10-23T19:01:36.722Z",
+          "endedAt": "2026-10-23T19:40:27.623Z",
+          "first": 1,
+          "last": 1,
+          "jobs": 1,
+          "status": "complete",
+          "elapsedMs": 2330901,
+          "startSha256": "9db912a03506098d07ffeabde8e53104f9e55d9a7c36e68ec0a1ddbd0b7a413d",
+          "endSha256": "d5051066de01bc25321ea8c5fe2f1731709e8289bb6b2ddc2f26001f05427e54"
+        }
+      ],
+      "attempts": [
+        {
+          "attemptId": "5ccd4853-d8ce-49c5-a6df-548d19006c5f",
+          "unit": "run-1/366-transcription",
+          "stage": "definition",
+          "task": "definition-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\evaluation\\run-1\\366-transcription\\attempts\\5ccd4853-d8ce-49c5-a6df-548d19006c5f",
+          "startedAt": "2026-10-23T19:23:35.454Z",
+          "endedAt": "2026-10-23T19:33:40.803Z",
+          "status": "sealed",
+          "verifiedFiles": 66,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 54,
+          "uniqueMessageIds": 20,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 40,
+            "cacheReadTokens": 1067002,
+            "cacheCreationTokens": 87442,
+            "outputTokens": 50771
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 36408,
+          "attemptElapsedMs": 605349,
+          "roundWallMs": 602412,
+          "cliDurationMs": 601295,
+          "apiDurationMs": 599851,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "147692fd4346bb67deafce29f64919ac21871a357561f0c8d80d213d16a882ec",
+          "sealSha256": "394e1732328f8c1fa94f5d40aaa9e0e4a8d7b32fc89ff7c5ce94e508d0e84f57",
+          "streamSha256": "6ce1b69dd536d18558588726066dfe1e0f2ec75ac760df9ff66b80a763766b95",
+          "streamBytes": 6781753
+        },
+        {
+          "attemptId": "f647aeca-d42b-43ac-8af8-22e12b043e96",
+          "unit": "run-1/366-transcription",
+          "stage": "dataset",
+          "task": "dataset-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\evaluation\\run-1\\366-transcription\\attempts\\f647aeca-d42b-43ac-8af8-22e12b043e96",
+          "startedAt": "2026-10-23T19:33:43.834Z",
+          "endedAt": "2026-10-23T19:40:27.298Z",
+          "status": "sealed",
+          "verifiedFiles": 73,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 71,
+          "uniqueMessageIds": 18,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 36,
+            "cacheReadTokens": 1111132,
+            "cacheCreationTokens": 106003,
+            "outputTokens": 53729
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 42867,
+          "attemptElapsedMs": 403464,
+          "roundWallMs": 399472,
+          "cliDurationMs": 398264,
+          "apiDurationMs": 396486,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "4378750cb0fe22e349d57b6fe14e0ec18203d596b123de61c88fdb5a0b48414b",
+          "sealSha256": "f9e47bfd9bd1b2edc461c9b57db19485780f4da641e6fb5c4bf1ab98220cf48e",
+          "streamSha256": "7f7aca9b3991d748dafbcac2c7d18981aaa13c2e46901bd4b2460b1a4d7f10d7",
+          "streamBytes": 10377937
+        },
+        {
+          "attemptId": "8c3b19e0-d0ee-4420-a3d5-ff4db8db02cb",
+          "unit": "run-1/m402-definition",
+          "stage": "definition",
+          "task": "definition-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\evaluation\\run-1\\m402-definition\\attempts\\8c3b19e0-d0ee-4420-a3d5-ff4db8db02cb",
+          "startedAt": "2026-10-23T19:01:42.210Z",
+          "endedAt": "2026-10-23T19:07:05.971Z",
+          "status": "sealed",
+          "verifiedFiles": 66,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 44,
+          "uniqueMessageIds": 13,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 26,
+            "cacheReadTokens": 609857,
+            "cacheCreationTokens": 71228,
+            "outputTokens": 43998
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 33394,
+          "attemptElapsedMs": 323761,
+          "roundWallMs": 320989,
+          "cliDurationMs": 319946,
+          "apiDurationMs": 318931,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "14f201aff15ab84e771ba00ef71cca380e269817ce9ff001fc45fa7e0bcfe05b",
+          "sealSha256": "ca25e345082bf0fe0f57f8ca488b377a5b3b15c414c9cf8953261495ab388d80",
+          "streamSha256": "b069ebb85b4f483e68e845abae8c327122ff169e1c918d421f8868a036d6241b",
+          "streamBytes": 4545863
+        },
+        {
+          "attemptId": "983acecc-3718-493b-bdb6-a4511fdc626a",
+          "unit": "run-1/m402-revision",
+          "stage": "revision",
+          "task": "template-revision",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\evaluation\\run-1\\m402-revision\\attempts\\983acecc-3718-493b-bdb6-a4511fdc626a",
+          "startedAt": "2026-10-23T19:20:40.922Z",
+          "endedAt": "2026-10-23T19:23:31.220Z",
+          "status": "sealed",
+          "verifiedFiles": 104,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 63,
+          "uniqueMessageIds": 23,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 46,
+            "cacheReadTokens": 1269678,
+            "cacheCreationTokens": 77159,
+            "outputTokens": 29917
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 16658,
+          "attemptElapsedMs": 170298,
+          "roundWallMs": 167448,
+          "cliDurationMs": 165865,
+          "apiDurationMs": 162879,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "cbc5a8a983a5ab559c236bb4287b6939cb18dee6aa1018e33b00731d8a2ff140",
+          "sealSha256": "32709459e2a91e34ae5583a5179fac7d951ae3cb0059b73d49d1805cc049e737",
+          "streamSha256": "dd3f49d30db08ed881270211b20f300b1ac0adf7beee36b955b194c67b5b571e",
+          "streamBytes": 1446669
+        },
+        {
+          "attemptId": "a7c709c4-e52f-45e2-8e3c-0dc080712634",
+          "unit": "run-1/m402-template",
+          "stage": "template",
+          "task": "template-design",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\evaluation\\run-1\\m402-template\\attempts\\a7c709c4-e52f-45e2-8e3c-0dc080712634",
+          "startedAt": "2026-10-23T19:07:08.832Z",
+          "endedAt": "2026-10-23T19:20:36.891Z",
+          "status": "sealed",
+          "verifiedFiles": 108,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 90,
+          "uniqueMessageIds": 28,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 56,
+            "cacheReadTokens": 2460777,
+            "cacheCreationTokens": 133550,
+            "outputTokens": 83642
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 55504,
+          "attemptElapsedMs": 808059,
+          "roundWallMs": 805222,
+          "cliDurationMs": 803868,
+          "apiDurationMs": 801007,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "f2a445c612ce231830080d92348783032eb36a1d942d8391baf4d9ff6b443df7",
+          "sealSha256": "89f9fba0f0f0e3b3bda6981011732a4ae76dc7d8032a94425d71b21e36d7e081",
+          "streamSha256": "70df6b7f97f85a0231fa8f122cbec463a9d0d63589c65562d4eb118cee2602f9",
+          "streamBytes": 5246022
+        }
+      ],
+      "reports": [
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-3\\reports\\2026-10-23-harness-original38-candidate-3.json",
+          "sha256": "4bd6668b0ae8d212aa6397d4eb63a4358144e2dbb1e3fe50b9e717e3b0d19716",
+          "attempts": 5,
+          "comparedSealedAttempts": 5,
+          "mechanismRealModelObservations": 0,
+          "totals": {
+            "wallMs": 2295543,
+            "inputTokens": 204,
+            "outputTokens": 262057,
+            "thinkingTokens": 184831,
+            "cacheReadTokens": 6518446,
+            "cacheCreationTokens": 475382,
+            "toolCalls": 128,
+            "persistedResults": 0,
+            "unknownUsageAttempts": 0,
+            "unknownByMetric": {
+              "inputTokens": 0,
+              "outputTokens": 0,
+              "thinkingTokens": 0,
+              "cacheReadTokens": 0,
+              "cacheCreationTokens": 0,
+              "toolCalls": 0,
+              "persistedResults": 0,
+              "wallMs": 0
+            },
+            "usageComplete": true,
+            "legacyHistoryUnknown": false
+          },
+          "timing": {
+            "sessions": 1,
+            "incompleteSessions": 0,
+            "actualWallMs": 2330901,
+            "knownWallMs": 2330901,
+            "attemptsElapsedMs": 2310931,
+            "unknownAttemptDurations": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "ticket21",
+      "root": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-3/observations",
+      "experiment": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "manifestSha256": "c11cf047d5110b9d60e4b20454a9e716e5f22c2f63de96c73b025dd309d7f556",
+      "plannedObservations": 16,
+      "plannedModelStages": 16,
+      "attemptsAtSnapshot": 8,
+      "sealedAttempts": 8,
+      "pendingAttempts": 0,
+      "notStartedStages": 8,
+      "totals": {
+        "inputTokens": {
+          "sealedKnown": 162,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "cacheReadTokens": {
+          "sealedKnown": 3788695,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "cacheCreationTokens": {
+          "sealedKnown": 509088,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        },
+        "outputTokens": {
+          "sealedKnown": 68750,
+          "sealedUnknown": 0,
+          "pendingKnown": 0,
+          "pendingUnknown": 0
+        }
+      },
+      "timing": {
+        "segments": 1,
+        "incompleteSegments": 0,
+        "actualWallMs": 672755,
+        "knownCompletedSegmentsWallMs": 672755,
+        "knownSealedAttemptElapsedMs": 630314,
+        "unknownSealedAttemptDurations": 0,
+        "knownSealedRoundWallMs": 602750
+      },
+      "segments": [
+        {
+          "file": "7c0efe95-ebf2-4409-9fec-ea600041167c.started.json",
+          "startedAt": "2026-10-23T19:01:21.173Z",
+          "endedAt": "2026-10-23T19:12:33.928Z",
+          "first": 1,
+          "last": 1,
+          "jobs": 1,
+          "status": "complete",
+          "elapsedMs": 672755,
+          "startSha256": "57a5280c5b87ff121c81cf6f712eaec27c56b17f7a6929c11a4d6d7cc5e60394",
+          "endSha256": "ac1d90125548ae521c0e62a482099d2d9443898aa9a3f3d9be88fde0be9f7699"
+        }
+      ],
+      "attempts": [
+        {
+          "attemptId": "7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4",
+          "unit": "run-1/en-dataset-extraction",
+          "stage": "feedback",
+          "task": "dataset-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-dataset-extraction\\attempts\\7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4",
+          "startedAt": "2026-10-23T19:08:49.591Z",
+          "endedAt": "2026-10-23T19:09:39.947Z",
+          "status": "sealed",
+          "verifiedFiles": 72,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 32,
+          "uniqueMessageIds": 10,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 20,
+            "cacheReadTokens": 215816,
+            "cacheCreationTokens": 31853,
+            "outputTokens": 6693
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 3213,
+          "attemptElapsedMs": 50356,
+          "roundWallMs": 47478,
+          "cliDurationMs": 46460,
+          "apiDurationMs": 45983,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "17f37d25ad1f8c7b2ec7c948cef407e934c9ffdb54e9ed1168a84881cdb70372",
+          "sealSha256": "f1f77e6c78d50c9598a0cff3d90bb52d8e8179b91f3dc6651473b1ae667ba44f",
+          "streamSha256": "7da0d113bcc5374ea76d85916223409db2b77ff82b331a69f4130fee589a21d9",
+          "streamBytes": 354705
+        },
+        {
+          "attemptId": "95485d7c-0a42-45d8-b4e2-d582f310971c",
+          "unit": "run-1/en-definition-extraction",
+          "stage": "feedback",
+          "task": "definition-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-definition-extraction\\attempts\\95485d7c-0a42-45d8-b4e2-d582f310971c",
+          "startedAt": "2026-10-23T19:07:50.017Z",
+          "endedAt": "2026-10-23T19:08:44.949Z",
+          "status": "sealed",
+          "verifiedFiles": 66,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 20,
+          "uniqueMessageIds": 6,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 12,
+            "cacheReadTokens": 110524,
+            "cacheCreationTokens": 26730,
+            "outputTokens": 8644
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 5548,
+          "attemptElapsedMs": 54932,
+          "roundWallMs": 52040,
+          "cliDurationMs": 51010,
+          "apiDurationMs": 50394,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "75879a8e6c27a63548995cdae994f542db1fddb388f265f0418272fe74500fb8",
+          "sealSha256": "5f3d1e059743108801768d0072f077030a3e713be4237dbd99bc44a7bed8623b",
+          "streamSha256": "faa82a0b0e9ad8cbdf35ee02036fc4d8a31940def11aecc61d693096a7dba8b7",
+          "streamBytes": 664592
+        },
+        {
+          "attemptId": "57099484-e529-4726-9e42-12f850bc03a3",
+          "unit": "run-1/en-template-design",
+          "stage": "feedback",
+          "task": "template-design",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-template-design\\attempts\\57099484-e529-4726-9e42-12f850bc03a3",
+          "startedAt": "2026-10-23T19:09:44.691Z",
+          "endedAt": "2026-10-23T19:11:03.102Z",
+          "status": "sealed",
+          "verifiedFiles": 80,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 37,
+          "uniqueMessageIds": 11,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 22,
+            "cacheReadTokens": 646871,
+            "cacheCreationTokens": 88735,
+            "outputTokens": 7434
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 3997,
+          "attemptElapsedMs": 78411,
+          "roundWallMs": 74433,
+          "cliDurationMs": 73303,
+          "apiDurationMs": 71484,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "8d079e4f452d5c4e868c10f4a015c3bf59e6548fabee1266459b5158ba5db36b",
+          "sealSha256": "37fc4dba24b1e903aa452a27fdd5bfe426133985d655ccd45a1ac8384deffafe",
+          "streamSha256": "d471da7b7cc6eba1fb91ba1a945bd510034078dcc65b4942188d792f43c718e3",
+          "streamBytes": 2455375
+        },
+        {
+          "attemptId": "0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e",
+          "unit": "run-1/en-template-revision",
+          "stage": "feedback",
+          "task": "template-revision",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-template-revision\\attempts\\0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e",
+          "startedAt": "2026-10-23T19:11:07.983Z",
+          "endedAt": "2026-10-23T19:12:33.626Z",
+          "status": "sealed",
+          "verifiedFiles": 86,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 45,
+          "uniqueMessageIds": 13,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 26,
+            "cacheReadTokens": 827283,
+            "cacheCreationTokens": 95112,
+            "outputTokens": 9469
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 4312,
+          "attemptElapsedMs": 85643,
+          "roundWallMs": 82648,
+          "cliDurationMs": 81530,
+          "apiDurationMs": 79334,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "fd1538730de1c7122f05d21c12cffb742bef92e1a0b124ba4404de70e0468cf2",
+          "sealSha256": "6c822b300227ec6e7f4beaea8e0abdf474dc21240b50f7d865d9f5f80235c4a3",
+          "streamSha256": "ce5eec9d8508e09f22eee18056e11b857499707ab910d0060e0a55e39a9d36c1",
+          "streamBytes": 2492645
+        },
+        {
+          "attemptId": "8f2a1c25-c616-4143-a22a-e4ddbecdc021",
+          "unit": "run-1/zh-dataset-extraction",
+          "stage": "feedback",
+          "task": "dataset-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-dataset-extraction\\attempts\\8f2a1c25-c616-4143-a22a-e4ddbecdc021",
+          "startedAt": "2026-10-23T19:02:15.879Z",
+          "endedAt": "2026-10-23T19:03:24.558Z",
+          "status": "sealed",
+          "verifiedFiles": 72,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 33,
+          "uniqueMessageIds": 8,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 16,
+            "cacheReadTokens": 174754,
+            "cacheCreationTokens": 32730,
+            "outputTokens": 6445
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 3765,
+          "attemptElapsedMs": 68679,
+          "roundWallMs": 65750,
+          "cliDurationMs": 64682,
+          "apiDurationMs": 64023,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "db71c91389083fec3ccd72531a62673205af3f9a74b21af50d3f9589ff87acf0",
+          "sealSha256": "6c12f53e9de4b84b3e79e3bd13ef313b644291719b20e91eac0cb8c2b7f7851b",
+          "streamSha256": "c8cd498043eceb73cfd73d73aee3d8ac6a1a1eb945150ace74fd3caa4c73cecb",
+          "streamBytes": 750353
+        },
+        {
+          "attemptId": "5b378e01-ea6f-4645-8f60-c451d87180cc",
+          "unit": "run-1/zh-definition-extraction",
+          "stage": "feedback",
+          "task": "definition-extraction",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-definition-extraction\\attempts\\5b378e01-ea6f-4645-8f60-c451d87180cc",
+          "startedAt": "2026-10-23T19:01:29.911Z",
+          "endedAt": "2026-10-23T19:02:11.201Z",
+          "status": "sealed",
+          "verifiedFiles": 66,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 23,
+          "uniqueMessageIds": 7,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 14,
+            "cacheReadTokens": 125099,
+            "cacheCreationTokens": 28801,
+            "outputTokens": 5619
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 2489,
+          "attemptElapsedMs": 41290,
+          "roundWallMs": 38434,
+          "cliDurationMs": 37341,
+          "apiDurationMs": 36990,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "c5e2a8326f3cb43658e6e2f3a6a62f5026c24c6dd6aa32e6ed9b67373ec42115",
+          "sealSha256": "8840da8f8bb89696920ed5762c0b81b6526525754d9ab771908418f47b1b5ca8",
+          "streamSha256": "cfb2d393ef46f3e77daa32986894a576a5e102cb8484c85c8605534e207df070",
+          "streamBytes": 124345
+        },
+        {
+          "attemptId": "ef3615ed-e21f-4151-8607-ac29f15fe731",
+          "unit": "run-1/zh-template-design",
+          "stage": "feedback",
+          "task": "template-design",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-template-design\\attempts\\ef3615ed-e21f-4151-8607-ac29f15fe731",
+          "startedAt": "2026-10-23T19:03:29.226Z",
+          "endedAt": "2026-10-23T19:05:50.529Z",
+          "status": "sealed",
+          "verifiedFiles": 80,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 49,
+          "uniqueMessageIds": 14,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 28,
+            "cacheReadTokens": 932583,
+            "cacheCreationTokens": 115306,
+            "outputTokens": 15338
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 8638,
+          "attemptElapsedMs": 141303,
+          "roundWallMs": 135270,
+          "cliDurationMs": 134154,
+          "apiDurationMs": 131682,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "adc1527df69e62c6f87e718827ff8be0626a94dd1447a5269c3537218e0c83bf",
+          "sealSha256": "ca765204eab3db72542b330d7a62eb41db1761cc27a7b09b4e856eeec62b7079",
+          "streamSha256": "04a7eb122ad39b6f9b9cd6a4e30bdd4f41d7851de2652e52b4fd48d0f3612842",
+          "streamBytes": 3885884
+        },
+        {
+          "attemptId": "1471e382-3000-4878-9828-68e3c6f5bc72",
+          "unit": "run-1/zh-template-revision",
+          "stage": "feedback",
+          "task": "template-revision",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-template-revision\\attempts\\1471e382-3000-4878-9828-68e3c6f5bc72",
+          "startedAt": "2026-10-23T19:05:55.535Z",
+          "endedAt": "2026-10-23T19:07:45.235Z",
+          "status": "sealed",
+          "verifiedFiles": 86,
+          "sourceStatus": "observed-native-cli-response",
+          "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+          "observedCliVersions": [
+            "2.1.296"
+          ],
+          "initializationModels": [
+            "claude-haiku-5-5"
+          ],
+          "responseMessageModels": [
+            "claude-haiku-5-5"
+          ],
+          "resultModels": [
+            "claude-haiku-5-5"
+          ],
+          "assistantEvents": 42,
+          "uniqueMessageIds": 12,
+          "resultEvents": 1,
+          "partialTrailingLine": false,
+          "usageStatus": "complete-result",
+          "usage": {
+            "inputTokens": 24,
+            "cacheReadTokens": 755765,
+            "cacheCreationTokens": 89821,
+            "outputTokens": 9108
+          },
+          "usageSources": {
+            "inputTokens": "result",
+            "cacheReadTokens": "result",
+            "cacheCreationTokens": "result",
+            "outputTokens": "result"
+          },
+          "thinkingTokens": 3480,
+          "attemptElapsedMs": 109700,
+          "roundWallMs": 106697,
+          "cliDurationMs": 105583,
+          "apiDurationMs": 103208,
+          "exitCode": 0,
+          "endedBy": "success",
+          "stopped": null,
+          "hasRunError": false,
+          "providerRevision": null,
+          "monetaryCost": null,
+          "startedSha256": "540445283728a7a95ec1042c4776085bd6041f2591dcc64132c4e2efd346f39f",
+          "sealSha256": "498e969e2d62cd37549a23a4e17f0bb6919b6435c53513043a781f6a7e6b4ae0",
+          "streamSha256": "901472a2df2fad8e1cff94f58ed1375706c168092b0d574c2a5acac2b19d8e20",
+          "streamBytes": 3222238
+        }
+      ],
+      "reports": [
+        {
+          "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\reports\\harness21-candidate-3.json",
+          "sha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47",
+          "attempts": 8,
+          "comparedSealedAttempts": 8,
+          "mechanismRealModelObservations": 0,
+          "totals": {
+            "wallMs": 602750,
+            "inputTokens": 162,
+            "outputTokens": 68750,
+            "thinkingTokens": 35442,
+            "cacheReadTokens": 3788695,
+            "cacheCreationTokens": 509088,
+            "toolCalls": 62,
+            "persistedResults": 0,
+            "unknownUsageAttempts": 0,
+            "unknownByMetric": {
+              "inputTokens": 0,
+              "outputTokens": 0,
+              "thinkingTokens": 0,
+              "cacheReadTokens": 0,
+              "cacheCreationTokens": 0,
+              "toolCalls": 0,
+              "persistedResults": 0,
+              "wallMs": 0
+            },
+            "usageComplete": true,
+            "legacyHistoryUnknown": false
+          },
+          "timing": {
+            "sessions": 1,
+            "incompleteSessions": 0,
+            "actualWallMs": 672755,
+            "knownWallMs": 672755,
+            "attemptsElapsedMs": 630314,
+            "unknownAttemptDurations": 0
+          }
+        }
+      ]
+    }
+  ],
+  "checks": 299,
+  "issues": [],
+  "limitations": [
+    "单次读取快照，运行中的result/用量/完整封存与墙钟明确pending；不持续轮询。",
+    "只从唯一attempt原件计数，不重复计兼容阶段视图或多份累计报告。",
+    "本地原生CLI、固定endpoint配置及响应消息模型证明可观测来源，不是远端提供方签名认证；providerRevision未知。",
+    "四类token分别记账，thinking仅为output子集，不重复相加；CLI list-price估算不当作实际账单，人工分钟未知。",
+    "不调用模型，不读取环境变量或密钥配置，不改候选、旧结果或运行目录。"
+  ]
+}
