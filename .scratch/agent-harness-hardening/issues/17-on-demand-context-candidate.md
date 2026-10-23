@@ -4,7 +4,7 @@
 
 **Blocked by:** 14
 
-**Status:** resolved
+**Status:** ready-for-agent
 
 **Trace:** [父规格](../spec.md) H6、D15–D16；US58–59；A18 的资料策略候选、自动指针检查和配对输入准备子项。配对实跑与收益判定归票据 18。
 
@@ -46,3 +46,14 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 - 主集成 `npm run build`、`npm run typecheck` 通过。
 - `node node_modules/vitest/vitest.mjs run test/agent-context-policy.test.ts -t '显式按需|真实MCP的问题|合法超长|公开参考服务' --maxWorkers=1`：4 项通过、4 项未选取，8.47 秒。复核默认入口、同身份续页、合法长区域名称首响应和会话参考固定。
 - 合同保留 0.16.0，CONTEXT 同步阶段与能力。未重复双平台全量，分支最终 Windows 62 项及 Linux 40 项的证据保留在上文；两份用户既有未跟踪评估报告原字节未改。
+
+
+### 首轮正式派发前的来源路径修复（2026-10-23）
+
+本票重新打开：候选1的 `contextPolicy.sources` 将 `agent/README.md`、`agent/tasks/...`、`agent/reference/...` 写成缺首字符的路径。根因是资料目录保留尾分隔符，`materialHashes` 通过目录字符串长度截取时多删一个字符。此前验收只检查身份变化，未核对来源键能否直接定位真实文件，因此没有发现此缺口。
+
+只读逐字节核查候选1和两份计划绑定：15份实际Agent材料映射到15个键，无覆盖或遗漏；七份公开参考/Schema内容完整，`identity.materials` 与候选共同内容清单均按正确路径完整覆盖。候选1仍是零模型观测准备包；修复不改它、票18的32次观测、既有报告或归档。资料来源实现归本票，后续候选2冻结与新计划绑定归票20。
+
+公开评估CLI经受控Agent执行器新增full/on-demand两例：读取 `eval.json` 与轮次provenance，要求来源路径保留真实文件名，完整材料集合一致，并按每个路径读回实际字节核对摘要。修复前两例均因缺首字符失败，日志 `F:/GenCode/render-weave/out/harness-context-source-fix/windows-red.log`；改用平台标准相对路径后两例均通过，日志 `windows-green.log`。不导入私有身份函数，不调用真实模型。
+
+修复后保留原身份格式、MCP合同、默认full、模型和effort；来源键与源码/构建字节改变会自然产生新身份。双平台相关回归完成后在本节记录最终结果，再关闭本票。
