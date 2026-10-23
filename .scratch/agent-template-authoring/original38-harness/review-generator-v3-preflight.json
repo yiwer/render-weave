@@ -1,0 +1,40 @@
+{
+  "format": "original38-review-generator-preflight/1",
+  "at": "2026-10-23T20:21:25.284Z",
+  "package": "F:/GenCode/render-weave/out/harness-original38-review/zh-generator-candidate4-preflight-01",
+  "manifestSha256": "f2afe0ae813f7566d8c576adab1a9e4a981b7666464b6d2c4683260f09461db3",
+  "generatorSha256": "f4154b41939a836b826d92e2d90fe07d4e50e239b8480f30c3e3196909584de1",
+  "scopeSha256": "6f268d9740483b005309a4d03379c79d0facfd06a7c33cb683f8691aa81b4f2c",
+  "preflight": true,
+  "candidate": null,
+  "sourceFiles": 106,
+  "sourceDirectories": 26,
+  "originalRoundUnchanged": true,
+  "copyUnchangedAfterPublicRead": true,
+  "publicReadOptions": {
+    "persistArtifacts": false
+  },
+  "actualImage": {
+    "dpi": 50,
+    "widthPx": 1457,
+    "heightPx": 325
+  },
+  "previewImage": {
+    "source": "separate-public-render",
+    "dpi": 120,
+    "widthPx": 3496,
+    "heightPx": 780
+  },
+  "layoutInventory": {
+    "nodes": 296,
+    "textNodes": 86
+  },
+  "humanReview": null,
+  "modelCalls": 0,
+  "initialRefusal": {
+    "cause": "scope父目录是out，输出保护拒绝包含关系",
+    "outputDirectoryCreated": false,
+    "guardChanged": false
+  },
+  "exitCode": 0
+}
