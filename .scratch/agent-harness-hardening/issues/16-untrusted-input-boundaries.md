@@ -29,3 +29,5 @@
 - Windows：`npm run typecheck`、`npm run build` 通过。显式设置 `RW_TRUST_CLAUDE_EXE` 后，`npx vitest run test/agent-trust-boundary.test.ts test/agent-trust-sources-cli.test.ts test/agent-budgets.test.ts test/agent.test.ts test/agent-checkpoint.test.ts --maxWorkers=1`：5 文件 **71 通过、1 跳过**；跳过为 Windows 不支持的 POSIX SIGTERM 用例，不是权限用例。
 - Linux Node 22.23.3 本机容器：重新 build 后运行 `test/agent-trust-boundary.test.ts test/agent.test.ts test/mcp.test.ts --maxWorkers=1`：3 文件 **68 通过、2 跳过**。跳过项要求真实 Claude 可执行文件，该 Linux 环境未安装；不能据此声称 Linux 原生执行器权限已验证。运行时限联动使用票据10稳定实现 9fe992d；最终跨平台冻结仍由20执行。
 - 受控模型协议夹具只使用隔离测试凭据，工具调用由真实执行器完成；没有读取或外发真实 key，没有调用远端模型，没有使用12例留出素材。精确脱敏不保证任意未知秘密或任意编码；本地工具限制不声称操作系统、同账号恶意进程或跨租户隔离。阶段5权限边界保持既有决定。
+
+集成复核：固定点 `9fe992d`，按编码约定与本票验收分别检查，无确认的规范违反或规格缺项。集成者在 Windows 独立提供真实 Claude 路径，重跑 `test/agent-trust-boundary.test.ts` 与 `test/agent-trust-sources-cli.test.ts --maxWorkers=1`，**12/12 通过**；类型检查与构建通过。合入同时带入票10稳定监督层，票10的最终全量验收仍由该票单独记录。

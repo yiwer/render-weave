@@ -16,14 +16,18 @@ async function waitJson(file:string):Promise<any> {
   throw new Error(`未收到公开结果：${file}`);
 }
 async function stop(child:ChildProcess){
-  if(!child.pid||child.exitCode!==null)return;
+  if(!child.pid||child.exitCode!==null||child.signalCode!==null)return;
   if(process.platform==='win32'){const task=spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});await once(task,'close');}
   else {
-    const out=child.spawnargs[child.spawnargs.indexOf('--out')+1];let executor:number|undefined;
-    try{const state=JSON.parse(await readFile(join(out!,'execution.json'),'utf8'));if(state.owner?.pid===child.pid&&!state.executorExited&&Number.isSafeInteger(state.executorPid)&&state.executorPid>1)executor=state.executorPid;}catch{}
-    if(executor)try{process.kill(-executor,'SIGKILL');}catch{}
+    const out=child.spawnargs[child.spawnargs.indexOf('--out')+1];let executor:number|undefined,host:number|undefined;
+    try{
+      const state=JSON.parse(await readFile(join(out!,'execution.json'),'utf8'));
+      if(state.owner?.supervisorPid===child.pid&&Number.isSafeInteger(state.owner.pid)&&state.owner.pid>1)host=state.owner.pid;
+      else if(state.owner?.pid===child.pid&&!state.executorExited&&Number.isSafeInteger(state.executorPid)&&state.executorPid>1)executor=state.executorPid;
+    }catch{}
+    for(const pid of [host,executor])if(pid)try{process.kill(-pid,'SIGKILL');}catch{}
     try{process.kill(-child.pid,'SIGKILL');}catch{child.kill('SIGKILL');}
-    if(executor)for(let i=0;i<100;i++){try{process.kill(executor,0);}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')break;}await new Promise(done=>setTimeout(done,20));}
+    for(const pid of [host,executor])if(pid)for(let i=0;i<100;i++){try{process.kill(pid,0);}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')break;}await new Promise(done=>setTimeout(done,20));}
   }
 }
 const definition=(fields:string[])=>({dslVersion:'renderweave-schema/1',name:'线路',fields:fields.map(name=>({name,displayName:name,type:'text'}))});
@@ -266,3 +270,4 @@ it('同一工作区选择了不同定义版本时不能跨依据排序',async()=
     expect(compared.candidateComparison?.comparison).toMatchObject({status:'incomparable',reasons:expect.arrayContaining(['比较依据不同：workspace'])});
   }finally{for(const job of jobs){await stop(job.child);await job.closed;}}
 });
+
