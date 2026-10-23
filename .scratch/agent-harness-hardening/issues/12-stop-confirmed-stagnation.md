@@ -33,3 +33,5 @@
 - 相关九文件前序回归执行了停滞、预算、检查点、候选选择、执行状态、实验身份、资料策略、MCP 与 Agent：163 项通过、3 项失败、1 项原有跳过。三个失败分别为新增接续用例误用源码入口与两处旧精确断言未包含票 17 字段，均改为既有编译后 CLI 接缝/当前合同，并在上述双平台用例中通过；未无故重复已通过文件。
 
 完整最终命令、输出及环境事故记录保存在仓库外 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-12-final-validation.md` 及同目录三个 `harness-12-final-*.log`。只读 Standards/Spec 审查由集成方完成，打印续跑遗漏已补公开红绿。真实模型调用为 0，质量收益由 18/21/38 等统一活动验证；本票没有偏离验收范围。
+
+集成复核（2026-10-23）：非压缩合并提交 `9ba2c31`；复核最终三个日志摘要与登记一致，续跑旗标、离线互斥及缺少写入事件的周期重置修复均保留。主线 `npm run typecheck`、`npm run build` 通过；`node node_modules/vitest/vitest.mjs run test/agent-stagnation.test.ts test/agent-eval-identity.test.ts -t '核准必修问题在两次|最后自检后只重复|缺少完整写入|停滞阈值进入|离线业务核查' --maxWorkers=1` 的 5 项通过、37 项未选择（33.92 秒）。覆盖停止与新轮次接续、正常交回、不足证据重置、非默认阈值实际续跑及离线互斥，未发现遗留的确定阻塞项。
