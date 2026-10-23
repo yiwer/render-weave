@@ -135,17 +135,20 @@ it('工作目录重新构建或修改资料不会改变已冻结包，当前内�
   const command=(args:string[])=>execute([join(cwd,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args],cwd);
   const created=await command(['--out',out]);
   expect(created.code,created.stderr).toBe(0);
-  const source='agent/reference/outcome.md',build='dist/bin.js';
-  const original=await readFile(join(out,'content',source));
+  const source='agent/reference/outcome.md',build='dist/bin.js',page='web/review.html';
+  const original=await readFile(join(out,'content',source)),originalPage=await readFile(join(out,'content',page));
   await writeFile(join(cwd,source),'已修改的工作资料');
   await writeFile(join(cwd,build),(await readFile(join(cwd,build),'utf8'))+'\n// 本地重新构建\n');
+  await writeFile(join(cwd,page),'已修改的本地审核页');
   expect(await readFile(join(out,'content',source))).toEqual(original);
+  expect(await readFile(join(out,'content',page))).toEqual(originalPage);
   const saved=await command(['--verify',out]);
   expect(saved.code,saved.stderr).toBe(0);
   const changed=await command(['--verify',out,'--current']);
   expect(changed.code).toBe(2);
   expect(changed.stderr).toContain(source);
   expect(changed.stderr).toContain(build);
+  expect(changed.stderr).toContain(page);
 },120000);
 it('冻结后修改资料产生新候选身份，并从旧计划明确列出必须重验的全部单元',async()=>{
   const working=join(root,'revision-working'),old=join(root,'revision-old'),next=join(root,'revision-next');
@@ -234,4 +237,21 @@ if(process.argv.includes('--version'))console.log('candidate-test-executor/1');e
   const linked=await run('linked-resource');
   expect(linked.code).toBe(2);expect(linked.stderr).toContain('绑定资源');
   expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+},120000);
+
+it('冻结包独立提供公开审核页，页面字节纳入身份且改动拒绝验证',async()=>{
+  const out=join(root,'review-page-package');
+  const frozen=await freeze(['--out',out]);expect(frozen.code,frozen.stderr).toBe(0);
+  const cwd=join(out,'content');
+  const probe=await execute(['--input-type=module','-e',
+    "import {createHash} from 'node:crypto';import {startReviewServer} from './dist/index.js';const server=await startReviewServer({roundDir:'.'});try{const response=await fetch(server.url);const bytes=Buffer.from(await response.arrayBuffer());console.log(JSON.stringify({status:response.status,type:response.headers.get('content-type'),sha256:'sha256:'+createHash('sha256').update(bytes).digest('hex')}));}finally{await server.close();}"],cwd);
+  expect(probe.code,probe.stderr).toBe(0);
+  const expected='sha256:'+createHash('sha256').update(await readFile(join(repoRoot,'web/review.html'))).digest('hex');
+  expect(JSON.parse(probe.stdout)).toMatchObject({status:200,type:'text/html; charset=utf-8',sha256:expected});
+  const manifest=JSON.parse(await readFile(join(out,'candidate.json'),'utf8'));
+  expect(manifest.identity.files['web/review.html']).toBe(expected);
+  expect((await freeze(['--verify',out])).code).toBe(0);
+  await writeFile(join(cwd,'web/review.html'),'审核页已变动');
+  const changed=await freeze(['--verify',out]);
+  expect(changed.code).toBe(2);expect(changed.stderr).toContain('web/review.html');
 },120000);

@@ -106,10 +106,10 @@ export interface TranscriptionAlignment {
   readonly candidateName?: string; readonly truthName?: string;
 }
 const TRANSCRIPTION_SCORER = {
-  version: 'renderweave-transcription/2',
+  version: 'renderweave-transcription/3',
   matchingPolicy: { id: 'ordered-occurrences/1', exact: 0, singleCharacterEdit: 1, otherSubstitution: 2, insertion: 1, omission: 1,
     nameNormalization: 'trim-trailing-circled-digit', tieBreak: 'diagonal-insertion-omission-for-diagnostics-only',
-    surplusExactName: 'never-single-character-tolerance', reorder: 'exact-occurrence-links-before-residual-edits', annotations: 'compare-only-after-name-alignment', ambiguity: 'all-optimal-correspondences-require-review' },
+    surplusExactName: 'never-single-character-tolerance', reorder: 'exact-occurrence-links-before-residual-edits', annotations: 'compare-only-after-name-alignment', landmarkReferences: 'all-occurrences-multiset', ambiguity: 'all-optimal-correspondences-require-review' },
 } as const;
 interface AlignmentAmbiguity {
   readonly candidatePosition?: number; readonly truthPosition?: number;
@@ -191,10 +191,10 @@ export function scoreTranscription(stops: readonly Record<string, unknown>[], tr
   }));
   const substitutions = alignment.filter((entry) => entry.kind === 'substitution').map((entry) => ({ candidatePosition: entry.candidatePosition!, truthPosition: entry.truthPosition!, candidateName: entry.candidateName!, truthName: entry.truthName! }));
   const omissions = alignment.filter((entry) => entry.kind === 'omission').map((entry) => ({ truthPosition: entry.truthPosition!, truthName: entry.truthName! }));
-  const landmarkOf = (stop: Record<string, unknown> | undefined) => {
-    const match = Object.values(stop ?? {}).map(String).join(' ').match(/res:landmark-(\d+)/);
-    return match ? Number(match[1]) : undefined;
-  };
+  const landmarksOf = (value: unknown): number[] => typeof value === 'string'
+    ? [...value.matchAll(/res:landmark-(\d+)/g)].map(match => Number(match[1]))
+    : Array.isArray(value) ? value.flatMap(landmarksOf)
+      : isRecord(value) ? Object.values(value).flatMap(landmarksOf) : [];
   const facility = (value: string) => FACILITY_NAMES.find(([pattern]) => pattern.test(value))?.[1] ?? value;
   const facilitiesOf = (stop: Record<string, unknown> | undefined) => Object.values(stop ?? {})
     .filter((value): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string' && !item.startsWith('res:')))
@@ -206,10 +206,13 @@ export function scoreTranscription(stops: readonly Record<string, unknown>[], tr
     const expected = row.truthPosition === undefined ? undefined : truth[row.truthPosition - 1];
     const actual = row.candidatePosition === undefined ? undefined : stops[row.candidatePosition - 1];
     const position = { candidatePosition: row.candidatePosition, truthPosition: row.truthPosition };
-    const mark = landmarkOf(actual);
-    if (expected?.landmark !== undefined && mark === expected.landmark) landmarkMatched++;
-    if (expected?.landmark !== undefined && mark !== expected.landmark) landmarkMissing.push({ ...position, value: expected.landmark });
-    if (mark !== undefined && mark !== expected?.landmark) landmarkExtra.push({ ...position, value: mark });
+    const marks = landmarksOf(actual);
+    if (expected?.landmark !== undefined) {
+      const index = marks.indexOf(expected.landmark);
+      if (index < 0) landmarkMissing.push({ ...position, value: expected.landmark });
+      else { landmarkMatched++; marks.splice(index, 1); }
+    }
+    landmarkExtra.push(...marks.map(value => ({ ...position, value })));
     const wanted = [...(expected?.facilities ?? [])].map(facility).sort(), got = facilitiesOf(actual);
     if (wanted.length > 0 && wanted.join('+') === got.join('+')) facilityMatched++;
     // 多重集合：多报同一设施不能被集合去重吞掉。

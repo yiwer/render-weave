@@ -4,7 +4,7 @@
 
 **Blocked by:** 无
 
-**Status:** resolved
+**Status:** ready-for-agent
 
 **Trace:** [父规格](../spec.md) H1、D05；US05–06；A03 的六类反事实及修改范围验证。
 

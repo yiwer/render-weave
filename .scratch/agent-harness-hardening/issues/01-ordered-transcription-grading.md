@@ -4,7 +4,7 @@
 
 **Blocked by:** 无
 
-**Status:** resolved
+**Status:** ready-for-agent
 
 **Trace:** [父规格](../spec.md) H1、D04；US02–04、US08；A01、A02。
 

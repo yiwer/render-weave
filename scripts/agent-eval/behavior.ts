@@ -154,13 +154,14 @@ function nodesOf(result: RenderResult, includeHidden = false): LayoutNode[] {
 function measure(fact: Fact, result: RenderResult): FactResult {
   if (fact.kind === 'fit' && record(fact.expected) && [fact.expected.minFontSize, fact.expected.maxFontSize, fact.expected.minCompression].every((v) => Number.isFinite(v) && v > 0)) {
     const nodes = nodesOf(result).filter((n) => matchPath(fact.selector, n.path));
-    const actual = nodes.map((n) => { const trace = result.evidence?.nodes.find((e) => e.path === n.path); return { path: n.path, fontSizes: n.text?.fragments.map((f) => f.fontSize), compression: n.text?.compression, overflow: n.text?.overflow, ink: trace?.inkBounds, transformed: trace?.transformed }; });
-    const failed = !nodes.length || actual.some((n) => !n.fontSizes || n.fontSizes.some((s) => s < fact.expected.minFontSize || s > fact.expected.maxFontSize) || n.compression! < fact.expected.minCompression || n.overflow || n.ink && (n.ink.x < -0.01 || n.ink.y < -0.01 || n.ink.x + n.ink.width > result.layout!.output.width + 0.01 || n.ink.y + n.ink.height > result.layout!.output.height + 0.01));
+    const actual = nodes.map((n) => { const trace = result.evidence?.nodes.find((e) => e.path === n.path); return { path: n.path, fontSizes: n.text?.fragments.map((f) => f.fontSize), compression: n.text?.compression, overflow: n.text?.overflow, ink: trace?.inkBounds, transformed: trace?.transformed, visibility: trace?.visibility }; });
+    const invisible = actual.some((n) => n.visibility?.status === 'invisible');
+    const failed = invisible || !nodes.length || actual.some((n) => !n.fontSizes || n.fontSizes.some((s) => s < fact.expected.minFontSize || s > fact.expected.maxFontSize) || n.compression! < fact.expected.minCompression || n.overflow || n.ink && (n.ink.x < -0.01 || n.ink.y < -0.01 || n.ink.x + n.ink.width > result.layout!.output.width + 0.01 || n.ink.y + n.ink.height > result.layout!.output.height + 0.01));
     const all = nodesOf(result);
-    // 公共摘要无法判定后画元素的实际遮挡面积：有相交即留未知，不能仅凭文字墨迹在画板内放行。
+    // 已证实的完全不可见优先失败；其他后画元素相交仍留未知，不能仅凭墨迹在画板内放行。
     const overlapping = actual.some((n) => n.ink && all.slice(all.findIndex((a) => a.path === n.path) + 1).some((a) => !n.path.startsWith(`${a.path}/`) && !['artboard', 'container', 'loop', 'call'].includes(a.type) && a.x < n.ink!.x + n.ink!.width && a.x + a.width > n.ink!.x && a.y < n.ink!.y + n.ink!.height && a.y + a.height > n.ink!.y));
     const unknown = overlapping || actual.some((n) => !n.ink || n.transformed);
-    return { id: fact.id, kind: fact.kind, expected: fact.expected, actual, status: failed ? 'fail' : unknown ? 'notChecked' : 'pass', ...(unknown ? { reason: '可能遮挡、复杂变换或缺少墨迹证据，未核查适配可见性；需要核准像素事实' } : {}) };
+    return { id: fact.id, kind: fact.kind, expected: fact.expected, actual, status: failed ? 'fail' : unknown ? 'notChecked' : 'pass', ...(invisible ? { reason: '实际绘制证据已确认文字不可见，不满足适配要求' } : unknown ? { reason: '可能遮挡、复杂变换或缺少墨迹证据，未核查适配可见性；需要核准像素事实' } : {}) };
   }
   if (fact.kind === 'visibility' && typeof fact.expected === 'boolean') {
     const nodes = nodesOf(result, true).filter((n) => matchPath(fact.selector, n.path));
