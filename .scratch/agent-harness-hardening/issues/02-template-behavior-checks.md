@@ -37,3 +37,17 @@
 - 合入集成分支 `3e5148b`（含票据 01）并保留 `--config` 与 `--behavior-policy` 两个入口后，`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval-transcription.test.ts --maxWorkers=1`：2 文件、28 测试通过；类型检查通过。
 
 验收边界：本票完成离线判据校准；原十项压测仍只表示技术回归，不代表新业务语义全过。布局显示不等于最终像素可见；复杂变换或可能遮挡按未核查保留，需要核准像素或独立审核，自动遮挡扩展归票据 13。没有运行真实模型；统一候选冻结、模型业务证据及跨平台整体回归按后续票据执行。CONTEXT 由集成方统一更新。
+
+### 2026-10-23 冻结前审查缺口与重新验收
+
+冻结前两轴审查确认 `fit` 未消费票13已经提供的实际不可见证据：文字颜色为 `#E6001200` 仍得到 pass；相同全透明图片改用 `opacity: 0` 却只得到 notChecked。原闭合记录没有覆盖透明颜色假通过，且已有有限测量能力未用于本票适配事实。状态在 `a02329a` 重开为 ready-for-agent，本次修复及双平台回归完成后重新关闭。
+
+[公开 CLI 红测](../../../out/harness-prefreeze-fixes/fit-red.log)先观察到应退出 1 的全透明色实际退出 0；修复后 `fit` 对实际绘制证据已确认的完全透明、完全裁切或完全遮挡明确失败，并把原始 `visibility` 依据放进事实的 `actual`。布局 `texts`/`visibility` 两类事实的承诺范围不变。正常对象的 visibility unknown 不独自使字号、压缩及墨迹适配变成未核查；部分遮挡、半透明覆盖、部分裁切与复杂变换仍是未核查，不扩大到感知可读性。
+
+[透明色/透明度绿测](../../../out/harness-prefreeze-fixes/fit-green-02.log)与[完全及部分可见性边界](../../../out/harness-prefreeze-fixes/fit-boundaries.log)通过。首次绿测日志 `fit-green.log` 是测试部分对象匹配器写法失败，修正断言后复跑通过，原日志保留。正常前置矩形及80/160mm对照通过，过度缩字和出界反例仍失败。行为报告保持兼容的 `/1` 格式，新增证据字段；评分源码与冻结候选哈希改变，旧复现原件和旧报告未改。
+
+验证固定源码 `a02329a`（由集成 `d3661a3` 合入票20固定源码 `4f17dc3` 后修复，执行前再次合最新集成为 already up to date）：
+
+- Windows Node 24.12.0：`npm run build`、`npm run typecheck` 通过；`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval-transcription.test.ts test/agent-candidate-freeze.test.ts test/agent-visibility.test.ts test/agent-eval-identity.test.ts --maxWorkers=1`：5 文件 67 项全过，753.51 秒，退出 0。
+- Linux Node 22.23.3/npm 10.9.9：独立源码快照和镜像内独立依赖运行同一构建、类型检查及五文件回归，67 项全过，512.58 秒，退出 0。容器镜像 `renderweave-service-test:local`，启动脚本与快照清单保存于 `out/harness-prefreeze-fixes/linux-run.sh`、`linux-files.txt`。
+- 持久日志：[Windows 回归](../../../out/harness-prefreeze-fixes/windows-regression.log)、[Linux 回归](../../../out/harness-prefreeze-fixes/linux-regression.log)；同目录保留两平台 build/typecheck 日志及 Linux runtime。未运行真实模型，不替代20统一全量或后续业务验收。
