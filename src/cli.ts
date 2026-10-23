@@ -31,6 +31,7 @@ import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-rec
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
+import { localAccessProblem, withLocalAccess } from './local-access.js';
 import { AGENT_EFFORTS, AgentUsageError, DEFAULT_KEY_ENV, runAgentTask, type AgentEffort } from './agent/run.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
@@ -224,6 +225,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'template-revisions') return await runTemplateRevisions(options, io);
     return await runResources(command, options, io);
   } catch (error) {
+    const busy = localAccessProblem(error);
+    if (busy) { reportProblems([busy], io); return ExitCodes.failed; }
     io.stderr(`命令执行失败：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
@@ -238,8 +241,9 @@ async function runRecords(command: string, options: Record<string, string>, io: 
       if (options.options) renderOptions = JSON.parse(await readFile(options.options, 'utf8'));
       if (precision.length) throw new Error(`请求数值超过 15 位有效数字：${precision.join('、')}`);
     } catch (error) { io.stderr(`请求或选项无法读取：${describeError(error)}\n`); return ExitCodes.usage; }
-    const workspace = await loadWorkspaceDocuments(options.workspace!);
-    const opened = await openVersionedResourceStore(options.resources!);
+    const { workspace, opened } = await withLocalAccess([options.workspace!, options.resources!], async () => ({
+      workspace: await loadWorkspaceDocuments(options.workspace!), opened: await openVersionedResourceStore(options.resources!),
+    }));
     reportProblems(opened.problems, io);
     if (!opened.store) return ExitCodes.failed;
     const labels = { delivered: '已交付', previewed: '已预览', failed: '失败', notRun: '未执行' } as const;
@@ -595,28 +599,31 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
     return ExitCodes.usage;
   }
   // 发布只需要已发布的静态数据定义，不读资源仓库。
-  const workspace = await loadWorkspaceDocuments(workspaceDir!);
-  if (workspace.problems.some((problem) => problem.level === 'severe')) {
-    io.stdout(`未发布；${reportProblems(workspace.problems, io)}\n`);
-    return ExitCodes.failed;
-  }
-  const { published, problems } = publishStaticSchema(definition, workspace.staticSchemas);
-  const summary = reportProblems(problems, io);
-  if (!published) {
-    io.stdout(`未发布；${summary}\n`);
-    return ExitCodes.failed;
-  }
-  const version = published.ref.version;
-  const names = publishedFileNames(definitionFile!, version);
   await mkdir(out!, { recursive: true });
-  const schemaFile = join(out!, names.schema);
-  const compiledFile = join(out!, names.compiled);
-  await writeExclusiveJsonFiles([
-    { path: schemaFile, value: published.definition },
-    { path: compiledFile, value: published.compiled },
-  ]);
-  io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
-  return ExitCodes.ok;
+  return withLocalAccess([workspaceDir!, out!], async () => {
+    const workspace = await loadWorkspaceDocuments(workspaceDir!);
+    if (workspace.problems.some((problem) => problem.level === 'severe')) {
+      io.stdout(`未发布；${reportProblems(workspace.problems, io)}\n`);
+      return ExitCodes.failed;
+    }
+    const { published, problems } = publishStaticSchema(definition, workspace.staticSchemas);
+    const summary = reportProblems(problems, io);
+    if (!published) {
+      io.stdout(`未发布；${summary}\n`);
+      return ExitCodes.failed;
+    }
+    const version = published.ref.version;
+    const names = publishedFileNames(definitionFile!, version);
+    await mkdir(out!, { recursive: true });
+    const schemaFile = join(out!, names.schema);
+    const compiledFile = join(out!, names.compiled);
+    await writeExclusiveJsonFiles([
+      { path: schemaFile, value: published.definition },
+      { path: compiledFile, value: published.compiled },
+    ]);
+    io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
+    return ExitCodes.ok;
+  });
 }
 
 /** 服务地址与令牌：令牌只从环境变量读取，缺少时是用法错误。 */

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, openResourceRepository,
   openVersionedResourceStore, ProblemCodes, render, ResourceReadError } from '../src/index.js';
 import { runCli } from '../src/cli.js';
-import { m402Dir, resourcesDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, m402Dir, resourcesDir } from './support/fixtures.js';
 
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof fs>();
@@ -262,7 +262,7 @@ describe('CLI 与实际出图', () => {
   it('临时工作区准备、导入、查询、M402 出图均成功；旧/自动打开/固定映射三个结果一致', async () => {
     const dir = join(root, 'cli-store');
     const workspaceDir = join(root, 'workspace');
-    await fs.cp(m402Dir, workspaceDir, { recursive: true });
+    await copyWorkspaceFixture(m402Dir, workspaceDir);
     const output: string[] = [], errors: string[] = [];
     const io = { stdout: (value: string) => output.push(value), stderr: (value: string) => errors.push(value) };
     expect(await runCli(['resources-init', '--resources', dir], io)).toBe(0);

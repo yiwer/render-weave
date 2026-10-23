@@ -114,11 +114,18 @@ node dist/bin.js render --workspace docs/examples/m402-dsl --resources out/resou
 | `resource.integrityMismatch` | 字节数或 SHA-256 不符；使用该资源的元素收到严重问题 |
 | `resource.versionNotFound` | 指定版本或固定映射内的资源不存在，不回退 |
 | `resource.storeBusy` | 写锁已存在，当前未获得写权限 |
+| `local.storeBusy` | 工作区读取或 Agent 应用未取得完整的一组目录约束；稍后重试 |
 | `resource.writeFailed` | 文件创建、同步、提交失败；清理失败时为提示 |
 | `resource.replacementInvalid` | 缺少或非法的检查报告，不能应用 |
 | `resource.replacementStale` | 预期版本、工作区、配置、候选内容或目标仓库已不匹配，重新检查 |
 
 进程强杀可能遗留写锁及未被清单引用的文件，读者不会通过清单读取这些半成品。恢复前应确认全部维护进程已停止，备份并检查清单及引用的版本，再人工移除遗留的空写锁目录；不要自动删除内容文件。断电持久性、网络文件系统、外部编辑器同时改写清单/路径及服务级隔离尚未验收。哈希用于发现损坏，不是针对同时篡改清单与内容的签名认证。取舍见 [ADR-0014](adr/0014-resource-manifest-commit.md)。
+
+### 与工作区提交协调
+
+正常运行时，资源初始化、导入、资源后端提交、替换、Agent 应用和数据定义发布使用同一目录约束；资源替换同时取得工作区与仓库约束，以稳定的真实路径顺序申请。公开工作区读取取得完整文档和资源字节后释放，渲染不长期持锁。Agent 最后核对相关资源并提交候选也处于同一边界；更新与应用只能形成一致先后。无关资源变化不使批准失效，占用冲突后可重试。
+
+该约束只覆盖正常产品操作，未实现强退后的多文件提交恢复；相关边界见 [Agent 任务说明](agent-tasks.md#内容身份与重新核准)，恢复由 harness 05 继续。
 
 ## 验收复现
 

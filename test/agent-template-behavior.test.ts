@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, writeFile, cp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { repoRoot, resourcesDir, singleTextDir, m402Dir } from './support/fixtures.js';
+import { copyWorkspaceFixture, repoRoot, resourcesDir, singleTextDir, m402Dir } from './support/fixtures.js';
 import { loadCanvasKit } from '../src/canvaskit.js';
 
 let dir: string;
@@ -22,7 +22,7 @@ function cli(args: string[]) {
 }
 
 it('换字段后从评估 CLI 核对实际文字：合法绑定通过，零严重问题的写死值失败', async () => {
-  const workspace = join(dir, 'field-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'field-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const policy = join(dir, 'fields.json');
   await json(policy, { format: 'renderweave-behavior-policy/1', id: 'field-calibration', authority: '维护者预登记：将问候内容改为 World',
     cases: [{ id: 'field', category: 'field', change: 'message 从 Hello 改为 World',
@@ -46,7 +46,7 @@ it('换字段后从评估 CLI 核对实际文字：合法绑定通过，零严�
 });
 
 it('列表插入、删除、同名出现按实际实例及空间顺序核查，拒绝截尾、反序和误合并', async () => {
-  const workspace = join(dir, 'list-workspace'); await cp(m402Dir, workspace, { recursive: true });
+  const workspace = join(dir, 'list-workspace'); await copyWorkspaceFixture(m402Dir, workspace);
   const original = await read(join(workspace, 'template-route-sign.json'));
   const dataset = await read(join(workspace, 'dataset-m402.json'));
   const policy = join(dir, 'list.json');
@@ -70,7 +70,7 @@ it('列表插入、删除、同名出现按实际实例及空间顺序核查，�
 });
 
 it('模板参数改变后核查实际状态和下一站，忽略参数的合法模板失败', async () => {
-  const workspace = join(dir, 'parameter-workspace'); await cp(m402Dir, workspace, { recursive: true });
+  const workspace = join(dir, 'parameter-workspace'); await copyWorkspaceFixture(m402Dir, workspace);
   const dataset = await read(join(workspace, 'dataset-m402.json')), policy = join(dir, 'parameter.json');
   await json(policy, { format: 'renderweave-behavior-policy/1', id: 'parameter-calibration', authority: '本站 1 时首站红、第二站黑；本站 2 时首站灰、第二站红',
     cases: [1, 2].map((index) => ({ id: `current-${index}`, category: 'parameter', change: `本站改为 ${index}`,
@@ -90,7 +90,7 @@ it('模板参数改变后核查实际状态和下一站，忽略参数的合法�
 });
 
 it('可选信息缺失时隐藏且释放预登记空间，空白占位仍被拒绝', async () => {
-  const workspace = join(dir, 'optional-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'optional-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const schema = await read(join(workspace, 'schema-greeting-v1.json')); schema.fields.push({ name: 'note', displayName: '注记', type: 'text' }); await json(join(workspace, 'schema-greeting-v1.json'), schema);
   const compiled = await read(join(workspace, 'compiled-greeting-v1.schema.json')); compiled.properties.note = { type: 'string' }; await json(join(workspace, 'compiled-greeting-v1.schema.json'), compiled);
   const template = await read(join(workspace, 'template-greeting.json'));
@@ -117,7 +117,7 @@ it('可选信息缺失时隐藏且释放预登记空间，空白占位仍被拒�
 });
 
 it('长文本在两个目标尺寸内保留完整文字和核准适配，移出画板或过度缩字失败', async () => {
-  const workspace = join(dir, 'fit-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'fit-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const file = join(workspace, 'template-greeting.json'), template = await read(file);
   const text = template.artboard.children[0]; text.place = { left: 8, top: 5, width: 'fill', height: { fixed: 20 } }; text.verticalAlign = 'center';
   text.fit = { steps: ['compressGlyphs', 'shrink'], minFontSize: 5, compressMin: 0.6 }; template.artboard.minFontSize = 5;
@@ -152,7 +152,7 @@ it('同名图片换内容后按核准区域像素验收，名称正确或整图�
     image.delete(); paint.delete(); surface.delete();
     return createHash('sha256').update(bytes).digest('hex');
   }
-  const workspace = join(dir, 'image-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'image-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const resources = join(dir, 'image-resources'); await mkdir(resources);
   const first = join(resources, 'first.png'), second = join(resources, 'second.png'), wrong = join(resources, 'wrong.png');
   const firstHash = await patch(first, '#FF0000', '#0000FF'), secondHash = await patch(second, '#0000FF', '#FF0000'); await patch(wrong, '#00FF00', '#00FF00');
@@ -179,7 +179,7 @@ it('同名图片换内容后按核准区域像素验收，名称正确或整图�
 });
 
 it('匹配实例在所选排序轴重叠时保留顺序歧义，不能按内部遍历顺序制造通过', async () => {
-  const workspace = join(dir, 'ambiguous-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'ambiguous-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const file = join(workspace, 'template-greeting.json'), template = await read(file);
   template.artboard.children.push({ ...template.artboard.children[0], name: '问候语副本' }); await json(file, template);
   const policy = join(dir, 'ambiguous.json'), out = join(dir, 'ambiguous-out');
@@ -192,7 +192,7 @@ it('匹配实例在所选排序轴重叠时保留顺序歧义，不能按内部�
 
 it('修改同时证明目标完成与非目标保留，未修改、越界属性和未经声明的排布变化分别失败', async () => {
   const workspace = join(dir, 'revision-workspace'), before = join(dir, 'revision-before');
-  await cp(singleTextDir, workspace, { recursive: true }); await cp(singleTextDir, before, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, workspace); await copyWorkspaceFixture(singleTextDir, before);
   const file = join(workspace, 'template-greeting.json'), original = await read(file), policy = join(dir, 'revision.json');
   await json(policy, { format: 'renderweave-behavior-policy/1', id: 'revision-calibration', authority: '只将问候语改为蓝色；位置、文字、背景均须保留',
     cases: [{ id: 'revision', category: 'revision', change: '问候语颜色从红色改为蓝色',
@@ -219,7 +219,7 @@ it('修改同时证明目标完成与非目标保留，未修改、越界属性�
 });
 
 it('无独立事实、不可测维度和复杂变换不自动通过；已有报告不能被另一份政策覆盖', async () => {
-  const workspace = join(dir, 'unknown-workspace'); await cp(singleTextDir, workspace, { recursive: true });
+  const workspace = join(dir, 'unknown-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
   const request = { template: '问候牌', dataset: { id: 'ds-greeting' }, parameters: {}, output: { width: 160, height: 40, dpi: 60, format: 'png' }, mode: 'draft' };
   const policy = join(dir, 'unknown.json'), out = join(dir, 'unknown-out');
   await json(policy, { format: 'renderweave-behavior-policy/1', id: 'unknown', authority: '维护者已确认无可用OCR事实', cases: [{ id: 'missing', category: 'field', change: '检查问候语', request, facts: [{ id: 'not-measurable', kind: 'ocr-semantic-correctness' }] }] });

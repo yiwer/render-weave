@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { applyAgentRound, applyResourceReplacement, changeReview, checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, readReview, render, runAgentTask } from '../src/index.js';
-import { resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, resourcesDir, singleTextDir } from './support/fixtures.js';
 import { startMcp } from './support/mcp-client.js';
 
 const fake = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -22,7 +22,7 @@ async function setup(versioned = true, candidate: unknown = template, additions:
   runtime: Pick<Parameters<typeof runAgentTask>[0], 'model' | 'effort'> = {}) {
   const dir = join(base, String(++sequence)), source = join(dir, 'source'), workspace = join(dir, 'workspace'), resources = join(dir, 'resources');
   await mkdir(source, { recursive: true });
-  await cp(singleTextDir, workspace, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, workspace);
   await cp(join(resourcesDir, 'images/test/quadrants.png'), join(source, 'picture.png'));
   const manifest = [{ id: 'picture', kind: 'image', file: 'picture.png' }];
   for (const [id, resource] of Object.entries(additions)) {

@@ -4,7 +4,7 @@
  * 以及模板已被他人保存时的覆盖与重做（M49–M52、M58）；另有 `agent run` 按任务校验 --definition 与 --dataset（票据 16）。
  */
 import { existsSync } from 'node:fs';
-import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -15,7 +15,7 @@ import {
   AgentUsageError, applyAgentRound, changeReview, deliverBatch, diffTemplate, importResources, initializeResourceStore, loadWorkspace,
   openVersionedResourceStore, readReview, render, runAgentTask, type AgentRunOptions, type ReviewView, type VersionedResourceStore,
 } from '../src/index.js';
-import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 import { startMcp } from './support/mcp-client.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -76,7 +76,7 @@ afterAll(async () => {
 /** 工作区：single-text 的问候（数据集 ds-greeting、模板问候牌）；saved 时另有已保存的问候横幅与横幅文字。 */
 async function workspace(saved: boolean): Promise<string> {
   const dir = join(base, `workspace-${++count}`);
-  await cp(singleTextDir, dir, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, dir);
   if (saved) {
     await writeFile(join(dir, 'template-banner.json'), JSON.stringify(BANNER, null, 2));
     await writeFile(join(dir, 'template-banner-words.json'), JSON.stringify(WORDS, null, 2));

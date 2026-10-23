@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
 import { applyResourceReplacement, checkResourceReplacement, importResources, initializeResourceStore, mmToPx, readPngInfo } from '../src/index.js';
 import { startMcp, type McpSession, type ToolCall } from './support/mcp-client.js';
-import { m402Dir, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, m402Dir, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const REQUEST = {
   template: '标准线路单边', dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 },
@@ -435,7 +435,7 @@ describe('交回前核对成果', () => {
 
   it('大批修改最多返回 100 条范围并给出总数；长路径也按字符预算截断', async () => {
     const workspace = join(base, 'revision-many-workspace'), dir = join(base, 'revision-many');
-    await cp(singleTextDir, workspace, { recursive: true });
+    await copyWorkspaceFixture(singleTextDir, workspace);
     await mkdir(join(dir, 'candidates'), { recursive: true });
     const saved = JSON.parse(await readFile(join(workspace, 'template-greeting.json'), 'utf8'));
     saved.artboard.children = Array.from({ length: 120 }, (_, i) => ({
@@ -595,7 +595,7 @@ describe('会话结束', () => {
 describe('命令行', () => {
   it('工作区在启动时读入为快照，之后的改动不影响本轮', async () => {
     const workspace = join(base, 'snapshot');
-    await cp(singleTextDir, workspace, { recursive: true });
+    await copyWorkspaceFixture(singleTextDir, workspace);
     const snapshot = startMcp(['--workspace', workspace, '--resources', resourcesDir, '--root', root]);
     const listed = await snapshot.callJson('list_documents');
     await rm(join(workspace, 'template-greeting.json'));
