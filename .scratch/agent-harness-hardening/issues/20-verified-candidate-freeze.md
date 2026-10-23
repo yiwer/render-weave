@@ -42,3 +42,26 @@
 - 最终候选 `sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f` 位于 `F:/GenCode/render-weave/out/harness-acceptance-20/candidate-2`，执行内容来自 `60515d5d1c5d51f6404c36ff050d72d02164b14e`；MCP0.17.0、full、默认预算、实际Node/安装依赖与原生执行器身份均已固定，提供方模型修订仍null。候选1保留为0观测旧包，新包也为0真实观测。
 - 原四场景绑定 `sha256:889bb317a86a29339982a79b7a7f68db6a86fe392768ac9a69dca9d70190c655`（8观测/10阶段），21绑定 `sha256:b2a1a7e53f303dfb184b417fa78248251bedd49a84e46dabe7280785ada06505`（16阶段）；两者均从F持久content生成，输入/资源使用F绝对路径。21的8类受控种子完整准备、16单元新计划ready，只为后续真实反馈提供初始状态。两个binding-2均保留上一绑定及10/16阶段重验清单，不拼接旧、新结果。
 - 19后续36订单/96阶段沿公开 `stage.ts --bind/--verify/--dispatch` 绑定实际审批、材料、预算、工作区及上游人工应用凭据。一次派发不替人审核/应用，不向模型复制宿主真值清单。原四/21/留出/真人各自负责独立结论；本票不宣称模型门槛、托管隔离、租户写入或阶段5客户自助通过，默认直发/可选审批决定不变。
+
+### 2026-10-23 资料顺序责任修复后的候选3发布
+
+候选2真实反馈16次中有6次分页时序有效失败，21保持needs-triage；原四首段4次达线、第二段4次未派发，整体未完成。通用资料责任由17修复并独立合入 `ad04734`，本票按原“变更后新候选与完整重验”验收项重新发布，不改旧失败或把两代结果拼为通过。
+
+发布树 `20cbc4390217a07fa78fd5ef4d612cffa4b454c7` 重建、typecheck通过；实际共同3322文件逐项核对，只有next-round/template-revision两份md改变。修复的双平台公开关联回归为Windows52、Linux51加原平台条件跳过1；最后交回范围消歧后各3项补验通过。完整旧基线与回归边界见[候选3记录](../../../docs/agent-eval/harness-acceptance-candidate-3.md)，本次不冒称最终源码重跑全量或模型遵循已改善。
+
+- 新候选 `sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c`，持久 `out/harness-acceptance-20/candidate-3`。
+- 原四使用原config和新binding-3：`sha256:9bfc3abb4823e882ffa460f564978e17d76c2e0ddb723b450079d24c597fada0`，8观测/10阶段全部重验。
+- 21另建 `out/harness21-trusted-feedback-candidate-3`，inputs/config.real-model.json、binding、plan.json；绑定 `sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d`，16阶段全部重验。
+- 两绑定的默认、运行预算、原生执行器和Node身份均与候选2一致，15份公开资料来源路径均对上新包字节。8类种子准备通过，16单元ready/not-run，真实模型观测0；没有碰12例留出。
+- 公开freeze、包内verify、prepare-feedback、两次bind、plan及再次verify共7步退出0，命令/cwd/退出码在[publication-3/steps.json](../../../out/harness-acceptance-20/publication-3/steps.json)。[readiness3](../../../out/harness-acceptance-20/candidate-readiness-3.json)绑定全部来源与重验单元；[索引3](../../../out/harness-acceptance-20/evidence-index-3.json)共301原件摘要，旧236条全部重核未变。
+- 旧候选2/观测/输入/归档保持原件。21与原38分别负责真实派发与结论，本票不以离线发布关闭两票。
+
+### 2026-10-23 候选3独立复核与集成
+
+独立复核者 `/root/implement_03` 对实际包及来源做19,294项核对，对原38实际登记做58项核对，再对301项证据、提交字节、21预登记及4项英文条件引用做1,508项核对，均无问题。包内公开 `freeze.ts --verify --current` 退出0，旧236份证据和旧候选字节未变；共同变化仅两份任务资料。本次未启动模型、未读取密钥值、未创建activation。
+
+发布提交 `2bc910c` 已非压缩合入 `2daa300`；原38登记 `7f80490` 合入 `37b7559`；21登记 `60ea223` 合入 `5edb66c`，均无冲突。原38登记SHA为 `21e4a1c97ce82b6508caa69333ddc51b756200790e97f4843e4ad906d9a768eb`，21登记SHA为 `d8f533d1684cf2bdcc7e09a86abf07311389ac9de1654743f5ab2510eb31e96e`；16槽均not-run，受控seed未计模型观测。21与原38继续保留原未完成状态。
+
+只读复核报告为 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate3-publication-and-registration-review.md`，SHA-256 `01c9d1b9146d05529f12c2e2ab46b946d69294a678435c01c061e1467923e3ad`；同目录三份审计JSON保存逐项核对。两份原有未跟踪报告保留，不纳入本次提交。
+
+复核措辞澄清：首份报告曾将第二段前置完成守卫共同归给两个launcher，实际仅21在代码层检查；原38由唯一派发者人工串行观察后再派发。已另存同目录 `harness-candidate3-publication-and-registration-review-v2.md`（SHA-256 `fdfa6c436f655472447844782b7be75f2dcd74a9b114be5ad85554e4f1f398bf`），旧报告字节和既有activation引用均保留。此项不改变登记、脚本或候选，也不影响21原复核结论。
