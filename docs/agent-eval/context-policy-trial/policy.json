@@ -104,7 +104,7 @@
     "humanMinutes": "unknown unless actually measured; never fill zero or claim total-cost improvement"
   },
   "decision": {
-    "adoptOnlyIf": "all 32 source-verified observations complete, all usage known, all quality and net-benefit guards and minimum improvement pass",
+    "adoptOnlyIf": "all 32 source-verified observations complete, all four requiredKnownFields known for every attempt, all quality and net-benefit guards and minimum improvement pass",
     "otherwiseComplete": "retain full; keep complete negative evidence",
     "effort": "unchanged"
   },
