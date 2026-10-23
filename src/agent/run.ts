@@ -297,6 +297,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (designPlan) {
     await writeFile(join(roundDir, 'design-checks.json'), `${JSON.stringify(designPlan, null, 2)}\n`);
     await copyFile(join(roundDir, 'design-checks.json'), join(agentDir, 'docs/design-checks.json'));
+    await copyFile(join(AGENT_MATERIALS, 'reference/visual-refinement.md'), join(agentDir, 'docs/visual-refinement.md'));
   }
   for (const [file, name] of [[options.requirement, 'requirement.md'], [options.feedback, 'feedback.md']] as const) {
     if (file === undefined) continue;
@@ -329,7 +330,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', templateTask ? 'template-next-round.md' : 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
-  if (designPlan) prompt += '\n本轮有宿主核查计划 docs/design-checks.json：按需读取涉及的边界与样式要求。check_outcome 自动执行原数据组合与样式核查，assessment.design 给失败、未覆盖与最差图像区域；用现有看图/局部预览工具核对这些区域后修正。相似度仅诊断，不代表内容正确。\n';
+  if (designPlan) prompt += '\n本轮有宿主核查计划 docs/design-checks.json。开始设计前读 docs/visual-refinement.md，按计划已有的参考和目标核查；有命名区域才用 check_outcome 的 designTarget 按需取详情。首次骨架及每次核查前保存 state.json，确认 checkpoint 为 ready。\n';
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;

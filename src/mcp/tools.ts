@@ -12,6 +12,7 @@ import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
 import type { RevisionDiff } from '../agent/diff.js';
 import { summarizeDesign } from '../agent/design-verification.js';
+import { candidateSnapshot, readProgressState, readReviewNote } from '../agent/progress.js';
 import { loadCanvasKit } from '../canvaskit.js';
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
 import { loadResourceImage, type LoadedImage } from '../images.js';
@@ -32,7 +33,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.9.0';
+export const MCP_CONTRACT_VERSION = '0.10.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -430,28 +431,36 @@ export function createTools(context: ToolContext): McpTool[] {
     {
       name: 'check_outcome',
       description: '交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。' +
-        '宿主提供核查计划时，assessment.design 返回不超过8000字符的当前候选边界/样式摘要、未覆盖数量及最差图像区域；designCase 可按需取单用例详情。声明的检查失败阻止合格，像素相似度只作诊断。' +
+        '宿主提供核查计划时，assessment.design 返回不超过8000字符的当前候选边界/样式摘要、未覆盖数量及图像区域；designCase 取单例，designTarget 取命名目标。模板任务先更新 state.json 的选择、未解决项与下一步，checkpoint 反馈进度是否有效；候选绑定随宿主调用日志记录。进度不改变 verdict，像素相似度只作诊断。' +
         '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
         '返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。' +
         '模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。' +
         `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。不写任何文件。`,
       inputSchema: { type: 'object', additionalProperties: false, properties: {
         designCase: { type: 'string', minLength: 1, description: '宿主核查计划中的用例ID；reference 为原始请求。省略时只给全部用例摘要。' },
+        designTarget: { type: 'string', minLength: 1, description: '命名参考区域 ID，按需取目标、核准状态、坐标与路径；与 designCase 每次只选一个。' },
       } },
       async call(args) {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
         const { task, ...known } = context.outcome;
         const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        const state = task === 'template-design' || task === 'template-revision' ? await readProgressState(files.root) : undefined;
+        const workingCandidates = state ? await candidateSnapshot(join(files.root, 'candidates')) : null;
+        const reviewNote = state?.status === 'ready' ? await readReviewNote(files.root) : undefined;
+        const checkpoint = state ? workingCandidates === null ? { status: 'invalid', hint: '候选快照不完整，无法绑定进度' } :
+          { status: state.status, hint: state.hint } : undefined;
         return json({
           verdict: check.verdict,
-          assessment: { ...check.assessment, ...(check.assessment.design ? { design: summarizeDesign(check.assessment.design, args['designCase'] as string | undefined) } : {}),
+          ...(checkpoint ? { checkpoint } : {}),
+          assessment: { ...check.assessment, ...(check.assessment.design ? { design: summarizeDesign(check.assessment.design, args['designCase'] as string | undefined, args['designTarget'] as string | undefined) } : {}),
             render: { ...check.assessment.render, ...listed(check.assessment.render.problems) } },
           ...listed(check.problems),
           candidates: check.candidates.map(({ sha256: _sha256, revision, problems, deferred, ...candidate }) => ({
             ...candidate, ...listed(problems), ...(deferred ? listed(deferred, 'deferred') : {}),
             ...(revision ? { revision: summarizedRevision(revision) } : {}),
           })),
-        }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
+        }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0),
+          ...(checkpoint ? { progressCheckpoint: { status: checkpoint.status, ...(checkpoint.status === 'ready' ? { progress: state!.progress, workingCandidates, ...(reviewNote ? { reviewNote } : {}) } : {}) } } : {}) });
       },
     },
   ];

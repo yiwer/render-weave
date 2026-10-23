@@ -1,5 +1,5 @@
 /** 通过公开轮次入口验证资料披露、运行时观测与恢复；不调用付费模型。 */
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, truncate, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,7 @@ import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { runAgentTask, changeReview, type AgentRunOptions } from '../src/index.js';
 import { runCli } from '../src/cli.js';
 import { repoRoot, resourcesDir, singleTextDir, greetingRequest } from './support/fixtures.js';
+import { startMcp } from './support/mcp-client.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const candidate = 'candidates/main.json';
@@ -115,6 +116,7 @@ it.each([true, false])('达到阈值主动停止并续接；Agent 已保存成�
   const handoff = await readFile(join(second.roundDir, 'agent/docs/handoff.md'), 'utf8');
   expect(handoff).toContain(state.summary);
   expect(handoff).toContain('旧核查不表示本轮通过');
+  expect(handoff).toContain('尚未经过工具检查点绑定');
   expect(await readFile(join(second.roundDir, 'agent/docs/brief.md'), 'utf8')).toContain('客户原文');
   expect(second.check.verdict).toBe('qualified');
   expect(second.record.runtime.contextLimit).toBeNull();
@@ -142,6 +144,74 @@ it.each(['not json', { ...state, summary: 'x'.repeat(501) }, 'x'.repeat(24001)])
   const handoff = await json(join(first.roundDir, 'handoff.json'));
   expect(handoff.progress).toBeUndefined();
   expect(handoff.progressWarning).toBeTruthy();
+});
+
+it.each([false, true])('真实 MCP 检查点绑定候选并交接，核查后改候选=%s', async (changed) => {
+  const first = await run({ [candidate]: template, 'state.json': state, 'outcome.json': outcome,
+    'scratch/visual-review.md': '具体区域的旧测量，只作接续线索',
+    '.mcp-calls.json': [{ name: 'check_outcome' }],
+    ...(changed ? { '.after-mcp-files.json': { [candidate]: { ...(template as object), description: '检查点之后修改' } } } : {}),
+    '.events.json': [response('at-limit', { input_tokens: 100 })], '.wait-after-events': '' }, { contextLimit: 100 });
+  expect((await json(join(first.roundDir, 'agent/mcp-answers.json')))[0].checkpoint.status).toBe('ready');
+  const saved = await json(join(first.roundDir, 'handoff.json'));
+  expect(saved.progressSource).toBe(changed ? 'none' : 'checkpoint');
+  if (changed) { expect(saved.progress).toBeUndefined(); expect(saved.progressWarning).toContain('候选已变化'); }
+  else expect(saved.progress).toEqual(state);
+  const second = await run({ 'outcome.json': outcome }, { from: first.roundDir, feedback: join(first.roundDir, 'handoff-feedback.md') });
+  const restored = await readFile(join(second.roundDir, 'agent/docs/handoff.md'), 'utf8');
+  expect(restored.includes(state.summary)).toBe(!changed);
+  if (!changed) expect(await readFile(join(second.roundDir, 'agent/scratch/visual-review.md'), 'utf8')).toBe('具体区域的旧测量，只作接续线索');
+  else expect(await readdir(join(second.roundDir, 'agent/scratch'))).not.toContain('visual-review.md');
+});
+
+it.each([undefined, { ...state, stage: '' }])('缺失或无效进度由 MCP 明确提示，不影响技术 verdict', async (progress) => {
+  const result = await run({ [candidate]: template, 'outcome.json': outcome,
+    ...(progress ? { 'state.json': progress } : {}), '.mcp-calls.json': [{ name: 'check_outcome' }] });
+  const answer = (await json(join(result.roundDir, 'agent/mcp-answers.json')))[0];
+  expect(answer.verdict).toBe('qualified');
+  expect(answer.checkpoint.status).toBe(progress ? 'invalid' : 'missing');
+  expect(answer.checkpoint.hint).toContain('state.json');
+  expect((await json(join(result.roundDir, 'handoff.json'))).progressSource).toBe('none');
+});
+
+it.each(['root-link', 'nested-link', 'oversize'])('检查点不读取越界或过大候选：%s', async (kind) => {
+  const root = join(base, 'bounded-' + ++count), log = join(base, 'bounded-' + count + '.jsonl');
+  const context = join(base, 'bounded-' + count + '-context.json');
+  const external = join(base, 'external-' + count);
+  await mkdir(root); await mkdir(external);
+  await writeFile(join(external, 'outside.json'), '外部内容不应参与检查点');
+  await writeFile(join(root, 'state.json'), JSON.stringify(state));
+  await writeFile(join(root, 'outcome.json'), JSON.stringify({ candidates: [], pending: [], notes: '只有进度，不交付候选' }));
+  await writeFile(context, JSON.stringify({ task: 'template-design', request: greetingRequest() }));
+  if (kind === 'root-link') await symlink(external, join(root, 'candidates'), 'junction');
+  else {
+    await mkdir(join(root, 'candidates'));
+    if (kind === 'nested-link') await symlink(external, join(root, 'candidates/nested'), 'junction');
+    else {
+      const large = join(root, 'candidates/large.json');
+      await writeFile(large, '{}'); await truncate(large, 32 * 1024 * 1024 + 1);
+    }
+  }
+  const mcp = startMcp(['--workspace', singleTextDir, '--resources', resourcesDir, '--root', root, '--log', log, '--outcome-context', context]);
+  try {
+    const answer = await mcp.callJson('check_outcome');
+    expect(answer.checkpoint.status).toBe('invalid');
+  } finally { expect(await mcp.close()).toBe(0); }
+  const events = (await readFile(log, 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+  expect(events.find((event) => event.tool === 'check_outcome').progressCheckpoint).toEqual({ status: 'invalid' });
+  expect(await readFile(log, 'utf8')).not.toContain('outside.json');
+});
+
+it('旧计划无命名区域仍得到可执行指导；未提供计划不注入纠偏资料', async () => {
+  const checks = join(base, 'legacy-checks.json');
+  await writeFile(checks, JSON.stringify({ format: 'renderweave-design-checks/1', basis: '旧计划兼容', cases: [], styles: [] }));
+  const first = await run({}, { checks });
+  const guide = await readFile(join(first.roundDir, 'agent/docs/visual-refinement.md'), 'utf8');
+  expect(guide).toContain('没有 targets 时用默认 worstRegions');
+  expect(guide).toContain('没有 reference 时只执行声明的样式与边界检查，不调用 designTarget');
+  expect(await readFile(join(first.roundDir, 'logs/prompt.md'), 'utf8')).toContain('有命名区域才用');
+  const plain = await run();
+  expect(await readdir(join(plain.roundDir, 'agent/docs'))).not.toContain('visual-refinement.md');
 });
 
 it('CLI 非法预算在创建轮次/启动前失败', async () => {

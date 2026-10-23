@@ -23,6 +23,21 @@ await writeFile('fake-run.json', JSON.stringify({
 if (preset !== 'none') await cp(preset, process.cwd(), { recursive: true });
 const write = (message) => process.stdout.write(`${JSON.stringify(message)}\n`);
 write({ type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-1', mcp_servers: [{ name: 'rw', status: 'connected' }] });
+// 检查点测试经过真实公开 MCP/CLI 与宿主日志，模型执行器仅编排文件和工具调用。
+if (existsSync('.mcp-calls.json')) {
+  const { tsImport } = await import('tsx/esm/api');
+  const { startMcp } = await tsImport('./mcp-client.ts', import.meta.url);
+  const config = JSON.parse(readFileSync(args[args.indexOf('--mcp-config') + 1], 'utf8'));
+  const mcp = startMcp(config.mcpServers.rw.args.slice(2));
+  try {
+    const answers = [];
+    for (const call of JSON.parse(readFileSync('.mcp-calls.json', 'utf8'))) answers.push(await mcp.callJson(call.name, call.args));
+    await writeFile('mcp-answers.json', JSON.stringify(answers));
+  } finally { await mcp.close(); }
+  if (existsSync('.after-mcp-files.json')) for (const [path, value] of Object.entries(JSON.parse(readFileSync('.after-mcp-files.json', 'utf8')))) {
+    await writeFile(path, JSON.stringify(value));
+  }
+}
 // 逐条发运行时事件；等待期间仍存活，供宿主停止/交接测试使用。
 if (existsSync('.events.json')) for (const event of JSON.parse(readFileSync('.events.json', 'utf8'))) write(event);
 if (existsSync('.wait-after-events')) {

@@ -55,6 +55,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 已实现能力
 
+- **区域纠偏与检查点（M307，MCP 0.10.0）**：宿主计划可声明待核准/已核准的命名区域，`designTarget` 按需返回目标、分数与元素位置；未提供目标仍支持旧计划。`check_outcome` 只读观测 state 并把候选绑定写入宿主日志，匹配检查点可恢复一份有界视觉记录；候选变化后不采用旧进度。实测口径见[登记协议](docs/template-design-refinement-protocol.md)。
+
 - **模板任务上下文与接续**：短核心及可追溯 DSL 章节；context.json 记录单请求有效输入、压缩事件与工具体积；--context-limit 显式停止并保存，--from 通过候选/输入指纹接续，历轮反馈原文按索引回读；业务 Claude Code 禁用技能发现。实测口径与效果边界见[验收记录](docs/template-design-p0-acceptance.md)。
 - **模板边界与视觉核查**：--checks 指定宿主计划，check_outcome、轮次结束、审核及应用按当前候选重核。报告实际渲染组合、毫米样式要求及未覆盖、局部像素差异和相交元素路径；design 摘要限制 8000 字符，designCase 按需取单例，热图可离线导出。相似度仅作诊断，内容仍需审核；用法见[核查说明](docs/template-design-checks.md)。
 

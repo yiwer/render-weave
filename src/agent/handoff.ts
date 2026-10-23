@@ -1,18 +1,13 @@
 /** 短进度与宿主交接清单：自述不充当核查证据，变更时不携带旧状态。 */
-import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { isRecord } from '../util.js';
 import { openResourceRepository } from '../resources.js';
 import { sha256 } from './round-files.js';
 import { readRoundChain } from './review.js';
 
-interface Progress {
-  readonly stage: string;
-  readonly summary: string;
-  readonly decisions: readonly string[];
-  readonly remaining: readonly string[];
-  readonly next: readonly string[];
-}
+import { candidateSnapshot, parseProgress, parseReviewNote, progressFromLog, readProgressState, type Progress, type ReviewNote } from './progress.js';
+
 export interface Handoff {
   readonly format: 'renderweave-handoff/1';
   readonly binding: string;
@@ -22,15 +17,9 @@ export interface Handoff {
   readonly workingCandidates: readonly { readonly path: string; readonly sha256: string }[] | null;
   readonly progress?: Progress;
   readonly progressWarning?: string;
+  readonly progressSource?: 'checkpoint' | 'stateFile' | 'none';
+  readonly reviewNote?: ReviewNote;
 }
-const shortText = (value: unknown): value is string => typeof value === 'string' && value.length <= 500;
-function progress(value: unknown): Progress | undefined {
-  if (!isRecord(value) || !shortText(value['stage']) || !shortText(value['summary'])) return undefined;
-  for (const key of ['decisions', 'remaining', 'next']) if (!Array.isArray(value[key]) || value[key].length > 12 || !value[key].every(shortText)) return undefined;
-  return { stage: value['stage'], summary: value['summary'], decisions: value['decisions'] as string[],
-    remaining: value['remaining'] as string[], next: value['next'] as string[] };
-}
-
 /** 资料指纹排除本轮反馈和交接视图；客户原文与完整章节仍参与指纹。 */
 export async function materialFingerprint(docs: string): Promise<string> {
   const files: [string, string][] = [];
@@ -69,33 +58,16 @@ export async function resourceFingerprint(dir: string): Promise<string> {
   return sha256(JSON.stringify({ manifest: sha256(await readFile(join(dir, 'resources.json'))), files }));
 }
 
-async function candidateSnapshot(dir: string): Promise<Handoff['workingCandidates']> {
-  const files = [];
-  try {
-    for (const file of (await readdir(dir, { recursive: true })).map(String).sort()) {
-      if (!file.endsWith('.json')) continue;
-      const info = await lstat(join(dir, file));
-      if (info.isDirectory()) continue;
-      if (!info.isFile()) return null; // 不跟随符号链接；不完整快照不能用于恢复摘要。
-      files.push({ path: 'candidates/' + file.replaceAll('\\', '/'), sha256: sha256(await readFile(join(dir, file))) });
-    }
-    return files;
-  } catch { return null; } // 交接观测失败不能阻断轮次记录落盘。
-}
-
-export async function saveHandoff(round: string, value: Omit<Handoff, 'format' | 'progress' | 'progressWarning' | 'workingCandidates'>): Promise<string> {
-  let state: Progress | undefined, warning: string | undefined;
-  try {
-    const file = join(round, 'agent/state.json'), info = await lstat(file);
-    if (!info.isFile() || info.size > 24_000) warning = 'state.json 不是普通小文件，未采用';
-    else {
-      state = progress(JSON.parse(await readFile(file, 'utf8')));
-      if (!state) warning = 'state.json 格式不合格，未采用';
-    }
-  } catch (error) { warning = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'Agent 未保存进度，按候选与原始要求继续' : 'state.json 无法读取，未采用'; }
+export async function saveHandoff(round: string, value: Omit<Handoff, 'format' | 'progress' | 'progressWarning' | 'workingCandidates' | 'progressSource' | 'reviewNote'>): Promise<string> {
   const workingCandidates = await candidateSnapshot(join(round, 'agent/candidates'));
+  const checkpoint = await progressFromLog(join(round, 'logs/tools.jsonl'), workingCandidates);
+  const fileState = checkpoint.found ? undefined : await readProgressState(join(round, 'agent'));
+  const state = checkpoint.progress ?? fileState?.progress;
+  let warning = checkpoint.warning ?? (fileState ? fileState.progress ? '进度来自 state.json，尚未经过工具检查点绑定' : fileState.hint : undefined);
   if (workingCandidates === null) warning = [warning, '候选快照不完整，续跑时不采用旧进度'].filter(Boolean).join('；');
-  const handoff: Handoff = { format: 'renderweave-handoff/1', ...value, workingCandidates, ...(state ? { progress: state } : {}), ...(warning ? { progressWarning: warning } : {}) };
+  const progressSource = state ? checkpoint.progress ? 'checkpoint' : 'stateFile' : 'none';
+  const handoff: Handoff = { format: 'renderweave-handoff/1', ...value, workingCandidates, progressSource, ...(state ? { progress: state } : {}),
+    ...(checkpoint.reviewNote ? { reviewNote: checkpoint.reviewNote } : {}), ...(warning ? { progressWarning: warning } : {}) };
   const text = JSON.stringify(handoff, null, 2) + '\n';
   await writeFile(join(round, 'handoff.json'), text);
   await writeFile(join(round, 'handoff-feedback.md'), '继续上轮未完成工作。先核对原始项目要求与当前候选，再处理交接中的未解决项；重新运行检查，按本轮实际结果交回。\n');
@@ -113,9 +85,17 @@ export async function restoreHandoff(previous: string, digest: string | undefine
       if (isRecord(value) && value['format'] === 'renderweave-handoff/1' && value['binding'] === binding && Array.isArray(value['workingCandidates']) &&
         value['workingCandidates'].length === candidates.size &&
         value['workingCandidates'].every((c) => isRecord(c) && typeof c['path'] === 'string' && candidates.has(c['path']) && sha256(candidates.get(c['path'])!) === c['sha256'])) {
-        const state = progress(value['progress']);
+        const state = parseProgress(value['progress']);
+        const reviewNote = state ? parseReviewNote(value['reviewNote']) : undefined;
+        if (reviewNote) {
+          const scratch = join(dirname(target), '../scratch');
+          await mkdir(scratch, { recursive: true });
+          await writeFile(join(scratch, 'visual-review.md'), reviewNote.text);
+        }
         note = '上轮来源：' + String(value['source']) + '。以下仅为 Agent 进度自述；旧核查不表示本轮通过。\n' +
-          (state ? JSON.stringify(state, null, 2) : '没有可用进度摘要；从当前候选和上轮问题清单定位未完成工作。');
+          (state ? '进度来源：' + String(value['progressSource'] ?? 'stateFile') + '。\n' + JSON.stringify(state, null, 2) : '没有可用进度摘要；从当前候选和上轮问题清单定位未完成工作。') +
+          (typeof value['progressWarning'] === 'string' ? '\n交接提示：' + value['progressWarning'] : '') +
+          (reviewNote ? '\n详细自述已恢复到 scratch/visual-review.md，涉及该区域时按需读取。' : '\n没有已绑定的详细记录；state 中的旧文件指针可能不可用，按当前候选重新测量。');
       }
     }
   } catch { /* 损坏或缺失的交接不阻止按原始资料恢复。 */ }

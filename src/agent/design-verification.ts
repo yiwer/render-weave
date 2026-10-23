@@ -8,7 +8,7 @@ import { isRecord } from '../util.js';
 import type { Workspace } from '../workspace.js';
 import type { CandidateDocument } from './candidates.js';
 import { canonical } from './diff.js';
-import { compareDesignImages, type ImageDifference, type ImageRegion } from './image-comparison.js';
+import { compareDesignImages, type DesignTarget, type ImageDifference, type ImageRegion } from './image-comparison.js';
 import { sha256 } from './round-files.js';
 
 type Range = { readonly min: number; readonly max: number };
@@ -30,10 +30,14 @@ export interface DesignCheckPlan {
   readonly basis: string;
   readonly cases: readonly CheckCase[];
   readonly styles: readonly StyleCheck[];
-  readonly reference?: { readonly sha256: string; readonly region?: ImageRegion };
+  readonly reference?: { readonly sha256: string; readonly region?: ImageRegion; readonly targets?: readonly DesignTarget[] };
 }
 const range = { type: 'object', additionalProperties: false, required: ['min', 'max'], properties: { min: { type: 'number' }, max: { type: 'number' } } };
 const text = { type: 'string', minLength: 1, maxLength: 300 };
+const region = { type: 'object', additionalProperties: false, required: ['x', 'y', 'width', 'height'], properties: {
+  x: { type: 'number', minimum: 0 }, y: { type: 'number', minimum: 0 },
+  width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 },
+} };
 export const DESIGN_CHECK_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['format', 'basis', 'cases', 'styles'], properties: {
     format: { const: 'renderweave-design-checks/1' }, basis: { type: 'string', minLength: 1, maxLength: 2000 },
@@ -55,10 +59,10 @@ export const DESIGN_CHECK_SCHEMA = {
     } } },
     reference: { type: 'object', additionalProperties: false, required: ['sha256'], properties: {
       sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
-      region: { type: 'object', additionalProperties: false, required: ['x', 'y', 'width', 'height'], properties: {
-        x: { type: 'number', minimum: 0 }, y: { type: 'number', minimum: 0 },
-        width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 },
-      } },
+      region,
+      targets: { type: 'array', minItems: 1, maxItems: 12, items: { type: 'object', additionalProperties: false,
+        required: ['id', 'region', 'goal', 'approval'], properties: { id: text, region, goal: text, approval: { enum: ['proposed', 'approved'] } } },
+      },
     } },
   },
 } as const;
@@ -70,6 +74,7 @@ export function parseDesignCheckPlan(value: unknown): DesignCheckPlan {
   const plan = value as DesignCheckPlan;
   const ids = ['reference', ...plan.cases.map((c) => c.id)];
   if (new Set(ids).size !== ids.length || new Set(plan.styles.map((s) => s.id)).size !== plan.styles.length) throw new Error('核查 ID 重复；reference 是保留的原始请求用例');
+  if (new Set(plan.reference?.targets?.map((t) => t.id)).size !== (plan.reference?.targets?.length ?? 0)) throw new Error('命名区域 ID 重复');
   for (const c of plan.cases) for (const change of c.changes ?? []) {
     pointer(change.path);
     if ((change.op === 'resize' && change.length === undefined) || (change.op === 'set' && !Object.hasOwn(change, 'value'))) throw new Error('resize 必须有 length；set 必须有 value');
@@ -100,26 +105,38 @@ interface DesignFailure { readonly case: string; readonly style?: string; readon
 export interface DesignCheckInput { readonly plan: DesignCheckPlan; readonly sampleFile: string }
 
 /** 模型工具只拿独立预算内的摘要；完整证据仍在宿主 check.json。 */
-export function summarizeDesign(report: DesignVerification, caseId?: string): Record<string, unknown> {
-  const selected = caseId === undefined ? report.cases : report.cases.filter((c) => c.id === caseId);
+export function summarizeDesign(report: DesignVerification, caseId?: string, targetId?: string): Record<string, unknown> {
+  if (caseId !== undefined && targetId !== undefined) throw new Error('designCase 与 designTarget 每次只选择一个');
+  const target = targetId === undefined ? undefined : report.visual?.targets?.find((t) => t.id === targetId);
+  if (targetId !== undefined && !target) throw new Error(`没有可比较的命名区域：${targetId}`);
+  const selected = targetId !== undefined ? report.cases.filter((c) => c.id === 'reference') :
+    caseId === undefined ? report.cases : report.cases.filter((c) => c.id === caseId);
   if (!selected.length) throw new Error(`没有核查用例：${caseId}`);
   const result = { status: report.status, fingerprint: report.fingerprint, planSha256: report.planSha256, content: report.content,
     caseCount: report.cases.length, passedCases: report.cases.filter((c) => c.passed).length, failureCount: report.failureCount,
-    cases: [] as unknown[], failures: [] as unknown[], visual: report.visual ? { ...report.visual, worstRegions: [] as unknown[] } : undefined,
-    truncated: report.detailsTruncated, hint: '用 check_outcome({designCase: 用例ID}) 按需取该用例详情；轮次结束后的 check.json 保存宿主报告，细节截断由 detailsTruncated 标记。' };
+    cases: [] as unknown[], failures: [] as unknown[], visual: report.visual ? { ...report.visual, worstRegions: [] as unknown[], targets: [] as unknown[] } : undefined,
+    truncated: report.detailsTruncated, hint: '用 designCase 取单例，designTarget 取命名区域目标、坐标与路径；check.json 保留宿主报告。proposed 目标待核准，像素分数只诊断。' };
   const keep = (target: unknown[], item: unknown): boolean => {
     target.push(item);
     if (JSON.stringify(result).length > 8000) { target.pop(); result.truncated = true; return false; }
     return true;
   };
   const details: { target: unknown[]; paths: readonly string[] }[] = [];
+  if (target) {
+    const item = { ...target, elements: [] as unknown[] };
+    keep(result.visual!.targets, item);
+    for (const path of target.elements) keep(item.elements, path);
+  }
   for (const c of selected) {
     const { problems: _problems, uncovered, failures: _failures, ...counts } = c;
     const item = { ...counts, ...(caseId !== undefined ? { uncovered: [] as unknown[] } : {}) };
     if (keep(result.cases, item) && item.uncovered) details.push({ target: item.uncovered, paths: uncovered });
   }
   for (const failure of caseId === undefined ? report.failures : selected[0]!.failures) keep(result.failures, failure);
-  for (const region of report.visual?.worstRegions ?? []) keep(result.visual!.worstRegions, region);
+  if (!target) {
+    for (const { id, approval, ssim, rgbSimilarity } of report.visual?.targets ?? []) keep(result.visual!.targets, { id, approval, ssim, rgbSimilarity });
+    for (const region of report.visual?.worstRegions ?? []) keep(result.visual!.worstRegions, region);
+  }
   for (const detail of details) for (const path of detail.paths) keep(detail.target, path);
   if (report.failureCount > report.failures.length) result.truncated = true;
   return result;
@@ -205,7 +222,7 @@ export async function verifyTemplateDesign(options: {
         if (!options.sample || sha256(options.sample) !== plan.reference.sha256) throw new Error('示例图与核查计划的 SHA-256 不符');
         if (result.image) {
           const compared = await compareDesignImages({ reference: options.sample, actual: result.image.bytes,
-            widthMm: width, heightMm: height, referenceRegion: plan.reference.region, layout: result.layout?.root });
+            widthMm: width, heightMm: height, referenceRegion: plan.reference.region, targets: plan.reference.targets, layout: result.layout?.root });
           visual = compared.report; heatmap = compared.heatmap;
         }
       }

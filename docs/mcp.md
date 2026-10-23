@@ -35,6 +35,8 @@ Claude Code 的配置示例（`--mcp-config`）：
 
 合同 0.9.0：宿主核查计划存在时，`check_outcome` 的 `assessment.design` 返回边界组合、逐实例样式、未覆盖情况与像素低分区域。声明的边界/样式失败阻止合格；像素分数不作质量门槛。仍为原有工具集合，见[模板核查](template-design-checks.md)。
 
+合同 0.10.0：`designTarget` 按需返回命名区域目标、核准状态、分数、坐标与路径；每次与 `designCase` 只选一个。模板任务的 `checkpoint` 反馈 state.json 的 ready/missing/invalid，不改变技术 verdict。有效进度和当前候选快照写入已有宿主工具日志，不写工作目录；轮次交接采用匹配的最近检查点。工具数量与只读性质不变。
+
 | 工具 | 输入 | 返回 |
 |---|---|---|
 | `list_documents` | 无 | 快照中的静态数据定义、模板、数据集，以及读取工作区时发现的问题 |
@@ -127,7 +129,9 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.8.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.10.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.10.0 加入命名区域 `designTarget` 按需诊断与只读进度检查点（M307）；
+  - 0.9.0 加入可选设计计划、边界/样式/像素核查及 `designCase` 有界摘要（M306）；
   - 0.8.0 加入成果分层评估和指定请求的实际渲染；受阻交回与正式交付分开（票据 31，M294）；
   - 0.7.0 在 0.6.0 上让 `check_outcome` 返回模板辅助修改的差异范围摘要（票据 17，M293），工具输入与其他任务的输出不变；
   - 0.6.0 在 0.5.0 上（票据 19、22、29）：`view_image` 缺省最多放大 2 倍并新增 `scale`；`dsl_reference`、`read_document` 新增 `pointer`，`schema/template` 不带 `pointer` 时返回目录；问题清单与元素检查有上限并给出截断信息；`render_draft`、`inspect_layout` 把 `mode: "final"` 按草稿处理；`list_resources` 给字体加 `weight` 与 `scripts`；工具带 `annotations`；文字结果超过 40,000 字符时改为工具错误；

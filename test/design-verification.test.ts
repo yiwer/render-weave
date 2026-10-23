@@ -79,6 +79,51 @@ it('画板比例不符要求校准；图片哈希不符不使用错误参考', a
   expect(mismatch.report.visual).toBeUndefined();
 });
 
+it('命名区域独立计分，保持核准状态；区域越界和重复 ID 被拒绝', async () => {
+  const request = greetingRequest({ output: { width: 160, height: 40, dpi: 25.4, format: 'png' } });
+  const before = await render(workspace, request);
+  const after = await render(withTemplate(workspace, '问候牌', (d) => { d.artboard.children[0].color = '#0000ff'; }), request);
+  const targets = [{ id: 'whole', goal: '测试区域，待核准', approval: 'proposed' as const, region: { x: 0, y: 0, width: 160, height: 40 } }];
+  const compared = await compareDesignImages({ reference: before.image!.bytes, actual: after.image!.bytes, widthMm: 160, heightMm: 40,
+    targets, layout: after.layout!.root });
+  expect(compared.report.targets?.[0]).toMatchObject({ id: 'whole', approval: 'proposed', ssim: compared.report.ssim,
+    rgbSimilarity: compared.report.rgbSimilarity, region: targets[0]!.region, elements: ['问候牌/问候语'] });
+  await expect(compareDesignImages({ reference: before.image!.bytes, actual: after.image!.bytes, widthMm: 160, heightMm: 40,
+    targets: [{ ...targets[0]!, region: { x: 159, y: 0, width: 2, height: 40 } }] })).rejects.toThrow('参考画板内');
+  expect(() => parseDesignCheckPlan({ ...empty, reference: { sha256: hash(before.image!.bytes), targets: [...targets, ...targets] } })).toThrow('ID 重复');
+});
+
+it('MCP 默认只披露命名区域分数；按目标取完整证据，核准状态不创建像素门槛', async () => {
+  const root = join(dir, 'targets'); await mkdir(join(root, 'candidates'), { recursive: true });
+  const main = structuredClone(workspace.templates[0]!.document) as any;
+  main.name = '命名区域'; main.artboard.children[0].color = '#0000ff';
+  await writeFile(join(root, 'candidates/main.json'), JSON.stringify(main));
+  await writeFile(join(root, 'outcome.json'), JSON.stringify({ candidates: ['candidates/main.json'], pending: [], notes: '目标诊断' }));
+  const request = greetingRequest({ template: main.name, output: { width: 160, height: 40, dpi: 25.4, format: 'png' } });
+  const picture = (await render(workspace, { ...request, template: '问候牌' })).image!.bytes;
+  await writeFile(join(root, 'sample.png'), picture);
+  const targets = Array.from({ length: 12 }, (_, i) => ({ id: 'r' + i, goal: '目标'.repeat(150), approval: i ? 'approved' : 'proposed',
+    region: { x: 0, y: 0, width: 160, height: 40 } }));
+  const context = join(dir, 'targets-context.json');
+  await writeFile(context, JSON.stringify({ task: 'template-design', request,
+    designChecks: { plan: { ...empty, reference: { sha256: hash(picture), targets } }, sampleFile: join(root, 'sample.png') } }));
+  const mcp = startMcp(['--workspace', singleTextDir, '--resources', resourcesDir, '--root', root, '--outcome-context', context]);
+  try {
+    const initial = await mcp.callJson('check_outcome');
+    expect(initial.verdict).toBe('qualified');
+    expect(initial.assessment.design.visual.targets).toHaveLength(12);
+    expect(initial.assessment.design.visual.targets[0]).not.toHaveProperty('goal');
+    expect(initial.assessment.design.visual.targets[0].ssim).toBeLessThan(1);
+    const detail = await mcp.callJson('check_outcome', { designTarget: 'r0' });
+    expect(detail.assessment.design.visual.targets).toEqual([expect.objectContaining({ id: 'r0', approval: 'proposed', goal: targets[0]!.goal,
+      elements: ['命名区域/问候语'] })]);
+    expect(JSON.stringify(detail.assessment.design).length).toBeLessThanOrEqual(8000);
+    expect(JSON.stringify(initial.assessment.design).length).toBeLessThanOrEqual(8000);
+    expect((await mcp.call('check_outcome', { designTarget: 'unknown' })).isError).toBe(true);
+    expect((await mcp.call('check_outcome', { designTarget: 'r0', designCase: 'reference' })).isError).toBe(true);
+  } finally { await mcp.close(); }
+});
+
 it('均匀灰度图 SSIM 与常量图的解析公式一致', async () => {
   const gray = async (color: string) => (await render(withTemplate(workspace, '问候牌', (d) => {
     d.artboard.children = []; d.artboard.fill = color;

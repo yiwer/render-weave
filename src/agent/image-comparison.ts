@@ -3,6 +3,16 @@ import { loadCanvasKit } from '../canvaskit.js';
 import type { LayoutNode } from '../layout/index.js';
 
 export interface ImageRegion { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+export interface DesignTarget {
+  readonly id: string;
+  readonly region: ImageRegion;
+  readonly goal: string;
+  readonly approval: 'proposed' | 'approved';
+}
+interface RegionDifference {
+  readonly region: ImageRegion; readonly referenceRegion: ImageRegion;
+  readonly rgbSimilarity: number; readonly ssim: number; readonly elements: readonly string[];
+}
 export interface ImageDifference {
   readonly status: 'compared' | 'alignmentRequired';
   readonly note?: string;
@@ -10,8 +20,8 @@ export interface ImageDifference {
   readonly height?: number;
   readonly rgbSimilarity?: number;
   readonly ssim?: number;
-  readonly worstRegions?: readonly { readonly region: ImageRegion; readonly referenceRegion: ImageRegion;
-    readonly rgbSimilarity: number; readonly ssim: number; readonly elements: readonly string[] }[];
+  readonly worstRegions?: readonly RegionDifference[];
+  readonly targets?: readonly (RegionDifference & { readonly id: string; readonly goal: string; readonly approval: DesignTarget['approval'] })[];
 }
 
 /** region 是参考图上的画板区域；输出 region 与元素路径均采用候选画板毫米坐标。 */
@@ -19,6 +29,7 @@ export async function compareDesignImages(options: {
   readonly reference: Uint8Array; readonly actual: Uint8Array;
   readonly widthMm: number; readonly heightMm: number;
   readonly referenceRegion?: ImageRegion; readonly layout?: LayoutNode;
+  readonly targets?: readonly DesignTarget[];
 }): Promise<{ report: ImageDifference; heatmap?: Uint8Array }> {
   const ck = await loadCanvasKit();
   const reference = ck.MakeImageFromEncoded(options.reference), actual = ck.MakeImageFromEncoded(options.actual);
@@ -28,6 +39,10 @@ export async function compareDesignImages(options: {
     if (![crop.x, crop.y, crop.width, crop.height, options.widthMm, options.heightMm].every(Number.isFinite) ||
       crop.x < 0 || crop.y < 0 || crop.width <= 0 || crop.height <= 0 || options.widthMm <= 0 || options.heightMm <= 0 ||
       crop.x + crop.width > reference.width() || crop.y + crop.height > reference.height()) throw new Error('参考区域或画板尺寸不合法');
+    for (const { region: r } of options.targets ?? []) if (![r.x, r.y, r.width, r.height].every(Number.isFinite) ||
+      r.width <= 0 || r.height <= 0 || r.x < crop.x || r.y < crop.y || r.x + r.width > crop.x + crop.width || r.y + r.height > crop.y + crop.height) {
+      throw new Error('命名目标区域必须位于参考画板内');
+    }
     const ratio = options.widthMm / options.heightMm;
     if (Math.abs(crop.width / crop.height / ratio - 1) > 0.01 || Math.abs(actual.width() / actual.height() / ratio - 1) > 0.01) {
       return { report: { status: 'alignmentRequired', note: '参考画板、候选图与物理尺寸的比例偏差超过 1%；请核准裁切/透视，未强行拉伸比较。' } };
@@ -71,18 +86,28 @@ export async function compareDesignImages(options: {
     const nodes: LayoutNode[] = [];
     const walk = (node: LayoutNode) => { if (!node.visible) return; nodes.push(node); node.children?.forEach(walk); };
     if (options.layout) walk(options.layout);
+    const compareRegion = (x: number, y: number, w: number, h: number): RegionDifference => {
+      const region = { x: x / width * options.widthMm, y: y / height * options.heightMm,
+        width: w / width * options.widthMm, height: h / height * options.heightMm };
+      const elements = nodes.filter((n) => !n.children?.length && n.x < region.x + region.width && n.x + n.width > region.x &&
+        n.y < region.y + region.height && n.y + n.height > region.y).map((n) => n.path);
+      return { region, referenceRegion: { x: crop.x + x / width * crop.width, y: crop.y + y / height * crop.height,
+        width: w / width * crop.width, height: h / height * crop.height }, ...scores(x, y, w, h), elements: elements.slice(0, 12) };
+    };
     const regions = [];
     const cols = Math.min(12, Math.max(1, Math.floor(width / 24))), rows = Math.min(4, Math.max(1, Math.floor(height / 24)));
     for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
       const x = Math.floor(col * width / cols), y = Math.floor(row * height / rows);
       const w = Math.floor((col + 1) * width / cols) - x, h = Math.floor((row + 1) * height / rows) - y;
-      const region = { x: x / width * options.widthMm, y: y / height * options.heightMm,
-        width: w / width * options.widthMm, height: h / height * options.heightMm };
-      const elements = nodes.filter((n) => !n.children?.length && n.x < region.x + region.width && n.x + n.width > region.x &&
-        n.y < region.y + region.height && n.y + n.height > region.y).map((n) => n.path);
-      regions.push({ region, referenceRegion: { x: crop.x + x / width * crop.width, y: crop.y + y / height * crop.height,
-        width: w / width * crop.width, height: h / height * crop.height }, ...scores(x, y, w, h), elements: elements.slice(0, 12) });
+      regions.push(compareRegion(x, y, w, h));
     }
+    const targets = options.targets?.map(({ region: r, ...target }) => {
+      const x = Math.min(width - 1, Math.floor((r.x - crop.x) / crop.width * width));
+      const y = Math.min(height - 1, Math.floor((r.y - crop.y) / crop.height * height));
+      const right = Math.min(width, Math.ceil((r.x + r.width - crop.x) / crop.width * width));
+      const bottom = Math.min(height, Math.ceil((r.y + r.height - crop.y) / crop.height * height));
+      return { ...target, ...compareRegion(x, y, Math.max(1, right - x), Math.max(1, bottom - y)) };
+    });
     // 红色越深表示局部结构差异越大；白底复合规则与采样一致。
     const pixels = new Uint8Array(size * 4);
     for (let i = 0; i < size; i++) {
@@ -93,6 +118,7 @@ export async function compareDesignImages(options: {
     if (!heatmap) throw new Error('无法生成差异热图');
     try {
       return { report: { status: 'compared', width, height, ...scores(0, 0, width, height),
+        ...(targets ? { targets } : {}),
         worstRegions: regions.sort((a, b) => a.ssim - b.ssim || a.rgbSimilarity - b.rgbSimilarity).slice(0, 5) },
       heatmap: heatmap.encodeToBytes() ?? undefined };
     } finally { heatmap.delete(); }
