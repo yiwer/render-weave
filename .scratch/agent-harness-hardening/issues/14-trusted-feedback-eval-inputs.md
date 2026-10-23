@@ -32,3 +32,20 @@
 - `npm run build`、`npm run typecheck` 通过。`npx vitest run test/agent-eval-feedback-cli.test.ts test/agent-eval.test.ts test/agent-eval-identity.test.ts test/agent-eval-attempts.test.ts test/mcp.test.ts --maxWorkers=1`：5 文件 86 项通过；追加 pending 和报告标识修复后，`npx vitest run test/agent-eval-feedback-cli.test.ts test/agent-dataset-template.test.ts --maxWorkers=1`：2 文件 19 项通过。
 - 验收边界：无偏离；真实模型的 16 个有效观测、业务效果与模型来源资格仍由票 21 统一冻结后承担，本票仅证明准备、传递、分页、身份和评分机制。
 集成复核：以 e874543 非压缩合并至集成分支。核对有效候选、来源身份及技术合格但执行器报错的 mixed 语义；主线 build/typecheck/diff-check 通过，反馈 CLI 与 MCP 两文件 40/40 通过（88.02 秒）。两份预存未跟踪报告未改。
+
+
+### 2026-10-23 责任修复重新打开
+
+候选3真实观测揭示目标text路径不存在时评分总try提前返回，其余独立守卫未执行却标false。原件与严格corrections政策保留；本轮按公开评估CLI/真实MCP接缝红绿修复独立核查与未核查诊断，不调用模型、不覆盖历史评分。
+
+### 2026-10-23 责任修复重新验收
+
+完成提交：独立诊断 abacbd9，只读审核 60af3ed；最终测试源码 6d0ccc237cc37e56d8641cd0cf30ba1f6f1b5202（合入主线资料修复与历史恢复边界更正）。
+
+- 公开 CLI/真实 MCP 复现 text 改为 slot 后总 try 短路：严格 corrections/1 原属性白名单仍令目标和非目标范围失败，其他守卫独立核对。新增 feedback-score/2，以 null/unchecked 区分未核查与实际失败；空完整日志的未调用为 false，缺失/损坏日志为 null，两者均不能过门槛。模型、输入、阈值与允许范围不变。
+- 公开审核新增 persistArtifacts:false；评分的两处读取均使用只读方式。缺检查/预览缓存时不写 checks/previews，实际内存渲染保留尺寸、问题与 assessment，不返回虚构 image。默认审核、资源身份、损坏保护回归保留。文件与目录完整集合及逐文件 SHA 的公开回归覆盖 API 与 CLI rescore。
+- 先证实 slot、缺日志、只读缺 checks、只读缺 previews 和 rescore 写缓存五项实际反例，再逐项修复；首个缺日志夹具错误保留但不冒充产品红灯。红绿原件与命令见 docs/agent-eval/feedback-diagnostics/evidence.json。
+- 原诊断两文件回归：Windows 29 通过、Linux 29 通过。扩展只读后最终命令：npx vitest run test/agent-eval-feedback-cli.test.ts test/agent-eval-identity.test.ts test/agent-review.test.ts test/agent-resource-identity.test.ts --maxWorkers=1；Windows 4 文件 54 通过（487.14 秒），Linux Node22.23.3 同 54 通过（320.9 秒），两平台 npm run build/typecheck 通过。
+- 在新独立恢复副本公开 --rescore 另存新评分身份报告，严格 gate 仍 fail、7 pass/1 fail/8 not-run；原始报告 SHA 13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47 不变。新评分器 sha256:99439a81470a6fe374f8902bfd0654ad032c8a298981ec332f4c6cbe106121ed 的三个独立守卫为 true，仅目标/非目标范围 false。原始与恢复各5172文件/977目录经完整集合/SHA前后比较无新增缺改，8轮公开只读审核通过。新报告与完整证明位于 F:/GenCode/render-weave/out/harness-feedback-diagnostics/historical-rescore-readonly-v2/ 和同根 historical-rescore-readonly-v2-verification.json。
+- 旧恢复件默认审核新增缓存的更正另存，旧失败日志、缓存及历史报告不删除不改写；新的只读证明不沿用仅检查 manifest 已列文件的边界。详见 docs/agent-eval/feedback-diagnostics/README.md。
+- 无模型调用、无留出素材、无历史结果回写；不宣称票21或候选4通过。CONTEXT由独立集成者更新，本轮无新政策决定。

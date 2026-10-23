@@ -1,0 +1,197 @@
+{
+  "format": "renderweave-feedback-diagnostics-fix-evidence/1",
+  "createdAt": "2026-10-23T20:01:59.884Z",
+  "sourceCommit": "6d0ccc237cc37e56d8641cd0cf30ba1f6f1b5202",
+  "tests": {
+    "windows": {
+      "files": 4,
+      "passed": 54,
+      "durationSeconds": 487.14
+    },
+    "linux": {
+      "files": 4,
+      "passed": 54,
+      "durationSeconds": 320.9
+    }
+  },
+  "reader": {
+    "api": "readReview(roundDir, {persistArtifacts:false})",
+    "engine": "sha256:0b7887bb849e54c8aa355c8c4444d9776bce67b0ff00c21be02605acb4811395",
+    "views": 8,
+    "options": {
+      "persistArtifacts": false
+    }
+  },
+  "historicalDiagnosis": {
+    "purpose": "历史诊断；不是候选4观测，不替代原报告，也不升级门槛",
+    "sourceCandidate": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+    "sourceIdentity": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+    "sourceReportSha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47",
+    "newReport": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\historical-rescore-readonly-v2\\candidate3-diagnostics-v2.rescore-c1678104-3020-4696-ba0c-148e3494af2a.json",
+    "newReportSha256": "d77482653f55e78bdf7bac5f678e7b5e3d63f76249ce0e7b385b70f9eddeb769",
+    "sourceScorer": "sha256:9ddcd556d4160179472c781a16ea913d5a2db8ffdb72a4f3f48a35269bca7c5a",
+    "newScorer": "sha256:99439a81470a6fe374f8902bfd0654ad032c8a298981ec332f4c6cbe106121ed",
+    "guardFormat": "renderweave-feedback-score/2",
+    "guards": {
+      "targetCorrection": false,
+      "nonTargetPreservation": false,
+      "unknownRetained": true,
+      "finalCheckMatches": true,
+      "pagination": true
+    },
+    "unchecked": {},
+    "before": {
+      "original": 5172,
+      "restored": 5172,
+      "directoriesCompared": 1954
+    },
+    "after": {
+      "original": 5172,
+      "restored": 5172,
+      "directoriesCompared": 1954
+    },
+    "oldGate": "fail",
+    "newGate": "fail",
+    "completeness": {
+      "planned": 16,
+      "pass": 7,
+      "fail": 1,
+      "invalid": 0,
+      "notRun": 8,
+      "complete": false
+    }
+  },
+  "realModelCalls": 0,
+  "files": [
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\slot-red.log",
+      "bytes": 1716,
+      "sha256": "e3a24643a9a22d6e1e28da6e0df37c70e00e7958445c834b130cdb614729edf7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\slot-green.log",
+      "bytes": 251,
+      "sha256": "b0c5d2782c2aa7598aa32824dd3891c3a765ca479a38f0949c750f9e49453e2b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\missing-red.log",
+      "bytes": 931,
+      "sha256": "ece963329736503439e92495afa0e62b45751d7de65ab84174c5799d088f9c12"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\missing-red-02.log",
+      "bytes": 1699,
+      "sha256": "e2d518f3babbb78009a6b62c4eed5cb3032e504000a12562bff884ddc66625f6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\diagnostics-green.log",
+      "bytes": 252,
+      "sha256": "0785741ff6451a97d7c73598c530aa54bb6aff34422168de6d0913a12b50c2ee"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\readonly-red.log",
+      "bytes": 24059,
+      "sha256": "281b436ebb0207c10465db2915d4bec42d390d8757e5968cfafb0703fb67de8a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\readonly-green.log",
+      "bytes": 253,
+      "sha256": "6dc99689b8d97a0a83036ae61dc9981b6975431880fa30b24b83862c3d157436"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\rescore-readonly-red.log",
+      "bytes": 4016,
+      "sha256": "e68106982e29eca6ceed6a3c5a213bb060f613260d57773b5412f344bab5ad08"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\preview-readonly-red.log",
+      "bytes": 1427,
+      "sha256": "0d1d7c69e6aac50a0a14a7e8f87d54cc6f78bbef34c71199d91619236522faca"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\readonly-complete-green.log",
+      "bytes": 253,
+      "sha256": "330f720f038bc35ff52cf1b43dd2e602f07f0c5c17d7a3c360be436e8342f543"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\windows-regression.log",
+      "bytes": 218,
+      "sha256": "962719f5cb499d95d5214721a2bfecb39a238e0869f599d9a92804b98a050339"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-regression.log",
+      "bytes": 4733,
+      "sha256": "8cf85d2d0fffab3b90779221d07ab575ac07860d807ac66f520ab0632366430e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\windows-final-build.log",
+      "bytes": 61,
+      "sha256": "fe3bf9e9d10efc5a36aba0d081121ba61eeda82128fa9c609c9a78af40747c8f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\windows-final-typecheck.log",
+      "bytes": 51,
+      "sha256": "e88d529d3937c931d3dbe4d4ec5bce9a467530d59ff5b682718a393efd5ff863"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\windows-final-regression.log",
+      "bytes": 218,
+      "sha256": "b1a8d505447763b344d9842b86ebdb8845821a9c2150d49256a5576d57f31fae"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-final-build.log",
+      "bytes": 57,
+      "sha256": "e6b45ffb6caab989ff5ca2257db7797619accb0766a34ad27fe14e345b775c97"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-final-typecheck.log",
+      "bytes": 47,
+      "sha256": "a1bfb899cb038f89e1a4ab041a8827440e53174db15753c90870b3a2e52486f5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-final-regression.log",
+      "bytes": 8930,
+      "sha256": "f15ddf27ae4dd56fb28fc95809a4029aef1367eb02ecf2203892570b4fb0ee82"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-final-runtime.log",
+      "bytes": 16,
+      "sha256": "f5fa7b06e6dacffc5918d1094283b0bfe1c0e905f0dc68e11b0fadc8c529a376"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\linux-final-run.sh",
+      "bytes": 577,
+      "sha256": "7039e974da479ff5ab6ff915171af5d5ac37a476749af76ae9058552b26a7b48"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\historical-rescore.log",
+      "bytes": 1175,
+      "sha256": "8af652e7b20d5887a5c6a94a61cfdc8df904a4c75f1428924db9066c25f93d77"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\historical-rescore-readonly-v2.log",
+      "bytes": 2428,
+      "sha256": "b5aad089a7507c425bcc4bbad37cb8522a0728ad965aaf9f4b9cbce5bbfa2021"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\historical-rescore-readonly-v2-verification.json",
+      "bytes": 223051,
+      "sha256": "8e9fe018e3830e0c89198b9ed17536eb0caee7e5cfd24ef7076846ce0787cd4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\restore-readonly-v2.log",
+      "bytes": 220,
+      "sha256": "8d96778f78a3c1a3bcd3162dad8fca93f23a61c56e38aafbaf06ff7af3c08475"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-feedback-diagnostics\\historical-rescore-readonly-v2\\candidate3-diagnostics-v2.rescore-c1678104-3020-4696-ba0c-148e3494af2a.json",
+      "bytes": 622865,
+      "sha256": "d77482653f55e78bdf7bac5f678e7b5e3d63f76249ce0e7b385b70f9eddeb769"
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-feedback-diagnostics-rescore-readonly-v2.mjs",
+      "bytes": 5990,
+      "sha256": "01ec36b6d3cd07649af1b2d72ad7f032eac40b83fe896b36440f90f3e8a2cfe2"
+    }
+  ]
+}
