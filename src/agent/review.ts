@@ -38,7 +38,7 @@ import type { RoundOutcome, RoundRecord, RoundUsage } from './run.js';
 import { replaceFile, writeJsonFiles, type JsonFileWrite } from './write-files.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
-import { readExecution, type RoundExecution } from './execution.js';
+import { readExecution, type RoundExecution, type RoundStart } from './execution.js';
 import { readCheckpoint, type CheckpointView } from './checkpoints.js';
 
 export const REVIEW_FILE = 'review.json';
@@ -1231,7 +1231,9 @@ async function workspaceDrift(round: AgentRound, workspace: string, actual: stri
 /** 下一轮所需的上一轮内容（M58）。 */
 export interface PreviousRound {
   readonly dir: string;
-  readonly record: RoundRecord;
+  readonly record: RoundRecord | RoundStart;
+  readonly checkpoint?: { readonly id: string; readonly contentIdentity: string; readonly source: 'hostRecovery' };
+  readonly checkpointWorkspace?: string;
   readonly round: number;
   /** 上一轮所用的资源仓库。 */
   readonly resources?: string;
@@ -1253,6 +1255,19 @@ export interface PreviousRound {
  */
 export async function readPreviousRound(dir: string): Promise<PreviousRound> {
   const execution = await readExecution(resolve(dir));
+  if (!execution.problems.length && execution.execution && !execution.execution.committed && execution.execution.status === 'interrupted' && execution.execution.start) {
+    const saved = await readCheckpoint(resolve(dir));
+    if (!saved.checkpoint || saved.problems.length) throw new AgentUsageError(`没有可核对的完整检查点，不能从残片接续：${saved.problems.map(p => p.message).join('；')}`);
+    const checkpoint = saved.checkpoint, root = resolve(dir), record = execution.execution.start;
+    const checkpointRoot = join(root, 'checkpoints', checkpoint.id);
+    return { dir: root, record, round: record.round, resources: record.inputs.resources, applied: false,
+      outcomeSha256: null, reviewSha256: null, reviewStatus: null,
+      checkpoint: { id: checkpoint.id, contentIdentity: checkpoint.contentIdentity, source: 'hostRecovery' },
+      checkpointWorkspace: join(checkpointRoot, 'snapshot'),
+      candidates: await Promise.all(checkpoint.check.candidates.map(async candidate => ({ path: candidate.path, bytes: await readFile(join(checkpointRoot, 'agent', candidate.path)) }))),
+      files: [{ name: 'checkpoint.json', bytes: Buffer.from(JSON.stringify(checkpoint)) },
+        { name: 'outcome.json', bytes: await readFile(join(checkpointRoot, 'agent/outcome.json')) }] };
+  }
   if (execution.problems.length || (execution.execution && !execution.execution.committed)) throw new AgentUsageError(
     `轮次尚未完整提交，不能从残留候选接续：${[...execution.problems.map(p => p.message), ...(execution.execution?.diagnostics ?? [])].join('；')}`);
   const root = resolve(dir);

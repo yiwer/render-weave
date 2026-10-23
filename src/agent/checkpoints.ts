@@ -9,6 +9,7 @@ import { canonical } from './diff.js';
 import { writeAtomicJson } from './execution.js';
 import { checkAgentOutcome, type OutcomeCheck, type OutcomeTarget } from './outcome.js';
 import { exists, sha256 } from './round-files.js';
+import { AgentUsageError } from './round-files.js';
 
 export type CheckpointSignal = { readonly status: 'saved'; readonly id: string; readonly contentIdentity: string }
   | { readonly status: 'notSaved'; readonly reason: string };
@@ -21,6 +22,17 @@ export interface CheckpointView extends CheckpointRecord { readonly contentIdent
 const DEPENDENCY_ERRORS = new Set<string>([ProblemCodes.templateNotFound, ProblemCodes.staticSchemaNotFound,
   ProblemCodes.compiledSchemaMissing, ProblemCodes.definitionRefNotFound, ProblemCodes.datasetNotFound,
   ProblemCodes.resourceUnreadable, ProblemCodes.resourceNotFound, ProblemCodes.datasetResourceNotFound]);
+
+/** 一次恢复占有源轮次；宿主异常消失时保留该事实，必须沿已建立的新轮次继续，不能抢占未知拥有者。 */
+export async function claimCheckpointRecovery(source: string, destination: string) {
+  const path = join(source, 'checkpoint-recovery.json'), owner = { id: randomUUID(), destination };
+  try { await writeAtomicJson(path, owner, true); }
+  catch { throw new AgentUsageError(`检查点已有恢复拥有者；请检查 checkpoint-recovery.json 指向的新轮次，不可并发接管：${source}`); }
+  return async () => {
+    const current = JSON.parse(await readFile(path, 'utf8'));
+    if (current.id === owner.id) await rm(path);
+  };
+}
 
 /** 只允许宿主提供固定路径和判据，MCP 请求不能携带它们。 */
 export function checkpointChecker(options: { roundDir: string; agentDir: string; snapshotDir: string; resourcesDir: string; target: OutcomeTarget }) {

@@ -35,7 +35,7 @@ import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerpr
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
 import { claimExecution, writeAtomicJson } from './execution.js';
-import { checkpointChecker } from './checkpoints.js';
+import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
 import { startCheckpointHost } from './checkpoint-host.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
@@ -170,6 +170,7 @@ export interface TemplateBasis {
 
 /** 轮次链上的上一环：沿 previous.dir 可以一直追到第 1 轮。 */
 export interface PreviousRef {
+  readonly checkpoint?: { readonly id: string; readonly contentIdentity: string; readonly source: 'hostRecovery' };
   readonly dir: string;
   readonly round: number;
   /** 上一轮成果的哈希；结构不合格、没有成果时为 null。 */
@@ -296,7 +297,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   const startedAt = new Date().toISOString();
   const execution = await claimExecution(roundDir, startedAt);
+  let releaseRecovery: (() => Promise<void>) | undefined;
   try {
+  if (previous?.checkpoint) releaseRecovery = await claimCheckpointRecovery(previous.dir, roundDir);
   const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
@@ -327,7 +330,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     for (const file of previous.files) await writeAt(join(agentDir, 'previous', file.name), file.bytes);
     for (const candidate of previous.candidates) await writeAt(join(agentDir, 'previous', candidate.path), candidate.bytes);
-    basisChanged = revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
+    basisChanged = previous.checkpoint ? false : revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
     if (!basisChanged) {
       for (const candidate of previous.candidates) {
         const name = templateName(candidate.bytes);
@@ -369,7 +372,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(contentBaseline ? { contentBaseline: { file: 'logs/content-baseline.json', sha256: sha256(await readFile(join(logsDir, 'content-baseline.json'))) } } : {}),
     brief: { source: resolve(options.brief), sha256: sha256(briefBytes) },
     domain: options.domain ?? null,
-    workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
+    workspace: { source: previous?.checkpoint ? previous.record.inputs.workspace.source : options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
     resources: resolve(options.resources),
     definition: basis.definition, dataset,
     request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
@@ -377,6 +380,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(previous ? { feedback } : {}),
     previous: previous ? {
       dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256, reviewStatus: previous.reviewStatus,
+      ...(previous.checkpoint ? { checkpoint: previous.checkpoint } : {}),
       ...(basisChanged !== undefined ? { basisChanged } : {}),
     } : null,
   };
@@ -491,6 +495,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   };
   await writeAtomicJson(join(roundDir, 'round.json'), record);
   await execution.finish(record);
+  await releaseRecovery?.();
   return { roundDir, record, check, ...(outcome ? { outcome } : {}), ...(recovered && deliverable.candidates.length > 0 ? { draft: DRAFT_FILE } : {}) };
   } catch (error) {
     await execution.fail().catch(() => undefined);
@@ -540,12 +545,12 @@ function checkNextRound(given: AgentRunOptions): void {
 function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptions {
   const { dir, record: { task, inputs } } = previous;
   return {
-    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, previous.checkpoint ? 'logs/materials/brief.md' : 'agent/docs/brief.md'),
     ...(inputs.reference ? { reference: join(dir, inputs.reference.file) } : {}),
     ...(inputs.contentBaseline ? { contentBaseline: join(dir, inputs.contentBaseline.file) } : {}),
     ...(previous.resources !== undefined ? { resources: previous.resources } : {}),
     ...(inputs.domain !== null ? { domain: inputs.domain } : {}),
-    ...(inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
+    ...(previous.checkpointWorkspace ? { workspace: previous.checkpointWorkspace } : inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
     ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
     ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
     ...(inputs.request ? { request: join(dir, 'request.json') } : {}),

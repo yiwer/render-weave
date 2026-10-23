@@ -1,9 +1,12 @@
 // 假执行器只写工作副本，经真实 MCP 协议检查，随后等待宿主测试决定继续或强退。
 import { spawn } from 'node:child_process';
-import { cp, readFile, writeFile } from 'node:fs/promises';
+import { cp, readFile, writeFile, readdir } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 const preset = process.argv[2];
 for await (const _ of process.stdin) {}
+const seeds = {};
+for (const name of await readdir('candidates')) seeds[name] = await readFile(`candidates/${name}`, 'utf8');
+await writeFile('checkpoint-seeds.json', JSON.stringify(seeds));
 await cp(preset, process.cwd(), { recursive: true });
 const config = JSON.parse(await readFile(process.argv[process.argv.indexOf('--mcp-config') + 1], 'utf8')).mcpServers.rw;
 const mcp = spawn(config.command, config.args, { env: { ...process.env, ...config.env }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
