@@ -1,0 +1,2841 @@
+{
+  "format": "harness26-inflight-evidence-map/2",
+  "kind": "candidate4-single-timepoint-not-final-acceptance",
+  "readStartedAt": "2026-10-23T20:28:49.284Z",
+  "readEndedAt": "2026-10-23T20:28:49.306Z",
+  "mainCommit": "2062511be93227562e692c00887f03e8f9e6b3b1",
+  "finalReviewBase": "40d14f1",
+  "derivedFrom": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-26-evidence-map-candidate3-during-run.json",
+    "sha256": "485f6ba7158a90e43cb8d1aa87445eae67da9c861cc0129ee66b4dbf6aa142ba",
+    "oldStatesNotReused": true
+  },
+  "candidate": {
+    "id": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d",
+    "commonFiles": 3322,
+    "changesFromCandidate3": 13,
+    "defaultContextPolicy": "full"
+  },
+  "mechanism": {
+    "ticket14": "independently-merged-feedback-score2-and-nonpersisting-public-review",
+    "ticket17": "independently-merged-three-generic-guidance-documents",
+    "validation": "baseline-full-plus-owned-changes-two-platform-regressions-not-final-single-full-run",
+    "restoredReadOnlyRounds": 42,
+    "restore37": {
+      "file": "F:/GenCode/render-weave/docs/agent-eval/archive-readonly-candidate4-evidence.json",
+      "files": 22916,
+      "directories": 5268,
+      "oldBusinessResultsUnchanged": true
+    },
+    "restore5": {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate3-archive-verification.json",
+      "files": 4286,
+      "directories": 649,
+      "reader": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+      "wholeTreeEqual": true
+    },
+    "notProofOf": "model quality, human acceptance, arbitrary-machine continuation"
+  },
+  "historical": {
+    "feedback2": {
+      "pass": 10,
+      "fail": 6,
+      "notRun": 0
+    },
+    "feedback3": {
+      "pass": 7,
+      "fail": 1,
+      "notRun": 8,
+      "posthocDiagnosticsNotNewObservation": true
+    },
+    "originalFour2": {
+      "pass": 4,
+      "fail": 0,
+      "notRun": 4
+    },
+    "originalFour3": {
+      "pass": 3,
+      "fail": 1,
+      "notRun": 4
+    },
+    "paired18": {
+      "observations": 32,
+      "bothPolicyPass": "11/16",
+      "inputAndCacheReductionPercent": 9.0711,
+      "decision": "retain-full",
+      "humanMinutes": null
+    }
+  },
+  "live": [
+    {
+      "id": "original38",
+      "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+      "bindingId": "sha256:c95dfdb1e4c3154cfb85fe981c528246d115fb6b80480adc1c05de33581e85d0",
+      "experimentId": "sha256:c6eccead1b20d245dc2369dd1a2853f87f5445f201a0811f75a1aeaf08a257c9",
+      "plannedObservations": 8,
+      "plannedModelStages": 10,
+      "startedAt": "2026-10-23T20:18:42.612Z",
+      "startFile": "F:/GenCode/render-weave/out/harness-original38-candidate-4/dispatch-segment-1/started.json",
+      "startFileSha256": "f92528c7e5384b6088d1ad7269377b407ea6b234fe05b60cef890858552f5e0e",
+      "firstCompletionRecordPresent": false,
+      "secondStartedRecordPresent": false,
+      "observationsAtThisSnapshot": null,
+      "finalResult": "pending-owner-complete-sealed-source-and-quality-audit",
+      "costTotals": null,
+      "readUnsealedStreams": false
+    },
+    {
+      "id": "feedback21",
+      "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+      "bindingId": "sha256:46cb478e587cc6c73aff68871d373a841b791f3818c4c6d8c987d589a807bd80",
+      "experimentId": "sha256:ed56446a11984236ce1b00daf0f0b1ad597716e8966eacfbce19e28e89719410",
+      "plannedObservations": 16,
+      "plannedModelStages": 16,
+      "startedAt": "2026-10-23T20:18:47.765Z",
+      "startFile": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-4/dispatch/block-1.started.json",
+      "startFileSha256": "5538ce93da450b005c5d6d81faa2c2dd3702bffcefb6c1c818a36ae773d82933",
+      "firstCompletionRecordPresent": true,
+      "secondStartedRecordPresent": false,
+      "observationsAtThisSnapshot": null,
+      "finalResult": "pending-owner-complete-sealed-source-and-quality-audit",
+      "costTotals": null,
+      "readUnsealedStreams": false
+    }
+  ],
+  "holdout": {
+    "directory": "F:/GenCode/render-weave/out/harness-holdout-execution-preparation-candidate-4",
+    "status": "preparation-only-do-not-dispatch",
+    "approved05": {
+      "status": "approved",
+      "reviewer": "user",
+      "approvedAt": "2026-10-23T16:21:26.877Z",
+      "approvedAtBasis": "本会话用户回复已收到后的登记时间，不冒称独立计时的点击时间",
+      "approvedManifest": "23f030f9aaa44c3565233130d0ce6a38d38f4d1f58eac1b97d22184ebb7f1da3",
+      "manifestFileSha256": "f0503600596381dc84bf0d43000b29c8666df2cdb913c8deeff52c028515bc40",
+      "sourceHistory": "用户确认原始素材未用于调优",
+      "familyIndependence": "unknown",
+      "authorization": "用户在本会话对05具体12例材料包选择“核准此材料包（推荐）”；10例全流程、2例英文字色修改，每例3次。核准准备材料，不代表36次实际成果已审核或允许跳过20/21/原38前置。",
+      "userReply": "核准此材料包（推荐）",
+      "questionItemId": "[\"request_user_input_async\",\"call_4472233ef5db44afb25c084442acbacd\",0]",
+      "scope": {
+        "cases": 12,
+        "fullFlowCases": 10,
+        "revisionCases": 2,
+        "units": 36,
+        "stagePlans": 96
+      },
+      "resultsReviewed": 0,
+      "candidateBinding": "pending-ticket-20"
+    },
+    "preparedFiles": 333,
+    "referenceFiles": 173,
+    "plannedOrders": 36,
+    "plannedStages": 96,
+    "realObservations": 0,
+    "newStageBindings": 0,
+    "newOrderRegisters": 0,
+    "reviewedResults": 0,
+    "humanMinutes": null,
+    "familyIndependence": "unknown",
+    "EnglishScope": "actual approved fields only; no price-tag or cross-domain claim"
+  },
+  "human": {
+    "english02": {
+      "status": "pending-user",
+      "doNotDispatch": true,
+      "reviewRows": 39,
+      "actualModels": 0,
+      "bindingCreated": false,
+      "humanMinutes": null
+    },
+    "chineseCandidate2": [
+      {
+        "type": "template",
+        "file": "F:/GenCode/render-weave/out/harness-original38-review/zh-template-r1-candidate-2-v2/review-template.json",
+        "status": "not-reviewed",
+        "items": 16,
+        "reviewedItems": 0,
+        "activeMinutes": null,
+        "judgment": null
+      },
+      {
+        "type": "revision",
+        "file": "F:/GenCode/render-weave/out/harness-original38-review/zh-revision-r1-candidate-2-v2/review-template.json",
+        "status": "not-reviewed",
+        "items": 16,
+        "reviewedItems": 0,
+        "activeMinutes": null,
+        "judgment": null
+      }
+    ],
+    "mixedBoard": {
+      "overall": "not-accepted",
+      "englishAcceptance": "not-established-by-this-review",
+      "individualDecisions": null,
+      "reviewMinutes": null,
+      "arabicRestoration": "out-of-scope-per-M307-stop-further-investment"
+    },
+    "walkthrough": {
+      "directory": "F:/GenCode/render-weave/out/harness-walkthrough-preparation-candidate-4-v3",
+      "steps": 12,
+      "humanExecution": false,
+      "judgment": null,
+      "minutes": null,
+      "controlledHistoricalCheckpoint": "b24c48ca-1b33-4b9f-80bc-4056b9a7ad17",
+      "actualContinuation": false
+    }
+  },
+  "mappingCorrections": [
+    {
+      "id": "ownership-US48",
+      "severity": "mapping-omission-corrected-in-this-snapshot",
+      "story": "US48",
+      "missingExplicitOwners": [
+        "20"
+      ],
+      "evidence": [
+        {
+          "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/20-verified-candidate-freeze.md",
+          "line": 9
+        }
+      ],
+      "action": "最终26证据表保留这些主责，不只列提供记录能力的共用票。"
+    },
+    {
+      "id": "ownership-US56",
+      "severity": "mapping-omission-corrected-in-this-snapshot",
+      "story": "US56",
+      "missingExplicitOwners": [
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "evidence": [
+        {
+          "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/22-landscape-route-holdout.md",
+          "line": 9
+        },
+        {
+          "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/23-vertical-route-holdout.md",
+          "line": 9
+        },
+        {
+          "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/24-bus-stop-board-holdout.md",
+          "line": 9
+        },
+        {
+          "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/25-bilingual-stop-name-holdout.md",
+          "line": 9
+        }
+      ],
+      "action": "最终26证据表保留这些主责，不只列提供记录能力的共用票。"
+    }
+  ],
+  "ownerActions": [
+    {
+      "priority": 1,
+      "owner": "21与原38各自唯一派发者",
+      "action": "完整封存候选4新16单元及原四8观测/10阶段；独立核全部attempt、真实响应/执行器、完整用量及pass/fail/invalid/not-run。共享英文4槽仅条件引用一次，不重复派发计费。",
+      "gate": "新批全量门槛；不能拼旧成功",
+      "evidence": "docs/agent-eval/harness-acceptance-candidate-4.md:23–33"
+    },
+    {
+      "priority": 1,
+      "owner": "原38 / 用户独立审核",
+      "action": "英文TfL具体02包仍pending-user；核准后按登记做真实参考设计及有真实缺陷才做一次纠偏；补中文/英文实际样式状态判断与分钟。原四即使全过也不自动关闭此项。",
+      "gate": "22–25依赖原38，不能用后置留出解除前置或把21受控种子当真实图",
+      "evidence": ".scratch/agent-template-authoring/issues/38-retest-after-quota-recovery.md:15–23"
+    },
+    {
+      "priority": 2,
+      "owner": "26证据维护者",
+      "action": "修正旧进行中映射遗漏：US48补20；US56补22–25，区分07/15记录能力与实际留出成本责任；本快照已修正，旧表保留。",
+      "gate": "责任覆盖完整",
+      "evidence": ".scratch/agent-harness-hardening/issues/20-verified-candidate-freeze.md:9；22–25各票:9"
+    },
+    {
+      "priority": 2,
+      "owner": "22–25 / 用户独立审核",
+      "action": "只有20/21/原38前置齐全后，按holdout4准备逐阶段新绑定→预检→派发→真人审核应用；保留36订单96阶段预算与05字节，不引入corrected种子；stage建轮前失败另记unknown。",
+      "gate": "当前0留出、0新订单/绑定，不预判误通过0",
+      "evidence": "out/harness-holdout-execution-preparation-candidate-4/README.md:24–56"
+    },
+    {
+      "priority": 2,
+      "owner": "26 / 用户",
+      "action": "用walkthrough4-v3执行12步；历史取消3只作为来源，候选4接续到新轮次；执行资源漂移重审和真实正式图。计时去重，未知分钟不填0。",
+      "gate": "只读42轮不能替代真人接续/批准/应用",
+      "evidence": "out/harness-walkthrough-preparation-candidate-4-v3/README.md:15–73"
+    },
+    {
+      "priority": 2,
+      "owner": "最终两轴审查者",
+      "action": "在完整结果齐备后从40d14f1基线做最终Spec/Standards收口，确认14/17修复及候选4证据纳入；将本快照替换为新的最终快照，不改本时间点文件。",
+      "gate": "当前不判总验收通过",
+      "evidence": ".scratch/agent-harness-hardening/issues/26-integrated-evidence-and-human-walkthrough.md:11–27"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "A01",
+      "focus": "有序转录与多报/重复/错漏分类",
+      "owners": "[01][T01]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 246,
+        "trigger": "真值、反序、交换、真实插入、错误重复、单字替换、单次漏项，经评估 CLI 评分",
+        "expected": "真值通过；反序/交换/插入/超额重复失败且分类准确；错字/漏项按 D04 容错，不引发全表错位",
+        "stories": [
+          "US02",
+          "US03",
+          "US08"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；转录/3及地标多报修复在候选4",
+      "realModel": "—",
+      "human": "—",
+      "boundary": "原四真实转录门槛另看A14；离线判据不代替真实模型。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A02",
+      "focus": "同名停靠、地标/设施归属",
+      "owners": "[01][T01]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 247,
+        "trigger": "合法 A→B→A→C，同名项地标不同；增加/串位设施",
+        "expected": "合法例通过，每次出现至多匹配一次；地标/设施串位与误报失败，歧义不自动通过",
+        "stories": [
+          "US04",
+          "US08"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；所有额外/重复地标均保留",
+      "realModel": "—",
+      "human": "—",
+      "boundary": "同名项一对一；歧义不自动通过。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A03",
+      "focus": "六类反事实与授权修改范围",
+      "owners": "[02][T02]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 248,
+        "trigger": "六类反事实变化及写死值、固定数量、无效参数反例，经公开渲染和评估报告",
+        "expected": "文字、实例数、顺序、状态与允许联动符合独立事实；反例被拒绝",
+        "stories": [
+          "US05",
+          "US06"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；透明fit反例已修",
+      "realModel": "实际模型修改范围由21/留出逐项留证",
+      "human": "原38/留出独立业务审核待完成",
+      "boundary": "正常visibility unknown不将fit全变未核；复杂感知仍未知。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A04",
+      "focus": "审核后相关资源漂移",
+      "owners": "[03][T03]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 249,
+        "trigger": "图片、字体、后备字体、SVG 字体分别在审核后更新；另更新无关资源",
+        "expected": "相关变化使旧批准失效，缓存和新预览可区分，覆盖选项不能绕过；无关资源不阻断，重审后可应用",
+        "stories": [
+          "US09",
+          "US10",
+          "US11",
+          "US12",
+          "US15"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "26资源变化→失效→重审→应用仍待真人",
+      "boundary": "W06准备可执行但未执行；旧批准不能用准备过程自动代替。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A05",
+      "focus": "并发应用与中断恢复",
+      "owners": "[04][T04]、[05][T05]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 250,
+        "trigger": "公开替换与应用并发，提交中终止，恢复前调用渲染/审核/应用，再恢复及重复应用",
+        "expected": "核对与提交有一致先后；未完成提交不暴露混合输入；无部分成功/重复发布；外部新改动不被恢复覆盖",
+        "stories": [
+          "US13",
+          "US16"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "26正常审核与应用待真人",
+      "boundary": "短锁/事务机制与真实使用分开；不外推任意直接改盘。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A06",
+      "focus": "旧资源/轮次兼容",
+      "owners": "[03][T03]、[08][T08]、[09][T09]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 251,
+        "trigger": "旧目录中相关图片/字体替换、无关文件变化、旧完整轮次、身份缺失历史轮次、资源损坏",
+        "expected": "相关字节变化需重查，无关变化允许；兼容读取和接续，新轮次可固定资源；不伪造历史，损坏明确拒绝",
+        "stories": [
+          "US14",
+          "US22",
+          "US63"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；37+5新恢复只读复验通过",
+      "realModel": "—",
+      "human": "26现场兼容与接续待真人",
+      "boundary": "42轮只证明当前机器完整只读查看；不证明任意迁移或接续执行。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A07",
+      "focus": "多阶段强退与完整集合恢复",
+      "owners": "[08][T08]、[09][T09]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 252,
+        "trigger": "初始化后、检查点保存完成状态后、检查点发布中、终检后强退；只改一半模板集合再恢复",
+        "expected": "精确恢复已保存检查实际消费的集合；未检查的新旧混合不顶替；受阻但完整候选可恢复；原轮次不伪造完成/批准",
+        "stories": [
+          "US17",
+          "US18",
+          "US19",
+          "US20",
+          "US21",
+          "US22",
+          "US23",
+          "US24"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "W05完整检查点接续尚未执行",
+      "boundary": "历史候选3受控取消完整checkpoint可查；草稿无批准/应用。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A08",
+      "focus": "恢复竞争与有效拥有者",
+      "owners": "[08][T08]、[09][T09]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 253,
+        "trigger": "两个恢复者、陈旧拥有者、旧执行器尚活、没有完整候选",
+        "expected": "至多一个可写拥有者；不能与原执行器并发写；无候选明确说明并保留诊断",
+        "stories": [
+          "US18",
+          "US20",
+          "US23",
+          "US24"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "26恢复入口查看待真人",
+      "boundary": "归档可读与恢复竞争机制不同；缺失故障原件不补造。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A09",
+      "focus": "整轮预算、取消与停止分类",
+      "owners": "[10][T10]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 254,
+        "trigger": "短预算下模型等待和执行器结束后的终检阻塞、取消、硬额度、普通429/5xx、错误硬token配置",
+        "expected": "预算加保存宽限及调度余量内退出并留可恢复记录，仅影响本轮；原因分开，普通错误不误判，不支持的硬限制启动前拒绝",
+        "stories": [
+          "US25",
+          "US26",
+          "US27",
+          "US28",
+          "US29"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—；历史额度仅为供应商故障记录",
+      "human": "26查看取消/超时/额度状态待真人",
+      "boundary": "持久受控取消可打开；timeout仅快照；旧额度早于M319，不能证明新停止合同。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A10",
+      "focus": "只停止已证停滞",
+      "owners": "[12][T12]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 255,
+        "trigger": "非空必修问题同哈希重复、两次完整无进展、写入未检查、基准变化、无可信比较；正确候选初检及交回复检",
+        "expected": "仅可证明停滞触发；正常重复确认仍能正式交回，分页/终检不误计；无可信比较使用预算兜底",
+        "stories": [
+          "US30"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "—",
+      "boundary": "完整反馈后修正机会及分页不误计；默认停滞阈值2。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A11",
+      "focus": "最后完整/较好候选及正式提交差异",
+      "owners": "[09][T09]、[11][T11]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 256,
+        "trigger": "新候选改善、关键缺项退步、维度冲突、未知增加、正式提交比保留版差",
+        "expected": "保留可验证完整候选；只在可比且无退步时更新较好候选；不私换正式提交",
+        "stories": [
+          "US21",
+          "US24",
+          "US31",
+          "US32"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "W05候选选择/接续待真人",
+      "boundary": "保持正式提交与较好候选分离，不暗换交回。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A12",
+      "focus": "冻结实验条件与另存重评分",
+      "owners": "[06][T06]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 257,
+        "trigger": "同实验改变模型/effort/预算/资料/评分器/真值/资源/构建，同身份串联/接续、服务模型变化和重新评分",
+        "expected": "预登记身份变化派发前拒绝；合法动态提示词保存实际证据不误拒；服务模型变化标注；仅补无效/未运行，重评分不覆盖",
+        "stories": [
+          "US33",
+          "US34",
+          "US35",
+          "US37",
+          "US38"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；候选4及两绑定独立复核",
+      "realModel": "原38/21候选4已启动，最终封存来源待审",
+      "human": "—",
+      "boundary": "预登记/activation的0是发布时事实，不能当当前未调用；旧3事后重评分不占新槽。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A13",
+      "focus": "全部尝试、真实用量和订单成本",
+      "owners": "[07][T07]、[15][T15]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 258,
+        "trigger": "暂时错误后成功、quota、无usage中断、并行任务、重启，给出可核对用量",
+        "expected": "所有尝试独立存在，成本不遗漏/重复；unknown与已知小计分开，thinking不重复，墙钟与耗时和不同",
+        "stories": [
+          "US36",
+          "US38",
+          "US55",
+          "US56"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；订单/全部attempt及unknown能力已有",
+      "realModel": "旧批次完整计量保留；候选4全批成本pending",
+      "human": "留出/26审核、修正、返工分钟均null",
+      "boundary": "分段墙钟与各轮耗时和不同；建轮前stage失败另存并保持unknown。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A14",
+      "focus": "原四场景与受控门槛汇总",
+      "owners": "[06][T06]、[原38][O38]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 259,
+        "trigger": "固定构建与新判据下原四场景各两次有效观测；另用受控报告覆盖fail+invalid、pass+invalid、pass+pass",
+        "expected": "真实门槛全部达线才通过；三种受控汇总及退出码分别为失败、未完成、通过，执行完整性另列；业务证据归属原38",
+        "stories": [
+          "US39",
+          "US48"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；06受控汇总已完成",
+      "realModel": "原四新8观测/10阶段已启动；尚无完整最终审计",
+      "human": "中文既有两包各16项未审；英文真实图仍待核准与实际纠偏",
+      "boundary": "旧3为3pass/1fail/4not-run；原四过线也不能自动关闭原38所有业务责任。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A15",
+      "focus": "中英文四任务可信反馈",
+      "owners": "[14][T14]、[21][T21]、[原38][O38]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 260,
+        "trigger": "中英文×四种任务可信反馈集，各两次有效观测，含后续页问题与未知内容",
+        "expected": "基准确实载入；核准问题修正、修改范围正确、未知保留；模型末次有效报告与宿主终检对应同内容身份；不得用合成工具测试替代",
+        "stories": [
+          "US40",
+          "US41",
+          "US42",
+          "US43",
+          "US49",
+          "US50"
+        ]
+      },
+      "mechanism": "14独立五守卫/unchecked及17通用资料修复均已独审合入候选4",
+      "realModel": "21新16槽已启动，最终质量/来源待封存审计",
+      "human": "原38中文/英文独立样式状态审核仍待",
+      "boundary": "旧2为10/6；旧3为7/1/8未派发。严格policy不变，合成种子+真实模型与真实英文参考责任分开。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A16",
+      "focus": "有限可见性与诚实未知",
+      "owners": "[13][T13]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 261,
+        "trigger": "无/无效基准、歧义、实心矩形遮挡/透明/出界；空心描边、透明孔洞、前后绘制/父透明度对照；低对比、错图",
+        "expected": "支持故障实际检出；不凭包围框误报遮挡，其余明确未知；参考被改拒绝；零异常/complete不能制造全图通过",
+        "stories": [
+          "US01",
+          "US07",
+          "US51",
+          "US52",
+          "US53",
+          "US54"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过",
+      "realModel": "—",
+      "human": "实际未核范围交原38/留出独立判断",
+      "boundary": "完全遮挡/透明/出界支持有限；低对比、部分遮挡等仍unknown。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A17",
+      "focus": "12例×3次留出及独立审核",
+      "owners": "[15][T15]、[19][T19]、[22][T22]、[23][T23]、[24][T24]、[25][T25]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 262,
+        "trigger": "公交四类型各3案例×3次计划、独立审核、人工修正与正式出图；首次结果、家族、调优及事后重评分记录",
+        "expected": "全部36计划/尝试可追踪，按业务类型及真实家族报告；关键错误误通过0；原始与人工补救分开；同族不增加独立家族数，英文限实际字段，价签未知；调优后集不得仍称独立，缺计划明确未完成",
+        "stories": [
+          "US44",
+          "US45",
+          "US46",
+          "US47",
+          "US48",
+          "US57"
+        ]
+      },
+      "mechanism": "19核准05；15记录能力；候选4留出准备333文件/173引用",
+      "realModel": "实际留出0；36订单/96阶段未派发",
+      "human": "05输入已核准；36成果与分钟尚未审核",
+      "boundary": "10全流程+2修改，各3次；家族独立性unknown；0观测不能声称关键误通过0。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A18",
+      "focus": "资料策略配对与自动指针检查",
+      "owners": "[17][T17]、[18][T18]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 263,
+        "trigger": "全量资料与按需资料配对实验，检查参考/合同/样例指针",
+        "expected": "预登记指标与质量守卫、完整成本；负结果也记录，未获收益不改默认；既有资料指向修复沿原20",
+        "stories": [
+          "US58",
+          "US59"
+        ]
+      },
+      "mechanism": "17策略/指针及最新通用资料字节已验证",
+      "realModel": "18历史32次已完成负结果，保留full",
+      "human": "历史分钟/金额未知",
+      "boundary": "旧11/16对11/16、输入缓存降9.0711%未达收益；不推断新候选成本收益。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A19",
+      "focus": "低可信输入与可分享证据",
+      "owners": "[15][T15]、[16][T16]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 264,
+        "trigger": "素材/字段/资源名/旧轮次注入、路径逃逸、正常成对样例、日志密钥检查",
+        "expected": "可信基准/权限/判据不可被污染，正常任务效用可见；没有凭据泄漏；不宣称已证明托管隔离",
+        "stories": [
+          "US60",
+          "US61",
+          "US62"
+        ]
+      },
+      "mechanism": "已有责任实现与公开机制回归；01–20票面resolved，不等于真实业务全部通过；16成对边界与15分享白名单",
+      "realModel": "—；真实执行器配受控上游不是远端模型质量观测",
+      "human": "—",
+      "boundary": "只证明所测本地边界；完整原件与可分享摘要分开，不宣称托管隔离。",
+      "finalConclusion": null
+    },
+    {
+      "id": "A20",
+      "focus": "兼容候选、跨平台与真人收口",
+      "owners": "[20][T20]、[26][T26]",
+      "prd": {
+        "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+        "line": 265,
+        "trigger": "合同/资料/记录升级，现有全量回归、共享样例、两平台涉及渲染的验证与真人走查",
+        "expected": "无无意兼容回退；旧票据证据可引用；走查记录审核/修正时间、各停止状态与最终正式出图",
+        "stories": [
+          "US01",
+          "US63",
+          "US64"
+        ]
+      },
+      "mechanism": "候选4共同3322文件、13变化；基线全量+14/17受影响双平台回归；42只读恢复",
+      "realModel": "原38/21新批进行中，留出0",
+      "human": "26全部12步/64US/20A仍空白",
+      "boundary": "最终从40d14f1起两轴收口与真人走查待完成；不是最终字节另跑单次全量。",
+      "finalConclusion": null
+    }
+  ],
+  "stories": [
+    {
+      "id": "US01",
+      "summary": "分开技术/内容/视觉/运行结论",
+      "requirement": "作为代建工程师，我想分别看到技术、内容、视觉和运行结论，以便知道哪些部分已验证、哪些还需要审核。",
+      "prdLine": 56,
+      "acceptance": [
+        "A16",
+        "A20"
+      ],
+      "explicitTicketOwners": [
+        "13",
+        "20",
+        "26"
+      ],
+      "supportingOwners": [
+        "08",
+        "06"
+      ],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "技术、内容、视觉、运行与业务结论继续分开；06/08为支撑来源，显式主责13/20/26。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US02",
+      "summary": "站序错误明确指出",
+      "requirement": "作为代建工程师，我想让停靠站点顺序错误被明确指出，以便评分通过的线路牌仍保持正确业务语义。",
+      "prdLine": 57,
+      "acceptance": [
+        "A01"
+      ],
+      "explicitTicketOwners": [
+        "01"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US03",
+      "summary": "多报/漏报/重复/错字分别列出",
+      "requirement": "作为代建工程师，我想让多报、漏报、错误重复和错别字分别列出，以便准确修正而不因一处错位重查整表。",
+      "prdLine": 58,
+      "acceptance": [
+        "A01"
+      ],
+      "explicitTicketOwners": [
+        "01"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US04",
+      "summary": "合法同名按位置核对附属事实",
+      "requirement": "作为代建工程师，我想合法同名停靠站点按各自位置核对，以便它们的地标和设施不会串到另一次出现。",
+      "prdLine": 59,
+      "acceptance": [
+        "A02"
+      ],
+      "explicitTicketOwners": [
+        "01"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US05",
+      "summary": "换数据/列表/参数后的真实行为",
+      "requirement": "作为代建工程师，我想更换数据、列表长度和模板参数后核查实际输出，以便确认模板能服务其他同类对象。",
+      "prdLine": 60,
+      "acceptance": [
+        "A03"
+      ],
+      "explicitTicketOwners": [
+        "02"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US06",
+      "summary": "目标修改与未授权内容保留",
+      "requirement": "作为代建工程师，我想验证修改要求实现的同时核对未授权部分，以便局部修改不会破坏原有内容。",
+      "prdLine": 61,
+      "acceptance": [
+        "A03"
+      ],
+      "explicitTicketOwners": [
+        "02"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US07",
+      "summary": "未知与证据不足持续显示",
+      "requirement": "作为审核人，我想未核查和证据不足的内容持续明确显示，以便不会将零异常理解为全图正确。",
+      "prdLine": 62,
+      "acceptance": [
+        "A16"
+      ],
+      "explicitTicketOwners": [
+        "13"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US08",
+      "summary": "结论的真值/候选/规则可追溯",
+      "requirement": "作为审核人，我想知道每项结论采用的真值、候选和规则，以便模型备注不能自证正确。",
+      "prdLine": 63,
+      "acceptance": [
+        "A01",
+        "A02"
+      ],
+      "explicitTicketOwners": [
+        "01"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US09",
+      "summary": "固定资源预览可复查",
+      "requirement": "作为审核人，我想查看与本轮固定资源一致的预览，以便所见内容稳定可复查。",
+      "prdLine": 64,
+      "acceptance": [
+        "A04"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US10",
+      "summary": "相关图片/字体漂移使旧批准失效",
+      "requirement": "作为审核人，我想相关图片或字体在应用前变化时让旧批准失效，以便核准对象与提交依据一致。",
+      "prdLine": 65,
+      "acceptance": [
+        "A04"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US11",
+      "summary": "无关资源变动不阻断",
+      "requirement": "作为代建工程师，我想未使用资源变化时仍能继续应用，以便无关素材不会造成返工。",
+      "prdLine": 66,
+      "acceptance": [
+        "A04"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US12",
+      "summary": "冲突列表与重新核准入口",
+      "requirement": "作为代建工程师，我想在资源冲突时看到变化清单和重新核准入口，以便不用猜测为何不能提交。",
+      "prdLine": 67,
+      "acceptance": [
+        "A04"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US13",
+      "summary": "并发替换/提交先后及中断读取",
+      "requirement": "作为维护者，我想并发资源替换与应用有明确先后顺序，以便不能在核对后、写入前悄悄换成另一份内容。",
+      "prdLine": 68,
+      "acceptance": [
+        "A05"
+      ],
+      "explicitTicketOwners": [
+        "04",
+        "05"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US14",
+      "summary": "旧目录也固定资源",
+      "requirement": "作为代建工程师，我想旧资源目录也能固定本轮使用内容，以便不必先迁移全部素材才能获得保护。",
+      "prdLine": 69,
+      "acceptance": [
+        "A06"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US15",
+      "summary": "应用后合法资源替换仍有效",
+      "requirement": "作为代建工程师，我想提交后的合法资源替换仍按已有规则生效，以便本轮核准不会永久锁死模板引用。",
+      "prdLine": 70,
+      "acceptance": [
+        "A04"
+      ],
+      "explicitTicketOwners": [
+        "03"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US16",
+      "summary": "中断提交状态和幂等重试",
+      "requirement": "作为代建工程师，我想应用中断后明确知道已提交、未提交还是需要恢复，以便重复操作不会多发布一个版本或留下混合文件。",
+      "prdLine": 71,
+      "acceptance": [
+        "A05"
+      ],
+      "explicitTicketOwners": [
+        "05"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US17",
+      "summary": "启动即持久可读状态",
+      "requirement": "作为代建工程师，我想任务启动后立即有可读状态，以便模型迟迟不返回时也能知道它是否在运行。",
+      "prdLine": 75,
+      "acceptance": [
+        "A07"
+      ],
+      "explicitTicketOwners": [
+        "08"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US18",
+      "summary": "强退后完整候选可读",
+      "requirement": "作为代建工程师，我想宿主被强制结束后仍能查看完整候选，以便已有工作不因缺少最终记录丢失。",
+      "prdLine": 76,
+      "acceptance": [
+        "A07",
+        "A08"
+      ],
+      "explicitTicketOwners": [
+        "08",
+        "09"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US19",
+      "summary": "现有入口从检查点开新轮次",
+      "requirement": "作为代建工程师，我想用现有接续入口基于完整检查点开新轮次，以便保留反馈习惯并明确原轮次已中断。",
+      "prdLine": 77,
+      "acceptance": [
+        "A07"
+      ],
+      "explicitTicketOwners": [
+        "09"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US20",
+      "summary": "半写/损坏不替代完整候选",
+      "requirement": "作为代建工程师，我想半写或损坏文件不能替代上一份完整候选，以便接续不会从混合内容开始。",
+      "prdLine": 78,
+      "acceptance": [
+        "A07",
+        "A08"
+      ],
+      "explicitTicketOwners": [
+        "09"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US21",
+      "summary": "主模板/被调模板同集合",
+      "requirement": "作为维护者，我想主模板和全部被调模板按同一候选集合保存，以便检查结果对应真实可渲染的一组文件。",
+      "prdLine": 79,
+      "acceptance": [
+        "A07",
+        "A11"
+      ],
+      "explicitTicketOwners": [
+        "09",
+        "11"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US22",
+      "summary": "旧完整轮次读取和接续",
+      "requirement": "作为代建工程师，我想旧版完整轮次仍可读取和接续，以便已有订单和历史证据继续可用。",
+      "prdLine": 80,
+      "acceptance": [
+        "A06",
+        "A07"
+      ],
+      "explicitTicketOwners": [
+        "08",
+        "09"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "37+5新恢复完整只读查看已补齐；实际接续仍须W05真人完成，不外推跨机器。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US23",
+      "summary": "唯一有效执行拥有者",
+      "requirement": "作为维护者，我想一个轮次只有一个有效执行拥有者，以便重复启动或陈旧锁不会制造两份相互覆盖的状态。",
+      "prdLine": 81,
+      "acceptance": [
+        "A07",
+        "A08"
+      ],
+      "explicitTicketOwners": [
+        "08",
+        "09"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US24",
+      "summary": "恢复来源明确且不自动批准",
+      "requirement": "作为审核人，我想恢复草稿继续标明宿主恢复来源，以便未正式交回的内容不会自动获得批准。",
+      "prdLine": 82,
+      "acceptance": [
+        "A07",
+        "A08",
+        "A11"
+      ],
+      "explicitTicketOwners": [
+        "08",
+        "09",
+        "11"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US25",
+      "summary": "开始前显示整轮时间/轮数",
+      "requirement": "作为代建工程师，我想开始前看到整轮时间与轮数限制，以便知道本轮的执行边界。",
+      "prdLine": 83,
+      "acceptance": [
+        "A09"
+      ],
+      "explicitTicketOwners": [
+        "10"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US26",
+      "summary": "超时停止并保存候选",
+      "requirement": "作为代建工程师，我想时间到达后停止本轮并保存候选，以便无需靠耗尽上游额度结束任务。",
+      "prdLine": 84,
+      "acceptance": [
+        "A09"
+      ],
+      "explicitTicketOwners": [
+        "10"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US27",
+      "summary": "取消只影响本轮",
+      "requirement": "作为代建工程师，我想取消只终止本轮执行器和代理，以便不会影响其他任务或正在使用的工具。",
+      "prdLine": 85,
+      "acceptance": [
+        "A09"
+      ],
+      "explicitTicketOwners": [
+        "10"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US28",
+      "summary": "取消/超时/额度/失败分开",
+      "requirement": "作为代建工程师，我想分别看到取消、超时、硬额度和模型失败原因，以便选择正确的接续时机。",
+      "prdLine": 86,
+      "acceptance": [
+        "A09"
+      ],
+      "explicitTicketOwners": [
+        "10"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "受控取消有原件；timeout只有快照；旧硬额度不是新M319证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US29",
+      "summary": "无法执行的硬token/费用启动前拒绝",
+      "requirement": "作为维护者，我想无法执行的硬 token 或费用限制在启动前明确拒绝，以便不会得到虚假的预算保证。",
+      "prdLine": 87,
+      "acceptance": [
+        "A09"
+      ],
+      "explicitTicketOwners": [
+        "10"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US30",
+      "summary": "有证机械停滞停止",
+      "requirement": "作为代建工程师，我想重复检查同一候选却没有进展时得到明确停止说明，以便减少机械循环消耗。",
+      "prdLine": 88,
+      "acceptance": [
+        "A10"
+      ],
+      "explicitTicketOwners": [
+        "12"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US31",
+      "summary": "最后完整与较好候选分开",
+      "requirement": "作为代建工程师，我想保留最后完整候选和有证据更好的候选，以便新一轮修改退步时仍能找回较好结果。",
+      "prdLine": 89,
+      "acceptance": [
+        "A11"
+      ],
+      "explicitTicketOwners": [
+        "11"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US32",
+      "summary": "正式提交和保留候选差异",
+      "requirement": "作为审核人，我想看到最终提交与保留候选的差异，以便系统不会悄悄替换作者正式交回的内容。",
+      "prdLine": 90,
+      "acceptance": [
+        "A11"
+      ],
+      "explicitTicketOwners": [
+        "11"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US33",
+      "summary": "模型/构建/资料/真值/资源/判据绑定",
+      "requirement": "作为维护者，我想一次评估绑定模型、构建、资料、真值、资源和判据，以便不同实验可比较。",
+      "prdLine": 94,
+      "acceptance": [
+        "A12"
+      ],
+      "explicitTicketOwners": [
+        "06",
+        "20"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "候选4共同身份7ce9…9804；原四c95d…85d0、21的46cb…bd80分别绑定；提供方修订未知。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US34",
+      "summary": "同名实验漂移派发前拒绝",
+      "requirement": "作为维护者，我想同名实验配置改变时在模型派发前被拒绝，以便续跑不会混入另一种条件。",
+      "prdLine": 95,
+      "acceptance": [
+        "A12"
+      ],
+      "explicitTicketOwners": [
+        "06"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US35",
+      "summary": "仅补invalid/not-run",
+      "requirement": "作为维护者，我想相同实验只补无效或未运行单元，以便不为已经完成的有效观测重复付费。",
+      "prdLine": 96,
+      "acceptance": [
+        "A12"
+      ],
+      "explicitTicketOwners": [
+        "06"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "新候选4全量新计划不等于同身份失败重跑；旧2/3失败保留。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US36",
+      "summary": "所有失败/重试独立记录",
+      "requirement": "作为维护者，我想每次失败和重试都有独立记录，以便诊断与成本不会因覆盖目录消失。",
+      "prdLine": 97,
+      "acceptance": [
+        "A13"
+      ],
+      "explicitTicketOwners": [
+        "07"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US37",
+      "summary": "新判据另存重评分",
+      "requirement": "作为维护者，我想新版判据重新评分时另存报告，以便同时保留当时结论和新规则下的结论。",
+      "prdLine": 98,
+      "acceptance": [
+        "A12"
+      ],
+      "explicitTicketOwners": [
+        "06"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "14历史另存重评分保持原strict失败；不改旧报告、不算候选4新观测。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US38",
+      "summary": "全计划pass/fail/invalid/not-run",
+      "requirement": "作为维护者，我想一次报告完整列出计划、通过、失败、无效和未运行单元，以便缺失结果不会藏在平均值里。",
+      "prdLine": 99,
+      "acceptance": [
+        "A12",
+        "A13"
+      ],
+      "explicitTicketOwners": [
+        "06",
+        "07"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "当前只记录两计划已启动；最终pass/fail/invalid/not-run及全成本等待封存审计。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US39",
+      "summary": "原四场景回归稳定比较",
+      "requirement": "作为维护者，我想原有四场景继续作为小型回归集，以便常见改动有稳定比较依据。",
+      "prdLine": 100,
+      "acceptance": [
+        "A14"
+      ],
+      "explicitTicketOwners": [
+        "26"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [
+        "original38-four-scenarios-and-business-review"
+      ],
+      "mechanismStatus": "integration-and-real-evidence-pending",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "原四8业务观测/10阶段运行；原38还有英文真实参考及中英文独立人审。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US40",
+      "summary": "可信反馈确实传入核准基准",
+      "requirement": "作为维护者，我想可信反馈场景实际传入核准基准，以便验证模型使用反馈修正了什么。",
+      "prdLine": 101,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "14机制完成且五守卫独立；真实遵循仍由21新16槽决定。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US41",
+      "summary": "中英文四任务各自纠偏证据",
+      "requirement": "作为维护者，我想中英文四种任务都有固定的真实纠偏场景，以便不同任务的新增能力分别获得证据。",
+      "prdLine": 102,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "21中英文四任务×2为通用真实纠偏；原38真实英文参考另有独立责任。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US42",
+      "summary": "真值/区域不由被测Agent选择改写",
+      "requirement": "作为维护者，我想核准事实与区域不由被测 Agent 自选或修改，以便模型不能改答案来通过检查。",
+      "prdLine": 103,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "05核准的是具体输入，不是36成果；真实反馈真值/政策固定不由模型改。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US43",
+      "summary": "后续页有真实必须修的问题",
+      "requirement": "作为维护者，我想大区域清单的后续页也含有待修问题，以便证明分页能力能被真实模型利用。",
+      "prdLine": 104,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "分页时序要求保持；旧2六个失败不消失；新16槽需实证。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US44",
+      "summary": "家族隔离与污染记录",
+      "requirement": "作为维护者，我想按模板家族隔离校准集与留出集，以便同图裁切或退化版不会造成信息泄漏。",
+      "prdLine": 105,
+      "acceptance": [
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "19",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "05输入已批；实际36结果、审核与成本仍待，模板家族/语言覆盖按批准事实。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US45",
+      "summary": "预登记预算与三次重复",
+      "requirement": "作为维护者，我想每个留出案例预先固定预算和重复次数，以便不靠挑选最好一次来展示效果。",
+      "prdLine": 106,
+      "acceptance": [
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "19",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "36订单96阶段40/40/80/80轮、每轮1h、full不变；当前0留出绑定/0订单。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US46",
+      "summary": "原始成果与人工补救分开",
+      "requirement": "作为维护者，我想分别记录 Agent 原始成果与人工修正后的交付结果，以便人工补救不会被算成首次成功。",
+      "prdLine": 107,
+      "acceptance": [
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "15",
+        "19",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "05输入已批；实际36结果、审核与成本仍待，模板家族/语言覆盖按批准事实。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US47",
+      "summary": "误通过位置/原因独立审核",
+      "requirement": "作为维护者，我想独立审核标出自动判定误通过的位置和原因，以便优先修复最危险的评分盲区。",
+      "prdLine": 108,
+      "acceptance": [
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "19",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "必须由用户看原始成果发现误通过；0观测不得先填关键误通过0。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US48",
+      "summary": "执行完整与业务达线分开",
+      "requirement": "作为维护者，我想评估报告区分测试系统完成与模型业务能力达线，以便不会把跑完案例当作客户自助就绪。",
+      "prdLine": 109,
+      "acceptance": [
+        "A14",
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "06",
+        "19",
+        "20",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [
+        "original38-four-scenarios-and-business-review"
+      ],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "补齐票20显式责任；机制完成、原四/21业务门槛、留出完成度分开。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US49",
+      "summary": "局部反馈路径/模板/差异/续取",
+      "requirement": "作为执行 Agent，我想局部反馈继续提供实例路径、源模板、分项差异和续取入口，以便能有针对性地修改。",
+      "prdLine": 113,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "17通用最小修改及语义规则进入三份资料，未泄漏样例答案；真实效果待新批。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US50",
+      "summary": "末次比较与终检同内容身份",
+      "requirement": "作为执行 Agent，我想最后一次比较与宿主终检绑定同一组候选，以便旧图的好结果不能代表新文件。",
+      "prdLine": 114,
+      "acceptance": [
+        "A15"
+      ],
+      "explicitTicketOwners": [
+        "14",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "14各守卫可独立出结论，null/unchecked不是false/pass；末次身份逐新单元核。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US51",
+      "summary": "支持的完全遮挡/透明/出界实测",
+      "requirement": "作为审核人，我想已支持的完全遮挡、全透明和移出画板问题被实际识别，以便正确文字存在于结构中也不能冒充可见。",
+      "prdLine": 115,
+      "acceptance": [
+        "A16"
+      ],
+      "explicitTicketOwners": [
+        "13"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US52",
+      "summary": "部分遮挡/复杂变换/低对比保持未知",
+      "requirement": "作为审核人，我想部分遮挡、复杂变换和低对比等未可靠测量的部分继续列为未知，以便不接受超出能力的视觉结论。",
+      "prdLine": 116,
+      "acceptance": [
+        "A16"
+      ],
+      "explicitTicketOwners": [
+        "13"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US53",
+      "summary": "正确与错误图片资源独立对照",
+      "requirement": "作为维护者，我想对照测试正确图片与错误图片资源，以便资源内容正确性有独立证据。",
+      "prdLine": 117,
+      "acceptance": [
+        "A16"
+      ],
+      "explicitTicketOwners": [
+        "13"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US54",
+      "summary": "有/无/无效基准对照",
+      "requirement": "作为维护者，我想按同一输入分别测试有基准、无基准和无效基准，以便缺证据时系统仍给出诚实状态。",
+      "prdLine": 118,
+      "acceptance": [
+        "A16"
+      ],
+      "explicitTicketOwners": [
+        "13",
+        "21"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "有/无/无效依据机制已核；21仍需当前身份真实对照，不将unknown改pass。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US55",
+      "summary": "失败token/时间进入订单成本",
+      "requirement": "作为代建工程师，我想失败尝试的 token 和时间也进入订单成本，以便估算实际代建投入。",
+      "prdLine": 119,
+      "acceptance": [
+        "A13"
+      ],
+      "explicitTicketOwners": [
+        "07",
+        "15",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "所有尝试进入成本；建轮前stage失败并列原派发记录及unknown，不伪造attempt。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US56",
+      "summary": "缺用量unknown、墙钟与耗时和分开",
+      "requirement": "作为维护者，我想用量缺失显示未知并区分并行墙钟与各轮耗时，以便不会低估成本或误读速度。",
+      "prdLine": 120,
+      "acceptance": [
+        "A13"
+      ],
+      "explicitTicketOwners": [
+        "07",
+        "15",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "current-candidate-running-final-audit-pending",
+      "humanStatus": "not-separately-required",
+      "boundary": "补齐22–25显式执行责任；07/15只给记录能力，实际缺失用量/墙钟边界须留出票逐批验收。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US57",
+      "summary": "审核/修正/返工分钟",
+      "requirement": "作为代建工程师，我想记录审核、修正与返工分钟，以便优化优先降低真正的人力负担。",
+      "prdLine": 121,
+      "acceptance": [
+        "A17"
+      ],
+      "explicitTicketOwners": [
+        "15",
+        "19",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "holdout-zero-or-upstream-running",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "288工时空模板不是分钟；原始审核/修正/返工待实际计时，不补0。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US58",
+      "summary": "全量与按需公平比较后改默认",
+      "requirement": "作为维护者，我想在相同条件下比较全量资料与按需资料，以便有收益证据才更改默认上下文。",
+      "prdLine": 122,
+      "acceptance": [
+        "A18"
+      ],
+      "explicitTicketOwners": [
+        "17",
+        "18"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "historical-negative-comparison-retained",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "18历史32次否定收益，full默认不变；资料4后不声称重新验证了节省。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US59",
+      "summary": "目录/DSL/合同/样例自动核对",
+      "requirement": "作为维护者，我想资料目录、DSL 参考、工具合同与样例可自动核对，以便减少过期指针和不一致指导。",
+      "prdLine": 123,
+      "acceptance": [
+        "A18"
+      ],
+      "explicitTicketOwners": [
+        "17",
+        "18"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "historical-negative-comparison-retained",
+      "humanStatus": "not-separately-required",
+      "boundary": "17资料及引用/身份回归已独审；候选4三份资料变化与14代码变化分别固定。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US60",
+      "summary": "低可信内容不改权限/基准/判据",
+      "requirement": "作为维护者，我想低可信素材中嵌入的指令不能改变参考、权限或通过规则，以便模型正常读图时仍遵守业务边界。",
+      "prdLine": 124,
+      "acceptance": [
+        "A19"
+      ],
+      "explicitTicketOwners": [
+        "16"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US61",
+      "summary": "防御与正常任务效用成对",
+      "requirement": "作为维护者，我想安全测试同时记录正常任务能否完成，以便不能靠拒绝一切来获得高拦截率。",
+      "prdLine": 125,
+      "acceptance": [
+        "A19"
+      ],
+      "explicitTicketOwners": [
+        "16"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US62",
+      "summary": "凭据脱敏与可分享身份",
+      "requirement": "作为维护者，我想报告和可分享证据清除凭据并保留必要身份信息，以便能诊断而不泄露密钥。",
+      "prdLine": 126,
+      "acceptance": [
+        "A19"
+      ],
+      "explicitTicketOwners": [
+        "15",
+        "16"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "not-separately-required",
+      "boundary": "沿当前责任票与对应A子项，不能由机制或准备状态替代真实/人工证据。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US63",
+      "summary": "新合同/记录兼容",
+      "requirement": "作为集成维护者，我想工具与轮次记录升级有兼容规则，以便旧消费者和历史轮次得到明确结果。",
+      "prdLine": 127,
+      "acceptance": [
+        "A06",
+        "A20"
+      ],
+      "explicitTicketOwners": [
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "15",
+        "16",
+        "18",
+        "19",
+        "20",
+        "26"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "旧缓存边界保留，37+5新只读证明已补；人类兼容/接续及最终收口未完成。",
+      "finalConclusion": null
+    },
+    {
+      "id": "US64",
+      "summary": "本地优化与阶段5/OCR/DSL职责边界",
+      "requirement": "作为产品负责人，我想本期优化与阶段 5 写入、托管、OCR、DSL 演进各有责任边界，以便后续实施不会重复建设或倒退已接受的决定。",
+      "prdLine": 128,
+      "acceptance": [
+        "A20"
+      ],
+      "explicitTicketOwners": [
+        "20",
+        "26"
+      ],
+      "supportingOwners": [],
+      "externalResponsibility": [],
+      "mechanismStatus": "responsibility-evidence-available",
+      "realModelStatus": "not-separately-required",
+      "humanStatus": "pending-actual-human-evidence",
+      "boundary": "本期本地单Agent/确定性宿主；阶段5托管/权限审计、OCR/DSL另责，阿文仍停止。",
+      "finalConclusion": null
+    }
+  ],
+  "tickets": [
+    {
+      "id": "01",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/01-ordered-transcription-grading.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) H1、D04；US02–04、US08；A01、A02。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US02",
+        "US03",
+        "US04",
+        "US08"
+      ],
+      "sha256": "afcd8bc8464c3ae56714de5c481afad85dcdb9d7740cadb7fba8b316e445cd69"
+    },
+    {
+      "id": "02",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/02-template-behavior-checks.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) H1、D05；US05–06；A03 的六类反事实及修改范围验证。",
+      "traceLine": 9,
+      "answerLine": 22,
+      "stories": [
+        "US05",
+        "US06"
+      ],
+      "sha256": "90f766c5b35962f8e2d89a28720490ce7e6145613bd219b24c66abf6240d1ec0"
+    },
+    {
+      "id": "03",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/03-pinned-review-resources.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D02、D03、D16；US09–12、US14–15、US63（本票内容身份与资源兼容）；A04；A06（旧资源目录、相关/无关变化、资源损坏和历史资源身份缺失子项）；A20（本票合同、资料及兼容子项）。遵守 ADR-0023，保留 ADR-0022 的阶段 5 策略。",
+      "traceLine": 9,
+      "answerLine": 24,
+      "stories": [
+        "US09",
+        "US10",
+        "US11",
+        "US12",
+        "US14",
+        "US15",
+        "US63"
+      ],
+      "sha256": "d7b332843fedbccf0091d22dc5ea5cd73a6f17b8054ad08bf57f1b012cf6553a"
+    },
+    {
+      "id": "04",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/04-concurrent-apply-and-reads.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D03；US13、US63（本票并发行为兼容）；A05（正常运行中的并发替换、核对与提交先后、一致读取及整体拒绝子项）；A20（本票合同、资料及兼容子项）。遵守 ADR-0023。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US13",
+        "US63"
+      ],
+      "sha256": "2e22bd5f482fe347c303fd5fc078c5032be7cbb9b62910f021669ae7d138e6c6"
+    },
+    {
+      "id": "05",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/05-recover-interrupted-apply.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D03、D09；US16、US13（中断后的读取一致性）、US63（本票应用记录兼容）；A05（提交中断、恢复前读取、完整恢复、重复应用及外部新改动子项）；A20（本票合同、资料及兼容子项）。遵守 ADR-0023。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US16",
+        "US13",
+        "US63"
+      ],
+      "sha256": "37e3393706c3a9b78e20eaa93ff7cefdda274b67b692c7c4fb327281491b6c0f"
+    },
+    {
+      "id": "06",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/06-frozen-evaluation-identity.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D06、D07、D16；US33–35、US37–38、US48、US63；A12；A14 的受控状态汇总与退出码子项。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US33",
+        "US34",
+        "US35",
+        "US37",
+        "US38",
+        "US48",
+        "US63"
+      ],
+      "sha256": "2ffb4bc7f623f079b165e0b6923981d5a743798c8c9c5b955ab7b7a8a27296f0"
+    },
+    {
+      "id": "07",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/07-immutable-attempts-and-usage.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D07、D14、D16；US36、US38、US55–56、US63；A13 的尝试留存、恢复去重和原始用量子项。",
+      "traceLine": 9,
+      "answerLine": 24,
+      "stories": [
+        "US36",
+        "US38",
+        "US55",
+        "US56",
+        "US63"
+      ],
+      "sha256": "accc3f9c3d0a3957f1ba3bada09db79d6d0066194e10187794abc5485a7410e8"
+    },
+    {
+      "id": "08",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/08-durable-round-state.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D08、D16；US17、US18（强退状态与诊断子项）、US22（历史完整轮次读取）、US23、US24（不伪造来源和批准）、US63；A07（初始化后、终检后强退的状态子项）；A08（拥有者与无完整候选诊断子项）；A06（历史轮次读取与身份缺失子项）；A20（本票合同、资料及兼容子项）。遵守 ADR-0024。",
+      "traceLine": 9,
+      "answerLine": 24,
+      "stories": [
+        "US17",
+        "US18",
+        "US22",
+        "US23",
+        "US24",
+        "US63"
+      ],
+      "sha256": "e350695fab7cd4b7d71f7df525b1acf753b4ae726e6cab54250a7b7fe3298953"
+    },
+    {
+      "id": "09",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/09-checkpoint-and-resume.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D08、D09、D11（最后完整候选基础）；US18–24、US63；A07（检查点发布、集合恢复及原轮次事实子项）；A08（恢复竞争、旧执行器仍活和无候选子项）；A06（旧轮次接续与新轮次固定资源子项）；A11（完整候选集合与来源子项，较好候选比较归 11）；A20（本票合同、资料及兼容子项）。遵守 ADR-0024。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US18",
+        "US19",
+        "US20",
+        "US21",
+        "US22",
+        "US23",
+        "US24",
+        "US63"
+      ],
+      "sha256": "2acc7406eb4a3cd886c73d0fa65c2347873ce16349f25db78148863085bd661a"
+    },
+    {
+      "id": "10",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/10-bounded-run-and-cancel.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D10（时间、取消、停止分类和用量边界）；US25–29、US63；A09；A20（本票合同、资料及兼容子项）。遵守 ADR-0024；已有硬额度停止和受阻草稿行为作为回归。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US25",
+        "US26",
+        "US27",
+        "US28",
+        "US29",
+        "US63"
+      ],
+      "sha256": "fc440914729d6a685657d1ac36edc81b1f198a3971ec9d2d2be7209749304a80"
+    },
+    {
+      "id": "11",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/11-retain-better-candidates.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D11；US21、US24、US31–32、US63；A11（较好候选选择、不可排序、正式提交差异及恢复来源子项；完整集合保存基础由 09 验收）；A20（本票合同、资料及兼容子项）。遵守 ADR-0024。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US21",
+        "US24",
+        "US31",
+        "US32",
+        "US63"
+      ],
+      "sha256": "a1c056026957da35aa781c1285bc5754d597e7f69860295dd25c472976e4fc80"
+    },
+    {
+      "id": "12",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/12-stop-confirmed-stagnation.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；D10（停滞）；US30、US63；A10；A20（本票合同、资料及兼容子项）。遵守 ADR-0024。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US30",
+        "US63"
+      ],
+      "sha256": "ab34f449f4cadd7354e6065354e8ae3dab6a421e0bbade751c2cf77fa9fb9e3d"
+    },
+    {
+      "id": "13",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/13-visible-content-checks.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) H5、D12；US01、US07、US51–54；A16。",
+      "traceLine": 9,
+      "answerLine": 22,
+      "stories": [
+        "US01",
+        "US07",
+        "US51",
+        "US52",
+        "US53",
+        "US54"
+      ],
+      "sha256": "b95ec2902524929dab58bd0c45854f016ecb1a46b7c9c2e9652a0e5f2caa8e10"
+    },
+    {
+      "id": "14",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/14-trusted-feedback-eval-inputs.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) H5、D06–D07、D12–D13；US40–43、US49–50；A15 的评估输入、8 类校准场景及 16 个有效观测计划、分页与内容身份机制子项。本票不承担 A15 的真实模型效果结论。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US40",
+        "US41",
+        "US42",
+        "US43",
+        "US49",
+        "US50"
+      ],
+      "sha256": "df6c3f524fd4b54463d3a7a97ec4b55c65a9c5cc9a60f63ac0ecf0a962f7271d"
+    },
+    {
+      "id": "15",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/15-order-cost-and-review-time.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D14、D16；US46、US55–57、US62–63；A13 的订单汇总子项；A17 的原始成果/人工补救记录能力；A20 的真人走查时间记录能力。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US46",
+        "US55",
+        "US56",
+        "US57",
+        "US62",
+        "US63"
+      ],
+      "sha256": "dc0539e1fe0fd97133d5c536a0da9b88c3f410cd72b821f06204d69eec1c26c1"
+    },
+    {
+      "id": "16",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/16-untrusted-input-boundaries.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D16；US60–63；A19 的信任边界实现、成对正常效用与日志检查。",
+      "traceLine": 9,
+      "answerLine": 23,
+      "stories": [
+        "US60",
+        "US61",
+        "US62",
+        "US63"
+      ],
+      "sha256": "5d241630e2da535512251c704df87e730cb4ff015ef4b4a5d7f9e0f11272df64"
+    },
+    {
+      "id": "17",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/17-on-demand-context-candidate.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) H6、D15–D16；US58–59；A18 的资料策略候选、自动指针检查和配对输入准备子项。配对实跑与收益判定归票据 18。",
+      "traceLine": 9,
+      "answerLine": 22,
+      "stories": [
+        "US58",
+        "US59"
+      ],
+      "sha256": "d224ba8fc96fca4070358acd85c65c0020bfcf7252eef61edebddcd1a65fe455"
+    },
+    {
+      "id": "18",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/18-context-strategy-paired-trial.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D15、D16；US58–59、US63；A18 的实际校准集配对试验、收益判断与默认策略决定。",
+      "traceLine": 9,
+      "answerLine": 24,
+      "stories": [
+        "US58",
+        "US59",
+        "US63"
+      ],
+      "sha256": "608b8e2da18fafd27b9e9877d444aecd87e6436c5f9e51909a47901c24b9da33"
+    },
+    {
+      "id": "19",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/19-holdout-cases-and-review-plan.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md) D13、D14、D16；US44–48、US57、US63；A17 的案例准备、冻结计划、独立审核及污染记录子项。",
+      "traceLine": 9,
+      "answerLine": 25,
+      "stories": [
+        "US44",
+        "US45",
+        "US46",
+        "US47",
+        "US48",
+        "US57",
+        "US63"
+      ],
+      "sha256": "7819051c9a996082b24d6f7c8cf3a5bef8827f748a76792746792d788bb2c03d"
+    },
+    {
+      "id": "20",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/20-verified-candidate-freeze.md",
+      "status": "resolved",
+      "trace": "**Trace:** [父规格](../spec.md)；US01、US33、US48、US63–64；A20 的兼容及自动验证部分；D06、D16。",
+      "traceLine": 9,
+      "answerLine": 24,
+      "stories": [
+        "US01",
+        "US33",
+        "US48",
+        "US63",
+        "US64"
+      ],
+      "sha256": "30b987fe7579a758820de2a7bc2f8acccb5ae934a038095f95abb876ab0fa017"
+    },
+    {
+      "id": "21",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/21-real-trusted-feedback-observations.md",
+      "status": "needs-triage",
+      "trace": "**Trace:** [父规格](../spec.md)；US40–43、US49–50、US54；A15 的真实模型部分；D13。14 负责离线编排与案例准备，本票不重复实现。",
+      "traceLine": 9,
+      "answerLine": 22,
+      "stories": [
+        "US40",
+        "US41",
+        "US42",
+        "US43",
+        "US49",
+        "US50",
+        "US54"
+      ],
+      "sha256": "cbbee11e5683e346950ccddf190e144c77a3c94d5b188305bd4781e2324fc192"
+    },
+    {
+      "id": "22",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/22-landscape-route-holdout.md",
+      "status": "ready-for-agent",
+      "trace": "**Trace:** [父规格](../spec.md)；US44–48、US55–57；A17 的横版线路牌执行及独立审核部分；D13、D14。",
+      "traceLine": 9,
+      "answerLine": 0,
+      "stories": [
+        "US44",
+        "US45",
+        "US46",
+        "US47",
+        "US48",
+        "US55",
+        "US56",
+        "US57"
+      ],
+      "sha256": "3a96a2dfbd66ed22b22fd0fd60f829a5e870e89b9da0c87d65b21fac5c301567"
+    },
+    {
+      "id": "23",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/23-vertical-route-holdout.md",
+      "status": "ready-for-agent",
+      "trace": "**Trace:** [父规格](../spec.md)；US44–48、US55–57；A17 的竖版线路牌执行及独立审核部分；D13、D14。",
+      "traceLine": 9,
+      "answerLine": 0,
+      "stories": [
+        "US44",
+        "US45",
+        "US46",
+        "US47",
+        "US48",
+        "US55",
+        "US56",
+        "US57"
+      ],
+      "sha256": "a40d108b399e0c7dad847081dfec6c6be485c49e8d8e14e763e63bf58a32d128"
+    },
+    {
+      "id": "24",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/24-bus-stop-board-holdout.md",
+      "status": "ready-for-agent",
+      "trace": "**Trace:** [父规格](../spec.md)；US44–48、US55–57；A17 的整站牌执行及独立审核部分；D13、D14。",
+      "traceLine": 9,
+      "answerLine": 0,
+      "stories": [
+        "US44",
+        "US45",
+        "US46",
+        "US47",
+        "US48",
+        "US55",
+        "US56",
+        "US57"
+      ],
+      "sha256": "c030736cb077136303b57c806e93039b8d2187cfc99a72ec43ed3efce1bf3743"
+    },
+    {
+      "id": "25",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/25-bilingual-stop-name-holdout.md",
+      "status": "ready-for-agent",
+      "trace": "**Trace:** [父规格](../spec.md)；US44–48、US55–57；A17 的双语站名牌执行及独立审核部分；D13、D14。",
+      "traceLine": 9,
+      "answerLine": 0,
+      "stories": [
+        "US44",
+        "US45",
+        "US46",
+        "US47",
+        "US48",
+        "US55",
+        "US56",
+        "US57"
+      ],
+      "sha256": "03ea3a3536bb765ead06ebb0bc8de337c29778a244972aa9081c7f6aee37c7ae"
+    },
+    {
+      "id": "26",
+      "file": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/26-integrated-evidence-and-human-walkthrough.md",
+      "status": "ready-for-agent",
+      "trace": "**Trace:** [父规格](../spec.md)；US01、US39、US48、US57、US63–64；A20 的真人走查与证据收口部分；引用 A01–A19 已有主责证据，不重新实现。",
+      "traceLine": 9,
+      "answerLine": 0,
+      "stories": [
+        "US01",
+        "US39",
+        "US48",
+        "US57",
+        "US63",
+        "US64"
+      ],
+      "sha256": "5eb8bebbeab61d9ad55830ce647ca015bbac47127b631fcb3eb280907e2f9d9c"
+    }
+  ],
+  "original38Status": "ready-for-agent",
+  "sourceFiles": [
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-26-evidence-map-candidate3-during-run.json",
+      "purpose": "historical-map-requirements-and-ownership-only",
+      "sha256": "485f6ba7158a90e43cb8d1aa87445eae67da9c861cc0129ee66b4dbf6aa142ba",
+      "length": 376425
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+      "purpose": "current-approved-prd",
+      "sha256": "190bc5662c919c1224505fd7c753893a11422ade9992e3ab29af973b01a32914",
+      "length": 44285
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/01-ordered-transcription-grading.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "afcd8bc8464c3ae56714de5c481afad85dcdb9d7740cadb7fba8b316e445cd69",
+      "length": 7410
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/02-template-behavior-checks.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "90f766c5b35962f8e2d89a28720490ce7e6145613bd219b24c66abf6240d1ec0",
+      "length": 7993
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/03-pinned-review-resources.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "d7b332843fedbccf0091d22dc5ea5cd73a6f17b8054ad08bf57f1b012cf6553a",
+      "length": 7078
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/04-concurrent-apply-and-reads.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "2e22bd5f482fe347c303fd5fc078c5032be7cbb9b62910f021669ae7d138e6c6",
+      "length": 7895
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/05-recover-interrupted-apply.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "37e3393706c3a9b78e20eaa93ff7cefdda274b67b692c7c4fb327281491b6c0f",
+      "length": 10312
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/06-frozen-evaluation-identity.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "2ffb4bc7f623f079b165e0b6923981d5a743798c8c9c5b955ab7b7a8a27296f0",
+      "length": 8152
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/07-immutable-attempts-and-usage.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "accc3f9c3d0a3957f1ba3bada09db79d6d0066194e10187794abc5485a7410e8",
+      "length": 7065
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/08-durable-round-state.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "e350695fab7cd4b7d71f7df525b1acf753b4ae726e6cab54250a7b7fe3298953",
+      "length": 6735
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/09-checkpoint-and-resume.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "2acc7406eb4a3cd886c73d0fa65c2347873ce16349f25db78148863085bd661a",
+      "length": 9430
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/10-bounded-run-and-cancel.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "fc440914729d6a685657d1ac36edc81b1f198a3971ec9d2d2be7209749304a80",
+      "length": 6791
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/11-retain-better-candidates.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "a1c056026957da35aa781c1285bc5754d597e7f69860295dd25c472976e4fc80",
+      "length": 6234
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/12-stop-confirmed-stagnation.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "ab34f449f4cadd7354e6065354e8ae3dab6a421e0bbade751c2cf77fa9fb9e3d",
+      "length": 6813
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/13-visible-content-checks.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "b95ec2902524929dab58bd0c45854f016ecb1a46b7c9c2e9652a0e5f2caa8e10",
+      "length": 4889
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/14-trusted-feedback-eval-inputs.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "df6c3f524fd4b54463d3a7a97ec4b55c65a9c5cc9a60f63ac0ecf0a962f7271d",
+      "length": 9476
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/15-order-cost-and-review-time.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "dc0539e1fe0fd97133d5c536a0da9b88c3f410cd72b821f06204d69eec1c26c1",
+      "length": 8190
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/16-untrusted-input-boundaries.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "5d241630e2da535512251c704df87e730cb4ff015ef4b4a5d7f9e0f11272df64",
+      "length": 5310
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/17-on-demand-context-candidate.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "d224ba8fc96fca4070358acd85c65c0020bfcf7252eef61edebddcd1a65fe455",
+      "length": 20918
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/18-context-strategy-paired-trial.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "608b8e2da18fafd27b9e9877d444aecd87e6436c5f9e51909a47901c24b9da33",
+      "length": 7658
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/19-holdout-cases-and-review-plan.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "7819051c9a996082b24d6f7c8cf3a5bef8827f748a76792746792d788bb2c03d",
+      "length": 11330
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/20-verified-candidate-freeze.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "30b987fe7579a758820de2a7bc2f8acccb5ae934a038095f95abb876ab0fa017",
+      "length": 13951
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/21-real-trusted-feedback-observations.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "cbbee11e5683e346950ccddf190e144c77a3c94d5b188305bd4781e2324fc192",
+      "length": 10315
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/22-landscape-route-holdout.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "3a96a2dfbd66ed22b22fd0fd60f829a5e870e89b9da0c87d65b21fac5c301567",
+      "length": 2748
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/23-vertical-route-holdout.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "a40d108b399e0c7dad847081dfec6c6be485c49e8d8e14e763e63bf58a32d128",
+      "length": 2748
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/24-bus-stop-board-holdout.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "c030736cb077136303b57c806e93039b8d2187cfc99a72ec43ed3efce1bf3743",
+      "length": 2724
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/25-bilingual-stop-name-holdout.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "03ea3a3536bb765ead06ebb0bc8de337c29778a244972aa9081c7f6aee37c7ae",
+      "length": 2748
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/26-integrated-evidence-and-human-walkthrough.md",
+      "purpose": "current-ticket-scope-and-status",
+      "sha256": "5eb8bebbeab61d9ad55830ce647ca015bbac47127b631fcb3eb280907e2f9d9c",
+      "length": 2699
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/issues/38-retest-after-quota-recovery.md",
+      "purpose": "original38-current-responsibility",
+      "sha256": "d228a4043f20f93bc276d5188854cfc82d25364b67fe9e24e239f08fc279522e",
+      "length": 13014
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4/candidate.json",
+      "purpose": "candidate4-frozen-manifest",
+      "sha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d",
+      "length": 430949
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/registration-candidate-4.json",
+      "purpose": "original38-fixed-registration",
+      "sha256": "0ab469ae08198bede0c2d12a0c19b9b2071376571b30851ce3ba354aecc3d9c4",
+      "length": 53926
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/trusted-feedback-acceptance/candidate-4/registration.json",
+      "purpose": "feedback21-fixed-registration",
+      "sha256": "8e419b8f50f57ecbad3ab8254fe9f24fdea950a50178a9ce5ccee7f801a6603b",
+      "length": 35613
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate-4/activation.json",
+      "purpose": "current-public-activation",
+      "sha256": "1ba9b14f60e4391672064b25d517c3e64c320165d3d4ce6d1b5094b5e7f3a338",
+      "length": 1564
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate-4/dispatch-segment-1/started.json",
+      "purpose": "current-public-start-record",
+      "sha256": "f92528c7e5384b6088d1ad7269377b407ea6b234fe05b60cef890858552f5e0e",
+      "length": 1607
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-4/activation.json",
+      "purpose": "current-public-activation",
+      "sha256": "05f2195c5146720f9d24af534181180b2103d7637beff91fb95e12b90d7cbebb",
+      "length": 1009
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-4/dispatch/block-1.started.json",
+      "purpose": "current-public-start-record",
+      "sha256": "5538ce93da450b005c5d6d81faa2c2dd3702bffcefb6c1c818a36ae773d82933",
+      "length": 2055
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/archive-readonly-candidate4-evidence.json",
+      "purpose": "sealed-37-readonly-restores",
+      "sha256": "8c84af66fd1eeb3b37ee72daece4d2fb9d8542312b2f9c66703f915e004fe349",
+      "length": 36230
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate3-archive-verification.json",
+      "purpose": "sealed-original38-candidate3-5-readonly-restores",
+      "sha256": "07a18415806635f2e0bf6c6cc812935de3ecf8f63b8a0cb656a995c96fb7b592",
+      "length": 4124
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-holdout-execution-preparation-candidate-4/gate-checklist.json",
+      "purpose": "holdout4-preparation-gates",
+      "sha256": "216753d8e1307b1612771a8b3f77344c0569dd390c59581ee70ef54c4ea0f9a4",
+      "length": 1707
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-holdout-execution-preparation-candidate-4/manifest.json",
+      "purpose": "holdout4-preparation-manifest",
+      "sha256": "70cb81f454eb1f810ef332b0789dbbf073207b56785b5703e7b0572dabc02e1a",
+      "length": 53842
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-holdout-execution-preparation-candidate-4/verification.json",
+      "purpose": "holdout4-preparation-verification",
+      "sha256": "4c6f3a9f7729af03ee79261a9f72754585b47a629006216e489bba51aca7efee",
+      "length": 670
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-walkthrough-preparation-candidate-4-v3/walkthrough-plan.json",
+      "purpose": "walkthrough4-v3-blank-plan",
+      "sha256": "482bcca076456ab9d03b5d86c947e28adfeb1338e758ccc30cee3295904c49d5",
+      "length": 6690
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-walkthrough-preparation-candidate-4-v3/review/walkthrough.blank.json",
+      "purpose": "walkthrough4-v3-blank-human-form",
+      "sha256": "5fe6dd20ed534af16772201bc1e2f2d59768834c7fe8b2cfc7fad43c71da0f5a",
+      "length": 7676
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-walkthrough-preparation-candidate-4-v3/verification.json",
+      "purpose": "walkthrough4-v3-mechanism-only-verification",
+      "sha256": "db79225abbf39329c13f82204372a81de8cf3087c36f378af44c0c7d88b5ab00",
+      "length": 1561
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-holdout-review-05/approval.json",
+      "purpose": "user-approved05-inputs-only",
+      "sha256": "1ce96493d5653453e78277762d36215dbfb8f1549a4c07f16c944b8dc52c6a1b",
+      "length": 1077
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-preparation-02/approval.json",
+      "purpose": "english-real-reference-input-approval-state",
+      "sha256": "73079d9a78a252c6f2bf8a9219b89a57eeb4b778a75b009f72401cc4caba9e4d",
+      "length": 464
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-preparation-02/verification.json",
+      "purpose": "english-preparation-only-verification",
+      "sha256": "2bb1ac2748e4609c2e409077329a72226a5c8c4bc906a5750b8deeaf2902767b",
+      "length": 964
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/mixed-board-user-feedback.json",
+      "purpose": "actual-mixed-board-user-negative-feedback",
+      "sha256": "452040f1546c4a837ceadd7870bd554ae748e1c70431e16d86c86515ddda5fc2",
+      "length": 966
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-review/zh-template-r1-candidate-2-v2/review-template.json",
+      "purpose": "chinese-historical-review-still-blank",
+      "sha256": "f0c978dc1d74032d4a672c7989aa530464017059c2527316110e2543f3d6ab17",
+      "length": 4337
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-review/zh-revision-r1-candidate-2-v2/review-template.json",
+      "purpose": "chinese-historical-review-still-blank",
+      "sha256": "f0c978dc1d74032d4a672c7989aa530464017059c2527316110e2543f3d6ab17",
+      "length": 4337
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/harness-acceptance-candidate-4.md",
+      "purpose": "candidate4-actual-13-change-scope-and-validation",
+      "sha256": "3c758e207766df98e155c2cac1f6a33c33e80fb1037799f900646b388341539d",
+      "length": 4681
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/feedback-diagnostics/README.md",
+      "purpose": "ticket14-mechanism-and-posthoc-boundary",
+      "sha256": "da2be00dbc1b12c0b6b3c7425cffb28f5e7efb6e0cf8d2ddc8b2ee501261c680",
+      "length": 2057
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness17-minimal-guidance-final-audit.json",
+      "purpose": "ticket17-independent-source-and-context-audit",
+      "sha256": "994f4aecbd7270f4001927b14c04ccfa390032253bdcc2df6711d48fad6839f2",
+      "length": 2204
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness14-final-evidence-audit.json",
+      "purpose": "ticket14-independent-final-regression-audit",
+      "sha256": "c38710927d3ea1ae3e0f366082f1c40b6e9dce74f0043965f5e28cbd342f8c11",
+      "length": 684
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate4-publication-and-registration-review.md",
+      "purpose": "candidate4-independent-publication-and-registration-review",
+      "sha256": "56052ee73492ad6c1fcc8d5b445792d4a600bbd91ce02d3714a9ca8bca00c016",
+      "length": 5889
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-archive-readonly-candidate4-independent-merge-audit.json",
+      "purpose": "independent37-full-tree-audit",
+      "sha256": "93e94baae2062bb602a3b240ab9f3b390e476f64d965a72eac37f9add7c4cdb6",
+      "length": 655
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/trusted-feedback-acceptance/RESULTS.md",
+      "purpose": "sealed-candidate2-feedback-negative-results",
+      "sha256": "78d60faa28e977ec88588f84f65958509d86916962bd18c3cc4492de7fd125d7",
+      "length": 6764
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/trusted-feedback-acceptance/candidate-3/RESULTS.md",
+      "purpose": "sealed-candidate3-feedback-negative-results",
+      "sha256": "53650f07673ac959ef0f0330a20a04b60c73d17c4fd0ef83993d6833e30db8a7",
+      "length": 5365
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/candidate-3-results.md",
+      "purpose": "sealed-candidate3-original-four-negative-results",
+      "sha256": "ed69d81c1b97b99a196835590a22fa0bc936cf612c63f9ca227667ffb0174c87",
+      "length": 3983
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/conditional-english-reference.candidate-4.json",
+      "purpose": "conditional-shared-english-slots-no-double-count",
+      "sha256": "2465af4fb1dbc2ab20a5dfd36ae2dac49e92fa0def77d751edcefa1f90d6c404",
+      "length": 4037
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate4-preparations-final-verification.json",
+      "purpose": "holdout-and-walkthrough-final-blank-preparation-proof",
+      "sha256": "454e182b6b40e1c95aa271cc599d4a925d50cfb9de1aeb86f8b91df8051dffbf",
+      "length": 13737
+    }
+  ],
+  "scope": {
+    "readOnly": true,
+    "modelsInvoked": 0,
+    "productApiCalls": 0,
+    "unsealedStreamsRead": false,
+    "testsRerun": 0,
+    "ticketStatesChanged": false,
+    "sourceFilesModified": false,
+    "continuousPolling": false,
+    "totalAcceptance": null
+  }
+}
