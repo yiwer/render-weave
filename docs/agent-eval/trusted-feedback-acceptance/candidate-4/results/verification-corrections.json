@@ -1,0 +1,26 @@
+{
+  "format": "renderweave-post-stop-verification-corrections/1",
+  "scope": "仅停止后的本地核验包装；没有产品、评分政策、候选、原始日志或观测修改。",
+  "items": [
+    {
+      "script": "harness21-candidate4-stopped-report.mjs",
+      "publicCommandExitCode": 3,
+      "wrapperExitCode": 1,
+      "failure": "expected report.results not-run=3, actual=0; results只列实际已评分单元，完整计划的3个未运行在gate.completeness/notRun与gate.scenarios.outcomes。",
+      "resolution": "保留第一次公开--rescore报告和前后快照，另用stopped-proof.mjs只读验证gate计划，不再执行评分。",
+      "originalUnchangedProof": "proof.json"
+    },
+    {
+      "script": "harness21-candidate4-source-audit-post-stop.mjs",
+      "exitCode": 1,
+      "failure": "AssertionError: 122928f6-1d85-44b9-b15f-fe1009f9977f:actual assistant model",
+      "observed": "27条Haiku5.5 assistant响应后有1条CLI合成<synthetic>错误，error=rate_limit；最终result.is_error=true且round.run.error含429。",
+      "resolution": "v2保留所有原始model标签，将只满足三项错误证据的合成消息单列，不计服务响应；真实响应仍逐项核对登记模型。该尝试仍quota-invalid，不变为有效通过。",
+      "result": "../audit/block-post-stop.json"
+    }
+  ],
+  "notes": [
+    "这些失败来自当次exec工具返回并在事后登记，不冒充当时tee的原始stdout文件。",
+    "初版与修正版工具均保留于post-trial-tools；已生成的报告、attempt和STOP不覆盖。"
+  ]
+}
