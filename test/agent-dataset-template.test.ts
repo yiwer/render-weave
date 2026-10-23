@@ -184,8 +184,9 @@ describe('发起数据集提取与模板辅助设计', () => {
       [{ task: 'definition-extraction', request }, '不用出图请求'],
     ];
     for (const [options, message] of cases) {
-      await expect(run({}, options)).rejects.toThrow(AgentUsageError);
-      await expect(run({}, options)).rejects.toThrow(message);
+      const rejected = run({}, options);
+      await expect(rejected).rejects.toThrow(AgentUsageError);
+      await expect(rejected).rejects.toThrow(message);
     }
   });
 
