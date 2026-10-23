@@ -39,7 +39,9 @@ import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from
 import { claimExecution, writeAtomicJson } from './execution.js';
 import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
 import { startCheckpointHost } from './checkpoint-host.js';
+import { usageCollector } from './usage.js';
 import { withLocalAccess } from '../local-access.js';
+import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -93,12 +95,21 @@ export interface AgentRunOptions {
   readonly smallModel?: string;
   readonly endpoint?: string;
   readonly maxTurns?: number;
+  /** 当前适配器不能实时执行硬 token 或费用限额，提供即在启动前拒绝。 */
+  readonly maxTokens?: number;
+  readonly maxCostUsd?: number;
+  /** 整轮墙钟上限（毫秒）；输入校验与准备不计入，缺省 60 分钟。 */
+  readonly roundTimeoutMs?: number;
+  /** 用户取消，只终止此轮所属进程树。 */
+  readonly signal?: AbortSignal;
   /** 推理力度：传给 Claude Code 的 --effort；不给时不传，用 Claude Code 的缺省（票据 23）。 */
   readonly effort?: AgentEffort;
   /** Claude Code 可执行文件与前置参数；测试用假执行器代替。 */
   readonly claude?: { readonly command: string; readonly args?: readonly string[] };
   /** 输入全部校验通过、创建轮次目录之前调用；命令行在这里打印"开始……"（票据 28）。 */
   readonly onStart?: (roundDir: string) => void;
+  /** 固定输入准备完成、执行器启动前显示生效预算。 */
+  readonly onBudget?: (runtime: RoundRecord['runtime']) => void;
 }
 
 /** Claude Code 的 --effort 取值。自适应思考的模型（如 Haiku 5.5）只认它，不认 MAX_THINKING_TOKENS（票据 23）。 */
@@ -106,6 +117,8 @@ export const AGENT_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 export type AgentEffort = (typeof AGENT_EFFORTS)[number];
 
 export interface RoundUsage {
+  /** result 为供应商轮次汇总，messages 仅包含已收到的唯一消息快照，可能不完整。 */
+  readonly usageSource?: 'result' | 'messages';
   readonly wallMs: number;
   readonly turns?: number;
   readonly inputTokens?: number;
@@ -134,9 +147,10 @@ export interface RoundRecord {
     readonly model: string; readonly smallModel: string; readonly protocol: 'anthropic' | 'google'; readonly endpoint: string; readonly maxTurns: number;
     /** 推理力度；没设为 null（票据 23）。 */
     readonly effort: AgentEffort | null;
+    readonly roundTimeoutMs?: number;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
-  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: QuotaStop };
+  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: RoundStop };
   readonly verdict: OutcomeCheck['verdict'];
 }
 
@@ -208,6 +222,8 @@ export interface RoundOutcome {
 }
 
 export interface AgentRunResult {
+  /** 停止后本地保存是否完成；未完成只代表诊断，不能作为正式成果。 */
+  readonly save?: 'complete' | 'incomplete';
   readonly roundDir: string;
   readonly record: RoundRecord;
   readonly check: OutcomeCheck;
@@ -226,6 +242,11 @@ const SEED_NOTES = {
 };
 
 export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResult> {
+  return superviseRound(given);
+}
+/** 受监督的原轮次宿主；不直接作为产品入口导出。 */
+export async function runAgentTaskInHost(given: AgentRunOptions, control: HostControl): Promise<AgentRunResult> {
+  if (given.roundTimeoutMs !== undefined && (!Number.isFinite(given.roundTimeoutMs) || given.roundTimeoutMs <= 0)) throw new AgentUsageError('--timeout-ms 必须是有限正值');
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
   if(given.from===undefined&&given.checkpoint!==undefined)throw new AgentUsageError('--checkpoint 只用于带 --from 发起的下一轮');
   if (given.from !== undefined) checkNextRound(given);
@@ -417,7 +438,11 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), inputs, engine: await rendererBuildId(),
     mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
-  await execution.initialize({ task: task.id, round, startedAt, inputs });
+  const runtime: RoundRecord['runtime'] = { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns,
+    roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
+  await execution.initialize({ task: task.id, round, startedAt, inputs, runtime });
+  await control.ready({ roundDir, record: { task: task.id, round, startedAt, inputs, runtime } });
+  const started = Date.now();
   const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
   managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
@@ -430,7 +455,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   // 两种模型协议都只给执行器本轮令牌；上游 key 留在宿主。
   const controller = new AbortController();
   let stopped: QuotaStop | undefined;
-  const stop = (reason: QuotaStop) => { stopped ??= reason; controller.abort(); };
+  const stop = (reason: QuotaStop) => { stopped ??= reason; control.stop(reason); };
   const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
@@ -442,10 +467,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
     '--max-turns', String(maxTurns), '--no-session-persistence', ...(options.effort ? ['--effort', options.effort] : [])];
 
-  const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token] });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token], onUsage: control.usage });
   } finally {
     await proxy.close();
     await checkpoints.idle();
@@ -503,9 +527,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
   const record: RoundRecord = {
     format: 'renderweave-round/1', execution: 'renderweave-execution/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
-    runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, effort: options.effort ?? null,
-      keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
-    run: { ...usage, exitCode: executed.exitCode,
+    runtime,
+    run: { ...usage, wallMs: Date.now() - started, exitCode: executed.exitCode,
       ...(stopped ? { stopped, error: `硬额度耗尽（${stopped.limit}），已停止本轮。额度恢复后用 --from "${roundDir}" --feedback <反馈文件> 续跑` }
         : executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
@@ -685,12 +708,12 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void> }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void }): Promise<{ exitCode: number | null; error?: string }> {
   const redactor = credentialRedactor(context.secrets);
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
-    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
+    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     const stop = () => {
       if (!child.pid) return;
       // 只终止本轮的进程树，连同它启动的 MCP；不碰其他 Claude Code 会话。
@@ -702,13 +725,13 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
     };
     context.signal.addEventListener('abort', stop, { once: true });
     if (context.signal.aborted) stop();
-    let buffer = '';
+    let buffer = ''; const usage = usageCollector();
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => {
       buffer += chunk;
       for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-        try { const quota = runtimeQuota(JSON.parse(line)); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+        try { const event = JSON.parse(line); usage.accept(event); context.onUsage(usage.read()); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
     let executionError: string | undefined;
@@ -749,18 +772,15 @@ async function recoverCandidates(agentDir: string, task: AgentTask): Promise<Sub
 }
 
 /** 从 Claude Code 的流式输出中取用量：初始化消息给出模型、版本与 MCP 状态，结果消息给出轮数与 token。 */
-async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[]; apiError?: string }> {
+export async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[]; apiError?: string }> {
   let text = '';
   try { text = await readFile(file, 'utf8'); } catch { return {}; }
   const messages = text.split('\n').flatMap((line) => { try { return [JSON.parse(line) as Record<string, any>]; } catch { return []; } });
   const init = messages.find((message) => message['type'] === 'system' && message['subtype'] === 'init');
-  const result = messages.find((message) => message['type'] === 'result');
-  const usage = result?.['usage'] as Record<string, number> | undefined;
-  const number = (value: unknown) => (typeof value === 'number' ? value : undefined);
+  const result = messages.findLast((message) => message['type'] === 'result');
+  const usage = usageCollector(); for (const message of messages) usage.accept(message);
   const fields = {
-    turns: number(result?.['num_turns']), inputTokens: number(usage?.['input_tokens']), outputTokens: number(usage?.['output_tokens']),
-    thinkingTokens: number((usage?.['output_tokens_details'] as Record<string, unknown> | undefined)?.['thinking_tokens']),
-    cacheReadTokens: number(usage?.['cache_read_input_tokens']), cacheCreationTokens: number(usage?.['cache_creation_input_tokens']),
+    ...usage.read(),
     servedModel: typeof init?.['model'] === 'string' ? init['model'] : undefined,
     claudeCodeVersion: typeof init?.['claude_code_version'] === 'string' ? init['claude_code_version'] : undefined,
     endedBy: typeof result?.['subtype'] === 'string' ? result['subtype'] : undefined,

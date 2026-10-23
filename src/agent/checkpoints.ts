@@ -41,13 +41,13 @@ export async function claimCheckpointRecovery(source: string, destination: strin
   const path = join(source, 'checkpoint-recovery.json'), owner = { id: randomUUID(), destination };
   await withLocalAccess([source], async () => {
     const original = await readExecution(source), checkpoint = await readCheckpoint(source,checkpointId);
-    if (original.problems.length || (!original.execution?.committed&&original.execution?.status !== 'interrupted') || checkpoint.problems.length || checkpoint.checkpoint?.id !== checkpointId)
+    if (original.problems.length || (!original.execution?.committed && !['interrupted', 'stopped'].includes(original.execution?.status ?? '')) || checkpoint.problems.length || checkpoint.checkpoint?.id !== checkpointId)
       throw new AgentUsageError('原轮次仍可写、身份不明或检查点已变化，不能取得恢复拥有权');
     if (await exists(path)) {
       try {
         const prior = JSON.parse(await readFile(path, 'utf8'));
         const state = await readExecution(prior.destination);
-        if (state.problems.length || !state.execution || (!state.execution.committed && state.execution.status !== 'interrupted')) throw new Error();
+        if (state.problems.length || !state.execution || (!state.execution.committed && !['interrupted', 'stopped'].includes(state.execution.status))) throw new Error();
       } catch { throw new AgentUsageError(`检查点已有恢复拥有者；请检查 checkpoint-recovery.json 指向的新轮次，不可并发接管：${source}`); }
     }
     await writeAtomicJson(path, owner);

@@ -97,7 +97,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.13.1' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.14.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');

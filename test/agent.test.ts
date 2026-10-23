@@ -271,7 +271,7 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
     const result = await run(await preset({ 'candidates/schema-session.json': SESSION, '.model-calls.json': Array.from({ length: 8 }, () => call) }), { model: 'gemini-test', endpoint: upstream });
     expect(requests).toHaveLength(1);
     expect(result.record).toMatchObject({ verdict: 'unqualified', run: { stopped: { reason: 'hardQuota', type: 'GoUsageLimitError', limit: 'weekly' } } });
-    expect(result.record.run.error).toContain('--from');
+    expect(result.record.run.error).toContain('仅可查看诊断');
     expect(result.outcome).toBeUndefined();
     expect(JSON.parse(await readFile(join(result.roundDir, 'draft.json'), 'utf8'))).toMatchObject({ source: 'hostRecovery' });
     expect((await proxyLog(result.roundDir))[0]).toMatchObject({ stopped: { limit: 'weekly' } });

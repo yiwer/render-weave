@@ -8,17 +8,20 @@ import { isRecord } from '../util.js';
 import { canonical } from './diff.js';
 import { AgentUsageError, exists, sha256 } from './round-files.js';
 import { materialHashes } from './provenance.js';
-import type { RoundInputs, RoundRecord } from './run.js';
+import type { RoundInputs, RoundRecord, RoundUsage } from './run.js';
+import type { RoundStop } from './supervision.js';
+import { stoppedMessage } from './stopped-round.js';
 
 const OWNER = 'execution-owner.json', STATE = 'execution.json', START = 'round-start.json';
 const PHASES = ['preparing', 'executing', 'finalizing', 'completed'];
 const STATUSES = ['running', 'completed', 'failed', 'stopped'];
 export type ExecutionPhase = 'preparing' | 'executing' | 'finalizing' | 'completed';
 export type ExecutionStatus = 'running' | 'completed' | 'failed' | 'stopped' | 'interrupted' | 'pendingRecovery';
-interface Owner { readonly id: string; readonly host: string; readonly pid: number; readonly startedAt: string }
+interface Owner { readonly id: string; readonly host: string; readonly pid: number; readonly startedAt: string; readonly supervisorPid?: number }
 export interface RoundStart {
   readonly format: 'renderweave-round-start/1'; readonly task: RoundRecord['task']; readonly round: number;
   readonly startedAt: string; readonly inputs: RoundInputs; readonly inputIdentity: string;
+  readonly runtime?: RoundRecord['runtime'];
   readonly files: Readonly<Record<string, string>>;
 }
 export interface ExecutionEvent {
@@ -30,7 +33,14 @@ interface ExecutionRecord {
   readonly events: readonly ExecutionEvent[];
 }
 export interface RoundExecution extends ExecutionRecord {
+  readonly stop?: { readonly reason: RoundStop; readonly usage: RoundUsage; readonly save: 'complete' | 'incomplete' };
   readonly start?: RoundStart; readonly committed: boolean; readonly diagnostics: readonly string[];
+}
+
+export async function writeStopReceipt(dir: string, reason: RoundStop, usage: RoundUsage, ownerPid: number): Promise<void> {
+  const owner = JSON.parse(await readFile(join(dir, OWNER), 'utf8')) as Owner;
+  if (owner.pid !== ownerPid || alive(ownerPid, owner.host) !== false) throw new Error('原宿主尚可写，不能发布停止凭据');
+  await writeAtomicJson(join(dir, 'stop.json'), { format: 'renderweave-stop/1', owner, reason, usage }, true);
 }
 
 /** 临时文件与目标在同目录；进程强退只能留下旧的完整版本或新的完整版本。 */
@@ -47,7 +57,7 @@ export async function writeAtomicJson(path: string, value: unknown, exclusive = 
 /** 同轮目录只允许首次创建者写入，已有/陈旧拥有者都必须另开轮次。 */
 export async function claimExecution(dir: string, startedAt: string) {
   await mkdir(dir, { recursive: true });
-  const owner: Owner = { id: randomUUID(), host: hostname(), pid: process.pid, startedAt };
+  const owner: Owner = { id: randomUUID(), host: hostname(), pid: process.pid, supervisorPid: process.ppid, startedAt };
   try { await writeAtomicJson(join(dir, OWNER), owner, true); }
   catch { throw new AgentUsageError(`轮次已有拥有者或无法确认拥有者，拒绝覆盖或接管：${dir}`); }
   let state: ExecutionRecord = { format: 'renderweave-execution/1', owner, phase: 'preparing', status: 'running', events: [] };
@@ -62,7 +72,7 @@ export async function claimExecution(dir: string, startedAt: string) {
   return {
     async initialize(value: Omit<RoundStart, 'format' | 'inputIdentity' | 'files'>) {
       const files = await materialHashes(join(dir, 'logs'), 'logs');
-      const start: RoundStart = { format: 'renderweave-round-start/1', ...value, files, inputIdentity: sha256(canonical({ inputs: value.inputs, files })) };
+      const start: RoundStart = { format: 'renderweave-round-start/1', ...value, files, inputIdentity: sha256(canonical({ inputs: value.inputs, files, ...(value.runtime ? { runtime: value.runtime } : {}) })) };
       await writeAtomicJson(join(dir, START), start, true);
       await update('preparing', 'running', '固定输入已提交', { startSha256: sha256(await readFile(join(dir, START))) });
     },
@@ -70,7 +80,7 @@ export async function claimExecution(dir: string, startedAt: string) {
     async finalizing() { await update('finalizing', 'running', '执行器已退出，正在检查成果', { executorExited: true }); },
     async checked() { await update('finalizing', 'running', '成果检查已完成，等待最终记录提交'); },
     async finish(record: RoundRecord) {
-      const stopped = record.run.stopped ? '硬额度耗尽' : record.run.endedBy === 'error_max_turns' ? '已达到轮数上限' : undefined;
+      const stopped = record.run.stopped ? stoppedMessage(record.run.stopped) : record.run.endedBy === 'error_max_turns' ? '已达到轮数上限' : undefined;
       const status = stopped ? 'stopped' : record.run.error || record.run.exitCode !== 0 ? 'failed' : 'completed';
       await update('completed', status, stopped ?? (status === 'failed' ? '执行器失败，详见轮次日志' : '最终记录已提交'),
         { recordSha256: sha256(await readFile(join(dir, 'round.json'))) });
@@ -82,6 +92,18 @@ export async function claimExecution(dir: string, startedAt: string) {
 function alive(pid: number, host: string): boolean | undefined {
   if (host !== hostname()) return undefined;
   try { process.kill(pid, 0); return true; } catch (error) { return (error as NodeJS.ErrnoException).code === 'ESRCH' ? false : undefined; }
+}
+
+/** 原宿主整棵执行子树停止后，由监督器专属保存进程提交结果，仍绑定原拥有者。 */
+export async function finishStoppedExecution(dir: string, record: RoundRecord, ownerPid: number): Promise<void> {
+  const state = JSON.parse(await readFile(join(dir, STATE), 'utf8')) as ExecutionRecord;
+  const owner = JSON.parse(await readFile(join(dir, OWNER), 'utf8')) as Owner;
+  if (state.owner.pid !== ownerPid || canonical(state.owner) !== canonical(owner) || alive(ownerPid, owner.host) !== false)
+    throw new Error('原宿主尚可写或拥有者不符，不能提交停止结果');
+  const status = 'stopped', phase = 'completed';
+  await writeAtomicJson(join(dir, STATE), { ...state, phase, status, executorExited: true,
+    recordSha256: sha256(await readFile(join(dir, 'round.json'))),
+    events: [...state.events, { sequence: state.events.length + 1, at: new Date().toISOString(), phase, status, reason: stoppedMessage(record.run.stopped!) }] });
 }
 
 /** 读取不改写历史；活 PID 只表示可能仍可写，不用它授权接管。 */
@@ -115,7 +137,7 @@ export async function readExecution(dir: string): Promise<{ execution?: RoundExe
       const bytes = await readFile(join(dir, START));
       const value = JSON.parse(bytes.toString('utf8')) as RoundStart;
       if ((state.startSha256 && sha256(bytes) !== state.startSha256) || value.format !== 'renderweave-round-start/1' || !value.inputs
-        || !isRecord(value.files) || value.inputIdentity !== sha256(canonical({ inputs: value.inputs, files: value.files }))) throw new Error('启动身份损坏');
+        || !isRecord(value.files) || value.inputIdentity !== sha256(canonical({ inputs: value.inputs, files: value.files, ...(value.runtime ? { runtime: value.runtime } : {}) }))) throw new Error('启动身份损坏');
       start = value;
     } catch { invalid(START, '固定输入记录缺失或内容身份不匹配'); }
   }
@@ -140,5 +162,17 @@ export async function readExecution(dir: string): Promise<{ execution?: RoundExe
       diagnostics.push(status === 'interrupted' ? '宿主已退出，本轮中断' : '宿主已退出或身份无法确认；执行器可能仍可写，禁止接管');
     }
   }
-  return { execution: { ...state, status, ...(start ? { start } : {}), committed, diagnostics }, problems };
+  let stop: RoundExecution['stop'];
+  if (await exists(join(dir, 'stop.json'))) {
+    try {
+      const value = JSON.parse(await readFile(join(dir, 'stop.json'), 'utf8'));
+      if (value.format !== 'renderweave-stop/1' || canonical(value.owner) !== canonical(state.owner) ||
+        !['timeout', 'cancelled', 'hardQuota'].includes(value.reason?.reason) || !Number.isFinite(value.usage?.wallMs)) throw new Error();
+      stop = { reason: value.reason, usage: value.usage, save: committed ? 'complete' : 'incomplete' };
+      if (!committed && alive(state.owner.pid, state.owner.host) === false) {
+        status = 'stopped'; diagnostics.push(`${stoppedMessage(stop.reason)}；本地保存未完成，只有已提交检查点可接续`);
+      }
+    } catch { invalid('stop.json', '停止凭据损坏或拥有者身份不匹配'); }
+  }
+  return { execution: { ...state, status, ...(start ? { start } : {}), ...(stop ? { stop } : {}), committed, diagnostics }, problems };
 }
