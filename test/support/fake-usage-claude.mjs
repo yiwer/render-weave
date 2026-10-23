@@ -1,0 +1,10 @@
+// 受控执行器：按给定用量和结束原因交回成果，不调用模型。
+import { cp } from 'node:fs/promises';
+if (process.argv.includes('--version')) { console.log('fake-usage-1'); process.exit(0); }
+const [preset, usage, error] = process.argv.slice(2);
+for await (const _ of process.stdin) { /* 消费提示词 */ }
+if (preset !== 'none') await cp(preset, process.cwd(), {recursive: true});
+const emit = value => console.log(JSON.stringify(value));
+emit({type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-usage-1'});
+if (usage !== 'unknown') emit({type: 'result', subtype: 'success', is_error: !!error, result: error ?? '', num_turns: 2,
+  usage: JSON.parse(usage)});

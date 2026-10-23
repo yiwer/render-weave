@@ -15,6 +15,7 @@ import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
+import {executeAttempt, restoreAttempt, savedAttempts} from './attempts.js';
 import {
   CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
   type ConventionId, type DefinitionScore, type RevisionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
@@ -291,13 +292,13 @@ class InvalidUnit extends Error {
  * 续跑时这一轮已有有效轮次记录就不再发起。
  */
 async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOptions & { upstream: UpstreamRecord; unit: string; label: string }): Promise<void> {
+  await restoreAttempt(spec, context.unit);
   if ((await roundError(spec.out)) === null) return;
   for (let attempt = 0; ; attempt++) {
     await context.beforeDispatch?.();
-    await rm(spec.out, { recursive: true, force: true });
     let failure: { kind: ErrorKind; error: string } | null | undefined, thrown: unknown;
     try {
-      await launch(spec);
+      await executeAttempt(spec, context.unit, launch);
       failure = await roundError(spec.out);
     } catch (caught) {
       thrown = caught;
@@ -521,7 +522,7 @@ export function resumeCommand(label: string, result: GateResult, args: readonly 
 
 /** /3 起要求全计划达线，完整性与质量分开；旧 /1、/2 只保留历史含义。 */
 export interface EvalReport {
-  readonly format: 'renderweave-agent-eval/3';
+  readonly format: 'renderweave-agent-eval/4';
   readonly label: string;
   readonly startedAt: string;
   readonly endedAt: string;
@@ -535,7 +536,16 @@ export interface EvalReport {
   readonly passLines: Readonly<Record<string, unknown>>;
   readonly results: readonly ScenarioResult[];
   readonly gate: GateResult;
-  readonly totals: { readonly wallMs: number; readonly inputTokens: number; readonly outputTokens: number; readonly thinkingTokens: number; readonly cacheReadTokens: number; readonly persistedResults: number };
+  readonly attempts: readonly AttemptSummary[];
+  readonly totals: { readonly wallMs: number; readonly inputTokens: number; readonly outputTokens: number; readonly thinkingTokens: number; readonly cacheReadTokens: number;
+    readonly cacheCreationTokens: number; readonly persistedResults: number; readonly toolCalls: number; readonly unknownUsageAttempts: number;
+    readonly unknownByMetric: Readonly<Record<string, number>>; readonly usageComplete: boolean; readonly legacyHistoryUnknown: boolean };
+}
+
+interface AttemptSummary {
+  readonly id: string; readonly unit: string; readonly stage: string; readonly dir: string; readonly startedAt: string | null; readonly endedAt: string | null;
+  readonly elapsedMs: number | null; readonly experiment: string | null; readonly state: 'completed' | 'unresolved' | 'legacy';
+  readonly error?: string; readonly usage?: RoundSummary;
 }
 
 /** 评估开始时的状态：提交与资料哈希。记进评估清单，重新评分时沿用，不按评分时的工作区算。 */
@@ -565,11 +575,33 @@ export async function buildReport(options: {
     }
   }
   const unique = (values: (string | undefined)[]) => [...new Set(values.filter((value): value is string => value !== undefined))].sort();
-  const rounds = options.results.flatMap((result) => result.rounds);
-  const sum = (pick: (round: RoundSummary) => number | undefined) => rounds.reduce((total, round) => total + (pick(round) ?? 0), 0);
+  const attempts: AttemptSummary[] = [];
+  const planned = options.plan ? options.config.scenarios.filter(scenario => options.plan!.scenarios.includes(scenario.id))
+    .flatMap(scenario => Array.from({length: options.plan!.repetitions}, (_, index) => ({id: scenario.id, repetition: index + 1}))) : options.results;
+  for (const item of planned) {
+    const result = options.results.find(result => result.id === item.id && result.repetition === item.repetition);
+    const unit = unitDir(options.outDir, {id: item.id} as Scenario, item.repetition);
+    const stored = await savedAttempts(unit);
+    for (const attempt of stored) {
+      const usage = await summarize(join(attempt.dir, 'round'), options.outDir);
+      attempts.push({id: attempt.record.id, unit: relative(options.outDir, unit).replaceAll('\\', '/'), stage: attempt.record.stage,
+        dir: relative(options.outDir, attempt.dir).replaceAll('\\', '/'), startedAt: attempt.record.startedAt, endedAt: attempt.completion?.endedAt ?? null,
+        elapsedMs: attempt.completion?.elapsedMs ?? null, experiment: attempt.record.experiment,
+        state: attempt.record.legacy ? 'legacy' : attempt.completion ? 'completed' : 'unresolved',
+        ...(attempt.completion?.error ? {error: attempt.completion.error} : {}), ...(usage ? {usage} : {})});
+    }
+    for (const round of result?.rounds ?? []) if (!stored.some(attempt => attempt.record.stage === round.dir.split('/').at(-1))) {
+      attempts.push({id: `legacy:${round.dir}`, unit: relative(options.outDir, unit).replaceAll('\\', '/'), stage: round.dir.split('/').at(-1)!,
+        dir: round.dir, startedAt: null, endedAt: null, elapsedMs: null, experiment: null, state: 'legacy', usage: round});
+    }
+  }
+  const metrics = ['inputTokens', 'outputTokens', 'thinkingTokens', 'cacheReadTokens', 'cacheCreationTokens', 'toolCalls', 'persistedResults', 'wallMs'] as const;
+  const unknownByMetric = Object.fromEntries(metrics.map(key => [key, attempts.filter(attempt => attempt.usage?.[key] === undefined).length]));
+  const unknownUsageAttempts = attempts.filter(attempt => ['inputTokens', 'outputTokens', 'thinkingTokens', 'cacheReadTokens', 'cacheCreationTokens'].some(key => attempt.usage?.[key as keyof RoundSummary] === undefined)).length;
+  const sum = (key: typeof metrics[number]) => attempts.reduce((total, attempt) => total + (attempt.usage?.[key] ?? 0), 0);
   const runtime = records[0]?.runtime;
   return {
-    format: 'renderweave-agent-eval/3', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
+    format: 'renderweave-agent-eval/4', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
     git: origin.git,
     runtime: {
       ...(runtime ? { model: runtime.model, smallModel: runtime.smallModel, endpoint: runtime.endpoint, effort: runtime.effort ?? null } : {}),
@@ -583,10 +615,11 @@ export async function buildReport(options: {
     consecutivePasses: options.config.consecutivePasses,
     passLines: Object.fromEntries(options.config.scenarios.map((scenario) => [scenario.id, scenario.pass])),
     results: options.results,
+    attempts,
     gate: gate(options.config, options.results, options.plan),
-    totals: { wallMs: sum((round) => round.wallMs), inputTokens: sum((round) => round.inputTokens), outputTokens: sum((round) => round.outputTokens),
-      thinkingTokens: sum((round) => round.thinkingTokens), cacheReadTokens: sum((round) => round.cacheReadTokens),
-      persistedResults: sum((round) => round.persistedResults) },
+    totals: { wallMs: sum('wallMs'), inputTokens: sum('inputTokens'), outputTokens: sum('outputTokens'), thinkingTokens: sum('thinkingTokens'),
+      cacheReadTokens: sum('cacheReadTokens'), cacheCreationTokens: sum('cacheCreationTokens'), toolCalls: sum('toolCalls'), persistedResults: sum('persistedResults'),
+      unknownUsageAttempts, unknownByMetric, usageComplete: unknownUsageAttempts === 0 && !attempts.some(attempt => attempt.state === 'legacy'), legacyHistoryUnknown: attempts.some(attempt => attempt.state === 'legacy') },
   };
 }
 
@@ -624,7 +657,8 @@ export function formatReport(report: EvalReport): string {
     if (result.invalid) lines.push(`  - ${invalidText(result.invalid)}`);
     for (const failure of result.failures) lines.push(`  - ${failure}`);
   }
-  lines.push('', `合计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输出 ${report.totals.outputTokens} tokens，其中思考 ${report.totals.thinkingTokens}。`);
+  lines.push('', `全部尝试已知小计 ${(report.totals.wallMs / 60000).toFixed(1)} 分钟（各轮之和），输入 ${report.totals.inputTokens}、输出 ${report.totals.outputTokens} tokens，其中思考 ${report.totals.thinkingTokens}（不再加到输出）；缓存读/写 ${report.totals.cacheReadTokens}/${report.totals.cacheCreationTokens}。`,
+    `用量有未知字段的已保存尝试 ${report.totals.unknownUsageAttempts} 个；${report.totals.usageComplete ? '已保存尝试的token用量完整' : '不能把已知小计当成完整成本'}${report.totals.legacyHistoryUnknown ? '；历史已删除尝试的数量和用量未知' : ''}。`);
   if (report.totals.persistedResults) lines.push(`有 ${report.totals.persistedResults} 次工具结果超过 Claude Code 的上限被转存或拒收：MCP 工具的输出应在 40,000 字符以内（票据 22）。`);
   return lines.join('\n');
 }
@@ -658,6 +692,7 @@ async function summarize(dir: string, outDir: string): Promise<RoundSummary | un
   } catch {
     return undefined;
   }
+  if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   let outcome: RoundOutcome | undefined;
   try { outcome = JSON.parse(await readFile(join(dir, 'outcome.json'), 'utf8')) as RoundOutcome; } catch { outcome = undefined; }
   let toolCalls: number | undefined, toolErrors: number | undefined, firstCheckProblems: number | undefined;
