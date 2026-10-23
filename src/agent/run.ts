@@ -31,7 +31,7 @@ import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } fro
 import { writeTemplateDomain, writeTemplateReference } from './materials.js';
 import { observeContext, type ContextStop } from './context-usage.js';
 import { materialFingerprint, resourceFingerprint, restoreHandoff, saveHandoff, writeFeedbackHistory } from './handoff.js';
-import { parseDesignCheckPlan, type DesignCheckPlan } from './design-verification.js';
+import { parseDesignCheckPlan, summarizeDesign, type DesignVerification, type DesignCheckPlan } from './design-verification.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -314,7 +314,16 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const seeds = new Map((revision ?? []).map((entry) => [`candidates/${entry.file}`, entry.bytes] as [string, Uint8Array]));
   let seedNote = '', basisChanged: boolean | undefined;
   if (previous) {
-    for (const file of previous.files) await writeAt(join(agentDir, 'previous', file.name), file.bytes);
+    for (const file of previous.files) {
+      let bytes = file.bytes;
+      if (designPlan?.repair && ['check.json', DRAFT_FILE].includes(file.name)) {
+        const document = JSON.parse(Buffer.from(bytes).toString('utf8'));
+        const check = file.name === DRAFT_FILE ? document.check : document;
+        if (check?.assessment?.design?.repair) check.assessment.design = summarizeDesign(check.assessment.design as DesignVerification);
+        bytes = Buffer.from(JSON.stringify(document, null, 2) + '\n');
+      }
+      await writeAt(join(agentDir, 'previous', file.name), bytes);
+    }
     for (const candidate of previous.candidates) await writeAt(join(agentDir, 'previous', candidate.path), candidate.bytes);
     basisChanged = revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
     if (!basisChanged) {

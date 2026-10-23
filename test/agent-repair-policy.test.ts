@@ -131,6 +131,8 @@ it('显式自动修复完成即停止，完整参考不复制给 Agent，skills 
   const next = await runAgentTask({ key: 'local-test', keyEnv: 'RW_TEST', claude: p.claude, out: join(root, 'manual'),
     from: result.roundDir, feedback: join(root, 'manual-feedback.md') });
   expect(next.record.round).toBe(2);
+  expect(JSON.parse(await readFile(join(next.roundDir, 'agent/previous/check.json'), 'utf8')).assessment.design.repair).not.toHaveProperty('checks');
+  expect(JSON.parse(await readFile(join(result.roundDir, 'check.json'), 'utf8')).assessment.design.repair.checks).toHaveLength(7);
 });
 
 it('预算用尽与成功分开，固定修改预算；用交回后当前候选重算而非信任 MCP 的旧停止报告', async () => {
@@ -164,6 +166,25 @@ it('宿主输入在执行期间变化，拒绝自动续轮或报告完成', asyn
     onStart: () => writeFileSync(join(work, 'changed.json'), '{}') }, 2);
   expect(result.repairRun).toMatchObject({ reason: 'inputsChanged' });
   expect(result.repairRun.rounds).toHaveLength(1);
+});
+
+it.each(['docs/brief.md', '../request.json', '../requirement.md'])('实际继承副本 %s 被改写时停止，不携带旧反馈续轮', async (file) => {
+  const p = await preset(true);
+  await json(join(p.dir, '.mcp-calls.json'), [{ name: 'check_outcome' }]);
+  await json(join(p.dir, '.after-mcp-files.json'), { [file]: { changed: '不是启动时的输入' } });
+  const result = await runAgentRepair({ ...options, claude: p.claude, out: join(root, 'copy-drift-' + count++) }, 2);
+  expect(result.repairRun.reason).toBe('inputsChanged');
+  expect(result.repairRun.rounds).toHaveLength(1);
+});
+
+it('第二轮反馈副本被改写，第三轮不会注入变化后的历史反馈', async () => {
+  const p = await preset(true); let calls = 0;
+  await json(join(p.dir, '.mcp-calls.json'), [{ name: 'check_outcome' }]);
+  const result = await runAgentRepair({ ...options, claude: p.claude, out: join(root, 'feedback-drift'), onStart: () => {
+    if (++calls === 2) writeFileSync(join(p.dir, '.after-mcp-files.json'), JSON.stringify({ '../feedback.md': '修改过的历史反馈' }));
+  } }, 3);
+  expect(result.repairRun.reason).toBe('inputsChanged'); expect(result.repairRun.rounds).toHaveLength(2);
+  expect(calls).toBe(2);
 });
 
 it('无核准计划、非法预算在模型调用前拒绝；CLI 识别新选项', async () => {

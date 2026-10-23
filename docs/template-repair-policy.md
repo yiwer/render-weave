@@ -27,7 +27,7 @@ node dist/bin.js agent run --task template-revision --workspace <工作区> --re
 
 ## 披露与测量
 
-完整 `repair` 清单只存在宿主的 `design-checks.json`、MCP 上下文和 `check.json`；不复制到 Agent 的 `docs/design-checks.json`。启动核心只增加一段条件指引，个人编码 skills 仍禁用。已有 DSL 章节仍按需读取。
+完整 `repair` 清单只存在宿主的 `design-checks.json`、MCP 上下文和 `check.json`；不复制到 Agent 的 `docs/design-checks.json`。接续轮的 `previous/check.json` 与草稿核查也只保留有界设计摘要，宿主历史原件不改。启动核心只增加一段条件指引，个人编码 skills 仍禁用。已有 DSL 章节仍按需读取。
 
 `check_outcome` 每次重算当前候选。默认 `assessment.repair` 返回指纹、检查数量、失败/未知数、停止建议与反馈；最多两个不同区域、1200 字符，优先内容、字号、位置、尺寸、颜色。缺失元素不编造候选路径；反馈没有列出的区域不表示通过。用 `designCase` 按需查看单用例失败证据，设计摘要仍有 8000 字符上限。
 
