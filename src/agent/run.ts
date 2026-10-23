@@ -19,6 +19,7 @@ import { dslDocumentKind } from '../dsl.js';
 import { parseRenderRequest } from '../request.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
+import { ROUTE_SIGN_BUSINESS_BASELINE } from './coverage-verification.js';
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
 import { isGoogleModel, startModelProxy } from './model-proxy.js';
@@ -215,6 +216,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const extension = imageExtension(await readFile(options.sample));
   if (!extension) throw new AgentUsageError(`示例图不是 PNG、JPEG 或 WebP：${options.sample}`);
   await requireFile(options.brief, '项目说明');
+  const briefBytes = await readFile(options.brief);
+  const briefText = briefBytes.toString('utf8');
   const domainFile = options.domain === undefined ? undefined : join(AGENT_MATERIALS, 'domains', `${options.domain}.md`);
   if (domainFile) {
     // 以 _ 开头的是给维护者的模板（如 _template.md），不是领域约定包。
@@ -309,7 +312,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const feedback = await textInput(options.feedback, 'feedback.md');
   const inputs: RoundInputs = {
     sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(await readFile(options.sample)) },
-    brief: { source: resolve(options.brief), sha256: sha256(await readFile(options.brief)) },
+    brief: { source: resolve(options.brief), sha256: sha256(briefBytes) },
     domain: options.domain ?? null,
     workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
     resources: resolve(options.resources),
@@ -328,6 +331,11 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
     ...(request ? { request: { ...request.document, template: request.template } } : {}),
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
+    // 提取任务要按图上业务内容核对覆盖；项目说明是判断“固定常量”有没有依据的唯一来源。
+    ...(task.id === 'definition-extraction' || task.id === 'dataset-extraction' ? { briefText } : {}),
+    ...(options.domain === 'route-sign' && (task.id === 'definition-extraction' || task.id === 'dataset-extraction')
+      ? { contentBaseline: ROUTE_SIGN_BUSINESS_BASELINE }
+      : {}),
   };
   const outcomeContext = join(logsDir, 'outcome-context.json');
   await writeFile(outcomeContext, `${JSON.stringify({ task: task.id, ...context } satisfies OutcomeTarget, null, 2)}\n`);

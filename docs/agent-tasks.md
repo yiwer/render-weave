@@ -161,6 +161,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
   - `reason` 是原因，取 M44 的四类之一：`unreadable`（看不清）、`inferred`（推测）、`conflicting`（来源冲突）、`requiredMissing`（必填未提供）；
   - `note` 是说明。
 - `notes`：给审核人的说明。
+- `coverage`：可选，业务内容覆盖记录（票据 33）。逐项说明图上的内容归到字段、派生、参数、固定标签还是待确认；派生写 `derivedFrom` 与 `logic`，固定标签写 `justification`，已知缺值写 `sampleOmissions`。提取任务建议写全；严重异常使结论不合格。写法见 [agent/reference/outcome.md](../agent/reference/outcome.md#业务内容覆盖)。
 
 **位置的写法**：
 
@@ -186,11 +187,12 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
    - **模板**：先按 `schemas/template.schema.json` 做 Schema 前置校验；再把全部候选作为工作副本做静态检查（M49、M50），同名的代替已保存的模板。模板辅助设计只新建模板，名称不能与工作区已有的模板重复；模板辅助修改只能改主模板调用树中的已保存模板，新建的模板同样不能与工作区重名。
 
    Schema 不通过时只报 Schema 的问题，不再做引擎校验。
-3. **渲染**：有完整出图请求时，覆盖候选后实际渲染草稿。模板的渲染严重问题使结论为不合格；数据集提取的预览仍只作参考。`assessment` 分开记录 `structure`、`candidates`、`content: needsReview` 与 `render`；缺完整请求记 `render.status: notChecked`，可渲染记 `renderable`，受阻记 `blocked`。`capabilityBlocked` 表示包含已知引擎能力问题。
-4. **结论**：结构、候选和模板的渲染检查通过时为"合格"，内容与样式仍须审核。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
+3. **渲染**：有完整出图请求时，覆盖候选后实际渲染草稿。模板的渲染严重问题使结论为不合格；数据集提取的预览仍只作参考。`assessment` 分开记录 `structure`、`candidates`、`content: needsReview` 与 `render`；缺完整请求记 `render.status: notChecked`，可渲染记 `renderable`，受阻记 `blocked`。`capabilityBlocked` 表示包含已知引擎能力问题。模板任务另有 `style`：按人工核准区域与布局摘要核对字号、重复实例与状态覆盖，异常给诊断，不单独改变结论。
+4. **覆盖**：提取任务另核对业务内容覆盖（票据 33）：站码等已知缺值是否说明、固定常量是否有项目说明依据、累计分钟等整块信息是否丢失、推导值是否有依据。严重异常使结论不合格，提示只记录不阻止。
+5. **结论**：结构、候选和模板的渲染检查通过时为"合格"，内容与样式仍须审核。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
 
 **交回前核对**（M233、M294）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`。已知能力受阻时交回候选与说明，结束本轮，不以修改模板解决引擎能力缺失。
-- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
+- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板；提取任务还带项目说明原文与领域内容基准。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
 - 这个文件在 Agent 工作目录之外，Agent 改不了。
 - 交回后的校验与它是同一份实现、同样的上下文，所以 Agent 交回前看到的结论与问题和 `check.json` 一致。
 

@@ -17,4 +17,6 @@
 5. 用 check_dataset 校验，有问题就修改，直到没有问题；待确认的位置除外。
    - 有 request.json 时，用 render_draft 出草稿对照示例图：request 用 request.json 的内容，datasetPath 指向你的数据集。
 6. check_dataset 第一次没有问题时，就按 outcome.md 写 outcome.json，之后每次修改都更新它：列出候选文件、值在图上的位置、待确认项与说明。看不清或推测的值都列为待确认项，候选值写在 candidate 里，不要当作确定的值。
+   - 用 `coverage` 交代每个业务区块：图上直接读到的值归 `field`；由总数、本站剩余时间等算出的归 `derived`，写清 `derivedFrom` 与 `logic`（如 55-31=24）；图上没有给出的站保持缺省，不要编造。
+   - 可选字段合法缺省不等于整块信息可以丢：图上明确给出的到站分钟、票价等内容要在数据集中有承载。
 7. 交回前用 check_outcome 核对：它按 RenderWeave 收到成果后的同一套规则检查 outcome.json 与候选文件。结论是 unqualified 时按问题修改，再核对，直到 qualified；deferred 中的问题落在待确认的位置上，留给审核，不用改。

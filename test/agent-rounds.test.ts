@@ -604,7 +604,9 @@ describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', 
     const extraction = await run(undefined, { task: 'dataset-extraction', workspace: dir, definition: '问候', request: greetingRequest });
     const greeting = { name: '问候', version: 1 };
     expect(extraction.record.inputs).toMatchObject({ definition: greeting, dataset: null, request: { template: '问候牌' } });
-    expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'dataset-extraction', definition: greeting, request: await json(join(extraction.roundDir, 'request.json')) });
+    expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({
+      task: 'dataset-extraction', briefText: await readFile(extraction.record.inputs.brief.source, 'utf8'), definition: greeting, request: await json(join(extraction.roundDir, 'request.json')),
+    });
     expect((await json(join(extraction.roundDir, 'agent/fake-run.json'))).prompt).toContain('按已发布的数据定义 问候 v1，');
 
     const request = await file('banner-request.json', BANNER_REQUEST);
