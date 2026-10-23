@@ -28,7 +28,7 @@ import {
 } from './eval.js';
 import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
 import { materialHashes } from '../../src/agent/provenance.js';
-import { experimentIdentity, inputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sealEvaluationRound, sha256, type ExperimentIdentity } from './identity.js';
+import { experimentIdentity, inputIdentity, resourceInputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sealEvaluationRound, sha256, type ExperimentIdentity } from './identity.js';
 
 const MANIFEST = 'eval.json';
 
@@ -193,7 +193,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
       sourceManifestSha256: sha256(await readFile(join(dir, MANIFEST))),
       sourceReportSha256: await readFile(join(reports, `${saved.label}.json`)).then(sha256, () => null),
       scoredAt: new Date().toISOString(), scorer: await scorerIdentity(),
-      scoringIdentity: {config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), inputs: await inputIdentity(pick(saved.scenarios.join(','))), resources: await materialHashes(resolve(REPO, config.resources), 'resources')},
+      scoringIdentity: {config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), inputs: await inputIdentity(pick(saved.scenarios.join(','))), resources: await resourceInputIdentity(resolve(REPO, config.resources))},
       sourceRounds: await Promise.all(all.flatMap(unit => unit.rounds.map(async round => {
         const files = await materialHashes(join(dir, round.dir), 'round');
         return {dir: round.dir, files, sha256: sha256(JSON.stringify(files))};
