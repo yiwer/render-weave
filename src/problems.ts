@@ -36,6 +36,7 @@ export interface Problem {
 export const ProblemCodes = {
   localStoreBusy: 'local.storeBusy',
   applyConcurrentChange: 'apply.concurrentChange',
+  applyRecoveryRequired: 'apply.recoveryRequired',
   deliveryUnsupported: 'delivery.unsupported',
   deliveryWriteFailed: 'delivery.writeFailed',
   /** 单项写入失败后探测到批次目录整体不可写，停止调度。 */

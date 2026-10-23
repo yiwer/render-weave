@@ -29,6 +29,8 @@ async function fingerprint(...dirs: string[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const walk = async (dir: string) => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
+      // 同时运行的产品读者可创建短时协调元数据；只核对业务文档与资源没有被 MCP 修改。
+      if (entry.isDirectory() && /^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) continue;
       const file = join(dir, entry.name);
       if (entry.isDirectory()) await walk(file);
       else if (entry.isSymbolicLink()) result.set(file, 'link');

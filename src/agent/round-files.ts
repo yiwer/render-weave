@@ -11,8 +11,11 @@ export class AgentUsageError extends Error {}
 
 /** 工作区指纹：按文件名排序的 JSON 文件名与内容哈希，再整体取哈希；应用时据此判断工作区是否已变（M51）。 */
 export async function workspaceFingerprint(dir: string): Promise<string> {
+  return fingerprintHashes(await jsonFileHashes(dir));
+}
+export function fingerprintHashes(hashes: ReadonlyMap<string, string>): string {
   const hash = createHash('sha256');
-  for (const [file, digest] of await jsonFileHashes(dir)) hash.update(`${file}\0${digest}\n`);
+  for (const [file, digest] of [...hashes].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) hash.update(`${file}\0${digest}\n`);
   return `sha256:${hash.digest('hex')}`;
 }
 
