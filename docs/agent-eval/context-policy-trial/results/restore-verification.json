@@ -1,0 +1,93 @@
+{
+  "format": "renderweave-context-trial-restore-verification/1",
+  "verifiedAt": "2026-10-23T15:58:23.383Z",
+  "archive": "F:/GenCode/render-weave/out/harness18-evidence-archive-v2",
+  "restored": "F:/GenCode/render-weave/out/harness18-restored-v2",
+  "manifestSha256": "25faa300298a7dc136a2fc30e3d3ff03b7e1ccc4c8efa4c17a9cf117941ffa8c",
+  "filesVerifiedAfterReview": 6205,
+  "directoriesVerified": 1982,
+  "logicalBytes": 2912341258,
+  "views": [
+    {
+      "strategy": "full",
+      "task": "definition-extraction",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\full\\run-1\\zh-definition-extraction\\attempts\\ca9622eb-82a6-4e53-b08e-0de2a36249f0\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "full",
+      "task": "dataset-extraction",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\full\\run-1\\zh-dataset-extraction\\attempts\\cf5a176a-20d9-4288-809c-d2b5bc781e3a\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "full",
+      "task": "template-design",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\full\\run-1\\zh-template-design\\attempts\\96c80ec2-5fcb-4020-baf6-df317d9143ef\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "full",
+      "task": "template-revision",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\full\\run-1\\zh-template-revision\\attempts\\a7cca956-d70f-4c2d-ad4d-b63ab73b0c9c\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "on-demand",
+      "task": "definition-extraction",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\on-demand\\run-1\\zh-definition-extraction\\attempts\\29260a52-a2f3-4036-b8eb-241826f77275\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "on-demand",
+      "task": "dataset-extraction",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\on-demand\\run-1\\zh-dataset-extraction\\attempts\\17101a65-2dbd-44f5-84b3-0b68bda0b192\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "on-demand",
+      "task": "template-design",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\on-demand\\run-1\\zh-template-design\\attempts\\6ecc0a1c-6d30-4b0a-a86a-e21564bc553f\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "strategy": "on-demand",
+      "task": "template-revision",
+      "path": "F:\\GenCode\\render-weave\\out\\harness18-restored-v2\\trial\\on-demand\\run-1\\zh-template-revision\\attempts\\e63edd10-e044-42d0-bc51-4b4ffc1d21c7\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "limitation": "原始F盘来源路径仍保留；公开审核入口读取恢复后的轮次，记录内部绝对路径未改写。不证明任意迁移后直接续跑，也没有再次调用模型。"
+}

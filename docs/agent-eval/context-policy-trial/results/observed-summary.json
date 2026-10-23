@@ -1,0 +1,1172 @@
+{
+  "format": "renderweave-context-trial-observed-summary/1",
+  "createdAt": "2026-10-23T15:53:30.381Z",
+  "complete": true,
+  "decision": "retain-full",
+  "observations": 32,
+  "attempts": 32,
+  "cases": [
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-template-revision",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-template-revision",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-revision",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-template-revision",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-template-design",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-template-revision",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-template-revision",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-template-revision",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-definition-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-dataset-extraction",
+      "status": "pass",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "failures": []
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-design",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-revision",
+      "status": "fail",
+      "retries": 0,
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "failures": [
+        "后续页实际取得未通过"
+      ]
+    }
+  ],
+  "failures": [
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-template-design",
+      "attemptId": "96c80ec2-5fcb-4020-baf6-df317d9143ef",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-template-design\\attempts\\96c80ec2-5fcb-4020-baf6-df317d9143ef\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:ccb75be2b63868ad4deb89a5436236509824215c4b629f6fceebbf72b7fec354",
+      "comparisons": [
+        {
+          "line": 1,
+          "at": "2026-10-23T15:09:02.862Z",
+          "reportId": "2f65d82004c38b38d5e38a2410b03dd542538419867469c3f472d3db66a0b553",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ],
+          "allIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:09:27.087Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T15:09:39.761Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T15:09:39.868Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-template-design",
+      "attemptId": "0c5b1ea8-5ed3-41cc-9cc3-f1e662c4377a",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\en-template-design\\attempts\\0c5b1ea8-5ed3-41cc-9cc3-f1e662c4377a\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:df56985fa9280056742ecd06c918a16a012e5e204922589e056310609a628762",
+      "comparisons": [
+        {
+          "line": 1,
+          "at": "2026-10-23T15:14:52.600Z",
+          "reportId": "b32072cda8c74afc5aa9302caeac189584d64cdfe8331f210d4146a96471eacd",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ],
+          "allIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T15:15:01.167Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:15:07.597Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T15:15:13.460Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-design",
+      "attemptId": "b153e473-d1bd-4c75-883c-f050126cbd31",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-template-design\\attempts\\b153e473-d1bd-4c75-883c-f050126cbd31\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:6380998b4206a2d1aea88d29c0cbaf585ff79f2488ed954c2c4749ef764cd408",
+      "comparisons": [
+        {
+          "line": 5,
+          "at": "2026-10-23T15:42:38.475Z",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": []
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T15:42:59.370Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T15:43:02.935Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 10,
+          "at": "2026-10-23T15:43:03.042Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-revision",
+      "attemptId": "5ae09753-fe22-4a80-a2f2-91d0937caef9",
+      "task": "template-revision",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-template-revision\\attempts\\5ae09753-fe22-4a80-a2f2-91d0937caef9\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:252429ab44f2c284c65272e531d745c6dca96559777a7e37f85feb0f92985cab",
+      "comparisons": [
+        {
+          "line": 2,
+          "at": "2026-10-23T15:43:57.934Z",
+          "reportId": "2f65d82004c38b38d5e38a2410b03dd542538419867469c3f472d3db66a0b553",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ],
+          "allIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T15:44:08.574Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T15:44:15.223Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T15:44:15.331Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-template-design",
+      "attemptId": "678e8fe2-cd66-4c60-b58c-d5eae90d49ef",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\en-template-design\\attempts\\678e8fe2-cd66-4c60-b58c-d5eae90d49ef\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:7b9f3590d98d038384606665b30630944a6e029748522cd7ff7a50c5f8200521",
+      "comparisons": [
+        {
+          "line": 5,
+          "at": "2026-10-23T15:47:49.567Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T15:47:53.508Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "e63edd10-e044-42d0-bc51-4b4ffc1d21c7",
+      "task": "template-revision",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\zh-template-revision\\attempts\\e63edd10-e044-42d0-bc51-4b4ffc1d21c7\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:6946fb6488d4d794d8aa66e6adf58e96986dcfd462854b27629221904c0fe5b4",
+      "comparisons": [
+        {
+          "line": 3,
+          "at": "2026-10-23T15:22:55.300Z",
+          "reportId": "2f65d82004c38b38d5e38a2410b03dd542538419867469c3f472d3db66a0b553",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:22:58.097Z",
+          "reportId": "2f65d82004c38b38d5e38a2410b03dd542538419867469c3f472d3db66a0b553",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ],
+          "allIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T15:23:06.911Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T15:23:07.202Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-template-design",
+      "attemptId": "a8255cfa-8ff9-4948-ad5a-b710b05189a7",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\en-template-design\\attempts\\a8255cfa-8ff9-4948-ad5a-b710b05189a7\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:ec17837bf42f0a1a01d5b6f62325d91c9970cf0ac18f41ddfb1ad74ea0d61893",
+      "comparisons": [
+        {
+          "line": 2,
+          "at": "2026-10-23T15:26:01.648Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T15:26:05.450Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:26:09.289Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-template-design",
+      "attemptId": "740de619-fa9a-4cb7-89b2-da578d199157",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\zh-template-design\\attempts\\740de619-fa9a-4cb7-89b2-da578d199157\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:5431f3f3cbe8510f934d2b05def235fdfa8122cde5986711eafdab6337ad5ee3",
+      "comparisons": [
+        {
+          "line": 8,
+          "at": "2026-10-23T15:31:14.989Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T15:31:18.491Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 11,
+          "at": "2026-10-23T15:31:28.715Z",
+          "reportId": "1b7d2e64f8c9c569743816a8951688c3da00d892eb7444f32c318f7ea2549f56",
+          "requestedRegions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-design",
+      "attemptId": "91b6ed5d-e200-409b-ae38-468239d7c6e0",
+      "task": "template-design",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-template-design\\attempts\\91b6ed5d-e200-409b-ae38-468239d7c6e0\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:15bdb38a6673f110cefc510079067c45f7ffa2b1d2ad3ab686cee11ecb8b270e",
+      "comparisons": [
+        {
+          "line": 3,
+          "at": "2026-10-23T15:36:57.451Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:37:00.819Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-revision",
+      "attemptId": "0c031083-1b0f-45da-b506-f8231c5b1f81",
+      "task": "template-revision",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": false
+      },
+      "toolsPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-template-revision\\attempts\\0c031083-1b0f-45da-b506-f8231c5b1f81\\round\\logs\\tools.jsonl",
+      "toolsSha256": "sha256:2477232eb731c1673f3e14814019746d3bba3e00f8a67c605b61b970611a2002",
+      "comparisons": [
+        {
+          "line": 3,
+          "at": "2026-10-23T15:37:57.409Z",
+          "reportId": "b32072cda8c74afc5aa9302caeac189584d64cdfe8331f210d4146a96471eacd",
+          "regionOffset": 0,
+          "requestedRegions": null,
+          "nextRegionOffset": 20,
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T15:38:00.589Z",
+          "reportId": "b32072cda8c74afc5aa9302caeac189584d64cdfe8331f210d4146a96471eacd",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ],
+          "allIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T15:38:07.931Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "requestedRegions": [
+            "region-22"
+          ],
+          "region22InCatalog": false,
+          "region22Issues": [],
+          "allIssues": []
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T15:38:15.872Z",
+          "reportId": "5338db3ee4d98ec13553dbd07550f3d4a96bb45c8fdadfd37c7c873cd1fcec63",
+          "regionOffset": 20,
+          "requestedRegions": null,
+          "nextRegionOffset": null,
+          "region22InCatalog": true,
+          "region22Issues": [],
+          "allIssues": []
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "full": {
+      "attempts": 16,
+      "complete": true,
+      "nonqualifiedAttempts": 0,
+      "unknownVerdictAttempts": 0,
+      "inputAndCacheTokens": 6701970,
+      "outputTokens": 119858,
+      "metricTotals": {
+        "inputTokens": 314,
+        "outputTokens": 119858,
+        "cacheReadTokens": 5870727,
+        "cacheCreationTokens": 830929,
+        "thinkingTokens": 55998,
+        "wallMs": 1110050
+      },
+      "unknownByMetric": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheCreationTokens": 0
+      },
+      "partialUsageAttempts": 0,
+      "unknownThinkingAttempts": 0,
+      "usageComplete": true,
+      "actualWallMs": 1202305,
+      "servedModels": [
+        "claude-haiku-5-5"
+      ],
+      "providerRevision": null,
+      "humanReviewMinutes": null,
+      "humanCorrectionMinutes": null,
+      "humanReworkMinutes": null
+    },
+    "onDemand": {
+      "attempts": 16,
+      "complete": true,
+      "nonqualifiedAttempts": 0,
+      "unknownVerdictAttempts": 0,
+      "inputAndCacheTokens": 6094028,
+      "outputTokens": 113347,
+      "metricTotals": {
+        "inputTokens": 302,
+        "outputTokens": 113347,
+        "cacheReadTokens": 5314568,
+        "cacheCreationTokens": 779158,
+        "thinkingTokens": 46265,
+        "wallMs": 1028846
+      },
+      "unknownByMetric": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheCreationTokens": 0
+      },
+      "partialUsageAttempts": 0,
+      "unknownThinkingAttempts": 0,
+      "usageComplete": true,
+      "actualWallMs": 1121309,
+      "servedModels": [
+        "claude-haiku-5-5"
+      ],
+      "providerRevision": null,
+      "humanReviewMinutes": null,
+      "humanCorrectionMinutes": null,
+      "humanReworkMinutes": null
+    }
+  },
+  "relativeInputReduction": 0.09071094021608572,
+  "guards": {
+    "qualityNoRegression": false,
+    "candidateAllPass": false,
+    "candidateNoCriticalErrors": true,
+    "outputNotIncreased": true,
+    "wallNotIncreased": true
+  },
+  "limitation": "只读提取冻结报告与工具原件，失败判定不重写。页内待修问题与改后已修的目录页分开保留。"
+}
