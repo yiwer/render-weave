@@ -15,7 +15,8 @@ import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
-import {evaluationTiming, executeAttempt, restoreAttempt, savedAttempts} from './attempts.js';
+import {evaluationTiming, executeAttempt, prepareAttempt, restoreAttempt, savedAttempts} from './attempts.js';
+import {withLocalAccess} from '../../src/local-access.js';
 import {
   CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
   type ConventionId, type DefinitionScore, type RevisionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
@@ -293,15 +294,21 @@ class InvalidUnit extends Error {
  * 续跑时这一轮已有有效轮次记录就不再发起。
  */
 async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOptions & { upstream: UpstreamRecord; unit: string; label: string }): Promise<void> {
-  try {await restoreAttempt(spec, context.unit);} catch (error) {
-    throw new EvaluationAborted(error instanceof Error ? error.message : String(error));
-  }
-  if ((await roundError(spec.out)) === null) return;
   for (let attempt = 0; ; attempt++) {
     await context.beforeDispatch?.();
+    let reserved;
+    try {
+      reserved = await withLocalAccess([context.unit], async () => {
+        await restoreAttempt(spec, context.unit);
+        return (await roundError(spec.out)) === null ? undefined : prepareAttempt(spec, context.unit);
+      });
+    } catch (error) {
+      throw new EvaluationAborted(error instanceof Error ? error.message : String(error));
+    }
+    if (!reserved) return;
     let failure: { kind: ErrorKind; error: string } | null | undefined, thrown: unknown;
     try {
-      await executeAttempt(spec, context.unit, launch);
+      await executeAttempt(spec, reserved, launch);
       failure = await roundError(spec.out);
     } catch (caught) {
       thrown = caught;
@@ -693,6 +700,7 @@ async function approveDefinitions(roundDir: string, workspace: string): Promise<
 }
 
 async function summarize(dir: string, outDir: string, task?: AgentTaskId): Promise<RoundSummary | undefined> {
+  const logs = await summarizeLogs(dir);
   let record: RoundRecord;
   try {
     record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord;
@@ -704,7 +712,7 @@ async function summarize(dir: string, outDir: string, task?: AgentTaskId): Promi
       try {const message = JSON.parse(line); if (message.type === 'result') result = message;} catch { /* 未写完的行没有可信用量 */ }
     }} catch { /* 无日志则全部用量未知 */ }
     const usage = result?.usage, number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
-    return {task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: 'missing',
+    return {task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: 'missing', ...logs,
       inputTokens: number(usage?.input_tokens), outputTokens: number(usage?.output_tokens), thinkingTokens: number(usage?.output_tokens_details?.thinking_tokens),
       cacheReadTokens: number(usage?.cache_read_input_tokens), cacheCreationTokens: number(usage?.cache_creation_input_tokens),
       ...(result?.subtype ? {endedBy: String(result.subtype)} : {})};
@@ -712,24 +720,31 @@ async function summarize(dir: string, outDir: string, task?: AgentTaskId): Promi
   if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   let outcome: RoundOutcome | undefined;
   try { outcome = JSON.parse(await readFile(join(dir, 'outcome.json'), 'utf8')) as RoundOutcome; } catch { outcome = undefined; }
-  let toolCalls: number | undefined, toolErrors: number | undefined, firstCheckProblems: number | undefined;
-  try {
-    const calls = (await readFile(join(dir, 'logs/tools.jsonl'), 'utf8')).split('\n').filter(Boolean)
-      .map((line) => JSON.parse(line) as { tool?: string; isError?: boolean; problems?: number });
-    toolCalls = calls.length;
-    toolErrors = calls.filter((call) => call.isError).length;
-    firstCheckProblems = calls.find((call) => call.tool === 'check_templates' && !call.isError)?.problems;
-  } catch { /* 没有工具调用日志 */ }
-  const persistedResults = await countPersisted(join(dir, 'logs/stream.jsonl'));
   const run = record.run;
   const pick = <K extends keyof typeof run>(key: K) => (run[key] === undefined ? {} : { [key]: run[key] });
   return {
     task: record.task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: record.verdict,
     ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'), ...pick('stopped'),
-    ...(outcome ? { pending: outcome.pending.length } : {}), ...(toolCalls !== undefined ? { toolCalls, toolErrors } : {}),
-    ...(persistedResults !== undefined ? { persistedResults } : {}), ...(firstCheckProblems !== undefined ? { firstCheckProblems } : {}),
+    ...(outcome ? { pending: outcome.pending.length } : {}), ...logs,
     ...(run.error ? { error: run.error } : {}),
   } as RoundSummary;
+}
+
+/** 完整与中断轮次使用同一计数规则；末尾损坏的一行不抹去此前完整事件。 */
+async function summarizeLogs(dir: string): Promise<Pick<RoundSummary, 'toolCalls' | 'toolErrors' | 'firstCheckProblems' | 'persistedResults'>> {
+  let toolCalls: number | undefined, toolErrors: number | undefined, firstCheckProblems: number | undefined;
+  try {
+    const calls: {tool: string; isError?: boolean; problems?: number}[] = [];
+    for (const line of (await readFile(join(dir, 'logs/tools.jsonl'), 'utf8')).split('\n')) {
+      try {const call = JSON.parse(line); if (call && typeof call.tool === 'string') calls.push(call);} catch { /* 未写完的行不计入 */ }
+    }
+    toolCalls = calls.length;
+    toolErrors = calls.filter(call => call.isError === true).length;
+    firstCheckProblems = calls.find(call => call.tool === 'check_templates' && !call.isError)?.problems;
+  } catch { /* 没有日志时计数未知 */ }
+  const persistedResults = await countPersisted(join(dir, 'logs/stream.jsonl'));
+  return {...(toolCalls !== undefined ? {toolCalls, toolErrors} : {}), ...(persistedResults !== undefined ? {persistedResults} : {}),
+    ...(firstCheckProblems !== undefined ? {firstCheckProblems} : {})};
 }
 
 /** 流式日志里被 Claude Code 转存成文件、或因过大被拒收的工具结果数；没有日志时为 undefined（票据 22）。 */

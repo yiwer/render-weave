@@ -4,6 +4,7 @@ import {cp, link, mkdir, open, readdir, readFile, rename, rm, unlink} from 'node
 import {basename, join, relative, resolve} from 'node:path';
 import {hostname} from 'node:os';
 import {readReview} from '../../src/index.js';
+import {withLocalAccess} from '../../src/local-access.js';
 import type {Launcher, RoundSpec} from './eval.js';
 
 export interface AttemptRecord {
@@ -40,9 +41,9 @@ async function readJson<T>(file: string): Promise<T | undefined> {
 async function hashes(dir: string, prefix = ''): Promise<Record<string, string>> {
   const result: Record<string, string> = {};
   for (const entry of (await readdir(dir, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name === '.write-lock' || !prefix && (entry.name === 'completed.json' || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
+    if (entry.isSymbolicLink()) throw new Error(`尝试原件包含不能固定的链接：${prefix + entry.name}`);
+    if (entry.name === '.write-lock' || !prefix && (['completed.json', 'completed.seal.json'].includes(entry.name) || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
     const name = prefix + entry.name, path = join(dir, entry.name);
-    if (entry.isSymbolicLink()) throw new Error(`尝试原件包含不能固定的链接：${name}`);
     if (entry.isDirectory()) Object.assign(result, await hashes(path, name + '/'));
     else result[name] = sha(await readFile(path));
   }
@@ -62,6 +63,11 @@ async function startAttempt(unit: string, record: AttemptRecord): Promise<string
   await rename(staging, dir);
   return dir;
 }
+/** 封存先提交完整值，兼容记录随后发布；中途退出仍可从封存读取同一完成事实。摘要只用于内容完整性，不是认证。 */
+async function completeAttempt(dir: string, completion: AttemptCompletion): Promise<void> {
+  await writeNew(join(dir, 'completed.seal.json'), {completion, sha256: sha(JSON.stringify(completion))});
+  await writeNew(join(dir, 'completed.json'), completion);
+}
 async function list(unit: string): Promise<SavedAttempt[]> {
   const directory = join(unit, 'attempts');
   let ids: string[];
@@ -73,7 +79,11 @@ async function list(unit: string): Promise<SavedAttempt[]> {
   for (const id of ids.sort()) {
     const dir = join(directory, id), record = await readJson<AttemptRecord>(join(dir, 'started.json'));
     if (!record || record.id !== id || record.format !== 'renderweave-eval-attempt/1') throw new Error(`尝试身份损坏：${dir}`);
-    const completion = await readJson<AttemptCompletion>(join(dir, 'completed.json'));
+    const compatibility = await readJson<AttemptCompletion>(join(dir, 'completed.json'));
+    const seal = await readJson<{completion: AttemptCompletion; sha256: string}>(join(dir, 'completed.seal.json'));
+    if ((compatibility && !seal) || (seal && (!seal.completion || sha(JSON.stringify(seal.completion)) !== seal.sha256
+      || (compatibility && sha(JSON.stringify(compatibility)) !== seal.sha256)))) throw new Error(`尝试完成记录已改变：${dir}`);
+    const completion = seal?.completion;
     if (completion && JSON.stringify(completion.files) !== JSON.stringify(await hashes(dir))) throw new Error(`尝试原件已改变：${dir}`);
     result.push({record, completion, dir});
   }
@@ -139,7 +149,7 @@ export async function restoreAttempt(spec: RoundSpec, unit: string): Promise<voi
       && (!attempt.record.experiment || proof?.experiment === attempt.record.experiment);
     const completion: AttemptCompletion = {endedAt: null, elapsedMs: null, recovered: true, eligible,
       ...(!eligible ? {error: '原派发中断或缺少实验封存，不能作为有效观测；保留已知用量'} : {}), files: await hashes(attempt.dir)};
-    await writeNew(join(attempt.dir, 'completed.json'), completion);
+    await completeAttempt(attempt.dir, completion);
   }
   const completed = (await list(unit)).filter(attempt => attempt.record.stage === basename(spec.out) && attempt.completion && attempt.completion.eligible !== false).at(-1);
   if (!completed) return;
@@ -147,7 +157,8 @@ export async function restoreAttempt(spec: RoundSpec, unit: string): Promise<voi
   if (current?.id !== completed.record.id) await publish(completed, spec.out);
 }
 
-export async function executeAttempt(spec: RoundSpec, unit: string, launch: Launcher): Promise<void> {
+/** 调用方须在单元短锁内恢复、重核并预留；模型执行不占用短锁。 */
+export async function prepareAttempt(spec: RoundSpec, unit: string): Promise<SavedAttempt> {
   if (resolve(spec.out, '..') !== resolve(unit)) throw new Error('尝试输出必须属于当前单元');
   const attempts = await list(unit);
   // 旧阶段仍保留可证的最后一次成果，不声称补齐已被旧运行器删除的重试历史。
@@ -160,7 +171,7 @@ export async function executeAttempt(spec: RoundSpec, unit: string, launch: Laun
         startedAt: null, owner: null, experiment: null, input, legacy: true};
       await startAttempt(unit, record);
       await cp(spec.out, join(dir, 'round'), {recursive: true});
-      await writeNew(join(dir, 'completed.json'), {endedAt: null, elapsedMs: null, files: await hashes(dir)} satisfies AttemptCompletion);
+      await completeAttempt(dir, {endedAt: null, elapsedMs: null, files: await hashes(dir)});
     }
   }
   const id = randomUUID(), dir = join(unit, 'attempts', id), started = Date.now(), {out: _out, ...input} = spec;
@@ -168,11 +179,18 @@ export async function executeAttempt(spec: RoundSpec, unit: string, launch: Laun
   const record: AttemptRecord = {format: 'renderweave-eval-attempt/1', id, stage: basename(spec.out), task: spec.task,
     startedAt: new Date(started).toISOString(), owner: {host: hostname(), pid: process.pid}, experiment: manifest?.identity ? 'sha256:' + sha(JSON.stringify(manifest.identity)) : null, input};
   await startAttempt(unit, record);
+  return {record, dir};
+}
+
+export async function executeAttempt(spec: RoundSpec, attempt: SavedAttempt, launch: Launcher): Promise<void> {
+  const {record, dir} = attempt;
   let failure: unknown;
   try {await launch({...spec, out: join(dir, 'round')});} catch (error) {failure = error;}
-  const completion: AttemptCompletion = {endedAt: new Date().toISOString(), elapsedMs: Date.now() - started,
-    ...(failure ? {error: failure instanceof Error ? failure.message : String(failure)} : {}), files: await hashes(dir)};
-  await writeNew(join(dir, 'completed.json'), completion);
-  await publish({record, completion, dir}, spec.out);
+  await withLocalAccess([resolve(dir, '../..')], async () => {
+    const completion: AttemptCompletion = {endedAt: new Date().toISOString(), elapsedMs: Date.now() - Date.parse(record.startedAt!),
+      ...(failure ? {error: failure instanceof Error ? failure.message : String(failure)} : {}), files: await hashes(dir)};
+    await completeAttempt(dir, completion);
+    await publish({record, completion, dir}, spec.out);
+  });
   if (failure) throw failure;
 }

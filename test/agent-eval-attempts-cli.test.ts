@@ -80,7 +80,7 @@ it('评估宿主被强退后保留已退出尝试，补跑保留此前用量与�
     const resumed = await cli(selected); expect(resumed.code, resumed.stdout + resumed.stderr).toBe(0);
     const file = /^报告：(.+)$/m.exec(resumed.stdout)![1]!.trim(), report = JSON.parse(await readFile(file, 'utf8'));
     expect(report.attempts).toHaveLength(3);
-    expect(report.totals).toMatchObject({inputTokens: 33, outputTokens: 666, thinkingTokens: 450, unknownUsageAttempts: 0});
+    expect(report.totals).toMatchObject({inputTokens: 33, outputTokens: 666, thinkingTokens: 450, toolCalls: 3, persistedResults: 3, unknownUsageAttempts: 0});
     expect(report.timing).toMatchObject({incompleteSessions: 1, actualWallMs: null, unknownAttemptDurations: 1});
     expect(await readFile(join(original, 'logs/stream.jsonl'))).toEqual(stream);
     expect(report.attempts.find((attempt: {id: string}) => attempt.id === firstId).error).toContain('原派发中断或缺少实验封存');

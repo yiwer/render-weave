@@ -103,3 +103,41 @@ it('旧派发拥有者尚活时拒绝重派，完成后续跑不产生额外尝�
   const report = await buildReport({config, label: 'live', startedAt, outDir: out, results: [result]});
   expect(report.attempts).toHaveLength(1); expect(report.totals.outputTokens).toBe(222);
 });
+
+it('同时开始同一未派发单元只允许一个执行器，未落盘窗口不能重复派发', async () => {
+  const out = join(root, 'race'); let calls = 0;
+  let release!: () => void; const pending = new Promise<void>(done => {release = done;});
+  const executor: Launcher = async spec => {calls++; await launch([])(spec); await pending;};
+  const first = runScenario(config, scenario(), 1, out, executor), second = runScenario(config, scenario(), 1, out, executor);
+  const finished = Promise.allSettled([first, second]);
+  await new Promise(done => setTimeout(done, 1500)); release();
+  const settled = await finished; expect(calls).toBe(1);
+  expect(settled.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+  expect(settled.find(result => result.status === 'fulfilled')).toMatchObject({value: {status: 'pass'}});
+  expect(settled.find(result => result.status === 'rejected')).toMatchObject({reason: expect.objectContaining({message: expect.stringContaining('尝试拥有者仍存活')})});
+  expect(await readdir(join(unitDir(out, scenario(), 1), 'attempts'))).toHaveLength(1);
+});
+
+it('完成封存已发布而兼容记录缺失时保留成本，公开续跑不重新派发', async () => {
+  const out = join(root, 'completion-gap'), startedAt = new Date().toISOString();
+  const result = await runScenario(config, scenario(), 1, out, launch([]));
+  const before = await buildReport({config, label: 'completion-gap', startedAt, outDir: out, results: [result]});
+  // 模拟退出发生在封存发布之后、兼容完成记录发布之前。
+  await rm(join(out, before.attempts[0]!.dir, 'completed.json'));
+  let calls = 0;
+  const resumed = await runScenario(config, scenario(), 1, out, async () => {calls++;});
+  const after = await buildReport({config, label: 'completion-gap', startedAt, outDir: out, results: [resumed]});
+  expect(calls).toBe(0);
+  expect(after.attempts).toEqual(before.attempts);
+  expect(after.totals).toEqual(before.totals);
+});
+
+it('完成元数据被改写时拒绝重评分，不能降低耗时或抹去错误', async () => {
+  const out = join(root, 'completion'), startedAt = new Date().toISOString();
+  const result = await runScenario(config, scenario(), 1, out, launch([]));
+  const report = await buildReport({config, label: 'completion', startedAt, outDir: out, results: [result]});
+  const file = join(out, report.attempts[0]!.dir, 'completed.json');
+  const completion = JSON.parse(await readFile(file, 'utf8')); completion.elapsedMs = -1;
+  await writeFile(file, JSON.stringify(completion));
+  await expect(buildReport({config, label: 'completion', startedAt, outDir: out, results: [result]})).rejects.toThrow('尝试完成记录已改变');
+});
