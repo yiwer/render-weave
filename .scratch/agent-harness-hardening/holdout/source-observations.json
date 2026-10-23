@@ -1,0 +1,162 @@
+{
+  "status": "unapproved-source-observations",
+  "purpose": "来源核对与核准材料准备，不作资料调优",
+  "observations": [
+    {
+      "id": "landscape-01",
+      "file": "download-huiyang7.png",
+      "width": 3696,
+      "height": 2615,
+      "bytes": 1404458,
+      "sha256": "1efe1dd4a1b11740c07128d51e79dca9c02e30444229868af78104aa144172d0"
+    },
+    {
+      "id": "landscape-02",
+      "file": "download324-1.png",
+      "width": 3696,
+      "height": 2615,
+      "bytes": 1110876,
+      "sha256": "da01b26ed3d9598cbe938476ae9c70e319dcf021cda414e791a63fbeb4f2eff8"
+    },
+    {
+      "id": "landscape-03",
+      "file": "downloadM561.png",
+      "width": 3696,
+      "height": 2615,
+      "bytes": 1036831,
+      "sha256": "11455f0e96aad3ac57a0da7c9b8c145abe3003d75eecd4cce29b37243d5cf1b7"
+    },
+    {
+      "id": "vertical-01",
+      "file": "download-line1.png",
+      "width": 921,
+      "height": 4346,
+      "bytes": 966054,
+      "sha256": "e8532b61defa879ea9c122e51a91485cde2bd402d68b8924dd8d8874e54be0ec"
+    },
+    {
+      "id": "vertical-02",
+      "file": "download-line2.png",
+      "width": 1039,
+      "height": 4252,
+      "bytes": 762241,
+      "sha256": "0a7cccafb7b0a345bbe2fba3bb0dfea0c1653d3930fcdf144bf562630197854c"
+    },
+    {
+      "id": "vertical-03",
+      "file": "download-line3.png",
+      "width": 1654,
+      "height": 4488,
+      "bytes": 1659849,
+      "sha256": "a23cfe6412c24372bda24c4bbc1afaf8049f1d70dc7b2c3e799cbbfb06872dcb"
+    },
+    {
+      "id": "board-01",
+      "file": "download -sign1.png",
+      "width": 4583,
+      "height": 7323,
+      "bytes": 3101747,
+      "sha256": "1a1d5c93b1d1ab20614b33c68462bb0a1c60bd96b4157381e819652d33bbeb0f"
+    },
+    {
+      "id": "board-02",
+      "file": "download-sign2.png",
+      "width": 4961,
+      "height": 7843,
+      "bytes": 3101767,
+      "sha256": "3b676834707e509ff7657c0779d8840cf25a69f3b89a2adf5e7ac3fe86512a6d"
+    },
+    {
+      "id": "board-03",
+      "file": "download-sign3.png",
+      "width": 4961,
+      "height": 7843,
+      "bytes": 2363891,
+      "sha256": "ed956febcfc9f1a985cbcb321e93035af7376e182cb5f413ab07c51ff3dff9f5"
+    },
+    {
+      "id": "stop-name-01",
+      "file": "download-stopname1.png",
+      "width": 1654,
+      "height": 4488,
+      "bytes": 260637,
+      "sha256": "8e6bfd46272e782dab9179a9bf7f25f23da903b1f4f2d43217505270e29c4f36",
+      "regions": {
+        "chinese": {
+          "left": 720,
+          "top": 584,
+          "right": 1106,
+          "bottom": 2875
+        },
+        "english": {
+          "left": 538,
+          "top": 595,
+          "right": 681,
+          "bottom": 2284
+        }
+      },
+      "background": [
+        1,
+        84,
+        164,
+        255
+      ]
+    },
+    {
+      "id": "stop-name-02",
+      "file": "download-stopname2.png",
+      "width": 1654,
+      "height": 4488,
+      "bytes": 289151,
+      "sha256": "af6a882d00d59baf3ec09aa73a93db33a909d1615bff9af007b07e9358e633b2",
+      "regions": {
+        "chinese": {
+          "left": 715,
+          "top": 584,
+          "right": 1098,
+          "bottom": 3350
+        },
+        "english": {
+          "left": 538,
+          "top": 588,
+          "right": 681,
+          "bottom": 2688
+        }
+      },
+      "background": [
+        1,
+        84,
+        164,
+        255
+      ]
+    },
+    {
+      "id": "stop-name-03",
+      "file": "download-stopname3.png",
+      "width": 1654,
+      "height": 4488,
+      "bytes": 315352,
+      "sha256": "c19d8a5a509d707fc719d1fda4bb2c82a51e742f79818944fd2d0f08935bdca9",
+      "regions": {
+        "chinese": {
+          "left": 717,
+          "top": 559,
+          "right": 1097,
+          "bottom": 3764
+        },
+        "english": {
+          "left": 538,
+          "top": 587,
+          "right": 681,
+          "bottom": 2032
+        }
+      },
+      "background": [
+        1,
+        84,
+        164,
+        255
+      ]
+    }
+  ]
+}
