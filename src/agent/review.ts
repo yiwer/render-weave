@@ -39,6 +39,7 @@ import { replaceFile, writeJsonFiles, type JsonFileWrite } from './write-files.j
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
 import { readExecution, type RoundExecution } from './execution.js';
+import { readCheckpoint, type CheckpointView } from './checkpoints.js';
 
 export const REVIEW_FILE = 'review.json';
 export const APPLIED_FILE = 'applied.json';
@@ -370,13 +371,14 @@ interface AgentRound {
 }
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
-export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; problems: Problem[] }> {
+export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; problems: Problem[] }> {
   const execution = await readExecution(roundDir);
-  if (execution.problems.length || (execution.execution && !execution.execution.committed)) return execution;
+  const checkpoint = await readCheckpoint(roundDir);
+  if (execution.problems.length || (execution.execution && !execution.execution.committed)) return { ...execution, checkpoint: checkpoint.checkpoint, problems: [...execution.problems, ...checkpoint.problems] };
   const opened = await openRound(roundDir);
   if (!opened.round) return { problems: opened.problems, execution: execution.execution };
   const { record, saved, problems } = await readReviewRecord(opened.round);
-  return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, problems: [] };
+  return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, checkpoint: checkpoint.checkpoint, problems: checkpoint.problems };
 }
 
 /**

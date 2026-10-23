@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
+import type { CheckpointCheck } from '../agent/checkpoints.js';
 import { compareReference, summarizeVisual, visualRegionPage, type VisualReport } from '../agent/visual-comparison.js';
 import type { RevisionDiff } from '../agent/diff.js';
 import type { CoverageAssessment } from '../agent/coverage-verification.js';
@@ -33,7 +34,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.12.0';
+export const MCP_CONTRACT_VERSION = '0.13.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -81,6 +82,8 @@ export interface ToolContext {
   readonly resourcesDir: string;
   /** 本轮任务与已知输入（--outcome-context）；没有时 check_outcome 报工具错误。 */
   readonly outcome?: OutcomeTarget;
+  /** 受管运行交给宿主固定并检查字节；独立 MCP 仍只读当前目录。 */
+  readonly checkOutcome?: () => Promise<CheckpointCheck>;
 }
 
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -478,10 +481,12 @@ export function createTools(context: ToolContext): McpTool[] {
       async call() {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
         const { task, ...known } = context.outcome;
-        const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        const managed = await context.checkOutcome?.();
+        const check = managed?.check ?? await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
         // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
         const response = (budget: number) => ({
           verdict: check.verdict,
+          ...(managed ? { checkpoint: managed.checkpoint } : {}),
           ...(check.contentIdentity ? { contentIdentity: { id: check.contentIdentity.id, format: check.contentIdentity.format,
             engine: check.contentIdentity.engine, criteria: check.contentIdentity.criteria } } : {}),
           assessment: { ...check.assessment, render: { ...check.assessment.render, ...listed(check.assessment.render.problems, 'problems', budget) },

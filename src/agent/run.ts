@@ -35,6 +35,8 @@ import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerpr
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
 import { claimExecution, writeAtomicJson } from './execution.js';
+import { checkpointChecker } from './checkpoints.js';
+import { startCheckpointHost } from './checkpoint-host.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -399,10 +401,12 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const maxTurns = options.maxTurns ?? task.maxTurns;
   await execution.initialize({ task: task.id, round, startedAt, inputs });
   const mcpConfig = join(logsDir, 'mcp.json');
-  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
+  const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
+  const managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
-  ] } } }, null, 2)}\n`);
+  ] });
+  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
   // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
@@ -426,13 +430,15 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing });
   } finally {
     await proxy?.close();
+    await checkpoints.idle();
+    await managedMcp.close();
   }
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
   await execution.finalizing();
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
-  const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
+  const checked = (await checkpoints.check()).check;
   const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
   const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);
   const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
