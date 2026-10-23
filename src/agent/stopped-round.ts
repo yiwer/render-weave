@@ -13,6 +13,7 @@ import type { PreparedRound, RoundStop } from './supervision.js';
 
 export function stoppedMessage(reason: RoundStop): string {
   return reason.reason === 'timeout' ? `整轮墙钟超过 ${reason.roundTimeoutMs} 毫秒，已停止本轮`
+    : reason.reason === 'stagnation' ? `连续 ${reason.threshold} 次完整修复机会没有核准进展，已停止本轮`
     : reason.reason === 'cancelled' ? '用户取消，已停止本轮' : `硬额度耗尽（${reason.limit}），已停止本轮`;
 }
 export function stoppedResult(prepared: PreparedRound, reason: RoundStop, usage: RoundUsage, save: 'complete' | 'incomplete', detail: string): AgentRunResult {
