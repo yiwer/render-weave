@@ -145,7 +145,7 @@ const esc=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').re
 const html=['<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><title>原38独立比较</title>',
 '<style>body{font:16px/1.6 system-ui;margin:32px;max-width:1600px;color:#172b4d}img{width:100%;height:auto;border:1px solid #ddd}h2{margin-top:36px}pre{white-space:pre-wrap;background:#f4f6f8;padding:16px}a{color:#1458b0}</style>',
 '<h1>原38 · 独立原始质量比较</h1><p>本包未审核、未批准、未应用。先对照原图记录独立判断，再查看诊断。复制 review-template.json 填写审核记录；工时未计量时保留 null。</p>',
-'<p>实际请求：'+esc(JSON.stringify(request.output))+'；原始候选的审核修改已通过公开入口生效。模式：'+esc(request.mode||'final')+'。</p>',
+'<p>实际请求：'+esc(JSON.stringify(request.output))+'；本包以公开读取入口取得的有效候选生成。模式：'+esc(request.mode||'final')+'。</p>',
 '<h2>原图</h2><img alt="原始参考图" src="source'+ext+'">',
 '<h2>实际请求的出图</h2>',result.image?'<img alt="实际请求结果" src="actual-request.png">':'<p>本次实际请求没有出图；记录受阻，不能当成通过。</p>',
 '<h2>审核预览</h2><p>预览为草稿模式，DPI由公开审核入口独立决定：'+esc(reviewed.view.preview?.dpi??'unknown')+'。它不代表上述实际请求的正式交付。</p>',
