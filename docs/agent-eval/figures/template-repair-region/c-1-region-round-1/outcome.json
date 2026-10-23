@@ -1,0 +1,42 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11",
+    "workspaceFingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-route-sign.json",
+      "kind": "template",
+      "name": "标准线路单边",
+      "sha256": "5a613b15fe1231596333e29dff031b64273443a10386a15b38c3ca88f6dbe82c",
+      "revises": {
+        "file": "template-route-sign.json",
+        "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "修改范围：标准线路单边。(1) 站点面板 padding.top 10→4，站点列及其标识行、站名整体上移约 6 mm，使标识图中心对齐参考（43.0 mm）。(2) 下一站区 padding.left 20→8，下一站文字与地标左移约 12 mm，地标中心对齐参考（67 mm）。未改数据绑定、参数、派生值与被调模板。已核查：inspect_layout 两项位置；check_templates 无问题；草稿出图 740 宽与 1500 宽均无问题。未核查：示例图顶栏、道路带与底栏服务时间的细部。",
+  "usage": {
+    "wallMs": 94669,
+    "turns": 29,
+    "inputTokens": 28,
+    "outputTokens": 14439,
+    "thinkingTokens": 8960,
+    "cacheReadTokens": 434161,
+    "cacheCreationTokens": 40544,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 14,
+      "peakInputTokens": 48432,
+      "compactions": 0
+    }
+  }
+}

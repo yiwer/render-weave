@@ -1,0 +1,202 @@
+{
+  "dataset": {
+    "id": "ds-m402-wanguocheng",
+    "name": "M402 开往万国城总站",
+    "staticSchema": {
+      "name": "线路牌",
+      "version": 1
+    },
+    "origin": {
+      "kind": "manual",
+      "note": "按 M402 设计稿逐项转录，待业务核对"
+    }
+  },
+  "data": {
+    "routeNo": "M402",
+    "routeNoImage": "res:route-no-m402",
+    "fareType": "一票制",
+    "fare": 2,
+    "operator": "巴士集团",
+    "firstDeparture": "07:30",
+    "lastDeparture": "22:30",
+    "serviceNote": "工作日运营",
+    "scheduleType": "定时班车",
+    "departureTimes": [
+      "08:00",
+      "08:25",
+      "08:50",
+      "09:10",
+      "09:30",
+      "09:50",
+      "10:30",
+      "17:35",
+      "17:50",
+      "18:00",
+      "18:15",
+      "18:30",
+      "18:50",
+      "19:35",
+      "20:25"
+    ],
+    "stops": [
+      {
+        "name": "建设路总站",
+        "road": "建设路"
+      },
+      {
+        "name": "建设路",
+        "road": "建设路",
+        "badges": [
+          "地铁"
+        ]
+      },
+      {
+        "name": "中国银行大厦",
+        "road": "建设路"
+      },
+      {
+        "name": "门诊部",
+        "road": "深南路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "东门",
+        "road": "东门路",
+        "landmark": "res:landmark-3"
+      },
+      {
+        "name": "田贝",
+        "road": "文锦路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "洪湖公园",
+        "road": "文锦路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "东晓街道办",
+        "road": "文锦北路",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "草埔地铁站",
+        "road": "文锦北路",
+        "landmark": "res:landmark-4"
+      },
+      {
+        "name": "荣超花园",
+        "road": "龙岗大道",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "粤宝宝丽路口",
+        "road": "粤宝路"
+      },
+      {
+        "name": "粤宝",
+        "road": "粤宝路"
+      },
+      {
+        "name": "粤宝红岗路口",
+        "road": "粤宝路"
+      },
+      {
+        "name": "德兴花园",
+        "road": "西环路"
+      },
+      {
+        "name": "钱排村",
+        "road": "西环路"
+      },
+      {
+        "name": "德福花园",
+        "road": "西环路"
+      },
+      {
+        "name": "莲花山庄",
+        "road": "西环路"
+      },
+      {
+        "name": "春蕾幼儿园",
+        "road": "西环路"
+      },
+      {
+        "name": "东升学校",
+        "road": "西环路"
+      },
+      {
+        "name": "金沙花园",
+        "road": "西环路"
+      },
+      {
+        "name": "森鑫源学校",
+        "road": "西环路"
+      },
+      {
+        "name": "布吉中学",
+        "road": "吉华路",
+        "badges": [
+          "医院"
+        ]
+      },
+      {
+        "name": "布吉天虹",
+        "road": "中兴路"
+      },
+      {
+        "name": "大世纪花园",
+        "road": "中兴路"
+      },
+      {
+        "name": "布龙立交",
+        "road": "东西干道"
+      },
+      {
+        "name": "石芽岭公园",
+        "road": "东西干道"
+      },
+      {
+        "name": "大龙山物流园",
+        "road": "东西干道"
+      },
+      {
+        "name": "左庭右院",
+        "road": "红棉路",
+        "landmark": "res:landmark-2"
+      },
+      {
+        "name": "尚峰花园",
+        "road": "布澜路"
+      },
+      {
+        "name": "石芽岭地铁站",
+        "road": "布澜路",
+        "landmark": "res:landmark-1"
+      },
+      {
+        "name": "联创科技园",
+        "road": "布澜路"
+      },
+      {
+        "name": "第三人民医院",
+        "road": "布澜路",
+        "badges": [
+          "医院"
+        ]
+      },
+      {
+        "name": "李朗国际珠宝园",
+        "road": "布澜路"
+      },
+      {
+        "name": "左右家私",
+        "road": "平吉大道"
+      },
+      {
+        "name": "万国城总站",
+        "road": "平朗路"
+      }
+    ]
+  }
+}

@@ -1,0 +1,343 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "标准线路单边",
+  "base": { "name": "线路牌", "version": 1 },
+
+  "parameters": [
+    {
+      "name": "currentIndex",
+      "displayName": "本站序号",
+      "visibility": "public",
+      "type": "number",
+      "constraints": { "integer": true, "min": 0, "max": 50 },
+      "default": 0
+    },
+    { "name": "stopNameSize", "displayName": "站名字号", "visibility": "internal", "type": "number", "constraints": { "min": 5 }, "default": 10 },
+    { "name": "primaryColor", "displayName": "主色", "visibility": "internal", "type": "color", "default": "#FF8000" },
+    { "name": "bandYellow", "displayName": "底带黄", "visibility": "internal", "type": "color", "default": "#FFEF00" }
+  ],
+
+  "derived": [
+    { "name": "stopCount", "displayName": "站点数", "type": "number", "op": "length", "of": { "var": "stops" } },
+    {
+      "name": "terminal", "displayName": "终点站",
+      "type": "ref", "ref": { "name": "停靠站点", "version": 1 },
+      "op": "pickItem", "list": { "var": "stops" }, "position": "last"
+    },
+    {
+      "name": "nextIndex", "displayName": "下一站序号", "type": "number",
+      "op": "add", "left": { "var": "currentIndex" }, "right": { "value": 1 }
+    },
+    {
+      "name": "nextStop", "displayName": "下一站",
+      "type": "ref", "ref": { "name": "停靠站点", "version": 1 },
+      "op": "pickItem", "list": { "var": "stops" }, "position": { "index": { "var": "nextIndex" } }
+    },
+    {
+      "name": "hasNextStop", "displayName": "有下一站", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "currentIndex" }, "op": "eq", "right": { "value": 0 } }, "then": { "value": false } },
+        { "when": { "left": { "var": "nextStop" }, "op": "empty" }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    },
+    {
+      "name": "nextStopHasLandmark", "displayName": "下一站有地标", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "nextStop.landmark" }, "op": "empty" }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    },
+    {
+      "name": "hasRouteNoImage", "displayName": "有线路号图片", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "routeNoImage" }, "op": "empty" }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    },
+    {
+      "name": "noRouteNoImage", "displayName": "无线路号图片", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "routeNoImage" }, "op": "empty" }, "then": { "value": true } }
+      ],
+      "otherwise": { "value": false }
+    },
+    {
+      "name": "hasFare", "displayName": "有票价", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "fare" }, "op": "empty" }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    },
+    {
+      "name": "hasServiceNote", "displayName": "有运营说明", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "serviceNote" }, "op": "empty" }, "then": { "value": false } }
+      ],
+      "otherwise": { "value": true }
+    },
+    {
+      "name": "currentIndexOutOfRange", "displayName": "本站超出", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "currentIndex" }, "op": "gt", "right": { "var": "stopCount" } }, "then": { "value": true } }
+      ],
+      "otherwise": { "value": false }
+    }
+  ],
+
+  "checks": [
+    {
+      "name": "本站序号不能超过站点数",
+      "problemWhen": { "var": "currentIndexOutOfRange" },
+      "level": "severe",
+      "message": "本站序号超过了停靠站点数"
+    }
+  ],
+
+  "artboard": {
+    "sizeRange": { "width": { "min": 740, "max": 1500 }, "height": { "min": 165, "max": 165 } },
+    "fill": { "var": "primaryColor" },
+    "cornerRadius": { "topLeft": 12, "topRight": 12, "bottomRight": 0, "bottomLeft": 0 },
+    "layout": {
+      "mode": "grid",
+      "rows": [{ "fixed": 34 }, { "fraction": 1 }, { "fixed": 10 }, { "fixed": 21 }],
+      "columns": [{ "fraction": 1 }]
+    },
+    "children": [
+      {
+        "type": "container",
+        "name": "顶栏",
+        "place": { "row": 1, "column": 1 },
+        "layout": { "mode": "stack", "direction": "row", "gap": 8, "alignItems": "center" },
+        "padding": { "left": 22, "right": 18 },
+        "children": [
+          {
+            "type": "image",
+            "name": "线路号图片",
+            "source": { "var": "routeNoImage" },
+            "fit": "contain",
+            "visible": { "var": "hasRouteNoImage" },
+            "place": { "width": { "fixed": 60 }, "height": { "fixed": 26 } }
+          },
+          {
+            "type": "text",
+            "name": "线路号",
+            "visible": { "var": "noRouteNoImage" },
+            "content": [{ "slot": "routeNo" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 24,
+            "color": "#E60012",
+            "slant": 12,
+            "stroke": { "color": "#FFFFFF", "width": 0.8 },
+            "place": { "width": "hug", "height": "hug" }
+          },
+          {
+            "type": "path",
+            "name": "开往箭头",
+            "d": "M0 0 L5 6 L0 12 L3 12 L8 6 L3 0 Z M6 0 L11 6 L6 12 L9 12 L14 6 L9 0 Z",
+            "fill": "#FFE600",
+            "place": { "width": { "fixed": 14 }, "height": { "fixed": 12 } }
+          },
+          {
+            "type": "text",
+            "name": "终点站",
+            "content": [{ "slot": "terminal.name" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 23,
+            "color": "#FFFFFF",
+            "place": { "width": "hug", "height": "hug" }
+          },
+          {
+            "type": "container",
+            "name": "顶栏留白",
+            "place": { "width": "fill", "height": { "fixed": 1 } }
+          },
+          {
+            "type": "container",
+            "name": "票价框",
+            "visible": { "var": "hasFare" },
+            "fill": "#FFFFFF",
+            "cornerRadius": 5.5,
+            "padding": { "top": 1.5, "bottom": 1.5, "left": 6, "right": 12 },
+            "layout": { "mode": "stack", "direction": "row", "alignItems": "center" },
+            "place": { "width": { "fixed": 120 }, "height": { "fixed": 16 } },
+            "children": [
+              {
+                "type": "text",
+                "name": "票价",
+                "content": [
+                  { "text": "票价：", "color": "#333333" },
+                  { "slot": "fareType", "color": "#FF6A00" },
+                  { "slot": "fare", "format": "0.##", "color": "#FF6A00" },
+                  { "text": "元", "color": "#FF6A00" }
+                ],
+                "font": "res:font-hei-medium",
+                "fontSize": 8,
+                "place": { "width": "fill", "height": "hug" }
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "name": "运营方",
+            "content": [{ "slot": "operator" }],
+            "font": "res:font-hei-heavy",
+            "fontSize": 8,
+            "color": "#FFFFFF",
+            "place": { "width": "hug", "height": "hug" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "站点面板",
+        "place": { "row": 2, "column": 1 },
+        "fill": "#FFFFFF",
+        "cornerRadius": { "topLeft": 12, "topRight": 12, "bottomRight": 0, "bottomLeft": 0 },
+        "padding": { "top": 4, "left": 23, "right": 23 },
+        "layout": { "mode": "stack", "direction": "column" },
+        "children": [
+          {
+            "type": "loop",
+            "name": "站点列",
+            "list": { "var": "stops" },
+            "template": "站点",
+            "args": {
+              "index": { "loop": "index" },
+              "currentIndex": { "var": "currentIndex" },
+              "stopNameSize": { "var": "stopNameSize" }
+            },
+            "itemLayout": { "direction": "row", "widths": "equal" },
+            "place": { "width": "fill", "height": "fill" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "道路带",
+        "place": { "row": 3, "column": 1 },
+        "fill": "#DCDCDC",
+        "padding": { "left": 23, "right": 23 },
+        "layout": { "mode": "stack", "direction": "row" },
+        "children": [
+          {
+            "type": "loop",
+            "name": "道路段列",
+            "list": { "var": "stops" },
+            "mergeBy": "road",
+            "template": "道路段",
+            "args": { "isFirst": { "loop": "isFirst" } },
+            "itemLayout": { "direction": "row", "widths": "equal", "spanBy": "groupSize" },
+            "place": { "width": "fill", "height": "fill" }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "name": "底栏",
+        "place": { "row": 4, "column": 1 },
+        "fill": "#F2F2F2",
+        "layout": { "mode": "stack", "direction": "row" },
+        "children": [
+          {
+            "type": "container",
+            "name": "下一站区",
+            "visible": { "var": "hasNextStop" },
+            "padding": { "left": 8 },
+            "layout": { "mode": "stack", "direction": "row", "gap": 1, "alignItems": "center" },
+            "place": { "width": { "fixed": 115 }, "height": "fill" },
+            "children": [
+              {
+                "type": "text",
+                "name": "下一站",
+                "content": [
+                  { "text": "下一站：", "color": "#333333" },
+                  { "slot": "nextStop.name", "color": "#FF6A00" }
+                ],
+                "font": "res:font-hei-medium",
+                "fontSize": 9,
+                "place": { "width": "hug", "height": "hug" }
+              },
+              {
+                "type": "image",
+                "name": "下一站地标",
+                "source": { "var": "nextStop.landmark" },
+                "visible": { "var": "nextStopHasLandmark" },
+                "fit": "contain",
+                "place": { "width": { "fixed": 8 }, "height": { "fixed": 8 } }
+              }
+            ]
+          },
+          {
+            "type": "polygon",
+            "name": "服务时间箭头",
+            "points": [[0, 0], [5, 10.5], [0, 21], [3, 21], [8, 10.5], [3, 0]],
+            "fill": { "var": "primaryColor" },
+            "place": { "width": { "fixed": 8 }, "height": { "fixed": 21 } }
+          },
+          {
+            "type": "container",
+            "name": "服务时间内容",
+            "fill": { "var": "bandYellow" },
+            "padding": { "left": 3 },
+            "layout": { "mode": "stack", "direction": "row", "gap": 4, "alignItems": "center" },
+            "place": { "width": "fill", "height": "fill" },
+            "children": [
+              {
+                "type": "text",
+                "name": "服务时间",
+                "content": [
+                  { "text": "始发站服务时间：" },
+                  { "slot": "firstDeparture", "format": "HH:mm" },
+                  { "text": "-" },
+                  { "slot": "lastDeparture", "format": "HH:mm" }
+                ],
+                "font": "res:font-hei-medium",
+                "fontSize": 10,
+                "color": "#222222",
+                "place": { "width": "hug", "height": "hug" }
+              },
+              {
+                "type": "container",
+                "name": "班次说明",
+                "layout": { "mode": "stack", "direction": "column", "gap": 0.5 },
+                "place": { "width": "fill", "height": "hug" },
+                "children": [
+                  {
+                    "type": "text",
+                    "name": "运营说明",
+                    "visible": { "var": "hasServiceNote" },
+                    "content": [
+                      { "text": "（" }, { "slot": "serviceNote" }, { "text": "）「" },
+                      { "slot": "scheduleType" }, { "text": "」" }
+                    ],
+                    "font": "res:font-hei-medium",
+                    "fontSize": 5.5,
+                    "color": "#222222",
+                    "place": { "width": "hug", "height": "hug" }
+                  },
+                  {
+                    "type": "loop",
+                    "name": "班次列",
+                    "list": { "var": "departureTimes" },
+                    "template": "班次时刻",
+                    "args": { "isLast": { "loop": "isLast" } },
+                    "itemLayout": { "direction": "row", "widths": "content" },
+                    "place": { "width": "fill", "height": "hug" }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "path",
+            "name": "底带收尾",
+            "d": "M0 0 L1 0 Q6 0 6 6 L6 21 L0 21 Z",
+            "fill": { "var": "bandYellow" },
+            "place": { "width": { "fixed": 6 }, "height": { "fixed": 21 } }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1188 @@
+{
+  "manifestSha256": "f823690b6dbdbdb7abda400801cff22f0403b28111352e6c1e6abbce3be95b53",
+  "rows": [
+    {
+      "id": "c-1-role",
+      "caseId": "c",
+      "repetition": 1,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T05:15:25.275Z",
+            "endedAt": "2026-10-23T05:16:49.514Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\role.md",
+                "file": "requirement.md",
+                "sha256": "dc1dc1fd86c4fd158f67dea5096d77d38336eb93839f097682794626e5aa3c6b"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 83874,
+              "turns": 25,
+              "inputTokens": 20,
+              "outputTokens": 11413,
+              "thinkingTokens": 6747,
+              "cacheReadTokens": 258661,
+              "cacheCreationTokens": 43951,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 10,
+                "peakInputTokens": 43953,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "70e6b99eb74da087fad0700dc7ede0cec7c262623ac384ad26efdd002e396f7e",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position"
+            ],
+            "addedFailures": [
+              "base/landmarks:position"
+            ],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/next-stop:position",
+              "base/landmarks:position",
+              "base/next-landmark:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:16:50.983Z",
+            "templateSha256": "54d6b7bb9d37ffef50e18d9c5c30acd290e5a0dc76644f3c446a238297f89c3f",
+            "measurementSha256": "0b8df74c45a1e5cb671afd102190aaf78bbe960a9707e70080833a60228a0890"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T05:16:51.021Z",
+            "endedAt": "2026-10-23T05:19:11.742Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "dc1dc1fd86c4fd158f67dea5096d77d38336eb93839f097682794626e5aa3c6b"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "bfacceabbcbc20dfb77d00eeee0318a7010921b903527d4b35d11d42d4d29e7d"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "452cdcb81e4a81f80324c86c56efabbf2102328840090243d06326c40b6a85dc",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 140556,
+              "turns": 30,
+              "inputTokens": 30,
+              "outputTokens": 18146,
+              "thinkingTokens": 12476,
+              "cacheReadTokens": 489872,
+              "cacheCreationTokens": 42234,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 15,
+                "peakInputTokens": 50122,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "91971c9e1ec99a73b5e0155bc8684cb889415fb63e6fd717f68aa058b522d0c1",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position",
+              "base/next-stop:position"
+            ],
+            "addedFailures": [
+              "base/landmarks:position"
+            ],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/landmarks:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:19:13.195Z",
+            "templateSha256": "14e3bfa7de69578ec4db972d752bfbe23663377821d6634fa0109ef37234b467",
+            "measurementSha256": "14e20a1e485b69296e3c519743f1aad52bb51cc318d206f895642dfefd2a7206"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "c-1-region",
+      "caseId": "c",
+      "repetition": 1,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T05:19:13.249Z",
+            "endedAt": "2026-10-23T05:20:48.073Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\region.md",
+                "file": "requirement.md",
+                "sha256": "85b16b3195193d60d781abb96005f3955a8163e3beaff2c0c53bfeac6a66fc14"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 94669,
+              "turns": 29,
+              "inputTokens": 28,
+              "outputTokens": 14439,
+              "thinkingTokens": 8960,
+              "cacheReadTokens": 434161,
+              "cacheCreationTokens": 40544,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 14,
+                "peakInputTokens": 48432,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "1f932c3da252c2e32d36375ed4da806d86e64b6b3f30c56cc688e40bb6e65543",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position",
+              "base/next-stop:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:20:49.513Z",
+            "templateSha256": "050ff81efdd5173017e997da1a6863954c05defab672e2cf00d4482fbc2ad846",
+            "measurementSha256": "fb43948221f494a013dafcec51759d49e367462f13dfa3a04ebd8d242edef178"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T05:20:49.549Z",
+            "endedAt": "2026-10-23T05:21:43.399Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "85b16b3195193d60d781abb96005f3955a8163e3beaff2c0c53bfeac6a66fc14"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "f4c6ebc2fa233f6cb9e42b4778f9505388d8c9d6607edfc8fcfe8b6577aeee3b"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "d6404b15b7c00af8bea564b0e59650daf261ae27a0b99d86e3cd90124c791b56",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 53689,
+              "turns": 28,
+              "inputTokens": 24,
+              "outputTokens": 9620,
+              "thinkingTokens": 4172,
+              "cacheReadTokens": 339151,
+              "cacheCreationTokens": 35772,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 12,
+                "peakInputTokens": 43660,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "73cbe81b9dc570419e2b2e61ccc7bef483ebdfdafd93eb82e7fb8480a787ac6b",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position",
+              "base/next-stop:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:21:44.825Z",
+            "templateSha256": "050ff81efdd5173017e997da1a6863954c05defab672e2cf00d4482fbc2ad846",
+            "measurementSha256": "8e78f54ae5e525b173c1cf4b547f2d5cb42efdb7be3ce1234cbe08521cda13d8"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "c-2-region",
+      "caseId": "c",
+      "repetition": 2,
+      "arm": "region",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T05:21:44.853Z",
+            "endedAt": "2026-10-23T05:23:00.845Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\region.md",
+                "file": "requirement.md",
+                "sha256": "85b16b3195193d60d781abb96005f3955a8163e3beaff2c0c53bfeac6a66fc14"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 75835,
+              "turns": 25,
+              "inputTokens": 22,
+              "outputTokens": 11356,
+              "thinkingTokens": 7097,
+              "cacheReadTokens": 347187,
+              "cacheCreationTokens": 40095,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 47983,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "723bdd03fd9e372dbe2eb0e8272517e95f8322ed6ba99aec5a99f6479950d22f",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position",
+              "base/next-stop:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:23:02.279Z",
+            "templateSha256": "050ff81efdd5173017e997da1a6863954c05defab672e2cf00d4482fbc2ad846",
+            "measurementSha256": "9f878a483f3cb7c3e0534001ca461ccfd8848736d2f482087e1ad2f409b37675"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T05:23:02.315Z",
+            "endedAt": "2026-10-23T05:24:31.026Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1\\agent\\docs\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "85b16b3195193d60d781abb96005f3955a8163e3beaff2c0c53bfeac6a66fc14"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1\\repair-score\\region-feedback.md",
+                "file": "feedback.md",
+                "sha256": "f4c6ebc2fa233f6cb9e42b4778f9505388d8c9d6607edfc8fcfe8b6577aeee3b"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-region\\round-1",
+                "round": 1,
+                "outcomeSha256": "b7e5370df09841bc9e61743c27d8e976efa3588b759a7b12e66c30dfe60d9310",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 88555,
+              "turns": 24,
+              "inputTokens": 22,
+              "outputTokens": 11819,
+              "thinkingTokens": 7286,
+              "cacheReadTokens": 320815,
+              "cacheCreationTokens": 44446,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 52334,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "d9885489aa4c5546197ceb19209c5b7315daaa9070cbe74bea715efd255bf29f",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/stations:position",
+              "base/next-stop:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": true,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": true,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:24:32.495Z",
+            "templateSha256": "050ff81efdd5173017e997da1a6863954c05defab672e2cf00d4482fbc2ad846",
+            "measurementSha256": "80696572a314d765d3145a75b1f940888493e6f39934b5b65316a5a30ba7a37e"
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "c-2-role",
+      "caseId": "c",
+      "repetition": 2,
+      "arm": "role",
+      "rounds": [
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 1,
+            "startedAt": "2026-10-23T05:24:32.526Z",
+            "endedAt": "2026-10-23T05:25:36.845Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\reference.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\role.md",
+                "file": "requirement.md",
+                "sha256": "dc1dc1fd86c4fd158f67dea5096d77d38336eb93839f097682794626e5aa3c6b"
+              },
+              "previous": null
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 64164,
+              "turns": 27,
+              "inputTokens": 22,
+              "outputTokens": 10432,
+              "thinkingTokens": 6297,
+              "cacheReadTokens": 297190,
+              "cacheCreationTokens": 35002,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 42890,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "041d66d1e978738c0e6c625930d8efc490ea20578decab6e3e34bd8dc3472bf5",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [],
+            "addedFailures": [],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/stations:position",
+              "base/next-stop:position",
+              "base/next-landmark:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:25:38.332Z",
+            "templateSha256": "46517681ab50b05376135602e1e78326c7ca156c067aac18ae4a4bcb3b285f77",
+            "measurementSha256": "5cb628454e7d05b047395d5de6e974deb8f5c7585c9074f42be3e65c8affcd6d"
+          }
+        },
+        {
+          "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-2",
+          "record": {
+            "format": "renderweave-round/1",
+            "task": "template-revision",
+            "round": 2,
+            "startedAt": "2026-10-23T05:25:38.389Z",
+            "endedAt": "2026-10-23T05:26:45.280Z",
+            "inputs": {
+              "sample": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1\\agent\\sample.png",
+                "file": "agent/sample.png",
+                "sha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11"
+              },
+              "brief": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1\\agent\\docs\\brief.md",
+                "sha256": "ecc6aac9ffa8b9211477d13442f911a89da7441e7bce78daa023970ebf8feba1"
+              },
+              "domain": "route-sign",
+              "workspace": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\c\\workspace",
+                "fingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+                "documents": 11
+              },
+              "resources": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+              "definition": null,
+              "dataset": "ds-m402-wanguocheng",
+              "request": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1\\request.json",
+                "file": "request.json",
+                "template": "标准线路单边"
+              },
+              "templates": [
+                {
+                  "name": "标准线路单边",
+                  "file": "template-route-sign.json",
+                  "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+                },
+                {
+                  "name": "站点",
+                  "file": "template-stop.json",
+                  "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+                },
+                {
+                  "name": "道路段",
+                  "file": "template-road-segment.json",
+                  "sha256": "e3bb1ff7362cd1d2da8ba82f299ffa68023d84d3a688c4aae1ae6deaa06244d6"
+                },
+                {
+                  "name": "班次时刻",
+                  "file": "template-departure-time.json",
+                  "sha256": "083eeb0bc18800cbcbe59a8002f776cb913f919637887e8311e61e892ece3385"
+                },
+                {
+                  "name": "标识图标",
+                  "file": "template-stop-badge.json",
+                  "sha256": "9ac303f97028bc97c8448eb81e8ab1a0cc9a112b99e25ec9f88842bb62cf8703"
+                }
+              ],
+              "requirement": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1\\requirement.md",
+                "file": "requirement.md",
+                "sha256": "dc1dc1fd86c4fd158f67dea5096d77d38336eb93839f097682794626e5aa3c6b"
+              },
+              "feedback": {
+                "source": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1\\repair-score\\role-feedback.md",
+                "file": "feedback.md",
+                "sha256": "55fce52d71fcacd8a24871380fa7fb03805c2bfe16c45958a33d755862caf0b1"
+              },
+              "previous": {
+                "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1",
+                "round": 1,
+                "outcomeSha256": "739a0c2cc46d623f3e763b7c979792e5c5a04cff4186b3189e3bbcdab68d0338",
+                "reviewSha256": null,
+                "reviewStatus": null,
+                "basisChanged": false
+              }
+            },
+            "runtime": {
+              "model": "claude-haiku-5-5",
+              "smallModel": "claude-haiku-5-5",
+              "protocol": "anthropic",
+              "endpoint": "https://opencode.ai/inference/go/anthropic",
+              "maxTurns": 20,
+              "effort": null,
+              "contextLimit": null,
+              "skills": "disabled",
+              "keyEnv": "OPEN_CODE_API_KEY",
+              "tools": "Read,Write,Edit,Glob",
+              "mcpTools": [
+                "list_documents",
+                "read_document",
+                "list_resources",
+                "check_templates",
+                "render_draft",
+                "inspect_layout",
+                "view_image",
+                "dsl_reference",
+                "check_outcome"
+              ]
+            },
+            "run": {
+              "wallMs": 66734,
+              "turns": 25,
+              "inputTokens": 22,
+              "outputTokens": 8860,
+              "thinkingTokens": 3967,
+              "cacheReadTokens": 259662,
+              "cacheCreationTokens": 28511,
+              "servedModel": "claude-haiku-5-5",
+              "claudeCodeVersion": "2.1.296",
+              "endedBy": "success",
+              "context": {
+                "requests": 11,
+                "peakInputTokens": 36399,
+                "compactions": 0
+              },
+              "exitCode": 0,
+              "handoffSha256": "cd8cbdfd6b6342ebf9374f1e4b1b2af3e6d9935f652d4428345955e56c581589",
+              "mcp": [
+                "rw:connected"
+              ]
+            },
+            "verdict": "qualified"
+          },
+          "score": {
+            "qualified": true,
+            "repaired": [
+              "base/next-stop:position"
+            ],
+            "addedFailures": [],
+            "cleanSuccess": false,
+            "available": true
+          },
+          "stopDecision": {
+            "stop": false,
+            "qualified": true,
+            "complete": true,
+            "missing": [],
+            "failed": [
+              "base/stations:position"
+            ],
+            "unexpected": [],
+            "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+            "decidedAt": "2026-10-23T05:26:46.769Z",
+            "templateSha256": "fff990fbbd2de874f6d3ebdb274377c71e0e0e42345ec34099097445d6dc64ad",
+            "measurementSha256": "23a0740444c6b7c168de2a161cf7d3a37dcd8c75062d0523f18b87c5a07dfc49"
+          }
+        }
+      ],
+      "status": "completed"
+    }
+  ]
+}

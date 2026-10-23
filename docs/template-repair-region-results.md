@@ -1,6 +1,8 @@
 # 区域反馈、停止条件与参考测量实测
 
-本轮把另一位 agent 的观察拆成可验证假设；协议、脚本与评分先冻结，再执行模型。结果与接入判断在批次结束后填写，原始失败不替换。
+建议把“按核准参考区域选择少量差异”接入可选核查，并用完整检查决定是否继续模型修复。本轮 Haiku 5.5 实测支持这两点；不支持它能降低上下文峰值。先修参考测量的缺项/片段/框语义，再扩大门禁。
+
+证据：[交互对照](agent-eval/figures/template-repair-region/index.html)、[逐轮报告](agent-eval/figures/template-repair-region/report.json)、[独立审计](agent-eval/figures/template-repair-region/audit.json)。协议、脚本与评分先冻结，4 单元、8 轮全部完成；95 次模型请求，无额度或基础设施错误，质量失败全部保留。
 
 ## 对观察与票据的取舍
 
@@ -37,8 +39,70 @@
 
 ## 真实模型结果
 
-待本批固定四单元八轮完成后，汇总首轮、固定两轮、共享前缀停止三种口径；未完成与未知保留。
+两臂只改变最多两条反馈的选择：role 按角色去重，region 按事前登记区域去重。相同 C 坏例、示例数据、参考图、工具与修改预算；每臂重复两次。全部检查共 53 项，覆盖布局内容、字号/位置，以及改名、currentIndex=10 的内容绑定回归。
+
+| 固定两轮的主对照 | 按角色（改前） | 按区域（改后） |
+|---|---:|---:|
+| 首轮目标修复 | 1/4（25%） | 4/4（100%） |
+| 两轮后目标修复 | 3/4（75%） | 4/4（100%） |
+| 全部 53 项通过的单元 | 0/2 | 2/2 |
+| 相对初始新增失败项 | 1 | 0 |
+| 第二轮相对首轮回退项 | 0 | 0 |
+| 单元平均上下文峰值 | 46,506 tokens | 50,383 tokens（+8.3%） |
+| 最大上下文峰值 | 50,122 tokens | 52,334 tokens |
+| 单元平均模型耗时 | 177.664 秒（2.96 分钟） | 156.374 秒（2.61 分钟，−12.0%） |
+
+单元峰值是该单元两轮的最大有效输入，平均值再按单元取平均。有效输入含 input + cache read + cache creation，不能把缓存部分当作没有占用注意力。耗时是实际模型执行 wallMs 之和，不含离线评分、构建和报告生成。
+
+| 单元 | 首轮修复 | 第二轮修复 | 最终残留失败 | 两轮峰值 | 两轮秒数 |
+|---|---:|---:|---|---:|---:|
+| c-1-role | 1/2 | 2/2 | 新增 landmarks:position | 50,122 | 224.430 |
+| c-2-role | 0/2 | 1/2 | 原有 stations:position | 42,890 | 130.898 |
+| c-1-region | 2/2 | 2/2 | 无 | 48,432 | 148.358 |
+| c-2-region | 2/2 | 2/2 | 无 | 52,334 | 164.390 |
+
+这说明“修好了原始目标”与“没有其他问题”不是一件事：c-1-role 两个目标都恢复，地标位置却退化，完整检查阻止了误停。c-2-role 的站名位置一直未恢复。region 两次首轮都恢复到参考图像，RGB 与 SSIM 均为 1；role 最终 SSIM 为 0.846248、0.876670。像素指标只作此次受控复原的补充证据，不改成通用视觉总分门禁。
+
+### 事先登记停止决定 + 影子续跑
+
+region 两次首轮均记录 stop=true，决定时间分别早于第二轮启动；role 两次均为 false。所有决定绑定评分与候选哈希，独立审计从 snapshot 和实际 candidate 文件复算。第二轮仍按协议真实执行，没有按中途结果改变预算。
+
+| 区域反馈策略 | 固定两轮 | 按登记决定停止（同批调用的前缀） |
+|---|---:|---:|
+| 每单元平均模型耗时 | 156.374 秒 | 85.252 秒 |
+| 每单元平均上下文峰值 | 50,383 | 48,207.5 |
+| 全检查通过 | 2/2 | 2/2 |
+| 前缀所含模型轮数 | 4 | 2 |
+
+两次影子续跑共 142.244 秒，没有增加已登记指标上的修复收益，也没有观察到回退。按停止决定取前缀，模型耗时少 45.5%；这是同一批实际调用的成本分解，不是独立随机停止臂或完整产品端到端收益。全部实际付费执行仍为 8 轮，共 668.076 秒模型耗时。报告同时保留全样本与成对分母；影子失败不会抹掉已知的有效停止前缀。
+
+## 接入判断
+
+1. **优先接入按区域去重的短反馈，作为有核准参考时的可选行为。** 保留最多两条与按需披露，不把全部布局摘要塞入核心。区域归组来自宿主核准参考；它选择不同区域的问题，不宣称自动证明了根因。跨模板验证后再考虑默认开启。
+2. **接入“完整检查通过后停止自动修复”的宿主策略，继续保留人工视觉审核。** 条件必须包含有效交回、完整检查集、候选绑定、全部通过；缺项/未知不可停。它表示已登记检查范围内无需续修，不能替代墨迹可见性或设计审核。
+3. **合并 ticket34 前用固定反例审查测量语义。** 显式字号、每个片段、布局/墨迹框、实际状态与未匹配项分别核对。不要把参考框高、领域推荐字号或“0 severe”直接升级成视觉通过标准。
+4. **将 ticket35 的追溯字段推广到普通运行。** 本轮实验已有脚本、src、dist、资料、输入、资源、实际 prompt、模型配置和候选证据；尚需统一普通运行与评估生成器，避免仅评估可复现。
+
+同尺度叠图、OCR、局部感知热图值得下一批各自做干预对照，当前没有新增模型收益证据，不优先增加工具或上下文。样本仅同一中文模板、同一位置坏例、每臂两次；区域效果与成本不能外推到任意 PNG、跨业务或更多退化类型。布局仍不能证明遮挡、裁切、最终墨迹与人工偏好。
 
 ## 验证与复跑
 
-协议见 [事前登记](template-repair-region-protocol.md)，新规格见 [实验规格](../.scratch/template-repair-region/spec.md)。模型冻结提交为 `d34a4eb`，根目录 `out/repair-region-live-v2`；较早 prepare 目录没有调用模型。报告命令与最终 review 在完成后补全。
+协议见 [事前登记](template-repair-region-protocol.md)，新规格见 [实验规格](../.scratch/template-repair-region/spec.md)。模型冻结提交为 `d34a4eb`，根目录 `out/repair-region-live-v2`；较早 prepare 目录没有调用模型。试验记录日期为 2026-10-22 PDT（UTC 为 10-23）。
+
+```powershell
+# 指定源码归档，使用显式资源；输出必须是新目录
+git archive --format=zip --output=out/style-source-64d7bae.zip 64d7baec
+Expand-Archive out/style-source-64d7bae.zip out/style-source-64d7bae
+node --import tsx scripts/agent-eval/style-baseline-probe.mjs --source out/style-source-64d7bae --revision 64d7baec6b795c2c5875b3ed754ef425438662be --out out/style-probe-new
+
+# 模型运行命令见登记协议；以下仅归档与审计，不调用模型
+node scripts/agent-eval/region-report.mjs --root out/repair-region-live-v2 --out docs/agent-eval/figures/template-repair-region
+node scripts/agent-eval/region-audit.mjs --root out/repair-region-live-v2 --out docs/agent-eval/figures/template-repair-region
+npx vitest run test/repair-policy.test.ts test/repair-feedback.test.ts test/fidelity.test.ts test/repair-report.test.ts test/region-report.test.ts
+npm run typecheck
+node docs/agent-eval/figures/template-repair-region/gallery-check.cjs
+```
+
+模型前 build、模型后 typecheck 均通过；上述 5 文件 30 个测试通过。独立审计核验 95 次请求占用、4 单元实际模型配置、两组输入一致、全部冻结文件/候选/决定指纹、反馈上限及各策略指标；最长反馈 449 字符，实际 skills=[]，仅 rw MCP、13 个工具。原始记录和归档扫描 696 个文件，密钥值及前后片段均 0 命中。画廊 1440/390 宽度 × 2 次重复 × 2 阶段共 8 组合通过，图片已查看。
+
+两轴代码 review 已关闭 DPI 请求指纹、重评分覆盖决定、影子失败筛样、未知测量处理和实际候选哈希复算问题；最终结果文档与归档的复核记录见实验票据。

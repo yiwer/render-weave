@@ -1,0 +1,173 @@
+{
+  "passed": true,
+  "manifestSha256": "f823690b6dbdbdb7abda400801cff22f0403b28111352e6c1e6abbce3be95b53",
+  "units": 4,
+  "rounds": 8,
+  "requests": 95,
+  "maxFeedbackChars": 449,
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "tools": 13,
+    "skills": [],
+    "mcp": [
+      "rw"
+    ]
+  },
+  "checks": [
+    "冻结指纹",
+    "成对输入相同",
+    "实际模型/工具/skills",
+    "每请求有效输入与峰值",
+    "候选与决定哈希",
+    "停止决定先于第二轮",
+    "反馈预算与区域去重",
+    "归档文件哈希",
+    "各策略修复/新增/回退/成本独立复算"
+  ],
+  "verified": [
+    {
+      "id": "c-1-role",
+      "arm": "role",
+      "rounds": [
+        {
+          "iteration": 1,
+          "peak": 43953,
+          "wallMs": 83874,
+          "stop": false,
+          "repaired": 1,
+          "added": [
+            "base/landmarks:position"
+          ],
+          "promptSha256": "68a12c17cd604bf04fc4b402da3ddd0dc28a5c00bb4f9dbeed8a744a0893d28b",
+          "mcpConfigSha256": "944775ebabc566bff3fb7e89bb24629ca99b7e07d287fc71c7d76bac80ad643d",
+          "tools": 24,
+          "layoutCalls": 2,
+          "remaining": [
+            "base/next-stop:position",
+            "base/landmarks:position",
+            "base/next-landmark:position"
+          ]
+        },
+        {
+          "iteration": 2,
+          "peak": 50122,
+          "wallMs": 140556,
+          "stop": false,
+          "repaired": 2,
+          "added": [
+            "base/landmarks:position"
+          ],
+          "promptSha256": "8548cea62e8f3d201c520afa167d93aa7477f541261952c838fc3ff425f4f084",
+          "mcpConfigSha256": "728331fe0ec75105a216b27d2606834bae0e85ea1219df232198e31f019897b9",
+          "tools": 29,
+          "layoutCalls": 2,
+          "remaining": [
+            "base/landmarks:position"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c-1-region",
+      "arm": "region",
+      "rounds": [
+        {
+          "iteration": 1,
+          "peak": 48432,
+          "wallMs": 94669,
+          "stop": true,
+          "repaired": 2,
+          "added": [],
+          "promptSha256": "68a12c17cd604bf04fc4b402da3ddd0dc28a5c00bb4f9dbeed8a744a0893d28b",
+          "mcpConfigSha256": "62e125b9bf920ca6e70305fa6a41bbfcfdfe5e053e15accc8977bbe46f246c85",
+          "tools": 28,
+          "layoutCalls": 2,
+          "remaining": []
+        },
+        {
+          "iteration": 2,
+          "peak": 43660,
+          "wallMs": 53689,
+          "stop": true,
+          "repaired": 2,
+          "added": [],
+          "promptSha256": "8548cea62e8f3d201c520afa167d93aa7477f541261952c838fc3ff425f4f084",
+          "mcpConfigSha256": "1dc5cc3f1d2f07fffce1331bd3a69302279dfb758ee92e869d90f39d7c4dd13b",
+          "tools": 27,
+          "layoutCalls": 3,
+          "remaining": []
+        }
+      ]
+    },
+    {
+      "id": "c-2-region",
+      "arm": "region",
+      "rounds": [
+        {
+          "iteration": 1,
+          "peak": 47983,
+          "wallMs": 75835,
+          "stop": true,
+          "repaired": 2,
+          "added": [],
+          "promptSha256": "68a12c17cd604bf04fc4b402da3ddd0dc28a5c00bb4f9dbeed8a744a0893d28b",
+          "mcpConfigSha256": "ad3cc0abb70d8d10b497db8e27de0dbeba2eb70dafe4ebcf508c64d91877fe66",
+          "tools": 24,
+          "layoutCalls": 2,
+          "remaining": []
+        },
+        {
+          "iteration": 2,
+          "peak": 52334,
+          "wallMs": 88555,
+          "stop": true,
+          "repaired": 2,
+          "added": [],
+          "promptSha256": "8548cea62e8f3d201c520afa167d93aa7477f541261952c838fc3ff425f4f084",
+          "mcpConfigSha256": "b2b01f5946ef7a7784fc52460f108122004cb23a93b2bf706d240a4ce0c9a37b",
+          "tools": 23,
+          "layoutCalls": 2,
+          "remaining": []
+        }
+      ]
+    },
+    {
+      "id": "c-2-role",
+      "arm": "role",
+      "rounds": [
+        {
+          "iteration": 1,
+          "peak": 42890,
+          "wallMs": 64164,
+          "stop": false,
+          "repaired": 0,
+          "added": [],
+          "promptSha256": "68a12c17cd604bf04fc4b402da3ddd0dc28a5c00bb4f9dbeed8a744a0893d28b",
+          "mcpConfigSha256": "0ad68045a02dfc2f4ca32c31c07c7e98fe3d136d1c8019a004b501f1ce543a95",
+          "tools": 26,
+          "layoutCalls": 1,
+          "remaining": [
+            "base/stations:position",
+            "base/next-stop:position",
+            "base/next-landmark:position"
+          ]
+        },
+        {
+          "iteration": 2,
+          "peak": 36399,
+          "wallMs": 66734,
+          "stop": false,
+          "repaired": 1,
+          "added": [],
+          "promptSha256": "8548cea62e8f3d201c520afa167d93aa7477f541261952c838fc3ff425f4f084",
+          "mcpConfigSha256": "3898085b6ed94ab45b21973e62abdead60a73cbf8521da38523118bfd387c5ff",
+          "tools": 24,
+          "layoutCalls": 2,
+          "remaining": [
+            "base/stations:position"
+          ]
+        }
+      ]
+    }
+  ]
+}

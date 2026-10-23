@@ -1,0 +1,58 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 2,
+  "inputs": {
+    "sampleSha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11",
+    "workspaceFingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+    "previous": {
+      "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-2-role\\round-1",
+      "round": 1,
+      "outcomeSha256": "739a0c2cc46d623f3e763b7c979792e5c5a04cff4186b3189e3bbcdab68d0338",
+      "reviewSha256": null
+    },
+    "feedbackSha256": "55fce52d71fcacd8a24871380fa7fb03805c2bfe16c45958a33d755862caf0b1"
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-route-sign.json",
+      "kind": "template",
+      "name": "标准线路单边",
+      "sha256": "5a613b15fe1231596333e29dff031b64273443a10386a15b38c3ca88f6dbe82c",
+      "revises": {
+        "file": "template-route-sign.json",
+        "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+      }
+    },
+    {
+      "path": "candidates/template-stop.json",
+      "kind": "template",
+      "name": "站点",
+      "sha256": "0b510e4ef8f361ba5061683c6d4697841f9460bfcdd92c27fb237f734600e237",
+      "revises": {
+        "file": "template-stop.json",
+        "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "第2轮:按反馈将标准线路单边底栏下一站区左内边距 20→8 mm,下一站与下一站地标随之左移约 12 mm(首字约 8 mm,地标中心约 67 mm),与示例图位置一致。第1轮改动保留:站点面板顶部内边距 10→4(标准线路单边),站点标识行下边距 2→5。已核查:check_templates 无问题;currentIndex=5 基线与候选出图无问题;currentIndex=0 且宽 1500 出图无问题。未核查:站点数最少/最多、有无地标的分别验证;下一站文字字号与示例图的细微差异未逐像素比对。",
+  "usage": {
+    "wallMs": 66734,
+    "turns": 25,
+    "inputTokens": 22,
+    "outputTokens": 8860,
+    "thinkingTokens": 3967,
+    "cacheReadTokens": 259662,
+    "cacheCreationTokens": 28511,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 11,
+      "peakInputTokens": 36399,
+      "compactions": 0
+    }
+  }
+}

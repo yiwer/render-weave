@@ -1,0 +1,308 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "站点",
+  "base": {
+    "name": "停靠站点",
+    "version": 1
+  },
+  "parameters": [
+    {
+      "name": "index",
+      "displayName": "序号",
+      "visibility": "public",
+      "type": "number",
+      "constraints": {
+        "integer": true,
+        "min": 1
+      },
+      "default": 1
+    },
+    {
+      "name": "currentIndex",
+      "displayName": "本站序号",
+      "visibility": "public",
+      "type": "number",
+      "constraints": {
+        "integer": true,
+        "min": 0
+      },
+      "default": 0
+    },
+    {
+      "name": "stopNameSize",
+      "displayName": "站名字号",
+      "visibility": "public",
+      "type": "number",
+      "constraints": {
+        "min": 5
+      },
+      "default": 10
+    },
+    {
+      "name": "nameColor",
+      "displayName": "站名颜色",
+      "visibility": "internal",
+      "type": "color",
+      "default": "#333333"
+    },
+    {
+      "name": "passedColor",
+      "displayName": "已过站颜色",
+      "visibility": "internal",
+      "type": "color",
+      "default": "#C8C8C8"
+    },
+    {
+      "name": "currentTextColor",
+      "displayName": "本站文字颜色",
+      "visibility": "internal",
+      "type": "color",
+      "default": "#E60012"
+    },
+    {
+      "name": "highlightColor",
+      "displayName": "高亮底色",
+      "visibility": "internal",
+      "type": "color",
+      "default": "#FFF000"
+    }
+  ],
+  "derived": [
+    {
+      "name": "stopState",
+      "displayName": "站点状态",
+      "type": "text",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "currentIndex"
+            },
+            "op": "eq",
+            "right": {
+              "value": 0
+            }
+          },
+          "then": {
+            "value": "普通"
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "index"
+            },
+            "op": "lt",
+            "right": {
+              "var": "currentIndex"
+            }
+          },
+          "then": {
+            "value": "已过站"
+          }
+        },
+        {
+          "when": {
+            "left": {
+              "var": "index"
+            },
+            "op": "eq",
+            "right": {
+              "var": "currentIndex"
+            }
+          },
+          "then": {
+            "value": "本站"
+          }
+        }
+      ],
+      "otherwise": {
+        "value": "未到站"
+      }
+    },
+    {
+      "name": "hasLandmark",
+      "displayName": "有地标",
+      "type": "boolean",
+      "op": "branch",
+      "branches": [
+        {
+          "when": {
+            "left": {
+              "var": "landmark"
+            },
+            "op": "empty"
+          },
+          "then": {
+            "value": false
+          }
+        }
+      ],
+      "otherwise": {
+        "value": true
+      }
+    }
+  ],
+  "artboard": {
+    "sizeRange": {
+      "width": {
+        "min": 8,
+        "max": 800
+      },
+      "height": {
+        "min": 80,
+        "max": 110
+      }
+    },
+    "layout": {
+      "mode": "stack",
+      "direction": "column",
+      "alignItems": "center"
+    },
+    "children": [
+      {
+        "type": "loop",
+        "name": "标识行",
+        "list": {
+          "var": "badges"
+        },
+        "template": "标识图标",
+        "args": {},
+        "itemLayout": {
+          "direction": "row",
+          "widths": {
+            "fixed": 9
+          },
+          "gap": 1
+        },
+        "place": {
+          "width": "hug",
+          "height": {
+            "fixed": 10
+          },
+          "margin": {
+            "bottom": 5
+          }
+        }
+      },
+      {
+        "type": "container",
+        "name": "名称区",
+        "padding": {
+          "left": 1,
+          "right": 1,
+          "top": 1,
+          "bottom": 4
+        },
+        "layout": {
+          "mode": "stack",
+          "direction": "column",
+          "alignItems": "center"
+        },
+        "place": {
+          "width": "hug",
+          "height": "fill"
+        },
+        "states": {
+          "by": {
+            "var": "stopState"
+          },
+          "cases": {
+            "本站": {
+              "fill": {
+                "var": "highlightColor"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "text",
+            "name": "站名",
+            "content": [
+              {
+                "slot": "name"
+              }
+            ],
+            "writingMode": "vertical",
+            "verticalAlign": "distribute",
+            "horizontalAlign": "center",
+            "font": "res:font-hei-medium",
+            "fontSize": {
+              "var": "stopNameSize"
+            },
+            "color": {
+              "var": "nameColor"
+            },
+            "fit": {
+              "steps": [
+                "tightenSpacing",
+                "compressGlyphs"
+              ],
+              "compressMin": 0.6,
+              "widthOverflow": {
+                "shrinkGroup": "stopNames",
+                "minFontSize": 5
+              },
+              "onFail": "severe"
+            },
+            "place": {
+              "width": "hug",
+              "height": "fill"
+            },
+            "states": {
+              "by": {
+                "var": "stopState"
+              },
+              "cases": {
+                "已过站": {
+                  "color": {
+                    "var": "passedColor"
+                  }
+                },
+                "本站": {
+                  "color": {
+                    "var": "currentTextColor"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "image",
+            "name": "地标",
+            "source": {
+              "var": "landmark"
+            },
+            "visible": {
+              "var": "hasLandmark"
+            },
+            "fit": "contain",
+            "place": {
+              "width": {
+                "fixed": 8
+              },
+              "height": {
+                "fixed": 8
+              },
+              "margin": {
+                "top": 1
+              }
+            },
+            "states": {
+              "by": {
+                "var": "stopState"
+              },
+              "cases": {
+                "已过站": {
+                  "opacity": 0.35
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

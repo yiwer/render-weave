@@ -1,0 +1,52 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 1,
+  "inputs": {
+    "sampleSha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11",
+    "workspaceFingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+    "previous": null
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-route-sign.json",
+      "kind": "template",
+      "name": "标准线路单边",
+      "sha256": "cd91a19656ca6c58d1d013b29f346e3a09cc0cd79d4067cb65b939dba24d8de5",
+      "revises": {
+        "file": "template-route-sign.json",
+        "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+      }
+    },
+    {
+      "path": "candidates/template-stop.json",
+      "kind": "template",
+      "name": "站点",
+      "sha256": "33c8199f98e821e385505879fd20eb30f205406a1958d4468fc637ffe7b39dfa",
+      "revises": {
+        "file": "template-stop.json",
+        "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "修改范围:标准线路单边的站点面板 padding.top 10→4;站点模板的标识行 margin.bottom 2→5、名称区 padding.bottom 1→4。核查结果:标识图绘制中心约 43mm(参考约 43mm),站名 54–130mm、中心约 92mm(参考约 92mm);ds-m402-wanguocheng 在 currentIndex 5 与 0 下草稿无问题。未核查:其他数据集、站点数极值与长站名的压缩情况。道路带、底栏、顶栏与数据绑定未改动。",
+  "usage": {
+    "wallMs": 83874,
+    "turns": 25,
+    "inputTokens": 20,
+    "outputTokens": 11413,
+    "thinkingTokens": 6747,
+    "cacheReadTokens": 258661,
+    "cacheCreationTokens": 43951,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 10,
+      "peakInputTokens": 43953,
+      "compactions": 0
+    }
+  }
+}

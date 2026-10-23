@@ -1,0 +1,58 @@
+{
+  "format": "renderweave-outcome/1",
+  "task": "template-revision",
+  "round": 2,
+  "inputs": {
+    "sampleSha256": "e815294bb5c2e6dffa15516d100cf979213d1f0863033b024d051c369d723d11",
+    "workspaceFingerprint": "sha256:c07fa357e219c79d97b30aaa09c066981df1a327e32eeb0d6bdae970118d7f3d",
+    "previous": {
+      "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-region-live-v2\\live\\c-1-role\\round-1",
+      "round": 1,
+      "outcomeSha256": "452cdcb81e4a81f80324c86c56efabbf2102328840090243d06326c40b6a85dc",
+      "reviewSha256": null
+    },
+    "feedbackSha256": "bfacceabbcbc20dfb77d00eeee0318a7010921b903527d4b35d11d42d4d29e7d"
+  },
+  "candidates": [
+    {
+      "path": "candidates/template-route-sign.json",
+      "kind": "template",
+      "name": "标准线路单边",
+      "sha256": "5a613b15fe1231596333e29dff031b64273443a10386a15b38c3ca88f6dbe82c",
+      "revises": {
+        "file": "template-route-sign.json",
+        "sha256": "0032ba0a943346bea4f65a24176a4bb5e224b2aaf0f157b5bba6a72af1e3925b"
+      }
+    },
+    {
+      "path": "candidates/template-stop.json",
+      "kind": "template",
+      "name": "站点",
+      "sha256": "33c8199f98e821e385505879fd20eb30f205406a1958d4468fc637ffe7b39dfa",
+      "revises": {
+        "file": "template-stop.json",
+        "sha256": "42bbb9fe6f7c8dc27ea34c78b3347c81f8ae7a445e031f976cf00e291b582321"
+      }
+    }
+  ],
+  "locations": [],
+  "pending": [],
+  "notes": "第2轮:仅改下一站区 padding.left 20→8(标准线路单边/底栏/下一站区),下一站地标中心由约79mm移至约67mm,与参考图一致。第1轮在站点模板改标识行下边距 2→5、名称区下内边距 1→4,并在标准线路单边站点面板顶部留白 10→4,保留。站点列[4]地标的 y 偏差反馈(宿主测量约3mm)未改动:inspect_layout 显示地标框 125–133mm,中心 129mm,目视与参考图差约1mm,方向与宿主测量不一致,请审核确认。数据绑定、道路带、底栏其余部分与顶栏未改。仅用 ds-m402-wanguocheng 与 currentIndex 0、5 验证,未覆盖其他站点数的极值列表。",
+  "usage": {
+    "wallMs": 140556,
+    "turns": 30,
+    "inputTokens": 30,
+    "outputTokens": 18146,
+    "thinkingTokens": 12476,
+    "cacheReadTokens": 489872,
+    "cacheCreationTokens": 42234,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "context": {
+      "requests": 15,
+      "peakInputTokens": 50122,
+      "compactions": 0
+    }
+  }
+}

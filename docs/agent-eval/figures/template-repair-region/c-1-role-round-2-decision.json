@@ -1,0 +1,14 @@
+{
+  "stop": false,
+  "qualified": true,
+  "complete": true,
+  "missing": [],
+  "failed": [
+    "base/landmarks:position"
+  ],
+  "unexpected": [],
+  "scope": "仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。",
+  "decidedAt": "2026-10-23T05:19:13.195Z",
+  "templateSha256": "14e3bfa7de69578ec4db972d752bfbe23663377821d6634fa0109ef37234b467",
+  "measurementSha256": "14e20a1e485b69296e3c519743f1aad52bb51cc318d206f895642dfefd2a7206"
+}
