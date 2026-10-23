@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { await rm(base, { recursive: true, force: true }); });
 
-async function evaluate(stops: Record<string, unknown>[], approvedTruth?: typeof truth, nameTolerance = 0) {
+async function evaluate(stops: Record<string, unknown>[], approvedTruth?: typeof truth, nameTolerance = 0, extraStopFields: Record<string, unknown>[] = []) {
   const label = `case-${++sequence}`, out = join(base, label), reports = join(base, 'reports');
   const preset = join(base, `${label}-preset`);
   const configFile = join(base, `${label}-config.json`);
@@ -40,9 +40,10 @@ async function evaluate(stops: Record<string, unknown>[], approvedTruth?: typeof
   await mkdir(join(preset, 'candidates'), { recursive: true });
   const dataset = await json(join(source, 'dataset.json'));
   dataset.data.stops = stops.map((stop) => ({ road: '测试路', ...stop }));
+  const stopDefinition = await json(join(source, 'stop.json')); stopDefinition.fields.push(...extraStopFields);
   const launch = async (spec: RoundSpec) => {
     const files = spec.task === 'definition-extraction'
-      ? { 'schema-route.json': await json(join(source, 'route.json')), 'schema-stop.json': await json(join(source, 'stop.json')) }
+      ? { 'schema-route.json': await json(join(source, 'route.json')), 'schema-stop.json': stopDefinition }
       : { 'dataset.json': dataset };
     for (const [name, value] of Object.entries(files)) await writeFile(join(preset, 'candidates', name), JSON.stringify(value));
     await writeFile(join(preset, 'outcome.json'), JSON.stringify({ candidates: Object.keys(files).map((name) => `candidates/${name}`), pending: [], notes: '受控转录评分样例。' }));
@@ -100,6 +101,24 @@ describe('有序转录评分的公开 CLI', () => {
     expect(score.errors.landmarkExtra).toEqual([{ candidatePosition: 1, truthPosition: 1, value: 2 }, { candidatePosition: 3, truthPosition: 3, value: 1 }]);
     expect(score.errors.facilityExtra).toEqual([{ candidatePosition: 1, truthPosition: 1, value: '医院' }, { candidatePosition: 3, truthPosition: 3, value: '地铁' }]);
   });
+  it.each([1, 2])('同站正确地标之后另报地标%s不能被吞掉，重复也算误报', async (additional) => {
+    const approved = [{ name: 'A', landmark: 1 }, { name: 'B' }];
+    const result = await evaluate([{ name: 'A', landmark: 'res:landmark-1', additionalLandmark: 'res:landmark-' + additional }, { name: 'B' }], approved, 0,
+      [{ name: 'additionalLandmark', displayName: '额外地标', type: 'image', constraints: { allowedSources: ['resource'] } }]);
+    expect(result.code, result.stdout).toBe(1);
+    for (const observation of result.report.results) {
+      expect(observation.checks.transcription).toMatchObject({ landmarks: { matched: 1, of: 1, extra: 1 },
+        errors: { landmarkMissing: [], landmarkExtra: [{ candidatePosition: 1, truthPosition: 1, value: additional }] } });
+    }
+  });
+  it('多值图片字段中的额外地标按全部出现计数，不把重复折叠或当设施', async () => {
+    const result = await evaluate([{ name: 'A', landmark: 'res:landmark-1', additionalLandmarks: ['res:landmark-1', 'res:landmark-2'], facilities: ['地铁'] }, { name: 'B' }],
+      [{ name: 'A', landmark: 1, facilities: ['地铁'] }, { name: 'B' }], 0,
+      [{ name: 'additionalLandmarks', displayName: '额外地标', type: 'list', items: { type: 'image', constraints: { allowedSources: ['resource'] } } }]);
+    expect(result.code, result.stdout).toBe(1);
+    expect(result.report.results[0].checks.transcription).toMatchObject({ landmarks: { matched: 1, of: 1, extra: 2 }, facilities: { matched: 1, of: 1, extra: 0 },
+      errors: { landmarkExtra: [{ candidatePosition: 1, truthPosition: 1, value: 1 }, { candidatePosition: 1, truthPosition: 1, value: 2 }], facilityExtra: [] } });
+  });
   it('同站多报同一设施也算误报；仅漏一处地标设施仍遵守核准容错', async () => {
     const duplicated = candidateStops();
     duplicated[0] = { ...duplicated[0]!, facilities: ['地铁', '地铁'] };
@@ -120,7 +139,7 @@ describe('有序转录评分的公开 CLI', () => {
     const score = result.report.results[0].checks.transcription;
     expect(score.requiresReview).toBe(true);
     expect(score.ambiguities).toContainEqual({ candidatePosition: 11, possibleTruthPositions: [11, null] });
-    expect(score.scorer).toMatchObject({ version: 'renderweave-transcription/2', matchingPolicy: { id: 'ordered-occurrences/1', exact: 0, singleCharacterEdit: 1, otherSubstitution: 2, insertion: 1, omission: 1 } });
+    expect(score.scorer).toMatchObject({ version: 'renderweave-transcription/3', matchingPolicy: { id: 'ordered-occurrences/1', exact: 0, singleCharacterEdit: 1, otherSubstitution: 2, insertion: 1, omission: 1 } });
     expect(result.stdout).toContain('对齐歧义');
     expect(result.stdout).toContain('复核');
   });

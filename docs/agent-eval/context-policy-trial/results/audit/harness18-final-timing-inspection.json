@@ -1,0 +1,77 @@
+{
+  "checkedAt": "2026-10-23T15:51:31.296Z",
+  "arms": [
+    {
+      "arm": "full",
+      "reportSha256": "24d24dc267c3bfa542b0ca8d1c57401dc5026e3d0a41f052d5d07776062123bb",
+      "actualWallMs": 1202305,
+      "idleGapExcludedMs": 1410092,
+      "intervals": [
+        {
+          "start": "2026-10-23T15:06:47.723Z",
+          "end": "2026-10-23T15:16:59.941Z",
+          "ms": 612218,
+          "startSha256": "65899e0d60f403f6a87536d528c68f2ee4c43439168cf3b0995a144cfe95c9cb",
+          "endSha256": "a61c6bb849f389761cc941a36e18616a7cf7982da00dfaedbaaf308bfca5af50",
+          "repetitions": [
+            1,
+            1
+          ]
+        },
+        {
+          "start": "2026-10-23T15:40:30.033Z",
+          "end": "2026-10-23T15:50:20.120Z",
+          "ms": 590087,
+          "startSha256": "faebef7574be2bd92f9b109971392f760605016fdb9d764ba6217984e4c41532",
+          "endSha256": "3d4f994ad140110de8ebabc2495866bcc1f9331fc760dc8317ab93ab1d434368",
+          "repetitions": [
+            2,
+            2
+          ]
+        }
+      ],
+      "inputAndCache": 6701970,
+      "output": 119858,
+      "passed": 11,
+      "failed": 5
+    },
+    {
+      "arm": "on-demand",
+      "reportSha256": "8f47146aab178403aa785a45cd1fc20c60a91c30449c0df943a3c806a018150c",
+      "actualWallMs": 1121309,
+      "idleGapExcludedMs": 78906,
+      "intervals": [
+        {
+          "start": "2026-10-23T15:18:34.145Z",
+          "end": "2026-10-23T15:27:38.524Z",
+          "ms": 544379,
+          "startSha256": "c3086be1aa07293ca7d19f8fe0598ecf987d28475a8dc0b696b6f6c99f69c585",
+          "endSha256": "4b6efa83d12d0a4e5e588e19b47bc5235db0ce03aee030a0b4f100c932e40224",
+          "repetitions": [
+            1,
+            1
+          ]
+        },
+        {
+          "start": "2026-10-23T15:28:57.430Z",
+          "end": "2026-10-23T15:38:34.360Z",
+          "ms": 576930,
+          "startSha256": "ccc76f17df6c573b5e23a00199024183739e3d7cf8bafcc59ff1150955049e53",
+          "endSha256": "5c24702079ef925f6efa959b9db2dd576524682def208083038494febf46929e",
+          "repetitions": [
+            2,
+            2
+          ]
+        }
+      ],
+      "inputAndCache": 6094028,
+      "output": 113347,
+      "passed": 11,
+      "failed": 5
+    }
+  ],
+  "inputAndCacheReduction": 0.09071094021608572,
+  "outputReduction": 0.054322615094528515,
+  "actualWallReduction": 0.06736726537775362,
+  "scope": "Independent arithmetic audit; local wall time includes background load, not an isolated benchmark. No monetary or human-cost inference."
+}

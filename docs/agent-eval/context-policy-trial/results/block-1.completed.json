@@ -1,0 +1,69 @@
+{
+  "block": 1,
+  "strategy": "full",
+  "repetition": 1,
+  "startedAt": "2026-10-23T15:06:47.190Z",
+  "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+  "node": "D:\\nodejs\\node.exe",
+  "cwd": "C:/Users/Administrator/.codex/worktrees/harness-18/render-weave",
+  "args": [
+    "--import",
+    "tsx",
+    "scripts/agent-eval/run.ts",
+    "--config",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\calibration\\config.json",
+    "--context-policy",
+    "full",
+    "--paired",
+    "--jobs",
+    "1",
+    "--repeat",
+    "2",
+    "--model",
+    "claude-haiku-5-5",
+    "--small-model",
+    "claude-haiku-5-5",
+    "--endpoint",
+    "https://opencode.ai/inference/go/anthropic",
+    "--timeout-ms",
+    "3600000",
+    "--claude",
+    "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+    "--context-pair",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\registration\\pair.json",
+    "--out",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full",
+    "--reports",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\reports",
+    "--label",
+    "harness18-full",
+    "--repetitions",
+    "1-1",
+    "--key-env",
+    "OPEN_CODE_API_KEY"
+  ],
+  "keyEnvironment": "OPEN_CODE_API_KEY",
+  "policySha256": "sha256:5a9be81d6765f8d40bd02225fba2f130b9b6521747cd90efad083d62cf7149ce",
+  "pairSha256": "sha256:751f4106b6e1a9d78ed46716677c7cc0a912070edd1b01f1610ec86e422a72da",
+  "plannedObservations": 8,
+  "retryPolicy": {
+    "source": "frozen existing evaluation runner",
+    "transientRetryDelaysMs": [
+      60000,
+      180000
+    ],
+    "hardQuotaRetries": 0
+  },
+  "exitCode": 1,
+  "signal": null,
+  "endedAt": "2026-10-23T15:17:02.483Z",
+  "hardQuota": false,
+  "reports": [
+    {
+      "file": "harness18-full.json",
+      "sha256": "sha256:0741519cf9b27a4b28d2c61cccd3a9498db8376cef54dd292f89f12881db701b"
+    }
+  ],
+  "stdoutSha256": "sha256:e83b99023297f95ec8b6013d589dfa3ab9f326e1315abaf62cb45987ca229600",
+  "stderrSha256": "sha256:513a24b390c8ed019a330fd88593c7d3d030ea871542cc630fb3ed077aa4b7d5"
+}

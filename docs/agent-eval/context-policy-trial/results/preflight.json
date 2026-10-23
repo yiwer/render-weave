@@ -1,0 +1,76 @@
+{
+  "format": "renderweave-context-trial-preflight/1",
+  "registeredAt": "2026-10-23T15:04:00.798Z",
+  "sourceCommit": "06d051eb13ca87cdeb225d55c32424f6e92b25eb",
+  "complete": true,
+  "realModelObservations": 0,
+  "policySha256": "sha256:5a9be81d6765f8d40bd02225fba2f130b9b6521747cd90efad083d62cf7149ce",
+  "pairSha256": "sha256:751f4106b6e1a9d78ed46716677c7cc0a912070edd1b01f1610ec86e422a72da",
+  "commonIdentitySha256": "sha256:4e33dfebb6efd778f87d5f1358d300676c389cb7a4514fd2dfb72a568c2702f6",
+  "executor": {
+    "command": "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+    "args": [],
+    "version": "2.1.296 (Claude Code)",
+    "files": {
+      "command": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a"
+    },
+    "node": "v24.12.0"
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "providerRevision": null
+  },
+  "budgets": {
+    "maxTurns": {
+      "definition-extraction": 40,
+      "dataset-extraction": 40,
+      "template-design": 80,
+      "template-revision": 80
+    },
+    "roundTimeoutMs": 3600000,
+    "stagnation": 2
+  },
+  "resources": {
+    "resource-bytes/font-hei-bold": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+    "resource-bytes/font-hei-heavy": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+    "resource-bytes/font-hei-medium": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+    "resource-bytes/font-hei-regular": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+    "resource-bytes/icon-hospital": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+    "resource-bytes/icon-metro": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+    "resource-bytes/landmark-1": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+    "resource-bytes/landmark-2": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+    "resource-bytes/landmark-3": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+    "resource-bytes/landmark-4": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+    "resource-bytes/route-no-m402": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+    "resource-bytes/test-quadrants-jpg": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+    "resource-bytes/test-quadrants-png": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+    "resource-bytes/test-quadrants-webp": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+    "resource-bytes/test-vector-svg": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+    "resources/font-subsets/LICENSE.txt": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+    "resources/font-subsets/README.md": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda",
+    "resources/font-subsets/TestSubset-Bold.otf": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def",
+    "resources/font-subsets/TestSubset-Medium.otf": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba",
+    "resources/font-subsets/TestSubset-Regular.otf": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1",
+    "resources/fonts/SourceHanSansCN-Bold.otf": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+    "resources/fonts/SourceHanSansCN-Heavy.otf": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+    "resources/fonts/SourceHanSansCN-Medium.otf": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+    "resources/fonts/SourceHanSansCN-Regular.otf": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+    "resources/images/m402/icon-hospital.png": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+    "resources/images/m402/icon-metro.png": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+    "resources/images/m402/landmark-1.png": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+    "resources/images/m402/landmark-2.png": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+    "resources/images/m402/landmark-3.png": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+    "resources/images/m402/landmark-4.png": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+    "resources/images/m402/route-no-m402.png": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+    "resources/images/README.md": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a",
+    "resources/images/test/quadrants.jpg": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+    "resources/images/test/quadrants.png": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+    "resources/images/test/quadrants.webp": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+    "resources/images/test/vector.svg": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+    "resources/resources.json": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+  },
+  "plannedObservations": 32
+}

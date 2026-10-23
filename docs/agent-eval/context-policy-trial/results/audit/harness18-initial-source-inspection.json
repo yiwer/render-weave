@@ -1,0 +1,64 @@
+{
+  "checkedAt": "2026-10-23T15:12:27.8261518Z",
+  "reviewer": "root independent source inspection",
+  "providerRevision": null,
+  "executor": {
+    "sha256": "76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+    "version": "2.1.296 (Claude Code)",
+    "command": "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"
+  },
+  "entries": [
+    {
+      "responseModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultCount": 1,
+      "initializedModels": [
+        "claude-haiku-5-5"
+      ],
+      "attempt": "ca9622eb-82a6-4e53-b08e-0de2a36249f0",
+      "endedBy": "success",
+      "streamSha256": "846a487a1af7b2086261bc7af177e4043df3858b6b6e2c233db203c105e51a5b",
+      "unit": "zh-definition-extraction",
+      "verdict": "qualified",
+      "exitCode": 0,
+      "round": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-definition-extraction\\attempts\\ca9622eb-82a6-4e53-b08e-0de2a36249f0\\round\\round.json",
+      "roundSha256": "c01af830f278108c91664f03baaeb7f7d09924edf8562de719de965e83e98cec"
+    },
+    {
+      "responseModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultCount": 1,
+      "initializedModels": [
+        "claude-haiku-5-5"
+      ],
+      "attempt": "cf5a176a-20d9-4288-809c-d2b5bc781e3a",
+      "endedBy": "success",
+      "streamSha256": "70e37e7f1d4ba46026974650a33c592b1038ac5b0f40c48d7e3685d680353e71",
+      "unit": "zh-dataset-extraction",
+      "verdict": "qualified",
+      "exitCode": 0,
+      "round": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-dataset-extraction\\attempts\\cf5a176a-20d9-4288-809c-d2b5bc781e3a\\round\\round.json",
+      "roundSha256": "fd929b5b4e8262f4d38a110c4b6fac4bc7e6be6451b2c95ec98146aa8ec13f9a"
+    },
+    {
+      "responseModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultCount": 1,
+      "initializedModels": [
+        "claude-haiku-5-5"
+      ],
+      "attempt": "96c80ec2-5fcb-4020-baf6-df317d9143ef",
+      "endedBy": "success",
+      "streamSha256": "55ec94ea68260af3bf4712cb1c54b70dcd2531666aa7f5160dc6004c203d211d",
+      "unit": "zh-template-design",
+      "verdict": "qualified",
+      "exitCode": 0,
+      "round": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-template-design\\attempts\\96c80ec2-5fcb-4020-baf6-df317d9143ef\\round\\round.json",
+      "roundSha256": "9e5fc99005db6cd3a5d6a8f7b358f214bd71c226702a655be6a9a482f4779b69"
+    }
+  ],
+  "scope": "first completed full-arm observations only; no overall trial or A15 acceptance"
+}

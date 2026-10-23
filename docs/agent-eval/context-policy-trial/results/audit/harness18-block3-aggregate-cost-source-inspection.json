@@ -1,0 +1,348 @@
+{
+  "block": 3,
+  "arm": "on-demand",
+  "checkedAt": "2026-10-23T15:39:44.089Z",
+  "reportSha256": "8f47146aab178403aa785a45cd1fc20c60a91c30449c0df943a3c806a018150c",
+  "source": "one native stream result usage per immutable attempt; independent four-counter sums and model event inspection",
+  "scope": "aggregate arm report includes both repetitions; earlier block audit is not additional observations",
+  "thinking": "contained in output, not added",
+  "humanMinutes": null,
+  "providerRevision": null,
+  "attempts": 16,
+  "comparisons": [
+    {
+      "metric": "inputTokens",
+      "reportTotal": 302,
+      "rawResultsSum": 302,
+      "unknown": 0,
+      "equal": true
+    },
+    {
+      "metric": "cacheReadTokens",
+      "reportTotal": 5314568,
+      "rawResultsSum": 5314568,
+      "unknown": 0,
+      "equal": true
+    },
+    {
+      "metric": "cacheCreationTokens",
+      "reportTotal": 779158,
+      "rawResultsSum": 779158,
+      "unknown": 0,
+      "equal": true
+    },
+    {
+      "metric": "outputTokens",
+      "reportTotal": 113347,
+      "rawResultsSum": 113347,
+      "unknown": 0,
+      "equal": true
+    }
+  ],
+  "observations": [
+    {
+      "attemptId": "29260a52-a2f3-4036-b8eb-241826f77275",
+      "unit": "run-1/zh-definition-extraction",
+      "streamSha256": "8dd8931d9776f1166169585cf1041fb0bdf16f173171fcc30a083860b1a099ad",
+      "streamBytes": 691047,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 14,
+        "cacheReadTokens": 128896,
+        "cacheCreationTokens": 30508,
+        "outputTokens": 4837
+      }
+    },
+    {
+      "attemptId": "6ae67b64-121d-49a0-bf26-f596810628c9",
+      "unit": "run-2/zh-definition-extraction",
+      "streamSha256": "b999789dd31ab02bd42d58521031856476a5df2f6fce1c69f0d2bc9267151a53",
+      "streamBytes": 713958,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 16,
+        "cacheReadTokens": 171486,
+        "cacheCreationTokens": 23252,
+        "outputTokens": 6255
+      }
+    },
+    {
+      "attemptId": "17101a65-2dbd-44f5-84b3-0b68bda0b192",
+      "unit": "run-1/zh-dataset-extraction",
+      "streamSha256": "6528e85e68494a019fd2f9e9b4a5317504523c4bd9916524430c3c68b0564474",
+      "streamBytes": 703704,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 197859,
+        "cacheCreationTokens": 24743,
+        "outputTokens": 5872
+      }
+    },
+    {
+      "attemptId": "8dc57551-7bd7-456f-a804-ef89688ee62b",
+      "unit": "run-2/zh-dataset-extraction",
+      "streamSha256": "900d210a4791543f69fa9cce66d7794db31b95599249775a39f6ca1234b3ed76",
+      "streamBytes": 765435,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 224829,
+        "cacheCreationTokens": 27570,
+        "outputTokens": 6237
+      }
+    },
+    {
+      "attemptId": "6ecc0a1c-6d30-4b0a-a86a-e21564bc553f",
+      "unit": "run-1/zh-template-design",
+      "streamSha256": "6de7de87135ff3cfe689aa41204354f21985504ff65a2ec28fc7623801b6f986",
+      "streamBytes": 3465441,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 372940,
+        "cacheCreationTokens": 60684,
+        "outputTokens": 8202
+      }
+    },
+    {
+      "attemptId": "740de619-fa9a-4cb7-89b2-da578d199157",
+      "unit": "run-2/zh-template-design",
+      "streamSha256": "a25e7e896f68c6d9a1f8d1140486bf1371d5449d521acc92045d59ea4bda4b55",
+      "streamBytes": 2246385,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 446268,
+        "cacheCreationTokens": 76764,
+        "outputTokens": 7337
+      }
+    },
+    {
+      "attemptId": "e63edd10-e044-42d0-bc51-4b4ffc1d21c7",
+      "unit": "run-1/zh-template-revision",
+      "streamSha256": "5eae18446c83a8ecdde3d7b6c749724b54f7d50fba7a2496c4a1695f0cd56f64",
+      "streamBytes": 2316366,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 482579,
+        "cacheCreationTokens": 75841,
+        "outputTokens": 8433
+      }
+    },
+    {
+      "attemptId": "0aa9b4ea-935d-4d95-8b00-f7345b3dd206",
+      "unit": "run-2/zh-template-revision",
+      "streamSha256": "f6fd6984f8e7f170c50fdff26fcf17bee3ec7c3d4c0639b76e20f6fb98777b5c",
+      "streamBytes": 3260622,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 28,
+        "cacheReadTokens": 862493,
+        "cacheCreationTokens": 95957,
+        "outputTokens": 9100
+      }
+    },
+    {
+      "attemptId": "7f3aa0af-b120-401f-ba21-07bd9b25cc7f",
+      "unit": "run-1/en-definition-extraction",
+      "streamSha256": "077f727ec5a7f557e7feaad2f99a672ecfb35a24978753452e827515910d2e05",
+      "streamBytes": 676996,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 202314,
+        "cacheCreationTokens": 23967,
+        "outputTokens": 7041
+      }
+    },
+    {
+      "attemptId": "881dfe0a-2d17-4f7e-b74b-5c77d89e8002",
+      "unit": "run-2/en-definition-extraction",
+      "streamSha256": "9d78f046afe19aa56ca0c213d314cb61f9cabc57a47f85f4251ae0a4e28ec00b",
+      "streamBytes": 682046,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 203976,
+        "cacheCreationTokens": 24669,
+        "outputTokens": 7487
+      }
+    },
+    {
+      "attemptId": "b17dbc54-8cb8-4f6a-b4f1-cd318b3e364c",
+      "unit": "run-1/en-dataset-extraction",
+      "streamSha256": "e94754d7ead927a4af167fe0a29a11572ecb657286ff7452194dfef796f7e146",
+      "streamBytes": 674782,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 227667,
+        "cacheCreationTokens": 25427,
+        "outputTokens": 6561
+      }
+    },
+    {
+      "attemptId": "07c25b00-b5f1-49b6-8b3d-85d6e1f91bdb",
+      "unit": "run-2/en-dataset-extraction",
+      "streamSha256": "facc63cd6af28a1467bab55b8975a472b88dfdf8ff6247d91364222bdac62322",
+      "streamBytes": 662807,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 16,
+        "cacheReadTokens": 171378,
+        "cacheCreationTokens": 24499,
+        "outputTokens": 5633
+      }
+    },
+    {
+      "attemptId": "a8255cfa-8ff9-4948-ad5a-b710b05189a7",
+      "unit": "run-1/en-template-design",
+      "streamSha256": "c20963f435b95116c2b54b174e56dc7dabfa47ab6864e8654ed5c5831d1f59db",
+      "streamBytes": 1765628,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 433584,
+        "cacheCreationTokens": 65239,
+        "outputTokens": 7676
+      }
+    },
+    {
+      "attemptId": "91b6ed5d-e200-409b-ae38-468239d7c6e0",
+      "unit": "run-2/en-template-design",
+      "streamSha256": "bb1150ccd8ebc47bc228669cb4f37ddb0b3324d169d6df125b74e89ffc78dd00",
+      "streamBytes": 1728837,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 386323,
+        "cacheCreationTokens": 72659,
+        "outputTokens": 9725
+      }
+    },
+    {
+      "attemptId": "afefd518-cb34-44c2-b01b-c3b4a3d575c4",
+      "unit": "run-1/en-template-revision",
+      "streamSha256": "575a842f5208770bcdcb753706a6306343107f2ed750bb6a07f1b891459cceaa",
+      "streamBytes": 1728925,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 18,
+        "cacheReadTokens": 361851,
+        "cacheCreationTokens": 59919,
+        "outputTokens": 5971
+      }
+    },
+    {
+      "attemptId": "0c031083-1b0f-45da-b506-f8231c5b1f81",
+      "unit": "run-2/en-template-revision",
+      "streamSha256": "0821a7bfbdbb0e9f487c738b933520506b5e55f4b8baf5ee42ec7f77a1e4da5f",
+      "streamBytes": 1903608,
+      "resultCount": 1,
+      "initModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantModels": [
+        "claude-haiku-5-5"
+      ],
+      "metrics": {
+        "inputTokens": 20,
+        "cacheReadTokens": 440125,
+        "cacheCreationTokens": 67460,
+        "outputTokens": 6980
+      }
+    }
+  ]
+}

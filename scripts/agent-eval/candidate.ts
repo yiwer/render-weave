@@ -13,7 +13,7 @@ import {experimentIdentity,identityDifferences,resourceInputIdentity,sha256,type
 import {REPO,readConfig,repoPath,stageNames} from './scenarios.js';
 import type {RuntimeOptions} from './eval.js';
 
-const roots=['src','dist','agent','schemas','node_modules'];
+const roots=['src','dist','agent','schemas','web','node_modules'];
 const singles=['package.json','package-lock.json','tsconfig.json','tsconfig.build.json'];
 const skippedDirectories=new Set(['.bin','.cache','.vite','.vite-temp']);
 export async function commonFiles(root=REPO,destination?:string):Promise<Record<string,string>>{

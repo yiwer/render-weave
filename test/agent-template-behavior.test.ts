@@ -137,9 +137,52 @@ it('长文本在两个目标尺寸内保留完整文字和核准适配，移出�
   const tiny = await run('fit-tiny'); expect(tiny.code).toBe(1); expect(tiny.report.cases[0].technical.severe).toBe(0);
   text.fontSize = 10; text.fit.minFontSize = 5; text.place.left = 400; text.place.width = { fixed: 144 }; await json(file, template);
   const outside = await run('fit-outside'); expect(outside.code).toBe(1); expect(outside.report.cases[0].facts[1].status).toBe('fail');
-  text.place.left = 8; text.place.width = 'fill'; text.opacity = 0; await json(file, template);
-  const transparent = await run('fit-transparent'); expect(transparent.code).toBe(3);
-  expect(transparent.report.cases[0].facts[1]).toMatchObject({ status: 'notChecked', reason: expect.stringContaining('复杂变换') });
+  text.place.left = 8; text.place.width = 'fill'; text.color = '#E6001200'; await json(file, template);
+  const transparentInk = await run('fit-transparent-ink'); expect(transparentInk.code).toBe(1);
+  expect(transparentInk.report.cases[0].facts[1]).toMatchObject({ status: 'fail', actual: [{ visibility: { status: 'invisible', reasons: ['transparent'] } }] });
+  text.color = '#E60012'; text.opacity = 0; await json(file, template);
+  const transparent = await run('fit-transparent'); expect(transparent.code).toBe(1);
+  expect(transparent.report.cases[0].facts[1]).toMatchObject({ status: 'fail', actual: [{ visibility: { status: 'invisible', reasons: ['transparent'] } }] });
+});
+
+it('fit拒绝已证实完全遮挡和裁切，部分遮挡、部分裁切与复杂变换仍未核查', async () => {
+  const workspace = join(dir, 'fit-visibility-workspace'); await copyWorkspaceFixture(singleTextDir, workspace);
+  const file = join(workspace, 'template-greeting.json'), template = await read(file);
+  const text = template.artboard.children[0];
+  text.place = { left: 8, top: 5, width: { fixed: 140 }, height: { fixed: 20 } };
+  const cover = { type: 'rect', name: '遮挡', fill: '#FFFFFF', place: { left: 0, top: 0, width: { fixed: 160 }, height: { fixed: 40 } } };
+  const clip = (width: number) => ({ type: 'container', name: '裁切', clip: true, layout: { mode: 'free' },
+    place: { left: 0, top: 0, width: { fixed: width }, height: { fixed: 40 } }, children: [text] });
+  const policy = join(dir, 'fit-visibility.json');
+  await json(policy, { format: 'renderweave-behavior-policy/1', id: 'fit-visibility', authority: '独立预期：文字须满足字号和完整适配；完全不可见不能通过，复杂或部分遮挡不自动通过',
+    cases: [{ id: 'visible', category: 'fit', change: '将内容改为 Long station name，目标尺寸160×40mm',
+      request: { template: '问候牌', dataset: { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: { message: 'Long station name' } } }, parameters: {}, output: { width: 160, height: 40, dpi: 60, format: 'png' }, mode: 'draft' },
+      facts: [{ id: 'fit', kind: 'fit', selector: '问候牌/*问候语', expected: { minFontSize: 5, maxFontSize: 10, minCompression: 0.6 } }] }] });
+  const run = async (name: string, children: unknown[]) => {
+    template.artboard.children = children; await json(file, template);
+    const out = join(dir, name), result = await cli(['--behavior-policy', policy, '--workspace', workspace, '--resources', resourcesDir, '--out', out]);
+    return { ...result, report: await read(join(out, 'behavior.json')) };
+  };
+  const normal = await run('fit-visible-control', [cover, text]);
+  expect(normal.code, JSON.stringify(normal)).toBe(0);
+  expect(normal.report.cases[0].facts[0]).toMatchObject({ status: 'pass', actual: [{ visibility: { status: 'unknown' } }] });
+  for (const [name, children, reason] of [
+    ['fully-covered', [text, cover], 'occluded'], ['fully-clipped', [clip(4)], 'clipped'],
+  ] as const) {
+    const result = await run('fit-' + name, [...children]);
+    expect(result.code, JSON.stringify(result)).toBe(1);
+    expect(result.report.cases[0].technical.severe).toBe(0);
+    expect(result.report.cases[0].facts[0]).toMatchObject({ status: 'fail', actual: [{ visibility: { status: 'invisible', reasons: [reason] } }] });
+  }
+  for (const [name, children] of [
+    ['partial-cover', [text, { ...cover, place: { ...cover.place, width: { fixed: 35 } } }]],
+    ['translucent-cover', [text, { ...cover, opacity: 0.5 }]],
+    ['partial-clip', [clip(35)]], ['rotated', [{ ...text, rotation: 10 }]],
+  ] as const) {
+    const result = await run('fit-' + name, [...children]);
+    expect(result.code, JSON.stringify(result)).toBe(3);
+    expect(result.report.cases[0].facts[0]).toMatchObject({ status: 'notChecked', actual: [{ visibility: { status: 'unknown' } }] });
+  }
 });
 
 it('同名图片换内容后按核准区域像素验收，名称正确或整图改变都不能掩盖错误图案', async () => {

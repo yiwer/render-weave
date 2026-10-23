@@ -1,0 +1,22 @@
+{
+  "status": "approved",
+  "reviewer": "user",
+  "approvedAt": "2026-10-23T16:21:26.877Z",
+  "approvedAtBasis": "本会话用户回复已收到后的登记时间，不冒称独立计时的点击时间",
+  "approvedManifest": "23f030f9aaa44c3565233130d0ce6a38d38f4d1f58eac1b97d22184ebb7f1da3",
+  "manifestFileSha256": "f0503600596381dc84bf0d43000b29c8666df2cdb913c8deeff52c028515bc40",
+  "sourceHistory": "用户确认原始素材未用于调优",
+  "familyIndependence": "unknown",
+  "authorization": "用户在本会话对05具体12例材料包选择“核准此材料包（推荐）”；10例全流程、2例英文字色修改，每例3次。核准准备材料，不代表36次实际成果已审核或允许跳过20/21/原38前置。",
+  "userReply": "核准此材料包（推荐）",
+  "questionItemId": "[\"request_user_input_async\",\"call_4472233ef5db44afb25c084442acbacd\",0]",
+  "scope": {
+    "cases": 12,
+    "fullFlowCases": 10,
+    "revisionCases": 2,
+    "units": 36,
+    "stagePlans": 96
+  },
+  "resultsReviewed": 0,
+  "candidateBinding": "pending-ticket-20"
+}

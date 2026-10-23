@@ -1,6 +1,6 @@
 # 待验候选与计划绑定
 
-候选包保留经核查的共同代码、构建、资料、Schema、工具合同、默认策略和实际安装依赖。计划绑定另存自己的输入、评分配置、资源依据、请求模型/effort/预算及执行器身份；原四场景、可信反馈和留出计划可以使用同一候选，各自保留独立结论。格式与取舍见 M327、[ADR-0026](adr/0026-immutable-candidate-and-plan-bindings.md)。
+候选包保留经核查的共同代码、构建、资料、Schema、公开审核页静态资源（`web/`）、工具合同、默认策略和实际安装依赖。计划绑定另存自己的输入、评分配置、资源依据、请求模型/effort/预算及执行器身份；原四场景、可信反馈和留出计划可以使用同一候选，各自保留独立结论。格式与取舍见 M327、[ADR-0026](adr/0026-immutable-candidate-and-plan-bindings.md)。
 
 ## 冻结前
 
@@ -14,7 +14,7 @@ npx tsx scripts/agent-eval/freeze.ts --verify out/acceptance/candidate-1
 npx tsx scripts/agent-eval/freeze.ts --verify out/acceptance/candidate-1 --current
 ```
 
-`--verify` 检查包内字节；加 `--current` 还核对当前执行内容与 Node。包内 `content/` 是实拷贝，原工作目录后来构建或修改资料不会改变它。目标目录必须不存在，失败的半成品没有有效发布清单，不能拿它派发。清单中的内容身份不是 Git 提交别名。
+`--verify` 检查包内字节；加 `--current` 还核对当前执行内容与 Node。包内 `content/` 是实拷贝，原工作目录后来构建或修改资料不会改变它。目标目录必须不存在，失败的半成品没有有效发布清单，不能拿它派发。清单中的内容身份不是 Git 提交别名。包内公开审核服务从 `content/web/review.html` 读取页面，该字节纳入共同身份；缺失或改动会使 `--verify` 拒绝。
 
 ## 按计划绑定和派发
 
