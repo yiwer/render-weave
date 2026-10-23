@@ -1,11 +1,13 @@
 /** 候选冻结只从公开 CLI 观察文件身份与实际可执行产物。 */
-import {spawn} from 'node:child_process';
+import {spawn,type ChildProcess} from 'node:child_process';
+import {once} from 'node:events';
 import {createHash} from 'node:crypto';
-import {mkdtemp,readFile,rm,writeFile,rename,symlink} from 'node:fs/promises';
+import {mkdtemp,readFile,rm,writeFile,rename,symlink,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {afterAll,beforeAll,expect,it} from 'vitest';
-import {repoRoot,copyWorkspaceFixture} from './support/fixtures.js';
+import {repoRoot} from './support/fixtures.js';
+import {runAgentTask,changeReview,applyAgentRound} from '../src/index.js';
 
 let root:string;
 beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-candidate-freeze-'));});
@@ -19,20 +21,65 @@ function execute(args:string[],cwd=repoRoot){
 }
 const freeze=(args:string[])=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args]);
 const stage=(args:string[])=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/stage.ts',...args]);
+async function killRound(child:ChildProcess,out:string){
+  if(!child.pid||child.exitCode!==null)return;
+  if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});await once(killer,'close');}
+  else{
+    const state=JSON.parse(await readFile(join(out,'execution.json'),'utf8'));
+    if(state.owner?.supervisorPid===child.pid&&Number.isSafeInteger(state.owner.pid)&&state.owner.pid>1){
+      try{process.kill(-state.owner.pid,'SIGKILL');}catch{}
+      for(let i=0;i<100;i++){try{process.kill(state.owner.pid,0);}catch{break;}await new Promise(resolve=>setTimeout(resolve,20));}
+    }
+    try{process.kill(-child.pid,'SIGKILL');}catch{child.kill('SIGKILL');}
+  }
+}
+it('宿主真实强退后没有round.json的完整检查点仍能绑定并通过原CLI接续',async()=>{
+  const source=join(root,'killed-round'),preset=join(root,'killed-preset'),brief=join(root,'recovery-brief.md');
+  await mkdir(join(preset,'candidates'),{recursive:true});await writeFile(brief,'提取线路号');
+  const bytes=JSON.stringify({dslVersion:'renderweave-schema/1',name:'线路',fields:[{name:'number',displayName:'线路号',type:'text'}]});
+  await writeFile(join(preset,'candidates/schema.json'),bytes);await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/schema.json'],pending:[],notes:'完整检查点'}));
+  const child=spawn(process.execPath,[join(repoRoot,'dist/bin.js'),'agent','run','--task','definition-extraction','--sample',join(repoRoot,'fixtures/resources/images/test/quadrants.png'),'--brief',brief,'--resources',join(repoRoot,'fixtures/resources'),'--out',source,'--key-env','RW_FREEZE_KEY','--claude',process.execPath,'--claude-args',JSON.stringify([join(repoRoot,'test/support/fake-checkpoint.mjs'),preset])],{cwd:repoRoot,windowsHide:true,detached:process.platform!=='win32',stdio:'pipe',env:{...process.env,RW_FREEZE_KEY:'offline-fixture-key'}});
+  const closed=once(child,'close');let errors='';child.stderr!.on('data',chunk=>errors+=chunk);
+  try{
+    let observed;
+    for(let i=0;i<600;i++){try{observed=JSON.parse(await readFile(join(source,'agent/checkpoint-observed.json'),'utf8'));break;}catch{}await new Promise(resolve=>setTimeout(resolve,20));}
+    expect(observed,errors).toBeDefined();expect(JSON.parse(observed.reply.result.content[0].text).checkpoint.status).toBe('saved');
+  }finally{await killRound(child,source);await closed;}
+  await expect(readFile(join(source,'round.json'))).rejects.toMatchObject({code:'ENOENT'});
+  const candidate=join(root,'recovery-candidate'),binding=join(root,'recovery-binding'),request=join(root,'recovery-request.json'),feedback=join(root,'recovery-feedback.md'),out=join(root,'recovered-round');
+  await writeFile(feedback,'继续完整检查点');
+  const executor=join(root,'recovery-executor.mjs'),fake=join(repoRoot,'test/support/fake-claude.mjs');
+  await writeFile(executor,`import {pathToFileURL} from 'node:url';if(process.argv.includes('--version'))console.log('recovery/1');else{process.argv.splice(1,1,${JSON.stringify(fake)},'none');await import(pathToFileURL(${JSON.stringify(fake)}).href);}`);
+  await writeFile(request,JSON.stringify({format:'renderweave-stage-request/1',unit:'recovery/run-1/attempt-2',materials:[{file:brief,sha256:`sha256:${createHash('sha256').update(await readFile(brief)).digest('hex')}`}],args:['--from',source,'--feedback',feedback,'--out',out,'--claude',process.execPath,'--claude-args',JSON.stringify([executor])]}));
+  expect((await freeze(['--out',candidate])).code).toBe(0);
+  const bound=await stage(['--bind',candidate,'--request',request,'--out',binding]);expect(bound.code,bound.stderr).toBe(0);
+  const resumed=await stage(['--dispatch',binding,'--key-env','RW_FREEZE_KEY']);expect(resumed.code,resumed.stderr).toBe(1);
+  expect(JSON.parse(await readFile(join(out,'round.json'),'utf8')).inputs.previous.checkpoint.source).toBe('hostRecovery');
+  expect(await readFile(join(out,'agent/candidates/schema.json'),'utf8')).toBe(bytes);
+},120000);
 it('直接数据集阶段绑定人工应用后的工作区，变化在单次派发前拒绝且不自动审核或应用',async()=>{
   const candidate=join(root,'stage-candidate'),binding=join(root,'stage-binding'),workspace=join(root,'stage-workspace');
   const request=join(root,'stage-request.json'),approval=join(root,'approval.json'),out=join(root,'stage-round');
   const executor=join(root,'stage-executor.mjs'),ledger=join(root,'stage-dispatches.txt'),fake=join(repoRoot,'test/support/fake-claude.mjs');
   await writeFile(executor,`import {appendFile} from 'node:fs/promises';import {pathToFileURL} from 'node:url';if(process.argv.includes('--version'))console.log('direct-stage/1');else{await appendFile(${JSON.stringify(ledger)},'dispatch\\n');process.argv.splice(1,1,${JSON.stringify(fake)},'none');await import(pathToFileURL(${JSON.stringify(fake)}).href);}`);
-  await copyWorkspaceFixture(join(repoRoot,'fixtures/workspaces/single-text'),workspace);
+  const preset=join(root,'stage-upstream-preset'),upstream=join(root,'stage-upstream');
+  await mkdir(join(preset,'candidates'),{recursive:true});
+  await writeFile(join(preset,'candidates/greeting.json'),JSON.stringify({dslVersion:'renderweave-schema/1',name:'问候',fields:[{name:'message',displayName:'问候语',type:'text'}]}));
+  await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/greeting.json'],pending:[],notes:'无模型夹具'}));
+  await runAgentTask({task:'definition-extraction',sample:join(repoRoot,'fixtures/resources/images/test/quadrants.png'),brief:join(repoRoot,'scripts/agent-eval/scenarios/m402/brief-definition.md'),resources:join(repoRoot,'fixtures/resources'),out:upstream,key:'offline-fixture-key',keyEnv:'RW_FREEZE_KEY',claude:{command:process.execPath,args:[fake,preset]}});
+  await changeReview(upstream,{type:'confirmRest',confirmed:true});
+  await changeReview(upstream,{type:'approve'});
+  await mkdir(workspace);
+  const applied=await applyAgentRound({roundDir:upstream,workspace});
+  expect(applied.applied,JSON.stringify(applied.problems)).toBeDefined();
   await writeFile(approval,'{"approvedPreparation":"independent-offline-test"}');
   const approved=`sha256:${createHash('sha256').update(await readFile(approval)).digest('hex')}`;
   const args=['--task','dataset-extraction','--definition','问候','--workspace',workspace,'--sample',join(repoRoot,'docs/examples/materials/m402-route-sign.jpg'),'--brief',join(repoRoot,'scripts/agent-eval/scenarios/m402/brief-definition.md'),'--resources',join(repoRoot,'fixtures/resources'),'--out',out,'--max-turns','40','--timeout-ms','60000','--stagnation-threshold','2','--claude',process.execPath,'--claude-args',JSON.stringify([executor])];
-  await writeFile(request,JSON.stringify({format:'renderweave-stage-request/1',unit:'holdout-test/run-1/dataset/attempt-1',materials:[{file:approval,sha256:approved}],args}));
+  await writeFile(request,JSON.stringify({format:'renderweave-stage-request/1',unit:'holdout-test/run-1/dataset/attempt-1',materials:[{file:approval,sha256:approved}],upstreamRounds:[upstream],args}));
   expect((await freeze(['--out',candidate])).code).toBe(0);
   const bound=await stage(['--bind',candidate,'--request',request,'--out',binding]);
   expect(bound.code,bound.stderr).toBe(0);
-  const file=join(workspace,'schema-greeting-v1.json'),before=await readFile(file);
+  const file=join(workspace,applied.applied!.published[0]!.files.find(file=>!file.includes('compiled'))!),before=await readFile(file);
   await writeFile(file,Buffer.concat([before,Buffer.from('\n')]));
   const rejected=await stage(['--dispatch',binding,'--key-env','RW_FREEZE_KEY']);
   expect(rejected.code).toBe(2);expect(rejected.stderr).toContain('workspace');
@@ -51,6 +98,10 @@ it('直接数据集阶段绑定人工应用后的工作区，变化在单次派�
   await writeFile(request,JSON.stringify(followup));
   const unapproved=await stage(['--bind',candidate,'--request',request,'--out',join(root,'unapproved-stage')]);
   expect(unapproved.code).toBe(2);expect(unapproved.stderr).toContain('应用');
+  followup.upstreamRounds=[upstream];await writeFile(request,JSON.stringify(followup));
+  const target=join(root,'external-schema.json');await rename(file,target);await symlink(target,file,'file');
+  const linked=await stage(['--bind',candidate,'--request',request,'--out',join(root,'linked-stage')]);
+  expect(linked.code).toBe(2);expect(linked.stderr).toContain('链接');
 },120000);
 it('候选内容目录不能换成指向工作目录的链接，即使当前字节相同也拒绝',async()=>{
   const candidate=join(root,'linked-candidate');

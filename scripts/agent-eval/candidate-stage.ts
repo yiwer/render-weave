@@ -1,10 +1,9 @@
 /** 人工审核链中的单个公开 Agent 阶段：固定实际上游输入，不负责审核、应用或循环。 */
-import {mkdir,readFile,writeFile,realpath} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,realpath,readdir,lstat} from 'node:fs/promises';
 import {isAbsolute,join,resolve} from 'node:path';
 import {materialHashes} from '../../src/agent/provenance.js';
 import {AGENT_TASKS} from '../../src/agent/tasks.js';
-import {readReview} from '../../src/agent/review.js';
-import type {RoundRecord} from '../../src/agent/run.js';
+import {readReview,readPreviousRound} from '../../src/agent/review.js';
 import {verifyCandidate} from './candidate.js';
 import {experimentIdentity,identityDifferences,sha256} from './identity.js';
 import type {RuntimeOptions} from './eval.js';
@@ -17,6 +16,16 @@ interface StageRequest{
 }
 const pathArguments=['sample','brief','resources','workspace','request','reference','content-baseline','requirement','from','feedback','out'];
 const allowed=new Set([...pathArguments,'task','domain','definition','dataset','checkpoint','model','small-model','endpoint','max-turns','timeout-ms','stagnation-threshold','context-policy','effort','claude','claude-args']);
+async function stageFiles(dir:string,prefix:string):Promise<Record<string,string>>{
+  const visit=async(path:string)=>{
+    if((await lstat(path)).isSymbolicLink())throw new Error(`阶段输入目录不能是链接，未派发：${path}`);
+    for(const entry of await readdir(path,{withFileTypes:true})){
+      if(entry.isSymbolicLink())throw new Error(`阶段输入不能包含链接，未派发：${join(path,entry.name)}`);
+      if(entry.isDirectory()&&!/^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name))await visit(join(path,entry.name));
+    }
+  };
+  await visit(dir);return materialHashes(dir,prefix);
+}
 function parameters(request:StageRequest):Record<string,string>{
   if(request.format!=='renderweave-stage-request/1'||!request.unit?.trim()||!Array.isArray(request.materials)||!request.materials.length||!Array.isArray(request.args)||request.args.length%2)throw new Error('阶段请求需要单元标识、核准材料身份和成对的 agent run 参数');
   const args:Record<string,string>={};
@@ -41,17 +50,19 @@ async function stageIdentity(request:StageRequest,file:string){
   for(const name of ['sample','brief','request','reference','content-baseline','requirement','feedback'])if(args[name])inputs[name]=sha256(await readFile(args[name]));
   let workspace=args.workspace,resources=args.resources;
   if(args.from){
-    Object.assign(inputs,await materialHashes(args.from,'previous'));
-    const previous:RoundRecord=JSON.parse(await readFile(join(args.from,'round.json'),'utf8'));
-    workspace=workspace??previous.inputs.workspace.source??undefined;resources=resources??previous.inputs.resources;
+    const previous=await readPreviousRound(args.from,{checkpoint:args.checkpoint});
+    Object.assign(inputs,await stageFiles(args.from,'previous'));
+    workspace=previous.checkpointWorkspace??previous.record.inputs.workspace.source??workspace;
+    resources=previous.resources??resources;
+    if(previous.checkpoint)inputs.selectedCheckpoint=previous.checkpoint.id;
   }
-  if(workspace)Object.assign(inputs,await materialHashes(workspace,'workspace'));
+  if(workspace)Object.assign(inputs,await stageFiles(workspace,'workspace'));
   if(request.upstreamRounds!==undefined&&!Array.isArray(request.upstreamRounds))throw new Error('上游应用轮次必须是目录数组');
   for(const [index,dir] of (request.upstreamRounds??[]).entries()){
     if(!isAbsolute(dir)||!workspace)throw new Error('上游应用轮次需要绝对路径及实际工作区');
     const checked=await readReview(dir);
     if(!checked.view?.applied||await realpath(checked.view.applied.workspace)!==await realpath(workspace))throw new Error(`上游轮次尚未完成有效应用或工作区不同，未派发：${dir}`);
-    Object.assign(inputs,await materialHashes(dir,`upstream/${index}`));
+    Object.assign(inputs,await stageFiles(dir,`upstream/${index}`));
   }
   if(!resources)throw new Error('阶段资源来源未知，未派发');
   const positive=(name:string)=>{if(args[name]===undefined)return undefined;const number=Number(args[name]);if(!Number.isSafeInteger(number)||number<1)throw new Error(`阶段预算必须为正整数：${name}`);return number;};
