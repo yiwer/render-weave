@@ -18,12 +18,14 @@
  * 所以不进 npm test。退出码：0 门槛通过；1 门槛未通过；2 用法错误；3 门槛未完成（有 invalid 或没跑的次数，按打印的命令续跑）。
  */
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  buildReport, cliLauncher, formatReport, provenance, resumeCommand, runUnits, scoreScenario, unitDir, type GateStatus, type Provenance, type ScenarioResult,
+  buildReport, cliLauncher, formatReport, provenance, resumeCommand, runUnits, scoreScenario, unitDir, type GateStatus, type Provenance, type ScenarioResult, type RuntimeOptions,
 } from './eval.js';
-import { REPO, readConfig, type Scenario } from './scenarios.js';
+import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
+import { experimentIdentity, identityDifferences, scorerIdentity, sha256, type ExperimentIdentity } from './identity.js';
 
 const MANIFEST = 'eval.json';
 
@@ -32,6 +34,7 @@ const { values } = parseArgs({
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
     rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
+    config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
   },
   strict: true,
 });
@@ -39,9 +42,10 @@ const fail = (message: string): never => {
   console.error(message);
   process.exit(2);
 };
-const config = await readConfig();
+const configFile = values.config ? resolve(values.config) : CONFIG_FILE;
+const config = await readConfig(configFile);
 
-interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance }
+interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance; identity?: ExperimentIdentity }
 
 const EXIT: Record<GateStatus, number> = { pass: 0, fail: 1, incomplete: 3 };
 
@@ -62,31 +66,61 @@ const scenarios = pick(values.scenarios);
 const segment = /^(\d+)(?:-(\d+))?$/.exec(values.repetitions ?? '');
 if (values.repetitions !== undefined && (!segment || Number(segment[1]) < 1 || Number(segment[2] ?? segment[1]) < Number(segment[1]))) fail('--repetitions 写成 起-止，如 1-1 或 2-2');
 const first = segment ? Number(segment[1]) : 1;
-const repeat = segment ? Number(segment[2] ?? segment[1]) : positive(values.repeat, config.consecutivePasses, '--repeat');
+let repeat = positive(values.repeat, config.consecutivePasses, '--repeat');
 const now = new Date().toISOString();
 const label = values.label ?? now.slice(0, 16).replace('T', '-').replace(':', '');
+if (!/^[\w.-]+$/.test(label) || label === '.' || label === '..') fail('--label 只能包含字母、数字、下划线、点和连字符');
 const outDir = resolve(values.out ?? join(REPO, 'out/agent-eval', label));
 await mkdir(outDir, { recursive: true });
 // 同一个 --label 接着前一次（后一段或续跑）：沿用开始时间、场景与资料哈希。
 let earlier: Manifest | undefined;
-try { earlier = JSON.parse(await readFile(join(outDir, MANIFEST), 'utf8')) as Manifest; } catch { earlier = undefined; }
+try { earlier = JSON.parse(await readFile(join(outDir, MANIFEST), 'utf8')) as Manifest; } catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== 'ENOENT') fail('评估清单损坏，不能覆盖原实验');
+}
 if (first > 1 && !earlier) fail(`从第 ${first} 次开始要接在同一个 --label 的前一段之后：${outDir} 中没有评估清单`);
 if (earlier && earlier.scenarios.join(',') !== scenarios.map((scenario) => scenario.id).join(',')) fail(`同一个 --label 接着跑时场景要与前一次相同：${earlier.scenarios.join('、')}`);
-const startedAt = earlier?.startedAt ?? now;
-const origin = earlier?.provenance ?? await provenance();
-const manifest: Manifest = { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat: Math.max(repeat, earlier?.repeat ?? 0), provenance: origin };
-await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
-const launch = cliLauncher({
+if (earlier && !earlier.identity) fail('旧评估缺少预登记身份，只能 --rescore；请创建新实验');
+if (earlier && earlier.label !== label) fail('同一评估目录不能改变实验名称');
+if (earlier && values.repeat === undefined) repeat = earlier.repeat;
+const last = segment ? Number(segment[2] ?? segment[1]) : repeat;
+if (last > repeat) fail('--repetitions 超出预登记 --repeat 计划，不能向同一实验追加观测');
+let claudeArgs: string[] | undefined;
+try {
+  const parsed: unknown = values['claude-args'] === undefined ? undefined : JSON.parse(values['claude-args']);
+  if (parsed !== undefined && (!values.claude || !Array.isArray(parsed) || !parsed.every(item => typeof item === 'string'))) fail('--claude-args 必须与 --claude 一起使用，且为字符串 JSON 数组');
+  claudeArgs = parsed as string[] | undefined;
+} catch { fail('--claude-args 必须为字符串 JSON 数组'); }
+const runtime: RuntimeOptions = {
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
   ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(effort ? { effort } : {}),
-});
+  ...(values.claude ? {claude: {command: values.claude, args: claudeArgs}} : {}),
+};
+let identity: ExperimentIdentity;
+try {
+  identity = await experimentIdentity(config, configFile, scenarios, runtime, {
+    scenarios: scenarios.map(scenario => scenario.id), repeat,
+    pairedJobs: values.paired || earlier?.identity?.plan.pairedJobs !== null && earlier?.identity?.plan.pairedJobs !== undefined ? jobs : null,
+  });
+} catch (error) { fail(error instanceof Error ? error.message : String(error)); }
+if (earlier) {
+  const changes = identityDifferences(earlier.identity, identity!);
+  if (changes.length > 0) fail(`实验条件变化，未派发；请使用新实验标识：\n${changes.map(path => `- ${path}`).join('\n')}`);
+}
+const startedAt = earlier?.startedAt ?? now;
+const origin = earlier?.provenance ?? await provenance();
+const manifest: Manifest = earlier ?? { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat, provenance: origin, identity: identity! };
+if (!earlier) await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`, {flag: 'wx'});
+const segmentId = randomUUID(), segments = join(outDir, 'segments');
+await mkdir(segments, {recursive: true});
+await writeFile(join(segments, `${segmentId}.started.json`), JSON.stringify({startedAt: now, jobs, first, last, experiment: sha256(JSON.stringify(identity!))}), {flag: 'wx'});
+const launch = cliLauncher({...runtime, ...identity!.runtime, effort: effort, claude: {command: identity!.executor.command, args: identity!.executor.args}});
 
 // 场景 × 次数，按 --jobs 并行；每个场景内部的轮次按顺序。
-const units = Array.from({ length: repeat - first + 1 }, (_, index) => scenarios.map((scenario) => ({ scenario, repetition: first + index }))).flat();
-console.error(`评估 ${label}：${scenarios.map((scenario) => scenario.name).join('、')}，第 ${first}–${repeat} 次，并行 ${jobs}；轮次目录 ${outDir}`);
+const units = Array.from({ length: last - first + 1 }, (_, index) => scenarios.map((scenario) => ({ scenario, repetition: first + index }))).flat();
+console.error(`评估 ${label}：${scenarios.map((scenario) => scenario.name).join('、')}，第 ${first}–${last} 次，并行 ${jobs}；轮次目录 ${outDir}`);
 await runUnits(config, units, outDir, launch, { jobs, log: (message) => console.error(message) });
 const endedAt = new Date().toISOString();
-await writeFile(join(outDir, MANIFEST), `${JSON.stringify({ ...manifest, endedAt }, null, 2)}\n`);
+await writeFile(join(segments, `${segmentId}.completed.json`), JSON.stringify({endedAt}), {flag: 'wx'});
 // 报告包括目录中已跑的全部次数（分段跑时含前一段）。
 await finish(label, manifest, outDir, await scoreAll(outDir, manifest), endedAt);
 
@@ -108,18 +142,31 @@ async function exists(path: string): Promise<boolean> {
 
 async function finish(name: string, saved: Manifest, dir: string, all: ScenarioResult[], ended: string | undefined): Promise<never> {
   all.sort((a, b) => a.repetition - b.repetition || config.scenarios.findIndex((s) => s.id === a.id) - config.scenarios.findIndex((s) => s.id === b.id));
-  const report = await buildReport({
+  const scored = await buildReport({
     config, label: name, startedAt: saved.startedAt, outDir: dir, results: all, plan: { scenarios: saved.scenarios, repetitions: saved.repeat },
     ...(saved.provenance ? { provenance: saved.provenance } : {}), ...(ended ? { endedAt: ended } : {}),
   });
   const reports = resolve(values.reports ?? join(REPO, 'docs/agent-eval/reports'));
   await mkdir(reports, { recursive: true });
-  const file = join(reports, `${name}.json`);
-  await writeFile(file, `${JSON.stringify(report, null, 2)}\n`);
+  const identified = {...scored, experimentIdentity: saved.identity ?? null};
+  const report = values.rescore === undefined ? identified : {
+    ...identified,
+    rescoring: {
+      sourceLabel: saved.label, sourceIdentity: saved.identity ? sha256(JSON.stringify(saved.identity)) : null,
+      sourceManifestSha256: sha256(await readFile(join(dir, MANIFEST))),
+      sourceReportSha256: await readFile(join(reports, `${saved.label}.json`)).then(sha256, () => null),
+      scoredAt: new Date().toISOString(), scorer: await scorerIdentity(),
+      sourceRounds: all.flatMap(unit => unit.rounds.map(round => round.dir)),
+      note: '旧记录缺少的实验身份保持未知；本报告是事后评分，不改写首次结论。',
+    },
+  };
+  const original = join(reports, `${name}.json`);
+  const file = values.rescore !== undefined ? join(reports, `${name}.rescore-${randomUUID()}.json`) : await exists(original) ? join(reports, `${name}.segment-${randomUUID()}.json`) : original;
+  await writeFile(file, `${JSON.stringify(report, null, 2)}\n`, {flag: 'wx'});
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

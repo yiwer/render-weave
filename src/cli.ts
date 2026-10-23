@@ -167,7 +167,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'reference', 'content-baseline'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -364,6 +364,10 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     return ExitCodes.usage;
   }
   try {
+    const claudeArgs: unknown = options['claude-args'] === undefined ? undefined : JSON.parse(options['claude-args']);
+    if (claudeArgs !== undefined && (!options.claude || !Array.isArray(claudeArgs) || !claudeArgs.every(value => typeof value === 'string'))) {
+      throw new AgentUsageError('--claude-args 必须与 --claude 一起使用，并提供字符串 JSON 数组');
+    }
     const result = await runAgentTask({
       out: options.out!, key, keyEnv,
       ...(task ? { task: task.id } : {}),
@@ -385,7 +389,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
       ...(maxTurns !== undefined ? { maxTurns } : {}),
       ...(effort !== undefined ? { effort } : {}),
-      ...(options.claude !== undefined ? { claude: { command: options.claude } } : {}),
+      ...(options.claude !== undefined ? { claude: { command: options.claude, ...(claudeArgs ? {args: claudeArgs as string[]} : {}) } } : {}),
       // 输入校验通过后才打印，用法错误时第一行就是错误（票据 28）。
       onStart: () => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
     });

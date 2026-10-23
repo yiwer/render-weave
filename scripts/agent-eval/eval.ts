@@ -39,6 +39,7 @@ export interface RoundSpec {
 export type Launcher = (spec: RoundSpec) => Promise<void>;
 
 export interface RuntimeOptions {
+  readonly claude?: { readonly command: string; readonly args?: readonly string[] };
   readonly model?: string;
   readonly smallModel?: string;
   readonly endpoint?: string;
@@ -58,6 +59,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
       ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('effort', runtime.effort),
+      ...flag('claude', runtime.claude?.command), ...(runtime.claude?.args ? ['--claude-args', JSON.stringify(runtime.claude.args)] : []),
     ];
     const result = await execute(process.execPath, args);
     await writeFile(`${spec.out}.log`, `${result.stdout}\n${result.stderr}`);
@@ -442,6 +444,8 @@ export interface GateResult {
   readonly status: GateStatus;
   /** status 为 pass。 */
   readonly pass: boolean;
+  /** 有效观测是否覆盖预登记计划，独立于质量结论。 */
+  readonly completeness: { readonly planned: number; readonly pass: number; readonly fail: number; readonly invalid: number; readonly notRun: number; readonly complete: boolean };
   readonly scenarios: readonly {
     readonly id: string;
     readonly name: string;
@@ -458,9 +462,8 @@ export interface GatePlan {
 }
 
 /**
- * 门槛：每个场景在本次评估中有连续 consecutivePasses 次达线。
- * invalid 与没跑的次数不是观测，算连续时跳过，不打断也不延长连续。没有连续达线时，把它们都当作达线也凑不出来的是 fail，
- * 凑得出来的是 incomplete。计划的次数至少是 consecutivePasses；缺省按结果中出现的场景与次数算。
+ * 门槛：预登记计划中的有效失败不可被后续成功覆盖；全部计划达线才通过。
+ * invalid 与没跑的次数不是有效观测，单独报告完整性。计划次数至少为 consecutivePasses。
  * 整体：有 fail 是 fail；否则有 incomplete（或一个场景都没有）是 incomplete；全部 pass 才是 pass。
  */
 export function gate(config: EvalConfig, results: readonly ScenarioResult[], plan?: GatePlan): GateResult {
@@ -469,21 +472,17 @@ export function gate(config: EvalConfig, results: readonly ScenarioResult[], pla
     const own = results.filter((result) => result.id === scenario.id);
     const count = Math.max(config.consecutivePasses, plan?.repetitions ?? 0, ...own.map((result) => result.repetition));
     const outcomes = Array.from({ length: count }, (_, index): RepetitionOutcome => own.find((result) => result.repetition === index + 1)?.status ?? 'not-run');
-    const longest = (unknownPasses: boolean) => {
-      let streak = 0, best = 0;
-      for (const outcome of outcomes) {
-        if (outcome === 'fail') streak = 0;
-        else if (outcome === 'pass' || unknownPasses) streak += 1;
-        best = Math.max(best, streak);
-      }
-      return best;
-    };
-    const status: GateStatus = longest(false) >= config.consecutivePasses ? 'pass' : longest(true) >= config.consecutivePasses ? 'incomplete' : 'fail';
+    const status: GateStatus = outcomes.includes('fail') ? 'fail' : outcomes.every(outcome => outcome === 'pass') ? 'pass' : 'incomplete';
     return { id: scenario.id, name: scenario.name, outcomes, status };
   });
   const status: GateStatus = scenarios.some((scenario) => scenario.status === 'fail') ? 'fail'
     : scenarios.length > 0 && scenarios.every((scenario) => scenario.status === 'pass') ? 'pass' : 'incomplete';
-  return { status, pass: status === 'pass', scenarios };
+  const outcomes = scenarios.flatMap(scenario => scenario.outcomes);
+  const count = (value: RepetitionOutcome) => outcomes.filter(outcome => outcome === value).length;
+  return { status, pass: status === 'pass', scenarios, completeness: {
+    planned: outcomes.length, pass: count('pass'), fail: count('fail'), invalid: count('invalid'), notRun: count('not-run'),
+    complete: outcomes.length > 0 && !outcomes.includes('invalid') && !outcomes.includes('not-run'),
+  } };
 }
 
 /** 门槛里 invalid 与没跑的次数；有的话返回用同一个 --label 续跑的命令，args 是要原样带上的其他选项。 */
