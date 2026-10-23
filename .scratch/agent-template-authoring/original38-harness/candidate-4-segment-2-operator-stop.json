@@ -1,0 +1,9 @@
+{
+  "format": "original38-cross-plan-stop/1",
+  "at": "2026-10-23T20:46:05.6751090Z",
+  "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\STOP.json",
+  "childPid": 135408,
+  "wrapperPid": 135680,
+  "action": "terminate-own-registered-eval-process-tree",
+  "reason": "收到同批已登记的停止标记，停止后续调用，保留全部中断证据"
+}

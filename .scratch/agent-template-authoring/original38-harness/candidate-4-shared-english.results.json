@@ -1,0 +1,115 @@
+{
+  "format": "original38-conditional-observation-reference-results/1",
+  "recordedAt": "2026-10-23T20:55:27.013Z",
+  "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+  "preregistration": {
+    "path": "F:\\GenCode\\render-weave\\.scratch\\agent-template-authoring\\original38-harness\\conditional-english-reference.candidate-4.json",
+    "sha256": "2465af4fb1dbc2ab20a5dfd36ae2dac49e92fa0def77d751edcefa1f90d6c404"
+  },
+  "entries": [
+    {
+      "slot": "F-ET-1",
+      "scenario": "en-template-design",
+      "repetition": 1,
+      "unit": "run-1/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "status": "pass",
+      "sourceObservation": {
+        "attempt": {
+          "id": "c742cd35-fc82-4c51-8227-1bdc700cca20",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-template-design\\attempts\\c742cd35-fc82-4c51-8227-1bdc700cca20",
+          "sealSha256": "sha256:aef6b81ef9c22318cff864c23162c6968bf198ff28a517c44a10b004f0ab3b3d"
+        },
+        "sourceRegistration": {
+          "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\registration.candidate-4.results.json",
+          "sha256": "7f6c5f3f537926ca7f8ca7e8408848e3c65c72a21be02ff1840db547c4e0df02"
+        },
+        "report": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\reports\\harness21-candidate-4-post-stop.rescore-3b7d3834-37a3-4dfe-9ba8-42c1cabf4c96.json",
+        "reportSha256": "sha256:0960aaa0203d5ecc48fbab5f2c07026fc502116ae25a61298a1b7539132fd6c8",
+        "guards": {
+          "format": "renderweave-feedback-score/2",
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true,
+          "unchecked": {}
+        }
+      },
+      "referenceDecision": "同身份受控英文纠偏可引用；不替代真实参考或独立人审",
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ET-2",
+      "scenario": "en-template-design",
+      "repetition": 2,
+      "unit": "run-2/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": "额度停止后未派发，不引用通过",
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ER-1",
+      "scenario": "en-template-revision",
+      "repetition": 1,
+      "unit": "run-1/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "status": "pass",
+      "sourceObservation": {
+        "attempt": {
+          "id": "fd179f3f-f3c5-45f5-a926-977658d4da0a",
+          "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-template-revision\\attempts\\fd179f3f-f3c5-45f5-a926-977658d4da0a",
+          "sealSha256": "sha256:b50c5f228a9af0d1263f6b6e042917c85d151c531eb3d583235378c56018114a"
+        },
+        "sourceRegistration": {
+          "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\registration.candidate-4.results.json",
+          "sha256": "7f6c5f3f537926ca7f8ca7e8408848e3c65c72a21be02ff1840db547c4e0df02"
+        },
+        "report": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\reports\\harness21-candidate-4-post-stop.rescore-3b7d3834-37a3-4dfe-9ba8-42c1cabf4c96.json",
+        "reportSha256": "sha256:0960aaa0203d5ecc48fbab5f2c07026fc502116ae25a61298a1b7539132fd6c8",
+        "guards": {
+          "format": "renderweave-feedback-score/2",
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true,
+          "unchecked": {}
+        }
+      },
+      "referenceDecision": "同身份受控英文纠偏可引用；不替代真实参考或独立人审",
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ER-2",
+      "scenario": "en-template-revision",
+      "repetition": 2,
+      "unit": "run-2/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": "额度停止后未派发，不引用通过",
+      "countsAsNewObservation": false
+    }
+  ],
+  "sharedObserved": 2,
+  "newObservationsCreated": 0,
+  "borrowedUsageAdded": 0,
+  "scope": "英文受控真实模型纠偏；不证明首次自由设计或真实站牌还原",
+  "notReplacements": [
+    "原38四场景8个业务观测",
+    "中文/英文真实参考的独立样式和状态人工审核",
+    "公交12例留出36次观测",
+    "票26真人走查"
+  ]
+}

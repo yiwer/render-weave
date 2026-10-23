@@ -21,3 +21,15 @@ conditional-english-reference.candidate-4.json -text
 prepare-review-v3.mjs -text whitespace=-blank-at-eof
 zh-style-inventory-v2.md -text
 review-generator-v3-preflight.json -text
+
+# 候选4验收原件保持字节；历史诊断文档只作当时快照。
+candidate-4-*.json -text
+candidate-4-*.log -text
+candidate-4-*.mjs -text whitespace=-blank-at-eof
+candidate-4-two-stop-diagnosis.md -text
+candidate-4-independent-source-classification.md -text
+candidate-4-zh-r1-review-audit.md -text
+candidate-4-boundary-data-preservation-proposal.md -text
+# PowerShell 停止记录原生 CRLF，不改写已核对原件。
+candidate-4-processes-after-stop.json whitespace=cr-at-eol
+candidate-4-segment-2-operator-stop.json whitespace=cr-at-eol

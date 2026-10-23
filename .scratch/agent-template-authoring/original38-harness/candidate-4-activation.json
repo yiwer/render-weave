@@ -1,0 +1,23 @@
+{
+  "format": "original38-dispatch-activation/1",
+  "activatedAt": "2026-10-23T20:18:28.395Z",
+  "ticket20Merged": true,
+  "integrationCommit": "b8af996c663ee9416fd22178eec1318d0048231c",
+  "registrationSha256": "0ab469ae08198bede0c2d12a0c19b9b2071376571b30851ce3ba354aecc3d9c4",
+  "registrationCommit": "169ea3a3bc5b2ea944a7395a06d68ce3af0c9557",
+  "publicationCommit": "28ff0d21fe8f1cd5a6d45aa0d7ed6294576154fb",
+  "independentReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate4-publication-and-registration-review.md",
+    "sha256": "56052ee73492ad6c1fcc8d5b445792d4a600bbd91ce02d3714a9ca8bca00c016"
+  },
+  "candidate": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "id": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d"
+  },
+  "status": "ready-for-planned-real-model-observations",
+  "endpointAuthorizationSha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf",
+  "publicCandidateVerificationExit": 0,
+  "authorization": "M329：用户已明确批准OpenCode Go具体端点和本批验收材料；本记录确认20发布与登记独立合入，不是人工成果审核。",
+  "segmentPolicy": "两段按预登记各执行一遍；第2段须第1段正常结束，保留自然模型失败。硬额度、真实工程缺陷或用户停止导致不派发时另记原因，不拼接旧候选结果。"
+}

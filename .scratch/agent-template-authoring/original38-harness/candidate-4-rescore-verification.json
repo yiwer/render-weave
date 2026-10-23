@@ -1,0 +1,29 @@
+{
+  "format": "original38-post-stop-offline-rescore/1",
+  "startedAt": "2026-10-23T20:48:37.212Z",
+  "endedAt": "2026-10-23T20:48:42.049Z",
+  "command": "D:\\nodejs\\node.exe",
+  "args": [
+    "node_modules/tsx/dist/cli.mjs",
+    "scripts/agent-eval/run.ts",
+    "--rescore",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation",
+    "--reports",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-post-stop-analysis\\reports",
+    "--config",
+    "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\config.json"
+  ],
+  "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content",
+  "exitCode": 1,
+  "signal": null,
+  "error": null,
+  "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4",
+  "sourceUnchanged": true,
+  "files": 1053,
+  "directories": 323,
+  "operatorStopSha256": "dba660aa5f305f238abbb5304a3ed2205936f8a7e2e52150517883ae8471d111",
+  "sharedStopSha256": "3f10866a902704a6ca4b536fabaeeb5c11a581dac52a25b6f728d03a0077082f",
+  "modelCalls": 0,
+  "keyRemovedFromChild": true,
+  "reportPurpose": "同候选事后离线汇总；不补造中断轮次封存/内部session完成，不覆盖首段原报告，不把未封存尝试当零成本。"
+}

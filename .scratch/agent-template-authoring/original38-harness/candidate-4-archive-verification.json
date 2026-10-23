@@ -1,0 +1,104 @@
+{
+  "format": "renderweave-original38-restore-verification/1",
+  "verifiedAt": "2026-10-23T20:56:30.076Z",
+  "archive": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-archive",
+  "restored": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored",
+  "manifestSha256": "05bfa461fb18a8dd08374893467a8229fe59dc840caeb457661aa33af8814dc5",
+  "filesVerifiedAfterReview": 4695,
+  "directoriesVerified": 762,
+  "logicalBytes": 816556783,
+  "sourceFilesVerified": 4695,
+  "views": [
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "dataset",
+      "attemptId": "9dde112d-6c38-4710-891b-56c1e3ca14ae",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\9dde112d-6c38-4710-891b-56c1e3ca14ae\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "definition",
+      "attemptId": "a14b3bd1-f075-44c1-b034-c62f8402b0c3",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\a14b3bd1-f075-44c1-b034-c62f8402b0c3\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-definition",
+      "stage": "definition",
+      "attemptId": "62658835-29fb-4fe2-92ea-e2fa0d2bd40e",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-1\\m402-definition\\attempts\\62658835-29fb-4fe2-92ea-e2fa0d2bd40e\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-revision",
+      "stage": "revision",
+      "attemptId": "8f5573d7-ca66-42d3-818b-fb3d32414d31",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-1\\m402-revision\\attempts\\8f5573d7-ca66-42d3-818b-fb3d32414d31\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-template",
+      "stage": "template",
+      "attemptId": "83349334-f839-44e5-8f4e-feaeadc95f92",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-1\\m402-template\\attempts\\83349334-f839-44e5-8f4e-feaeadc95f92\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/m402-definition",
+      "stage": "definition",
+      "attemptId": "727c5d19-c3e7-46ef-9bb3-5b8e6f83f883",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-restored\\original38\\evaluation\\run-2\\m402-definition\\attempts\\727c5d19-c3e7-46ef-9bb3-5b8e6f83f883\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "reader": {
+    "candidate": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d",
+    "module": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content\\dist\\index.js",
+    "moduleSha256": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4",
+    "options": {
+      "persistArtifacts": false
+    },
+    "publicCandidateVerificationExit": 0,
+    "publicCandidateVerificationAfterExit": 0
+  },
+  "completePathSetsVerifiedBeforeAndAfter": true,
+  "interruptedUnsealedAttempt": {
+    "id": "32362262-a3e4-475a-b470-cd46e2865710",
+    "bytesPreserved": true,
+    "publicReviewInvoked": false,
+    "completionManufactured": false
+  },
+  "limitations": [
+    "5个有效业务观测的6个封存阶段可读；另1个中断未封存尝试只核归档字节，未补封存、未接续、不改业务或人审结论。",
+    "以同一冻结候选4的公开入口只读读取其实际轮次，不把恢复读取记作新模型观测或接续成功。",
+    "恢复后公开readReview(persistArtifacts:false)读取，再核恢复文件和目录完整集合及全部字节；原始根同样完整核对，不仅遍历清单内文件。",
+    "原始绝对路径不改写，不证明任意迁移后可以直接接续运行；不批准、不应用、不调用模型。"
+  ]
+}
