@@ -29,6 +29,16 @@
 
 公开归档CLI实际打包/恢复6986文件、1588目录；恢复后的公开readReview全部16轮可读，之后重新核SHA全一致。归档清单ce416f56adf9da273a84ce871872065e0a9112c0fb118c573ff0a52754e651a6；绝对路径边界保留。原件、失败、提示与seed均不更改。下一步由独立责任实现者修通用接续提示顺序，生成新候选后另登记重验；不得在旧16槽上覆盖重跑。
 
+### 2026-10-23 候选3首段负结果及未派发边界
+
+候选3首段7pass/1有效fail，第二段8槽按维护者决策exclusive登记not-run，没有第二段尝试；票21保持needs-triage。原报告SHA13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47、exit1/stopped=false。唯一失败为中文模板设计将固定text改为slot，严格四属性政策不接受该结构改写。模型可见说明没有逐字列text键的边界如实记录，不以同一画面显示正确重判通过。
+
+评分器目标路径异常使其余独立守卫短路为false；实际原件已取得改前后续页缺陷、改后无异常、终检身份一致并保留unknown24。这些事实与原fail分开记录，不把未计算说成已证明失败。责任14接回诊断独立性修复，严格policy/阈值不改，评分身份变化后另存重评分；当前报告与原trace不改写。
+
+[完整首段结果](../../../docs/agent-eval/trusted-feedback-acceptance/candidate-3/RESULTS.md)包含16槽、全部五项原始守卫、有效来源/用量/时间。8唯一attempt/608封存文件逐项核对，原生CLI2.1.296及Haiku5.5；input162/cacheRead3788695/cacheCreation509088/output68750与原生result相符；实际评估墙钟672755ms，模型602750ms，未知用量0、人工分钟/金额null。原生报告0真实计数保持，实际来源另证。
+
+公开archive/restore真实恢复5172文件/977目录，恢复后readReview8轮通过，再核所有SHA一致；manifest f4345789032d3d93408eda764c8cc38a832089085d29137713c6e40b1d2e95c9，已知key扫描5172/0命中。模型与独立业务门槛均未因此关闭，也未以候选2通过补本批槽位。
+
 ## Comments
 
 2026-10-23准备：基于集成`de76b55`创建独立`codex/harness-21`工作树，[16槽计划与证据索引](../../../docs/agent-eval/trusted-feedback-acceptance/README.md)已登记，当前全部not-run、真实观测0。22个资源文件已独立复制并逐项核SHA；不复用18观测。20负责从最终候选content准备inputs和binding，21等待交接后唯一派发；没有提前运行模型、准备seed或勾选验收。有效分页流程失败保持fail，原38只有条件引用与独立派发/业务审核分工。

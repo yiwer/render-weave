@@ -1,0 +1,93 @@
+{
+  "format": "renderweave-feedback-restore-verification/1",
+  "verifiedAt": "2026-10-23T19:19:34.610Z",
+  "archive": "F:/GenCode/render-weave/out/harness21-candidate3-evidence-archive",
+  "restored": "F:/GenCode/render-weave/out/harness21-candidate3-evidence-restored",
+  "manifestSha256": "f4345789032d3d93408eda764c8cc38a832089085d29137713c6e40b1d2e95c9",
+  "filesVerifiedAfterReview": 5172,
+  "directoriesVerified": 977,
+  "logicalBytes": 1077395448,
+  "views": [
+    {
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "5b378e01-ea6f-4645-8f60-c451d87180cc",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\zh-definition-extraction\\attempts\\5b378e01-ea6f-4645-8f60-c451d87180cc\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "8f2a1c25-c616-4143-a22a-e4ddbecdc021",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\zh-dataset-extraction\\attempts\\8f2a1c25-c616-4143-a22a-e4ddbecdc021\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-template-design",
+      "attemptId": "ef3615ed-e21f-4151-8607-ac29f15fe731",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\zh-template-design\\attempts\\ef3615ed-e21f-4151-8607-ac29f15fe731\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "1471e382-3000-4878-9828-68e3c6f5bc72",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\zh-template-revision\\attempts\\1471e382-3000-4878-9828-68e3c6f5bc72\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "95485d7c-0a42-45d8-b4e2-d582f310971c",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\en-definition-extraction\\attempts\\95485d7c-0a42-45d8-b4e2-d582f310971c\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\en-dataset-extraction\\attempts\\7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-template-design",
+      "attemptId": "57099484-e529-4726-9e42-12f850bc03a3",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\en-template-design\\attempts\\57099484-e529-4726-9e42-12f850bc03a3\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-template-revision",
+      "attemptId": "0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate3-evidence-restored\\feedback\\observations\\run-1\\en-template-revision\\attempts\\0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "limitation": "原始F盘来源路径仍保留；公开审核入口读取恢复后的轮次，记录内部绝对路径未改写。证明字节恢复和这8例可审核，不证明任意迁移后可直接续跑；没有再次调用模型。"
+}
