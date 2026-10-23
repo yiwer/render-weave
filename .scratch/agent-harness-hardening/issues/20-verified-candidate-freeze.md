@@ -65,3 +65,11 @@
 只读复核报告为 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate3-publication-and-registration-review.md`，SHA-256 `01c9d1b9146d05529f12c2e2ab46b946d69294a678435c01c061e1467923e3ad`；同目录三份审计JSON保存逐项核对。两份原有未跟踪报告保留，不纳入本次提交。
 
 复核措辞澄清：首份报告曾将第二段前置完成守卫共同归给两个launcher，实际仅21在代码层检查；原38由唯一派发者人工串行观察后再派发。已另存同目录 `harness-candidate3-publication-and-registration-review-v2.md`（SHA-256 `fdfa6c436f655472447844782b7be75f2dcd74a9b114be5ad85554e4f1f398bf`），旧报告字节和既有activation引用均保留。此项不改变登记、脚本或候选，也不影响21原复核结论。
+
+### 2026-10-23 责任14/17修复后的候选4发布
+
+票14独立诊断/只读审核与票17通用修改范围/内容判断已由独立审查合入主线631d564。候选3的21首段7pass/1fail/8not-run、原四3pass/1fail/4not-run原件保持；本次是新身份完整重验，不是补缺或跨代拼接。
+
+来源38e73feaf12551c9dcef8d288010952ee661ccad build/typecheck通过，3322共同文件仅13处已验证变化，其余3309字节一致；13处与14双平台54通过的受测树和17三资料验证字节逐项相同。此前基线全量与修复回归的边界保留，不冒称最终单次全量。公开7步全部0、414份索引中旧301份不变，详见[候选4记录](../../../docs/agent-eval/harness-acceptance-candidate-4.md)。
+
+候选sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804；原四binding-4为sha256:c95dfdb1e4c3154cfb85fe981c528246d115fb6b80480adc1c05de33581e85d0（实验sha256:c6eccead1b20d245dc2369dd1a2853f87f5445f201a0811f75a1aeaf08a257c9，10阶段）；21新根harness21-trusted-feedback-candidate-4的binding为sha256:46cb478e587cc6c73aff68871d373a841b791f3818c4c6d8c987d589a807bd80（实验sha256:ed56446a11984236ce1b00daf0f0b1ad597716e8966eacfbce19e28e89719410，16阶段）。两计划均保留previous3及完整重验清单，默认/预算/原生执行器/Node身份不变。新种子8类、计划16空槽准备成功，真实观测0，未触留出素材。发布与登记待独立复核后激活，21与原38继续未完成。
