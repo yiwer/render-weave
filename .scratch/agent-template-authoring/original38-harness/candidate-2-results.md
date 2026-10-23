@@ -28,7 +28,7 @@
 | 尝试耗时合计ms | 1,815,653 |
 | 轮次耗时合计ms | 1,801,381 |
 
-5阶段均正常结束，无重试、硬额度或无效attempt。货币账单和人工分钟未知。366数据集请求maxTurns=40，而执行器原始num_turns=43且success；分别保留两个值，尚未据此证明硬轮数计数语义。请求整轮超时仍为1小时。
+5阶段均正常结束，无重试、硬额度或无效attempt。货币账单和人工分钟未知。366数据集请求maxTurns=40，而执行器原始num_turns=43且success。后续只读核对固定执行器及原始流，证明两者计数口径不同：43为42条user事件加初始1，实际15个模型响应中14个含工具调用。不能据43判为超40次工具循环，也不声称本轮实测了40上限截断；见[独立说明](candidate-2-turn-count-review.md)。原结果登记保留核查前的未知边界，不回写原报告。请求整轮超时仍为1小时。
 
 中文模板/修改已生成两份独立材料-v2，实际50DPI、预览120DPI分列，16项人审全空。旧混合图负面反馈保留；不再做阿文。纯英文真实参考材料另行准备。
 
@@ -38,5 +38,7 @@
 - [第二段未启动决定](candidate-2-segment-2-not-dispatched.json)：在第二段目录未存在时登记，未结束任何运行中的尝试。
 - 实际尝试位于F:/GenCode/render-weave/out/harness-original38-candidate-2/evaluation/run-1/各场景/attempts/。两个停止观察器在第一段结束后正常退出，无STOP标记。
 - [两份中文人审材料来源](zh-r1-candidate-2-v2-index.json)；它们不替代人审，不自动批准或应用。
+
+归档及恢复已实际完成：4,553文件、710目录、742,432,285逻辑字节；5个封存轮次从恢复候选经公开readReview全部可读，随后恢复与原件摘要全部复核。归档manifest SHA为0f7f43a8614fa28bff46be0b06e1de779a54701a6bb19632a53b68a99bed122f；见[恢复证明](candidate-2-archive-verification.json)、[原件未变](candidate-2-archive-source-unchanged.json)和两份命令日志。
 
 下一步：通用任务资料修复后，在新候选登记完整8个原四观测和21的16单元，再执行真实英文与独立人审。
