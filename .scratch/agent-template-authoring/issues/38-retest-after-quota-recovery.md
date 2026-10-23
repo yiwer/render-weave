@@ -52,6 +52,14 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 新首次定义与数据集已完成，分别 393.9 秒/30 轮、310.6 秒/37 轮。数据集的真实工具反馈拦住始发站缺 0，修正后基准异常归零；另有货币占位长度冲突，隔离审核明确留空，仍保留差异。新首次模板正在运行。各输入条件、复核命令、反馈成本和限制见[原图新复跑记录](../../../docs/agent-arabic-retest-2026-10-23.md)。
 
+### 2026-10-23 harness候选2准备及未派发状态
+
+20已独立合入7c0ff99，固定候选2为 sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f。原四场景完整预登记见 [运行登记](../original38-harness/registration-candidate-2.json)：8个业务观测、10个模型阶段，52份输入/15份资料及原生Claude/Node摘要独立复核，两段各跑既定一遍、不新增重复。共享4个英文纠偏槽位由21唯一派发，条件引用见 [共享登记](../original38-harness/conditional-english-reference.json)。
+
+原四启动命令在进程创建前被自动审批拒绝，原因是要求用户明确授权向具体第三方opencode.ai端点发送所需材料。已向用户询问，未改端点/模型或间接绕过；F:/GenCode/render-weave/out/harness-original38-candidate-2/dispatch-authorization-blocked.json记录无dispatch目录、无evaluation目录、真实观测0。外部审批待答不是模型失败，也不计invalid模型尝试或补造0用量。
+
+[英文局部审核包](F:/GenCode/render-weave/out/harness-original38-review/en-local-candidate-2/review.html)已由本候选公开render生成：41项、50 DPI、原21份材料不变，正式结果保留文字能力阻断，另有1575×1772干净草稿；没有新模型观测。已请求用户独立逐项审核并记录分钟/是否预看诊断，当前全41项及分钟仍空白。中文本候选模板成果尚未产生，不能用旧记录替代。生成器、输入与输出均已独立复核，见外部 harness-original38-readonly-review.md。本票所有未完成验收框保持不变。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。
