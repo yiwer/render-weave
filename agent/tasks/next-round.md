@@ -1,5 +1,5 @@
 
-这是本任务的第 {round} 轮：上一轮的成果经人审核后，带着反馈交回给你继续做。
+这是本任务的第 {round} 轮：带着反馈，在上一轮的成果或宿主保存的完整检查点上继续做。以 previous/ 的记录识别来源，不假设上一轮已经人工批准。
 
 1. docs/feedback.md 是审核人的反馈，本轮按它修改。反馈优先于上面列出的全部文档。
 2. previous/ 是上一轮的原样记录，只作参考：
@@ -7,6 +7,7 @@
    - previous/outcome.json 是上一轮交回的待确认项、图上位置与说明（如有）；
    - previous/review.json 是审核人对待确认项的处理与意见（如有）；
    - previous/check.json 是 RenderWeave 对上一轮成果的校验结果。
+   - previous/checkpoint.json 如存在，表示从宿主完整检查点接续，包含内容身份、被检查集合与问题；它不是正式交回或批准。
 3. {seeds}
 4. outcome.json 按本轮的成果重新写：
    - candidates 按本任务的要求列全，不能只列本轮新改的文件；

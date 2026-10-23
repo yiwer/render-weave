@@ -40,7 +40,8 @@ import { replaceFile, type JsonFileWrite } from './write-files.js';
 import { commitApplication, localPath, verifyApplicationReceipt } from '../local-commit.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
-import { readExecution, type RoundExecution } from './execution.js';
+import { readExecution, type RoundExecution, type RoundStart } from './execution.js';
+import { readCheckpoint, type CheckpointView } from './checkpoints.js';
 import { localAccessProblem, withLocalAccess } from '../local-access.js';
 
 export const REVIEW_FILE = 'review.json';
@@ -130,6 +131,7 @@ export interface ReviewView {
 
 /** 轮次链上的一轮。 */
 export interface RoundLink {
+  readonly executionStatus?: RoundExecution['status'];
   readonly round: number;
   readonly dir: string;
   readonly task?: AgentTaskId;
@@ -376,7 +378,7 @@ interface AgentRound {
 }
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
-export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; problems: Problem[] }> {
+export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; problems: Problem[] }> {
   try { return await readReviewCaptured(roundDir); }
   catch (error) { const problem = localAccessProblem(error); if (problem) return { problems: [problem] }; throw error; }
 }
@@ -390,13 +392,14 @@ async function openReview(roundDir: string) {
       { kind: 'input', source: roundDir }, `轮次无法读取：${describeError(error)}`)] };
   }
 }
-async function readReviewCaptured(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; problems: Problem[] }> {
+async function readReviewCaptured(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; problems: Problem[] }> {
   const execution = await readExecution(roundDir);
-  if (execution.problems.length || (execution.execution && !execution.execution.committed)) return execution;
+  const checkpoint = execution.execution ? await readCheckpoint(roundDir) : { problems: [] };
+  if (execution.problems.length || (execution.execution && !execution.execution.committed)) return { ...execution, checkpoint: checkpoint.checkpoint, problems: [...execution.problems, ...checkpoint.problems] };
   const opened = await openReview(roundDir);
-  if (!opened.round) return { problems: opened.problems, execution: execution.execution };
+  if (!opened.round) return { problems: [...opened.problems, ...checkpoint.problems], execution: execution.execution, checkpoint: checkpoint.checkpoint };
   const { record, saved, problems } = opened.review!;
-  return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, problems: [] };
+  return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, checkpoint: checkpoint.checkpoint, problems: checkpoint.problems };
 }
 
 /**
@@ -1283,7 +1286,9 @@ async function workspaceDrift(round: AgentRound, workspace: string, actual: stri
 /** 下一轮所需的上一轮内容（M58）。 */
 export interface PreviousRound {
   readonly dir: string;
-  readonly record: RoundRecord;
+  readonly record: RoundRecord | RoundStart;
+  readonly checkpoint?: { readonly id: string; readonly contentIdentity: string; readonly source: 'hostRecovery' };
+  readonly checkpointWorkspace?: string;
   readonly round: number;
   /** 上一轮所用的资源仓库。 */
   readonly resources?: string;
@@ -1309,6 +1314,23 @@ export async function readPreviousRound(dir: string): Promise<PreviousRound> {
 }
 async function readPreviousRoundLocked(dir: string): Promise<PreviousRound> {
   const execution = await readExecution(resolve(dir));
+  if (!execution.problems.length && execution.execution && !execution.execution.committed && execution.execution.status === 'interrupted' && execution.execution.start) {
+    const saved = await readCheckpoint(resolve(dir));
+    if (!saved.checkpoint || saved.problems.length) throw new AgentUsageError(`没有可核对的完整检查点，不能从残片接续：${saved.problems.map(p => p.message).join('；')}`);
+    const checkpoint = saved.checkpoint, root = resolve(dir), record = execution.execution.start;
+    for (const [path, digest] of Object.entries(record.files)) {
+      try { if (sha256(await readFile(join(root, path))) !== digest) throw new Error('内容身份不符'); }
+      catch (error) { throw new AgentUsageError(`上一轮固定资料无法核对：${path}（${describeError(error)}）`); }
+    }
+    const checkpointRoot = join(root, 'checkpoints', checkpoint.id);
+    return { dir: root, record, round: record.round, resources: record.inputs.resources, applied: false,
+      outcomeSha256: null, reviewSha256: null, reviewStatus: null,
+      checkpoint: { id: checkpoint.id, contentIdentity: checkpoint.contentIdentity, source: 'hostRecovery' },
+      checkpointWorkspace: join(checkpointRoot, 'snapshot'),
+      candidates: await Promise.all(checkpoint.check.candidates.map(async candidate => ({ path: candidate.path, bytes: await readFile(join(checkpointRoot, 'agent', candidate.path)) }))),
+      files: [{ name: 'checkpoint.json', bytes: Buffer.from(JSON.stringify(checkpoint)) },
+        { name: 'outcome.json', bytes: await readFile(join(checkpointRoot, 'agent/outcome.json')) }] };
+  }
   if (execution.problems.length || (execution.execution && !execution.execution.committed)) throw new AgentUsageError(
     `轮次尚未完整提交，不能从残留候选接续：${[...execution.problems.map(p => p.message), ...(execution.execution?.diagnostics ?? [])].join('；')}`);
   const root = resolve(dir);
@@ -1366,6 +1388,14 @@ export async function readRoundChain(dir: string): Promise<RoundLink[]> {
       record = undefined;
     }
     if (!isRecord(record) || !isRecord(record.inputs) || !Number.isSafeInteger(record.round)) {
+      const state = await readExecution(current);
+      if (!state.problems.length && state.execution?.start) {
+        const start = state.execution.start;
+        chain.unshift({ round: start.round, dir: current, task: start.task, executionStatus: state.execution.status, applied: false });
+        expected = start.inputs.previous?.round;
+        current = start.inputs.previous ? resolve(start.inputs.previous.dir) : undefined;
+        continue;
+      }
       chain.unshift({ round: expected ?? 0, dir: current, applied: false, missing: true });
       break;
     }

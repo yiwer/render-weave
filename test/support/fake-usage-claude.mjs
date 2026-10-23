@@ -1,6 +1,7 @@
 // 受控执行器：按给定用量和结束原因交回成果，不调用模型。
 import { cp, writeFile, access, readFile, appendFile } from 'node:fs/promises';
 import {spawn} from 'node:child_process';
+import {join} from 'node:path';
 if (process.argv.includes('--version')) { console.log('fake-usage-1'); process.exit(0); }
 const parameters = process.argv.slice(2);
 const [preset, usage, error, holdParameter] = parameters.slice(0, parameters.indexOf('-p') < 0 ? undefined : parameters.indexOf('-p'));
@@ -27,7 +28,7 @@ if (holdParameter?.startsWith('hold:')) {
       {jsonrpc: '2.0', id: 2, method: 'tools/call', params: {name: 'list_resources', arguments: {}}} ].map(value => JSON.stringify(value) + '\n').join(''));
   });
   // 模拟进程退出时工具日志的最后一行只写了一部分；前面的完整调用仍必须计数。
-  await appendFile(server.args[server.args.indexOf('--log') + 1], '{"tool":');
+  await appendFile(join(process.cwd(), '../logs/tools.jsonl'), '{"tool":');
   emit({type: 'user', message: {content: [{type: 'tool_result', content: '<persisted-output>controlled-runtime-result</persisted-output>'}]}});
 }
 emit({type: 'system', subtype: 'init', model: process.env.ANTHROPIC_MODEL, claude_code_version: 'fake-usage-1'});

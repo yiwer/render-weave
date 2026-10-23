@@ -35,6 +35,8 @@ import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerpr
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
 import { claimExecution, writeAtomicJson } from './execution.js';
+import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
+import { startCheckpointHost } from './checkpoint-host.js';
 import { withLocalAccess } from '../local-access.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
@@ -169,6 +171,7 @@ export interface TemplateBasis {
 
 /** 轮次链上的上一环：沿 previous.dir 可以一直追到第 1 轮。 */
 export interface PreviousRef {
+  readonly checkpoint?: { readonly id: string; readonly contentIdentity: string; readonly source: 'hostRecovery' };
   readonly dir: string;
   readonly round: number;
   /** 上一轮成果的哈希；结构不合格、没有成果时为 null。 */
@@ -211,6 +214,7 @@ export interface AgentRunResult {
 
 /** 下一轮的候选从哪里开始：写进提示词。 */
 const SEED_NOTES = {
+  checkpoint: 'candidates/ 中是上一轮完整检查点的候选字节；previous/checkpoint.json 记录来源、内容身份和检查结果。它不是人工批准，按反馈重新检查并完整交回。',
   previous: 'candidates/ 中已放好上一轮的成果（含审核时的修改），在它的基础上按反馈修改，不要从头重做。',
   unqualified: 'candidates/ 中已放好上一轮交回的文件。上一轮的成果结构不合格，没有经过审核：按 previous/check.json 的问题与反馈修改。',
   applied: '上一轮的成果已经应用：candidates/ 中放的是应用后最新保存的模板，已含上一轮的修改，在它的基础上按反馈修改。',
@@ -298,7 +302,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   const startedAt = new Date().toISOString();
   const execution = await claimExecution(roundDir, startedAt);
+  let releaseRecovery: (() => Promise<void>) | undefined;
+  let managedMcp: Awaited<ReturnType<typeof startCheckpointHost>> | undefined;
   try {
+  if (previous?.checkpoint) releaseRecovery = await claimCheckpointRecovery(previous.dir, roundDir, previous.checkpoint.id);
   const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
@@ -329,7 +336,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     for (const file of previous.files) await writeAt(join(agentDir, 'previous', file.name), file.bytes);
     for (const candidate of previous.candidates) await writeAt(join(agentDir, 'previous', candidate.path), candidate.bytes);
-    basisChanged = revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
+    basisChanged = previous.checkpoint ? false : revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
     if (!basisChanged) {
       for (const candidate of previous.candidates) {
         const name = templateName(candidate.bytes);
@@ -337,7 +344,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
         seeds.set(candidate.path, candidate.bytes);
       }
     }
-    seedNote = basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
+    seedNote = previous.checkpoint ? SEED_NOTES.checkpoint : basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
   }
   for (const [path, bytes] of seeds) await writeAt(join(agentDir, path), bytes);
 
@@ -374,7 +381,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(contentBaseline ? { contentBaseline: { file: 'logs/content-baseline.json', sha256: sha256(await readFile(join(logsDir, 'content-baseline.json'))) } } : {}),
     brief: { source: resolve(options.brief), sha256: sha256(briefBytes) },
     domain: options.domain ?? null,
-    workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
+    workspace: { source: previous?.checkpoint ? previous.record.inputs.workspace.source : options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
     resources: resolve(options.resources),
     definition: basis.definition, dataset,
     request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
@@ -382,6 +389,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(previous ? { feedback } : {}),
     previous: previous ? {
       dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256, reviewStatus: previous.reviewStatus,
+      ...(previous.checkpoint ? { checkpoint: previous.checkpoint } : {}),
       ...(basisChanged !== undefined ? { basisChanged } : {}),
     } : null,
   };
@@ -406,10 +414,12 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const maxTurns = options.maxTurns ?? task.maxTurns;
   await execution.initialize({ task: task.id, round, startedAt, inputs });
   const mcpConfig = join(logsDir, 'mcp.json');
-  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
+  const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
+  managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
-  ] } } }, null, 2)}\n`);
+  ] });
+  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
   // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
@@ -433,13 +443,16 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing });
   } finally {
     await proxy?.close();
+    await checkpoints.idle();
+    await managedMcp.close();
   }
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
   await execution.finalizing();
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
-  const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
+  const finalCheck = await checkpoints.check();
+  const checked = finalCheck.check;
   const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
   const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);
   const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
@@ -451,7 +464,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
     for (const candidate of deliverable.candidates) {
       await mkdir(dirname(join(roundDir, candidate.path)), { recursive: true });
-      await copyFile(join(agentDir, candidate.path), join(roundDir, candidate.path));
+      const checkedDir = !recovered && finalCheck.checkpoint.status === 'saved'
+        ? join(roundDir, 'checkpoints', finalCheck.checkpoint.id, 'agent') : agentDir;
+      await copyFile(join(checkedDir, candidate.path), join(roundDir, candidate.path));
     }
     outcome = {
       format: 'renderweave-outcome/1', task: task.id, round,
@@ -496,6 +511,11 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   } catch (error) {
     await execution.fail().catch(() => undefined);
     throw error;
+  } finally {
+    await managedMcp?.close();
+    // execute 等待执行器 close 才返回；准备失败没有执行器，检查失败也已结束执行。
+    // 正常错误清理完本轮可写进程后释放恢复权；宿主强退则留给死亡身份核对。
+    await releaseRecovery?.();
   }
 }
 
@@ -541,16 +561,16 @@ function checkNextRound(given: AgentRunOptions): void {
 function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptions {
   const { dir, record: { task, inputs } } = previous;
   return {
-    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, previous.checkpoint ? 'logs/materials/brief.md' : 'agent/docs/brief.md'),
     ...(inputs.reference ? { reference: join(dir, inputs.reference.file) } : {}),
     ...(inputs.contentBaseline ? { contentBaseline: join(dir, inputs.contentBaseline.file) } : {}),
     ...(previous.resources !== undefined ? { resources: previous.resources } : {}),
     ...(inputs.domain !== null ? { domain: inputs.domain } : {}),
-    ...(inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
+    ...(previous.checkpointWorkspace ? { workspace: previous.checkpointWorkspace } : inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
     ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
     ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
-    ...(inputs.request ? { request: join(dir, 'request.json') } : {}),
-    ...(inputs.requirement ? { requirement: join(dir, 'requirement.md') } : {}),
+    ...(inputs.request ? { request: join(dir, previous.checkpoint ? 'logs/materials/request.json' : 'request.json') } : {}),
+    ...(inputs.requirement ? { requirement: join(dir, previous.checkpoint ? 'logs/materials/requirement.md' : 'requirement.md') } : {}),
   };
 }
 

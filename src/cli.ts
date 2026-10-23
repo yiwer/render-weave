@@ -526,8 +526,10 @@ async function runMcp(options: Record<string, string>, io: CliIo): Promise<numbe
   }
   // 工作区只在启动时读一次，作为本轮的只读快照；资源内容按需读取。
   const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
+  const { managedOutcomeCheck } = await import('./agent/checkpoint-host.js');
   const all = createTools({
     workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!), ...(outcome ? { outcome } : {}),
+    checkOutcome: managedOutcomeCheck(),
   });
   const names = options.tools?.split(',').map((name) => name.trim());
   const unknown = names?.filter((name) => !all.some((tool) => tool.name === name)) ?? [];

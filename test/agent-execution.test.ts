@@ -82,7 +82,7 @@ it('宿主执行期间被强退：可读中断或待恢复状态，残留成果�
     expect(['pendingRecovery', 'interrupted']).toContain(result.execution?.status); // 有些宿主平台一并结束子进程。
     expect((await changeReview(job.dir, { type: 'approve' })).problems[0]?.message).toMatch(/尚未提交|残留/);
     expect((await applyAgentRound({ roundDir: job.dir })).problems[0]?.message).toMatch(/尚未提交|残留/);
-    await expect(readPreviousRound(job.dir)).rejects.toThrow(/不能从残留候选接续/);
+    await expect(readPreviousRound(job.dir)).rejects.toThrow(/不能从残留候选接续|没有可核对的完整检查点/);
     const before = await readFile(join(job.dir, 'execution.json'));
     await expect(runAgentTask(job.options)).rejects.toThrow(/轮次目录|拥有者/);
     expect(await readFile(join(job.dir, 'execution.json'))).toEqual(before);
