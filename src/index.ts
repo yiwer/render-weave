@@ -80,7 +80,8 @@ export {
   type AgentApplyOptions, type AgentApplyResult, type RoundLink, type RevisionView, type TemplateConflict, type PreviousRound,
 } from './agent/review.js';
 export { diffTemplate, revisionDiff, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
-export type { CheckpointView, CheckpointSignal } from './agent/checkpoints.js';
+export type { CheckpointView, CheckpointSignal, CandidateSelectionView, CandidateComparisonView, CandidateDifference, CheckpointCandidateView } from './agent/checkpoints.js';
+export type { CandidateComparison, CandidateChange, ComparisonBasis } from './agent/candidate-comparison.js';
 export {
   verifyElementStyles, hashCandidatesAndRequest, isVerificationValid, matchPath,
   type ApprovedRegion, type ReferenceBaseline, type StyleAnomaly, type StyleVerificationRecord, type BusinessState,

@@ -110,6 +110,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --reference   模板任务的人工核准区域、物理尺寸及测量类型 JSON；随本轮固定，未提供时视觉比较返回 notChecked
   --content-baseline 提取任务的本次内容事实 JSON；显式指定定义、字段、缺值或逐项数值，不从领域名推断
   --from        上一轮的轮次目录：下一轮沿用它的任务、素材、基准、出图请求与修改要求，拿到它的成果（含审核时的修改）
+  --checkpoint  可选，与 --from 一起用：latest、better 或已发布检查点 ID，选择整套宿主保存候选；没有较好证据时 better 明确拒绝
   --feedback    带 --from 时必须给：给下一轮的反馈（Markdown）
   --key-env     可选，key 所在的环境变量名，缺省 OPEN_CODE_API_KEY；key 只经环境变量传入，不写任何文件
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
@@ -169,7 +170,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'timeout-ms', 'max-tokens', 'max-cost-usd'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint', 'timeout-ms', 'max-tokens', 'max-cost-usd'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -382,6 +383,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options.resources !== undefined ? { resources: options.resources } : {}),
       ...(options.requirement !== undefined ? { requirement: options.requirement } : {}),
       ...(options.from !== undefined ? { from: options.from } : {}),
+      ...(options.checkpoint !== undefined ? { checkpoint: options.checkpoint } : {}),
       ...(options.feedback !== undefined ? { feedback: options.feedback } : {}),
       ...(options.domain !== undefined ? { domain: options.domain } : {}),
       ...(options.workspace !== undefined ? { workspace: options.workspace } : {}),
