@@ -133,7 +133,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.10.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.11.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.11.0 在可选核准 repair 计划下返回区域短反馈和当前候选的完整检查停止建议（M314）；无计划时输出不增加 repair。详见[接入说明](template-repair-policy.md)；
   - 0.10.0 加入命名区域 `designTarget` 按需诊断与只读进度检查点（M307）；
   - 0.9.0 加入可选设计计划、边界/样式/像素核查及 `designCase` 有界摘要（M306）；
   - 0.9.0 在 `check_outcome` 的评估里加入提取覆盖（票据 33）与样式核查（票据 34）：新增 `assessment.coverage`、`assessment.style`、`coverageVerification`、`styleVerification`；工具输入不变；

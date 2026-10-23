@@ -10,6 +10,8 @@ import type { CandidateDocument } from './candidates.js';
 import { canonical } from './diff.js';
 import { compareDesignImages, type DesignTarget, type ImageDifference, type ImageRegion } from './image-comparison.js';
 import { sha256 } from './round-files.js';
+import { checkLayoutReference, type RepairCheck } from './layout-reference.js';
+import { REPAIR_POLICY_SCHEMA, validateRepairPolicy, measureRepairPolicy, type RepairPolicy, type RepairMeasurement } from './repair-policy.js';
 
 type Range = { readonly min: number; readonly max: number };
 type DataChange = { readonly path: string; readonly op: 'set' | 'remove' | 'resize'; readonly value?: unknown; readonly length?: number };
@@ -30,6 +32,7 @@ export interface DesignCheckPlan {
   readonly basis: string;
   readonly cases: readonly CheckCase[];
   readonly styles: readonly StyleCheck[];
+  readonly repair?: RepairPolicy;
   readonly reference?: { readonly sha256: string; readonly region?: ImageRegion; readonly targets?: readonly DesignTarget[] };
 }
 const range = { type: 'object', additionalProperties: false, required: ['min', 'max'], properties: { min: { type: 'number' }, max: { type: 'number' } } };
@@ -57,6 +60,7 @@ export const DESIGN_CHECK_SCHEMA = {
         colors: { type: 'array', minItems: 1, uniqueItems: true, items: { type: 'string', pattern: '^#[a-fA-F0-9]{6}([a-fA-F0-9]{2})?$' } },
       } },
     } } },
+    repair: REPAIR_POLICY_SCHEMA,
     reference: { type: 'object', additionalProperties: false, required: ['sha256'], properties: {
       sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
       region,
@@ -84,6 +88,7 @@ export function parseDesignCheckPlan(value: unknown): DesignCheckPlan {
     if ((style.maxCount ?? Infinity) < (style.minCount ?? 1)) throw new Error('样式数量范围颠倒');
     for (const value of Object.values(style.expect)) if (isRecord(value) && Number(value['min']) > Number(value['max'])) throw new Error('样式数值范围颠倒');
   }
+  if (plan.repair) validateRepairPolicy(plan.repair, ids, plan.reference?.sha256);
   return plan;
 }
 
@@ -99,6 +104,7 @@ export interface DesignVerification {
   readonly visual?: ImageDifference;
   readonly content: 'needsReview';
   readonly detailsTruncated: boolean;
+  readonly repair?: RepairMeasurement;
 }
 interface DesignFailure { readonly case: string; readonly style?: string; readonly path?: string; readonly message: string }
 
@@ -112,6 +118,10 @@ export function summarizeDesign(report: DesignVerification, caseId?: string, tar
   const selected = targetId !== undefined ? report.cases.filter((c) => c.id === 'reference') :
     caseId === undefined ? report.cases : report.cases.filter((c) => c.id === caseId);
   if (!selected.length) throw new Error(`没有核查用例：${caseId}`);
+  if (report.repair && caseId === undefined && targetId === undefined) return { status: report.status, fingerprint: report.fingerprint,
+    planSha256: report.planSha256, content: report.content, failureCount: report.failureCount,
+    repair: { complete: report.repair.complete, checked: report.repair.checks.length, failed: report.repair.failed, unknown: report.repair.unknown },
+    hint: '区域短反馈和停止决定见 assessment.repair；designCase/designTarget 按需展开。' };
   const result = { status: report.status, fingerprint: report.fingerprint, planSha256: report.planSha256, content: report.content,
     caseCount: report.cases.length, passedCases: report.cases.filter((c) => c.passed).length, failureCount: report.failureCount,
     cases: [] as unknown[], failures: [] as unknown[], visual: report.visual ? { ...report.visual, worstRegions: [] as unknown[], targets: [] as unknown[] } : undefined,
@@ -132,6 +142,7 @@ export function summarizeDesign(report: DesignVerification, caseId?: string, tar
     const item = { ...counts, ...(caseId !== undefined ? { uncovered: [] as unknown[] } : {}) };
     if (keep(result.cases, item) && item.uncovered) details.push({ target: item.uncovered, paths: uncovered });
   }
+  if (report.repair && caseId !== undefined) for (const check of report.repair.checks.filter(c => c.id.startsWith(caseId + '/') && !c.pass)) keep(result.failures, check);
   for (const failure of caseId === undefined ? report.failures : selected[0]!.failures) keep(result.failures, failure);
   if (!target) {
     for (const { id, approval, ssim, rgbSimilarity } of report.visual?.targets ?? []) keep(result.visual!.targets, { id, approval, ssim, rgbSimilarity });
@@ -174,10 +185,14 @@ export async function verifyTemplateDesign(options: {
     candidates: options.candidates, schemas: workspace.staticSchemas, resources, sample: options.sample ? sha256(options.sample) : null }));
   const failures: DesignFailure[] = [];
   const cases = [];
+  const repairChecks: RepairCheck[] = [];
+  const expectedRepairChecks: string[] = [];
   let visual: ImageDifference | undefined, heatmap: Uint8Array | undefined;
   for (const c of [{ id: 'reference' }, ...plan.cases] as readonly CheckCase[]) {
     const before = failures.length;
     const fail = (message: string, path?: string, style?: string) => failures.push({ case: c.id, message, ...(path ? { path } : {}), ...(style ? { style } : {}) });
+    const reference = plan.repair?.references.find(r => r.case === c.id);
+    if (reference) expectedRepairChecks.push(...checkLayoutReference(undefined, reference.reference, reference.geometry).map(check => c.id + '/' + check.id), c.id + '/render:content');
     const dataset = structuredClone(base);
     let nodes: LayoutNode[] = [], covered = new Set<string>(), problems: string[] = [];
     try {
@@ -218,6 +233,11 @@ export async function verifyTemplateDesign(options: {
           }
         }
       }
+      if (reference) {
+        repairChecks.push(...checkLayoutReference(result.layout, reference.reference, reference.geometry).map(check => ({ ...check, id: c.id + '/' + check.id })));
+        repairChecks.push({ id: c.id + '/render:content', role: 'render', dimension: 'content', status: 'measured',
+          pass: !!result.image && problems.length === 0, severity: 100, detail: '必须生成图像且没有严重渲染问题' });
+      }
       if (c.id === 'reference' && plan.reference) {
         if (!options.sample || sha256(options.sample) !== plan.reference.sha256) throw new Error('示例图与核查计划的 SHA-256 不符');
         if (result.image) {
@@ -234,7 +254,8 @@ export async function verifyTemplateDesign(options: {
       visibleInstances: nodes.length, uncoveredCount: uncovered.length, uncovered: uncovered.slice(0, 12),
       failureCount: failures.length - before, failures: failures.slice(before, before + 12) });
   }
-  return { report: { status: failures.length ? 'failed' : 'passed', fingerprint, planSha256, cases,
+  const repair = plan.repair ? measureRepairPolicy(plan.repair, expectedRepairChecks, repairChecks) : undefined;
+  return { report: { ...(repair ? { repair } : {}), status: failures.length ? 'failed' : 'passed', fingerprint, planSha256, cases,
     failureCount: failures.length, failures: failures.slice(0, 40), ...(visual ? { visual } : {}), content: 'needsReview',
     detailsTruncated: failures.length > 40 || cases.some((c) => c.uncoveredCount > c.uncovered.length || c.failureCount > c.failures.length) }, ...(heatmap ? { heatmap } : {}) };
 }

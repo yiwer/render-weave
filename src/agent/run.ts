@@ -299,7 +299,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   }
   if (designPlan) {
     await writeFile(join(roundDir, 'design-checks.json'), `${JSON.stringify(designPlan, null, 2)}\n`);
-    await copyFile(join(roundDir, 'design-checks.json'), join(agentDir, 'docs/design-checks.json'));
+    // 完整参考清单仅留宿主。Agent 按需读取现有计划，不把逐字参考灌入上下文。
+    const { repair: _repair, ...agentPlan } = designPlan;
+    await writeFile(join(agentDir, 'docs/design-checks.json'), `${JSON.stringify(agentPlan, null, 2)}\n`);
     await copyFile(join(AGENT_MATERIALS, 'reference/visual-refinement.md'), join(agentDir, 'docs/visual-refinement.md'));
   }
   for (const [file, name] of [[options.requirement, 'requirement.md'], [options.feedback, 'feedback.md']] as const) {
@@ -333,6 +335,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', templateTask ? 'template-next-round.md' : 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
+  if (designPlan?.repair) prompt += '\n已开启核准参考修复。先保存 outcome.json 后调用 check_outcome，按 assessment.repair 的最多两条区域差异局部修复；stop=true 时保存状态并交回，勿继续润色。完整参考留宿主，designCase 按需取局部证据。停止只代表登记范围完成，仍需人工视觉审核。\n';
   if (designPlan) prompt += '\n本轮有宿主核查计划 docs/design-checks.json。开始设计前读 docs/visual-refinement.md，按计划已有的参考和目标核查；有命名区域才用 check_outcome 的 designTarget 按需取详情。首次骨架及每次核查前保存 state.json，确认 checkpoint 为 ready。\n';
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。

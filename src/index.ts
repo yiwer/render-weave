@@ -93,3 +93,7 @@ export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';
 export { parseDesignCheckPlan, verifyTemplateDesign, type DesignCheckPlan, type DesignVerification } from './agent/design-verification.js';
 export { compareDesignImages, type ImageDifference, type ImageRegion } from './agent/image-comparison.js';
+
+export { createLayoutReference, checkLayoutReference, type LayoutReference, type ReferenceElement } from './agent/layout-reference.js';
+export type { RepairPolicy, RepairDecision } from './agent/repair-policy.js';
+export { runAgentRepair, type RepairRunSummary } from './agent/repair-run.js';

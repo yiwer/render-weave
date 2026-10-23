@@ -15,6 +15,7 @@ import { assessCandidates, type RenderAssessment } from './assessment.js';
 import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
+import { decideRepair, type RepairDecision } from './repair-policy.js';
 import { assessDesign, DESIGN_CHECK_SCHEMA, type DesignCheckInput, type DesignVerification } from './design-verification.js';
 import { hashCandidatesAndRequest, verifyElementStyles, type ReferenceBaseline, type StyleVerificationRecord, type StyleAnomaly, type BusinessState } from './style-verification.js';
 import { verifyExtractionCoverage, type BusinessContentBaseline, type ContentCoverageItem, type CoverageAssessment, type CoverageVerificationRecord } from './coverage-verification.js';
@@ -146,6 +147,7 @@ export interface OutcomeCheck {
     readonly content: 'needsReview';
     readonly render: RenderAssessment;
     readonly design?: DesignVerification;
+    readonly repair?: RepairDecision;
     readonly style?: StyleAssessment;
     readonly coverage?: CoverageAssessment;
   };
@@ -384,6 +386,7 @@ export async function checkAgentOutcome(options: {
       content: 'needsReview',
       render: renderAssessment,
       ...(design.report ? { design: design.report } : {}),
+      ...(design.report?.repair ? { repair: decideRepair(design.report.repair, design.report.fingerprint, !severeFound, submission.pending.length) } : {}),
       ...(styleVerification ? {
         style: {
           passed: styleVerification.passed,

@@ -31,6 +31,7 @@ import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-rec
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
+import { runAgentRepair } from './agent/repair-run.js';
 import { AGENT_EFFORTS, AgentUsageError, DEFAULT_KEY_ENV, runAgentTask, type AgentEffort } from './agent/run.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
@@ -111,6 +112,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
   --context-limit  可选的单请求有效输入交接阈值（正整数，包含缓存）；默认只观测，达到后停止并保存。不是请求前硬上限。
+  --repair-rounds  可选，1–4轮宿主有界修复；要求 --checks 含核准 repair 清单。--out 为新建运行根目录。
   --checks         模板任务可选的宿主核查计划 JSON；声明边界用例、毫米样式范围和参考图，下一轮沿用。
   --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
 
@@ -166,7 +168,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'context-limit', 'effort', 'claude', 'checks'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'context-limit', 'effort', 'claude', 'checks', 'repair-rounds'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -363,7 +365,8 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     return ExitCodes.usage;
   }
   try {
-    const result = await runAgentTask({
+    const execute = options['repair-rounds'] === undefined ? runAgentTask : (args: Parameters<typeof runAgentTask>[0]) => runAgentRepair(args, Number(options['repair-rounds']));
+    const result = await execute({
       out: options.out!, key, keyEnv,
       ...(task ? { task: task.id } : {}),
       ...(options.sample !== undefined ? { sample: options.sample } : {}),
@@ -386,7 +389,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(effort !== undefined ? { effort } : {}),
       ...(options.claude !== undefined ? { claude: { command: options.claude } } : {}),
       // 输入校验通过后才打印，用法错误时第一行就是错误（票据 28）。
-      onStart: () => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
+      onStart: (roundDir) => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${roundDir}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
     });
     const { check, record } = result;
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems), ...check.assessment.render.problems], io);
@@ -400,12 +403,18 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       })),
       pending: result.outcome?.pending.length ?? null,
       ...(result.draft ? { draft: result.draft } : {}),
+      ...('repairRun' in result ? { repairRun: result.repairRun } : {}),
       assessment: check.assessment,
       ...(record.run.stopped ? { stopped: record.run.stopped } : {}),
       ...(record.run.contextStopped ? { contextStopped: record.run.contextStopped } : {}),
       context: record.run.context,
       usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
     }, null, 2)}\n`);
+    if ('repairRun' in result) {
+      const summary = result.repairRun as Awaited<ReturnType<typeof runAgentRepair>>['repairRun'];
+      io.stderr(`自动修复结束：${summary.reason}；已运行 ${summary.rounds.length}/${summary.maxRounds} 轮，仍需人工审核\n`);
+      return summary.reason === 'complete' ? ExitCodes.ok : ExitCodes.failed;
+    }
     if (check.verdict === 'unqualified') io.stderr('成果不合格：问题清单见 check.json；是否带着问题重跑由你决定，不会自动重试\n');
     return check.verdict === 'qualified' ? ExitCodes.ok : ExitCodes.failed;
   } catch (error) {
