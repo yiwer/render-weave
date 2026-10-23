@@ -397,7 +397,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(outcomeContext, `${JSON.stringify({ task: task.id, ...context } satisfies OutcomeTarget, null, 2)}\n`);
   await writeFile(join(logsDir, 'prompt.md'), prompt);
   await cp(join(agentDir, 'docs'), join(logsDir, 'materials'), { recursive: true });
-  await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), engine: await rendererBuildId(),
+  await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), inputs, engine: await rendererBuildId(),
     mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const mcpConfig = join(logsDir, 'mcp.json');

@@ -53,6 +53,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
 | `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
+| `--claude-args` | 可选，仅与 `--claude` 同用的字符串 JSON 参数数组，作为执行器前置参数；受控执行器可用 `--claude <node.exe> --claude-args '["executor.mjs"]'`。不经 shell 解释 |
 
 **三种任务**：
 

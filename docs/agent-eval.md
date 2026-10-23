@@ -1,6 +1,6 @@
 # Agent 评估
 
-评估判断业务 Agent 能不能继续用：经产品路径（`renderweave agent` 与 `renderweave mcp`）跑固定的评估场景，按 M211–M217 的检查评分，与通过线对照。每个场景连续两次达线，门槛才算通过（第三阶段 PRD 第 16、17 条，M230）。
+评估判断业务 Agent 能不能继续用：经产品路径（`renderweave agent` 与 `renderweave mcp`）跑固定的评估场景，按 M211–M217 的检查评分，与通过线对照。每个场景的预登记次数全部达线，门槛才算通过（缺省两次；M313）。历史报告仍按当时口径保留。
 
 ## 什么时候必须跑
 
@@ -26,14 +26,16 @@ npx tsx scripts/agent-eval/run.ts
 |---|---|
 | `--config <文件>` | 使用显式核准案例配置，文件路径相对当前目录；配置内素材、真值等路径仍相对仓库根目录。缺省 `scripts/agent-eval/config.json` |
 | `--scenarios` | 只跑部分场景，逗号分隔，如 `m402-definition,366-transcription`；缺省全部 |
-| `--repeat` | 每个场景跑几次，缺省为配置中的连续达线次数（2） |
-| `--jobs` | 同时跑几个场景，缺省 3；同一场景内部的轮次按顺序 |
+| `--repeat` | 预登记每个场景的总次数，缺省 2，不少于配置 `consecutivePasses`；续跑不得扩展计划 |
+| `--jobs` | 同时跑几个单元，缺省 3；单元内轮次按顺序。普通续跑可变更，每段留存调度记录 |
+| `--paired` | 首次启动预登记配对运行，固定并行数；后续续跑即使省略此选项也不能改变并行数 |
+| `--claude`、`--claude-args` | 显式执行器文件及可选字符串 JSON 参数数组；参数数组只可与 `--claude` 同用。可用 `node` 加脚本实现完整受控执行器；执行器须支持 `--version` |
 | `--label` | 报告名称，缺省为开始时间，如 `2026-10-15-1930`。同一个名称再跑时接着前一次：已有有效结果的单元跳过，`invalid` 的单元按轮次续跑，场景要与前一次相同 |
 | `--out` | 轮次目录的根，缺省 `out/agent-eval/<名称>/` |
 | `--reports` | 报告目录，缺省 `docs/agent-eval/reports/` |
 | `--model`、`--small-model`、`--endpoint`、`--key-env`、`--max-turns`、`--effort` | 传给 `renderweave agent run`；报告的 `runtime.effort` 记推理力度，`totals.thinkingTokens` 记思考 token 合计 |
-| `--rescore <目录>` | 只按已有的轮次目录重新评分并重写报告，不调用模型；评分规则改了以后用它 |
-| `--repetitions <起-止>` | 分段跑：模型的额度窗口装不下一整遍时，先 `--repetitions 1-1`，额度恢复后用同一个 `--label` 跑 `--repetitions 2-2`。后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛 |
+| `--rescore <目录>` | 只按已有轮次重新评分，另存带来源身份的新报告，不调用模型；原报告、清单保持不变 |
+| `--repetitions <起-止>` | 分段跑：模型的额度窗口装不下一整遍时，先 `--repetitions 1-1`，额度恢复后用同一个 `--label` 跑 `--repetitions 2-2`。每段核对全部冻结条件；报告始终列出整个预登记计划，尚未运行的次数为 `not-run` |
 
 **模型**：缺省与 `renderweave agent run` 相同，即 OpenCode Go 上的 Claude Haiku 5.5。评估 Gemini 4 Argon 时加 `--model gemini-4-argon-contributor`：Gemini 只有 Google 接口，`agent run` 会在每轮里自动起本机转换代理（M232）。
 
@@ -53,12 +55,12 @@ key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KE
 
 两类字样都有时按额度算。成果合格的轮次不看错误：模型已经交回了。500 的原文是 Claude Code 自己重试之后才报出来的，例如 `API Error: 500 status code (no body). This is a server-side issue, usually temporary`，所以外层只重试 2 次。
 
-**门槛**：`invalid` 不是一次观测，算连续达线时跳过它，不打断也不延长连续。计划内没跑的次数（额度熔断后没发起，或分段跑还没到）同样不是观测。
+**门槛与完整性**：`invalid` 与 `not-run` 都是缺失的有效观测，不能跳过后宣称全计划通过。`gate.completeness` 分列计划数、通过、失败、无效、未运行和是否完整。
 
-- 有连续 2 次达线：通过。例如达线、`invalid`、达线。
-- 把 `invalid` 与没跑的次数都当作达线也凑不出连续 2 次：未通过。例如未达线、`invalid`。
-- 其余是**未完成**（`incomplete`，退出码 3），补跑之后才知道。例如达线、`invalid`；或分段跑的第一段 `--repetitions 1-1` 结束时。
-- 整体：有一个场景未通过就是未通过；否则有未完成的就是未完成；全部通过才通过。计划的次数取评估清单的次数，至少是连续达线次数。
+- 任何有效失败都使门槛为 `fail`（退出 1），包括失败加无效。
+- 没有有效失败但有缺失观测为 `incomplete`（退出 3），包括通过加无效。
+- 全计划均有效且通过才为 `pass`（退出 0）。以后成功不能替换已有失败。
+- `consecutivePasses` 是保留的配置字段名，目前表示最少计划次数；不再采用跳过无效观测后寻找连续成功的旧口径。
 
 **续跑**：有 `invalid` 或没跑的次数时，命令结束前打印用同一个 `--label` 续跑的命令，带上本次的其他选项，例如：
 
@@ -67,6 +69,22 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 ```
 
 额度窗口恢复后照抄运行即可：已有有效结果的单元跳过；`invalid` 的单元只重新发起出错的轮次，366 已应用的第一轮保留；重试次数累计。`--rescore` 不知道原来的模型等选项，不打印续跑命令。
+
+## 冻结身份、分段与重新评分
+
+首次派发前以独占创建方式保存 `<out>/eval.json`，身份格式 `renderweave-eval-identity/1`；后续不改写清单。冻结请求模型、轻量模型、effort、无凭据端点、执行器路径/参数/文件内容/版本/Node 版本、各任务轮数预算、实际 `dist/` 与锁文件、全部 Agent 资料、工具合同、评估脚本、配置、案例素材/说明/真值/工作区/请求/修改要求、可选参考与内容基准、资源目录的实际内容。
+
+执行器通过 `--version` 探测，最多等 10 秒；Windows 请指定原生可执行文件，脚本使用 `--claude <node.exe>` 与 `--claude-args '["脚本路径"]'`。不经 shell 执行 `.cmd`。端点有用户名、密码、查询参数或片段时直接拒绝，不把凭据写入身份或诊断。供应商修订无法固定，明确记 `providerRevision: null`；时间预算与停滞策略当前尚未实现，身份也明确为 `null`，待票据 10、12 接入实际配置。
+
+续跑、每次派发（含重试）和签发报告前都重新核验；变化退出 2 并列出差异路径，需使用新的实验名称与输出目录。已有轮次的请求模型、轮数、素材/说明、资料与合同也核对原身份。每轮执行结束由评估宿主写 `evaluation.json`（`renderweave-eval-observation/1`），绑定完整实验摘要和原始记录、候选、资料、快照及资源的实际字节；同模型下的外来轮次也不能混入。缺失该来源的旧轮次只能重新评分。文档或 Git 提交变化本身不构成拒绝依据。有效成功和失败保留，只有计划内无效或未运行单元可以补；空目录或半写记录仍是未运行。
+
+`segments/<id>.started.json` 记本段时间、并行数、次数范围与实验身份，正常结束另存 `completed.json`。第一次报告为 `<label>.json`，后续段为 `<label>.segment-<id>.json`，不覆盖旧报告。运行中条件变化会停止继续派发，等待正在执行的单元结束并拒绝签发混合条件报告。
+
+每轮在启动执行器前写 `logs/prompt.md`、`logs/materials/` 和 `logs/provenance.json`，后者包含实际输入、工作区/上游成果/检查点身份。合法串联的动态提示词无需与首轮相同。响应中的服务模型是事后观测，报告列 `servedModels`、`servedModelChanged`、`requestedModelMismatch`，不会倒填进预登记身份。
+
+`--rescore` 另存 `<label>.rescore-<id>.json`，保存评分时间、原清单/首份报告摘要、每个原轮次的内容清单与汇总摘要、新评分器/配置/输入/资源身份。新结论不改写首次结论；旧记录没有的身份保留 `null`。旧实验可重新评分，不能续跑并入新实验。若原报告不在指定报告目录，来源报告摘要为 `null`，不猜测其位置。
+
+案例可配置 `reference` 或 `contentBaseline` 文件路径，分别透传已有 Agent 参考基准和内容基准参数，并按实际字节冻结；它们的合法任务范围与 `agent run` 相同。
 
 ## 场景与通过线
 
@@ -164,7 +182,7 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 
 ## 报告
 
-报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，格式 `renderweave-agent-eval/2`（票据 21 起；之前的报告是 `/1`，没有单元的 `status` 与重试次数，`gate` 只有 `pass` 与各次的 `passes`），只存摘要，不存图片与日志：
+报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，新格式为 `renderweave-agent-eval/3`，全计划门槛与完整性分开。旧 `/1`、`/2` 保留历史含义，不自动改判，只能另存重新评分：
 
 | 键 | 内容 |
 |---|---|
@@ -172,10 +190,12 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 | `git` | 提交与是否有未提交的改动 |
 | `runtime` | 配置的模型、轻量模型与端点，实际服务的模型，Claude Code 版本 |
 | `mcpContract` | MCP 工具合同版本 |
-| `materials` | `agent/` 下各资料文件的 SHA-256（前 12 位），判断两次评估之间资料是否变了 |
+| `materials` | `agent/` 下各资料文件的 完整 SHA-256，判断两次评估之间资料是否变了 |
 | `consecutivePasses`、`passLines` | 门槛规则与通过线 |
 | `results` | 每个场景每一次：`status`（`pass`、`fail`、`invalid`）、上游瞬时错误的重试次数 `retries`、`invalid` 的原因（分类、轮次与错误原文，单列，不算没达线的原因）、没达线的原因、各轮的结论、用时、轮数、token、待确认项数、工具调用与错误数，以及全部检查结果 |
-| `gate` | 门槛结论 `status`（`pass`、`fail`、`incomplete`）；每个场景从第 1 次起各次的结果 `outcomes`（`pass`、`fail`、`invalid`、`not-run`）与结论 |
+| `experimentIdentity` | 冻结实验身份；旧记录重新评分时为 `null` |
+| `rescoring` | 仅重新评分报告存在：来源身份、原轮次内容、新评分身份与评分时间 |
+| `gate` | 执行完整性 `completeness`；门槛结论 `status`（`pass`、`fail`、`incomplete`）；每个场景从第 1 次起各次的结果 `outcomes`（`pass`、`fail`、`invalid`、`not-run`）与结论 |
 | `totals` | 各轮用时、token 之和 |
 
 命令的标准输出是同样内容的文字摘要；有 `invalid` 或没跑的次数时，最后是续跑命令。

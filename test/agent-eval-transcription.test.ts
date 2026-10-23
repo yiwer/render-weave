@@ -58,7 +58,7 @@ async function evaluate(stops: Record<string, unknown>[], approvedTruth?: typeof
     child.stderr.on('data', (chunk) => { stderr += String(chunk); });
     child.on('close', (code) => done({ code, stdout, stderr }));
   });
-  return { ...result, report: await json(join(reports, `${label}.json`)) };
+  return { ...result, report: await json(/^报告：(.+)$/m.exec(result.stdout)![1]!.trim()) };
 }
 
 describe('有序转录评分的公开 CLI', () => {
