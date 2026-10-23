@@ -32,9 +32,10 @@ import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, parseDatasetDocument, parseStaticSchemaRef, type StaticSchemaEntry, type TemplateEntry, type Workspace } from '../workspace.js';
 import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
+import { outcomeFeedback } from './outcome-feedback.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.13.1';
+export const MCP_CONTRACT_VERSION = '0.16.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -105,6 +106,7 @@ const DRAFT_INPUT = {
 };
 
 export function createTools(context: ToolContext): McpTool[] {
+  let feedback:ReturnType<typeof outcomeFeedback>|undefined;
   const { workingDirectory: files, workspace } = context;
   const shown = (problems: readonly Problem[]) => problems.map((problem) => displayProblem(problem, context));
   /** 问题清单：最多 PROBLEMS_MAX 条且不超过字符预算；截断时给出总数与按问题代码的计数（票据 22）。 */
@@ -471,6 +473,16 @@ export function createTools(context: ToolContext): McpTool[] {
       },
     },
     {
+      name:'outcome_feedback',
+      description:'只读续取同一 check_outcome 的完整局部问题；不重新检查当前候选。按 code 或 target 聚类，保留实例、源模板位置、待确认和未知范围。使用 check_outcome 返回的 reportId；同一会话下一次检查使旧报告过期。分页按 nextOffset 继续，超长单项以可无损拼接的 JSON fragment 返回。',
+      inputSchema:{type:'object',additionalProperties:false,required:['reportId'],properties:{reportId:{type:'string',minLength:1},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100},groupBy:{enum:['code','target']}}},
+      async call(args){
+        if(!feedback)throw new ToolInputError('没有可续取的检查报告；先调用 check_outcome');
+        const page=feedback.page(args);
+        return json(page,{reportId:page.reportId,contentIdentity:page.contentIdentity,offset:page.offset,nextOffset:page.nextOffset,total:page.total});
+      },
+    },
+    {
       name: 'check_outcome',
       description: '交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。' +
         '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
@@ -483,9 +495,12 @@ export function createTools(context: ToolContext): McpTool[] {
         const { task, ...known } = context.outcome;
         const managed = await context.checkOutcome?.();
         const check = managed?.check ?? await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        feedback=outcomeFeedback(check,problem=>displayProblem(problem,context));
+        const feedbackMetadata=feedback.metadata;
         // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
         const response = (budget: number) => ({
           verdict: check.verdict,
+          feedback: feedbackMetadata,
           ...(managed ? { checkpoint: managed.checkpoint } : {}),
           ...(check.contentIdentity ? { contentIdentity: { id: check.contentIdentity.id, format: check.contentIdentity.format,
             engine: check.contentIdentity.engine, criteria: check.contentIdentity.criteria } } : {}),

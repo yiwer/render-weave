@@ -169,7 +169,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint', 'context-policy'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -375,6 +375,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     }
     const result = await runAgentTask({
       out: options.out!, key, keyEnv,
+      ...(options['context-policy'] !== undefined ? {contextPolicy: options['context-policy'] as 'full' | 'on-demand'} : {}),
       ...(task ? { task: task.id } : {}),
       ...(options.sample !== undefined ? { sample: options.sample } : {}),
       ...(options.brief !== undefined ? { brief: options.brief } : {}),

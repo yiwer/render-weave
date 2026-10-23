@@ -1,0 +1,12 @@
+{
+  "format": "renderweave-context-catalog/1",
+  "stages": [
+    { "id": "data", "when": "设计数据定义或提取数据集，先核对字段、约束和示例", "name": "reference/data-definition" },
+    { "id": "layout", "when": "搭建模板骨架与画板、布局", "name": "reference/template", "heading": "布局与位置" },
+    { "id": "loops", "when": "重复内容、循环容器或子模板调用", "name": "reference/template", "heading": "循环与调用" },
+    { "id": "text", "when": "文本排版、缩字组与文字适配", "name": "reference/template", "heading": "元素" },
+    { "id": "variables", "when": "参数、派生变量与条件", "name": "reference/template", "heading": "变量与运算数" },
+    { "id": "states", "when": "绑定、条件显示与状态样式", "name": "reference/template", "heading": "绑定与状态样式" },
+    { "id": "schema", "when": "核对模板精确结构，先取目录再用其中的 pointer", "name": "schema/template" }
+  ]
+}

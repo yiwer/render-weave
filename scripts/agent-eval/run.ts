@@ -39,6 +39,7 @@ const { values } = parseArgs({
     rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
     plan: { type: 'string' }, config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
+    'context-policy':{type:'string'},'context-pair':{type:'string'},
   },
   strict: true,
 });
@@ -116,6 +117,7 @@ try {
   claudeArgs = parsed as string[] | undefined;
 } catch { fail('--claude-args 必须为字符串 JSON 数组'); }
 const runtime: RuntimeOptions = {
+  ...((values['context-policy']!==undefined)?{contextPolicy:values['context-policy'] as 'full'|'on-demand'}:{}),
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
   ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(effort ? { effort } : {}),
   ...(values.claude ? {claude: {command: values.claude, args: claudeArgs}} : {}),
@@ -127,6 +129,15 @@ try {
     pairedJobs: values.paired || earlier?.identity?.plan.pairedJobs !== null && earlier?.identity?.plan.pairedJobs !== undefined ? jobs : null,
   });
 } catch (error) { fail(error instanceof Error ? error.message : String(error)); }
+if(values['context-pair']){
+  try{
+    const pair=JSON.parse(await readFile(resolve(values['context-pair']),'utf8'));
+    const arm=pair.arms?.find((value:any)=>value.policy===identity!.contextPolicy.name);
+    if(pair.format!=='renderweave-context-pair/1'||pair.ready!==true||!arm||arm.identityHash!==sha256(JSON.stringify(arm.identity)))throw new Error('配对计划未完成或身份无效');
+    const changes=identityDifferences(arm.identity,identity!);
+    if(changes.length)throw new Error(changes.join('、'));
+  }catch(error){fail(`配对冻结条件变化，未派发：${error instanceof Error?error.message:String(error)}`);}
+}
 if (earlier) {
   const changes = identityDifferences(earlier.identity, identity!);
   if (changes.length > 0) fail(`实验条件变化，未派发；请使用新实验标识：\n${changes.map(path => `- ${path}`).join('\n')}`);

@@ -35,6 +35,7 @@ export async function feedbackPlan(config: EvalConfig, scenarios: readonly Scena
       const identity: import('./identity.js').ExperimentIdentity = saved.identity;
       const budgets = [...new Set(Object.values(identity.budgets.maxTurns))];
       const current = await experimentIdentity(config, sourceOptions.configFile, scenarios, {
+        contextPolicy:identity.contextPolicy?.name,
         ...identity.runtime, effort: identity.runtime.effort ?? undefined,
         claude: {command: identity.executor.command, args: identity.executor.args}, ...(budgets.length === 1 ? {maxTurns: budgets[0]} : {}),
       }, identity.plan);

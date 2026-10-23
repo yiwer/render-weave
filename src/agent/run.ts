@@ -38,6 +38,7 @@ import { claimExecution, writeAtomicJson } from './execution.js';
 import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
 import { startCheckpointHost } from './checkpoint-host.js';
 import { withLocalAccess } from '../local-access.js';
+import { contextPolicy, prepareContextPolicy, contextPrompt, contextIdentity, type ContextPolicyIdentity } from './context-policy.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -57,6 +58,7 @@ const SYSTEM_VARIABLES = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 
   'USERDOMAIN', 'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
 
 export interface AgentRunOptions {
+  readonly contextPolicy?: 'full' | 'on-demand';
   /** 本次人工核准的视觉参考 JSON，与示例图一起固定到宿主目录。 */
   readonly reference?: string;
   /** 本次提取事实 JSON；不从领域名称推断样例事实。 */
@@ -139,6 +141,7 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  readonly contextPolicy?: ContextPolicyIdentity;
   readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly reference?: { readonly file: string; readonly sha256: string };
   readonly contentBaseline?: { readonly file: string; readonly sha256: string };
@@ -224,6 +227,7 @@ const SEED_NOTES = {
 };
 
 export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResult> {
+  const selectedContext = contextPolicy(given.contextPolicy);
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
   if(given.from===undefined&&given.checkpoint!==undefined)throw new AgentUsageError('--checkpoint 只用于带 --from 发起的下一轮');
   if (given.from !== undefined) checkNextRound(given);
@@ -322,7 +326,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
   await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
   if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
-  for (const reference of task.references) await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
+  for (const reference of task.references) if (selectedContext === 'full' || reference === 'outcome') await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
+  await prepareContextPolicy(selectedContext, join(agentDir, 'docs'));
   if (request) {
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
@@ -358,6 +363,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
+  prompt = contextPrompt(prompt, selectedContext);
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
@@ -377,6 +383,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const feedback = await textInput(options.feedback, 'feedback.md');
   const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
   const inputs: RoundInputs = {
+    contextPolicy: await contextIdentity(selectedContext, join(agentDir, 'docs')),
     resourceSnapshot,
     sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
     referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
