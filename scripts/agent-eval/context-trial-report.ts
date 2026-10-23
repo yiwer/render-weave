@@ -25,6 +25,14 @@ function inspect(file:typeof fullFile,strategy:string) {
   if (report.format!=='renderweave-agent-eval/4' || !arm || arm.identityHash!==sha(JSON.stringify(arm.identity))
     || JSON.stringify(report.experimentIdentity)!==JSON.stringify(arm.identity)) throw new Error(`${strategy} 报告与冻结身份不匹配`);
   if (JSON.stringify(arm.identity.plan.scenarios)!==JSON.stringify(policy.cases) || arm.identity.plan.repeat!==policy.repetitions) throw new Error(`${strategy} 计划与政策不匹配`);
+  const registered=policy.runtime;
+  const same=(left:unknown,right:unknown)=>JSON.stringify(left)===JSON.stringify(right);
+  if (!registered || ['model','smallModel','endpoint','effort','providerRevision'].some(field=>Object.hasOwn(registered,field)&&!same(registered[field],arm.identity.runtime?.[field]))
+    || Object.hasOwn(registered,'claudeVersion') && !arm.identity.executor?.version?.startsWith(registered.claudeVersion)
+    || Object.hasOwn(registered,'roundTimeoutMs') && !same(registered.roundTimeoutMs,arm.identity.budgets?.roundTimeoutMs)
+    || Object.hasOwn(registered,'maxTurns') && !same(registered.maxTurns,arm.identity.budgets?.maxTurns)
+    || Object.hasOwn(registered,'stagnationThreshold') && !same(registered.stagnationThreshold,arm.identity.budgets?.stagnation)
+    || policy.schedule?.jobs!==undefined && policy.schedule.jobs!==arm.identity.plan.pairedJobs) throw new Error(`${strategy} 运行条件与预登记政策不符`);
   const results:any[]=report.results, attempts:any[]=report.attempts;
   if (!Array.isArray(results) || !Array.isArray(attempts) || new Set(results.map(key)).size!==results.length || results.some(value=>!planned.includes(key(value)))
     || new Set(attempts.map(value=>value.id)).size!==attempts.length || attempts.some(value=>!planned.includes(value.unit))) throw new Error(`${strategy} 结果或尝试身份重复/超出计划`);

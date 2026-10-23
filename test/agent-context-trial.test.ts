@@ -12,7 +12,7 @@ beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-context-trial-'));});
 afterAll(async()=>{await rm(root,{recursive:true,force:true});});
 const sha=(value:unknown)=>'sha256:'+createHash('sha256').update(JSON.stringify(value)).digest('hex');
 async function prepare(name:string){
-  const policy={format:'renderweave-context-trial-policy/1',status:'frozen',cases:['calibration'],repetitions:2,plannedObservations:4,
+  const policy={format:'renderweave-context-trial-policy/1',status:'frozen',cases:['calibration'],repetitions:2,plannedObservations:4,runtime:{model:'controlled-report'},
     metric:{fields:['inputTokens','cacheReadTokens','cacheCreationTokens'],minimumRelativeReduction:0.2,requiredKnownFields:['inputTokens','outputTokens','cacheReadTokens','cacheCreationTokens'],requiredUsageSource:'result'},
     quality:{requiredFeedbackGuards:['targetCorrection','nonTargetPreservation','unknownRetained','finalCheckMatches','pagination']}};
   const identity=(strategy:string)=>({contextPolicy:{name:strategy,id:strategy},runtime:{model:'controlled-report'},plan:{scenarios:['calibration'],repeat:2,pairedJobs:1},inputs:{sample:'same'},build:{engine:'same'}});
@@ -67,4 +67,13 @@ it('既往尝试的关键不合格不能被单元最终通过覆盖',async()=>{
   const {files,values}=await prepare('critical-history');values.candidate.attempts[0]!.usage.verdict='unqualified';
   await writeFile(files.candidate,JSON.stringify(values.candidate));const result=await summarize(files);
   expect(result.report).toMatchObject({complete:true,candidateEligible:false,decision:'retain-full',onDemand:{nonqualifiedAttempts:1},guards:{candidateNoCriticalErrors:false}});
+});
+it('两组彼此一致但共同偏离预登记模型时仍拒绝，不把相互匹配当作登记核对',async()=>{
+  const {files,values}=await prepare('policy-drift');
+  for(const arm of values.pair.arms){arm.identity.runtime.model='other-model';arm.identityHash=sha(arm.identity);}
+  await writeFile(files.pair,JSON.stringify(values.pair));
+  for(const key of ['full','candidate'] as const){values[key].experimentIdentity.runtime.model='other-model';await writeFile(files[key],JSON.stringify(values[key]));}
+  const result=await promisify(execFile)(process.execPath,['--import','tsx','scripts/agent-eval/context-trial-report.ts','--policy',files.policy,'--pair',files.pair,'--full',files.full,'--on-demand',files.candidate,'--out',files.out],{cwd:repoRoot,windowsHide:true}).catch(error=>error);
+  expect(result.code).not.toBe(0);expect(result.stderr).toContain('运行条件与预登记政策不符');
+  await expect(readFile(files.out)).rejects.toMatchObject({code:'ENOENT'});
 });
