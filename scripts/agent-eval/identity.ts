@@ -1,7 +1,7 @@
 /** 评估身份与重新评分所使用的内容摘要；不以文件路径或 git 提交代替实际内容。 */
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { delimiter, isAbsolute, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { materialHashes } from '../../src/agent/provenance.js';
@@ -89,13 +89,36 @@ export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Rec
   return inputs;
 }
 
-/** 只核对预登记的静态条件；串联工作区、检查点、实际服务模型属于观测。 */
-export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir: string, scenarios: readonly Scenario[], repeat: number): Promise<void> {
+/** 宿主在执行结束后封存完整实验身份及实际轮次字节，不能靠部分运行字段推测来源。 */
+export async function sealEvaluationRound(identity: ExperimentIdentity, dir: string): Promise<void> {
+  try { await stat(join(dir, 'round.json')); } catch { return; }
+  const record = {format: 'renderweave-eval-observation/1', experiment: sha256(JSON.stringify(identity)), files: await observationFiles(dir)};
+  await writeFile(join(dir, 'evaluation.json'), `${JSON.stringify(record, null, 2)}\n`, {flag: 'wx'});
+}
+
+async function observationFiles(dir: string): Promise<Record<string, string>> {
+  const files: Record<string, string> = {};
+  for (const name of ['round.json', 'check.json', 'outcome.json', 'draft.json', 'request.json', 'requirement.md', 'feedback.md']) {
+    try { files[name] = sha256(await readFile(join(dir, name))); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  }
+  for (const name of ['agent', 'snapshot', 'resources', 'logs']) {
+    try { Object.assign(files, await materialHashes(join(dir, name), name)); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  }
+  return files;
+}
+
+/** 静态条件与宿主封存来源都核对；串联工作区、检查点、服务模型仍作为实际观测留存。 */
+export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir: string, scenarios: readonly Scenario[], repeat: number, active: ReadonlySet<string> = new Set()): Promise<void> {
   for (let repetition = 1; repetition <= repeat; repetition++) for (const scenario of scenarios) {
     for (const name of scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind]) {
       const dir = join(outDir, `run-${repetition}`, scenario.id, name);
+      // 并行工作者尚未结束的轮次还没有最终封存；仅本次进程亲自派发中的目录可暂缓。
+      if (active.has(dir)) continue;
       let record: RoundRecord;
-      try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; }
+      let recordBytes: string;
+      try { recordBytes = await readFile(join(dir, 'round.json'), 'utf8'); record = JSON.parse(recordBytes) as RoundRecord; }
       catch { continue; }
       if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) continue;
       const expectedRuntime = {...identity.runtime, maxTurns: identity.budgets.maxTurns[record.task]};
@@ -109,6 +132,14 @@ export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir
         changes.push(...identityDifferences(identity.materials, provenance.materials, 'materials'));
         changes.push(...identityDifferences(identity.mcpContract, provenance.mcpContract, 'mcpContract'));
       } catch { changes.push('provenance'); }
+      try {
+        const proof = JSON.parse(await readFile(join(dir, 'evaluation.json'), 'utf8'));
+        if (proof.format !== 'renderweave-eval-observation/1') changes.push('evaluation.format');
+        changes.push(...identityDifferences(sha256(JSON.stringify(identity)), proof.experiment, 'evaluation.experiment'));
+        changes.push(...identityDifferences(proof.files, await observationFiles(dir), 'evaluation.files'));
+      } catch { changes.push('evaluation'); }
+      // 另一工作者可能在本次读取期间补完 invalid；最终签发前还会对稳定记录完整核验。
+      if (active.has(dir) || await readFile(join(dir, 'round.json'), 'utf8').catch(() => null) !== recordBytes) continue;
       if (changes.length) throw new Error(`观测条件与原实验不符：run-${repetition}/${scenario.id}/${name}\n${changes.map(path => `- ${path}`).join('\n')}`);
     }
   }

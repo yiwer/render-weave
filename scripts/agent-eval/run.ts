@@ -28,7 +28,7 @@ import {
 } from './eval.js';
 import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
 import { materialHashes } from '../../src/agent/provenance.js';
-import { experimentIdentity, inputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sha256, type ExperimentIdentity } from './identity.js';
+import { experimentIdentity, inputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sealEvaluationRound, sha256, type ExperimentIdentity } from './identity.js';
 
 const MANIFEST = 'eval.json';
 
@@ -128,18 +128,27 @@ const origin = earlier?.provenance ?? await provenance();
 const manifest: Manifest = earlier ?? { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat, provenance: origin, identity: identity! };
 if (!earlier) await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`, {flag: 'wx'});
 const segmentId = randomUUID(), segments = join(outDir, 'segments');
+const activeRounds = new Set<string>();
 await mkdir(segments, {recursive: true});
 await writeFile(join(segments, `${segmentId}.started.json`), JSON.stringify({startedAt: now, jobs, first, last, experiment: sha256(JSON.stringify(identity!))}), {flag: 'wx'});
 const verifyIdentity = async () => {
   try {
     const current = await experimentIdentity(config, configFile, scenarios, runtime, identity!.plan);
     const changes = identityDifferences(identity!, current);
-    await verifyRoundIdentities(identity!, outDir, scenarios, repeat);
+    await verifyRoundIdentities(identity!, outDir, scenarios, repeat, activeRounds);
     if (changes.length) throw new Error(`实验条件变化，已停止派发；请使用新实验标识：\n${changes.map(path => `- ${path}`).join('\n')}`);
   } catch (error) { throw new EvaluationAborted(error instanceof Error ? error.message : String(error)); }
 };
 await verifyIdentity().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
-const launch = cliLauncher({...runtime, ...identity!.runtime, effort: effort, claude: {command: identity!.executor.command, args: identity!.executor.args}});
+const executeRound = cliLauncher({...runtime, ...identity!.runtime, effort: effort, claude: {command: identity!.executor.command, args: identity!.executor.args}});
+const launch: typeof executeRound = async spec => {
+  activeRounds.add(spec.out);
+  try { await executeRound(spec); }
+  finally {
+    try { await sealEvaluationRound(identity!, spec.out); }
+    finally { activeRounds.delete(spec.out); }
+  }
+};
 
 // 场景 × 次数，按 --jobs 并行；每个场景内部的轮次按顺序。
 const units = Array.from({ length: last - first + 1 }, (_, index) => scenarios.map((scenario) => ({ scenario, repetition: first + index }))).flat();

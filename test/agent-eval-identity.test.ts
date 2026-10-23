@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -329,4 +329,21 @@ it('同目录中的有效观测若来自其他模型条件，续跑拒绝混用�
   expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\n');
   expect(await readFile(join(e.reports, 'mixed-results.json'), 'utf8')).toBe(original);
   expect(await readdir(e.reports)).toHaveLength(1);
+});
+
+it('相同模型下复制来自不同核准事实的轮次，不能并入已冻结实验', async () => {
+  const target = await experiment('foreign-target'), source = await experiment('foreign-source');
+  const baseline = join(source.root, 'facts.json');
+  await writeFile(baseline, JSON.stringify({name: '另一实验的事实', items: [{id: 'route', label: '线路号'}]}));
+  const config = await read(source.configFile); config.scenarios[0].contentBaseline = baseline;
+  await writeFile(source.configFile, JSON.stringify(config));
+  for (const e of [target, source]) expect((await cli([...e.args, '--repetitions', '1-1'])).code).toBe(1);
+  const report = await readFile(join(target.reports, 'foreign-target.json'));
+  await cp(join(source.out, 'run-1/m402-definition/definition'), join(target.out, 'run-1/m402-definition/definition'), {recursive: true, force: true});
+  const resumed = await cli([...target.args, '--repetitions', '1-1']);
+  expect(resumed.code, resumed.stdout + resumed.stderr).toBe(2);
+  expect(resumed.stderr).toContain('观测条件与原实验不符');
+  expect(await readFile(target.ledger, 'utf8')).toBe('dispatch\n');
+  expect(await readFile(join(target.reports, 'foreign-target.json'))).toEqual(report);
+  expect(await readdir(target.reports)).toHaveLength(1);
 });

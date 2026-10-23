@@ -40,6 +40,8 @@
 | `test/agent-eval-transcription.test.ts`、`test/agent-eval.test.ts`、`test/agent-dataset-template.test.ts` | 转录判据、四场景编排与门槛、报告兼容、Agent 输入/参考链回归；连同上述文件为 65 条 |
 | `test/agent-template-behavior.test.ts`、`test/agent.test.ts` | 票据 02 离线业务行为与普通 Agent 公共入口，39 条 |
 
-实现入口：`scripts/agent-eval/identity.ts`、`run.ts`、`eval.ts`、`scenarios.ts`；轮次派发证据在 `src/agent/run.ts`；CLI 参数在 `src/cli/agent.ts`。用法与兼容说明见 `docs/agent-eval.md`、`docs/agent-tasks.md`。实施提交 `8ecf571`、`bf8aca0`、`4f7576d`、`8f76622`；已合入集成分支至 `2d09212`（含 01/02/03）。
+实现入口：`scripts/agent-eval/identity.ts`、`run.ts`、`eval.ts`、`scenarios.ts`；轮次派发证据在 `src/agent/run.ts`；CLI 参数在 `src/cli.ts`。用法与兼容说明见 `docs/agent-eval.md`、`docs/agent-tasks.md`。实施提交 `8ecf571`、`bf8aca0`、`4f7576d`、`8f76622`；已合入集成分支至 `2d09212`（含 01/02/03）。
+
+集成审查补修（2026-10-23）：公开 CLI 反例证实，同模型但核准内容事实不同的外来整轮复制后，原实现仅比较部分字段，仍会签发报告。现由评估宿主在实际派发目录写 `evaluation.json`，绑定完整冻结身份与原始记录、候选、资料、工作区和资源字节；续跑核对完整来源，不改变原报告。并行补跑时复核读取期间记录是否稳定，最终签发前再核验完整记录。`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t "相同模型下复制|同身份续跑|串联定义" --maxWorkers=1`：新增反例先失败，修复后 3 项通过；`npm run typecheck` 与 `git diff --check` 通过。票据 07 的尝试原件按实际 `spec.out` 留存此来源，兼容视图复制时一并保留。
 
 边界与后续交接：时间预算、停滞策略当前未实现，冻结字段如实为 `null`，由票据 10、12 接入实际配置及身份；本票未声称支持它们。票据 07 负责独立尝试目录、重试历史与用量汇总，本票按现存轮次留存重新评分来源；新增尝试目录后应继续沿用不可覆盖与来源摘要原则。真实四场景模型门槛仍由原票 38 留证。`CONTEXT.md` 的关闭更新由集成方统一执行。
