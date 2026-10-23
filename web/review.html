@@ -81,6 +81,7 @@
 <script>
 'use strict';
 let view = null;
+let execution = null;
 const $ = (id) => document.getElementById(id);
 /** 只用 textContent 建节点：Agent 写的说明与候选内容都不当作 HTML。 */
 function h(tag, attrs, ...children) {
@@ -110,9 +111,30 @@ function toast(message) {
 async function load() {
   const response = await fetch('/api/review');
   const body = await response.json();
-  if (!body.view) { $('content').replaceChildren(h('section', {}, h('h2', {}, '无法审核'), problemList(body.problems ?? []))); return; }
+  execution = body.execution ?? null;
+  if (!body.view) {
+    $('title').textContent = '轮次状态';
+    $('status').textContent = body.execution ? '状态已读取' : '无法读取';
+    $('verdict').textContent = '尚无可审核成果';
+    $('viewer').style.display = 'none';
+    document.querySelector('main').style.gridTemplateColumns = '1fr';
+    $('content').replaceChildren(body.execution ? executionPanel(body.execution) : h('section', {}, h('h2', {}, '无法审核')), problemList(body.problems ?? []));
+    if (body.execution && !body.execution.committed && body.execution.status === 'running') setTimeout(load, 2000);
+    return;
+  }
   view = body.view;
+  $('viewer').style.display = '';
+  document.querySelector('main').style.gridTemplateColumns = '';
   render();
+}
+
+function executionPanel(execution) {
+  const phases = { preparing: '准备', executing: '执行', finalizing: '收尾', completed: '完成收尾' };
+  const statuses = { running: '运行中', completed: '执行完成', failed: '失败', stopped: '已停止', interrupted: '已中断', pendingRecovery: '待恢复确认' };
+  return h('section', {}, h('h2', {}, `轮次状态：${phases[execution.phase]} · ${statuses[execution.status]}`),
+    h('p', {}, execution.committed ? '最终记录已提交。技术、内容/视觉和人工审核结论分别见下方；执行完成不会自动批准或应用。' : execution.diagnostics.join('；')),
+    execution.start && h('p', {}, `第 ${execution.start.round} 轮 · ${execution.start.task} · 输入身份 ${execution.start.inputIdentity}`),
+    h('details', {}, h('summary', {}, '固定输入与关键事件'), h('pre', {}, json({ inputs: execution.start?.inputs, events: execution.events }))));
 }
 
 async function change(payload) {
@@ -263,7 +285,7 @@ function render() {
   $('dir').textContent = round.dir;
   $('round').textContent = `第 ${round.round} 轮`;
   syncPreview();
-  $('content').replaceChildren(...[conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection()].filter(Boolean));
+  $('content').replaceChildren(...[execution && executionPanel(execution), conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection()].filter(Boolean));
 }
 
 function blocking() {
