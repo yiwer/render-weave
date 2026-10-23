@@ -159,7 +159,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(known.referenceImage.path).toContain('logs');
     expect(round.check.assessment.visual?.status).toBe('notChecked');
     const provenance = await json(join(round.roundDir, 'logs/provenance.json'));
-    expect(provenance.mcpContract).toBe('0.13.0'); expect(provenance.engine).toMatch(/^sha256:/);
+    expect(provenance.mcpContract).toBe('0.13.1'); expect(provenance.engine).toMatch(/^sha256:/);
     expect(provenance.actualMaterials['materials/guide.md']).toHaveLength(64);
     expect(await readFile(join(round.roundDir, 'logs/prompt.md'), 'utf8')).toBe((await json(join(round.roundDir, 'agent/fake-run.json'))).prompt);
     await writeFile(join(round.roundDir, 'logs/reference.json'), '{}');
