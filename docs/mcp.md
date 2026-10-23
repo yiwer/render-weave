@@ -133,7 +133,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.12.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.12.1`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.12.1 将本地应用读取接入提交恢复：相关工作区未完成应用时先恢复或明确返回 `apply.recoveryRequired`，不把混合输入作为工具初始状态。Agent 新应用记录为 `renderweave-applied/2`，公开应用结果带可核对的 `commitId` 与重复结果标记，旧 `/1` 成功记录仍读取。工具参数与只读能力不变；恢复和同宿主 Windows/Linux 边界见[应用恢复](agent-tasks.md#应用强退与恢复)。
   - 0.12.0 为 `compare_reference` 和 `check_outcome` 的视觉结果增加 `contentInvisible`、`imageContentMismatch`，每个实例可返回 `visibility` 与 `imageContent`。基准新增操作者核准的 `expectedImageSha256`；实际绘制的透明、完全裁掉和有限实心矩形遮挡证据与宿主终检一致，图片按实际资源字节核对。未知不计通过，合同不承诺整体可读性或全样式验收；完整边界见[视觉反馈](agent-visual-feedback.md)。分页和总预算不变。
   - 0.11.1 将本地工作区读取、资源替换和审核应用纳入共同的短时读取/提交约束。工具初始化取得完整文档与资源字节副本后释放约束，调用期间使用同一副本；新读取才能看到后续更新。占用时本地读取可返回 `local.storeBusy`，需重试，不把部分输入当成有效工作区。工具参数及身份摘要形状不变。
   - 0.11.0 为每次 `check_outcome` 增加 `contentIdentity` 摘要（`format`、`id`、`engine`、`criteria`）。完整身份随宿主检查保存，含候选集合、依赖文档、请求、可信参考/内容事实和实际读取资源；不含模型配置。`agent run` 在启动执行器前固定资源，本轮工具与终检读取同一份私有副本；审核/应用规则见[内容身份与重新核准](agent-tasks.md#内容身份与重新核准)。工具仍只读。

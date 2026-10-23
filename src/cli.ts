@@ -473,6 +473,9 @@ async function runApply(roundDir: string, options: Record<string, string>, overw
   }
   if (!result.applied) return ExitCodes.failed;
   io.stdout(`${JSON.stringify({
+    status: 'committed', reused: result.reused ?? false, appliedAt: result.applied.appliedAt,
+    ...(result.applied.commitId ? { commitId: result.applied.commitId } : {}),
+    ...(result.applied.contentIdentity ? { contentIdentity: result.applied.contentIdentity } : {}),
     workspace: result.applied.workspace, overwrite: result.applied.overwrite,
     published: result.applied.published.map((item) => ({
       kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files, ...(item.replaced ? { replaced: true } : {}),

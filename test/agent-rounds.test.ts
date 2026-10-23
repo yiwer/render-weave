@@ -454,7 +454,7 @@ describe('模板辅助修改：审核与应用', () => {
       request: { template, mode, items: [{ id: 'banner', ...item }] } });
     expect(delivered.problems).toEqual([]);
     expect(delivered.summary).toMatchObject({ total: 1, delivered: 1 });
-    expect(codes((await applyAgentRound({ roundDir })).problems)).toEqual(['apply.alreadyApplied']);
+    expect((await applyAgentRound({ roundDir })).applied).toEqual(applied.applied);
 
     // 应用之后再带反馈发起下一轮：候选从应用后最新保存的模板开始，已含上一轮的修改。
     const next = await run(undefined, { from: roundDir, feedback: await file('feedback.md', '本站 0 时不标本站。') });
@@ -541,22 +541,26 @@ describe('模板辅助修改：审核与应用', () => {
     expect(await readFile(join(dir, 'template-corner.json'), 'utf8')).toBe('{"note":"别人放的文件"}');
   });
 
-  it.runIf(process.platform === 'win32')('Windows：替换第二个模板失败时，已替换的第一个恢复原内容', async () => {
+  it.runIf(process.platform === 'win32')('Windows：模板替换受阻时公开读取阻断，解除阻碍后恢复全部工作副本', async () => {
     const dir = await workspace(true);
     const bigger = withChildren(WORDS, [{ ...WORDS.artboard.children[0], fontSize: 10 }]);
     const { roundDir } = await revisionRound(dir, { 'outcome.json': REVISION_SUBMISSION, [BANNER_FILE]: PINK_BANNER, [WORDS_FILE]: bigger });
     await approveRevision(roundDir);
-    const banner = await readFile(join(dir, 'template-banner.json')), words = await readFile(join(dir, 'template-banner-words.json'));
+    const words = await readFile(join(dir, 'template-banner-words.json'));
     await chmod(join(dir, 'template-banner-words.json'), 0o444);
     try {
       const failed = await applyAgentRound({ roundDir });
-      expect(codes(failed.problems)).toEqual(['apply.failed']);
-      expect(await readFile(join(dir, 'template-banner.json'))).toEqual(banner);
+      expect(codes(failed.problems)).toEqual(['apply.recoveryRequired']);
       expect(await readFile(join(dir, 'template-banner-words.json'))).toEqual(words);
+      expect((await loadWorkspace({ dir, resourcesDir: storeDir })).problems.some(p => p.code === 'apply.recoveryRequired')).toBe(true);
+      expect((await readReview(roundDir)).view).toBeUndefined();
       expect((await readdir(dir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     } finally {
       await chmod(join(dir, 'template-banner-words.json'), 0o644);
     }
+    expect((await applyAgentRound({ roundDir })).problems).toEqual([]);
+    expect(await json(join(dir, 'template-banner.json'))).toEqual(PINK_BANNER);
+    expect(await json(join(dir, 'template-banner-words.json'))).toEqual(bigger);
   });
 });
 

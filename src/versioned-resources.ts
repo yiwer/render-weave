@@ -8,7 +8,7 @@ import { parseResourceRef, ResourceReadError, sortedInfos, type ResourceInfo, ty
 import { describeError, isRecord } from './util.js';
 import { inspectResourceWorkspace, resourceWorkspaceFingerprint, type ResourceWorkspaceImpact } from './resource-impact.js';
 import type { RenderOptions } from './render.js';
-import { LocalAccessBusy, withLocalAccess } from './local-access.js';
+import { LocalAccessBusy, localAccessProblem, withLocalAccess } from './local-access.js';
 
 const FORMAT = 'renderweave-resources/1';
 const MANIFEST = 'resources.json';
@@ -41,6 +41,7 @@ class StoreError extends Error {
 }
 function problem(error: unknown, source: string): Problem {
   if (error instanceof LocalAccessBusy) return severe(ProblemCodes.resourceStoreBusy, { kind: 'input', source: error.directory }, error.message);
+  const recovery = localAccessProblem(error); if (recovery) return recovery;
   return severe(error instanceof StoreError || error instanceof ResourceReadError ? error.code : ProblemCodes.resourceWriteFailed,
     { kind: 'input', source: error instanceof StoreError ? error.source : source }, describeError(error));
 }

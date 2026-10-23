@@ -163,7 +163,7 @@ it.each(['read', 'apply'])('多份候选提交时并发%s取得完整集合或�
   }
   const results = await Promise.all([applyAgentRound({ roundDir: f.round }), applyAgentRound({ roundDir: other.roundDir })]);
   expect(results.filter(result => result.applied)).toHaveLength(1);
-  expect(results.find(result => !result.applied)!.problems.some(p => ['local.storeBusy', 'apply.concurrentChange', 'apply.workspaceChanged'].includes(p.code))).toBe(true);
+  expect(results.find(result => !result.applied)!.problems.some(p => ['local.storeBusy', 'apply.concurrentChange', 'apply.workspaceChanged'].includes(p.code)), JSON.stringify(results)).toBe(true);
   const actual = await loadWorkspace({ dir: f.workspace, resourcesDir: f.resources });
   expect(actual.problems).toEqual([]);
   expect(actual.templates.filter(item => names.includes(item.name)).length).toBe(results[1]!.applied ? names.length : 0);

@@ -291,11 +291,11 @@ describe('应用', () => {
     expect((await json(join(workspace, 'compiled-badge-v1.schema.json')))['x-renderweave-static-schema']).toEqual({ name: '胸牌', version: 1 });
     expect(await json(join(workspace, 'schema-greeting-v2.json'))).toEqual({ ...GREETING, version: 2 });
     expect(await json(join(dir, 'applied.json'))).toEqual(result.applied);
-    expect(result.applied).toMatchObject({ format: 'renderweave-applied/1', workspace, overwrite: false });
+    expect(result.applied).toMatchObject({ format: 'renderweave-applied/2', workspace, overwrite: false });
     expect(result.applied!.fingerprints.before).toBe(result.applied!.fingerprints.round);
 
     const again = await applyAgentRound({ roundDir: dir, overwrite: true });
-    expect(codes(again.problems)).toEqual(['apply.alreadyApplied']);
+    expect(again.problems).toEqual([]); expect(again.applied).toEqual(result.applied);
     expect(codes((await changeReview(dir, { type: 'reopen' })).problems)).toEqual(['review.invalid']);
     expect((await readReview(dir)).view!.applied).toEqual(result.applied);
   });
@@ -331,7 +331,7 @@ describe('应用', () => {
     await approved(dir);
     const before = await contents(workspace);
     const result = await applyAgentRound({ roundDir: dir });
-    expect([codes(result.problems), result.problems[0]!.message]).toEqual([['apply.failed'], expect.stringContaining('已撤回本次写入')]);
+    expect([codes(result.problems), result.problems[0]!.message]).toEqual([['apply.failed'], expect.stringContaining('提交目标状态变化')]);
     expect(await contents(workspace)).toEqual(before);
     expect(await readdir(dir)).not.toContain('applied.json');
   });
