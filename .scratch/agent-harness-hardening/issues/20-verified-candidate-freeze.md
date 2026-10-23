@@ -73,3 +73,11 @@
 来源38e73feaf12551c9dcef8d288010952ee661ccad build/typecheck通过，3322共同文件仅13处已验证变化，其余3309字节一致；13处与14双平台54通过的受测树和17三资料验证字节逐项相同。此前基线全量与修复回归的边界保留，不冒称最终单次全量。公开7步全部0、414份索引中旧301份不变，详见[候选4记录](../../../docs/agent-eval/harness-acceptance-candidate-4.md)。
 
 候选sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804；原四binding-4为sha256:c95dfdb1e4c3154cfb85fe981c528246d115fb6b80480adc1c05de33581e85d0（实验sha256:c6eccead1b20d245dc2369dd1a2853f87f5445f201a0811f75a1aeaf08a257c9，10阶段）；21新根harness21-trusted-feedback-candidate-4的binding为sha256:46cb478e587cc6c73aff68871d373a841b791f3818c4c6d8c987d589a807bd80（实验sha256:ed56446a11984236ce1b00daf0f0b1ad597716e8966eacfbce19e28e89719410，16阶段）。两计划均保留previous3及完整重验清单，默认/预算/原生执行器/Node身份不变。新种子8类、计划16空槽准备成功，真实观测0，未触留出素材。发布与登记待独立复核后激活，21与原38继续未完成。
+
+### 2026-10-23 候选4独立复核与集成
+
+独立复核者 `/root/implement_03` 完成实际共同字节19,985项、414份发布索引719项、原四登记84项、两登记与4英文条件引用972项核对，均通过；包内公开 `freeze --verify --current` 退出0。另对原38候选3新增负结果及原始/恢复各4286文件649目录完整集合、大小、SHA做17,218项核对，旧失败与未运行状态保留。未重跑已通过全量、未调用模型或创建activation。
+
+20发布 `28ff0d2` 合入 `2312ef5`，21登记 `7867ee0` 合入 `5b4c169`，原38记录 `169ea3a` 合入 `c0a3845`，均无冲突。21和原38保持未完成，受控seed及历史另存诊断均未计入新观测。本代两个launcher都在代码层检查第二段的前段完成条件，并保留共享STOP与独占分段；参数、预算和严格政策未改。
+
+最终独立报告为 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate4-publication-and-registration-review.md`，SHA256 `56052ee73492ad6c1fcc8d5b445792d4a600bbd91ce02d3714a9ca8bca00c016`。报告固定后不覆盖，两方唯一派发者将其与包含上述提交的主线点固定进各自激活凭据；本记录不代替实际模型或人工验收。

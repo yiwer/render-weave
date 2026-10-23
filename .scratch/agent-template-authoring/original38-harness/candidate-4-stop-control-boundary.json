@@ -1,0 +1,78 @@
+{
+  "format": "original38-cross-plan-stop-boundary/1",
+  "recordedAt": "2026-10-23T20:52:57.017Z",
+  "sharedStopAt": "2026-10-23T20:45:02.373Z",
+  "nonPrivilegedWatcher": {
+    "sessionId": 65325,
+    "exitCode": 1,
+    "observedBy": "tool output at root task; Get-CimInstance failed before identity check or taskkill",
+    "error": "无法从客户端中访问 CIM 资源。",
+    "unknownFailureTimestamp": true
+  },
+  "privilegedRetry": {
+    "command": "& F:/GenCode/render-weave/out/harness-original38-candidate-4/watch-stop.ps1 -Segment 2",
+    "sameScript": true,
+    "identityChecked": [
+      "child PID 135408",
+      "parent PID 135680",
+      "registered eval command and original38 path"
+    ],
+    "exitCode": 0,
+    "actionAt": "2026-10-23T20:46:05.6751090Z",
+    "childTreeTerminated": true
+  },
+  "completed": {
+    "endedAt": "2026-10-23T20:46:07.728Z",
+    "exitCode": 1,
+    "signal": null
+  },
+  "delayToVerifiedStopActionMs": 63302,
+  "delayToDispatcherCompletionMs": 65355,
+  "sourceStream": {
+    "file": "out/harness-original38-candidate-4/evaluation/run-2/m402-template/attempts/32362262-a3e4-475a-b470-cd46e2865710/round/logs/stream.jsonl",
+    "sha256": "4d8cdd8404202d568acc03aa84f0d2f249282ae897dc0b0ccafbe45ef3d9854c"
+  },
+  "eventsAfterSharedStop": [
+    {
+      "type": "assistant",
+      "timestamp": "2026-10-23T20:46:03.082Z",
+      "model": "claude-haiku-5-5",
+      "isApiError": false,
+      "error": null
+    },
+    {
+      "type": "assistant",
+      "timestamp": "2026-10-23T20:46:03.084Z",
+      "model": "claude-haiku-5-5",
+      "isApiError": false,
+      "error": null
+    },
+    {
+      "type": "assistant",
+      "timestamp": "2026-10-23T20:46:05.023Z",
+      "model": "claude-haiku-5-5",
+      "isApiError": false,
+      "error": null
+    },
+    {
+      "type": "user",
+      "timestamp": "2026-10-23T20:46:05.037Z",
+      "model": null,
+      "isApiError": false,
+      "error": null
+    },
+    {
+      "type": "assistant",
+      "timestamp": "2026-10-23T20:46:07.210Z",
+      "model": "<synthetic>",
+      "isApiError": true,
+      "error": "rate_limit"
+    }
+  ],
+  "limitations": [
+    "共享STOP到实际终止存在CIM权限失败及人工编排介入延迟；不能宣称跨批即时自动停止。",
+    "期间仍有真实assistant事件；保留全部用量，不推断事件对应请求的起始时间，不扣除费用。",
+    "本次只终止已登记自身进程树；未改候选/轮次/评分，未补造结束或尝试封存。"
+  ],
+  "nextDispatchRequirement": "任何未来获准派发前，跨批停止观察器必须在具有读取CIM及终止本任务进程树权限的相同上下文中启动并预检；当前不派发、不轮询额度。"
+}

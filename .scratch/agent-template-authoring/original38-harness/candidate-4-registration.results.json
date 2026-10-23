@@ -1,0 +1,1575 @@
+{
+  "format": "original38-candidate-results/1",
+  "recordedAt": "2026-10-23T20:55:27.007Z",
+  "candidate": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "id": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d"
+  },
+  "binding": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/plans/original-four/binding-4",
+    "id": "sha256:c95dfdb1e4c3154cfb85fe981c528246d115fb6b80480adc1c05de33581e85d0",
+    "sha256": "95bd7262e5c2872b6b1e03686ca4fef683867dd1c2cacd574894d5a7db1466c3"
+  },
+  "experimentId": "c6eccead1b20d245dc2369dd1a2853f87f5445f201a0811f75a1aeaf08a257c9",
+  "registrationSha256": "0ab469ae08198bede0c2d12a0c19b9b2071376571b30851ce3ba354aecc3d9c4",
+  "reports": [
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\reports\\2026-10-23-harness-original38-candidate-4.json",
+      "sha256": "23ad47e884b17d7a4b24abb96f42a2b5b48be1380d5037378eac47352a34bd6d",
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "m402-definition",
+            "name": "M402 数据定义",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "m402-template",
+            "name": "M402 模板",
+            "outcomes": [
+              "fail",
+              "not-run"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "m402-revision",
+            "name": "M402 模板辅助修改",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "366-transcription",
+            "name": "366 数据定义与转录",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          }
+        ],
+        "completeness": {
+          "planned": 8,
+          "pass": 3,
+          "fail": 1,
+          "invalid": 0,
+          "notRun": 4,
+          "complete": false
+        }
+      }
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-post-stop-analysis\\reports\\2026-10-23-harness-original38-candidate-4.rescore-bc8e1e3e-cf2b-47e3-ab5e-ec55f157618d.json",
+      "sha256": "ba960d452e1aa120ef742c854802da8868ed0d72d9caabe4264d251accb09631",
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "m402-definition",
+            "name": "M402 数据定义",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "m402-template",
+            "name": "M402 模板",
+            "outcomes": [
+              "fail",
+              "not-run"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "m402-revision",
+            "name": "M402 模板辅助修改",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "366-transcription",
+            "name": "366 数据定义与转录",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          }
+        ],
+        "completeness": {
+          "planned": 8,
+          "pass": 4,
+          "fail": 1,
+          "invalid": 0,
+          "notRun": 3,
+          "complete": false
+        }
+      }
+    }
+  ],
+  "report": {
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-post-stop-analysis\\reports\\2026-10-23-harness-original38-candidate-4.rescore-bc8e1e3e-cf2b-47e3-ab5e-ec55f157618d.json",
+    "sha256": "ba960d452e1aa120ef742c854802da8868ed0d72d9caabe4264d251accb09631",
+    "gate": {
+      "status": "fail",
+      "pass": false,
+      "scenarios": [
+        {
+          "id": "m402-definition",
+          "name": "M402 数据定义",
+          "outcomes": [
+            "pass",
+            "pass"
+          ],
+          "status": "pass"
+        },
+        {
+          "id": "m402-template",
+          "name": "M402 模板",
+          "outcomes": [
+            "fail",
+            "not-run"
+          ],
+          "status": "fail"
+        },
+        {
+          "id": "m402-revision",
+          "name": "M402 模板辅助修改",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "366-transcription",
+          "name": "366 数据定义与转录",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        }
+      ],
+      "completeness": {
+        "planned": 8,
+        "pass": 4,
+        "fail": 1,
+        "invalid": 0,
+        "notRun": 3,
+        "complete": false
+      }
+    },
+    "mechanismEvidenceUnchanged": {
+      "kind": "unverified",
+      "realModelObservations": 0,
+      "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+    }
+  },
+  "sourceAudit": {
+    "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-live-source-usage-candidate4-stopped-classified.json",
+    "sha256": "2486f4f61743af290faa75b6a9f9f0f4dca24691b490c5de79ae2255aad024ed",
+    "checks": 572,
+    "issues": [],
+    "sourceVerifiedRealBusinessObservations": 5,
+    "sourceVerifiedStartedModelStages": 7,
+    "completedSealedStages": 6,
+    "interruptedUnsealedStages": 1
+  },
+  "units": [
+    {
+      "scenario": "m402-definition",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "failures": [],
+      "retries": 0,
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 15,
+            "of": 15,
+            "missing": [],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoImage",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.fare",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.scheduleDayNote",
+              "scheduleType": "公交线路牌.scheduleType",
+              "departureTimes": "公交线路牌.departures",
+              "stops": "公交线路牌.stops",
+              "name": "站点.name",
+              "road": "站点.road",
+              "badges": "站点.facilities",
+              "landmark": "站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    },
+    {
+      "scenario": "m402-template",
+      "repetition": 1,
+      "status": "fail",
+      "pass": false,
+      "failures": [
+        "压测 9/10，要求至少 10（有严重问题：2 站）"
+      ],
+      "retries": 0,
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9072
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 9,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "scenario": "m402-revision",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "failures": [],
+      "retries": 0,
+      "checks": {
+        "revision": {
+          "templates": [
+            {
+              "name": "站点标识",
+              "status": "unchanged"
+            },
+            {
+              "name": "道路段",
+              "status": "modified"
+            },
+            {
+              "name": "线路牌主模板",
+              "status": "unchanged"
+            },
+            {
+              "name": "站点格",
+              "status": "modified"
+            },
+            {
+              "name": "时刻项",
+              "status": "unchanged"
+            }
+          ],
+          "violations": [],
+          "changedElements": 5
+        },
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9141
+          },
+          "stress": [
+            {
+              "label": "35 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "check.failed"
+              ]
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 35",
+              "severe": 0,
+              "hint": 1,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 740",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "50 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "35 站 1500",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "12 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 6,
+          "landmarkBaseline": {
+            "found": true,
+            "deltaMm": 0,
+            "pass": true
+          },
+          "roadAlign": {
+            "aligns": [
+              "spaceEvenly"
+            ],
+            "pass": true
+          },
+          "layoutPassed": 2
+        }
+      }
+    },
+    {
+      "scenario": "366-transcription",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "failures": [],
+      "retries": 0,
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 12,
+            "of": 15,
+            "missing": [
+              "运营说明",
+              "班车类型",
+              "班次时刻"
+            ],
+            "mapping": {
+              "routeNo": "线路牌.routeNo",
+              "routeNoImage": "线路牌.routeNoArt",
+              "fareType": "线路牌.fareSystem",
+              "fare": "线路牌.boardingFare",
+              "operator": "线路牌.operator",
+              "firstDeparture": "线路牌.serviceStart",
+              "lastDeparture": "线路牌.serviceEnd",
+              "stops": "线路牌.stops",
+              "name": "线路站点.name",
+              "road": "线路站点.roadName",
+              "badges": "线路站点.facilities",
+              "landmark": "线路站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        },
+        "transcription": {
+          "stops": "59/59",
+          "names": 59,
+          "namesInOrder": 59,
+          "scorer": {
+            "version": "renderweave-transcription/3",
+            "matchingPolicy": {
+              "id": "ordered-occurrences/1",
+              "exact": 0,
+              "singleCharacterEdit": 1,
+              "otherSubstitution": 2,
+              "insertion": 1,
+              "omission": 1,
+              "nameNormalization": "trim-trailing-circled-digit",
+              "tieBreak": "diagonal-insertion-omission-for-diagnostics-only",
+              "surplusExactName": "never-single-character-tolerance",
+              "reorder": "exact-occurrence-links-before-residual-edits",
+              "annotations": "compare-only-after-name-alignment",
+              "landmarkReferences": "all-occurrences-multiset",
+              "ambiguity": "all-optimal-correspondences-require-review"
+            }
+          },
+          "alignment": [
+            {
+              "kind": "match",
+              "candidatePosition": 1,
+              "truthPosition": 1,
+              "candidateName": "皇岗口岸公交接驳站",
+              "truthName": "皇岗口岸公交接驳站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 2,
+              "truthPosition": 2,
+              "candidateName": "福滨新村",
+              "truthName": "福滨新村"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 3,
+              "truthPosition": 3,
+              "candidateName": "赤尾地铁站",
+              "truthName": "赤尾地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 4,
+              "truthPosition": 4,
+              "candidateName": "滨河华强天桥",
+              "truthName": "滨河华强天桥"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 5,
+              "truthPosition": 5,
+              "candidateName": "爱华南天桥",
+              "truthName": "爱华南天桥"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 6,
+              "truthPosition": 6,
+              "candidateName": "上步南天桥",
+              "truthName": "上步南天桥"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 7,
+              "truthPosition": 7,
+              "candidateName": "鹿丹村",
+              "truthName": "鹿丹村"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 8,
+              "truthPosition": 8,
+              "candidateName": "宝安南路",
+              "truthName": "宝安南路"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 9,
+              "truthPosition": 9,
+              "candidateName": "振业大厦",
+              "truthName": "振业大厦"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 10,
+              "truthPosition": 10,
+              "candidateName": "西湖宾馆",
+              "truthName": "西湖宾馆"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 11,
+              "truthPosition": 11,
+              "candidateName": "宝安北路南",
+              "truthName": "宝安北路南"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 12,
+              "truthPosition": 12,
+              "candidateName": "市安全教育基地",
+              "truthName": "市安全教育基地"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 13,
+              "truthPosition": 13,
+              "candidateName": "笋岗街道办",
+              "truthName": "笋岗街道办"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 14,
+              "truthPosition": 14,
+              "candidateName": "洪湖公园",
+              "truthName": "洪湖公园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 15,
+              "truthPosition": 15,
+              "candidateName": "东晓街道办",
+              "truthName": "东晓街道办"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 16,
+              "truthPosition": 16,
+              "candidateName": "草埔地铁站",
+              "truthName": "草埔地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 17,
+              "truthPosition": 17,
+              "candidateName": "荣超花园",
+              "truthName": "荣超花园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 18,
+              "truthPosition": 18,
+              "candidateName": "深圳东站",
+              "truthName": "深圳东站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 19,
+              "truthPosition": 19,
+              "candidateName": "龙珠花园",
+              "truthName": "龙珠花园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 20,
+              "truthPosition": 20,
+              "candidateName": "大芬地铁站",
+              "truthName": "大芬地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 21,
+              "truthPosition": 21,
+              "candidateName": "桂芳园",
+              "truthName": "桂芳园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 22,
+              "truthPosition": 22,
+              "candidateName": "丹竹头地铁站",
+              "truthName": "丹竹头地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 23,
+              "truthPosition": 23,
+              "candidateName": "深坑居民小组",
+              "truthName": "深坑居民小组"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 24,
+              "truthPosition": 24,
+              "candidateName": "六约地铁站",
+              "truthName": "六约地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 25,
+              "truthPosition": 25,
+              "candidateName": "牛始埔居民小组",
+              "truthName": "牛始埔居民小组"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 26,
+              "truthPosition": 26,
+              "candidateName": "六约天桥",
+              "truthName": "六约天桥"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 27,
+              "truthPosition": 27,
+              "candidateName": "塘坑地铁站",
+              "truthName": "塘坑地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 28,
+              "truthPosition": 28,
+              "candidateName": "横岗街道办",
+              "truthName": "横岗街道办"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 29,
+              "truthPosition": 29,
+              "candidateName": "力嘉创意文化园",
+              "truthName": "力嘉创意文化园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 30,
+              "truthPosition": 30,
+              "candidateName": "横岗志健广场",
+              "truthName": "横岗志健广场"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 31,
+              "truthPosition": 31,
+              "candidateName": "横岗地铁站",
+              "truthName": "横岗地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 32,
+              "truthPosition": 32,
+              "candidateName": "永湖地铁站",
+              "truthName": "永湖地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 33,
+              "truthPosition": 33,
+              "candidateName": "马峦山郊野公园",
+              "truthName": "马峦山郊野公园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 34,
+              "truthPosition": 34,
+              "candidateName": "碧湖春天花园",
+              "truthName": "碧湖春天花园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 35,
+              "truthPosition": 35,
+              "candidateName": "石楼围居民小组",
+              "truthName": "石楼围居民小组"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 36,
+              "truthPosition": 36,
+              "candidateName": "油社居民小组",
+              "truthName": "油社居民小组"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 37,
+              "truthPosition": 37,
+              "candidateName": "碧桂园凤凰公馆",
+              "truthName": "碧桂园凤凰公馆"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 38,
+              "truthPosition": 38,
+              "candidateName": "润樾山花园",
+              "truthName": "润樾山花园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 39,
+              "truthPosition": 39,
+              "candidateName": "坪山大道沙湖路口",
+              "truthName": "坪山大道沙湖路口"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 40,
+              "truthPosition": 40,
+              "candidateName": "佳华沙湖广场",
+              "truthName": "佳华沙湖广场"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 41,
+              "truthPosition": 41,
+              "candidateName": "深业东城国际",
+              "truthName": "深业东城国际"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 42,
+              "truthPosition": 42,
+              "candidateName": "锦龙地铁站",
+              "truthName": "锦龙地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 43,
+              "truthPosition": 43,
+              "candidateName": "坪山城市候机楼",
+              "truthName": "坪山城市候机楼"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 44,
+              "truthPosition": 44,
+              "candidateName": "坪山大道同富支路口",
+              "truthName": "坪山大道同富支路口"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 45,
+              "truthPosition": 45,
+              "candidateName": "坪山大道东纵路口",
+              "truthName": "坪山大道东纵路口"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 46,
+              "truthPosition": 46,
+              "candidateName": "坪山围地铁站",
+              "truthName": "坪山围地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 47,
+              "truthPosition": 47,
+              "candidateName": "飞东村",
+              "truthName": "飞东村"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 48,
+              "truthPosition": 48,
+              "candidateName": "坪山广场地铁站",
+              "truthName": "坪山广场地铁站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 49,
+              "truthPosition": 49,
+              "candidateName": "坪山区委区政府",
+              "truthName": "坪山区委区政府"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 50,
+              "truthPosition": 50,
+              "candidateName": "大工业区体育中心",
+              "truthName": "大工业区体育中心"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 51,
+              "truthPosition": 51,
+              "candidateName": "松子坑",
+              "truthName": "松子坑"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 52,
+              "truthPosition": 52,
+              "candidateName": "盘古石",
+              "truthName": "盘古石"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 53,
+              "truthPosition": 53,
+              "candidateName": "坪山区群团活动中心",
+              "truthName": "坪山区群团活动中心"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 54,
+              "truthPosition": 54,
+              "candidateName": "坪山中医院",
+              "truthName": "坪山中医院"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 55,
+              "truthPosition": 55,
+              "candidateName": "坑梓汽车站",
+              "truthName": "坑梓汽车站"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 56,
+              "truthPosition": 56,
+              "candidateName": "坑梓沙梨园小区",
+              "truthName": "坑梓沙梨园小区"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 57,
+              "truthPosition": 57,
+              "candidateName": "兰景吉康路口",
+              "truthName": "兰景吉康路口"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 58,
+              "truthPosition": 58,
+              "candidateName": "坑梓中心幼儿园",
+              "truthName": "坑梓中心幼儿园"
+            },
+            {
+              "kind": "match",
+              "candidatePosition": 59,
+              "truthPosition": 59,
+              "candidateName": "坪山综保场站",
+              "truthName": "坪山综保场站"
+            }
+          ],
+          "ambiguities": [],
+          "requiresReview": false,
+          "errors": {
+            "orderViolations": [],
+            "insertions": [],
+            "duplicates": [],
+            "substitutions": [],
+            "omissions": [],
+            "landmarkMissing": [
+              {
+                "candidatePosition": 15,
+                "truthPosition": 15,
+                "value": 2
+              }
+            ],
+            "landmarkExtra": [],
+            "facilityMissing": [],
+            "facilityExtra": []
+          },
+          "missing": [],
+          "unexpected": [],
+          "landmarks": {
+            "matched": 14,
+            "of": 15,
+            "extra": 0
+          },
+          "facilities": {
+            "matched": 18,
+            "of": 18,
+            "extra": 0
+          }
+        }
+      }
+    },
+    {
+      "scenario": "m402-definition",
+      "repetition": 2,
+      "status": "pass",
+      "pass": true,
+      "failures": [],
+      "retries": 0,
+      "checks": {
+        "definition": {
+          "expertFields": {
+            "matched": 15,
+            "of": 15,
+            "missing": [],
+            "mapping": {
+              "routeNo": "公交线路牌.routeNo",
+              "routeNoImage": "公交线路牌.routeNoArt",
+              "fareType": "公交线路牌.fareSystem",
+              "fare": "公交线路牌.fare",
+              "operator": "公交线路牌.operator",
+              "firstDeparture": "公交线路牌.serviceStart",
+              "lastDeparture": "公交线路牌.serviceEnd",
+              "serviceNote": "公交线路牌.operatingDays",
+              "scheduleType": "公交线路牌.serviceType",
+              "departureTimes": "公交线路牌.departures",
+              "stops": "公交线路牌.stops",
+              "name": "线路站点.name",
+              "road": "线路站点.road",
+              "badges": "线路站点.facilities",
+              "landmark": "线路站点.landmark"
+            }
+          },
+          "conventions": {
+            "landmark": true,
+            "badges": true,
+            "fareIsNumber": true,
+            "noTerminalField": true,
+            "noCurrentStop": true,
+            "routeNoText": true
+          },
+          "conventionsPassed": 6
+        }
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "attemptId": "9dde112d-6c38-4710-891b-56c1e3ca14ae",
+      "unit": "run-1/366-transcription",
+      "stage": "dataset",
+      "task": "dataset-extraction",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-1\\366-transcription\\attempts\\9dde112d-6c38-4710-891b-56c1e3ca14ae",
+      "startedAt": "2026-10-23T20:33:35.265Z",
+      "endedAt": "2026-10-23T20:38:21.657Z",
+      "status": "sealed",
+      "verifiedFiles": 73,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 52,
+      "remoteResponseEvents": 52,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 16,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 32,
+        "cacheReadTokens": 865667,
+        "cacheCreationTokens": 87183,
+        "outputTokens": 50891
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 40532,
+      "attemptElapsedMs": 286392,
+      "roundWallMs": 282577,
+      "cliDurationMs": 281462,
+      "apiDurationMs": 280603,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "b851c60493651d9dde4dc7c3d39bf3c4dbde59ccb3c2e0a4202a02cea8409d3b",
+      "sealSha256": "2dc7b853d4ed2c560997bf5ff3ce06e8331c4985b192551d6a9dad30acc73027",
+      "streamSha256": "e6380e2aa899af0415cabc81ed7c8b47fdeed0d63483391747c67215c751a147",
+      "streamBytes": 6809600
+    },
+    {
+      "attemptId": "a14b3bd1-f075-44c1-b034-c62f8402b0c3",
+      "unit": "run-1/366-transcription",
+      "stage": "definition",
+      "task": "definition-extraction",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-1\\366-transcription\\attempts\\a14b3bd1-f075-44c1-b034-c62f8402b0c3",
+      "startedAt": "2026-10-23T20:29:29.966Z",
+      "endedAt": "2026-10-23T20:33:32.666Z",
+      "status": "sealed",
+      "verifiedFiles": 66,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 48,
+      "remoteResponseEvents": 48,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 14,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 28,
+        "cacheReadTokens": 653087,
+        "cacheCreationTokens": 81143,
+        "outputTokens": 45613
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 34954,
+      "attemptElapsedMs": 242700,
+      "roundWallMs": 238633,
+      "cliDurationMs": 236284,
+      "apiDurationMs": 235534,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "bc23d696434929297eb31a286ccf2a6d9da33d0ab34b1fa66b0c0e024fdb0e5c",
+      "sealSha256": "a1bac7f18d36a3a1c921bde022cadaeccaa0e9e40cf1927ff8d0a3fb71c2b66c",
+      "streamSha256": "5a5c08c4aff95e7c4770eb57fc76e35be120012b6299789a0d79e88c347c07d5",
+      "streamBytes": 7004056
+    },
+    {
+      "attemptId": "62658835-29fb-4fe2-92ea-e2fa0d2bd40e",
+      "unit": "run-1/m402-definition",
+      "stage": "definition",
+      "task": "definition-extraction",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-1\\m402-definition\\attempts\\62658835-29fb-4fe2-92ea-e2fa0d2bd40e",
+      "startedAt": "2026-10-23T20:18:48.738Z",
+      "endedAt": "2026-10-23T20:21:50.412Z",
+      "status": "sealed",
+      "verifiedFiles": 66,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 44,
+      "remoteResponseEvents": 44,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 15,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 30,
+        "cacheReadTokens": 580450,
+        "cacheCreationTokens": 64750,
+        "outputTokens": 29711
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 19285,
+      "attemptElapsedMs": 181674,
+      "roundWallMs": 178542,
+      "cliDurationMs": 177366,
+      "apiDurationMs": 176229,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "1093292cebda1e681781c1dd01459d30f61d95aa05d0f2082d59d5d648c412f7",
+      "sealSha256": "3ad686abd83bd5d017790005b482032a736a12b78fcbcc9be263141a6e833072",
+      "streamSha256": "d5881673e95c6b28e35074fdc49dc8b359c3a77c36771b8ca168367a527f1de7",
+      "streamBytes": 5208959
+    },
+    {
+      "attemptId": "8f5573d7-ca66-42d3-818b-fb3d32414d31",
+      "unit": "run-1/m402-revision",
+      "stage": "revision",
+      "task": "template-revision",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-1\\m402-revision\\attempts\\8f5573d7-ca66-42d3-818b-fb3d32414d31",
+      "startedAt": "2026-10-23T20:26:22.376Z",
+      "endedAt": "2026-10-23T20:29:25.648Z",
+      "status": "sealed",
+      "verifiedFiles": 104,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 55,
+      "remoteResponseEvents": 55,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 17,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 34,
+        "cacheReadTokens": 839847,
+        "cacheCreationTokens": 66402,
+        "outputTokens": 20953
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 9587,
+      "attemptElapsedMs": 183272,
+      "roundWallMs": 180179,
+      "cliDurationMs": 178864,
+      "apiDurationMs": 175547,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "3bf09607677200e4c6307570453f0d788f76923b6d3a4556925d4e8f4fab6cb6",
+      "sealSha256": "4dfcb0aeae32bfaf9e66afe6efb0e2e8a91dc111f4ea96088681a427953d786f",
+      "streamSha256": "9e1fe32fb550054e288ec466a9732f8a2202e9b9e53563c1f00ad6697b3173b6",
+      "streamBytes": 2339679
+    },
+    {
+      "attemptId": "83349334-f839-44e5-8f4e-feaeadc95f92",
+      "unit": "run-1/m402-template",
+      "stage": "template",
+      "task": "template-design",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-1\\m402-template\\attempts\\83349334-f839-44e5-8f4e-feaeadc95f92",
+      "startedAt": "2026-10-23T20:21:53.600Z",
+      "endedAt": "2026-10-23T20:26:18.043Z",
+      "status": "sealed",
+      "verifiedFiles": 95,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 59,
+      "remoteResponseEvents": 59,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 20,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 40,
+        "cacheReadTokens": 1311822,
+        "cacheCreationTokens": 90898,
+        "outputTokens": 50983
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 33780,
+      "attemptElapsedMs": 264443,
+      "roundWallMs": 261330,
+      "cliDurationMs": 258880,
+      "apiDurationMs": 256683,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "4f2156c6c35a107d9d552852298eeeffed7368f27a942701afea8725a83ebbb0",
+      "sealSha256": "4facaf99830062907713cb459b0b07edd2a802fd43f54bb04e9ac2ab19c5df72",
+      "streamSha256": "7231e19cc6d0a6b168d2ade27c8938e839a99eac5f71031706609ff9e2a42424",
+      "streamBytes": 2426156
+    },
+    {
+      "attemptId": "727c5d19-c3e7-46ef-9bb3-5b8e6f83f883",
+      "unit": "run-2/m402-definition",
+      "stage": "definition",
+      "task": "definition-extraction",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-2\\m402-definition\\attempts\\727c5d19-c3e7-46ef-9bb3-5b8e6f83f883",
+      "startedAt": "2026-10-23T20:39:09.264Z",
+      "endedAt": "2026-10-23T20:42:18.422Z",
+      "status": "sealed",
+      "verifiedFiles": 66,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 49,
+      "remoteResponseEvents": 49,
+      "localCliApiErrorEvents": 0,
+      "uniqueMessageIds": 13,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": null,
+      "usageStatus": "complete-result",
+      "usage": {
+        "inputTokens": 26,
+        "cacheReadTokens": 543619,
+        "cacheCreationTokens": 66812,
+        "outputTokens": 34535
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 23656,
+      "attemptElapsedMs": 189158,
+      "roundWallMs": 186063,
+      "cliDurationMs": 184971,
+      "apiDurationMs": 184140,
+      "exitCode": 0,
+      "endedBy": "success",
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "0fb1a546b2a4f80cf858c4732369bc62ed048821b6fdb0693b730287cb19562f",
+      "sealSha256": "24a7ee610e2b7504a0775541ddd2c4d65df29ac093e7859c8a647467d40a8b58",
+      "streamSha256": "69648a110c6f5b4db9fb33b2bc1f0788aee03a6e562d87d647bfbfbe842df893",
+      "streamBytes": 4361619
+    },
+    {
+      "attemptId": "32362262-a3e4-475a-b470-cd46e2865710",
+      "unit": "run-2/m402-template",
+      "stage": "template",
+      "task": "template-design",
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation\\run-2\\m402-template\\attempts\\32362262-a3e4-475a-b470-cd46e2865710",
+      "startedAt": "2026-10-23T20:42:21.643Z",
+      "endedAt": null,
+      "status": "terminal-unsealed-pending",
+      "verifiedFiles": null,
+      "sourceStatus": "observed-native-cli-response",
+      "registeredEndpoint": "https://opencode.ai/inference/go/anthropic",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "allAssistantMessageModels": [
+        "<synthetic>",
+        "claude-haiku-5-5"
+      ],
+      "resultModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantEvents": 36,
+      "remoteResponseEvents": 35,
+      "localCliApiErrorEvents": 1,
+      "uniqueMessageIds": 9,
+      "resultEvents": 1,
+      "partialTrailingLine": false,
+      "stopBoundary": "dispatch stopped; original attempt remains unsealed/pending; no completion or duration inferred",
+      "usageStatus": "pending-or-partial",
+      "usage": {
+        "inputTokens": 16,
+        "cacheReadTokens": 237406,
+        "cacheCreationTokens": 45200,
+        "outputTokens": 41978
+      },
+      "usageSources": {
+        "inputTokens": "result",
+        "cacheReadTokens": "result",
+        "cacheCreationTokens": "result",
+        "outputTokens": "result"
+      },
+      "thinkingTokens": 39318,
+      "attemptElapsedMs": null,
+      "roundWallMs": null,
+      "cliDurationMs": 223755,
+      "apiDurationMs": 221091,
+      "exitCode": null,
+      "endedBy": null,
+      "stopped": null,
+      "hasRunError": false,
+      "providerRevision": null,
+      "monetaryCost": null,
+      "startedSha256": "c2cc87dfd2c5e3d206090a2a403c084b68198c24d29aa08f554c8605f14fca78",
+      "sealSha256": null,
+      "streamSha256": "4d8cdd8404202d568acc03aa84f0d2f249282ae897dc0b0ccafbe45ef3d9854c",
+      "streamBytes": 2405979
+    }
+  ],
+  "totals": {
+    "wallMs": 1327324,
+    "inputTokens": 206,
+    "outputTokens": 274664,
+    "thinkingTokens": 201112,
+    "cacheReadTokens": 5031898,
+    "cacheCreationTokens": 502388,
+    "toolCalls": 128,
+    "persistedResults": 0,
+    "unknownUsageAttempts": 0,
+    "unknownByMetric": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 0,
+      "toolCalls": 0,
+      "persistedResults": 0,
+      "wallMs": 1
+    },
+    "usageComplete": false,
+    "legacyHistoryUnknown": false
+  },
+  "timing": {
+    "sessions": 2,
+    "incompleteSessions": 1,
+    "actualWallMs": null,
+    "knownWallMs": 1178888,
+    "attemptsElapsedMs": 1347639,
+    "unknownAttemptDurations": 1
+  },
+  "dispatch": [
+    {
+      "segment": 1,
+      "endedAt": "2026-10-23T20:38:25.909Z",
+      "exitCode": 1,
+      "signal": null
+    },
+    {
+      "segment": 2,
+      "endedAt": "2026-10-23T20:46:07.728Z",
+      "exitCode": 1,
+      "signal": null
+    }
+  ],
+  "operatorStop": {
+    "format": "original38-cross-plan-stop/1",
+    "at": "2026-10-23T20:46:05.6751090Z",
+    "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\STOP.json",
+    "childPid": 135408,
+    "wrapperPid": 135680,
+    "action": "terminate-own-registered-eval-process-tree",
+    "reason": "收到同批已登记的停止标记，停止后续调用，保留全部中断证据"
+  },
+  "sharedStop": {
+    "at": "2026-10-23T20:45:02.373Z",
+    "reason": "quota-or-429",
+    "block": 2,
+    "childPid": 136700,
+    "stderrSha256": "82e03c19efac6d85dd004c0cd16a55d351cafe0da958835f57b2760ec4d2199d"
+  },
+  "offlineRescoreVerification": {
+    "format": "original38-post-stop-offline-rescore/1",
+    "startedAt": "2026-10-23T20:48:37.212Z",
+    "endedAt": "2026-10-23T20:48:42.049Z",
+    "command": "D:\\nodejs\\node.exe",
+    "args": [
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/agent-eval/run.ts",
+      "--rescore",
+      "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\evaluation",
+      "--reports",
+      "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-post-stop-analysis\\reports",
+      "--config",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\config.json"
+    ],
+    "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content",
+    "exitCode": 1,
+    "signal": null,
+    "error": null,
+    "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4",
+    "sourceUnchanged": true,
+    "files": 1053,
+    "directories": 323,
+    "operatorStopSha256": "dba660aa5f305f238abbb5304a3ed2205936f8a7e2e52150517883ae8471d111",
+    "sharedStopSha256": "3f10866a902704a6ca4b536fabaeeb5c11a581dac52a25b6f728d03a0077082f",
+    "modelCalls": 0,
+    "keyRemovedFromChild": true,
+    "reportPurpose": "同候选事后离线汇总；不补造中断轮次封存/内部session完成，不覆盖首段原报告，不把未封存尝试当零成本。"
+  },
+  "reviews": [
+    {
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-4",
+      "archivedRelativePath": "metadata/reviews/zh-template-r1",
+      "manifestSha256": "67157c7dd590625629c3b9eb7c960c102d999fe40cd778760df2507fdaa75b19",
+      "attemptId": "83349334-f839-44e5-8f4e-feaeadc95f92",
+      "independentHumanReview": null
+    },
+    {
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-4",
+      "archivedRelativePath": "metadata/reviews/zh-revision-r1",
+      "manifestSha256": "5df9698dc408ae8248bdeb6c7eed8e13fbe70804b361af5669cf9b59a8d09082",
+      "attemptId": "8f5573d7-ca66-42d3-818b-fb3d32414d31",
+      "independentHumanReview": null
+    }
+  ],
+  "limitations": [
+    "计划8槽保留：5有效业务观测为4pass/1fail；3not-run中包含1个已启动且在外部停止时尚未封存的模板尝试，另外2场景未启动；未重跑有效失败。",
+    "机制报告realModelObservations字段保持原字节；实际模型来源由原生执行器、响应与封存核对另证。",
+    "业务达线与执行完整性分别记录；中文独立样式审核及分钟尚未完成，纯英文真实参考仍需其单独材料核准与执行。",
+    "提供方模型修订、实际货币账单及人工分钟未知；未产生12例留出实际观测。",
+    "与21并发，不由两批墙钟差异推断策略收益。"
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "format": "renderweave-feedback-committed-evidence/1",
+  "copiedAt": "2026-10-23T20:53:37.664Z",
+  "files": [
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\registration.candidate-4.results.json",
+      "file": "results/registration.results.json",
+      "bytes": 56975,
+      "sha256": "7f6c5f3f537926ca7f8ca7e8408848e3c65c72a21be02ff1840db547c4e0df02"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\block-post-stop.json",
+      "file": "results/source-audit.json",
+      "bytes": 373101,
+      "sha256": "975bd8f0c50b135b64fd1a76a4b015e93b63474708bb53d0d55a4642fb7b938d"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\feedback-trace-block-post-stop.json",
+      "file": "results/feedback-traces.json",
+      "bytes": 35683,
+      "sha256": "f6d04ab71b9f5ad4e5b5fc8009e508ae635fb3fc8cea03c0ab7ead2e57d6478e"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\historical-comparison.json",
+      "file": "results/historical-comparison.json",
+      "bytes": 7450,
+      "sha256": "2d68d8780eec7bd0daae33c1cd1a6dbd2ed0e412d581be4a621a215cbf5933f6"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay-diagnostic.json",
+      "file": "results/close-delay-diagnostic.json",
+      "bytes": 3405,
+      "sha256": "44b7f2b7239a95d7aa75ddb5c7ebb7c91373c7a773f2d5c6405081e7e2b4a1ba"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay-diagnostic-supplement.json",
+      "file": "results/close-delay-diagnostic-supplement.json",
+      "bytes": 2070,
+      "sha256": "0340c65ac0e2e8820f56174936fb13e93b174767936794d7c0e282ca9c8be0ea"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\evidence-index.candidate-4.results.json",
+      "file": "results/evidence-index.json",
+      "bytes": 10109,
+      "sha256": "ecaf659c40b6d9fbceb7d5e4fad1f18f566a371cfc4a831d259b39082d0e7dd2"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\activation.json",
+      "file": "results/activation.json",
+      "bytes": 1009,
+      "sha256": "05f2195c5146720f9d24af534181180b2103d7637beff91fb95e12b90d7cbebb"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\STOP.json",
+      "file": "results/STOP.json",
+      "bytes": 189,
+      "sha256": "3f10866a902704a6ca4b536fabaeeb5c11a581dac52a25b6f728d03a0077082f"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\proof.json",
+      "file": "results/post-stop-proof.json",
+      "bytes": 123257,
+      "sha256": "64d47e9c67141b837ff3dc2d2a73c3e4c4c0449cd15fb56fd6f5011a0e7d6dc3"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\verification-corrections.json",
+      "file": "results/verification-corrections.json",
+      "bytes": 1589,
+      "sha256": "ea48da1f7e3dee63f5a2a80ade091781454ffb8fced890d2ce41ea8f7471fd01"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\stdout.log",
+      "file": "results/post-stop-stdout.log",
+      "bytes": 3025,
+      "sha256": "d63c7d50ac006af668c3be83afacb29da785b804e1b221c3f260f5ed477def7c"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\stderr.log",
+      "file": "results/post-stop-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.started.json",
+      "file": "results/block-1.started.json",
+      "bytes": 2055,
+      "sha256": "5538ce93da450b005c5d6d81faa2c2dd3702bffcefb6c1c818a36ae773d82933"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.pid.json",
+      "file": "results/block-1.pid.json",
+      "bytes": 92,
+      "sha256": "5dde680638c1724430762e21e6b7f2c164a5d7626d504a7db276cee013878e27"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.completed.json",
+      "file": "results/block-1.completed.json",
+      "bytes": 2627,
+      "sha256": "967bd6e03ebf4877b5a269aa34983e1578422d4094149c45d3fd7a3ff0bf7fad"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.stdout.log",
+      "file": "results/block-1.stdout.log",
+      "bytes": 3203,
+      "sha256": "727e7598285417f5b296c3601ead6e7f43733587531670248f9698342eda69c0"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.stderr.log",
+      "file": "results/block-1.stderr.log",
+      "bytes": 667,
+      "sha256": "d2463a26225dc8c7fe613fa72123ca862907a3620c150fc124ee0b5c13cadf35"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-2.started.json",
+      "file": "results/block-2.started.json",
+      "bytes": 2055,
+      "sha256": "68f51b29e6e6dd7e0279c5231a1ee5858a92262960bc0c732b2285592ea4e17f"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-2.pid.json",
+      "file": "results/block-2.pid.json",
+      "bytes": 92,
+      "sha256": "c87b0634895873d383447878156834246ac85dad447ff7c2f91d4a4ff3adaa7b"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-2.completed.json",
+      "file": "results/block-2.completed.json",
+      "bytes": 2339,
+      "sha256": "127733bc054dfab9db66fee09880b99c556bd3b005db6053fd1e0828585d00e1"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-2.stdout.log",
+      "file": "results/block-2.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-2.stderr.log",
+      "file": "results/block-2.stderr.log",
+      "bytes": 772,
+      "sha256": "82e03c19efac6d85dd004c0cd16a55d351cafe0da958835f57b2760ec4d2199d"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\dispatch\\block-1.report-harness21-candidate-4.json",
+      "file": "results/block-1-report.json",
+      "bytes": 417261,
+      "sha256": "b2c4afffccb36c107dffdde2a6a9304c73dd246b7d30a9ab0421c18974b054a9"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\reports\\harness21-candidate-4-post-stop.rescore-3b7d3834-37a3-4dfe-9ba8-42c1cabf4c96.json",
+      "file": "results/post-stop-report.json",
+      "bytes": 795897,
+      "sha256": "0960aaa0203d5ecc48fbab5f2c07026fc502116ae25a61298a1b7539132fd6c8"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-candidate4-close-delay-evidence.mjs",
+      "file": "results/harness21-candidate4-close-delay-evidence.mjs",
+      "bytes": 4246,
+      "sha256": "cf40a0ec58e4af31c48fddf125f147969a10d2b23b9779c1d57f4d3389571bab"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-candidate4-pending-close-inspector.json",
+      "file": "results/harness21-candidate4-pending-close-inspector.json",
+      "bytes": 1335,
+      "sha256": "df37d3d08a7a42234779d39c3b736452508d1991867d3cf06e0eb1ef7a5d4476"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-candidate4-pending-close-processes.json",
+      "file": "results/harness21-candidate4-pending-close-processes.json",
+      "bytes": 4103,
+      "sha256": "ad26550d56ccd91fc93d3c1a8619df949066331a51fc851a0ec7a307f82ec1f5"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-candidate4-pending-close-snapshot.json",
+      "file": "results/harness21-candidate4-pending-close-snapshot.json",
+      "bytes": 13656,
+      "sha256": "b942f7585f8576b372d372d6918af862ce0def2e84158402a2a923db0aeb7b36"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-candidate4-pending-close-snapshot.mjs",
+      "file": "results/harness21-candidate4-pending-close-snapshot.mjs",
+      "bytes": 2044,
+      "sha256": "642edfe2bc729621456dfccc969c4ad0574b0c2e84191cd762be6cedb913de09"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-close-inspector.mjs",
+      "file": "results/harness21-close-inspector.mjs",
+      "bytes": 1324,
+      "sha256": "d925e4c2faa111eb84542a3696cdf72feba3c07522b5cdf376d77410016512c8"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\audit\\close-delay\\harness21-pending-close-inspector.mjs",
+      "file": "results/harness21-pending-close-inspector.mjs",
+      "bytes": 3223,
+      "sha256": "ca6311e2976f37f69978b129895ee453a7f415854088bd1b142c543c4d80ed76"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness21-candidate4-evidence-archive/manifest.json",
+      "file": "results/archive-manifest.json",
+      "bytes": 1455309,
+      "sha256": "5dc831d67f5cd5d42af8a912fca2e133144e089aaec39ddc95a5dd98ffbed320"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness21-candidate4-archive-verification.json",
+      "file": "results/restore-verification.json",
+      "bytes": 8739,
+      "sha256": "f92b43ffaaa54547a423b91d889ab64f92a431fc81783af47bce46a62cbfddce"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness21-candidate4-archive-pack.log",
+      "file": "results/archive-pack.log",
+      "bytes": 182,
+      "sha256": "059ef3f14a80e0f836f0d5fadef884e54c9e15dade160b21d955c97632ac0e12"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness21-candidate4-archive-restore.log",
+      "file": "results/archive-restore.log",
+      "bytes": 208,
+      "sha256": "41a1faa2dc12ae5c2938e357b1b5b8ab1fd8e208dfdcf6a23210610b4de09bb6"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness21-candidate4-restore-verification.log",
+      "file": "results/restore-verification.log",
+      "bytes": 415,
+      "sha256": "ead05e48a1ed58e2bcfcd7cbaac1f34baa734510067e2702a217a1f04d55a50c"
+    }
+  ]
+}

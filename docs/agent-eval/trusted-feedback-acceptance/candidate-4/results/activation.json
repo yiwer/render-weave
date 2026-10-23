@@ -1,0 +1,16 @@
+{
+  "format": "renderweave-feedback-activation/1",
+  "authorizedAt": "2026-10-23T20:18:31.883Z",
+  "registrationSha256": "8e419b8f50f57ecbad3ab8254fe9f24fdea950a50178a9ce5ccee7f801a6603b",
+  "authorizationSha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf",
+  "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+  "bindingId": "sha256:46cb478e587cc6c73aff68871d373a841b791f3818c4c6d8c987d589a807bd80",
+  "experimentId": "sha256:ed56446a11984236ce1b00daf0f0b1ad597716e8966eacfbce19e28e89719410",
+  "ticket20Merged": "b8af996c663ee9416fd22178eec1318d0048231c",
+  "independentRegistrationReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate4-publication-and-registration-review.md",
+    "sha256": "56052ee73492ad6c1fcc8d5b445792d4a600bbd91ce02d3714a9ca8bca00c016"
+  },
+  "registrationCommit": "7867ee0491d0013909209f39a005567b9aba81dc",
+  "realModelObservations": 0
+}

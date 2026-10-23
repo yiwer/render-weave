@@ -1,0 +1,7 @@
+评估 harness21-candidate-4：zh-definition-extraction、zh-dataset-extraction、zh-template-design、zh-template-revision、en-definition-extraction、en-dataset-extraction、en-template-design、en-template-revision，第 2–2 次，并行 1；轮次目录 F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-4\observations
+zh-definition-extraction 第 2 次：达线
+zh-dataset-extraction 第 2 次：达线
+zh-template-design 第 2 次：达线
+zh-template-revision 第 2 次：达线
+en-definition-extraction 第 2 次：invalid（数据定义提取一轮遇到额度限制：模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded）
+额度限制：队列中还没开始的 3 个单元不再发起，已在跑的单元跑完
