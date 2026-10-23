@@ -11,6 +11,8 @@
  * 模板辅助修改：把主模板调用树中已保存的模板复制进 candidates/ 作为工作副本（M49），并记录各自所基于的保存内容（M51）。
  */
 import { spawn } from 'node:child_process';
+import { startAnthropicProxy } from './anthropic-proxy.js';
+import { credentialRedactor } from './credential-redaction.js';
 import { createWriteStream } from 'node:fs';
 import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -426,7 +428,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const controller = new AbortController();
   let stopped: QuotaStop | undefined;
   const stop = (reason: QuotaStop) => { stopped ??= reason; controller.abort(); };
-  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : undefined;
+  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
     ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
@@ -440,7 +442,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token] });
   } finally {
     await proxy?.close();
     await checkpoints.idle();
@@ -680,7 +682,8 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void> }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void> }): Promise<{ exitCode: number | null; error?: string }> {
+  const redactor = credentialRedactor(context.secrets);
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
@@ -707,8 +710,8 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
     });
     let executionError: string | undefined;
     child.on('error', (error) => { executionError = `无法启动 ${claude.command}：${error.message}`; });
-    child.stdout.pipe(log);
-    child.stderr.pipe(errors);
+    child.stdout.pipe(redactor.stream()).pipe(log);
+    child.stderr.pipe(redactor.stream()).pipe(errors);
     child.stdin.on('error', () => {});
     const recorded = child.pid ? context.onSpawn(child.pid).then(() => { child.stdin.end(context.prompt); }, () => {
       executionError = '执行器身份无法持久记录，已停止执行器'; stop();
