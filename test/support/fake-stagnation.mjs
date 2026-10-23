@@ -22,14 +22,19 @@ const end = (id, content) => console.log(JSON.stringify({ type: 'user', message:
 await request('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'stagnation-fixture', version: '1' } });
 const actions = JSON.parse(await readFile('actions.json', 'utf8'));
 for (const action of actions) {
-  if (action.kind === 'check') {
+  if (action.kind === 'check' || action.kind === 'checkAndFinish') {
     const id = begin('mcp__rw__check_outcome', {});
     const reply = await request('tools/call', { name: 'check_outcome', arguments: {} });
+    if (action.kind === 'checkAndFinish') {
+      mcp.stdin.end();
+      process.stdout.write(JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: id, content: reply.result.content }] } }) + '\n' + JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: toolSequence }) + '\n', () => process.exit(0));
+      await new Promise(() => {});
+    }
     end(id, reply.result.content);
-  } else if (action.kind === 'write') {
-    const path = resolve('candidates/schema.json'), content = JSON.stringify({ dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
+  } else if (action.kind === 'write' || action.kind === 'writePending') {
+    const path = resolve(action.path ?? 'candidates/schema.json'), content = JSON.stringify({ dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
     const id = begin('Write', { file_path: path, content });
-    await writeFile(path, content); end(id, `File created successfully at: ${path}`);
+    await writeFile(path, content); if (action.kind !== 'writePending') end(id, `File created successfully at: ${path}`);
   } else if (action.kind === 'finish') {
     mcp.stdin.end();
     console.log(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, num_turns: toolSequence }));

@@ -13,19 +13,22 @@ export interface StagnationStop {
   readonly reason: 'stagnation'; readonly threshold: number; readonly basis: ComparisonBasis;
   readonly cycles: readonly StagnationCycle[];
 }
-interface Call { name: string; input: Record<string, unknown>; after?: string }
+interface Call { name: string; input: Record<string, unknown>; after?: string; overlappingWrite?: boolean }
 export const DEFAULT_STAGNATION_THRESHOLD = 2;
 export function stagnationController(options: { roundDir: string; agentDir: string; threshold: number; stop(reason: StagnationStop): void }) {
   const calls = new Map<string, Call>(), completedChecks = new Set<string>();
   let previous: CheckpointView | undefined, repairs: RepairEvidence[] = [], cycles: StagnationCycle[] = [];
   let pending: Promise<void> = Promise.resolve();
+  let submitted = false, stopped = false;
   const reset = () => { previous = undefined; repairs = []; cycles = []; };
   const accept = async (event: Record<string, any>) => {
     if (!Array.isArray(event.message?.content)) return;
     for (const block of event.message.content) {
       if (event.type === 'assistant' && block.type === 'tool_use' && typeof block.id === 'string') {
         if (calls.has(block.id)) { reset(); continue; }
-        calls.set(block.id, { name: block.name, input: block.input ?? {}, after: previous?.id });
+        if (['Write', 'Edit'].includes(block.name)) for (const call of calls.values()) if (call.name === 'mcp__rw__check_outcome') call.overlappingWrite = true;
+        calls.set(block.id, { name: block.name, input: block.input ?? {}, after: previous?.id,
+          overlappingWrite: block.name === 'mcp__rw__check_outcome' && [...calls.values()].some(call => ['Write', 'Edit'].includes(call.name)) });
       }
       if (event.type !== 'user' || block.type !== 'tool_result') continue;
       const call = calls.get(block.tool_use_id); calls.delete(block.tool_use_id);
@@ -35,12 +38,14 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
         if (path.startsWith('candidates/') && !path.split('/').includes('..') && path.endsWith('.json')) repairs.push({ toolCallId: block.tool_use_id, path });
       }
       if (call.name !== 'mcp__rw__check_outcome') continue;
+      if (call.overlappingWrite) { reset(); continue; }
       const texts = typeof block.content === 'string' ? [block.content] : Array.isArray(block.content) ? block.content.flatMap((item: any) => item.type === 'text' ? [item.text] : []) : [];
       let delivered: any;
       for (const text of texts) { try { const value = JSON.parse(text); if (value.checkpoint) delivered = value; } catch { /* 未收到完整结果不能证明机会。 */ } }
       if (delivered?.checkpoint?.status !== 'saved' || !completedChecks.delete(delivered.checkpoint.id) || truncated(delivered)) { reset(); continue; }
       const { checkpoint } = await readCheckpoint(options.roundDir, delivered.checkpoint.id);
       if (!checkpoint || checkpoint.contentIdentity !== delivered.checkpoint.contentIdentity) { reset(); continue; }
+      repairs = repairs.filter(repair => previous?.files[`agent/${repair.path}`] || checkpoint.files[`agent/${repair.path}`]);
       const required = requiredProblems(checkpoint);
       if (previous && requiredProblems(previous).length && repairs.length && required.length) {
         const comparison = compareCandidates(previous, checkpoint);
@@ -51,7 +56,10 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
         if (!sameBasis || progress || [...after.unknown].some(value => !before.unknown.has(value))) cycles = [];
         else {
           cycles.push({ before: previous.id, after: checkpoint.id, beforeIdentity: previous.contentIdentity, afterIdentity: checkpoint.contentIdentity, repairs, required });
-          if (cycles.length >= options.threshold && checkpoint.comparisonBasis) options.stop({ reason: 'stagnation', threshold: options.threshold, basis: checkpoint.comparisonBasis, cycles });
+          if (!submitted && !stopped && cycles.length >= options.threshold && checkpoint.comparisonBasis) {
+            stopped = true;
+            options.stop({ reason: 'stagnation', threshold: options.threshold, basis: checkpoint.comparisonBasis, cycles });
+          }
         }
       } else if (!required.length || (previous && canonical(previous.comparisonBasis) !== canonical(checkpoint.comparisonBasis))) cycles = [];
       previous = checkpoint; repairs = [];
@@ -59,7 +67,11 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
   };
   return {
     checked(value: CheckpointCheck) { if (value.checkpoint.status === 'saved') completedChecks.add(value.checkpoint.id); },
-    accept(event: Record<string, any>) { pending = pending.then(() => accept(event)).catch(() => reset()); },
+    accept(event: Record<string, any>) {
+      // result 是执行器的交回边界；已排队的异步读取不能在交回后新作停止决定。
+      if (event.type === 'result') submitted = true;
+      pending = pending.then(() => accept(event)).catch(() => reset());
+    },
     async idle() { await pending; },
   };
 }

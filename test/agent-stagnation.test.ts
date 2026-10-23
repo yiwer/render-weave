@@ -112,3 +112,27 @@ it('完整候选反复违反数据定义硬约束时，即使没有内容基准�
   expect(checkpoint.check.assessment.candidates).toBe('invalid');
   expect(job.result.stopped.cycles[0].required).not.toEqual([]);
 });
+it('检查时仍有未完成写入，不能将已有字节当成完整修复失败', async () => {
+  const job = await run('unfinished-write', [
+    { kind: 'write', fields: ['number'] }, { kind: 'check' },
+    { kind: 'write', fields: ['number'] }, { kind: 'writePending', fields: ['number'] },
+    { kind: 'check' }, { kind: 'finish' },
+  ], ['--stagnation-threshold', '1']);
+  expect(job.result?.stopped, job.stderr).toBeUndefined();
+  expect((await readReview(job.out)).execution?.status).toBe('completed');
+});
+it('写入未列入成果集合的杂项文件，不会得到候选修复机会', async () => {
+  const job = await run('unlisted-write', [
+    { kind: 'write', fields: ['number'] }, { kind: 'check' },
+    { kind: 'write', path: 'candidates/unlisted.json', fields: ['number'] }, { kind: 'check' },
+  ], ['--stagnation-threshold', '1']);
+  expect(job.result?.stopped, job.stderr).toMatchObject({ reason: 'timeout' });
+});
+it('执行器已正式交回后，异步检查读取不得再新判定停滞', async () => {
+  const job = await run('submitted', [
+    { kind: 'write', fields: ['number'] }, { kind: 'check' },
+    { kind: 'write', fields: ['number'] }, { kind: 'checkAndFinish' },
+  ], ['--stagnation-threshold', '1']);
+  expect(job.result?.stopped, job.stderr).toBeUndefined();
+  expect((await readReview(job.out)).execution?.status).toBe('completed');
+});
