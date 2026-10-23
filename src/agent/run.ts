@@ -33,6 +33,7 @@ import { runtimeQuota, type QuotaStop } from './quota.js';
 import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
+import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -131,6 +132,7 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly reference?: { readonly file: string; readonly sha256: string };
   readonly contentBaseline?: { readonly file: string; readonly sha256: string };
   readonly referenceImage?: { readonly file: string; readonly sha256: string };
@@ -351,7 +353,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     (file === undefined ? null : { source: resolve(file), file: name, sha256: sha256(await readFile(file)) });
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
+  const resourceSnapshot = await captureResources(roundDir, options.resources);
+  const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
   const inputs: RoundInputs = {
+    resourceSnapshot,
     sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
     referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
     ...(baseline ? { reference: { file: 'logs/reference.json', sha256: sha256(await readFile(join(logsDir, 'reference.json'))) } } : {}),
@@ -372,6 +377,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。
   const context: OutcomeContext = {
+    resourceIdentity: (await readResourceSnapshot(roundDir, resourceSnapshot)).resources,
     ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
     ...(request ? { request: { ...request.document, template: request.template } } : {}),
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
@@ -389,7 +395,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const mcpConfig = join(logsDir, 'mcp.json');
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
-    BIN, 'mcp', '--workspace', snapshotDir, '--resources', resolve(options.resources), '--root', agentDir, '--outcome-context', outcomeContext,
+    BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] } } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
@@ -419,7 +425,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
 
-  const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
+  const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
   const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
   const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
   const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);

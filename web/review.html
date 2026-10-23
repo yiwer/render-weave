@@ -287,7 +287,7 @@ function conclusion(editable) {
     h('div', { class: 'row' },
       h('button', { class: 'primary', disabled: !editable || !view.canApprove, onclick: () => change({ type: 'approve', ...(comment.value.trim() ? { comment: comment.value } : {}) }) }, '审核通过'),
       h('button', { class: 'danger', disabled: !editable, onclick: () => change({ type: 'reject', comment: comment.value }) }, '审核不通过'),
-      h('button', { disabled: review.status === 'inProgress' || Boolean(applied), onclick: () => change({ type: 'reopen' }) }, '撤回结论'),
+      h('button', { disabled: (review.status === 'inProgress' && !view.problems.some(p => p.code === 'apply.resourcesChanged' || (p.code === 'review.invalid' && p.message.includes('历史轮次')))) || Boolean(applied), onclick: () => change({ type: 'reopen' }) }, '撤回结论 / 重新检查'),
       review.status === 'approved' && !applied ? h('span', { class: 'muted' }, '下一步：renderweave agent apply ', h('code', {}, view.round.dir)) : null),
     h('h3', { style: 'margin-top:12px' }, '还不能通过的原因'),
     problemList(blocking()));

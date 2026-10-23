@@ -5,6 +5,7 @@
  * 引擎只通过 ResourceRepository 接口取资源，日后换成数据库或对象存储不影响引擎。
  */
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { isAbsolute, join, normalize, relative } from 'node:path';
 import { ProblemCodes, severe, type Problem, type ProblemCode } from './problems.js';
 import { describeError, isRecord } from './util.js';
@@ -46,6 +47,8 @@ const MANIFEST = 'resources.json';
 
 interface FileEntry extends ResourceInfo {
   readonly file: string;
+  readonly sha256?: string;
+  readonly byteLength?: number;
 }
 
 /** 自动识别新旧清单。旧清单返回可用部分；版本清单错误时整体拒绝。 */
@@ -101,7 +104,9 @@ export async function openResourceRepository(
       problems.push(severe(ProblemCodes.inputDuplicate, where, `资源 ID 重复：${id}`));
       return;
     }
-    entries.set(id, { id, kind, file: join(dir, file) });
+    entries.set(id, { id, kind, file: join(dir, file),
+      ...(typeof item.sha256 === 'string' ? { sha256: item.sha256 } : {}),
+      ...(typeof item.byteLength === 'number' ? { byteLength: item.byteLength } : {}) });
   });
 
   return { repository: new FileResourceRepository(entries), problems };
@@ -123,7 +128,11 @@ class FileResourceRepository implements ResourceRepository {
     const entry = this.entries.get(id);
     if (!entry) throw new ResourceReadError(id, `资源仓库中没有资源 ${id}`);
     try {
-      return new Uint8Array(await readFile(entry.file));
+      const bytes = new Uint8Array(await readFile(entry.file));
+      if (entry.sha256 !== undefined && (createHash('sha256').update(bytes).digest('hex') !== entry.sha256 || bytes.length !== entry.byteLength)) {
+        throw new Error(`资源 ${id} 的字节与固定记录不符`);
+      }
+      return bytes;
     } catch (error) {
       const hintText = entry.kind === 'font' ? '；字体文件需先运行 npm run fetch-fonts 获取' : '';
       throw new ResourceReadError(id, `资源 ${id} 的文件无法读取：${describeError(error)}${hintText}`);

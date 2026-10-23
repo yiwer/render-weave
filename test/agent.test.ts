@@ -131,12 +131,12 @@ describe('发起一轮数据定义提取', () => {
       '--max-turns', '9', '--no-session-persistence']);
     const mcp = JSON.parse(await readFile(join(logs, 'mcp.json'), 'utf8'));
     expect(Object.keys(mcp.mcpServers)).toEqual(['rw']);
-    expect(mcp.mcpServers.rw.args.slice(1)).toEqual(['mcp', '--workspace', join(result.roundDir, 'snapshot'), '--resources', resourcesDir, '--root', agent,
+    expect(mcp.mcpServers.rw.args.slice(1)).toEqual(['mcp', '--workspace', join(result.roundDir, 'snapshot'), '--resources', join(result.roundDir, result.record.inputs.resourceSnapshot!.directory), '--root', agent,
       '--outcome-context', join(logs, 'outcome-context.json'), '--log', join(logs, 'tools.jsonl'),
       '--tools', 'list_documents,read_document,list_resources,check_definitions,check_dataset,view_image,dsl_reference,check_outcome']);
     expect(mcp.mcpServers.rw.args[0]).toMatch(/bin\.js$/);
     expect(JSON.parse(await readFile(join(logs, 'outcome-context.json'), 'utf8'))).toEqual({
-      task: 'definition-extraction', briefText: await readFile(result.record.inputs.brief.source, 'utf8'),
+      task: 'definition-extraction', briefText: await readFile(result.record.inputs.brief.source, 'utf8'), resourceIdentity: expect.any(Array),
     });
 
     const leaks = [];
@@ -211,6 +211,7 @@ describe('发起一轮数据定义提取', () => {
     expect(record.verdict).toBe('unqualified');
     expect(record.problems[0].message).toContain('没有字段 rank');
     expect(checked).toEqual({ verdict: record.verdict, assessment: record.assessment, problems: record.problems,
+      contentIdentity: { id: record.contentIdentity.id, format: 'renderweave-content-identity/1', engine: record.contentIdentity.engine, criteria: 'authoring-check/1' },
       candidates: record.candidates.map(({ sha256: _sha256, ...candidate }: Record<string, unknown>) => candidate) });
   });
 });

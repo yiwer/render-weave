@@ -181,6 +181,7 @@ export const ProblemCodes = {
   reviewNotApproved: 'review.notApproved',
   /** 应用被拒绝：工作区自成果生成后已变化，需明确选择覆盖或重做（M51）。 */
   applyWorkspaceChanged: 'apply.workspaceChanged',
+  applyResourcesChanged: 'apply.resourcesChanged',
   /** 应用被拒绝：本轮已经应用过。 */
   applyAlreadyApplied: 'apply.alreadyApplied',
   /** 应用失败：发布或写入失败，已撤回本次写入，工作区保持原状。 */

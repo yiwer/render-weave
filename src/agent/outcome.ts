@@ -12,12 +12,14 @@ import { isRecord } from '../util.js';
 import type { StaticSchemaRef, Workspace } from '../workspace.js';
 import { checkCandidates, type CandidateContext } from './candidates.js';
 import { assessCandidates, type RenderAssessment } from './assessment.js';
-import { revisionDiff, type RevisionDiff } from './diff.js';
+import { canonical, revisionDiff, type RevisionDiff } from './diff.js';
+import { sha256 } from './round-files.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { validateReferenceBaseline, type ReferenceBaseline, type StyleVerificationRecord, type StyleAnomaly, type BusinessState } from './style-verification.js';
 import { validateContentBaseline, verifyExtractionCoverage, type BusinessContentBaseline, type ContentCoverageItem, type CoverageAssessment, type CoverageVerificationRecord } from './coverage-verification.js';
 import { summarizeVisual, type ReferenceImage } from './visual-comparison.js';
+import { contentIdentity, trackResources, type ContentIdentity, type ResourceIdentity } from './content-identity.js';
 
 /** 待确认项的四类原因（M44）：看不清、推测、来源冲突、必填未提供。 */
 export const PENDING_REASONS = ['unreadable', 'inferred', 'conflicting', 'requiredMissing'] as const;
@@ -134,6 +136,7 @@ export interface StyleAssessment {
 }
 
 export interface OutcomeCheck {
+  readonly contentIdentity?: ContentIdentity;
   /** 技术检查合格：结构、候选及指定请求的模板渲染通过；内容与样式仍需审核。 */
   readonly verdict: 'qualified' | 'unqualified';
   /** 结构问题：没有 outcome.json、结构不合格、候选文件或待确认项不对。 */
@@ -157,6 +160,7 @@ export interface OutcomeCheck {
 
 /** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）；模板辅助修改可以改的模板。 */
 export interface OutcomeContext extends CandidateContext {
+  readonly resourceIdentity?: readonly ResourceIdentity[];
   readonly request?: { readonly template: string; readonly [key: string]: unknown };
   readonly baseline?: ReferenceBaseline;
   readonly referenceImage?: ReferenceImage;
@@ -184,6 +188,10 @@ const OUTCOME_TARGET_SCHEMA = {
     referenceImage: { type: 'object', additionalProperties: false, required: ['path', 'sha256'], properties: { path: { type: 'string', minLength: 1 }, sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' } } },
     contentBaseline: { type: 'object' },
     briefText: { type: 'string' },
+    resourceIdentity: { type: 'array', items: { type: 'object', required: ['id', 'kind', 'sha256', 'byteLength'], properties: {
+      id: { type: 'string' }, kind: { enum: ['image', 'font'] }, sha256: { type: ['string', 'null'] }, byteLength: { type: ['number', 'null'] },
+      version: { type: 'integer', minimum: 1 }, file: { type: 'string' },
+    } } },
   },
 } as const;
 
@@ -216,10 +224,15 @@ export async function checkAgentOutcome(options: {
 }): Promise<OutcomeCheck> {
   const task = AGENT_TASKS[options.task];
   const context = options.context ?? {};
+  const tracked = trackResources(options.workspace.resources, context.resourceIdentity);
+  options = { ...options, workspace: { ...options.workspace, resources: tracked.repository } };
   const files = await WorkingDirectory.open(options.agentDir);
   const problems: Problem[] = [];
   const at = (source: string) => ({ kind: 'input', source: source === '' ? OUTCOME_FILE : `${OUTCOME_FILE}#${source}` }) as const;
-  const unqualified = (candidates: CandidateCheck[] = []): OutcomeCheck => ({ verdict: 'unqualified', problems, candidates,
+  const unqualified = async (candidates: CandidateCheck[] = []): Promise<OutcomeCheck> => ({ verdict: 'unqualified', problems, candidates,
+    contentIdentity: await contentIdentity({ workspace: options.workspace, candidates: { files: candidates.map(({ path, sha256 }) => ({ path, sha256 })), submission: sha256(canonical(submitted)) },
+      request: context.request, reference: { baseline: context.baseline, contentBaseline: context.contentBaseline, referenceImage: context.referenceImage?.sha256,
+        briefText: context.briefText, definition: context.definition, revision: context.revision }, resources: tracked.used() }),
     assessment: { structure: 'invalid', candidates: 'notChecked', content: 'needsReview',
       render: { status: 'notChecked', problems: [], hasImage: false, capabilityBlocked: false, blocking: false } } });
 
@@ -357,7 +370,11 @@ export async function checkAgentOutcome(options: {
   }
 
   const coverageSevere = coverageVerification?.anomalies.some((a) => a.level === 'severe') ?? false;
-  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || coverageSevere;
+  problems.push(...tracked.errors);
+  const identity = await contentIdentity({ workspace: options.workspace, candidates: { files: final.map(({ path, sha256 }) => ({ path, sha256 })), submission: sha256(canonical(submission)) },
+    request: context.request, reference: { baseline: context.baseline, contentBaseline: context.contentBaseline,
+      referenceImage: context.referenceImage?.sha256, briefText: context.briefText, definition: context.definition, revision: context.revision }, resources: tracked.used() });
+  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || coverageSevere || tracked.errors.length > 0;
 
   const styleVerification = visualReport;
   if (styleVerification) {
@@ -368,7 +385,7 @@ export async function checkAgentOutcome(options: {
     }
   }
 
-  return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final,
+  return { verdict: severeFound ? 'unqualified' : 'qualified', contentIdentity: identity, problems, candidates: final,
     assessment: {
       structure: structureValid ? 'valid' : 'invalid',
       candidates: candidatesValid ? 'valid' : 'invalid',
