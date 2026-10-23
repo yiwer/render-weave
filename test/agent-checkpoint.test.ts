@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { readReview, changeReview, applyAgentRound } from '../src/index.js';
+import { readReview, readPreviousRound, changeReview, applyAgentRound } from '../src/index.js';
 import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 let base: string;
 beforeAll(async () => { base = await mkdtemp(join(tmpdir(), 'rw-checkpoint-')); await writeFile(join(base, 'brief.md'), '提取线路号'); });
@@ -54,6 +54,18 @@ it('沿用成果清单的合法相对路径写法，保存实际被检查候选'
     expect(result.checkpoint.status).toBe('saved');
     expect((await readReview(job.out)).checkpoint?.files).toHaveProperty('agent/candidates/schema.json');
   } finally { await stop(job.child);await job.closed; }
+});
+it('接续前核对旧轮次固定资料，说明或参考图被改动时拒绝继承', async () => {
+  const job=await start('changed-materials');
+  try { await waitJson(join(job.out,'agent/checkpoint-observed.json')); }
+  finally { await stop(job.child);await job.closed; }
+  expect((await readPreviousRound(job.out)).checkpoint).toBeDefined();
+  for(const path of ['logs/materials/brief.md','logs/sample.png']) {
+    const file=join(job.out,path),original=await readFile(file);
+    await writeFile(file,'changed fixed material');
+    await expect(readPreviousRound(job.out)).rejects.toThrow('固定资料');
+    await writeFile(file,original);
+  }
 });
 
 async function checkAgain(out:string,id:number) {

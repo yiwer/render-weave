@@ -567,8 +567,8 @@ function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptio
     ...(previous.checkpointWorkspace ? { workspace: previous.checkpointWorkspace } : inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
     ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
     ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
-    ...(inputs.request ? { request: join(dir, 'request.json') } : {}),
-    ...(inputs.requirement ? { requirement: join(dir, 'requirement.md') } : {}),
+    ...(inputs.request ? { request: join(dir, previous.checkpoint ? 'logs/materials/request.json' : 'request.json') } : {}),
+    ...(inputs.requirement ? { requirement: join(dir, previous.checkpoint ? 'logs/materials/requirement.md' : 'requirement.md') } : {}),
   };
 }
 

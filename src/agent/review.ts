@@ -1311,6 +1311,10 @@ async function readPreviousRoundLocked(dir: string): Promise<PreviousRound> {
     const saved = await readCheckpoint(resolve(dir));
     if (!saved.checkpoint || saved.problems.length) throw new AgentUsageError(`没有可核对的完整检查点，不能从残片接续：${saved.problems.map(p => p.message).join('；')}`);
     const checkpoint = saved.checkpoint, root = resolve(dir), record = execution.execution.start;
+    for (const [path, digest] of Object.entries(record.files)) {
+      try { if (sha256(await readFile(join(root, path))) !== digest) throw new Error('内容身份不符'); }
+      catch (error) { throw new AgentUsageError(`上一轮固定资料无法核对：${path}（${describeError(error)}）`); }
+    }
     const checkpointRoot = join(root, 'checkpoints', checkpoint.id);
     return { dir: root, record, round: record.round, resources: record.inputs.resources, applied: false,
       outcomeSha256: null, reviewSha256: null, reviewStatus: null,

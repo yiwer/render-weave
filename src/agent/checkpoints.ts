@@ -128,7 +128,8 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
     if (captureProblem) {
       const { submission: _submission, ...incomplete } = check;
       return { check: { ...incomplete, verdict: 'unqualified', assessment: { ...check.assessment, structure: 'invalid' },
-        problems: [...check.problems, severe(ProblemCodes.outcomeInvalid, { kind: 'input', source: 'outcome.json' }, captureProblem)] },
+        problems: check.assessment.structure === 'invalid' ? check.problems
+          : [...check.problems, severe(ProblemCodes.outcomeInvalid, { kind: 'input', source: 'outcome.json' }, captureProblem)] },
         checkpoint: { status: 'notSaved', reason: captureProblem } };
     }
     if (reason || !check.contentIdentity) return { check, checkpoint: { status: 'notSaved', reason: reason ?? '检查未形成完整内容身份' } };
