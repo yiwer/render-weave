@@ -225,12 +225,16 @@ it('预登记拒绝草稿交付与重叠同任务计划，范围时间被改后�
 });
 it('接续来源在登记范围外时报告缺失历史，不把局部用量与首次质量当作完整订单',async()=>{
   const f=await setup('outside-source'),rounds=join(root,'only-new-rounds');
-  const scope=await initialize('only-new',[{id:'order-a',plans:[{id:'design',task:'template-design',root:rounds}],deliveries:[]}]);
+  const scope=await initialize('only-new',[{id:'order-a',plans:[{id:'design',task:'template-design',root:rounds}],deliveries:[{id:'image-a',plan:'design',request:f.request}]}]);
   const next=await runAgentTask({from:f.round,feedback:join(f.dir,'brief.md'),out:join(rounds,'continued'),key:'test',keyEnv:'TEST',claude:{command:process.execPath,args:[join(repoRoot,'test/support/fake-claude.mjs'),f.preset]}});
   expect((await event(scope,{id:'partial-first',kind:'assessment',order:'order-a',plan:'design',round:next.roundDir,phase:'original',result:'pass'})).code).toBe(0);
   const r=await cli(['agent','order-report','--order',scope]);expect(r.code,r.stderr).toBe(0);
   expect(r.value().history).toMatchObject({complete:false,outsideScopePreviousRounds:1});
   expect(r.value().orders[0].quality.agentFirstSuccess).toBe(false);expect(r.value().totals.usage.outputTokens.known).toBe(222);
+  for(const category of ['review','correction','rework'])expect((await event(scope,{id:'partial-'+category,kind:'labor',order:'order-a',plan:'design',round:next.roundDir,category,minutes:1})).code).toBe(0);
+  const record=await delivery({...f,round:next.roundDir});expect((await event(scope,{id:'partial-delivery',kind:'delivery',order:'order-a',plan:'design',round:next.roundDir,delivery:'image-a',record})).code).toBe(0);
+  const completed=await cli(['agent','order-report','--order',scope]);expect(completed.code,completed.stderr).toBe(0);
+  expect(completed.value().counts.successfulOrders).toBe(1);expect(completed.value().costPerSuccessfulOrder.labor).toEqual({knownMinutes:3,complete:false});
 });
 it('派发在轮次建立前失败仍保留尝试成本未知与invalid，不能从报告消失',async()=>{
   const config=await readConfig(),scenario=config.scenarios.find(s=>s.id==='m402-definition')!,out=join(root,'dispatch-failed');

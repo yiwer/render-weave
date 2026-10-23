@@ -171,7 +171,8 @@ function quality(plans:readonly OrderPlan[],attempts:Attempt[],events:StoredEven
   return {original:verdict(byPlan.map(p=>p.original)),corrected:verdict(byPlan.map(p=>p.corrected)),
     agentFirstSuccess:byPlan.every(p=>p.original==='pass'),plans:byPlan,
     assessments:assessments.map(e=>({id:e.input.id,at:e.at,phase:(e.input as HumanEvent).phase,result:(e.input as HumanEvent).result,binding:e.binding}))};
-}const metrics=['inputTokens','outputTokens','thinkingTokens','cacheReadTokens','cacheCreationTokens','toolCalls','persistedResults'] as const;
+}
+const metrics=['inputTokens','outputTokens','thinkingTokens','cacheReadTokens','cacheCreationTokens','toolCalls','persistedResults'] as const;
 function totals(attempts:Attempt[]){return {usage:Object.fromEntries(metrics.map(key=>[key,{known:attempts.reduce((n,a)=>n+(a.usage?.[key]??0),0),unknownAttempts:attempts.filter(a=>a.usage?.[key]===undefined).length}]))};}
 type DeliverySummary={delivery:string}&Awaited<ReturnType<typeof bindDelivery>>;
 interface OrderResult {events:StoredEvent[];history:ReturnType<typeof history>;totals:ReturnType<typeof totals>;timing:ReturnType<typeof timing>;id:string;status:string;labor:ReturnType<typeof laborTotals>;quality:ReturnType<typeof quality>;attempts:{evidence:ReturnType<typeof evidence>;elapsedMs?:number;startedAt:string|null;endedAt:string|null;attemptId?:string;experiment?:string|null;id:string;plan:string;dir:string;usage?:RoundMetrics;original:string;originalIdentity:string|null;execution?:string;previous:string|null;checkpoint?:NonNullable<RoundRecord['inputs']['previous']>['checkpoint']}[];commits:string[];deliveries:DeliverySummary[]}
@@ -238,7 +239,7 @@ export async function reportOrders(dir:string){
   return {format:'renderweave-order-report/1',scopeIdentity:saved.identity,scope:saved.scope,declaredAt:saved.declaredAt,history:coverage,
     model:{validAttempts:all.length-invalidAttempts-unknownAttempts,invalidAttempts,unknownAttempts},
     timing:{...timing(all),actualWallMs:orders.length===successfulOrders&&finished.length?Math.max(...finished)-Date.parse(saved.declaredAt):null},counts:{orders:orders.length,plans:saved.scope.orders.reduce((n,o)=>n+o.plans.length,0),attempts:all.length,successfulOrders},orders,totals:total,
-    costPerSuccessfulOrder:successfulOrders?{usageComplete:coverage.complete&&metrics.every(key=>total.usage[key]!.unknownAttempts===0),labor:{knownMinutes:orders.reduce((n,o)=>n+laborKinds.reduce((s,k)=>s+o.labor[k]!.knownMinutes,0),0)/successfulOrders,complete:orders.every(o=>laborKinds.every(k=>o.labor[k]!.unknownPlans===0))},usage:Object.fromEntries(metrics.map(key=>[key,total.usage[key]!.known/successfulOrders]))}:null,amount:amount(all,saved.scope.pricing,coverage.complete)};
+    costPerSuccessfulOrder:successfulOrders?{usageComplete:coverage.complete&&metrics.every(key=>total.usage[key]!.unknownAttempts===0),labor:{knownMinutes:orders.reduce((n,o)=>n+laborKinds.reduce((s,k)=>s+o.labor[k]!.knownMinutes,0),0)/successfulOrders,complete:coverage.complete&&orders.every(o=>laborKinds.every(k=>o.labor[k]!.unknownPlans===0))},usage:Object.fromEntries(metrics.map(key=>[key,total.usage[key]!.known/successfulOrders]))}:null,amount:amount(all,saved.scope.pricing,coverage.complete)};
 }
 /** 白名单摘要；不复制错误原文、提示词、客户备注或目录，不是完整复现包。 */
 export async function shareOrders(dir:string){
