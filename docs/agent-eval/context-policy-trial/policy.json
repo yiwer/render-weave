@@ -32,6 +32,7 @@
     "providerRevision": null,
     "claudeVersion": "2.1.296",
     "roundTimeoutMs": 3600000,
+    "stagnationThreshold": 2,
     "maxTurns": {
       "definition-extraction": 40,
       "dataset-extraction": 40,
