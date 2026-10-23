@@ -38,4 +38,4 @@ node dist/bin.js agent run --from out/round-1 --feedback feedback.md --out out/r
 
 显式选择已发布集合使用 `--from <轮次> --checkpoint latest|better|<id>`，完整已结束轮次也可选择；不指定时沿用既有正式稿或中断检查点策略。`better` 没有实际改善证据时明确拒绝，不退回首次候选。完整合同、比较守卫和审核差异见[保留候选](agent-candidate-selection.md)。
 
-验证见 `test/agent-checkpoint.test.ts`：实际 CLI、假执行器和真实 MCP，覆盖保存信号、两模板集合、业务受阻、半写/缺依赖、读取变化、保存/终检强退、发布中断、字节接续、恢复竞争与直接批准/应用拒绝。候选选择另见 `test/agent-candidate-selection.test.ts`。预算、停滞与真实模型效果属于其他票据。
+验证见 `test/agent-checkpoint.test.ts`：实际 CLI、假执行器和真实 MCP，覆盖保存信号、两模板集合、业务受阻、半写/缺依赖、读取变化、保存/终检强退、发布中断、字节接续、恢复竞争与直接批准/应用拒绝。候选选择另见 `test/agent-candidate-selection.test.ts`。预算、取消及停止保存见[整轮预算](agent-budgets.md)；停滞与真实模型效果属于其他票据。

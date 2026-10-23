@@ -40,6 +40,16 @@ async function host(name: string, fault?: string) {
   return { child, closed, options, dir, gate, started, errors: () => errors };
 }
 
+async function forceClose(job: Awaited<ReturnType<typeof host>>) {
+  const owner = JSON.parse(await readFile(join(job.dir, 'execution-owner.json'), 'utf8'));
+  job.child.kill('SIGKILL'); await job.closed;
+  // CLI 监督器退出与其业务宿主处理 IPC 断开是两个事件；核对记录绑定后等待实际退出。
+  if (owner.supervisorPid === job.child.pid) for (let i = 0; i < 500; i++) {
+    try { process.kill(owner.pid, 0); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ESRCH') return; }
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+}
+
 it('初始化后强退宿主仍留固定输入，身份不能排除写入时拒绝接管', async () => {
   const job = await host('init-kill', 'kill-initialized');
   await job.closed;
@@ -57,7 +67,7 @@ it('启动记录已发布而阶段更新尚未发布时强退，已保存的输�
   const job = await host('initial-publish-gap', 'block-initialized');
   try {
     await waitFor(join(job.dir, 'start-write-waiting'));
-    job.child.kill('SIGKILL'); await job.closed;
+    await forceClose(job);
     const result = await readReview(job.dir);
     expect(result.execution).toMatchObject({ phase: 'preparing', committed: false,
       start: { task: 'definition-extraction', inputs: { sample: { sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } } } });
@@ -76,7 +86,7 @@ it('宿主执行期间被强退：可读中断或待恢复状态，残留成果�
   let pid: number | undefined;
   try {
     pid = Number(await waitFor(job.started));
-    job.child.kill('SIGKILL'); await job.closed;
+    await forceClose(job);
     const result = await readReview(job.dir);
     expect(result.execution).toMatchObject({ phase: 'executing', committed: false });
     expect(['pendingRecovery', 'interrupted']).toContain(result.execution?.status); // 有些宿主平台一并结束子进程。
@@ -93,7 +103,7 @@ it('存活执行器或无法确认的跨机拥有者均保留待恢复，年龄�
   const job = await host('uncertain-kill');
   let pid: number | undefined;
   try {
-    pid = Number(await waitFor(job.started)); job.child.kill('SIGKILL'); await job.closed;
+    pid = Number(await waitFor(job.started)); await forceClose(job);
     // 旧轮次记录夹具：宿主已死，但执行器 PID 仍在本机存活；不需要也不会接管该进程。
     const state = JSON.parse(await readFile(join(job.dir, 'execution.json'), 'utf8'));
     state.executorPid = process.pid;
@@ -115,7 +125,7 @@ it('终检后最终记录提交被文件系统阻塞时强退，不将残留结�
   try {
     await waitFor(job.started); await writeFile(job.gate, 'finish');
     await waitFor(join(job.dir, 'final-write-waiting'));
-    job.child.kill('SIGKILL'); await job.closed;
+    await forceClose(job);
     const result = await readReview(job.dir);
     expect(result.execution).toMatchObject({ phase: 'finalizing', status: 'interrupted', committed: false });
     expect(result.execution?.events.at(-1)?.reason).toContain('成果检查已完成');

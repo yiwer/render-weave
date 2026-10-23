@@ -36,7 +36,7 @@ const { values } = parseArgs({
   options: {
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
-    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
+    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'timeout-ms': { type: 'string' },
     plan: { type: 'string' }, config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
     'context-policy':{type:'string'},'context-pair':{type:'string'},
@@ -85,6 +85,8 @@ if (!process.env[keyEnv]) fail(`缺少环境变量 ${keyEnv}：key 只经环境�
 try { await stat(join(REPO, 'dist/bin.js')); } catch { fail('没有 dist/bin.js：先运行 npm run build'); }
 const jobs = positive(values.jobs, 3, '--jobs');
 const maxTurns = values['max-turns'] === undefined ? undefined : positive(values['max-turns'], 0, '--max-turns');
+const roundTimeoutMs = values['timeout-ms'] === undefined ? undefined : Number(values['timeout-ms']);
+if (roundTimeoutMs !== undefined && (!Number.isFinite(roundTimeoutMs) || roundTimeoutMs <= 0)) fail('--timeout-ms 必须是有限正值');
 const effort = values.effort;
 if (effort !== undefined && !['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) fail('--effort 只能取 low、medium、high、xhigh、max');
 const scenarios = pick(values.scenarios);
@@ -119,7 +121,7 @@ try {
 const runtime: RuntimeOptions = {
   ...((values['context-policy']!==undefined)?{contextPolicy:values['context-policy'] as 'full'|'on-demand'}:{}),
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
-  ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(effort ? { effort } : {}),
+  ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(roundTimeoutMs !== undefined ? { roundTimeoutMs } : {}), ...(effort ? { effort } : {}),
   ...(values.claude ? {claude: {command: values.claude, args: claudeArgs}} : {}),
 };
 let identity: ExperimentIdentity;
