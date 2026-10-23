@@ -1,0 +1,719 @@
+{
+  "format": "renderweave-feedback-trace-observations/1",
+  "createdAt": "2026-10-23T19:14:14.980Z",
+  "block": 1,
+  "report": {
+    "file": "harness21-candidate-3.json",
+    "snapshot": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\dispatch\\block-1.report-harness21-candidate-3.json",
+    "sha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47"
+  },
+  "observations": [
+    {
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "5b378e01-ea6f-4645-8f60-c451d87180cc",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-definition-extraction\\attempts\\5b378e01-ea6f-4645-8f60-c451d87180cc\\round\\logs\\tools.jsonl",
+      "toolSha256": "99f845c9d95a502b17df5a8e6c9ae87843f877b2e70a39e88e4309b042fc3fba",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 2,
+          "at": "2026-10-23T19:02:04.832Z",
+          "isError": false,
+          "contentIdentity": "b44cae0fff0a5728247e103ad51c4448849dc299ac41e9c330bb796473936c96"
+        }
+      ],
+      "finalContentIdentity": "b44cae0fff0a5728247e103ad51c4448849dc299ac41e9c330bb796473936c96",
+      "finalVisualReportId": null,
+      "classification": "guard-passed",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "8f2a1c25-c616-4143-a22a-e4ddbecdc021",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-dataset-extraction\\attempts\\8f2a1c25-c616-4143-a22a-e4ddbecdc021\\round\\logs\\tools.jsonl",
+      "toolSha256": "abce6e4b1692df425103b18b121a0979e234d900c5a249c10a37a001f38a580c",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 6,
+          "at": "2026-10-23T19:03:07.915Z",
+          "isError": false,
+          "contentIdentity": "aed57d4c8536e100dde6e6a79d72790011eafd53cae985d511fc3e875b2a6006"
+        }
+      ],
+      "finalContentIdentity": "aed57d4c8536e100dde6e6a79d72790011eafd53cae985d511fc3e875b2a6006",
+      "finalVisualReportId": null,
+      "classification": "guard-passed",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/zh-template-design",
+      "attemptId": "ef3615ed-e21f-4151-8607-ac29f15fe731",
+      "status": "fail",
+      "failures": [
+        "纠偏目标路径不存在",
+        "目标修正未通过",
+        "非目标保留未通过",
+        "未知范围保留未通过",
+        "最后工具检查与宿主终检身份未通过",
+        "后续页实际取得未通过"
+      ],
+      "guards": {
+        "targetCorrection": false,
+        "nonTargetPreservation": false,
+        "unknownRetained": false,
+        "finalCheckMatches": false,
+        "pagination": false
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-template-design\\attempts\\ef3615ed-e21f-4151-8607-ac29f15fe731\\round\\logs\\tools.jsonl",
+      "toolSha256": "b6ab5e993b9e55ffa5fe0387c695ea5a89f107e4b70837d26a5ca8f1e3227cd2",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 5,
+          "at": "2026-10-23T19:03:53.401Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T19:03:58.127Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T19:03:58.240Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 10,
+          "at": "2026-10-23T19:04:14.567Z",
+          "isError": false,
+          "reportId": "2b4f7184f3af6d1a736085d9348ac9764e52ef4315a96124b66e93363e36ad4d",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 11,
+          "at": "2026-10-23T19:04:20.594Z",
+          "isError": false,
+          "reportId": "2b4f7184f3af6d1a736085d9348ac9764e52ef4315a96124b66e93363e36ad4d",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 13,
+          "at": "2026-10-23T19:05:24.242Z",
+          "isError": false,
+          "contentIdentity": "2418d1de04d190033d23dc69f8d6f224cfff1455a5d3a6a73e82b2034ade8de7"
+        }
+      ],
+      "finalContentIdentity": "2418d1de04d190033d23dc69f8d6f224cfff1455a5d3a6a73e82b2034ade8de7",
+      "finalVisualReportId": "2b4f7184f3af6d1a736085d9348ac9764e52ef4315a96124b66e93363e36ad4d",
+      "classification": "point-defect-before-clean-later-page",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "1471e382-3000-4878-9828-68e3c6f5bc72",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-template-revision\\attempts\\1471e382-3000-4878-9828-68e3c6f5bc72\\round\\logs\\tools.jsonl",
+      "toolSha256": "54311180e00b268171b1114a921f5c746287562ec3f3ac4d8697e9bd3f8a39a7",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 2,
+          "at": "2026-10-23T19:06:13.413Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T19:06:15.865Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T19:06:15.979Z",
+          "isError": false,
+          "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T19:06:23.994Z",
+          "isError": false,
+          "reportId": "a15e209616bc83e51e95da0768c36fddfeb6d66087b045b6ae0d8451bde336db",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T19:06:34.377Z",
+          "isError": false,
+          "reportId": "a15e209616bc83e51e95da0768c36fddfeb6d66087b045b6ae0d8451bde336db",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 9,
+          "at": "2026-10-23T19:07:00.172Z",
+          "isError": false,
+          "contentIdentity": "23ac670272e9fa11b1e881c9c13b8bc835b28778663a157fc5e3690944a46e1e"
+        },
+        {
+          "line": 10,
+          "at": "2026-10-23T19:07:34.054Z",
+          "isError": false,
+          "contentIdentity": "4a455904ba7ec92bca4379bb7beb609984dece1ebedc232fb8ebefdee7d9f395"
+        }
+      ],
+      "finalContentIdentity": "4a455904ba7ec92bca4379bb7beb609984dece1ebedc232fb8ebefdee7d9f395",
+      "finalVisualReportId": "a15e209616bc83e51e95da0768c36fddfeb6d66087b045b6ae0d8451bde336db",
+      "classification": "guard-passed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "95485d7c-0a42-45d8-b4e2-d582f310971c",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-definition-extraction\\attempts\\95485d7c-0a42-45d8-b4e2-d582f310971c\\round\\logs\\tools.jsonl",
+      "toolSha256": "5f64d1be2c3f1f3c2f26de190e3084c634b6415e577521a44f530d34a1936e3e",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 4,
+          "at": "2026-10-23T19:08:37.454Z",
+          "isError": false,
+          "contentIdentity": "69c744cc3d3f071822c1c03d7a62ac2af4e5ef83ce41b4ac92f5dd91d13eeac0"
+        }
+      ],
+      "finalContentIdentity": "69c744cc3d3f071822c1c03d7a62ac2af4e5ef83ce41b4ac92f5dd91d13eeac0",
+      "finalVisualReportId": null,
+      "classification": "guard-passed",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-dataset-extraction\\attempts\\7c0ccb38-0a6a-4786-8ec8-d6a93135c1b4\\round\\logs\\tools.jsonl",
+      "toolSha256": "0636e533d46a99763f5c7d8ed1d35689bca7b06027f0bc79cb152b5753c34487",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 5,
+          "at": "2026-10-23T19:09:30.100Z",
+          "isError": false,
+          "contentIdentity": "d1239816dd7aa675ff3b6e9176fb058d8289506dc0558cc5bfeac16cfbb05141"
+        }
+      ],
+      "finalContentIdentity": "d1239816dd7aa675ff3b6e9176fb058d8289506dc0558cc5bfeac16cfbb05141",
+      "finalVisualReportId": null,
+      "classification": "guard-passed",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/en-template-design",
+      "attemptId": "57099484-e529-4726-9e42-12f850bc03a3",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-template-design\\attempts\\57099484-e529-4726-9e42-12f850bc03a3\\round\\logs\\tools.jsonl",
+      "toolSha256": "affb15cde67d363129c10427f53b16ba55ce33aa2101883677690bc23e275acc",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 1,
+          "at": "2026-10-23T19:09:59.534Z",
+          "isError": false,
+          "reportId": "d96e68e897eff0bd51626d5c6d5f8b2c7efd1e948a04afef357ae6a070c99061",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 2,
+          "at": "2026-10-23T19:10:02.718Z",
+          "isError": false,
+          "reportId": "d96e68e897eff0bd51626d5c6d5f8b2c7efd1e948a04afef357ae6a070c99061",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T19:10:02.803Z",
+          "isError": false,
+          "reportId": "d96e68e897eff0bd51626d5c6d5f8b2c7efd1e948a04afef357ae6a070c99061",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T19:10:11.337Z",
+          "isError": false,
+          "reportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T19:10:11.540Z",
+          "isError": false,
+          "reportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T19:10:11.626Z",
+          "isError": false,
+          "reportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 8,
+          "at": "2026-10-23T19:10:41.290Z",
+          "isError": false,
+          "contentIdentity": "818a3d4d5cb5cecac6b83f93dbf21ebd1d765dd016e95d46c69d2ea4765f4421"
+        }
+      ],
+      "finalContentIdentity": "818a3d4d5cb5cecac6b83f93dbf21ebd1d765dd016e95d46c69d2ea4765f4421",
+      "finalVisualReportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+      "classification": "guard-passed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-1/en-template-revision",
+      "attemptId": "0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\en-template-revision\\attempts\\0a9577bb-2fc5-4ff3-85a3-d38c8e95be7e\\round\\logs\\tools.jsonl",
+      "toolSha256": "6daf2202b01e2db7205aba07272d728ae4cb0b2d0a986dfb228a495da0ed2fe5",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 2,
+          "at": "2026-10-23T19:11:29.207Z",
+          "isError": false,
+          "reportId": "d96e68e897eff0bd51626d5c6d5f8b2c7efd1e948a04afef357ae6a070c99061",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T19:11:32.415Z",
+          "isError": false,
+          "reportId": "d96e68e897eff0bd51626d5c6d5f8b2c7efd1e948a04afef357ae6a070c99061",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T19:11:47.367Z",
+          "isError": false,
+          "reportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T19:11:51.245Z",
+          "isError": false,
+          "reportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 9,
+          "at": "2026-10-23T19:12:11.127Z",
+          "isError": false,
+          "contentIdentity": "9219f10f26d896f74eee75b19abebccfeb129c39da3b102ffb0ade848de7d89c"
+        }
+      ],
+      "finalContentIdentity": "9219f10f26d896f74eee75b19abebccfeb129c39da3b102ffb0ade848de7d89c",
+      "finalVisualReportId": "063564392242df8c623a3ab4f98e2d9d0a1158ea7196b59adb54a0f4801d9562",
+      "classification": "guard-passed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 0
+    }
+  ],
+  "limits": [
+    "保留原始评分，分类只描述公开工具日志时序",
+    "干净后续页不等于未分页；不能证明改前后续页缺陷取证",
+    "18为历史不同候选的描述性比较，不能补本轮重复槽或推断因果"
+  ]
+}
