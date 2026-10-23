@@ -34,7 +34,7 @@ node dist/bin.js agent run --task template-design --sample sample.png --brief br
 
 当前适配器无法执行实时硬 token/费用上限，因此 `--max-tokens` / `--max-cost-usd`（API `maxTokens` / `maxCostUsd`）在启动前明确拒绝。供应商结束汇总与已收到消息的用量用于报告，不冒充实时限额。
 
-结果汇总优先；未收到结果时按消息 ID 保留最新快照并累计不同消息，`usageSource: messages` 表示只覆盖已知消息，可能不完整。`usageSource: result` 表示供应商结果汇总。未收到的字段不填零，失败、取消和超时不清空已知用量。`wallMs` 包含执行后的终检。全实验成本继续使用独立尝试原件和既有汇总，不另建账本。
+结果汇总逐字段优先；缺失字段沿用已收到消息的数值，空结果对象不会清除已知用量。同一消息 ID 的稀疏更新只合并已知字段，再累计不同消息，`usageSource: messages` 表示使用了消息证据，可能不完整。`usageSource: result` 表示数值全部来自供应商结果汇总。未收到的字段不填零，失败、取消和超时不清空已知用量。`wallMs` 包含执行后的终检。全实验成本继续使用独立尝试原件和既有汇总，不另建账本。
 
 明确硬额度沿用原分类；普通 429、5xx 和含糊限流不触发硬额度停止。执行器非零退出/服务错误保留失败诊断，宿主强退显示持久状态，检查点来源标为 `hostRecovery`，均不替换成成功或批准。
 
