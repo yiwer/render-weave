@@ -49,13 +49,26 @@ export interface TranscriptionScenario extends ScenarioBase {
   readonly pass: { readonly names: number; readonly landmarks: number; readonly facilities: number; readonly orderViolations: number; readonly insertions: number; readonly duplicates: number; readonly landmarkExtra: number; readonly facilityExtra: number };
 }
 
-export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario;
+/** 已知可修初始成果的反馈接续；seed 是受控初始状态，不冒充首次模型产物。 */
+export interface FeedbackScenario extends ScenarioBase {
+  readonly kind: 'feedback';
+  readonly language: 'zh' | 'en';
+  readonly task: import('../../src/index.js').AgentTaskId;
+  readonly seedRound: string;
+  readonly feedback: string;
+  readonly policy: string;
+  readonly pass: {readonly targetCorrection: true; readonly nonTargetPreservation: true; readonly unknownRetained: true};
+}
+export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario | FeedbackScenario;
+
+export const stageNames = (scenario: Scenario): readonly string[] => scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
 
 export interface EvalConfig {
   readonly format: 'renderweave-agent-eval-config/2';
   /** 每个场景至少预登记几次；字段名沿用旧配置。 */
   readonly consecutivePasses: number;
   readonly resources: string;
+  readonly evidence?: 'mechanism' | 'real-model';
   readonly scenarios: readonly Scenario[];
 }
 
@@ -65,6 +78,9 @@ export async function readConfig(file = CONFIG_FILE): Promise<EvalConfig> {
   const config = JSON.parse(await readFile(file, 'utf8')) as EvalConfig;
   if (config.format !== 'renderweave-agent-eval-config/2') throw new Error(`评估配置需 renderweave-agent-eval-config/2 的核准评分政策：${file}；评估未完成，不自动迁移旧通过线`);
   for (const scenario of config.scenarios) {
+    if (scenario.kind === 'feedback') {
+      if (!['zh', 'en'].includes(scenario.language) || !['definition-extraction', 'dataset-extraction', 'template-design', 'template-revision'].includes(scenario.task) || !Number.isSafeInteger(config.consecutivePasses) || config.consecutivePasses < 2) throw new Error('可信反馈需要中英四种任务和每类至少两次的完整计划');
+    }
     if (scenario.kind !== 'transcription') continue;
     const required = ['names', 'landmarks', 'facilities', 'orderViolations', 'insertions', 'duplicates', 'landmarkExtra', 'facilityExtra'] as const;
     if (required.some((key) => !Number.isSafeInteger(scenario.pass?.[key]) || scenario.pass[key] < 0)) {
