@@ -36,6 +36,8 @@ function inspect(file:typeof fullFile,strategy:string) {
   const sum=(field:string)=>attempts.reduce((total,value)=>total+(number(value.usage?.[field])?value.usage[field]:0),0);
   const units=planned.map(unit=>{const value=byUnit.get(unit); return {unit,status:value?.status??'not-run',feedback:value?.checks?.feedback??null,failures:value?.failures??[]};});
   return {byUnit,summary:{attempts:attempts.length,complete,units,
+    nonqualifiedAttempts:attempts.filter(value=>value.usage?.verdict==='unqualified').length,
+    unknownVerdictAttempts:attempts.filter(value=>!['qualified','unqualified'].includes(value.usage?.verdict)).length,
     inputAndCacheTokens:inputFields.reduce((total,field)=>total+sum(field),0),outputTokens:sum('outputTokens'),
     metricTotals:Object.fromEntries([...knownFields,'thinkingTokens','wallMs'].map(field=>[field,sum(field)])),
     unknownByMetric,partialUsageAttempts,unknownThinkingAttempts:attempts.filter(value=>!number(value.usage?.thinkingTokens)).length,
@@ -53,7 +55,8 @@ const measured=complete && full.summary.usageComplete && candidate.summary.usage
 const relativeReduction=measured && full.summary.inputAndCacheTokens>0 ? 1-candidate.summary.inputAndCacheTokens/full.summary.inputAndCacheTokens : null;
 const qualityNoRegression=planned.every(unit=>guards.every(guard=>full.byUnit.get(unit)?.checks?.feedback?.[guard]!==true || candidate.byUnit.get(unit)?.checks?.feedback?.[guard]===true));
 const candidateAllPass=planned.every(unit=>candidate.byUnit.get(unit)?.status==='pass' && guards.every(guard=>candidate.byUnit.get(unit)?.checks?.feedback?.[guard]===true));
-const qualityPass=complete && qualityNoRegression && candidateAllPass;
+const candidateNoCriticalErrors=candidate.summary.nonqualifiedAttempts===0 && candidate.summary.unknownVerdictAttempts===0;
+const qualityPass=complete && qualityNoRegression && candidateAllPass && candidateNoCriticalErrors;
 const outputNotIncreased=measured && candidate.summary.outputTokens<=full.summary.outputTokens;
 const wallNotIncreased=number(full.summary.actualWallMs) && number(candidate.summary.actualWallMs) && candidate.summary.actualWallMs<=full.summary.actualWallMs;
 const candidateEligible=measured && qualityPass && outputNotIncreased && wallNotIncreased && relativeReduction!==null && relativeReduction>=policy.metric.minimumRelativeReduction;
@@ -61,7 +64,7 @@ const result={format:'renderweave-context-trial-comparison/1',complete,candidate
   decision:!complete?'incomplete':candidateEligible?'requires-source-verification':'retain-full',
   verifiedRealModelObservations:0,sourceVerification:'仅从报告不能证明真实执行来源；须另核原生CLI、冻结派发和尝试原件登记。',
   sources:{policy:{file:policyFile.file,sha256:policyFile.sha256},pair:{file:pairFile.file,sha256:pairFile.sha256},full:{file:fullFile.file,sha256:fullFile.sha256},onDemand:{file:candidateFile.file,sha256:candidateFile.sha256}},
-  full:full.summary,onDemand:candidate.summary,relativeReduction,guards:{qualityNoRegression,candidateAllPass,outputNotIncreased,wallNotIncreased},
+  full:full.summary,onDemand:candidate.summary,relativeReduction,guards:{qualityNoRegression,candidateAllPass,candidateNoCriticalErrors,outputNotIncreased,wallNotIncreased},
   monetaryCost:null,totalCostImprovement:null,note:'保守工程决策线；人工分钟、金额及提供方修订未知。不改写原始报告、不修改默认。'};
 await writeFile(resolve(values.out!),JSON.stringify(result,null,2)+'\n',{flag:'wx'});
 process.exitCode=complete?0:3;

@@ -20,7 +20,7 @@ async function prepare(name:string){
   const pair={format:'renderweave-context-pair/1',ready:true,arms:[fullIdentity,candidateIdentity].map(value=>({policy:value.contextPolicy.name,identity:value,identityHash:sha(value)}))};
   const report=(candidate:boolean)=>({format:'renderweave-agent-eval/4',experimentIdentity:candidate?candidateIdentity:fullIdentity,
     results:[1,2].map(repetition=>({id:'calibration',repetition,status:'pass',checks:{feedback:Object.fromEntries(policy.quality.requiredFeedbackGuards.map(key=>[key,true]))}})),
-    attempts:[1,2].map(repetition=>({id:`${candidate?'candidate':'full'}-${repetition}`,unit:`run-${repetition}/calibration`,state:'completed',usage:{usageSource:'result',inputTokens:candidate?70:100,outputTokens:candidate?40:50,cacheReadTokens:candidate?10:20,cacheCreationTokens:candidate?0:10}})),
+    attempts:[1,2].map(repetition=>({id:`${candidate?'candidate':'full'}-${repetition}`,unit:`run-${repetition}/calibration`,state:'completed',usage:{verdict:'qualified',usageSource:'result',inputTokens:candidate?70:100,outputTokens:candidate?40:50,cacheReadTokens:candidate?10:20,cacheCreationTokens:candidate?0:10}})),
     timing:{actualWallMs:candidate?180:200},runtime:{servedModels:['controlled-report'],providerRevision:null}});
   const files={policy:join(root,name+'-policy.json'),pair:join(root,name+'-pair.json'),full:join(root,name+'-full.json'),candidate:join(root,name+'-candidate.json'),out:join(root,name+'-out.json')};
   const values={policy,pair,full:report(false),candidate:report(true)};
@@ -62,4 +62,9 @@ it('报告与冻结身份不一致时拒绝比较，不产生可采用结果',as
   const result=await promisify(execFile)(process.execPath,['--import','tsx','scripts/agent-eval/context-trial-report.ts','--policy',files.policy,'--pair',files.pair,'--full',files.full,'--on-demand',files.candidate,'--out',files.out],{cwd:repoRoot,windowsHide:true}).catch(error=>error);
   expect(result.code).not.toBe(0);expect(result.stderr).toContain('报告与冻结身份不匹配');
   await expect(readFile(files.out)).rejects.toMatchObject({code:'ENOENT'});
+});
+it('既往尝试的关键不合格不能被单元最终通过覆盖',async()=>{
+  const {files,values}=await prepare('critical-history');values.candidate.attempts[0]!.usage.verdict='unqualified';
+  await writeFile(files.candidate,JSON.stringify(values.candidate));const result=await summarize(files);
+  expect(result.report).toMatchObject({complete:true,candidateEligible:false,decision:'retain-full',onDemand:{nonqualifiedAttempts:1},guards:{candidateNoCriticalErrors:false}});
 });
