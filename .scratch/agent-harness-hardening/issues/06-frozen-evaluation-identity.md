@@ -44,4 +44,8 @@
 
 集成审查补修（2026-10-23）：公开 CLI 反例证实，同模型但核准内容事实不同的外来整轮复制后，原实现仅比较部分字段，仍会签发报告。现由评估宿主在实际派发目录写 `evaluation.json`，绑定完整冻结身份与原始记录、候选、资料、工作区和资源字节；续跑核对完整来源，不改变原报告。并行补跑时复核读取期间记录是否稳定，最终签发前再核验完整记录。`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t "相同模型下复制|同身份续跑|串联定义" --maxWorkers=1`：新增反例先失败，修复后 3 项通过；`npm run typecheck` 与 `git diff --check` 通过。票据 07 的尝试原件按实际 `spec.out` 留存此来源，兼容视图复制时一并保留。
 
+同次审查另以旧资源清单指向 junction/symlink 的公开反例复现：目录扫描遗漏实际读取字节，换图后仍允许续跑。冻结与重新评分现同时通过资源仓库读取每个资源 ID 并摘要，修复后该反例以及续跑、重新评分两项回归通过（命令 `node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t "旧资源目录经链接|同身份续跑|重新评分另存" --maxWorkers=1`，3 项通过）。为票据 08 兼容预留 `round-start.json`、`execution.json`、`execution-owner.json` 的原始证据封存。
+
+与 13 集成后：`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts test/agent-eval.test.ts test/agent-eval-transcription.test.ts test/agent-visibility.test.ts test/agent-style-verification.test.ts test/mcp.test.ts test/render.test.ts --maxWorkers=1`：7 文件 123 项通过；链接修复后完整复跑 `test/agent-eval-identity.test.ts --maxWorkers=1`：15 项通过。构建、类型检查与 diff 检查通过，保留评估报告 /3 与 MCP 0.12.0。
+
 边界与后续交接：时间预算、停滞策略当前未实现，冻结字段如实为 `null`，由票据 10、12 接入实际配置及身份；本票未声称支持它们。票据 07 负责独立尝试目录、重试历史与用量汇总，本票按现存轮次留存重新评分来源；新增尝试目录后应继续沿用不可覆盖与来源摘要原则。真实四场景模型门槛仍由原票 38 留证。`CONTEXT.md` 的关闭更新由集成方统一执行。

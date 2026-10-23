@@ -46,8 +46,8 @@ export async function startReviewServer(options: { readonly roundDir: string; re
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/review') {
-      const { view, problems } = await readReview(options.roundDir);
-      return send(response, view ? 200 : 409, view ? { view } : { problems });
+      const result = await readReview(options.roundDir);
+      return send(response, result.view || result.execution ? 200 : 409, result);
     }
     if (request.method === 'GET' && url.pathname === '/sample') {
       const { view, problems } = await readReview(options.roundDir);

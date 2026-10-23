@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -346,4 +346,23 @@ it('相同模型下复制来自不同核准事实的轮次，不能并入已冻�
   expect(await readFile(target.ledger, 'utf8')).toBe('dispatch\n');
   expect(await readFile(join(target.reports, 'foreign-target.json'))).toEqual(report);
   expect(await readdir(target.reports)).toHaveLength(1);
+});
+
+it('旧资源目录经链接读取的实际字节变化同样拒绝续跑', async () => {
+  const e = await experiment('linked-resource'), assets = join(e.root, 'assets'), resources = join(e.root, 'resources');
+  await mkdir(assets); await mkdir(resources);
+  const image = join(assets, 'picture.png');
+  await cp(join(resourcesDir, 'images/test/quadrants.png'), image);
+  await symlink(assets, join(resources, 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+  await writeFile(join(resources, 'resources.json'), JSON.stringify({resources: [{id: 'picture', kind: 'image', file: 'linked/picture.png'}]}));
+  const config = await read(e.configFile); config.resources = resources; await writeFile(e.configFile, JSON.stringify(config));
+  const args = [...e.args, '--repetitions', '1-1'];
+  expect((await cli(args)).code).toBe(1);
+  const manifest = await readFile(join(e.out, 'eval.json'));
+  await cp(join(resourcesDir, 'images/test/quadrants.jpg'), image);
+  const resumed = await cli(args);
+  expect(resumed.code, resumed.stdout + resumed.stderr).toBe(2);
+  expect(resumed.stderr).toContain('resources');
+  expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\n');
+  expect(await readFile(join(e.out, 'eval.json'))).toEqual(manifest);
 });

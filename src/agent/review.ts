@@ -38,6 +38,7 @@ import type { RoundOutcome, RoundRecord, RoundUsage } from './run.js';
 import { replaceFile, writeJsonFiles, type JsonFileWrite } from './write-files.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
+import { readExecution, type RoundExecution } from './execution.js';
 
 export const REVIEW_FILE = 'review.json';
 export const APPLIED_FILE = 'applied.json';
@@ -369,11 +370,13 @@ interface AgentRound {
 }
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
-export async function readReview(roundDir: string): Promise<{ view?: ReviewView; problems: Problem[] }> {
+export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; problems: Problem[] }> {
+  const execution = await readExecution(roundDir);
+  if (execution.problems.length || (execution.execution && !execution.execution.committed)) return execution;
   const opened = await openRound(roundDir);
-  if (!opened.round) return { problems: opened.problems };
+  if (!opened.round) return { problems: opened.problems, execution: execution.execution };
   const { record, saved, problems } = await readReviewRecord(opened.round);
-  return { view: await buildView(opened.round, record, saved, problems), problems: [] };
+  return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, problems: [] };
 }
 
 /**
@@ -631,6 +634,9 @@ export async function applyAgentRound(options: AgentApplyOptions): Promise<Agent
 async function openRound(dir: string): Promise<{ round?: AgentRound; problems: Problem[] }> {
   const root = resolve(dir);
   const fail = (file: string, message: string) => ({ problems: [severe(ProblemCodes.roundInvalid, { kind: 'input', source: join(root, file) }, message)] });
+  const execution = await readExecution(root);
+  if (execution.problems.length) return { problems: execution.problems };
+  if (execution.execution && !execution.execution.committed) return fail('execution.json', execution.execution.diagnostics.join('；'));
   const readJson = async (file: string): Promise<{ bytes: Buffer; value: unknown } | string> => {
     try {
       const bytes = await readFile(join(root, file));
@@ -651,7 +657,11 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   const recordFile = await readJson('round.json');
   if (typeof recordFile === 'string') return fail('round.json', `轮次记录无法读取：${recordFile}`);
   const record = recordFile.value as RoundRecord;
-  if (!isRecord(record) || !isRecord(record.inputs) || typeof record.inputs.sample?.file !== 'string' || !/^agent\/sample\.(png|jpg|webp)$/.test(record.inputs.sample.file)) {
+  if (!isRecord(record) || record.format !== 'renderweave-round/1' || !Object.hasOwn(AGENT_TASKS, record.task)
+    || !Number.isSafeInteger(record.round) || record.round < 1 || typeof record.startedAt !== 'string' || typeof record.endedAt !== 'string'
+    || !isRecord(record.run) || !['qualified', 'unqualified'].includes(record.verdict)
+    || !isRecord(record.inputs) || !isRecord(record.inputs.workspace) || typeof record.inputs.workspace.fingerprint !== 'string'
+    || typeof record.inputs.sample?.sha256 !== 'string' || typeof record.inputs.sample?.file !== 'string' || !/^agent\/sample\.(png|jpg|webp)$/.test(record.inputs.sample.file)) {
     return fail('round.json', 'round.json 不是 renderweave-round/1 轮次记录');
   }
   for (const input of [record.inputs.sample, record.inputs.referenceImage, record.inputs.reference, record.inputs.contentBaseline]) {
@@ -1240,6 +1250,9 @@ export interface PreviousRound {
  * 上一轮结构不合格、没有成果时，给 Agent 当时交回的 candidates/ 下的文件与问题清单。
  */
 export async function readPreviousRound(dir: string): Promise<PreviousRound> {
+  const execution = await readExecution(resolve(dir));
+  if (execution.problems.length || (execution.execution && !execution.execution.committed)) throw new AgentUsageError(
+    `轮次尚未完整提交，不能从残留候选接续：${[...execution.problems.map(p => p.message), ...(execution.execution?.diagnostics ?? [])].join('；')}`);
   const root = resolve(dir);
   let record: RoundRecord;
   try {
