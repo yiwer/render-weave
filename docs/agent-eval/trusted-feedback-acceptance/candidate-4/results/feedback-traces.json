@@ -1,0 +1,1098 @@
+{
+  "format": "renderweave-feedback-trace-observations/2",
+  "createdAt": "2026-10-23T20:48:14.402Z",
+  "block": "post-stop",
+  "report": {
+    "snapshot": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\post-stop\\reports\\harness21-candidate-4-post-stop.rescore-3b7d3834-37a3-4dfe-9ba8-42c1cabf4c96.json",
+    "sha256": "0960aaa0203d5ecc48fbab5f2c07026fc502116ae25a61298a1b7539132fd6c8"
+  },
+  "observations": [
+    {
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "1a3fec1b-9ad4-47cf-bfeb-6d0af3810994",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\zh-definition-extraction\\attempts\\1a3fec1b-9ad4-47cf-bfeb-6d0af3810994\\round\\logs\\tools.jsonl",
+      "toolSha256": "61b045ad7d30b0c749bd9b4601645b5dd298cbb0695c02a3ee8061c9fb4c4b8f",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 3,
+          "at": "2026-10-23T20:19:43.128Z",
+          "isError": false,
+          "contentIdentity": "42dda4ab2e221f110bd33605c76a77366d3a0bac7fff7b03e035d55ca16dec2f"
+        }
+      ],
+      "finalContentIdentity": "42dda4ab2e221f110bd33605c76a77366d3a0bac7fff7b03e035d55ca16dec2f",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "3128662f-7225-43b5-8f17-be786788a37d",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\zh-dataset-extraction\\attempts\\3128662f-7225-43b5-8f17-be786788a37d\\round\\logs\\tools.jsonl",
+      "toolSha256": "437cacc7df584d5daa3752691137d9e2448804c77d4685b43db71e57f4652e79",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 5,
+          "at": "2026-10-23T20:20:26.419Z",
+          "isError": false,
+          "contentIdentity": "0eaea3ea2eb6e372cdaa6c11da09c33b5faac2bc972669a03fdb4c7881987ba0"
+        }
+      ],
+      "finalContentIdentity": "0eaea3ea2eb6e372cdaa6c11da09c33b5faac2bc972669a03fdb4c7881987ba0",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/zh-template-design",
+      "attemptId": "3ee19b3a-d40f-4fb6-9a1d-25401caf7a63",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\zh-template-design\\attempts\\3ee19b3a-d40f-4fb6-9a1d-25401caf7a63\\round\\logs\\tools.jsonl",
+      "toolSha256": "011f05ca10189597b17f15484fca14ad6f57fe97619111522013f81c52fbff48",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 1,
+          "at": "2026-10-23T20:20:49.602Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 2,
+          "at": "2026-10-23T20:20:52.665Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T20:20:52.779Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T20:21:02.914Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 6,
+          "at": "2026-10-23T20:21:03.057Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 9,
+          "at": "2026-10-23T20:21:39.687Z",
+          "isError": false,
+          "contentIdentity": "e87465478cfc09539a4587c7772e26eb5614b1f683c10996f41196bee87508ff"
+        }
+      ],
+      "finalContentIdentity": "e87465478cfc09539a4587c7772e26eb5614b1f683c10996f41196bee87508ff",
+      "finalVisualReportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 1,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "949597d0-b3d0-4c08-96c0-75d5b99d0a24",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\zh-template-revision\\attempts\\949597d0-b3d0-4c08-96c0-75d5b99d0a24\\round\\logs\\tools.jsonl",
+      "toolSha256": "02e0ee380b242b606f4c8e9f33c06ecd53c9283130087c27d1ba5306108edd94",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 3,
+          "at": "2026-10-23T20:22:10.817Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T20:22:13.824Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 5,
+          "at": "2026-10-23T20:22:13.981Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T20:22:22.399Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 11,
+          "at": "2026-10-23T20:22:26.044Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 12,
+          "at": "2026-10-23T20:22:26.149Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 13,
+          "at": "2026-10-23T20:22:44.006Z",
+          "isError": false,
+          "contentIdentity": "4309446f40b4af4c6861a1b9ccdfd30152575beb4ec5c328a706d3e83a85bfcb"
+        }
+      ],
+      "finalContentIdentity": "4309446f40b4af4c6861a1b9ccdfd30152575beb4ec5c328a706d3e83a85bfcb",
+      "finalVisualReportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "bf495a22-3d17-4e2e-a230-ef3e9d741e08",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-definition-extraction\\attempts\\bf495a22-3d17-4e2e-a230-ef3e9d741e08\\round\\logs\\tools.jsonl",
+      "toolSha256": "0129f5ebeb9e7c4c4b711eeca5aa099c252f13e31dea3a707885ba70b5f4fb34",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 3,
+          "at": "2026-10-23T20:23:42.941Z",
+          "isError": false,
+          "contentIdentity": "784aead250db1ae1522b19562a833b9dc56d7e79721a70371b241c0f1dcf594f"
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T20:23:46.061Z",
+          "isError": false,
+          "contentIdentity": "1d3c4a1a979391a62a8d6ace49c72ac1c2d4ed87e2afc229670e31ef0cc6697a"
+        }
+      ],
+      "finalContentIdentity": "1d3c4a1a979391a62a8d6ace49c72ac1c2d4ed87e2afc229670e31ef0cc6697a",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "1244ee28-40bd-42e3-9f27-3ad31cce7faf",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-dataset-extraction\\attempts\\1244ee28-40bd-42e3-9f27-3ad31cce7faf\\round\\logs\\tools.jsonl",
+      "toolSha256": "907f4c985915ce8071b183f3d12a67628f34fdee068009458357c7c961c687ba",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 5,
+          "at": "2026-10-23T20:24:43.962Z",
+          "isError": false,
+          "contentIdentity": "6994a35044ff82d93663d603334dd7c98d6432b9ccee297c99f7c852c80bc76e"
+        }
+      ],
+      "finalContentIdentity": "6994a35044ff82d93663d603334dd7c98d6432b9ccee297c99f7c852c80bc76e",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/en-template-design",
+      "attemptId": "c742cd35-fc82-4c51-8227-1bdc700cca20",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-template-design\\attempts\\c742cd35-fc82-4c51-8227-1bdc700cca20\\round\\logs\\tools.jsonl",
+      "toolSha256": "d1e81922bffd74f1b40ec2d546f1f99c4084f5454f6ca747398991c4c4af77a4",
+      "toolErrors": 1,
+      "compare": [
+        {
+          "line": 1,
+          "at": "2026-10-23T20:25:15.875Z",
+          "isError": false,
+          "reportId": "69bc4546e5679b59a0021de3bb8a014d1729aa95199ecb5d1b3b04b2a757ff0c",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 2,
+          "at": "2026-10-23T20:25:18.432Z",
+          "isError": false,
+          "reportId": "69bc4546e5679b59a0021de3bb8a014d1729aa95199ecb5d1b3b04b2a757ff0c",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T20:25:27.855Z",
+          "isError": false,
+          "reportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T20:25:28.068Z",
+          "isError": false,
+          "reportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 7,
+          "at": "2026-10-23T20:26:09.212Z",
+          "isError": false,
+          "contentIdentity": "1557f1be78ae39c19f2f5e067672a00bfe1be47b23bddabadb182ea81a958982"
+        }
+      ],
+      "finalContentIdentity": "1557f1be78ae39c19f2f5e067672a00bfe1be47b23bddabadb182ea81a958982",
+      "finalVisualReportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-1/en-template-revision",
+      "attemptId": "fd179f3f-f3c5-45f5-a926-977658d4da0a",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-1\\en-template-revision\\attempts\\fd179f3f-f3c5-45f5-a926-977658d4da0a\\round\\logs\\tools.jsonl",
+      "toolSha256": "a1ff1bdebff33846a3ba153376dc83b6bf6000e4e4b6ea108fee6e7445e512ac",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 2,
+          "at": "2026-10-23T20:26:46.561Z",
+          "isError": false,
+          "reportId": "69bc4546e5679b59a0021de3bb8a014d1729aa95199ecb5d1b3b04b2a757ff0c",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T20:26:50.305Z",
+          "isError": false,
+          "reportId": "69bc4546e5679b59a0021de3bb8a014d1729aa95199ecb5d1b3b04b2a757ff0c",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 7,
+          "at": "2026-10-23T20:27:09.574Z",
+          "isError": false,
+          "reportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T20:27:09.763Z",
+          "isError": false,
+          "reportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 11,
+          "at": "2026-10-23T20:28:06.156Z",
+          "isError": false,
+          "contentIdentity": "1427503a76dca391271e95ffabd1355518d123b9899ee92366311581a5330a23"
+        }
+      ],
+      "finalContentIdentity": "1427503a76dca391271e95ffabd1355518d123b9899ee92366311581a5330a23",
+      "finalVisualReportId": "dfb8c630d528102cc230d27ac8a593ac35b30b7c9de57caa0cad4a619a65aeb5",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "c3e402ab-7c05-47bb-aaee-229080618d48",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-definition-extraction\\attempts\\c3e402ab-7c05-47bb-aaee-229080618d48\\round\\logs\\tools.jsonl",
+      "toolSha256": "2ae1eaa27129f6e81a21f5952f7e5675982d334fea228c5d31eac68f6ef172ad",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 4,
+          "at": "2026-10-23T20:30:18.897Z",
+          "isError": false,
+          "contentIdentity": "0dd28d0121011d10a36528a26f823beb5b7715616748d111151d3cbae5ed5f5a"
+        }
+      ],
+      "finalContentIdentity": "0dd28d0121011d10a36528a26f823beb5b7715616748d111151d3cbae5ed5f5a",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-2/zh-dataset-extraction",
+      "attemptId": "864c52ea-1cc7-4b4c-bb45-67b92c121f38",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-dataset-extraction\\attempts\\864c52ea-1cc7-4b4c-bb45-67b92c121f38\\round\\logs\\tools.jsonl",
+      "toolSha256": "63ea702d3a1218f041043f4f9f684c53d936d26976ff3da092b0300bd736c2f5",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 6,
+          "at": "2026-10-23T20:40:46.034Z",
+          "isError": false,
+          "contentIdentity": "65e8b7274e2321eb34e64b4ed39bc35e5dcb06bf7e0e9aeebaa8931bc8a1988d"
+        }
+      ],
+      "finalContentIdentity": "65e8b7274e2321eb34e64b4ed39bc35e5dcb06bf7e0e9aeebaa8931bc8a1988d",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-2/zh-template-design",
+      "attemptId": "771dee6d-5a0b-4449-a51c-8d129ba43055",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-template-design\\attempts\\771dee6d-5a0b-4449-a51c-8d129ba43055\\round\\logs\\tools.jsonl",
+      "toolSha256": "b9a272c0b675451051f98ed26f46af4dd41420371cd3e3d6613d1d80deb8fb87",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 1,
+          "at": "2026-10-23T20:41:21.344Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 2,
+          "at": "2026-10-23T20:41:25.083Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T20:41:42.559Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T20:41:42.768Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 5,
+          "at": "2026-10-23T20:42:18.216Z",
+          "isError": false,
+          "contentIdentity": "41ec9393a33e7fdf7072aa0839750dbc28b9364690d556e336039718e60cf58a"
+        }
+      ],
+      "finalContentIdentity": "41ec9393a33e7fdf7072aa0839750dbc28b9364690d556e336039718e60cf58a",
+      "finalVisualReportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 0
+    },
+    {
+      "unit": "run-2/zh-template-revision",
+      "attemptId": "41698cac-f4d0-447c-a145-1fddb0e1499a",
+      "status": "pass",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-template-revision\\attempts\\41698cac-f4d0-447c-a145-1fddb0e1499a\\round\\logs\\tools.jsonl",
+      "toolSha256": "4c6c964334de4429c88f24e6a77e36fe02c78a183e105b3732fc7b88b6bb8dab",
+      "toolErrors": 0,
+      "compare": [
+        {
+          "line": 1,
+          "at": "2026-10-23T20:42:56.882Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 3,
+          "at": "2026-10-23T20:42:59.620Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 4,
+          "at": "2026-10-23T20:43:03.232Z",
+          "isError": false,
+          "reportId": "a69117a788edb41af950d602dcedd45e437b0add0127851127a7f5302448cc46",
+          "regionOffset": null,
+          "regions": [],
+          "regionIssues": [
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22",
+            "region-22"
+          ]
+        },
+        {
+          "line": 8,
+          "at": "2026-10-23T20:43:17.572Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 0,
+          "regions": [
+            "region-01",
+            "region-02",
+            "region-03",
+            "region-04",
+            "region-05",
+            "region-06",
+            "region-07",
+            "region-08",
+            "region-09",
+            "region-10",
+            "region-11",
+            "region-12",
+            "region-13",
+            "region-14",
+            "region-15",
+            "region-16",
+            "region-17",
+            "region-18",
+            "region-19",
+            "region-20"
+          ],
+          "regionIssues": []
+        },
+        {
+          "line": 9,
+          "at": "2026-10-23T20:43:17.783Z",
+          "isError": false,
+          "reportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+          "regionOffset": 20,
+          "regions": [
+            "region-21",
+            "region-22",
+            "region-23",
+            "region-24"
+          ],
+          "regionIssues": []
+        }
+      ],
+      "checks": [
+        {
+          "line": 11,
+          "at": "2026-10-23T20:43:46.794Z",
+          "isError": false,
+          "contentIdentity": "0611b98c4fc88928c0a70895890e3c5d0bfe1ab4e3f15e5da057b5a905dec57f"
+        },
+        {
+          "line": 12,
+          "at": "2026-10-23T20:43:56.363Z",
+          "isError": false,
+          "contentIdentity": "7cfc72f4e54975b588be0777751d0c37165d472839a828bccbf92eb78609e5a2"
+        }
+      ],
+      "finalContentIdentity": "7cfc72f4e54975b588be0777751d0c37165d472839a828bccbf92eb78609e5a2",
+      "finalVisualReportId": "ceba30b79b9ee1018922c192ccf3eed4ece3693f90e5058bad07d24ce6e06f11",
+      "reportedPaginationGuard": true,
+      "classification": "later-page-defect-observed",
+      "successfulLaterPages": 2,
+      "laterPageDefectReads": 1,
+      "pointDefectReads": 1
+    },
+    {
+      "unit": "run-2/en-definition-extraction",
+      "attemptId": "122928f6-1d85-44b9-b15f-fe1009f9977f",
+      "status": "invalid",
+      "failures": [],
+      "guards": {
+        "format": "renderweave-feedback-score/2",
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true,
+        "unchecked": {}
+      },
+      "toolFile": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\en-definition-extraction\\attempts\\122928f6-1d85-44b9-b15f-fe1009f9977f\\round\\logs\\tools.jsonl",
+      "toolSha256": "1cef2ab39741d4f689758266128eeeb757fce4b26b8efbb37f09c9e1debfcdd6",
+      "toolErrors": 0,
+      "compare": [],
+      "checks": [
+        {
+          "line": 3,
+          "at": "2026-10-23T20:44:54.678Z",
+          "isError": false,
+          "contentIdentity": "e851cc54b9cefd22d9b0552408653d01e6f2137427e144978c8c3e561778ced8"
+        }
+      ],
+      "finalContentIdentity": "e851cc54b9cefd22d9b0552408653d01e6f2137427e144978c8c3e561778ced8",
+      "finalVisualReportId": null,
+      "reportedPaginationGuard": true,
+      "classification": "not-required-for-extraction",
+      "successfulLaterPages": 0,
+      "laterPageDefectReads": 0,
+      "pointDefectReads": 0
+    }
+  ],
+  "limits": [
+    "保留原始评分，分类只描述公开工具日志时序",
+    "干净后续页不等于未分页；不能证明改前后续页缺陷取证",
+    "18为历史不同候选的描述性比较，不能补本轮重复槽或推断因果"
+  ]
+}
