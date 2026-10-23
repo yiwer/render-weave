@@ -1,0 +1,203 @@
+{
+  "format": "renderweave-feedback-full-tree-restore-verification/2",
+  "verifiedAt": "2026-10-23T20:51:35.042Z",
+  "archive": "F:/GenCode/render-weave/out/harness21-candidate4-evidence-archive",
+  "restored": "F:/GenCode/render-weave/out/harness21-candidate4-evidence-restored",
+  "manifestSha256": "5dc831d67f5cd5d42af8a912fca2e133144e089aaec39ddc95a5dd98ffbed320",
+  "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+  "reader": {
+    "module": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\candidate\\content\\dist\\index.js",
+    "moduleSha256": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4",
+    "options": {
+      "persistArtifacts": false
+    }
+  },
+  "comparisons": [
+    {
+      "role": "original",
+      "label": "feedback",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4",
+      "files": 2601,
+      "directories": 874,
+      "beforeTreeSha256": "3165299145a1cf938d0d315715270e484ea4016628658534109daf75754b2fe9",
+      "afterTreeSha256": "3165299145a1cf938d0d315715270e484ea4016628658534109daf75754b2fe9",
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "role": "restored",
+      "label": "feedback",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback",
+      "files": 2601,
+      "directories": 874,
+      "beforeTreeSha256": "3165299145a1cf938d0d315715270e484ea4016628658534109daf75754b2fe9",
+      "afterTreeSha256": "3165299145a1cf938d0d315715270e484ea4016628658534109daf75754b2fe9",
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "role": "original",
+      "label": "candidate",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4",
+      "files": 3323,
+      "directories": 360,
+      "beforeTreeSha256": "8d86751676fd2056972ac67e79a924cb472013e0475437a74a10be071cd59985",
+      "afterTreeSha256": "8d86751676fd2056972ac67e79a924cb472013e0475437a74a10be071cd59985",
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "role": "restored",
+      "label": "candidate",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\candidate",
+      "files": 3323,
+      "directories": 360,
+      "beforeTreeSha256": "8d86751676fd2056972ac67e79a924cb472013e0475437a74a10be071cd59985",
+      "afterTreeSha256": "8d86751676fd2056972ac67e79a924cb472013e0475437a74a10be071cd59985",
+      "added": [],
+      "removed": [],
+      "changed": []
+    }
+  ],
+  "views": [
+    {
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "1a3fec1b-9ad4-47cf-bfeb-6d0af3810994",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\zh-definition-extraction\\attempts\\1a3fec1b-9ad4-47cf-bfeb-6d0af3810994\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "c3e402ab-7c05-47bb-aaee-229080618d48",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-2\\zh-definition-extraction\\attempts\\c3e402ab-7c05-47bb-aaee-229080618d48\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "3128662f-7225-43b5-8f17-be786788a37d",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\zh-dataset-extraction\\attempts\\3128662f-7225-43b5-8f17-be786788a37d\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/zh-dataset-extraction",
+      "attemptId": "864c52ea-1cc7-4b4c-bb45-67b92c121f38",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-2\\zh-dataset-extraction\\attempts\\864c52ea-1cc7-4b4c-bb45-67b92c121f38\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-template-design",
+      "attemptId": "3ee19b3a-d40f-4fb6-9a1d-25401caf7a63",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\zh-template-design\\attempts\\3ee19b3a-d40f-4fb6-9a1d-25401caf7a63\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/zh-template-design",
+      "attemptId": "771dee6d-5a0b-4449-a51c-8d129ba43055",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-2\\zh-template-design\\attempts\\771dee6d-5a0b-4449-a51c-8d129ba43055\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "949597d0-b3d0-4c08-96c0-75d5b99d0a24",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\zh-template-revision\\attempts\\949597d0-b3d0-4c08-96c0-75d5b99d0a24\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/zh-template-revision",
+      "attemptId": "41698cac-f4d0-447c-a145-1fddb0e1499a",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-2\\zh-template-revision\\attempts\\41698cac-f4d0-447c-a145-1fddb0e1499a\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "bf495a22-3d17-4e2e-a230-ef3e9d741e08",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\en-definition-extraction\\attempts\\bf495a22-3d17-4e2e-a230-ef3e9d741e08\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-2/en-definition-extraction",
+      "attemptId": "122928f6-1d85-44b9-b15f-fe1009f9977f",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-2\\en-definition-extraction\\attempts\\122928f6-1d85-44b9-b15f-fe1009f9977f\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "failed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "1244ee28-40bd-42e3-9f27-3ad31cce7faf",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\en-dataset-extraction\\attempts\\1244ee28-40bd-42e3-9f27-3ad31cce7faf\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-template-design",
+      "attemptId": "c742cd35-fc82-4c51-8227-1bdc700cca20",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\en-template-design\\attempts\\c742cd35-fc82-4c51-8227-1bdc700cca20\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/en-template-revision",
+      "attemptId": "fd179f3f-f3c5-45f5-a926-977658d4da0a",
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-candidate4-evidence-restored\\feedback\\observations\\run-1\\en-template-revision\\attempts\\fd179f3f-f3c5-45f5-a926-977658d4da0a\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "realModelCalls": 0,
+  "limitations": [
+    "原始F盘来源路径保留；不改写旧绝对路径，不证明任意迁移后可直接接续",
+    "本次核对每个根完整文件/目录集合与字节，包含额外文件；并非仅检查manifest已列文件",
+    "有效已有缓存可读；无缓存时实际内存渲染不要求image路径"
+  ]
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "ProcessId": 138208,
+    "ParentProcessId": 137224,
+    "CreationDate": "2026-10-23T13:29:21.179866-07:00",
+    "CommandLine": "\"D:\\nodejs\\node.exe\" F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-4/pre-dispatch-tools/dispatch.mjs 2"
+  },
+  {
+    "ProcessId": 136700,
+    "ParentProcessId": 138208,
+    "CreationDate": "2026-10-23T13:29:21.22344-07:00",
+    "CommandLine": "node node_modules/tsx/dist/cli.mjs scripts/agent-eval/run.ts --config F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\inputs\\config.real-model.json --candidate-binding F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\binding --label harness21-candidate-4 --out F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations --reports F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\reports --key-env OPEN_CODE_API_KEY --repeat 2 --jobs 1 --model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --context-policy full --timeout-ms 3600000 --stagnation-threshold 2 --claude D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe --repetitions 2-2"
+  },
+  {
+    "ProcessId": 103412,
+    "ParentProcessId": 136700,
+    "CreationDate": "2026-10-23T13:29:21.277693-07:00",
+    "CommandLine": "D:\\nodejs\\node.exe --require F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content\\node_modules\\tsx\\dist\\preflight.cjs --import file:///F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4/content/node_modules/tsx/dist/loader.mjs scripts/agent-eval/run.ts --config F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\inputs\\config.real-model.json --candidate-binding F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\binding --label harness21-candidate-4 --out F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations --reports F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\reports --key-env OPEN_CODE_API_KEY --repeat 2 --jobs 1 --model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --context-policy full --timeout-ms 3600000 --stagnation-threshold 2 --claude D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe --repetitions 2-2"
+  },
+  {
+    "ProcessId": 133552,
+    "ParentProcessId": 103412,
+    "CreationDate": "2026-10-23T13:29:31.250346-07:00",
+    "CommandLine": "D:\\nodejs\\node.exe F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content\\dist\\bin.js agent run --out F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-definition-extraction\\attempts\\c3e402ab-7c05-47bb-aaee-229080618d48\\round --from F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\inputs\\zh\\definition-extraction\\seed --feedback F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\inputs\\zh\\definition-extraction\\feedback.md --model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --key-env OPEN_CODE_API_KEY --timeout-ms 3600000 --stagnation-threshold 2 --context-policy full --claude D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe --claude-args []"
+  },
+  {
+    "ProcessId": 138052,
+    "ParentProcessId": 133552,
+    "CreationDate": "2026-10-23T13:29:31.357272-07:00",
+    "CommandLine": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+  },
+  {
+    "ProcessId": 125740,
+    "ParentProcessId": 133552,
+    "CreationDate": "2026-10-23T13:29:31.916026-07:00",
+    "CommandLine": "D:\\nodejs\\node.exe F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-4\\content\\dist\\agent\\run-worker.js"
+  },
+  {
+    "ProcessId": 135204,
+    "ParentProcessId": 125740,
+    "CreationDate": "2026-10-23T13:29:31.923643-07:00",
+    "CommandLine": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+  }
+]

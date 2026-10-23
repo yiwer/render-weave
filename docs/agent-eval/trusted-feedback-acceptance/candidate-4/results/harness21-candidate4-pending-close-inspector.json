@@ -1,0 +1,52 @@
+{
+  "format": "harness-local-inspector-diagnostic/1",
+  "pid": 125740,
+  "startedAt": "2026-10-23T20:39:47.931Z",
+  "scope": "仅 active resource 类型与调用位置；不读 env、scope、heap 或凭据；不改业务结果。",
+  "commands": [
+    {
+      "at": "2026-10-23T20:39:47.957Z",
+      "method": "Runtime.evaluate",
+      "params": {
+        "expression": "process.getActiveResourcesInfo()",
+        "returnByValue": true
+      }
+    },
+    {
+      "at": "2026-10-23T20:39:47.958Z",
+      "method": "Debugger.enable",
+      "params": {}
+    },
+    {
+      "at": "2026-10-23T20:39:48.009Z",
+      "method": "Debugger.setAsyncCallStackDepth",
+      "params": {
+        "maxDepth": 8
+      }
+    },
+    {
+      "at": "2026-10-23T20:39:48.010Z",
+      "method": "Debugger.pause",
+      "params": {}
+    },
+    {
+      "at": "2026-10-23T20:39:53.023Z",
+      "method": "Debugger.resume",
+      "params": {}
+    },
+    {
+      "at": "2026-10-23T20:39:53.023Z",
+      "method": "Runtime.evaluate",
+      "params": {
+        "expression": "import('node:inspector').then(module=>setTimeout(()=>module.close(),50)); 'inspector-close-scheduled'",
+        "returnByValue": true
+      }
+    }
+  ],
+  "resourcesBefore": [
+    "PipeWrap",
+    "PipeWrap"
+  ],
+  "error": "Error: pause timeout",
+  "endedAt": "2026-10-23T20:39:58.029Z"
+}
