@@ -91,4 +91,5 @@ export {
   type CoverageVerificationRecord, type ExtractionCoverageScore, type CoverageKind,
 } from './agent/coverage-verification.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
+export type { RoundExecution, RoundStart, ExecutionEvent, ExecutionPhase, ExecutionStatus } from './agent/execution.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';

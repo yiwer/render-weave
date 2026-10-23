@@ -147,6 +147,7 @@ describe('受阻成果与中断草稿（票据 31）', () => {
     const arabic = withChildren(WORDS, [{ ...WORDS.artboard.children[0], content: [{ text: 'سلام' }] }]);
     const round = await designRound(dir, { 'outcome.json': DESIGN_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: arabic });
     expect(round.outcome).toBeDefined();
+    expect((await readReview(round.roundDir)).execution).toMatchObject({ status: 'completed', committed: true });
     expect(round.check).toMatchObject({ verdict: 'unqualified', assessment: { structure: 'valid', candidates: 'valid', content: 'needsReview',
       render: { status: 'blocked', hasImage: true, capabilityBlocked: true, blocking: true } } });
     expect(round.check.assessment.render.problems).toContainEqual(expect.objectContaining({ code: 'text.unshapedScript', level: 'severe' }));

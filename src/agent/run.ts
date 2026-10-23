@@ -34,6 +34,7 @@ import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
+import { claimExecution, writeAtomicJson } from './execution.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -114,6 +115,7 @@ export interface RoundUsage {
 
 /** 轮次记录 round.json：无论成果是否合格都写出。 */
 export interface RoundRecord {
+  readonly execution?: 'renderweave-execution/1';
   readonly format: 'renderweave-round/1';
   readonly task: AgentTaskId;
   readonly round: number;
@@ -291,6 +293,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   options.onStart?.(roundDir);
 
   const startedAt = new Date().toISOString();
+  const execution = await claimExecution(roundDir, startedAt);
+  try {
   const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
@@ -393,6 +397,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), engine: await rendererBuildId(),
     mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
+  await execution.initialize({ task: task.id, round, startedAt, inputs });
   const mcpConfig = join(logsDir, 'mcp.json');
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
@@ -418,12 +423,13 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing });
   } finally {
     await proxy?.close();
   }
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
   const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
+  await execution.finalizing();
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
   const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
@@ -432,6 +438,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
   const deliverable = draftCheck ?? check;
   const submission = recovered ?? check.submission;
+  await execution.checked();
   let outcome: RoundOutcome | undefined;
   if (submission && deliverable.candidates.length > 0) {
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
@@ -468,7 +475,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const { submission: _submission, ...checkRecord } = check;
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
   const record: RoundRecord = {
-    format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
+    format: 'renderweave-round/1', execution: 'renderweave-execution/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
     runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, effort: options.effort ?? null,
       keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
     run: { ...usage, exitCode: executed.exitCode,
@@ -476,8 +483,13 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
         : executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };
-  await writeFile(join(roundDir, 'round.json'), `${JSON.stringify(record, null, 2)}\n`);
+  await writeAtomicJson(join(roundDir, 'round.json'), record);
+  await execution.finish(record);
   return { roundDir, record, check, ...(outcome ? { outcome } : {}), ...(recovered && deliverable.candidates.length > 0 ? { draft: DRAFT_FILE } : {}) };
+  } catch (error) {
+    await execution.fail().catch(() => undefined);
+    throw error;
+  }
 }
 
 /** 任务顺序（M43）与各任务需要的输入：--definition、--dataset 只接受该任务用得上的那些。 */
@@ -641,7 +653,7 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void> }): Promise<{ exitCode: number | null; error?: string }> {
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
@@ -666,12 +678,19 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
         try { const quota = runtimeQuota(JSON.parse(line)); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
-    child.on('error', (error) => done({ exitCode: null, error: `无法启动 ${claude.command}：${error.message}` }));
+    let executionError: string | undefined;
+    child.on('error', (error) => { executionError = `无法启动 ${claude.command}：${error.message}`; });
     child.stdout.pipe(log);
     child.stderr.pipe(errors);
     child.stdin.on('error', () => {});
-    child.stdin.end(context.prompt);
-    child.on('close', (code) => { context.signal.removeEventListener('abort', stop); done({ exitCode: code }); });
+    const recorded = child.pid ? context.onSpawn(child.pid).then(() => { child.stdin.end(context.prompt); }, () => {
+      executionError = '执行器身份无法持久记录，已停止执行器'; stop();
+    }) : Promise.resolve();
+    child.on('close', (code) => {
+      context.signal.removeEventListener('abort', stop);
+      // 极快退出不能越过尚未完成的拥有者记录，否则较慢的 executing 发布会覆盖 completed。
+      void recorded.then(() => done({ exitCode: executionError ? null : code, ...(executionError ? { error: executionError } : {}) }));
+    });
   });
   await Promise.all([new Promise((done) => log.end(done)), new Promise((done) => errors.end(done))]);
   return result;

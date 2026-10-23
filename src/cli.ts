@@ -420,8 +420,8 @@ async function runReview(roundDir: string, options: Record<string, string>, noOp
     io.stderr('--port 必须是 0–65535 的整数\n');
     return ExitCodes.usage;
   }
-  const { view, problems } = await readReview(roundDir);
-  if (!view) {
+  const { view, execution, problems } = await readReview(roundDir);
+  if (!view && !execution) {
     reportProblems(problems, io);
     return ExitCodes.failed;
   }
@@ -432,9 +432,10 @@ async function runReview(roundDir: string, options: Record<string, string>, noOp
     io.stderr(`审核页无法启动：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
-  const decided = view.pending.filter((item) => item.decision).length;
+  const decided = view?.pending.filter((item) => item.decision).length ?? 0;
   io.stdout(`${server.url}\n`);
-  io.stderr(`审核页：${server.url}（${view.round.taskName}，待确认项 ${view.pending.length} 个，已处理 ${decided} 个）。审核结果随时保存到 review.json；按 Ctrl+C 结束\n`);
+  io.stderr(view ? `审核页：${server.url}（${view.round.taskName}，待确认项 ${view.pending.length} 个，已处理 ${decided} 个）。审核结果随时保存到 review.json；按 Ctrl+C 结束\n`
+    : `轮次状态页：${server.url}（${execution!.phase} / ${execution!.status}）。${execution!.diagnostics.join('；')}；按 Ctrl+C 结束\n`);
   if (!noOpen) openBrowser(server.url, io);
   if (io.signal && !io.signal.aborted) await new Promise((done) => io.signal!.addEventListener('abort', done, { once: true }));
   await server.close();
