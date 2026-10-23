@@ -1,7 +1,7 @@
 /** 实验评分与有界反馈：不进入生产 MCP，不依据候选自述评价修复。 */
 import type { FidelityMeasurement, RoleMeasurement } from './fidelity.js';
 
-export interface RepairCheck { id: string; pass: boolean; role: string; dimension: 'content' | 'font' | 'position'; severity: number; detail: string; path?: string }
+export interface RepairCheck { id: string; pass: boolean; role: string; dimension: 'content' | 'font' | 'position' | 'size' | 'color'; severity: number; detail: string; path?: string; status?: 'measured' | 'missing' | 'unknown' }
 export const REPAIR_THRESHOLDS = { fontLog: Math.log(1.1), center: 0.005 } as const;
 const complete = (r: RoleMeasurement) => r.matched === r.expected && !r.unexpected.length && !r.unassignedText.length && !(r.inversionRate && r.inversionRate > 0);
 export function repairChecks(actual: FidelityMeasurement, reference: FidelityMeasurement, geometry = true): RepairCheck[] {
@@ -27,7 +27,7 @@ export function repairChecks(actual: FidelityMeasurement, reference: FidelityMea
 }
 /** 没有匹配实例时只提供角色和缺失值，不编造缺失元素的路径。 */
 export function boundedRepairFeedback(checks: readonly RepairCheck[], groups: Readonly<Record<string, string>> = {}): string {
-  const priority = { content: 0, font: 1, position: 2 };
+  const priority = { content: 0, font: 1, position: 2, size: 3, color: 4 };
   const failures = checks.filter((c) => !c.pass).toSorted((a, b) => priority[a.dimension] - priority[b.dimension] || b.severity - a.severity || a.id.localeCompare(b.id));
   const selected: RepairCheck[] = [];
   for (const check of failures) {

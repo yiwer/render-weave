@@ -9,10 +9,10 @@ export const REPAIR_REGIONS: Readonly<Record<string, string>> = {
 export function repairStopDecision(expectedIds: readonly string[], checks: readonly RepairCheck[] | null, qualified: boolean) {
   const actual = new Map(checks?.map(c => [c.id, c]));
   const missing = expectedIds.filter(id => !actual.has(id));
-  const failed = checks?.filter(c => !c.pass).map(c => c.id) ?? [];
+  const failed = checks?.filter(c => c.pass !== true || c.status !== undefined && c.status !== 'measured').map(c => c.id) ?? [];
   const unexpected = checks?.filter(c => !expectedIds.includes(c.id)).map(c => c.id) ?? [];
   const complete = expectedIds.length > 0 && new Set(expectedIds).size === expectedIds.length &&
     checks !== null && actual.size === checks.length && missing.length === 0 && unexpected.length === 0;
   return { stop: qualified && complete && failed.length === 0, qualified, complete, missing, failed, unexpected,
-    scope: '仅表示预登记的布局内容、字号、位置与两组绑定回归通过；不证明最终墨迹可见或人工视觉认可。' };
+    scope: '仅表示预登记的布局检查与绑定回归通过；不证明最终墨迹可见或人工视觉认可。' };
 }

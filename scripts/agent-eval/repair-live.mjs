@@ -11,6 +11,7 @@ if (!values.root || !process.env.OPEN_CODE_API_KEY) throw new Error('需要 --ro
 const root = resolve(values.root), repo = resolve(import.meta.dirname, '../..');
 const json = async (p) => JSON.parse(await readFile(p, 'utf8'));
 const manifest = await json(join(root, 'manifest.json'));
+const crossTemplate = manifest.comparison === 'cross-template';
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 const verifyScorer = async () => {
   for (const file of manifest.scripts) if (sha(await readFile(join(repo, file.path))) !== file.sha256) throw new Error('脚本不再等于登记版本：' + file.path);
@@ -28,7 +29,7 @@ const rows = [];
 const save = async () => writeFile(join(root, 'live-report.json'), JSON.stringify({ manifestSha256: sha(await readFile(join(root, 'manifest.json'))), rows }, null, 2) + '\n');
 const score = async (caseId, round) => {
   await verifyScorer();
-  const stdout = execFileSync(process.execPath, ['--import', 'tsx', join(repo, 'scripts/agent-eval/repair-experiment.ts'), '--root', root, '--case', caseId, '--round', round], { cwd: repo, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+  const stdout = execFileSync(process.execPath, ['--import', 'tsx', join(repo, 'scripts/agent-eval', crossTemplate ? 'cross-experiment.ts' : 'repair-experiment.ts'), '--root', root, '--case', caseId, '--round', round], { cwd: repo, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
   console.log(stdout.trim());
 };
 let stopped = false;
@@ -39,8 +40,11 @@ for (const unit of manifest.order) {
   for (const iteration of [1, 2]) {
     const out = join(unitDir, 'round-' + iteration);
     console.log(JSON.stringify({ event: 'start', unit: unit.id, iteration, at: new Date().toISOString() }));
-    const options = iteration === 1 ? { task: 'template-revision', sample: join(root, 'reference.png'), brief: join(root, 'brief.md'), resources: join(repo, 'fixtures/resources'),
-      workspace: join(base, 'workspace'), dataset: 'ds-m402-wanguocheng', request: join(root, 'request.json'), requirement: join(base, unit.arm + '.md'), domain: 'route-sign' }
+    const spec = manifest.cases.find(c => c.id === unit.caseId);
+    const inputRoot = crossTemplate ? base : root;
+    const options = iteration === 1 ? { task: 'template-revision', sample: join(inputRoot, 'reference.png'), brief: join(inputRoot, 'brief.md'), resources: join(repo, 'fixtures/resources'),
+      workspace: join(base, 'workspace'), dataset: crossTemplate ? spec.dataset : 'ds-m402-wanguocheng', request: join(inputRoot, 'request.json'), requirement: join(base, unit.arm + '.md'),
+      ...(crossTemplate ? spec.domain ? { domain: spec.domain } : {} : { domain: 'route-sign' }) }
       : { from: join(unitDir, 'round-1'), feedback: join(unitDir, 'round-1/repair-score', unit.arm + '-feedback.md') };
     let result;
     try { result = await runAgentTask({ ...runtime, ...options, out }); }
@@ -54,7 +58,7 @@ for (const unit of manifest.order) {
     await score(unit.caseId, out); // 模型已结束，离线评分时间不混入 wallMs
     const measured = await json(join(out, 'repair-score/report.json'));
     item.rounds.at(-1).score = { qualified: measured.qualified, repaired: measured.repaired, addedFailures: measured.addedFailures, cleanSuccess: measured.cleanSuccess, available: measured.available };
-    if (manifest.comparison === 'role-region') item.rounds.at(-1).stopDecision = await json(join(out, 'repair-score/stop-decision.json'));
+    if (manifest.comparison === 'role-region' || crossTemplate) item.rounds.at(-1).stopDecision = await json(join(out, 'repair-score/stop-decision.json'));
     console.log(JSON.stringify({ event: 'complete', unit: unit.id, iteration, verdict: result.record.verdict, peak: result.record.run.context?.peakInputTokens, wallMs: result.record.run.wallMs, ...item.rounds.at(-1).score }));
     if (iteration === 2) item.status = 'completed';
     await save();

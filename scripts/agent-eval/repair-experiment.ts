@@ -77,7 +77,7 @@ async function measure(ws: Workspace, control: Workspace, dir: string) {
   const baseChecks = repairChecks(baseMetrics!, baseReference!);
   return { checks, inputs, pixel: pixel ?? null, feedback: boundedRepairFeedback(baseChecks), templateSha256: sha(JSON.stringify(ws.templates.map((t) => [t.name, t.document]))) };
 }
-async function fingerprints(dir: string, prefix = ''): Promise<{ path: string; sha256: string }[]> {
+export async function fingerprints(dir: string, prefix = ''): Promise<{ path: string; sha256: string }[]> {
   const result = [];
   for (const item of (await readdir(dir, { withFileTypes: true })).toSorted((a, b) => a.name.localeCompare(b.name))) {
     if (item.isSymbolicLink()) throw new Error('指纹输入不能是链接');
