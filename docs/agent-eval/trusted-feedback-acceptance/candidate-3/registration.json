@@ -1,0 +1,798 @@
+{
+  "format": "renderweave-trusted-feedback-registration/1",
+  "preparedAt": "2026-10-23T18:53:16.619Z",
+  "status": "authorized-not-dispatched",
+  "authority": {
+    "ticket": ".scratch/agent-harness-hardening/issues/21-real-trusted-feedback-observations.md",
+    "integrationBase": "d78a12cff826e6f51154234559c50f866c97f97b",
+    "prerequisiteTicket": "20",
+    "defaultDecisionTicket": "18",
+    "mechanismTicket": "14",
+    "authorization": {
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate-2/endpoint-authorization.json",
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf",
+      "questionCall": "call_8fa6a92a2dc64ba3b1b97b5c2378792b",
+      "endpoint": "https://opencode.ai/inference/go/anthropic",
+      "answer": "允许按已批准计划发送并验收（推荐）"
+    },
+    "candidatePublication": "2bc910caaba7d9df98f7ac6d6b9dab82731376a0",
+    "independentRegistrationReviewRequired": true
+  },
+  "plannedObservations": 16,
+  "realModelObservations": 0,
+  "completedObservations": 0,
+  "historicalObservationsReused": 0,
+  "candidate": {
+    "id": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-3",
+    "prepareAndBindOwner": "harness-20",
+    "status": "verified-not-dispatched"
+  },
+  "paths": {
+    "root": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-3",
+    "resources": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\resources",
+    "inputs": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs",
+    "binding": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\binding",
+    "observations": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations",
+    "reports": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\reports",
+    "dispatch": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\dispatch"
+  },
+  "runtime": {
+    "contextPolicy": "full",
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "roundTimeoutMs": 3600000,
+    "stagnationThreshold": 2,
+    "maxTurns": {
+      "definition-extraction": 40,
+      "dataset-extraction": 40,
+      "template-design": 80,
+      "template-revision": 80
+    },
+    "executor": "D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+    "executorVersion": "2.1.296 (Claude Code)",
+    "executorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+    "providerRevision": null,
+    "keyEnvironmentName": "OPEN_CODE_API_KEY"
+  },
+  "schedule": {
+    "jobs": 1,
+    "repeat": 2,
+    "blocks": [
+      {
+        "repetitions": "1-1",
+        "scenarios": [
+          "zh-definition-extraction",
+          "zh-dataset-extraction",
+          "zh-template-design",
+          "zh-template-revision",
+          "en-definition-extraction",
+          "en-dataset-extraction",
+          "en-template-design",
+          "en-template-revision"
+        ]
+      },
+      {
+        "repetitions": "2-2",
+        "scenarios": [
+          "zh-definition-extraction",
+          "zh-dataset-extraction",
+          "zh-template-design",
+          "zh-template-revision",
+          "en-definition-extraction",
+          "en-dataset-extraction",
+          "en-template-design",
+          "en-template-revision"
+        ]
+      }
+    ],
+    "validFailureRetries": 0,
+    "existingInfrastructureRetryPolicy": {
+      "maximumRetries": 2,
+      "delaysMs": [
+        60000,
+        180000
+      ]
+    },
+    "hardQuotaRetries": 0,
+    "hardQuotaAction": "保存并停止所有后续派发；不自动等待、换模型或提高预算"
+  },
+  "requiredGuards": [
+    "targetCorrection",
+    "nonTargetPreservation",
+    "unknownRetained",
+    "pagination",
+    "finalCheckMatches"
+  ],
+  "paginationRequirement": "缺陷仍存在时，沿nextRegionOffset取得后续目录页且该页包含region-22待修问题；改前点查与改后干净页不能拼为通过。ID已预告，不测试盲发现。",
+  "evidencePolicy": {
+    "allPlannedValidObservationsMustPass": true,
+    "originalReportsImmutable": true,
+    "preserveEveryAttempt": true,
+    "mechanismCounterMustNotBeRewritten": true,
+    "historical18Reused": false,
+    "humanMinutes": null,
+    "monetaryCost": null
+  },
+  "sharing": {
+    "exactReuseWithOriginalFour": [],
+    "originalFourDispatchOwner": "original-38",
+    "englishCorrectionReferenceConditional": true,
+    "independentStyleStateReviewOwner": "original-34/38",
+    "oneObservationOneRepetitionSlot": true
+  },
+  "resources": {
+    "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback\\resources",
+    "copiedTo": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\resources",
+    "files": [
+      {
+        "file": "font-subsets/LICENSE.txt",
+        "bytes": 4463,
+        "sha256": "sha256:fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+      },
+      {
+        "file": "font-subsets/README.md",
+        "bytes": 1147,
+        "sha256": "sha256:77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda"
+      },
+      {
+        "file": "font-subsets/TestSubset-Bold.otf",
+        "bytes": 3044,
+        "sha256": "sha256:66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def"
+      },
+      {
+        "file": "font-subsets/TestSubset-Medium.otf",
+        "bytes": 3088,
+        "sha256": "sha256:24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba"
+      },
+      {
+        "file": "font-subsets/TestSubset-Regular.otf",
+        "bytes": 3048,
+        "sha256": "sha256:5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Bold.otf",
+        "bytes": 8569308,
+        "sha256": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Heavy.otf",
+        "bytes": 8808068,
+        "sha256": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Medium.otf",
+        "bytes": 8406556,
+        "sha256": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+      },
+      {
+        "file": "fonts/SourceHanSansCN-Regular.otf",
+        "bytes": 8429224,
+        "sha256": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+      },
+      {
+        "file": "images/m402/icon-hospital.png",
+        "bytes": 1721,
+        "sha256": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+      },
+      {
+        "file": "images/m402/icon-metro.png",
+        "bytes": 2700,
+        "sha256": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+      },
+      {
+        "file": "images/m402/landmark-1.png",
+        "bytes": 2800,
+        "sha256": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+      },
+      {
+        "file": "images/m402/landmark-2.png",
+        "bytes": 3445,
+        "sha256": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+      },
+      {
+        "file": "images/m402/landmark-3.png",
+        "bytes": 3633,
+        "sha256": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+      },
+      {
+        "file": "images/m402/landmark-4.png",
+        "bytes": 3054,
+        "sha256": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+      },
+      {
+        "file": "images/m402/route-no-m402.png",
+        "bytes": 28274,
+        "sha256": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+      },
+      {
+        "file": "images/README.md",
+        "bytes": 1643,
+        "sha256": "sha256:e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a"
+      },
+      {
+        "file": "images/test/quadrants.jpg",
+        "bytes": 3626,
+        "sha256": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+      },
+      {
+        "file": "images/test/quadrants.png",
+        "bytes": 413,
+        "sha256": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+      },
+      {
+        "file": "images/test/quadrants.webp",
+        "bytes": 1266,
+        "sha256": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+      },
+      {
+        "file": "images/test/vector.svg",
+        "bytes": 743,
+        "sha256": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+      },
+      {
+        "file": "resources.json",
+        "bytes": 1518,
+        "sha256": "sha256:09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+      }
+    ],
+    "sha256": "sha256:3731213b71ba1e157cc2bc9ec7dacddf58f9159b0c5df715ca9148a60f5a0ab6"
+  },
+  "slots": [
+    {
+      "slot": "F-ZD-1",
+      "scenario": "zh-definition-extraction",
+      "repetition": 1,
+      "unit": "run-1/zh-definition-extraction",
+      "language": "zh",
+      "task": "definition-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\definition-extraction",
+      "seedSha256": "sha256:3500d83a5be4a96ae6afb54e38a011bf1a09c1395cc63c4b088b8bdb9f0a1254",
+      "feedbackSha256": "sha256:88818a41cd06def02628d27b7a062636c713104579c4cecece925b411cbd0fd2",
+      "policySha256": "sha256:b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a",
+      "approvedBaselineSha256": "sha256:0acd9368579a6592e517ff23537a4f110478663262dc0a37b8cf17da66737155",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ZD-2",
+      "scenario": "zh-definition-extraction",
+      "repetition": 2,
+      "unit": "run-2/zh-definition-extraction",
+      "language": "zh",
+      "task": "definition-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\definition-extraction",
+      "seedSha256": "sha256:3500d83a5be4a96ae6afb54e38a011bf1a09c1395cc63c4b088b8bdb9f0a1254",
+      "feedbackSha256": "sha256:88818a41cd06def02628d27b7a062636c713104579c4cecece925b411cbd0fd2",
+      "policySha256": "sha256:b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a",
+      "approvedBaselineSha256": "sha256:0acd9368579a6592e517ff23537a4f110478663262dc0a37b8cf17da66737155",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ZS-1",
+      "scenario": "zh-dataset-extraction",
+      "repetition": 1,
+      "unit": "run-1/zh-dataset-extraction",
+      "language": "zh",
+      "task": "dataset-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\dataset-extraction",
+      "seedSha256": "sha256:ed99819d37682b5cbe9386278a68952c68c0f45654bcd8c68cf446a9a539d864",
+      "feedbackSha256": "sha256:29e61548888c178b4e5dc2796e41d970153752eb2a439ba31f5c0ebbd35256a4",
+      "policySha256": "sha256:1823caf8492f1541ca79b1b9ccc133f1072c5e4154ff32b20b88dda53ec6658d",
+      "approvedBaselineSha256": "sha256:59cb7b1d0f6d7af08b5ec9f839387353911c3c2b756a397869aca5151a43daec",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ZS-2",
+      "scenario": "zh-dataset-extraction",
+      "repetition": 2,
+      "unit": "run-2/zh-dataset-extraction",
+      "language": "zh",
+      "task": "dataset-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\dataset-extraction",
+      "seedSha256": "sha256:ed99819d37682b5cbe9386278a68952c68c0f45654bcd8c68cf446a9a539d864",
+      "feedbackSha256": "sha256:29e61548888c178b4e5dc2796e41d970153752eb2a439ba31f5c0ebbd35256a4",
+      "policySha256": "sha256:1823caf8492f1541ca79b1b9ccc133f1072c5e4154ff32b20b88dda53ec6658d",
+      "approvedBaselineSha256": "sha256:59cb7b1d0f6d7af08b5ec9f839387353911c3c2b756a397869aca5151a43daec",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ZT-1",
+      "scenario": "zh-template-design",
+      "repetition": 1,
+      "unit": "run-1/zh-template-design",
+      "language": "zh",
+      "task": "template-design",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\template-design",
+      "seedSha256": "sha256:83f4671a3f0c919e3ef9dd45ce005c6df185eeb8ba334774ad5dc154a93ea8ed",
+      "feedbackSha256": "sha256:42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec",
+      "policySha256": "sha256:17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13",
+      "approvedBaselineSha256": "sha256:3b729f2a115f1c5d166dbc8dc6bb0120e245f1e07f49b899d59f48cab6b15ff0",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "中文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ZT-2",
+      "scenario": "zh-template-design",
+      "repetition": 2,
+      "unit": "run-2/zh-template-design",
+      "language": "zh",
+      "task": "template-design",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\template-design",
+      "seedSha256": "sha256:83f4671a3f0c919e3ef9dd45ce005c6df185eeb8ba334774ad5dc154a93ea8ed",
+      "feedbackSha256": "sha256:42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec",
+      "policySha256": "sha256:17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13",
+      "approvedBaselineSha256": "sha256:3b729f2a115f1c5d166dbc8dc6bb0120e245f1e07f49b899d59f48cab6b15ff0",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "中文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ZR-1",
+      "scenario": "zh-template-revision",
+      "repetition": 1,
+      "unit": "run-1/zh-template-revision",
+      "language": "zh",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\template-revision",
+      "seedSha256": "sha256:0c83fbf25039d2a77d939fee9c5983566011e2cd9975459ea02ed7df2c546d0b",
+      "feedbackSha256": "sha256:42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec",
+      "policySha256": "sha256:17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13",
+      "approvedBaselineSha256": "sha256:3b729f2a115f1c5d166dbc8dc6bb0120e245f1e07f49b899d59f48cab6b15ff0",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "中文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ZR-2",
+      "scenario": "zh-template-revision",
+      "repetition": 2,
+      "unit": "run-2/zh-template-revision",
+      "language": "zh",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\zh\\template-revision",
+      "seedSha256": "sha256:0c83fbf25039d2a77d939fee9c5983566011e2cd9975459ea02ed7df2c546d0b",
+      "feedbackSha256": "sha256:42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec",
+      "policySha256": "sha256:17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13",
+      "approvedBaselineSha256": "sha256:3b729f2a115f1c5d166dbc8dc6bb0120e245f1e07f49b899d59f48cab6b15ff0",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "中文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ED-1",
+      "scenario": "en-definition-extraction",
+      "repetition": 1,
+      "unit": "run-1/en-definition-extraction",
+      "language": "en",
+      "task": "definition-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\definition-extraction",
+      "seedSha256": "sha256:a9446c7b8ca9ba66fb9d8998e66871d3d13393a64085e7f90004ba530d03b506",
+      "feedbackSha256": "sha256:9b8502f5fb3bac13fb57182305ddd0fe19ce6947aa2542bf49f1997a342f80b2",
+      "policySha256": "sha256:b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a",
+      "approvedBaselineSha256": "sha256:0a4208c9b573a328554d1618841d1f5041c8429f56f1b14161ff789a9571fe3c",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ED-2",
+      "scenario": "en-definition-extraction",
+      "repetition": 2,
+      "unit": "run-2/en-definition-extraction",
+      "language": "en",
+      "task": "definition-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\definition-extraction",
+      "seedSha256": "sha256:a9446c7b8ca9ba66fb9d8998e66871d3d13393a64085e7f90004ba530d03b506",
+      "feedbackSha256": "sha256:9b8502f5fb3bac13fb57182305ddd0fe19ce6947aa2542bf49f1997a342f80b2",
+      "policySha256": "sha256:b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a",
+      "approvedBaselineSha256": "sha256:0a4208c9b573a328554d1618841d1f5041c8429f56f1b14161ff789a9571fe3c",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ES-1",
+      "scenario": "en-dataset-extraction",
+      "repetition": 1,
+      "unit": "run-1/en-dataset-extraction",
+      "language": "en",
+      "task": "dataset-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\dataset-extraction",
+      "seedSha256": "sha256:ce5a5249f520172ac74ed0b1269b5235366d4e5815fac3261ef82fe56e2b0fd6",
+      "feedbackSha256": "sha256:3b7b74b91a6968a36ffef8ec37738581b7d8a977ce737a620a66ab3a197dbbed",
+      "policySha256": "sha256:cabffabf2b13d9d91f6267c7ae27bd51344f6cd2bcc398aa99229fa8c4e05b64",
+      "approvedBaselineSha256": "sha256:a6eed7d3de70e6f524fe8d83bd347238fe742000e927ae99a686eaf8a484fc21",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ES-2",
+      "scenario": "en-dataset-extraction",
+      "repetition": 2,
+      "unit": "run-2/en-dataset-extraction",
+      "language": "en",
+      "task": "dataset-extraction",
+      "maxTurns": 40,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\dataset-extraction",
+      "seedSha256": "sha256:ce5a5249f520172ac74ed0b1269b5235366d4e5815fac3261ef82fe56e2b0fd6",
+      "feedbackSha256": "sha256:3b7b74b91a6968a36ffef8ec37738581b7d8a977ce737a620a66ab3a197dbbed",
+      "policySha256": "sha256:cabffabf2b13d9d91f6267c7ae27bd51344f6cd2bcc398aa99229fa8c4e05b64",
+      "approvedBaselineSha256": "sha256:a6eed7d3de70e6f524fe8d83bd347238fe742000e927ae99a686eaf8a484fc21",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": []
+    },
+    {
+      "slot": "F-ET-1",
+      "scenario": "en-template-design",
+      "repetition": 1,
+      "unit": "run-1/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\template-design",
+      "seedSha256": "sha256:41ba65c65630f7c0145459a53688f14b5c660403f3233dde5987038b5da4172d",
+      "feedbackSha256": "sha256:ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09",
+      "policySha256": "sha256:8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002",
+      "approvedBaselineSha256": "sha256:cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "英文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ET-2",
+      "scenario": "en-template-design",
+      "repetition": 2,
+      "unit": "run-2/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\template-design",
+      "seedSha256": "sha256:41ba65c65630f7c0145459a53688f14b5c660403f3233dde5987038b5da4172d",
+      "feedbackSha256": "sha256:ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09",
+      "policySha256": "sha256:8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002",
+      "approvedBaselineSha256": "sha256:cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "英文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ER-1",
+      "scenario": "en-template-revision",
+      "repetition": 1,
+      "unit": "run-1/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\template-revision",
+      "seedSha256": "sha256:3ea638386ea539da9658779ee2ccb8e9b6ab48089be77adbede56f18501d1441",
+      "feedbackSha256": "sha256:ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09",
+      "policySha256": "sha256:8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002",
+      "approvedBaselineSha256": "sha256:cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "英文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    },
+    {
+      "slot": "F-ER-2",
+      "scenario": "en-template-revision",
+      "repetition": 2,
+      "unit": "run-2/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "dispatchOwner": "harness-21",
+      "status": "not-run",
+      "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+      "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+      "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+      "inputDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\en\\template-revision",
+      "seedSha256": "sha256:3ea638386ea539da9658779ee2ccb8e9b6ab48089be77adbede56f18501d1441",
+      "feedbackSha256": "sha256:ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09",
+      "policySha256": "sha256:8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002",
+      "approvedBaselineSha256": "sha256:cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e",
+      "attempts": [],
+      "resultReport": null,
+      "contentIdentity": null,
+      "sourceVerification": null,
+      "conditionalReferences": [
+        {
+          "ticket": "original-38",
+          "scope": "英文真实纠偏条件引用",
+          "countsAsAdditionalObservation": false
+        }
+      ]
+    }
+  ],
+  "boundAt": "2026-10-23T18:53:16.619Z",
+  "binding": {
+    "id": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+    "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\binding",
+    "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+    "config": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\config.real-model.json",
+    "configSha256": "sha256:52e2734b7778cf728126773148b2940a12096072246e9922d62d50930c4c6bd0",
+    "plan": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\plan.json",
+    "planSha256": "sha256:3e61c961d08f734eb8dcc58257ee30c849374c6e35081970e08ae1c709eca5cf"
+  },
+  "execution": {
+    "label": "harness21-candidate-3",
+    "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-3\\content",
+    "keyEnvironmentName": "OPEN_CODE_API_KEY",
+    "realModelObservations": 0,
+    "sharedStopPolicy": "任一计划发现硬额度或429立即写本方STOP并通知对方，停止后续派发；保留中断原件，不自动续跑",
+    "sharedStopFiles": [
+      "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\STOP.json",
+      "F:/GenCode/render-weave/out/harness-original38-candidate-3/STOP.json"
+    ],
+    "blocks": [
+      {
+        "block": 1,
+        "repetitions": "1-1",
+        "command": "node",
+        "args": [
+          "node_modules/tsx/dist/cli.mjs",
+          "scripts/agent-eval/run.ts",
+          "--config",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\config.real-model.json",
+          "--candidate-binding",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\binding",
+          "--label",
+          "harness21-candidate-3",
+          "--out",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations",
+          "--reports",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\reports",
+          "--key-env",
+          "OPEN_CODE_API_KEY",
+          "--repeat",
+          "2",
+          "--jobs",
+          "1",
+          "--model",
+          "claude-haiku-5-5",
+          "--small-model",
+          "claude-haiku-5-5",
+          "--endpoint",
+          "https://opencode.ai/inference/go/anthropic",
+          "--context-policy",
+          "full",
+          "--timeout-ms",
+          "3600000",
+          "--stagnation-threshold",
+          "2",
+          "--claude",
+          "D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+          "--repetitions",
+          "1-1"
+        ],
+        "status": "not-run"
+      },
+      {
+        "block": 2,
+        "repetitions": "2-2",
+        "command": "node",
+        "args": [
+          "node_modules/tsx/dist/cli.mjs",
+          "scripts/agent-eval/run.ts",
+          "--config",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\config.real-model.json",
+          "--candidate-binding",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\binding",
+          "--label",
+          "harness21-candidate-3",
+          "--out",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations",
+          "--reports",
+          "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\reports",
+          "--key-env",
+          "OPEN_CODE_API_KEY",
+          "--repeat",
+          "2",
+          "--jobs",
+          "1",
+          "--model",
+          "claude-haiku-5-5",
+          "--small-model",
+          "claude-haiku-5-5",
+          "--endpoint",
+          "https://opencode.ai/inference/go/anthropic",
+          "--context-policy",
+          "full",
+          "--timeout-ms",
+          "3600000",
+          "--stagnation-threshold",
+          "2",
+          "--claude",
+          "D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+          "--repetitions",
+          "2-2"
+        ],
+        "status": "not-run"
+      }
+    ]
+  },
+  "previousCandidate": {
+    "id": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+    "results": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback\\registration.candidate-2.results.json",
+    "resultsSha256": "sha256:1c367aaa63ca56d368773d83ec03923f10ea8fca54ddad48e7f427271c8d4e9b",
+    "completed": 16,
+    "pass": 10,
+    "fail": 6,
+    "invalid": 0,
+    "notRun": 0,
+    "reusedObservations": 0,
+    "reason": "六次有效分页时序失败由17通用资料修复；新候选全部16槽重验，不是补缺或覆盖失败",
+    "originalFour": "候选2第一段4次达线、第二段4次未派发；新候选由原38完整重验8观测",
+    "preserveOriginals": true
+  }
+}
