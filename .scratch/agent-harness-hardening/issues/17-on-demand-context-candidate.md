@@ -109,3 +109,5 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 - 最终核对候选3全部3322个共同文件：旧包所有原字节未变；本树仅guide、next-round、template-revision三份资料不同，其余3319个完全相同，四个字体均为实文件。Linux在本地镜像的独立目录复制依赖与源码，没有共享依赖联接。
 
 改前资料、10份真实失败相关原件快照、公开回归日志、两份源码包及最终3322文件摘要保存于 `F:/GenCode/render-weave/out/harness-minimal-change-guide-fix/`；`red-evidence.json`区分模型越界与评分短路，`validation.json`记录所有摘要及平台结果。实际模型调用0；本次资料责任缺口闭合后将本票重新记为resolved，真实质量改善仍待新候选观测。CONTEXT由独立集成者更新。
+
+独立集成：以 `356cdcad` 非压缩合入 `d8bf777`。固定措辞审查无阻塞；42份证据逐项SHA/大小、全部3322共同文件、候选3旧字节、3份最终Git资料字节及日志摘要共6791项只读断言通过，其余3319共同文件完全相同。没有重跑测试或模型。证据清单SHA为 `8a60f1122556c9877c7c805ba5074c40cc5576b268f2f06c549d6c5d53e747c3`；外部 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness17-minimal-guidance-final-audit.json` SHA为 `994f4aecbd7270f4001927b14c04ccfa390032253bdcc2df6711d48fad6839f2`。最终diff-check通过，旧候选与失败原件不改。
