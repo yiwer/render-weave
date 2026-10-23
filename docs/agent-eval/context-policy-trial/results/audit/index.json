@@ -1,0 +1,37 @@
+{
+  "format": "renderweave-context-trial-audit-index/1",
+  "audits": [
+    {
+      "name": "harness18-initial-source-inspection.json",
+      "sha256": "sha256:dca2fc3c471df5b267735c38d3599955e37c2063c4f14240efd53ec70ec2c659"
+    },
+    {
+      "name": "harness18-block1-cost-inspection.json",
+      "sha256": "sha256:baa5883fd0421279c585a7d24c74d7a4cbb61255a8236fa7421107fa8d96284e"
+    },
+    {
+      "name": "harness18-block2-cost-source-inspection.json",
+      "sha256": "sha256:bf2791c6d0c07dcc8d692ef8a3942d94434ffe3b946ebc684ccdd11fa1cee3d6"
+    },
+    {
+      "name": "harness18-block3-aggregate-cost-source-inspection.json",
+      "sha256": "sha256:3438755efe4c0baf7cf307910012cb28c90ad39758d5cbc5a924adfccd5834dd"
+    },
+    {
+      "name": "harness18-block4-aggregate-cost-source-inspection.json",
+      "sha256": "sha256:0652298c5ea2c527dfa532fa454b184405c4bfae20e0c6c60e51b33bff370c7d"
+    },
+    {
+      "name": "harness18-final-timing-inspection.json",
+      "sha256": "sha256:103a8c5edfe9fd81b9aebc134995aeae7fc894c0de32e92602bab8542523e8cd"
+    },
+    {
+      "name": "harness-18-pagination-criterion-review.md",
+      "sha256": "sha256:61deb83496f4c5d031063c086bf101cc6e2dd7d0dfe6979dcc1ba6b48ec5b4af"
+    },
+    {
+      "name": "inspect-harness18-block.mjs",
+      "sha256": "sha256:99ad15eb94f46649ad1501950da35689a0e44eee588cf28890687d53044719d5"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "block": 4,
+  "strategy": "full",
+  "repetition": 2,
+  "startedAt": "2026-10-23T15:40:29.541Z",
+  "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+  "node": "D:\\nodejs\\node.exe",
+  "cwd": "C:/Users/Administrator/.codex/worktrees/harness-18/render-weave",
+  "args": [
+    "--import",
+    "tsx",
+    "scripts/agent-eval/run.ts",
+    "--config",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\calibration\\config.json",
+    "--context-policy",
+    "full",
+    "--paired",
+    "--jobs",
+    "1",
+    "--repeat",
+    "2",
+    "--model",
+    "claude-haiku-5-5",
+    "--small-model",
+    "claude-haiku-5-5",
+    "--endpoint",
+    "https://opencode.ai/inference/go/anthropic",
+    "--timeout-ms",
+    "3600000",
+    "--claude",
+    "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+    "--context-pair",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\registration\\pair.json",
+    "--out",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full",
+    "--reports",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\reports",
+    "--label",
+    "harness18-full",
+    "--repetitions",
+    "2-2",
+    "--key-env",
+    "OPEN_CODE_API_KEY"
+  ],
+  "keyEnvironment": "OPEN_CODE_API_KEY",
+  "policySha256": "sha256:5a9be81d6765f8d40bd02225fba2f130b9b6521747cd90efad083d62cf7149ce",
+  "pairSha256": "sha256:751f4106b6e1a9d78ed46716677c7cc0a912070edd1b01f1610ec86e422a72da",
+  "plannedObservations": 8,
+  "retryPolicy": {
+    "source": "frozen existing evaluation runner",
+    "transientRetryDelaysMs": [
+      60000,
+      180000
+    ],
+    "hardQuotaRetries": 0
+  },
+  "exitCode": 1,
+  "signal": null,
+  "endedAt": "2026-10-23T15:50:23.864Z",
+  "hardQuota": false,
+  "reports": [
+    {
+      "file": "harness18-full.segment-4e93171e-547d-4c15-93dc-42bb90338d87.json",
+      "snapshot": "dispatch/block-4.report.json",
+      "sha256": "sha256:24d24dc267c3bfa542b0ca8d1c57401dc5026e3d0a41f052d5d07776062123bb"
+    }
+  ],
+  "stdoutSha256": "sha256:f1a4f5f806e5566d83b8e353ff968b7fb4e545e9a842880717509d9123f87063",
+  "stderrSha256": "sha256:12371df817dbbfcbf17928085f5c0d219829124c0a658e232a42a5af39d98b01"
+}
