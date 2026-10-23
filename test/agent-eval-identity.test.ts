@@ -139,6 +139,21 @@ it('停滞阈值进入实际派发与冻结身份，续跑改变阈值在启动�
   expect((await cli(changed)).stderr).toContain('budgets.stagnation');
   expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\n');
   expect(await readFile(join(e.out, 'eval.json'), 'utf8')).toBe(manifest);
+  const printed = first.stdout.split('\n').find(line => line.startsWith('npx tsx scripts/agent-eval/run.ts '))!;
+  expect(printed).toContain('--stagnation-threshold 3');
+  // 该受控夹具的参数只使用普通词和单引号字符串，按打印值原样执行，不重建选项。
+  const words = [...printed.matchAll(/'((?:[^']|'')*)'|(\S+)/g)].map(match => match[1] === undefined ? match[2]! : match[1].replaceAll("''", "'"));
+  const resumed = await cli(words.slice(3));
+  expect(resumed.code, resumed.stderr).toBe(1);
+  expect((await read(join(e.out, 'run-2/m402-definition/definition/round.json'))).runtime.stagnationThreshold).toBe(3);
+  expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\ndispatch\n');
+  expect(await readFile(join(e.out, 'eval.json'), 'utf8')).toBe(manifest);
+});
+it('离线业务核查拒绝混用停滞运行参数，不静默忽略阈值', async () => {
+  const result = await cli(['--behavior-policy', join(base,'policy.json'), '--workspace', base, '--resources', resourcesDir,
+    '--out', join(base,'offline'), '--stagnation-threshold','3']);
+  expect(result.code).toBe(2);
+  expect(result.stderr).toContain('独立离线模式');
 });
 
 it('每次派发前核验冻结输入，运行中条件变化停止后续派发且不产出混合条件报告', async () => {

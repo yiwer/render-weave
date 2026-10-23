@@ -42,8 +42,9 @@ for (const action of actions) {
       offset = JSON.parse(reply.result.content[0].text).nextOffset;
       if (action.onlyFirst) break;
     } while (offset !== null);
-  } else if (action.kind === 'write' || action.kind === 'writePending') {
+  } else if (action.kind === 'write' || action.kind === 'writePending' || action.kind === 'silentWrite') {
     const path = resolve(action.path ?? 'candidates/schema.json'), content = action.raw ?? JSON.stringify(action.document ?? { dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
+    if (action.kind === 'silentWrite') { await writeFile(path, content); continue; }
     const id = begin('Write', { file_path: path, content });
     await writeFile(path, content); if (action.kind !== 'writePending') end(id, `File created successfully at: ${path}`);
   } else if (action.kind === 'finish') {

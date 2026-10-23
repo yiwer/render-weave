@@ -31,6 +31,8 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
   const reset = () => { previous = undefined; repairs = []; cycles = []; report = undefined; previousFeedback = undefined; };
   const delivered = (checkpoint: CheckpointView, feedback: FeedbackEvidence) => {
     repairs = repairs.filter(repair => previous?.files[`agent/${repair.path}`] || checkpoint.files[`agent/${repair.path}`]);
+    // 已检查字节改变却没有完整写入事件，旧周期已断裂；不能把观测缺失当作无进展。
+    if (previous && !repairs.length && previous.contentIdentity !== checkpoint.contentIdentity) cycles = [];
     const required = requiredProblems(checkpoint);
     if (previous && previousFeedback && requiredProblems(previous).length && repairs.length && required.length) {
       const comparison = compareCandidates(previous, checkpoint);

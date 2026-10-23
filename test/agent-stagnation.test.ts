@@ -18,7 +18,7 @@ async function run(name: string, actions: unknown[], extra: string[] = [], basel
   await writeFile(join(preset, 'actions.json'), JSON.stringify(actions));
   await writeFile(join(preset, 'outcome.json'), JSON.stringify({ candidates: ['candidates/schema.json'], pending: [], notes: '提取线路字段' }));
   const child = spawn(process.execPath, [join(repoRoot, 'dist/bin.js'), 'agent', 'run', ...(taskArgs ?? ['--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png')]),
-    '--brief', join(dir, 'brief.md'), '--resources', resourcesDir, ...(baseline ? ['--content-baseline', join(dir, 'facts.json')] : []), '--out', out,
+    ...(taskArgs?.includes('--from') ? [] : ['--brief', join(dir, 'brief.md'), '--resources', resourcesDir]), ...(baseline ? ['--content-baseline', join(dir, 'facts.json')] : []), '--out', out,
     '--key-env', 'RW_STAGNATION_KEY', '--timeout-ms', '8000', '--claude', process.execPath,
     '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-stagnation.mjs'), preset]), ...extra],
   { cwd: repoRoot, env: { ...process.env, RW_STAGNATION_KEY: 'offline' }, windowsHide: true, stdio: 'pipe' });
@@ -43,13 +43,10 @@ it('核准必修问题在两次完整写入和复测后仍相同，停止并保�
   expect((await changeReview(job.out, {type:'approve'})).problems.length).toBeGreaterThan(0);
   expect((await applyAgentRound({roundDir:job.out, workspace:join(root,'never-applied')})).applied).toBeUndefined();
   const original = await readFile(join(job.out,'round.json'),'utf8'), state = await readFile(join(job.out,'execution.json'),'utf8');
-  const preset = join(root,'resume-preset'), feedback = join(root,'feedback.md'); await mkdir(preset);
+  const feedback = join(root,'feedback.md');
   await writeFile(feedback,'补齐 title 与 station');
-  await writeFile(join(preset,'actions.json'),JSON.stringify([{kind:'check'},{kind:'write',fields:['number','title','station']},{kind:'checkAndFinish'}]));
-  await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/schema.json'],pending:[],notes:'接续修复'}));
-  const resumed = await runAgentTask({from:job.out,feedback,out:join(root,'resumed'),key:'offline',keyEnv:'RW_STAGNATION_KEY',
-    roundTimeoutMs:10000,claude:{command:process.execPath,args:[join(repoRoot,'test/support/fake-stagnation.mjs'),preset]}});
-  expect(resumed.record.run.stopped).toBeUndefined(); expect(resumed.record.verdict).toBe('qualified');
+  const resumed = await run('resumed',[{kind:'check'},{kind:'write',fields:['number','title','station']},{kind:'checkAndFinish'}], [], false, ['--from',job.out,'--feedback',feedback]);
+  expect(resumed.result?.stopped).toBeUndefined(); expect(resumed.result?.verdict, resumed.stderr).toBe('qualified');
   expect(await readFile(join(job.out,'round.json'),'utf8')).toBe(original);
   expect(await readFile(join(job.out,'execution.json'),'utf8')).toBe(state);
 });
@@ -217,6 +214,14 @@ it('半写成果未提交完整检查点，下一次完整复测不能沿用断�
     {kind:'write',fields:['number']},{kind:'check'},
     {kind:'write',raw:'{"unfinished":'},{kind:'check'},
     {kind:'write',fields:['number']},{kind:'check'},
+  ], ['--stagnation-threshold','1']);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
+});
+it('检查发现候选已变化却缺少完整写入事件，不能沿用旧无进展证据停止', async () => {
+  const job = await run('unobserved-change', [
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'silentWrite',fields:['number','title']},{kind:'check'},
   ], ['--stagnation-threshold','1']);
   expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
 });
