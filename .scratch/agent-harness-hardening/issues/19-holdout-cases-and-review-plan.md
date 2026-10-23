@@ -46,3 +46,4 @@ node --import tsx scripts/agent-eval/prepare-holdout.mjs --out F:/GenCode/render
 结果：12例、36单元、96阶段；公开订单入口读到36订单/96计划/0尝试/0成功。38次公开 Agent 输入检查（提取/设计36次、真实种子修改2次）全部通过；实际 roundTimeoutMs 均为15000，执行器无网络且模型观测0。无成果入口正确拒绝审核；已有模板种子仅形成hostRecovery、unqualified、canApprove=false的可读草稿。两例种子8次公开渲染无问题，单点diff及非目标像素保持通过。准备清单156份文件逐一重核SHA-256一致，材料身份为23f030f9aaa44c3565233130d0ce6a38d38f4d1f58eac1b97d22184ebb7f1da3；node scripts/scan-keys.mjs扫描1838文件、1个key、0命中。
 
 独立只读审查已修正：误通过只针对声明已核查的必要范围；routeNo不含显示单位“路”；修改入口实际预检；公开API使用roundTimeoutMs；候选登记随包复制；人工填写表另存observations，不改冻结模板。01/04准备失败及02/03中间成功包保留，仅05作为待核准包，不计任何真实模型结果。用户核准后仍须绑定20确切候选，并满足21/原38前置后才派发22–25。
+2026-10-23，已同步主集成5a21b45（票17，MCP0.16.0），工作树合并dd68be2。build/typecheck通过；再从四类公开Agent入口做兼容核查4/4通过，资料策略身份为full，实际15秒预算、无成果拒绝及不可批准恢复草稿均保持，真实模型调用0。记录在05包的validation/compat-17-03/results.json；该目录属于预先排除于材料身份的诊断范围，不改变156份已核准候选材料。两次探针入口/字段路径错误原件保留，未改运行时或真值。具体材料核准仍待用户回复。
