@@ -34,5 +34,6 @@
 - `node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval.test.ts --maxWorkers=1`：2 文件、31 测试通过（新增 9 项与原有 22 项）；首次原回归有 1 项因隔离工作树缺少 `dist/bin.js` 失败，构建后复跑通过。
 - 补入“恰好漏末项”反例后，`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts --maxWorkers=1`：9 项通过。
 - `node node_modules/typescript/bin/tsc --noEmit`、`git diff --check`：通过。
+- 合入集成分支 `3e5148b`（含票据 01）并保留 `--config` 与 `--behavior-policy` 两个入口后，`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval-transcription.test.ts --maxWorkers=1`：2 文件、28 测试通过；类型检查通过。
 
 验收边界：本票完成离线判据校准；原十项压测仍只表示技术回归，不代表新业务语义全过。布局显示不等于最终像素可见；复杂变换或可能遮挡按未核查保留，需要核准像素或独立审核，自动遮挡扩展归票据 13。没有运行真实模型；统一候选冻结、模型业务证据及跨平台整体回归按后续票据执行。CONTEXT 由集成方统一更新。
