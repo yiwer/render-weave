@@ -6,3 +6,5 @@ conditional-english-reference.json -text
 
 endpoint-authorization.json -text
 mixed-board-user-feedback.json -text
+candidate-2-*.json -text
+candidate-2-*.log -text
