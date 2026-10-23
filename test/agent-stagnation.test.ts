@@ -101,3 +101,14 @@ it('没有核准内容依据且不存在技术错误时，不推断停滞而由�
   ], ['--stagnation-threshold', '1'], false);
   expect(job.result?.stopped, job.stderr).toMatchObject({ reason: 'timeout' });
 });
+it('完整候选反复违反数据定义硬约束时，即使没有内容基准也可证明停滞', async () => {
+  const job = await run('technical-constraint', [
+    { kind: 'write', fields: ['number', 'number'] }, { kind: 'check' },
+    { kind: 'write', fields: ['number', 'number'] }, { kind: 'check' },
+    { kind: 'write', fields: ['number', 'number'] }, { kind: 'check' },
+  ], [], false);
+  expect(job.result?.stopped, job.stderr).toMatchObject({ reason: 'stagnation' });
+  const checkpoint = (await readReview(job.out)).checkpoint!;
+  expect(checkpoint.check.assessment.candidates).toBe('invalid');
+  expect(job.result.stopped.cycles[0].required).not.toEqual([]);
+});

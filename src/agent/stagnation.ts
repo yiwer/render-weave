@@ -1,7 +1,7 @@
 /** 只有已交付检查、完成的候选写入和下一完整检查才能组成修复机会。 */
 import { relative, resolve, sep } from 'node:path';
 import { readCheckpoint, type CheckpointCheck, type CheckpointView } from './checkpoints.js';
-import { compareCandidates, type ComparisonBasis } from './candidate-comparison.js';
+import { approvedObservations, compareCandidates, type ComparisonBasis } from './candidate-comparison.js';
 import { canonical } from './diff.js';
 
 export interface RepairEvidence { readonly toolCallId: string; readonly path: string }
@@ -41,11 +41,14 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
       if (delivered?.checkpoint?.status !== 'saved' || !completedChecks.delete(delivered.checkpoint.id) || truncated(delivered)) { reset(); continue; }
       const { checkpoint } = await readCheckpoint(options.roundDir, delivered.checkpoint.id);
       if (!checkpoint || checkpoint.contentIdentity !== delivered.checkpoint.contentIdentity) { reset(); continue; }
-      const required = checkpoint.check.coverageVerification?.status !== 'notChecked'
-        ? checkpoint.check.coverageVerification?.missingItems.map(item => `coverage.missing:${item}`) ?? [] : [];
-      if (previous && previous.check.coverageVerification?.missingItems.length && repairs.length && required.length) {
+      const required = requiredProblems(checkpoint);
+      if (previous && requiredProblems(previous).length && repairs.length && required.length) {
         const comparison = compareCandidates(previous, checkpoint);
-        if (comparison.status === 'incomparable' || comparison.improved.length || comparison.unknownAdded.length) cycles = [];
+        const before = approvedObservations(previous), after = approvedObservations(checkpoint);
+        const sameBasis = previous.comparisonBasis && checkpoint.comparisonBasis && canonical(previous.comparisonBasis) === canonical(checkpoint.comparisonBasis);
+        const progress = requiredProblems(previous).some(problem => !required.includes(problem)) || comparison.improved.some(change =>
+          change.dimension !== 'coverage.anomaly' || JSON.parse(change.item).level === 'severe');
+        if (!sameBasis || progress || [...after.unknown].some(value => !before.unknown.has(value))) cycles = [];
         else {
           cycles.push({ before: previous.id, after: checkpoint.id, beforeIdentity: previous.contentIdentity, afterIdentity: checkpoint.contentIdentity, repairs, required });
           if (cycles.length >= options.threshold && checkpoint.comparisonBasis) options.stop({ reason: 'stagnation', threshold: options.threshold, basis: checkpoint.comparisonBasis, cycles });
@@ -59,6 +62,15 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
     accept(event: Record<string, any>) { pending = pending.then(() => accept(event)).catch(() => reset()); },
     async idle() { await pending; },
   };
+}
+function requiredProblems(record: CheckpointView): string[] {
+  const check = record.check;
+  const technical = [...check.problems, ...check.candidates.flatMap(candidate => candidate.problems),
+    ...(check.assessment.render.blocking ? check.assessment.render.problems : [])]
+    .filter(problem => problem.level === 'severe').map(problem => `technical:${canonical({ code: problem.code, location: problem.location })}`);
+  const missing = check.coverageVerification?.status !== 'notChecked'
+    ? check.coverageVerification?.missingItems.map(item => `coverage.missing:${item}`) ?? [] : [];
+  return [...new Set([...technical, ...missing])].sort();
 }
 function truncated(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
