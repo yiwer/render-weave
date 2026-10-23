@@ -1,0 +1,109 @@
+{
+  "format": "renderweave-feedback-evidence-index/1",
+  "createdAt": "2026-10-23T19:18:46.657Z",
+  "root": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-3",
+  "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+  "binding": {
+    "id": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+    "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\binding",
+    "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+    "config": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\inputs\\config.real-model.json",
+    "configSha256": "sha256:52e2734b7778cf728126773148b2940a12096072246e9922d62d50930c4c6bd0",
+    "plan": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\plan.json",
+    "planSha256": "sha256:3e61c961d08f734eb8dcc58257ee30c849374c6e35081970e08ae1c709eca5cf"
+  },
+  "status": "valid-failure-following-block-not-run",
+  "realModelObservations": 8,
+  "files": [
+    {
+      "file": "registration.candidate-3.authorized.json",
+      "bytes": 35353,
+      "sha256": "d8f533d1684cf2bdcc7e09a86abf07311389ac9de1654743f5ab2510eb31e96e"
+    },
+    {
+      "file": "registration.candidate-3.results.json",
+      "bytes": 71407,
+      "sha256": "c73aa7436fda07cff106a923a8d3b934c39cc8bed104b1b91043088722afd621"
+    },
+    {
+      "file": "activation.json",
+      "bytes": 1009,
+      "sha256": "369730bd577560e63c033ebb2a36e83d271244deb3a26d27a5c4a074c171f5f1"
+    },
+    {
+      "file": "activation-supplement.json",
+      "bytes": 769,
+      "sha256": "51c3e1f2621b6e995985d029a5934e02c280419f008e9e423d52dea36478708c"
+    },
+    {
+      "file": "endpoint-authorization.json",
+      "bytes": 1093,
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+    },
+    {
+      "file": "input-evidence.candidate-3.json",
+      "bytes": 71938,
+      "sha256": "ad3c1f2158154c726c62f74748973f7c908d54c038f9ec5dc3f36cd68ce6214b"
+    },
+    {
+      "file": "plan.json",
+      "bytes": 7044,
+      "sha256": "3e61c961d08f734eb8dcc58257ee30c849374c6e35081970e08ae1c709eca5cf"
+    },
+    {
+      "file": "block-2-not-dispatched.json",
+      "bytes": 1156,
+      "sha256": "a0764efa6c1be3458061abbf0b549df863714465cebf06266c5458ee71fb3f10"
+    },
+    {
+      "file": "audit/block-1.json",
+      "bytes": 246061,
+      "sha256": "051346522f42b3537b4847a7f37caed3632013b3546a256f4e86c5df5e91092b"
+    },
+    {
+      "file": "audit/feedback-trace-block-1.json",
+      "bytes": 22916,
+      "sha256": "27045ab1b17e35e266253a3279d67b6f5d43bf355cda13abfc5c2ed5fa73d27b"
+    },
+    {
+      "file": "audit/template-design-1-scope-diagnosis.json",
+      "bytes": 55407,
+      "sha256": "391e8fe70c0fb7a3acadb7e55c877e08fbd7bd762c31ba89382de1bd3768eaed"
+    },
+    {
+      "file": "dispatch/block-1.started.json",
+      "bytes": 2055,
+      "sha256": "a6e7efdea7b0768500394cdaf957ae4be957deb56d71dd402dfb56cba727f291"
+    },
+    {
+      "file": "dispatch/block-1.pid.json",
+      "bytes": 92,
+      "sha256": "a239d2cb8b0cf54cefae81bd1bba746797a31c3a4b232beb3a3f589c0dd2b445"
+    },
+    {
+      "file": "dispatch/block-1.completed.json",
+      "bytes": 2627,
+      "sha256": "897b7f892309e1192adbb70ad29a3f1c2b92acb1d7c8d99f7efab5d91611e5d9"
+    },
+    {
+      "file": "dispatch/block-1.stdout.log",
+      "bytes": 3417,
+      "sha256": "273fff06b6848d97ba3021ca92db77f59c2872c2e9d9345653ffb9f38871cc81"
+    },
+    {
+      "file": "dispatch/block-1.stderr.log",
+      "bytes": 868,
+      "sha256": "405e6a025201efa346cf0250ad77c343f97a3557eae1b42ad858fd6867ad03eb"
+    },
+    {
+      "file": "dispatch/block-1.report-harness21-candidate-3.json",
+      "bytes": 417164,
+      "sha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47"
+    }
+  ],
+  "notes": [
+    "原报告/原trace保留；短路诊断单列，不重评分",
+    "8未派发不计无效或零成本已尝试；没有第二段模型",
+    "实际模型计数另留来源，不回填机制报告0"
+  ]
+}

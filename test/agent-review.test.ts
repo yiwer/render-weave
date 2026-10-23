@@ -430,3 +430,18 @@ describe('命令行', () => {
     await expect(fetch(server.url)).rejects.toThrow();
   });
 });
+
+
+it('显式只读审核即使缺少检查缓存也不新增或改变轮次文件', async () => {
+  const dir = await round({workspace: await workspaceCopy()});
+  await rm(join(dir, 'checks'), {recursive: true, force: true});
+  const before = await contents(dir);
+  const opened = await readReview(dir, {persistArtifacts: false});
+  expect(opened.problems).toEqual([]);
+  expect(opened.view?.candidates.length).toBe(3);
+  expect(opened.view?.contentIdentity?.id).toBeDefined();
+  expect(await contents(dir)).toEqual(before);
+  // 原有交互审核默认仍保存检查供后续批准与应用核对。
+  await readReview(dir);
+  expect((await readdir(join(dir, 'checks'))).length).toBeGreaterThan(0);
+});

@@ -24,7 +24,7 @@ const MAX_SIDE_PX = 4000;
 export interface PreviewView {
   /** 出图请求，数据集为候选时写成 { "candidate": 候选文件 }。 */
   readonly request: Record<string, unknown>;
-  /** 预览图在轮次目录中的位置；请求无法渲染时没有。 */
+  /** 已持久化预览图在轮次目录中的位置；不能渲染或只读模式缺缓存时没有。 */
   readonly image?: string;
   readonly widthPx?: number;
   readonly heightPx?: number;
@@ -39,6 +39,8 @@ let build: Promise<string> | undefined;
 
 export async function renderPreview(options: {
   readonly roundDir: string;
+  /** false 时允许读取有效缓存，缺失时只在内存渲染，不产生持久文件。 */
+  readonly persistArtifacts?: boolean;
   readonly workspace: Workspace;
   /** 要渲染的请求；mode、format 与 dpi 由这里决定。 */
   readonly request: Record<string, unknown>;
@@ -78,17 +80,19 @@ export async function renderPreview(options: {
   const tracked = trackResources(options.workspace.resources);
   const result = await render({ ...options.workspace, resources: tracked.repository }, request);
   const view = {
-    ...(result.image ? { image, widthPx: result.image.widthPx, heightPx: result.image.heightPx, dpi: result.image.dpi } : {}),
+    ...(result.image ? { ...(options.persistArtifacts === false ? {} : {image}), widthPx: result.image.widthPx, heightPx: result.image.heightPx, dpi: result.image.dpi } : {}),
     problems: result.problems,
     resourceIds: tracked.used().filter(item => item.sha256 !== null).map(item => item.id),
     missingResourceIds: tracked.used().filter(item => item.sha256 === null).map(item => item.id),
-    ...(result.image ? { imageSha256: sha256(result.image.bytes) } : {}),
+    ...(result.image && options.persistArtifacts !== false ? { imageSha256: sha256(result.image.bytes) } : {}),
   };
-  await mkdir(join(options.roundDir, PREVIEW_DIR), { recursive: true });
-  if (result.image) await writeFile(join(options.roundDir, image), result.image.bytes);
-  await writeFile(meta, `${JSON.stringify(view, null, 2)}\n`);
+  if (options.persistArtifacts !== false) {
+    await mkdir(join(options.roundDir, PREVIEW_DIR), { recursive: true });
+    if (result.image) await writeFile(join(options.roundDir, image), result.image.bytes);
+    await writeFile(meta, `${JSON.stringify(view, null, 2)}\n`);
+  }
   return { request: options.shown, ...view, blocking: options.blocking,
-    assessment: assessRendering(view.problems, !!view.image, options.blocking) };
+    assessment: assessRendering(view.problems, !!result.image, options.blocking) };
 }
 
 /** 让预览与示例图的像素宽度相近：按示例图宽度折算 DPI，不低于 50，不超过 300，最长边不超过 4000 像素。 */

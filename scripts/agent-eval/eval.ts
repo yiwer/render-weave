@@ -390,7 +390,7 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
   }
   if (scenario.kind === 'transcription' && await exists(join(unit, 'dataset', 'outcome.json'))) {
     // 审核视图里的数据集已把还没处理的待确认项换成候选值（M46），按审核人全部采纳计。
-    const view = (await readReview(join(unit, 'dataset'))).view;
+    const view = (await readReview(join(unit, 'dataset'), {persistArtifacts: false})).view;
     const dataset = view?.candidates.find((candidate) => candidate.kind === 'dataset')?.document;
     const truth = (JSON.parse(await readFile(repoPath(scenario.truth), 'utf8')) as { stops: TruthStop[] }).stops;
     Object.assign(checks, { transcription: scoreTranscription(stopsOf(dataset), truth) });
