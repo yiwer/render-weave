@@ -42,3 +42,20 @@
 ## 当前边界
 
 本登记不关闭原38，不修改其历史已勾选的中文纠偏记录，不重复承担原34的实现。后续真实结果、共享引用和人工审核应写入原38票据及其绑定证据；harness26只引用相应结论。
+
+## 公开审核材料生成器（离线准备）
+
+prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用。实际轮次先完整复制到新目录并核对逐文件摘要；在副本上调用公开 readReview、readPreviousRound、loadWorkspace 和 render，获取已生效的审核修改及固定资源。原轮次前后逐文件摘要必须相同。
+
+正式材料同时传 --candidate 与其 content 的 --runtime，前后用公开 freeze.ts --verify --current 核查来源；仅离线工具预演允许 --preflight。实际出图保持本轮 request.json 的模式与 DPI。公开审核页的草稿预览可自动调整 DPI，因此另列预览尺寸与 DPI，不将其当成原请求结果。没有实际图片时保留受阻结果；缺固定资源则拒绝，不用当前资源补造历史身份。
+
+输出含实际请求图片/布局、单独的公开审核预览、有效候选、独立范围说明、不可变材料清单、空白人工记录和 review.html。首页先展示原图及结果，诊断入口收折；这只能支持独立观察，不能技术上保证审核人从未读过诊断。人工须据实际情况记录 autoDiagnosticsSeenBeforeFirstJudgment，未知工时保持 null。材料本身保持 prepared-not-reviewed。
+
+2026-10-23 已用18的一个已结束合成中文模板轮次做工具预演，位置 F:/GenCode/render-weave/out/harness-original38-review-preflight-02/：公开入口读到1份有效候选，实际请求100 DPI/866×610，预览100 DPI/866×610；原轮次所有字节不变。它只验证工具可运行，不是原38业务观测、人审结果或20固定候选上的测试。初版预演01一并保留，不能计成第二次模型观测。
+
+20完成后的命令形状（实际值待最终登记）：
+
+    node .scratch/agent-template-authoring/original38-harness/prepare-review.mjs --candidate <候选包> --runtime <候选包/content> --round <实际封存轮次> --out <新的审核目录> --scope .scratch/agent-template-authoring/original38-harness/zh-style-inventory.md
+
+每次M402模板/修改成果独立生成一包。脚本不能替代人对照全部35站、15道路段、15班次及独立样式/状态；也不能将英文局部离线材料当整体可交付结果。
+
