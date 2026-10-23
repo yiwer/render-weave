@@ -59,3 +59,13 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
 
 每次M402模板/修改成果独立生成一包。脚本不能替代人对照全部35站、15道路段、15班次及独立样式/状态；也不能将英文局部离线材料当整体可交付结果。
 
+
+## 英文局部材料生成器（准备完成，待20候选）
+
+`prepare-legacy-en-review.mjs` 强制提供20的候选包，前后核对其公开 `freeze.ts --verify --current`。它逐一验证库存所列原始材料摘要，在新目录复制5份快照文档、3份原样旧候选和资源，调用公开 `loadWorkspace` 与 `render`。原正式请求保留50 DPI与本站6，同时单独生成干净草稿内容供人工查看；原来的严重问题与正式出图阻断保留，不构造缺失的 outcome 或审核记录。
+
+输出41项同位置上下文面板、完整整图、公开渲染结果和空白人工记录。历史框仅用作定位，未核准事实与测量不传给自动比较，因此不产生自动通过结论。面板按同一整板坐标显示，保留位置偏差；混排项只审核英文局部，16站最长英文仍由审核者逐项判断。生成器字节、实际渲染器身份、全部输入和输出摘要一并留存，原件结束后重新验哈希。
+
+已通过 `node --check`；尚未在20候选上渲染，不计已验证的业务结果。20冻结后的命令为：
+
+    node .scratch/agent-template-authoring/original38-harness/prepare-legacy-en-review.mjs --candidate <20最终候选包> --inventory .scratch/agent-template-authoring/original38-harness/en-inventory.json --out <新的英文局部审核目录>
