@@ -28,10 +28,11 @@ const original = ws.templates.find(t => t.name === request.template).document;
 const find = (n, name) => n.name === name ? n : n.children?.map(c => find(c, name)).find(Boolean);
 async function renderVariant(name, mutate, dpi = 50) {
   const document = structuredClone(original); mutate(document);
-  const result = await api.render({ ...ws, templates: ws.templates.map(t => t.name === request.template ? { ...t, document } : t) }, { ...request, output: { ...request.output, dpi } });
+  const actualRequest = { ...request, output: { ...request.output, dpi } };
+  const result = await api.render({ ...ws, templates: ws.templates.map(t => t.name === request.template ? { ...t, document } : t) }, actualRequest);
   if (!result.image || result.problems.some(p => p.level === 'severe')) throw new Error('探针不能正常出图：' + name + JSON.stringify(result.problems));
   await writeFile(join(out, name + '.png'), result.image.bytes);
-  return { document, layout: result.layout, operator: find(result.layout.root, '运营方') };
+  return { document, request: actualRequest, layout: result.layout, operator: find(result.layout.root, '运营方') };
 }
 const good = await renderVariant('good', () => {});
 const small = await renderVariant('small', d => { find(d.artboard, '运营方').fontSize = 4; });
@@ -43,7 +44,7 @@ if (!b?.text || b.text.fontSize !== 8 || !mixed.operator.text.fragments.some(f =
 const baseline = { sampleWidthPx: good.layout.output.widthPx, sampleHeightPx: good.layout.output.heightPx, artboardWidthMm: 740, artboardHeightMm: 165,
   approvedRegions: [{ id: 'operator', name: '运营方', sampleRegion: { x: b.x * good.layout.output.widthPx / 740, y: b.y * good.layout.output.heightPx / 165,
     width: b.width * good.layout.output.widthPx / 740, height: b.height * good.layout.output.heightPx / 165 }, targetPathPattern: '*运营方', expectedFontSizeMm: 8 }] };
-const verify = (v, base) => api.verifyElementStyles({ layout: v.layout, baseline: base, ...api.hashCandidatesAndRequest([{ name: request.template, document: v.document }], request), parameters: request.parameters });
+const verify = (v, base) => ({ request: v.request, ...api.verifyElementStyles({ layout: v.layout, baseline: base, ...api.hashCandidatesAndRequest([{ name: request.template, document: v.document }], v.request), parameters: v.request.parameters }) });
 const summarize = (r) => r;
 const missing = structuredClone(baseline); missing.approvedRegions[0].targetPathPattern = '*不存在的元素';
 const boxOnly = structuredClone(baseline); delete boxOnly.approvedRegions[0].expectedFontSizeMm;
