@@ -12,7 +12,11 @@ const root = resolve(values.root), repo = resolve(import.meta.dirname, '../..');
 const json = async (p) => JSON.parse(await readFile(p, 'utf8'));
 const manifest = await json(join(root, 'manifest.json'));
 const sha = (b) => createHash('sha256').update(b).digest('hex');
-for (const file of manifest.scripts) if (sha(await readFile(join(repo, file.path))) !== file.sha256) throw new Error('脚本不再等于登记版本：' + file.path);
+const verifyScorer = async () => {
+  for (const file of manifest.scripts) if (sha(await readFile(join(repo, file.path))) !== file.sha256) throw new Error('脚本不再等于登记版本：' + file.path);
+  for (const file of manifest.engine) if (sha(await readFile(join(repo, 'src', file.path))) !== file.sha256) throw new Error('评分引擎不再等于登记版本：' + file.path);
+};
+await verifyScorer();
 for (const [directory, files] of [['dist', manifest.runtime], ['agent', manifest.materials]]) for (const file of files) {
   if (sha(await readFile(join(repo, directory, file.path))) !== file.sha256) throw new Error('运行资料不再等于登记版本：' + file.path);
 }
@@ -22,7 +26,8 @@ const dir = join(root, 'live'); await mkdir(dir); // 不能静默覆盖或重复
 const runtime = { key: process.env.OPEN_CODE_API_KEY, keyEnv: 'OPEN_CODE_API_KEY', model: manifest.model, smallModel: manifest.model, maxTurns: manifest.maxTurns };
 const rows = [];
 const save = async () => writeFile(join(root, 'live-report.json'), JSON.stringify({ manifestSha256: sha(await readFile(join(root, 'manifest.json'))), rows }, null, 2) + '\n');
-const score = (caseId, round) => {
+const score = async (caseId, round) => {
+  await verifyScorer();
   const stdout = execFileSync(process.execPath, ['--import', 'tsx', join(repo, 'scripts/agent-eval/repair-experiment.ts'), '--root', root, '--case', caseId, '--round', round], { cwd: repo, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
   console.log(stdout.trim());
 };
@@ -37,12 +42,16 @@ for (const unit of manifest.order) {
     const options = iteration === 1 ? { task: 'template-revision', sample: join(root, 'reference.png'), brief: join(root, 'brief.md'), resources: join(repo, 'fixtures/resources'),
       workspace: join(base, 'workspace'), dataset: 'ds-m402-wanguocheng', request: join(root, 'request.json'), requirement: join(base, unit.arm + '.md'), domain: 'route-sign' }
       : { from: join(unitDir, 'round-1'), feedback: join(unitDir, 'round-1/repair-score', unit.arm + '-feedback.md') };
-    const result = await runAgentTask({ ...runtime, ...options, out });
+    let result;
+    try { result = await runAgentTask({ ...runtime, ...options, out }); }
+    catch (error) {
+      item.status = 'invalid'; item.failure = String(error).replaceAll(runtime.key, '[redacted]'); stopped = true; await save(); break;
+    }
     item.rounds.push({ dir: out, record: result.record }); await save();
     const error = result.record.run.error ?? '';
-    if (result.record.run.stopped || /\b429\b|rate[_ ]?limit|quota|usage limit/i.test(error)) { item.status = 'quota'; stopped = true; await save(); break; }
-    if (/\b(?:500|502|503|529)\b|overloaded|ECONNRESET|ETIMEDOUT|socket hang up/i.test(error)) { item.status = 'invalid'; await save(); break; }
-    score(unit.caseId, out); // 模型已结束，离线评分时间不混入 wallMs
+    if (result.record.run.stopped) { item.status = 'quota'; stopped = true; await save(); break; }
+    if (result.record.run.endedBy !== 'error_max_turns' && (error || result.record.run.exitCode !== 0)) { item.status = 'invalid'; stopped = true; await save(); break; }
+    await score(unit.caseId, out); // 模型已结束，离线评分时间不混入 wallMs
     const measured = await json(join(out, 'repair-score/report.json'));
     item.rounds.at(-1).score = { qualified: measured.qualified, repaired: measured.repaired, addedFailures: measured.addedFailures, cleanSuccess: measured.cleanSuccess, available: measured.available };
     console.log(JSON.stringify({ event: 'complete', unit: unit.id, iteration, verdict: result.record.verdict, peak: result.record.run.context?.peakInputTokens, wallMs: result.record.run.wallMs, ...item.rounds.at(-1).score }));

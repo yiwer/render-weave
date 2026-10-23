@@ -29,9 +29,11 @@ describe('受控修复评分', () => {
     const delta = repairDelta([check('a', false), check('b', true)], [check('a', true), check('b', false)], ['a'], true);
     expect(delta).toEqual({ targetCount: 1, repaired: ['a'], addedFailures: ['b'], cleanSuccess: false });
   });
-  it('无成果的新增项是未知；未合格交回不计目标修复', () => {
+  it('无成果的新增项是未知；目标修复与合格交回分别记录', () => {
     expect(repairDelta([check('a', false)], null, ['a'], false).addedFailures).toBeNull();
-    expect(repairDelta([check('a', false)], [check('a', true)], ['a'], false).repaired).toEqual([]);
+    const delta = repairDelta([check('a', false)], [check('a', true)], ['a'], false);
+    expect(delta.repaired).toEqual(['a']);
+    expect(delta.cleanSuccess).toBe(false);
   });
   it('原通过项消失时，不能静默算成没有新增失败', () => {
     expect(repairDelta([check('a', true)], [], [], true).addedFailures).toEqual(['a']);

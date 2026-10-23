@@ -13,12 +13,15 @@ export function repairChecks(actual: FidelityMeasurement, reference: FidelityMea
       ...(role?.matches.find(Boolean)?.path ? { path: role.matches.find(Boolean)!.path } : {}) });
     if (!geometry || !ref.expected) continue;
     const available = !!role && role.geometry?.compared === ref.matched && ref.matched === ref.expected;
+    const first = role?.matches.findIndex((m, i) => m !== null && ref.matches[i] != null) ?? -1;
+    const center = (box: { x: number; y: number; width: number; height: number }) => [box.x + box.width / 2, box.y + box.height / 2].map((v) => Number(v.toFixed(5)));
+    const location = first >= 0 ? `；首个匹配中心 ${JSON.stringify(center(role!.matches[first]!.box))}，参考 ${JSON.stringify(center(ref.matches[first]!.box))}` : '';
     if (ref.fontSizeMm) checks.push({ id: ref.id + ':font', role: ref.id, dimension: 'font', pass: available && role.geometry!.meanFontLogError !== null && role.geometry!.meanFontLogError <= REPAIR_THRESHOLDS.fontLog,
       severity: role?.geometry?.meanFontLogError ?? 1, detail: `字号中位数 ${role?.fontSizeMm?.median ?? '未知'} mm，参考 ${ref.fontSizeMm.median} mm；平均字号对数偏差 ${role?.geometry?.meanFontLogError ?? '未知'}`,
       ...(role?.matches.find(Boolean)?.path ? { path: role.matches.find(Boolean)!.path } : {}) });
     checks.push({ id: ref.id + ':position', role: ref.id, dimension: 'position', pass: available && role.geometry!.meanCenterError <= REPAIR_THRESHOLDS.center,
-      severity: role?.geometry?.meanCenterError ?? 1, detail: `平均中心偏差 ${role?.geometry?.meanCenterError ?? '未知'}（分别按画板宽、高归一化；目标 ≤ ${REPAIR_THRESHOLDS.center}）`,
-      ...(role?.matches.find(Boolean)?.path ? { path: role.matches.find(Boolean)!.path } : {}) });
+      severity: role?.geometry?.meanCenterError ?? 1, detail: `平均中心偏差 ${role?.geometry?.meanCenterError ?? '未知'}（分别按画板宽、高归一化；目标 ≤ ${REPAIR_THRESHOLDS.center}）${location}`,
+      ...(first >= 0 ? { path: role!.matches[first]!.path } : {}) });
   }
   return checks;
 }
@@ -38,7 +41,7 @@ export function boundedRepairFeedback(checks: readonly RepairCheck[]): string {
 }
 export function repairDelta(initial: readonly RepairCheck[], final: readonly RepairCheck[] | null, targets: readonly string[], qualified: boolean) {
   const byId = new Map(final?.map((c) => [c.id, c]));
-  const repaired = qualified ? targets.filter((id) => byId.get(id)?.pass) : [];
+  const repaired = targets.filter((id) => byId.get(id)?.pass);
   const added = final ? initial.filter((c) => c.pass && byId.get(c.id)?.pass !== true).map((c) => c.id) : null;
   return { targetCount: targets.length, repaired, addedFailures: added, cleanSuccess: qualified && repaired.length === targets.length && added?.length === 0 };
 }
