@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "rw": {
+      "type": "stdio",
+      "command": "D:\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\src\\bin.js",
+        "mcp",
+        "--workspace",
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-policy-live\\price\\round-1\\snapshot",
+        "--resources",
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\fixtures\\resources",
+        "--root",
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-policy-live\\price\\round-1\\agent",
+        "--outcome-context",
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-policy-live\\price\\round-1\\logs\\outcome-context.json",
+        "--log",
+        "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-policy-live\\price\\round-1\\logs\\tools.jsonl",
+        "--tools",
+        "list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome"
+      ]
+    }
+  }
+}

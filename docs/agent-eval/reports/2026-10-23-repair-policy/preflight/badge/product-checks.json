@@ -1,0 +1,2512 @@
+{
+  "format": "renderweave-design-checks/1",
+  "basis": "受控实验维护模板的核准布局；只用于产品接线验收",
+  "styles": [],
+  "reference": {
+    "sha256": "621617f0f3555966f2130c3f2cd553ed24058e5131d22edda0fd1d006edfef7d"
+  },
+  "cases": [
+    {
+      "id": "binding",
+      "parameters": {},
+      "changes": [
+        {
+          "path": "/fullName",
+          "op": "set",
+          "value": "李晓明"
+        },
+        {
+          "path": "/organization",
+          "op": "set",
+          "value": "城市设计研究所"
+        },
+        {
+          "path": "/sessions",
+          "op": "set",
+          "value": [
+            {
+              "title": "设计与验证",
+              "startsAt": "09:30",
+              "room": "一号厅"
+            },
+            {
+              "title": "分论坛：出图自动化",
+              "startsAt": "14:00"
+            }
+          ]
+        },
+        {
+          "path": "/tags",
+          "op": "set",
+          "value": [
+            "设计",
+            "嘉宾"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "parameters": {
+        "showSeat": false,
+        "accentColor": "#1565C0",
+        "nameSize": 8,
+        "eventName": "城市设计论坛"
+      },
+      "changes": [
+        {
+          "path": "/role",
+          "op": "set",
+          "value": "嘉宾"
+        },
+        {
+          "path": "/vip",
+          "op": "set",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "repair": {
+    "approval": "approved",
+    "regions": [
+      {
+        "id": "页眉",
+        "paths": [
+          "会议胸牌/页眉/会议名称"
+        ]
+      },
+      {
+        "id": "会议胸牌/照片",
+        "paths": [
+          "会议胸牌/照片"
+        ]
+      },
+      {
+        "id": "会议胸牌/姓名",
+        "paths": [
+          "会议胸牌/姓名"
+        ]
+      },
+      {
+        "id": "会议胸牌/单位",
+        "paths": [
+          "会议胸牌/单位"
+        ]
+      },
+      {
+        "id": "会议胸牌/身份",
+        "paths": [
+          "会议胸牌/身份"
+        ]
+      },
+      {
+        "id": "信息",
+        "paths": [
+          "会议胸牌/信息/证件号",
+          "会议胸牌/信息/座位",
+          "会议胸牌/信息/会议日期",
+          "会议胸牌/信息/发证时间",
+          "会议胸牌/信息/主场次",
+          "会议胸牌/信息/贵宾通道"
+        ]
+      },
+      {
+        "id": "场次列",
+        "paths": [
+          "会议胸牌/场次列[1]/开始时刻",
+          "会议胸牌/场次列[1]/场次名称",
+          "会议胸牌/场次列[1]/会场",
+          "会议胸牌/场次列[2]/开始时刻",
+          "会议胸牌/场次列[2]/场次名称"
+        ]
+      },
+      {
+        "id": "标签行",
+        "paths": [
+          "会议胸牌/标签行[1]/标签文字",
+          "会议胸牌/标签行[2]/标签文字"
+        ]
+      }
+    ],
+    "references": [
+      {
+        "case": "reference",
+        "geometry": true,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 95,
+          "height": 135,
+          "elements": [
+            {
+              "path": "会议胸牌/页眉/会议名称",
+              "role": "会议胸牌/页眉/会议名称",
+              "type": "text",
+              "box": {
+                "x": 28.364,
+                "y": 6,
+                "width": 38.272,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "2026 出图技术大会",
+              "characters": [
+                {
+                  "text": "2",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "0",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "2",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "6",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": " ",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "出",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "图",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "技",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "术",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "大",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "会",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/照片",
+              "role": "会议胸牌/照片",
+              "type": "image",
+              "box": {
+                "x": 35.5,
+                "y": 15.5,
+                "width": 24,
+                "height": 24
+              },
+              "boxKind": "layout",
+              "image": "res:test-quadrants-png"
+            },
+            {
+              "path": "会议胸牌/姓名",
+              "role": "会议胸牌/姓名",
+              "type": "text",
+              "box": {
+                "x": 22.5,
+                "y": 41,
+                "width": 50,
+                "height": 9
+              },
+              "boxKind": "layout",
+              "text": "张三",
+              "characters": [
+                {
+                  "text": "张",
+                  "size": 9,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "三",
+                  "size": 9,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/单位",
+              "role": "会议胸牌/单位",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 51.5,
+                "width": 87,
+                "height": 4
+              },
+              "boxKind": "layout",
+              "text": "示例科技有限公司",
+              "characters": [
+                {
+                  "text": "示",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "例",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "科",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "技",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "有",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "限",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "公",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "司",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/身份",
+              "role": "会议胸牌/身份",
+              "type": "text",
+              "box": {
+                "x": 42.5,
+                "y": 57,
+                "width": 10,
+                "height": 5
+              },
+              "boxKind": "layout",
+              "text": "讲者",
+              "characters": [
+                {
+                  "text": "讲",
+                  "size": 5,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "者",
+                  "size": 5,
+                  "color": "#b4532aff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/证件号",
+              "role": "会议胸牌/信息/证件号",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 63.5,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "证件号 SP0001",
+              "characters": [
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "件",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "S",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "P",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/座位",
+              "role": "会议胸牌/信息/座位",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 63.5,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "座位 12 排",
+              "characters": [
+                {
+                  "text": "座",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "位",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "排",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/会议日期",
+              "role": "会议胸牌/信息/会议日期",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 67.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "2026年11月20日",
+              "characters": [
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "年",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "月",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "日",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/发证时间",
+              "role": "会议胸牌/信息/发证时间",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 67.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "发证 2026-11-01 09:30",
+              "characters": [
+                {
+                  "text": "发",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/主场次",
+              "role": "会议胸牌/信息/主场次",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 71.9,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "主场次 主旨演讲",
+              "characters": [
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "场",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "次",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "旨",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "演",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "讲",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 77.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "09:30",
+              "characters": [
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 77.5,
+                "width": 65.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "主旨演讲",
+              "characters": [
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "旨",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "演",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "讲",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/会场",
+              "role": "会议胸牌/场次列/会场",
+              "type": "text",
+              "box": {
+                "x": 82,
+                "y": 77.6,
+                "width": 9,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "一号厅",
+              "characters": [
+                {
+                  "text": "一",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "厅",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 82.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "14:00",
+              "characters": [
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "4",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 82.5,
+                "width": 74.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "分论坛：出图自动化",
+              "characters": [
+                {
+                  "text": "分",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "论",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "坛",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "：",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "出",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "图",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "自",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "动",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "化",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[1]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 5.5,
+                "y": 109.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "首次",
+              "characters": [
+                {
+                  "text": "首",
+                  "size": 3,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "次",
+                  "size": 3,
+                  "color": "#b4532aff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[2]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 16,
+                "y": 109.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "讲者",
+              "characters": [
+                {
+                  "text": "讲",
+                  "size": 3,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "者",
+                  "size": 3,
+                  "color": "#b4532aff"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "case": "binding",
+        "geometry": false,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 95,
+          "height": 135,
+          "elements": [
+            {
+              "path": "会议胸牌/页眉/会议名称",
+              "role": "会议胸牌/页眉/会议名称",
+              "type": "text",
+              "box": {
+                "x": 28.364,
+                "y": 6,
+                "width": 38.272,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "2026 出图技术大会",
+              "characters": [
+                {
+                  "text": "2",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "0",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "2",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "6",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": " ",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "出",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "图",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "技",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "术",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "大",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "会",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/照片",
+              "role": "会议胸牌/照片",
+              "type": "image",
+              "box": {
+                "x": 35.5,
+                "y": 15.5,
+                "width": 24,
+                "height": 24
+              },
+              "boxKind": "layout",
+              "image": "res:test-quadrants-png"
+            },
+            {
+              "path": "会议胸牌/姓名",
+              "role": "会议胸牌/姓名",
+              "type": "text",
+              "box": {
+                "x": 22.5,
+                "y": 41,
+                "width": 50,
+                "height": 9
+              },
+              "boxKind": "layout",
+              "text": "李晓明",
+              "characters": [
+                {
+                  "text": "李",
+                  "size": 9,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "晓",
+                  "size": 9,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "明",
+                  "size": 9,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/单位",
+              "role": "会议胸牌/单位",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 51.5,
+                "width": 87,
+                "height": 4
+              },
+              "boxKind": "layout",
+              "text": "城市设计研究所",
+              "characters": [
+                {
+                  "text": "城",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "市",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "设",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "计",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "研",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "究",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "所",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/身份",
+              "role": "会议胸牌/身份",
+              "type": "text",
+              "box": {
+                "x": 42.5,
+                "y": 57,
+                "width": 10,
+                "height": 5
+              },
+              "boxKind": "layout",
+              "text": "讲者",
+              "characters": [
+                {
+                  "text": "讲",
+                  "size": 5,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "者",
+                  "size": 5,
+                  "color": "#b4532aff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/证件号",
+              "role": "会议胸牌/信息/证件号",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 63.5,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "证件号 SP0001",
+              "characters": [
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "件",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "S",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "P",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/座位",
+              "role": "会议胸牌/信息/座位",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 63.5,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "座位 12 排",
+              "characters": [
+                {
+                  "text": "座",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "位",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "排",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/会议日期",
+              "role": "会议胸牌/信息/会议日期",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 67.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "2026年11月20日",
+              "characters": [
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "年",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "月",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "日",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/发证时间",
+              "role": "会议胸牌/信息/发证时间",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 67.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "发证 2026-11-01 09:30",
+              "characters": [
+                {
+                  "text": "发",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/主场次",
+              "role": "会议胸牌/信息/主场次",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 71.9,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "主场次 主旨演讲",
+              "characters": [
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "场",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "次",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "旨",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "演",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "讲",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 77.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "09:30",
+              "characters": [
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 77.5,
+                "width": 65.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "设计与验证",
+              "characters": [
+                {
+                  "text": "设",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "计",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "与",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "验",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/会场",
+              "role": "会议胸牌/场次列/会场",
+              "type": "text",
+              "box": {
+                "x": 82,
+                "y": 77.6,
+                "width": 9,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "一号厅",
+              "characters": [
+                {
+                  "text": "一",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "厅",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 82.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "14:00",
+              "characters": [
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "4",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 82.5,
+                "width": 74.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "分论坛：出图自动化",
+              "characters": [
+                {
+                  "text": "分",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "论",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "坛",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "：",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "出",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "图",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "自",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "动",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "化",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[1]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 5.5,
+                "y": 109.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "设计",
+              "characters": [
+                {
+                  "text": "设",
+                  "size": 3,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "计",
+                  "size": 3,
+                  "color": "#b4532aff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[2]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 16,
+                "y": 109.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "嘉宾",
+              "characters": [
+                {
+                  "text": "嘉",
+                  "size": 3,
+                  "color": "#b4532aff"
+                },
+                {
+                  "text": "宾",
+                  "size": 3,
+                  "color": "#b4532aff"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "case": "state",
+        "geometry": false,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 95,
+          "height": 135,
+          "elements": [
+            {
+              "path": "会议胸牌/页眉/会议名称",
+              "role": "会议胸牌/页眉/会议名称",
+              "type": "text",
+              "box": {
+                "x": 34,
+                "y": 6,
+                "width": 26.999,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "城市设计论坛",
+              "characters": [
+                {
+                  "text": "城",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "市",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "设",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "计",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "论",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                },
+                {
+                  "text": "坛",
+                  "size": 4.5,
+                  "color": "#ffffffff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/照片",
+              "role": "会议胸牌/照片",
+              "type": "image",
+              "box": {
+                "x": 35.5,
+                "y": 15.5,
+                "width": 24,
+                "height": 24
+              },
+              "boxKind": "layout",
+              "image": "res:test-quadrants-png"
+            },
+            {
+              "path": "会议胸牌/姓名",
+              "role": "会议胸牌/姓名",
+              "type": "text",
+              "box": {
+                "x": 22.5,
+                "y": 41,
+                "width": 50,
+                "height": 8
+              },
+              "boxKind": "layout",
+              "text": "张三",
+              "characters": [
+                {
+                  "text": "张",
+                  "size": 8,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "三",
+                  "size": 8,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/单位",
+              "role": "会议胸牌/单位",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 50.5,
+                "width": 87,
+                "height": 4
+              },
+              "boxKind": "layout",
+              "text": "示例科技有限公司",
+              "characters": [
+                {
+                  "text": "示",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "例",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "科",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "技",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "有",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "限",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "公",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "司",
+                  "size": 4,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/身份",
+              "role": "会议胸牌/身份",
+              "type": "text",
+              "box": {
+                "x": 42.5,
+                "y": 56,
+                "width": 10,
+                "height": 5
+              },
+              "boxKind": "layout",
+              "text": "嘉宾",
+              "characters": [
+                {
+                  "text": "嘉",
+                  "size": 5,
+                  "color": "#7a3eb1ff"
+                },
+                {
+                  "text": "宾",
+                  "size": 5,
+                  "color": "#7a3eb1ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/证件号",
+              "role": "会议胸牌/信息/证件号",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 62.5,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "证件号 SP0001",
+              "characters": [
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "件",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "S",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "P",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/会议日期",
+              "role": "会议胸牌/信息/会议日期",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 66.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "2026年11月20日",
+              "characters": [
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "年",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "月",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "日",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/发证时间",
+              "role": "会议胸牌/信息/发证时间",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 66.7,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "发证 2026-11-01 09:30",
+              "characters": [
+                {
+                  "text": "发",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "证",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "2",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "6",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "-",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/主场次",
+              "role": "会议胸牌/信息/主场次",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 70.9,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "主场次 主旨演讲",
+              "characters": [
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "场",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "次",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "旨",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "演",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                },
+                {
+                  "text": "讲",
+                  "size": 3.2,
+                  "color": "#000000ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/信息/贵宾通道",
+              "role": "会议胸牌/信息/贵宾通道",
+              "type": "text",
+              "box": {
+                "x": 48.5,
+                "y": 70.9,
+                "width": 42.5,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "贵宾通道",
+              "characters": [
+                {
+                  "text": "贵",
+                  "size": 3.2,
+                  "color": "#1565c0ff"
+                },
+                {
+                  "text": "宾",
+                  "size": 3.2,
+                  "color": "#1565c0ff"
+                },
+                {
+                  "text": "通",
+                  "size": 3.2,
+                  "color": "#1565c0ff"
+                },
+                {
+                  "text": "道",
+                  "size": 3.2,
+                  "color": "#1565c0ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 76.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "09:30",
+              "characters": [
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "3",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 76.5,
+                "width": 65.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "主旨演讲",
+              "characters": [
+                {
+                  "text": "主",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "旨",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "演",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "讲",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[1]/会场",
+              "role": "会议胸牌/场次列/会场",
+              "type": "text",
+              "box": {
+                "x": 82,
+                "y": 76.6,
+                "width": 9,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "一号厅",
+              "characters": [
+                {
+                  "text": "一",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "号",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                },
+                {
+                  "text": "厅",
+                  "size": 3,
+                  "color": "#7a7166ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/开始时刻",
+              "role": "会议胸牌/场次列/开始时刻",
+              "type": "text",
+              "box": {
+                "x": 4,
+                "y": 81.5,
+                "width": 8.217,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "14:00",
+              "characters": [
+                {
+                  "text": "1",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "4",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": ":",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/场次列[2]/场次名称",
+              "role": "会议胸牌/场次列/场次名称",
+              "type": "text",
+              "box": {
+                "x": 14.217,
+                "y": 81.5,
+                "width": 74.783,
+                "height": 3.2
+              },
+              "boxKind": "layout",
+              "text": "分论坛：出图自动化",
+              "characters": [
+                {
+                  "text": "分",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "论",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "坛",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "：",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "出",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "图",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "自",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "动",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                },
+                {
+                  "text": "化",
+                  "size": 3.2,
+                  "color": "#2b2824ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[1]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 5.5,
+                "y": 108.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "首次",
+              "characters": [
+                {
+                  "text": "首",
+                  "size": 3,
+                  "color": "#1565c0ff"
+                },
+                {
+                  "text": "次",
+                  "size": 3,
+                  "color": "#1565c0ff"
+                }
+              ]
+            },
+            {
+              "path": "会议胸牌/标签行[2]/标签文字",
+              "role": "会议胸牌/标签行/标签文字",
+              "type": "text",
+              "box": {
+                "x": 16,
+                "y": 108.6,
+                "width": 6,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "讲者",
+              "characters": [
+                {
+                  "text": "讲",
+                  "size": 3,
+                  "color": "#1565c0ff"
+                },
+                {
+                  "text": "者",
+                  "size": 3,
+                  "color": "#1565c0ff"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

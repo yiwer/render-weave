@@ -1,0 +1,12 @@
+{
+  "head": "ed28f1ba9933b598903f4923d6eb13992edca1de",
+  "model": "claude-haiku-5-5",
+  "maxTurns": 20,
+  "maxRounds": 2,
+  "cases": [
+    "price",
+    "badge"
+  ],
+  "repeats": 1,
+  "scope": "产品接线 smoke，每模板一次；完整四场景门槛另跑。相同跨模板坏例，已核准受控布局；不宣称真实 PNG 自动参考或效果显著性。"
+}

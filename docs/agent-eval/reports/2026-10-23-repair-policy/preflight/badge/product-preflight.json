@@ -1,0 +1,14 @@
+[
+  {
+    "folder": "control",
+    "fingerprint": "e97d4c90cc1747760e13da699920966e76b574b25eb76bec4d11815047b5f7fe",
+    "checked": 187,
+    "failed": 0
+  },
+  {
+    "folder": "workspace",
+    "fingerprint": "6215486067b53dd5d27373ba16d58867bf4a4d3db71b67644bdf3810fdabe997",
+    "checked": 187,
+    "failed": 7
+  }
+]

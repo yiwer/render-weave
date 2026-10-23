@@ -1,0 +1,17 @@
+{
+  "server": {
+    "name": "renderweave",
+    "version": "0.11.0"
+  },
+  "tools": [
+    "check_outcome",
+    "check_templates",
+    "dsl_reference",
+    "inspect_layout",
+    "list_documents",
+    "list_resources",
+    "read_document",
+    "render_draft",
+    "view_image"
+  ]
+}

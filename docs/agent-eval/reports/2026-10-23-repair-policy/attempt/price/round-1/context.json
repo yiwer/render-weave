@@ -1,0 +1,37 @@
+{
+  "format": "renderweave-context/1",
+  "source": "runtime-events",
+  "limit": null,
+  "peakInputTokens": 0,
+  "requests": [
+    {
+      "id": "364fe630-a3d5-4b89-9fcc-ad76c26a84a9",
+      "inputTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 0,
+      "outputTokens": 0,
+      "effectiveInputTokens": 0
+    }
+  ],
+  "compactions": [],
+  "tools": {
+    "calls": 0,
+    "results": 0,
+    "textChars": 0,
+    "images": 0,
+    "encodedImageChars": 0
+  },
+  "runtime": {
+    "skills": [],
+    "tools": [
+      "Edit",
+      "Glob",
+      "Read",
+      "Write"
+    ],
+    "plugins": [
+      "cc-plugin-agents-md",
+      "cc-plugin-plugin-authoring"
+    ]
+  }
+}

@@ -1,0 +1,1596 @@
+{
+  "format": "renderweave-design-checks/1",
+  "basis": "受控实验维护模板的核准布局；只用于产品接线验收",
+  "styles": [],
+  "reference": {
+    "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+  },
+  "cases": [
+    {
+      "id": "binding",
+      "parameters": {},
+      "changes": [
+        {
+          "path": "/productName",
+          "op": "set",
+          "value": "高山矿泉水"
+        },
+        {
+          "path": "/retailPrice",
+          "op": "set",
+          "value": 12.8
+        },
+        {
+          "path": "/memberPrice",
+          "op": "set",
+          "value": 9.9
+        },
+        {
+          "path": "/features",
+          "op": "set",
+          "value": [
+            "清爽",
+            "天然"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "parameters": {
+        "storeName": "实验分店"
+      },
+      "changes": [
+        {
+          "path": "/memberPrice",
+          "op": "remove"
+        },
+        {
+          "path": "/onSale",
+          "op": "set",
+          "value": false
+        }
+      ]
+    }
+  ],
+  "repair": {
+    "approval": "approved",
+    "regions": [
+      {
+        "id": "抬头",
+        "paths": [
+          "商品价签/抬头/品名",
+          "商品价签/抬头/促销"
+        ]
+      },
+      {
+        "id": "商品价签/规格产地",
+        "paths": [
+          "商品价签/规格产地"
+        ]
+      },
+      {
+        "id": "价格",
+        "paths": [
+          "商品价签/价格/零售价",
+          "商品价签/价格/会员价"
+        ]
+      },
+      {
+        "id": "卖点行",
+        "paths": [
+          "商品价签/卖点行[1]/卖点文字",
+          "商品价签/卖点行[2]/卖点文字"
+        ]
+      },
+      {
+        "id": "页脚",
+        "paths": [
+          "商品价签/页脚/货号",
+          "商品价签/页脚/促销截止",
+          "商品价签/页脚/门店"
+        ]
+      }
+    ],
+    "references": [
+      {
+        "case": "reference",
+        "geometry": true,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 100,
+          "height": 52,
+          "elements": [
+            {
+              "path": "商品价签/抬头/品名",
+              "role": "商品价签/抬头/品名",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 3,
+                "width": 85,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "天然饮用水",
+              "characters": [
+                {
+                  "text": "天",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "然",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "饮",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "用",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "水",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/抬头/促销",
+              "role": "商品价签/抬头/促销",
+              "type": "text",
+              "box": {
+                "x": 90,
+                "y": 4.25,
+                "width": 7,
+                "height": 3.5
+              },
+              "boxKind": "layout",
+              "text": "促销",
+              "characters": [
+                {
+                  "text": "促",
+                  "size": 3.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "销",
+                  "size": 3.5,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/规格产地",
+              "role": "商品价签/规格产地",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 10.2,
+                "width": 94,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "规格 550ml  单位 瓶  产地 浙江杭州",
+              "characters": [
+                {
+                  "text": "规",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "格",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "m",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "l",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "单",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "位",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "瓶",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "产",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "地",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "浙",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "江",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "杭",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "州",
+                  "size": 3,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/价格/零售价",
+              "role": "商品价签/价格/零售价",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 27.1,
+                "width": 30.936,
+                "height": 12
+              },
+              "boxKind": "layout",
+              "text": "¥2.00",
+              "characters": [
+                {
+                  "text": "¥",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": ".",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 12,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/价格/会员价",
+              "role": "商品价签/价格/会员价",
+              "type": "text",
+              "box": {
+                "x": 36.936,
+                "y": 35.6,
+                "width": 20.31,
+                "height": 3.5
+              },
+              "boxKind": "layout",
+              "text": "会员价 ¥1.80",
+              "characters": [
+                {
+                  "text": "会",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "员",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "价",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "¥",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "1",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": ".",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "8",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[1]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 4.2,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "天然",
+              "characters": [
+                {
+                  "text": "天",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "然",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[2]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 13.694,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "弱碱",
+              "characters": [
+                {
+                  "text": "弱",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "碱",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/货号",
+              "role": "商品价签/页脚/货号",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 46.5,
+                "width": 15.538,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "货号 0012345",
+              "characters": [
+                {
+                  "text": "货",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "号",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "3",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "4",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/促销截止",
+              "role": "商品价签/页脚/促销截止",
+              "type": "text",
+              "box": {
+                "x": 21.538,
+                "y": 46.5,
+                "width": 29.463,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "促销截止 2026年11月30日",
+              "characters": [
+                {
+                  "text": "促",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "销",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "截",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "止",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": " ",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "6",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "年",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "月",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "3",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "日",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/门店",
+              "role": "商品价签/页脚/门店",
+              "type": "text",
+              "box": {
+                "x": 54.001,
+                "y": 46.5,
+                "width": 42.999,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "示例生活超市",
+              "characters": [
+                {
+                  "text": "示",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "例",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "生",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "活",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "超",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "市",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "case": "binding",
+        "geometry": false,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 100,
+          "height": 52,
+          "elements": [
+            {
+              "path": "商品价签/抬头/品名",
+              "role": "商品价签/抬头/品名",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 3,
+                "width": 85,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "高山矿泉水",
+              "characters": [
+                {
+                  "text": "高",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "山",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "矿",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "泉",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "水",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/抬头/促销",
+              "role": "商品价签/抬头/促销",
+              "type": "text",
+              "box": {
+                "x": 90,
+                "y": 4.25,
+                "width": 7,
+                "height": 3.5
+              },
+              "boxKind": "layout",
+              "text": "促销",
+              "characters": [
+                {
+                  "text": "促",
+                  "size": 3.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "销",
+                  "size": 3.5,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/规格产地",
+              "role": "商品价签/规格产地",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 10.2,
+                "width": 94,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "规格 550ml  单位 瓶  产地 浙江杭州",
+              "characters": [
+                {
+                  "text": "规",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "格",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "m",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "l",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "单",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "位",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "瓶",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "产",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "地",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "浙",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "江",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "杭",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "州",
+                  "size": 3,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/价格/零售价",
+              "role": "商品价签/价格/零售价",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 27.1,
+                "width": 37.776,
+                "height": 12
+              },
+              "boxKind": "layout",
+              "text": "¥12.80",
+              "characters": [
+                {
+                  "text": "¥",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "1",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": ".",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "8",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 12,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/价格/会员价",
+              "role": "商品价签/价格/会员价",
+              "type": "text",
+              "box": {
+                "x": 43.776,
+                "y": 35.6,
+                "width": 20.31,
+                "height": 3.5
+              },
+              "boxKind": "layout",
+              "text": "会员价 ¥9.90",
+              "characters": [
+                {
+                  "text": "会",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "员",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "价",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "¥",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": ".",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "9",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "0",
+                  "size": 3.5,
+                  "color": "#1f1d1aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[1]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 4.2,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "清爽",
+              "characters": [
+                {
+                  "text": "清",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "爽",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[2]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 13.694,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "天然",
+              "characters": [
+                {
+                  "text": "天",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "然",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/货号",
+              "role": "商品价签/页脚/货号",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 46.5,
+                "width": 15.538,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "货号 0012345",
+              "characters": [
+                {
+                  "text": "货",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "号",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "3",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "4",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/促销截止",
+              "role": "商品价签/页脚/促销截止",
+              "type": "text",
+              "box": {
+                "x": 21.538,
+                "y": 46.5,
+                "width": 29.463,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "促销截止 2026年11月30日",
+              "characters": [
+                {
+                  "text": "促",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "销",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "截",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "止",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": " ",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "6",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "年",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "月",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "3",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "日",
+                  "size": 2.5,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/门店",
+              "role": "商品价签/页脚/门店",
+              "type": "text",
+              "box": {
+                "x": 54.001,
+                "y": 46.5,
+                "width": 42.999,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "示例生活超市",
+              "characters": [
+                {
+                  "text": "示",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "例",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "生",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "活",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "超",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "市",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "case": "state",
+        "geometry": false,
+        "reference": {
+          "basis": "维护模板在固定数据/参数下的真实布局；受控实验参考，不是任意 PNG 的真值",
+          "width": 100,
+          "height": 52,
+          "elements": [
+            {
+              "path": "商品价签/抬头/品名",
+              "role": "商品价签/抬头/品名",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 3,
+                "width": 94,
+                "height": 6
+              },
+              "boxKind": "layout",
+              "text": "天然饮用水",
+              "characters": [
+                {
+                  "text": "天",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "然",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "饮",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "用",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                },
+                {
+                  "text": "水",
+                  "size": 6,
+                  "color": "#1f1d1aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/规格产地",
+              "role": "商品价签/规格产地",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 10.2,
+                "width": 94,
+                "height": 3
+              },
+              "boxKind": "layout",
+              "text": "规格 550ml  单位 瓶  产地 浙江杭州",
+              "characters": [
+                {
+                  "text": "规",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "格",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "m",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "l",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "单",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "位",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "瓶",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "产",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "地",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "浙",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "江",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "杭",
+                  "size": 3,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "州",
+                  "size": 3,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/价格/零售价",
+              "role": "商品价签/价格/零售价",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 27.1,
+                "width": 30.936,
+                "height": 12
+              },
+              "boxKind": "layout",
+              "text": "¥2.00",
+              "characters": [
+                {
+                  "text": "¥",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "2",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": ".",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 12,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "0",
+                  "size": 12,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[1]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 4.2,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "天然",
+              "characters": [
+                {
+                  "text": "天",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "然",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/卖点行[2]/卖点文字",
+              "role": "商品价签/卖点行/卖点文字",
+              "type": "text",
+              "box": {
+                "x": 13.694,
+                "y": 41.4,
+                "width": 5.594,
+                "height": 2.8
+              },
+              "boxKind": "layout",
+              "text": "弱碱",
+              "characters": [
+                {
+                  "text": "弱",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                },
+                {
+                  "text": "碱",
+                  "size": 2.8,
+                  "color": "#c8102eff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/货号",
+              "role": "商品价签/页脚/货号",
+              "type": "text",
+              "box": {
+                "x": 3,
+                "y": 46.5,
+                "width": 15.538,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "货号 0012345",
+              "characters": [
+                {
+                  "text": "货",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "号",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": " ",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "0",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "1",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "2",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "3",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "4",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "5",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            },
+            {
+              "path": "商品价签/页脚/门店",
+              "role": "商品价签/页脚/门店",
+              "type": "text",
+              "box": {
+                "x": 21.538,
+                "y": 46.5,
+                "width": 75.462,
+                "height": 2.5
+              },
+              "boxKind": "layout",
+              "text": "实验分店",
+              "characters": [
+                {
+                  "text": "实",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "验",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "分",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                },
+                {
+                  "text": "店",
+                  "size": 2.5,
+                  "color": "#55504aff"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

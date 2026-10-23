@@ -1,0 +1,27 @@
+{
+  "verdict": "unqualified",
+  "problems": [
+    {
+      "code": "outcome.invalid",
+      "level": "severe",
+      "location": {
+        "kind": "input",
+        "source": "outcome.json"
+      },
+      "message": "没有交回可读的 outcome.json：文件不存在：outcome.json"
+    }
+  ],
+  "candidates": [],
+  "assessment": {
+    "structure": "invalid",
+    "candidates": "notChecked",
+    "content": "needsReview",
+    "render": {
+      "status": "notChecked",
+      "problems": [],
+      "hasImage": false,
+      "capabilityBlocked": false,
+      "blocking": false
+    }
+  }
+}

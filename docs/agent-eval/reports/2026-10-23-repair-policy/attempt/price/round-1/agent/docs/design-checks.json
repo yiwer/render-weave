@@ -1,0 +1,56 @@
+{
+  "format": "renderweave-design-checks/1",
+  "basis": "受控实验维护模板的核准布局；只用于产品接线验收",
+  "styles": [],
+  "reference": {
+    "sha256": "0d2c9eee9056f2e25b7f11a1c031ec43214c8945d18c379cbbfdaf2446110a3f"
+  },
+  "cases": [
+    {
+      "id": "binding",
+      "parameters": {},
+      "changes": [
+        {
+          "path": "/productName",
+          "op": "set",
+          "value": "高山矿泉水"
+        },
+        {
+          "path": "/retailPrice",
+          "op": "set",
+          "value": 12.8
+        },
+        {
+          "path": "/memberPrice",
+          "op": "set",
+          "value": 9.9
+        },
+        {
+          "path": "/features",
+          "op": "set",
+          "value": [
+            "清爽",
+            "天然"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "parameters": {
+        "storeName": "实验分店"
+      },
+      "changes": [
+        {
+          "path": "/memberPrice",
+          "op": "remove"
+        },
+        {
+          "path": "/onSale",
+          "op": "set",
+          "value": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "format": "renderweave-repair-policy-acceptance/1",
+  "date": "2026-10-23",
+  "status": "incomplete",
+  "merge": {
+    "branch": "main",
+    "commit": "a986f520ebdf16393208f96d02c472f01bf4a740",
+    "pushed": true
+  },
+  "implementation": {
+    "branch": "codex/template-repair-policy",
+    "engineHead": "6e56be9",
+    "preflightHead": "ed28f1b",
+    "mcpContract": "0.11.0",
+    "defaultEnabled": false
+  },
+  "offline": {
+    "command": "npm test",
+    "passedFiles": 68,
+    "skippedFiles": 1,
+    "passedTests": 1137,
+    "skippedTests": 13,
+    "policyTests": 14,
+    "typecheck": true,
+    "build": true,
+    "preflight": [
+      {
+        "template": "price",
+        "measurements": [
+          {
+            "folder": "control",
+            "fingerprint": "62078b9898280fd8b772829d91e9988392508d5dad0be27c07d270437197baa2",
+            "checked": 107,
+            "failed": 0
+          },
+          {
+            "folder": "workspace",
+            "fingerprint": "be4d10c5c3d5d1a66749e361bf29ff1027650655ce2f537c09bb4bfc82ffe4f5",
+            "checked": 107,
+            "failed": 5
+          }
+        ],
+        "transport": {
+          "server": {
+            "name": "renderweave",
+            "version": "0.11.0"
+          },
+          "tools": [
+            "check_outcome",
+            "check_templates",
+            "dsl_reference",
+            "inspect_layout",
+            "list_documents",
+            "list_resources",
+            "read_document",
+            "render_draft",
+            "view_image"
+          ]
+        }
+      },
+      {
+        "template": "badge",
+        "measurements": [
+          {
+            "folder": "control",
+            "fingerprint": "e97d4c90cc1747760e13da699920966e76b574b25eb76bec4d11815047b5f7fe",
+            "checked": 187,
+            "failed": 0
+          },
+          {
+            "folder": "workspace",
+            "fingerprint": "6215486067b53dd5d27373ba16d58867bf4a4d3db71b67644bdf3810fdabe997",
+            "checked": 187,
+            "failed": 7
+          }
+        ],
+        "transport": {
+          "server": {
+            "name": "renderweave",
+            "version": "0.11.0"
+          },
+          "tools": [
+            "check_outcome",
+            "check_templates",
+            "dsl_reference",
+            "inspect_layout",
+            "list_documents",
+            "list_resources",
+            "read_document",
+            "render_draft",
+            "view_image"
+          ]
+        }
+      }
+    ]
+  },
+  "review": {
+    "standardsRemaining": 0,
+    "specRemaining": 0,
+    "fixed": [
+      "源及继承材料、历轮反馈漂移",
+      "历史核查摘要预算",
+      "候选归档与工作副本指纹",
+      "实测脚本编译入口与连接预检"
+    ]
+  },
+  "live": {
+    "head": "6e56be9",
+    "credentialSource": "Windows User environment OPEN_CODE_API_KEY (explicitly copied to process)",
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "maxTurns": 20,
+    "maxRounds": 2,
+    "plannedTemplates": 2,
+    "attemptedTemplates": 1,
+    "validSamples": 0,
+    "error": "API Error: Request rejected (429) · Go usage limit exceeded",
+    "action": "停止派发；未重试、未跑胸牌或M230四场景门槛",
+    "driverIssue": "首轮经tsx源入口导致MCP bin指向src/bin.js，init为failed；ed28f1b改用dist并先做stdio预检。原失败不覆写，尚无有效模型接线样本。",
+    "metrics": "0有效样本：峰值0及1.895秒只是失败调用，不能评价修复效果或上下文收益"
+  },
+  "contextDisclosure": {
+    "source": "实际失败轮次的磁盘文件，字符数不是token",
+    "hostPlanCharacters": 42379,
+    "agentPlanCharacters": 1054,
+    "promptCharacters": 933,
+    "skills": [],
+    "feedbackMaxCharacters": 1200,
+    "feedbackMaxRegions": 2
+  },
+  "gate": {
+    "M230": "not_run",
+    "reason": "同一端点/额度池已返回429，避免重复无效调用",
+    "releaseEligible": false
+  },
+  "resume": [
+    "npm run build",
+    "npx tsx scripts/agent-eval/repair-policy-live.ts --out out/repair-policy-live-resume-1",
+    "npx tsx scripts/agent-eval/run.ts --label 2026-10-23-repair-policy-0110 --jobs 1 --model claude-haiku-5-5 --small-model claude-haiku-5-5"
+  ]
+}

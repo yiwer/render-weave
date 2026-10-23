@@ -1,0 +1,13 @@
+{
+  "format": "renderweave-repair-run/1",
+  "maxRounds": 2,
+  "reason": "runtimeStopped",
+  "rounds": [
+    {
+      "dir": "C:\\Users\\Administrator\\.codex\\worktrees\\template-design\\render-weave\\out\\repair-policy-live\\price\\round-1",
+      "stop": false,
+      "wallMs": 1895,
+      "peakInputTokens": 0
+    }
+  ]
+}
