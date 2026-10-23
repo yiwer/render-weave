@@ -1,0 +1,20 @@
+{
+  "format": "original38-dispatch-supersession-decision/1",
+  "recordedAt": "2026-10-23T19:19:42.713Z",
+  "registrationSha256": "21e4a1c97ce82b6508caa69333ddc51b756200790e97f4843e4ad906d9a768eb",
+  "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+  "reason": "同候选21第一段7通过/1严格结构范围失败，诊断有短路误标缺陷；原四M402定义第1次13/15低于14门槛，重现既有标题内容误作固定文字。回到14/17责任修复后冻结新候选，不继续派发本候选第二遍。",
+  "inProgress": "第一分段继续自然完成，保存原始成功与失败；不结束已在跑的尝试。",
+  "unstartedSegment": 2,
+  "affectedUnits": [
+    "G-D2",
+    "G-T2",
+    "G-R2",
+    "G-S2"
+  ],
+  "status": "not-run-superseded-before-dispatch",
+  "attemptCreated": false,
+  "countsAsInvalidAttempt": false,
+  "replaceOldResults": false,
+  "nextCandidate": "尚未生成；须独立审核、冻结并登记。全部原四8业务观测及21全16单元重新验收，不能拼接旧新。"
+}

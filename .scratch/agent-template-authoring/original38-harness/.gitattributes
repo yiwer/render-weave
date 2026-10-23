@@ -11,3 +11,9 @@ candidate-2-*.log -text
 
 registration-candidate-3.json -text
 conditional-english-reference.candidate-3.json -text
+
+registration-candidate-4.json -text
+
+candidate-3-*.json -text
+candidate-3-*.log -text
+conditional-english-reference.candidate-4.json -text
