@@ -1,0 +1,40 @@
+{
+  "dataset": {
+    "id": "ds-m162-tengchang-south",
+    "name": "M162 开往大康福田村（腾昌花园站南向）",
+    "staticSchema": { "name": "竖版线路牌", "version": 1 },
+    "origin": {
+      "kind": "manual",
+      "note": "按用户提供的 350 × 950 mm 示例图逐项转录，本站腾昌花园（四联路）由渲染参数 currentIndex 指定"
+    }
+  },
+  "data": {
+    "routeNo": "M162",
+    "serviceStart": "06:30",
+    "serviceEnd": "22:30",
+    "fare": 2,
+    "stops": [
+      { "name": "腾昌花园", "road": "四联路" },
+      { "name": "丰收城百货", "road": "四联路" },
+      { "name": "排榜路", "road": "排榜路" },
+      { "name": "茂盛公园", "road": "茂盛路" },
+      { "name": "盛大百货", "road": "茂盛路" },
+      { "name": "新世界广场", "road": "茂盛路" },
+      { "name": "横岗商业街", "road": "松柏路" },
+      { "name": "松柏保康路口", "road": "松柏路", "facilities": ["医院"] },
+      { "name": "大康路口", "road": "保康路" },
+      { "name": "328工业区（招呼站）", "road": "康贤路" },
+      { "name": "上中村（招呼站）", "road": "大康路" },
+      { "name": "莘塘路口北（招呼站）", "road": "山子下路" },
+      { "name": "大康社区工作站", "road": "山子下路" },
+      { "name": "山子下路龙村路口（招呼站）", "road": "山子下路" },
+      { "name": "大康小学", "road": "山子下路" },
+      { "name": "大康市场", "road": "山子下路" },
+      { "name": "园山地铁站", "road": "山子下路", "facilities": ["地铁站"] },
+      { "name": "大凤村", "road": "山子下路" },
+      { "name": "大万村", "road": "山子下路" },
+      { "name": "八斗路口", "road": "山子下路" },
+      { "name": "大康福田村", "road": "山子下路" }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "template": "竖版线路牌主模板",
+  "mode": "final",
+  "items": [
+    { "id": "current-1", "dataset": { "id": "ds-m162-tengchang-south" }, "parameters": { "currentIndex": 1 }, "output": { "width": 350, "height": 950, "dpi": 120, "format": "png" } },
+    { "id": "no-current", "dataset": { "id": "ds-m162-tengchang-south" }, "parameters": { "currentIndex": 0 }, "output": { "width": 350, "height": 950, "dpi": 120, "format": "png" } },
+    { "id": "current-10", "dataset": { "id": "ds-m162-tengchang-south" }, "parameters": { "currentIndex": 10 }, "output": { "width": 350, "height": 950, "dpi": 120, "format": "png" } }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "竖版站牌站点",
+  "version": 1,
+  "displayName": "竖版多线路站牌停靠站点",
+  "description": "竖版站牌上的一列站点：站名与所在道路；道路相同的相邻站点在道路带上合并为一段",
+  "fields": [
+    {
+      "name": "name",
+      "displayName": "站名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "road",
+      "displayName": "所在道路",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 12
+      }
+    }
+  ]
+}

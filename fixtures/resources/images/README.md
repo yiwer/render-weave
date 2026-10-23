@@ -8,6 +8,10 @@
 | `m402/landmark-1.png` 至 `landmark-4.png` | `landmark-1` 至 `landmark-4` | 用思源黑体 Medium 的带圈数字 ①–④ 绘制，深灰 `#222222`，按墨迹居中，96 × 96 像素 |
 | `m402/icon-metro.png` | `icon-metro` | 示意图标：绿底圆形加白色"M"（思源黑体 Heavy），不是官方标志 |
 | `m402/icon-hospital.png` | `icon-hospital` | 示意图标：红底圆形加白色十字 |
+| `m162/facility-hospital.svg` | `facility-hospital` | 手写示意图标：白底红色菱形，中央白色十字；用于 [M162 竖版线路牌](../../../docs/examples/m162-vertical-sign/README.md)，不是官方标志 |
+| `m162/facility-metro.svg` | `facility-metro` | 手写示意图标：白色圆角方块内蓝色地铁列车正面；同上，不是官方标志 |
+| `m162/facility-railway.svg` | `facility-railway` | 手写示意图标：白色圆角方块内深色火车头正面；同上，不是官方标志 |
+| `m162/facility-airport.svg` | `facility-airport` | 手写示意图标：白色圆角方块内蓝色飞机；同上，不是官方标志 |
 | `test/quadrants.png`、`.jpg`、`.webp` | `test-quadrants-png`、`-jpg`、`-webp` | 200 × 100 像素四色测试图：左上红、右上绿、左下蓝、右下黄，外加 10 像素黑边，用于检查三种格式与三种适配方式（铺满裁剪会裁掉两侧黑边） |
 | `test/vector.svg` | `test-vector-svg` | 手写的 80 × 40 矢量测试图，含路径、渐变、内部 CSS、圆角裁剪与细线；用于 SVG 三种适配、高 DPI 和跨平台验证，不由位图生成脚本生成 |
 

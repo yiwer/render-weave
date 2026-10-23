@@ -1,0 +1,40 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "竖排道路带",
+  "base": { "name": "竖版站牌站点", "version": 1 },
+
+  "parameters": [
+    {
+      "name": "roadSize", "displayName": "道路名字号", "visibility": "public", "type": "number",
+      "constraints": { "min": 4, "max": 12 }, "default": 7.2
+    }
+  ],
+
+  "artboard": {
+    "sizeRange": { "width": { "min": 8, "max": 500 }, "height": { "min": 5, "max": 20 } },
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "text",
+        "name": "道路名",
+        "content": [{ "slot": "road" }],
+        "font": "res:font-hei-regular",
+        "fontSize": { "var": "roadSize" },
+        "color": "#0070C0",
+        "horizontalAlign": "distribute",
+        "verticalAlign": "center",
+        "padding": { "left": 1, "right": 1 },
+        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6, "onFail": "hint" },
+        "place": { "left": 0, "top": 0, "width": "fill", "height": "fill" }
+      },
+      {
+        "type": "line",
+        "name": "道路分隔线",
+        "from": [0.15, 0],
+        "to": [0.15, 10],
+        "stroke": { "color": "#666666", "width": 0.3 },
+        "place": { "left": 0, "top": 0, "width": { "fixed": 0.3 }, "height": "fill" }
+      }
+    ]
+  }
+}

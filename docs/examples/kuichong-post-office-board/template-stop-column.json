@@ -1,0 +1,94 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "竖排站点列",
+  "base": { "name": "竖版站牌站点", "version": 1 },
+
+  "parameters": [
+    {
+      "name": "index", "displayName": "站点序号", "visibility": "public", "type": "number",
+      "constraints": { "integer": true, "min": 1 }, "default": 1
+    },
+    {
+      "name": "currentIndex", "displayName": "本站序号", "visibility": "public", "type": "number",
+      "constraints": { "integer": true, "min": 0 }, "default": 0
+    },
+    {
+      "name": "nameSize", "displayName": "站名字号", "visibility": "public", "type": "number",
+      "constraints": { "min": 5, "max": 20 }, "default": 12.8
+    },
+    {
+      "name": "highlightWidth", "displayName": "本站底板宽", "visibility": "public", "type": "number",
+      "constraints": { "min": 0, "max": 60 }, "default": 15
+    },
+    {
+      "name": "barLeft", "displayName": "本站底板左偏移", "visibility": "public", "type": "number",
+      "constraints": { "min": 0, "max": 30 }, "default": 1
+    }
+  ],
+
+  "derived": [
+    {
+      "name": "isCurrent", "displayName": "是本站", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "index" }, "op": "eq", "right": { "var": "currentIndex" } }, "then": { "value": true } }
+      ],
+      "otherwise": { "value": false }
+    },
+    {
+      "name": "stopState", "displayName": "站点状态", "type": "text", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "index" }, "op": "eq", "right": { "var": "currentIndex" } }, "then": { "value": "current" } },
+        {
+          "when": {
+            "all": [
+              { "left": { "var": "currentIndex" }, "op": "gt", "right": { "value": 0 } },
+              { "left": { "var": "index" }, "op": "lt", "right": { "var": "currentIndex" } }
+            ]
+          },
+          "then": { "value": "passed" }
+        }
+      ],
+      "otherwise": { "value": "upcoming" }
+    }
+  ],
+
+  "artboard": {
+    "sizeRange": { "width": { "min": 8, "max": 80 }, "height": { "min": 20, "max": 100 } },
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "rect",
+        "name": "本站高亮底板",
+        "fill": "#FFF000",
+        "visible": { "var": "isCurrent" },
+        "place": {
+          "left": { "var": "barLeft" },
+          "top": 0,
+          "width": { "fixed": { "var": "highlightWidth" } },
+          "height": "fill"
+        }
+      },
+      {
+        "type": "text",
+        "name": "站名",
+        "content": [{ "slot": "name" }],
+        "font": "res:font-hei-medium",
+        "fontSize": { "var": "nameSize" },
+        "color": "#231815",
+        "writingMode": "vertical",
+        "horizontalAlign": "center",
+        "verticalAlign": "bottom",
+        "padding": { "top": 1, "bottom": 1.5 },
+        "fit": { "steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 0, "top": 0, "width": "fill", "height": "fill" },
+        "states": {
+          "by": { "var": "stopState" },
+          "cases": {
+            "current": { "color": "#E62129", "font": "res:font-hei-bold" },
+            "passed": { "color": "#C9CACA", "font": "res:font-hei-regular" }
+          }
+        }
+      }
+    ]
+  }
+}

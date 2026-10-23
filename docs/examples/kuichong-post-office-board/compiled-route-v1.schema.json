@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "竖版站牌线路 v1",
+  "x-renderweave-static-schema": {
+    "name": "竖版站牌线路",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "routeNo",
+    "serviceStart",
+    "serviceEnd",
+    "fare",
+    "fareNote",
+    "nextStop",
+    "operator",
+    "currentIndex",
+    "stops"
+  ],
+  "properties": {
+    "routeNo": {
+      "title": "线路号",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "serviceStart": {
+      "title": "服务开始时刻",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "serviceEnd": {
+      "title": "服务结束时刻",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "fare": {
+      "title": "票价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "fareNote": {
+      "title": "票价说明",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "nextStop": {
+      "title": "下一站",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "operator": {
+      "title": "运营单位",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "currentIndex": {
+      "title": "本站序号",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "stops": {
+      "title": "停靠站点",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 60,
+      "items": {
+        "x-renderweave-static-schema": {
+          "name": "竖版站牌站点",
+          "version": 1
+        },
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "road"
+        ],
+        "properties": {
+          "name": {
+            "title": "站名",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "road": {
+            "title": "所在道路",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12
+          }
+        }
+      }
+    }
+  }
+}

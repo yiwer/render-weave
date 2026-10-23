@@ -1,0 +1,116 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "竖版多线路站牌",
+  "version": 1,
+  "displayName": "竖版多线路站牌（单方向）",
+  "description": "一根站杆上的整块竖版站牌：站名、服务热线、温馨提示、线路列表与底部标语；每条线路自带本站序号 currentIndex，渲染时与整板站名核对",
+  "fields": [
+    {
+      "name": "stationName",
+      "displayName": "本站名称",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "stationNameEn",
+      "displayName": "本站英文名",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 60
+      }
+    },
+    {
+      "name": "hotline",
+      "displayName": "服务热线整行",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 60
+      }
+    },
+    {
+      "name": "notice",
+      "displayName": "温馨提示",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 80
+      }
+    },
+    {
+      "name": "qrUrl",
+      "displayName": "二维码内容",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    {
+      "name": "slogan",
+      "displayName": "标语",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "sloganEn",
+      "displayName": "标语英文",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 80
+      }
+    },
+    {
+      "name": "producer",
+      "displayName": "制作单位（含电话）",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 60
+      }
+    },
+    {
+      "name": "supervisor",
+      "displayName": "监制单位（含电话）",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 60
+      }
+    },
+    {
+      "name": "routes",
+      "displayName": "线路列表",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "竖版站牌线路",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 1,
+        "maxItems": 6
+      }
+    }
+  ]
+}

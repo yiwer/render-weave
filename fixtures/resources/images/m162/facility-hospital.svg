@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- 医院：白边红色菱形徽章，中间白十字 -->
+  <path d="M50 3 L97 50 L50 97 L3 50 Z" fill="#FFFFFF"/>
+  <path d="M50 11 L89 50 L50 89 L11 50 Z" fill="#E60012"/>
+  <path d="M43 30 H57 V43 H70 V57 H57 V70 H43 V57 H30 V43 H43 Z" fill="#FFFFFF"/>
+</svg>

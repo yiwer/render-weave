@@ -270,7 +270,8 @@ describe('CLI 与实际出图', () => {
     output.length = 0;
     expect(await runCli(['resources-list', '--resources', dir], io)).toBe(0);
     const listed = JSON.parse(output.join(''));
-    expect(listed).toHaveLength(15);
+    const sourceManifest = JSON.parse(await fs.readFile(join(resourcesDir, 'resources.json'), 'utf8'));
+    expect(listed).toHaveLength(sourceManifest.resources.length);
     expect(listed.every((item: { version: number }) => item.version === 1)).toBe(true);
     const requestFile = join(workspaceDir, 'render-request-m402.json');
     const out = join(root, 'output');

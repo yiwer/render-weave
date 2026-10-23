@@ -1,0 +1,103 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "竖版站牌线路",
+  "version": 1,
+  "displayName": "竖版多线路站牌的一条线路",
+  "description": "站牌上的一块线路：线路号、始发站服务时间、票价、下一站、运营单位与按行驶方向排列的站点；终点站由站点列表末项派生",
+  "fields": [
+    {
+      "name": "routeNo",
+      "displayName": "线路号",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "serviceStart",
+      "displayName": "服务开始时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "serviceEnd",
+      "displayName": "服务结束时刻",
+      "type": "time",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "fare",
+      "displayName": "票价（元）",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "fareNote",
+      "displayName": "票价说明",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 8
+      }
+    },
+    {
+      "name": "nextStop",
+      "displayName": "下一站",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "operator",
+      "displayName": "运营单位",
+      "type": "text",
+      "constraints": {
+        "required": true,
+        "minLength": 1,
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "currentIndex",
+      "displayName": "本站序号",
+      "type": "number",
+      "constraints": {
+        "required": true,
+        "integer": true,
+        "min": 1,
+        "max": 60
+      }
+    },
+    {
+      "name": "stops",
+      "displayName": "停靠站点",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "竖版站牌站点",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 2,
+        "maxItems": 60
+      }
+    }
+  ]
+}

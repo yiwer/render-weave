@@ -1,0 +1,199 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "竖版线路牌主模板",
+  "base": { "name": "竖版线路牌", "version": 1 },
+
+  "parameters": [
+    {
+      "name": "currentIndex", "displayName": "本站序号", "visibility": "public", "type": "number",
+      "constraints": { "integer": true, "min": 0, "max": 100 }, "default": 0
+    }
+  ],
+
+  "derived": [
+    {
+      "name": "stopCount", "displayName": "站点数", "type": "number",
+      "op": "length", "of": { "var": "stops" }
+    },
+    {
+      "name": "destination", "displayName": "终点站", "type": "ref",
+      "ref": { "name": "竖版停靠站点", "version": 1 },
+      "op": "pickItem", "list": { "var": "stops" }, "position": "last"
+    },
+    {
+      "name": "fitRowHeight", "displayName": "按站数等分的行高", "type": "number",
+      "op": "divide", "left": { "value": 657.3 }, "right": { "var": "stopCount" }
+    },
+    {
+      "name": "rowHeight", "displayName": "站点行高", "type": "number", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "stopCount" }, "op": "gt", "right": { "value": 21 } }, "then": { "var": "fitRowHeight" } }
+      ],
+      "otherwise": { "value": 31.3 }
+    },
+    {
+      "name": "scaledNameSize", "displayName": "按行高缩小的站名字号", "type": "number",
+      "op": "multiply", "left": { "var": "rowHeight" }, "right": { "value": 0.58 }
+    },
+    {
+      "name": "nameSize", "displayName": "站名字号", "type": "number", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "rowHeight" }, "op": "lt", "right": { "value": 26 } }, "then": { "var": "scaledNameSize" } }
+      ],
+      "otherwise": { "value": 14.3 }
+    },
+    {
+      "name": "currentOutOfRange", "displayName": "本站序号越界", "type": "boolean", "op": "branch",
+      "branches": [
+        { "when": { "left": { "var": "currentIndex" }, "op": "gt", "right": { "var": "stopCount" } }, "then": { "value": true } }
+      ],
+      "otherwise": { "value": false }
+    }
+  ],
+
+  "checks": [
+    {
+      "name": "currentIndexWithinStops", "displayName": "本站序号不超出站点数",
+      "problemWhen": { "var": "currentOutOfRange" },
+      "level": "severe",
+      "message": "本站序号大于站点数；本站序号从 1 开始，0 表示不标本站"
+    }
+  ],
+
+  "artboard": {
+    "sizeRange": { "width": { "min": 350, "max": 350 }, "height": { "min": 950, "max": 950 } },
+    "fill": "#FFFFFF",
+    "layout": { "mode": "free" },
+    "children": [
+      {
+        "type": "rect",
+        "name": "顶部黄色分隔条",
+        "fill": "#FFF000",
+        "place": { "left": 0, "top": 188, "width": { "fixed": 350 }, "height": { "fixed": 9 } }
+      },
+      {
+        "type": "rect",
+        "name": "蓝色站名区",
+        "fill": "#0154A4",
+        "place": { "left": 0, "top": 197, "width": { "fixed": 350 }, "height": { "fixed": 663 } }
+      },
+      {
+        "type": "path",
+        "name": "向下箭头纹",
+        "fill": "#006DB8",
+        "opacity": 0.95,
+        "d": "M0 0 L12 0 L20 7 L28 0 L40 0 L20 30 Z M0 32 L12 32 L20 39 L28 32 L40 32 L20 62 Z M0 64 L12 64 L20 71 L28 64 L40 64 L20 94 Z M0 96 L12 96 L20 103 L28 96 L40 96 L20 126 Z M0 128 L12 128 L20 135 L28 128 L40 128 L20 158 Z M0 160 L12 160 L20 167 L28 160 L40 160 L20 190 Z M0 192 L12 192 L20 199 L28 192 L40 192 L20 222 Z M0 224 L12 224 L20 231 L28 224 L40 224 L20 254 Z M0 256 L12 256 L20 263 L28 256 L40 256 L20 286 Z M0 288 L12 288 L20 295 L28 288 L40 288 L20 318 Z M0 320 L12 320 L20 327 L28 320 L40 320 L20 350 Z M0 352 L12 352 L20 359 L28 352 L40 352 L20 382 Z M0 384 L12 384 L20 391 L28 384 L40 384 L20 414 Z M0 416 L12 416 L20 423 L28 416 L40 416 L20 446 Z M0 448 L12 448 L20 455 L28 448 L40 448 L20 478 Z M0 480 L12 480 L20 487 L28 480 L40 480 L20 510 Z M0 512 L12 512 L20 519 L28 512 L40 512 L20 542 Z M0 544 L12 544 L20 551 L28 544 L40 544 L20 574 Z M0 576 L12 576 L20 583 L28 576 L40 576 L20 606 Z M0 608 L12 608 L20 615 L28 608 L40 608 L20 638 Z",
+        "place": { "left": 307, "top": 203, "width": { "fixed": 40 }, "height": { "fixed": 648 } }
+      },
+      {
+        "type": "rect",
+        "name": "行驶方向底板",
+        "fill": "#0A9EDC",
+        "cornerRadius": 10.5,
+        "place": { "left": 11, "top": 203, "width": { "fixed": 21 }, "height": { "fixed": 199 } }
+      },
+      {
+        "type": "text",
+        "name": "行驶方向说明",
+        "content": [{ "text": "线路行驶方向为站点由上至下 ↓" }],
+        "font": "res:font-hei-regular",
+        "fontSize": 11.7,
+        "color": "#FFFFFF",
+        "writingMode": "vertical",
+        "verticalAlign": "distribute",
+        "horizontalAlign": "center",
+        "fit": { "steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 11.5, "top": 207, "width": { "fixed": 20 }, "height": { "fixed": 191 } }
+      },
+      {
+        "type": "loop",
+        "name": "站点列",
+        "list": { "var": "stops" },
+        "template": "竖版站点行",
+        "args": {
+          "index": { "loop": "index" },
+          "currentIndex": { "var": "currentIndex" },
+          "nameSize": { "var": "nameSize" }
+        },
+        "itemLayout": { "direction": "column", "heights": { "fixed": { "var": "rowHeight" } }, "gap": 0 },
+        "place": { "left": 44, "top": 205.5, "width": { "fixed": 250 }, "height": { "fixed": 661.5 } }
+      },
+      {
+        "type": "text",
+        "name": "线路号",
+        "content": [{ "slot": "routeNo" }],
+        "font": "res:font-hei-heavy",
+        "fontSize": 82,
+        "letterSpacing": -3,
+        "color": "#0154A4",
+        "fit": { "steps": ["compressGlyphs", "shrink"], "compressMin": 0.7, "minFontSize": 45, "onFail": "severe" },
+        "place": { "left": 37, "top": 31, "width": { "fixed": 290 }, "height": "hug" }
+      },
+      {
+        "type": "text",
+        "name": "开往",
+        "content": [
+          { "text": "开往 " },
+          { "slot": "destination.name" }
+        ],
+        "font": "res:font-hei-bold",
+        "fontSize": 29,
+        "color": "#111111",
+        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 45, "top": 117, "width": { "fixed": 181 }, "height": "hug" }
+      },
+      {
+        "type": "text",
+        "name": "服务时间",
+        "content": [
+          { "text": "服务时间：" },
+          { "slot": "serviceStart", "format": "HH:mm" },
+          { "text": "-" },
+          { "slot": "serviceEnd", "format": "HH:mm" }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 15.6,
+        "color": "#7F7F7F",
+        "slant": 8,
+        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 45, "top": 149.5, "width": { "fixed": 280 }, "height": "hug" }
+      },
+      {
+        "type": "text",
+        "name": "票价",
+        "content": [
+          { "text": "票价：" },
+          { "slot": "fare", "format": "0.##" },
+          { "text": "元" }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 15.6,
+        "color": "#7F7F7F",
+        "slant": 8,
+        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 45, "top": 169, "width": { "fixed": 240 }, "height": "hug" }
+      },
+      {
+        "type": "rect",
+        "name": "底部黄色热线条",
+        "fill": "#FFF000",
+        "place": { "left": 0, "top": 860, "width": { "fixed": 350 }, "height": { "fixed": 90 } }
+      },
+      {
+        "type": "text",
+        "name": "服务热线",
+        "content": [
+          { "text": "市交通运输局", "font": "res:font-hei-bold" },
+          { "text": "24", "font": "res:font-hei-heavy" },
+          { "text": "小时服务热线：", "font": "res:font-hei-bold" },
+          { "text": "12328", "font": "res:font-hei-heavy" }
+        ],
+        "font": "res:font-hei-medium",
+        "fontSize": 18,
+        "color": "#111111",
+        "fit": { "steps": ["compressGlyphs"], "compressMin": 0.6, "onFail": "severe" },
+        "place": { "left": 49, "top": 920, "width": { "fixed": 252 }, "height": "hug" }
+      }
+    ]
+  }
+}

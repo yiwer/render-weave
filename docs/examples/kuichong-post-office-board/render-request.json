@@ -1,0 +1,6 @@
+{
+  "template": "竖版多线路站牌主模板",
+  "dataset": { "id": "ds-kuichong-post-office-west" },
+  "output": { "width": 1050, "height": 1660, "dpi": 120, "format": "png" },
+  "mode": "final"
+}

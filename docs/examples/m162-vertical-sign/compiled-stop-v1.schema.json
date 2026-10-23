@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "竖版停靠站点 v1",
+  "x-renderweave-static-schema": {
+    "name": "竖版停靠站点",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "road"
+  ],
+  "properties": {
+    "name": {
+      "title": "站名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "road": {
+      "title": "所在道路",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12
+    },
+    "facilities": {
+      "title": "设施",
+      "type": "array",
+      "maxItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "医院",
+          "地铁站",
+          "火车站",
+          "机场"
+        ]
+      }
+    }
+  }
+}
