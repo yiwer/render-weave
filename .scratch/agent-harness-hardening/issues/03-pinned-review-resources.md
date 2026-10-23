@@ -38,6 +38,7 @@
 - 红绿循环先验证相关资源替换仍被旧批准应用的失败，再实现固定/差异核对；追加的固定副本损坏红例暴露缓存占位图覆盖原图问题，修复后原图与原检查记录保持不变；同候选仅修改有效待确认项的红例暴露身份遗漏提交清单，补齐后身份变化。
 - `npx vitest run test/agent-resource-identity.test.ts test/agent.test.ts test/agent-review.test.ts test/agent-rounds.test.ts test/agent-dataset-template.test.ts test/mcp.test.ts test/agent-style-verification.test.ts test/agent-coverage-verification.test.ts test/versioned-resources.test.ts test/resource-replacement.test.ts --maxWorkers=1`：10 个文件、204 个测试全部通过（合并集成分支 `71136d9` 后）。
 - `npm run typecheck`、`npm run build`：通过。
+- 提交前再合入集成 `3e5148b` 的票据 01；`npx vitest run test/agent-eval.test.ts test/agent-eval-transcription.test.ts test/agent-resource-identity.test.ts --maxWorkers=1` 中 52 项通过，仅当前生成报告的旧合同版本断言失败。更新为 0.11.0 后，`npx vitest run test/agent-eval.test.ts -t "三种场景各跑一次" --maxWorkers=1`：该项通过（其余 21 项未重跑）；合入后 typecheck/build 仍通过。
 - `git diff --check`：通过。
 
 验收偏差：无。并发提交和应用中断分别留在 04、05；历史轮次接续状态留在 08、09；阶段 5 的租户策略要求维持原约定。`CONTEXT.md` 由集成方统一更新。
