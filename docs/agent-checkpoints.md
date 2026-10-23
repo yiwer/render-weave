@@ -12,7 +12,7 @@
 | `checkpoints/<id>/agent/` | 本次检查消费的 `outcome.json` 与候选原始字节 |
 | `checkpoints/<id>/snapshot/` | 本次固定的工作区依据，包含被调模板及定义、数据集 |
 | `basis.json`、`reference-image` | 固定的核准上下文及可选参考图；资源字节仍在轮次的固定资源副本，读取核对实际使用的哈希 |
-| `checkpoint.json` | `renderweave-checkpoint-ref/1`；最后完整检查点 ID 与记录哈希。它是唯一发布点 |
+| `checkpoint.json` | `renderweave-checkpoint-ref/2`；最后完整检查点 ID、记录哈希、已发布历史引用及 `renderweave-candidate-selection/1` 选择证据。它是唯一发布点；兼容读取旧 `/1` |
 | `checkpoint-recovery.json` | 当前恢复拥有者与目标新轮次；短锁内核对并发布，正常结束后释放 |
 
 宿主先写 `.pending-<id>` 目录，检查完成后把完整目录改名，最后原子更新指针。发布途中强退只会保留上一完整指针或新完整指针；未发布目录和临时文件不能恢复。每次读取验证记录、候选、清单、依据及实际使用资源的哈希；损坏会给出诊断，不借用残留文件。终检同样保存完整检查点，正式成果从终检消费的固定副本复制。保证针对进程强退与本地原子替换，不声明断电或网络共享文件系统事务。
@@ -36,4 +36,6 @@ node dist/bin.js agent run --from out/round-1 --feedback feedback.md --out out/r
 
 检查点仅可查看或接续，不能直接批准、应用。新轮次真实交回后再进入现有人工审核。旧版完整轮次继续走原 `--from` 入口；缺失历史身份和资源版本时保留已知事实，在新轮次重新固定，不能补造旧版本。旧报告和原始记录不迁移、不改写。
 
-验证见 `test/agent-checkpoint.test.ts`：实际 CLI、假执行器和真实 MCP，覆盖保存信号、两模板集合、业务受阻、半写/缺依赖、读取变化、保存/终检强退、发布中断、字节接续、恢复竞争与直接批准/应用拒绝。预算、较好候选选择、停滞与真实模型效果属于后续票据。
+显式选择已发布集合使用 `--from <轮次> --checkpoint latest|better|<id>`，完整已结束轮次也可选择；不指定时沿用既有正式稿或中断检查点策略。`better` 没有实际改善证据时明确拒绝，不退回首次候选。完整合同、比较守卫和审核差异见[保留候选](agent-candidate-selection.md)。
+
+验证见 `test/agent-checkpoint.test.ts`：实际 CLI、假执行器和真实 MCP，覆盖保存信号、两模板集合、业务受阻、半写/缺依赖、读取变化、保存/终检强退、发布中断、字节接续、恢复竞争与直接批准/应用拒绝。候选选择另见 `test/agent-candidate-selection.test.ts`。预算、停滞与真实模型效果属于其他票据。

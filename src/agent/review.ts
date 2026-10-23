@@ -41,7 +41,7 @@ import { commitApplication, localPath, verifyApplicationReceipt } from '../local
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
 import { readExecution, type RoundExecution, type RoundStart } from './execution.js';
-import { readCheckpoint, type CheckpointView } from './checkpoints.js';
+import { readCheckpoint, readSelectedCheckpoint, readCandidateSelection, readCandidateComparison, type CandidateComparisonView, type CandidateSelectionView, type CheckpointView } from './checkpoints.js';
 import { localAccessProblem, withLocalAccess } from '../local-access.js';
 
 export const REVIEW_FILE = 'review.json';
@@ -378,9 +378,15 @@ interface AgentRound {
 }
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
-export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; problems: Problem[] }> {
-  try { return await readReviewCaptured(roundDir); }
-  catch (error) { const problem = localAccessProblem(error); if (problem) return { problems: [problem] }; throw error; }
+export async function readReview(roundDir: string,options:{compareWith?:{roundDir:string;id:string}}={}): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; candidateSelection?:CandidateSelectionView; candidateComparison?:CandidateComparisonView; problems: Problem[] }> {
+  let captured:Awaited<ReturnType<typeof readReviewCaptured>>;
+  try { captured=await readReviewCaptured(roundDir); }
+  catch (error) { const problem=localAccessProblem(error);if(problem)return {problems:[problem]};throw error; }
+  // 旧轮次没有检查点身份；坏启动/资源诊断也不能被附加选择记录覆盖。
+  if(!captured.execution||captured.problems.length)return captured;
+  try { return {...captured,candidateSelection:await readCandidateSelection(roundDir),
+    ...(options.compareWith?{candidateComparison:await readCandidateComparison(roundDir,options.compareWith)}:{})}; }
+  catch (error) { return {...captured,problems:[...captured.problems,localAccessProblem(error)??severe(ProblemCodes.roundInvalid,{kind:'input',source:roundDir},`候选记录无法核对：${describeError(error)}`)]}; }
 }
 async function openReview(roundDir: string) {
   try { return await withLocalAccess([roundDir], async () => {
@@ -1308,14 +1314,15 @@ export interface PreviousRound {
  * 读出上一轮，供下一轮使用：成果按 review.json 作用审核时的修改（与审核页、应用同一套规则）；整份标为空的候选不再给。
  * 上一轮结构不合格、没有成果时，给 Agent 当时交回的 candidates/ 下的文件与问题清单。
  */
-export async function readPreviousRound(dir: string): Promise<PreviousRound> {
-  try { return await withLocalAccess([dir], () => readPreviousRoundLocked(dir), 1000); }
+export async function readPreviousRound(dir: string,options:{checkpoint?:string}={}): Promise<PreviousRound> {
+  try { return await withLocalAccess([dir], () => readPreviousRoundLocked(dir,options.checkpoint), 1000); }
   catch (error) { if (localAccessProblem(error) || error instanceof AgentUsageError) throw error; throw new AgentUsageError(`上一轮的轮次记录无法读取：${describeError(error)}`); }
 }
-async function readPreviousRoundLocked(dir: string): Promise<PreviousRound> {
+async function readPreviousRoundLocked(dir: string,selection?:string): Promise<PreviousRound> {
   const execution = await readExecution(resolve(dir));
-  if (!execution.problems.length && execution.execution && !execution.execution.committed && execution.execution.status === 'interrupted' && execution.execution.start) {
-    const saved = await readCheckpoint(resolve(dir));
+  if (!execution.problems.length && execution.execution?.start &&
+    ((!execution.execution.committed&&execution.execution.status==='interrupted')||(execution.execution.committed&&selection!==undefined))) {
+    const saved = await readSelectedCheckpoint(resolve(dir),selection);
     if (!saved.checkpoint || saved.problems.length) throw new AgentUsageError(`没有可核对的完整检查点，不能从残片接续：${saved.problems.map(p => p.message).join('；')}`);
     const checkpoint = saved.checkpoint, root = resolve(dir), record = execution.execution.start;
     for (const [path, digest] of Object.entries(record.files)) {
@@ -1333,6 +1340,7 @@ async function readPreviousRoundLocked(dir: string): Promise<PreviousRound> {
   }
   if (execution.problems.length || (execution.execution && !execution.execution.committed)) throw new AgentUsageError(
     `轮次尚未完整提交，不能从残留候选接续：${[...execution.problems.map(p => p.message), ...(execution.execution?.diagnostics ?? [])].join('；')}`);
+  if(selection!==undefined)throw new AgentUsageError('旧轮次没有可核对的检查点选择记录；请沿用原 --from 接续入口');
   const root = resolve(dir);
   let record: RoundRecord;
   try {

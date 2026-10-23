@@ -83,6 +83,7 @@
 let view = null;
 let execution = null;
 let checkpoint = null;
+let candidateSelection = null;
 const $ = (id) => document.getElementById(id);
 /** 只用 textContent 建节点：Agent 写的说明与候选内容都不当作 HTML。 */
 function h(tag, attrs, ...children) {
@@ -114,13 +115,14 @@ async function load() {
   const body = await response.json();
   execution = body.execution ?? null;
   checkpoint = body.checkpoint ?? null;
+  candidateSelection = body.candidateSelection ?? null;
   if (!body.view) {
     $('title').textContent = '轮次状态';
     $('status').textContent = body.execution ? '状态已读取' : '无法读取';
     $('verdict').textContent = '尚无可审核成果';
     $('viewer').style.display = 'none';
     document.querySelector('main').style.gridTemplateColumns = '1fr';
-    $('content').replaceChildren(body.execution ? executionPanel(body.execution) : h('section', {}, h('h2', {}, '无法审核')), problemList(body.problems ?? []));
+    $('content').replaceChildren(body.execution ? executionPanel(body.execution) : h('section', {}, h('h2', {}, '无法审核')), candidateSelectionPanel(), problemList(body.problems ?? []));
     if (body.execution && !body.execution.committed && body.execution.status === 'running') setTimeout(load, 2000);
     return;
   }
@@ -128,6 +130,22 @@ async function load() {
   $('viewer').style.display = '';
   document.querySelector('main').style.gridTemplateColumns = '';
   render();
+}
+
+function candidateSelectionPanel() {
+  const item = candidateSelection;
+  if (!item) return h('section', {}, h('h2', {}, '保留候选'), h('p', {}, '没有较好候选证据。旧轮次和未完成完整检查的轮次不补造比较结论。'));
+  const labels = { uncompared: '尚无比较', improved: '逐项改善', regressed: '存在退步', incomparable: '不可排序', unchanged: '没有可证明的改善' };
+  return h('section', {}, h('h2', {}, '保留候选'),
+    h('p', {}, `最后完整候选：${item.latest.id}`),
+    h('p', {}, item.better ? `有证据较好候选：${item.better.id}。相对改善不代表业务全部合格；未核查与受阻项仍保留。` : '尚无有证据较好的候选；首次候选只是比较起点。'),
+    h('p', {}, `本次比较：${labels[item.comparison.status]}。${item.comparison.reasons.join('；')}`),
+    h('p', {}, '正式交回仍是作者提交的内容。以下保留集合只可查看或接续，不直接批准或应用。'),
+    item.better && h('p', {}, '接续命令：agent run --from <本轮目录> --checkpoint better --feedback <反馈文件> --out <新轮次目录>'),
+    h('details', {}, h('summary', {}, '逐项比较依据、改善、退步与未知'), h('pre', {}, json(item.comparison))),
+    h('details', {}, h('summary', {}, '两份完整候选的内容差异'), h('pre', {}, json(item.differences))),
+    h('details', {}, h('summary', {}, '最后完整候选：内容和检查'), h('pre', {}, json({ identity: item.latest.contentIdentity, documents: item.latest.documents, check: item.latest.check }))),
+    item.better && h('details', {}, h('summary', {}, '保留候选：内容和检查'), h('pre', {}, json({ identity: item.better.contentIdentity, documents: item.better.documents, check: item.better.check }))));
 }
 
 function executionPanel(execution) {
@@ -289,7 +307,7 @@ function render() {
   $('dir').textContent = round.dir;
   $('round').textContent = `第 ${round.round} 轮`;
   syncPreview();
-  $('content').replaceChildren(...[execution && executionPanel(execution), conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection()].filter(Boolean));
+  $('content').replaceChildren(...[execution && executionPanel(execution), candidateSelectionPanel(), conclusion(editable), roundSection(), previewSection(), pendingSection(editable), ...view.candidates.map(candidateSection), notesSection()].filter(Boolean));
 }
 
 function blocking() {

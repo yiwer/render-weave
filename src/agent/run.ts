@@ -82,6 +82,8 @@ export interface AgentRunOptions {
   readonly requirement?: string;
   /** 上一轮的轮次目录：下一轮沿用它的输入，拿到它的成果（含审核时的修改）与反馈（M58）。 */
   readonly from?: string;
+  /** 明确从上一轮已发布的完整检查点接续；better 不存在时拒绝，不自动冒称较好。 */
+  readonly checkpoint?: string;
   /** 给下一轮的反馈（Markdown）；带 from 时必须给。 */
   readonly feedback?: string;
   /** key 的值只留在宿主内存；keyEnv 是它所在的环境变量名，只用于记录。 */
@@ -225,8 +227,9 @@ const SEED_NOTES = {
 
 export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResult> {
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
+  if(given.from===undefined&&given.checkpoint!==undefined)throw new AgentUsageError('--checkpoint 只用于带 --from 发起的下一轮');
   if (given.from !== undefined) checkNextRound(given);
-  const previous = given.from === undefined ? undefined : await readPreviousRound(given.from);
+  const previous = given.from === undefined ? undefined : await readPreviousRound(given.from,{checkpoint:given.checkpoint});
   if (previous) {
     const inputs = previous.record.inputs;
     for (const item of [inputs.reference, inputs.contentBaseline, inputs.referenceImage]) {
