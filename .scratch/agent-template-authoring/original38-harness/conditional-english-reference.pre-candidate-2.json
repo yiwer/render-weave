@@ -1,0 +1,102 @@
+{
+  "format": "original38-conditional-observation-reference/1",
+  "registeredAt": "2026-10-23T16:48:43.491Z",
+  "status": "awaiting-candidate-20-no-observations",
+  "owner": "original-38",
+  "uniqueDispatchOwner": "harness-21",
+  "sourceRegistration": {
+    "commit": "a187ccb",
+    "file": "C:/Users/Administrator/.codex/worktrees/harness-21/render-weave/docs/agent-eval/trusted-feedback-acceptance/registration.json",
+    "sha256": "79ded677f2df2c3d00696928d9d48a3dd8ce576fb9957846287e7c892b17b7ef",
+    "preparationCopy": "F:/GenCode/render-weave/out/harness21-trusted-feedback/registration.preparation.json"
+  },
+  "candidateId": null,
+  "bindingId": null,
+  "experimentId": null,
+  "entries": [
+    {
+      "slot": "F-ET-1",
+      "scenario": "en-template-design",
+      "repetition": 1,
+      "unit": "run-1/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": null,
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ET-2",
+      "scenario": "en-template-design",
+      "repetition": 2,
+      "unit": "run-2/en-template-design",
+      "language": "en",
+      "task": "template-design",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": null,
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ER-1",
+      "scenario": "en-template-revision",
+      "repetition": 1,
+      "unit": "run-1/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": null,
+      "countsAsNewObservation": false
+    },
+    {
+      "slot": "F-ER-2",
+      "scenario": "en-template-revision",
+      "repetition": 2,
+      "unit": "run-2/en-template-revision",
+      "language": "en",
+      "task": "template-revision",
+      "maxTurns": 80,
+      "status": "not-run",
+      "sourceObservation": null,
+      "referenceDecision": null,
+      "countsAsNewObservation": false
+    }
+  ],
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "contextPolicy": "full",
+    "effort": null,
+    "roundTimeoutMs": 3600000,
+    "stagnationThreshold": 2,
+    "jobs": 1,
+    "repeat": 2
+  },
+  "requiredGuards": [
+    "targetCorrection",
+    "nonTargetPreservation",
+    "unknownRetained",
+    "pagination",
+    "finalCheckMatches"
+  ],
+  "conditions": [
+    "派发前填入20候选、21绑定与实验身份，核对同一案例/重复/预算/判据与实际单元一致",
+    "仅引用真实提供方模型观测，受控seed与机制0计数不改写",
+    "完整记录改前缺陷的后续目录页、修正、非目标保留、未知及末次有效反馈与终检身份",
+    "有效失败保留失败，未运行/invalid不计通过，不能选最好的一次覆盖其他重复",
+    "同一不可变attempt只能占一个槽位，跨票引用不增加计数"
+  ],
+  "scope": "英文受控真实模型纠偏；不证明首次自由设计或真实站牌还原",
+  "notReplacements": [
+    "原38四场景8个业务观测",
+    "中文/英文真实参考的独立样式和状态人工审核",
+    "公交12例留出36次观测",
+    "票26真人走查"
+  ],
+  "realModelObservations": 0
+}

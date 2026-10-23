@@ -52,6 +52,26 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 新首次定义与数据集已完成，分别 393.9 秒/30 轮、310.6 秒/37 轮。数据集的真实工具反馈拦住始发站缺 0，修正后基准异常归零；另有货币占位长度冲突，隔离审核明确留空，仍保留差异。新首次模板正在运行。各输入条件、复核命令、反馈成本和限制见[原图新复跑记录](../../../docs/agent-arabic-retest-2026-10-23.md)。
 
+### 2026-10-23 harness候选2准备及未派发状态
+
+20已独立合入7c0ff99，固定候选2为 sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f。原四场景完整预登记见 [运行登记](../original38-harness/registration-candidate-2.json)：8个业务观测、10个模型阶段，52份输入/15份资料及原生Claude/Node摘要独立复核，两段各跑既定一遍、不新增重复。共享4个英文纠偏槽位由21唯一派发，条件引用见 [共享登记](../original38-harness/conditional-english-reference.json)。
+
+原四启动命令在进程创建前被自动审批拒绝，原因是要求用户明确授权向具体第三方opencode.ai端点发送所需材料。已向用户询问，未改端点/模型或间接绕过；F:/GenCode/render-weave/out/harness-original38-candidate-2/dispatch-authorization-blocked.json记录无dispatch目录、无evaluation目录、真实观测0。外部审批待答不是模型失败，也不计invalid模型尝试或补造0用量。
+
+[英文局部审核包](F:/GenCode/render-weave/out/harness-original38-review/en-local-candidate-2/review.html)已由本候选公开render生成：41项、50 DPI、原21份材料不变，正式结果保留文字能力阻断，另有1575×1772干净草稿；没有新模型观测。已请求用户独立逐项审核并记录分钟/是否预看诊断，当前全41项及分钟仍空白。中文本候选模板成果尚未产生，不能用旧记录替代。生成器、输入与输出均已独立复核，见外部 harness-original38-readonly-review.md。本票所有未完成验收框保持不变。
+
+### 2026-10-23 具体目的地授权与混合图负评
+
+用户已明确授权OpenCode Go具体端点及验收所需材料（含后续12例），见M329与[授权原话](../original38-harness/endpoint-authorization.json)。重新审批原命令后原四第一段已从候选2启动，先前拒绝原件保留；本段开始不代表任何门槛通过。
+
+用户认为混合站牌对比糟糕，并建议跳过阿文，见[原话及材料身份](../original38-harness/mixed-board-user-feedback.json)。按M307停止该图进一步还原；整体记未接受，41逐项结论、分钟及是否预看诊断仍未知，不将此答复转成英文通过。中文/英文独立样式审核责任保留，接续方案另核。
+
+### 2026-10-23 候选2首轮中文原始成果材料
+
+原四第一遍的M402定义、模板、修改三个单元已由公开评估判为达线，366正完成其串联阶段；这只是运行中快照，不勾选完整门槛。已对真实封存模板/修改attempt分别生成正式来源绑定的中文材料，每包16个独立样式/状态审核项，见[材料索引](../original38-harness/zh-r1-candidate-2-v2-index.json)。实际请求为50 DPI/1457×325，公开草稿预览为120 DPI/3496×780；不以预览尺寸替换正式请求。
+
+独立复核发现初版页面误写“审核修改已生效”，生成器已改为只说明通过公开读取入口取得有效候选，并在新的-v2目录重新生成；初版原样保留。两包的源证明、原始轮次、有效候选、正式/预览图片与初版一致，16项人工判断、分钟及是否预看诊断仍空白。公开生成器CLI两次成功且node --check通过；独立复核723项检查通过。当前不给这些材料补造人工审核结论。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。

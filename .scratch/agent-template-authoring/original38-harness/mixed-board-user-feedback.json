@@ -1,0 +1,16 @@
+{
+  "format": "original38-user-review-receipt/1",
+  "recordedAt": "2026-10-23T17:59:23.060Z",
+  "source": "human-user-message-in-this-task",
+  "questionItemId": "[\"request_user_input_async\",\"call_acdd25cfc8b64344a44d28c0a57ec316\",0]",
+  "package": "F:/GenCode/render-weave/out/harness-original38-review/en-local-candidate-2",
+  "manifestSha256": "c37d8151763bd5847789f930260f862e9845f132f57ef0ab7f8a6775bfbb4c32",
+  "answer": "确认，这个实现对比比较糟糕。我认为可以考虑跳过阿拉伯文",
+  "overallAssessment": "not-accepted",
+  "arabicRestoration": "out-of-scope-per-M307-stop-further-investment",
+  "individual41ItemDecisions": null,
+  "reviewMinutes": null,
+  "autoDiagnosticsSeenBeforeFirstJudgment": null,
+  "englishAcceptance": "not-established-by-this-review",
+  "action": "保留负面评价及原件，停止此混合图的后续还原投入；继续已批准中文/英文验收，另核最小英文独立样式接续方案。"
+}
