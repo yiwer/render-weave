@@ -26,12 +26,12 @@ export function repairChecks(actual: FidelityMeasurement, reference: FidelityMea
   return checks;
 }
 /** 没有匹配实例时只提供角色和缺失值，不编造缺失元素的路径。 */
-export function boundedRepairFeedback(checks: readonly RepairCheck[]): string {
+export function boundedRepairFeedback(checks: readonly RepairCheck[], groups: Readonly<Record<string, string>> = {}): string {
   const priority = { content: 0, font: 1, position: 2 };
   const failures = checks.filter((c) => !c.pass).toSorted((a, b) => priority[a.dimension] - priority[b.dimension] || b.severity - a.severity || a.id.localeCompare(b.id));
   const selected: RepairCheck[] = [];
   for (const check of failures) {
-    if (!selected.some((c) => c.role === check.role)) selected.push(check);
+    if (!selected.some((c) => (groups[c.role] ?? c.role) === (groups[check.role] ?? check.role))) selected.push(check);
     if (selected.length === 2) break;
   }
   const items = selected.map((c) => ({ role: c.role, dimension: c.dimension, difference: c.detail.slice(0, 260), path: c.path?.slice(0, 180) ?? null }));

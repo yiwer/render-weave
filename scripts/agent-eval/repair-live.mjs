@@ -54,6 +54,7 @@ for (const unit of manifest.order) {
     await score(unit.caseId, out); // 模型已结束，离线评分时间不混入 wallMs
     const measured = await json(join(out, 'repair-score/report.json'));
     item.rounds.at(-1).score = { qualified: measured.qualified, repaired: measured.repaired, addedFailures: measured.addedFailures, cleanSuccess: measured.cleanSuccess, available: measured.available };
+    if (manifest.comparison === 'role-region') item.rounds.at(-1).stopDecision = await json(join(out, 'repair-score/stop-decision.json'));
     console.log(JSON.stringify({ event: 'complete', unit: unit.id, iteration, verdict: result.record.verdict, peak: result.record.run.context?.peakInputTokens, wallMs: result.record.run.wallMs, ...item.rounds.at(-1).score }));
     if (iteration === 2) item.status = 'completed';
     await save();

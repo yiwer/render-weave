@@ -8,6 +8,7 @@ import { parseArgs } from 'node:util';
 import { loadWorkspace, render, compareDesignImages, type Workspace, type RenderRequest } from '../../src/index.js';
 import { assessFidelity, m402DisplayContract, type M402Data } from './fidelity.js';
 import { boundedRepairFeedback, repairChecks, repairDelta, REPAIR_THRESHOLDS, type RepairCheck } from './repair-feedback.js';
+import { REPAIR_REGIONS, repairStopDecision } from './repair-policy.js';
 
 const repo = resolve(import.meta.dirname, '../..');
 const json = async (p: string) => JSON.parse(await readFile(p, 'utf8'));
@@ -85,7 +86,7 @@ async function fingerprints(dir: string, prefix = ''): Promise<{ path: string; s
   }
   return result;
 }
-export async function prepareRepairExperiment(out: string) {
+export async function prepareRepairExperiment(out: string, comparison: 'image-evidence' | 'role-region' = 'image-evidence') {
   await mkdir(out); // 不覆盖之前的试验
   const ws = await loadWorkspace({ dir: source, resourcesDir: resources });
   const original = ws.templates.map((t) => t.document as Doc);
@@ -99,7 +100,8 @@ export async function prepareRepairExperiment(out: string) {
   const good = await measure(ws, ws, join(out, 'control-score'));
   if (good.checks.some((c) => !c.pass)) throw new Error('正例未通过固定评分');
   await save(join(out, 'control-score/report.json'), good);
-  for (const spec of REPAIR_CASES) {
+  const cases = comparison === 'role-region' ? REPAIR_CASES.filter(c => c.id === 'c') : REPAIR_CASES;
+  for (const spec of cases) {
     const dir = join(out, spec.id), workspace = join(dir, 'workspace'); await mkdir(workspace, { recursive: true });
     const damaged = damageTemplates(original, spec.id);
     for (const file of (await readdir(source)).filter((f) => f.endsWith('.json'))) {
@@ -112,20 +114,26 @@ export async function prepareRepairExperiment(out: string) {
     await save(join(dir, 'initial/report.json'), score);
     await writeFile(join(dir, 'image.md'), common + '\n');
     await writeFile(join(dir, 'evidence.md'), common + '\n\n' + score.feedback + '\n');
+    if (comparison === 'role-region') {
+      await writeFile(join(dir, 'role.md'), common + '\n\n' + score.feedback + '\n');
+      await writeFile(join(dir, 'region.md'), common + '\n\n' + boundedRepairFeedback(score.checks.filter(c => c.id.startsWith('base/') && c.role !== 'render'), REPAIR_REGIONS) + '\n');
+    }
   }
   const order = [];
-  for (const repetition of [1, 2]) for (const [i, spec] of REPAIR_CASES.entries()) {
-    const arms = (i + repetition) % 2 === 1 ? ['image', 'evidence'] : ['evidence', 'image'];
+  for (const repetition of [1, 2]) for (const [i, spec] of cases.entries()) {
+    const pair = comparison === 'role-region' ? ['role', 'region'] : ['image', 'evidence'];
+    const arms = (i + repetition) % 2 === 1 ? pair : pair.toReversed();
     for (const arm of arms) order.push({ id: `${spec.id}-${repetition}-${arm}`, caseId: spec.id, repetition, arm });
   }
-  const files = ['repair-feedback.ts', 'repair-experiment.ts', 'repair-live.mjs', 'fidelity.ts'];
+  const files = ['repair-feedback.ts', 'repair-policy.ts', 'repair-experiment.ts', 'repair-live.mjs', 'fidelity.ts'];
   const manifest = { format: 'renderweave-repair-experiment/1', createdAt: new Date().toISOString(), head: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(),
-    model: 'claude-haiku-5-5', rounds: 2, maxTurns: 20, thresholds: REPAIR_THRESHOLDS, cases: REPAIR_CASES, order,
+    comparison, model: 'claude-haiku-5-5', rounds: 2, maxTurns: 20, thresholds: REPAIR_THRESHOLDS, cases, order,
+    ...(comparison === 'role-region' ? { regions: REPAIR_REGIONS, stopping: '登记全检查停止决定，然后固定执行第二轮作影子对照；共享第一轮，不是独立停止臂。' } : {}),
     scripts: await Promise.all(files.map(async (f) => ({ path: 'scripts/agent-eval/' + f, sha256: sha(await readFile(join(repo, 'scripts/agent-eval', f))) }))),
     engine: await fingerprints(join(repo, 'src')), runtime: await fingerprints(join(repo, 'dist')), materials: await fingerprints(join(repo, 'agent')),
     resources: await fingerprints(resources), inputs: await fingerprints(out), referenceSha256: sha(reference.image.bytes) };
   await save(join(out, 'manifest.json'), manifest);
-  return { units: order.length, rounds: order.length * 2, targets: REPAIR_CASES.map((c) => c.targets), out };
+  return { units: order.length, rounds: order.length * 2, targets: cases.map((c) => c.targets), out };
 }
 export async function scoreRepairRound(root: string, caseId: string, round: string) {
   const dir = join(round, 'repair-score'), spec = REPAIR_CASES.find((c) => c.id === caseId);
@@ -152,11 +160,21 @@ export async function scoreRepairRound(root: string, caseId: string, round: stri
   await save(join(dir, 'report.json'), result);
   await writeFile(join(dir, 'image-feedback.md'), next + '\n');
   await writeFile(join(dir, 'evidence-feedback.md'), next + '\n\n' + (measurement?.feedback ?? '当前没有可用的交回布局证据，先保存有效成果。') + '\n');
+  const manifest = await json(join(root, 'manifest.json'));
+  if (manifest.comparison === 'role-region') {
+    const expected = await json(join(root, 'control-score/report.json'));
+    const decision = { ...repairStopDecision(expected.checks.map((c: RepairCheck) => c.id), measurement?.checks ?? null, result.qualified),
+      decidedAt: new Date().toISOString(), templateSha256: measurement?.templateSha256 ?? null, measurementSha256: sha(await readFile(join(dir, 'report.json'))) };
+    await save(join(dir, 'stop-decision.json'), decision);
+    await writeFile(join(dir, 'role-feedback.md'), next + '\n\n' + (measurement?.feedback ?? '当前没有可用的交回布局证据，先保存有效成果。') + '\n');
+    await writeFile(join(dir, 'region-feedback.md'), next + '\n\n' + (measurement ? boundedRepairFeedback(measurement.checks.filter(c => c.id.startsWith('base/') && c.role !== 'render'), REPAIR_REGIONS) : '当前没有可用的交回布局证据，先保存有效成果。') + '\n');
+  }
   return { caseId, repaired: result.repaired, added: result.addedFailures, qualified: result.qualified };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const { values } = parseArgs({ options: { prepare: { type: 'string' }, root: { type: 'string' }, case: { type: 'string' }, round: { type: 'string' } }, strict: true });
-  if (values.prepare) console.log(JSON.stringify(await prepareRepairExperiment(resolve(values.prepare))));
+  const { values } = parseArgs({ options: { prepare: { type: 'string' }, comparison: { type: 'string' }, root: { type: 'string' }, case: { type: 'string' }, round: { type: 'string' } }, strict: true });
+  if (values.comparison && !['image-evidence', 'role-region'].includes(values.comparison)) throw new Error('未知对照类型');
+  if (values.prepare) console.log(JSON.stringify(await prepareRepairExperiment(resolve(values.prepare), values.comparison as 'image-evidence' | 'role-region' | undefined)));
   else if (values.root && values.case && values.round) console.log(JSON.stringify(await scoreRepairRound(resolve(values.root), values.case, resolve(values.round))));
   else throw new Error('需要 --prepare <新目录> 或 --root <试验目录> --case <a|b|c> --round <轮次>');
 }
