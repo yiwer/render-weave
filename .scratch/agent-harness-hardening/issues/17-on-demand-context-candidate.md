@@ -89,3 +89,25 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 改前两份任务原件、固定源码包、全部日志与SHA保存于 `F:/GenCode/render-weave/out/harness-feedback-order-fix/`。`validation.json` 保留首轮结果，`validation-final.json` 固定最终3322个共同执行文件摘要及两份资料前后SHA；与候选2逐项比较，仅 `agent/tasks/next-round.md`、`agent/tasks/template-revision.md` 改变，其余3320个文件相同。候选2清单及两份原任务字节仍匹配旧身份。`linux-run.sh`、`linux-drift-run.sh`、`linux-final-run.sh` 记录可复现命令。
 
 本修复没有调用真实模型；52项Windows及51项Linux关联通过（另1项原平台跳过）与最后各3项补验，只证明公开资料/分页/身份流程仍可执行。真实反馈顺序是否更稳定必须由新候选、新绑定和新观测判断，不能用受控执行器通过覆盖票21的6次失败，也不以本次修改关闭21或原38。
+
+
+### 候选3后的局部修改与内容判断修复（2026-10-23）
+
+本票按通用资料责任重新打开。候选3的21首段8次真实观测为7通过、1失败；失败轮将固定文字改为变量插槽，当前数据的视觉修正不能替代对授权属性范围的遵守。评分器在目标路径变化后提前返回、令其他守卫一并显示失败的问题由票14另行修复，本票不把这些短路结果解释为全部守卫独立失败。原四场景的M402定义首轮为13/15；其outcome已识别相关说明，但因其标题排版及变化性未定而按固定文字待确认，未为该内容建可选字段。这触发了 docs/stage3-acceptance.md 第308–312行保留的通用指南修正条件。两份原始真实失败保留，不以本次资料验证改判。
+
+实现固定在 `d81df93`，基于 `ad7733a`；验证后以 `402bbdb` 合入主线 `acaea68` 的21候选3负结果文档，未改变执行内容。独立资料审查通过。只改三份通用资料：guide 第1条明确内容判断先于标题/括注排版，含义已知但变化性未知时为该内容建可选字段并在其上列待确认；含义本身未知仍按第8条处理。guide 的“局部修改”成为单一规则来源，两份任务入口按适用分支引用；未授权的文字/插槽、常量/变量表示形式及节点/引用结构保留，只改授权属性值，需要扩展结构才可完成时说明范围并待确认。首次自由设计与明确授权的结构修改保留。
+
+未修改领域约定、首次设计任务、校准答案/反馈、评分器、预算、模型或effort；MCP合同保持0.17.0、默认仍full。三份资料都会进入实际资料身份，下一候选须重新冻结和绑定。原四场景8次及票21的16次有效观测需由候选4重新执行；历史6次额外稳定性探针仅保留为旧参考，本次未派发。不关闭21或原38，不把技术回归当作真实模型遵循。
+
+沿已核准的公开Agent/CLI/MCP接缝，读取两项真实失败作为改前证据，再跑现有受控执行器回归；不加逐字匹配新句子或让执行器按新措辞改行为的镜像测试。验证如下：
+
+- Windows Node24.12.0、Linux Node22.23.3：`npm run build`、`npm run typecheck`、`git diff --check`通过。
+- `node node_modules/vitest/vitest.mjs run test/agent-rounds.test.ts test/agent-context-policy.test.ts test/agent-eval-feedback-cli.test.ts --maxWorkers=1`：Windows 3文件38项通过，553.68秒；Linux 3文件37项通过、1项原Windows专用用例跳过，310.84秒。覆盖公开接续/修改提示词传递、全量与按需资料、真实MCP分页、受控反馈与报告边界。
+- `test/agent.test.ts -t '轮次目录组装三层资料'`：两平台各1项通过，7.98/3.67秒，核对定义提取收到当前完整guide及任务资料。
+- `test/agent-eval-identity.test.ts -t '同一实验固定派发条件|实验来源保留可定位|续跑逐项拒绝实际构建'`：两平台各4项通过，42.12/31.57秒。核对full/on-demand实际来源及摘要、已有有效失败保留、资料变化在派发前拒绝且原实验不变。上述命令均沿用`node node_modules/vitest/vitest.mjs run`及`--maxWorkers=1`；未选取项不计通过。
+- 最终共同文件逐字节核对发现本树`src/agent/provenance.ts`有33个CR换行残留；规范为仓库要求及候选3的LF原字节，Git源码无差异、编译产物未变。首轮`source.tar`及原文件另存，最终另存`source-final.tar`，两平台重新build并各跑`agent-eval-identity.test.ts -t '实验来源保留可定位'`2项通过（12.57/8.79秒）。不冒称首轮源码包与最终包全字节相同。
+- 最终核对候选3全部3322个共同文件：旧包所有原字节未变；本树仅guide、next-round、template-revision三份资料不同，其余3319个完全相同，四个字体均为实文件。Linux在本地镜像的独立目录复制依赖与源码，没有共享依赖联接。
+
+改前资料、10份真实失败相关原件快照、公开回归日志、两份源码包及最终3322文件摘要保存于 `F:/GenCode/render-weave/out/harness-minimal-change-guide-fix/`；`red-evidence.json`区分模型越界与评分短路，`validation.json`记录所有摘要及平台结果。实际模型调用0；本次资料责任缺口闭合后将本票重新记为resolved，真实质量改善仍待新候选观测。CONTEXT由独立集成者更新。
+
+独立集成：以 `356cdcad` 非压缩合入 `d8bf777`。固定措辞审查无阻塞；42份证据逐项SHA/大小、全部3322共同文件、候选3旧字节、3份最终Git资料字节及日志摘要共6791项只读断言通过，其余3319共同文件完全相同。没有重跑测试或模型。证据清单SHA为 `8a60f1122556c9877c7c805ba5074c40cc5576b268f2f06c549d6c5d53e747c3`；外部 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness17-minimal-guidance-final-audit.json` SHA为 `994f4aecbd7270f4001927b14c04ccfa390032253bdcc2df6711d48fad6839f2`。最终diff-check通过，旧候选与失败原件不改。

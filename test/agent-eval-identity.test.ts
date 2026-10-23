@@ -247,7 +247,7 @@ it('续跑逐项拒绝实际构建、评分器、资料、输入、资源与运�
     expect(changed.stderr).toContain(difference);
   }
   for (const [file, difference] of [
-    ['dist/bin.js', 'build'], ['agent/guide.md', 'materials'], ['scripts/agent-eval/behavior.ts', 'scorer'],
+    ['dist/bin.js', 'build'], ['agent/guide.md', 'materials'], ['scripts/agent-eval/behavior.ts', 'scorer'], ['scripts/agent-eval/feedback.ts', 'scorer'],
     ['scripts/agent-eval/scenarios/m402/brief-definition.md', 'inputs'], ['scripts/agent-eval/scenarios/366/truth.json', 'inputs'],
     ['docs/examples/materials/m402-route-sign.jpg', 'inputs'], ['fixtures/resources/resources.json', 'resources'],
   ]) {

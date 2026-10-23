@@ -28,7 +28,7 @@ if(process.argv.includes('--context-probe')){
   contextObservation={references,pages:0,unknownTotal:0,instances:[]};
 }
 let isTemplate = false;
-if (['calibration', 'collateral', 'stale', 'mixed', 'pending'].includes(preset)) {
+if (['calibration', 'collateral', 'stale', 'mixed', 'pending', 'slot-target'].includes(preset)) {
   const files = (await readdir('candidates')).filter(name => name.endsWith('.json'));
   const paths = files.map(name => 'candidates/' + name);
   await writeFile('outcome.json', JSON.stringify({candidates: paths, pending: [], notes: '机制验证；未测部分仍未知'}));
@@ -56,6 +56,7 @@ if (['calibration', 'collateral', 'stale', 'mixed', 'pending'].includes(preset))
     if (!later.anomalies.some(item => item.regionId === 'region-22')) throw new Error('未实际取得后续页缺陷');
     await call('compare_reference', {regions: ['region-22']});
     const node = document.artboard.children[21]; node.content[0].text = correct; node.fontSize = 7; node.color = '#172B4D'; node.place.left = 60;
+    if (preset === 'slot-target') node.content[0] = {slot: 'stopName'};
   } else if (document.fields) document.fields[1].name = 'stopName'; else document.data.stopName = correct;
   if (preset === 'collateral' || preset === 'mixed' && document.data) {if (document.fields) document.fields[0].displayName = '越界修改'; else document.data.routeNo = '99';}
   await writeFile(paths[0], JSON.stringify(document));
