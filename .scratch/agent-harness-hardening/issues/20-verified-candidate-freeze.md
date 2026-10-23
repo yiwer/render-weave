@@ -63,3 +63,5 @@
 发布提交 `2bc910c` 已非压缩合入 `2daa300`；原38登记 `7f80490` 合入 `37b7559`；21登记 `60ea223` 合入 `5edb66c`，均无冲突。原38登记SHA为 `21e4a1c97ce82b6508caa69333ddc51b756200790e97f4843e4ad906d9a768eb`，21登记SHA为 `d8f533d1684cf2bdcc7e09a86abf07311389ac9de1654743f5ab2510eb31e96e`；16槽均not-run，受控seed未计模型观测。21与原38继续保留原未完成状态。
 
 只读复核报告为 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate3-publication-and-registration-review.md`，SHA-256 `01c9d1b9146d05529f12c2e2ab46b946d69294a678435c01c061e1467923e3ad`；同目录三份审计JSON保存逐项核对。两份原有未跟踪报告保留，不纳入本次提交。
+
+复核措辞澄清：首份报告曾将第二段前置完成守卫共同归给两个launcher，实际仅21在代码层检查；原38由唯一派发者人工串行观察后再派发。已另存同目录 `harness-candidate3-publication-and-registration-review-v2.md`（SHA-256 `fdfa6c436f655472447844782b7be75f2dcd74a9b114be5ad85554e4f1f398bf`），旧报告字节和既有activation引用均保留。此项不改变登记、脚本或候选，也不影响21原复核结论。
