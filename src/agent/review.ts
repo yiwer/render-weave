@@ -129,6 +129,7 @@ export interface ReviewView {
 
 /** 轮次链上的一轮。 */
 export interface RoundLink {
+  readonly executionStatus?: RoundExecution['status'];
   readonly round: number;
   readonly dir: string;
   readonly task?: AgentTaskId;
@@ -391,7 +392,7 @@ async function readReviewCaptured(roundDir: string): Promise<{ view?: ReviewView
   const checkpoint = execution.execution ? await readCheckpoint(roundDir) : { problems: [] };
   if (execution.problems.length || (execution.execution && !execution.execution.committed)) return { ...execution, checkpoint: checkpoint.checkpoint, problems: [...execution.problems, ...checkpoint.problems] };
   const opened = await openReview(roundDir);
-  if (!opened.round) return { problems: opened.problems, execution: execution.execution };
+  if (!opened.round) return { problems: [...opened.problems, ...checkpoint.problems], execution: execution.execution, checkpoint: checkpoint.checkpoint };
   const { record, saved, problems } = opened.review!;
   return { view: await buildView(opened.round, record, saved, problems), execution: execution.execution, checkpoint: checkpoint.checkpoint, problems: checkpoint.problems };
 }
@@ -1376,6 +1377,14 @@ export async function readRoundChain(dir: string): Promise<RoundLink[]> {
       record = undefined;
     }
     if (!isRecord(record) || !isRecord(record.inputs) || !Number.isSafeInteger(record.round)) {
+      const state = await readExecution(current);
+      if (!state.problems.length && state.execution?.start) {
+        const start = state.execution.start;
+        chain.unshift({ round: start.round, dir: current, task: start.task, executionStatus: state.execution.status, applied: false });
+        expected = start.inputs.previous?.round;
+        current = start.inputs.previous ? resolve(start.inputs.previous.dir) : undefined;
+        continue;
+      }
       chain.unshift({ round: expected ?? 0, dir: current, applied: false, missing: true });
       break;
     }

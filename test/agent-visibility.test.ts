@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { compareReference, loadWorkspace, render, runAgentTask, type ReferenceBaseline, type Workspace } from '../src/index.js';
@@ -139,8 +139,8 @@ it('真实MCP比较、交回检查与宿主终检的不可见证据一致，修�
   expect(task.check.verdict).toBe('qualified');
   expect(task.check.assessment.visual?.status).toBe('needsWork');
   expect(task.check.assessment.style?.passed).toBe(false);
-  const config = JSON.parse(await readFile(join(task.roundDir, 'logs/mcp.json'), 'utf8'));
-  const session = startMcp(config.mcpServers.rw.args.slice(2));
+  const session = startMcp(['--workspace',join(task.roundDir,'snapshot'),'--resources',join(task.roundDir,task.record.inputs.resourceSnapshot!.directory),
+    '--root',join(task.roundDir,'agent'),'--outcome-context',join(task.roundDir,'logs/outcome-context.json')]);
   try {
     await session.request('initialize', {protocolVersion: '2025-06-18'});
     const compared = await session.callJson('compare_reference');

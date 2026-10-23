@@ -17,10 +17,20 @@ const request = (method, params) => new Promise(resolve => {
 });
 await request('initialize', {protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'checkpoint-fixture',version:'1'}});
 const tools = await request('tools/list', {});
+const comparison = tools.result.tools.some(tool => tool.name === 'compare_reference')
+  ? await request('tools/call', {name:'compare_reference',arguments:{}}) : undefined;
 const reply = await request('tools/call', {name:'check_outcome',arguments:{}});
-await writeFile('checkpoint-observed.json', JSON.stringify({ reply, tools, executorPid: process.pid,
+await writeFile('checkpoint-observed.json', JSON.stringify({ reply, tools, comparison, executorPid: process.pid,
   hasBridgeSecret: Boolean(process.env.RW_CHECKPOINT_HOST || process.env.RW_CHECKPOINT_TOKEN) }));
 while (true) {
+  try {
+    const action = JSON.parse(await readFile('checkpoint-action.json', 'utf8'));
+    if (!pending.has(`action-${action.id}`)) {
+      pending.set(`action-${action.id}`, true);
+      const next = await request('tools/call', {name:'check_outcome',arguments:{}});
+      await writeFile(`checkpoint-observed-${action.id}.json`, JSON.stringify(next));
+    }
+  } catch {}
   try { await readFile('continue'); break; } catch {} await new Promise(resolve => setTimeout(resolve, 20));
 }
 mcp.stdin.end();

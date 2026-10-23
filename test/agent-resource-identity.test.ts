@@ -85,8 +85,9 @@ it('已有候选的内容身份不包含模型配置，记录指向核准内容�
 });
 
 it('候选文件不变但提交清单新增待确认项时，MCP返回新检查身份', async () => {
-  const f = await setup(false), config = await json(join(f.round, 'logs/mcp.json'));
-  const session = startMcp(config.mcpServers.rw.args.slice(2));
+  const f = await setup(false);
+  const session = startMcp(['--workspace',join(f.round,'snapshot'),'--resources',join(f.round,f.run.record.inputs.resourceSnapshot!.directory),
+    '--root',join(f.round,'agent'),'--outcome-context',join(f.round,'logs/outcome-context.json')]);
   try {
     const first = await session.callJson('check_outcome');
     expect(first.contentIdentity.id).toBe(f.run.check.contentIdentity!.id);

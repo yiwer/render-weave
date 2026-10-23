@@ -1,15 +1,18 @@
 /** 宿主固定检查输入并提交检查点。暂存目录不是检查点；唯一发布点是 checkpoint.json。 */
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 import { WorkingDirectory } from '../mcp/files.js';
 import { ProblemCodes, severe, type Problem } from '../problems.js';
 import { loadWorkspace } from '../workspace.js';
+import { withLocalAccess } from '../local-access.js';
 import { canonical } from './diff.js';
-import { writeAtomicJson } from './execution.js';
+import { flattenElements } from './locations.js';
+import { isRecord } from '../util.js';
+import { readExecution, writeAtomicJson } from './execution.js';
 import { checkAgentOutcome, type OutcomeCheck, type OutcomeTarget } from './outcome.js';
-import { exists, sha256 } from './round-files.js';
-import { AgentUsageError } from './round-files.js';
+import { AgentUsageError, exists, sha256 } from './round-files.js';
+import { readResourceSnapshot } from './content-identity.js';
 
 export type CheckpointSignal = { readonly status: 'saved'; readonly id: string; readonly contentIdentity: string }
   | { readonly status: 'notSaved'; readonly reason: string };
@@ -23,14 +26,27 @@ const DEPENDENCY_ERRORS = new Set<string>([ProblemCodes.templateNotFound, Proble
   ProblemCodes.compiledSchemaMissing, ProblemCodes.definitionRefNotFound, ProblemCodes.datasetNotFound,
   ProblemCodes.resourceUnreadable, ProblemCodes.resourceNotFound, ProblemCodes.datasetResourceNotFound]);
 
-/** 一次恢复占有源轮次；宿主异常消失时保留该事实，必须沿已建立的新轮次继续，不能抢占未知拥有者。 */
-export async function claimCheckpointRecovery(source: string, destination: string) {
+/** 短锁只保护恢复拥有权的核对/替换；不跨执行器调用持有。明确结束者可重试，未知/存活者不可抢占。 */
+export async function claimCheckpointRecovery(source: string, destination: string, checkpointId: string) {
   const path = join(source, 'checkpoint-recovery.json'), owner = { id: randomUUID(), destination };
-  try { await writeAtomicJson(path, owner, true); }
-  catch { throw new AgentUsageError(`检查点已有恢复拥有者；请检查 checkpoint-recovery.json 指向的新轮次，不可并发接管：${source}`); }
+  await withLocalAccess([source], async () => {
+    const original = await readExecution(source), checkpoint = await readCheckpoint(source);
+    if (original.problems.length || original.execution?.status !== 'interrupted' || checkpoint.problems.length || checkpoint.checkpoint?.id !== checkpointId)
+      throw new AgentUsageError('原轮次仍可写、身份不明或检查点已变化，不能取得恢复拥有权');
+    if (await exists(path)) {
+      try {
+        const prior = JSON.parse(await readFile(path, 'utf8'));
+        const state = await readExecution(prior.destination);
+        if (state.problems.length || !state.execution || (!state.execution.committed && state.execution.status !== 'interrupted')) throw new Error();
+      } catch { throw new AgentUsageError(`检查点已有恢复拥有者；请检查 checkpoint-recovery.json 指向的新轮次，不可并发接管：${source}`); }
+    }
+    await writeAtomicJson(path, owner);
+  });
   return async () => {
-    const current = JSON.parse(await readFile(path, 'utf8'));
-    if (current.id === owner.id) await rm(path);
+    await withLocalAccess([source], async () => {
+      const current = JSON.parse(await readFile(path, 'utf8'));
+      if (current.id === owner.id) await rm(path);
+    });
   };
 }
 
@@ -65,10 +81,11 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
       await save('agent/outcome.json', outcome);
       const submission = JSON.parse(Buffer.from(outcome).toString('utf8'));
       if (Array.isArray(submission?.candidates)) for (const path of submission.candidates) {
-        if (typeof path !== 'string' || !/^candidates\/(?!.*(?:^|\/)\.\.?\/)[^\\]+\.json$/.test(path)) continue;
+        const actual = relative(working.root, await working.resolve(path)).split(sep).join('/');
+        if (!actual.startsWith('candidates/') || !actual.endsWith('.json')) continue;
         const bytes = await working.readBytes(path);
         captured.set(path, bytes);
-        await save(`agent/${path}`, bytes);
+        await save(`agent/${actual}`, bytes);
       }
     } catch (error) { captureProblem = `候选集合无法完整固定：${String(error)}`; }
     // 一轮采集后再逐字核对，读取期间的写入不得形成一个看似完整的新旧混合集合。
@@ -87,10 +104,33 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
     }
     const workspace = await loadWorkspace({ dir: join(stage, 'snapshot'), resourcesDir });
     const check = await checkAgentOutcome({ task, agentDir: join(stage, 'agent'), workspace, context: checkedContext });
+    // 语义受阻仍可保存，但解析失败不能掩盖缺少被调模板；按实际集合独立核对调用闭包。
+    const templates = new Map(workspace.templates.map(entry => [entry.name, entry.document]));
+    for (const [path, bytes] of captured) if (path !== 'outcome.json') {
+      try { const value: unknown = JSON.parse(Buffer.from(bytes).toString('utf8'));
+        if (isRecord(value) && value.dslVersion === 'renderweave-template/1' && typeof value.name === 'string') templates.set(value.name, value);
+      } catch { /* JSON 半写已经由结构检查报告。 */ }
+    }
+    const visited = new Set<string>(), missingCalls = new Set<string>();
+    const visit = (name: string) => {
+      if (visited.has(name)) return;
+      visited.add(name);
+      const document = templates.get(name);
+      if (!document) { missingCalls.add(name); return; }
+      for (const { element } of flattenElements(document)) if ((element.type === 'call' || element.type === 'loop') && typeof element.template === 'string') visit(element.template);
+    };
+    for (const candidate of check.candidates) if (candidate.kind === 'template' && candidate.name) visit(candidate.name);
     const missing = [...check.problems, ...check.candidates.flatMap(candidate => candidate.problems), ...check.assessment.render.problems]
       .filter(problem => problem.level === 'severe' && DEPENDENCY_ERRORS.has(problem.code));
     const reason = captureProblem ?? (!check.submission || check.assessment.structure !== 'valid' ? '候选清单或文件不完整，不能发布完整检查点'
+      : missingCalls.size ? `缺少必要被调模板依赖：${[...missingCalls].join('、')}`
       : missing.length ? `缺少或无法读取必要依赖：${missing.map(problem => problem.message).join('；')}` : undefined);
+    if (captureProblem) {
+      const { submission: _submission, ...incomplete } = check;
+      return { check: { ...incomplete, verdict: 'unqualified', assessment: { ...check.assessment, structure: 'invalid' },
+        problems: [...check.problems, severe(ProblemCodes.outcomeInvalid, { kind: 'input', source: 'outcome.json' }, captureProblem)] },
+        checkpoint: { status: 'notSaved', reason: captureProblem } };
+    }
     if (reason || !check.contentIdentity) return { check, checkpoint: { status: 'notSaved', reason: reason ?? '检查未形成完整内容身份' } };
     const record: CheckpointRecord = { format: 'renderweave-checkpoint/1', source: 'hostRecovery', id, savedAt: new Date().toISOString(),
       startSha256: sha256(await readFile(join(roundDir, 'round-start.json'))), files, check };
@@ -120,6 +160,18 @@ export async function readCheckpoint(roundDir: string): Promise<{ checkpoint?: C
     const { id: contentId, ...identity } = record.check.contentIdentity;
     if (sha256(canonical(identity)) !== contentId) throw new Error('检查内容身份不符');
     for (const candidate of record.check.candidates) if (record.files[`agent/${candidate.path}`] !== candidate.sha256) throw new Error('检查候选与保存字节不符');
+    const submission = JSON.parse(Buffer.from(await safe.readBytes('agent/outcome.json')).toString('utf8'));
+    if (canonical(submission) !== canonical(record.check.submission) || canonical(identity.candidates) !== canonical({
+      files: record.check.candidates.map(({ path, sha256 }) => ({ path, sha256 })), submission: sha256(canonical(submission)) })) throw new Error('检查清单与内容身份不符');
+    const start = JSON.parse(await readFile(join(roundDir, 'round-start.json'), 'utf8'));
+    if (start.inputs.resourceSnapshot) {
+      await readResourceSnapshot(roundDir, start.inputs.resourceSnapshot);
+      for (const resource of identity.resources) if (resource.sha256 !== null) {
+        if (!/^[A-Za-z0-9_-]+$/.test(resource.id)) throw new Error('检查资源标识不合法');
+        const bytes = await readFile(join(roundDir, start.inputs.resourceSnapshot.directory, `${resource.id}.bin`));
+        if (sha256(bytes) !== resource.sha256 || bytes.length !== resource.byteLength) throw new Error(`检查资源已变化：${resource.id}`);
+      }
+    }
     return { checkpoint: { ...record, contentIdentity: contentId }, problems: [] };
   } catch (error) { return { problems: [severe(ProblemCodes.roundInvalid, { kind: 'input', source: join(roundDir, 'checkpoint.json') }, `检查点无法核对：${String(error)}`)] }; }
 }

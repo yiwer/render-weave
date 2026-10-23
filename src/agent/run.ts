@@ -214,6 +214,7 @@ export interface AgentRunResult {
 
 /** 下一轮的候选从哪里开始：写进提示词。 */
 const SEED_NOTES = {
+  checkpoint: 'candidates/ 中是上一轮完整检查点的候选字节；previous/checkpoint.json 记录来源、内容身份和检查结果。它不是人工批准，按反馈重新检查并完整交回。',
   previous: 'candidates/ 中已放好上一轮的成果（含审核时的修改），在它的基础上按反馈修改，不要从头重做。',
   unqualified: 'candidates/ 中已放好上一轮交回的文件。上一轮的成果结构不合格，没有经过审核：按 previous/check.json 的问题与反馈修改。',
   applied: '上一轮的成果已经应用：candidates/ 中放的是应用后最新保存的模板，已含上一轮的修改，在它的基础上按反馈修改。',
@@ -302,8 +303,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const startedAt = new Date().toISOString();
   const execution = await claimExecution(roundDir, startedAt);
   let releaseRecovery: (() => Promise<void>) | undefined;
+  let managedMcp: Awaited<ReturnType<typeof startCheckpointHost>> | undefined;
   try {
-  if (previous?.checkpoint) releaseRecovery = await claimCheckpointRecovery(previous.dir, roundDir);
+  if (previous?.checkpoint) releaseRecovery = await claimCheckpointRecovery(previous.dir, roundDir, previous.checkpoint.id);
   const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
@@ -342,7 +344,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
         seeds.set(candidate.path, candidate.bytes);
       }
     }
-    seedNote = basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
+    seedNote = previous.checkpoint ? SEED_NOTES.checkpoint : basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
   }
   for (const [path, bytes] of seeds) await writeAt(join(agentDir, path), bytes);
 
@@ -413,7 +415,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await execution.initialize({ task: task.id, round, startedAt, inputs });
   const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
-  const managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
+  managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] });
@@ -449,7 +451,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   await execution.finalizing();
 
   const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
-  const checked = (await checkpoints.check()).check;
+  const finalCheck = await checkpoints.check();
+  const checked = finalCheck.check;
   const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
   const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);
   const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
@@ -461,7 +464,9 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
     for (const candidate of deliverable.candidates) {
       await mkdir(dirname(join(roundDir, candidate.path)), { recursive: true });
-      await copyFile(join(agentDir, candidate.path), join(roundDir, candidate.path));
+      const checkedDir = !recovered && finalCheck.checkpoint.status === 'saved'
+        ? join(roundDir, 'checkpoints', finalCheck.checkpoint.id, 'agent') : agentDir;
+      await copyFile(join(checkedDir, candidate.path), join(roundDir, candidate.path));
     }
     outcome = {
       format: 'renderweave-outcome/1', task: task.id, round,
@@ -507,6 +512,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   } catch (error) {
     await execution.fail().catch(() => undefined);
     throw error;
+  } finally {
+    await managedMcp?.close();
   }
 }
 

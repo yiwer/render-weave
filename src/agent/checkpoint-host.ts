@@ -35,7 +35,8 @@ export async function startCheckpointHost(options: { args: readonly string[]; en
     socket.on('close', () => { sockets.delete(socket); child.kill(); });
     child.stdin.on('error', () => socket.destroy());
   });
-  await new Promise<void>((resolve, reject) => { bridge.once('error', reject); bridge.listen(pipe, resolve); });
+  try { await new Promise<void>((resolve, reject) => { bridge.once('error', reject); bridge.listen(pipe, resolve); }); }
+  catch (error) { server.close(); throw error; }
   return {
     config: { type: 'stdio', command: process.execPath, args: [fileURLToPath(new URL('./mcp-forward.js', import.meta.url)), pipe] },
     async close() {
