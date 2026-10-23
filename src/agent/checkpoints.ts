@@ -146,8 +146,9 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
     const startBytes=await readFile(join(roundDir,'round-start.json')),start=JSON.parse(startBytes.toString('utf8'));
     const digest=(value:unknown)=>sha256(canonical(value??null));
     const comparisonBasis:ComparisonBasis={task,workspace:digest({files:Object.fromEntries(Object.entries(files).filter(([path])=>path.startsWith('snapshot/'))),definition:context.definition??null,dataset:start.inputs.dataset??null}),
-      resources:digest(context.resourceIdentity),request:digest(context.request),reference:digest({baseline:context.baseline??null,content:context.contentBaseline??null,image:context.referenceImage?.sha256??null}),
-      policy:digest({brief:start.inputs.brief.sha256,requirement:start.inputs.requirement?.sha256??null,feedback:start.inputs.feedback?.sha256??null,revision:context.revision??null}),
+      resources:digest(context.resourceIdentity),request:digest(context.request),reference:digest({baseline:context.baseline??null,content:context.contentBaseline??null,image:start.inputs.sample.sha256}),
+      policy:digest({brief:start.inputs.brief.sha256,domain:start.inputs.domain??null,domainSha256:start.files[`logs/materials/domain-${start.inputs.domain}.md`]??null,
+        requirement:start.inputs.requirement?.sha256??null,feedback:start.inputs.feedback?.sha256??null,revision:context.revision??null}),
       criteria:digest({engine:check.contentIdentity.engine,criteria:check.contentIdentity.criteria,comparison:'candidate-comparison/1'})};
     const record: CheckpointRecord = { format: 'renderweave-checkpoint/1', source: 'hostRecovery', id, savedAt: new Date().toISOString(),
       startSha256: sha256(startBytes), files, check,comparisonBasis,...(context.baseline?{comparisonReference:context.baseline}:{}) };

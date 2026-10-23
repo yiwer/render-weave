@@ -379,9 +379,14 @@ interface AgentRound {
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
 export async function readReview(roundDir: string,options:{compareWith?:{roundDir:string;id:string}}={}): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; candidateSelection?:CandidateSelectionView; candidateComparison?:CandidateComparisonView; problems: Problem[] }> {
-  try { return {...await readReviewCaptured(roundDir),candidateSelection:await readCandidateSelection(roundDir),
+  let captured:Awaited<ReturnType<typeof readReviewCaptured>>;
+  try { captured=await readReviewCaptured(roundDir); }
+  catch (error) { const problem=localAccessProblem(error);if(problem)return {problems:[problem]};throw error; }
+  // 旧轮次没有检查点身份；坏启动/资源诊断也不能被附加选择记录覆盖。
+  if(!captured.execution||captured.problems.length)return captured;
+  try { return {...captured,candidateSelection:await readCandidateSelection(roundDir),
     ...(options.compareWith?{candidateComparison:await readCandidateComparison(roundDir,options.compareWith)}:{})}; }
-  catch (error) { return { problems: [localAccessProblem(error)??severe(ProblemCodes.roundInvalid,{kind:'input',source:roundDir},`候选记录无法核对：${describeError(error)}`)] }; }
+  catch (error) { return {...captured,problems:[...captured.problems,localAccessProblem(error)??severe(ProblemCodes.roundInvalid,{kind:'input',source:roundDir},`候选记录无法核对：${describeError(error)}`)]}; }
 }
 async function openReview(roundDir: string) {
   try { return await withLocalAccess([roundDir], async () => {

@@ -27,13 +27,13 @@ async function stop(child:ChildProcess){
   }
 }
 const definition=(fields:string[])=>({dslVersion:'renderweave-schema/1',name:'线路',fields:fields.map(name=>({name,displayName:name,type:'text'}))});
-async function start(name:string,fields:string[],baseline=true,approvedFields=['number','title','station']){
+async function start(name:string,fields:string[],baseline=true,approvedFields=['number','title','station'],sample='images/test/quadrants.png'){
   const dir=join(root,name),preset=join(root,`${name}-preset`),brief=join(root,`${name}.md`),facts=join(root,`${name}-facts.json`);
   await mkdir(join(preset,'candidates'),{recursive:true});await writeFile(brief,'从图中提取线路字段');
   await writeFile(facts,JSON.stringify({name:'核准线路字段',items:approvedFields.map(field=>({id:field,label:field,definition:'线路',field}))}));
   await writeFile(join(preset,'candidates/schema.json'),JSON.stringify(definition(fields)));
   await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/schema.json'],pending:[],notes:'候选'}));
-  return launch(dir,preset,['--task','definition-extraction','--sample',join(resourcesDir,'images/test/quadrants.png'),'--brief',brief,'--resources',resourcesDir,...(baseline?['--content-baseline',facts]:[])]);
+  return launch(dir,preset,['--task','definition-extraction','--sample',join(resourcesDir,sample),'--brief',brief,'--resources',resourcesDir,...(baseline?['--content-baseline',facts]:[])]);
 }
 async function launch(dir:string,preset:string,args:string[]){
   const child=spawn(process.execPath,[join(repoRoot,'dist/bin.js'),'agent','run',...args,'--out',dir,'--key-env','RW_SELECTION_KEY','--claude',process.execPath,
@@ -78,6 +78,14 @@ it('两轮真实检查的核准依据不同，审核比较给出不可排序及�
     expect(result.candidateComparison.comparison).toMatchObject({status:'incomparable',reasons:expect.arrayContaining(['比较依据不同：reference'])});
     expect(result.candidateComparison.before.id).toBe(a.id);
     expect(result.candidateComparison.after.id).toBe((await readReview(second.dir)).checkpoint!.id);
+  }finally{for(const job of [first,second]){await stop(job.child);await job.closed;}}
+});
+it('提取任务即使内容事实相同，示例图字节不同也不可跨参考排序',async()=>{
+  const first=await start('sample-a',['number']),second=await start('sample-b',['number','title'],true,undefined,'images/test/quadrants.jpg');
+  try{
+    const checkpoint=(await readReview(first.dir)).checkpoint!;
+    const compared=await readReview(second.dir,{compareWith:{roundDir:first.dir,id:checkpoint.id}});
+    expect(compared.candidateComparison?.comparison).toMatchObject({status:'incomparable',reasons:expect.arrayContaining(['比较依据不同：reference'])});
   }finally{for(const job of [first,second]){await stop(job.child);await job.closed;}}
 });
 it('没有可信核准事实不能排序，相同候选和无关字段变化也不制造改善',async()=>{
