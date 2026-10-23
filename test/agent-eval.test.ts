@@ -110,7 +110,9 @@ describe('评分：用存档的历史成果校准', () => {
     expect(zoom).toMatchObject({ stops: '59/59', names: 58, missing: ['宝安北路南'], unexpected: ['宝安北路'],
       landmarks: { matched: 15, of: 15, extra: 0 }, facilities: { matched: 18, of: 18, extra: 0 } });
     const plain = scoreTranscription(stopsOf(await read(join(FIXTURES, '366/des-366-gd/dataset.json'))), truth);
-    expect(plain).toMatchObject({ stops: '58/59', names: 57, landmarks: { matched: 11, extra: 3 }, facilities: { matched: 14, extra: 1 } });
+    expect(plain).toMatchObject({ stops: '58/59', names: 57, landmarks: { matched: 11, extra: 4 }, facilities: { matched: 14, extra: 1 } });
+    // 新评分把福滨新村的地标 ②（真值 ①）也计为误报；旧规则只数无地标站多报的 3 处。
+    expect(plain.errors.landmarkExtra).toContainEqual({ candidatePosition: 2, truthPosition: 2, value: 2 });
     expect(plain.missing).toContain('油社居民小组');
     // 设施写成英文时按中文类别比较。
     const english = stopsOf(await read(join(FIXTURES, '366/des-366-zoom1/dataset.json')))
@@ -137,7 +139,7 @@ describe('判定与门槛', () => {
       'm402-definition': { conventions: 6, expertFields: 14 },
       'm402-template': { stress: 10, layoutChecks: 2 },
       'm402-revision': { stress: 6, layoutChecks: 2, scopeViolations: 0 },
-      '366-transcription': { names: 57, landmarks: 14, facilities: 17 },
+      '366-transcription': { names: 57, landmarks: 14, facilities: 17, orderViolations: 0, insertions: 0, duplicates: 0, landmarkExtra: 0, facilityExtra: 0 },
     });
     expect(judge(scenario('m402-definition'), {})).toEqual(['没有可评分的数据定义']);
   });

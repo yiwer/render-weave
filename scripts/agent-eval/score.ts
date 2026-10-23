@@ -98,12 +98,46 @@ export function scoreDefinitions(documents: readonly unknown[]): DefinitionScore
 
 export interface TruthStop { readonly name: string; readonly landmark?: number; readonly facilities?: readonly string[] }
 
+interface StopPosition { readonly candidatePosition: number; readonly candidateName: string }
+interface TruthPosition { readonly truthPosition: number; readonly truthName: string }
+export interface TranscriptionAlignment {
+  readonly kind: 'match' | 'substitution' | 'omission' | 'insertion' | 'duplicate' | 'moved';
+  readonly candidatePosition?: number; readonly truthPosition?: number;
+  readonly candidateName?: string; readonly truthName?: string;
+}
+const TRANSCRIPTION_SCORER = {
+  version: 'renderweave-transcription/2',
+  matchingPolicy: { id: 'ordered-occurrences/1', exact: 0, singleCharacterEdit: 1, otherSubstitution: 2, insertion: 1, omission: 1,
+    nameNormalization: 'trim-trailing-circled-digit', tieBreak: 'diagonal-insertion-omission-for-diagnostics-only',
+    surplusExactName: 'never-single-character-tolerance', reorder: 'exact-occurrence-links-before-residual-edits', annotations: 'compare-only-after-name-alignment', ambiguity: 'all-optimal-correspondences-require-review' },
+} as const;
+interface AlignmentAmbiguity {
+  readonly candidatePosition?: number; readonly truthPosition?: number;
+  readonly possibleTruthPositions?: readonly (number | null)[];
+  readonly possibleCandidatePositions?: readonly (number | null)[];
+}
+interface AnnotationError { readonly candidatePosition?: number; readonly truthPosition?: number; readonly value: string | number }
 export interface TranscriptionScore {
   /** 交回的站数 / 真值站数。 */
   readonly stops: string;
-  /** 与真值站名完全一致的站数（按站名对齐，不按位置，免得漏一站后全部错位）。 */
+  /** 一对一完全同名的出现次数；有顺序违例仍不通过。 */
   readonly names: number;
   readonly namesInOrder: number;
+  readonly scorer: typeof TRANSCRIPTION_SCORER;
+  readonly alignment: readonly TranscriptionAlignment[];
+  readonly ambiguities: readonly AlignmentAmbiguity[];
+  readonly requiresReview: boolean;
+  readonly errors: {
+    readonly orderViolations: readonly { readonly candidatePosition: number; readonly truthPosition: number }[];
+    readonly insertions: readonly StopPosition[];
+    readonly duplicates: readonly (StopPosition & { readonly truthPositions: readonly number[] })[];
+    readonly substitutions: readonly (StopPosition & TruthPosition)[];
+    readonly omissions: readonly TruthPosition[];
+    readonly landmarkMissing: readonly AnnotationError[];
+    readonly landmarkExtra: readonly AnnotationError[];
+    readonly facilityMissing: readonly AnnotationError[];
+    readonly facilityExtra: readonly AnnotationError[];
+  };
   readonly missing: readonly string[];
   readonly unexpected: readonly string[];
   readonly landmarks: { readonly matched: number; readonly of: number; readonly extra: number };
@@ -119,7 +153,44 @@ export function scoreTranscription(stops: readonly Record<string, unknown>[], tr
     .map((key) => [key, stops.filter((stop) => truthNames.includes(String(stop[key]).replace(CIRCLED, '').trim())).length] as const)
     .sort((a, b) => b[1] - a[1])[0]?.[0];
   const names = stops.map((stop) => String(nameKey === undefined ? '' : stop[nameKey] ?? '').replace(CIRCLED, '').trim());
-  const byName = new Map(stops.map((stop, index) => [names[index]!, stop]));
+  const used = new Set<number>();
+  const occurrences = names.flatMap((name, candidate) => {
+    const expected = truthNames.findIndex((value, index) => value === name && !used.has(index));
+    if (expected < 0) return [];
+    used.add(expected);
+    return [{ candidatePosition: candidate + 1, truthPosition: expected + 1 }];
+  });
+  const orderViolations = occurrences.filter((entry, index) => occurrences.some((other, otherIndex) =>
+    (otherIndex < index && other.truthPosition > entry.truthPosition) || (otherIndex > index && other.truthPosition < entry.truthPosition)));
+  const aligned = alignStops(names, truthNames);
+  const ambiguities = aligned.ambiguities;
+  // 已证实的移位用同名出现连接表示，避免编辑距离把反序解释成大量错别字。
+  // 只有未被这些连接使用的出现才保留替换；任何原有歧义仍需复核。
+  const alignment: TranscriptionAlignment[] = orderViolations.length === 0 ? aligned.alignment : (() => {
+    const linkedCandidates = new Set(occurrences.map((entry) => entry.candidatePosition));
+    const linkedTruth = new Set(occurrences.map((entry) => entry.truthPosition));
+    const rows: TranscriptionAlignment[] = occurrences.map((entry) => ({ ...entry,
+      kind: orderViolations.some((moved) => moved.candidatePosition === entry.candidatePosition) ? 'moved' : 'match',
+      candidateName: names[entry.candidatePosition - 1]!, truthName: truthNames[entry.truthPosition - 1]!,
+    }));
+    for (const row of aligned.alignment) {
+      if (row.kind !== 'substitution' || linkedCandidates.has(row.candidatePosition!) || linkedTruth.has(row.truthPosition!)) continue;
+      rows.push(row); linkedCandidates.add(row.candidatePosition!); linkedTruth.add(row.truthPosition!);
+    }
+    names.forEach((name, index) => {
+      if (!linkedCandidates.has(index + 1)) rows.push({ kind: truthNames.includes(name) ? 'duplicate' : 'insertion', candidatePosition: index + 1, candidateName: name });
+    });
+    truthNames.forEach((name, index) => {
+      if (!linkedTruth.has(index + 1)) rows.push({ kind: 'omission', truthPosition: index + 1, truthName: name });
+    });
+    return rows.sort((a, b) => (a.candidatePosition ?? Infinity) - (b.candidatePosition ?? Infinity));
+  })();
+  const insertions = alignment.filter((entry) => entry.kind === 'insertion').map((entry) => ({ candidatePosition: entry.candidatePosition!, candidateName: entry.candidateName! }));
+  const duplicates = alignment.filter((entry) => entry.kind === 'duplicate').map((entry) => ({ candidatePosition: entry.candidatePosition!, candidateName: entry.candidateName!,
+    truthPositions: truthNames.flatMap((name, index) => name === entry.candidateName ? [index + 1] : []),
+  }));
+  const substitutions = alignment.filter((entry) => entry.kind === 'substitution').map((entry) => ({ candidatePosition: entry.candidatePosition!, truthPosition: entry.truthPosition!, candidateName: entry.candidateName!, truthName: entry.truthName! }));
+  const omissions = alignment.filter((entry) => entry.kind === 'omission').map((entry) => ({ truthPosition: entry.truthPosition!, truthName: entry.truthName! }));
   const landmarkOf = (stop: Record<string, unknown> | undefined) => {
     const match = Object.values(stop ?? {}).map(String).join(' ').match(/res:landmark-(\d+)/);
     return match ? Number(match[1]) : undefined;
@@ -127,24 +198,113 @@ export function scoreTranscription(stops: readonly Record<string, unknown>[], tr
   const facility = (value: string) => FACILITY_NAMES.find(([pattern]) => pattern.test(value))?.[1] ?? value;
   const facilitiesOf = (stop: Record<string, unknown> | undefined) => Object.values(stop ?? {})
     .filter((value): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string' && !item.startsWith('res:')))
-    .flat().map(facility).sort().join('+');
-  const found = truth.filter((stop) => byName.has(stop.name));
+    .flat().map(facility).sort();
+  const landmarkMissing: AnnotationError[] = [], landmarkExtra: AnnotationError[] = [];
+  const facilityMissing: AnnotationError[] = [], facilityExtra: AnnotationError[] = [];
+  let landmarkMatched = 0, facilityMatched = 0;
+  for (const row of alignment) {
+    const expected = row.truthPosition === undefined ? undefined : truth[row.truthPosition - 1];
+    const actual = row.candidatePosition === undefined ? undefined : stops[row.candidatePosition - 1];
+    const position = { candidatePosition: row.candidatePosition, truthPosition: row.truthPosition };
+    const mark = landmarkOf(actual);
+    if (expected?.landmark !== undefined && mark === expected.landmark) landmarkMatched++;
+    if (expected?.landmark !== undefined && mark !== expected.landmark) landmarkMissing.push({ ...position, value: expected.landmark });
+    if (mark !== undefined && mark !== expected?.landmark) landmarkExtra.push({ ...position, value: mark });
+    const wanted = [...(expected?.facilities ?? [])].map(facility).sort(), got = facilitiesOf(actual);
+    if (wanted.length > 0 && wanted.join('+') === got.join('+')) facilityMatched++;
+    // 多重集合：多报同一设施不能被集合去重吞掉。
+    const remaining = [...got];
+    for (const value of wanted) {
+      const index = remaining.indexOf(value);
+      if (index < 0) facilityMissing.push({ ...position, value });
+      else remaining.splice(index, 1);
+    }
+    facilityExtra.push(...remaining.map((value) => ({ ...position, value })));
+  }
   return {
     stops: `${stops.length}/${truth.length}`,
-    names: found.length, namesInOrder: lcs(names, truthNames),
-    missing: truth.filter((stop) => !byName.has(stop.name)).map((stop) => stop.name),
-    unexpected: names.filter((name) => !truthNames.includes(name)),
-    landmarks: {
-      matched: found.filter((stop) => stop.landmark !== undefined && landmarkOf(byName.get(stop.name)) === stop.landmark).length,
-      of: truth.filter((stop) => stop.landmark !== undefined).length,
-      extra: found.filter((stop) => stop.landmark === undefined && landmarkOf(byName.get(stop.name)) !== undefined).length,
-    },
-    facilities: {
-      matched: found.filter((stop) => stop.facilities && facilitiesOf(byName.get(stop.name)) === [...stop.facilities].sort().join('+')).length,
-      of: truth.filter((stop) => stop.facilities).length,
-      extra: found.filter((stop) => !stop.facilities && facilitiesOf(byName.get(stop.name)) !== '').length,
-    },
+    names: alignment.filter((entry) => entry.kind === 'match' || entry.kind === 'moved').length, namesInOrder: lcs(names, truthNames),
+    scorer: TRANSCRIPTION_SCORER, alignment, ambiguities, requiresReview: ambiguities.length > 0, errors: { orderViolations, insertions, duplicates, substitutions, omissions, landmarkMissing, landmarkExtra, facilityMissing, facilityExtra },
+    missing: alignment.filter((row) => row.kind === 'omission' || row.kind === 'substitution').map((row) => row.truthName!),
+    unexpected: alignment.filter((row) => ['insertion', 'duplicate', 'substitution'].includes(row.kind)).map((row) => row.candidateName!),
+    landmarks: { matched: landmarkMatched, of: truth.filter((stop) => stop.landmark !== undefined).length, extra: landmarkExtra.length },
+    facilities: { matched: facilityMatched, of: truth.filter((stop) => stop.facilities?.length).length, extra: facilityExtra.length },
   };
+}
+
+/** 有序编辑对齐：单字增删改代价 1，其他替换代价 2，漏项/插入各 1；位置从 1 开始。 */
+function alignStops(candidate: readonly string[], truth: readonly string[]): { alignment: TranscriptionAlignment[]; ambiguities: AlignmentAmbiguity[] } {
+  const n = candidate.length, m = truth.length;
+  const costs = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  const surplusNames = new Set(candidate.filter((name) => truth.includes(name) && candidate.filter((value) => value === name).length > truth.filter((value) => value === name).length));
+  const substitutionCost = (i: number, j: number) => candidate[i] === truth[j] ? 0 :
+    !surplusNames.has(candidate[i]!) && oneCharacterEdit(candidate[i]!, truth[j]!) ? 1 : 2;
+  for (let i = n; i >= 0; i--) for (let j = m; j >= 0; j--) {
+    if (i === n) costs[i]![j] = m - j;
+    else if (j === m) costs[i]![j] = n - i;
+    else costs[i]![j] = Math.min(substitutionCost(i, j) + costs[i + 1]![j + 1]!, 1 + costs[i + 1]![j]!, 1 + costs[i]![j + 1]!);
+  }
+  // 遍历最优路径的 DAG，收集所有可能对应，而不是枚举指数数量的路径或按地标挑选。
+  const candidates = Array.from({ length: n }, () => new Set<number | null>());
+  const expected = Array.from({ length: m }, () => new Set<number | null>());
+  const visited = new Set<number>(), pending: [number, number][] = [[0, 0]];
+  while (pending.length > 0) {
+    const [i, j] = pending.pop()!;
+    const key = i * (m + 1) + j;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if (i < n && j < m && costs[i]![j] === substitutionCost(i, j) + costs[i + 1]![j + 1]!) {
+      candidates[i]!.add(j + 1); expected[j]!.add(i + 1); pending.push([i + 1, j + 1]);
+    }
+    if (i < n && costs[i]![j] === 1 + costs[i + 1]![j]!) {
+      candidates[i]!.add(null); pending.push([i + 1, j]);
+    }
+    if (j < m && costs[i]![j] === 1 + costs[i]![j + 1]!) {
+      expected[j]!.add(null); pending.push([i, j + 1]);
+    }
+  }
+  const ordered = (values: Set<number | null>) => [...values].sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
+  const ambiguities: AlignmentAmbiguity[] = [
+    ...candidates.flatMap((values, index) => values.size > 1 ? [{ candidatePosition: index + 1, possibleTruthPositions: ordered(values) }] : []),
+    ...expected.flatMap((values, index) => values.size > 1 ? [{ truthPosition: index + 1, possibleCandidatePositions: ordered(values) }] : []),
+  ];
+  const rows: TranscriptionAlignment[] = [];
+  let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && !(surplusNames.has(candidate[i]!) && candidate[i] !== truth[j]) && costs[i]![j] === substitutionCost(i, j) + costs[i + 1]![j + 1]!) {
+      rows.push({ kind: candidate[i] === truth[j] ? 'match' : 'substitution', candidatePosition: i + 1, truthPosition: j + 1, candidateName: candidate[i]!, truthName: truth[j]! });
+      i++; j++;
+    } else if (i < n && costs[i]![j] === 1 + costs[i + 1]![j]!) {
+      rows.push({ kind: 'insertion', candidatePosition: i + 1, candidateName: candidate[i]! }); i++;
+    } else {
+      rows.push({ kind: 'omission', truthPosition: j + 1, truthName: truth[j]! }); j++;
+    }
+  }
+  // 被有序对齐排除的同名出现是移位，不能把它同时算作真实插入与漏项。
+  const removed = new Set<TranscriptionAlignment>();
+  const result = rows.map((row): TranscriptionAlignment => {
+    if (row.kind !== 'insertion') return row;
+    const omitted = rows.find((other) => other.kind === 'omission' && !removed.has(other) && other.truthName === row.candidateName);
+    if (omitted) {
+      removed.add(omitted);
+      return { ...row, kind: 'moved', truthPosition: omitted.truthPosition!, truthName: omitted.truthName! };
+    }
+    return { ...row, kind: truth.includes(row.candidateName!) ? 'duplicate' : 'insertion' };
+  });
+  return { alignment: result.filter((row) => !removed.has(row)), ambiguities };
+}
+
+function oneCharacterEdit(a: string, b: string): boolean {
+  const left = [...a], right = [...b];
+  if (Math.abs(left.length - right.length) > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < left.length && j < right.length) {
+    if (left[i] === right[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (left.length >= right.length) i++;
+    if (left.length <= right.length) j++;
+  }
+  return edits + left.length - i + right.length - j === 1;
 }
 
 /** 数据集中的站点列表：数据里第一个对象列表。 */

@@ -425,6 +425,10 @@ export function judge(scenario: Scenario, checks: ScenarioResult['checks']): str
     const score = checks.transcription;
     if (!score) return ['没有可评分的数据集'];
     const line = scenario.pass;
+    if (score.requiresReview) failures.push(`对齐歧义 ${score.ambiguities.length} 处，需按报告中的候选/真值位置复核；不得自动通过`);
+    for (const [key, label] of [['orderViolations', '顺序违例'], ['insertions', '真实插入'], ['duplicates', '超额重复'], ['landmarkExtra', '地标误报'], ['facilityExtra', '设施误报']] as const) {
+      if (score.errors[key].length > line[key]) failures.push(`${label} ${score.errors[key].length}，最多 ${line[key]}`);
+    }
     if (score.names < line.names) failures.push(`站名 ${score.names}/${score.stops.split('/')[1]}，要求至少 ${line.names}（缺：${score.missing.join('、')}）`);
     if (score.landmarks.matched < line.landmarks) failures.push(`地标 ${score.landmarks.matched}/${score.landmarks.of}，要求至少 ${line.landmarks}`);
     if (score.facilities.matched < line.facilities) failures.push(`设施图标 ${score.facilities.matched}/${score.facilities.of}，要求至少 ${line.facilities}`);
@@ -584,6 +588,10 @@ export function formatReport(report: EvalReport): string {
     if (result.checks.revision && result.checks.template) {
       const { revision, template } = result.checks;
       lines.push(`  - 压测 ${template.stressPassed}/${template.stress.length}；版面 ${template.layoutPassed}/2；修改范围违例 ${revision.violations.length}；改动元素 ${revision.changedElements}`);
+    }
+    if (result.checks.transcription) {
+      const score = result.checks.transcription;
+      lines.push(`  - 转录评分器 ${score.scorer.version}，匹配政策 ${score.scorer.matchingPolicy.id}；站名 ${score.names}/${score.stops.split('/')[1]}，地标 ${score.landmarks.matched}/${score.landmarks.of}，设施 ${score.facilities.matched}/${score.facilities.of}；逐次出现的对齐与错误位置见报告 checks.transcription`);
     }
     if (result.invalid) lines.push(`  - ${invalidText(result.invalid)}`);
     for (const failure of result.failures) lines.push(`  - ${failure}`);
