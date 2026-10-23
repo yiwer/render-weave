@@ -104,7 +104,7 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
   - 评估命令不接受 `--claude`，只能改 PATH。可以只对当前终端改：`$env:Path = "<bin 目录>;" + $env:Path`。
 - **Docker 把宿主的本机代理注入容器**：Docker 客户端配置了代理时（如 `http://127.0.0.1:10808`），容器里也有 `HTTP_PROXY` 等变量。可是容器里的 127.0.0.1 是容器自己，`npm ci` 会连接被拒，最后报"Exit handler never called!"。遇到这种情况，在容器命令开头加 `unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY &&`，让容器直连 npm 镜像源。
   - Docker 后端测试 `node service/scripts/test-docker.mjs` 由 Compose 构建镜像，代理也作为构建参数注入，`unset` 用不上。做法是不改用户的 `~/.docker/config.json`：复制一份去掉 `proxies` 的副本，连同 `contexts`、`buildx`、`cli-plugins` 目录放进一个临时目录，只对这一次运行设 `DOCKER_CONFIG` 指向它（票据 14）。
-  - 直连时 Alpine 源可能很慢：没有构建缓存的话，tester 镜像装 Chromium 那一步可能要几个小时（票据 14 实测约 4.6 小时）。
+  - 直连时 Alpine 源可能很慢：没有构建缓存的话，tester 镜像装 Chromium 那一步可能要几个小时（票据 14 实测约 4.6 小时）。这时设 `RW_ALPINE_MIRROR=https://mirrors.aliyun.com` 再跑，tester 镜像从这个镜像源装 Chromium（票据 15 实测索引 9 秒，直连 86 秒）。Chromium 与测试字体在不依赖源码的一层里，装好一次之后改源码重建 tester 不再重装。
 
 - **命令行提交审核操作**：Windows 的 Git Bash 里用 `curl` 发中文，会按本机代码页发出，审核服务按 UTF-8 严格解码，返回 400。审核请在浏览器里操作；确实要用脚本时，用 Node 的 `fetch` 发 UTF-8 JSON。
 - **正式出图要资源版本仓库**：`fixtures/resources` 只能用于发起任务与审核预览。`deliver` 前先 `resources-init`，再 `resources-import`，见[代建指南](agent-guide.md)第 7 步。

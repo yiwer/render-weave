@@ -16,6 +16,8 @@ import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { assessDesign, DESIGN_CHECK_SCHEMA, type DesignCheckInput, type DesignVerification } from './design-verification.js';
+import { hashCandidatesAndRequest, verifyElementStyles, type ReferenceBaseline, type StyleVerificationRecord, type StyleAnomaly, type BusinessState } from './style-verification.js';
+import { verifyExtractionCoverage, type BusinessContentBaseline, type ContentCoverageItem, type CoverageAssessment, type CoverageVerificationRecord } from './coverage-verification.js';
 
 /** 待确认项的四类原因（M44）：看不清、推测、来源冲突、必填未提供。 */
 export const PENDING_REASONS = ['unreadable', 'inferred', 'conflicting', 'requiredMissing'] as const;
@@ -49,6 +51,7 @@ export interface SubmittedOutcome {
   readonly locations?: readonly FieldLocation[];
   readonly pending: readonly PendingItem[];
   readonly notes: string;
+  readonly coverage?: readonly ContentCoverageItem[];
 }
 
 /** Agent 交回的 outcome.json 的结构，写给 Agent 的说明见 agent/reference/outcome.md。 */
@@ -79,6 +82,27 @@ export const SUBMITTED_OUTCOME_SCHEMA = {
       },
     } },
     notes: { type: 'string', minLength: 1 },
+    coverage: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'label', 'kind'],
+        properties: {
+          id: { type: 'string', minLength: 1 },
+          label: { type: 'string', minLength: 1 },
+          kind: { enum: ['field', 'derived', 'parameter', 'constant', 'pending'] },
+          file: { type: 'string', minLength: 1 },
+          path: { type: 'string', minLength: 1 },
+          isOptional: { type: 'boolean' },
+          derivedFrom: { type: 'array', items: { type: 'string', minLength: 1 } },
+          logic: { type: 'string', minLength: 1 },
+          justification: { type: 'string', minLength: 1 },
+          sampleOmissions: { type: 'integer', minimum: 0 },
+          notes: { type: 'string', minLength: 1 },
+        },
+      },
+    },
   },
 } as const;
 
@@ -98,6 +122,17 @@ export interface CandidateCheck {
   readonly revision?: RevisionDiff;
 }
 
+export interface StyleAssessment {
+  readonly passed: boolean;
+  readonly anomalies: readonly StyleAnomaly[];
+  readonly coverage: {
+    readonly approvedRegionsTotal: number;
+    readonly approvedRegionsMatched: number;
+    readonly repeatedInstancesScanned: number;
+    readonly statesCovered: readonly BusinessState[];
+  };
+}
+
 export interface OutcomeCheck {
   /** 技术检查合格：结构、候选及指定请求的模板渲染通过；内容与样式仍需审核。 */
   readonly verdict: 'qualified' | 'unqualified';
@@ -111,15 +146,22 @@ export interface OutcomeCheck {
     readonly content: 'needsReview';
     readonly render: RenderAssessment;
     readonly design?: DesignVerification;
+    readonly style?: StyleAssessment;
+    readonly coverage?: CoverageAssessment;
   };
   /** 结构合格时才有。 */
   readonly submission?: SubmittedOutcome;
+  readonly styleVerification?: StyleVerificationRecord;
+  readonly coverageVerification?: CoverageVerificationRecord;
 }
 
 /** 本轮的已知输入：数据集提取所选的数据定义；示例图对应的出图请求（模板辅助设计时，其主模板必须在候选中）；模板辅助修改可以改的模板。 */
 export interface OutcomeContext extends CandidateContext {
   readonly request?: { readonly template: string; readonly [key: string]: unknown };
   readonly designChecks?: DesignCheckInput;
+  readonly baseline?: ReferenceBaseline;
+  readonly contentBaseline?: BusinessContentBaseline;
+  readonly briefText?: string;
 }
 
 /** 交回前核对（MCP 工具 check_outcome）要的本轮任务与已知输入：agent run 写到 Agent 工作目录之外，经 --outcome-context 交给 MCP 服务。 */
@@ -141,6 +183,9 @@ const OUTCOME_TARGET_SCHEMA = {
     revision: { type: 'object', additionalProperties: false, required: ['templates'], properties: {
       templates: { type: 'array', items: { type: 'string', minLength: 1 } },
     } },
+    baseline: { type: 'object' },
+    contentBaseline: { type: 'object' },
+    briefText: { type: 'string' },
   },
 } as const;
 
@@ -285,12 +330,79 @@ export async function checkAgentOutcome(options: {
   const candidatesValid = final.every((candidate) => candidate.problems.every((problem) => problem.level !== 'severe'));
   const rendering = await assessCandidates(options.workspace, documents, structureValid ? context.request : undefined,
     task.id === 'template-design' || task.id === 'template-revision');
+  // 布局摘要只给样式核查用，不随 assessment 返回：它可能很大，MCP 输出有预算。
+  const { layout: renderLayout, ...renderAssessment } = rendering;
+  let coverageVerification: CoverageVerificationRecord | undefined;
+  if (context.contentBaseline || task.id === 'definition-extraction' || task.id === 'dataset-extraction') {
+    coverageVerification = verifyExtractionCoverage({
+      task: task.id,
+      candidates,
+      submission,
+      baseline: context.contentBaseline,
+      definitions: options.workspace.staticSchemas.map((entry) => entry.definition).filter((document) => document !== undefined),
+      briefText: context.briefText,
+    });
+    if (coverageVerification.anomalies.length > 0) {
+      for (const anomaly of coverageVerification.anomalies) {
+        const where = at(anomaly.path ?? 'candidates');
+        problems.push(anomaly.level === 'severe'
+          ? severe(ProblemCodes.outcomeInvalid, where, anomaly.message)
+          : hint(ProblemCodes.outcomeInvalid, where, anomaly.message));
+      }
+    }
+  }
+
   const design = structureValid && candidatesValid ? await assessDesign(options.workspace, documents, context.request, context.designChecks) : { problems: [] };
   problems.push(...design.problems);
-  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || design.problems.length > 0;
+  const coverageSevere = coverageVerification ? !coverageVerification.passed : false;
+  const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || coverageSevere || design.problems.length > 0;
+
+  let styleVerification: StyleVerificationRecord | undefined;
+  if (renderLayout && context.request && (context.baseline || task.id === 'template-design' || task.id === 'template-revision')) {
+    const { candidatesHash, requestHash } = hashCandidatesAndRequest(
+      candidates.map((c) => ({ name: c.name, document: c.document })),
+      context.request as any,
+    );
+    styleVerification = verifyElementStyles({
+      layout: renderLayout,
+      baseline: context.baseline,
+      candidatesHash,
+      requestHash,
+      parameters: isRecord(context.request['parameters']) ? (context.request['parameters'] as Record<string, unknown>) : undefined,
+    });
+    if (styleVerification.anomalies.length > 0) {
+      for (const anomaly of styleVerification.anomalies) {
+        problems.push(hint(ProblemCodes.outcomeInvalid, at('candidates'), anomaly.message));
+      }
+    }
+  }
+
   return { verdict: severeFound ? 'unqualified' : 'qualified', problems, candidates: final,
-    assessment: { structure: structureValid ? 'valid' : 'invalid', candidates: candidatesValid ? 'valid' : 'invalid', content: 'needsReview', render: rendering,
-      ...(design.report ? { design: design.report } : {}) },
+    assessment: {
+      structure: structureValid ? 'valid' : 'invalid',
+      candidates: candidatesValid ? 'valid' : 'invalid',
+      content: 'needsReview',
+      render: renderAssessment,
+      ...(design.report ? { design: design.report } : {}),
+      ...(styleVerification ? {
+        style: {
+          passed: styleVerification.passed,
+          anomalies: styleVerification.anomalies,
+          coverage: styleVerification.coverage,
+        },
+      } : {}),
+      ...(coverageVerification ? {
+        coverage: {
+          passed: coverageVerification.passed,
+          score: coverageVerification.score.totalScore,
+          anomalies: coverageVerification.anomalies,
+          coveredItems: coverageVerification.coveredItems,
+          missingItems: coverageVerification.missingItems,
+        },
+      } : {}),
+    },
+    ...(styleVerification ? { styleVerification } : {}),
+    ...(coverageVerification ? { coverageVerification } : {}),
     ...(structureValid ? { submission } : {}) };
 }
 

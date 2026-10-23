@@ -5,11 +5,12 @@
 import {
   EmailTakenError, periodOf,
   type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
-  type PreviewQuota, type Readiness, type RecordCursor, type RecordEntry, type ReplayResult, type ReplayState, type ServiceBackend, type TaskResult, type TaskState,
+  type PreviewQuota, type Readiness, type RecordCursor, type RecordEntry, type ReplayResult, type ReplayState, type ServiceBackend, type TaskCounts, type TaskResult, type TaskState,
   type Tenant, type TenantScope, type UsageEvent, type UsageKind,
 } from '../backend.js';
 import { batchManifest, NOT_STARTED, notRunItem } from '../batches.js';
 import { manifestBytes, type RenderMode } from '../engine.js';
+import { backlogOf } from '../tasks.js';
 import type { BlobStore } from './blobs.js';
 import { asPlatform, isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
 import { lockCounter, readPlan, releaseReserved, usageCounts } from './metering.js';
@@ -313,6 +314,11 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         await client.query(`UPDATE render_tasks SET status = 'done', finished_at = $3, result = $4 WHERE tenant_id = $1 AND id = $2 AND kind = 'replay' AND status = 'running'`,
           [task.tenantId, task.id, now, JSON.stringify(result)]);
       }),
+      async backlog(now) {
+        const rows = (await db.query<{ kind: keyof TaskCounts; status: 'queued' | 'running'; tasks: string; oldest: Date }>('SELECT * FROM rw_queue_backlog()')).rows;
+        return backlogOf(rows.map((row) => ({ ...row, tasks: Number(row.tasks) })), now);
+      },
+      purge: async (before) => Number((await db.query<{ removed: string }>('SELECT rw_purge_tasks($1) AS removed', [before])).rows[0]!.removed),
       finish: (task, result, now) => withTenant(db, task.tenantId, async (client) => {
         const { image, ...rest } = result;
         const meta = image ? { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi } : undefined;

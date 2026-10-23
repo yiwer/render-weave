@@ -13,6 +13,7 @@ import {
 } from './backend.js';
 import { batchFinishedEvent, batchManifest, NOT_STARTED, notRunItem } from './batches.js';
 import { itemDirectory, manifestBytes, memoryWorkspaceDocuments, resourceBackend, type BatchSource, type RenderMode, type ResourceManifestEntry } from './engine.js';
+import { backlogOf } from './tasks.js';
 
 interface UserRow { id: string; tenantId: string | null; email: string; role: MemberRole | 'platformAdmin'; passwordHash: string; active: boolean; createdAt: string }
 interface SessionRow { id: string; userId: string; tenantId: string | null; tokenHash: string; expiresAt: Date; revokedAt?: Date }
@@ -425,6 +426,16 @@ export function createMemoryBackend(): ServiceBackend {
       },
       async cancelRequested(task) {
         return batches.get(task.batchId)?.cancelRequestedAt !== undefined;
+      },
+      async backlog(now) {
+        return backlogOf(tasks.flatMap((task) => task.status === 'queued' || task.status === 'running'
+          ? [{ kind: task.kind, status: task.status, tasks: 1, oldest: task.createdAt }] : []), now);
+      },
+      async purge(before) {
+        const kept = tasks.filter((task) => task.kind === 'batchItem' || task.createdAt >= before);
+        const removed = tasks.length - kept.length;
+        tasks.splice(0, tasks.length, ...kept);
+        return removed;
       },
     },
     platform: {

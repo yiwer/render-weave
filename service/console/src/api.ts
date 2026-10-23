@@ -33,6 +33,17 @@ let memory: string | undefined;
 let unauthorized: () => void = () => {};
 export const onUnauthorized = (handler: () => void) => { unauthorized = handler; };
 
+/** 用量可能变了（提交或取消批次、批次结束）：顶栏的本月剩余重新读取。返回取消订阅的函数。 */
+const usageListeners = new Set<() => void>();
+export const onUsageChanged = (listener: () => void) => { usageListeners.add(listener); return () => { usageListeners.delete(listener); }; };
+export const usageChanged = () => { for (const listener of usageListeners) listener(); };
+/** 请求成功之后通知用量可能变了。 */
+const changingUsage = async <T>(request: Promise<T>): Promise<T> => {
+  const reply = await request;
+  usageChanged();
+  return reply;
+};
+
 const problemOf = (message: string): Problem => ({ code: 'request.failed', level: 'severe', location: { kind: 'input', source: 'request' }, message });
 
 interface RequestOptions {
@@ -122,9 +133,10 @@ export const api = {
 
   preview: (request: unknown) => json<PreviewReply>('POST', '/v1/previews', { json: request }),
 
-  submitBatch: (request: unknown, idempotencyKey: string) => json<BatchView>('POST', '/v1/batches', { json: request, headers: { 'idempotency-key': idempotencyKey } }),
+  submitBatch: (request: unknown, idempotencyKey: string) =>
+    changingUsage(json<BatchView>('POST', '/v1/batches', { json: request, headers: { 'idempotency-key': idempotencyKey } })),
   batch: (id: string) => json<BatchView>('GET', `/v1/batches/${enc(id)}`),
-  cancelBatch: (id: string) => json<BatchView>('POST', `/v1/batches/${enc(id)}/cancel`),
+  cancelBatch: (id: string) => changingUsage(json<BatchView>('POST', `/v1/batches/${enc(id)}/cancel`)),
   download: async (path: string) => (await send('GET', path)).blob(),
 };
 

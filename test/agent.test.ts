@@ -135,7 +135,9 @@ describe('发起一轮数据定义提取', () => {
       '--outcome-context', join(logs, 'outcome-context.json'), '--log', join(logs, 'tools.jsonl'),
       '--tools', 'list_documents,read_document,list_resources,check_definitions,check_dataset,view_image,dsl_reference,check_outcome']);
     expect(mcp.mcpServers.rw.args[0]).toMatch(/bin\.js$/);
-    expect(JSON.parse(await readFile(join(logs, 'outcome-context.json'), 'utf8'))).toEqual({ task: 'definition-extraction' });
+    expect(JSON.parse(await readFile(join(logs, 'outcome-context.json'), 'utf8'))).toEqual({
+      task: 'definition-extraction', briefText: await readFile(result.record.inputs.brief.source, 'utf8'),
+    });
 
     const leaks = [];
     for (const file of await filesUnder(result.roundDir)) if ((await readFile(file)).includes(KEY)) leaks.push(file);

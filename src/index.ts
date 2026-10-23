@@ -79,6 +79,16 @@ export {
   type AgentApplyOptions, type AgentApplyResult, type RoundLink, type RevisionView, type TemplateConflict, type PreviousRound,
 } from './agent/review.js';
 export { diffTemplate, revisionDiff, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
+export {
+  verifyElementStyles, hashCandidatesAndRequest, isVerificationValid, matchPath,
+  type ApprovedRegion, type ReferenceBaseline, type StyleAnomaly, type StyleVerificationRecord, type BusinessState,
+} from './agent/style-verification.js';
+export {
+  verifyExtractionCoverage, scoreExtractionCoverage, ROUTE_SIGN_BUSINESS_BASELINE,
+  type ContentCoverageItem, type BusinessContentBaseline, type BusinessContentBaselineItem,
+  type CoverageAnomaly, type CoverageAnomalyCode, type CoverageAssessment,
+  type CoverageVerificationRecord, type ExtractionCoverageScore, type CoverageKind,
+} from './agent/coverage-verification.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';
 export { parseDesignCheckPlan, verifyTemplateDesign, type DesignCheckPlan, type DesignVerification } from './agent/design-verification.js';

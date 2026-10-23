@@ -70,12 +70,14 @@ export function registerBatchRoutes(app: FastifyInstance, context: ApiContext): 
     if (!frozen.snapshot) throw new ApiError(400, frozen.problems as unknown as ServiceProblem[]);
 
     // 入队前的限制（ADR-0017）：只让超限的那一项失败，问题写进快照里这一项的准备问题，worker 不渲染它。
-    const envelope = frozen.snapshot.envelope, plan = await scope.plan();
+    const envelope = frozen.snapshot.envelope, plan = await scope.plan(), { documents } = await scope.storage.authoringState();
     const items: BatchSnapshot['items'][number][] = [];
     for (const item of frozen.snapshot.items) {
+      // 量规模是同步的（M402 一项约 1.4 ms）：每 25 项让出一次事件循环，提交千项时别的请求不被占住太久（票据 15）。
+      if (item.index % 25 === 0) await new Promise((resolve) => setImmediate(resolve));
       if (item.problems.length) { items.push(item); continue; }
       const raw = envelope.items[item.index - 1]!, at = `request.items.${item.index - 1}`;
-      const problems: ServiceProblem[] = await datasetLimitProblems(limits, scope, raw['dataset'], `${at}.dataset`);
+      const problems: ServiceProblem[] = datasetLimitProblems(limits, documents, raw['dataset'], `${at}.dataset`);
       if (!problems.length) {
         const measured = measureRender(opened.workspace, { template: envelope.template, mode: envelope.mode, dataset: raw['dataset'], parameters: raw['parameters'], output: raw['output'] });
         if (measured.measure) {

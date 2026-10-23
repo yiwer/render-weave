@@ -60,7 +60,7 @@ node service/scripts/up.mjs
 | 组件 | Compose 服务 | 端口 |
 |---|---|---|
 | 接口进程 | `api` | `8080`，可用 `RW_API_PORT` 改 |
-| 渲染 worker | `worker` | `8081`，可用 `RW_WORKER_PORT` 改 |
+| 渲染 worker | `worker` | `8081`，可用 `RW_WORKER_PORT` 改；起几个由 `RW_WORKERS` 定（见[容量基线](#容量基线)） |
 | PostgreSQL 17 | `postgres` | 只在 Compose 网络内 |
 | S3 兼容存储（RustFS 1.0.3） | `s3` | 只在 Compose 网络内 |
 | 部署步骤 | `setup` | 迁移、设置应用账号、建桶后退出 |
@@ -88,17 +88,20 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `RW_S3_FORCE_PATH_STYLE` | 全部 | 缺省开启路径形式地址；写 `false` 关闭 |
 | `RW_PORT` | 接口进程、worker | 监听端口，接口进程缺省 8080，worker 缺省 8081 |
 | `RW_LOG_LEVEL` | 全部 | 缺省 `info` |
-| `RW_RENDER_TIMEOUT_MS` | worker | 单项超时，缺省 30000（M266） |
+| `RW_RENDER_TIMEOUT_MS` | worker | 单项超时，缺省 60000（M266、M302） |
 | `RW_RENDER_RECYCLE_AFTER` | worker | 渲染子进程做满这么多项后换新，缺省 500 |
 | `RW_WORKER_POLL_MS` | worker | 队列空时隔多久再看，缺省 100 |
 | `RW_RECONCILE_MS` | 接口进程 | 对账任务隔多久做一次，缺省 60000（M275） |
 | `RW_RESERVATION_GRACE_MS` | 接口进程 | 批次闲置多久、又没有它的构建的 worker 时退回预占，缺省 600000（10 分钟） |
+| `RW_TASK_RETENTION_MS` | 接口进程 | 预览与重放的任务行保留多久，缺省 3600000（1 小时），至少 120000；与对账同一个间隔清理 |
 | `RW_SECRET_KEY` | 接口进程 | 服务密钥：64 位小写十六进制（32 字节），加密各 webhook 的签名密钥；必填，各接口进程用同一个（M277） |
 | `RW_WEBHOOK_POLL_MS` | 接口进程 | 投递任务隔多久看一次到期的投递，缺省 1000 |
 | `RW_WEBHOOK_RETRY_BASE_MS`、`RW_WEBHOOK_MAX_ATTEMPTS` | 接口进程 | 第一次重试前等多久（之后每次翻倍）与最多试几次，缺省 60000 与 8 |
 | `RW_WEBHOOK_TIMEOUT_MS` | 接口进程 | 一次投递等回答的时间，缺省 10000 |
 | `RW_WEBHOOK_ALLOW_PRIVATE` | 接口进程 | `true` 时允许 http 与本机、内网地址，只用于本机开发与测试；缺省 `false` |
 | `RW_WORKER_MEMORY` | Compose | worker 容器的内存上限，缺省 `2g`，不用交换分区 |
+| `RW_WORKER_CPUS` | Compose | 每个 worker 容器的 CPU，缺省 1（渲染是单线程的，见[容量基线](#容量基线)） |
+| `RW_WORKERS` | Compose | 起几个 worker，缺省 1；多于 1 个时 `RW_WORKER_PORT` 写一段端口，如 `8081-8086` |
 | `RW_WORKER_STOP_GRACE` | Compose | worker 的停止宽限，缺省 `30m`：停止时做完本构建已接受的批次项再退出（M269） |
 
 本机的 `.env` 有五项：`RW_POSTGRES_PASSWORD`、`RW_APP_DB_PASSWORD`、`RW_S3_ACCESS_KEY_ID`、`RW_S3_SECRET_ACCESS_KEY` 与 `RW_SECRET_KEY`。Compose 用这几项拼出上面的变量；票据 11 之前生成的 `.env` 没有 `RW_SECRET_KEY`，再运行一次 `up.mjs` 会补上。
@@ -110,15 +113,16 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | 命令 | 作用 |
 |---|---|
 | `setup` | 部署步骤：用属主账号执行数据库迁移，让应用账号能登录并设置密码，再建桶。运行时的服务只用读、写、取头信息、列举 |
-| `api` | 等迁移与代码一致，再启动接口进程；启动时与之后定期对账，退回崩溃后遗留的预占（见[计量与额度](#计量与额度)）；投递 webhook（见 [webhook](#webhook)） |
+| `api` | 等迁移与代码一致，再启动接口进程；启动时与之后定期对账，退回崩溃后遗留的预占（见[计量与额度](#计量与额度)）；投递 webhook（见 [webhook](#webhook)）；定期清理预览与重放的任务行（见[渲染 worker](#渲染-worker)） |
 | `worker` | 等迁移与代码一致，再启动渲染 worker：调度进程领取任务，交给渲染子进程；收到停止信号时排空（见[渲染 worker](#渲染-worker)） |
 | `platform-admin <邮箱>` | 建平台管理员账号，随机初始密码只显示一次；操作记审计 |
 | `build-id` | 输出渲染器构建标识 |
 
 **健康检查**：接口进程与 worker 都有两个端点。
 
-- `GET /healthz`：存活，返回服务名与构建标识；worker 另带渲染器的计数（`renderer`：已做的任务、超时、内存超限、崩溃、取消时结束的项与子进程换新的次数）。
+- `GET /healthz`：存活，返回服务名与构建标识；worker 另带渲染器的计数（`renderer`：已做的任务、超时、内存超限、崩溃、取消时结束的项、子进程换新的次数，`renderMs` 是各项渲染用时之和、`maxRenderMs` 是最慢的一项，毫秒）。
 - `GET /readyz`：就绪。要求数据库可连、迁移与代码一致、对象存储可列举；否则返回 503，并列出没通过的检查项与原因，不带连接串或凭据。
+- **队列积压**（M303）：worker 就绪时 `/readyz` 另带 `queue`（跨租户，只有计数）：`queued` 与 `running` 按种类（`preview`、`batchItem`、`replay`）给任务数，`oldestQueuedMs` 是排队最久的一项已经等了多久。积压查不出来时不带它，就绪与否不受影响。接口进程的 `/readyz` 对外公开，不带积压；接口进程与对账同一个间隔，队列不空时记一行日志"队列积压"，worker 全停时看这行。逐项的渲染用时在 worker 的日志里，每项一行，`ms` 字段。
 
 **日志**：每行一个 JSON 对象，带时间、级别、服务名（`api`、`worker`、`setup`）与构建标识。请求体不进日志；请求头里的凭据会被遮盖。
 
@@ -291,7 +295,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 | 展开后会显示的元素数 | 20,000 | `limit.expansionExceeded` |
 | 展开后的循环项数（嵌套逐层累计） | 2,000 | `limit.expansionExceeded` |
 
-这些数值与单项超时、内存上限都是暂定的，容量基线（票据 15）实测后再定。
+这些数值经容量基线核对后不变（M302，见[容量基线](#容量基线)）。
 
 ## 批量交付
 
@@ -598,8 +602,58 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 重领前先看这一项是否已登记：已登记就沿用，不重渲染，记录只提交一次；
   - 写回以领取次数作凭据，重领之后旧的写回不生效；
   - 领了 3 次仍没做完，记 `worker.crashed`。
+- **任务行的清理**：预览与重放的结果由接口进程同步取走，之后没人再读。接口进程与对账同一个间隔，删掉入队超过 `RW_TASK_RETENTION_MS`（缺省 1 小时）的预览与重放任务行，表不随预览次数一直长大。批次项的行是批次逐项状态与出图记录列表的来源，一直保留。
 - **排空**：收到 SIGTERM 时先离开、不再领预览与重放，做完本构建排队的批次项再退出。发布新版本时，旧构建的 worker 就这样做完已接受的批次（Compose 的停止宽限缺省 30 分钟，`RW_WORKER_STOP_GRACE`）。旧构建的 worker 全都不在了，它接受的批次会停在排队中，要再起一个旧构建的 worker 才能做完。
-- **实测**（Windows，Node v24，问候牌草稿）：每像素约 13 字节，1 亿像素的草稿峰值约 1.3 GB、3 秒；只有一种字体的小图峰值约 210 MB。6,000 项文字的循环约 4 秒、峰值约 400 MB。缺省的 2 GB 内存上限放得下引擎上限的一张图。
+- **数值**：每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒、做满 500 项换新，依据见[容量基线](#容量基线)。
+
+## 容量基线
+
+票据 15 在本机 Docker Compose 上经开放 API 实测，定下 worker 的数值（M302）。测量用 `node service/scripts/capacity.mjs profile|long|scale|soak`，每个阶段都从空环境起服务；逐项数字与测试机见[第四阶段验收](stage4-acceptance.md#容量基线)。
+
+**每个 worker 的预算**：
+
+| 项 | 定值 | 依据 |
+|---|---|---|
+| CPU | 1 个（`RW_WORKER_CPUS`） | 渲染是单线程的：给 4 个 CPU 时 M402 线路牌与大图只快 2–4%（1,061 → 1,022 ms），渲染时 worker 一直用满约 1 个核；本来就快的价签快一些（107 → 92 ms） |
+| 内存上限 | 2 GB（`RW_WORKER_MEMORY`，不用交换分区） | 单张上限 1 亿像素的图峰值 1.3 GB；M402 线路牌（740 × 165 mm、120 dpi）约 0.3 GB，价签约 0.35 GB，1500 mm 宽的线路牌 0.6–0.7 GB |
+| 单项超时 | 60 秒（`RW_RENDER_TIMEOUT_MS`，原暂定 30 秒） | 限制之内最慢的一项是单边 2 万像素的线路牌（1500 mm、338 dpi）：用时随本站序号增长，第 10 站 12.6 秒，本机第 35 站比第 10 站再多约 5 秒，推断约 18 秒。多起 worker、核不够用时单项会慢到 1.8 倍（见下表），30 秒不够；60 秒留 3 倍余量。展开上限之内最重的草稿（2,000 项循环）约 1 秒 |
+| 子进程换新 | 做满 500 项（`RW_RENDER_RECYCLE_AFTER`） | 千项长批次不换新时，容器内存从 270 MiB 到 293 MiB，逐项用时不变；换新一次约 1 秒，每 500 项一次 |
+
+**吞吐**：M402 线路牌每个 worker 每分钟约 60 张，价签约 9 张每秒。多起 worker 吞吐按个数增长，直到物理核用完：
+
+| worker | 每分钟 | 每个 worker | 单项中位数 |
+|---|---|---|---|
+| 1 | 59.6 | 59.6 | 1,103 ms |
+| 2 | 115.2 | 57.6 | 1,129 ms |
+| 4 | 220.2 | 55.1 | 1,184 ms |
+| 8 | 361.7 | 45.2 | 1,429 ms |
+| 16 | 525.1 | 32.8 | 1,987 ms |
+
+测试机是 8 个性能核加 12 个能效核：超过 8 个 worker 后有的落到能效核与超线程上，单项变慢。16 个 worker 时对象存储约用半个核、PostgreSQL 约四分之一个核，接口进程平时不到十分之一个核，提交批次时会冲到 1.5 个核。
+
+**并发数**（worker 个数，`RW_WORKERS`）：每个物理核一个 worker，留 1–2 个核给接口进程、PostgreSQL 与对象存储；内存按每个 worker 2 GB，另留 2 GB 给其余服务与系统。例如 8 核 16 GB 的云服务器起 6 个 worker，M402 线路牌每小时约 2 万张。起多个 worker 时宿主端口给一段：
+
+```bash
+RW_WORKERS=6 RW_WORKER_PORT=8081-8086 docker compose up -d --wait
+```
+
+**入队前的限制与套餐**：数值不变（见[模板与草稿预览](#模板与草稿预览)）。展开上限之内最重的一项也远在超时之内；草稿预览从提交到拿到图约 1.2 秒，每个租户同时 2 个、每分钟 60 次够用。
+
+**接口进程里的同步工作**（票据 13 留到这里定）：Excel 解析与提交批次都在接口进程里做，不另限流。期间每 20 ms 探一次 `/healthz`，最长的一次就是接口进程被占住的时长：
+
+| 请求 | 答完 | `/healthz` 最长等 |
+|---|---|---|
+| Excel 导入：一千行的价签表 | 80–110 ms | 45 ms |
+| Excel 导入：主表补到单元格上限（50 万个） | 0.7 秒 | 0.57 秒 |
+| Excel 导入：超出解压上限的 3.4 MB 文件 | 约 220 ms，答 413 | 50 ms |
+| 提交千项价签（数据写在请求里，390 KB） | 0.9 秒 | 0.25 秒 |
+| 提交千项 M402（引用已保存的数据集，150 KB） | 2.7–3.1 秒 | 0.9 秒 |
+
+- 提交千项 M402 原先要 4 秒：每项检查数据集字节数时都去库里读一遍文档清单。已改为一个请求读一次，逐项量规模时每 25 项让出一次事件循环。
+- 剩下最长的约 0.9 秒，推断是引擎一次固定整批（`freezeBatch`，同步），服务只经公开入口调用它，拆不开。
+- 限制之内最坏的一次占住接口进程不到 1 秒，健康检查的超时是 5 秒，所以不另限流。一个接口进程每分钟要处理多个这样的大请求、别的请求的延迟明显变长时，把固定批次、量规模与 Excel 解析挪出事件循环（M302）。
+
+**长期负载**：3 个租户、2 个 worker 连续出图 3 小时，32,091 项全部交付；接口进程与 worker 的内存不随时间增长（接口进程约 110 MiB，worker 约 335 MiB），各种批次大小的用时前后一样，计量与 webhook 逐个对得上。本机模拟对象存储用的 RustFS 内存 3 小时从 0.7 GiB 涨到 2.25 GiB，没看到封顶，生产换对象存储时另设内存上限。
 
 ## 数据库迁移
 

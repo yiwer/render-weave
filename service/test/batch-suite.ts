@@ -9,11 +9,14 @@
  *   所以用例 1 逐字节与本进程相同，也就证明了别的构建的 worker 没有插手。批次中的内存超限、取消时结束正在渲染的一项与跨批次去重
  *   经真实的接口进程提交，由真实的 worker 交付。
  */
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { BatchItemTask, ClaimedTask, ServiceBackend, TenantStorage } from '../src/backend.js';
 import {
   createMemoryBatch, freezeBatch, readBatchFrom, readWorkspaceDocuments, rendererBuildId, replayRecord, runFrozenBatch,
 } from '../src/engine.js';
+import { purgeTasks } from '../src/tasks.js';
+import { createWorkerHealthServer } from '../src/worker/health.js';
 import { emptyStats, inProcessRunner, startScheduler, type Runner, type Scheduler } from '../src/worker/scheduler.js';
 import { createWorld, type World } from './api-suite.js';
 import { seedGreeting, seedStress, stressRequest } from './seed.js';
@@ -424,6 +427,53 @@ export function describeBatches(name: string, makeBackend: () => Promise<Service
         const again = await remoteFinished((await remoteSubmit(greetingBatch(items))).body.id);
         expect(again.summary.delivered).toBe(2);
         expect(await listObjects(`tenants/${world.b.id}/`)).toEqual(before);
+      });
+    }
+
+    it('任务行的清理：过了保留期的预览与重放任务行被删；批次项的行不删，批次的逐项状态与出图记录照旧可查', async () => {
+      const preview = await world.call('POST', '/v1/previews', world.b.operator.token, { template: '问候牌', dataset: { id: 'ds-greeting' }, output: OUTPUT });
+      expect(preview.status).toBe(200);
+      const done = await finished((await submit(greetingBatch([GREETING_ITEMS[0]!]))).body.id);
+      const replayed = await world.call('POST', `/v1/batches/${done.id}/items/1/replay`, world.b.key.token);
+      expect(replayed.status, replayed.raw.slice(0, 300)).toBe(200);
+      const records = async () => (await world.call('GET', `/v1/records?batchId=${done.id}`, world.b.key.token)).body;
+      const [state, listed] = [(await view(done.id)).body, await records()];
+      expect(listed.records).toHaveLength(1);
+      // 保留期 0：此刻之前入队的预览与重放都删掉。
+      expect(await purgeTasks(backend, new Date(Date.now() + 1), 0)).toBeGreaterThanOrEqual(2);
+      expect(await purgeTasks(backend, new Date(Date.now() + 1), 0)).toBe(0);
+      expect((await view(done.id)).body).toEqual(state);
+      expect(await records()).toEqual(listed);
+      expect((await world.call('POST', `/v1/batches/${done.id}/items/1/replay`, world.b.key.token)).status).toBe(200);
+    });
+
+    if (options.ownsQueue) {
+      it('队列积压与渲染用时：worker 的就绪检查给出各种类排队与渲染中的任务数、排队最久的等了多久，做完后归零；存活检查给渲染用时；接口进程公开的就绪检查不带积压', async () => {
+        const idle = { queued: { preview: 0, batchItem: 0, replay: 0 }, running: { preview: 0, batchItem: 0, replay: 0 }, oldestQueuedMs: 0 };
+        const runner = inProcessRunner(backend);
+        const health = createWorkerHealthServer({ backend, build, logger: silentLogger, stats: runner.stats });
+        await new Promise<void>((resolve) => health.listen(0, '127.0.0.1', resolve));
+        const url = `http://127.0.0.1:${(health.address() as AddressInfo).port}`;
+        try {
+          const backlog = async () => ((await (await fetch(`${url}/readyz`)).json()) as { queue: typeof idle }).queue;
+          expect(await backlog()).toEqual(idle);
+          expect((await world.app.inject({ method: 'GET', url: '/readyz' })).json()).not.toHaveProperty('queue');
+          await scheduler!.stop();
+          // 批次按接口进程的时钟入队：拨到 5 秒前，排队最久的一项至少等了 5 秒。
+          world.clock.value = new Date(Date.now() - 5_000);
+          const reply = await submit(greetingBatch());
+          const waiting = await backlog();
+          expect(waiting).toEqual({ ...idle, queued: { preview: 0, batchItem: 3, replay: 0 }, oldestQueuedMs: expect.any(Number) });
+          expect(waiting.oldestQueuedMs).toBeGreaterThanOrEqual(5_000);
+          expect(waiting.oldestQueuedMs).toBeLessThan(60_000);
+          scheduler = startWorker(runner);
+          await finished(reply.body.id);
+          expect(await backlog()).toEqual(idle);
+          const { renderer } = (await (await fetch(`${url}/healthz`)).json()) as { renderer: { tasks: number; renderMs: number; maxRenderMs: number } };
+          expect(renderer.tasks).toBe(3);
+          expect(renderer.maxRenderMs).toBeGreaterThan(0);
+          expect(renderer.renderMs).toBeGreaterThanOrEqual(renderer.maxRenderMs);
+        } finally { await new Promise<void>((resolve) => health.close(() => resolve())); }
       });
     }
 

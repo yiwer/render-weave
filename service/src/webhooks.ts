@@ -13,6 +13,7 @@ import { request as httpsRequest } from 'node:https';
 import { BlockList, isIP, type LookupFunction } from 'node:net';
 import type { ClaimedDelivery, DeliveryOutcome, ServiceBackend, WebhookAttempt } from './backend.js';
 import type { Logger } from './log.js';
+import { every } from './periodic.js';
 
 /** 投递的数值：缺省共试 8 次，间隔 1、2、4……64 分钟，约 2 小时后不再试。 */
 export interface WebhookConfig {
@@ -199,27 +200,12 @@ export function startWebhookDispatcher(options: {
         outcome: outcome.status }, outcome.status === 'failed' ? 'webhook 投递失败，不再重试' : 'webhook 投递失败，稍后重试');
     }
   };
-  let running: Promise<void> = Promise.resolve(), stopped = false;
-  const tick = () => {
-    running = running.then(async () => {
-      if (stopped) return;
-      try {
-        const at = now();
-        // 租约比一次尝试的超时长：过了还没记下结果，说明投递任务中途退出了，别的投递任务可以再领。
-        const claimed = await backend.webhooks.claim(at, new Date(at.getTime() + config.timeoutMs + 60_000), BATCH);
-        await Promise.all(claimed.map((delivery) => attemptOnce(delivery).catch((error) => logger.warn({ err: error, deliveryId: delivery.id }, 'webhook 投递记录失败'))));
-      } catch (error) { logger.warn({ err: error }, '领取 webhook 投递失败，下次再试'); }
-    });
-    return running;
-  };
-  const timer = setInterval(() => void tick(), config.pollMs);
-  void tick();
-  return {
-    tick,
-    async stop() {
-      clearInterval(timer);
-      stopped = true;
-      await running;
-    },
-  };
+  return every(config.pollMs, async () => {
+    try {
+      const at = now();
+      // 租约比一次尝试的超时长：过了还没记下结果，说明投递任务中途退出了，别的投递任务可以再领。
+      const claimed = await backend.webhooks.claim(at, new Date(at.getTime() + config.timeoutMs + 60_000), BATCH);
+      await Promise.all(claimed.map((delivery) => attemptOnce(delivery).catch((error) => logger.warn({ err: error, deliveryId: delivery.id }, 'webhook 投递记录失败'))));
+    } catch (error) { logger.warn({ err: error }, '领取 webhook 投递失败，下次再试'); }
+  });
 }
