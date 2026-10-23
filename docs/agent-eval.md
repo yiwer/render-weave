@@ -85,6 +85,8 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 
 ## 评分
 
+模板六类反事实与修改目标/非目标验收另有离线入口 `--behavior-policy`，详见[模板反事实业务验收](agent-template-behavior.md)。它按维护者预登记的独立事实核查真实出图，保留政策、输入、资源字节与输出证据。下面原有十项压测和按模板划分的修改范围只表示原回归集对应检查通过，不能代替新增业务语义验收；没有独立政策时这些新维度仍未核查。
+
 评分在 [scripts/agent-eval/score.ts](../scripts/agent-eval/score.ts)，沿用验证脚本 `scripts/m190/run.mjs` 的检查，改为只看产品路径交回的成果。
 
 **数据定义**：数据定义提取只交数据定义（M43），所以不再像验证脚本那样从数据集反推字段，而是直接在数据定义上判断。
