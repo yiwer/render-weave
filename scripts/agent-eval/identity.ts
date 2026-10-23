@@ -11,7 +11,7 @@ import { DEFAULT_ROUND_TIMEOUT_MS } from '../../src/agent/supervision.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { openResourceRepository } from '../../src/resources.js';
 import { withLocalAccess } from '../../src/local-access.js';
-import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
+import { REPO, repoPath, stageNames, type EvalConfig, type Scenario } from './scenarios.js';
 import type { RoundRecord } from '../../src/agent/run.js';
 import type { RuntimeOptions } from './eval.js';
 
@@ -76,6 +76,14 @@ export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Rec
     await add(`${scenario.id}/brief`, scenario.brief);
     if (scenario.reference) await add(`${scenario.id}/reference`, scenario.reference);
     if (scenario.contentBaseline) await add(`${scenario.id}/contentBaseline`, scenario.contentBaseline);
+    if (scenario.kind === 'feedback') {
+      await add(`${scenario.id}/feedback`, scenario.feedback);
+      await add(`${scenario.id}/policy`, scenario.policy);
+      Object.assign(inputs, await materialHashes(repoPath(scenario.seedRound), `${scenario.id}/seed`));
+      const seed: RoundRecord = JSON.parse(await readFile(join(repoPath(scenario.seedRound), 'round.json'), 'utf8'));
+      if (seed.inputs.workspace.source) Object.assign(inputs, await materialHashes(seed.inputs.workspace.source, `${scenario.id}/inheritedWorkspace`));
+      if (seed.inputs.resources) Object.assign(inputs, Object.fromEntries(Object.entries(await resourceInputIdentity(seed.inputs.resources)).map(([key, value]) => [`${scenario.id}/inheritedResources/${key}`, value])));
+    }
     if (scenario.kind === 'transcription') {
       await add(`${scenario.id}/datasetBrief`, scenario.datasetBrief);
       await add(`${scenario.id}/truth`, scenario.truth);
@@ -130,7 +138,7 @@ async function observationFiles(dir: string): Promise<Record<string, string>> {
 /** 静态条件与宿主封存来源都核对；串联工作区、检查点、服务模型仍作为实际观测留存。 */
 export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir: string, scenarios: readonly Scenario[], repeat: number, active: ReadonlySet<string> = new Set()): Promise<void> {
   for (let repetition = 1; repetition <= repeat; repetition++) for (const scenario of scenarios) {
-    for (const name of scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind]) {
+    for (const name of stageNames(scenario)) {
       const dir = join(outDir, `run-${repetition}`, scenario.id, name);
       // 并行工作者尚未结束的轮次还没有最终封存；仅本次进程亲自派发中的目录可暂缓。
       if (active.has(dir)) continue;

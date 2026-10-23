@@ -37,7 +37,7 @@ const { values } = parseArgs({
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
     rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'timeout-ms': { type: 'string' },
-    config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
+    plan: { type: 'string' }, config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
   },
   strict: true,
@@ -60,6 +60,14 @@ if (values['behavior-policy'] !== undefined) {
 } else {
 const configFile = values.config ? resolve(values.config) : CONFIG_FILE;
 const config = await readConfig(configFile).catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
+
+if (values.plan !== undefined) {
+  const {feedbackPlan} = await import('./feedback.js');
+  const plan = await feedbackPlan(config, pick(values.scenarios), values.out ? {dir: resolve(values.out), configFile} : undefined);
+  await writeFile(resolve(values.plan), JSON.stringify(plan, null, 2) + '\n', {flag: 'wx'});
+  console.log(`反馈计划：${resolve(values.plan)}；${plan.units.length} 个预登记单元，真实模型观测 0`);
+  process.exit(plan.ready ? 0 : 3);
+}
 
 interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance; identity?: ExperimentIdentity }
 

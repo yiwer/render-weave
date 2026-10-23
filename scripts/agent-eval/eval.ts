@@ -14,8 +14,9 @@ import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs
 import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
-import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
+import { REPO, repoPath, stageNames, type EvalConfig, type Scenario } from './scenarios.js';
 import {evaluationTiming, executeAttempt, prepareAttempt, restoreAttempt, savedAttempts} from './attempts.js';
+import {scoreFeedback, validateFeedbackScenario, type FeedbackScore} from './feedback.js';
 import {withLocalAccess} from '../../src/local-access.js';
 import {
   CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
@@ -24,6 +25,8 @@ import {
 
 export interface RoundSpec {
   readonly task: AgentTaskId;
+  readonly from?: string;
+  readonly feedback?: string;
   /** 新的轮次目录。 */
   readonly out: string;
   readonly sample: string;
@@ -59,9 +62,9 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
   return async (spec) => {
     const flag = (name: string, value: string | number | undefined) => (value === undefined ? [] : [`--${name}`, String(value)]);
     const args = [
-      join(REPO, 'dist/bin.js'), 'agent', 'run', '--task', spec.task, '--sample', spec.sample, '--brief', spec.brief,
-      '--resources', spec.resources, '--out', spec.out, ...flag('domain', spec.domain), ...flag('workspace', spec.workspace),
-      ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement), ...flag('reference', spec.reference), ...flag('content-baseline', spec.contentBaseline),
+      join(REPO, 'dist/bin.js'), 'agent', 'run', '--out', spec.out, ...(spec.from ? ['--from', spec.from, '--feedback', spec.feedback!] : ['--task', spec.task, '--sample', spec.sample, '--brief', spec.brief,
+      '--resources', spec.resources, ...flag('domain', spec.domain), ...flag('workspace', spec.workspace),
+      ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement), ...flag('reference', spec.reference), ...flag('content-baseline', spec.contentBaseline)]),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('timeout-ms', runtime.roundTimeoutMs), ...flag('effort', runtime.effort),
       ...flag('claude', runtime.claude?.command), ...(runtime.claude?.args ? ['--claude-args', JSON.stringify(runtime.claude.args)] : []),
@@ -163,6 +166,7 @@ export interface ScenarioResult {
     readonly template?: TemplateScore;
     readonly revision?: RevisionScore;
     readonly transcription?: TranscriptionScore;
+    readonly feedback?: FeedbackScore;
   };
 }
 
@@ -188,7 +192,10 @@ export async function runScenario(config: EvalConfig, scenario: Scenario, repeti
   const round = (spec: RoundSpec) => launchRound(spec, launch, { ...retry, upstream, unit, label: `${scenario.name} 第 ${repetition} 次` });
   const failures: string[] = [];
   try {
-    if (scenario.kind === 'definition') {
+    if (scenario.kind === 'feedback') {
+      await validateFeedbackScenario(scenario);
+      await round({...base, task: scenario.task, from: repoPath(scenario.seedRound), feedback: repoPath(scenario.feedback), out: join(unit, 'feedback')});
+    } else if (scenario.kind === 'definition') {
       await round({ ...base, task: 'definition-extraction', out: join(unit, 'definition') });
     } else if (scenario.kind === 'template' || scenario.kind === 'revision') {
       const workspace = join(unit, 'workspace');
@@ -230,7 +237,7 @@ async function unitPending(outDir: string, scenario: Scenario, repetition: numbe
 export async function observedUnit(outDir: string, scenario: Scenario, repetition: number): Promise<boolean> {
   const unit = unitDir(outDir, scenario, repetition);
   if ((await readUpstream(unit)).invalid || await exists(join(unit, LAUNCH_FAILURES))) return true;
-  const names = scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
+  const names = stageNames(scenario);
   return (await Promise.all(names.map(name => roundError(join(unit, name))))).every(value => value !== undefined);
 }
 
@@ -339,7 +346,7 @@ async function roundError(dir: string): Promise<{ kind: ErrorKind; error: string
   try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; } catch { return undefined; }
   if (!record || !record.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   if (record.run.stopped?.reason === 'hardQuota') return { kind: 'quota', error: record.run.error ?? `硬额度耗尽（${record.run.stopped.limit}）` };
-  const error = record.verdict === 'qualified' ? undefined : record.run.error;
+  const error = record.run.error;
   const kind = error !== undefined ? classifyError(error) : 'other';
   return error !== undefined && kind !== 'other' ? { kind, error } : null;
 }
@@ -376,7 +383,7 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
   }
   const upstream = await readUpstream(unit);
   const failures = [...launched];
-  const names = scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
+  const names = stageNames(scenario);
   const rounds: RoundSummary[] = [];
   for (const name of names) {
     const summary = await summarize(join(unit, name), outDir);
@@ -417,6 +424,7 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
     const truth = (JSON.parse(await readFile(repoPath(scenario.truth), 'utf8')) as { stops: TruthStop[] }).stops;
     Object.assign(checks, { transcription: scoreTranscription(stopsOf(dataset), truth) });
   }
+  if (scenario.kind === 'feedback') Object.assign(checks, {feedback: await scoreFeedback(scenario, join(unit, 'feedback'))});
   failures.push(...judge(scenario, checks));
   // invalid 时的成果不合格与缺评分都是上游错误的后果，不列为没达线的原因；各轮的结论与检查结果照样留作诊断。
   const status: UnitStatus = upstream.invalid ? 'invalid' : failures.length === 0 ? 'pass' : 'fail';
@@ -429,7 +437,11 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
 /** 与通过线对照，返回没达线的原因；缺少评分（没有成果）也算没达线。 */
 export function judge(scenario: Scenario, checks: ScenarioResult['checks']): string[] {
   const failures: string[] = [];
-  if (scenario.kind === 'definition') {
+  if (scenario.kind === 'feedback') {
+    const score = checks.feedback;
+    if (!score) return ['没有可评分的反馈接续'];
+    return score.failures;
+  } else if (scenario.kind === 'definition') {
     const score = checks.definition;
     if (!score) return ['没有可评分的数据定义'];
     if (score.conventionsPassed < scenario.pass.conventions) {
@@ -534,6 +546,7 @@ export function resumeCommand(label: string, result: GateResult, args: readonly 
 /** /3 起要求全计划达线，完整性与质量分开；旧 /1、/2 只保留历史含义。 */
 export interface EvalReport {
   readonly format: 'renderweave-agent-eval/4';
+  readonly evidence?: {readonly kind: string; readonly realModelObservations: number; readonly note: string};
   readonly label: string;
   readonly startedAt: string;
   readonly endedAt: string;
@@ -614,6 +627,7 @@ export async function buildReport(options: {
   const sum = (key: typeof metrics[number]) => attempts.reduce((total, attempt) => total + (attempt.usage?.[key] ?? 0), 0);
   const runtime = records[0]?.runtime;
   return {
+    evidence: {kind: options.config.evidence ?? 'unverified', realModelObservations: 0, note: '机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验'},
     format: 'renderweave-agent-eval/4', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
     git: origin.git,
     runtime: {
@@ -644,6 +658,7 @@ const OUTCOME_TEXT: Record<RepetitionOutcome, string> = { pass: '达线', fail: 
 export function formatReport(report: EvalReport): string {
   const lines = [
     `# Agent 评估 ${report.label}：门槛${GATE_TEXT[report.gate.status]}`,
+    `证据类别：${report.evidence?.kind === 'mechanism' ? '机制验证' : '模型来源尚需独立核准'}；已核准真实模型观测 ${report.evidence?.realModelObservations ?? 0}。`,
     '',
     `计划 ${report.gate.completeness.planned} 次：通过 ${report.gate.completeness.pass}、失败 ${report.gate.completeness.fail}、无效 ${report.gate.completeness.invalid}、未运行 ${report.gate.completeness.notRun}；执行${report.gate.completeness.complete ? '完整' : '未完成'}。`,
     '',
