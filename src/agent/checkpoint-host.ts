@@ -6,6 +6,7 @@ import { createServer as pipeServer, type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createInterface } from 'node:readline';
 import type { CheckpointCheck } from './checkpoints.js';
 
 export async function startCheckpointHost(options: { args: readonly string[]; env: NodeJS.ProcessEnv; check: () => Promise<CheckpointCheck> }) {
@@ -28,7 +29,17 @@ export async function startCheckpointHost(options: { args: readonly string[]; en
     const child = spawn(process.execPath, [...options.args], { env: { ...options.env,
       RW_CHECKPOINT_HOST: `http://127.0.0.1:${address.port}/check`, RW_CHECKPOINT_TOKEN: token }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     children.add(child);
-    socket.pipe(child.stdin); child.stdout.pipe(socket); child.stderr.resume();
+    // Windows 命名管道不能靠半关闭保留回包方向，输入 EOF 单独传递。
+    const input = createInterface({ input: socket, crlfDelay: Infinity });
+    input.on('line', line => {
+      try {
+        const frame = JSON.parse(line);
+        if (frame.end === true) child.stdin.end();
+        else if (typeof frame.data === 'string') child.stdin.write(Buffer.from(frame.data, 'base64'));
+        else socket.destroy();
+      } catch { socket.destroy(); }
+    });
+    child.stdout.pipe(socket); child.stderr.resume();
     child.on('error', () => socket.destroy());
     child.on('close', () => { children.delete(child); socket.end(); });
     socket.on('error', () => child.kill());
