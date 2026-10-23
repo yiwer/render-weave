@@ -138,6 +138,9 @@ export async function prepareRepairExperiment(out: string, comparison: 'image-ev
 export async function scoreRepairRound(root: string, caseId: string, round: string) {
   const dir = join(round, 'repair-score'), spec = REPAIR_CASES.find((c) => c.id === caseId);
   if (!spec) throw new Error('未知坏例');
+  const manifest = await json(join(root, 'manifest.json'));
+  // 决定时间必须早于影子续跑；拒绝重新评分覆盖事前证据。
+  if (manifest.comparison === 'role-region') await mkdir(dir);
   const initial = await json(join(root, caseId, 'initial/report.json'));
   const record = await json(join(round, 'round.json'));
   const control = await loadWorkspace({ dir: join(root, 'control'), resourcesDir: resources });
@@ -160,7 +163,6 @@ export async function scoreRepairRound(root: string, caseId: string, round: stri
   await save(join(dir, 'report.json'), result);
   await writeFile(join(dir, 'image-feedback.md'), next + '\n');
   await writeFile(join(dir, 'evidence-feedback.md'), next + '\n\n' + (measurement?.feedback ?? '当前没有可用的交回布局证据，先保存有效成果。') + '\n');
-  const manifest = await json(join(root, 'manifest.json'));
   if (manifest.comparison === 'role-region') {
     const expected = await json(join(root, 'control-score/report.json'));
     const decision = { ...repairStopDecision(expected.checks.map((c: RepairCheck) => c.id), measurement?.checks ?? null, result.qualified),

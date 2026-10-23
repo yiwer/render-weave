@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { boundedRepairFeedback, type RepairCheck } from '../scripts/agent-eval/repair-feedback.js';
 import { REPAIR_REGIONS, repairStopDecision } from '../scripts/agent-eval/repair-policy.js';
+import { scoreRepairRound } from '../scripts/agent-eval/repair-experiment.js';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 const check = (role: string, severity = 1, pass = false): RepairCheck => ({ id: role + ':position', role, dimension: 'position', pass, severity, detail: '差异' });
 const items = (text: string) => JSON.parse(text.split('\n')[1]!) as { role: string }[];
 describe('区域反馈与全检查停止', () => {
+  it('重评分不能覆盖已记录的停止决定或评分', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'rw-region-policy-'));
+    try {
+      const round = join(root, 'round'), dir = join(round, 'repair-score');
+      await mkdir(dir, { recursive: true });
+      await writeFile(join(root, 'manifest.json'), JSON.stringify({ comparison: 'role-region' }));
+      await writeFile(join(dir, 'stop-decision.json'), '原决定');
+      await expect(scoreRepairRound(root, 'c', round)).rejects.toMatchObject({ code: 'EEXIST' });
+      expect(await readFile(join(dir, 'stop-decision.json'), 'utf8')).toBe('原决定');
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
   it('同样两项预算覆盖两个区域，未登记角色仍各自独立', () => {
     const checks = [check('badges', 4), check('stations', 3), check('next-landmark', 2), check('next-stop', 1)];
     expect(items(boundedRepairFeedback(checks)).map(c => c.role)).toEqual(['badges', 'stations']);
