@@ -19,7 +19,21 @@ async function waitJson(file: string): Promise<any> {
 async function stop(child: ChildProcess) {
   if (!child.pid || child.exitCode !== null) return;
   if (process.platform === 'win32') { const kill=spawn('taskkill',['/PID',String(child.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'}); await once(kill,'close'); }
-  else { try { process.kill(-child.pid,'SIGKILL'); } catch { child.kill('SIGKILL'); } }
+  else {
+    // CLI 与执行器在 Linux 上分别拥有进程组；只终止本次公开执行记录确认的执行器。
+    const out=child.spawnargs[child.spawnargs.indexOf('--out')+1];
+    let executor:number|undefined;
+    try {
+      const state=JSON.parse(await readFile(join(out!,'execution.json'),'utf8'));
+      if(state.owner?.pid===child.pid&&!state.executorExited&&Number.isSafeInteger(state.executorPid)&&state.executorPid>1)executor=state.executorPid;
+    } catch { /* 初始化前尚无执行器记录。 */ }
+    if(executor)try{process.kill(-executor,'SIGKILL');}catch{ /* 已退出。 */ }
+    try { process.kill(-child.pid,'SIGKILL'); } catch { child.kill('SIGKILL'); }
+    if(executor)for(let i=0;i<100;i++){
+      try{process.kill(executor,0);}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')break;}
+      await new Promise(resolve=>setTimeout(resolve,20));
+    }
+  }
 }
 async function start(name: string, definition:unknown=schema, fault?:string, candidate='candidates/schema.json') {
   const out=join(base,name),preset=join(base,`${name}-preset`);
