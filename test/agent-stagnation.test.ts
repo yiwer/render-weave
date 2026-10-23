@@ -5,16 +5,16 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { readReview, readPreviousRound, runAgentTask, loadWorkspace, render } from '../src/index.js';
+import { readReview, readPreviousRound, runAgentTask, loadWorkspace, render, changeReview, applyAgentRound } from '../src/index.js';
 import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 let root: string;
 beforeAll(async () => { root = await mkdtemp(join(tmpdir(), 'rw-stagnation-')); });
 afterAll(async () => { await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
-async function run(name: string, actions: unknown[], extra: string[] = [], baseline = true, taskArgs?: string[]) {
+async function run(name: string, actions: unknown[], extra: string[] = [], baseline: boolean | readonly string[] = true, taskArgs?: string[]) {
   const dir = join(root, name), preset = join(dir, 'preset'), out = join(dir, 'round');
   await mkdir(join(preset, 'candidates'), { recursive: true });
   await writeFile(join(dir, 'brief.md'), '从图中提取线路字段');
-  await writeFile(join(dir, 'facts.json'), JSON.stringify({ name: '核准字段', items: ['number', 'title', 'station'].map(field => ({ id: field, label: field, definition: '线路', field })) }));
+  await writeFile(join(dir, 'facts.json'), JSON.stringify({ name: '核准字段', items: (Array.isArray(baseline) ? baseline : ['number', 'title', 'station']).map(field => ({ id: field, label: field, definition: '线路', field })) }));
   await writeFile(join(preset, 'actions.json'), JSON.stringify(actions));
   await writeFile(join(preset, 'outcome.json'), JSON.stringify({ candidates: ['candidates/schema.json'], pending: [], notes: '提取线路字段' }));
   const child = spawn(process.execPath, [join(repoRoot, 'dist/bin.js'), 'agent', 'run', ...(taskArgs ?? ['--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png')]),
@@ -40,6 +40,18 @@ it('核准必修问题在两次完整写入和复测后仍相同，停止并保�
   expect(review.checkpoint?.check.coverageVerification?.missingItems).toEqual(['title', 'station']);
   expect((await readPreviousRound(job.out)).checkpoint?.id).toBe(review.checkpoint?.id);
   expect(JSON.parse(await readFile(join(job.out, 'round.json'), 'utf8')).verdict).toBe('unqualified');
+  expect((await changeReview(job.out, {type:'approve'})).problems.length).toBeGreaterThan(0);
+  expect((await applyAgentRound({roundDir:job.out, workspace:join(root,'never-applied')})).applied).toBeUndefined();
+  const original = await readFile(join(job.out,'round.json'),'utf8'), state = await readFile(join(job.out,'execution.json'),'utf8');
+  const preset = join(root,'resume-preset'), feedback = join(root,'feedback.md'); await mkdir(preset);
+  await writeFile(feedback,'补齐 title 与 station');
+  await writeFile(join(preset,'actions.json'),JSON.stringify([{kind:'check'},{kind:'write',fields:['number','title','station']},{kind:'checkAndFinish'}]));
+  await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/schema.json'],pending:[],notes:'接续修复'}));
+  const resumed = await runAgentTask({from:job.out,feedback,out:join(root,'resumed'),key:'offline',keyEnv:'RW_STAGNATION_KEY',
+    roundTimeoutMs:10000,claude:{command:process.execPath,args:[join(repoRoot,'test/support/fake-stagnation.mjs'),preset]}});
+  expect(resumed.record.run.stopped).toBeUndefined(); expect(resumed.record.verdict).toBe('qualified');
+  expect(await readFile(join(job.out,'round.json'),'utf8')).toBe(original);
+  expect(await readFile(join(job.out,'execution.json'),'utf8')).toBe(state);
 });
 const template = (size: number) => ({dslVersion:'renderweave-template/1',name:'对照',base:{name:'问候',version:1},
   artboard:{sizeRange:{width:{min:10,max:200},height:{min:10,max:200}},layout:{mode:'free'},children:[
@@ -165,4 +177,46 @@ it('执行器已正式交回后，异步检查读取不得再新判定停滞', a
   ], ['--stagnation-threshold', '1']);
   expect(job.result?.stopped, job.stderr).toBeUndefined();
   expect((await readReview(job.out)).execution?.status).toBe('completed');
+});
+it('达到阈值的最后自检后只重复诊断并正式交回，不会被当成下一修复周期', async () => {
+  const job = await run('final-check', [
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'check'}, {kind:'finish',delayMs:300},
+  ], ['--stagnation-threshold','1']);
+  expect(job.result?.stopped, job.stderr).toBeUndefined();
+  expect((await readReview(job.out)).execution?.status).toBe('completed');
+});
+const manyFields = Array.from({length:180}, (_, index) => `approvedField${index}`);
+it('截断的检查明细未读全，即使候选写入和复测重复也不能证明完整修复机会', async () => {
+  const job = await run('incomplete-feedback', [
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'write',fields:['number']},{kind:'check'},
+  ], ['--stagnation-threshold','1'], manyFields);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
+});
+it('读完同一报告全部页后获得完整修复机会，分页本身不增加周期', async () => {
+  const job = await run('complete-feedback', [
+    {kind:'write',fields:['number']},{kind:'check'},{kind:'pages'},
+    {kind:'write',fields:['number']},{kind:'check'},{kind:'pages'},
+  ], ['--stagnation-threshold','1'], manyFields);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'stagnation'});
+  expect(job.result.stopped.cycles).toHaveLength(1);
+  expect(job.result.stopped.cycles[0].feedback.before.pages.length).toBeGreaterThan(1);
+  expect(job.result.stopped.cycles[0].feedback.after.pages.at(-1).nextOffset).toBeNull();
+});
+it('只读部分页就修改候选，后续完整分页不能倒推此前获得完整修复机会', async () => {
+  const job = await run('partial-feedback', [
+    {kind:'write',fields:['number']},{kind:'check'},{kind:'pages',onlyFirst:true},
+    {kind:'write',fields:['number']},{kind:'check'},{kind:'pages'},
+  ], ['--stagnation-threshold','1'], manyFields);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
+});
+it('半写成果未提交完整检查点，下一次完整复测不能沿用断裂的修复周期', async () => {
+  const job = await run('partial-file', [
+    {kind:'write',fields:['number']},{kind:'check'},
+    {kind:'write',raw:'{"unfinished":'},{kind:'check'},
+    {kind:'write',fields:['number']},{kind:'check'},
+  ], ['--stagnation-threshold','1']);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
 });

@@ -121,6 +121,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
   --timeout-ms  整轮墙钟有限正值，缺省 3600000 毫秒；取消/超时后本地保存最多 30000 毫秒。当前不支持 --max-tokens / --max-cost-usd 硬限制
+  --stagnation-threshold  无核准进展的完整修复周期阈值，正整数，缺省 2；完整反馈后再次写候选才停止，正常交回与分页不计
   --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
   --context-policy 可选，full（缺省全量参考）或 on-demand（入口强制约束与按需目录）；不改变 effort 或预算
 

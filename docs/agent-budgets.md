@@ -20,7 +20,7 @@ node dist/bin.js agent run --task template-design --sample sample.png --brief br
 
 | 记录/字段 | 含义 |
 |---|---|
-| `run.stopped.reason` | `timeout`、`cancelled` 或 `hardQuota`；超时另存生效 `roundTimeoutMs`，硬额度保留结构化 type/limit |
+| `run.stopped.reason` | `timeout`、`cancelled`、`hardQuota` 或 `stagnation`；超时另存生效 `roundTimeoutMs`，硬额度保留结构化 type/limit，停滞保留阈值及完整周期证据，见[停滞控制](agent-stagnation.md) |
 | `stop.json` | `renderweave-stop/1`；在进一步保存前独占发布原拥有者、停止原因和已知用量。它不是完整成果或批准凭据 |
 | CLI / API `save` | `complete` 表示本地停止记录已提交；`incomplete` 表示宽限或保存故障，不能当作成果完成 |
 | `readReview().execution.stop` | 同一原因、已知用量和 `save`；完整性由启动/最终记录身份核对，不能由文件存在推断 |

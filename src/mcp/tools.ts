@@ -35,7 +35,7 @@ import { REFERENCE_FILES, type ReferenceTexts } from './references.js';
 export { REFERENCE_FILES } from './references.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.16.0';
+export const MCP_CONTRACT_VERSION = '0.17.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
