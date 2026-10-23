@@ -187,6 +187,14 @@ it('第二轮反馈副本被改写，第三轮不会注入变化后的历史反�
   expect(calls).toBe(2);
 });
 
+it('已检查候选的归档副本后改，不把旧候选的反馈带入第三轮', async () => {
+  const p = await preset(true); let calls = 0; const out = join(root, 'candidate-drift');
+  const result = await runAgentRepair({ ...options, claude: p.claude, out, onStart: () => {
+    if (++calls === 2) writeFileSync(join(out, 'round-1/candidates/main.json'), '{}');
+  } }, 3);
+  expect(result.repairRun.reason).toBe('inputsChanged'); expect(result.repairRun.rounds).toHaveLength(2);
+});
+
 it('无核准计划、非法预算在模型调用前拒绝；CLI 识别新选项', async () => {
   await expect(runAgentRepair({ ...options, checks: undefined, out: join(root, 'no-plan') }, 2)).rejects.toThrow('核准');
   await expect(runAgentRepair({ ...options, out: join(root, 'invalid') }, 5)).rejects.toThrow('1–4');

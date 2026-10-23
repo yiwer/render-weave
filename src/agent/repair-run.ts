@@ -93,6 +93,8 @@ async function inheritedInputsMatch(result: AgentRunResult): Promise<boolean> {
     [join(dir, 'agent/docs/feedback.md'), inputs.feedback.sha256]);
   else if (await exists(join(dir, 'feedback.md')) || await exists(join(dir, 'agent/docs/feedback.md'))) return false;
   if (inputs.checks) files.push([join(dir, inputs.checks.file), inputs.checks.sha256]);
+  for (const candidate of result.check.candidates) if (candidate.sha256) files.push(
+    [join(dir, candidate.path), candidate.sha256], [join(dir, 'agent', candidate.path), candidate.sha256]);
   for (const [file, expected] of files) if (sha256(await readFile(file)) !== expected) return false;
   if (inputs.request) {
     const context = JSON.parse(await readFile(join(dir, 'logs/outcome-context.json'), 'utf8'));
