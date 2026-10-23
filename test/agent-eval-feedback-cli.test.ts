@@ -173,3 +173,57 @@ it('待确认候选覆盖了已核准的目标值时不能只凭原始JSON判定
   const report = JSON.parse(await readFile(join(root, 'pending-reports/pending.json'), 'utf8'));
   expect(report.results[0].checks.feedback.targetCorrection).toBe(false);
 }, 60000);
+
+
+it('目标text路径被slot替代仍拒绝越界，并独立核对未知、后续页和终检身份', async () => {
+  const dir = await preparedMatrix();
+  const result = await cli(['scripts/agent-eval/run.ts', '--config', join(dir, 'config.json'), '--scenarios', 'zh-template-design',
+    '--out', join(root, 'slot-target'), '--reports', join(root, 'slot-target-reports'), '--label', 'slot-target', '--jobs', '1', '--repetitions', '1-1',
+    '--key-env', 'RW_FEEDBACK_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-feedback-claude.mjs'), 'slot-target'])], true);
+  expect(result.code, result.stdout + result.stderr).toBe(1);
+  const report = JSON.parse(await readFile(join(root, 'slot-target-reports/slot-target.json'), 'utf8'));
+  expect(report.results[0].status).toBe('fail');
+  expect(report.results[0].checks.feedback).toMatchObject({targetCorrection: false, nonTargetPreservation: false,
+    unknownRetained: true, finalCheckMatches: true, pagination: true});
+  expect(report.results[0].checks.feedback.failures).toEqual(['目标修正未通过', '非目标保留未通过']);
+}, 90000);
+
+
+it('历史工具记录缺失与实际未调用分开诊断，重新评分另存且不改旧报告', async () => {
+  const {mkdir, readdir} = await import('node:fs/promises');
+  const dir = await preparedMatrix();
+  const configFile = join(dir, 'config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  const scenario = config.scenarios.find((value: any) => value.id === 'zh-template-design');
+  const out = join(root, 'legacy-feedback'), round = join(out, 'run-1/zh-template-design/feedback'), reports = join(root, 'legacy-reports');
+  const completed = await cli(['dist/bin.js', 'agent', 'run', '--from', scenario.seedRound, '--feedback', scenario.feedback, '--out', round,
+    '--key-env', 'RW_FEEDBACK_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-feedback-claude.mjs'), 'calibration'])], true);
+  expect(completed.code, completed.stdout + completed.stderr).toBe(0);
+  const manifest = JSON.stringify({label: 'legacy-feedback', startedAt: '2026-10-23T00:00:00Z', scenarios: ['zh-template-design'], repeat: 2});
+  await writeFile(join(out, 'eval.json'), manifest); await mkdir(reports);
+  const original = JSON.stringify({label: 'legacy-feedback', originalVerdict: 'historical'});
+  await writeFile(join(reports, 'legacy-feedback.json'), original);
+  // 受控历史副本缺工具记录；不是修改真实封存尝试，也不制造模型观测。
+  await rm(join(round, 'logs/tools.jsonl'));
+  const rescored = await cli(['scripts/agent-eval/run.ts', '--config', configFile, '--rescore', out, '--reports', reports]);
+  expect(rescored.code, rescored.stdout + rescored.stderr).toBe(1);
+  const files = (await readdir(reports)).filter(name => name.includes('.rescore-'));
+  expect(files).toHaveLength(1);
+  const report = JSON.parse(await readFile(join(reports, files[0]!), 'utf8'));
+  const feedback = report.results[0].checks.feedback;
+  expect(feedback).toMatchObject({format: 'renderweave-feedback-score/2', targetCorrection: true, nonTargetPreservation: true,
+    unknownRetained: true, finalCheckMatches: null, pagination: null});
+  expect(feedback.unchecked).toMatchObject({finalCheckMatches: expect.any(String), pagination: expect.any(String)});
+  expect(feedback.failures).toHaveLength(2);
+  expect(feedback.failures.every((reason: string) => reason.includes('未核查'))).toBe(true);
+  expect(report.rescoring.scoringIdentity.scorer).toMatch(/^sha256:/);
+  expect(report.rescoring.sourceReportSha256).toMatch(/^sha256:/);
+  expect(await readFile(join(reports, 'legacy-feedback.json'), 'utf8')).toBe(original);
+  expect(await readFile(join(out, 'eval.json'), 'utf8')).toBe(manifest);
+  await writeFile(join(round, 'logs/tools.jsonl'), '');
+  const empty = await cli(['scripts/agent-eval/run.ts', '--config', configFile, '--rescore', out, '--reports', reports]);
+  expect(empty.code, empty.stdout + empty.stderr).toBe(1);
+  const second = (await readdir(reports)).find(name => name.includes('.rescore-') && !files.includes(name))!;
+  const withoutCalls = JSON.parse(await readFile(join(reports, second), 'utf8')).results[0].checks.feedback;
+  expect(withoutCalls).toMatchObject({finalCheckMatches: false, pagination: false, unknownRetained: true, unchecked: {}});
+}, 90000);

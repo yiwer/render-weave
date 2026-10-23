@@ -4,7 +4,7 @@
 
 **Blocked by:** 07、13
 
-**Status:** resolved
+**Status:** ready-for-agent
 
 **Trace:** [父规格](../spec.md) H5、D06–D07、D12–D13；US40–43、US49–50；A15 的评估输入、8 类校准场景及 16 个有效观测计划、分页与内容身份机制子项。本票不承担 A15 的真实模型效果结论。
 
@@ -32,3 +32,8 @@
 - `npm run build`、`npm run typecheck` 通过。`npx vitest run test/agent-eval-feedback-cli.test.ts test/agent-eval.test.ts test/agent-eval-identity.test.ts test/agent-eval-attempts.test.ts test/mcp.test.ts --maxWorkers=1`：5 文件 86 项通过；追加 pending 和报告标识修复后，`npx vitest run test/agent-eval-feedback-cli.test.ts test/agent-dataset-template.test.ts --maxWorkers=1`：2 文件 19 项通过。
 - 验收边界：无偏离；真实模型的 16 个有效观测、业务效果与模型来源资格仍由票 21 统一冻结后承担，本票仅证明准备、传递、分页、身份和评分机制。
 集成复核：以 e874543 非压缩合并至集成分支。核对有效候选、来源身份及技术合格但执行器报错的 mixed 语义；主线 build/typecheck/diff-check 通过，反馈 CLI 与 MCP 两文件 40/40 通过（88.02 秒）。两份预存未跟踪报告未改。
+
+
+### 2026-10-23 责任修复重新打开
+
+候选3真实观测揭示目标text路径不存在时评分总try提前返回，其余独立守卫未执行却标false。原件与严格corrections政策保留；本轮按公开评估CLI/真实MCP接缝红绿修复独立核查与未核查诊断，不调用模型、不覆盖历史评分。
