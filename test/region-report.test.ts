@@ -11,6 +11,8 @@ afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recurs
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), 'rw-region-report-')); dirs.push(root);
   await mkdir(join(root, 'c/initial'), { recursive: true });
+  for (const dir of ['control', 'control-score']) await mkdir(join(root, dir));
+  for (const file of ['brief.md', 'request.json']) await writeFile(join(root, file), 'fixture');
   for (const p of ['reference.png', 'c/initial/base.png']) await writeFile(join(root, p), 'fixture');
   await save(join(root, 'c/initial/report.json'), { checks: [] });
   await writeFile(join(root, 'c/role.md'), '初始反馈');
@@ -47,6 +49,16 @@ describe('区域实验报告公开命令', () => {
     const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
     expect(report.groups.role.fixed).toMatchObject({ unknownRepair: 1, unknownAdded: 1, unknownAllPassed: 1, unknownRegressions: 1 });
     expect(report.groups.role.stopped.allPassed).toBe(1);
+  });
+  it('影子续跑失败也保留已登记的首轮停止成果，配对覆盖另列', async () => {
+    const root = await fixture(), p = join(root, 'live-report.json');
+    const live = JSON.parse(await readFile(p, 'utf8'));
+    live.rows[0].status = 'invalid'; live.rows[0].rounds = live.rows[0].rounds.slice(0, 1);
+    await save(p, live); run(root);
+    const report = JSON.parse(await readFile(join(root, 'archive/report.json'), 'utf8'));
+    expect(report.groups.role.fixed.measured).toBe(0);
+    expect(report.groups.role.stopped).toMatchObject({ measured: 1, repaired: 2, allPassed: 1, meanWallMs: 1000 });
+    expect(report.pairedGroups.role.stopped.measured).toBe(0);
   });
   it('拒绝候选评分变化及事后补写停止决定', async () => {
     const root = await fixture();

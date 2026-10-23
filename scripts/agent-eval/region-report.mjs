@@ -1,5 +1,5 @@
 /** 归档区域反馈实验与共享前缀停止对照；不调用模型、不重新评分。 */
-import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -13,6 +13,7 @@ const manifest = await json(join(root, 'manifest.json')), live = await json(join
 if (manifest.comparison !== 'role-region' || live.manifestSha256 !== sha(await readFile(join(root, 'manifest.json')))) throw new Error('实验类型或输入指纹不匹配');
 await mkdir(out, { recursive: true });
 for (const file of ['reference.png', 'manifest.json', 'live-report.json']) await copyFile(join(root, file), join(out, file));
+for (const file of ['control', 'c', 'brief.md', 'request.json', 'control-score']) await cp(join(root, file), join(out, 'inputs', file), { recursive: true });
 await copyFile(join(root, 'c/initial/base.png'), join(out, 'initial.png'));
 const initial = await json(join(root, 'c/initial/report.json'));
 const rows = [];
@@ -27,6 +28,7 @@ for (const unit of manifest.order) {
     if (JSON.stringify(record) !== JSON.stringify(round.record)) throw new Error('执行记录不一致：' + prefix);
     const files = { record: 'round.json', context: 'context.json', score: 'repair-score/report.json', decision: 'repair-score/stop-decision.json', image: 'repair-score/base.png' };
     const archived = {};
+    for (const file of ['candidates', 'outcome.json', 'logs/prompt.md']) if (await exists(join(round.dir, file))) await cp(join(round.dir, file), join(out, prefix, file), { recursive: true });
     for (const [key, path] of Object.entries(files)) if (await exists(join(round.dir, path))) {
       const name = prefix + '-' + key + (key === 'image' ? '.png' : '.json');
       await copyFile(join(round.dir, path), join(out, name));
@@ -43,7 +45,7 @@ for (const unit of manifest.order) {
     const prefix = rounds.slice(0, count), final = prefix.at(-1);
     const available = final?.score?.available && final.decision;
     const firstChecks = rounds[0]?.score?.checks, finalChecks = final?.score?.checks;
-    return { rounds: count, repaired: final?.score?.repaired.length ?? null, allPassed: available ? final.decision.stop : null,
+    return { rounds: count, repaired: final?.score?.available ? final.score.repaired.length : null, allPassed: available ? final.decision.stop : null,
       addedFailures: final?.score?.addedFailures ?? null,
       remainingFailures: finalChecks ? finalChecks.filter(c => !c.pass).map(c => c.id) : null,
       regressions: firstChecks && finalChecks ? firstChecks.filter(c => c.pass && finalChecks.find(f => f.id === c.id)?.pass !== true).map(c => c.id) : null,
@@ -52,11 +54,12 @@ for (const unit of manifest.order) {
   };
   rows.push({ ...unit, status: item?.status ?? 'notRun', failure: item?.failure ?? null, rounds,
     first: rounds.length ? metrics(1) : null, fixed: completed ? metrics(2) : null,
-    stopped: completed && rounds[0]?.decision ? metrics(rounds[0].decision.stop ? 1 : 2) : null });
+    stopped: rounds[0]?.decision?.stop ? metrics(1) : completed && rounds[0]?.decision ? metrics(2) : null });
 }
 const average = xs => xs.length && xs.every(Number.isFinite) ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-const summarize = (arm, policy) => {
-  const planned = rows.filter(r => r.arm === arm), done = planned.filter(r => r[policy]);
+const pairedKeys = Object.fromEntries(['first', 'fixed', 'stopped'].map(policy => [policy, rows.filter(r => r.arm === 'role' && r[policy] && rows.some(p => p.arm === 'region' && p.repetition === r.repetition && p.caseId === r.caseId && p[policy])).map(r => r.caseId + '-' + r.repetition)]));
+const summarize = (arm, policy, pairedOnly = false) => {
+  const planned = rows.filter(r => r.arm === arm), done = planned.filter(r => r[policy] && (!pairedOnly || pairedKeys[policy].includes(r.caseId + '-' + r.repetition)));
   const known = done.map(r => r[policy]);
   return { planned: planned.length, measured: done.length, targetCount: done.length * 2, repaired: known.reduce((s, r) => s + (r.repaired ?? 0), 0),
     unknownRepair: known.filter(r => r.repaired === null).length, allPassed: known.filter(r => r.allPassed === true).length, unknownAllPassed: known.filter(r => r.allPassed === null).length,
@@ -68,9 +71,10 @@ const summarize = (arm, policy) => {
     totalWallMs: known.length && known.every(r => Number.isFinite(r.wallMs)) ? known.reduce((s, r) => s + r.wallMs, 0) : null };
 };
 const groups = Object.fromEntries(['role', 'region'].map(arm => [arm, Object.fromEntries(['first', 'fixed', 'stopped'].map(policy => [policy, summarize(arm, policy)]))]));
+const pairedGroups = Object.fromEntries(['role', 'region'].map(arm => [arm, Object.fromEntries(['first', 'fixed', 'stopped'].map(policy => [policy, summarize(arm, policy, true)]))]));
 const report = { format: 'renderweave-region-results/1', createdAt: new Date().toISOString(), manifestSha256: live.manifestSha256, sourceCommit: manifest.head,
   scope: '同一 C 位置坏例，每臂重复两次；第一轮停止决定先登记，第二轮仍真实执行。stopped 使用同一批实际调用的前缀，不是独立随机化实验。',
-  initialChecks: initial.checks, groups, rows };
+  initialChecks: initial.checks, groups, pairedKeys, pairedGroups, rows };
 await writeFile(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 const compact = { ...report, rows: rows.map(r => ({ ...r, rounds: r.rounds.map(x => ({ ...x, record: { verdict: x.record.verdict, run: x.record.run } })) })) };
 await writeFile(join(out, 'index.html'), `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>区域反馈与停止条件实测</title>
