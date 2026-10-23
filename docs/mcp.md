@@ -82,6 +82,7 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
   | `contentBaseline` | 否 | 宿主核准的本次内容事实；由 `agent run --content-baseline` 提供，领域名称不产生事实 |
   | `baseline` | 否 | 人工核准的原图区域、画板尺寸及测量类型；由 `agent run --reference` 固定 |
   | `referenceImage` | 否 | `{path, sha256}`，宿主原图快照；比较前校验实际字节与核准尺寸 |
+  | `resourceIdentity` | 否 | `agent run` 生成的固定资源身份清单：ID、种类、原版本或旧目录映射、字节 SHA-256 与长度；工具只将实际依赖计入检查身份 |
 
   `agent run` 每轮写到 `logs/outcome-context.json`，在 Agent 工作目录之外。
 - **成果评估（合同 0.9.0，M294）**：返回 `assessment.structure`、`candidates`、`content: needsReview` 与 `render`。渲染包含 `status`（`notChecked` / `renderable` / `blocked`）、`hasImage`、`capabilityBlocked`、`blocking` 和按预算截断的问题清单。有完整请求时覆盖候选做实际草稿渲染；模板存在严重出图问题时 `verdict` 为 `unqualified`。已知能力受阻应保留候选和说明后交回，严重问题仍阻止审核通过与应用。
@@ -132,7 +133,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.10.1`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.11.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.11.0 为每次 `check_outcome` 增加 `contentIdentity` 摘要（`format`、`id`、`engine`、`criteria`）。完整身份随宿主检查保存，含候选集合、依赖文档、请求、可信参考/内容事实和实际读取资源；不含模型配置。`agent run` 在启动执行器前固定资源，本轮工具与终检读取同一份私有副本；审核/应用规则见[内容身份与重新核准](agent-tasks.md#内容身份与重新核准)。工具仍只读。
   - 0.10.1 为 `compare_reference` 增加 `regionOffset` 和可分页区域目录，摘要截断后仍可发现并点查全部区域；最终检查的问题、内容明细和修改差异共享预算。
   - 0.10.0 增加 `compare_reference`、受保护的参考输入、`assessment.visual`、实际资源/构建来源；提取核查改用本次可信事实，总分为 null，未知不计通过。接入与边界见[视觉反馈](agent-visual-feedback.md)；
   - 0.9.0 在 `check_outcome` 的评估里加入提取覆盖（票据 33）与样式核查（票据 34）：新增 `assessment.coverage`、`assessment.style`、`coverageVerification`、`styleVerification`；工具输入不变；

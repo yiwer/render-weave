@@ -343,7 +343,7 @@ describe('模板辅助修改：发起与成果', () => {
       .replaceAll('{templates}', '问候横幅（candidates/template-banner.json）、横幅文字（candidates/template-banner-words.json）'));
     expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'] });
     expect(await json(join(round.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] },
+      task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] }, resourceIdentity: expect.any(Array),
     });
     expect(await readFile(join(agent, 'docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
   });
@@ -605,7 +605,7 @@ describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', 
     const greeting = { name: '问候', version: 1 };
     expect(extraction.record.inputs).toMatchObject({ definition: greeting, dataset: null, request: { template: '问候牌' } });
     expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'dataset-extraction', briefText: await readFile(extraction.record.inputs.brief.source, 'utf8'), definition: greeting, request: await json(join(extraction.roundDir, 'request.json')),
+      task: 'dataset-extraction', briefText: await readFile(extraction.record.inputs.brief.source, 'utf8'), definition: greeting, request: await json(join(extraction.roundDir, 'request.json')), resourceIdentity: expect.any(Array),
     });
     expect((await json(join(extraction.roundDir, 'agent/fake-run.json'))).prompt).toContain('按已发布的数据定义 问候 v1，');
 

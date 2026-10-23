@@ -159,7 +159,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(known.referenceImage.path).toContain('logs');
     expect(round.check.assessment.visual?.status).toBe('notChecked');
     const provenance = await json(join(round.roundDir, 'logs/provenance.json'));
-    expect(provenance.mcpContract).toBe('0.10.1'); expect(provenance.engine).toMatch(/^sha256:/);
+    expect(provenance.mcpContract).toBe('0.11.0'); expect(provenance.engine).toMatch(/^sha256:/);
     expect(provenance.actualMaterials['materials/guide.md']).toHaveLength(64);
     expect(await readFile(join(round.roundDir, 'logs/prompt.md'), 'utf8')).toBe((await json(join(round.roundDir, 'agent/fake-run.json'))).prompt);
     await writeFile(join(round.roundDir, 'logs/reference.json'), '{}');
@@ -202,7 +202,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(await readFile(join(dataset.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/data-definition.md'), 'utf8'));
     expect((await json(join(dataset.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1)).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft,check_outcome');
     expect(await json(join(dataset.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'dataset-extraction', briefText: await readFile(dataset.record.inputs.brief.source, 'utf8'), definition: { name: '胸牌', version: 1 }, request: withoutDataset,
+      task: 'dataset-extraction', briefText: await readFile(dataset.record.inputs.brief.source, 'utf8'), definition: { name: '胸牌', version: 1 }, request: withoutDataset, resourceIdentity: expect.any(Array),
     });
 
     const template = await templateRound(dir);
@@ -214,7 +214,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
     expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
       .toBe('list_documents,read_document,list_resources,check_templates,render_draft,compare_reference,inspect_layout,view_image,dsl_reference,check_outcome');
-    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')) });
+    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')), resourceIdentity: expect.any(Array) });
   });
 });
 

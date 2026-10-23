@@ -2,6 +2,8 @@
 
 第一次写出可读候选后，就在工作目录根上写 `outcome.json`，之后每次修改都同步更新。交回前用 `check_outcome` 核对结构、候选与实际渲染；`qualified` 表示这些技术检查通过，内容与样式仍需审核。
 
+`check_outcome` 的 `contentIdentity.id` 标识本次实际检查的候选和依据。修改候选后要重新检查，不把旧 ID 或旧图作为新候选的证据。本轮资源由宿主固定；资源更新后的重新检查与核准由操作者发起。这个身份由工具计算，不写进 Agent 的 `outcome.json`。
+
 按 `assessment` 决定下一步：
 - `structure` 或 `candidates` 为 `invalid`：按问题修正文件或引用后重新核对。
 - `render.status` 为 `notChecked`：本轮缺少完整出图请求，说明未验证的范围。

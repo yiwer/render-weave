@@ -33,7 +33,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.10.1';
+export const MCP_CONTRACT_VERSION = '0.11.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -482,6 +482,8 @@ export function createTools(context: ToolContext): McpTool[] {
         // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
         const response = (budget: number) => ({
           verdict: check.verdict,
+          ...(check.contentIdentity ? { contentIdentity: { id: check.contentIdentity.id, format: check.contentIdentity.format,
+            engine: check.contentIdentity.engine, criteria: check.contentIdentity.criteria } } : {}),
           assessment: { ...check.assessment, render: { ...check.assessment.render, ...listed(check.assessment.render.problems, 'problems', budget) },
             ...(check.assessment.coverage ? { coverage: summarizedCoverage(check.assessment.coverage, budget) } : {}) },
           ...listed(check.problems, 'problems', budget),
