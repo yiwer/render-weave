@@ -37,7 +37,7 @@ import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from
 import { claimExecution, writeAtomicJson } from './execution.js';
 import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
 import { startCheckpointHost } from './checkpoint-host.js';
-import { stagnationController } from './stagnation.js';
+import { DEFAULT_STAGNATION_THRESHOLD, stagnationController } from './stagnation.js';
 import { usageCollector } from './usage.js';
 import { withLocalAccess } from '../local-access.js';
 import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
@@ -99,6 +99,7 @@ export interface AgentRunOptions {
   readonly maxCostUsd?: number;
   /** 整轮墙钟上限（毫秒）；输入校验与准备不计入，缺省 60 分钟。 */
   readonly roundTimeoutMs?: number;
+  readonly stagnationThreshold?: number;
   /** 用户取消，只终止此轮所属进程树。 */
   readonly signal?: AbortSignal;
   /** 推理力度：传给 Claude Code 的 --effort；不给时不传，用 Claude Code 的缺省（票据 23）。 */
@@ -147,6 +148,7 @@ export interface RoundRecord {
     /** 推理力度；没设为 null（票据 23）。 */
     readonly effort: AgentEffort | null;
     readonly roundTimeoutMs?: number;
+    readonly stagnationThreshold?: number;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
   readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: RoundStop };
@@ -438,13 +440,14 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
     mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const runtime: RoundRecord['runtime'] = { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns,
-    roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
+    roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnationThreshold: options.stagnationThreshold ?? DEFAULT_STAGNATION_THRESHOLD,
+    effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
   await execution.initialize({ task: task.id, round, startedAt, inputs, runtime });
   await control.ready({ roundDir, record: { task: task.id, round, startedAt, inputs, runtime } });
   const started = Date.now();
   const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
-  const stagnation = stagnationController({ roundDir, agentDir, stop: control.stop });
+  const stagnation = stagnationController({ roundDir, agentDir, threshold: runtime.stagnationThreshold!, stop: control.stop });
   managedMcp = await startCheckpointHost({ check: async () => { const result = await checkpoints.check(); stagnation.checked(result); return result; }, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),

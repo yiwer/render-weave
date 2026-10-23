@@ -14,7 +14,8 @@ export interface StagnationStop {
   readonly cycles: readonly StagnationCycle[];
 }
 interface Call { name: string; input: Record<string, unknown>; after?: string }
-export function stagnationController(options: { roundDir: string; agentDir: string; stop(reason: StagnationStop): void }) {
+export const DEFAULT_STAGNATION_THRESHOLD = 2;
+export function stagnationController(options: { roundDir: string; agentDir: string; threshold: number; stop(reason: StagnationStop): void }) {
   const calls = new Map<string, Call>(), completedChecks = new Set<string>();
   let previous: CheckpointView | undefined, repairs: RepairEvidence[] = [], cycles: StagnationCycle[] = [];
   let pending: Promise<void> = Promise.resolve();
@@ -47,7 +48,7 @@ export function stagnationController(options: { roundDir: string; agentDir: stri
         if (comparison.status === 'incomparable' || comparison.improved.length || comparison.unknownAdded.length) cycles = [];
         else {
           cycles.push({ before: previous.id, after: checkpoint.id, beforeIdentity: previous.contentIdentity, afterIdentity: checkpoint.contentIdentity, repairs, required });
-          if (cycles.length >= 2 && checkpoint.comparisonBasis) options.stop({ reason: 'stagnation', threshold: 2, basis: checkpoint.comparisonBasis, cycles });
+          if (cycles.length >= options.threshold && checkpoint.comparisonBasis) options.stop({ reason: 'stagnation', threshold: options.threshold, basis: checkpoint.comparisonBasis, cycles });
         }
       } else if (!required.length || (previous && canonical(previous.comparisonBasis) !== canonical(checkpoint.comparisonBasis))) cycles = [];
       previous = checkpoint; repairs = [];
