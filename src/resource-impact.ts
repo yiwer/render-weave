@@ -12,6 +12,7 @@ import type { TemplateModel } from './template/model.js';
 import { DEFAULT_FALLBACK_FONTS } from './text/fonts.js';
 import { describeError, isRecord } from './util.js';
 import { loadWorkspaceDocuments, type Workspace } from './workspace.js';
+import { localAccessProblem, withLocalAccess } from './local-access.js';
 
 export interface ResourceImpact {
   readonly kind: ResourceReferenceKind;
@@ -34,6 +35,9 @@ export interface ResourceWorkspaceImpact {
 
 /** 覆盖顶层全部 JSON 文件名与原始字节，并纳入实际字体配置。 */
 export async function resourceWorkspaceFingerprint(dir: string, options: RenderOptions = {}): Promise<string> {
+  return withLocalAccess([dir], () => fingerprintLocked(dir, options), 1000);
+}
+async function fingerprintLocked(dir: string, options: RenderOptions): Promise<string> {
   const digest = createHash('sha256');
   digest.update(JSON.stringify(normalizeOptions(options)));
   for (const file of (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()) {
@@ -57,6 +61,10 @@ function normalizeOptions(options: RenderOptions): ResourceWorkspaceImpact['rend
 }
 
 export async function inspectResourceWorkspace(dir: string, id: string, options: RenderOptions = {}): Promise<{ impact?: ResourceWorkspaceImpact; problems: Problem[] }> {
+  try { return await withLocalAccess([dir], () => inspectLocked(dir, id, options), 1000); }
+  catch (error) { return { problems: [localAccessProblem(error) ?? severe(ProblemCodes.inputUnreadable, { kind: 'input', source: dir }, describeError(error))] }; }
+}
+async function inspectLocked(dir: string, id: string, options: RenderOptions): Promise<{ impact?: ResourceWorkspaceImpact; problems: Problem[] }> {
   try {
     const root = await realpath(dir);
     const renderOptions = normalizeOptions(options);

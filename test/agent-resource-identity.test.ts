@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { applyAgentRound, applyResourceReplacement, changeReview, checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, readReview, render, runAgentTask } from '../src/index.js';
-import { resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, resourcesDir, singleTextDir } from './support/fixtures.js';
 import { startMcp } from './support/mcp-client.js';
 
 const fake = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -18,10 +18,11 @@ const template = { dslVersion: 'renderweave-template/1', name: '固定图片', b
     { type: 'image', name: '图', source: 'res:picture', fit: 'fill', place: { left: 0, top: 0, width: { fixed: 80 }, height: { fixed: 40 } } },
   ],
 } };
-async function setup(versioned = true, candidate: unknown = template, additions: Record<string, { kind: 'image' | 'font'; path?: string; text?: string }> = {}) {
+async function setup(versioned = true, candidate: unknown = template, additions: Record<string, { kind: 'image' | 'font'; path?: string; text?: string }> = {},
+  runtime: Pick<Parameters<typeof runAgentTask>[0], 'model' | 'effort'> = {}) {
   const dir = join(base, String(++sequence)), source = join(dir, 'source'), workspace = join(dir, 'workspace'), resources = join(dir, 'resources');
   await mkdir(source, { recursive: true });
-  await cp(singleTextDir, workspace, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, workspace);
   await cp(join(resourcesDir, 'images/test/quadrants.png'), join(source, 'picture.png'));
   const manifest = [{ id: 'picture', kind: 'image', file: 'picture.png' }];
   for (const [id, resource] of Object.entries(additions)) {
@@ -40,7 +41,7 @@ async function setup(versioned = true, candidate: unknown = template, additions:
   await writeFile(join(preset, 'outcome.json'), JSON.stringify({ candidates: ['candidates/template-picture.json'], pending: [], notes: '按给定图片设计' }));
   const run = await runAgentTask({ task: 'template-design', sample: join(source, 'picture.png'), brief: join(dir, 'brief.md'), workspace,
     resources: versioned ? resources : source, dataset: 'ds-greeting', request: join(dir, 'request.json'), out: join(dir, 'round'), key: 'test', keyEnv: 'TEST',
-    claude: { command: process.execPath, args: [fake, preset] } });
+    ...runtime, claude: { command: process.execPath, args: [fake, preset] } });
   expect(run.check.verdict).toBe('qualified');
   return { dir, source, workspace, resources: versioned ? resources : source, run, round: run.roundDir };
 }
@@ -71,15 +72,15 @@ it('审核后替换相关图片：旧图可复查，覆盖不能应用，重新�
 });
 
 it('已有候选的内容身份不包含模型配置，记录指向核准内容与应用依据', async () => {
-  const f = await setup(false); const approved = await approve(f.round);
-  const record = await json(join(f.round, 'round.json')); record.runtime.model = 'another-model'; record.runtime.effort = 'high';
-  await writeFile(join(f.round, 'round.json'), JSON.stringify(record));
-  const view = (await readReview(f.round)).view!;
-  expect(view.contentIdentity!.id).toBe(approved.contentIdentity!.id);
+  const f = await setup(false);
+  const other = await setup(false, template, {}, { model: 'another-model', effort: 'high' });
+  expect(other.run.record.runtime.model).not.toBe(f.run.record.runtime.model);
+  expect(other.run.check.contentIdentity!.id).toBe(f.run.check.contentIdentity!.id);
+  const view = await approve(other.round);
   expect(view.review.contentIdentity!.id).toBe(view.contentIdentity!.id);
   expect(view.contentIdentity).toMatchObject({ format: 'renderweave-content-identity/1', criteria: 'authoring-check/1', engine: expect.stringMatching(/^sha256:/),
     resources: [{ id: 'picture', kind: 'image', sha256: expect.stringMatching(/^[a-f0-9]{64}$/), file: 'picture.png' }] });
-  const result = await applyAgentRound({ roundDir: f.round });
+  const result = await applyAgentRound({ roundDir: other.round });
   expect(result.applied!.contentIdentity).toBe(view.contentIdentity!.id);
 });
 
@@ -172,7 +173,8 @@ it('旧目录图片字节、清单映射和种类变化均拒绝旧批准；无�
 it('历史轮次没有资源身份时保留旧事实，当前重新检查与核准后才能应用', async () => {
   const f = await setup(false); await approve(f.round);
   const oldRound = await json(join(f.round, 'round.json')), oldReview = await json(join(f.round, 'review.json'));
-  delete oldRound.inputs.resourceSnapshot; delete oldReview.contentIdentity;
+  delete oldRound.inputs.resourceSnapshot; delete oldReview.contentIdentity; delete oldRound.execution;
+  for (const name of ['execution.json', 'execution-owner.json', 'round-start.json']) await rm(join(f.round, name));
   const roundBytes = JSON.stringify(oldRound), reviewBytes = JSON.stringify(oldReview);
   await writeFile(join(f.round, 'round.json'), roundBytes); await writeFile(join(f.round, 'review.json'), reviewBytes);
   expect((await readReview(f.round)).view!.problems.some(p => p.message.includes('历史轮次'))).toBe(true);

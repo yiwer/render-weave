@@ -8,6 +8,7 @@ import { materialHashes } from '../../src/agent/provenance.js';
 import { DEFAULT_ENDPOINT, DEFAULT_GOOGLE_ENDPOINT, DEFAULT_MODEL, DEFAULT_SMALL_MODEL } from '../../src/agent/run.js';
 import { AGENT_TASKS } from '../../src/agent/tasks.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
+import { openResourceRepository } from '../../src/resources.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
 import type { RoundRecord } from '../../src/agent/run.js';
 import type { RuntimeOptions } from './eval.js';
@@ -60,7 +61,7 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
     budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: null, stagnation: null},
     build: {...await materialHashes(join(REPO, 'dist'), 'dist'), 'package-lock.json': sha256(await readFile(join(REPO, 'package-lock.json')))},
     mcpContract: MCP_CONTRACT_VERSION, materials: await materialHashes(join(REPO, 'agent'), 'agent'), inputs: await inputIdentity(scenarios),
-    resources: await materialHashes(repoPath(config.resources), 'resources'), config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), plan,
+    resources: await resourceInputIdentity(repoPath(config.resources)), config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), plan,
   };
 }
 
@@ -89,6 +90,18 @@ export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Rec
   return inputs;
 }
 
+/** 清单读取的实际字节也要固定；目录遍历本身不跟随旧目录中的资源链接。 */
+export async function resourceInputIdentity(dir: string): Promise<Record<string, string>> {
+  const files = await materialHashes(dir, 'resources');
+  const opened = await openResourceRepository(dir);
+  if (opened.problems.some(problem => problem.level === 'severe')) throw new Error(`评估资源无法固定：${opened.problems.map(problem => problem.message).join('；')}`);
+  for (const resource of opened.repository.list()) {
+    try { files[`resource-bytes/${resource.id}`] = sha256(await opened.repository.read(resource.id)); }
+    catch { files[`resource-bytes/${resource.id}`] = 'unreadable'; }
+  }
+  return Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b)));
+}
+
 /** 宿主在执行结束后封存完整实验身份及实际轮次字节，不能靠部分运行字段推测来源。 */
 export async function sealEvaluationRound(identity: ExperimentIdentity, dir: string): Promise<void> {
   try { await stat(join(dir, 'round.json')); } catch { return; }
@@ -98,7 +111,7 @@ export async function sealEvaluationRound(identity: ExperimentIdentity, dir: str
 
 async function observationFiles(dir: string): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
-  for (const name of ['round.json', 'check.json', 'outcome.json', 'draft.json', 'request.json', 'requirement.md', 'feedback.md']) {
+  for (const name of ['round.json', 'round-start.json', 'execution.json', 'execution-owner.json', 'check.json', 'outcome.json', 'draft.json', 'request.json', 'requirement.md', 'feedback.md']) {
     try { files[name] = sha256(await readFile(join(dir, name))); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   }
