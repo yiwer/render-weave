@@ -60,6 +60,12 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 [英文局部审核包](F:/GenCode/render-weave/out/harness-original38-review/en-local-candidate-2/review.html)已由本候选公开render生成：41项、50 DPI、原21份材料不变，正式结果保留文字能力阻断，另有1575×1772干净草稿；没有新模型观测。已请求用户独立逐项审核并记录分钟/是否预看诊断，当前全41项及分钟仍空白。中文本候选模板成果尚未产生，不能用旧记录替代。生成器、输入与输出均已独立复核，见外部 harness-original38-readonly-review.md。本票所有未完成验收框保持不变。
 
+### 2026-10-23 具体目的地授权与混合图负评
+
+用户已明确授权OpenCode Go具体端点及验收所需材料（含后续12例），见M329与[授权原话](../original38-harness/endpoint-authorization.json)。重新审批原命令后原四第一段已从候选2启动，先前拒绝原件保留；本段开始不代表任何门槛通过。
+
+用户认为混合站牌对比糟糕，并建议跳过阿文，见[原话及材料身份](../original38-harness/mixed-board-user-feedback.json)。按M307停止该图进一步还原；整体记未接受，41逐项结论、分钟及是否预看诊断仍未知，不将此答复转成英文通过。中文/英文独立样式审核责任保留，接续方案另核。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。
