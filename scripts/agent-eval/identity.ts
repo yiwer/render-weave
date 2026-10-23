@@ -14,6 +14,7 @@ import { withLocalAccess } from '../../src/local-access.js';
 import { REPO, repoPath, stageNames, type EvalConfig, type Scenario } from './scenarios.js';
 import type { RoundRecord } from '../../src/agent/run.js';
 import type { RuntimeOptions } from './eval.js';
+import {contextPolicy,contextStrategyIdentity} from '../../src/agent/context-policy.js';
 
 export const sha256 = (bytes: string | Uint8Array): string => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
@@ -23,6 +24,7 @@ export async function scorerIdentity(): Promise<string> {
 }
 
 export interface ExperimentIdentity {
+  readonly contextPolicy: Awaited<ReturnType<typeof contextStrategyIdentity>>;
   readonly format: 'renderweave-eval-identity/1';
   readonly runtime: { readonly model: string; readonly smallModel: string; readonly endpoint: string; readonly effort: string | null; readonly providerRevision: null };
   readonly executor: { readonly command: string; readonly args: readonly string[]; readonly version: string; readonly files: Readonly<Record<string, string>>; readonly node: string };
@@ -58,6 +60,7 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
 
   return {
     format: 'renderweave-eval-identity/1',
+    contextPolicy:await contextStrategyIdentity(contextPolicy(runtime.contextPolicy)),
     runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null},
     executor: {command, args, version, files: executorFiles, node: process.version},
     budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: runtime.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnation: null},
@@ -151,6 +154,7 @@ export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir
       const {providerRevision: _unknown, ...expected} = expectedRuntime;
       const actual = Object.fromEntries(Object.keys(expected).map(key => [key, record.runtime?.[key as keyof RoundRecord['runtime']]]));
       const changes = identityDifferences(expected, actual, 'runtime');
+      changes.push(...identityDifferences(identity.contextPolicy.name,record.inputs.contextPolicy?.name,'contextPolicy'));
       const expectedInput = {sample: identity.inputs[`${scenario.id}/sample`], brief: identity.inputs[`${scenario.id}/${name === 'dataset' ? 'datasetBrief' : 'brief'}`]};
       changes.push(...identityDifferences(expectedInput, {sample: `sha256:${record.inputs?.sample?.sha256}`, brief: `sha256:${record.inputs?.brief?.sha256}`}, 'inputs'));
       try {

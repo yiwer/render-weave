@@ -400,8 +400,44 @@
       }
     },
     {
+      "name": "outcome_feedback",
+      "description": "只读续取同一 check_outcome 的完整局部问题；不重新检查当前候选。按 code 或 target 聚类，保留实例、源模板位置、待确认和未知范围。使用 check_outcome 返回的 reportId；同一会话下一次检查使旧报告过期。分页按 nextOffset 继续，超长单项以可无损拼接的 JSON fragment 返回。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportId"
+        ],
+        "properties": {
+          "reportId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "groupBy": {
+            "enum": [
+              "code",
+              "target"
+            ]
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "check_outcome",
-      "description": "交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。每个候选最多 100 条差异、约 20000 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。",
+      "description": "交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。每个候选最多 100 条差异、约 20000 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。feedback.reportId 可交给 outcome_feedback 续取同一检查的完整局部问题、差异与未知范围；先读完再修改，分页不重新检查。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
