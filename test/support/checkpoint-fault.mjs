@@ -6,6 +6,7 @@ const fault = process.env.RW_CHECKPOINT_FAULT, out = process.env.RW_CHECKPOINT_F
 const rename = fs.promises.rename, readFile = fs.promises.readFile, writeFile = fs.promises.writeFile;
 let publications = 0, mutated = false, candidateReads = 0;
 fs.promises.rename = async (source, target) => {
+  if (fault === 'final-error' && target === join(out, 'round.json')) throw new Error('controlled final commit failure');
   if (target === join(out, 'checkpoint.json')) {
     publications++;
     if (fault === 'final-edit' && publications === 2) await writeFile(join(out, 'agent/candidates/schema.json'), '{"unexamined":true}');
@@ -16,6 +17,10 @@ fs.promises.rename = async (source, target) => {
     await new Promise(() => { setInterval(() => {}, 1000); });
   }
   return rename(source, target);
+};
+fs.promises.writeFile = async (path, ...args) => {
+  if (fault === 'prepare-error' && path === join(out, 'logs/prompt.md')) throw new Error('controlled preparation failure');
+  return writeFile(path, ...args);
 };
 fs.promises.readFile = async (path, ...args) => {
   const bytes = await readFile(path, ...args);

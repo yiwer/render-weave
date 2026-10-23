@@ -507,13 +507,15 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   };
   await writeAtomicJson(join(roundDir, 'round.json'), record);
   await execution.finish(record);
-  await releaseRecovery?.();
   return { roundDir, record, check, ...(outcome ? { outcome } : {}), ...(recovered && deliverable.candidates.length > 0 ? { draft: DRAFT_FILE } : {}) };
   } catch (error) {
     await execution.fail().catch(() => undefined);
     throw error;
   } finally {
     await managedMcp?.close();
+    // execute 等待执行器 close 才返回；准备失败没有执行器，检查失败也已结束执行。
+    // 正常错误清理完本轮可写进程后释放恢复权；宿主强退则留给死亡身份核对。
+    await releaseRecovery?.();
   }
 }
 

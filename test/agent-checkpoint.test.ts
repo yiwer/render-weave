@@ -220,6 +220,24 @@ it('业务受阻的完整检查点能够接续，新轮次仍保留不合格结�
     } finally { await stop(next.child); }
   } finally { await stop(job.child); }
 });
+it.each(['prepare-error','final-error'])('恢复失败且执行器已结束后释放拥有权，可从原检查点重试（%s）', async fault => {
+  const source=await start(`retry-${fault}`);
+  try { await waitJson(join(source.out,'agent/checkpoint-observed.json')); }
+  finally { await stop(source.child);await source.closed; }
+  const feedback=join(base,`${fault}-feedback.md`);await writeFile(feedback,'继续');
+  const preset=join(base,`${fault}-preset`);await mkdir(preset);
+  await writeFile(join(preset,'outcome.json'),JSON.stringify({candidates:['candidates/schema.json'],pending:[],notes:'继续'}));
+  const failed=launch(join(base,`${fault}-failed`),preset,['--from',source.out,'--feedback',feedback],fault);
+  try {
+    if(fault==='final-error') { await waitJson(join(failed.out,'agent/checkpoint-observed.json'));await writeFile(join(failed.out,'agent/continue'),''); }
+    await failed.closed;expect(failed.child.exitCode).not.toBe(0);
+    expect((await readReview(failed.out)).execution?.status).toBe('failed');
+  } finally { await stop(failed.child);await failed.closed; }
+  const retry=launch(join(base,`${fault}-retry`),preset,['--from',source.out,'--feedback',feedback]);
+  try {
+    await Promise.race([waitJson(join(retry.out,'agent/checkpoint-observed.json')),retry.closed.then(()=>{throw new Error(retry.errors());})]);
+  } finally { await stop(retry.child);await retry.closed; }
+});
 it('候选读取期间变化不发布；无完整检查点的中断轮次拒绝残片接续', async () => {
   const job=await start('read-race',schema,'reading');
   try {
