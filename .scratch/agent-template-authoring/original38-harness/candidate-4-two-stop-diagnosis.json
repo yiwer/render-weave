@@ -1,0 +1,252 @@
+{
+  "format": "original38-two-stop-readonly-diagnosis/1",
+  "createdAt": "2026-10-23T20:42:07.307Z",
+  "classification": {
+    "primary": "model-template-generalization-defect",
+    "confirmed": true,
+    "productDefectFound": false,
+    "criterionDefectFound": false,
+    "sourceMaterialDefectFound": false
+  },
+  "conclusion": "标识纵向循环填满随站数变化的站点列，将359.5mm调用框传入最大60mm的站点标识图；模型自建2站检查省掉badges，漏掉此分支。",
+  "candidate": {
+    "path": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "id": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d",
+    "moduleSha256": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4"
+  },
+  "attemptId": "83349334-f839-44e5-8f4e-feaeadc95f92",
+  "experiment": "sha256:c6eccead1b20d245dc2369dd1a2853f87f5445f201a0811f75a1aeaf08a257c9",
+  "binding": {
+    "id": "sha256:c95dfdb1e4c3154cfb85fe981c528246d115fb6b80480adc1c05de33581e85d0",
+    "contentIdVerified": true,
+    "configByteVerified": true,
+    "evalIdentityVerified": true,
+    "registeredUnitVerified": true,
+    "resourcesVerified": [
+      {
+        "id": "font-hei-bold",
+        "sha256": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+      },
+      {
+        "id": "font-hei-heavy",
+        "sha256": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+      },
+      {
+        "id": "font-hei-medium",
+        "sha256": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+      },
+      {
+        "id": "font-hei-regular",
+        "sha256": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+      },
+      {
+        "id": "icon-hospital",
+        "sha256": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+      },
+      {
+        "id": "icon-metro",
+        "sha256": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+      },
+      {
+        "id": "landmark-1",
+        "sha256": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+      },
+      {
+        "id": "landmark-2",
+        "sha256": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+      },
+      {
+        "id": "landmark-3",
+        "sha256": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+      },
+      {
+        "id": "landmark-4",
+        "sha256": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+      },
+      {
+        "id": "route-no-m402",
+        "sha256": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+      },
+      {
+        "id": "test-quadrants-jpg",
+        "sha256": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+      },
+      {
+        "id": "test-quadrants-png",
+        "sha256": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+      },
+      {
+        "id": "test-quadrants-webp",
+        "sha256": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+      },
+      {
+        "id": "test-vector-svg",
+        "sha256": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+      }
+    ]
+  },
+  "scope": {
+    "sourceFiles": 97,
+    "sourceDirectories": 23,
+    "sealedFiles": 95,
+    "sourceUnchanged": true,
+    "copyUnchanged": true,
+    "publicRenderCalls": 17,
+    "publicCandidateVerifyExit": 0,
+    "privateCalls": 0,
+    "readReviewCalls": 0,
+    "modelCalls": 0,
+    "originalTemplateEdits": 0,
+    "thresholdEdits": 0,
+    "newCandidateCreated": false
+  },
+  "frozenStress": {
+    "passRequired": 10,
+    "actualPassed": 9,
+    "cases": [
+      {
+        "label": "35站本站5",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "本站0",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "本站1",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "本站35",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "2站",
+        "severe": 1,
+        "problems": [
+          {
+            "code": "render.sizeOutOfRange",
+            "level": "severe",
+            "location": {
+              "kind": "element",
+              "path": "线路牌主模板/站点循环[2]/列/站点标识[1]"
+            },
+            "message": "实际尺寸 359.5 × 6 mm 超出模板“站点标识图”的适用尺寸范围：宽 2–60 mm，高 2–20 mm"
+          }
+        ]
+      },
+      {
+        "label": "20站",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "50站740",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "50站1500",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "35站1500",
+        "severe": 0,
+        "problems": []
+      },
+      {
+        "label": "12字站名",
+        "severe": 0,
+        "problems": []
+      }
+    ]
+  },
+  "formula": {
+    "usableWidthMm": 719,
+    "stationCount": 2,
+    "callWidthMm": 359.5,
+    "calledTemplateWidthMaxMm": 60,
+    "calledTemplateHeightMm": 6
+  },
+  "modelCoverage": {
+    "toolLogLine": 12,
+    "streamResultLine": 70,
+    "ownTwoStopInputHadBadges": false,
+    "ownTwoStopCurrentIndex": 0,
+    "ownTwoStopReturnedOuterRangeProblems": 2,
+    "finalOuterColumnMaxWidthMm": 1500,
+    "finalInnerBadgeMaxWidthMm": 60
+  },
+  "probes": [
+    {
+      "label": "2站改DPI50_其他不变",
+      "severe": 1,
+      "problems": [
+        {
+          "code": "render.sizeOutOfRange",
+          "level": "severe",
+          "location": {
+            "kind": "element",
+            "path": "线路牌主模板/站点循环[2]/列/站点标识[1]"
+          },
+          "message": "实际尺寸 359.5 × 6 mm 超出模板“站点标识图”的适用尺寸范围：宽 2–60 mm，高 2–20 mm"
+        }
+      ]
+    },
+    {
+      "label": "2站只移除第二站badges_诊断控制非验收",
+      "severe": 0,
+      "problems": []
+    },
+    {
+      "label": "2站只将标识循环width由fill改fixed6_外部内存假设验证",
+      "severe": 0,
+      "problems": []
+    },
+    {
+      "label": "11站原模板",
+      "severe": 1,
+      "problems": [
+        {
+          "code": "render.sizeOutOfRange",
+          "level": "severe",
+          "location": {
+            "kind": "element",
+            "path": "线路牌主模板/站点循环[2]/列/站点标识[1]"
+          },
+          "message": "实际尺寸 65.364 × 6 mm 超出模板“站点标识图”的适用尺寸范围：宽 2–60 mm，高 2–20 mm"
+        }
+      ]
+    },
+    {
+      "label": "12站原模板",
+      "severe": 0,
+      "problems": []
+    }
+  ],
+  "authoringCheck": {
+    "verdict": "qualified",
+    "scope": "封存request对应的35站currentIndex5；不能代替独立10项业务压测或人工视觉审核",
+    "content": "needsReview",
+    "visual": "notChecked"
+  },
+  "recommendation": {
+    "current": "保留9/10失败并继续既定第二遍；不改候选4、不降阈值、不新造候选5。",
+    "future": "如后续授权纠偏，在模板内约束标识调用框并保持对齐，使用最少站数且保留可选标识的合法数据通过公开render回归。",
+    "notClaimed": "外部fixed6仅验证病因，不是正式纠偏或整体视觉通过；人工审核/分钟未填写。"
+  },
+  "evidence": {
+    "red": "harness-original38-candidate4-two-stop-diagnosis/red-reproduction.json",
+    "probes": "harness-original38-candidate4-two-stop-diagnosis/probe-results.json",
+    "feedback": "harness-original38-candidate4-two-stop-diagnosis/actual-model-tool-feedback.json",
+    "originalSet": "harness-original38-candidate4-two-stop-diagnosis/source-before.json",
+    "bindingConfigSha256": "f3d716e322fc351fbbb84fb0066e8d433502312b09ae8207676887fcf4acd52a",
+    "completedSealSha256": "4facaf99830062907713cb459b0b07edd2a802fd43f54bb04e9ac2ab19c5df72"
+  }
+}
