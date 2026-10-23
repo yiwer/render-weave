@@ -41,4 +41,10 @@
 - `npm run typecheck`、`npm run build`、`git diff --check`：通过。
 - 过程中一次全量仅因夹具 `fs.cp` 把另一读者的活动锁目录一起复制进新工作区失败；已改为通过公开 `localWorkspaceDocuments` 复制 JSON 字节，相关 9 个文件、174 项先通过，再完成上述全量验证。服务快速测试复用主仓库已安装依赖；未调用真实模型。
 
+集成复核（2026-10-23）：已与 08 的持久执行状态合并；`readReview` 同时保留未完成状态诊断、已提交记录哈希核对和短锁读取，上一轮接续在短锁内核对执行合同，模型等待继续不占资源或工作区锁。MCP 合同保持 13 的 0.12.0。
+
+- `node node_modules/vitest/vitest.mjs run test/agent-concurrency.test.ts test/agent-execution.test.ts test/agent-resource-identity.test.ts test/agent-review.test.ts test/agent-rounds.test.ts test/resource-replacement.test.ts test/versioned-resources.test.ts --maxWorkers=1`：7 个文件、137 项全部通过，覆盖并发操作与强退状态、审核/应用、资源完整性、历史轮次和接续交叉回归。
+- 合并提交 `c58276a` 后，`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts test/mcp.test.ts --maxWorkers=1`：2 个文件、47 项全部通过，核对冻结评估身份、实际状态证据与公开 MCP 合同的交叉影响。
+- `npx tsc --noEmit`、`npm run build`、`git diff --check` 均通过。
+
 验收偏差：无。本票不保证外部直接改盘参与事务，不宣称崩溃恢复；05 接续持久提交意图、恢复和幂等。阶段 5 策略不变。`CONTEXT.md` 由集成方统一更新。
