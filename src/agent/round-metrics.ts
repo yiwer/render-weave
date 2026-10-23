@@ -1,6 +1,7 @@
 /** 完整与中断轮次共用的可证用量读取；未知不补零，thinking 属于 output。 */
 import {readFile} from 'node:fs/promises';
 import {join, relative} from 'node:path';
+import {usageCollector} from './usage.js';
 import type {AgentTaskId} from './tasks.js';
 import type {RoundRecord, RoundOutcome} from './run.js';
 export interface RoundMetrics {
@@ -10,6 +11,7 @@ export interface RoundMetrics {
   /** missing：没有轮次记录（发起失败）。 */
   readonly verdict: RoundRecord['verdict'] | 'missing';
   readonly wallMs?: number;
+  readonly usageSource?: RoundRecord['run']['usageSource'];
   readonly turns?: number;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
@@ -36,16 +38,12 @@ export async function readRoundMetrics(dir: string, outDir: string, task?: Agent
     record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord;
   } catch {
     if (!task) return undefined;
-    // 宿主强退可能只留下完整 result 行；只读取运行时给出的累计用量，不把逐条消息相加。
-    let result: Record<string, any> | undefined;
+    // 同运行监督共用累计规则；重复消息按id更新，稀疏result不抹去已知字段，未完行不计。
+    const usage=usageCollector();let endedBy:string|undefined;
     try {for (const line of (await readFile(join(dir, 'logs/stream.jsonl'), 'utf8')).split('\n')) {
-      try {const message = JSON.parse(line); if (message.type === 'result') result = message;} catch { /* 未写完的行没有可信用量 */ }
+      try {const message=JSON.parse(line);usage.accept(message);if(message.type==='result'&&typeof message.subtype==='string')endedBy=message.subtype;} catch { /* 未写完的行没有可信用量 */ }
     }} catch { /* 无日志则全部用量未知 */ }
-    const usage = result?.usage, number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
-    return {task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: 'missing', ...logs,
-      inputTokens: number(usage?.input_tokens), outputTokens: number(usage?.output_tokens), thinkingTokens: number(usage?.output_tokens_details?.thinking_tokens),
-      cacheReadTokens: number(usage?.cache_read_input_tokens), cacheCreationTokens: number(usage?.cache_creation_input_tokens),
-      ...(result?.subtype ? {endedBy: String(result.subtype)} : {})};
+    return {task,dir:relative(outDir,dir).replaceAll('\\','/'),verdict:'missing',...logs,...usage.read(),...(endedBy?{endedBy}:{})};
   }
   if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   let outcome: RoundOutcome | undefined;
@@ -54,7 +52,7 @@ export async function readRoundMetrics(dir: string, outDir: string, task?: Agent
   const pick = <K extends keyof typeof run>(key: K) => (run[key] === undefined ? {} : { [key]: run[key] });
   return {
     task: record.task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: record.verdict,
-    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'), ...pick('stopped'),
+    ...pick('wallMs'), ...pick('usageSource'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'), ...pick('stopped'),
     ...(outcome ? { pending: outcome.pending.length } : {}), ...logs,
     ...(run.error ? { error: run.error } : {}),
   } as RoundMetrics;

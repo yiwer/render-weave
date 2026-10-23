@@ -70,7 +70,7 @@ node dist/bin.js agent order-report --order F:/orders/register --share > share.j
 ```
 
 - `counts` 分开列订单、计划、尝试、成功订单数量。`model` 的有效、invalid、未知尝试是模型观察口径；invalid 仍计入订单成本与交付记录。
-- 各订单以及整体的 `totals.usage` 分别列原始用量的 `known` 小计和 `unknownAttempts`。包括成功、失败、中断、重试和建立轮次前的派发失败。thinking 是 output 的子集，单独显示，不另加进总输出或金额。
+- 各订单以及整体的 `totals.usage` 分别列原始用量的 `known` 小计和 `unknownAttempts`。包括成功、失败、中断、重试和建立轮次前的派发失败。thinking 是 output 的子集，单独显示，不另加进总输出或金额。只有消息级用量时标记 `usageSource:messages`：按消息ID合并重复/稀疏更新，保留已知小计，同时将该尝试计入未知余量；空 result 不抹去先前数值，这类部分用量不用于金额估算。
 - `timing.knownExecutionWallMs` 是已知执行区间的并集，不重复累计并行区间；`executionWallMs` 在区间不完整时为 null。`attemptsElapsedMs` 是各尝试完整起止耗时之和（评估使用封存尝试耗时，普通轮次使用 startedAt/endedAt），另有未知耗时数量；原始 `usage.wallMs` 仅为执行器用时，另行保留，不与整轮墙钟混算。`actualWallMs` 只有整批交付完成且有明确结束事件时才给出登记到最后交付的持续时间；未完订单、人工作业间隙和未知结束不会凭空补齐。
 - `history` 列出旧记录、范围外前序轮次、登记前已开始的尝试和未知开始时间。历史不完整时保留已知成本，但不声称完整估算或 Agent 首次成功。
 - `costPerSuccessfulOrder` 的分子是登记范围内**所有订单**的尝试与已知人工时间，包括没有成功的订单；分母仅为已完成所需正式出图的成功应用订单。成功数为 0 时为 null；完整性字段区分已知小计与完整成本。单笔订单成本在 `orders` 中独立列出。
