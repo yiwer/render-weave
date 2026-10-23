@@ -1,8 +1,8 @@
 {
   "format": "renderweave-trusted-feedback-evidence-index/1",
-  "status": "not-dispatched",
-  "candidateId": null,
-  "bindingId": null,
+  "status": "awaiting-endpoint-authorization",
+  "candidateId": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+  "bindingId": "sha256:b2a1a7e53f303dfb184b417fa78248251bedd49a84e46dabe7280785ada06505",
   "expectedSources": [
     "candidate.json",
     "binding.json",
@@ -210,5 +210,7 @@
       "unknownCosts": null,
       "sharedReferences": []
     }
-  ]
+  ],
+  "experimentId": "sha256:5e69585bf0ceb8ca62800889af0dccb94e0974606b894bd34e2c2cae7d925961",
+  "inputEvidence": "input-evidence.json"
 }

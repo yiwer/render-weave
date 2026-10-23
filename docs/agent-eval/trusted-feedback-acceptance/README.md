@@ -1,6 +1,6 @@
-# 固定候选可信反馈验收：派发前准备
+# 固定候选可信反馈验收：候选2已登记，待外发授权
 
-已登记中文/英文四任务各两次，共16个新观测槽位；当前全部`not-run`，真实观测0。[登记](registration.json)与[证据索引](evidence-index.json)尚未绑定20最终候选，因此不可用于派发或宣称验收完成。票21仍待20，18的32次资料策略试验不占这里任何槽位。
+已登记中文/英文四任务各两次，共16个新观测槽位；当前全部`not-run`，真实观测0。[登记](registration.json)、[输入摘要](input-evidence.json)及[证据索引](evidence-index.json)已绑定20的最终候选2。20已合入主线7c0ff99；21当前等待用户明确授权向OpenCode Go的具体端点披露验收所需资料，尚未执行任何真实派发。18的32次资料策略试验不占这里任何槽位。
 
 ## 固定计划与责任
 
@@ -30,17 +30,17 @@
 根目录：`F:/GenCode/render-weave/out/harness21-trusted-feedback`。
 
 - `resources/`已独立复制，22文件逐一与`fixtures/resources`核对SHA，包含4个字体。资源清单见登记；未使用用户留出图。
-- `inputs/`、`binding/`尚不存在，由20在最终候选完成后从其`content/`自身唯一准备和绑定；21不抢先准备或覆盖。
+- 20已从最终候选`content/`唯一生成`inputs-2/`、`plan-2.json`与`binding-2/`；8类受控seed准备通过，16单元全未运行。旧候选1的`inputs/`、`binding/`与计划保留为0观测准备原件，不用于本轮。
 - `observations/`保存公开评估生成的不可变尝试和轮次；`reports/`保存每次分段报告；`dispatch/`保存首次派发参数、开始/完成、日志与报告快照。这些目录尚未派发生成。
 - 21工作树仅准备说明和登记，独立安装依赖，不修改main、20工作树、Agent资料或构建。
 
-20交接必须提供共同候选目录和内容身份、公开验证结果、输入准备清单与配置、16槽计划输出、绑定目录与ID。候选路径不是身份，不能仅凭Git提交或“相同模型名”接受来源。21接收时补登记中的null身份及每槽seed/反馈/政策/核准事实摘要，另存生效前快照，核对计划全为not-run、没有复用旧观测，再允许真实派发。
+20交接已核对：候选3322文件、15份公开资料真实路径，配置及各15个绑定资源摘要，16槽公开计划与预登记逐项一致；full/模型/执行器/预算/停滞阈值均吻合。登记已补共同候选、绑定、实验及每槽seed/反馈/政策/核准事实摘要，另存candidate-2.pending-authorization快照。受控seed哈希按相对路径排序的完整文件摘要映射计算，规则和原件路径见input-evidence.json。实际派发仍须等待具体端点授权。
 
-20准备命令形状如下，当前未执行；实际路径取最终交接，cwd必须为候选`content/`：
+20已执行的准备入口如下；这段仅作命令形状说明，不能再次覆盖已有输入。实际命令、cwd和退出码见20的publication-2/steps.json：
 
 ```powershell
-node node_modules/tsx/dist/cli.mjs scripts/agent-eval/prepare-feedback.ts --out F:/GenCode/render-weave/out/harness21-trusted-feedback/inputs --resources F:/GenCode/render-weave/out/harness21-trusted-feedback/resources
-node node_modules/tsx/dist/cli.mjs scripts/agent-eval/run.ts --config F:/GenCode/render-weave/out/harness21-trusted-feedback/inputs/config.json --plan F:/GenCode/render-weave/out/harness21-trusted-feedback/plan.json
+node node_modules/tsx/dist/cli.mjs scripts/agent-eval/prepare-feedback.ts --out F:/GenCode/render-weave/out/harness21-trusted-feedback/inputs-2 --resources F:/GenCode/render-weave/out/harness21-trusted-feedback/resources
+node node_modules/tsx/dist/cli.mjs scripts/agent-eval/run.ts --config F:/GenCode/render-weave/out/harness21-trusted-feedback/inputs-2/config.real-model.json --plan F:/GenCode/render-weave/out/harness21-trusted-feedback/plan-2.json
 node node_modules/tsx/dist/cli.mjs scripts/agent-eval/freeze.ts --verify <最终候选目录> --current
 ```
 
@@ -58,4 +58,4 @@ node node_modules/tsx/dist/cli.mjs scripts/agent-eval/freeze.ts --verify <最终
 
 有效失败意味着本票门槛未通过；尚未运行或无有效结果则保留not-run/invalid。不能因某条内容已修好而忽略分页等独立要求，也不能拿18的成功轮次补缺。若观察到实现缺陷，先回责任票修复、形成新候选和受影响清单，再决定证据有效性；不能在本轮边跑边改判据。
 
-本准备没有运行模型、准备seed或绑定候选，也没有关闭票21。下一步等待20最终候选及16槽输入/绑定交接。
+20已完成受控seed与候选绑定；21没有运行模型，也没有关闭票21。候选为72a5e749…b949f，绑定b2a1a7e5…6505，实验5e69585b…5961，完整身份见登记。待用户对具体opencode.ai端点授权后，再另存可派发登记并依原两段参数执行；出现硬额度或429立即联动原38停止后续，保留中断原件，不自动续跑。
