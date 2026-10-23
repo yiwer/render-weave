@@ -39,6 +39,12 @@
 
 公开archive/restore真实恢复5172文件/977目录，恢复后readReview8轮通过，再核所有SHA一致；manifest f4345789032d3d93408eda764c8cc38a832089085d29137713c6e40b1d2e95c9，已知key扫描5172/0命中。模型与独立业务门槛均未因此关闭，也未以候选2通过补本批槽位。
 
+### 候选3首段独立集成复核
+
+2026-10-23：独立复核 `ad7733a...146605d` 后以 `0202b546` 合入。17份提交原件与持久目录逐字节一致；8个唯一尝试/608封存文件、原生用量、5172个源文件及恢复文件、3635个CAS块、977个恢复目录共20,926项断言通过。读取作者既有8份公开readReview恢复证明，未重跑模型、测试或评分。原报告SHA保持13ca58f7…18c47，严格属性失败与四项未执行守卫分开记录，票保持needs-triage。
+
+独立复核原件：`C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness21-candidate3-result-merge-review.md`，SHA256 `41ea8292ed5a24bec5f7e9659671e8ac0a6c71599e894ab4cfbf92b341618447`；同名audit.json为 `39d34203e8a13294092e69e9499f462e467ed0812aec41601d1cf5ca09ab43c8`。602750ms为轮次累计墙钟，不代表仅提供方推理耗时；与尝试、运行会话和启动包装墙钟分别保留。
+
 ## Comments
 
 2026-10-23准备：基于集成`de76b55`创建独立`codex/harness-21`工作树，[16槽计划与证据索引](../../../docs/agent-eval/trusted-feedback-acceptance/README.md)已登记，当前全部not-run、真实观测0。22个资源文件已独立复制并逐项核SHA；不复用18观测。20负责从最终候选content准备inputs和binding，21等待交接后唯一派发；没有提前运行模型、准备seed或勾选验收。有效分页流程失败保持fail，原38只有条件引用与独立派发/业务审核分工。
