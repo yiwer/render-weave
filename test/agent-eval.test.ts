@@ -185,7 +185,7 @@ describe('判定与门槛', () => {
     // 一个场景注定不过，整体就是未通过，补跑别的场景也改变不了。
     expect(gate(config, [result('m402-definition', 1, true), result('m402-template', 1, false), result('m402-template', 2, false)], plan).status).toBe('fail');
     expect(resumeCommand('label', planned, ['--model', 'gemini-4-argon-contributor', '--out', 'F:\\eval out']))
-      .toBe('npx tsx scripts/agent-eval/run.ts --label label --repetitions 1-2 --model gemini-4-argon-contributor --out "F:\\eval out"');
+      .toBe("npx tsx scripts/agent-eval/run.ts --label label --repetitions 1-2 --model gemini-4-argon-contributor --out 'F:\\eval out'");
     expect(resumeCommand('label', gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, true)]))).toBeUndefined();
   });
 });

@@ -1,7 +1,7 @@
 /** 评估身份与重新评分所使用的内容摘要；不以文件路径或 git 提交代替实际内容。 */
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { delimiter, isAbsolute, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { materialHashes } from '../../src/agent/provenance.js';
@@ -9,12 +9,13 @@ import { DEFAULT_ENDPOINT, DEFAULT_GOOGLE_ENDPOINT, DEFAULT_MODEL, DEFAULT_SMALL
 import { AGENT_TASKS } from '../../src/agent/tasks.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
+import type { RoundRecord } from '../../src/agent/run.js';
 import type { RuntimeOptions } from './eval.js';
 
 export const sha256 = (bytes: string | Uint8Array): string => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
 export async function scorerIdentity(): Promise<string> {
-  const files = ['scripts/agent-eval/score.ts', 'scripts/agent-eval/eval.ts', 'scripts/agent-eval/scenarios.ts'];
+  const files = (await readdir(join(REPO, 'scripts/agent-eval'))).filter(file => file.endsWith('.ts')).sort().map(file => `scripts/agent-eval/${file}`);
   return sha256(JSON.stringify(await Promise.all(files.map(async path => [path, sha256(await readFile(join(REPO, path)))]))));
 }
 
@@ -51,11 +52,27 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
   for (const [index, arg] of args.entries()) {
     try { if ((await stat(arg)).isFile()) executorFiles[`arg-${index}`] = sha256(await readFile(arg)); } catch { /* 普通命令参数 */ }
   }
+
+  return {
+    format: 'renderweave-eval-identity/1',
+    runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null},
+    executor: {command, args, version, files: executorFiles, node: process.version},
+    budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: null, stagnation: null},
+    build: {...await materialHashes(join(REPO, 'dist'), 'dist'), 'package-lock.json': sha256(await readFile(join(REPO, 'package-lock.json')))},
+    mcpContract: MCP_CONTRACT_VERSION, materials: await materialHashes(join(REPO, 'agent'), 'agent'), inputs: await inputIdentity(scenarios),
+    resources: await materialHashes(repoPath(config.resources), 'resources'), config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), plan,
+  };
+}
+
+/** 当前评分所使用的输入内容；重新评分不会冒充历史派发身份。 */
+export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Record<string, string>> {
   const inputs: Record<string, string> = {};
   const add = async (key: string, path: string) => { inputs[key] = sha256(await readFile(repoPath(path))); };
   for (const scenario of scenarios) {
     await add(`${scenario.id}/sample`, scenario.sample);
     await add(`${scenario.id}/brief`, scenario.brief);
+    if (scenario.reference) await add(`${scenario.id}/reference`, scenario.reference);
+    if (scenario.contentBaseline) await add(`${scenario.id}/contentBaseline`, scenario.contentBaseline);
     if (scenario.kind === 'transcription') {
       await add(`${scenario.id}/datasetBrief`, scenario.datasetBrief);
       await add(`${scenario.id}/truth`, scenario.truth);
@@ -69,15 +86,32 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
       for (const file of scenario.savedTemplates.files) await add(`${scenario.id}/savedTemplates/${file}`, join(scenario.savedTemplates.from, file));
     }
   }
-  return {
-    format: 'renderweave-eval-identity/1',
-    runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null},
-    executor: {command, args, version, files: executorFiles, node: process.version},
-    budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: null, stagnation: null},
-    build: {...await materialHashes(join(REPO, 'dist'), 'dist'), 'package-lock.json': sha256(await readFile(join(REPO, 'package-lock.json')))},
-    mcpContract: MCP_CONTRACT_VERSION, materials: await materialHashes(join(REPO, 'agent'), 'agent'), inputs,
-    resources: await materialHashes(repoPath(config.resources), 'resources'), config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), plan,
-  };
+  return inputs;
+}
+
+/** 只核对预登记的静态条件；串联工作区、检查点、实际服务模型属于观测。 */
+export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir: string, scenarios: readonly Scenario[], repeat: number): Promise<void> {
+  for (let repetition = 1; repetition <= repeat; repetition++) for (const scenario of scenarios) {
+    for (const name of scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind]) {
+      const dir = join(outDir, `run-${repetition}`, scenario.id, name);
+      let record: RoundRecord;
+      try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; }
+      catch { continue; }
+      if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) continue;
+      const expectedRuntime = {...identity.runtime, maxTurns: identity.budgets.maxTurns[record.task]};
+      const {providerRevision: _unknown, ...expected} = expectedRuntime;
+      const actual = Object.fromEntries(Object.keys(expected).map(key => [key, record.runtime?.[key as keyof RoundRecord['runtime']]]));
+      const changes = identityDifferences(expected, actual, 'runtime');
+      const expectedInput = {sample: identity.inputs[`${scenario.id}/sample`], brief: identity.inputs[`${scenario.id}/${name === 'dataset' ? 'datasetBrief' : 'brief'}`]};
+      changes.push(...identityDifferences(expectedInput, {sample: `sha256:${record.inputs?.sample?.sha256}`, brief: `sha256:${record.inputs?.brief?.sha256}`}, 'inputs'));
+      try {
+        const provenance = JSON.parse(await readFile(join(dir, 'logs/provenance.json'), 'utf8')) as {materials: unknown; mcpContract: unknown};
+        changes.push(...identityDifferences(identity.materials, provenance.materials, 'materials'));
+        changes.push(...identityDifferences(identity.mcpContract, provenance.mcpContract, 'mcpContract'));
+      } catch { changes.push('provenance'); }
+      if (changes.length) throw new Error(`观测条件与原实验不符：run-${repetition}/${scenario.id}/${name}\n${changes.map(path => `- ${path}`).join('\n')}`);
+    }
+  }
 }
 
 export function identityDifferences(left: unknown, right: unknown, path = ''): string[] {

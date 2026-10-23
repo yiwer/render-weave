@@ -8,12 +8,12 @@
  *   npx tsx scripts/agent-eval/run.ts --behavior-policy <政策.json> --workspace <工作区> --resources <资源> --out <新目录>
  *     离线核查预登记的模板业务事实，不调用模型；用法见 docs/agent-template-behavior.md。
  *   分段跑（某个模型的额度窗口装不下一整遍）：用同一个 --label，先加 --repetitions 1-1，额度恢复后加 --repetitions 2-2；
- *   后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛。
+ *   每段核验冻结身份，报告按预登记全计划判定门槛。
  *   同一个 --label 再跑时接着前一次：已有有效结果的单元跳过，invalid 的单元按轮次续跑。
  *   两种用法都可加 --reports <目录>：报告写到哪里，缺省 docs/agent-eval/reports/<名称>.json
  *
  * 上游错误（票据 21）：500/502/503/529、overloaded 与连接中断只重跑出错的那一轮，最多 2 次，间隔 60、180 秒；
- * 429 与额度字样停止派发队列中还没开始的单元，结束时打印续跑命令。拿不到有效结果的单元记为 invalid，不计入连续达线。
+ * 429 与额度字样停止派发队列中还没开始的单元，结束时打印续跑命令。拿不到有效结果的单元记为 invalid，执行完整性记为未完成。
  *
  * 模型缺省与 renderweave agent run 相同（OpenCode Go 上的 Claude Haiku 5.5）；--model gemini-… 时由 agent run 起本机转换代理。
  * 需要 key（缺省读环境变量 OPEN_CODE_API_KEY，由 renderweave agent run 读取，本命令不读取其值），耗时长、消耗额度，
@@ -24,10 +24,11 @@ import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  buildReport, cliLauncher, formatReport, observedUnit, provenance, resumeCommand, runUnits, scoreScenario, type GateStatus, type Provenance, type ScenarioResult, type RuntimeOptions,
+  EvaluationAborted, buildReport, cliLauncher, formatReport, observedUnit, provenance, resumeCommand, runUnits, scoreScenario, type GateStatus, type Provenance, type ScenarioResult, type RuntimeOptions,
 } from './eval.js';
 import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
-import { experimentIdentity, identityDifferences, scorerIdentity, sha256, type ExperimentIdentity } from './identity.js';
+import { materialHashes } from '../../src/agent/provenance.js';
+import { experimentIdentity, inputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sha256, type ExperimentIdentity } from './identity.js';
 
 const MANIFEST = 'eval.json';
 
@@ -129,18 +130,28 @@ if (!earlier) await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest
 const segmentId = randomUUID(), segments = join(outDir, 'segments');
 await mkdir(segments, {recursive: true});
 await writeFile(join(segments, `${segmentId}.started.json`), JSON.stringify({startedAt: now, jobs, first, last, experiment: sha256(JSON.stringify(identity!))}), {flag: 'wx'});
+const verifyIdentity = async () => {
+  try {
+    const current = await experimentIdentity(config, configFile, scenarios, runtime, identity!.plan);
+    const changes = identityDifferences(identity!, current);
+    await verifyRoundIdentities(identity!, outDir, scenarios, repeat);
+    if (changes.length) throw new Error(`实验条件变化，已停止派发；请使用新实验标识：\n${changes.map(path => `- ${path}`).join('\n')}`);
+  } catch (error) { throw new EvaluationAborted(error instanceof Error ? error.message : String(error)); }
+};
+await verifyIdentity().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
 const launch = cliLauncher({...runtime, ...identity!.runtime, effort: effort, claude: {command: identity!.executor.command, args: identity!.executor.args}});
 
 // 场景 × 次数，按 --jobs 并行；每个场景内部的轮次按顺序。
 const units = Array.from({ length: last - first + 1 }, (_, index) => scenarios.map((scenario) => ({ scenario, repetition: first + index }))).flat();
 console.error(`评估 ${label}：${scenarios.map((scenario) => scenario.name).join('、')}，第 ${first}–${last} 次，并行 ${jobs}；轮次目录 ${outDir}`);
-await runUnits(config, units, outDir, launch, { jobs, log: (message) => console.error(message) });
+try { await runUnits(config, units, outDir, launch, { jobs, beforeDispatch: verifyIdentity, log: (message) => console.error(message) }); }
+catch (error) { fail(error instanceof Error ? error.message : String(error)); }
 const endedAt = new Date().toISOString();
 await writeFile(join(segments, `${segmentId}.completed.json`), JSON.stringify({endedAt}), {flag: 'wx'});
 // 报告包括目录中已跑的全部次数（分段跑时含前一段）。
 await finish(label, manifest, outDir, await scoreAll(outDir, manifest), endedAt);
 
-/** 按评估清单重新评分目录中已跑的每一次；还没跑的次数（分段跑的后一段）不计入。 */
+/** 按评估清单重新评分目录中已跑的每一次；未跑次数在完整计划中列为 not-run。 */
 async function scoreAll(dir: string, saved: Manifest): Promise<ScenarioResult[]> {
   const chosen = pick(saved.scenarios.join(','));
   const all: ScenarioResult[] = [];
@@ -162,6 +173,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
     config, label: name, startedAt: saved.startedAt, outDir: dir, results: all, plan: { scenarios: saved.scenarios, repetitions: saved.repeat },
     ...(saved.provenance ? { provenance: saved.provenance } : {}), ...(ended ? { endedAt: ended } : {}),
   });
+  if (values.rescore === undefined) await verifyIdentity().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
   const reports = resolve(values.reports ?? join(REPO, 'docs/agent-eval/reports'));
   await mkdir(reports, { recursive: true });
   const identified = {...scored, experimentIdentity: saved.identity ?? null};
@@ -172,7 +184,11 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
       sourceManifestSha256: sha256(await readFile(join(dir, MANIFEST))),
       sourceReportSha256: await readFile(join(reports, `${saved.label}.json`)).then(sha256, () => null),
       scoredAt: new Date().toISOString(), scorer: await scorerIdentity(),
-      sourceRounds: all.flatMap(unit => unit.rounds.map(round => round.dir)),
+      scoringIdentity: {config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), inputs: await inputIdentity(pick(saved.scenarios.join(','))), resources: await materialHashes(resolve(REPO, config.resources), 'resources')},
+      sourceRounds: await Promise.all(all.flatMap(unit => unit.rounds.map(async round => {
+        const files = await materialHashes(join(dir, round.dir), 'round');
+        return {dir: round.dir, files, sha256: sha256(JSON.stringify(files))};
+      }))),
       note: '旧记录缺少的实验身份保持未知；本报告是事后评分，不改写首次结论。',
     },
   };
