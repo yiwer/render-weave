@@ -1,0 +1,333 @@
+{
+  "format": "renderweave-harness26-gap-snapshot/1",
+  "recordedAt": "2026-10-23T21:06:44.384Z",
+  "basisMain": "7b867c3abb67f727b7c1a80acf1f96b4aa0b1123",
+  "basisMeaning": "21独立合入后的已确认主线；原38候选4停止元数据为F盘原件，未假定已入库。",
+  "candidate": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-4",
+    "id": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+    "manifestSha256": "ca3ec1630f13b57ea853148df7972334558225496e204c7b1b52a3db8775357d"
+  },
+  "overall": "incomplete-not-accepted",
+  "sources": [
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate-4-evidence-metadata/registration.results.json",
+      "bytes": 50343,
+      "sha256": "406ce6e027013aae126a8a445d525e7897b4a8bf91b681079c087e35c849dd45"
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate4-stopped-archive-verification.json",
+      "bytes": 4854,
+      "sha256": "a92983ed1acefcb1eca1da0d2b73a024157b73403d562826d3b84b5983c88b94"
+    },
+    {
+      "path": "F:/GenCode/render-weave/docs/agent-eval/trusted-feedback-acceptance/candidate-4/RESULTS.md",
+      "bytes": 6497,
+      "sha256": "ee33204046f200fee63bb0295198de11d71c72363e4d8fcf74325a535ecdeec5"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/19-holdout-cases-and-review-plan.md",
+      "bytes": 11330,
+      "sha256": "7819051c9a996082b24d6f7c8cf3a5bef8827f748a76792746792d788bb2c03d"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/21-real-trusted-feedback-observations.md",
+      "bytes": 11868,
+      "sha256": "3a493fe559a854e904be1b2d53141a508480ad208c1b8a6512153ef3e32f1fbe"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/22-landscape-route-holdout.md",
+      "bytes": 2748,
+      "sha256": "3a96a2dfbd66ed22b22fd0fd60f829a5e870e89b9da0c87d65b21fac5c301567"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/23-vertical-route-holdout.md",
+      "bytes": 2748,
+      "sha256": "a40d108b399e0c7dad847081dfec6c6be485c49e8d8e14e763e63bf58a32d128"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/24-bus-stop-board-holdout.md",
+      "bytes": 2724,
+      "sha256": "c030736cb077136303b57c806e93039b8d2187cfc99a72ec43ed3efce1bf3743"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/25-bilingual-stop-name-holdout.md",
+      "bytes": 2748,
+      "sha256": "03ea3a3536bb765ead06ebb0bc8de337c29778a244972aa9081c7f6aee37c7ae"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/26-integrated-evidence-and-human-walkthrough.md",
+      "bytes": 2699,
+      "sha256": "5eb8bebbeab61d9ad55830ce647ca015bbac47127b631fcb3eb280907e2f9d9c"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/spec.md",
+      "bytes": 44285,
+      "sha256": "190bc5662c919c1224505fd7c753893a11422ade9992e3ab29af973b01a32914"
+    },
+    {
+      "path": "F:/GenCode/render-weave/.scratch/agent-template-authoring/issues/38-retest-after-quota-recovery.md",
+      "bytes": 14081,
+      "sha256": "d1adb87743200ec013e1d73779b3f958d7fb32ac81cf2ea6c94f02b789f79118"
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-holdout-execution-preparation-candidate-4/README.md",
+      "bytes": 6927,
+      "sha256": "e905e09b51b35a68974c9b44c94390610ce3235f4b2c4774853393a09e722076"
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-walkthrough-preparation-candidate-4-v3/README.md",
+      "bytes": 10131,
+      "sha256": "969d3aa4ec5223982a74fc506ef2ac3de67a99929b812fe12f60a618ba38447b"
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-26-evidence-map-candidate4-during-run.md",
+      "bytes": 26523,
+      "sha256": "67ede67a8c48fb91b24b51c2f514498eb761069eb89b01f54dedc8c2da6c0629"
+    },
+    {
+      "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-26-evidence-map-candidate4-during-run.json",
+      "bytes": 115437,
+      "sha256": "46f71d813a3421f2b00a2c0cedbb0b75fb431f6e4eeeaca1db7e52123460dbf4"
+    }
+  ],
+  "tickets": [
+    {
+      "id": 19,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/19-holdout-cases-and-review-plan.md",
+      "status": "resolved",
+      "checkedAC": 9,
+      "openAC": 0
+    },
+    {
+      "id": 21,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/21-real-trusted-feedback-observations.md",
+      "status": "needs-triage",
+      "checkedAC": 6,
+      "openAC": 2
+    },
+    {
+      "id": 22,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/22-landscape-route-holdout.md",
+      "status": "ready-for-agent",
+      "checkedAC": 0,
+      "openAC": 9
+    },
+    {
+      "id": 23,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/23-vertical-route-holdout.md",
+      "status": "ready-for-agent",
+      "checkedAC": 0,
+      "openAC": 9
+    },
+    {
+      "id": 24,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/24-bus-stop-board-holdout.md",
+      "status": "ready-for-agent",
+      "checkedAC": 0,
+      "openAC": 9
+    },
+    {
+      "id": 25,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/25-bilingual-stop-name-holdout.md",
+      "status": "ready-for-agent",
+      "checkedAC": 0,
+      "openAC": 9
+    },
+    {
+      "id": 26,
+      "path": "F:/GenCode/render-weave/.scratch/agent-harness-hardening/issues/26-integrated-evidence-and-human-walkthrough.md",
+      "status": "ready-for-agent",
+      "checkedAC": 0,
+      "openAC": 9
+    }
+  ],
+  "feedback21": {
+    "planned": 16,
+    "pass": 12,
+    "validFail": 0,
+    "quotaInvalid": 1,
+    "neverStarted": 3,
+    "actualAttempts": 13,
+    "sealedAttempts": 13,
+    "missingValidObservationsOnCandidate4": 4,
+    "sharedEnglishTemplateSlots": {
+      "planned": 4,
+      "valid": 2,
+      "neverStarted": 2,
+      "countsAsAdditionalObservation": false
+    },
+    "closureDelay": {
+      "attempt": "c3e402ab-7c05-47bb-aaee-229080618d48",
+      "elapsedMs": 626845,
+      "inspectorIntervention": true,
+      "rootCause": "unknown",
+      "unattendedCompletionProven": false,
+      "performanceEligible": false
+    },
+    "actualWallMs": 1514118,
+    "humanMinutes": null,
+    "money": null
+  },
+  "original38": {
+    "report": {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-post-stop-analysis\\reports\\2026-10-23-harness-original38-candidate-4.rescore-bc8e1e3e-cf2b-47e3-ab5e-ec55f157618d.json",
+      "sha256": "ba960d452e1aa120ef742c854802da8868ed0d72d9caabe4264d251accb09631",
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "m402-definition",
+            "name": "M402 数据定义",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "m402-template",
+            "name": "M402 模板",
+            "outcomes": [
+              "fail",
+              "not-run"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "m402-revision",
+            "name": "M402 模板辅助修改",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "366-transcription",
+            "name": "366 数据定义与转录",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          }
+        ],
+        "completeness": {
+          "planned": 8,
+          "pass": 4,
+          "fail": 1,
+          "invalid": 0,
+          "notRun": 3,
+          "complete": false
+        }
+      },
+      "mechanismEvidenceUnchanged": {
+        "kind": "unverified",
+        "realModelObservations": 0,
+        "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+      }
+    },
+    "plannedBusinessObservations": 8,
+    "validBusinessObservations": 5,
+    "pass": 4,
+    "validFail": 1,
+    "reportedNotRun": 3,
+    "startedButUnsealedWithinReportedNotRun": 1,
+    "neverStarted": 2,
+    "actualAttempts": 7,
+    "sealedStages": 6,
+    "interruptedAttempt": "32362262-a3e4-475a-b470-cd46e2865710",
+    "totals": {
+      "wallMs": 1327324,
+      "inputTokens": 206,
+      "outputTokens": 274664,
+      "thinkingTokens": 201112,
+      "cacheReadTokens": 5031898,
+      "cacheCreationTokens": 502388,
+      "toolCalls": 128,
+      "persistedResults": 0,
+      "unknownUsageAttempts": 0,
+      "unknownByMetric": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "thinkingTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheCreationTokens": 0,
+        "toolCalls": 0,
+        "persistedResults": 0,
+        "wallMs": 1
+      },
+      "usageComplete": false,
+      "legacyHistoryUnknown": false
+    },
+    "timing": {
+      "sessions": 2,
+      "incompleteSessions": 1,
+      "actualWallMs": null,
+      "knownWallMs": 1178888,
+      "attemptsElapsedMs": 1347639,
+      "unknownAttemptDurations": 1
+    },
+    "independentChineseReviews": [
+      {
+        "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-4",
+        "attemptId": "83349334-f839-44e5-8f4e-feaeadc95f92",
+        "result": null
+      },
+      {
+        "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-4",
+        "attemptId": "8f5573d7-ca66-42d3-818b-fb3d32414d31",
+        "result": null
+      }
+    ],
+    "englishRealReference": "材料核准、实际执行及独立样式状态审核仍待完成；受控21不得替代",
+    "archive": {
+      "manifestSha256": "05bfa461fb18a8dd08374893467a8229fe59dc840caeb457661aa33af8814dc5",
+      "files": 4695,
+      "directories": 762,
+      "fullPathSetsBeforeAfter": true
+    }
+  },
+  "holdout": {
+    "prepared": true,
+    "inputsApproved": true,
+    "caseCount": 12,
+    "strata": 4,
+    "plannedObservations": 36,
+    "plannedPublicStages": 96,
+    "actualObservations": 0,
+    "independentOutcomeReviews": 0,
+    "humanMinutes": null,
+    "criticalFalsePassRate": null,
+    "blockedBy": [
+      "21全部有效观测及责任缺口收口",
+      "原38同候选真实门槛与独立业务审核"
+    ]
+  },
+  "walkthrough26": {
+    "preparedSteps": 12,
+    "performedSteps": 0,
+    "finalEvidenceRows": 84,
+    "finalSpecStandardsReviewComplete": false,
+    "humanMinutes": null,
+    "accepted": false
+  },
+  "candidate5": {
+    "state": "freeze-pending-validation",
+    "created": false,
+    "activated": false,
+    "modelCalls": 0,
+    "coordinationEvidence": "parent任务消息：17新旧资料在同一Windows公开测试均原60秒超时；Linux已过。改前同失败不等于兼容通过，待最小环境诊断及独立03结论。此快照未独立重跑17。",
+    "nextIdentityPolicy": "若17通过并合入新资料，按20新共同身份及原四8/21全16新绑定列全部重验；不得拼接候选4已通过单元。",
+    "whenUnresolved": "只交付待冻源和未验证缺口，不生成ready候选。"
+  },
+  "actionsNotTaken": [
+    "没有改仓库/票据/候选/原件",
+    "没有重新评分或调用产品API",
+    "没有模型调用或额度轮询",
+    "没有关闭任何票或替真人审核",
+    "没有覆盖旧进行中快照"
+  ]
+}
