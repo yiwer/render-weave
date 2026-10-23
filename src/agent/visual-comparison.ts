@@ -7,7 +7,7 @@ import { render, type RenderResult } from '../render.js';
 import { parseRenderRequest } from '../request.js';
 import type { Workspace } from '../workspace.js';
 import { ToolInputError } from '../mcp/files.js';
-import { digest, hashCandidatesAndRequest, verifyElementStyles, type ReferenceBaseline, type StyleVerificationRecord, type ReferenceBox } from './style-verification.js';
+import { digest, hashCandidatesAndRequest, validateReferenceBaseline, verifyElementStyles, type ReferenceBaseline, type StyleVerificationRecord, type ReferenceBox } from './style-verification.js';
 
 export interface ReferenceImage { readonly path: string; readonly sha256: string }
 export interface VisualReport extends StyleVerificationRecord {
@@ -27,6 +27,7 @@ export async function compareReference(options: {
   readonly sample?: ReferenceImage; readonly regions?: readonly string[]; readonly includeImages?: boolean;
 }): Promise<{ readonly render: RenderResult; readonly report?: VisualReport; readonly panels: readonly ComparisonPanel[] }> {
   const { workspace, baseline } = options;
+  if (baseline !== undefined && !validateReferenceBaseline(baseline)) throw new ToolInputError('参考基准格式无效');
   if (options.regions?.some((id) => !baseline?.approvedRegions.some((r) => r.id === id))) throw new ToolInputError('regions 包含参考清单中不存在的区域 ID');
   const parsed = parseRenderRequest(options.request);
   if (!parsed.request) return { render: { problems: parsed.problems }, panels: [] };
@@ -54,9 +55,9 @@ export async function compareReference(options: {
   const result = await render({ ...workspace, resources }, { ...request, mode: 'draft' }, { comparisonEvidence: true });
   const evidence = result.evidence;
   if (!evidence) return { render: result, panels: [] };
-  const verification = verifyElementStyles({ layout: evidence.layout, baseline, evidence,
+  const verification = verifyElementStyles({ layout: evidence.layout, baseline, evidence, resourceHashes: hashes,
     ...hashCandidatesAndRequest(workspace.templates, request), parameters: request.parameters });
-  const provenance = { algorithm: 'reference-comparison/1', engine: await (engine ??= rendererBuildId()),
+  const provenance = { algorithm: 'reference-comparison/2', engine: await (engine ??= rendererBuildId()),
     workspace: digest({ templates: workspace.templates.map(({ name, document }) => ({ name, document })).sort((a, b) => a.name.localeCompare(b.name)),
       datasets: workspace.datasets.map(({ id, document }) => ({ id, document })).sort((a, b) => a.id.localeCompare(b.id)), schemas: workspace.staticSchemas, request }),
     referenceImage: reference ? sha(reference) : null, resources: Object.fromEntries(Object.entries(hashes).sort(([a], [b]) => a.localeCompare(b))) };
