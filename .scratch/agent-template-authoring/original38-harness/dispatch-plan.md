@@ -81,3 +81,11 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
 修改后的无模型预演03在 C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-original38-review-preflight-03/：一个有效候选、实际与预览均100 DPI/866×610，原轮次所有字节不变、人工未审核。仅为工具预演，不是20候选或本次原38的模型观测；正式绑定的正向验证须使用本次实际封存结果。
 
 候选1发布后另做两项零模型拒绝检查（候选1因来源标签修复将保留为零观测准备版本）：将18旧实验原件配到本次原四绑定时，生成器报“源实验不属于本候选和计划”，且输出目录未创建；英文生成器将输出指向历史轮次子目录时也在渲染前拒绝、未创建目录。证据分别为 `out/harness-original38-review-guard-check-02/old-experiment-rejected.json` 和 `legacy-source-output-rejected.json`。它们只验证防错路径，不生成任何正式审核包，不重判历史成果。
+
+## 候选2派发前登记
+
+20的候选2为 sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f。原四场景具体命令、完整实验身份、输入与执行器摘要已在 registration-candidate-2.json 固定，并另存 F:/GenCode/render-weave/out/harness-original38-candidate-2/registration.json；52份输入与15份agent来源逐字节核对，原生执行器版本及摘要一致。派发仍须等20独立合入核验，当前真实模型观测为0。初次登记中配置哈希校验少带 sha256: 前缀而拒绝，没有输出和模型调用；修正本地登记校验后通过，未修改产品或候选。
+
+英文4个共享槽位已与21候选2绑定逐项相符，旧待候选登记单独保留为 conditional-english-reference.pre-candidate-2.json；本票不派发这些槽位。
+
+英文局部材料已在候选2公开渲染入口完成，位置 F:/GenCode/render-weave/out/harness-original38-review/en-local-candidate-2/：41项，同原正式请求50 DPI；正式结果保留阻断无图，草稿干净内容1575×1772供局部对照。原21份材料结束后摘要未变，人工记录全部空白、新模型观测0。首次因输出父目录未建而在写入前拒绝；建立专用父目录后生成成功。该离线旧候选局部审核不替代21英文真实纠偏，也不宣称整图正式交付。
