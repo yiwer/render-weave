@@ -2,16 +2,29 @@
  * 原38人工比较材料：只读原轮次，在独立副本经公开入口取得有效成果并渲染。
  * 不是批准/应用或模型派发入口；不把预览DPI当实际出图DPI。
  */
-import {readFile,writeFile,mkdir,readdir,cp} from 'node:fs/promises';
-import {resolve,join,relative,isAbsolute,sep} from 'node:path';
+import {readFile,writeFile,mkdir,readdir,cp,realpath,lstat} from 'node:fs/promises';
+import {resolve,join,relative,isAbsolute,sep,dirname} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {parseArgs} from 'node:util';
 import {spawnSync} from 'node:child_process';
 
-const {values}=parseArgs({options:{runtime:{type:'string'},round:{type:'string'},out:{type:'string'},scope:{type:'string'},candidate:{type:'string'},preflight:{type:'boolean'}},strict:true});
+const {values}=parseArgs({options:{runtime:{type:'string'},round:{type:'string'},out:{type:'string'},scope:{type:'string'},candidate:{type:'string'},evaluation:{type:'string'},binding:{type:'string'},preflight:{type:'boolean'}},strict:true});
 for(const key of ['runtime','round','out','scope']) if(!values[key]) throw new Error('缺少 --'+key);
 const runtime=resolve(values.runtime),round=resolve(values.round),out=resolve(values.out);
+// 在创建目录前按真实父目录判断，不能让链接或误填路径改写原件/候选。
+async function rejectLinks(path){
+  let current=resolve(path);
+  while(true){if((await lstat(current)).isSymbolicLink())throw new Error('来源或输出父目录不能是链接：'+current);const parent=dirname(current);if(parent===current)break;current=parent;}
+}
+async function outsideSources(roots){
+  await rejectLinks(dirname(out));
+  for(const root of roots)await rejectLinks(root);
+  const actualOut=join(await realpath(dirname(out)),out.split(/[\\/]/).at(-1));
+  for(const root of roots){const actualRoot=await realpath(root),rel=relative(actualRoot,actualOut);if(!rel||!rel.startsWith('..'+sep)&&rel!=='..'&&!isAbsolute(rel))throw new Error('输出目录必须在来源之外：'+root);}
+}
+await outsideSources([round,runtime,dirname(resolve(values.scope)),...(values.candidate?[resolve(values.candidate)]:[]),...(values.evaluation?[resolve(values.evaluation)]:[]),...(values.binding?[resolve(values.binding)]:[])]);
+if(values.candidate&&(!values.evaluation||!values.binding))throw new Error('正式包需要 --evaluation 与 --binding，不能只核对新渲染器');
 if(!values.candidate&&!values.preflight)throw new Error('正式审核材料必须提供 --candidate；离线工具预演须明确 --preflight');
 let candidate=null;
 async function verifyRuntime(){
@@ -26,11 +39,13 @@ async function verifyRuntime(){
 }
 await verifyRuntime();
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-async function inventory(root){
+async function inventory(root,attemptSeal=false){
   const files=[];
   async function walk(dir){
     for(const entry of (await readdir(dir,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){
       const file=join(dir,entry.name);
+      if(attemptSeal&&entry.isDirectory()&&/^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name))continue;
+      if(attemptSeal&&dir===root&&(['completed.json','completed.seal.json'].includes(entry.name)||/^\.metadata-.*\.tmp$/.test(entry.name)))continue;
       if(entry.isSymbolicLink())throw new Error('审核副本不跟随链接：'+file);
       if(entry.isDirectory())await walk(file);
       else if(entry.isFile())files.push({path:relative(root,file).split(sep).join('/'),sha256:hash(await readFile(file))});
@@ -44,12 +59,52 @@ function inside(root,path){
   if(rel==='..'||rel.startsWith('..'+sep)||isAbsolute(rel))throw new Error('轮次内路径越界');
   return file;
 }
+let observationProof=null;
+async function verifyObservation(){
+  if(!values.candidate)return;
+  const evaluation=await realpath(resolve(values.evaluation)),actualRound=await realpath(round);
+  const rel=relative(evaluation,actualRound).split(sep).join('/');
+  const match=/^run-(\d+)[/]([^/]+)[/]attempts[/]([a-f0-9-]+)[/]round$/.exec(rel);
+  if(!match)throw new Error('正式包只接受本实验 attempts 中封存的 round 原件');
+  const evaluationBytes=await readFile(join(evaluation,'eval.json'));
+  const saved=JSON.parse(evaluationBytes);
+  const bindingBytes=await readFile(join(resolve(values.binding),'binding.json'));
+  const binding=JSON.parse(bindingBytes),{id,...body}=binding;
+  if(binding.format!=='renderweave-candidate-binding/1'||id!=='sha256:'+hash(JSON.stringify(body)))throw new Error('计划绑定完整性不符');
+  if(binding.candidate.id!==candidate.id||saved.candidateBinding?.candidateId!==candidate.id||saved.candidateBinding?.id!==id||JSON.stringify(saved.identity)!==JSON.stringify(binding.identity))throw new Error('源实验不属于本候选和计划');
+  if('sha256:'+hash(await readFile(join(resolve(values.binding),'config.json')))!==binding.identity.config)throw new Error('绑定配置字节变化');
+  const resourceIds=Object.keys(binding.identity.resources).filter(key=>key.startsWith('resource-bytes/')).map(key=>key.slice(15));
+  if(resourceIds.length!==Object.keys(binding.resourceEvidence??{}).length)throw new Error('绑定资源清单不全');
+  for(const resourceId of resourceIds){const resource=binding.resourceEvidence[resourceId];if(!resource||!/^resources[/][a-f0-9]{64}\.bin$/.test(resource.file)||resource.sha256!==binding.identity.resources['resource-bytes/'+resourceId])throw new Error('绑定资源身份无效');const path=inside(resolve(values.binding),resource.file);await rejectLinks(path);if('sha256:'+hash(await readFile(path))!==resource.sha256)throw new Error('绑定资源字节变化');}
+  const attempt=dirname(actualRound),startBytes=await readFile(join(attempt,'started.json')),start=JSON.parse(startBytes);
+  const sealBytes=await readFile(join(attempt,'completed.seal.json')),seal=JSON.parse(sealBytes),completion=seal.completion;
+  const compatibility=await readFile(join(attempt,'completed.json'),'utf8').then(JSON.parse,error=>{if(error.code==='ENOENT')return undefined;throw error;});
+  const experiment='sha256:'+hash(JSON.stringify(saved.identity));
+  if(start.format!=='renderweave-eval-attempt/1'||start.id!==match[3]||start.experiment!==experiment||start.legacy||!['template-design','template-revision'].includes(start.task))throw new Error('尝试来源不符');
+  if(!binding.units.some(unit=>unit.scenario===match[2]&&unit.repetition===Number(match[1])&&unit.stage===start.stage))throw new Error('尝试不属于预登记单元');
+  if(!seal.completion||seal.sha256!==hash(JSON.stringify(seal.completion))||(compatibility!==undefined&&seal.sha256!==hash(JSON.stringify(compatibility)))||completion.eligible===false)throw new Error('尝试完成封存无效');
+  const attemptFiles=await inventory(attempt,true);
+  const actual=Object.fromEntries(attemptFiles.map(item=>[item.path,item.sha256]));
+  const expected=completion.files;
+  if(Object.keys(actual).length!==Object.keys(expected??{}).length||Object.entries(actual).some(([file,sha])=>expected[file]!==sha))throw new Error('尝试原件与封存文件不一致');
+  const observation=JSON.parse(await readFile(join(actualRound,'evaluation.json')));
+  if(observation.format!=='renderweave-eval-observation/1'||observation.experiment!==experiment)throw new Error('轮次实验封存不符');
+  observationProof={evaluation,bindingDirectory:resolve(values.binding),candidateId:candidate.id,bindingId:id,experiment,unit:{scenario:match[2],repetition:Number(match[1]),stage:start.stage},attemptId:start.id,evaluationSha256:hash(evaluationBytes),bindingSha256:hash(bindingBytes),startedSha256:hash(startBytes),completionSealSha256:hash(sealBytes),sourceFiles:completion.files};
+}
+await verifyObservation();
+const originalObservationProof=JSON.stringify(observationProof);
 const before=await inventory(round);
 await mkdir(out); // 必须是新目录；不覆盖之前的材料。
 const generatorBytes=await readFile(fileURLToPath(import.meta.url));
 await writeFile(join(out,'prepare-review.mjs'),generatorBytes,{flag:'wx'});
 await cp(round,join(out,'round-copy'),{recursive:true,errorOnExist:true,force:false});
+if(observationProof){
+  await writeFile(join(out,'observation-source.json'),JSON.stringify(observationProof,null,2)+'\n',{flag:'wx'});
+  await writeFile(join(out,'source-eval.json'),await readFile(join(observationProof.evaluation,'eval.json')),{flag:'wx'});
+  await writeFile(join(out,'source-binding.json'),await readFile(join(observationProof.bindingDirectory,'binding.json')),{flag:'wx'});
+}
 const copy=join(out,'round-copy');
+if((await lstat(copy)).isSymbolicLink()||!(await lstat(copy)).isDirectory())throw new Error('轮次副本必须是普通目录');
 if(JSON.stringify(before)!==JSON.stringify(await inventory(copy)))throw new Error('副本身份不符');
 const api=await import(pathToFileURL(join(runtime,'dist/index.js')).href);
 const reviewed=await api.readReview(copy);
@@ -102,7 +157,9 @@ await writeFile(join(out,'review.html'),html,{flag:'wx'});
 const after=await inventory(round);
 if(JSON.stringify(before)!==JSON.stringify(after))throw new Error('原始轮次在打包期间变化，材料不能使用');
 await verifyRuntime();
-const manifest={generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
+await verifyObservation();
+if(JSON.stringify(observationProof)!==originalObservationProof)throw new Error('源实验或尝试记录在打包期间改变');
+const manifest={observationProof,generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
 await writeFile(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({out,originalRoundUnchanged:true,effectiveCandidates:effectiveFiles.length,actualImage:manifest.actualImage,previewImage:manifest.previewImage,reviewStatus:blank.status}));
 

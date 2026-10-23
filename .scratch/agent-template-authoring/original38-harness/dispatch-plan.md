@@ -55,7 +55,7 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
 
 20完成后的命令形状（实际值待最终登记）：
 
-    node .scratch/agent-template-authoring/original38-harness/prepare-review.mjs --candidate <候选包> --runtime <候选包/content> --round <实际封存轮次> --out <新的审核目录> --scope .scratch/agent-template-authoring/original38-harness/zh-style-inventory.md
+    node .scratch/agent-template-authoring/original38-harness/prepare-review.mjs --candidate <候选包> --runtime <候选包/content> --evaluation <本次评估根目录> --binding <20对应计划绑定目录> --round <本次评估/run-N/场景/attempts/id/round> --out <新的审核目录> --scope .scratch/agent-template-authoring/original38-harness/zh-style-inventory.md
 
 每次M402模板/修改成果独立生成一包。脚本不能替代人对照全部35站、15道路段、15班次及独立样式/状态；也不能将英文局部离线材料当整体可交付结果。
 
@@ -71,3 +71,11 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
     node .scratch/agent-template-authoring/original38-harness/prepare-legacy-en-review.mjs --candidate <20最终候选包> --inventory .scratch/agent-template-authoring/original38-harness/en-inventory.json --out <新的英文局部审核目录>
 
 共享引用已逐项登记在 `conditional-english-reference.json`：21唯一派发的 F-ET-1、F-ET-2、F-ER-1、F-ER-2，共4个英文模板纠偏槽位。原38只按实际完整结果条件引用，不另外派发，不增加观测数，也不代替本票8个四场景观测或真实参考人审。当前均未运行；20交接后、真实派发前补入确切候选/绑定/实验身份，并与21登记互核。
+
+## 审核生成器来源保护补验
+
+正式模板包同时核对候选、计划绑定、eval.identity、attempt.started与round/evaluation.json的实验身份，以及completed.seal.json记录的全部原始文件。只接受attempts下的封存round原件，拒绝兼容视图、旧实验与未绑定轮次；技术不合格的真实失败成果仍保留供审核，不要求评分通过。completed.json可缺失，存在时须与封存一致。绑定配置、资源和原始轮次前后重核；来源记录另存进包，不靠新渲染器身份给旧观测补造来源。
+
+两生成器均在写入前禁止输出落在来源内，并拒绝来源根及祖先链接，防止复制junction后回写原件。2026-10-23已从生成器CLI验证3项拒绝：源内输出、源根junction、正式包缺evaluation/binding；临时canary原件不变，证据位于 F:/GenCode/render-weave/out/harness-original38-review-guard-check-02/results.json。首次非提权junction创建被Windows权限拒绝，未开展该例；随后在专用目录完成，并只解除已校验本次junction。
+
+修改后的无模型预演03在 C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-original38-review-preflight-03/：一个有效候选、实际与预览均100 DPI/866×610，原轮次所有字节不变、人工未审核。仅为工具预演，不是20候选或本次原38的模型观测；正式绑定的正向验证须使用本次实际封存结果。

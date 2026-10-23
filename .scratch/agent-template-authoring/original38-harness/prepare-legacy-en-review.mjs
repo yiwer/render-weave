@@ -1,5 +1,5 @@
 /** 原38英文局部：原样旧候选只读重放；不创建模型轮次、outcome、批准或应用。 */
-import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,readdir,realpath,lstat} from 'node:fs/promises';
 import {resolve,join,dirname,relative,basename,sep,isAbsolute} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -29,6 +29,17 @@ async function verifySources(){
     checked.push({file:item.file,sha256:actual});
   }
   return checked;
+}
+async function rejectLinks(path){
+  let current=resolve(path);
+  while(true){if((await lstat(current)).isSymbolicLink())throw new Error('来源或输出父目录不能是链接：'+current);const parent=dirname(current);if(parent===current)break;current=parent;}
+}
+await rejectLinks(dirname(out));
+for(const file of [candidateDir,resolve(values.inventory),...sourceRecords.map(item=>item.file)])await rejectLinks(file);
+const actualOut=join(await realpath(dirname(out)),basename(out));
+for(const root of [candidateDir,dirname(resolve(values.inventory)),...sourceRecords.map(item=>dirname(item.file))]){
+  const rel=relative(await realpath(root),actualOut);
+  if(!rel||!rel.startsWith('..'+sep)&&rel!=='..'&&!isAbsolute(rel))throw new Error('输出目录必须在来源之外：'+root);
 }
 const sourceFiles=await verifySources();
 await mkdir(out); // 新目录，不覆盖任何旧报告。
