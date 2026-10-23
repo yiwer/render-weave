@@ -11,6 +11,7 @@ const read = async (file:string) => { const bytes=await readFile(resolve(file),'
 const [policyFile,pairFile,fullFile,candidateFile] = await Promise.all([read(values.policy!),read(values.pair!),read(values.full!),read(values['on-demand']!)]);
 const policy=policyFile.value, pair=pairFile.value;
 if (policy.format!=='renderweave-context-trial-policy/1' || policy.status!=='frozen' || pair.format!=='renderweave-context-pair/1' || pair.ready!==true) throw new Error('需要已冻结政策与完整配对身份');
+if (policy.pair?.sha256!==pairFile.sha256) throw new Error('预登记配对摘要不符');
 if (!Array.isArray(policy.cases) || !policy.cases.length || new Set(policy.cases).size!==policy.cases.length || !Number.isSafeInteger(policy.repetitions) || policy.repetitions<1
   || policy.plannedObservations!==2*policy.cases.length*policy.repetitions) throw new Error('预登记单元不完整');
 const planned:string[] = policy.cases.flatMap((id:string) => Array.from({length:policy.repetitions},(_,i)=>`run-${i+1}/${id}`));
@@ -58,6 +59,7 @@ function inspect(file:typeof fullFile,strategy:string) {
 const full=inspect(fullFile,'full'), candidate=inspect(candidateFile,'on-demand');
 const common=(identity:any)=>{const {contextPolicy:_strategy,...rest}=identity; return JSON.stringify(rest);};
 if (common(fullFile.value.experimentIdentity)!==common(candidateFile.value.experimentIdentity)) throw new Error('两组除资料策略外的冻结条件不同');
+if (policy.candidate?.commonIdentitySha256!==sha(common(fullFile.value.experimentIdentity))) throw new Error('预登记共同候选身份不符');
 const complete=full.summary.complete && candidate.summary.complete;
 const measured=complete && full.summary.usageComplete && candidate.summary.usageComplete;
 const relativeReduction=measured && full.summary.inputAndCacheTokens>0 ? 1-candidate.summary.inputAndCacheTokens/full.summary.inputAndCacheTokens : null;
