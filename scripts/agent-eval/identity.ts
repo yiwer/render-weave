@@ -9,6 +9,7 @@ import { DEFAULT_ENDPOINT, DEFAULT_GOOGLE_ENDPOINT, DEFAULT_MODEL, DEFAULT_SMALL
 import { AGENT_TASKS } from '../../src/agent/tasks.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { openResourceRepository } from '../../src/resources.js';
+import { withLocalAccess } from '../../src/local-access.js';
 import { REPO, repoPath, type EvalConfig, type Scenario } from './scenarios.js';
 import type { RoundRecord } from '../../src/agent/run.js';
 import type { RuntimeOptions } from './eval.js';
@@ -92,6 +93,9 @@ export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Rec
 
 /** 清单读取的实际字节也要固定；目录遍历本身不跟随旧目录中的资源链接。 */
 export async function resourceInputIdentity(dir: string): Promise<Record<string, string>> {
+  return withLocalAccess([dir], () => resourceInputIdentityLocked(dir));
+}
+async function resourceInputIdentityLocked(dir: string): Promise<Record<string, string>> {
   const files = await materialHashes(dir, 'resources');
   const opened = await openResourceRepository(dir);
   if (opened.problems.some(problem => problem.level === 'severe')) throw new Error(`评估资源无法固定：${opened.problems.map(problem => problem.message).join('；')}`);
