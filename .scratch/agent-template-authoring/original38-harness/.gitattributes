@@ -10,3 +10,4 @@ candidate-2-*.json -text
 candidate-2-*.log -text
 
 registration-candidate-3.json -text
+conditional-english-reference.candidate-3.json -text
