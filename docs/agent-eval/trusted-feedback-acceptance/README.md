@@ -1,6 +1,6 @@
-# 固定候选可信反馈验收：候选2已登记，真实验收进行中
+# 固定候选可信反馈验收：16次完成，门槛未通过
 
-已登记中文/英文四任务各两次，共16个新观测槽位；当前全部`not-run`，真实观测0。[登记](registration.json)、[输入摘要](input-evidence.json)及[证据索引](evidence-index.json)已绑定20的最终候选2。20已合入主线7c0ff99；用户已明确授权向OpenCode Go的具体端点披露验收所需资料，授权原件见endpoint-authorization.json；21已按固定两段登记启动第一段。18的32次资料策略试验不占这里任何槽位。
+已按预登记完成中文/英文四任务各两次，共16个有效真实观测，10通过、6失败；票21保持needs-triage。完整结果、每项守卫、失败时序、来源/成本及归档恢复见[实跑结果](RESULTS.md)。[原预登记](registration.json)保持派发前含义，当前状态以[结果登记](results/registration.results.json)为准。18的32次资料策略试验不占这里任何槽位。
 
 ## 固定计划与责任
 
@@ -30,8 +30,8 @@
 根目录：`F:/GenCode/render-weave/out/harness21-trusted-feedback`。
 
 - `resources/`已独立复制，22文件逐一与`fixtures/resources`核对SHA，包含4个字体。资源清单见登记；未使用用户留出图。
-- 20已从最终候选`content/`唯一生成`inputs-2/`、`plan-2.json`与`binding-2/`；8类受控seed准备通过，16单元全未运行。旧候选1的`inputs/`、`binding/`与计划保留为0观测准备原件，不用于本轮。
-- `observations/`保存公开评估生成的不可变尝试和轮次；`reports/`保存每次分段报告；`dispatch/`保存首次派发参数、开始/完成、日志与报告快照。这些目录尚未派发生成。
+- 20已从最终候选`content/`唯一生成`inputs-2/`、`plan-2.json`与`binding-2/`；8类受控seed准备通过；plan-2保留派发前16单元未运行状态，当前结果见results/registration.results.json。旧候选1的`inputs/`、`binding/`与计划保留为0观测准备原件，不用于本轮。
+- `observations/`保存公开评估生成的不可变尝试和轮次；`reports/`保存每次分段报告；`dispatch/`保存首次派发参数、开始/完成、日志与报告快照。两段已执行，成功与有效失败均已封存。
 - 21工作树仅准备说明和登记，独立安装依赖，不修改main、20工作树、Agent资料或构建。
 
 20交接已核对：候选3322文件、15份公开资料真实路径，配置及各15个绑定资源摘要，16槽公开计划与预登记逐项一致；full/模型/执行器/预算/停滞阈值均吻合。登记已补共同候选、绑定、实验及每槽seed/反馈/政策/核准事实摘要，另存candidate-2.pending-authorization快照。受控seed哈希按相对路径排序的完整文件摘要映射计算，规则和原件路径见input-evidence.json。授权已获，实际派发使用另存的registration.candidate-2.authorized.json与activation.json；待授权快照仍原样保留。
@@ -58,4 +58,4 @@ node node_modules/tsx/dist/cli.mjs scripts/agent-eval/freeze.ts --verify <最终
 
 有效失败意味着本票门槛未通过；尚未运行或无有效结果则保留not-run/invalid。不能因某条内容已修好而忽略分页等独立要求，也不能拿18的成功轮次补缺。若观察到实现缺陷，先回责任票修复、形成新候选和受影响清单，再决定证据有效性；不能在本轮边跑边改判据。
 
-20已完成受控seed与候选绑定；21已启动第一段，尚未关闭票21。候选为72a5e749…b949f，绑定b2a1a7e5…6505，实验5e69585b…5961，完整身份见登记。用户已于call_8fa6a92a2dc64ba3b1b97b5c2378792b明确同意具体opencode.ai端点，已另存可派发登记并依原两段参数执行；出现硬额度或429立即联动原38停止后续，保留中断原件，不自动续跑。
+20已完成受控seed与候选绑定；21两段已全部完成但门槛未通过，尚未关闭票21。候选为72a5e749…b949f，绑定b2a1a7e5…6505，实验5e69585b…5961，完整身份见登记。用户已于call_8fa6a92a2dc64ba3b1b97b5c2378792b明确同意具体opencode.ai端点，已另存可派发登记并依原两段参数执行；出现硬额度或429立即联动原38停止后续，保留中断原件，不自动续跑。

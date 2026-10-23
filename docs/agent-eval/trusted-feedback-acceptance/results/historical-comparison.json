@@ -1,0 +1,959 @@
+{
+  "format": "renderweave-feedback-historical-description/1",
+  "createdAt": "2026-10-23T18:21:43.945Z",
+  "current": {
+    "candidateId": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+    "report": {
+      "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback\\dispatch\\block-2.report-harness21-candidate-2.segment-d90536c9-ab32-455d-8327-202398fc7643.json",
+      "sha256": "sha256:d52b37523959616df1f5cacfdf47b56db09154c90688765f8387f33526045487",
+      "originalEvidence": {
+        "kind": "real-model",
+        "realModelObservations": 0,
+        "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+      },
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "zh-definition-extraction",
+            "name": "zh-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-dataset-extraction",
+            "name": "zh-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-template-design",
+            "name": "zh-template-design",
+            "outcomes": [
+              "fail",
+              "pass"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "zh-template-revision",
+            "name": "zh-template-revision",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-definition-extraction",
+            "name": "en-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-dataset-extraction",
+            "name": "en-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-template-design",
+            "name": "en-template-design",
+            "outcomes": [
+              "fail",
+              "pass"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-template-revision",
+            "name": "en-template-revision",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          }
+        ],
+        "completeness": {
+          "planned": 16,
+          "pass": 10,
+          "fail": 6,
+          "invalid": 0,
+          "notRun": 0,
+          "complete": true
+        }
+      }
+    },
+    "results": [
+      {
+        "slot": "F-ZD-1",
+        "scenario": "zh-definition-extraction",
+        "repetition": 1,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ZD-2",
+        "scenario": "zh-definition-extraction",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ZS-1",
+        "scenario": "zh-dataset-extraction",
+        "repetition": 1,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ZS-2",
+        "scenario": "zh-dataset-extraction",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ZT-1",
+        "scenario": "zh-template-design",
+        "repetition": 1,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "only-clean-later-page"
+      },
+      {
+        "slot": "F-ZT-2",
+        "scenario": "zh-template-design",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ZR-1",
+        "scenario": "zh-template-revision",
+        "repetition": 1,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "point-defect-before-clean-later-page"
+      },
+      {
+        "slot": "F-ZR-2",
+        "scenario": "zh-template-revision",
+        "repetition": 2,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "point-defect-before-clean-later-page"
+      },
+      {
+        "slot": "F-ED-1",
+        "scenario": "en-definition-extraction",
+        "repetition": 1,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ED-2",
+        "scenario": "en-definition-extraction",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ES-1",
+        "scenario": "en-dataset-extraction",
+        "repetition": 1,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ES-2",
+        "scenario": "en-dataset-extraction",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ET-1",
+        "scenario": "en-template-design",
+        "repetition": 1,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "only-clean-later-page"
+      },
+      {
+        "slot": "F-ET-2",
+        "scenario": "en-template-design",
+        "repetition": 2,
+        "status": "pass",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true
+        },
+        "traceClassification": "guard-passed"
+      },
+      {
+        "slot": "F-ER-1",
+        "scenario": "en-template-revision",
+        "repetition": 1,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "point-defect-before-clean-later-page"
+      },
+      {
+        "slot": "F-ER-2",
+        "scenario": "en-template-revision",
+        "repetition": 2,
+        "status": "fail",
+        "guards": {
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": false
+        },
+        "traceClassification": "only-clean-later-page"
+      }
+    ]
+  },
+  "historical": [
+    {
+      "file": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\dispatch\\block-4.report.json",
+      "sha256": "24d24dc267c3bfa542b0ca8d1c57401dc5026e3d0a41f052d5d07776062123bb",
+      "strategy": "full",
+      "candidateIdentityDifferent": true,
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "zh-definition-extraction",
+            "name": "zh-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-dataset-extraction",
+            "name": "zh-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-template-design",
+            "name": "zh-template-design",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "zh-template-revision",
+            "name": "zh-template-revision",
+            "outcomes": [
+              "pass",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-definition-extraction",
+            "name": "en-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-dataset-extraction",
+            "name": "en-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-template-design",
+            "name": "en-template-design",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-template-revision",
+            "name": "en-template-revision",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          }
+        ],
+        "completeness": {
+          "planned": 16,
+          "pass": 11,
+          "fail": 5,
+          "invalid": 0,
+          "notRun": 0,
+          "complete": true
+        }
+      },
+      "results": [
+        {
+          "scenario": "zh-definition-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-dataset-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-template-design",
+          "repetition": 1,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "zh-template-revision",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-definition-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-dataset-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-template-design",
+          "repetition": 1,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-template-revision",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-definition-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-dataset-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-template-design",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "zh-template-revision",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-definition-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-dataset-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-template-design",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-template-revision",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        }
+      ]
+    },
+    {
+      "file": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\dispatch\\block-3.report.json",
+      "sha256": "8f47146aab178403aa785a45cd1fc20c60a91c30449c0df943a3c806a018150c",
+      "strategy": "on-demand",
+      "candidateIdentityDifferent": true,
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "zh-definition-extraction",
+            "name": "zh-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-dataset-extraction",
+            "name": "zh-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-template-design",
+            "name": "zh-template-design",
+            "outcomes": [
+              "pass",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "zh-template-revision",
+            "name": "zh-template-revision",
+            "outcomes": [
+              "fail",
+              "pass"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-definition-extraction",
+            "name": "en-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-dataset-extraction",
+            "name": "en-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-template-design",
+            "name": "en-template-design",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-template-revision",
+            "name": "en-template-revision",
+            "outcomes": [
+              "pass",
+              "fail"
+            ],
+            "status": "fail"
+          }
+        ],
+        "completeness": {
+          "planned": 16,
+          "pass": 11,
+          "fail": 5,
+          "invalid": 0,
+          "notRun": 0,
+          "complete": true
+        }
+      },
+      "results": [
+        {
+          "scenario": "zh-definition-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-dataset-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-template-design",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-template-revision",
+          "repetition": 1,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-definition-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-dataset-extraction",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-template-design",
+          "repetition": 1,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-template-revision",
+          "repetition": 1,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-definition-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-dataset-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "zh-template-design",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "zh-template-revision",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-definition-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-dataset-extraction",
+          "repetition": 2,
+          "status": "pass",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": true,
+            "failures": []
+          }
+        },
+        {
+          "scenario": "en-template-design",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        },
+        {
+          "scenario": "en-template-revision",
+          "repetition": 2,
+          "status": "fail",
+          "guards": {
+            "targetCorrection": true,
+            "nonTargetPreservation": true,
+            "unknownRetained": true,
+            "finalCheckMatches": true,
+            "pagination": false,
+            "failures": [
+              "后续页实际取得未通过"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "18与21候选身份不同，不能复用观测、替代槽位或合并通过率",
+    "仅描述同类校准的守卫与时序，不解释候选差异的因果作用",
+    "全部已知有效失败保留，不重评或换题"
+  ]
+}

@@ -1,1 +1,3 @@
 *.json -text
+*.sha256 -text
+*.log -text
