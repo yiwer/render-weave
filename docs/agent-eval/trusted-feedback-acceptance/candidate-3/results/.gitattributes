@@ -1,0 +1,4 @@
+*.json -text
+*.log -text
+*.sha256 -text
+* whitespace=cr-at-eol
