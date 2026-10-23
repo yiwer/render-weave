@@ -1,12 +1,24 @@
+/** 订单范围与报告：独立于不可覆盖的执行原件，缺失记录保持未知。 */
 import {readSavedAttempts, type SavedAttempt} from './attempt-records.js';
 import {classifyError} from './execution-error.js';
-/** 订单范围与报告：独立于不可覆盖的执行原件，缺失记录保持未知。 */
 import {mkdir, readFile, writeFile, readdir} from 'node:fs/promises';
 import {join, resolve, relative, isAbsolute} from 'node:path';
 import {createHash} from 'node:crypto';
 import {AGENT_TASKS, type AgentTaskId} from './tasks.js';
 import {canonical} from './diff.js';
 import {isRecord} from '../util.js';
+import {readReview, type ReviewView} from './review.js';
+import {readRoundMetrics, type RoundMetrics} from './round-metrics.js';
+import {readOutputRecord} from '../output-records.js';
+import {prepareRecordInput, singleRequest, type RecordInput} from '../record-input.js';
+import {parseRenderRequest} from '../request.js';
+import {withLocalAccess} from '../local-access.js';
+import {writeAtomicJson} from './execution.js';
+import type {RoundRecord} from './run.js';
+import {isDeepStrictEqual} from 'node:util';
+import {workspaceFingerprint} from './round-files.js';
+import {loadWorkspaceDocuments} from '../workspace.js';
+
 const hash=(value:unknown)=>'sha256:'+createHash('sha256').update(canonical(value)).digest('hex');
 const id=(value:unknown):value is string=>typeof value==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(value);
 export interface OrderPlan {readonly id:string; readonly task:AgentTaskId; readonly root:string}
@@ -51,19 +63,12 @@ async function openScope(dir:string):Promise<SavedScope>{
   const saved=JSON.parse(await readFile(join(dir,'scope.json'),'utf8')) as SavedScope;
   if(saved.format!=='renderweave-order-register/1'||hash({scope:scopeOf(saved.scope),declaredAt:saved.declaredAt})!==saved.identity)throw new Error('预登记订单范围已改变');return saved;
 }
-import {readReview, type ReviewView} from './review.js';
-import {readRoundMetrics, type RoundMetrics} from './round-metrics.js';
-import {readOutputRecord} from '../output-records.js';
-import {prepareRecordInput, singleRequest, type RecordInput} from '../record-input.js';
-import {parseRenderRequest} from '../request.js';
-import {withLocalAccess} from '../local-access.js';
-import {writeAtomicJson} from './execution.js';
-import type {RoundRecord} from './run.js';
-import {isDeepStrictEqual} from 'node:util';
-import {workspaceFingerprint} from './round-files.js';
-import {loadWorkspaceDocuments} from '../workspace.js';
 const inside=(root:string,path:string)=>{const rel=relative(resolve(root),resolve(path));return !isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('..\\')&&!rel.startsWith('../');};
 async function optional<T>(file:string):Promise<T|undefined>{try{return JSON.parse(await readFile(file,'utf8')) as T;}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return undefined;throw e;}}
+function elapsed(start:string|undefined,end:string|undefined):number|undefined{
+  const begin=Date.parse(start??''),finish=Date.parse(end??'');
+  return Number.isFinite(begin)&&Number.isFinite(finish)&&finish>=begin?finish-begin:undefined;
+}
 interface Attempt {elapsedMs?:number;error?:string;aliases?:string[];attemptId?:string;experiment?:string|null;legacy?:boolean;id:string;plan:string;dir:string;usage?:RoundMetrics;startedAt:string|null;endedAt:string|null;original:string;originalIdentity:string|null;view?:ReviewView;record?:RoundRecord;execution?:string;previous:string|null}
 async function collect(plan:OrderPlan):Promise<Attempt[]>{
   const found:Attempt[]=[],metadata=new Map<string,SavedAttempt>();
@@ -85,7 +90,7 @@ async function collect(plan:OrderPlan):Promise<Attempt[]>{
       if(inspected.execution?.start&&inspected.execution.start.task!==plan.task)throw new Error('订单计划与轮次任务不一致');
       const attempt=metadata.get(resolve(dir));
       const usage=await readRoundMetrics(dir,plan.root,plan.task);
-      found.push({elapsedMs:attempt?.completion?attempt.completion.elapsedMs??undefined:usage?.wallMs,error:record?.run.error??attempt?.completion?.error,attemptId:attempt?.record.id,experiment:attempt?.record.experiment,legacy:attempt?.record.legacy??!inspected.execution,id:inspected.execution?.owner.id??hash(record),plan:plan.id,dir,usage,
+      found.push({elapsedMs:attempt?.completion?attempt.completion.elapsedMs??undefined:elapsed(record?.startedAt,record?.endedAt),error:record?.run.error??attempt?.completion?.error,attemptId:attempt?.record.id,experiment:attempt?.record.experiment,legacy:attempt?.record.legacy??!inspected.execution,id:inspected.execution?.owner.id??hash(record),plan:plan.id,dir,usage,
         startedAt:record?.startedAt??inspected.execution?.start?.startedAt??null,endedAt:record?.endedAt??null,
         original:record?.verdict??'unknown',originalIdentity:(await optional<{contentIdentity?:{id:string}}>(join(dir,'check.json')))?.contentIdentity?.id??null,view:inspected.view,record,execution:inspected.execution?.status,
         previous:record?.inputs.previous?.dir??inspected.execution?.start?.inputs.previous?.dir??null});return;
@@ -247,7 +252,7 @@ export async function shareOrders(dir:string){
   return {format:'renderweave-order-share/1',reproductionBundle:false,scopeIdentity:report.scopeIdentity,counts:report.counts,history:report.history,model:report.model,timing:report.timing,totals:report.totals,costPerSuccessfulOrder:report.costPerSuccessfulOrder,amount:report.amount,
     orders:report.orders.map(order=>({id:hash(order.id),status:order.status,history:order.history,labor:order.labor,totals:order.totals,timing:order.timing,
       quality:{original:order.quality.original,corrected:order.quality.corrected,agentFirstSuccess:order.quality.agentFirstSuccess},
-      attempts:order.attempts.map(attempt=>({id:hash(attempt.id),plan:hash(attempt.plan),original:attempt.original,
+      attempts:order.attempts.map(attempt=>({id:hash(attempt.id),plan:hash(attempt.plan),original:attempt.original,originalIdentity:attempt.originalIdentity,reviewIdentity:attempt.evidence.reviewIdentity,recordIdentity:attempt.evidence.recordIdentity,execution:attempt.execution??null,stopped:attempt.usage?.stopped?.reason??null,
         usage:Object.fromEntries(metrics.map(key=>[key,attempt.usage?.[key]??null])),diagnostic:classifyError(attempt.usage?.error??'') })),
       commits:order.commits.map(hash),deliveries:order.deliveries.map(d=>({delivery:hash(d.delivery),round:hash(d.round),commit:hash(d.commit),contentIdentity:d.contentIdentity,record:d.record}))}))};
 }

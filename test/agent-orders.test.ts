@@ -1,8 +1,18 @@
+
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import {mkdtemp, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {runCli} from '../src/cli.js';
+import {mkdir, readFile} from 'node:fs/promises';
+import {changeReview, applyAgentRound, runAgentTask, initializeResourceStore, importResources} from '../src/index.js';
+import {copyWorkspaceFixture, singleTextDir, resourcesDir, repoRoot, greetingRequest} from './support/fixtures.js';
+import {spawn, type ChildProcess} from 'node:child_process';
+import {once} from 'node:events';
+import {runScenario, type Launcher} from '../scripts/agent-eval/eval.js';
+import {readConfig} from '../scripts/agent-eval/scenarios.js';
+import {pathToFileURL} from 'node:url';
+
 let root: string;
 beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-order-'));});
 afterAll(async()=>{await rm(root,{recursive:true,force:true});});
@@ -27,9 +37,6 @@ it('预先固定完整订单范围，未运行计划不算尝试或成功，零�
   const repeat=await cli(['agent','order-init','--scope',join(root,'empty.json'),'--out',out]);
   expect(repeat.code).toBe(1);
 });
-import {mkdir, readFile} from 'node:fs/promises';
-import {changeReview, applyAgentRound, runAgentTask, initializeResourceStore, importResources} from '../src/index.js';
-import {copyWorkspaceFixture, singleTextDir, resourcesDir, repoRoot, greetingRequest} from './support/fixtures.js';
 async function setup(name:string, pending=false, extra:unknown[]=[], pricing?:unknown){
   const dir=join(root,name+'-data'), workspace=join(dir,'workspace'), preset=join(dir,'preset'), rounds=join(dir,'rounds');
   await copyWorkspaceFixture(singleTextDir,workspace);await mkdir(join(preset,'candidates'),{recursive:true});
@@ -127,10 +134,9 @@ it('可分享摘要保留身份和数值但不复制本机路径、业务备注�
   expect(shared.code,shared.stderr).toBe(0);expect(shared.stdout).not.toContain(secret);expect(shared.stdout).not.toContain(root);expect(shared.stdout).not.toContain('private-customer-secret');
   expect(shared.value()).toMatchObject({format:'renderweave-order-share/1',reproductionBundle:false,scopeIdentity:expect.stringMatching(/^sha256:/),counts:{attempts:2}});
   expect(shared.value().orders[0].attempts[0].id).toBeTruthy();
+  expect(shared.value().orders[0].attempts.find((a:any)=>a.original==='qualified')).toMatchObject({originalIdentity:expect.any(String),reviewIdentity:expect.any(String),recordIdentity:expect.stringMatching(/^sha256:/),execution:'completed'});
 });
 
-import {spawn, type ChildProcess} from 'node:child_process';
-import {once} from 'node:events';
 async function waitFile(file:string){for(let i=0;i<1000;i++){try{return JSON.parse(await readFile(file,'utf8'));}catch{}await new Promise(r=>setTimeout(r,20));}throw new Error('等待公开保存信号超时');}
 async function killOwned(child:ChildProcess,out:string){
   if(!child.pid||child.exitCode!==null)return;
@@ -157,8 +163,6 @@ it('真实MCP保存后强退再接续成功，订单保留中断尝试与检查�
   expect(report.timing.unknownAttemptDurations).toBe(1);
 },60000);
 
-import {runScenario, type Launcher} from '../scripts/agent-eval/eval.js';
-import {readConfig} from '../scripts/agent-eval/scenarios.js';
 it('评估重试原件与兼容阶段只计一次，封存日志改变后不能继续出具订单成本',async()=>{
   const config=await readConfig(),scenario=config.scenarios.find(s=>s.id==='m402-definition')!,out=join(root,'evaluated'),unit=join(out,'run-1',scenario.id);
   const scope=await initialize('eval-order',[{id:'eval-a',plans:[{id:'definition',task:'definition-extraction',root:unit}],deliveries:[]}]);
@@ -258,3 +262,12 @@ it('从另一个登记范围复制来的人工事件不会计入新订单',async
   await mkdir(join(scope,'events'));await writeFile(join(scope,'events/labor-1.json'),await readFile(join(f.scope,'events/labor-1.json')));
   const r=await cli(['agent','order-report','--order',scope]);expect(r.code).toBe(1);expect(r.stderr).toContain('订单事件记录已改变');
 });
+it('并行执行的墙钟取区间并集，各轮耗时求和保留实际投入',async()=>{
+  const f=await setup('parallel-time'),slow=join(f.dir,'slow.mjs');
+  await writeFile(slow,'await new Promise(r=>setTimeout(r,1200));await import('+JSON.stringify(pathToFileURL(join(repoRoot,'test/support/fake-claude.mjs')).href)+');');
+  await Promise.all([2,3].map(n=>runAgentTask({task:'template-design',sample:join(resourcesDir,'images/test/quadrants.png'),brief:join(f.dir,'brief.md'),workspace:f.workspace,resources:resourcesDir,dataset:'ds-greeting',request:join(f.dir,'request.json'),out:join(f.rounds,'parallel-'+n),key:'test',keyEnv:'TEST',claude:{command:process.execPath,args:[slow,f.preset]}})));
+  const r=await cli(['agent','order-report','--order',f.scope]);expect(r.code,r.stderr).toBe(0);
+  expect(r.value().counts.attempts).toBe(3);expect(r.value().timing.executionWallMs).toBeGreaterThan(1200);
+  expect(r.value().timing.executionWallMs).toBeLessThan(r.value().timing.attemptsElapsedMs);
+  expect(r.value().timing.unknownAttemptDurations).toBe(0);
+},60000);
