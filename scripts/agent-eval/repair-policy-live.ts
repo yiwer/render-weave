@@ -2,14 +2,18 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { runAgentRepair, parseDesignCheckPlan, verifyTemplateDesign, loadWorkspace, type DesignCheckPlan } from '../../src/index.js';
+import { pathToFileURL } from 'node:url';
+import type { DesignCheckPlan } from '../../src/index.js';
 import { CROSS_CASES, prepareCrossExperiment, scoreCrossRound } from './cross-experiment.js';
 
 const { values } = parseArgs({ options: { out: { type: 'string' }, 'prepare-only': { type: 'boolean' } } });
 if (!values.out) throw new Error('需要 --out <不存在的目录>');
 const root = resolve(values.out), repo = resolve(import.meta.dirname, '../..');
+// 必须使用已构建入口：从 tsx 的 src/run.ts 发起会把 MCP bin 错指向不存在的 src/bin.js。
+const engine: typeof import('../../src/index.js') = await import(pathToFileURL(join(repo, 'dist/index.js')).href);
+const { runAgentRepair, parseDesignCheckPlan, verifyTemplateDesign, loadWorkspace } = engine;
 const key = process.env['OPEN_CODE_API_KEY'];
 if (!key && !values['prepare-only']) throw new Error('OPEN_CODE_API_KEY 为空');
 const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
@@ -17,6 +21,7 @@ const save = async (path: string, value: unknown) => writeFile(path, JSON.string
 await mkdir(root);
 const fixtures = join(root, 'fixtures'); await prepareCrossExperiment(fixtures);
 const results: unknown[] = [];
+let failed = false, incomplete = false;
 await save(join(root, 'protocol.json'), { head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   model: 'claude-haiku-5-5', maxTurns: 20, maxRounds: 2, cases: ['price', 'badge'], repeats: 1,
   scope: '产品接线 smoke，每模板一次；完整四场景门槛另跑。相同跨模板坏例，已核准受控布局；不宣称真实 PNG 自动参考或效果显著性。' });
@@ -55,6 +60,14 @@ for (const spec of CROSS_CASES) {
     preflight.push({ folder, fingerprint: report.fingerprint, checked: report.repair.checks.length, failed: report.repair.failed });
   }
   await save(join(base, 'product-preflight.json'), preflight);
+  const context = join(base, 'transport-context.json');
+  await save(context, { task: 'template-revision', request: await json(join(base, 'request.json')),
+    revision: { templates: [spec.template] }, designChecks: { plan, sampleFile: join(base, 'reference.png') } });
+  const tools = engine.AGENT_TASKS['template-revision'].mcpTools;
+  await save(join(base, 'transport-preflight.json'), await probeMcp([
+    join(repo, 'dist/bin.js'), 'mcp', '--workspace', join(base, 'workspace'), '--resources', join(repo, 'fixtures/resources'),
+    '--root', join(base, 'workspace'), '--outcome-context', context, '--tools', tools.join(','),
+  ], tools));
   if (values['prepare-only']) { process.stdout.write(JSON.stringify({ case: spec.id, preflight }) + '\n'); continue; }
   const requirement = join(base, 'product-requirement.md');
   await writeFile(requirement, 'StaticSchema、数据集与参考图都已提供。按图局部修复模板，保留绑定、参数适配及元素名称；先保存 outcome.json，用 check_outcome 获取当前测量反馈。\n');
@@ -67,5 +80,38 @@ for (const spec of CROSS_CASES) {
   const item = { case: spec.id, repairRun: result.repairRun, score, context: result.record.run.context, usage: result.record.run.wallMs };
   results.push(item); await save(join(root, 'results.json'), results);
   process.stdout.write(JSON.stringify(item) + '\n');
-  if (result.repairRun.reason === 'runtimeStopped' || result.record.run.error) break;
+  failed ||= result.repairRun.reason !== 'complete' || !score.allPassed;
+  if (result.repairRun.reason === 'runtimeStopped' || result.record.run.error) { incomplete = true; break; }
+}
+if (!values['prepare-only']) process.exitCode = incomplete ? 3 : failed ? 1 : 0;
+
+/** 不调用模型的真实 stdio 预检；编译入口、宿主计划解析、工具连接均先验证。 */
+function probeMcp(args: string[], expected: readonly string[]): Promise<unknown> {
+  return new Promise((done, fail) => {
+    const child = spawn(process.execPath, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    const replies: Record<number, any> = {}; let buffer = '', errors = '';
+    const timeout = setTimeout(() => { child.kill(); fail(new Error('MCP 连接预检超时')); }, 10000);
+    child.once('error', error => { clearTimeout(timeout); fail(error); });
+    child.stderr.on('data', data => { errors = (errors + data).slice(-2000); });
+    child.stdout.on('data', data => {
+      buffer += String(data);
+      let end;
+      while ((end = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
+        try {
+          const reply = JSON.parse(line); replies[reply.id] = reply;
+          if (reply.id === 1) child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }) + '\n');
+          if (reply.id === 2) child.stdin.end();
+        } catch { child.kill(); }
+      }
+    });
+    child.once('close', code => {
+      clearTimeout(timeout);
+      const names = replies[2]?.result?.tools?.map((tool: any) => tool.name).sort();
+      if (code !== 0 || JSON.stringify(names) !== JSON.stringify([...expected].sort())) fail(new Error('MCP 连接预检失败：' + errors));
+      else done({ server: replies[1].result.serverInfo, tools: names });
+    });
+    child.stdin.on('error', () => {});
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'repair-preflight', version: '1' } } }) + '\n');
+  });
 }
