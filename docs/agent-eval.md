@@ -17,6 +17,8 @@
 
 ## 运行
 
+本期最终验收先按[候选冻结与计划绑定](agent-candidate-freeze.md)保存经离线核查的候选，再给实际运行传 `--candidate-binding <绑定目录>`。原四场景与新增可信反馈各自绑定输入和判据，共享同一候选身份；已有实验不能事后补造绑定。资料策略尚未决定时不提前发布最终候选。
+
 ```bash
 npm run build
 npx tsx scripts/agent-eval/run.ts

@@ -142,4 +142,10 @@ if(process.argv.includes('--version'))console.log('candidate-test-executor/1');e
   const corrupted=await run('corrupted-resource');
   expect(corrupted.code).toBe(2);expect(corrupted.stderr).toContain('绑定资源');
   expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+  await writeFile(join(binding,font.file),await readFile(join(repoRoot,'fixtures/resources/fonts/SourceHanSansCN-Regular.otf')));
+  await rename(join(binding,'resources'),join(binding,'resources-original'));
+  await symlink(join(binding,'resources-original'),join(binding,'resources'),process.platform==='win32'?'junction':'dir');
+  const linked=await run('linked-resource');
+  expect(linked.code).toBe(2);expect(linked.stderr).toContain('绑定资源');
+  expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
 },120000);

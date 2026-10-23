@@ -132,6 +132,7 @@ export async function verifyCandidateBinding(dir:string,identity:ExperimentIdent
   const candidate=await verifyCandidate(binding.candidate.directory,true);
   if(candidate.id!==binding.candidate.id)throw new Error('候选身份不匹配，未派发');
   if(sha256(await readFile(join(dir,'config.json')))!==binding.identity.config)throw new Error('绑定评分配置字节变化，未派发');
+  if((await lstat(join(dir,'resources'))).isSymbolicLink())throw new Error('绑定资源目录不能是链接，未派发');
   const resourceIds=Object.keys(binding.identity.resources).filter(key=>key.startsWith('resource-bytes/')).map(key=>key.slice('resource-bytes/'.length));
   if(!binding.resourceEvidence||identityDifferences([...resourceIds].sort(),Object.keys(binding.resourceEvidence).sort()).length)throw new Error('绑定资源清单不完整，未派发');
   for(const id of resourceIds){
