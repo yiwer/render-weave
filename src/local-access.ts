@@ -32,14 +32,21 @@ export async function withLocalAccess<T>(directories: readonly string[], action:
         }
         break;
       } catch (error) {
-        for (const root of owned.reverse()) await rmdir(join(root, '.write-lock'));
-        owned.length = 0;
+        await release(owned);
         if (!(error instanceof LocalAccessBusy) || Date.now() >= deadline) throw error;
         await delay(10);
       }
     }
     return await held.run(new Set([...inherited, ...owned]), action);
   } finally {
-    for (const root of owned.reverse()) await rmdir(join(root, '.write-lock'));
+    await release(owned);
   }
+}
+
+async function release(owned: string[]): Promise<void> {
+  let failure: unknown;
+  for (const root of owned.splice(0).reverse()) {
+    try { await rmdir(join(root, '.write-lock')); } catch (error) { failure ??= error; }
+  }
+  if (failure) throw failure;
 }

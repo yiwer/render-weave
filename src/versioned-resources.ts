@@ -463,11 +463,18 @@ async function writeTransaction(dir: string, initialize: boolean,
   beforeCommit?: () => Promise<void>,
   relatedDirectories: readonly string[] = [],
 ): Promise<Problem[]> {
+  let completed: Problem[] | undefined;
   try {
     if (initialize) await fs.mkdir(dir, { recursive: true });
     else await storeRoot(dir);
-    return await withLocalAccess([dir, ...relatedDirectories], () => writeTransactionLocked(dir, initialize, prepare, beforeCommit));
-  } catch (error) { return [problem(error, dir)]; }
+    return await withLocalAccess([dir, ...relatedDirectories], async () => {
+      completed = await writeTransactionLocked(dir, initialize, prepare, beforeCommit);
+      return completed;
+    });
+  } catch (error) {
+    // 保留原资源 API：事务结果已确定时，释放约束失败只附加清理提示，不能把已发布版本报成未提交。
+    return completed ? [...completed, hint(ProblemCodes.resourceWriteFailed, { kind: 'input', source: dir }, `写锁清理失败：${describeError(error)}`)] : [problem(error, dir)];
+  }
 }
 
 async function writeTransactionLocked(dir: string, initialize: boolean,

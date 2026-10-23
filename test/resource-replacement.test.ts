@@ -9,7 +9,7 @@ import { copyWorkspaceFixture, m402Dir, resourcesDir } from './support/fixtures.
 
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof fs>();
-  return { ...actual, rename: vi.fn(actual.rename), open: vi.fn(actual.open) };
+  return { ...actual, rename: vi.fn(actual.rename), open: vi.fn(actual.open), rmdir: vi.fn(actual.rmdir) };
 });
 let root: string, dir: string, workspaceDir: string, file: string;
 const originalBytes = Uint8Array.from([1, 2, 3]);
@@ -48,6 +48,14 @@ afterEach(async () => {
 });
 
 describe('检查与应用资源替换', () => {
+  it('替换已提交后释放目录约束失败仍返回新版本，清理问题作为提示', async () => {
+    const checked = await check();
+    vi.mocked(fs.rmdir).mockRejectedValueOnce(Object.assign(new Error('模拟目录释放失败'), { code: 'EBUSY' }));
+    const result = await apply(checked);
+    expect(result.replaced?.version).toBe(2);
+    expect(result.problems).toEqual([expect.objectContaining({ code: ProblemCodes.resourceWriteFailed, level: 'hint' })]);
+    expect(await (await store()).read('photo', 2)).toEqual(newBytes);
+  });
   it('检查只读；零引用也需版本检查，同字节再次替换产生 v3', async () => {
     const before = await fs.readFile(join(dir, 'resources.json'));
     const opened = await store();
