@@ -168,7 +168,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'timeout-ms', 'max-tokens', 'max-cost-usd'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -374,6 +374,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     }
     const result = await runAgentTask({
       out: options.out!, key, keyEnv,
+      ...(io.signal ? { signal: io.signal } : {}),
       ...(task ? { task: task.id } : {}),
       ...(options.sample !== undefined ? { sample: options.sample } : {}),
       ...(options.brief !== undefined ? { brief: options.brief } : {}),
@@ -392,10 +393,14 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
       ...(maxTurns !== undefined ? { maxTurns } : {}),
+      ...(options['timeout-ms'] !== undefined ? { roundTimeoutMs: Number(options['timeout-ms']) } : {}),
+      ...(options['max-tokens'] !== undefined ? { maxTokens: Number(options['max-tokens']) } : {}),
+      ...(options['max-cost-usd'] !== undefined ? { maxCostUsd: Number(options['max-cost-usd']) } : {}),
       ...(effort !== undefined ? { effort } : {}),
       ...(options.claude !== undefined ? { claude: { command: options.claude, ...(claudeArgs ? {args: claudeArgs as string[]} : {}) } } : {}),
       // 输入校验通过后才打印，用法错误时第一行就是错误（票据 28）。
       onStart: () => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
+      onBudget: runtime => io.stderr(`本轮限制：${runtime.roundTimeoutMs} 毫秒，最多 ${runtime.maxTurns} 轮；停止后本地保存最多 30000 毫秒\n`),
     });
     const { check, record } = result;
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems), ...check.assessment.render.problems], io);
@@ -411,6 +416,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(result.draft ? { draft: result.draft } : {}),
       assessment: check.assessment,
       ...(record.run.stopped ? { stopped: record.run.stopped } : {}),
+      ...(result.save ? { save: result.save } : {}),
       usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
     }, null, 2)}\n`);
     if (check.verdict === 'unqualified') io.stderr('成果不合格：问题清单见 check.json；是否带着问题重跑由你决定，不会自动重试\n');

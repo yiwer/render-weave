@@ -196,7 +196,8 @@ it('续跑逐项拒绝实际构建、评分器、资料、输入、资源与运�
   expect((await cli(args)).code).toBe(1);
   const manifest = await readFile(join(e.out, 'eval.json'), 'utf8');
   const dispatches = await readFile(e.ledger, 'utf8');
-  for (const [flag, value, difference] of [['--effort', 'high', 'runtime.effort'], ['--max-turns', '9', 'budgets.maxTurns'], ['--small-model', 'other-small', 'runtime.smallModel'], ['--endpoint', 'https://fixture.invalid', 'runtime.endpoint']] as const) {
+  expect(JSON.parse(manifest).identity.budgets.roundTimeoutMs).toBe(3600000);
+  for (const [flag, value, difference] of [['--timeout-ms', '9000', 'budgets.roundTimeoutMs'], ['--effort', 'high', 'runtime.effort'], ['--max-turns', '9', 'budgets.maxTurns'], ['--small-model', 'other-small', 'runtime.smallModel'], ['--endpoint', 'https://fixture.invalid', 'runtime.endpoint']] as const) {
     const changed = await cli([...args, flag, value]);
     expect(changed.code, changed.stderr).toBe(2);
     expect(changed.stderr).toContain(difference);

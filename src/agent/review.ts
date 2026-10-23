@@ -1314,7 +1314,9 @@ export async function readPreviousRound(dir: string): Promise<PreviousRound> {
 }
 async function readPreviousRoundLocked(dir: string): Promise<PreviousRound> {
   const execution = await readExecution(resolve(dir));
-  if (!execution.problems.length && execution.execution && !execution.execution.committed && execution.execution.status === 'interrupted' && execution.execution.start) {
+  if (!execution.problems.length && execution.execution && execution.execution.start &&
+    ((!execution.execution.committed && execution.execution.status === 'interrupted') ||
+      (execution.execution.status === 'stopped' && !(await exists(join(dir, OUTCOME_FILE)))))) {
     const saved = await readCheckpoint(resolve(dir));
     if (!saved.checkpoint || saved.problems.length) throw new AgentUsageError(`没有可核对的完整检查点，不能从残片接续：${saved.problems.map(p => p.message).join('；')}`);
     const checkpoint = saved.checkpoint, root = resolve(dir), record = execution.execution.start;
