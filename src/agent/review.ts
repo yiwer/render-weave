@@ -41,7 +41,7 @@ import { commitApplication, localPath, verifyApplicationReceipt } from '../local
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
 import { captureResources, contentIdentity, readResourceSnapshot, resourceDifferences, trackResources, type ContentIdentity, type ResourceSnapshotRef, type ResourceIdentity } from './content-identity.js';
 import { readExecution, type RoundExecution, type RoundStart } from './execution.js';
-import { readCheckpoint, type CheckpointView } from './checkpoints.js';
+import { readCheckpoint, readCandidateSelection, type CandidateSelectionView, type CheckpointView } from './checkpoints.js';
 import { localAccessProblem, withLocalAccess } from '../local-access.js';
 
 export const REVIEW_FILE = 'review.json';
@@ -378,8 +378,8 @@ interface AgentRound {
 }
 
 /** 读取一轮的审核视图；轮次本身不完整或被改动时没有视图，只有问题。 */
-export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; problems: Problem[] }> {
-  try { return await readReviewCaptured(roundDir); }
+export async function readReview(roundDir: string): Promise<{ view?: ReviewView; execution?: RoundExecution; checkpoint?: CheckpointView; candidateSelection?:CandidateSelectionView; problems: Problem[] }> {
+  try { return {...await readReviewCaptured(roundDir),candidateSelection:await readCandidateSelection(roundDir)}; }
   catch (error) { const problem = localAccessProblem(error); if (problem) return { problems: [problem] }; throw error; }
 }
 async function openReview(roundDir: string) {

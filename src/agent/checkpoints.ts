@@ -13,6 +13,7 @@ import { readExecution, writeAtomicJson } from './execution.js';
 import { checkAgentOutcome, type OutcomeCheck, type OutcomeTarget } from './outcome.js';
 import { AgentUsageError, exists, sha256 } from './round-files.js';
 import { readResourceSnapshot } from './content-identity.js';
+import { compareCandidates, type CandidateComparison, type ComparisonBasis } from './candidate-comparison.js';
 
 export type CheckpointSignal = { readonly status: 'saved'; readonly id: string; readonly contentIdentity: string }
   | { readonly status: 'notSaved'; readonly reason: string };
@@ -20,8 +21,12 @@ export interface CheckpointCheck { readonly check: OutcomeCheck; readonly checkp
 export interface CheckpointRecord {
   readonly format: 'renderweave-checkpoint/1'; readonly source: 'hostRecovery'; readonly id: string; readonly savedAt: string;
   readonly startSha256: string; readonly files: Readonly<Record<string, string>>; readonly check: OutcomeCheck;
+  readonly comparisonBasis?:ComparisonBasis;
 }
 export interface CheckpointView extends CheckpointRecord { readonly contentIdentity: string }
+interface CheckpointRef { readonly id:string; readonly sha256:string }
+interface CandidateSelection { readonly format:'renderweave-candidate-selection/1'; readonly baseline:CheckpointRef; readonly better?:CheckpointRef; readonly comparison:CandidateComparison }
+export interface CandidateSelectionView { readonly latest:CheckpointView; readonly better?:CheckpointView; readonly comparison:CandidateComparison }
 const DEPENDENCY_ERRORS = new Set<string>([ProblemCodes.templateNotFound, ProblemCodes.staticSchemaNotFound,
   ProblemCodes.compiledSchemaMissing, ProblemCodes.definitionRefNotFound, ProblemCodes.datasetNotFound,
   ProblemCodes.resourceUnreadable, ProblemCodes.resourceNotFound, ProblemCodes.datasetResourceNotFound]);
@@ -133,23 +138,40 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
         checkpoint: { status: 'notSaved', reason: captureProblem } };
     }
     if (reason || !check.contentIdentity) return { check, checkpoint: { status: 'notSaved', reason: reason ?? '检查未形成完整内容身份' } };
+    const startBytes=await readFile(join(roundDir,'round-start.json')),start=JSON.parse(startBytes.toString('utf8'));
+    const digest=(value:unknown)=>sha256(canonical(value??null));
+    const comparisonBasis:ComparisonBasis={task,workspace:digest(Object.fromEntries(Object.entries(files).filter(([path])=>path.startsWith('snapshot/')))),
+      resources:digest(context.resourceIdentity),request:digest(context.request),reference:digest({baseline:context.baseline??null,content:context.contentBaseline??null,image:context.referenceImage?.sha256??null}),
+      policy:digest({brief:start.inputs.brief.sha256,requirement:start.inputs.requirement?.sha256??null,feedback:start.inputs.feedback?.sha256??null,revision:context.revision??null}),
+      criteria:digest({engine:check.contentIdentity.engine,criteria:check.contentIdentity.criteria,comparison:'candidate-comparison/1'})};
     const record: CheckpointRecord = { format: 'renderweave-checkpoint/1', source: 'hostRecovery', id, savedAt: new Date().toISOString(),
-      startSha256: sha256(await readFile(join(roundDir, 'round-start.json'))), files, check };
+      startSha256: sha256(startBytes), files, check,comparisonBasis };
     await writeAtomicJson(join(stage, 'record.json'), record, true);
     await rename(stage, join(roundDir, 'checkpoints', id));
     // 这个原子指针是唯一提交点；强退留下的目录和临时指针都不能成为最后完整候选。
-    await writeAtomicJson(join(roundDir, 'checkpoint.json'), { format: 'renderweave-checkpoint-ref/1', id,
-      sha256: sha256(await readFile(join(roundDir, 'checkpoints', id, 'record.json'))) });
+    const ref={id,sha256:sha256(await readFile(join(roundDir,'checkpoints',id,'record.json')))};
+    const prior=await exists(join(roundDir,'checkpoint.json'))?JSON.parse(await readFile(join(roundDir,'checkpoint.json'),'utf8')):undefined;
+    const previousSelection=prior?.selection as CandidateSelection|undefined;
+    const baseline=previousSelection?.baseline??(prior?{id:prior.id,sha256:prior.sha256}:ref),against=previousSelection?.better??baseline;
+    const checkedPrior=prior?await readCheckpoint(roundDir,against.id):undefined;
+    if(checkedPrior&&!checkedPrior.checkpoint)throw new Error('先前检查点无法核对，不能覆盖选择记录');
+    const comparison=compareCandidates(checkedPrior?.checkpoint,record);
+    const selection:CandidateSelection={format:'renderweave-candidate-selection/1',baseline,
+      ...(comparison.status==='improved'?{better:ref}:previousSelection?.better?{better:previousSelection.better}:{}),comparison};
+    await writeAtomicJson(join(roundDir,'checkpoint.json'),{format:'renderweave-checkpoint-ref/2',...ref,
+      history:[...(prior?.history??(prior?[{id:prior.id,sha256:prior.sha256}]:[])),ref],selection});
     return { check, checkpoint: { status: 'saved', id, contentIdentity: check.contentIdentity.id } };
   } finally { await rm(stage, { recursive: true, force: true }); }
 }
 
 /** 只读已提交集合；每次核对清单、候选、依据与内容身份，不信任目录名或残留文件。 */
-export async function readCheckpoint(roundDir: string): Promise<{ checkpoint?: CheckpointView; problems: Problem[] }> {
+export async function readCheckpoint(roundDir: string, selectedId?:string): Promise<{ checkpoint?: CheckpointView; problems: Problem[] }> {
   if (!(await exists(join(roundDir, 'checkpoint.json')))) return { problems: [] };
   try {
-    const ref = JSON.parse(await readFile(join(roundDir, 'checkpoint.json'), 'utf8'));
-    if (ref.format !== 'renderweave-checkpoint-ref/1' || !/^[a-f0-9-]{36}$/.test(ref.id)) throw new Error('检查点引用不合法');
+    const pointer = JSON.parse(await readFile(join(roundDir, 'checkpoint.json'), 'utf8'));
+    if (!['renderweave-checkpoint-ref/1','renderweave-checkpoint-ref/2'].includes(pointer.format)) throw new Error('检查点引用不合法');
+    const ref=selectedId&&selectedId!==pointer.id?pointer.history?.find((item:CheckpointRef)=>item.id===selectedId):pointer;
+    if(!ref||!/^[a-f0-9-]{36}$/.test(ref.id))throw new Error('所选检查点未完整发布');
     const root = join(roundDir, 'checkpoints', ref.id), safe = await WorkingDirectory.open(root);
     const bytes = await safe.readBytes('record.json');
     if (sha256(bytes) !== ref.sha256) throw new Error('检查点记录哈希不符');
@@ -175,4 +197,14 @@ export async function readCheckpoint(roundDir: string): Promise<{ checkpoint?: C
     }
     return { checkpoint: { ...record, contentIdentity: contentId }, problems: [] };
   } catch (error) { return { problems: [severe(ProblemCodes.roundInvalid, { kind: 'input', source: join(roundDir, 'checkpoint.json') }, `检查点无法核对：${String(error)}`)] }; }
+}
+
+export async function readCandidateSelection(roundDir:string):Promise<CandidateSelectionView|undefined>{
+  if(!await exists(join(roundDir,'checkpoint.json')))return undefined;
+  const pointer=JSON.parse(await readFile(join(roundDir,'checkpoint.json'),'utf8'));
+  const selection=pointer.selection as CandidateSelection|undefined;
+  if(!selection)return undefined;
+  const latest=await readCheckpoint(roundDir),better=selection.better?await readCheckpoint(roundDir,selection.better.id):undefined;
+  if(!latest.checkpoint||better&&!better.checkpoint)throw new Error('候选选择引用的完整集合无法核对');
+  return {latest:latest.checkpoint,...(better?.checkpoint?{better:better.checkpoint}:{}),comparison:selection.comparison};
 }
