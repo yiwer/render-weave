@@ -37,4 +37,6 @@
 3. 随后 `npm run build` 成功，再单独 `npx vitest run test/agent-eval-identity.test.ts --maxWorkers=1`：14/14 通过。已确认源码与实际构建一致；两组共 103 条通过，不把此前旧构建的失败计作通过。
 4. `npx tsc --noEmit`、`npm run build`、`git diff --check` 均成功。
 
+集成复核（2026-10-23）：合并提交 `38245d0`。`node node_modules/vitest/vitest.mjs run test/agent-execution.test.ts test/agent-resource-identity.test.ts test/agent-eval-identity.test.ts --maxWorkers=1` 首次 39/41 通过；03 的两条旧测试直接改写新格式已封存 `round.json`，被完整性校验正确拒绝。将模型独立性改为实际启动两个不同模型配置的公开轮次比较候选检查身份，并将历史兼容夹具显式转换为不含执行合同的旧格式；单独重跑资源身份文件 12/12 通过。保留运行时间等成果记录差异，不要求不同实际观测的审核身份相同。合并后 `npm run build`、`npx tsc --noEmit` 成功。
+
 范围无偏差：本票只交付持久状态、独占拥有者与保守诊断；不自动接管、不保存或恢复检查点、不实现时间预算，不运行真实模型。检查点及恢复竞争由 09、预算由 10、真实模型证据由统一验收活动承担。04 的工作区短锁由集成方合并并复核；本票保留其后续接入位置。
