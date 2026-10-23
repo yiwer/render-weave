@@ -17,7 +17,7 @@ const PHASES = ['preparing', 'executing', 'finalizing', 'completed'];
 const STATUSES = ['running', 'completed', 'failed', 'stopped'];
 export type ExecutionPhase = 'preparing' | 'executing' | 'finalizing' | 'completed';
 export type ExecutionStatus = 'running' | 'completed' | 'failed' | 'stopped' | 'interrupted' | 'pendingRecovery';
-interface Owner { readonly id: string; readonly host: string; readonly pid: number; readonly startedAt: string }
+interface Owner { readonly id: string; readonly host: string; readonly pid: number; readonly startedAt: string; readonly supervisorPid?: number }
 export interface RoundStart {
   readonly format: 'renderweave-round-start/1'; readonly task: RoundRecord['task']; readonly round: number;
   readonly startedAt: string; readonly inputs: RoundInputs; readonly inputIdentity: string;
@@ -57,7 +57,7 @@ export async function writeAtomicJson(path: string, value: unknown, exclusive = 
 /** 同轮目录只允许首次创建者写入，已有/陈旧拥有者都必须另开轮次。 */
 export async function claimExecution(dir: string, startedAt: string) {
   await mkdir(dir, { recursive: true });
-  const owner: Owner = { id: randomUUID(), host: hostname(), pid: process.pid, startedAt };
+  const owner: Owner = { id: randomUUID(), host: hostname(), pid: process.pid, supervisorPid: process.ppid, startedAt };
   try { await writeAtomicJson(join(dir, OWNER), owner, true); }
   catch { throw new AgentUsageError(`轮次已有拥有者或无法确认拥有者，拒绝覆盖或接管：${dir}`); }
   let state: ExecutionRecord = { format: 'renderweave-execution/1', owner, phase: 'preparing', status: 'running', events: [] };

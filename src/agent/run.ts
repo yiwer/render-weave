@@ -437,6 +437,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
     roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
   await execution.initialize({ task: task.id, round, startedAt, inputs, runtime });
   await control.ready({ roundDir, record: { task: task.id, round, startedAt, inputs, runtime } });
+  const started = Date.now();
   const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
   managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
@@ -461,7 +462,6 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
     '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
     '--max-turns', String(maxTurns), '--no-session-persistence', ...(options.effort ? ['--effort', options.effort] : [])];
 
-  const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
     executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, onUsage: control.usage });

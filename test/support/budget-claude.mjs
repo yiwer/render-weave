@@ -6,11 +6,15 @@ const child = spawn(process.execPath, ['--input-type=module', '-e', 'import {wri
 await writeFile('budget-processes.json', JSON.stringify({ executor: process.pid, child: child.pid }));
 if (process.argv[2] === 'crash-host') process.kill(process.ppid, 'SIGKILL');
 console.log(JSON.stringify({ type: 'system', subtype: 'init', model: 'test-model', claude_code_version: 'budget-test-1' }));
-if (process.argv[2] === 'partial') {
+if (['partial', 'sparse'].includes(process.argv[2])) {
   for (const message of [
     { id: 'one', usage: { input_tokens: 10, output_tokens: 2 } },
     { id: 'one', usage: { input_tokens: 10, output_tokens: 5 } },
     { id: 'two', usage: { input_tokens: 20, output_tokens: 7 } },
   ]) console.log(JSON.stringify({ type: 'assistant', message }));
+  if (process.argv[2] === 'sparse') {
+    console.log(JSON.stringify({ type: 'assistant', message: { id: 'one', usage: { input_tokens: 11 } } }));
+    console.log(JSON.stringify({ type: 'result', subtype: 'error', usage: {} }));
+  }
 } else console.log(JSON.stringify({ type: 'result', subtype: 'success', num_turns: 1, usage: { input_tokens: 123, output_tokens: 45 } }));
 setInterval(() => {}, 1000);

@@ -100,7 +100,7 @@ it('保存宽限最多 30 秒，保存挂起仍返回停止原因和已知用量
   } finally { await terminate(child); await closed; }
 }, 45000);
 
-it.each(['result', 'partial'])('模型等待超时终止本轮执行器及后代，保留 %s 用量，无关工具仍存活', async mode => {
+it.each(['result', 'partial', 'sparse'])('模型等待超时终止本轮执行器及后代，保留 %s 用量，无关工具仍存活', async mode => {
   const f = await prepared(`model-wait-${mode}`), args = [...f.args];
   args[args.indexOf('--claude-args') + 1] = JSON.stringify([join(repoRoot, 'test/support/budget-claude.mjs'), mode]);
   const unrelated = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { stdio: 'ignore', windowsHide: true });
@@ -112,7 +112,7 @@ it.each(['result', 'partial'])('模型等待超时终止本轮执行器及后代
     expect(await Promise.race([closed, delay(10000).then(() => undefined)]), errors).toBeDefined();
     expect(JSON.parse(output)).toMatchObject({ stopped: { reason: 'timeout' }, usage: { outputTokens: mode === 'result' ? 45 : 12 } });
     const record = JSON.parse(await readFile(join(f.out, 'round.json'), 'utf8'));
-    expect(record.run).toMatchObject(mode === 'result' ? { inputTokens: 123, outputTokens: 45 } : { inputTokens: 30, outputTokens: 12, usageSource: 'messages' });
+    expect(record.run).toMatchObject(mode === 'result' ? { inputTokens: 123, outputTokens: 45 } : { inputTokens: mode === 'sparse' ? 31 : 30, outputTokens: 12, usageSource: 'messages' });
     expect(record.run.thinkingTokens).toBeUndefined();
     const heartbeat = join(f.out, 'agent/descendant-heartbeat'), last = await readFile(heartbeat, 'utf8');
     await delay(150); expect(await readFile(heartbeat, 'utf8')).toBe(last);

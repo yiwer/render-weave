@@ -12,14 +12,15 @@ export type RoundStop = QuotaStop | { readonly reason: 'timeout'; readonly round
 export interface PreparedRound { readonly roundDir: string; readonly record: Pick<RoundRecord, 'task' | 'round' | 'startedAt' | 'inputs' | 'runtime'> }
 export interface HostControl { ready(value: PreparedRound): Promise<void>; stop(reason: RoundStop): void; usage(value: Omit<RoundUsage, 'wallMs'>): void }
 
-export async function terminateOwnedTree(child: ChildProcess): Promise<void> {
+export async function terminateOwnedTree(child: ChildProcess, requireLiveRoot = false): Promise<void> {
   if (!child.pid) return;
   const exited = () => child.exitCode !== null || child.signalCode !== null;
+  if (process.platform === 'win32' && requireLiveRoot && exited()) throw new Error('本轮宿主已异常退出，无法凭失效根 PID 确认所有后代已结束');
   if (process.platform === 'win32' && !exited()) await new Promise<void>((resolve, reject) => {
     const killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
     const deadline = setTimeout(() => { killer.kill('SIGKILL'); reject(new Error('本轮进程树终止未获确认')); }, 5000);
     killer.once('error', error => { clearTimeout(deadline); reject(error); });
-    killer.once('close', code => { clearTimeout(deadline); if (code === 0 || exited()) resolve(); else reject(new Error(`本轮进程树终止失败：${code}`)); });
+    killer.once('close', code => { clearTimeout(deadline); if (code === 0) resolve(); else reject(new Error(`本轮进程树终止失败：${code}`)); });
   });
   if (process.platform !== 'win32') { try { process.kill(-child.pid, 'SIGKILL'); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; } }
   if (!exited()) await new Promise<void>((resolve, reject) => {
@@ -53,7 +54,7 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
     const stop = async (reason: RoundStop) => {
       if (stopping) return;
       stopping = true; close(); const stopStarted = performance.now();
-      await terminateOwnedTree(child);
+      await terminateOwnedTree(child, true);
       if (!prepared) { reject(new Error('轮次在固定输入完成前停止；仅保留准备诊断')); return; }
       const usage = { ...knownUsage, wallMs: Date.now() - started };
       const saver = host();
@@ -73,7 +74,8 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
     child.on('close', code => { if (!stopping) {
       close(); stopping = true;
       // Linux 进程组在组长死亡后仍可定向终止；Windows 不凭已失效根 PID 猜测后代。
-      void terminateOwnedTree(child).finally(() => reject(new Error(`轮次宿主提前退出（${String(code)}）；已有记录仅供诊断，后代可写性须按执行状态核对：${errors.slice(-1000)}`)));
+      const failure = new Error(`轮次宿主提前退出（${String(code)}）；已有记录仅供诊断，后代可写性须按执行状态核对：${errors.slice(-1000)}`);
+      void terminateOwnedTree(child).then(() => reject(failure), () => reject(failure));
     } });
     child.on('message', (message: any) => {
       if (message.type === 'usage') knownUsage = message.value;

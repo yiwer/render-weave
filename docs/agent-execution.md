@@ -8,8 +8,8 @@
 
 | 文件 | 格式与用途 |
 |---|---|
-| `execution-owner.json` | 不可变拥有者：随机 id、本机 hostname、宿主 PID、开始时间。以独占文件链接发布，只有首次创建者能继续写 |
-| `round-start.json` | `renderweave-round-start/1`：任务、轮次、开始时间、完整 `RoundInputs`、实际固定资料文件的 SHA-256 清单，以及 `inputIdentity` |
+| `execution-owner.json` | 不可变拥有者：随机 id、本机 hostname、业务宿主 PID、开始时间，新记录另含 `supervisorPid` 便于核对所属树。以独占文件链接发布，只有首次创建者能继续写 |
+| `round-start.json` | `renderweave-round-start/1`：任务、轮次、开始时间、完整 `RoundInputs`、实际固定资料文件的 SHA-256 清单，以及 `inputIdentity`；新记录另绑定生效 runtime 与预算，旧记录可缺省 |
 | `execution.json` | `renderweave-execution/1`：拥有者、phase、status、执行器 PID/已退出事实、启动记录哈希、最终记录哈希、递增关键 events |
 | `round.json` | 保持 `renderweave-round/1` 的完成记录；新轮次加 `execution: "renderweave-execution/1"` 标识，要求同时核对持久状态 |
 
@@ -22,7 +22,7 @@
 | `phase: preparing` | 已占有轮次；固定输入可能仍在准备，保存完成后有 `startSha256` |
 | `phase: executing` | 执行器 PID 已记录，随后才向执行器交付提示词 |
 | `phase: finalizing` | 执行器已退出，宿主检查、保存成果并准备最终记录；“检查已完成”事件仍不代表最终提交 |
-| `phase: completed` | 终检与 `round.json` 发布完成，状态含最终记录哈希 |
+| `phase: completed` | 正常终检或停止后的有界本地保存及 `round.json` 发布完成，状态含最终记录哈希；停止不代表终检通过 |
 | `status` | 已记录值为 `running`、`completed`、`failed` 或 `stopped`；启动失败/服务错误归失败，硬额度及轮数上限归停止 |
 | `committed` | 读取时核对启动记录与最终记录哈希得到的结果，不由目录中存在候选文件推断 |
 
@@ -32,7 +32,7 @@
 
 读取不会修改旧记录。宿主已退出且记录表明执行器已退出时，读取显示 `interrupted`；执行器可能仍存活、拥有者来自另一台机器、进程身份不能确认时，显示 `pendingRecovery`。PID 存活只作为保守阻止接管的依据，不能证明它仍是原进程。时间经过多久都不授权覆盖拥有者。
 
-同轮目录重复启动被拒绝，已有状态不被覆盖。没有最终提交身份时，即使目录中留下 `outcome.json`、候选或 `check.json`，也不能批准、应用或直接从这些残留接续。`readReview` 可额外提供宿主已提交且可验证的完整检查点；原执行器明确退出后，`--from` 可从该集合开新轮次，详见[检查点合同](agent-checkpoints.md)。时间预算由后续机制处理。
+同轮目录重复启动被拒绝，已有状态不被覆盖。没有最终提交身份时，即使目录中留下 `outcome.json`、候选或 `check.json`，也不能批准、应用或直接从这些残留接续。`readReview` 可额外提供宿主已提交且可验证的完整检查点；原执行器明确退出后，`--from` 可从该集合开新轮次，详见[检查点合同](agent-checkpoints.md)。时间预算、停止凭据及未完成保存见[整轮预算](agent-budgets.md)。
 
 Agent 正式交回成果仍标记 `agent`。正常收尾时抢救的草稿仍标记 `hostRecovery`，可查看但不准直接批准或应用；持久执行状态不会改变已有来源与审核事实。
 

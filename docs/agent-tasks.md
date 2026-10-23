@@ -51,6 +51,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
 | `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M287） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
+| `--timeout-ms` | 整轮墙钟有限正值，缺省 3600000 毫秒；准备结束后开始，覆盖工具和终检。取消、保存宽限与恢复见[预算合同](agent-budgets.md) |
 | `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
 | `--claude-args` | 可选，仅与 `--claude` 同用的字符串 JSON 参数数组，作为执行器前置参数；受控执行器可用 `--claude <node.exe> --claude-args '["executor.mjs"]'`。不经 shell 解释 |
@@ -231,7 +232,7 @@ renderweave agent review <轮次目录> [--port <端口>] [--no-open]
 
 只有 `draft.json` 的轮次可查看候选与预览，页面注明宿主抢救、完成度未知；审核操作与应用拒绝。用 `--from`、`--feedback` 发起下一轮，继承原工作目录的候选；Agent 完成说明后再交回正式成果。已有 outcome 损坏时不会退回读取草稿掩盖错误。
 
-**硬额度停止（M295）**：Google 转换代理识别 `GoUsageLimitError`（如 weekly）、`insufficient_quota`、`credit_balance_too_low` 后封住后续上游请求，宿主终止本轮执行器进程树。直连运行时的错误事件明确带出相同类型时也停止；只有一般 `rate_limit` / 429、5xx 不误判。`round.json` 的 `run.stopped` 记 `reason: hardQuota`、`type`、`limit`；命令退出失败并给出 `--from` 续跑入口，仍保存 outcome 或恢复草稿。没有结果消息的 token/轮数保持未知。额度恢复后由用户发起接续。
+**硬额度停止（M295、M319）**：Google 转换代理识别 `GoUsageLimitError`（如 weekly）、`insufficient_quota`、`credit_balance_too_low` 后封住后续上游请求，宿主终止本轮执行器进程树。直连运行时的错误事件明确带出相同类型时也停止；只有一般 `rate_limit` / 429、5xx 不误判。`round.json` 的 `run.stopped` 记 `reason: hardQuota`、`type`、`limit`；停止后有界保存只读恢复草稿。有完整检查点时可 `--from` 接续，无检查点时仅供诊断。已收到消息的用量保留，缺失字段仍未知；停止不代表正式完成或人工批准，见[整轮预算](agent-budgets.md)。
 
 **页面内容**：
 
