@@ -1,10 +1,11 @@
 /** 候选冻结只从公开 CLI 观察文件身份与实际可执行产物。 */
 import {spawn} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {mkdtemp,readFile,rm,writeFile,rename,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {afterAll,beforeAll,expect,it} from 'vitest';
-import {repoRoot} from './support/fixtures.js';
+import {repoRoot,copyWorkspaceFixture} from './support/fixtures.js';
 
 let root:string;
 beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-candidate-freeze-'));});
@@ -17,6 +18,40 @@ function execute(args:string[],cwd=repoRoot){
   });
 }
 const freeze=(args:string[])=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args]);
+const stage=(args:string[])=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/stage.ts',...args]);
+it('直接数据集阶段绑定人工应用后的工作区，变化在单次派发前拒绝且不自动审核或应用',async()=>{
+  const candidate=join(root,'stage-candidate'),binding=join(root,'stage-binding'),workspace=join(root,'stage-workspace');
+  const request=join(root,'stage-request.json'),approval=join(root,'approval.json'),out=join(root,'stage-round');
+  const executor=join(root,'stage-executor.mjs'),ledger=join(root,'stage-dispatches.txt'),fake=join(repoRoot,'test/support/fake-claude.mjs');
+  await writeFile(executor,`import {appendFile} from 'node:fs/promises';import {pathToFileURL} from 'node:url';if(process.argv.includes('--version'))console.log('direct-stage/1');else{await appendFile(${JSON.stringify(ledger)},'dispatch\\n');process.argv.splice(1,1,${JSON.stringify(fake)},'none');await import(pathToFileURL(${JSON.stringify(fake)}).href);}`);
+  await copyWorkspaceFixture(join(repoRoot,'fixtures/workspaces/single-text'),workspace);
+  await writeFile(approval,'{"approvedPreparation":"independent-offline-test"}');
+  const approved=`sha256:${createHash('sha256').update(await readFile(approval)).digest('hex')}`;
+  const args=['--task','dataset-extraction','--definition','问候','--workspace',workspace,'--sample',join(repoRoot,'docs/examples/materials/m402-route-sign.jpg'),'--brief',join(repoRoot,'scripts/agent-eval/scenarios/m402/brief-definition.md'),'--resources',join(repoRoot,'fixtures/resources'),'--out',out,'--max-turns','40','--timeout-ms','60000','--stagnation-threshold','2','--claude',process.execPath,'--claude-args',JSON.stringify([executor])];
+  await writeFile(request,JSON.stringify({format:'renderweave-stage-request/1',unit:'holdout-test/run-1/dataset/attempt-1',materials:[{file:approval,sha256:approved}],args}));
+  expect((await freeze(['--out',candidate])).code).toBe(0);
+  const bound=await stage(['--bind',candidate,'--request',request,'--out',binding]);
+  expect(bound.code,bound.stderr).toBe(0);
+  const file=join(workspace,'schema-greeting-v1.json'),before=await readFile(file);
+  await writeFile(file,Buffer.concat([before,Buffer.from('\n')]));
+  const rejected=await stage(['--dispatch',binding,'--key-env','RW_FREEZE_KEY']);
+  expect(rejected.code).toBe(2);expect(rejected.stderr).toContain('workspace');
+  await expect(readFile(ledger)).rejects.toMatchObject({code:'ENOENT'});
+  await writeFile(file,before);
+  const dispatched=await stage(['--dispatch',binding,'--key-env','RW_FREEZE_KEY']);
+  expect(dispatched.code,dispatched.stderr).toBe(1);
+  expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+  expect(JSON.parse(await readFile(join(out,'round.json'),'utf8')).task).toBe('dataset-extraction');
+  const proof=JSON.parse(await readFile(join(binding,'dispatch.json'),'utf8'));
+  expect(proof).toMatchObject({format:'renderweave-stage-dispatch/1',unit:'holdout-test/run-1/dataset/attempt-1',candidate:expect.stringMatching(/^sha256:/),binding:expect.stringMatching(/^sha256:/),exitCode:1});
+  expect(proof.files['round.json']).toMatch(/^sha256:/);
+  await expect(readFile(join(out,'review.json'))).rejects.toMatchObject({code:'ENOENT'});
+  expect(await readFile(file)).toEqual(before);
+  const followup=JSON.parse(await readFile(request,'utf8'));followup.upstreamRounds=[out];
+  await writeFile(request,JSON.stringify(followup));
+  const unapproved=await stage(['--bind',candidate,'--request',request,'--out',join(root,'unapproved-stage')]);
+  expect(unapproved.code).toBe(2);expect(unapproved.stderr).toContain('应用');
+},120000);
 it('候选内容目录不能换成指向工作目录的链接，即使当前字节相同也拒绝',async()=>{
   const candidate=join(root,'linked-candidate');
   expect((await freeze(['--out',candidate])).code).toBe(0);

@@ -32,6 +32,45 @@ npx tsx scripts/agent-eval/run.ts --config scripts/agent-eval/config.json --cand
 
 原始输入路径不自动重写成可迁移工作区；输入移走或改动应先创建新计划。留出材料可以先独立准备，在派发前绑定最终候选；冻结不等待留出材料，也不把校准输入当成留出输入。
 
+## 人工审核链的逐阶段绑定
+
+19 的留出程序包含独立数据集阶段和每阶段人工审核应用，不是自动转录评估。每个阶段另写一份请求（以下绝对路径为占位示例）：
+
+```json
+{
+  "format": "renderweave-stage-request/1",
+  "unit": "landscape/case-01/run-1/dataset/attempt-01",
+  "materials": [
+    {"file": "F:/approved/preparation-manifest.json", "sha256": "sha256:<已核准的64位摘要>"},
+    {"file": "F:/approved/approval.json", "sha256": "sha256:<实际用户核准记录摘要>"},
+    {"file": "F:/approved/budget-policy.json", "sha256": "sha256:<核准预算摘要>"}
+  ],
+  "upstreamRounds": ["F:/observations/unit-01/definition/attempt-01"],
+  "args": [
+    "--task", "dataset-extraction", "--definition", "线路牌",
+    "--workspace", "F:/observations/unit-01/workspace",
+    "--sample", "F:/approved/case-01/source.jpg", "--brief", "F:/approved/case-01/brief.md",
+    "--resources", "F:/approved/resources", "--content-baseline", "F:/approved/case-01/dataset-baseline.json",
+    "--out", "F:/observations/unit-01/dataset/attempt-01",
+    "--model", "claude-haiku-5-5", "--small-model", "claude-haiku-5-5",
+    "--max-turns", "40", "--timeout-ms", "3600000", "--stagnation-threshold", "2",
+    "--context-policy", "full", "--claude", "C:/tools/claude.exe"
+  ]
+}
+```
+
+所有实际使用的原图、说明、基准、请求和当前工作区/资源均从 `args` 自动取字节身份。`materials` 额外列出宿主需核验的核准材料及政策；摘要必须来自实际核准包，不以当前文件自动补造批准。`upstreamRounds` 列本阶段所依赖的人工已应用轮次，逐个通过公开审核读取核对应用凭据属于同一工作区，再固定完整轮次字节，包含原件、人工修正和应用记录。独立空白阶段或核准种子不冒充上游 Agent 成功，可不提供该数组。预算参数按核准政策填写；本入口固定这些事实，不自行解释任意业务政策 JSON。
+
+```powershell
+node node_modules/tsx/dist/cli.mjs scripts/agent-eval/stage.ts --bind F:/acceptance/candidate-1 --request F:/observations/dataset-request.json --out F:/observations/dataset-binding
+node node_modules/tsx/dist/cli.mjs scripts/agent-eval/stage.ts --verify F:/observations/dataset-binding
+node node_modules/tsx/dist/cli.mjs scripts/agent-eval/stage.ts --dispatch F:/observations/dataset-binding --key-env OPEN_CODE_API_KEY
+```
+
+绑定和预检不读密钥、不调用模型。派发重核同一候选和全部阶段来源后，仅调用一次与 `dist/bin.js agent run` 相同的公开 CLI；不提供自动审核、应用、重试或业务循环。所有参数一旗标一值，拒绝重复或未知旗标，路径须绝对；凭据仅以派发时的环境变量读取。`dispatch-start.json` 独占消费绑定，`dispatch.json` 关联候选、绑定、单元、退出码和原始轮次文件摘要；失败也保留，不能重用绑定覆盖派发。运行期间来源变化记为无效，不能计入该候选。
+
+`materials`、其他案例真值和 correctedWorkspace 均不会因为绑定而复制给模型；只有 `args` 指定的本例、本阶段输入沿既有 Agent 准备路径传入。每次审核、修改、应用继续使用19原程序的公开入口；下一阶段使用应用后的真实工作区重新创建绑定。接续同样新建请求，用 `--from`、`--feedback` 和可选 `--checkpoint`，核对前轮及其继承的资源/工作区。核准材料、代码或预算改变须新候选/绑定与影响清单；已有阶段原件保留，不以新绑定替换旧来源。
+
 ## 改动后的重验
 
 有任何代码、资料、工具或默认预算变化，重新构建与核查，写入新候选目录。为每个受影响的计划重新绑定，并指向旧绑定：
