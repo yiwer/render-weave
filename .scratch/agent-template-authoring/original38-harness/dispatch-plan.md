@@ -69,3 +69,5 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
 已通过 `node --check`；尚未在20候选上渲染，不计已验证的业务结果。20冻结后的命令为：
 
     node .scratch/agent-template-authoring/original38-harness/prepare-legacy-en-review.mjs --candidate <20最终候选包> --inventory .scratch/agent-template-authoring/original38-harness/en-inventory.json --out <新的英文局部审核目录>
+
+共享引用已逐项登记在 `conditional-english-reference.json`：21唯一派发的 F-ET-1、F-ET-2、F-ER-1、F-ER-2，共4个英文模板纠偏槽位。原38只按实际完整结果条件引用，不另外派发，不增加观测数，也不代替本票8个四场景观测或真实参考人审。当前均未运行；20交接后、真实派发前补入确切候选/绑定/实验身份，并与21登记互核。
