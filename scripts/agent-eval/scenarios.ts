@@ -1,5 +1,5 @@
 /**
- * 评估配置（config.json）：场景、通过线与连续达线次数。通过线以 M213–M217 的实测为基线（第三阶段 PRD 第 17 条）。
+ * 评估配置（config.json）：场景、通过线与最少计划次数。通过线以 M213–M217 的实测为基线（第三阶段 PRD 第 17 条）。
  */
 import { readFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
@@ -13,6 +13,8 @@ interface ScenarioBase {
   readonly sample: string;
   readonly brief: string;
   readonly domain?: string;
+  readonly reference?: string;
+  readonly contentBaseline?: string;
 }
 
 /** 数据定义提取一轮，按专家字段与 6 项约定评分。 */
@@ -51,7 +53,7 @@ export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario 
 
 export interface EvalConfig {
   readonly format: 'renderweave-agent-eval-config/2';
-  /** 每个场景要连续达线的次数。 */
+  /** 每个场景至少预登记几次；字段名沿用旧配置。 */
   readonly consecutivePasses: number;
   readonly resources: string;
   readonly scenarios: readonly Scenario[];
