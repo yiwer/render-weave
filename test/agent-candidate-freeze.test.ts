@@ -61,6 +61,32 @@ it('工作目录重新构建或修改资料不会改变已冻结包，当前内�
   expect(changed.stderr).toContain(source);
   expect(changed.stderr).toContain(build);
 },120000);
+it('冻结后修改资料产生新候选身份，并从旧计划明确列出必须重验的全部单元',async()=>{
+  const working=join(root,'revision-working'),old=join(root,'revision-old'),next=join(root,'revision-next');
+  const configFile=join(root,'revision-config.json'),executor=join(root,'revision-version.mjs');
+  await writeFile(executor,"if(process.argv.includes('--version'))console.log('revision-only/1');else throw new Error('不得调用模型');");
+  const original=JSON.parse(await readFile(join(repoRoot,'scripts/agent-eval/config.json'),'utf8'));
+  const scenario=original.scenarios.find((value:{id:string})=>value.id==='m402-definition');
+  await writeFile(configFile,JSON.stringify({...original,resources:join(repoRoot,'fixtures/resources'),scenarios:[{...scenario,sample:join(repoRoot,scenario.sample),brief:join(repoRoot,scenario.brief)}]}));
+  expect((await freeze(['--out',working])).code).toBe(0);
+  const cwd=join(working,'content');
+  const command=(args:string[])=>execute([join(cwd,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args],cwd);
+  const args=['--config',configFile,'--claude',process.execPath,'--claude-args',JSON.stringify([executor])];
+  expect((await command(['--out',old])).code).toBe(0);
+  const oldBinding=join(root,'revision-old-binding'),newBinding=join(root,'revision-new-binding');
+  const bound=await command(['--bind',old,'--out',oldBinding,...args]);expect(bound.code,bound.stderr).toBe(0);
+  const before=await readFile(join(old,'candidate.json'),'utf8');
+  const path=join(cwd,'agent/reference/outcome.md');await writeFile(path,(await readFile(path,'utf8'))+'\n追加已核准说明。\n');
+  expect((await command(['--out',next])).code).toBe(0);
+  const rebound=await command(['--bind',next,'--out',newBinding,'--previous-binding',oldBinding,...args]);
+  expect(rebound.code,rebound.stderr).toBe(0);
+  const result=JSON.parse(await readFile(join(newBinding,'binding.json'),'utf8'));
+  expect(result.candidate.id).not.toBe(JSON.parse(before).id);
+  expect(result.revalidation).toMatchObject({previousBinding:JSON.parse(await readFile(join(oldBinding,'binding.json'),'utf8')).id,previousCandidate:JSON.parse(before).id});
+  expect(result.revalidation.changed).toContain('candidate.files.agent/reference/outcome.md');
+  expect(result.revalidation.units).toEqual([{scenario:'m402-definition',repetition:1,stage:'definition'},{scenario:'m402-definition',repetition:2,stage:'definition'}]);
+  expect(await readFile(join(old,'candidate.json'),'utf8')).toBe(before);
+},120000);
 it('同一共同候选分别绑定不同计划，原始评分配置另存而不锁死校准输入',async()=>{
   const candidate=join(root,'shared-candidate'),executor=join(root,'version-only.mjs');
   await writeFile(executor,"if(process.argv.includes('--version'))console.log('binding-only/1');else throw new Error('不得调用模型');");

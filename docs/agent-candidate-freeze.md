@@ -1,0 +1,46 @@
+# 待验候选与计划绑定
+
+候选包保留经核查的共同代码、构建、资料、Schema、工具合同、默认策略和实际安装依赖。计划绑定另存自己的输入、评分配置、资源依据、请求模型/effort/预算及执行器身份；原四场景、可信反馈和留出计划可以使用同一候选，各自保留独立结论。格式与取舍见 M327、[ADR-0026](adr/0026-immutable-candidate-and-plan-bindings.md)。
+
+## 冻结前
+
+先完成责任票的合同、资料、记录兼容和样例同步，运行 `npm run typecheck`、`npm run build`、`npm test -- --maxWorkers=1`。两平台分别复核涉及渲染的共享样例图片及布局摘要，保存命令、环境和字节清单。自动回归或冻结成功都不能代替后续真实模型活动；资料策略最终决定尚未完成时只准备工具，不发布最终候选。
+
+冻结期间保持来源不变。依赖应由锁文件独立安装，不能用工作树之间的目录链接；包会保存实际 node_modules 文件，含 WASM、tsx 和平台需要的 esbuild。`.bin`、`.cache`、`.vite`、`.vite-temp` 是可再生命令链接/缓存，不是模型执行资料。默认评估 JSON 和各案例文件属于逐计划内容，不混进共同输入。
+
+```sh
+npx tsx scripts/agent-eval/freeze.ts --out out/acceptance/candidate-1
+npx tsx scripts/agent-eval/freeze.ts --verify out/acceptance/candidate-1
+npx tsx scripts/agent-eval/freeze.ts --verify out/acceptance/candidate-1 --current
+```
+
+`--verify` 检查包内字节；加 `--current` 还核对当前执行内容与 Node。包内 `content/` 是实拷贝，原工作目录后来构建或修改资料不会改变它。目标目录必须不存在，失败的半成品没有有效发布清单，不能拿它派发。清单中的内容身份不是 Git 提交别名。
+
+## 按计划绑定和派发
+
+原四场景使用当前核准的配置，新增可信反馈使用准备工具产出的独立配置。以下路径是命令示例，实际验收应使用核准输入和持久目录：
+
+```sh
+npx tsx scripts/agent-eval/freeze.ts --bind out/acceptance/candidate-1 --config scripts/agent-eval/config.json --out out/acceptance/four-scenarios
+npx tsx scripts/agent-eval/freeze.ts --bind out/acceptance/candidate-1 --config out/approved-feedback/config.json --out out/acceptance/feedback
+npx tsx scripts/agent-eval/run.ts --config scripts/agent-eval/config.json --candidate-binding out/acceptance/four-scenarios --label acceptance-four --out out/acceptance/four-observations
+```
+
+绑定接受与实际运行相同的 `--scenarios`、`--repeat`、`--model`、`--small-model`、`--endpoint`、`--effort`、`--max-turns`、`--timeout-ms`、`--stagnation-threshold`、`--context-policy`、`--claude` 和 `--claude-args`。质量/成本配对加 `--paired --jobs N` 固定调度条件；普通实验的并行数继续作为调度事实。绑定本身只调用执行器的 `--version`，不读取密钥、不调用模型。提供方修订未知保持 null。
+
+`binding.json` 列出每个场景/次数/阶段，`config.json` 保存原评分配置，`resources/` 保存实际字体和图片字节。首次派发及后续轮次重核共同候选、当前构建、安装依赖、输入、配置、资源、执行器和预算；不匹配列出差异并拒绝模型启动。候选和绑定损坏也拒绝。实际运行的 `eval.json` 与报告记录绑定 ID 和候选 ID；同标识续跑不能去掉或替换绑定，旧实验不能追加绑定后冒充原来已固定。
+
+原始输入路径不自动重写成可迁移工作区；输入移走或改动应先创建新计划。留出材料可以先独立准备，在派发前绑定最终候选；冻结不等待留出材料，也不把校准输入当成留出输入。
+
+## 改动后的重验
+
+有任何代码、资料、工具或默认预算变化，重新构建与核查，写入新候选目录。为每个受影响的计划重新绑定，并指向旧绑定：
+
+```sh
+npx tsx scripts/agent-eval/freeze.ts --out out/acceptance/candidate-2
+npx tsx scripts/agent-eval/freeze.ts --bind out/acceptance/candidate-2 --config scripts/agent-eval/config.json --out out/acceptance/four-scenarios-v2 --previous-binding out/acceptance/four-scenarios
+```
+
+新绑定的 `revalidation` 列出旧身份、全部差异和需要重验的确切单元。首版保守地重验该计划所有单元，不把旧、新候选的成功结果拼接。其他计划要各自生成比较清单。原包、绑定、报告均保留；新评分仍通过已有 `--rescore` 另存结果，不改旧报告，也不补造历史身份。
+
+阶段 5 的默认直接发布、可选审批及托管边界不变。本地候选合格只表示可以进入相应真实验收计划，不能宣称客户自助上线。

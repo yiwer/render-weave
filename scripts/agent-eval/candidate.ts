@@ -15,7 +15,7 @@ import type {RuntimeOptions} from './eval.js';
 
 const roots=['src','dist','agent','schemas','node_modules'];
 const singles=['package.json','package-lock.json','tsconfig.json','tsconfig.build.json'];
-const skippedDirectories=new Set(['.bin','.cache','.vite']);
+const skippedDirectories=new Set(['.bin','.cache','.vite','.vite-temp']);
 export async function commonFiles(root=REPO,destination?:string):Promise<Record<string,string>>{
   for(const path of ['',...roots,'scripts','scripts/agent-eval'])if((await lstat(join(root,path))).isSymbolicLink())throw new Error(`候选目录不能是链接：${path||root}`);
   const files:Record<string,string>={};
@@ -80,8 +80,9 @@ export interface CandidateBinding{
   format:'renderweave-candidate-binding/1';id:string;candidate:{id:string;directory:string};identity:ExperimentIdentity;
   units:{scenario:string;repetition:number;stage:string}[];
   resourceEvidence:Record<string,{file:string;sha256:string}>;
+  revalidation?:{previousBinding:string;previousCandidate:string;changed:string[];units:CandidateBinding['units']};
 }
-export async function bindCandidate(options:{candidate:string;config:string;out:string;scenarios?:string;repeat?:number;pairedJobs:number|null;runtime:RuntimeOptions}):Promise<CandidateBinding>{
+export async function bindCandidate(options:{candidate:string;config:string;out:string;scenarios?:string;repeat?:number;pairedJobs:number|null;runtime:RuntimeOptions;previousBinding?:string}):Promise<CandidateBinding>{
   const candidate=await verifyCandidate(options.candidate,true),config=await readConfig(options.config);
   const ids=options.scenarios?.split(',').map(value=>value.trim()).filter(Boolean),scenarios=ids?ids.map(id=>{
     const scenario=config.scenarios.find(value=>value.id===id);if(!scenario)throw new Error(`未知场景 ${id}`);return scenario;
@@ -92,6 +93,16 @@ export async function bindCandidate(options:{candidate:string;config:string;out:
   const configBytes=await readFile(options.config);
   if(sha256(configBytes)!==identity.config)throw new Error('绑定时评分配置变化，绑定未发布');
   const units=Array.from({length:repeat},(_,index)=>scenarios.flatMap(scenario=>stageNames(scenario).map(stage=>({scenario:scenario.id,repetition:index+1,stage})))).flat();
+  let revalidation:CandidateBinding['revalidation'];
+  if(options.previousBinding){
+    const previous:CandidateBinding=JSON.parse(await readFile(join(options.previousBinding,'binding.json'),'utf8'));
+    const {id,...body}=previous;
+    if(previous.format!=='renderweave-candidate-binding/1'||id!==sha256(JSON.stringify(body)))throw new Error('旧计划绑定损坏，不能推导重验单元');
+    const old=await verifyCandidate(previous.candidate.directory);
+    if(old.id!==previous.candidate.id)throw new Error('旧候选与计划绑定不符');
+    const changed=[...identityDifferences(old.identity,candidate.identity,'candidate'),...identityDifferences(previous.identity,identity,'plan')];
+    revalidation={previousBinding:id,previousCandidate:old.id,changed,units:changed.length?units:[]};
+  }
   const resources=repoPath(config.resources);
   const bytes=await withLocalAccess([resources],async()=>{
     const opened=await openResourceRepository(resources);
@@ -109,7 +120,7 @@ export async function bindCandidate(options:{candidate:string;config:string;out:
   }
   const changes=identityDifferences(identity.resources,await resourceInputIdentity(resources));
   if(changes.length)throw new Error(`绑定时资源变化，绑定未发布：${changes.join('、')}`);
-  const body={format:'renderweave-candidate-binding/1' as const,candidate:{id:candidate.id,directory:resolve(options.candidate)},identity,units,resourceEvidence};
+  const body={format:'renderweave-candidate-binding/1' as const,candidate:{id:candidate.id,directory:resolve(options.candidate)},identity,units,resourceEvidence,...(revalidation?{revalidation}:{})};
   const binding={...body,id:sha256(JSON.stringify(body))};
   await writeFile(join(options.out,'binding.json'),JSON.stringify(binding,null,2)+'\n',{flag:'wx'});
   return binding;
