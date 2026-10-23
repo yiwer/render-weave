@@ -81,7 +81,8 @@ for(let index=0;index<previous.candidates.length;index++){
 }
 const scope=await readFile(resolve(values.scope),'utf8');
 await writeFile(join(out,'scope.md'),scope,{flag:'wx'});
-const blank={format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:[],corrections:[],businessAcceptance:null};
+const reviewItems=[...scope.matchAll(/^\| (Z\d{2}) \| ([^|]+) \|/gm)].map(match=>({id:match[1],label:match[2].trim(),decision:null,allApplicableInstancesReviewed:null,sourceLocation:null,resultLocation:null,evidence:null,comment:null}));
+const blank={allowedDecisions:['accept','issue','unknown','not-applicable'],format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:reviewItems,corrections:[],businessAcceptance:null};
 await writeFile(join(out,'review-template.json'),JSON.stringify(blank,null,2)+'\n',{flag:'wx'});
 const esc=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 const html=['<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><title>原38独立比较</title>',
@@ -99,7 +100,7 @@ await writeFile(join(out,'review.html'),html,{flag:'wx'});
 const after=await inventory(round);
 if(JSON.stringify(before)!==JSON.stringify(after))throw new Error('原始轮次在打包期间变化，材料不能使用');
 await verifyRuntime();
-const manifest={candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'中文实际模板/修改成果；不含模型自评正文',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
+const manifest={candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
 await writeFile(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({out,originalRoundUnchanged:true,effectiveCandidates:effectiveFiles.length,actualImage:manifest.actualImage,previewImage:manifest.previewImage,reviewStatus:blank.status}));
 
