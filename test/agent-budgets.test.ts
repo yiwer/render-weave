@@ -125,12 +125,13 @@ it('取消只停止本轮，最后完整检查点仍可从新轮次接续，未�
   const a = await prepared('cancel-a'), b = await prepared('cancel-b'), controller = new AbortController();
   const args = (f: Awaited<ReturnType<typeof prepared>>) => {
     const values = [...f.args]; values[values.indexOf('--claude-args') + 1] = JSON.stringify([join(repoRoot, 'test/support/fake-checkpoint.mjs'), f.preset]);
-    return [...values, '--timeout-ms', '7000'];
+    // 本例检查取消隔离；B 轮需等 A 轮取消、保存及接续完成，不能先因夹具的短预算超时。
+    return [...values, '--timeout-ms', '30000'];
   };
-  let output = '', errors = '';
+  let output = '', errors = '', secondOutput = '';
   process.env.RW_BUDGET_TEST_KEY = 'test-key';
   const first = runCli(args(a), { signal: controller.signal, stdout: (value: string) => { output += value; }, stderr: (value: string) => { errors += value; } });
-  const second = runCli(args(b), { stdout: () => {}, stderr: () => {} });
+  const second = runCli(args(b), { stdout: (value: string) => { secondOutput += value; }, stderr: () => {} });
   try {
     const observed = JSON.parse(await waitFile(join(a.out, 'agent/checkpoint-observed.json')));
     const id = JSON.parse(observed.reply.result.content[0].text).checkpoint.id;
@@ -148,7 +149,9 @@ it('取消只停止本轮，最后完整检查点仍可从新轮次接续，未�
       '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-claude.mjs'), a.preset])], { stdout: (value: string) => { nextOutput += value; }, stderr: () => {} })).toBe(0);
     expect(JSON.parse(nextOutput).verdict).toBe('qualified');
     expect(await readFile(join(a.out, 'round.json'))).toEqual(old);
-    await writeFile(join(b.out, 'agent/continue'), ''); expect(await second).toBe(0);
+    await writeFile(join(b.out, 'agent/continue'), '');
+    const secondCode = await second;
+    expect(secondCode, secondOutput).toBe(0);
   } finally {
     controller.abort(); await writeFile(join(b.out, 'agent/continue'), '').catch(() => undefined);
     await Promise.allSettled([first, second]); delete process.env.RW_BUDGET_TEST_KEY;
