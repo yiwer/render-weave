@@ -264,8 +264,12 @@ it('从另一个登记范围复制来的人工事件不会计入新订单',async
 });
 it('并行执行的墙钟取区间并集，各轮耗时求和保留实际投入',async()=>{
   const f=await setup('parallel-time'),slow=join(f.dir,'slow.mjs');
-  await writeFile(slow,'await new Promise(r=>setTimeout(r,1200));await import('+JSON.stringify(pathToFileURL(join(repoRoot,'test/support/fake-claude.mjs')).href)+');');
-  await Promise.all([2,3].map(n=>runAgentTask({task:'template-design',sample:join(resourcesDir,'images/test/quadrants.png'),brief:join(f.dir,'brief.md'),workspace:f.workspace,resources:resourcesDir,dataset:'ds-greeting',request:join(f.dir,'request.json'),out:join(f.rounds,'parallel-'+n),key:'test',keyEnv:'TEST',claude:{command:process.execPath,args:[slow,f.preset]}})));
+  const barrier=join(f.dir,'barrier');await mkdir(barrier);
+  await writeFile(slow,"import {writeFile,access} from 'node:fs/promises';import {join} from 'node:path';"+
+    "await writeFile(join(process.argv[4],process.argv[3]),'ready');const exists=p=>access(p).then(()=>true,()=>false);"+
+    "while(!await exists(join(process.argv[4],'2'))||!await exists(join(process.argv[4],'3')))await new Promise(r=>setTimeout(r,20));"+
+    "await new Promise(r=>setTimeout(r,1200));await import("+JSON.stringify(pathToFileURL(join(repoRoot,'test/support/fake-claude.mjs')).href)+');');
+  await Promise.all([2,3].map(n=>runAgentTask({task:'template-design',sample:join(resourcesDir,'images/test/quadrants.png'),brief:join(f.dir,'brief.md'),workspace:f.workspace,resources:resourcesDir,dataset:'ds-greeting',request:join(f.dir,'request.json'),out:join(f.rounds,'parallel-'+n),key:'test',keyEnv:'TEST',claude:{command:process.execPath,args:[slow,f.preset,String(n),barrier]}})));
   const r=await cli(['agent','order-report','--order',f.scope]);expect(r.code,r.stderr).toBe(0);
   expect(r.value().counts.attempts).toBe(3);expect(r.value().timing.executionWallMs).toBeGreaterThan(1200);
   expect(r.value().timing.executionWallMs).toBeLessThan(r.value().timing.attemptsElapsedMs);
