@@ -46,3 +46,22 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 - 主集成 `npm run build`、`npm run typecheck` 通过。
 - `node node_modules/vitest/vitest.mjs run test/agent-context-policy.test.ts -t '显式按需|真实MCP的问题|合法超长|公开参考服务' --maxWorkers=1`：4 项通过、4 项未选取，8.47 秒。复核默认入口、同身份续页、合法长区域名称首响应和会话参考固定。
 - 合同保留 0.16.0，CONTEXT 同步阶段与能力。未重复双平台全量，分支最终 Windows 62 项及 Linux 40 项的证据保留在上文；两份用户既有未跟踪评估报告原字节未改。
+
+
+### 首轮正式派发前的来源路径修复（2026-10-23）
+
+本票重新打开：候选1的 `contextPolicy.sources` 将 `agent/README.md`、`agent/tasks/...`、`agent/reference/...` 写成缺首字符的路径。根因是资料目录保留尾分隔符，`materialHashes` 通过目录字符串长度截取时多删一个字符。此前验收只检查身份变化，未核对来源键能否直接定位真实文件，因此没有发现此缺口。
+
+只读逐字节核查候选1和两份计划绑定：15份实际Agent材料映射到15个键，无覆盖或遗漏；七份公开参考/Schema内容完整，`identity.materials` 与候选共同内容清单均按正确路径完整覆盖。候选1仍是零模型观测准备包；修复不改它、票18的32次观测、既有报告或归档。资料来源实现归本票，后续候选2冻结与新计划绑定归票20。
+
+公开评估CLI经受控Agent执行器新增full/on-demand两例：读取 `eval.json` 与轮次provenance，要求来源路径保留真实文件名，完整材料集合一致，并按每个路径读回实际字节核对摘要。修复前两例均因缺首字符失败，日志 `F:/GenCode/render-weave/out/harness-context-source-fix/windows-red.log`；改用平台标准相对路径后两例均通过，日志 `windows-green.log`。不导入私有身份函数，不调用真实模型。
+
+修复后保留原身份格式、MCP合同、默认full、模型和effort；来源键与源码/构建字节改变会自然产生新身份。双平台相关回归已完成，本次验收缺口闭合后重新关闭本票；原18业务结论不重新计数。
+
+
+最终实现提交 `7339fab`，已基于票20验证提交 `2fe039a`。本次没有修改渲染实现、评分判据或资料内容，因此不重跑渲染全量；相关身份与资料策略回归覆盖既有实验拒绝漂移、来源文件可读、固定公开参考、资料获取与配对报告。
+
+- Windows Node24.12.0：`npm run build`、`npm run typecheck`通过；`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts test/agent-context-policy.test.ts test/agent-context-trial.test.ts --maxWorkers=1`，3文件38项通过，311.52秒，退出0。
+- Linux Node22.23.3 / npm10.9.9：独立容器中从本次源码和实字体重建，同命令3文件38项通过，227.20秒，退出0；build、typecheck通过。
+- 两组均为身份19项、资料策略8项、配对比较11项；真实模型观测0。日志、独立Linux源码包与执行脚本另存 `F:/GenCode/render-weave/out/harness-context-source-fix/`，保留红例、绿例及两个平台全部结果。
+- 候选1路径标签的只读完整性核查另存 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-context-source-label-audit.json`。旧记录不修补；20须发布新候选与新绑定后再启动首轮，不能把本次机制验证算成正式模型或人工业务通过。

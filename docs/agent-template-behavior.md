@@ -64,12 +64,12 @@ npx tsx scripts/agent-eval/run.ts --behavior-policy policy.json --workspace cand
 | `colors` | `expected: string[][]`；每实例实际文本片段颜色，颜色规范成 RGBA；配合文字事实核查参数状态 |
 | `visibility` | `expected: boolean`；匹配元素及父级的布局显示/隐藏；不把元素不存在当作隐藏成功，不声明透明度/遮挡已测量 |
 | `box` | `expected` 中明确给出 `x/y/width/height` 的所需数值，`toleranceMm` 必填；要求唯一匹配，适用于缺失可选信息后的空间释放 |
-| `fit` | `expected: {minFontSize,maxFontSize,minCompression}`；同时要求文字无溢出、墨迹在画板内；复杂变换、可能遮挡或没有墨迹证据记未核查。完整文字另外用 `texts` 核查 |
+| `fit` | `expected: {minFontSize,maxFontSize,minCompression}`；同时要求文字无溢出、墨迹在画板内；实际绘制证据已确认完全透明、完全裁切或完全遮挡时失败，并在 `actual.visibility` 留证。复杂变换、部分/可能遮挡或没有墨迹证据仍记未核查。完整文字另外用 `texts` 核查 |
 | `pixels` | `expected: {file,sha256}`、`regionMm: {x,y,width,height}`、逐通道容差 `tolerance`（0–255）；核准 PNG 必须是同 DPI 的区域图，比较区域内全部像素。参考字节改变或尺寸不同为未核查，实际区域出界为失败 |
 
 像素事实适合核准的图片内容和可见性；不能只给资源名、全图哈希或自动从当前候选截出的图片。核准参考包含需要的背景合成。尺寸以本次 DPI 四舍五入到像素，参考图必须使用同一口径；不自动拉伸参考或放宽容差。一个案例可用 `resources: [{id,file}]` 为已有图片资源提供受控替换字节，仅影响本次内存渲染，原资源仓库不改变。
 
-`fit` 不是全图可见性判据；有遮挡风险时必须另给核准像素或独立审核。自动遮挡覆盖的扩展由票据 13 负责。原票据 18 的主模板基准、33 的覆盖、34 的完整样式验收均保持原责任。
+`fit` 不是全图可见性判据；有遮挡风险时必须另给核准像素或独立审核。票据 13 提供的有限不可见证据现已用于 `fit` 的明确失败；正常对象的 `visibility.status: unknown` 不单独否定字号、压缩与墨迹适配事实，也不证明最终感知可读。原票据 18 的主模板基准、33 的覆盖、34 的完整样式验收均保持原责任。
 
 ## 六类校准政策
 
@@ -81,7 +81,7 @@ npx tsx scripts/agent-eval/run.ts --behavior-policy policy.json --workspace cand
 | `list` | 先 `Alpha → Beta → Alpha → Alpha → Gamma`，再缩为 `Alpha → Gamma`；按各实例从左到右核对 | 正常循环通过；固定两项、反序、合并相邻同名项失败；合法同名实例保留 |
 | `parameter` | 三站中将本站从 1 改为 2；首站红/黑切为灰/红，下一站从 Beta 切为 Gamma | 参数绑定通过；循环把本站写死为 0，实际状态错误而失败 |
 | `optional` | `note` 有值占左侧 40 mm，缺值时隐藏且问候语移至 x=0 | 正常隐藏释放空间；仅隐藏容器内部文字、仍保留 40 mm 空白的反例失败 |
-| `fit` | `Long station name`，目标宽度 80/160 mm；字号 5–10 mm、压缩至少 0.6、墨迹在画板内 | 正常适配通过；2 mm 过度缩字、移出画板失败；透明/复杂变换保留未核查 |
+| `fit` | `Long station name`，目标宽度 80/160 mm；字号 5–10 mm、压缩至少 0.6、墨迹在画板内 | 正常适配通过；2 mm 过度缩字、移出画板、完全透明（颜色 alpha 或累计 opacity 为零）、完全裁切/遮挡失败；部分遮挡、部分裁切及复杂变换保留未核查 |
 | `image` | 同名 `badge` 从左红右蓝换成左蓝右红，固定 10×10 的独立核准区域 | 对两个核准版本逐像素通过；整图变化但图案全绿的反例失败 |
 
 校准运行：`npx vitest run test/agent-template-behavior.test.ts --maxWorkers=1`。它调用真实评估 CLI 和真实渲染器；不 mock 内部函数、不运行模型。它证明判据能区分这些受控正反例，不证明真实模型能使用反馈。

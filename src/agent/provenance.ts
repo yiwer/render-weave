@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -16,7 +16,7 @@ export async function materialHashes(directory: string, prefix: string): Promise
       // 拥有者/租约是瞬时协调状态，不是模型资料、资源或观测事实；进入目录前排除，避免消失竞态。
       if (entry.isDirectory()) { if (!/^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) await visit(absolute); }
       else if (entry.isFile()) {
-        const key = `${prefix}/${absolute.slice(directory.length + 1).replaceAll('\\', '/')}`;
+        const key = `${prefix}/${relative(directory, absolute).replaceAll('\\', '/')}`;
         result[key] = createHash('sha256').update(await readFile(absolute)).digest('hex');
       }
     }

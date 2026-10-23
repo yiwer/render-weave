@@ -4,6 +4,7 @@
  *   npm run build
  *   npx tsx scripts/agent-eval/run.ts [--config 配置文件] [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
  *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数] [--effort 力度]
+ *                                     [--candidate-binding <预登记候选计划目录>]
  *   npx tsx scripts/agent-eval/run.ts --rescore <评估输出目录>     只按已有的轮次目录重新评分，不调用模型
  *   npx tsx scripts/agent-eval/run.ts --behavior-policy <政策.json> --workspace <工作区> --resources <资源> --out <新目录>
  *     离线核查预登记的模板业务事实，不调用模型；用法见 docs/agent-template-behavior.md。
@@ -29,6 +30,7 @@ import {
 import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
 import { materialHashes } from '../../src/agent/provenance.js';
 import { experimentIdentity, inputIdentity, resourceInputIdentity, verifyRoundIdentities, identityDifferences, scorerIdentity, sealEvaluationRound, sha256, type ExperimentIdentity } from './identity.js';
+import {verifyCandidateBinding} from './candidate.js';
 
 const MANIFEST = 'eval.json';
 
@@ -39,7 +41,7 @@ const { values } = parseArgs({
     rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'timeout-ms': { type: 'string' }, 'stagnation-threshold': { type: 'string' },
     plan: { type: 'string' }, config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
-    'context-policy':{type:'string'},'context-pair':{type:'string'},
+    'context-policy':{type:'string'},'context-pair':{type:'string'},'candidate-binding':{type:'string'},
   },
   strict: true,
 });
@@ -47,6 +49,7 @@ const fail = (message: string): never => {
   console.error(message);
   process.exit(2);
 };
+if(values['candidate-binding']&&(values.rescore||values.plan||values['behavior-policy']))fail('--candidate-binding 只用于实际派发；离线模式不补造候选来源');
 if (values['behavior-policy'] !== undefined) {
   if (['claude', 'claude-args', 'paired', 'config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions', 'timeout-ms', 'context-policy', 'context-pair', 'stagnation-threshold'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
   const workspace = values.workspace ?? fail('--behavior-policy 需要 --workspace');
@@ -70,7 +73,7 @@ if (values.plan !== undefined) {
   process.exit(plan.ready ? 0 : 3);
 }
 
-interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance; identity?: ExperimentIdentity }
+interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance; identity?: ExperimentIdentity; candidateBinding?:{id:string;candidateId:string} }
 
 const EXIT: Record<GateStatus, number> = { pass: 0, fail: 1, incomplete: 3 };
 
@@ -135,6 +138,8 @@ try {
     pairedJobs: values.paired || earlier?.identity?.plan.pairedJobs !== null && earlier?.identity?.plan.pairedJobs !== undefined ? jobs : null,
   });
 } catch (error) { fail(error instanceof Error ? error.message : String(error)); }
+const candidateBinding=values['candidate-binding']?await verifyCandidateBinding(resolve(values['candidate-binding']),identity!).catch((error:unknown)=>fail(error instanceof Error?error.message:String(error))):undefined;
+if(earlier&&identityDifferences(earlier.candidateBinding,candidateBinding).length)fail('续跑必须保留原候选计划绑定，旧实验不能补造来源');
 if(values['context-pair']){
   try{
     const pair=JSON.parse(await readFile(resolve(values['context-pair']),'utf8'));
@@ -150,7 +155,7 @@ if (earlier) {
 }
 const startedAt = earlier?.startedAt ?? now;
 const origin = earlier?.provenance ?? await provenance();
-const manifest: Manifest = earlier ?? { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat, provenance: origin, identity: identity! };
+const manifest: Manifest = earlier ?? { label, startedAt, scenarios: scenarios.map((scenario) => scenario.id), repeat, provenance: origin, identity: identity!,...(candidateBinding?{candidateBinding}:{}) };
 if (!earlier) await writeFile(join(outDir, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`, {flag: 'wx'});
 const segmentId = randomUUID(), segments = join(outDir, 'segments');
 const activeRounds = new Set<string>();
@@ -159,6 +164,7 @@ await writeFile(join(segments, `${segmentId}.started.json`), JSON.stringify({sta
 const verifyIdentity = async () => {
   try {
     const current = await experimentIdentity(config, configFile, scenarios, runtime, identity!.plan);
+    if(values['candidate-binding'])await verifyCandidateBinding(resolve(values['candidate-binding']),current);
     const changes = identityDifferences(identity!, current);
     await verifyRoundIdentities(identity!, outDir, scenarios, repeat, activeRounds);
     if (changes.length) throw new Error(`实验条件变化，已停止派发；请使用新实验标识：\n${changes.map(path => `- ${path}`).join('\n')}`);
@@ -210,7 +216,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   if (values.rescore === undefined) await verifyIdentity().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
   const reports = resolve(values.reports ?? join(REPO, 'docs/agent-eval/reports'));
   await mkdir(reports, { recursive: true });
-  const identified = {...scored, experimentIdentity: saved.identity ?? null};
+  const identified = {...scored, experimentIdentity: saved.identity ?? null,...(saved.candidateBinding?{candidateBinding:saved.candidateBinding}:{})};
   const report = values.rescore === undefined ? identified : {
     ...identified,
     rescoring: {
@@ -232,7 +238,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args', 'timeout-ms', 'context-policy', 'context-pair', 'stagnation-threshold'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args', 'timeout-ms', 'context-policy', 'context-pair', 'stagnation-threshold','candidate-binding'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

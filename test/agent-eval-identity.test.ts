@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -127,6 +128,21 @@ await import(pathToFileURL(${JSON.stringify(fake)}).href);
     '--repeat', '2', '--jobs', '1', '--key-env', 'RW_IDENTITY_TEST_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([executor])];
   return {root, out, reports, configFile, ledger, executor, args};
 }
+it.each(['full', 'on-demand'])('资料策略 %s 的实验来源保留可定位的真实文件路径与轮次资料摘要', async policy => {
+  const e = await experiment(`source-paths-${policy}`);
+  const result = await cli([...e.args, '--repetitions', '1-1', '--context-policy', policy]);
+  expect(result.code, result.stdout + result.stderr).toBe(1);
+  const {identity} = await read(join(e.out, 'eval.json'));
+  const sources = Object.fromEntries(Object.entries(identity.contextPolicy.sources).filter(([path]) => path.startsWith('agent/')));
+  expect(Object.keys(sources)).toEqual(expect.arrayContaining(['agent/README.md', 'agent/guide.md', 'agent/reference/template.md', 'agent/tasks/template-design.md']));
+  const provenance = await read(join(e.out, 'run-1/m402-definition/definition/logs/provenance.json'));
+  expect(sources).toEqual(identity.materials);
+  expect(sources).toEqual(provenance.materials);
+  for (const [path, digest] of Object.entries(sources)) {
+    expect(createHash('sha256').update(await readFile(join(repoRoot, path))).digest('hex'), path).toBe(digest);
+  }
+});
+
 it('停滞阈值进入实际派发与冻结身份，续跑改变阈值在启动前拒绝', async () => {
   const e = await experiment('stagnation-budget');
   const args = [...e.args, '--repetitions', '1-1', '--stagnation-threshold', '3'];
