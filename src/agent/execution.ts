@@ -128,7 +128,11 @@ export async function readExecution(dir: string): Promise<{ execution?: RoundExe
   let status = state.status;
   const diagnostics: string[] = [];
   if (!committed) {
-    diagnostics.push(start ? '最终记录尚未提交，没有可审核的正式成果；残留文件仅供诊断' : '固定输入尚未提交完整，没有可审核的正式成果');
+    if (state.phase === 'completed') {
+      status = 'pendingRecovery';
+      diagnostics.push('已记录的提交身份无法核对，不能确认完成；已有事件仅保留历史记录');
+    }
+    diagnostics.push(start ? '最终记录尚未提交或无法核对，没有可审核的正式成果；残留文件仅供诊断' : '固定输入尚未提交完整，没有可审核的正式成果');
     const hostAlive = alive(state.owner.pid, state.owner.host);
     if (state.status === 'running' && hostAlive !== true) {
       const executorAlive = state.executorExited ? false : state.executorPid ? alive(state.executorPid, state.owner.host) : undefined;

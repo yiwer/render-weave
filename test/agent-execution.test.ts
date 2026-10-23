@@ -269,3 +269,12 @@ it('同一空轮次并发启动只有一个拥有者；状态更换期间记录�
   expect((await readReview(out)).execution).toMatchObject({ status: 'completed', committed: true });
   expect(await readFile(join(out, 'execution-owner.json'), 'utf8')).toBe(owner);
 });
+
+it('最终记录丢失后显示待恢复诊断，不继续宣称可证完成', async () => {
+  const round = await finished('missing-final', { 'outcome.json': SUBMISSION, 'candidates/route.json': DEFINITION });
+  await rm(join(round.roundDir, 'round.json'));
+  const result = await readReview(round.roundDir);
+  expect(result.execution).toMatchObject({ status: 'pendingRecovery', committed: false });
+  expect(result.view).toBeUndefined();
+  expect(result.problems[0]?.location).toMatchObject({ source: join(round.roundDir, 'round.json') });
+});
