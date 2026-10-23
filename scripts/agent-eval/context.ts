@@ -10,7 +10,7 @@ import {REPO,readConfig} from './scenarios.js';
 import {experimentIdentity,sha256} from './identity.js';
 import {feedbackPlan} from './feedback.js';
 
-const {values} = parseArgs({options:{check:{type:'string'},catalog:{type:'string'},'prepare-pair':{type:'string'},config:{type:'string'},model:{type:'string'},'small-model':{type:'string'},endpoint:{type:'string'},effort:{type:'string'},jobs:{type:'string'},repeat:{type:'string'},'max-turns':{type:'string'},claude:{type:'string'},'claude-args':{type:'string'}},strict:true});
+const {values} = parseArgs({options:{check:{type:'string'},catalog:{type:'string'},'prepare-pair':{type:'string'},config:{type:'string'},model:{type:'string'},'small-model':{type:'string'},endpoint:{type:'string'},effort:{type:'string'},jobs:{type:'string'},repeat:{type:'string'},'max-turns':{type:'string'},'timeout-ms':{type:'string'},claude:{type:'string'},'claude-args':{type:'string'}},strict:true});
 if (values['prepare-pair']) {
   if(values.check||values.catalog||!values.config)throw new Error('--prepare-pair 需要 --config，不能混用指针检查');
   const configFile=resolve(values.config), config=await readConfig(configFile);
@@ -24,13 +24,13 @@ if (values['prepare-pair']) {
   const args=values['claude-args']?JSON.parse(values['claude-args']):undefined;
   if(args!==undefined&&(!values.claude||!Array.isArray(args)||!args.every(value=>typeof value==='string')))throw new Error('claude-args 必须与 claude 一起提供字符串数组');
   const runtime={model:values.model,smallModel:values['small-model'],endpoint:values.endpoint,effort:values.effort,
-    ...(values['max-turns']?{maxTurns:positive(values['max-turns'],1)}:{}),...(values.claude?{claude:{command:values.claude,args}}:{})};
+    ...(values['max-turns']?{maxTurns:positive(values['max-turns'],1)}:{}),...(values['timeout-ms']?{roundTimeoutMs:positive(values['timeout-ms'],1)}:{}),...(values.claude?{claude:{command:values.claude,args}}:{})};
   const arms=[];
-  for(const policy of ['full','on-demand'] as const){
+  for(const policy of plan.ready?['full','on-demand'] as const:[]){
     const identity=await experimentIdentity(config,configFile,config.scenarios,{...runtime,contextPolicy:policy},{scenarios:config.scenarios.map(value=>value.id),repeat,pairedJobs:jobs});
     const flag=(name:string,value:unknown)=>value===undefined?[]:[`--${name}`,String(value)];
     arms.push({policy,identity,identityHash:sha256(JSON.stringify(identity)),arguments:['--config',configFile,'--context-policy',policy,'--paired','--jobs',String(jobs),'--repeat',String(repeat),
-      ...flag('model',runtime.model),...flag('small-model',runtime.smallModel),...flag('endpoint',runtime.endpoint),...flag('effort',runtime.effort),...flag('max-turns',runtime.maxTurns),
+      ...flag('model',runtime.model),...flag('small-model',runtime.smallModel),...flag('endpoint',runtime.endpoint),...flag('effort',runtime.effort),...flag('max-turns',runtime.maxTurns),...flag('timeout-ms',runtime.roundTimeoutMs),
       ...flag('claude',runtime.claude?.command),...(runtime.claude?.args?['--claude-args',JSON.stringify(runtime.claude.args)]:[])]});
   }
   const out=resolve(values['prepare-pair']);await mkdir(out);

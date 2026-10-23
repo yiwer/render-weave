@@ -25,7 +25,7 @@ if(process.argv.includes('--context-probe')){
     if(stage.heading&&!text.includes(stage.heading))throw new Error('参考缺少所需章节');
     references.push(stage.name);
   }
-  contextObservation={references,pages:0,unknownTotal:0};
+  contextObservation={references,pages:0,unknownTotal:0,instances:[]};
 }
 let isTemplate = false;
 if (['calibration', 'collateral', 'stale', 'mixed', 'pending'].includes(preset)) {
@@ -37,6 +37,7 @@ if (['calibration', 'collateral', 'stale', 'mixed', 'pending'].includes(preset))
     do{
       const page=await call('outcome_feedback',{reportId:before.feedback.reportId,offset,limit:3,groupBy:'target'});
       if(page.contentIdentity!==before.contentIdentity.id)throw new Error('分页检查身份漂移');
+      contextObservation.instances.push(...page.groups.flatMap(group=>group.items.flatMap(item=>item.detail.instances??[])));
       contextObservation.pages++;contextObservation.unknownTotal=page.unknownTotal;offset=page.nextOffset;
     }while(offset!==null);
     await writeFile('context-observation.json',JSON.stringify(contextObservation));

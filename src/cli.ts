@@ -40,6 +40,7 @@ import { AGENT_TASKS, findAgentTask } from './agent/tasks.js';
 import { WorkingDirectory } from './mcp/files.js';
 import { serveMcp } from './mcp/server.js';
 import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
+import { referenceTexts } from './mcp/references.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
@@ -117,6 +118,7 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
   --timeout-ms  整轮墙钟有限正值，缺省 3600000 毫秒；取消/超时后本地保存最多 30000 毫秒。当前不支持 --max-tokens / --max-cost-usd 硬限制
   --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
+  --context-policy 可选，full（缺省全量参考）或 on-demand（入口强制约束与按需目录）；不改变 effort 或预算
 
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配
@@ -187,7 +189,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
-    : command === 'mcp' ? ['tools', 'log', 'outcome-context'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
+    : command === 'mcp' ? ['tools', 'log', 'outcome-context', 'reference-bundle'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
     : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
     : command === 'push' ? ['token-env', 'rounds'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
@@ -538,6 +540,7 @@ async function runMcp(options: Record<string, string>, io: CliIo): Promise<numbe
   const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
   const { managedOutcomeCheck } = await import('./agent/checkpoint-host.js');
   const all = createTools({
+    references: await referenceTexts(options['reference-bundle']),
     workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!), ...(outcome ? { outcome } : {}),
     checkOutcome: managedOutcomeCheck(),
   });

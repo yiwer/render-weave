@@ -48,7 +48,7 @@ const fail = (message: string): never => {
   process.exit(2);
 };
 if (values['behavior-policy'] !== undefined) {
-  if (['claude', 'claude-args', 'paired', 'config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
+  if (['claude', 'claude-args', 'paired', 'config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions', 'timeout-ms', 'context-policy', 'context-pair'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
   const workspace = values.workspace ?? fail('--behavior-policy 需要 --workspace');
   const resources = values.resources ?? fail('--behavior-policy 需要 --resources');
   const out = values.out ?? fail('--behavior-policy 需要 --out');
@@ -75,6 +75,7 @@ interface Manifest { label: string; startedAt: string; endedAt?: string; scenari
 const EXIT: Record<GateStatus, number> = { pass: 0, fail: 1, incomplete: 3 };
 
 if (values.rescore !== undefined) {
+  if (values['context-policy'] || values['context-pair']) fail('--rescore 只读取已有策略，不接受新的策略或配对计划');
   const outDir = resolve(values.rescore);
   const manifest = JSON.parse(await readFile(join(outDir, MANIFEST), 'utf8')) as Manifest;
   await finish(values.label ?? manifest.label, manifest, outDir, await scoreAll(outDir, manifest), manifest.endedAt);
@@ -228,7 +229,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args', 'timeout-ms', 'context-policy', 'context-pair'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

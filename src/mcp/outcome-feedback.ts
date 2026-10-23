@@ -11,6 +11,8 @@ export function outcomeFeedback(check:OutcomeCheck, display:(problem:Problem)=>P
   const problem=(value:Problem,file='')=>{const shown=display(value);add(shown.code,file||JSON.stringify(shown.location),shown);};
   check.problems.forEach(value=>problem(value));check.assessment.render.problems.forEach(value=>problem(value));
   for(const candidate of check.candidates){
+    const {problems: _problems, deferred: _deferred, revision: _revision, sha256: _sha256, ...metadata} = candidate;
+    add('candidate', candidate.path, metadata);
     candidate.problems.forEach(value=>problem(value,candidate.path));
     candidate.deferred?.forEach(value=>add(`deferred.${value.code}`,candidate.path,display(value),true));
     candidate.revision?.changes.forEach(value=>add('revision.change',candidate.path,{file:candidate.path,...value}));

@@ -42,6 +42,7 @@ import { startCheckpointHost } from './checkpoint-host.js';
 import { usageCollector } from './usage.js';
 import { withLocalAccess } from '../local-access.js';
 import { contextPolicy, prepareContextPolicy, contextPrompt, contextIdentity, type ContextPolicyIdentity } from './context-policy.js';
+import { referenceTexts } from '../mcp/references.js';
 import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
@@ -341,6 +342,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
 
   // 资料：反馈 > 修改要求 > 项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
+  const references = await referenceTexts();
   const sampleFile = `sample${extension}`;
   await writeFile(join(agentDir, sampleFile), sampleBytes);
   await writeFile(join(logsDir, sampleFile), sampleBytes);
@@ -349,8 +351,14 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
   await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
   if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
-  for (const reference of task.references) if (selectedContext === 'full' || reference === 'outcome') await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
-  await prepareContextPolicy(selectedContext, join(agentDir, 'docs'));
+  for (const reference of task.references) {
+    if (reference === 'outcome') await copyFile(join(AGENT_MATERIALS, 'reference/outcome.md'), join(agentDir, 'docs/outcome.md'));
+    else if (selectedContext === 'full') {
+      if (reference !== 'template' && reference !== 'data-definition') throw new AgentUsageError(`未知 DSL 参考：${reference}`);
+      await writeFile(join(agentDir, 'docs/dsl-reference.md'), references[`reference/${reference}`]);
+    }
+  }
+  await prepareContextPolicy(selectedContext, join(agentDir, 'docs'), references);
   if (request) {
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
@@ -405,8 +413,10 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
   const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
+  const referenceBundle=join(logsDir,'reference-materials.json');
+  await writeFile(referenceBundle,JSON.stringify({format:'renderweave-reference-materials/1',texts:references}));
   const inputs: RoundInputs = {
-    contextPolicy: await contextIdentity(selectedContext, join(agentDir, 'docs')),
+    contextPolicy: await contextIdentity(selectedContext, join(agentDir, 'docs'),references),
     resourceSnapshot,
     sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
     referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
@@ -454,6 +464,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
   managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
+    '--reference-bundle',referenceBundle,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] });
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
