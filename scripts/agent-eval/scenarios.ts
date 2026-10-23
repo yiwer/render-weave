@@ -44,13 +44,13 @@ export interface TranscriptionScenario extends ScenarioBase {
   readonly kind: 'transcription';
   readonly datasetBrief: string;
   readonly truth: string;
-  readonly pass: { readonly names: number; readonly landmarks: number; readonly facilities: number };
+  readonly pass: { readonly names: number; readonly landmarks: number; readonly facilities: number; readonly orderViolations: number; readonly insertions: number; readonly duplicates: number; readonly landmarkExtra: number; readonly facilityExtra: number };
 }
 
 export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario;
 
 export interface EvalConfig {
-  readonly format: 'renderweave-agent-eval-config/1';
+  readonly format: 'renderweave-agent-eval-config/2';
   /** 每个场景要连续达线的次数。 */
   readonly consecutivePasses: number;
   readonly resources: string;
@@ -61,7 +61,22 @@ export const CONFIG_FILE = join(REPO, 'scripts/agent-eval/config.json');
 
 export async function readConfig(file = CONFIG_FILE): Promise<EvalConfig> {
   const config = JSON.parse(await readFile(file, 'utf8')) as EvalConfig;
-  if (config.format !== 'renderweave-agent-eval-config/1') throw new Error(`评估配置格式不对：${file}`);
+  if (config.format !== 'renderweave-agent-eval-config/2') throw new Error(`评估配置需 renderweave-agent-eval-config/2 的核准评分政策：${file}；评估未完成，不自动迁移旧通过线`);
+  for (const scenario of config.scenarios) {
+    if (scenario.kind !== 'transcription') continue;
+    const required = ['names', 'landmarks', 'facilities', 'orderViolations', 'insertions', 'duplicates', 'landmarkExtra', 'facilityExtra'] as const;
+    if (required.some((key) => !Number.isSafeInteger(scenario.pass?.[key]) || scenario.pass[key] < 0)) {
+      throw new Error(`转录案例 ${scenario.id} 缺少完整核准评分政策；评估未完成，补齐通过线后再运行`);
+    }
+    let truth: { stops?: { name?: unknown; landmark?: unknown; facilities?: unknown }[] } | null;
+    try { truth = JSON.parse(await readFile(repoPath(scenario.truth), 'utf8')); }
+    catch { throw new Error(`转录案例 ${scenario.id} 无法读取核准真值；评估未完成，核对 truth 路径与文件`); }
+    if (!truth || !Array.isArray(truth.stops) || truth.stops.length === 0 || truth.stops.some((stop) => !stop || typeof stop.name !== 'string' || stop.name.trim() === '' ||
+      (stop.landmark !== undefined && (!Number.isSafeInteger(stop.landmark) || Number(stop.landmark) < 1)) ||
+      (stop.facilities !== undefined && (!Array.isArray(stop.facilities) || stop.facilities.some((value) => typeof value !== 'string'))))) {
+      throw new Error(`转录案例 ${scenario.id} 缺少有效核准真值；评估未完成，需非空的逐次停靠站点事实`);
+    }
+  }
   return config;
 }
 

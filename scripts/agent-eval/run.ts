@@ -2,7 +2,7 @@
  * Agent 评估命令（第三阶段票据 08）：经产品路径跑评估场景，与通过线对照，报告存档到 docs/agent-eval/reports/。
  *
  *   npm run build
- *   npx tsx scripts/agent-eval/run.ts [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
+ *   npx tsx scripts/agent-eval/run.ts [--config 配置文件] [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
  *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数] [--effort 力度]
  *   npx tsx scripts/agent-eval/run.ts --rescore <评估输出目录>     只按已有的轮次目录重新评分，不调用模型
  *   分段跑（某个模型的额度窗口装不下一整遍）：用同一个 --label，先加 --repetitions 1-1，额度恢复后加 --repetitions 2-2；
@@ -43,7 +43,7 @@ const fail = (message: string): never => {
   process.exit(2);
 };
 const configFile = values.config ? resolve(values.config) : CONFIG_FILE;
-const config = await readConfig(configFile);
+const config = await readConfig(configFile).catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
 
 interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance; identity?: ExperimentIdentity }
 

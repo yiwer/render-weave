@@ -27,9 +27,9 @@
 | [19：冻结十二个留出案例及独立审核计划](issues/19-holdout-cases-and-review-plan.md) | 14、15 | A17 案例与审核准备 |
 | [20：兼容检查通过后冻结同一份待验候选](issues/20-verified-candidate-freeze.md) | 01、11、18 | A20 自动兼容与候选冻结 |
 | [21：固定候选完成中英文四类任务的可信反馈纠偏](issues/21-real-trusted-feedback-observations.md) | 20 | A15 真实模型反馈 |
-| [22：中文线路牌留出案例完成九次独立观测](issues/22-zh-route-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 中文线路牌 |
-| [23：英文线路牌留出案例完成九次独立观测](issues/23-en-route-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 英文线路牌 |
-| [24：中文价签留出案例完成九次独立观测](issues/24-zh-price-tag-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 中文价签 |
-| [25：英文价签留出案例完成九次独立观测](issues/25-en-price-tag-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 英文价签 |
+| [22：横版线路牌留出案例完成九次独立观测](issues/22-landscape-route-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 横版线路牌 |
+| [23：竖版线路牌留出案例完成九次独立观测](issues/23-vertical-route-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 竖版线路牌 |
+| [24：整站牌留出案例完成九次独立观测](issues/24-bus-stop-board-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 整站牌 |
+| [25：双语站名牌留出案例完成九次独立观测](issues/25-bilingual-stop-name-holdout.md) | 19、21；[原票 38：固定候选的既有真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | A17 双语站名牌 |
 | [26：完成真人走查并交付全部验收证据](issues/26-integrated-evidence-and-human-walkthrough.md) | 22、23、24、25 | A20 真人走查与证据收口 |
 | [关联：原 38 真实模型验收](../agent-template-authoring/issues/38-retest-after-quota-recovery.md) | 原 31、原 32；[20](issues/20-verified-candidate-freeze.md) | A14 真实四场景；既有英文纠偏与中英文样式/状态审核 |
