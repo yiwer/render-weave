@@ -1,3 +1,4 @@
+import { agentProvenance } from '../../src/agent/provenance.js';
 /**
  * 评估的编排（第三阶段票据 08、验收 A10）：经产品路径（renderweave agent 与 renderweave mcp）发起各场景的轮次，
  * 评分并与通过线对照；每个场景连续 consecutivePasses 次达线才算通过。报告只存摘要，不存图片与日志。
@@ -9,7 +10,6 @@
  * 仍拿不到有效结果的单元记为 invalid：它不是一次观测，既不算达线，也不算模型没做出来。
  */
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
@@ -520,7 +520,7 @@ export interface Provenance {
 }
 
 export async function provenance(): Promise<Provenance> {
-  return { git: await gitState(), materials: await materialHashes() };
+  return agentProvenance();
 }
 
 export async function buildReport(options: {
@@ -693,20 +693,6 @@ async function submittedDefinitions(dir: string): Promise<unknown[]> {
 function hasListOfRef(document: unknown): boolean {
   const fields = (document as { fields?: { type?: string; items?: { type?: string } }[] } | undefined)?.fields;
   return Array.isArray(fields) && fields.some((field) => field.type === 'list' && field.items?.type === 'ref');
-}
-
-async function materialHashes(): Promise<Record<string, string>> {
-  const root = join(REPO, 'agent');
-  const files = (await readdir(root, { recursive: true })).map(String).filter((file) => file.endsWith('.md')).sort();
-  const hashes: Record<string, string> = {};
-  for (const file of files) hashes[`agent/${file.replaceAll('\\', '/')}`] = createHash('sha256').update(await readFile(join(root, file))).digest('hex').slice(0, 12);
-  return hashes;
-}
-
-async function gitState(): Promise<{ commit: string; dirty: boolean }> {
-  const commit = (await execute('git', ['rev-parse', '--short', 'HEAD'], REPO)).stdout.trim();
-  const status = (await execute('git', ['status', '--porcelain'], REPO)).stdout.trim();
-  return { commit: commit || 'unknown', dirty: status !== '' };
 }
 
 function execute(command: string, args: readonly string[], cwd = REPO): Promise<{ code: number | null; stdout: string; stderr: string }> {

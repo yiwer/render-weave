@@ -1,0 +1,1575 @@
+{
+  "sampleWidthPx": 3200,
+  "sampleHeightPx": 3600,
+  "artboardWidthMm": 800,
+  "artboardHeightMm": 900,
+  "sampleSha256": "622e340e787706113d6f579d53b892e4a7ed6f2a3b85041b5c2f0c5c6300f1da",
+  "complete": false,
+  "approvedRegions": [
+    {
+      "id": "header-label",
+      "name": "顶栏中英文标题",
+      "targetPathPattern": "*/本站栏目标题",
+      "sampleRegion": {
+        "x": 2347,
+        "y": 81,
+        "width": 459,
+        "height": 46
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "header-ar",
+      "name": "本站阿文大标题",
+      "targetPathPattern": "*/本站名称行/本站阿文名",
+      "sampleRegion": {
+        "x": 2108,
+        "y": 152,
+        "width": 693,
+        "height": 115
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "header-en",
+      "name": "本站英文标题",
+      "targetPathPattern": "*/本站名称行/本站英文名",
+      "expectedText": "Palm Park",
+      "sampleRegion": {
+        "x": 1824,
+        "y": 202,
+        "width": 237,
+        "height": 39
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "code-label",
+      "name": "站码标题",
+      "targetPathPattern": "*/站点编号标题",
+      "sampleRegion": {
+        "x": 162,
+        "y": 77,
+        "width": 338,
+        "height": 36
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "code-value",
+      "name": "站码数值",
+      "targetPathPattern": "*/站点编号值",
+      "sampleRegion": {
+        "x": 319,
+        "y": 172,
+        "width": 181,
+        "height": 57
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "towards-label",
+      "name": "方向标签",
+      "targetPathPattern": "*/开往标题",
+      "sampleRegion": {
+        "x": 2333,
+        "y": 448,
+        "width": 334,
+        "height": 46
+      },
+      "boxKind": "ink",
+      "expectedColor": "#F2A900",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "destination-ar",
+      "name": "方向阿文大字",
+      "targetPathPattern": "*/终点站名称行/终点站阿文名",
+      "sampleRegion": {
+        "x": 2263,
+        "y": 533,
+        "width": 393,
+        "height": 135
+      },
+      "boxKind": "ink",
+      "expectedColor": "#FFFFFF",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "destination-en",
+      "name": "方向英文",
+      "targetPathPattern": "*/终点站名称行/终点站英文名",
+      "expectedText": "Port",
+      "sampleRegion": {
+        "x": 2082,
+        "y": 591,
+        "width": 123,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#C9D3E3",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "via-line",
+      "name": "始发与途经说明",
+      "targetPathPattern": "*/始发与途经行",
+      "sampleRegion": {
+        "x": 1749,
+        "y": 705,
+        "width": 918,
+        "height": 44
+      },
+      "boxKind": "ink",
+      "expectedColor": "#C9D3E3",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "route-label",
+      "name": "线路号牌标签",
+      "targetPathPattern": "*/线路号前缀",
+      "sampleRegion": {
+        "x": 2862,
+        "y": 466,
+        "width": 57,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "route-main",
+      "name": "线路号牌主字",
+      "targetPathPattern": "*/线路号主字",
+      "sampleRegion": {
+        "x": 2824,
+        "y": 533,
+        "width": 160,
+        "height": 119
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "route-secondary",
+      "name": "线路号牌副字",
+      "targetPathPattern": "*/线路号副字",
+      "expectedText": "12",
+      "sampleRegion": {
+        "x": 2868,
+        "y": 692,
+        "width": 44,
+        "height": 28
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "count-label",
+      "name": "站数标签",
+      "targetPathPattern": "*/站数标题",
+      "sampleRegion": {
+        "x": 365,
+        "y": 423,
+        "width": 293,
+        "height": 36
+      },
+      "boxKind": "ink",
+      "expectedColor": "#C9D3E3",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "count-value",
+      "name": "站数数值",
+      "targetPathPattern": "*/站数值",
+      "sampleRegion": {
+        "x": 393,
+        "y": 478,
+        "width": 261,
+        "height": 81
+      },
+      "boxKind": "ink",
+      "expectedColor": "#FFFFFF",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "trip-label",
+      "name": "全程标签",
+      "targetPathPattern": "*/全程时长标题",
+      "sampleRegion": {
+        "x": 271,
+        "y": 621,
+        "width": 386,
+        "height": 36
+      },
+      "boxKind": "ink",
+      "expectedColor": "#C9D3E3",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "trip-value",
+      "name": "全程时长里程",
+      "targetPathPattern": "*/全程时长里程值",
+      "sampleRegion": {
+        "x": 163,
+        "y": 691,
+        "width": 494,
+        "height": 71
+      },
+      "boxKind": "ink",
+      "expectedColor": "#FFFFFF",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-右-time",
+      "name": "右栏分钟标题",
+      "targetPathPattern": "*/右栏表头分钟",
+      "sampleRegion": {
+        "x": 1666,
+        "y": 926,
+        "width": 186,
+        "height": 37
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-右-transfer",
+      "name": "右栏换乘标题",
+      "targetPathPattern": "*/右栏表头换乘",
+      "sampleRegion": {
+        "x": 1890,
+        "y": 921,
+        "width": 413,
+        "height": 42
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-右-stops",
+      "name": "右栏站名标题",
+      "targetPathPattern": "*/右栏表头站点",
+      "sampleRegion": {
+        "x": 2798,
+        "y": 926,
+        "width": 240,
+        "height": 37
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-左-time",
+      "name": "左栏分钟标题",
+      "targetPathPattern": "*/左栏表头分钟",
+      "sampleRegion": {
+        "x": 162,
+        "y": 926,
+        "width": 186,
+        "height": 37
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-左-transfer",
+      "name": "左栏换乘标题",
+      "targetPathPattern": "*/左栏表头换乘",
+      "sampleRegion": {
+        "x": 386,
+        "y": 921,
+        "width": 413,
+        "height": 42
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "table-左-stops",
+      "name": "左栏站名标题",
+      "targetPathPattern": "*/左栏表头站点",
+      "sampleRegion": {
+        "x": 1294,
+        "y": 926,
+        "width": 240,
+        "height": 37
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-1-ar",
+      "name": "第 1 站阿文",
+      "targetPathPattern": "*/右栏站点列表[1]/*/站点阿文名",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2553,
+        "y": 1038,
+        "width": 370,
+        "height": 52
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-1-en",
+      "name": "第 1 站副标题",
+      "targetPathPattern": "*/右栏站点列表[1]/*/站点副标题",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2528,
+        "y": 1106,
+        "width": 399,
+        "height": 32
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-2-ar",
+      "name": "第 2 站阿文",
+      "targetPathPattern": "*/右栏站点列表[2]/*/站点阿文名",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2612,
+        "y": 1193,
+        "width": 312,
+        "height": 38
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-2-en",
+      "name": "第 2 站副标题",
+      "targetPathPattern": "*/右栏站点列表[2]/*/站点副标题",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2705,
+        "y": 1256,
+        "width": 222,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-3-ar",
+      "name": "第 3 站阿文",
+      "targetPathPattern": "*/右栏站点列表[3]/*/站点阿文名",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2645,
+        "y": 1345,
+        "width": 279,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-3-en",
+      "name": "第 3 站副标题",
+      "targetPathPattern": "*/右栏站点列表[3]/*/站点副标题",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2767,
+        "y": 1408,
+        "width": 160,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-4-ar",
+      "name": "第 4 站阿文",
+      "targetPathPattern": "*/右栏站点列表[4]/*/站点阿文名",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2771,
+        "y": 1497,
+        "width": 152,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-4-en",
+      "name": "第 4 站副标题",
+      "targetPathPattern": "*/右栏站点列表[4]/*/站点副标题",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2787,
+        "y": 1560,
+        "width": 140,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-5-ar",
+      "name": "第 5 站阿文",
+      "targetPathPattern": "*/右栏站点列表[5]/*/站点阿文名",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2560,
+        "y": 1650,
+        "width": 363,
+        "height": 51
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-5-en",
+      "name": "第 5 站副标题",
+      "targetPathPattern": "*/右栏站点列表[5]/*/站点副标题",
+      "state": "passed",
+      "sampleRegion": {
+        "x": 2690,
+        "y": 1712,
+        "width": 237,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-6-ar",
+      "name": "第 6 站阿文",
+      "targetPathPattern": "*/右栏站点列表[6]/*/站点阿文名",
+      "state": "current",
+      "sampleRegion": {
+        "x": 2591,
+        "y": 1818,
+        "width": 334,
+        "height": 55
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-6-en",
+      "name": "第 6 站副标题",
+      "targetPathPattern": "*/右栏站点列表[6]/*/站点副标题",
+      "state": "current",
+      "sampleRegion": {
+        "x": 2786,
+        "y": 1888,
+        "width": 141,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-7-ar",
+      "name": "第 7 站阿文",
+      "targetPathPattern": "*/右栏站点列表[7]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 2680,
+        "y": 1993,
+        "width": 246,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-7-en",
+      "name": "第 7 站副标题",
+      "targetPathPattern": "*/右栏站点列表[7]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 2667,
+        "y": 2056,
+        "width": 260,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-8-ar",
+      "name": "第 8 站阿文",
+      "targetPathPattern": "*/右栏站点列表[8]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 2704,
+        "y": 2147,
+        "width": 220,
+        "height": 46
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-8-en",
+      "name": "第 8 站副标题",
+      "targetPathPattern": "*/右栏站点列表[8]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 2656,
+        "y": 2208,
+        "width": 268,
+        "height": 34
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-9-ar",
+      "name": "第 9 站阿文",
+      "targetPathPattern": "*/左栏站点列表[9]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1122,
+        "y": 1040,
+        "width": 298,
+        "height": 49
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-9-en",
+      "name": "第 9 站副标题",
+      "targetPathPattern": "*/左栏站点列表[9]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1231,
+        "y": 1104,
+        "width": 192,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-10-ar",
+      "name": "第 10 站阿文",
+      "targetPathPattern": "*/左栏站点列表[10]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1132,
+        "y": 1195,
+        "width": 290,
+        "height": 50
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-10-en",
+      "name": "第 10 站副标题",
+      "targetPathPattern": "*/左栏站点列表[10]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1153,
+        "y": 1256,
+        "width": 270,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-11-ar",
+      "name": "第 11 站阿文",
+      "targetPathPattern": "*/左栏站点列表[11]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1092,
+        "y": 1346,
+        "width": 328,
+        "height": 57
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-11-en",
+      "name": "第 11 站副标题",
+      "targetPathPattern": "*/左栏站点列表[11]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1175,
+        "y": 1408,
+        "width": 246,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-12-ar",
+      "name": "第 12 站阿文",
+      "targetPathPattern": "*/左栏站点列表[12]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1219,
+        "y": 1496,
+        "width": 201,
+        "height": 49
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-12-en",
+      "name": "第 12 站副标题",
+      "targetPathPattern": "*/左栏站点列表[12]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1298,
+        "y": 1560,
+        "width": 125,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-13-ar",
+      "name": "第 13 站阿文",
+      "targetPathPattern": "*/左栏站点列表[13]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1148,
+        "y": 1651,
+        "width": 272,
+        "height": 46
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-13-en",
+      "name": "第 13 站副标题",
+      "targetPathPattern": "*/左栏站点列表[13]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1260,
+        "y": 1712,
+        "width": 163,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-14-ar",
+      "name": "第 14 站阿文",
+      "targetPathPattern": "*/左栏站点列表[14]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1126,
+        "y": 1801,
+        "width": 294,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-14-en",
+      "name": "第 14 站副标题",
+      "targetPathPattern": "*/左栏站点列表[14]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1283,
+        "y": 1866,
+        "width": 140,
+        "height": 22
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-15-ar",
+      "name": "第 15 站阿文",
+      "targetPathPattern": "*/左栏站点列表[15]/*/站点阿文名",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1144,
+        "y": 1945,
+        "width": 276,
+        "height": 60
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-15-en",
+      "name": "第 15 站副标题",
+      "targetPathPattern": "*/左栏站点列表[15]/*/站点副标题",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 1251,
+        "y": 2016,
+        "width": 173,
+        "height": 24
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-16-ar",
+      "name": "第 16 站阿文",
+      "targetPathPattern": "*/左栏站点列表[16]/*/站点阿文名",
+      "state": "terminal",
+      "sampleRegion": {
+        "x": 1266,
+        "y": 2103,
+        "width": 153,
+        "height": 53
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "stop-16-en",
+      "name": "第 16 站副标题",
+      "targetPathPattern": "*/左栏站点列表[16]/*/站点副标题",
+      "state": "terminal",
+      "sampleRegion": {
+        "x": 1217,
+        "y": 2170,
+        "width": 206,
+        "height": 33
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "current-badge",
+      "name": "本站提示白字",
+      "targetPathPattern": "*/右栏站点列表[6]/*/本站提示文字",
+      "state": "current",
+      "sampleRegion": {
+        "x": 1696,
+        "y": 1849,
+        "width": 331,
+        "height": 31
+      },
+      "boxKind": "ink",
+      "expectedColor": "#FFFFFF",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "time-value",
+      "name": "剩余分钟数",
+      "targetPathPattern": "*/左栏站点列表[9]/*/预计分钟文字",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 162,
+        "y": 1071,
+        "width": 70,
+        "height": 33
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "transfer-badge",
+      "name": "换乘线路号文字",
+      "targetPathPattern": "*/左栏站点列表[10]/*/换乘线路列表[1]/换乘线路号",
+      "state": "normal",
+      "sampleRegion": {
+        "x": 404,
+        "y": 1230,
+        "width": 23,
+        "height": 20
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "legend-time",
+      "name": "图例时间说明",
+      "targetPathPattern": "*/时间近似说明",
+      "sampleRegion": {
+        "x": 1268,
+        "y": 2345,
+        "width": 828,
+        "height": 39
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "legend-transfer",
+      "name": "图例换乘说明",
+      "targetPathPattern": "*/换乘图例文字",
+      "sampleRegion": {
+        "x": 2156,
+        "y": 2350,
+        "width": 257,
+        "height": 34
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "legend-passed",
+      "name": "图例过站说明",
+      "targetPathPattern": "*/过站图例文字",
+      "sampleRegion": {
+        "x": 2535,
+        "y": 2350,
+        "width": 168,
+        "height": 34
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "legend-current",
+      "name": "图例本站说明",
+      "targetPathPattern": "*/本站图例文字",
+      "sampleRegion": {
+        "x": 2814,
+        "y": 2350,
+        "width": 172,
+        "height": 40
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-access-label",
+      "name": "无障碍栏目标题",
+      "targetPathPattern": "*/无障碍标题",
+      "sampleRegion": {
+        "x": 365,
+        "y": 2519,
+        "width": 459,
+        "height": 36
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-access-body",
+      "name": "无障碍正文",
+      "targetPathPattern": "*/低地板说明",
+      "sampleRegion": {
+        "x": 462,
+        "y": 2589,
+        "width": 364,
+        "height": 42
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-fare-label",
+      "name": "票价栏目标题",
+      "targetPathPattern": "*/票价标题",
+      "sampleRegion": {
+        "x": 1280,
+        "y": 2514,
+        "width": 282,
+        "height": 43
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-fare-value",
+      "name": "票价金额",
+      "targetPathPattern": "*/票价金额行",
+      "sampleRegion": {
+        "x": 1270,
+        "y": 2611,
+        "width": 286,
+        "height": 49
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-fare-body",
+      "name": "票制正文",
+      "targetPathPattern": "*/票制说明行",
+      "sampleRegion": {
+        "x": 1205,
+        "y": 2717,
+        "width": 359,
+        "height": 50
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-frequency-label",
+      "name": "发车间隔标题",
+      "targetPathPattern": "*/发车间隔标题",
+      "sampleRegion": {
+        "x": 1910,
+        "y": 2518,
+        "width": 393,
+        "height": 37
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-peak-body",
+      "name": "高峰时段正文",
+      "targetPathPattern": "*/高峰时段行",
+      "sampleRegion": {
+        "x": 1840,
+        "y": 2586,
+        "width": 462,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-interval-value",
+      "name": "发车间隔数值",
+      "targetPathPattern": "*/高峰间隔值",
+      "sampleRegion": {
+        "x": 2135,
+        "y": 2655,
+        "width": 172,
+        "height": 41
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-subtitle",
+      "name": "平峰粗体小标题",
+      "targetPathPattern": "*/平峰时段标题",
+      "sampleRegion": {
+        "x": 2124,
+        "y": 2731,
+        "width": 177,
+        "height": 53
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-hours-label",
+      "name": "运营时间标题",
+      "targetPathPattern": "*/运营时间标题",
+      "sampleRegion": {
+        "x": 2705,
+        "y": 2513,
+        "width": 335,
+        "height": 42
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "service-hours-body",
+      "name": "运营时间正文",
+      "targetPathPattern": "*/工作日首末班",
+      "sampleRegion": {
+        "x": 2471,
+        "y": 2651,
+        "width": 569,
+        "height": 47
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-customer-label",
+      "name": "客服栏目标题",
+      "targetPathPattern": "*/客服标题",
+      "sampleRegion": {
+        "x": 839,
+        "y": 3159,
+        "width": 676,
+        "height": 36
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-phone",
+      "name": "客服电话占位",
+      "targetPathPattern": "*/客服电话文字",
+      "sampleRegion": {
+        "x": 1099,
+        "y": 3247,
+        "width": 413,
+        "height": 72
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-contact",
+      "name": "运营信息正文",
+      "targetPathPattern": "*/运营与更新日期行",
+      "sampleRegion": {
+        "x": 560,
+        "y": 3365,
+        "width": 953,
+        "height": 48
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-live-title",
+      "name": "实时到站标题",
+      "targetPathPattern": "*/实时到站标题",
+      "sampleRegion": {
+        "x": 2139,
+        "y": 3192,
+        "width": 567,
+        "height": 50
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-sms-ar",
+      "name": "短信阿文说明",
+      "targetPathPattern": "*/短信查询阿文说明",
+      "sampleRegion": {
+        "x": 1746,
+        "y": 3280,
+        "width": 959,
+        "height": 46
+      },
+      "boxKind": "ink",
+      "expectedColor": "#0B2545",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-sms-en",
+      "name": "短信英文说明",
+      "targetPathPattern": "*/短信查询英文说明",
+      "expectedText": "Scan for live arrivals · SMS stop code 2048",
+      "sampleRegion": {
+        "x": 2101,
+        "y": 3354,
+        "width": 605,
+        "height": 30
+      },
+      "boxKind": "ink",
+      "expectedColor": "#4A5A73",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "footer-qr",
+      "name": "二维码占位标签",
+      "targetPathPattern": "*/二维码占位文字",
+      "expectedText": "QR",
+      "sampleRegion": {
+        "x": 2851,
+        "y": 3267,
+        "width": 46,
+        "height": 31
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "longest-stop-ar",
+      "name": "原图最宽阿文站名",
+      "targetPathPattern": "*/右栏站点列表[1]/*/站点阿文名",
+      "state": "longestText",
+      "sampleRegion": {
+        "x": 2553,
+        "y": 1038,
+        "width": 370,
+        "height": 52
+      },
+      "boxKind": "ink",
+      "expectedColor": "#5F6C82",
+      "toleranceRatio": {
+        "min": 0.8,
+        "max": 1.2
+      },
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "marker-first",
+      "name": "首站方标",
+      "sampleRegion": {
+        "x": 2968,
+        "y": 1055,
+        "width": 64,
+        "height": 66
+      },
+      "targetPathPattern": "*/右栏站点列表[1]/*/首末站方标",
+      "state": "passed",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "marker-passed",
+      "name": "过站圆标",
+      "sampleRegion": {
+        "x": 2972,
+        "y": 1213,
+        "width": 55,
+        "height": 55
+      },
+      "targetPathPattern": "*/右栏站点列表[2]/*/途经站圆标",
+      "state": "passed",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "marker-current",
+      "name": "本站圆标",
+      "sampleRegion": {
+        "x": 2960,
+        "y": 1828,
+        "width": 81,
+        "height": 81
+      },
+      "targetPathPattern": "*/右栏站点列表[6]/*/本站圆标",
+      "state": "current",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "marker-normal",
+      "name": "普通圆标",
+      "sampleRegion": {
+        "x": 1468,
+        "y": 1060,
+        "width": 55,
+        "height": 55
+      },
+      "targetPathPattern": "*/左栏站点列表[9]/*/途经站圆标",
+      "state": "normal",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "marker-terminal",
+      "name": "终点方标",
+      "sampleRegion": {
+        "x": 1464,
+        "y": 2121,
+        "width": 64,
+        "height": 64
+      },
+      "targetPathPattern": "*/左栏站点列表[16]/*/首末站方标",
+      "state": "terminal",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    },
+    {
+      "id": "highlight-current",
+      "name": "本站高亮底块",
+      "sampleRegion": {
+        "x": 1640,
+        "y": 1781,
+        "width": 1426,
+        "height": 177
+      },
+      "targetPathPattern": "*/右栏站点列表[6]/本站高亮底块",
+      "state": "current",
+      "boxKind": "layout",
+      "positionToleranceMm": 2
+    }
+  ]
+}

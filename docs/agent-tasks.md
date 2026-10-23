@@ -45,6 +45,8 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--dataset` | 模板辅助设计所基于的已保存数据集 id，数据定义取它选定的那一份；模板辅助修改可用它代替出图请求中的数据集 |
 | `--request` | 示例图对应的出图请求（主模板名、对外参数、输出尺寸与 `mode`；`mode` 必填，取 `draft` 或 `final`，与渲染请求相同）。模板辅助设计与模板辅助修改必须给；数据集提取可选，给了就用工作区已有的模板预览候选数据集 |
 | `--requirement` | 模板辅助修改的修改要求（Markdown），见[模板辅助修改](#模板辅助修改) |
+| `--reference` | 模板任务的人工核准参考 JSON；原图尺寸、画板毫米与区域标注的写法见[视觉反馈](agent-visual-feedback.md)。基准由宿主固定，缺省为未核查 |
+| `--content-baseline` | 提取任务的本次事实 JSON，显式字段映射/缺值/逐项数值，不由领域名推断；与参考一样在下一轮继承 |
 | `--from`、`--feedback` | 带反馈发起下一轮，见[下一轮](#下一轮) |
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
 | `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M287） |
@@ -123,6 +125,8 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `agent/` | Agent 工作目录，即 MCP 服务的 `--root` |
 | `agent/sample.<格式>` | 示例图 |
 | `agent/docs/` | `brief.md`（项目说明）、`guide.md`（通用做法）、`domain-<领域>.md`（领域约定，如有）、`dsl-reference.md`（DSL 参考）、`outcome.md`（成果格式）、`request.json`（出图请求，如有）、`requirement.md`（修改要求，模板辅助修改）、`feedback.md`（反馈，下一轮） |
+| `logs/prompt.md`、`logs/materials/`、`logs/provenance.json` | 实际任务提示词、实际发给 Agent 的资料副本及哈希、源码提交/脏状态、工具合同、引擎标识；普通轮次与评估共用清单生成逻辑 |
+| `logs/reference.json`、`logs/content-baseline.json`、`logs/sample.*` | 宿主固定的可选视觉/内容基准与示例；下一轮验哈希后继承，禁止另传覆盖 |
 | `agent/candidates/` | Agent 写的候选文件；模板辅助修改与下一轮由命令预先放好起点 |
 | `agent/previous/` | 下一轮才有：上一轮的原样记录 |
 | `agent/scratch/` | Agent 的自查草稿，不是成果 |
@@ -188,11 +192,11 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 
    Schema 不通过时只报 Schema 的问题，不再做引擎校验。
 3. **渲染**：有完整出图请求时，覆盖候选后实际渲染草稿。模板的渲染严重问题使结论为不合格；数据集提取的预览仍只作参考。`assessment` 分开记录 `structure`、`candidates`、`content: needsReview` 与 `render`；缺完整请求记 `render.status: notChecked`，可渲染记 `renderable`，受阻记 `blocked`。`capabilityBlocked` 表示包含已知引擎能力问题。模板任务另有 `style`：按人工核准区域与布局摘要核对字号、重复实例与状态覆盖，异常给诊断，不单独改变结论。
-4. **覆盖**：提取任务另核对业务内容覆盖（票据 33）：站码等已知缺值是否说明、固定常量是否有项目说明依据、累计分钟等整块信息是否丢失、推导值是否有依据。严重异常使结论不合格，提示只记录不阻止。
+4. **覆盖**：提取任务按宿主核准的本次事实检查字段、缺值、数值与常量授权。待确认候选与预览使用相同有效值，仍保留审核；没有基准为 `notChecked`，派生语义等未核查项列未知，总分为 `null`。事实严重异常使结论不合格，提示不阻止。模板的 `assessment.visual` 通过共享比较模块测量区域；详细合同见[视觉反馈](agent-visual-feedback.md)。
 5. **结论**：结构、候选和模板的渲染检查通过时为"合格"，内容与样式仍须审核。数据集中落在待确认位置上的问题，如必填未提供，记在候选的 `deferred` 里，留给审核处理，不计入结论（M46）。
 
 **交回前核对**（M233、M294）：同一套校验也开放给 Agent，即 MCP 工具 `check_outcome`。已知能力受阻时交回候选与说明，结束本轮，不以修改模板解决引擎能力缺失。
-- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板；提取任务还带项目说明原文与领域内容基准。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
+- 校验要知道本轮任务与已知输入：数据集提取所选的数据定义、完整出图请求、模板辅助修改可以改的模板，以及显式提供的参考/内容基准。命令把它们写到 `logs/outcome-context.json`，经 `--outcome-context` 交给 MCP 服务。
 - 这个文件在 Agent 工作目录之外，Agent 改不了。
 - 交回后的校验与它是同一份实现、同样的上下文，所以 Agent 交回前看到的结论与问题和 `check.json` 一致。
 

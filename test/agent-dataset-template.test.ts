@@ -146,6 +146,25 @@ const codes = (problems: readonly { code: string }[]) => problems.map((problem) 
 const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 
 describe('发起数据集提取与模板辅助设计', () => {
+  it('正常轮次固定参考输入并保存真实提示词、资料与比较报告；下一轮拒绝被篡改的参考', async () => {
+    const dir = await workspace();
+    const reference = await file('reference.json', { sampleWidthPx: 8, sampleHeightPx: 8, artboardWidthMm: 200, artboardHeightMm: 50, approvedRegions: [] });
+    const sampleBytes = await readFile(join(resourcesDir, 'images/test/quadrants.png'));
+    const dimensions = await import('../src/index.js').then(({ readPngInfo }) => readPngInfo(sampleBytes));
+    await writeFile(reference, JSON.stringify({ sampleWidthPx: dimensions.width, sampleHeightPx: dimensions.height, artboardWidthMm: 200, artboardHeightMm: 50, approvedRegions: [] }));
+    const round = await run({ 'outcome.json': TEMPLATE_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: WORDS },
+      { task: 'template-design', workspace: dir, dataset: 'ds-greeting', request: await file('reference-request.json', BANNER_REQUEST), reference });
+    const known = await json(join(round.roundDir, 'logs/outcome-context.json'));
+    expect(known.baseline.sampleSha256).toBe(round.record.inputs.sample.sha256);
+    expect(known.referenceImage.path).toContain('logs');
+    expect(round.check.assessment.visual?.status).toBe('notChecked');
+    const provenance = await json(join(round.roundDir, 'logs/provenance.json'));
+    expect(provenance.mcpContract).toBe('0.10.1'); expect(provenance.engine).toMatch(/^sha256:/);
+    expect(provenance.actualMaterials['materials/guide.md']).toHaveLength(64);
+    expect(await readFile(join(round.roundDir, 'logs/prompt.md'), 'utf8')).toBe((await json(join(round.roundDir, 'agent/fake-run.json'))).prompt);
+    await writeFile(join(round.roundDir, 'logs/reference.json'), '{}');
+    await expect(run({}, { task: undefined, from: round.roundDir, sample: undefined, brief: undefined, resources: undefined, feedback: join(base, 'brief.md') })).rejects.toThrow('参考资料已改变');
+  });
   it('任务顺序与输入：数据集提取要已发布的数据定义，模板辅助设计要已保存的数据集与出图请求', async () => {
     const dir = await workspace();
     const request = await file('card-request.json', CARD_REQUEST);
@@ -194,7 +213,7 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(prompt).toContain('已保存的 ds-greeting');
     expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
     expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
-      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome');
+      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,compare_reference,inspect_layout,view_image,dsl_reference,check_outcome');
     expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')) });
   });
 });

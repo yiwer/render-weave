@@ -42,6 +42,7 @@ Claude Code 的配置示例（`--mcp-config`）：
 | `check_dataset` | `path`、`definitionPaths` | 按所选定义的编译产物校验，问题带字段路径。定义可以来自快照，也可以来自候选 |
 | `check_templates` | `paths` | 模板工作副本的静态检查，问题带元素路径，同一问题只报一次 |
 | `render_draft` | `request`、`templates`、`datasetPath`、`region` | 问题清单与 PNG 图片内容块 |
+| `compare_reference` | 可选 `templates`、`regions`、`regionOffset`（与 `regions` 互斥） | 固定参考与请求下的多维偏差、覆盖范围、源模板/实例位置、可分页区域目录、同尺度局部图；详见[视觉反馈](agent-visual-feedback.md) |
 | `inspect_layout` | `request`、`templates`、`datasetPath`、`elements`、`depth` | 元素的布局摘要与这些元素上的问题 |
 | `view_image` | `path`（工作目录内的图片，或 `res:资源ID`）、`region`（像素）、`scale`（1–4） | 原图尺寸、裁切区域、倍数与缩放后的 PNG |
 | `dsl_reference` | `name`、`pointer`（只用于 `schema/*`） | `agent/reference/` 中的参考，或 `schemas/` 中的 JSON Schema 原文；Schema 超过 30,000 字符且不带 `pointer` 时返回目录 |
@@ -77,13 +78,15 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
   | `definition` | 否 | `{name, version}`，数据集提取所选的数据定义，候选数据集必须选定它 |
   | `request` | 否 | 完整出图请求，模板辅助设计的主模板必须在候选中；兼容旧的 `{template}`，但只能静态检查 |
   | `revision` | 否 | `{templates}`，模板辅助修改可以改的已保存模板 |
-  | `briefText` | 否 | 项目说明原文；提取任务判断固定常量有没有依据 |
-  | `contentBaseline` | 否 | 领域业务内容基准；`route-sign` 提取任务由 `agent run` 自动带上 |
+  | `briefText` | 否 | 项目说明原文；留作上下文，不用关键词匹配授权固定常量 |
+  | `contentBaseline` | 否 | 宿主核准的本次内容事实；由 `agent run --content-baseline` 提供，领域名称不产生事实 |
+  | `baseline` | 否 | 人工核准的原图区域、画板尺寸及测量类型；由 `agent run --reference` 固定 |
+  | `referenceImage` | 否 | `{path, sha256}`，宿主原图快照；比较前校验实际字节与核准尺寸 |
 
   `agent run` 每轮写到 `logs/outcome-context.json`，在 Agent 工作目录之外。
 - **成果评估（合同 0.9.0，M294）**：返回 `assessment.structure`、`candidates`、`content: needsReview` 与 `render`。渲染包含 `status`（`notChecked` / `renderable` / `blocked`）、`hasImage`、`capabilityBlocked`、`blocking` 和按预算截断的问题清单。有完整请求时覆盖候选做实际草稿渲染；模板存在严重出图问题时 `verdict` 为 `unqualified`。已知能力受阻应保留候选和说明后交回，严重问题仍阻止审核通过与应用。
-  - 提取任务另有 `assessment.coverage`（票据 33）：业务内容覆盖得分、严重异常、已覆盖与缺失项；严重异常使 `verdict` 为 `unqualified`。结果同时以 `coverageVerification` 返回。
-  - 模板任务另有 `assessment.style`（票据 34）：人工核准区域的字号与物理尺寸异常、重复实例扫描数与状态覆盖；异常只记提示，不单独改变结论。结果同时以 `styleVerification` 返回。
+  - 提取任务的 `assessment.coverage`：本次可信事实的严重异常、已覆盖/缺失/未知项；未校准总分为 `null`，严重异常使 `verdict` 为 `unqualified`。没有基准时为 `notChecked`。完整 `coverageVerification` 由宿主保存到 `check.json`。
+  - 模板任务的 `assessment.visual`：与 `compare_reference` 相同的报告 ID、区域偏差和覆盖摘要；兼容 `assessment.style`。没有基准或尺度未对齐记 `notChecked`；异常只记提示。完整 `styleVerification` 由宿主保存，工具只返回限长摘要。
 - **返回**：与 `check.json` 使用同一份校验结果，候选不带 `sha256`，问题清单按上述预算截断。有 `revision` 上下文时，模板候选另给结构化差异的范围摘要（M293），其他任务不返回：
   - `revision.status`：`modified`（改了已保存模板）、`unchanged`（原样，应用时不写入）或 `added`（新模板）。后两者的 `changes` 是空列表。
   - `revision.changes`：每条有 `path`、`target`（`element` / `template`）、`change`（`added` / `removed` / `changed`）；有属性差异时，`properties` 是属性键名数组，如 `["color", "place"]`。参数、派生变量与检查项用各项的名称。没有 `before` / `after`，新增、删除元素也不返回元素正文。
@@ -129,7 +132,9 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.9.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.10.1`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.10.1 为 `compare_reference` 增加 `regionOffset` 和可分页区域目录，摘要截断后仍可发现并点查全部区域；最终检查的问题、内容明细和修改差异共享预算。
+  - 0.10.0 增加 `compare_reference`、受保护的参考输入、`assessment.visual`、实际资源/构建来源；提取核查改用本次可信事实，总分为 null，未知不计通过。接入与边界见[视觉反馈](agent-visual-feedback.md)；
   - 0.9.0 在 `check_outcome` 的评估里加入提取覆盖（票据 33）与样式核查（票据 34）：新增 `assessment.coverage`、`assessment.style`、`coverageVerification`、`styleVerification`；工具输入不变；
   - 0.8.0 加入成果分层评估和指定请求的实际渲染；受阻交回与正式交付分开（票据 31，M294）；
   - 0.7.0 在 0.6.0 上让 `check_outcome` 返回模板辅助修改的差异范围摘要（票据 17，M293），工具输入与其他任务的输出不变；

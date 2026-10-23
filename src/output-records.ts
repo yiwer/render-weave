@@ -113,7 +113,7 @@ export interface BatchSnapshot {
   readonly build: string;
   readonly envelope: BatchEnvelope;
   readonly documents: RecordDocuments;
-  readonly options: Required<RenderOptions>;
+  readonly options: Required<Pick<RenderOptions, 'fallbackFonts' | 'svgFonts'>>;
   /** 固定的资源内容版本，按资源 ID 排序。 */
   readonly resources: readonly VersionedResourceInfo[];
   /** 按输入顺序；有准备阶段问题的项不渲染。 */

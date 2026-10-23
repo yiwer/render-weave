@@ -12,14 +12,19 @@
  */
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dslDocumentKind } from '../dsl.js';
 import { parseRenderRequest } from '../request.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
-import { ROUTE_SIGN_BUSINESS_BASELINE } from './coverage-verification.js';
+import { validateContentBaseline, type BusinessContentBaseline } from './coverage-verification.js';
+import { validateReferenceBaseline, type ReferenceBaseline } from './style-verification.js';
+import { loadCanvasKit } from '../canvaskit.js';
+import { rendererBuildId } from '../renderer-build.js';
+import { agentProvenance, materialHashes } from './provenance.js';
+import { MCP_CONTRACT_VERSION } from '../mcp/tools.js';
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
 import { isGoogleModel, startModelProxy } from './model-proxy.js';
@@ -47,6 +52,10 @@ const SYSTEM_VARIABLES = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 
   'USERDOMAIN', 'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
 
 export interface AgentRunOptions {
+  /** 本次人工核准的视觉参考 JSON，与示例图一起固定到宿主目录。 */
+  readonly reference?: string;
+  /** 本次提取事实 JSON；不从领域名称推断样例事实。 */
+  readonly contentBaseline?: string;
   /** 任务类型、示例图、项目说明与资源仓库：带 from 时沿用上一轮，不能再给。 */
   readonly task?: AgentTaskId;
   readonly sample?: string;
@@ -122,6 +131,9 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  readonly reference?: { readonly file: string; readonly sha256: string };
+  readonly contentBaseline?: { readonly file: string; readonly sha256: string };
+  readonly referenceImage?: { readonly file: string; readonly sha256: string };
   readonly sample: { readonly source: string; readonly file: string; readonly sha256: string };
   readonly brief: { readonly source: string; readonly sha256: string };
   readonly domain: string | null;
@@ -204,6 +216,12 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
   if (given.from !== undefined) checkNextRound(given);
   const previous = given.from === undefined ? undefined : await readPreviousRound(given.from);
+  if (previous) {
+    const inputs = previous.record.inputs;
+    for (const item of [inputs.reference, inputs.contentBaseline, inputs.referenceImage]) {
+      if (item && sha256(await readFile(join(previous.dir, item.file))) !== item.sha256) throw new AgentUsageError(`上一轮参考资料已改变：${item.file}；要换基准请发起新任务`);
+    }
+  }
   const options = previous ? inherit(given, previous) : given;
   if (options.task === undefined || options.sample === undefined || options.brief === undefined || options.resources === undefined) {
     throw new AgentUsageError('发起第 1 轮要给出任务类型、示例图、项目说明与资源仓库');
@@ -213,7 +231,8 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   checkTaskOrder(task, options);
   await requireFile(options.sample, '示例图');
   // 按文件头定扩展名：文件名与内容不符时，Claude Code 会按扩展名声明错误的图片类型。
-  const extension = imageExtension(await readFile(options.sample));
+  const sampleBytes = await readFile(options.sample);
+  const extension = imageExtension(sampleBytes);
   if (!extension) throw new AgentUsageError(`示例图不是 PNG、JPEG 或 WebP：${options.sample}`);
   await requireFile(options.brief, '项目说明');
   const briefBytes = await readFile(options.brief);
@@ -232,6 +251,25 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
   const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
   const dataset = request?.dataset ?? basis.dataset;
+  let baseline: ReferenceBaseline | undefined, contentBaseline: BusinessContentBaseline | undefined;
+  if (options.reference) {
+    if (!request || (task.id !== 'template-design' && task.id !== 'template-revision')) throw new AgentUsageError('--reference 只用于有完整请求的模板任务');
+    let input: unknown;
+    try { input = JSON.parse(await readFile(options.reference, 'utf8')); } catch { throw new AgentUsageError('参考基准 JSON 无法读取'); }
+    if (!validateReferenceBaseline(input)) throw new AgentUsageError('参考基准字段不合法');
+    const ck = await loadCanvasKit(), image = ck.MakeImageFromEncoded(sampleBytes);
+    if (!image) throw new AgentUsageError('示例图无法解码');
+    try { if (image.width() !== input.sampleWidthPx || image.height() !== input.sampleHeightPx || input.sampleSha256 && input.sampleSha256 !== sha256(sampleBytes)) throw new AgentUsageError('参考基准与示例图不一致'); }
+    finally { image.delete(); }
+    baseline = { ...input, sampleSha256: sha256(sampleBytes) };
+  }
+  if (options.contentBaseline) {
+    if (task.id !== 'definition-extraction' && task.id !== 'dataset-extraction') throw new AgentUsageError('--content-baseline 只用于提取任务');
+    let input: unknown;
+    try { input = JSON.parse(await readFile(options.contentBaseline, 'utf8')); } catch { throw new AgentUsageError('内容基准 JSON 无法读取'); }
+    if (!validateContentBaseline(input)) throw new AgentUsageError('内容基准字段不合法');
+    contentBaseline = input;
+  }
   const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
   // 元素路径只在第 1 轮核对：沿用到下一轮时，上一轮可能已经把那些元素改名或移走并应用了。
   if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
@@ -257,7 +295,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 
   // 资料：反馈 > 修改要求 > 项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
   const sampleFile = `sample${extension}`;
-  await copyFile(options.sample, join(agentDir, sampleFile));
+  await writeFile(join(agentDir, sampleFile), sampleBytes);
+  await writeFile(join(logsDir, sampleFile), sampleBytes);
+  if (baseline) await writeFile(join(logsDir, 'reference.json'), JSON.stringify(baseline, null, 2));
+  if (contentBaseline) await writeFile(join(logsDir, 'content-baseline.json'), JSON.stringify(contentBaseline, null, 2));
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
   await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
   if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
@@ -311,7 +352,10 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
   const inputs: RoundInputs = {
-    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(await readFile(options.sample)) },
+    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
+    referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
+    ...(baseline ? { reference: { file: 'logs/reference.json', sha256: sha256(await readFile(join(logsDir, 'reference.json'))) } } : {}),
+    ...(contentBaseline ? { contentBaseline: { file: 'logs/content-baseline.json', sha256: sha256(await readFile(join(logsDir, 'content-baseline.json'))) } } : {}),
     brief: { source: resolve(options.brief), sha256: sha256(briefBytes) },
     domain: options.domain ?? null,
     workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
@@ -333,12 +377,15 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
     // 提取任务要按图上业务内容核对覆盖；项目说明是判断“固定常量”有没有依据的唯一来源。
     ...(task.id === 'definition-extraction' || task.id === 'dataset-extraction' ? { briefText } : {}),
-    ...(options.domain === 'route-sign' && (task.id === 'definition-extraction' || task.id === 'dataset-extraction')
-      ? { contentBaseline: ROUTE_SIGN_BUSINESS_BASELINE }
-      : {}),
+    ...(contentBaseline ? { contentBaseline } : {}),
+    ...(baseline ? { baseline, referenceImage: { path: join(logsDir, sampleFile), sha256: sha256(sampleBytes) } } : {}),
   };
   const outcomeContext = join(logsDir, 'outcome-context.json');
   await writeFile(outcomeContext, `${JSON.stringify({ task: task.id, ...context } satisfies OutcomeTarget, null, 2)}\n`);
+  await writeFile(join(logsDir, 'prompt.md'), prompt);
+  await cp(join(agentDir, 'docs'), join(logsDir, 'materials'), { recursive: true });
+  await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), engine: await rendererBuildId(),
+    mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const mcpConfig = join(logsDir, 'mcp.json');
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
@@ -457,7 +504,7 @@ function checkTaskOrder(task: AgentTask, options: AgentRunOptions): void {
 
 /** 下一轮只给反馈与运行参数：任务、素材、基准、出图请求与修改要求都沿用上一轮。 */
 function checkNextRound(given: AgentRunOptions): void {
-  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement'] as const;
+  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'reference', 'contentBaseline'] as const;
   const repeated = fixed.filter((name) => given[name] !== undefined);
   if (repeated.length > 0) {
     throw new AgentUsageError(`带 --from 发起下一轮时沿用上一轮的输入，不能再给 ${repeated.map((name) => `--${name}`).join('、')}；要换输入就重新发起第 1 轮`);
@@ -469,7 +516,9 @@ function checkNextRound(given: AgentRunOptions): void {
 function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptions {
   const { dir, record: { task, inputs } } = previous;
   return {
-    ...given, task, sample: join(dir, inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...(inputs.reference ? { reference: join(dir, inputs.reference.file) } : {}),
+    ...(inputs.contentBaseline ? { contentBaseline: join(dir, inputs.contentBaseline.file) } : {}),
     ...(previous.resources !== undefined ? { resources: previous.resources } : {}),
     ...(inputs.domain !== null ? { domain: inputs.domain } : {}),
     ...(inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),

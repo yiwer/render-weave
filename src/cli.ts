@@ -71,6 +71,7 @@ const USAGE = `用法：
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>] [--outcome-context <本轮任务.json>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
                         [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>] [--requirement <修改要求.md>]
+                        [--reference <核准参考.json>] [--content-baseline <内容事实.json>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--effort <力度>] [--claude <可执行文件>]
   renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--effort …] [--claude …]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
@@ -105,6 +106,8 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --request     示例图对应的出图请求（主模板名、参数与输出尺寸）：模板辅助设计与模板辅助修改必须给；数据集提取可选，用工作区已有的模板预览
                 模板辅助修改时主模板就是要改的已保存模板，它调用的模板也可以改；数据集写在请求里或用 --dataset 指定
   --requirement 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在
+  --reference   模板任务的人工核准区域、物理尺寸及测量类型 JSON；随本轮固定，未提供时视觉比较返回 notChecked
+  --content-baseline 提取任务的本次内容事实 JSON；显式指定定义、字段、缺值或逐项数值，不从领域名推断
   --from        上一轮的轮次目录：下一轮沿用它的任务、素材、基准、出图请求与修改要求，拿到它的成果（含审核时的修改）
   --feedback    带 --from 时必须给：给下一轮的反馈（Markdown）
   --key-env     可选，key 所在的环境变量名，缺省 OPEN_CODE_API_KEY；key 只经环境变量传入，不写任何文件
@@ -164,7 +167,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'reference', 'content-baseline'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
 const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
@@ -375,6 +378,8 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(options.definition !== undefined ? { definition: options.definition } : {}),
       ...(options.dataset !== undefined ? { dataset: options.dataset } : {}),
       ...(options.request !== undefined ? { request: options.request } : {}),
+      ...(options.reference !== undefined ? { reference: options.reference } : {}),
+      ...(options['content-baseline'] !== undefined ? { contentBaseline: options['content-baseline'] } : {}),
       ...(options.model !== undefined ? { model: options.model } : {}),
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),

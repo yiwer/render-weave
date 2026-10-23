@@ -40,14 +40,14 @@ export const AGENT_TASKS: Readonly<Record<AgentTaskId, AgentTask>> = {
   'template-design': {
     id: 'template-design', name: '模板辅助设计', implemented: true, candidateKinds: ['template'], requires: 'dataset', request: 'required',
     references: ['template', 'outcome'], tools: 'Read,Write,Edit,Glob',
-    mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'],
+    mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'],
     // 票据 03 的模板步骤在 60 轮上限处停下，改为 80。
     maxTurns: 80,
   },
   'template-revision': {
     id: 'template-revision', name: '模板辅助修改', implemented: true, candidateKinds: ['template'], requires: 'template', request: 'required',
     references: ['template', 'outcome'], tools: 'Read,Write,Edit,Glob',
-    mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'],
+    mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'],
     maxTurns: 80,
   },
 };

@@ -15,8 +15,9 @@ import { assessCandidates, type RenderAssessment } from './assessment.js';
 import { revisionDiff, type RevisionDiff } from './diff.js';
 import { applyChanges, locate, within } from './locations.js';
 import { AGENT_TASKS, type AgentTaskId, type CandidateKind } from './tasks.js';
-import { hashCandidatesAndRequest, verifyElementStyles, type ReferenceBaseline, type StyleVerificationRecord, type StyleAnomaly, type BusinessState } from './style-verification.js';
-import { verifyExtractionCoverage, type BusinessContentBaseline, type ContentCoverageItem, type CoverageAssessment, type CoverageVerificationRecord } from './coverage-verification.js';
+import { validateReferenceBaseline, type ReferenceBaseline, type StyleVerificationRecord, type StyleAnomaly, type BusinessState } from './style-verification.js';
+import { validateContentBaseline, verifyExtractionCoverage, type BusinessContentBaseline, type ContentCoverageItem, type CoverageAssessment, type CoverageVerificationRecord } from './coverage-verification.js';
+import { summarizeVisual, type ReferenceImage } from './visual-comparison.js';
 
 /** 待确认项的四类原因（M44）：看不清、推测、来源冲突、必填未提供。 */
 export const PENDING_REASONS = ['unreadable', 'inferred', 'conflicting', 'requiredMissing'] as const;
@@ -143,6 +144,7 @@ export interface OutcomeCheck {
     readonly candidates: 'valid' | 'invalid' | 'notChecked';
     /** 没有待确认项也不代表内容已核实。 */
     readonly content: 'needsReview';
+    readonly visual?: ReturnType<typeof summarizeVisual>;
     readonly render: RenderAssessment;
     readonly style?: StyleAssessment;
     readonly coverage?: CoverageAssessment;
@@ -157,6 +159,7 @@ export interface OutcomeCheck {
 export interface OutcomeContext extends CandidateContext {
   readonly request?: { readonly template: string; readonly [key: string]: unknown };
   readonly baseline?: ReferenceBaseline;
+  readonly referenceImage?: ReferenceImage;
   readonly contentBaseline?: BusinessContentBaseline;
   readonly briefText?: string;
 }
@@ -178,6 +181,7 @@ const OUTCOME_TARGET_SCHEMA = {
       templates: { type: 'array', items: { type: 'string', minLength: 1 } },
     } },
     baseline: { type: 'object' },
+    referenceImage: { type: 'object', additionalProperties: false, required: ['path', 'sha256'], properties: { path: { type: 'string', minLength: 1 }, sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' } } },
     contentBaseline: { type: 'object' },
     briefText: { type: 'string' },
   },
@@ -192,7 +196,12 @@ const validateTarget = ajv.compile(OUTCOME_TARGET_SCHEMA);
 
 /** 读 --outcome-context 的内容；不合规时返回说明。 */
 export function parseOutcomeTarget(document: unknown): OutcomeTarget | string {
-  if (validateTarget(document)) return document as unknown as OutcomeTarget;
+  if (validateTarget(document) && isRecord(document)) {
+    const record = document;
+    if (record['baseline'] !== undefined && !validateReferenceBaseline(record['baseline'])) return '上下文 baseline 不是合法的参考基准';
+    if (record['contentBaseline'] !== undefined && !validateContentBaseline(record['contentBaseline'])) return '上下文 contentBaseline 不是合法的内容基准';
+    return document as unknown as OutcomeTarget;
+  }
   return (validateTarget.errors ?? []).map((error) => describe(error, '上下文')).join('；');
 }
 
@@ -323,15 +332,16 @@ export async function checkAgentOutcome(options: {
   const structureValid = problems.every((problem) => problem.level !== 'severe');
   const candidatesValid = final.every((candidate) => candidate.problems.every((problem) => problem.level !== 'severe'));
   const rendering = await assessCandidates(options.workspace, documents, structureValid ? context.request : undefined,
-    task.id === 'template-design' || task.id === 'template-revision');
+    task.id === 'template-design' || task.id === 'template-revision',
+    task.id === 'template-design' || task.id === 'template-revision' ? { baseline: context.baseline, sample: context.referenceImage } : undefined);
   // 布局摘要只给样式核查用，不随 assessment 返回：它可能很大，MCP 输出有预算。
-  const { layout: renderLayout, ...renderAssessment } = rendering;
+  const { layout: _layout, visualReport, ...renderAssessment } = rendering;
   let coverageVerification: CoverageVerificationRecord | undefined;
   if (context.contentBaseline || task.id === 'definition-extraction' || task.id === 'dataset-extraction') {
     coverageVerification = verifyExtractionCoverage({
       task: task.id,
-      candidates,
-      submission,
+      candidates: candidates.map((candidate, index) => ({ ...candidate, document: documents[index]!.document })),
+      submission: { ...submission, pending: submission.pending.map((p) => ({ ...p, file: normalizeCandidatePath(p.file) })) },
       baseline: context.contentBaseline,
       definitions: options.workspace.staticSchemas.map((entry) => entry.definition).filter((document) => document !== undefined),
       briefText: context.briefText,
@@ -346,22 +356,11 @@ export async function checkAgentOutcome(options: {
     }
   }
 
-  const coverageSevere = coverageVerification ? !coverageVerification.passed : false;
+  const coverageSevere = coverageVerification?.anomalies.some((a) => a.level === 'severe') ?? false;
   const severeFound = !structureValid || !candidatesValid || (rendering.blocking && rendering.status === 'blocked') || coverageSevere;
 
-  let styleVerification: StyleVerificationRecord | undefined;
-  if (renderLayout && context.request && (context.baseline || task.id === 'template-design' || task.id === 'template-revision')) {
-    const { candidatesHash, requestHash } = hashCandidatesAndRequest(
-      candidates.map((c) => ({ name: c.name, document: c.document })),
-      context.request as any,
-    );
-    styleVerification = verifyElementStyles({
-      layout: renderLayout,
-      baseline: context.baseline,
-      candidatesHash,
-      requestHash,
-      parameters: isRecord(context.request['parameters']) ? (context.request['parameters'] as Record<string, unknown>) : undefined,
-    });
+  const styleVerification = visualReport;
+  if (styleVerification) {
     if (styleVerification.anomalies.length > 0) {
       for (const anomaly of styleVerification.anomalies) {
         problems.push(hint(ProblemCodes.outcomeInvalid, at('candidates'), anomaly.message));
@@ -375,20 +374,23 @@ export async function checkAgentOutcome(options: {
       candidates: candidatesValid ? 'valid' : 'invalid',
       content: 'needsReview',
       render: renderAssessment,
+      ...(visualReport ? { visual: summarizeVisual(visualReport) } : {}),
       ...(styleVerification ? {
         style: {
           passed: styleVerification.passed,
-          anomalies: styleVerification.anomalies,
+          anomalies: styleVerification.anomalies.slice(0, 20),
           coverage: styleVerification.coverage,
         },
       } : {}),
       ...(coverageVerification ? {
         coverage: {
+          status: coverageVerification.status,
           passed: coverageVerification.passed,
           score: coverageVerification.score.totalScore,
           anomalies: coverageVerification.anomalies,
           coveredItems: coverageVerification.coveredItems,
           missingItems: coverageVerification.missingItems,
+          unknownItems: coverageVerification.unknownItems,
         },
       } : {}),
     },

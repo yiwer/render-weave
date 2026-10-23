@@ -10,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
+import { compareReference, summarizeVisual, visualRegionPage, type VisualReport } from '../agent/visual-comparison.js';
 import type { RevisionDiff } from '../agent/diff.js';
+import type { CoverageAssessment } from '../agent/coverage-verification.js';
 import { loadCanvasKit } from '../canvaskit.js';
 import { CompiledSchemaError, validateDataset } from '../dataset-validation.js';
 import { loadResourceImage, type LoadedImage } from '../images.js';
@@ -31,7 +33,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.9.0';
+export const MCP_CONTRACT_VERSION = '0.10.1';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -103,13 +105,13 @@ export function createTools(context: ToolContext): McpTool[] {
   const { workingDirectory: files, workspace } = context;
   const shown = (problems: readonly Problem[]) => problems.map((problem) => displayProblem(problem, context));
   /** 问题清单：最多 PROBLEMS_MAX 条且不超过字符预算；截断时给出总数与按问题代码的计数（票据 22）。 */
-  const listed = (problems: readonly Problem[], key = 'problems') => {
+  const listed = (problems: readonly Problem[], key = 'problems', maxChars = PROBLEMS_MAX_CHARS) => {
     const all = shown(problems);
     const kept: Problem[] = [];
     let chars = 0;
     for (const problem of all) {
       chars += JSON.stringify(problem).length + 1;
-      if (kept.length >= PROBLEMS_MAX || chars > PROBLEMS_MAX_CHARS) break;
+      if (kept.length >= PROBLEMS_MAX || chars > maxChars) break;
       kept.push(problem);
     }
     if (kept.length === all.length) return { [key]: all };
@@ -119,6 +121,7 @@ export function createTools(context: ToolContext): McpTool[] {
       hint: '只列出前面的问题：先按问题代码成批修改，再检查；也可以只检查一部分文件' } };
   };
   let fontStore: Promise<FontStore> | undefined;
+  let previousComparison: VisualReport | undefined;
 
   const tools: McpTool[] = [
     {
@@ -300,6 +303,44 @@ export function createTools(context: ToolContext): McpTool[] {
       },
     },
     {
+      name: 'compare_reference',
+      description: '按本轮核准参考比较当前模板：返回缺项、文字、毫米位置与尺寸、颜色差异、实例路径与源模板位置，以及同尺度局部三联图（参考、候选、叠图）。' +
+        'templates 省略时读 outcome.json；始终测量全清单，regions 仅限制详细证据。regionCatalog 给本页区域 ID，nextRegionOffset 非 null 时用 regionOffset 读取下一页；详情截断时用目录 ID 点查。基准、示例图与请求由宿主固定，不能在调用时替换。没有基准明确返回未校准；不报告整体相似度，不写文件。修改后重查，并比较 resolved/new/remaining；交回前仍用 check_outcome 全检。',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {
+        templates: paths('全部当前模板候选文件；省略时使用 outcome.json 的 candidates'),
+        regions: { type: 'array', minItems: 1, maxItems: 20, uniqueItems: true, items: { type: 'string', minLength: 1 }, description: '核准参考区域 ID；只限制返回详情，不能代表全图通过' },
+        regionOffset: { type: 'integer', minimum: 0, description: '区域目录起点，缺省0；沿 nextRegionOffset 翻页，每页最多20项，与 regions 互斥' },
+      } },
+      async call(args) {
+        const known = context.outcome;
+        if (!known?.request) throw new ToolInputError('本轮没有完整出图请求，无法比较');
+        let templates = args['templates'];
+        if (templates === undefined) templates = (await files.readJson('outcome.json')).document;
+        if (isRecord(templates)) templates = templates['candidates'];
+        if (!Array.isArray(templates) || !templates.length || templates.some((p) => typeof p !== 'string')) throw new ToolInputError('需要模板候选路径列表');
+        const copies = [];
+        for (const path of templates as string[]) copies.push({ path, entry: await readWorkingCopy(path) });
+        const overlay = withWorkingCopies(copies);
+        const regions = args['regions'] as string[] | undefined;
+        const offset = args['regionOffset'] as number | undefined;
+        if (regions && offset !== undefined) throw new ToolInputError('regions 与 regionOffset 只能选一个');
+        const pageRegions = regions || !known.baseline?.approvedRegions.length ? undefined : visualRegionPage(known.baseline.approvedRegions, offset).regionCatalog.slice(0, 3).map((r) => r.id);
+        const result = await compareReference({ workspace: overlay.workspace, request: known.request, baseline: known.baseline,
+          sample: known.referenceImage, regions: regions ?? pageRegions, includeImages: true });
+        if (!result.report) return json({ status: 'notChecked', reason: 'renderUnavailable', ...listed(result.render.problems) });
+        const report = result.report;
+        const previous = previousComparison?.baselineHash === report.baselineHash && previousComparison.requestHash === report.requestHash ? previousComparison : undefined;
+        const keys = (r: VisualReport) => new Set(r.anomalies.map((a) => `${a.regionId}:${a.kind}:${a.path}`));
+        const before = previous ? keys(previous) : new Set<string>(), after = keys(report);
+        const changes = previous ? { fromReportId: previous.reportId, resolved: [...before].filter((k) => !after.has(k)).length,
+          new: [...after].filter((k) => !before.has(k)).length, remaining: [...after].filter((k) => before.has(k)).length } : undefined;
+        previousComparison = report;
+        return { content: [{ type: 'text', text: JSON.stringify({ ...summarizeVisual(report, regions, regions ? undefined : offset ?? 0), changes,
+          panels: result.panels.map(({ regionId, transform }) => ({ regionId, transform })), ...listed(result.render.problems) }) },
+          ...result.panels.map((panel) => ({ type: 'image' as const, mimeType: 'image/png' as const, data: Buffer.from(panel.bytes).toString('base64') }))], summary: { status: report.status, reportId: report.reportId } };
+      },
+    },
+    {
       name: 'inspect_layout',
       description: '按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；' +
         '文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。' +
@@ -438,15 +479,20 @@ export function createTools(context: ToolContext): McpTool[] {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
         const { task, ...known } = context.outcome;
         const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
-        return json({
+        // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
+        const response = (budget: number) => ({
           verdict: check.verdict,
-          assessment: { ...check.assessment, render: { ...check.assessment.render, ...listed(check.assessment.render.problems) } },
-          ...listed(check.problems),
+          assessment: { ...check.assessment, render: { ...check.assessment.render, ...listed(check.assessment.render.problems, 'problems', budget) },
+            ...(check.assessment.coverage ? { coverage: summarizedCoverage(check.assessment.coverage, budget) } : {}) },
+          ...listed(check.problems, 'problems', budget),
           candidates: check.candidates.map(({ sha256: _sha256, revision, problems, deferred, ...candidate }) => ({
-            ...candidate, ...listed(problems), ...(deferred ? listed(deferred, 'deferred') : {}),
-            ...(revision ? { revision: summarizedRevision(revision) } : {}),
+            ...candidate, ...listed(problems, 'problems', budget), ...(deferred ? listed(deferred, 'deferred', budget) : {}),
+            ...(revision ? { revision: summarizedRevision(revision, Math.min(budget, REVISION_MAX_CHARS)) } : {}),
           })),
-        }, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
+        });
+        let budget = PROBLEMS_MAX_CHARS, result = response(budget);
+        while (JSON.stringify(result).length > 39000 && budget > 200) { budget = Math.floor(budget / 2); result = response(budget); }
+        return json(result, { verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
     },
   ];
@@ -579,13 +625,35 @@ export function createTools(context: ToolContext): McpTool[] {
 }
 
 /** 与审核页共用差异，只投影 Agent 核对修改范围需要的键。 */
-function summarizedRevision(revision: RevisionDiff) {
+/** 内容事实明细也占用最终检查总预算；截断不改变判定，保留每类总量及异常代码计数。 */
+function summarizedCoverage(coverage: CoverageAssessment, maxChars: number) {
+  const trimmed: { field: string; shown: number; total: number }[] = [];
+  const take = <T>(field: string, values: readonly T[]): readonly T[] => {
+    let chars = 0;
+    const kept: T[] = [];
+    for (const value of values) {
+      chars += JSON.stringify(value).length + 1;
+      if (chars > maxChars / 4) break;
+      kept.push(value);
+    }
+    if (kept.length < values.length) trimmed.push({ field, shown: kept.length, total: values.length });
+    return kept;
+  };
+  const result = { ...coverage, anomalies: take('anomalies', coverage.anomalies), coveredItems: take('coveredItems', coverage.coveredItems),
+    missingItems: take('missingItems', coverage.missingItems), unknownItems: take('unknownItems', coverage.unknownItems) };
+  const byCode: Record<string, number> = {};
+  for (const anomaly of coverage.anomalies) byCode[anomaly.code] = (byCode[anomaly.code] ?? 0) + 1;
+  return { ...result, ...(trimmed.length ? { detailsTruncated: { fields: trimmed, byCode,
+    hint: '明细未完整列出；先按已返回的路径修正后再次检查。宿主最终 check.json 保留完整报告。' } } : {}) };
+}
+
+function summarizedRevision(revision: RevisionDiff, maxChars = REVISION_MAX_CHARS) {
   const changes = [];
   let chars = 0;
   for (const { path, target, change, properties } of revision.changes) {
     const summary = { path, target, change, ...(properties ? { properties: properties.map(({ key }) => key) } : {}) };
     chars += JSON.stringify(summary).length + 1;
-    if (changes.length >= REVISION_MAX_CHANGES || chars > REVISION_MAX_CHARS) break;
+    if (changes.length >= REVISION_MAX_CHANGES || chars > maxChars) break;
     changes.push(summary);
   }
   return { status: revision.status, changes,

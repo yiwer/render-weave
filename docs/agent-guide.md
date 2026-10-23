@@ -12,6 +12,8 @@
 
 ## 准备
 
+需要 Agent 在设计中收到区域级偏差与同尺度对照时，按[视觉反馈指南](agent-visual-feedback.md)准备本次核准参考，在模板命令中增加 `--reference reference.json`。提取阶段的可信事实用 `--content-baseline content.json`；基准缺省时结果明确未核查，技术合格不代表还原合格。
+
 **软件**：Node.js 22 或以上，以及 Claude Code（`claude --version` 能运行即可，它只作为 Agent 的运行环境）。在仓库根目录执行一次：
 
 ```powershell

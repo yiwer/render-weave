@@ -17,7 +17,7 @@ const REQUEST = {
   output: { width: 740, height: 165, dpi: 20 },
 };
 const READ_ONLY_TOOLS = ['list_documents', 'read_document', 'list_resources', 'check_definitions', 'check_dataset', 'check_templates',
-  'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'];
+  'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'];
 const NOTE = { dslVersion: 'renderweave-schema/1', name: '便签', fields: [{ name: 'title', displayName: '标题', type: 'text', constraints: { required: true, maxLength: 4 } }] };
 
 let base: string, root: string, outside: string, logFile: string;
@@ -95,7 +95,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.9.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.10.1' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
