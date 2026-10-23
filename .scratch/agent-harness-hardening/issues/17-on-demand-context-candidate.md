@@ -4,7 +4,7 @@
 
 **Blocked by:** 14
 
-**Status:** resolved
+**Status:** ready-for-agent
 
 **Trace:** [父规格](../spec.md) H6、D15–D16；US58–59；A18 的资料策略候选、自动指针检查和配对输入准备子项。配对实跑与收益判定归票据 18。
 
@@ -89,3 +89,10 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 改前两份任务原件、固定源码包、全部日志与SHA保存于 `F:/GenCode/render-weave/out/harness-feedback-order-fix/`。`validation.json` 保留首轮结果，`validation-final.json` 固定最终3322个共同执行文件摘要及两份资料前后SHA；与候选2逐项比较，仅 `agent/tasks/next-round.md`、`agent/tasks/template-revision.md` 改变，其余3320个文件相同。候选2清单及两份原任务字节仍匹配旧身份。`linux-run.sh`、`linux-drift-run.sh`、`linux-final-run.sh` 记录可复现命令。
 
 本修复没有调用真实模型；52项Windows及51项Linux关联通过（另1项原平台跳过）与最后各3项补验，只证明公开资料/分页/身份流程仍可执行。真实反馈顺序是否更稳定必须由新候选、新绑定和新观测判断，不能用受控执行器通过覆盖票21的6次失败，也不以本次修改关闭21或原38。
+
+
+### 候选3后的局部修改与内容判断修复（2026-10-23）
+
+本票按通用资料责任重新打开。候选3的21首段8次真实观测为7通过、1失败；失败轮将固定文字改为变量插槽，当前数据的视觉修正不能替代对授权属性范围的遵守。评分器在目标路径变化后提前返回、令其他守卫一并显示失败的问题由票14另行修复，本票不把这些短路结果解释为全部守卫独立失败。原四场景的M402定义首轮为13/15；其outcome已识别相关说明，但因其标题排版及变化性未定而按固定文字待确认，未为该内容建可选字段。这触发了 docs/stage3-acceptance.md 第308–312行保留的通用指南修正条件。两份原始真实失败保留，不以本次资料验证改判。
+
+验证尚在进行。原件来源与改前资料另存 F:/GenCode/render-weave/out/harness-minimal-change-guide-fix/。
