@@ -4,7 +4,7 @@
 
 **Blocked by:** 14
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Trace:** [父规格](../spec.md) H6、D15–D16；US58–59；A18 的资料策略候选、自动指针检查和配对输入准备子项。配对实跑与收益判定归票据 18。
 
@@ -56,4 +56,12 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 
 公开评估CLI经受控Agent执行器新增full/on-demand两例：读取 `eval.json` 与轮次provenance，要求来源路径保留真实文件名，完整材料集合一致，并按每个路径读回实际字节核对摘要。修复前两例均因缺首字符失败，日志 `F:/GenCode/render-weave/out/harness-context-source-fix/windows-red.log`；改用平台标准相对路径后两例均通过，日志 `windows-green.log`。不导入私有身份函数，不调用真实模型。
 
-修复后保留原身份格式、MCP合同、默认full、模型和effort；来源键与源码/构建字节改变会自然产生新身份。双平台相关回归完成后在本节记录最终结果，再关闭本票。
+修复后保留原身份格式、MCP合同、默认full、模型和effort；来源键与源码/构建字节改变会自然产生新身份。双平台相关回归已完成，本次验收缺口闭合后重新关闭本票；原18业务结论不重新计数。
+
+
+最终实现提交 `7339fab`，已基于票20验证提交 `2fe039a`。本次没有修改渲染实现、评分判据或资料内容，因此不重跑渲染全量；相关身份与资料策略回归覆盖既有实验拒绝漂移、来源文件可读、固定公开参考、资料获取与配对报告。
+
+- Windows Node24.12.0：`npm run build`、`npm run typecheck`通过；`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts test/agent-context-policy.test.ts test/agent-context-trial.test.ts --maxWorkers=1`，3文件38项通过，311.52秒，退出0。
+- Linux Node22.23.3 / npm10.9.9：独立容器中从本次源码和实字体重建，同命令3文件38项通过，227.20秒，退出0；build、typecheck通过。
+- 两组均为身份19项、资料策略8项、配对比较11项；真实模型观测0。日志、独立Linux源码包与执行脚本另存 `F:/GenCode/render-weave/out/harness-context-source-fix/`，保留红例、绿例及两个平台全部结果。
+- 候选1路径标签的只读完整性核查另存 `C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-context-source-label-audit.json`。旧记录不修补；20须发布新候选与新绑定后再启动首轮，不能把本次机制验证算成正式模型或人工业务通过。
