@@ -1,8 +1,9 @@
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import {spawn} from 'node:child_process';
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {mkdtemp, readFile, readdir, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join, relative} from 'node:path';
 import {repoRoot, resourcesDir} from './support/fixtures.js';
 let root: string;
 beforeAll(async () => {root = await mkdtemp(join(tmpdir(), 'rw-feedback-cli-'));});
@@ -14,6 +15,13 @@ async function cli(args: string[], key = false) {
     let stdout = '', stderr = ''; child.stdout.on('data', value => {stdout += value;}); child.stderr.on('data', value => {stderr += value;});
     child.on('close', code => done({code, stdout, stderr}));
   });
+}
+async function artifactState(dir: string) {
+  const entries = await readdir(dir, {recursive: true, withFileTypes: true});
+  const paths = entries.map(entry => ({entry, path: join(entry.parentPath, entry.name)})).sort((a, b) => a.path.localeCompare(b.path));
+  return {directories: paths.filter(({entry}) => entry.isDirectory()).map(({path}) => relative(dir, path)),
+    files: Object.fromEntries(await Promise.all(paths.filter(({entry}) => entry.isFile()).map(async ({path}) =>
+      [relative(dir, path), createHash('sha256').update(await readFile(path)).digest('hex')])))};
 }
 it('公开评估入口无需凭据可列出双语四任务的16个未运行单元及缺失材料，不用其他场景填补', async () => {
   const tasks = ['definition-extraction', 'dataset-extraction', 'template-design', 'template-revision'];
@@ -186,6 +194,21 @@ it('目标text路径被slot替代仍拒绝越界，并独立核对未知、后�
   expect(report.results[0].checks.feedback).toMatchObject({targetCorrection: false, nonTargetPreservation: false,
     unknownRetained: true, finalCheckMatches: true, pagination: true});
   expect(report.results[0].checks.feedback.failures).toEqual(['目标修正未通过', '非目标保留未通过']);
+  const out = join(root, 'slot-target');
+  const round = join(out, 'run-1/zh-template-design/feedback');
+  await rm(join(round, 'checks'), {recursive: true, force: true});
+  await rm(join(round, 'previews'), {recursive: true, force: true});
+  const before = await artifactState(out), original = await readFile(join(root, 'slot-target-reports/slot-target.json'));
+  const {readReview} = await import('../src/index.js');
+  const inspected = await readReview(round, {persistArtifacts: false});
+  expect(inspected.view?.preview?.widthPx).toBeGreaterThan(0);
+  expect(inspected.view?.preview?.image).toBeUndefined();
+  expect(inspected.view?.preview?.assessment).toBeDefined();
+  expect(await artifactState(out)).toEqual(before);
+  const rescored = await cli(['scripts/agent-eval/run.ts', '--config', join(dir, 'config.json'), '--rescore', out, '--reports', join(root, 'slot-target-reports')]);
+  expect(rescored.code, rescored.stdout + rescored.stderr).toBe(1);
+  expect(await artifactState(out)).toEqual(before);
+  expect(await readFile(join(root, 'slot-target-reports/slot-target.json'))).toEqual(original);
 }, 90000);
 
 

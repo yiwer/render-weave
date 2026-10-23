@@ -149,7 +149,7 @@ export async function scoreFeedback(scenario: FeedbackScenario, dir: string): Pr
       evidence(() => json(join(seed, 'agent', policy.candidate))),
       evidence(async () => {
         // 与宿主审核预览相同的有效候选包含尚未审核的 pending.candidate。
-        const reviewed = await readReview(dir);
+        const reviewed = await readReview(dir, {persistArtifacts: false});
         const current = reviewed.view?.candidates.find(candidate => candidate.path === policy.candidate)?.document;
         if (!current) throw new Error('没有可评分的有效候选');
         return current;
