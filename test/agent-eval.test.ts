@@ -289,7 +289,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const results = [m402, template, transcription];
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
-      format: 'renderweave-agent-eval/3', mcpContract: '0.13.0', consecutivePasses: 2,
+      format: 'renderweave-agent-eval/4', mcpContract: '0.13.0', consecutivePasses: 2,
       runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       results: [{ status: 'fail', retries: 0 }, { status: 'pass', retries: 0 }, { status: 'pass', retries: 0 }],
       gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4, thinkingTokens: 150 * 4, persistedResults: 0 },
@@ -381,7 +381,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(other.map(classifyError)).toEqual(other.map(() => 'other'));
   });
 
-  it('第一次 500、第二次成功：只删出错的轮次目录再发起，留下一个有效轮次目录，单元达线并记重试次数', async () => {
+  it('第一次 500、第二次成功：保留两次尝试与一个当前阶段视图，单元达线并记重试次数', async () => {
     const outDir = join(base, 'eval-retry');
     const calls: AgentTaskId[] = [], slept: number[] = [], logs: string[] = [];
     const launch = flaky({ 'definition-extraction': await definitionFiles(join(FIXTURES, 'definitions/des-gd1')) }, { 'definition-extraction': [{ api: SERVER_500 }] }, calls);
@@ -392,7 +392,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(slept).toEqual([60_000]);
     expect(logs).toEqual([expect.stringContaining('M402 数据定义 第 1 次数据定义提取：上游瞬时错误，60 秒后重试这一轮（1/2）：模型服务报错：API Error: 500')]);
     const unit = unitDir(outDir, scenario('m402-definition'), 1);
-    expect((await readdir(unit)).sort()).toEqual(['definition', 'upstream-errors.json']);
+    expect((await readdir(unit)).sort()).toEqual(['attempts', 'definition', 'upstream-errors.json']);
     expect(await read(join(unit, 'upstream-errors.json'))).toEqual({ retries: [{ task: 'definition-extraction', error: `模型服务报错：${SERVER_500}` }] });
     // 重新评分读回重试次数。
     expect(await scoreScenario(config, scenario('m402-definition'), 1, outDir)).toEqual(result);
@@ -506,7 +506,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(resumed.skipped.map((unit) => unit.repetition)).toEqual([2]);
     expect(resumed.results.map((result) => [result.repetition, result.status]).sort()).toEqual([[1, 'pass'], [3, 'pass'], [4, 'pass']]);
     expect(resumed.held).toEqual([]);
-    expect(await readdir(unitDir(outDir, scenario('m402-definition'), 1))).toEqual(['definition']);
+    expect((await readdir(unitDir(outDir, scenario('m402-definition'), 1))).sort()).toEqual(['attempts', 'definition']);
     const all = await Promise.all([1, 2, 3, 4].map((repetition) => scoreScenario(config, scenario('m402-definition'), repetition, outDir)));
     expect(gate(config, all, plan).status).toBe('pass');
   });
@@ -525,7 +525,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(incomplete.stdout).toContain('门槛未完成');
     expect(incomplete.stdout).toContain('| M402 数据定义 | 达线、invalid | 未完成 |');
     expect(await read(reportPath(incomplete.stdout))).toMatchObject({
-      format: 'renderweave-agent-eval/3', gate: { status: 'incomplete', pass: false },
+      format: 'renderweave-agent-eval/4', gate: { status: 'incomplete', pass: false },
       results: [{ repetition: 1, status: 'pass', retries: 0 }, { repetition: 2, status: 'invalid', retries: 0, failures: [], invalid: { kind: 'quota' } }],
     });
 
