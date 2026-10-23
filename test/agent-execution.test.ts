@@ -67,7 +67,7 @@ it('启动记录已发布而阶段更新尚未发布时强退，已保存的输�
 
 it('执行器立即退出且状态写入缓慢时，执行状态不倒退覆盖完成记录', async () => {
   const job = await host('quick-exit', 'delay-executing');
-  await job.closed;
+  expect((await job.closed)[0]).toBe(1); // CLI 业务结论不合格，与执行完成分离。
   expect((await readReview(job.dir)).execution, job.errors()).toMatchObject({ phase: 'completed', status: 'completed', committed: true });
 });
 

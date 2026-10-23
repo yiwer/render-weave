@@ -113,11 +113,18 @@ async function load() {
   const body = await response.json();
   execution = body.execution ?? null;
   if (!body.view) {
+    $('title').textContent = '轮次状态';
+    $('status').textContent = body.execution ? '状态已读取' : '无法读取';
+    $('verdict').textContent = '尚无可审核成果';
+    $('viewer').style.display = 'none';
+    document.querySelector('main').style.gridTemplateColumns = '1fr';
     $('content').replaceChildren(body.execution ? executionPanel(body.execution) : h('section', {}, h('h2', {}, '无法审核')), problemList(body.problems ?? []));
     if (body.execution && !body.execution.committed && body.execution.status === 'running') setTimeout(load, 2000);
     return;
   }
   view = body.view;
+  $('viewer').style.display = '';
+  document.querySelector('main').style.gridTemplateColumns = '';
   render();
 }
 
