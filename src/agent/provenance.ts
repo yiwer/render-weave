@@ -9,13 +9,19 @@ import { promisify } from 'node:util';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const execute = promisify(execFile);
 export async function materialHashes(directory: string, prefix: string): Promise<Record<string, string>> {
-  const files = (await readdir(directory, { recursive: true, withFileTypes: true })).filter((entry) => entry.isFile());
   const result: Record<string, string> = {};
-  for (const file of files) {
-    const absolute = join(file.parentPath, file.name);
-    const key = `${prefix}/${absolute.slice(directory.length + 1).replaceAll('\\', '/')}`;
-    result[key] = createHash('sha256').update(await readFile(absolute)).digest('hex');
-  }
+  const visit = async (dir: string) => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const absolute = join(dir, entry.name);
+      // 拥有者/租约是瞬时协调状态，不是模型资料、资源或观测事实；进入目录前排除，避免消失竞态。
+      if (entry.isDirectory()) { if (!/^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) await visit(absolute); }
+      else if (entry.isFile()) {
+        const key = `${prefix}/${absolute.slice(directory.length + 1).replaceAll('\\', '/')}`;
+        result[key] = createHash('sha256').update(await readFile(absolute)).digest('hex');
+      }
+    }
+  };
+  await visit(directory);
   return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
 export async function agentProvenance() {
