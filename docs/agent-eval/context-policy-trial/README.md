@@ -19,3 +19,7 @@ node --import tsx scripts/agent-eval/context-trial-report.ts --policy <已冻结
 ```
 
 入口核对两组冻结身份和预登记单元，按全部尝试原始数值汇总，缺失单元退出3，身份不匹配拒绝产生结果，已有比较报告不覆盖。完整数字通过时仅返回 `requires-source-verification`，不会自动核准真实来源或修改默认；未知、回退消息、范围违例、输出/墙钟升高均不能触发采用。真实采用仍需来源登记和本票的明确决定，原始失败与负结果保留。
+
+原件归档仅用于本次试验：输入清单的格式为 `renderweave-context-trial-archive-inputs/1`，`roots` 每项含唯一 `label` 和源目录 `path`，须覆盖校准准备、两组全部轮次/失败/重试/流日志、报告与冻结资料；不能只选最后成功的轮次。运行 `node --import tsx scripts/agent-eval/archive-context-trial.ts --pack <输入清单.json> --out <新归档目录>` 后，每个文件以SHA-256去重保存，清单保留原相对路径与原根绝对路径，清单自身摘要另存。
+
+清理工作树前，用同一脚本 `--restore <归档目录> --out <新恢复目录>` 恢复全部原件并逐文件核对SHA，再从公开 `readReview` 抽查代表轮次。恢复不重写记录中的绝对路径；归档保证字节可恢复，不保证移动到任意位置后可直接接续执行。来源登记把CLI初始化模型与实际响应消息中的模型分别列出；提供方未返回的修订保持未知，不能把初始化字段冒称提供方版本证明。
