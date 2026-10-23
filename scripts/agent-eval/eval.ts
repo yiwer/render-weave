@@ -211,7 +211,15 @@ export async function runScenario(config: EvalConfig, scenario: Scenario, repeti
 /** 这个单元还要不要跑：没有目录，或上次是 invalid。同一个 --label 接着跑时，已有有效结果的单元跳过。 */
 async function unitPending(outDir: string, scenario: Scenario, repetition: number): Promise<boolean> {
   const unit = unitDir(outDir, scenario, repetition);
-  return !(await exists(unit)) || (await readUpstream(unit)).invalid !== undefined;
+  return !(await observedUnit(outDir, scenario, repetition)) || (await readUpstream(unit)).invalid !== undefined;
+}
+
+/** 目录存在本身不是观测；半写目录仍是 not-run，允许接续补齐。 */
+export async function observedUnit(outDir: string, scenario: Scenario, repetition: number): Promise<boolean> {
+  const unit = unitDir(outDir, scenario, repetition);
+  if ((await readUpstream(unit)).invalid || await exists(join(unit, LAUNCH_FAILURES))) return true;
+  const names = scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
+  return (await Promise.all(names.map(name => roundError(join(unit, name))))).every(value => value !== undefined);
 }
 
 export interface EvalUnit {
@@ -493,9 +501,9 @@ export function resumeCommand(label: string, result: GateResult, args: readonly 
   return ['npx tsx scripts/agent-eval/run.ts', ...['--label', label, '--repetitions', `${Math.min(...open)}-${Math.max(...open)}`, ...args].map(quote)].join(' ');
 }
 
-/** 报告格式。/2 起（票据 21）每个单元有 status 与重试次数，门槛有 incomplete，各次结果是 outcomes 而不是 /1 的 passes。 */
+/** /3 起要求全计划达线，完整性与质量分开；旧 /1、/2 只保留历史含义。 */
 export interface EvalReport {
-  readonly format: 'renderweave-agent-eval/2';
+  readonly format: 'renderweave-agent-eval/3';
   readonly label: string;
   readonly startedAt: string;
   readonly endedAt: string;
@@ -543,7 +551,7 @@ export async function buildReport(options: {
   const sum = (pick: (round: RoundSummary) => number | undefined) => rounds.reduce((total, round) => total + (pick(round) ?? 0), 0);
   const runtime = records[0]?.runtime;
   return {
-    format: 'renderweave-agent-eval/2', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
+    format: 'renderweave-agent-eval/3', label: options.label, startedAt: options.startedAt, endedAt: options.endedAt ?? new Date().toISOString(),
     git: origin.git,
     runtime: {
       ...(runtime ? { model: runtime.model, smallModel: runtime.smallModel, endpoint: runtime.endpoint, effort: runtime.effort ?? null } : {}),
@@ -568,6 +576,8 @@ const OUTCOME_TEXT: Record<RepetitionOutcome, string> = { pass: '达线', fail: 
 export function formatReport(report: EvalReport): string {
   const lines = [
     `# Agent 评估 ${report.label}：门槛${GATE_TEXT[report.gate.status]}`,
+    '',
+    `计划 ${report.gate.completeness.planned} 次：通过 ${report.gate.completeness.pass}、失败 ${report.gate.completeness.fail}、无效 ${report.gate.completeness.invalid}、未运行 ${report.gate.completeness.notRun}；执行${report.gate.completeness.complete ? '完整' : '未完成'}。`,
     '',
     `模型 ${report.runtime.model ?? '?'}（服务端 ${report.runtime.servedModels.join('、') || '?'}），Claude Code ${report.runtime.claudeCodeVersions.join('、') || '?'}，MCP 合同 ${report.mcpContract}，提交 ${report.git.commit}${report.git.dirty ? '（有未提交改动）' : ''}。`,
     '',

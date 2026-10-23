@@ -22,7 +22,7 @@ import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  buildReport, cliLauncher, formatReport, provenance, resumeCommand, runUnits, scoreScenario, unitDir, type GateStatus, type Provenance, type ScenarioResult, type RuntimeOptions,
+  buildReport, cliLauncher, formatReport, observedUnit, provenance, resumeCommand, runUnits, scoreScenario, type GateStatus, type Provenance, type ScenarioResult, type RuntimeOptions,
 } from './eval.js';
 import { CONFIG_FILE, REPO, readConfig, type Scenario } from './scenarios.js';
 import { experimentIdentity, identityDifferences, scorerIdentity, sha256, type ExperimentIdentity } from './identity.js';
@@ -82,6 +82,7 @@ if (earlier && earlier.scenarios.join(',') !== scenarios.map((scenario) => scena
 if (earlier && !earlier.identity) fail('旧评估缺少预登记身份，只能 --rescore；请创建新实验');
 if (earlier && earlier.label !== label) fail('同一评估目录不能改变实验名称');
 if (earlier && values.repeat === undefined) repeat = earlier.repeat;
+if (repeat < config.consecutivePasses) fail('--repeat 不得少于配置要求的计划次数');
 const last = segment ? Number(segment[2] ?? segment[1]) : repeat;
 if (last > repeat) fail('--repetitions 超出预登记 --repeat 计划，不能向同一实验追加观测');
 let claudeArgs: string[] | undefined;
@@ -130,7 +131,7 @@ async function scoreAll(dir: string, saved: Manifest): Promise<ScenarioResult[]>
   const all: ScenarioResult[] = [];
   for (let repetition = 1; repetition <= saved.repeat; repetition++) {
     for (const scenario of chosen) {
-      if (await exists(unitDir(dir, scenario, repetition))) all.push(await scoreScenario(config, scenario, repetition, dir));
+      if (await observedUnit(dir, scenario, repetition)) all.push(await scoreScenario(config, scenario, repetition, dir));
     }
   }
   return all;
