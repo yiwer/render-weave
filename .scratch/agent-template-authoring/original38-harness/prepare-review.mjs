@@ -4,7 +4,7 @@
  */
 import {readFile,writeFile,mkdir,readdir,cp} from 'node:fs/promises';
 import {resolve,join,relative,isAbsolute,sep} from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL,fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {parseArgs} from 'node:util';
 import {spawnSync} from 'node:child_process';
@@ -46,6 +46,8 @@ function inside(root,path){
 }
 const before=await inventory(round);
 await mkdir(out); // 必须是新目录；不覆盖之前的材料。
+const generatorBytes=await readFile(fileURLToPath(import.meta.url));
+await writeFile(join(out,'prepare-review.mjs'),generatorBytes,{flag:'wx'});
 await cp(round,join(out,'round-copy'),{recursive:true,errorOnExist:true,force:false});
 const copy=join(out,'round-copy');
 if(JSON.stringify(before)!==JSON.stringify(await inventory(copy)))throw new Error('副本身份不符');
@@ -100,7 +102,7 @@ await writeFile(join(out,'review.html'),html,{flag:'wx'});
 const after=await inventory(round);
 if(JSON.stringify(before)!==JSON.stringify(after))throw new Error('原始轮次在打包期间变化，材料不能使用');
 await verifyRuntime();
-const manifest={candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
+const manifest={generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/1',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,originalRoundUnchanged:true,sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:reviewed.view.preview?.image?{dpi:reviewed.view.preview.dpi,widthPx:reviewed.view.preview.widthPx,heightPx:reviewed.view.preview.heightPx}:null,humanReview:null,files:await inventory(out)};
 await writeFile(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({out,originalRoundUnchanged:true,effectiveCandidates:effectiveFiles.length,actualImage:manifest.actualImage,previewImage:manifest.previewImage,reviewStatus:blank.status}));
 
