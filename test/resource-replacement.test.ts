@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyResourceReplacement, checkResourceReplacement, importResources, initializeResourceStore,
   loadWorkspace, openVersionedResourceStore, ProblemCodes, render, type ResourceReplacementCheck, type RenderOptions } from '../src/index.js';
 import { runCli } from '../src/cli.js';
-import { m402Dir, resourcesDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, m402Dir, resourcesDir } from './support/fixtures.js';
 
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof fs>();
@@ -199,7 +199,7 @@ describe('真实图片、字体与 CLI 验收', () => {
     dir = join(root, 'complete');
     await initializeResourceStore(dir);
     expect((await importResources({ dir, sourceDir: resourcesDir })).problems).toEqual([]);
-    await fs.cp(m402Dir, workspaceDir, { recursive: true });
+    await copyWorkspaceFixture(m402Dir, workspaceDir);
     const initial = await store();
     const fixed = initial.pin();
     const requestFile = join(workspaceDir, 'render-request-m402.json');

@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { applyAgentRound, applyResourceReplacement, changeReview, checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, readReview, render, runAgentTask, localResourceBackend } from '../src/index.js';
-import { resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 
 const fake = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -32,7 +32,7 @@ const template = { dslVersion: 'renderweave-template/1', name: '固定图片', b
 async function setup(versioned = true, candidate: unknown = template, additions: Record<string, { kind: 'image' | 'font'; path?: string; text?: string }> = {}) {
   const dir = join(base, String(++sequence)), source = join(dir, 'source'), workspace = join(dir, 'workspace'), resources = join(dir, 'resources');
   await mkdir(source, { recursive: true });
-  await cp(singleTextDir, workspace, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, workspace);
   await cp(join(resourcesDir, 'images/test/quadrants.png'), join(source, 'picture.png'));
   const manifest = [{ id: 'picture', kind: 'image', file: 'picture.png' }];
   for (const [id, resource] of Object.entries(additions)) {

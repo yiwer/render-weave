@@ -2,7 +2,7 @@
  * 审核与应用（第三阶段票据 05、验收 A07、A08）：用假执行器造出一轮成果，经公开入口与命令行审核、应用，
  * 断言 review.json、能否通过、写进工作区的内容，以及被拒绝时工作区一字不变。审核页服务另做接口级测试。
  */
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
 import { applyAgentRound, changeReview, readReview, runAgentTask, startReviewServer, type ReviewView } from '../src/index.js';
-import { resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const KEY = `rw-test-key-${Math.random().toString(36).slice(2)}`;
@@ -55,7 +55,7 @@ afterAll(async () => {
 /** 工作区副本：顶层 JSON 文件来自 single-text，另可加文件。 */
 async function workspaceCopy(extra: Record<string, unknown> = {}): Promise<string> {
   const dir = join(base, `workspace-${++count}`);
-  await cp(singleTextDir, dir, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, dir);
   for (const [file, value] of Object.entries(extra)) await writeFile(join(dir, file), JSON.stringify(value, null, 2));
   return dir;
 }
