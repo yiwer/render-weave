@@ -1,3 +1,4 @@
+import {initializeOrderScope, recordOrderEvent, reportOrders, shareOrders} from './agent/orders.js';
 /**
  * 命令行：
  * - render：对一个工作区执行渲染请求，把图片、问题清单与布局摘要写到输出目录。
@@ -75,6 +76,9 @@ const USAGE = `用法：
                         [--reference <核准参考.json>] [--content-baseline <内容事实.json>]
                         [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--timeout-ms <整轮毫秒>] [--effort <力度>] [--claude <可执行文件>]
   renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--effort …] [--claude …]
+  renderweave agent order-init --scope <订单范围.json> --out <新登记目录>
+  renderweave agent order-record --order <登记目录> --event <人工或交付事件.json>
+  renderweave agent order-report --order <登记目录> [--share]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
   renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--rounds <轮次目录>] [--dry-run] [--token-env <环境变量名>]
@@ -165,6 +169,9 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'agent run': ['out'],
   'agent review': [],
   'agent apply': [],
+  'agent order-init': ['scope', 'out'],
+  'agent order-report': ['order'],
+  'agent order-record': ['order', 'event'],
   push: ['server', 'tenant', 'workspace', 'resources'],
   'template-revisions': ['server', 'tenant', 'template'],
 };
@@ -173,7 +180,7 @@ const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'w
   'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint', 'timeout-ms', 'max-tokens', 'max-cost-usd'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
-const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
+const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent order-report': ['share'], 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   // agent 带子命令：agent run、agent review、agent apply。
@@ -216,6 +223,9 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   const options = values as Record<string, string>;
   try {
+    if (command === 'agent order-init') { io.stdout(JSON.stringify(await initializeOrderScope(options.out!, JSON.parse(await readFile(options.scope!, 'utf8')))) + '\n'); return 0; }
+    if (command === 'agent order-report') { io.stdout(JSON.stringify(await (values.share ? shareOrders : reportOrders)(options.order!)) + '\n'); return 0; }
+    if (command === 'agent order-record') { io.stdout(JSON.stringify(await recordOrderEvent(options.order!, JSON.parse(await readFile(options.event!, 'utf8')))) + '\n'); return 0; }
     if (command === 'agent review') return await runReview(positionals[0]!, options, values['no-open'] === true, io);
     if (command === 'agent apply') return await runApply(positionals[0]!, options, values['overwrite'] === true, io);
     if (command === 'render') return await runRender(options, io);
