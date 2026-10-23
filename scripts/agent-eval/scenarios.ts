@@ -49,13 +49,26 @@ export interface TranscriptionScenario extends ScenarioBase {
   readonly pass: { readonly names: number; readonly landmarks: number; readonly facilities: number; readonly orderViolations: number; readonly insertions: number; readonly duplicates: number; readonly landmarkExtra: number; readonly facilityExtra: number };
 }
 
-export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario;
+/** 已知可修初始成果的反馈接续；seed 是受控初始状态，不冒充首次模型产物。 */
+export interface FeedbackScenario extends ScenarioBase {
+  readonly kind: 'feedback';
+  readonly language: 'zh' | 'en';
+  readonly task: import('../../src/index.js').AgentTaskId;
+  readonly seedRound: string;
+  readonly feedback: string;
+  readonly policy: string;
+  readonly pass: {readonly targetCorrection: true; readonly nonTargetPreservation: true; readonly unknownRetained: true};
+}
+export type Scenario = DefinitionScenario | TemplateScenario | RevisionScenario | TranscriptionScenario | FeedbackScenario;
+
+export const stageNames = (scenario: Scenario): readonly string[] => scenario.kind === 'transcription' ? ['definition', 'dataset'] : [scenario.kind];
 
 export interface EvalConfig {
   readonly format: 'renderweave-agent-eval-config/2';
   /** 每个场景至少预登记几次；字段名沿用旧配置。 */
   readonly consecutivePasses: number;
   readonly resources: string;
+  readonly evidence?: 'mechanism' | 'real-model';
   readonly scenarios: readonly Scenario[];
 }
 
