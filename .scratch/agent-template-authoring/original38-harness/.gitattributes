@@ -17,3 +17,6 @@ registration-candidate-4.json -text
 candidate-3-*.json -text
 candidate-3-*.log -text
 conditional-english-reference.candidate-4.json -text
+prepare-review-v3.mjs -text
+zh-style-inventory-v2.md -text
+review-generator-v3-preflight.json -text
