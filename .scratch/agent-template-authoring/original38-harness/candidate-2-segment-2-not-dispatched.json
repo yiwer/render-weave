@@ -1,0 +1,20 @@
+{
+  "format": "original38-dispatch-supersession-decision/1",
+  "recordedAt": "2026-10-23T18:19:27.055Z",
+  "registrationSha256": "b53c0fa21bcb9bc8d83abdb84ff9167269c9c76736c9985394d5d5ae1ce5ca8d",
+  "candidateId": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+  "reason": "同候选21已有有效失败，需修订通用模板接续资料并生成新候选；不继续消耗尚未启动的旧候选重复槽位。",
+  "inProgress": "第一分段继续自然完成，原始结果封存；不结束已在跑的尝试。",
+  "unstartedSegment": 2,
+  "affectedUnits": [
+    "G-D2",
+    "G-T2",
+    "G-R2",
+    "G-S2"
+  ],
+  "status": "not-run-superseded-before-dispatch",
+  "attemptCreated": false,
+  "countsAsInvalidAttempt": false,
+  "replaceOldResults": false,
+  "nextCandidate": "尚未生成；须独立检查、冻结、登记并重验全部原四8业务观测和21全16单元，不能拼接旧新。"
+}

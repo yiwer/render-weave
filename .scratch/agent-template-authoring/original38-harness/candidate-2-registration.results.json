@@ -1,0 +1,239 @@
+{
+  "format": "original38-candidate-results/1",
+  "recordedAt": "2026-10-23T18:30:39.479Z",
+  "candidate": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-2",
+    "id": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+    "manifestSha256": "fde9740921daf28c871acdd307734b7e20f7b65490116e5b9730d81ac1227cb4"
+  },
+  "binding": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/plans/original-four/binding-2",
+    "id": "sha256:889bb317a86a29339982a79b7a7f68db6a86fe392768ac9a69dca9d70190c655",
+    "sha256": "b36611612b3c9cc9a86dfb08fb4a8a8d48c731b82998fe45a51af6a9011c05d3"
+  },
+  "experimentId": "de9aa1f0550751340efcf5113ab4fdac6b87d63377dba3c63d43cee1b500616e",
+  "registrationSha256": "b53c0fa21bcb9bc8d83abdb84ff9167269c9c76736c9985394d5d5ae1ce5ca8d",
+  "report": {
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2\\reports\\2026-10-23-harness-original38-candidate-2.json",
+    "sha256": "f5046428795de2f8f7865399096ed92c8c04215886dc345264aa3ee65efa9487",
+    "gate": {
+      "status": "incomplete",
+      "pass": false,
+      "scenarios": [
+        {
+          "id": "m402-definition",
+          "name": "M402 数据定义",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "m402-template",
+          "name": "M402 模板",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "m402-revision",
+          "name": "M402 模板辅助修改",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "366-transcription",
+          "name": "366 数据定义与转录",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        }
+      ],
+      "completeness": {
+        "planned": 8,
+        "pass": 4,
+        "fail": 0,
+        "invalid": 0,
+        "notRun": 4,
+        "complete": false
+      }
+    },
+    "mechanismEvidenceUnchanged": {
+      "kind": "unverified",
+      "realModelObservations": 0,
+      "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+    }
+  },
+  "sourceAudit": {
+    "path": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-live-source-usage-candidate2-final.json",
+    "sha256": "7b1265bb8140bc88debdfd83fb0a7a94ac081059bdf20b487da32dbc62c078b7",
+    "checks": 510,
+    "issues": [],
+    "sourceVerifiedRealBusinessObservations": 4,
+    "sourceVerifiedRealModelStages": 5
+  },
+  "units": [
+    {
+      "scenario": "m402-definition",
+      "repetition": 1,
+      "status": "pass",
+      "attemptIds": [
+        "023dabfe-338c-4a7f-88ca-9395aa456b71"
+      ],
+      "tasks": [
+        {
+          "task": "definition-extraction",
+          "verdict": "qualified",
+          "reportedTurns": 35,
+          "pendingItems": 3
+        }
+      ],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "m402-template",
+      "repetition": 1,
+      "status": "pass",
+      "attemptIds": [
+        "e1e7bd68-5013-46ba-85a7-16a363601a29"
+      ],
+      "tasks": [
+        {
+          "task": "template-design",
+          "verdict": "qualified",
+          "reportedTurns": 45,
+          "pendingItems": 4
+        }
+      ],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "m402-revision",
+      "repetition": 1,
+      "status": "pass",
+      "attemptIds": [
+        "87439417-f360-4c16-aeda-5c07e23fa14c"
+      ],
+      "tasks": [
+        {
+          "task": "template-revision",
+          "verdict": "qualified",
+          "reportedTurns": 32,
+          "pendingItems": 0
+        }
+      ],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "366-transcription",
+      "repetition": 1,
+      "status": "pass",
+      "attemptIds": [
+        "5ac7a067-6814-4ae9-a98e-6538f6ca23bc",
+        "f1120c25-edfb-483b-8e27-01220e6b726a"
+      ],
+      "tasks": [
+        {
+          "task": "definition-extraction",
+          "verdict": "qualified",
+          "reportedTurns": 32,
+          "pendingItems": 5
+        },
+        {
+          "task": "dataset-extraction",
+          "verdict": "qualified",
+          "reportedTurns": 43,
+          "pendingItems": 13
+        }
+      ],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "m402-definition",
+      "repetition": 2,
+      "status": "not-run",
+      "reason": "not-run-superseded-before-dispatch",
+      "attemptIds": [],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "m402-template",
+      "repetition": 2,
+      "status": "not-run",
+      "reason": "not-run-superseded-before-dispatch",
+      "attemptIds": [],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "m402-revision",
+      "repetition": 2,
+      "status": "not-run",
+      "reason": "not-run-superseded-before-dispatch",
+      "attemptIds": [],
+      "independentHumanReview": null
+    },
+    {
+      "scenario": "366-transcription",
+      "repetition": 2,
+      "status": "not-run",
+      "reason": "not-run-superseded-before-dispatch",
+      "attemptIds": [],
+      "independentHumanReview": null
+    }
+  ],
+  "actualSource": {
+    "nativeCli": "2.1.296",
+    "responseModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "providerRevision": null
+  },
+  "totals": {
+    "wallMs": 1801381,
+    "inputTokens": 174,
+    "outputTokens": 204843,
+    "thinkingTokens": 146653,
+    "cacheReadTokens": 4686905,
+    "cacheCreationTokens": 399088,
+    "toolCalls": 102,
+    "persistedResults": 0,
+    "unknownUsageAttempts": 0,
+    "unknownByMetric": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 0,
+      "toolCalls": 0,
+      "persistedResults": 0,
+      "wallMs": 0
+    },
+    "usageComplete": true,
+    "legacyHistoryUnknown": false
+  },
+  "timing": {
+    "sessions": 1,
+    "incompleteSessions": 0,
+    "actualWallMs": 1835601,
+    "knownWallMs": 1835601,
+    "attemptsElapsedMs": 1815653,
+    "unknownAttemptDurations": 0
+  },
+  "monetaryCost": null,
+  "independentHumanMinutes": null,
+  "knownLimitations": [
+    "候选2的21有6个有效失败，须修资料并在新候选完整重验；不把本结果拼作新候选通过。",
+    "366名字57/59准确：滨河强天桥/滨河华强天桥、润槺山花园/润樾山花园两处替换仍保留；本轮按预登记57阈值达线。",
+    "模板辅助修改压力6/10达到原登记6阈值；另四压力场景的错误原样保留。",
+    "原始报告机制字段evidence.realModelObservations保持0；真实来源结论来自独立核对固定候选/原生执行器/响应模型与封存日志，不回写原报告。",
+    "366 dataset请求maxTurns=40，CLI回报num_turns=43且success；两个值分别保存，尚未据此验证硬轮数计数语义。",
+    "正式出图50DPI与审核预览120DPI分列；无独立人工结论，不以评分达线宣称视觉业务通过。"
+  ]
+}

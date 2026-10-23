@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-23T18:38:49.244Z",
+  "manifestSha256": "0f7f43a8614fa28bff46be0b06e1de779a54701a6bb19632a53b68a99bed122f",
+  "originalFilesUnchanged": 4553,
+  "roots": [
+    "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2",
+    "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-2",
+    "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-2-v2",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-2-v2",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-evidence-metadata"
+  ],
+  "notes": "原件与归档仍逐字一致；只读核对，不改变四未运行或人工未审状态"
+}
