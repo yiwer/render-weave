@@ -25,6 +25,23 @@ export interface ResourceRepository {
   read(id: string): Promise<Uint8Array>;
 }
 
+/** 在本地读取约束内取得全部字节；计算阶段只读副本，未使用的损坏资源不阻止其他出图。 */
+export async function snapshotResourceRepository(repository: ResourceRepository): Promise<ResourceRepository> {
+  const infos = repository.list().map(item => repository.get(item.id)!);
+  const contents = new Map<string, Uint8Array | { error: unknown }>();
+  for (const info of infos) {
+    try { contents.set(info.id, Uint8Array.from(await repository.read(info.id))); }
+    catch (error) { contents.set(info.id, { error }); }
+  }
+  return { get: id => infos.find(info => info.id === id), list: () => infos,
+    async read(id) {
+      const content = contents.get(id);
+      if (!content) throw new ResourceReadError(id, `资源仓库中没有资源 ${id}`);
+      if (!(content instanceof Uint8Array)) throw content.error;
+      return Uint8Array.from(content);
+    } };
+}
+
 export class ResourceReadError extends Error {
   constructor(
     readonly resourceId: string,
