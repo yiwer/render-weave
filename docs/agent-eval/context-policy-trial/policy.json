@@ -1,0 +1,116 @@
+{
+  "format": "renderweave-context-trial-policy/1",
+  "id": "2026-10-23-context-candidate",
+  "status": "awaiting-candidate",
+  "candidate": null,
+  "pair": null,
+  "registration": null,
+  "source": "ticket14-predeclared-synthetic-calibration",
+  "sourceReview": "operator-verifies-native-cli-and-upstream-observations",
+  "holdoutAccess": false,
+  "strategies": [
+    "full",
+    "on-demand"
+  ],
+  "cases": [
+    "zh-definition-extraction",
+    "zh-dataset-extraction",
+    "zh-template-design",
+    "zh-template-revision",
+    "en-definition-extraction",
+    "en-dataset-extraction",
+    "en-template-design",
+    "en-template-revision"
+  ],
+  "repetitions": 2,
+  "plannedObservations": 32,
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "providerRevision": null,
+    "claudeVersion": "2.1.296",
+    "roundTimeoutMs": 3600000,
+    "maxTurns": {
+      "definition-extraction": 40,
+      "dataset-extraction": 40,
+      "template-design": 80,
+      "template-revision": 80
+    }
+  },
+  "schedule": {
+    "jobs": 1,
+    "blocks": [
+      {
+        "strategy": "full",
+        "repetition": 1
+      },
+      {
+        "strategy": "on-demand",
+        "repetition": 1
+      },
+      {
+        "strategy": "on-demand",
+        "repetition": 2
+      },
+      {
+        "strategy": "full",
+        "repetition": 2
+      }
+    ],
+    "withinBlock": "cases order; no replacement or selected repeats"
+  },
+  "metric": {
+    "name": "all-attempt-input-and-cache-tokens",
+    "fields": [
+      "inputTokens",
+      "cacheReadTokens",
+      "cacheCreationTokens"
+    ],
+    "minimumRelativeReduction": 0.2,
+    "requiredKnownFields": [
+      "inputTokens",
+      "outputTokens",
+      "cacheReadTokens",
+      "cacheCreationTokens"
+    ],
+    "requiredUsageSource": "result",
+    "thinking": "subset of output; report separately if known, never add again"
+  },
+  "quality": {
+    "rawCandidateAllPass": true,
+    "requiredFeedbackGuards": [
+      "targetCorrection",
+      "nonTargetPreservation",
+      "unknownRetained",
+      "finalCheckMatches",
+      "pagination"
+    ],
+    "pairedNoRegression": true,
+    "criticalErrors": 0,
+    "outOfScopeChanges": 0
+  },
+  "netBenefitGuards": {
+    "allAttemptOutputTokens": "on-demand <= full",
+    "actualWallMs": "on-demand <= full; use completed evaluation-segment interval union, not the idle gap between ABBA blocks",
+    "unknownWallTime": "not eligible to adopt",
+    "scope": "conservative engineering policy, not a business-calibrated threshold"
+  },
+  "missing": {
+    "quota": "stop immediately; no automatic waiting or bypass",
+    "materialOrObservation": "incomplete; no default decision and no ticket closure",
+    "unknownUsage": "report known subtotal and unknown count; do not claim savings",
+    "humanMinutes": "unknown unless actually measured; never fill zero or claim total-cost improvement"
+  },
+  "decision": {
+    "adoptOnlyIf": "all 32 source-verified observations complete, all usage known, all quality and net-benefit guards and minimum improvement pass",
+    "otherwiseComplete": "retain full; keep complete negative evidence",
+    "effort": "unchanged"
+  },
+  "artifacts": {
+    "rawReports": "append-only; preserve mechanism realModelObservations=0",
+    "sourceRegistry": "separate operator-reviewed native CLI/upstream/attempt manifest",
+    "roundOriginals": "immutable attempt directories with file digests and recoverable archive"
+  }
+}
