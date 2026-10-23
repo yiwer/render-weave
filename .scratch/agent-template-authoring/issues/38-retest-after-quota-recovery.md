@@ -80,6 +80,10 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 完整归档并实际恢复4553文件/710目录；5个原始封存轮次经恢复候选的公开readReview全部可读，恢复与原件SHA再核无差异，见[恢复证明](../original38-harness/candidate-2-archive-verification.json)。请求40/回报43的差异已由固定CLI二进制和原始流解释为不同计数：实际15个模型响应，其中14个含工具，43=42条user事件+1；不据此声称实际超预算或已测硬截断。详情见[独立核对](../original38-harness/candidate-2-turn-count-review.md)。上述核查不改原报告、评分、候选或未完成状态。
 
+### 2026-10-23 候选3全单元重新登记
+
+通用资料修复后重新冻结候选3，仅两份任务资料改变，其余3320个共同执行文件字节不变。原四8个业务观测/10个模型阶段已重新固定同配置、预算与判据，见[派发前登记](../original38-harness/candidate-3-preregistration.md)。候选2的4个已完成观测与4个not-run原样保留，不拼接新旧通过；当前新观测为0，启动须等20独立合入及登记复核。票据未完成框保持不变。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。
