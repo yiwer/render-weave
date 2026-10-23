@@ -13,6 +13,7 @@
  * 它与审核页一样是命令行附带的本机服务：只用 node:http，不是阶段 4 的 HTTP 服务外壳。
  */
 import { randomBytes } from 'node:crypto';
+import { credentialRedactor } from './credential-redaction.js';
 import { appendFile } from 'node:fs/promises';
 import { Agent as HttpAgent, createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
 import { Agent as HttpsAgent, request as httpsRequest } from 'node:https';
@@ -70,6 +71,7 @@ export function isGoogleModel(model: string): boolean {
 
 export async function startModelProxy(options: ModelProxyOptions): Promise<ModelProxy> {
   const token = randomBytes(24).toString('hex');
+  const safe = credentialRedactor([options.key, token]);
   /** Gemini 的 thoughtSignature：工具调用 id → 签名。 */
   const signatures = new Map<string, string>();
   let counter = 0;
@@ -114,7 +116,7 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
     };
     const heartbeat = body.stream ? setInterval(() => { open(); sse(response, 'ping', { type: 'ping' }); }, 15_000) : undefined;
     try {
-      const result = await callUpstream(body, session, trace, () => { if (body.stream) open(); });
+      const result = JSON.parse(safe.text(JSON.stringify(await callUpstream(body, session, trace, () => { if (body.stream) open(); })))) as Translated;
       await log({ model: body.model, ms: Date.now() - started, status: 200, events: trace.events, maxGapMs: trace.maxGapMs,
         ...result.usage, stop: result.stopReason, blocks: result.content.map((block) => block.type) });
       if (body.stream) {
@@ -129,8 +131,9 @@ export async function startModelProxy(options: ModelProxyOptions): Promise<Model
       const upstream = failure instanceof UpstreamError ? failure : undefined;
       const status = upstream?.status ?? 502;
       const kind = status === 429 ? 'rate_limit_error' : status === 400 ? 'invalid_request_error' : status === 401 || status === 403 ? 'authentication_error' : 'api_error';
-      const message = failure instanceof Error ? failure.message : String(failure);
-      const cause = upstream ? upstream.reason : causeOf(failure);
+      const message = safe.text(failure instanceof Error ? failure.message : String(failure));
+      const rawCause = upstream ? upstream.reason : causeOf(failure);
+      const cause = rawCause ? { ...rawCause, message: safe.text(rawCause.message) } : undefined;
       if (upstream?.quota && !stopped) stopped = upstream.quota;
       // 日志分清失败在哪个阶段、底层原因，以及失败前多久没收到上游的数据。
       await log({ model: body.model, ms: Date.now() - started, status, phase: upstream?.phase ?? trace.phase, error: message.slice(0, 300),

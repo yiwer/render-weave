@@ -1,3 +1,7 @@
+import {classifyError, type ErrorKind} from '../../src/agent/execution-error.js';
+export {classifyError, type ErrorKind} from '../../src/agent/execution-error.js';
+import {readRoundMetrics as summarize, type RoundMetrics as RoundSummary} from '../../src/agent/round-metrics.js';
+export {countPersisted} from '../../src/agent/round-metrics.js';
 import { agentProvenance } from '../../src/agent/provenance.js';
 /**
  * 评估的编排（第三阶段票据 08、验收 A10）：经产品路径（renderweave agent 与 renderweave mcp）发起各场景的轮次，
@@ -75,19 +79,6 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
   };
 }
 
-/** 上游错误的分类：transient 按轮次重试；quota 停止派发剩下的单元；other（参数错误、缺 key、执行器无法启动）照旧算未达线。 */
-export type ErrorKind = 'transient' | 'quota' | 'other';
-
-const QUOTA = /\b429\b|rate[_ ]?limit|quota|usage limit/i;
-const TRANSIENT = /\b(?:500|502|503|529)\b|overloaded|ECONNRESET|ETIMEDOUT|socket hang up/i;
-
-/** 按 round.json 的 run.error 或发起失败的文字分类，大小写不敏感。两类字样都有时按额度算，不在关着的额度窗口上重试。 */
-export function classifyError(text: string): ErrorKind {
-  if (QUOTA.test(text)) return 'quota';
-  if (TRANSIENT.test(text)) return 'transient';
-  return 'other';
-}
-
 /** 瞬时错误后每次重试前等多久；长度就是最多重试几次。Claude Code 自己已经重试过，外层两次就够。 */
 export const RETRY_DELAYS_MS: readonly number[] = [60_000, 180_000];
 
@@ -118,31 +109,7 @@ interface UpstreamRecord {
   invalid?: InvalidReason;
 }
 
-export interface RoundSummary {
-  readonly task: AgentTaskId;
-  /** 相对评估输出目录。 */
-  readonly dir: string;
-  /** missing：没有轮次记录（发起失败）。 */
-  readonly verdict: RoundRecord['verdict'] | 'missing';
-  readonly wallMs?: number;
-  readonly turns?: number;
-  readonly inputTokens?: number;
-  readonly outputTokens?: number;
-  readonly thinkingTokens?: number;
-  readonly cacheReadTokens?: number;
-  readonly cacheCreationTokens?: number;
-  readonly endedBy?: string;
-  readonly stopped?: RoundRecord['run']['stopped'];
-  readonly pending?: number;
-  readonly toolCalls?: number;
-  readonly toolErrors?: number;
-  /** 被 Claude Code 转存（<persisted-output>）或因过大拒收的工具结果数（票据 22）。 */
-  readonly persistedResults?: number;
-  /** 第一次 check_templates 的问题数（票据 27）。 */
-  readonly firstCheckProblems?: number;
-  /** 执行器无法启动或模型服务报错（如额度用完）。 */
-  readonly error?: string;
-}
+export type {RoundMetrics as RoundSummary} from '../../src/agent/round-metrics.js';
 
 /** 一个单元（场景的一次）的结论：达线、未达线，或因上游错误拿不到有效结果。 */
 export type UnitStatus = 'pass' | 'fail' | 'invalid';
@@ -713,70 +680,6 @@ async function approveDefinitions(roundDir: string, workspace: string): Promise<
   const name = route?.published?.name ?? route?.name;
   if (!name) throw new Error('成果中没有含站点列表的数据定义');
   return name;
-}
-
-async function summarize(dir: string, outDir: string, task?: AgentTaskId): Promise<RoundSummary | undefined> {
-  const logs = await summarizeLogs(dir);
-  let record: RoundRecord;
-  try {
-    record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord;
-  } catch {
-    if (!task) return undefined;
-    // 宿主强退可能只留下完整 result 行；只读取运行时给出的累计用量，不把逐条消息相加。
-    let result: Record<string, any> | undefined;
-    try {for (const line of (await readFile(join(dir, 'logs/stream.jsonl'), 'utf8')).split('\n')) {
-      try {const message = JSON.parse(line); if (message.type === 'result') result = message;} catch { /* 未写完的行没有可信用量 */ }
-    }} catch { /* 无日志则全部用量未知 */ }
-    const usage = result?.usage, number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
-    return {task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: 'missing', ...logs,
-      inputTokens: number(usage?.input_tokens), outputTokens: number(usage?.output_tokens), thinkingTokens: number(usage?.output_tokens_details?.thinking_tokens),
-      cacheReadTokens: number(usage?.cache_read_input_tokens), cacheCreationTokens: number(usage?.cache_creation_input_tokens),
-      ...(result?.subtype ? {endedBy: String(result.subtype)} : {})};
-  }
-  if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
-  let outcome: RoundOutcome | undefined;
-  try { outcome = JSON.parse(await readFile(join(dir, 'outcome.json'), 'utf8')) as RoundOutcome; } catch { outcome = undefined; }
-  const run = record.run;
-  const pick = <K extends keyof typeof run>(key: K) => (run[key] === undefined ? {} : { [key]: run[key] });
-  return {
-    task: record.task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: record.verdict,
-    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'), ...pick('stopped'),
-    ...(outcome ? { pending: outcome.pending.length } : {}), ...logs,
-    ...(run.error ? { error: run.error } : {}),
-  } as RoundSummary;
-}
-
-/** 完整与中断轮次使用同一计数规则；末尾损坏的一行不抹去此前完整事件。 */
-async function summarizeLogs(dir: string): Promise<Pick<RoundSummary, 'toolCalls' | 'toolErrors' | 'firstCheckProblems' | 'persistedResults'>> {
-  let toolCalls: number | undefined, toolErrors: number | undefined, firstCheckProblems: number | undefined;
-  try {
-    const calls: {tool: string; isError?: boolean; problems?: number}[] = [];
-    for (const line of (await readFile(join(dir, 'logs/tools.jsonl'), 'utf8')).split('\n')) {
-      try {const call = JSON.parse(line); if (call && typeof call.tool === 'string') calls.push(call);} catch { /* 未写完的行不计入 */ }
-    }
-    toolCalls = calls.length;
-    toolErrors = calls.filter(call => call.isError === true).length;
-    firstCheckProblems = calls.find(call => call.tool === 'check_templates' && !call.isError)?.problems;
-  } catch { /* 没有日志时计数未知 */ }
-  const persistedResults = await countPersisted(join(dir, 'logs/stream.jsonl'));
-  return {...(toolCalls !== undefined ? {toolCalls, toolErrors} : {}), ...(persistedResults !== undefined ? {persistedResults} : {}),
-    ...(firstCheckProblems !== undefined ? {firstCheckProblems} : {})};
-}
-
-/** 流式日志里被 Claude Code 转存成文件、或因过大被拒收的工具结果数；没有日志时为 undefined（票据 22）。 */
-export async function countPersisted(file: string): Promise<number | undefined> {
-  let text: string;
-  try { text = await readFile(file, 'utf8'); } catch { return undefined; }
-  let count = 0;
-  for (const line of text.split('\n')) {
-    let message: { type?: string; message?: { content?: unknown } };
-    try { message = JSON.parse(line) as typeof message; } catch { continue; }
-    if (message.type !== 'user' || !Array.isArray(message.message?.content)) continue;
-    for (const block of message.message.content as { type?: string; content?: unknown }[]) {
-      if (block.type === 'tool_result' && /<persisted-output>|exceeds maximum allowed tokens/.test(JSON.stringify(block.content ?? ''))) count++;
-    }
-  }
-  return count;
 }
 
 async function candidates(roundDir: string): Promise<{ kind: string; document: unknown }[]> {

@@ -1,3 +1,5 @@
+import {attemptFileHashes as hashes, readSavedAttempts as list, type AttemptRecord, type AttemptCompletion, type SavedAttempt} from '../../src/agent/attempt-records.js';
+export type {AttemptRecord, AttemptCompletion, SavedAttempt} from '../../src/agent/attempt-records.js';
 /** 评估尝试原件与兼容阶段视图。实际执行只写唯一目录，已完成原件不再改写。 */
 import {createHash, randomUUID} from 'node:crypto';
 import {cp, link, mkdir, open, readdir, readFile, rename, rm, unlink} from 'node:fs/promises';
@@ -7,49 +9,12 @@ import {readReview} from '../../src/index.js';
 import {withLocalAccess} from '../../src/local-access.js';
 import type {Launcher, RoundSpec} from './eval.js';
 
-export interface AttemptRecord {
-  readonly format: 'renderweave-eval-attempt/1';
-  readonly id: string;
-  readonly stage: string;
-  readonly task: RoundSpec['task'];
-  readonly startedAt: string | null;
-  readonly owner: {readonly host: string; readonly pid: number} | null;
-  readonly experiment: string | null;
-  readonly input: Omit<RoundSpec, 'out'>;
-  readonly legacy?: true;
-}
-export interface AttemptCompletion {
-  readonly endedAt: string | null;
-  readonly elapsedMs: number | null;
-  readonly error?: string;
-  readonly recovered?: true;
-  readonly eligible?: boolean;
-  readonly files: Readonly<Record<string, string>>;
-}
-export interface SavedAttempt {
-  readonly record: AttemptRecord;
-  readonly completion?: AttemptCompletion;
-  readonly dir: string;
-}
 const sha = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex');
 async function readJson<T>(file: string): Promise<T | undefined> {
   try {return JSON.parse(await readFile(file, 'utf8')) as T;} catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
     throw new Error(`尝试记录无法核对：${file}`, {cause: error});
   }
-}
-async function hashes(dir: string, prefix = ''): Promise<Record<string, string>> {
-  const result: Record<string, string> = {};
-  for (const entry of (await readdir(dir, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.isSymbolicLink()) throw new Error(`尝试原件包含不能固定的链接：${prefix + entry.name}`);
-    // 与资料身份共用协调目录口径；进入前排除初始化、释放和回收残留，普通同前缀文件仍需核对。
-    if (entry.isDirectory() && /^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) continue;
-    if (!prefix && (['completed.json', 'completed.seal.json'].includes(entry.name) || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
-    const name = prefix + entry.name, path = join(dir, entry.name);
-    if (entry.isDirectory()) Object.assign(result, await hashes(path, name + '/'));
-    else result[name] = sha(await readFile(path));
-  }
-  return result;
 }
 async function writeNew(file: string, value: unknown): Promise<void> {
   const temporary = join(resolve(file, '..'), '.metadata-' + randomUUID() + '.tmp');
@@ -69,27 +34,6 @@ async function startAttempt(unit: string, record: AttemptRecord): Promise<string
 async function completeAttempt(dir: string, completion: AttemptCompletion): Promise<void> {
   await writeNew(join(dir, 'completed.seal.json'), {completion, sha256: sha(JSON.stringify(completion))});
   await writeNew(join(dir, 'completed.json'), completion);
-}
-async function list(unit: string): Promise<SavedAttempt[]> {
-  const directory = join(unit, 'attempts');
-  let ids: string[];
-  try {ids = await readdir(directory);} catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  }
-  const result: SavedAttempt[] = [];
-  for (const id of ids.sort()) {
-    const dir = join(directory, id), record = await readJson<AttemptRecord>(join(dir, 'started.json'));
-    if (!record || record.id !== id || record.format !== 'renderweave-eval-attempt/1') throw new Error(`尝试身份损坏：${dir}`);
-    const compatibility = await readJson<AttemptCompletion>(join(dir, 'completed.json'));
-    const seal = await readJson<{completion: AttemptCompletion; sha256: string}>(join(dir, 'completed.seal.json'));
-    if ((compatibility && !seal) || (seal && (!seal.completion || sha(JSON.stringify(seal.completion)) !== seal.sha256
-      || (compatibility && sha(JSON.stringify(compatibility)) !== seal.sha256)))) throw new Error(`尝试完成记录已改变：${dir}`);
-    const completion = seal?.completion;
-    if (completion && JSON.stringify(completion.files) !== JSON.stringify(await hashes(dir))) throw new Error(`尝试原件已改变：${dir}`);
-    result.push({record, completion, dir});
-  }
-  return result.sort((a, b) => (a.record.startedAt ?? '').localeCompare(b.record.startedAt ?? '') || a.record.id.localeCompare(b.record.id));
 }
 export async function savedAttempts(unit: string): Promise<SavedAttempt[]> {return list(unit);}
 

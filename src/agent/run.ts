@@ -3,14 +3,16 @@
  * 在独占的轮次目录里组装三层资料、DSL 参考、示例图与工作区快照，按受限模式启动一次 Claude Code 无头运行，
  * 只连本仓库的 `renderweave mcp`；结束后校验 Agent 交回的 outcome.json，写出轮次记录、成果与校验结果。
  *
- * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；key 只经环境变量传入，不写任何文件。
- * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 时在本进程起转换代理，Claude Code 只拿到本轮令牌（M232）。
+ * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；上游 key 只留在宿主内存，执行器环境只传入本轮代理令牌。
+ * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；两种协议均经本机代理，Claude Code 只拿到本轮令牌（M232、M321）。
  *
  * 多轮（M58）：带 from 发起下一轮时，沿用上一轮的任务、素材、基准、出图请求与修改要求，工作区重新取快照；
  * 上一轮成果（含审核时的修改）放进 candidates/ 作为起点，原样记录放进 previous/，反馈放进 docs/feedback.md。
  * 模板辅助修改：把主模板调用树中已保存的模板复制进 candidates/ 作为工作副本（M49），并记录各自所基于的保存内容（M51）。
  */
 import { spawn } from 'node:child_process';
+import { startAnthropicProxy } from './anthropic-proxy.js';
+import { credentialRedactor } from './credential-redaction.js';
 import { createWriteStream } from 'node:fs';
 import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -87,7 +89,7 @@ export interface AgentRunOptions {
   readonly checkpoint?: string;
   /** 给下一轮的反馈（Markdown）；带 from 时必须给。 */
   readonly feedback?: string;
-  /** key 的值只在内存中传给子进程；keyEnv 是它所在的环境变量名，只用于记录。 */
+  /** key 的值只留在宿主内存；keyEnv 是它所在的环境变量名，只用于记录。 */
   readonly key: string;
   readonly keyEnv: string;
   readonly model?: string;
@@ -455,14 +457,14 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
-  // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
+  // 两种模型协议都只给执行器本轮令牌；上游 key 留在宿主。
   const controller = new AbortController();
   let stopped: QuotaStop | undefined;
   const stop = (reason: QuotaStop) => { stopped ??= reason; control.stop(reason); };
-  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : undefined;
+  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
-    ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
+    ANTHROPIC_BASE_URL: proxy.url, ANTHROPIC_AUTH_TOKEN: proxy.token, ANTHROPIC_MODEL: model,
     ANTHROPIC_DEFAULT_OPUS_MODEL: model, ANTHROPIC_DEFAULT_SONNET_MODEL: model, ANTHROPIC_DEFAULT_HAIKU_MODEL: smallModel,
     CLAUDE_CODE_SUBAGENT_MODEL: model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
   });
@@ -472,10 +474,10 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
 
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, onUsage: control.usage, onEvent: stagnation.accept });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token], onUsage: control.usage, onEvent: stagnation.accept });
     await stagnation.idle();
   } finally {
-    await proxy?.close();
+    await proxy.close();
     await checkpoints.idle();
     await managedMcp.close();
   }
@@ -712,7 +714,8 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  const redactor = credentialRedactor(context.secrets);
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
@@ -734,13 +737,13 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
       buffer += chunk;
       for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-        try { const event = JSON.parse(line); usage.accept(event); context.onUsage(usage.read()); context.onEvent(event); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+        try { const event = JSON.parse(redactor.text(line)); usage.accept(event); context.onUsage(usage.read()); context.onEvent(event); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
     let executionError: string | undefined;
     child.on('error', (error) => { executionError = `无法启动 ${claude.command}：${error.message}`; });
-    child.stdout.pipe(log);
-    child.stderr.pipe(errors);
+    child.stdout.pipe(redactor.stream()).pipe(log);
+    child.stderr.pipe(redactor.stream()).pipe(errors);
     child.stdin.on('error', () => {});
     const recorded = child.pid ? context.onSpawn(child.pid).then(() => { child.stdin.end(context.prompt); }, () => {
       executionError = '执行器身份无法持久记录，已停止执行器'; stop();
@@ -752,7 +755,7 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
     });
   });
   await Promise.all([new Promise((done) => log.end(done)), new Promise((done) => errors.end(done))]);
-  return result;
+  return { ...result, ...(result.error ? { error: redactor.text(result.error) } : {}) };
 }
 
 /** 抢救已写完整的候选 JSON；不跟随符号链接，不补写 Agent 自述的成果。 */

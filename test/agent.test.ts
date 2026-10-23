@@ -125,7 +125,8 @@ describe('发起一轮数据定义提取', () => {
       'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL',
       'ANTHROPIC_MODEL', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', 'CLAUDE_CODE_SUBAGENT_MODEL', 'CLAUDE_CONFIG_DIR',
     ]);
-    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: 'https://endpoint.example/anthropic', configDir: join(logs, 'claude-config') });
+    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/), configDir: join(logs, 'claude-config') });
+    expect(fake.tokenSha256).not.toBe(createHash('sha256').update(KEY).digest('hex'));
     expect(fake.args).toEqual(['-p', '--output-format', 'stream-json', '--verbose', '--model', 'model-x', '--restricted', '--tools', 'Read,Write,Edit,Glob',
       '--mcp-config', join(logs, 'mcp.json'), '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
       '--max-turns', '9', '--no-session-persistence']);
