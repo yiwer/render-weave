@@ -10,6 +10,8 @@
 
 全程只用 `renderweave` 命令与本机的审核页，不需要读代码，也不手工复制或改写工作区里的文件。各轮的用时见文末「用时与用量参考」。命令细节见 [业务 Agent 任务](agent-tasks.md)，交给 Agent 的资料见 [agent/README.md](../agent/README.md)。
 
+资料默认仍为全量阅读。校准时可显式选择 `--context-policy on-demand`，保留强制约束并通过现有只读参考工具按阶段取资料；候选、问题分页与配对准备见[资料策略](agent-context-policy.md)。它尚无真实模型收益结论，不自动改变默认或 effort。
+
 ## 准备
 
 需要 Agent 在设计中收到区域级偏差与同尺度对照时，按[视觉反馈指南](agent-visual-feedback.md)准备本次核准参考，在模板命令中增加 `--reference reference.json`。提取阶段的可信事实用 `--content-baseline content.json`；基准缺省时结果明确未核查，技术合格不代表还原合格。

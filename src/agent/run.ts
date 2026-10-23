@@ -42,6 +42,8 @@ import { startCheckpointHost } from './checkpoint-host.js';
 import { DEFAULT_STAGNATION_THRESHOLD, stagnationController } from './stagnation.js';
 import { usageCollector } from './usage.js';
 import { withLocalAccess } from '../local-access.js';
+import { contextPolicy, prepareContextPolicy, contextPrompt, contextIdentity, type ContextPolicyIdentity } from './context-policy.js';
+import { referenceTexts } from '../mcp/references.js';
 import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
@@ -62,6 +64,7 @@ const SYSTEM_VARIABLES = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 
   'USERDOMAIN', 'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
 
 export interface AgentRunOptions {
+  readonly contextPolicy?: 'full' | 'on-demand';
   /** 本次人工核准的视觉参考 JSON，与示例图一起固定到宿主目录。 */
   readonly reference?: string;
   /** 本次提取事实 JSON；不从领域名称推断样例事实。 */
@@ -158,6 +161,7 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  readonly contextPolicy?: ContextPolicyIdentity;
   readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly reference?: { readonly file: string; readonly sha256: string };
   readonly contentBaseline?: { readonly file: string; readonly sha256: string };
@@ -249,6 +253,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
 }
 /** 受监督的原轮次宿主；不直接作为产品入口导出。 */
 export async function runAgentTaskInHost(given: AgentRunOptions, control: HostControl): Promise<AgentRunResult> {
+  const selectedContext = contextPolicy(given.contextPolicy);
   if (given.roundTimeoutMs !== undefined && (!Number.isFinite(given.roundTimeoutMs) || given.roundTimeoutMs <= 0)) throw new AgentUsageError('--timeout-ms 必须是有限正值');
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
   if(given.from===undefined&&given.checkpoint!==undefined)throw new AgentUsageError('--checkpoint 只用于带 --from 发起的下一轮');
@@ -340,6 +345,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
 
   // 资料：反馈 > 修改要求 > 项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
+  const references = await referenceTexts();
   const sampleFile = `sample${extension}`;
   await writeFile(join(agentDir, sampleFile), sampleBytes);
   await writeFile(join(logsDir, sampleFile), sampleBytes);
@@ -348,7 +354,14 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
   await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
   if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
-  for (const reference of task.references) await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
+  for (const reference of task.references) {
+    if (reference === 'outcome') await copyFile(join(AGENT_MATERIALS, 'reference/outcome.md'), join(agentDir, 'docs/outcome.md'));
+    else if (selectedContext === 'full') {
+      if (reference !== 'template' && reference !== 'data-definition') throw new AgentUsageError(`未知 DSL 参考：${reference}`);
+      await writeFile(join(agentDir, 'docs/dsl-reference.md'), references[`reference/${reference}`]);
+    }
+  }
+  await prepareContextPolicy(selectedContext, join(agentDir, 'docs'), references);
   if (request) {
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
@@ -384,6 +397,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   if (previous) {
     prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
+  prompt = contextPrompt(prompt, selectedContext);
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
@@ -402,7 +416,10 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
   const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
+  const referenceBundle=join(logsDir,'reference-materials.json');
+  await writeFile(referenceBundle,JSON.stringify({format:'renderweave-reference-materials/1',texts:references}));
   const inputs: RoundInputs = {
+    contextPolicy: await contextIdentity(selectedContext, join(agentDir, 'docs'),references),
     resourceSnapshot,
     sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
     referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
@@ -452,6 +469,7 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const stagnation = stagnationController({ roundDir, agentDir, threshold: runtime.stagnationThreshold!, stop: control.stop });
   managedMcp = await startCheckpointHost({ check: async () => { const result = await checkpoints.check(); stagnation.checked(result); return result; }, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
+    '--reference-bundle',referenceBundle,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] });
   await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);

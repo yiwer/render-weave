@@ -18,6 +18,7 @@ renderweave mcp --workspace <工作区目录> --resources <资源仓库> --root 
 | `--tools` | 可选，只开放列出的工具，逗号分隔；工具名写错时报用法错误 |
 | `--log` | 可选，每次工具调用追加一行记录：工具、参数、用时、是否出错。日志由启动方保存，不经工具读写 |
 | `--outcome-context` | 可选，`check_outcome` 要的本轮任务与已知输入，JSON 文件，见[交回前核对](#交回前核对)。不给时 `check_outcome` 返回工具错误 |
+| `--reference-bundle` | 可选，操作者提供的完整 `renderweave-reference-materials/1` 固定资料；受管轮次由宿主生成。启动时读入全部七份公开参考/Schema，缺少任何一份拒绝启动，之后文件变化不改变本会话资料。不给时仍从原仓库路径一次读入 |
 
 - **退出码**：0 表示读完标准输入后正常结束；2 表示用法错误，或工作区、工作目录、`--outcome-context` 的文件无法打开或不合规。
 - **输出约定**：标准输出只写协议消息，启动说明与工作区问题写到标准错误流。
@@ -46,6 +47,7 @@ Claude Code 的配置示例（`--mcp-config`）：
 | `inspect_layout` | `request`、`templates`、`datasetPath`、`elements`、`depth` | 元素的布局摘要与这些元素上的问题 |
 | `view_image` | `path`（工作目录内的图片，或 `res:资源ID`）、`region`（像素）、`scale`（1–4） | 原图尺寸、裁切区域、倍数与缩放后的 PNG |
 | `dsl_reference` | `name`、`pointer`（只用于 `schema/*`） | `agent/reference/` 中的参考，或 `schemas/` 中的 JSON Schema 原文；Schema 超过 30,000 字符且不带 `pointer` 时返回目录 |
+| `outcome_feedback` | `reportId`、可选 `offset`（默认0）、`limit`（1–100，默认30）、`groupBy`（code/target，默认code） | 续取同一检查的完整局部问题、差异、实例/源模板位置及未知项；分页不重检、不保存检查点；详见[资料策略](agent-context-policy.md) |
 | `check_outcome` | 无 | 按交回后的同一套规则核对工作目录根上的 `outcome.json` 与候选：结论 `verdict`、`outcome.json` 的问题，以及每个候选的问题与 `deferred`；模板辅助修改另有 `revision` 范围摘要 |
 
 工具结果是一段 JSON 文本，预览类工具再加一个图片内容块。`tools/list` 给每个工具标注 `annotations: { readOnlyHint: true, openWorldHint: false }`。
@@ -57,6 +59,7 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 - **问题清单**：`render_draft`、`inspect_layout`、`check_*` 与 `list_documents` 最多列 200 条、约 25,000 字符。截断时另有 `problemsTruncated`：已列条数、总数与按问题代码的计数（`check_outcome` 的 `deferred` 同样有 `deferredTruncated`）。
 - **元素检查**：`inspect_layout` 按约 30,000 字符的预算收集元素，用完时返回 `truncated: true`、`returned`（已返回）与 `total`（这次请求范围内的元素总数）。
 - **模板修改差异**：`check_outcome` 的每个候选最多返回 100 条差异、约 20,000 字符，只列范围。截断时 `revision` 中另给 `truncated: true` 与 `total`（该候选的差异总条数），已返回条数是 `changes.length`。
+- **局部问题续取**：`check_outcome.feedback.reportId` 对应本会话最近一次完整检查；`outcome_feedback` 按 `nextOffset` 取完所有页，保留问题代码、目标与原始上下文，未知项单独计数。单项过大时按 `itemId/index` 拼接 JSON 分片。修改后重新检查，下一次检查使旧报告失效；详见[分页语义](agent-context-policy.md#完整问题的分页)。
 - **Schema**：`dsl_reference` 的 `schema/*` 可以写 `pointer`（JSON Pointer，如 `/$defs/textElement`）只取一段；整份超过 30,000 字符的（目前只有 `schema/template`）不带 `pointer` 时返回目录：顶层各键，以及 `properties`、`$defs` 中各项的字符数。`pointer` 找不到时是工具错误，列出那一层可用的名称。`read_document` 也可以写 `pointer`。
 - **兜底**：工具结果仍超过 40,000 字符时，服务层不交出，改为工具错误，提示缩小范围。
 - **观测**：调用日志每条记 `chars`（文字结果字符数）与 `imageBytes`（图片字节数）；评估报告统计被转存或拒收的工具结果（`persistedResults`），非零时在文字摘要里提示。
@@ -133,7 +136,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.15.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.16.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.16.0 新增只读 `outcome_feedback` 与 `check_outcome.feedback` 续页入口，日志以检查报告ID及实际内容身份关联；公开参考在会话启动时固定。两种资料策略共用这些工具，默认全量与 effort 不变，见[资料策略](agent-context-policy.md)。
   - 0.15.0 固定本地素材/核准事实权限边界，模型上游凭据由宿主持有，运行及失败诊断持久化前脱敏；工具仍只读，版本与平台证据见[信任边界](agent-trust-boundary.md)。
   - 0.14.0 明确 Agent 整轮预算、取消、停止保存与已知用量合同；新增停止凭据及可选生效 runtime 字段，工具仍只读，见[整轮预算](agent-budgets.md)。
   - 0.13.1 的宿主工具日志为 `check_outcome` 增加实际内容身份，为 `compare_reference` 增加本页区域目录、续取位置及本页异常区域。评估可以核对后续页实际取得和末次工具检查/终检的关联；不改变候选、参考或工具只读权限。

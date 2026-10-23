@@ -5,9 +5,7 @@
  * 工具名称、输入 Schema 与输出结构是 v0.7 的稳定合同，由快照测试守护：新增工具或可选参数属于兼容改动，改名或删参数要升合同版本。
  * 文字结果不超过 MAX_TEXT_CHARS（票据 22）：问题清单、元素检查与 Schema 各自按预算截断，服务层再兜底。
  */
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { join, relative } from 'node:path';
+import { relative } from 'node:path';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
 import type { CheckpointCheck } from '../agent/checkpoints.js';
@@ -32,9 +30,12 @@ import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, parseDatasetDocument, parseStaticSchemaRef, type StaticSchemaEntry, type TemplateEntry, type Workspace } from '../workspace.js';
 import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
+import { outcomeFeedback } from './outcome-feedback.js';
+import { REFERENCE_FILES, type ReferenceTexts } from './references.js';
+export { REFERENCE_FILES } from './references.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.15.0';
+export const MCP_CONTRACT_VERSION = '0.16.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -75,6 +76,7 @@ const SCRIPT_PROBES: Readonly<Record<string, string>> = {
 };
 
 export interface ToolContext {
+  readonly references: ReferenceTexts;
   readonly workingDirectory: WorkingDirectory;
   /** 启动时读入的工作区快照。 */
   readonly workspace: Workspace;
@@ -86,16 +88,6 @@ export interface ToolContext {
   readonly checkOutcome?: () => Promise<CheckpointCheck>;
 }
 
-const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
-export const REFERENCE_FILES = {
-  'reference/data-definition': 'agent/reference/data-definition.md',
-  'reference/template': 'agent/reference/template.md',
-  'schema/data-definition': 'schemas/data-definition.schema.json',
-  'schema/dataset': 'schemas/dataset.schema.json',
-  'schema/template': 'schemas/template.schema.json',
-  'schema/render-request': 'schemas/render-request.schema.json',
-  'schema/batch-request': 'schemas/batch-request.schema.json',
-} as const;
 
 const paths = (description: string) => ({ type: 'array', minItems: 1, items: { type: 'string', minLength: 1 }, description });
 const DRAFT_INPUT = {
@@ -105,6 +97,7 @@ const DRAFT_INPUT = {
 };
 
 export function createTools(context: ToolContext): McpTool[] {
+  let feedback:ReturnType<typeof outcomeFeedback>|undefined;
   const { workingDirectory: files, workspace } = context;
   const shown = (problems: readonly Problem[]) => problems.map((problem) => displayProblem(problem, context));
   /** 问题清单：最多 PROBLEMS_MAX 条且不超过字符预算；截断时给出总数与按问题代码的计数（票据 22）。 */
@@ -454,7 +447,7 @@ export function createTools(context: ToolContext): McpTool[] {
       } },
       async call(args) {
         const name = args['name'] as keyof typeof REFERENCE_FILES;
-        const text = await readFile(join(REPO_ROOT, REFERENCE_FILES[name]), 'utf8');
+        const text = context.references[name];
         const pointer = args['pointer'] as string | undefined;
         if (!name.startsWith('schema/')) {
           if (pointer !== undefined) throw new ToolInputError('pointer 只用于 schema/*；参考文档整份返回');
@@ -471,21 +464,34 @@ export function createTools(context: ToolContext): McpTool[] {
       },
     },
     {
+      name:'outcome_feedback',
+      description:'只读续取同一 check_outcome 的完整局部问题；不重新检查当前候选。按 code 或 target 聚类，保留实例、源模板位置、待确认和未知范围。使用 check_outcome 返回的 reportId；同一会话下一次检查使旧报告过期。分页按 nextOffset 继续，超长单项以可无损拼接的 JSON fragment 返回。',
+      inputSchema:{type:'object',additionalProperties:false,required:['reportId'],properties:{reportId:{type:'string',minLength:1},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100},groupBy:{enum:['code','target']}}},
+      async call(args){
+        if(!feedback)throw new ToolInputError('没有可续取的检查报告；先调用 check_outcome');
+        const page=feedback.page(args);
+        return json(page,{reportId:page.reportId,contentIdentity:page.contentIdentity,offset:page.offset,nextOffset:page.nextOffset,total:page.total});
+      },
+    },
+    {
       name: 'check_outcome',
       description: '交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。' +
         '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
         '返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。' +
         '模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。' +
-        `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。`,
+        `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。feedback.reportId 可交给 outcome_feedback 续取同一检查的完整局部问题、差异与未知范围；先读完再修改，分页不重新检查。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。`,
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       async call() {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
         const { task, ...known } = context.outcome;
         const managed = await context.checkOutcome?.();
         const check = managed?.check ?? await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        feedback=outcomeFeedback(check,problem=>displayProblem(problem,context));
+        const feedbackMetadata=feedback.metadata;
         // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
         const response = (budget: number) => ({
           verdict: check.verdict,
+          feedback: feedbackMetadata,
           ...(managed ? { checkpoint: managed.checkpoint } : {}),
           ...(check.contentIdentity ? { contentIdentity: { id: check.contentIdentity.id, format: check.contentIdentity.format,
             engine: check.contentIdentity.engine, criteria: check.contentIdentity.criteria } } : {}),
@@ -499,7 +505,27 @@ export function createTools(context: ToolContext): McpTool[] {
         });
         let budget = PROBLEMS_MAX_CHARS, result = response(budget);
         while (JSON.stringify(result).length > 39000 && budget > 200) { budget = Math.floor(budget / 2); result = response(budget); }
-        return json(result, { contentIdentity: check.contentIdentity?.id, verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
+        // 任意合法长名称、布局或大量候选也不能挤掉续页入口；完整局部明细由同一冻结报告续取。
+        const bounded = JSON.stringify(result).length <= 39000 ? result : {
+          verdict: check.verdict, feedback: feedbackMetadata, contentIdentity: result.contentIdentity,
+          ...(managed ? {checkpoint: managed.checkpoint.status === 'saved' ? managed.checkpoint : {
+            status: 'notSaved', reason: managed.checkpoint.reason.slice(0, 2000), reasonTruncated: managed.checkpoint.reason.length > 2000,
+          }} : {}),
+          assessment: {
+            structure: check.assessment.structure, candidates: check.assessment.candidates, content: check.assessment.content,
+            render: {status: check.assessment.render.status, hasImage: check.assessment.render.hasImage,
+              blocking: check.assessment.render.blocking, capabilityBlocked: check.assessment.render.capabilityBlocked,
+              problems: [], problemsTotal: check.assessment.render.problems.length},
+            ...(check.assessment.coverage ? {coverage: {status: check.assessment.coverage.status, passed: check.assessment.coverage.passed}} : {}),
+            ...(check.assessment.style ? {style: {passed: check.assessment.style.passed, anomalies: [],
+              anomaliesTotal: check.styleVerification?.anomalies.length ?? check.assessment.style.anomalies.length}} : {}),
+            ...(check.assessment.visual ? {visual: {reportId: check.assessment.visual.reportId, status: check.assessment.visual.status,
+              anomaliesTotal: check.assessment.visual.anomaliesTotal, regionsTotal: check.assessment.visual.regionsTotal}} : {}),
+          },
+          problems: [], problemsTotal: check.problems.length, candidates: [], candidatesTotal: check.candidates.length,
+          detailsTruncated: true, continuation: '本响应只保留状态与计数；使用 feedback.reportId 调用 outcome_feedback 并读完全部 nextOffset。分页不重新检查当前字节。',
+        };
+        return json(bounded, { contentIdentity: check.contentIdentity?.id, feedbackReportId: feedbackMetadata.reportId, feedbackTotal: feedbackMetadata.total, feedbackUnknownTotal: feedbackMetadata.unknownTotal, verdict: check.verdict, problems: check.problems.length + check.candidates.reduce((sum, candidate) => sum + candidate.problems.length, 0) });
       },
     },
   ];
@@ -651,7 +677,7 @@ function summarizedCoverage(coverage: CoverageAssessment, maxChars: number) {
   const byCode: Record<string, number> = {};
   for (const anomaly of coverage.anomalies) byCode[anomaly.code] = (byCode[anomaly.code] ?? 0) + 1;
   return { ...result, ...(trimmed.length ? { detailsTruncated: { fields: trimmed, byCode,
-    hint: '明细未完整列出；先按已返回的路径修正后再次检查。宿主最终 check.json 保留完整报告。' } } : {}) };
+    hint: '明细未完整列出；修改前用 feedback.reportId 调用 outcome_feedback，按 nextOffset 读完同一检查。宿主最终 check.json 保留完整报告。' } } : {}) };
 }
 
 function summarizedRevision(revision: RevisionDiff, maxChars = REVISION_MAX_CHARS) {

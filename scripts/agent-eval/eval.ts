@@ -50,6 +50,7 @@ export interface RoundSpec {
 export type Launcher = (spec: RoundSpec) => Promise<void>;
 
 export interface RuntimeOptions {
+  readonly contextPolicy?: 'full'|'on-demand';
   readonly claude?: { readonly command: string; readonly args?: readonly string[] };
   readonly model?: string;
   readonly smallModel?: string;
@@ -73,6 +74,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('timeout-ms', runtime.roundTimeoutMs), ...flag('effort', runtime.effort),
       ...flag('stagnation-threshold', runtime.stagnationThreshold),
+      ...flag('context-policy',runtime.contextPolicy),
       ...flag('claude', runtime.claude?.command), ...(runtime.claude?.args ? ['--claude-args', JSON.stringify(runtime.claude.args)] : []),
     ];
     const result = await execute(process.execPath, args);
