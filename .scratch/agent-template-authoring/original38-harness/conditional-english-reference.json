@@ -7,7 +7,8 @@
   "sourceRegistration": {
     "commit": "a187ccb",
     "file": "C:/Users/Administrator/.codex/worktrees/harness-21/render-weave/docs/agent-eval/trusted-feedback-acceptance/registration.json",
-    "sha256": "79ded677f2df2c3d00696928d9d48a3dd8ce576fb9957846287e7c892b17b7ef"
+    "sha256": "79ded677f2df2c3d00696928d9d48a3dd8ce576fb9957846287e7c892b17b7ef",
+    "preparationCopy": "F:/GenCode/render-weave/out/harness21-trusted-feedback/registration.preparation.json"
   },
   "candidateId": null,
   "bindingId": null,
