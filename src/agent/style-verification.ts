@@ -13,6 +13,8 @@ export interface ApprovedRegion {
   /** 不指定框类型时不比较几何；字号只接受显式核准值。 */
   readonly boxKind?: 'layout' | 'ink';
   readonly expectedFontSizeMm?: number; readonly expectedText?: string; readonly expectedColor?: string;
+  /** 操作者核准的图片资源原始内容摘要，不从候选或资源名称生成预期值。 */
+  readonly expectedImageSha256?: string;
   readonly toleranceRatio?: { readonly min?: number; readonly max?: number };
   readonly positionToleranceMm?: number;
   /** 同一独立样式的重复项只比尺寸，不把每个实例拉到代表项位置。 */
@@ -28,7 +30,7 @@ export interface ReferenceBaseline {
   readonly approvedRegions: readonly ApprovedRegion[];
 }
 export interface StyleAnomaly {
-  readonly kind: 'fontSizeTooSmall' | 'fontSizeTooLarge' | 'missingRegion' | 'sizeDeviation' | 'positionDeviation' | 'textMismatch' | 'colorMismatch';
+  readonly kind: 'fontSizeTooSmall' | 'fontSizeTooLarge' | 'missingRegion' | 'sizeDeviation' | 'positionDeviation' | 'textMismatch' | 'colorMismatch' | 'contentInvisible' | 'imageContentMismatch';
   readonly path: string; readonly regionId: string; readonly elementRole?: string;
   readonly actualMm?: number; readonly expectedMm?: number; readonly ratio?: number; readonly message: string;
 }
@@ -41,11 +43,13 @@ export interface RegionMeasurement {
     readonly fontSizeMm?: number; readonly fontSizesMm?: readonly number[]; readonly text?: string; readonly colors?: readonly string[];
     readonly box?: ReferenceBox; readonly deltaMm?: { readonly x: number; readonly y: number };
     readonly sizeRatio?: { readonly width: number; readonly height: number };
+    readonly visibility?: RenderEvidence['nodes'][number]['visibility'];
+    readonly imageContent?: { readonly status: 'matches' | 'mismatch' | 'notChecked'; readonly sha256?: string };
     readonly unknown: readonly string[];
   }[];
 }
 export interface StyleVerificationRecord {
-  readonly format: 'renderweave-style-verification/2';
+  readonly format: 'renderweave-style-verification/3';
   readonly candidatesHash: string; readonly requestHash: string; readonly baselineHash: string; readonly valid: boolean;
   readonly status: 'notChecked' | 'needsWork' | 'needsReview'; readonly reason?: string;
   readonly physicalScale: { readonly pxPerMmh: number; readonly pxPerMmv: number };
@@ -83,6 +87,7 @@ export function validateReferenceBaseline(value: unknown): value is ReferenceBas
     if (r['state'] !== undefined && !['normal', 'current', 'passed', 'terminal', 'longestText'].includes(String(r['state']))) return false;
     if (r['repeat'] !== undefined && typeof r['repeat'] !== 'boolean') return false;
     if (r['expectedColor'] !== undefined && (typeof r['expectedColor'] !== 'string' || !/^#[a-f\d]{6}([a-f\d]{2})?$/i.test(r['expectedColor']))) return false;
+    if (r['expectedImageSha256'] !== undefined && (typeof r['expectedImageSha256'] !== 'string' || !/^[a-f\d]{64}$/.test(r['expectedImageSha256']))) return false;
     if (r['expectedFontSizeMm'] !== undefined && !(typeof r['expectedFontSizeMm'] === 'number' && Number.isFinite(r['expectedFontSizeMm']) && r['expectedFontSizeMm'] > 0)) return false;
     if (r['positionToleranceMm'] !== undefined && !(typeof r['positionToleranceMm'] === 'number' && Number.isFinite(r['positionToleranceMm']) && r['positionToleranceMm'] >= 0)) return false;
     const tolerance = r['toleranceRatio'];
@@ -96,6 +101,7 @@ export function verifyElementStyles(options: {
   readonly layout: LayoutSummary; readonly baseline?: ReferenceBaseline;
   readonly candidatesHash: string; readonly requestHash: string;
   readonly parameters?: Record<string, unknown>; readonly evidence?: RenderEvidence;
+  readonly resourceHashes?: Readonly<Record<string, string>>;
 }): StyleVerificationRecord {
   const { layout, baseline, candidatesHash, requestHash, evidence } = options;
   const b = baseline?.boardRegion ?? { x: 0, y: 0, width: baseline?.sampleWidthPx ?? layout.output.widthPx, height: baseline?.sampleHeightPx ?? layout.output.heightPx };
@@ -114,6 +120,14 @@ export function verifyElementStyles(options: {
       const trace = evidence?.nodes.find((n) => n.path === node.path);
       const unknown: string[] = [];
       const add = (kind: StyleAnomaly['kind'], message: string, values = {}) => anomalies.push({ kind, regionId: region.id, path: node.path, message, ...values });
+      if (trace?.visibility.status === 'invisible') add('contentInvisible', `${region.name}：实际绘制内容完全不可见（${trace.visibility.reasons.join('、')}）`);
+      const imageHash = node.image ? options.resourceHashes?.[node.image.source.replace(/^res:/, '')] : undefined;
+      const imageContent: RegionMeasurement['instances'][number]['imageContent'] = node.image || region.expectedImageSha256 ? {
+        status: !region.expectedImageSha256 || !imageHash ? 'notChecked' : region.expectedImageSha256 === imageHash ? 'matches' : 'mismatch',
+        ...(imageHash ? {sha256: imageHash} : {}),
+      } : undefined;
+      if (imageContent?.status === 'mismatch') add('imageContentMismatch', `${region.name}：实际图片资源内容与核准摘要不同`);
+      if (imageContent?.status === 'notChecked') unknown.push('图片内容缺少核准事实或实际资源证据');
       const ratio = (actual: number, expected: number, kind: StyleAnomaly['kind']) => {
         const r = actual / expected;
         if (r < (region.toleranceRatio?.min ?? 0.8) || r > (region.toleranceRatio?.max ?? 1.2)) add(kind, `${region.name}：实际 ${actual.toFixed(3)} mm，参考 ${expected.toFixed(3)} mm，比值 ${r.toFixed(3)}`, { actualMm: actual, expectedMm: expected, ratio: r });
@@ -132,26 +146,26 @@ export function verifyElementStyles(options: {
       }
       const actual = region.boxKind === 'layout' ? node : region.boxKind === 'ink' ? trace?.inkBounds : undefined;
       if (region.boxKind && (!actual || trace?.transformed)) unknown.push('旋转/裁切或墨迹测量不可用');
-      unknown.push('最终像素遮挡与对比度未核查');
-      if (!region.boxKind && region.expectedFontSizeMm === undefined && region.expectedText === undefined && !region.expectedColor) unknown.push('没有同口径的核准测量');
+      unknown.push('部分遮挡、复杂变换、低对比与感知可读性未核查');
+      if (!region.boxKind && region.expectedFontSizeMm === undefined && region.expectedText === undefined && !region.expectedColor && !region.expectedImageSha256) unknown.push('没有同口径的核准测量');
       const measuredBox = actual && !trace?.transformed ? { x: actual.x, y: actual.y, width: actual.width, height: actual.height } : undefined;
       if (measuredBox) {
         ratio(measuredBox.width, ref.width, 'sizeDeviation'); ratio(measuredBox.height, ref.height, 'sizeDeviation');
         if (!region.repeat && (Math.abs(measuredBox.x - ref.x) > (region.positionToleranceMm ?? 1) || Math.abs(measuredBox.y - ref.y) > (region.positionToleranceMm ?? 1))) add('positionDeviation', `${region.name}：位置偏移 Δx=${(measuredBox.x - ref.x).toFixed(3)}、Δy=${(measuredBox.y - ref.y).toFixed(3)} mm`);
       }
-      return { path: node.path, ...(trace?.source ? { sourceLocation: trace.source } : {}), ...(node.text ? { ...(fontSizes.length === 1 ? { fontSizeMm: fontSizes[0]! } : {}), fontSizesMm: fontSizes, text: node.text.content, colors } : {}),
+      return { path: node.path, ...(imageContent ? {imageContent} : {}), ...(trace?.visibility ? { visibility: trace.visibility } : {}), ...(trace?.source ? { sourceLocation: trace.source } : {}), ...(node.text ? { ...(fontSizes.length === 1 ? { fontSizeMm: fontSizes[0]! } : {}), fontSizesMm: fontSizes, text: node.text.content, colors } : {}),
         ...(measuredBox ? { box: measuredBox, deltaMm: { x: measuredBox.x - ref.x, y: measuredBox.y - ref.y }, sizeRatio: { width: measuredBox.width / ref.width, height: measuredBox.height / ref.height } } : {}), unknown };
     });
     regions.push({ id: region.id, name: region.name, ...(region.state ? { state: region.state } : {}), status: !selected.length ? 'missing' : instances.some((i) => i.unknown.length) ? 'unknown' : 'measured', referenceBoxMm: ref, instances });
   }
   const unknown = regions.filter((r) => r.status === 'unknown' || r.status === 'ambiguous').length;
-  return { format: 'renderweave-style-verification/2', candidatesHash, requestHash, baselineHash: baseline ? digest(baseline) : '', valid: true,
+  return { format: 'renderweave-style-verification/3', candidatesHash, requestHash, baselineHash: baseline ? digest(baseline) : '', valid: true,
     status: !baseline?.approvedRegions.length || misaligned ? 'notChecked' : anomalies.length ? 'needsWork' : 'needsReview',
     ...(misaligned ? { reason: 'alignmentUnknown' } : !baseline?.approvedRegions.length ? { reason: 'referenceUnavailable' } : {}),
     physicalScale: { pxPerMmh: sx, pxPerMmv: sy }, coverage: { approvedRegionsTotal: baseline?.approvedRegions.length ?? 0,
       approvedRegionsMatched: regions.filter((r) => r.instances.length).length, repeatedInstancesScanned: regions.reduce((n, r) => n + r.instances.length, 0),
       statesCovered: [...new Set(regions.filter((r) => r.status === 'measured' && r.state && !anomalies.some((a) => a.regionId === r.id)).map((r) => r.state!))],
-      statesMeasured: [...new Set(regions.filter((r) => r.state && r.instances.length && r.instances.every((i) => i.unknown.every((u) => u === '最终像素遮挡与对比度未核查'))).map((r) => r.state!))],
+      statesMeasured: [...new Set(regions.filter((r) => r.state && r.instances.length && r.instances.every((i) => i.unknown.every((u) => u === '部分遮挡、复杂变换、低对比与感知可读性未核查'))).map((r) => r.state!))],
       unknownRegions: unknown, complete: baseline?.complete === true },
     regions, anomalies, passed: !!baseline?.approvedRegions.length && !misaligned && !unknown && !anomalies.length && regions.every((r) => r.status === 'measured') };
 }

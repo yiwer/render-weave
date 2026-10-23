@@ -113,7 +113,7 @@ export interface FragmentSummary {
 export type Radii = readonly [number, number, number, number];
 
 /** 绘制指令：坐标与尺寸都是毫米，相对画板左上角；按顺序执行，后画的在上面（M72）。 */
-export type DrawOp =
+export type DrawOp = (
   | {
       readonly op: 'barcode';
       readonly drawn: Box;
@@ -212,7 +212,7 @@ export type DrawOp =
       readonly glyphs: readonly number[];
       /** 每个字形的基线起点，按 x、y 交替排列，毫米，相对画板。 */
       readonly positions: readonly number[];
-    };
+    }) & { readonly elementPath?: string };
 
 export interface LayoutResult {
   readonly summary: LayoutSummary;

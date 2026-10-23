@@ -133,7 +133,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.11.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.12.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.12.0 为 `compare_reference` 和 `check_outcome` 的视觉结果增加 `contentInvisible`、`imageContentMismatch`，每个实例可返回 `visibility` 与 `imageContent`。基准新增操作者核准的 `expectedImageSha256`；实际绘制的透明、完全裁掉和有限实心矩形遮挡证据与宿主终检一致，图片按实际资源字节核对。未知不计通过，合同不承诺整体可读性或全样式验收；完整边界见[视觉反馈](agent-visual-feedback.md)。分页和总预算不变。
   - 0.11.0 为每次 `check_outcome` 增加 `contentIdentity` 摘要（`format`、`id`、`engine`、`criteria`）。完整身份随宿主检查保存，含候选集合、依赖文档、请求、可信参考/内容事实和实际读取资源；不含模型配置。`agent run` 在启动执行器前固定资源，本轮工具与终检读取同一份私有副本；审核/应用规则见[内容身份与重新核准](agent-tasks.md#内容身份与重新核准)。工具仍只读。
   - 0.10.1 为 `compare_reference` 增加 `regionOffset` 和可分页区域目录，摘要截断后仍可发现并点查全部区域；最终检查的问题、内容明细和修改差异共享预算。
   - 0.10.0 增加 `compare_reference`、受保护的参考输入、`assessment.visual`、实际资源/构建来源；提取核查改用本次可信事实，总分为 null，未知不计通过。接入与边界见[视觉反馈](agent-visual-feedback.md)；
