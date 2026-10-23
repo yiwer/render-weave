@@ -1,0 +1,119 @@
+/** 候选冻结只从公开 CLI 观察文件身份与实际可执行产物。 */
+import {spawn} from 'node:child_process';
+import {mkdtemp,readFile,rm,writeFile,rename,symlink} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {afterAll,beforeAll,expect,it} from 'vitest';
+import {repoRoot} from './support/fixtures.js';
+
+let root:string;
+beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-candidate-freeze-'));});
+afterAll(async()=>{await rm(root,{recursive:true,force:true,maxRetries:10,retryDelay:100});});
+function execute(args:string[],cwd=repoRoot){
+  return new Promise<{code:number|null;stdout:string;stderr:string}>(done=>{
+    const child=spawn(process.execPath,args,{cwd,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,RW_FREEZE_KEY:'offline-fixture-key'}});
+    let stdout='',stderr='';child.stdout.on('data',value=>stdout+=value);child.stderr.on('data',value=>stderr+=value);
+    child.on('close',code=>done({code,stdout,stderr}));
+  });
+}
+const freeze=(args:string[])=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args]);
+it('候选内容目录不能换成指向工作目录的链接，即使当前字节相同也拒绝',async()=>{
+  const candidate=join(root,'linked-candidate');
+  expect((await freeze(['--out',candidate])).code).toBe(0);
+  await rename(join(candidate,'content/agent'),join(candidate,'content/agent-original'));
+  await symlink(join(repoRoot,'agent'),join(candidate,'content/agent'),process.platform==='win32'?'junction':'dir');
+  const result=await freeze(['--verify',candidate]);
+  expect(result.code).toBe(2);expect(result.stderr).toContain('链接');
+});
+it('冻结实际构建、资料、合同和依赖字节，包内 CLI 可独立加载且不能覆盖',async()=>{
+  const out=join(root,'candidate');
+  const result=await freeze(['--out',out]);
+  expect(result.code,result.stderr).toBe(0);
+  const manifest=JSON.parse(await readFile(join(out,'candidate.json'),'utf8'));
+  expect(manifest).toMatchObject({format:'renderweave-candidate/1',id:expect.stringMatching(/^sha256:/),identity:{mcpContract:'0.17.0',defaults:{contextPolicy:'full',stagnationThreshold:2},providerRevision:null}});
+  for(const path of ['dist/bin.js','agent/reference/outcome.md','node_modules/canvaskit-wasm/bin/full/canvaskit.wasm']){
+    expect(await readFile(join(out,'content',path))).toEqual(await readFile(join(repoRoot,path)));
+    expect(manifest.identity.files[path]).toMatch(/^sha256:/);
+  }
+  const help=await execute([join(out,'content/dist/bin.js'),'resources-init','--resources',join(root,'new-resources')],join(out,'content'));
+  expect(help.code,help.stderr).toBe(0);
+  expect(help.stdout).not.toContain('ERR_MODULE_NOT_FOUND');
+  const again=await freeze(['--out',out]);
+  expect(again.code).not.toBe(0);
+  expect(JSON.parse(await readFile(join(out,'candidate.json'),'utf8')).id).toBe(manifest.id);
+});
+it('工作目录重新构建或修改资料不会改变已冻结包，当前内容不匹配时列出差异',async()=>{
+  const working=join(root,'working-copy'),out=join(root,'unchanging-package');
+  expect((await freeze(['--out',working])).code).toBe(0);
+  const cwd=join(working,'content');
+  const command=(args:string[])=>execute([join(cwd,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/freeze.ts',...args],cwd);
+  const created=await command(['--out',out]);
+  expect(created.code,created.stderr).toBe(0);
+  const source='agent/reference/outcome.md',build='dist/bin.js';
+  const original=await readFile(join(out,'content',source));
+  await writeFile(join(cwd,source),'已修改的工作资料');
+  await writeFile(join(cwd,build),(await readFile(join(cwd,build),'utf8'))+'\n// 本地重新构建\n');
+  expect(await readFile(join(out,'content',source))).toEqual(original);
+  const saved=await command(['--verify',out]);
+  expect(saved.code,saved.stderr).toBe(0);
+  const changed=await command(['--verify',out,'--current']);
+  expect(changed.code).toBe(2);
+  expect(changed.stderr).toContain(source);
+  expect(changed.stderr).toContain(build);
+},120000);
+it('同一共同候选分别绑定不同计划，原始评分配置另存而不锁死校准输入',async()=>{
+  const candidate=join(root,'shared-candidate'),executor=join(root,'version-only.mjs');
+  await writeFile(executor,"if(process.argv.includes('--version'))console.log('binding-only/1');else throw new Error('不得调用模型');");
+  expect((await freeze(['--out',candidate])).code).toBe(0);
+  const original=JSON.parse(await readFile(join(repoRoot,'scripts/agent-eval/config.json'),'utf8'));
+  const bindings=[];
+  for(const id of ['m402-definition','m402-template']){
+    const configFile=join(root,`${id}.json`),out=join(root,`${id}-binding`);
+    const config={...original,scenarios:original.scenarios.filter((scenario:{id:string})=>scenario.id===id)};
+    const bytes=JSON.stringify(config);await writeFile(configFile,bytes);
+    const result=await freeze(['--bind',candidate,'--out',out,'--config',configFile,'--claude',process.execPath,'--claude-args',JSON.stringify([executor])]);
+    expect(result.code,result.stderr).toBe(0);
+    const binding=JSON.parse(await readFile(join(out,'binding.json'),'utf8'));bindings.push(binding);
+    expect(await readFile(join(out,'config.json'),'utf8')).toBe(bytes);
+    config.scenarios[0].pass.expertFields=0;await writeFile(configFile,JSON.stringify(config));
+    expect(await readFile(join(out,'config.json'),'utf8')).toBe(bytes);
+  }
+  expect(bindings[0].candidate.id).toBe(bindings[1].candidate.id);
+  expect(bindings[0].id).not.toBe(bindings[1].id);
+  expect(bindings[0].identity.inputs['m402-definition/sample']).toMatch(/^sha256:/);
+  expect(bindings[1].identity.inputs['m402-template/sample']).toMatch(/^sha256:/);
+  expect(bindings[1].identity.inputs['m402-definition/sample']).toBeUndefined();
+},120000);
+it('计划绑定同一候选后实际派发，改变计划输入在模型启动前拒绝且不改旧记录',async()=>{
+  const candidate=join(root,'dispatch-candidate'),binding=join(root,'binding'),configFile=join(root,'config.json');
+  const ledger=join(root,'dispatches.txt'),executor=join(root,'executor.mjs');
+  const fake=join(repoRoot,'test/support/fake-claude.mjs');
+  await writeFile(executor,`import {appendFile} from 'node:fs/promises';import {pathToFileURL} from 'node:url';
+if(process.argv.includes('--version'))console.log('candidate-test-executor/1');else{await appendFile(${JSON.stringify(ledger)},'dispatch\\n');process.argv.splice(1,1,${JSON.stringify(fake)},'none');await import(pathToFileURL(${JSON.stringify(fake)}).href);}`);
+  const config=JSON.parse(await readFile(join(repoRoot,'scripts/agent-eval/config.json'),'utf8'));
+  await writeFile(configFile,JSON.stringify(config));
+  expect((await freeze(['--out',candidate])).code).toBe(0);
+  const args=['--config',configFile,'--scenarios','m402-definition','--repeat','2','--jobs','1','--claude',process.execPath,'--claude-args',JSON.stringify([executor])];
+  const bound=await freeze(['--bind',candidate,'--out',binding,...args]);
+  expect(bound.code,bound.stderr).toBe(0);
+  const saved=await readFile(join(binding,'binding.json'),'utf8');
+  expect(JSON.parse(saved)).toMatchObject({format:'renderweave-candidate-binding/1',candidate:{id:expect.stringMatching(/^sha256:/)},identity:{runtime:{providerRevision:null},budgets:{stagnation:2}},units:[{scenario:'m402-definition',repetition:1,stage:'definition'},{scenario:'m402-definition',repetition:2,stage:'definition'}]});
+  const font=JSON.parse(saved).resourceEvidence?.['font-hei-regular'];
+  expect(font).toMatchObject({file:expect.any(String),sha256:expect.stringMatching(/^sha256:/)});
+  expect(await readFile(join(binding,font.file))).toEqual(await readFile(join(repoRoot,'fixtures/resources/fonts/SourceHanSansCN-Regular.otf')));
+  const run=(label:string)=>execute([join(repoRoot,'node_modules/tsx/dist/cli.mjs'),'scripts/agent-eval/run.ts',...args,'--candidate-binding',binding,'--repetitions','1-1','--label',label,'--out',join(root,label),'--reports',join(root,'reports'),'--key-env','RW_FREEZE_KEY']);
+  const first=await run('matched');
+  expect(first.code,first.stderr).toBe(1);
+  expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+  expect(JSON.parse(await readFile(join(root,'matched/eval.json'),'utf8')).candidateBinding).toMatchObject({id:JSON.parse(saved).id,candidateId:JSON.parse(saved).candidate.id});
+  const originalConfig=await readFile(configFile);config.scenarios[0].pass.expertFields=1;await writeFile(configFile,JSON.stringify(config));
+  const mismatch=await run('mismatch');
+  expect(mismatch.code).toBe(2);expect(mismatch.stderr).toContain('config');
+  expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+  expect(await readFile(join(binding,'binding.json'),'utf8')).toBe(saved);
+  await writeFile(configFile,originalConfig);
+  await writeFile(join(binding,font.file),'已损坏的封存字体');
+  const corrupted=await run('corrupted-resource');
+  expect(corrupted.code).toBe(2);expect(corrupted.stderr).toContain('绑定资源');
+  expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
+},120000);
