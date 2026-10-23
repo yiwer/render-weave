@@ -121,4 +121,13 @@ Standards自查：没有新增依赖、HTTP服务或DSL语法，测试从真实C
 
 已读implement-spec、TDD、writing-for-agents及编码约定，沿已核准公开Agent/CLI/MCP接缝使用现有资料/上下文/身份回归，不新增逐字匹配句子或按新措辞操纵假执行器的镜像测试。历史真实失败及公开诊断是红证据；后续机制回归只验证新资料的传递、身份与已有合同，不证明真实模型改善。候选4已因实际额度停止派发，当前不调用或轮询模型、不新冻候选、不改原38状态。CONTEXT由root统一收口。
 
-验证进行中，结果和最终提交将在本节补齐。
+实施提交 `20df097`，基线 `2062511`；独立措辞审查无阻塞。验证结束后以 `ef23e99` 合入最新集成的候选4停止与21部分结果记录；共同执行内容仍只有两份Agent资料改变，未吸收新产品行为。MCP合同0.17.0、默认full、预算、评估配置和评分器均未改。
+
+- Windows Node24.12.0、Linux Node22.23.3：`npm run build`、`npm run typecheck`通过，`git diff --check`通过。
+- `node node_modules/vitest/vitest.mjs run test/agent-context-policy.test.ts test/agent-dataset-template.test.ts --maxWorkers=1`：Linux两文件19项通过，170.34秒；Windows首轮18项通过、1项失败，340.06秒。失败是原有“任务顺序与输入”用例在60秒上限超时，未报告业务断言失败。
+- Windows按原命令和原60秒上限仅选取 `-t '任务顺序与输入'` 复验，仍超时（61.12秒总时长）。随后在同一隔离树把两份资料暂换为保存的改前字节，使用同一公开用例及原上限，仍超时（61.02秒）；finally恢复实施字节并逐SHA核对。三份原日志均保留，不覆盖首轮、不调阈值，不把改前同失败改写为通过。已验证这不是新文案独有的失败；具体耗时根因未知。
+- `test/agent-eval-identity.test.ts -t '同一实验固定派发条件|实验来源保留可定位|续跑逐项拒绝实际构建'`：Windows/Linux各4项通过，40.97/30.97秒；`test/agent.test.ts -t '轮次目录组装三层资料'`：各1项通过，7.86/3.62秒。命令沿用 `node node_modules/vitest/vitest.mjs run` 和 `--maxWorkers=1`；未选取项不计通过。
+- 本次所选24项中，Linux24项通过；Windows23项通过、1项限时未通过。身份/资料检查证明新字节可传递并进入来源身份，不能证明模型会遵循新规则。没有新增或修改测试、假执行器、私有入口或评分逻辑。
+- 候选4全部3322个共同文件仍为原字节；实施树仅 `agent/guide.md` 与 `agent/tasks/template-design.md` 不同，其余3320个完全相同。四份字体为实文件。Linux在禁外网的本地镜像独立目录复制依赖、固定源码和字体重建，未使用共享依赖联接。首次无提权tar因无法进入C工作树失败，其空原件与原因也保留；实际测试使用另存的 `source-for-tests.tar`。
+
+完整证据在 `F:/GenCode/render-weave/out/harness-boundary-input-guide-fix/`，`validation.json` SHA256为 `6ca65d3601012f18eb14b9b3cb712b17eca744b0a259148cd178d27601b23deb`，记录43份原件摘要、双平台结果及旧资料对照；具体命令见同目录Windows/Linux脚本。资料实现已完成，但Windows限时检查未过，本票暂保持ready-for-agent交独立复核与基线问题归属处理，不冒称本次完整验收全绿。真实模型调用0；不冻结新候选、不改变候选4失败、不关闭原38或21，额度与真实模型改善仍由其责任票处理。
