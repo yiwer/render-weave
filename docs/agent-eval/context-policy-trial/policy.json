@@ -1,10 +1,28 @@
 {
   "format": "renderweave-context-trial-policy/1",
   "id": "2026-10-23-context-candidate",
-  "status": "awaiting-candidate",
-  "candidate": null,
-  "pair": null,
-  "registration": null,
+  "status": "frozen",
+  "candidate": {
+    "sourceCommit": "06d051eb13ca87cdeb225d55c32424f6e92b25eb",
+    "commonIdentitySha256": "sha256:4e33dfebb6efd778f87d5f1358d300676c389cb7a4514fd2dfb72a568c2702f6",
+    "mcpContract": "0.17.0"
+  },
+  "pair": {
+    "file": "frozen-pair.json",
+    "originalPath": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\registration\\pair.json",
+    "sha256": "sha256:751f4106b6e1a9d78ed46716677c7cc0a912070edd1b01f1610ec86e422a72da"
+  },
+  "registration": {
+    "registeredAt": "2026-10-23T15:04:00.798Z",
+    "observationsAtRegistration": 0,
+    "platform": "win32",
+    "osRelease": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.12.0",
+    "keyEnvironment": "OPEN_CODE_API_KEY",
+    "scope": "synthetic-calibration-only",
+    "sourceReview": "native executable identity; separately inspect init.model and assistant.message.model; provider revision remains unknown"
+  },
   "source": "ticket14-predeclared-synthetic-calibration",
   "sourceReview": "operator-verifies-native-cli-and-upstream-observations",
   "holdoutAccess": false,
