@@ -731,7 +731,7 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
       buffer += chunk;
       for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-        try { const event = JSON.parse(line); usage.accept(event); context.onUsage(usage.read()); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+        try { const event = JSON.parse(redactor.text(line)); usage.accept(event); context.onUsage(usage.read()); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
     let executionError: string | undefined;
@@ -749,7 +749,7 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
     });
   });
   await Promise.all([new Promise((done) => log.end(done)), new Promise((done) => errors.end(done))]);
-  return result;
+  return { ...result, ...(result.error ? { error: redactor.text(result.error) } : {}) };
 }
 
 /** 抢救已写完整的候选 JSON；不跟随符号链接，不补写 Agent 自述的成果。 */

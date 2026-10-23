@@ -6,7 +6,7 @@ M321：示例图文字、数据字段、资源名称、旧轮次与模型备注�
 
 默认执行器是带 `--restricted`、显式文件工具及严格只读 MCP 配置的 Claude Code。文件工具限定本轮 `agent/`；Bash、PowerShell、REPL、网页请求及额外 MCP 不在允许集合。宿主核准事实、固定资源、检查记录、审核、提交回执位于工作目录之外。MCP 按真实路径检查，符号链接与 Windows 目录联接不能扩大读取范围；核准基准在宿主启动时固定，`check_outcome` 不接收替代基准参数。
 
-Anthropic 与 Google 上游凭据均只留在本轮宿主。执行器拿本机代理地址和随机轮次令牌；代理限定本机 Host、拒绝 Origin、验证令牌，Anthropic 只转发 Messages、计数与模型列表接口，关闭轮次即撤销。运行记录仍保存配置的上游端点，不把动态本机端口作为可复跑端点。上游端点不接受内嵌用户名、密码、查询或片段。
+Anthropic 与 Google 上游凭据均只留在本轮宿主。执行器拿本机代理地址和随机轮次令牌；代理限定本机 Host、拒绝 Origin、验证令牌，Anthropic 只转发 Messages、计数与模型列表接口，关闭轮次即撤销。运行记录仍保存配置的上游端点，不把动态本机端口作为可复跑端点。Anthropic 上游端点不接受内嵌用户名、密码、查询或片段。
 
 已知上游 key 与本轮令牌在模型响应、stdout、stderr 和错误诊断进入持久记录前脱敏为 `[REDACTED]`，支持 UTF-8、凭据跨块、JSON 转义与 URL 编码形式；用量数字和失败状态保留。未登记的任意秘密、任意编码或人为复制的外部历史文件不属于该精确脱敏保证。新输出脱敏后再封存尝试，旧尝试原件不被重写。
 
@@ -27,7 +27,7 @@ Anthropic 与 Google 上游凭据均只留在本轮宿主。执行器拿本机�
 
 ## 复跑
 
-先运行 `npm run build`。普通回归包括分块令牌输出、上游错误、硬额度停止及日志内容；原生权限测试须显式提供已安装的真实 Claude 可执行文件：
+先运行 `npm run build`。普通回归包括分块令牌输出、上游错误、硬额度停止、超时保存、失败接续、准备/启动异常及日志内容；原生权限测试须显式提供已安装的真实 Claude 可执行文件：
 
 ```powershell
 $env:RW_TRUST_CLAUDE_EXE = 'D:\nodejs\node_global\node_modules\@anthropic-ai\claude-code\bin\claude.exe'

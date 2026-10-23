@@ -5,6 +5,7 @@ import type { AgentRunOptions, AgentRunResult, RoundRecord, RoundUsage } from '.
 import type { QuotaStop } from './quota.js';
 import { AgentUsageError } from './round-files.js';
 import { stoppedResult } from './stopped-round.js';
+import { credentialRedactor } from './credential-redaction.js';
 
 export const DEFAULT_ROUND_TIMEOUT_MS = 60 * 60 * 1000;
 export const SAVE_GRACE_MS = 30 * 1000;
@@ -43,10 +44,10 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
   if (options.maxTokens !== undefined) throw new AgentUsageError('当前适配器不支持实时硬 token 限额；--max-tokens 不能执行');
   if (options.maxCostUsd !== undefined) throw new AgentUsageError('当前适配器不支持实时硬费用限额；--max-cost-usd 不能执行');
   if (options.signal?.aborted) throw new AgentUsageError('轮次开始前已取消');
-  const child = host();
+  const safe = credentialRedactor([options.key]); const child = host();
   let prepared: PreparedRound | undefined, timer: ReturnType<typeof setTimeout> | undefined, started = 0, stopping = false;
   let errors = '', knownUsage: Omit<RoundUsage, 'wallMs'> = {};
-  child.stderr!.on('data', bytes => { errors = (errors + String(bytes)).slice(-4000); });
+  child.stderr!.pipe(safe.stream()).on('data', bytes => { errors = (errors + String(bytes)).slice(-4000); });
   return new Promise<AgentRunResult>((resolve, reject) => {
     const cancel = () => { void stop({ reason: 'cancelled' }).catch(reject); };
     const close = () => { if (timer) clearTimeout(timer); options.signal?.removeEventListener('abort', cancel); };
@@ -59,7 +60,7 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
       const usage = { ...knownUsage, wallMs: Date.now() - started };
       const saver = host();
       let saved = false;
-      const incomplete = async (detail: string) => { if (saved) return; saved = true; clearTimeout(grace); await terminateOwnedTree(saver); resolve(stoppedResult(prepared!, reason, usage, 'incomplete', detail)); };
+      const incomplete = async (detail: string) => { if (saved) return; saved = true; clearTimeout(grace); await terminateOwnedTree(saver); resolve(stoppedResult(prepared!, reason, usage, 'incomplete', safe.text(detail))); };
       const grace = setTimeout(() => { void incomplete(`本地保存超过 ${SAVE_GRACE_MS} 毫秒，未完成；已有完整检查点仍保留`).catch(reject); }, Math.max(1, SAVE_GRACE_MS - (performance.now() - stopStarted)));
       saver.stderr!.resume();
       saver.on('error', error => { void incomplete(`本地保存未完成：${error.message}`).catch(reject); });
@@ -95,7 +96,7 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
       if (message.type === 'stop') void stop(message.reason).catch(reject);
       if (message.type === 'result' && !stopping) void finish(message.value).catch(reject);
       if (message.type === 'error' && !stopping) {
-        stopping = true; close(); void terminateOwnedTree(child).then(() => reject(message.usage ? new AgentUsageError(message.message) : new Error(message.message)), reject);
+        stopping = true; close(); void terminateOwnedTree(child).then(() => reject(message.usage ? new AgentUsageError(safe.text(message.message)) : new Error(safe.text(message.message))), reject);
       }
     });
     options.signal?.addEventListener('abort', cancel, { once: true });

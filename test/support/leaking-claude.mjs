@@ -20,3 +20,7 @@ if (mode === 'quota') {
   await new Promise(resolve => setTimeout(resolve, 30000));
   await writeFile('continued-after-quota', 'unexpected');
 }
+if (mode === 'timeout') {
+  process.stdout.write(JSON.stringify({ type: 'system', subtype: 'init', model: token, claude_code_version: 'test-runtime', mcp_servers: [] }) + '\n');
+  await new Promise(resolve => setTimeout(resolve, 30000));
+}

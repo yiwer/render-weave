@@ -122,3 +122,23 @@ it('失败后接续与重复尝试保留各自原件，每次令牌和上游凭�
     const bytes = await readFile(join(entry.parentPath, entry.name)); for (const credential of [...keys, ...tokens]) expect(bytes.includes(credential), entry.name).toBe(false);
   }
 }, 30000);
+it('启动失败与准备失败经过监督器返回时，诊断中的已知凭据仍脱敏', async () => {
+  const key = 'isolated-supervisor-error-key-16', brief = join(base, 'spawn-brief.md'), out = join(base, 'spawn-error');
+  await writeFile(brief, '启动诊断验证');
+  const args = ['agent', 'run', '--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png'), '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--claude', join(base, `${key}.exe`)];
+  const failed = await trustCli([...args, '--brief', brief, '--out', out], { RW_TEST_KEY: key });
+  const record = await readFile(join(out, 'round.json'), 'utf8');
+  expect(record).not.toContain(key); expect(failed.output).not.toContain(key);
+  const preparation = await trustCli([...args, '--brief', join(base, `${key}.md`), '--out', join(base, 'prepare-error')], { RW_TEST_KEY: key });
+  expect(preparation.output).not.toContain(key); expect(preparation.output).toContain('[REDACTED]');
+}, 30000);
+
+it('timeout 后保存的增量用量元数据与诊断不泄漏执行器本轮令牌', async () => {
+  const out = join(base, 'timeout'), observed = join(base, 'timeout-observed.txt'), brief = join(base, 'timeout-brief.md');
+  await writeFile(brief, '有界停止脱敏测试');
+  const executed = await trustCli(['agent', 'run', '--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png'), '--brief', brief, '--resources', resourcesDir, '--out', out, '--key-env', 'RW_TEST_KEY', '--endpoint', 'http://127.0.0.1:1', '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/leaking-claude.mjs'), observed, 'timeout']), '--timeout-ms', '1600'], { RW_TEST_KEY: 'isolated-timeout-key-16' });
+  const token = await readFile(observed, 'utf8'), record = JSON.parse(await readFile(join(out, 'round.json'), 'utf8'));
+  expect(record.run).toMatchObject({ stopped: { reason: 'timeout' }, inputTokens: 12, outputTokens: 23 });
+  for (const entry of await readdir(out, { recursive: true, withFileTypes: true })) if (entry.isFile()) expect((await readFile(join(entry.parentPath, entry.name))).includes(token), entry.name).toBe(false);
+  expect(executed.output).not.toContain(token);
+}, 30000);
