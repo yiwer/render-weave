@@ -1,5 +1,5 @@
 {
-  "format": "renderweave-agent-eval-config/1",
+  "format": "renderweave-agent-eval-config/2",
   "consecutivePasses": 2,
   "resources": "fixtures/resources",
   "scenarios": [
@@ -57,7 +57,7 @@
       "datasetBrief": "scripts/agent-eval/scenarios/366/brief-dataset.md",
       "domain": "route-sign",
       "truth": "scripts/agent-eval/scenarios/366/truth.json",
-      "pass": { "names": 57, "landmarks": 14, "facilities": 17 }
+      "pass": { "names": 57, "landmarks": 14, "facilities": 17, "orderViolations": 0, "insertions": 0, "duplicates": 0, "landmarkExtra": 0, "facilityExtra": 0 }
     }
   ]
 }

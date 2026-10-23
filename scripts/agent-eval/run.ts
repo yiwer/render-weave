@@ -2,7 +2,7 @@
  * Agent 评估命令（第三阶段票据 08）：经产品路径跑评估场景，与通过线对照，报告存档到 docs/agent-eval/reports/。
  *
  *   npm run build
- *   npx tsx scripts/agent-eval/run.ts [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
+ *   npx tsx scripts/agent-eval/run.ts [--config 配置文件] [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
  *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数] [--effort 力度]
  *   npx tsx scripts/agent-eval/run.ts --rescore <评估输出目录>     只按已有的轮次目录重新评分，不调用模型
  *   npx tsx scripts/agent-eval/run.ts --behavior-policy <政策.json> --workspace <工作区> --resources <资源> --out <新目录>
@@ -33,7 +33,7 @@ const { values } = parseArgs({
   options: {
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
-    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
+    config: { type: 'string' }, rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
   },
   strict: true,
@@ -43,7 +43,7 @@ const fail = (message: string): never => {
   process.exit(2);
 };
 if (values['behavior-policy'] !== undefined) {
-  if (['rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
+  if (['config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
   const workspace = values.workspace ?? fail('--behavior-policy 需要 --workspace');
   const resources = values.resources ?? fail('--behavior-policy 需要 --resources');
   const out = values.out ?? fail('--behavior-policy 需要 --out');
@@ -54,7 +54,7 @@ if (values['behavior-policy'] !== undefined) {
     process.exitCode = report.status === 'pass' ? 0 : report.status === 'fail' ? 1 : 3;
   } catch (error) { fail(error instanceof Error ? error.message : String(error)); }
 } else {
-const config = await readConfig();
+const config = await readConfig(values.config === undefined ? undefined : resolve(values.config)).catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
 
 interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance }
 
@@ -134,7 +134,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort'] as const)
+  const passthrough = (['config', 'scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);
