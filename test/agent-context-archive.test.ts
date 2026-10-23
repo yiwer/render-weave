@@ -13,6 +13,7 @@ const run=(...args:string[])=>promisify(execFile)(process.execPath,['--import','
 it('全部成功与失败原件按原相对路径恢复，重复资源仅存一次，清单另有摘要',async()=>{
   const source=join(root,'originals'),archive=join(root,'archive'),restored=join(root,'restored'),config=join(root,'inputs.json');
   await mkdir(join(source,'failed','logs'),{recursive:true});await mkdir(join(source,'passed','resources'),{recursive:true});
+  await mkdir(join(source,'passed','snapshot'));
   await writeFile(join(source,'failed','logs','stream.jsonl'),'failed\n');
   await writeFile(join(source,'failed','font.otf'),'same-font');
   await writeFile(join(source,'passed','resources','font.otf'),'same-font');
@@ -24,5 +25,6 @@ it('全部成功与失败原件按原相对路径恢复，重复资源仅存一�
   expect(result).toMatchObject({filesVerified:3,sourceRoots:1});
   expect(await readFile(join(restored,'trial','failed','logs','stream.jsonl'),'utf8')).toBe('failed\n');
   expect(await readFile(join(restored,'trial','passed','resources','font.otf'),'utf8')).toBe('same-font');
+  expect(await readdir(join(restored,'trial','passed','snapshot'))).toEqual([]);
   expect(await readFile(join(source,'failed','logs','stream.jsonl'),'utf8')).toBe('failed\n');
 });

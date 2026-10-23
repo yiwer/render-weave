@@ -9,7 +9,8 @@ if (!values.out || Boolean(values.pack)===Boolean(values.restore)) throw new Err
 const sha=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const out=resolve(values.out);
 type Entry={path:string;sha256:string;bytes:number};
-type Root={label:string;originalPath:string;entries:Entry[]};
+type Root={label:string;originalPath:string;entries:Entry[];directories?:string[]};
+const validPath=(path:string)=>path && !path.split('/').some(part=>!part||part==='.'||part==='..'||/[\\:]/.test(part));
 if(values.pack){
   const input=JSON.parse(await readFile(resolve(values.pack),'utf8'));
   if(input.format!=='renderweave-context-trial-archive-inputs/1' || !Array.isArray(input.roots) || !input.roots.length)throw new Error('不是票18归档输入清单');
@@ -18,12 +19,12 @@ if(values.pack){
   for(const source of input.roots){
     if(typeof source.label!=='string'|| !/^[a-zA-Z0-9_-]+$/.test(source.label)||seen.has(source.label)||typeof source.path!=='string')throw new Error('归档源标签无效或重复');
     seen.add(source.label);
-    const root:Root={label:source.label,originalPath:resolve(source.path),entries:[]};
+    const root:Root={label:source.label,originalPath:resolve(source.path),entries:[],directories:[]};
     if(out===root.originalPath || out.startsWith(root.originalPath+'\\') || out.startsWith(root.originalPath+'/'))throw new Error('归档不能放入来源目录');
     async function visit(relative:string):Promise<void>{
       for(const entry of (await readdir(join(root.originalPath,relative),{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))){
         const path=relative?relative+'/'+entry.name:entry.name;
-        if(entry.isDirectory())await visit(path);
+        if(entry.isDirectory()){root.directories!.push(path);await visit(path);}
         else if(entry.isFile()){
           const bytes=await readFile(join(root.originalPath,path)),hash=sha(bytes),blob=join(out,'blobs',hash);
           try{await writeFile(blob,bytes,{flag:'wx'});}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;}
@@ -46,8 +47,13 @@ if(values.pack){
   await mkdir(out);let count=0;
   for(const root of manifest.roots as Root[]){
     if(!/^[a-zA-Z0-9_-]+$/.test(root.label))throw new Error('归档源标签无效');
+    await mkdir(join(out,root.label));
+    for(const path of root.directories??[]){
+      if(!validPath(path))throw new Error('归档目录路径无效');
+      await mkdir(join(out,root.label,path),{recursive:true});
+    }
     for(const entry of root.entries){
-      if(!entry.path || entry.path.split('/').some(part=>!part||part==='.'||part==='..'||/[\\:]/.test(part)) || !/^[a-f0-9]{64}$/.test(entry.sha256))throw new Error('归档文件路径或摘要无效');
+      if(!validPath(entry.path) || !/^[a-f0-9]{64}$/.test(entry.sha256))throw new Error('归档文件路径或摘要无效');
       const data=await readFile(join(archive,'blobs',entry.sha256));
       if(data.length!==entry.bytes || sha(data)!==entry.sha256)throw new Error(`原件摘要不符：${root.label}/${entry.path}`);
       const file=join(out,root.label,entry.path);await mkdir(dirname(file),{recursive:true});await writeFile(file,data,{flag:'wx'});
