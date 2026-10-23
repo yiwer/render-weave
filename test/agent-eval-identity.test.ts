@@ -127,6 +127,34 @@ await import(pathToFileURL(${JSON.stringify(fake)}).href);
     '--repeat', '2', '--jobs', '1', '--key-env', 'RW_IDENTITY_TEST_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([executor])];
   return {root, out, reports, configFile, ledger, executor, args};
 }
+it('停滞阈值进入实际派发与冻结身份，续跑改变阈值在启动前拒绝', async () => {
+  const e = await experiment('stagnation-budget');
+  const args = [...e.args, '--repetitions', '1-1', '--stagnation-threshold', '3'];
+  const first = await cli(args);
+  expect(first.code, first.stderr).toBe(1);
+  const manifest = await readFile(join(e.out, 'eval.json'), 'utf8');
+  expect(JSON.parse(manifest).identity.budgets.stagnation).toBe(3);
+  expect((await read(join(e.out, 'run-1/m402-definition/definition/round.json'))).runtime.stagnationThreshold).toBe(3);
+  const changed = [...args]; changed[changed.indexOf('--stagnation-threshold') + 1] = '1';
+  expect((await cli(changed)).stderr).toContain('budgets.stagnation');
+  expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\n');
+  expect(await readFile(join(e.out, 'eval.json'), 'utf8')).toBe(manifest);
+  const printed = first.stdout.split('\n').find(line => line.startsWith('npx tsx scripts/agent-eval/run.ts '))!;
+  expect(printed).toContain('--stagnation-threshold 3');
+  // 该受控夹具的参数只使用普通词和单引号字符串，按打印值原样执行，不重建选项。
+  const words = [...printed.matchAll(/'((?:[^']|'')*)'|(\S+)/g)].map(match => match[1] === undefined ? match[2]! : match[1].replaceAll("''", "'"));
+  const resumed = await cli(words.slice(3));
+  expect(resumed.code, resumed.stderr).toBe(1);
+  expect((await read(join(e.out, 'run-2/m402-definition/definition/round.json'))).runtime.stagnationThreshold).toBe(3);
+  expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\ndispatch\n');
+  expect(await readFile(join(e.out, 'eval.json'), 'utf8')).toBe(manifest);
+});
+it('离线业务核查拒绝混用停滞运行参数，不静默忽略阈值', async () => {
+  const result = await cli(['--behavior-policy', join(base,'policy.json'), '--workspace', base, '--resources', resourcesDir,
+    '--out', join(base,'offline'), '--stagnation-threshold','3']);
+  expect(result.code).toBe(2);
+  expect(result.stderr).toContain('独立离线模式');
+});
 
 it('每次派发前核验冻结输入，运行中条件变化停止后续派发且不产出混合条件报告', async () => {
   const e = await experiment('mid-run-change', "await appendFile(configFile, ' ');");

@@ -38,6 +38,8 @@ export async function feedbackPlan(config: EvalConfig, scenarios: readonly Scena
         contextPolicy:identity.contextPolicy?.name,
         ...identity.runtime, effort: identity.runtime.effort ?? undefined,
         claude: {command: identity.executor.command, args: identity.executor.args}, ...(budgets.length === 1 ? {maxTurns: budgets[0]} : {}),
+        ...(identity.budgets.roundTimeoutMs !== null ? {roundTimeoutMs:identity.budgets.roundTimeoutMs} : {}),
+        ...(identity.budgets.stagnation != null ? {stagnationThreshold:identity.budgets.stagnation} : {}),
       }, identity.plan);
       const changed = identityDifferences(identity, current);
       if (changed.length) throw new Error(`来源条件不相容：${changed.join('、')}`);

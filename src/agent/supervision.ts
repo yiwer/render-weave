@@ -5,11 +5,12 @@ import type { AgentRunOptions, AgentRunResult, RoundRecord, RoundUsage } from '.
 import type { QuotaStop } from './quota.js';
 import { AgentUsageError } from './round-files.js';
 import { stoppedResult } from './stopped-round.js';
+import type { StagnationStop } from './stagnation.js';
 import { credentialRedactor } from './credential-redaction.js';
 
 export const DEFAULT_ROUND_TIMEOUT_MS = 60 * 60 * 1000;
 export const SAVE_GRACE_MS = 30 * 1000;
-export type RoundStop = QuotaStop | { readonly reason: 'timeout'; readonly roundTimeoutMs: number } | { readonly reason: 'cancelled' };
+export type RoundStop = QuotaStop | StagnationStop | { readonly reason: 'timeout'; readonly roundTimeoutMs: number } | { readonly reason: 'cancelled' };
 export interface PreparedRound { readonly roundDir: string; readonly record: Pick<RoundRecord, 'task' | 'round' | 'startedAt' | 'inputs' | 'runtime'> }
 export interface HostControl { ready(value: PreparedRound): Promise<void>; stop(reason: RoundStop): void; usage(value: Omit<RoundUsage, 'wallMs'>): void }
 
@@ -40,6 +41,8 @@ function host() {
 export async function superviseRound(options: AgentRunOptions): Promise<AgentRunResult> {
   const timeout = options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS;
   if (!Number.isFinite(timeout) || timeout <= 0) throw new AgentUsageError('--timeout-ms 必须是有限正值');
+  if (options.stagnationThreshold !== undefined && (!Number.isSafeInteger(options.stagnationThreshold) || options.stagnationThreshold < 1))
+    throw new AgentUsageError('--stagnation-threshold 必须是正整数');
   if (options.maxTurns !== undefined && (!Number.isSafeInteger(options.maxTurns) || options.maxTurns < 1)) throw new AgentUsageError('--max-turns 必须是正整数');
   if (options.maxTokens !== undefined) throw new AgentUsageError('当前适配器不支持实时硬 token 限额；--max-tokens 不能执行');
   if (options.maxCostUsd !== undefined) throw new AgentUsageError('当前适配器不支持实时硬费用限额；--max-cost-usd 不能执行');

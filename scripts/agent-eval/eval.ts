@@ -58,6 +58,7 @@ export interface RuntimeOptions {
   readonly keyEnv?: string;
   readonly maxTurns?: number;
   readonly roundTimeoutMs?: number;
+  readonly stagnationThreshold?: number;
   /** 推理力度，透传给 agent run 的 --effort（票据 23）。 */
   readonly effort?: string;
 }
@@ -72,6 +73,7 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
       ...flag('definition', spec.definition), ...flag('dataset', spec.dataset), ...flag('request', spec.request), ...flag('requirement', spec.requirement), ...flag('reference', spec.reference), ...flag('content-baseline', spec.contentBaseline)]),
       ...flag('model', runtime.model), ...flag('small-model', runtime.smallModel), ...flag('endpoint', runtime.endpoint),
       ...flag('key-env', runtime.keyEnv), ...flag('max-turns', runtime.maxTurns), ...flag('timeout-ms', runtime.roundTimeoutMs), ...flag('effort', runtime.effort),
+      ...flag('stagnation-threshold', runtime.stagnationThreshold),
       ...flag('context-policy',runtime.contextPolicy),
       ...flag('claude', runtime.claude?.command), ...(runtime.claude?.args ? ['--claude-args', JSON.stringify(runtime.claude.args)] : []),
     ];

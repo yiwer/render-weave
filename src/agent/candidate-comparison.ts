@@ -15,7 +15,7 @@ export function compareCandidates(before:CheckpointRecord|undefined,after:Checkp
   if(!before.comparisonBasis||!after.comparisonBasis)return {...result,status:'incomparable',reasons:['缺少可核对的比较依据']};
   const changed=Object.keys(after.comparisonBasis).filter(key=>before.comparisonBasis![key as keyof ComparisonBasis]!==after.comparisonBasis![key as keyof ComparisonBasis]);
   if(changed.length)return {...result,status:'incomparable',reasons:changed.map(key=>`比较依据不同：${key}`)};
-  const old=observations(before),next=observations(after);
+  const old=approvedObservations(before),next=approvedObservations(after);
   if(!old.trusted||!next.trusted)return {...result,status:'incomparable',reasons:['没有可信的已核准测量，不能排序']};
   for(const key of new Set([...old.metrics.keys(),...next.metrics.keys()])){
     const prior=old.metrics.get(key)?.value??0,current=next.metrics.get(key)?.value??0;
@@ -30,7 +30,8 @@ export function compareCandidates(before:CheckpointRecord|undefined,after:Checkp
   return {...result,status:result.regressed.length?'regressed':result.improved.length?'improved':'unchanged',reasons:result.regressed.length?['存在逐项退步']:result.improved.length?['核准指标改善且其余已核查维度未退步']:['没有可证明的改善']};
 }
 
-function observations(record:CheckpointRecord){
+/** 共享完整检查的核准测量和未知集合，不包含候选选择或停滞策略。 */
+export function approvedObservations(record:CheckpointRecord){
   const metrics=new Map<string,{dimension:string;item:string;value:number}>(),unknown=new Set<string>();
   let trusted=false;
   const add=(dimension:string,item:string,value:number)=>metrics.set(canonical([dimension,item]),{dimension,item,value});

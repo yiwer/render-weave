@@ -33,7 +33,7 @@ npx tsx scripts/agent-eval/run.ts
 | `--label` | 报告名称，缺省为开始时间，如 `2026-10-15-1930`。同一个名称再跑时接着前一次：已有有效结果的单元跳过，`invalid` 的单元按轮次续跑，场景要与前一次相同 |
 | `--out` | 轮次目录的根，缺省 `out/agent-eval/<名称>/` |
 | `--reports` | 报告目录，缺省 `docs/agent-eval/reports/` |
-| `--model`、`--small-model`、`--endpoint`、`--key-env`、`--max-turns`、`--timeout-ms`、`--effort` | 传给 `renderweave agent run`；报告的 `runtime.effort` 记推理力度，`totals.thinkingTokens` 记思考 token 合计 |
+| `--model`、`--small-model`、`--endpoint`、`--key-env`、`--max-turns`、`--timeout-ms`、`--stagnation-threshold`、`--effort` | 传给 `renderweave agent run`；报告的 `runtime.effort` 记推理力度，`totals.thinkingTokens` 记思考 token 合计；停滞生效阈值固定为 `identity.budgets.stagnation`，旧 null 身份只能重评，不能静默续跑 |
 | `--rescore <目录>` | 只按已有轮次重新评分，另存带来源身份的新报告，不调用模型；原报告、清单保持不变 |
 | `--repetitions <起-止>` | 分段跑：模型的额度窗口装不下一整遍时，先 `--repetitions 1-1`，额度恢复后用同一个 `--label` 跑 `--repetitions 2-2`。每段核对全部冻结条件；报告始终列出整个预登记计划，尚未运行的次数为 `not-run` |
 

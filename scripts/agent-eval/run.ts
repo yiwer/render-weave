@@ -36,7 +36,7 @@ const { values } = parseArgs({
   options: {
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
-    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'timeout-ms': { type: 'string' },
+    rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' }, 'timeout-ms': { type: 'string' }, 'stagnation-threshold': { type: 'string' },
     plan: { type: 'string' }, config: { type: 'string' }, claude: { type: 'string' }, 'claude-args': { type: 'string' }, paired: { type: 'boolean' },
     'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
     'context-policy':{type:'string'},'context-pair':{type:'string'},
@@ -48,7 +48,7 @@ const fail = (message: string): never => {
   process.exit(2);
 };
 if (values['behavior-policy'] !== undefined) {
-  if (['claude', 'claude-args', 'paired', 'config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions', 'timeout-ms', 'context-policy', 'context-pair'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
+  if (['claude', 'claude-args', 'paired', 'config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions', 'timeout-ms', 'context-policy', 'context-pair', 'stagnation-threshold'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
   const workspace = values.workspace ?? fail('--behavior-policy 需要 --workspace');
   const resources = values.resources ?? fail('--behavior-policy 需要 --resources');
   const out = values.out ?? fail('--behavior-policy 需要 --out');
@@ -86,6 +86,8 @@ if (!process.env[keyEnv]) fail(`缺少环境变量 ${keyEnv}：key 只经环境�
 try { await stat(join(REPO, 'dist/bin.js')); } catch { fail('没有 dist/bin.js：先运行 npm run build'); }
 const jobs = positive(values.jobs, 3, '--jobs');
 const maxTurns = values['max-turns'] === undefined ? undefined : positive(values['max-turns'], 0, '--max-turns');
+const stagnationThreshold = values['stagnation-threshold'] === undefined ? undefined : Number(values['stagnation-threshold']);
+if (stagnationThreshold !== undefined && (!Number.isSafeInteger(stagnationThreshold) || stagnationThreshold < 1)) fail('--stagnation-threshold 必须是正整数');
 const roundTimeoutMs = values['timeout-ms'] === undefined ? undefined : Number(values['timeout-ms']);
 if (roundTimeoutMs !== undefined && (!Number.isFinite(roundTimeoutMs) || roundTimeoutMs <= 0)) fail('--timeout-ms 必须是有限正值');
 const effort = values.effort;
@@ -123,6 +125,7 @@ const runtime: RuntimeOptions = {
   ...((values['context-policy']!==undefined)?{contextPolicy:values['context-policy'] as 'full'|'on-demand'}:{}),
   ...(values.model ? { model: values.model } : {}), ...(values['small-model'] ? { smallModel: values['small-model'] } : {}),
   ...(values.endpoint ? { endpoint: values.endpoint } : {}), keyEnv, ...(maxTurns ? { maxTurns } : {}), ...(roundTimeoutMs !== undefined ? { roundTimeoutMs } : {}), ...(effort ? { effort } : {}),
+  ...(stagnationThreshold !== undefined ? { stagnationThreshold } : {}),
   ...(values.claude ? {claude: {command: values.claude, args: claudeArgs}} : {}),
 };
 let identity: ExperimentIdentity;
@@ -229,7 +232,7 @@ async function finish(name: string, saved: Manifest, dir: string, all: ScenarioR
   console.log(formatReport(report));
   console.log(`\n报告：${file}`);
   // 续跑命令带上本次的其他选项；重新评分时不知道原来的模型等选项，不打印。
-  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args', 'timeout-ms', 'context-policy', 'context-pair'] as const)
+  const passthrough = (['scenarios', 'jobs', 'out', 'reports', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'repeat', 'config', 'claude', 'claude-args', 'timeout-ms', 'context-policy', 'context-pair', 'stagnation-threshold'] as const)
     .flatMap((option) => (values[option] === undefined ? [] : [`--${option}`, values[option]]));
   const resume = values.rescore === undefined ? resumeCommand(name, report.gate, passthrough) : undefined;
   if (resume) console.log(`\ninvalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：\n${resume}`);

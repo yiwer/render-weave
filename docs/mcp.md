@@ -136,7 +136,8 @@ Claude Code 把超过 50,000 字符的工具文字结果转存成文件，只给
 
 ## 合同与版本
 
-- **版本**：合同版本是 `0.16.0`，即 `initialize` 返回的 `serverInfo.version`。
+- **版本**：合同版本是 `0.17.0`，即 `initialize` 返回的 `serverInfo.version`。
+  - 0.17.0 增加有证据的停滞停止：阈值、完整反馈交付、候选修复与下一周期依据均可追溯，正常自检、交回和分页排除规则见[停滞控制](agent-stagnation.md)。工具权限与检查点格式不变。
   - 0.16.0 新增只读 `outcome_feedback` 与 `check_outcome.feedback` 续页入口，日志以检查报告ID及实际内容身份关联；公开参考在会话启动时固定。两种资料策略共用这些工具，默认全量与 effort 不变，见[资料策略](agent-context-policy.md)。
   - 0.15.0 固定本地素材/核准事实权限边界，模型上游凭据由宿主持有，运行及失败诊断持久化前脱敏；工具仍只读，版本与平台证据见[信任边界](agent-trust-boundary.md)。
   - 0.14.0 明确 Agent 整轮预算、取消、停止保存与已知用量合同；新增停止凭据及可选生效 runtime 字段，工具仍只读，见[整轮预算](agent-budgets.md)。

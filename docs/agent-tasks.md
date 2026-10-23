@@ -51,6 +51,7 @@ renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新
 | `--key-env` | 可选，key 所在的环境变量名，缺省 `OPEN_CODE_API_KEY` |
 | `--model`、`--small-model`、`--endpoint` | 可选，缺省为 OpenCode Go 上的 `claude-haiku-5-5`（模型与轻量任务模型相同）与端点 `https://opencode.ai/inference/go/anthropic`。模型名以 `gemini` 开头时（如 `gemini-4-argon-contributor`）只有 Google 接口：本轮在本机起转换代理，Claude Code 连代理、只拿到本轮令牌，代理带上游 key 连 `--endpoint`（缺省 `https://opencode.ai/inference/go/google/v1beta`）；轻量任务模型缺省与模型相同，两者要同为 Gemini 或同为 Anthropic 接口的模型。代理只绑定 127.0.0.1，随本轮结束关闭，调用日志在 `logs/model-proxy.jsonl`（M232）。代理向上游发流式的 `streamGenerateContent`，收齐各分块再交给 Claude Code，生成超过 300 秒也不会断；上游失败时日志按连接、状态码、流中记阶段与底层原因，Claude Code 照常重试（M287） |
 | `--max-turns` | 可选，轮数上限，缺省见下表 |
+| `--stagnation-threshold` | 可选，无核准进展的完整修复周期阈值，正整数，缺省 2；正常确认和交回不计，详见[停滞控制](agent-stagnation.md) |
 | `--timeout-ms` | 整轮墙钟有限正值，缺省 3600000 毫秒；准备结束后开始，覆盖工具和终检。取消、保存宽限与恢复见[预算合同](agent-budgets.md) |
 | `--effort` | 可选，推理力度 `low`、`medium`、`high`、`xhigh` 或 `max`，传给 Claude Code 的 `--effort`；不给时用 Claude Code 的缺省。Haiku 5.5 是自适应思考，Claude Code 对它固定发 `thinking: {type: "adaptive"}`，`MAX_THINKING_TOKENS` 不起作用，只能用 effort 调（票据 23）。`round.json` 的 `runtime.effort` 记这个值（没给为 `null`），`run.thinkingTokens` 记这一轮输出中的思考 token。带反馈的下一轮不沿用，要用时再给 |
 | `--claude` | 可选，Claude Code 可执行文件，缺省为 PATH 上的 `claude` |
