@@ -40,3 +40,5 @@
 - Windows：`npm run typecheck`、`npm run build`、`vitest run test/agent-context-trial.test.ts test/agent-context-archive.test.ts --maxWorkers=1`，2文件12项通过；`git diff --check`通过。
 - Linux Node22 Docker：同两文件12项通过，build通过，包含空目录恢复回归。
 - 已同步主集成`1fdb78a`；冻结运行材料在合入后续资料之前归档，事后归档修复单独标注。没有更改默认行为、MCP合同、校准判据或用户留出素材。
+
+2026-10-23，非压缩合并bc26cd0集成最终958e3b0。主线npm run typecheck、npm run build、git diff --check通过；node node_modules/vitest/vitest.mjs run test/agent-context-trial.test.ts test/agent-context-archive.test.ts --maxWorkers=1，2文件12项全部通过。用主线公开context-trial-report.ts对已入库的冻结政策/配对及block4、block3原报告再次比较，输出另存out/harness18-integration-comparison.json；complete、决定、两组完整汇总、守卫与原comparison逐项一致，仍为retain-full。归档清单SHA保持25faa300298a7dc136a2fc30e3d3ff03b7e1ccc4c8efa4c17a9cf117941ffa8c；未改两份主线预存未跟踪报告或旧比较结果。CONTEXT同步阶段和默认决策能力，19仍待材料核准，20及其后验收不提前算完成。
