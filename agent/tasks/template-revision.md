@@ -11,14 +11,17 @@
    - request.json 是示例图对应的出图请求：主模板 {template}，数据集是工作区中已保存的 {dataset}。
 
    冲突时，修改要求优先于项目说明，项目说明优先于领域约定，领域约定优先于通用做法。
-2. candidates/ 中已放好可以修改的模板，都是已保存模板的原样复制：{templates}。直接在这些文件上修改。
+2. candidates/ 中已放好可以修改的模板，都是已保存模板的原样复制：{templates}。先完成下面的改前核对，再在这些文件上修改。
    - 只改修改要求涉及的地方，其余保持原样；
    - 需要新的被调模板时另建文件，名称不与工作区已有的模板重复；
    - 不在上面列表里的模板不能改。
 3. 改之前先用 render_draft 出一次修改前的草稿（request 用 request.json 的内容，不传 templates），对照示例图与修改要求，用 inspect_layout 找到问题所在的元素与实际尺寸。
-   用 compare_reference（templates 列出预置工作副本）记录修改前的参考差异；notChecked 或 unknown 的部分列为未核实。
+   用 compare_reference 记录修改前的参考差异：
+   - templates 显式列出全部预置模板工作副本；此时尚无 outcome.json，直接使用这份路径清单。
+   - 保持候选字节不变，从 regionOffset: 0 读取目录，沿 nextRegionOffset 续取至 null；再用目录 ID 在 regions 中点查必修问题和被截断的详情。regions 与 regionOffset 分开调用，修改要求点名的区域也须在完整目录核对后再改。
+   - 完整改前目录与所需详情取得后再修改。没有核准参考而返回 notChecked 时，列出未核实范围，继续按修改要求和其余检查核对；目录中的 unknown 同样保留为未核实，不算通过。
 4. 修改后用 check_templates 做静态检查，再用 render_draft 出草稿：templates 列出 candidates/ 中的全部模板文件。
-   - 用 inspect_layout 核对修改要求中的每一条；再用 compare_reference 比较改前改后的缺项、文字、尺寸、位置与颜色，沿 sourceLocation 修改源模板。新要求有意改变参考时，以修改要求为准并在 notes 解释差异；
+   - 用 inspect_layout 核对修改要求中的每一条；再用 compare_reference（templates 列全当前工作副本）读完目录与所需详情，比较 resolved/new/remaining 中的缺项、文字、尺寸、位置与颜色，沿 sourceLocation 修改源模板。新要求有意改变参考时，以修改要求为准并在 notes 解释差异；
    - 同一问题连续两次修正无进展时记录尝试与剩余差异，交回草稿；
    - 再按通用做法验证极端情况，可用内联数据集；与修改要求无关的既有问题只记入 notes，不顺手修复；
    - 以修改要求全部满足、本轮改动没有引入严重问题为目标；遇到能力阻塞时按 outcome.md 交回草稿。
