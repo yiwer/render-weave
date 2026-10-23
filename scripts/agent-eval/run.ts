@@ -5,6 +5,8 @@
  *   npx tsx scripts/agent-eval/run.ts [--config 配置文件] [--scenarios id,…] [--repeat 次数] [--jobs 并行数] [--label 名称] [--out 目录]
  *                                     [--model …] [--small-model …] [--endpoint …] [--key-env 变量名] [--max-turns 轮数] [--effort 力度]
  *   npx tsx scripts/agent-eval/run.ts --rescore <评估输出目录>     只按已有的轮次目录重新评分，不调用模型
+ *   npx tsx scripts/agent-eval/run.ts --behavior-policy <政策.json> --workspace <工作区> --resources <资源> --out <新目录>
+ *     离线核查预登记的模板业务事实，不调用模型；用法见 docs/agent-template-behavior.md。
  *   分段跑（某个模型的额度窗口装不下一整遍）：用同一个 --label，先加 --repetitions 1-1，额度恢复后加 --repetitions 2-2；
  *   后一段沿用前一段的开始时间与资料哈希，报告按目录中已跑的全部次数判定门槛。
  *   同一个 --label 再跑时接着前一次：已有有效结果的单元跳过，invalid 的单元按轮次续跑。
@@ -32,6 +34,7 @@ const { values } = parseArgs({
     scenarios: { type: 'string' }, repeat: { type: 'string' }, jobs: { type: 'string' }, label: { type: 'string' }, out: { type: 'string' },
     model: { type: 'string' }, 'small-model': { type: 'string' }, endpoint: { type: 'string' }, 'key-env': { type: 'string' }, 'max-turns': { type: 'string' }, effort: { type: 'string' },
     config: { type: 'string' }, rescore: { type: 'string' }, reports: { type: 'string' }, repetitions: { type: 'string' },
+    'behavior-policy': { type: 'string' }, workspace: { type: 'string' }, resources: { type: 'string' },
   },
   strict: true,
 });
@@ -39,6 +42,18 @@ const fail = (message: string): never => {
   console.error(message);
   process.exit(2);
 };
+if (values['behavior-policy'] !== undefined) {
+  if (['config', 'rescore', 'scenarios', 'repeat', 'jobs', 'label', 'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'reports', 'repetitions'].some((key) => values[key as keyof typeof values] !== undefined)) fail('--behavior-policy 是独立离线模式，不能混用模型运行或重新评分选项');
+  const workspace = values.workspace ?? fail('--behavior-policy 需要 --workspace');
+  const resources = values.resources ?? fail('--behavior-policy 需要 --resources');
+  const out = values.out ?? fail('--behavior-policy 需要 --out');
+  try {
+    const { runBehavior } = await import('./behavior.js');
+    const report = await runBehavior({ policy: resolve(values['behavior-policy']), workspace: resolve(workspace), resources: resolve(resources), out: resolve(out) });
+    console.log(`业务行为：${report.status}；报告：${join(resolve(out), 'behavior.json')}`);
+    process.exitCode = report.status === 'pass' ? 0 : report.status === 'fail' ? 1 : 3;
+  } catch (error) { fail(error instanceof Error ? error.message : String(error)); }
+} else {
 const config = await readConfig(values.config === undefined ? undefined : resolve(values.config)).catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));
 
 interface Manifest { label: string; startedAt: string; endedAt?: string; scenarios: string[]; repeat: number; provenance?: Provenance }
@@ -139,4 +154,5 @@ function positive(value: string | undefined, fallback: number, flag: string): nu
   const number = Number(value);
   if (!Number.isSafeInteger(number) || number < 1) fail(`${flag} 必须是正整数`);
   return number;
+}
 }
