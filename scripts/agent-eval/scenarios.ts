@@ -78,6 +78,9 @@ export async function readConfig(file = CONFIG_FILE): Promise<EvalConfig> {
   const config = JSON.parse(await readFile(file, 'utf8')) as EvalConfig;
   if (config.format !== 'renderweave-agent-eval-config/2') throw new Error(`评估配置需 renderweave-agent-eval-config/2 的核准评分政策：${file}；评估未完成，不自动迁移旧通过线`);
   for (const scenario of config.scenarios) {
+    if (scenario.kind === 'feedback') {
+      if (!['zh', 'en'].includes(scenario.language) || !['definition-extraction', 'dataset-extraction', 'template-design', 'template-revision'].includes(scenario.task) || !Number.isSafeInteger(config.consecutivePasses) || config.consecutivePasses < 2) throw new Error('可信反馈需要中英四种任务和每类至少两次的完整计划');
+    }
     if (scenario.kind !== 'transcription') continue;
     const required = ['names', 'landmarks', 'facilities', 'orderViolations', 'insertions', 'duplicates', 'landmarkExtra', 'facilityExtra'] as const;
     if (required.some((key) => !Number.isSafeInteger(scenario.pass?.[key]) || scenario.pass[key] < 0)) {

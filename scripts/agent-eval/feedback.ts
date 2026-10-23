@@ -5,9 +5,9 @@ import {isDeepStrictEqual} from 'node:util';
 import {createHash} from 'node:crypto';
 import {validateContentBaseline} from '../../src/agent/coverage-verification.js';
 import type {OutcomeCheck, RoundRecord} from '../../src/index.js';
-import {AGENT_TASKS} from '../../src/index.js';
+import {AGENT_TASKS, readReview} from '../../src/index.js';
 import {repoPath, type EvalConfig, type Scenario, type FeedbackScenario} from './scenarios.js';
-export async function feedbackPlan(config: EvalConfig, scenarios: readonly Scenario[]) {
+export async function feedbackPlan(config: EvalConfig, scenarios: readonly Scenario[], sourceOptions?: {dir: string; configFile: string}) {
   const units = [];
   for (const scenario of scenarios) {
     if (scenario.kind !== 'feedback') throw new Error('--plan 需要可信反馈场景');
@@ -25,8 +25,33 @@ export async function feedbackPlan(config: EvalConfig, scenarios: readonly Scena
       budget: {maxTurns: AGENT_TASKS[scenario.task].maxTurns}, seed: {source: 'controlled-initial-result', round: repoPath(scenario.seedRound)},
     });
   }
-  return {format: 'renderweave-feedback-plan/1', evidence: config.evidence ?? 'mechanism', ready: units.every(unit => !unit.missing.length),
-    realModelObservations: 0, missingRealModelObservations: units.length, units};
+  let source: {compatible: boolean; directory: string; identity?: string; reason?: string} | undefined;
+  if (sourceOptions) {
+    try {
+      const {experimentIdentity, identityDifferences, verifyRoundIdentities, sha256} = await import('./identity.js');
+      const saved = await json(join(sourceOptions.dir, 'eval.json'));
+      if (!saved.identity || saved.repeat !== Math.max(2, config.consecutivePasses)
+        || !isDeepStrictEqual(saved.scenarios, scenarios.map(scenario => scenario.id))) throw new Error('缺少完整来源身份或预登记计划不相容');
+      const identity: import('./identity.js').ExperimentIdentity = saved.identity;
+      const budgets = [...new Set(Object.values(identity.budgets.maxTurns))];
+      const current = await experimentIdentity(config, sourceOptions.configFile, scenarios, {
+        ...identity.runtime, effort: identity.runtime.effort ?? undefined,
+        claude: {command: identity.executor.command, args: identity.executor.args}, ...(budgets.length === 1 ? {maxTurns: budgets[0]} : {}),
+      }, identity.plan);
+      const changed = identityDifferences(identity, current);
+      if (changed.length) throw new Error(`来源条件不相容：${changed.join('、')}`);
+      await verifyRoundIdentities(identity, sourceOptions.dir, scenarios, saved.repeat);
+      const {observedUnit, scoreScenario} = await import('./eval.js');
+      for (const unit of units) {
+        unit.budget.maxTurns = identity.budgets.maxTurns[unit.task]!;
+        const scenario = scenarios.find(scenario => scenario.id === unit.id)!;
+        if (await observedUnit(sourceOptions.dir, scenario, unit.repetition)) unit.status = (await scoreScenario(config, scenario, unit.repetition, sourceOptions.dir)).status;
+      }
+      source = {compatible: true, directory: sourceOptions.dir, identity: sha256(JSON.stringify(identity))};
+    } catch (error) {source = {compatible: false, directory: sourceOptions.dir, reason: error instanceof Error ? error.message : String(error)};}
+  }
+  return {format: 'renderweave-feedback-plan/1', evidence: config.evidence ?? 'mechanism', ready: units.every(unit => !unit.missing.length) && source?.compatible !== false,
+    realModelObservations: 0, missingRealModelObservations: units.length, ...(source ? {source} : {}), units};
 }
 
 export interface FeedbackPolicy {
@@ -90,7 +115,11 @@ export async function scoreFeedback(scenario: FeedbackScenario, dir: string): Pr
     const policy = await policyOf(scenario), seed = repoPath(scenario.seedRound);
     before = await json(join(seed, 'check.json')); after = await json(join(dir, 'check.json'));
     if (!before || !after) throw new Error('缺少初始或反馈终检');
-    const initial = await json(join(seed, 'agent', policy.candidate)), current = await json(join(dir, 'agent', policy.candidate));
+    const initial = await json(join(seed, 'agent', policy.candidate));
+    // 与宿主审核预览相同的有效候选包含尚未审核的 pending.candidate，不能只评分原始 JSON。
+    const reviewed = await readReview(dir);
+    const current = reviewed.view?.candidates.find(candidate => candidate.path === policy.candidate)?.document;
+    if (!current) throw new Error('没有可评分的有效候选');
     targetCorrection = policy.corrections.every(change => isDeepStrictEqual(pointer(current, change.pointer).value, change.after));
     const masked = structuredClone(current);
     for (const change of policy.corrections) {const target = pointer(masked, change.pointer); target.parent[target.key] = change.before;}

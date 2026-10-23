@@ -16,7 +16,7 @@ const call = async (name, args = {}) => {const value = await rpc('tools/call', {
   return JSON.parse(value.result.content.find(item => item.type === 'text').text);};
 await rpc('initialize', {protocolVersion: '2025-06-18', capabilities: {}, clientInfo: {name: 'feedback-mechanism', version: '1'}});
 let isTemplate = false;
-if (['calibration', 'collateral', 'stale', 'mixed'].includes(preset)) {
+if (['calibration', 'collateral', 'stale', 'mixed', 'pending'].includes(preset)) {
   const files = (await readdir('candidates')).filter(name => name.endsWith('.json'));
   const paths = files.map(name => 'candidates/' + name);
   await writeFile('outcome.json', JSON.stringify({candidates: paths, pending: [], notes: '机制验证；未测部分仍未知'}));
@@ -39,6 +39,7 @@ if (['calibration', 'collateral', 'stale', 'mixed'].includes(preset)) {
   await writeFile(paths[0], JSON.stringify(document));
 } else await cp(preset, process.cwd(), {recursive: true});
 if (isTemplate) await call('compare_reference');
+if (preset === 'pending') {const outcome = JSON.parse(await readFile('outcome.json', 'utf8')); outcome.pending = [{file: 'candidates/dataset.json', path: 'stopName', candidate: '错误候选', reason: 'conflicting', note: '受控反例'}]; await writeFile('outcome.json', JSON.stringify(outcome));}
 const checked = await call('check_outcome');
 if (preset === 'stale') {const path = 'candidates/definition.json'; const document = JSON.parse(await readFile(path, 'utf8')); document.fields[0].displayName = '检查后修改'; await writeFile(path, JSON.stringify(document));}
 await writeFile('mechanism-observation.json', JSON.stringify({checked}));

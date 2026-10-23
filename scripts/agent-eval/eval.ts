@@ -657,6 +657,7 @@ const OUTCOME_TEXT: Record<RepetitionOutcome, string> = { pass: '达线', fail: 
 export function formatReport(report: EvalReport): string {
   const lines = [
     `# Agent 评估 ${report.label}：门槛${GATE_TEXT[report.gate.status]}`,
+    `证据类别：${report.evidence?.kind === 'mechanism' ? '机制验证' : '模型来源尚需独立核准'}；已核准真实模型观测 ${report.evidence?.realModelObservations ?? 0}。`,
     '',
     `计划 ${report.gate.completeness.planned} 次：通过 ${report.gate.completeness.pass}、失败 ${report.gate.completeness.fail}、无效 ${report.gate.completeness.invalid}、未运行 ${report.gate.completeness.notRun}；执行${report.gate.completeness.complete ? '完整' : '未完成'}。`,
     '',

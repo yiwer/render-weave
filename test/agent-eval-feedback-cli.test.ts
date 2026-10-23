@@ -140,3 +140,36 @@ it('受控pass/fail/invalid/not-run共存且保留16个计划单元，假执行�
   expect(report.attempts).toHaveLength(3);
   expect(report.evidence.realModelObservations).toBe(0);
 }, 90000);
+
+it('离线计划只引用完整身份相容的已有轮次，条件变化不把旧观测补入缺失单元', async () => {
+  const dir = await preparedMatrix(), configFile = join(dir, 'config.json'), out = join(root, 'referenced');
+  const run = await cli(['scripts/agent-eval/run.ts', '--config', configFile, '--scenarios', 'zh-definition-extraction', '--out', out,
+    '--reports', join(root, 'referenced-reports'), '--label', 'referenced', '--jobs', '1', '--repetitions', '1-1', '--key-env', 'RW_FEEDBACK_KEY',
+    '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-feedback-claude.mjs'), 'calibration'])], true);
+  expect(run.code, run.stdout + run.stderr).toBe(3);
+  const planFile = join(root, 'referenced-plan.json');
+  const plan = await cli(['scripts/agent-eval/run.ts', '--config', configFile, '--scenarios', 'zh-definition-extraction', '--out', out, '--plan', planFile]);
+  expect(plan.code, plan.stdout + plan.stderr).toBe(0);
+  const reference = JSON.parse(await readFile(planFile, 'utf8'));
+  expect(reference.source).toMatchObject({compatible: true, identity: expect.stringMatching(/^sha256:/)});
+  expect(reference.units.map((unit: any) => unit.status)).toEqual(['pass', 'not-run']);
+  expect(reference.realModelObservations).toBe(0);
+  const changed = JSON.parse(await readFile(configFile, 'utf8')); changed.scenarios[0].name += ' 改变配置';
+  const changedFile = join(root, 'changed-config.json'); await writeFile(changedFile, JSON.stringify(changed));
+  const incompatibleFile = join(root, 'incompatible-plan.json');
+  const incompatible = await cli(['scripts/agent-eval/run.ts', '--config', changedFile, '--scenarios', 'zh-definition-extraction', '--out', out, '--plan', incompatibleFile]);
+  expect(incompatible.code, incompatible.stdout + incompatible.stderr).toBe(3);
+  const rejected = JSON.parse(await readFile(incompatibleFile, 'utf8'));
+  expect(rejected.source).toMatchObject({compatible: false});
+  expect(rejected.units.every((unit: any) => unit.status === 'not-run')).toBe(true);
+}, 90000);
+
+it('待确认候选覆盖了已核准的目标值时不能只凭原始JSON判定纠偏成功', async () => {
+  const dir = await preparedMatrix();
+  const result = await cli(['scripts/agent-eval/run.ts', '--config', join(dir, 'config.json'), '--scenarios', 'zh-dataset-extraction',
+    '--out', join(root, 'pending'), '--reports', join(root, 'pending-reports'), '--label', 'pending', '--jobs', '1', '--repetitions', '1-1',
+    '--key-env', 'RW_FEEDBACK_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-feedback-claude.mjs'), 'pending'])], true);
+  expect(result.code, result.stdout + result.stderr).toBe(1);
+  const report = JSON.parse(await readFile(join(root, 'pending-reports/pending.json'), 'utf8'));
+  expect(report.results[0].checks.feedback.targetCorrection).toBe(false);
+}, 60000);

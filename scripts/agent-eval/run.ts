@@ -63,7 +63,7 @@ const config = await readConfig(configFile).catch((error: unknown) => fail(error
 
 if (values.plan !== undefined) {
   const {feedbackPlan} = await import('./feedback.js');
-  const plan = await feedbackPlan(config, pick(values.scenarios));
+  const plan = await feedbackPlan(config, pick(values.scenarios), values.out ? {dir: resolve(values.out), configFile} : undefined);
   await writeFile(resolve(values.plan), JSON.stringify(plan, null, 2) + '\n', {flag: 'wx'});
   console.log(`反馈计划：${resolve(values.plan)}；${plan.units.length} 个预登记单元，真实模型观测 0`);
   process.exit(plan.ready ? 0 : 3);
