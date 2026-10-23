@@ -1,7 +1,7 @@
 /** 独立 CLI 宿主的文件系统故障边界；不替换产品检查器或 MCP 协议。 */
 import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 const fault = process.env.RW_CHECKPOINT_FAULT, out = process.env.RW_CHECKPOINT_FAULT_OUT;
 const rename = fs.promises.rename, readFile = fs.promises.readFile, writeFile = fs.promises.writeFile;
 let publications = 0, mutated = false, candidateReads = 0;
@@ -24,7 +24,7 @@ fs.promises.writeFile = async (path, ...args) => {
 };
 fs.promises.readFile = async (path, ...args) => {
   const bytes = await readFile(path, ...args);
-  if (String(path).endsWith(join('agent/candidates/schema.json')) && !String(path).includes(`${join('checkpoints')}\\`)) {
+  if (String(path).endsWith(join('agent/candidates/schema.json')) && !String(path).includes(`${sep}checkpoints${sep}`)) {
     candidateReads++;
     if (!mutated && ((fault === 'reading' && candidateReads === 1) || (fault === 'reading-final' && candidateReads === 3))) {
       mutated = true;
