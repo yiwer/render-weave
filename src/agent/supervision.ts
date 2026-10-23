@@ -5,10 +5,11 @@ import type { AgentRunOptions, AgentRunResult, RoundRecord, RoundUsage } from '.
 import type { QuotaStop } from './quota.js';
 import { AgentUsageError } from './round-files.js';
 import { stoppedResult } from './stopped-round.js';
+import type { StagnationStop } from './stagnation.js';
 
 export const DEFAULT_ROUND_TIMEOUT_MS = 60 * 60 * 1000;
 export const SAVE_GRACE_MS = 30 * 1000;
-export type RoundStop = QuotaStop | { readonly reason: 'timeout'; readonly roundTimeoutMs: number } | { readonly reason: 'cancelled' };
+export type RoundStop = QuotaStop | StagnationStop | { readonly reason: 'timeout'; readonly roundTimeoutMs: number } | { readonly reason: 'cancelled' };
 export interface PreparedRound { readonly roundDir: string; readonly record: Pick<RoundRecord, 'task' | 'round' | 'startedAt' | 'inputs' | 'runtime'> }
 export interface HostControl { ready(value: PreparedRound): Promise<void>; stop(reason: RoundStop): void; usage(value: Omit<RoundUsage, 'wallMs'>): void }
 

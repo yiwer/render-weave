@@ -37,6 +37,7 @@ import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from
 import { claimExecution, writeAtomicJson } from './execution.js';
 import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
 import { startCheckpointHost } from './checkpoint-host.js';
+import { stagnationController } from './stagnation.js';
 import { usageCollector } from './usage.js';
 import { withLocalAccess } from '../local-access.js';
 import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
@@ -443,7 +444,8 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const started = Date.now();
   const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
-  managedMcp = await startCheckpointHost({ check: checkpoints.check, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
+  const stagnation = stagnationController({ roundDir, agentDir, stop: control.stop });
+  managedMcp = await startCheckpointHost({ check: async () => { const result = await checkpoints.check(); stagnation.checked(result); return result; }, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
     BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] });
@@ -467,7 +469,8 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
 
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, onUsage: control.usage });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, onUsage: control.usage, onEvent: stagnation.accept });
+    await stagnation.idle();
   } finally {
     await proxy?.close();
     await checkpoints.idle();
@@ -706,7 +709,7 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<{ exitCode: number | null; error?: string }> {
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
@@ -728,7 +731,7 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
       buffer += chunk;
       for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-        try { const event = JSON.parse(line); usage.accept(event); context.onUsage(usage.read()); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+        try { const event = JSON.parse(line); usage.accept(event); context.onUsage(usage.read()); context.onEvent(event); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
     let executionError: string | undefined;

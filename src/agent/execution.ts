@@ -167,7 +167,7 @@ export async function readExecution(dir: string): Promise<{ execution?: RoundExe
     try {
       const value = JSON.parse(await readFile(join(dir, 'stop.json'), 'utf8'));
       if (value.format !== 'renderweave-stop/1' || canonical(value.owner) !== canonical(state.owner) ||
-        !['timeout', 'cancelled', 'hardQuota'].includes(value.reason?.reason) || !Number.isFinite(value.usage?.wallMs)) throw new Error();
+        !['timeout', 'cancelled', 'hardQuota', 'stagnation'].includes(value.reason?.reason) || !Number.isFinite(value.usage?.wallMs)) throw new Error();
       stop = { reason: value.reason, usage: value.usage, save: committed ? 'complete' : 'incomplete' };
       if (!committed && alive(state.owner.pid, state.owner.host) === false) {
         status = 'stopped'; diagnostics.push(`${stoppedMessage(stop.reason)}；本地保存未完成，只有已提交检查点可接续`);
