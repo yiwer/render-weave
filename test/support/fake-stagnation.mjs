@@ -32,7 +32,7 @@ for (const action of actions) {
     }
     end(id, reply.result.content);
   } else if (action.kind === 'write' || action.kind === 'writePending') {
-    const path = resolve(action.path ?? 'candidates/schema.json'), content = JSON.stringify({ dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
+    const path = resolve(action.path ?? 'candidates/schema.json'), content = JSON.stringify(action.document ?? { dslVersion: 'renderweave-schema/1', name: '线路', fields: action.fields.map(name => ({ name, displayName: name, type: 'text' })) });
     const id = begin('Write', { file_path: path, content });
     await writeFile(path, content); if (action.kind !== 'writePending') end(id, `File created successfully at: ${path}`);
   } else if (action.kind === 'finish') {

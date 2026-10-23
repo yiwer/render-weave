@@ -127,6 +127,19 @@ await import(pathToFileURL(${JSON.stringify(fake)}).href);
     '--repeat', '2', '--jobs', '1', '--key-env', 'RW_IDENTITY_TEST_KEY', '--claude', process.execPath, '--claude-args', JSON.stringify([executor])];
   return {root, out, reports, configFile, ledger, executor, args};
 }
+it('停滞阈值进入实际派发与冻结身份，续跑改变阈值在启动前拒绝', async () => {
+  const e = await experiment('stagnation-budget');
+  const args = [...e.args, '--repetitions', '1-1', '--stagnation-threshold', '3'];
+  const first = await cli(args);
+  expect(first.code, first.stderr).toBe(1);
+  const manifest = await readFile(join(e.out, 'eval.json'), 'utf8');
+  expect(JSON.parse(manifest).identity.budgets.stagnation).toBe(3);
+  expect((await read(join(e.out, 'run-1/m402-definition/definition/round.json'))).runtime.stagnationThreshold).toBe(3);
+  const changed = [...args]; changed[changed.indexOf('--stagnation-threshold') + 1] = '1';
+  expect((await cli(changed)).stderr).toContain('budgets.stagnation');
+  expect(await readFile(e.ledger, 'utf8')).toBe('dispatch\n');
+  expect(await readFile(join(e.out, 'eval.json'), 'utf8')).toBe(manifest);
+});
 
 it('每次派发前核验冻结输入，运行中条件变化停止后续派发且不产出混合条件报告', async () => {
   const e = await experiment('mid-run-change', "await appendFile(configFile, ' ');");

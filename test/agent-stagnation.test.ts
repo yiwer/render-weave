@@ -5,19 +5,19 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { readReview, readPreviousRound, runAgentTask } from '../src/index.js';
-import { repoRoot, resourcesDir } from './support/fixtures.js';
+import { readReview, readPreviousRound, runAgentTask, loadWorkspace, render } from '../src/index.js';
+import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 let root: string;
 beforeAll(async () => { root = await mkdtemp(join(tmpdir(), 'rw-stagnation-')); });
 afterAll(async () => { await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
-async function run(name: string, actions: unknown[], extra: string[] = [], baseline = true) {
+async function run(name: string, actions: unknown[], extra: string[] = [], baseline = true, taskArgs?: string[]) {
   const dir = join(root, name), preset = join(dir, 'preset'), out = join(dir, 'round');
   await mkdir(join(preset, 'candidates'), { recursive: true });
   await writeFile(join(dir, 'brief.md'), '从图中提取线路字段');
   await writeFile(join(dir, 'facts.json'), JSON.stringify({ name: '核准字段', items: ['number', 'title', 'station'].map(field => ({ id: field, label: field, definition: '线路', field })) }));
   await writeFile(join(preset, 'actions.json'), JSON.stringify(actions));
   await writeFile(join(preset, 'outcome.json'), JSON.stringify({ candidates: ['candidates/schema.json'], pending: [], notes: '提取线路字段' }));
-  const child = spawn(process.execPath, [join(repoRoot, 'dist/bin.js'), 'agent', 'run', '--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png'),
+  const child = spawn(process.execPath, [join(repoRoot, 'dist/bin.js'), 'agent', 'run', ...(taskArgs ?? ['--task', 'definition-extraction', '--sample', join(resourcesDir, 'images/test/quadrants.png')]),
     '--brief', join(dir, 'brief.md'), '--resources', resourcesDir, ...(baseline ? ['--content-baseline', join(dir, 'facts.json')] : []), '--out', out,
     '--key-env', 'RW_STAGNATION_KEY', '--timeout-ms', '8000', '--claude', process.execPath,
     '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-stagnation.mjs'), preset]), ...extra],
@@ -40,6 +40,36 @@ it('核准必修问题在两次完整写入和复测后仍相同，停止并保�
   expect(review.checkpoint?.check.coverageVerification?.missingItems).toEqual(['title', 'station']);
   expect((await readPreviousRound(job.out)).checkpoint?.id).toBe(review.checkpoint?.id);
   expect(JSON.parse(await readFile(join(job.out, 'round.json'), 'utf8')).verdict).toBe('unqualified');
+});
+const template = (size: number) => ({dslVersion:'renderweave-template/1',name:'对照',base:{name:'问候',version:1},
+  artboard:{sizeRange:{width:{min:10,max:200},height:{min:10,max:200}},layout:{mode:'free'},children:[
+    {type:'text',name:'站名',content:[{text:'科技园'}],font:'res:font-hei-medium',fontSize:size,color:'#000000',place:{left:10,top:10,width:{fixed:60},height:{fixed:30}}}]}});
+async function runTemplate(name: string, actions: unknown[]) {
+  const dir = join(root, name); await mkdir(dir);
+  const sample = join(dir, 'sample.png'), reference = join(dir, 'reference.json'), requestFile = join(dir, 'request.json');
+  const request = {template:'对照',dataset:{id:'ds-greeting'},parameters:{},output:{width:100,height:60,dpi:50,format:'png' as const},mode:'final' as const};
+  const workspace = await loadWorkspace({dir:singleTextDir,resourcesDir});
+  const image = (await render({...workspace,templates:[...workspace.templates,{name:'对照',document:template(10),source:'candidate.json'}]},request)).image!;
+  await writeFile(sample, image.bytes); await writeFile(requestFile, JSON.stringify(request));
+  await writeFile(reference, JSON.stringify({sampleWidthPx:image.widthPx,sampleHeightPx:image.heightPx,artboardWidthMm:100,artboardHeightMm:60,
+    approvedRegions:[{id:'stop',name:'站名',sampleRegion:{x:0,y:0,width:image.widthPx,height:image.heightPx},targetPathPattern:'对照/站名',expectedFontSizeMm:10,expectedText:'科技园'}]}));
+  return run(name, actions, ['--timeout-ms','15000','--stagnation-threshold','1'], false, ['--task','template-design','--sample',sample,'--workspace',singleTextDir,'--dataset','ds-greeting','--request',requestFile,'--reference',reference]);
+}
+it('核准字号偏差仍在且完整修复后没有改善，按视觉必修证据停止', async () => {
+  const job = await runTemplate('style-no-progress', [
+    {kind:'write',document:template(6)},{kind:'check'},
+    {kind:'write',document:template(6)},{kind:'check'},
+  ]);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'stagnation'});
+  expect(job.result.stopped.cycles[0].required.some((item: string) => item.startsWith('style.'))).toBe(true);
+});
+it('核准字号偏差虽未消除但已真实缩小，不能因问题名称相同停止', async () => {
+  const job = await runTemplate('style-progress', [
+    {kind:'write',document:template(6)},{kind:'check'},
+    {kind:'write',document:template(7)},{kind:'check'},
+  ]);
+  expect(job.result?.stopped, job.stderr).toMatchObject({reason:'timeout'});
+  expect((await readReview(job.out)).checkpoint?.check.styleVerification?.anomalies).toEqual(expect.arrayContaining([expect.objectContaining({kind:'fontSizeTooSmall'})]));
 });
 it('显式阈值一只需一个完整修复周期，生效值显示并固定在轮次记录', async () => {
   const job = await run('threshold-one', [

@@ -8,6 +8,7 @@ import { materialHashes } from '../../src/agent/provenance.js';
 import { DEFAULT_ENDPOINT, DEFAULT_GOOGLE_ENDPOINT, DEFAULT_MODEL, DEFAULT_SMALL_MODEL } from '../../src/agent/run.js';
 import { AGENT_TASKS } from '../../src/agent/tasks.js';
 import { DEFAULT_ROUND_TIMEOUT_MS } from '../../src/agent/supervision.js';
+import { DEFAULT_STAGNATION_THRESHOLD } from '../../src/agent/stagnation.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { openResourceRepository } from '../../src/resources.js';
 import { withLocalAccess } from '../../src/local-access.js';
@@ -26,7 +27,7 @@ export interface ExperimentIdentity {
   readonly format: 'renderweave-eval-identity/1';
   readonly runtime: { readonly model: string; readonly smallModel: string; readonly endpoint: string; readonly effort: string | null; readonly providerRevision: null };
   readonly executor: { readonly command: string; readonly args: readonly string[]; readonly version: string; readonly files: Readonly<Record<string, string>>; readonly node: string };
-  readonly budgets: { readonly maxTurns: Readonly<Record<string, number>>; readonly roundTimeoutMs: number | null; readonly stagnation: null };
+  readonly budgets: { readonly maxTurns: Readonly<Record<string, number>>; readonly roundTimeoutMs: number | null; readonly stagnation: number | null };
   readonly build: Readonly<Record<string, string>>;
   readonly mcpContract: string;
   readonly materials: Readonly<Record<string, string>>;
@@ -60,7 +61,7 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
     format: 'renderweave-eval-identity/1',
     runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null},
     executor: {command, args, version, files: executorFiles, node: process.version},
-    budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: runtime.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnation: null},
+    budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: runtime.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnation: runtime.stagnationThreshold ?? DEFAULT_STAGNATION_THRESHOLD},
     build: {...await materialHashes(join(REPO, 'dist'), 'dist'), 'package-lock.json': sha256(await readFile(join(REPO, 'package-lock.json')))},
     mcpContract: MCP_CONTRACT_VERSION, materials: await materialHashes(join(REPO, 'agent'), 'agent'), inputs: await inputIdentity(scenarios),
     resources: await resourceInputIdentity(repoPath(config.resources)), config: sha256(await readFile(configFile)), scorer: await scorerIdentity(), plan,
@@ -147,7 +148,7 @@ export async function verifyRoundIdentities(identity: ExperimentIdentity, outDir
       try { recordBytes = await readFile(join(dir, 'round.json'), 'utf8'); record = JSON.parse(recordBytes) as RoundRecord; }
       catch { continue; }
       if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) continue;
-      const expectedRuntime = {...identity.runtime, maxTurns: identity.budgets.maxTurns[record.task], ...(identity.budgets.roundTimeoutMs !== null ? { roundTimeoutMs: identity.budgets.roundTimeoutMs } : {})};
+      const expectedRuntime = {...identity.runtime, maxTurns: identity.budgets.maxTurns[record.task], ...(identity.budgets.roundTimeoutMs !== null ? { roundTimeoutMs: identity.budgets.roundTimeoutMs } : {}), ...(identity.budgets.stagnation != null ? { stagnationThreshold: identity.budgets.stagnation } : {})};
       const {providerRevision: _unknown, ...expected} = expectedRuntime;
       const actual = Object.fromEntries(Object.keys(expected).map(key => [key, record.runtime?.[key as keyof RoundRecord['runtime']]]));
       const changes = identityDifferences(expected, actual, 'runtime');

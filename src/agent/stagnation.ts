@@ -82,7 +82,9 @@ function requiredProblems(record: CheckpointView): string[] {
     .filter(problem => problem.level === 'severe').map(problem => `technical:${canonical({ code: problem.code, location: problem.location })}`);
   const missing = check.coverageVerification?.status !== 'notChecked'
     ? check.coverageVerification?.missingItems.map(item => `coverage.missing:${item}`) ?? [] : [];
-  return [...new Set([...technical, ...missing])].sort();
+  const style = [...approvedObservations(record).metrics.values()].filter(metric => metric.dimension.startsWith('style.') && metric.value > 0)
+    .map(metric => `${metric.dimension}:${metric.item}`);
+  return [...new Set([...technical, ...missing, ...style])].sort();
 }
 function truncated(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
