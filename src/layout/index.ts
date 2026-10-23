@@ -251,6 +251,7 @@ class Layouter {
 
   arrange(node: EvaluatedNode, box: Box): LayoutNode {
     const model = node.model;
+    const firstOp = this.drawOps.length;
     if (node.calledTemplate) {
       const { name, sizeRange: { width, height } } = node.calledTemplate;
       if (box.width < width.min - EPSILON || box.width > width.max + EPSILON || box.height < height.min - EPSILON || box.height > height.max + EPSILON) {
@@ -296,6 +297,10 @@ class Layouter {
         }
     }
     if (wrapped) this.drawOps.push({ op: 'restore' });
+    // 子元素已记录自己的路径；只为本元素直接产生的绘制补来源。
+    for (let i = firstOp; i < this.drawOps.length; i++) {
+      if (!this.drawOps[i]!.elementPath) this.drawOps[i] = {...this.drawOps[i]!, elementPath: formatElementPath(model.path)};
+    }
     return {
       path: formatElementPath(model.path),
       name: model.name,
