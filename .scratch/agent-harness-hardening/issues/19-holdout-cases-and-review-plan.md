@@ -37,3 +37,12 @@
 2026-10-23，用户补齐 12 例并明确选择“改为公交四类型”。当前完整文件、哈希与目视类型登记在 [holdout-candidates.md](../holdout-candidates.md)，旧清单中两张已不在目录，一张仅改名，故不算额外三例。同步父规格 v1.1、M317 与 22–26 的业务范围；各 3 例×3 次、至少 8 例全流程、独立人工审核及成本证据要求不变。只为来源登记查看图片，未用其生成结果调优，也未派发模型。实际模板家族、使用史、操作者核准与独立审核者待本票准备阶段补齐；有文件不等于已冻结可执行计划，不提前勾选验收。
 
 2026-10-23，用户进一步确认“由我审核；素材未用于调优”。独立审核责任已明确为用户本人，素材调优使用史据用户声明登记；家族独立性仍逐例核对，业务事实与审核包待14/15能力就绪后核准。本次确认不提前关闭本票或任何真实模型/人工审核条目。
+
+2026-10-23，准备实现已完成，尚待用户对具体材料包核准，故保留 ready-for-agent。可审阅入口为 F:/GenCode/render-weave/out/harness-holdout-review-05/REVIEW.md；源材料保存在 holdout/，生成入口 scripts/agent-eval/prepare-holdout.mjs 与 prepare-holdout-seeds.ts。M325记录10例全流程、2例单点改色、独立审核及未知口径。
+
+已执行 npm run build、npm run typecheck；总准备命令：
+node --import tsx scripts/agent-eval/prepare-holdout.mjs --out F:/GenCode/render-weave/out/harness-holdout-review-05 --resources fixtures/resources
+
+结果：12例、36单元、96阶段；公开订单入口读到36订单/96计划/0尝试/0成功。38次公开 Agent 输入检查（提取/设计36次、真实种子修改2次）全部通过；实际 roundTimeoutMs 均为15000，执行器无网络且模型观测0。无成果入口正确拒绝审核；已有模板种子仅形成hostRecovery、unqualified、canApprove=false的可读草稿。两例种子8次公开渲染无问题，单点diff及非目标像素保持通过。准备清单156份文件逐一重核SHA-256一致，材料身份为23f030f9aaa44c3565233130d0ce6a38d38f4d1f58eac1b97d22184ebb7f1da3；node scripts/scan-keys.mjs扫描1838文件、1个key、0命中。
+
+独立只读审查已修正：误通过只针对声明已核查的必要范围；routeNo不含显示单位“路”；修改入口实际预检；公开API使用roundTimeoutMs；候选登记随包复制；人工填写表另存observations，不改冻结模板。01/04准备失败及02/03中间成功包保留，仅05作为待核准包，不计任何真实模型结果。用户核准后仍须绑定20确切候选，并满足21/原38前置后才派发22–25。

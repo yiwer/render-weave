@@ -1,0 +1,594 @@
+{
+  "status": "unapproved-proposal",
+  "source": "D:/我的图片/sample",
+  "interpretation": {
+    "landscapeSize": "700×315.56毫米为此次评估声明尺寸，不冒称源图物理尺寸；裁取上下两条业务牌，排除签审表",
+    "otherSizes": "按原图文件注记核准，字号仍未知",
+    "regionMeasurement": "主文字独立选区，仅诊断；最终区域由原始像素测量并由操作者核准",
+    "familyClaims": "素材未调优据用户声明；未证明家族独立，全部先记回归，独立泛化unknown"
+  },
+  "cases": [
+    {
+      "id": "landscape-01",
+      "file": "download-huiyang7.png",
+      "kind": "landscape",
+      "flow": "full",
+      "family": "horizontal-route-regression",
+      "size": [
+        700,
+        315.56
+      ],
+      "boardRegion": {
+        "x": 100,
+        "y": 214,
+        "width": 3496,
+        "height": 1576
+      },
+      "facts": {
+        "routeNo": "惠阳7"
+      },
+      "manual": [
+        "两条方向分别为沙田地铁站、惠阳沙田（谟岭）",
+        "起步2元，分段收费；按车来了APP公示服务时间",
+        "响应式停靠：上车招手，下车按铃",
+        "逐站核对两个方向的停靠、道路与设施，空下一站不补造"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "惠阳7路",
+          [
+            155,
+            122,
+            245,
+            65
+          ],
+          "normal",
+          true
+        ],
+        [
+          "destination-1",
+          "沙田地铁站",
+          [
+            608,
+            120,
+            240,
+            60
+          ],
+          "normal"
+        ],
+        [
+          "destination-2",
+          "惠阳沙田（谟岭）",
+          [
+            608,
+            528,
+            365,
+            65
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 1.9576271186440677
+    },
+    {
+      "id": "landscape-02",
+      "file": "download324-1.png",
+      "kind": "landscape",
+      "flow": "full",
+      "family": "horizontal-route-regression",
+      "size": [
+        700,
+        315.56
+      ],
+      "boardRegion": {
+        "x": 100,
+        "y": 214,
+        "width": 3496,
+        "height": 1576
+      },
+      "facts": {
+        "routeNo": "324"
+      },
+      "manual": [
+        "两个方向：中山园场站、民治综合车场",
+        "上方向06:30–21:00，下方向06:00–21:30",
+        "上车2元、全程7元、巴士集团",
+        "两方向站序不互为简单反转；地铁、医院及圈号位置逐站核对"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "324",
+          [
+            196,
+            117,
+            160,
+            68
+          ],
+          "normal",
+          true
+        ],
+        [
+          "destination-1",
+          "中山园场站",
+          [
+            608,
+            119,
+            240,
+            62
+          ],
+          "normal"
+        ],
+        [
+          "destination-2",
+          "民治综合车场",
+          [
+            608,
+            526,
+            282,
+            62
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 1.9576271186440677
+    },
+    {
+      "id": "landscape-03",
+      "file": "downloadM561.png",
+      "kind": "landscape",
+      "flow": "full",
+      "family": "horizontal-route-regression",
+      "size": [
+        700,
+        315.56
+      ],
+      "boardRegion": {
+        "x": 100,
+        "y": 214,
+        "width": 3496,
+        "height": 1576
+      },
+      "facts": {
+        "routeNo": "M561"
+      },
+      "manual": [
+        "两方向港大医院总站、方大城公交首末站；均07:00–20:00、2元，巴士集团",
+        "下方向港大医院总站与港大医院是两次不同停靠",
+        "响应式停靠，不漏上车请招手图示/说明",
+        "逐站核对道路、设施、地标，不用上方向倒序生成下方向"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "M561",
+          [
+            165,
+            118,
+            225,
+            70
+          ],
+          "normal",
+          true
+        ],
+        [
+          "destination-1",
+          "港大医院总站",
+          [
+            609,
+            120,
+            285,
+            63
+          ],
+          "normal"
+        ],
+        [
+          "destination-2",
+          "方大城公交首末站",
+          [
+            608,
+            526,
+            375,
+            63
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 1.9576271186440677
+    },
+    {
+      "id": "vertical-01",
+      "file": "download-line1.png",
+      "kind": "vertical",
+      "flow": "full",
+      "family": "vertical-route-regression",
+      "size": [
+        195,
+        920
+      ],
+      "facts": {
+        "routeNo": "M148"
+      },
+      "manual": [
+        "开往天健天骄南苑公交首末站；06:50–20:00，2元；热线12328",
+        "本站安托山九路（安托山九路），由上至下行驶",
+        "28次停靠；重复出现的首末站、北环香蜜立交、妇儿大厦等不可去重",
+        "过站青色、本站黄底、后续白色；道路与地铁标志归属逐站对照"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "M148",
+          [
+            45,
+            53,
+            343,
+            125
+          ],
+          "normal"
+        ],
+        [
+          "current-stop",
+          "安托山九路",
+          [
+            86,
+            951,
+            104,
+            27
+          ],
+          "current"
+        ],
+        [
+          "future-stop",
+          "红岭中学高中部",
+          [
+            87,
+            1007,
+            139,
+            28
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 2.1220703125
+    },
+    {
+      "id": "vertical-02",
+      "file": "download-line2.png",
+      "kind": "vertical",
+      "flow": "full",
+      "family": "vertical-route-regression",
+      "size": [
+        220,
+        900
+      ],
+      "facts": {
+        "routeNo": "B962"
+      },
+      "manual": [
+        "开往长富金茂大厦；07:30–20:30，1元；热线12328",
+        "10次停靠，首尾同名长富金茂大厦；第3站桃花海虹路口（招呼站）为本站",
+        "图上的招呼站括注与道路括注分别保留，其他文字不能省略",
+        "青色过站、黄色本站、白色后续，右箭头向下"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "B962",
+          [
+            45,
+            54,
+            365,
+            124
+          ],
+          "normal"
+        ],
+        [
+          "current-stop",
+          "桃花海虹路口",
+          [
+            87,
+            720,
+            127,
+            30
+          ],
+          "current"
+        ],
+        [
+          "future-stop",
+          "赛意法",
+          [
+            90,
+            891,
+            78,
+            30
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 2.076171875
+    },
+    {
+      "id": "vertical-03",
+      "file": "download-line3.png",
+      "kind": "vertical",
+      "flow": "full",
+      "family": "vertical-route-regression",
+      "size": [
+        350,
+        950
+      ],
+      "facts": {
+        "routeNo": "58"
+      },
+      "manual": [
+        "开往翠枫豪园；05:55–21:00，2–8元；热线12328",
+        "本站大靓市场（华龙路）；后两站翠枫实验学校、翠枫豪园",
+        "首站南头火车西站，完整长列表不丢行、并站、重排",
+        "医院/火车/地铁图标、圈号与所在站绑定；蓝色过站/黄底本站/白色后续"
+      ],
+      "regions": [
+        [
+          "route-number",
+          "58",
+          [
+            90,
+            83,
+            220,
+            150
+          ],
+          "normal"
+        ],
+        [
+          "current-stop",
+          "大靓市场",
+          [
+            99,
+            1868,
+            140,
+            30
+          ],
+          "current"
+        ],
+        [
+          "future-stop",
+          "翠枫实验学校",
+          [
+            101,
+            1897,
+            208,
+            30
+          ],
+          "normal"
+        ],
+        [
+          "terminal-stop",
+          "翠枫豪园",
+          [
+            101,
+            1926,
+            140,
+            30
+          ],
+          "terminal"
+        ]
+      ],
+      "regionScale": 2.19140625
+    },
+    {
+      "id": "board-01",
+      "file": "download -sign1.png",
+      "kind": "board",
+      "flow": "full",
+      "family": "whole-stop-board",
+      "size": [
+        970,
+        1550
+      ],
+      "facts": {
+        "stopNameZh": "特区报社①",
+        "stopNameEn": "Special Zone Daily Office 1"
+      },
+      "manual": [
+        "4条线路：223→宁水花园总站；M191→大梅沙公交站；M441→深业花园公交总站；高峰专线101→华新村总站",
+        "分站地图：①当前红底、②蓝底；深南中路；保留车流方向不代表指引方向注记",
+        "每条线路当前特区报社①黄色，之前浅灰、之后深色，逐条逐站核对全文、路段、圈号和设施",
+        "服务热线12328；生产电话83317030；二维码实际目标未知，不伪造网址"
+      ],
+      "regions": [
+        [
+          "board-stop-name-zh",
+          "特区报社①",
+          [
+            319,
+            177,
+            610,
+            103
+          ],
+          "normal"
+        ],
+        [
+          "board-stop-name-en",
+          "Special Zone Daily Office 1",
+          [
+            286,
+            289,
+            671,
+            50
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 3.672275641025641
+    },
+    {
+      "id": "board-02",
+      "file": "download-sign2.png",
+      "kind": "board",
+      "flow": "full",
+      "family": "whole-stop-board",
+      "entityGroup": "dapeng-center-1-front-back",
+      "size": [
+        1050,
+        1660
+      ],
+      "facts": {
+        "stopNameZh": "大鹏中心①",
+        "stopNameEn": "Dapeng Center 1"
+      },
+      "manual": [
+        "5条线路：E11→深圳北站交通枢纽公交场站、E26→润月广场公交首末站、E91/E92→溪涌地铁站②、M231→大鹏公交总站",
+        "对应票价10/10/5/6/3元；独立核对服务时间、下一站及完整站序",
+        "分站②蓝、①当前红；迎宾路；不能将方向箭头当分站指引",
+        "热线12328、生产电话83317030，二维码目标未知"
+      ],
+      "regions": [
+        [
+          "board-stop-name-zh",
+          "大鹏中心①",
+          [
+            337,
+            202,
+            580,
+            102
+          ],
+          "normal"
+        ],
+        [
+          "board-stop-name-en",
+          "Dapeng Center 1",
+          [
+            421,
+            311,
+            405,
+            50
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 3.9751602564102564
+    },
+    {
+      "id": "board-03",
+      "file": "download-sign3.png",
+      "kind": "board",
+      "flow": "full",
+      "family": "whole-stop-board",
+      "entityGroup": "dapeng-center-1-front-back",
+      "size": [
+        1050,
+        1660
+      ],
+      "facts": {
+        "stopNameZh": "大鹏中心①",
+        "stopNameEn": "Dapeng Center 1"
+      },
+      "manual": [
+        "2条线路M274和M232均往大鹏公交总站，均3元、06:30–20:45",
+        "各条本站接近末端，下一站大鹏公交总站；先前站序仍须完整保留",
+        "宣传文案深圳质量/品质交通；World-Class Transport for a World-Class City逐字保留",
+        "与board-02为同一实体组；热线12328、二维码目标未知"
+      ],
+      "regions": [
+        [
+          "board-stop-name-zh",
+          "大鹏中心①",
+          [
+            337,
+            202,
+            580,
+            102
+          ],
+          "normal"
+        ],
+        [
+          "board-stop-name-en",
+          "Dapeng Center 1",
+          [
+            421,
+            311,
+            405,
+            50
+          ],
+          "normal"
+        ]
+      ],
+      "regionScale": 3.9751602564102564
+    },
+    {
+      "id": "stop-name-01",
+      "file": "download-stopname1.png",
+      "kind": "stop-name",
+      "flow": "full",
+      "family": "vertical-stop-name",
+      "size": [
+        350,
+        950
+      ],
+      "facts": {
+        "stopNameZh": "港讯工业园",
+        "stopNameEn": "Gangxun Industrial Park"
+      },
+      "manual": [
+        "中文逐字竖排，英文整行顺时针旋转90度",
+        "蓝底#0154A4、白字，按原图保留两列位置与边距",
+        "不包含左上角生产文件注记"
+      ],
+      "regions": "pixel-observations"
+    },
+    {
+      "id": "stop-name-02",
+      "file": "download-stopname2.png",
+      "kind": "stop-name",
+      "flow": "revision",
+      "family": "vertical-stop-name",
+      "size": [
+        350,
+        950
+      ],
+      "facts": {
+        "stopNameZh": "梧岗宝桐路口",
+        "stopNameEn": "Wugang Baotong Rd Crossing"
+      },
+      "manual": [
+        "中文逐字竖排、英文整行旋转90度，蓝底白字",
+        "仅允许将预登记种子英文字色从#172B4D改为#FFFFFF，其他模板属性和数据不变"
+      ],
+      "regions": "pixel-observations",
+      "revision": {
+        "target": "stop-name-en",
+        "property": "color",
+        "before": "#172B4D",
+        "after": "#FFFFFF"
+      }
+    },
+    {
+      "id": "stop-name-03",
+      "file": "download-stopname3.png",
+      "kind": "stop-name",
+      "flow": "revision",
+      "family": "vertical-stop-name",
+      "size": [
+        350,
+        950
+      ],
+      "facts": {
+        "stopNameZh": "无名站（龙岗-沿河路）",
+        "stopNameEn": "This is English Name"
+      },
+      "manual": [
+        "英文是原始占位文字，原样转录，不翻译、不当真实英文译名",
+        "中文长名与全角括号竖排、英文整行旋转90度",
+        "仅允许将预登记种子英文字色从#172B4D改为#FFFFFF，其他模板属性和数据不变"
+      ],
+      "regions": "pixel-observations",
+      "revision": {
+        "target": "stop-name-en",
+        "property": "color",
+        "before": "#172B4D",
+        "after": "#FFFFFF"
+      }
+    }
+  ]
+}
