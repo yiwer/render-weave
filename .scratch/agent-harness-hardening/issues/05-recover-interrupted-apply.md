@@ -57,3 +57,9 @@
 - `npm run typecheck`、`npm run build`、`git diff --check`：通过。只读集成复核提出的锁回收窗口与跨轮次凭据两项均已修复并复核通过。
 
 验收偏差：无。保证限定同宿主 Windows/Linux 上遵守共同边界的产品入口；不宣称介质断电、网络文件系统、混跑旧版本或任意直接改盘的事务保证。08/09 的执行与检查点恢复不归本票，未调用真实模型。`CONTEXT.md` 由集成方统一更新。
+
+集成复核（2026-10-23）：分支最终提交 `444e306` 已以 `7b4c813` 保留历史合入集成分支。补齐与 07 的联动：`scripts/agent-eval/attempts.ts` 在进入目录前，按 `materialHashes` 相同规则排除 `.write-lock*`、`.write-released*`、`.write-abandoned*` 协调目录；只排除目录，普通同前缀文件继续封存，链接继续拒绝。公开评估反例先因协调残留报“尝试原件已改变”，修复后残留拥有者/租约变化不改变尝试与成本，普通业务文件变更仍拒绝。
+
+- `npx vitest run test/agent-eval-attempts.test.ts -t '应用锁初始化释放' --maxWorkers=1`：新增反例红绿通过。
+- `npx vitest run test/agent-apply-recovery.test.ts test/agent-concurrency.test.ts test/agent-eval-attempts.test.ts test/agent-eval-attempts-cli.test.ts test/agent-eval-identity.test.ts --maxWorkers=1`：主工作树 5 个文件、48 项全部通过（147.68 秒）。
+- `npm run build`、`npm run typecheck`、`git diff --check` 通过；两份既有未跟踪评估报告保持不变。
