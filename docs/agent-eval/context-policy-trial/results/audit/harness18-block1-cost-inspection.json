@@ -1,0 +1,39 @@
+{
+  "thinking": "contained in output, not added",
+  "source": "one native stream result usage per immutable attempt; independent sum of four counters",
+  "comparisons": [
+    {
+      "reportTotal": 156,
+      "unknown": 0,
+      "equal": true,
+      "metric": "inputTokens",
+      "rawResultsSum": 156
+    },
+    {
+      "reportTotal": 2766259,
+      "unknown": 0,
+      "equal": true,
+      "metric": "cacheReadTokens",
+      "rawResultsSum": 2766259
+    },
+    {
+      "reportTotal": 407817,
+      "unknown": 0,
+      "equal": true,
+      "metric": "cacheCreationTokens",
+      "rawResultsSum": 407817
+    },
+    {
+      "reportTotal": 56701,
+      "unknown": 0,
+      "equal": true,
+      "metric": "outputTokens",
+      "rawResultsSum": 56701
+    }
+  ],
+  "block": 1,
+  "reportSha256": "0741519cf9b27a4b28d2c61cccd3a9498db8376cef54dd292f89f12881db701b",
+  "humanMinutes": null,
+  "checkedAt": "2026-10-23T15:22:23.4879415Z",
+  "attempts": 8
+}

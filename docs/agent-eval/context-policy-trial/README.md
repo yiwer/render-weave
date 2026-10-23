@@ -1,4 +1,6 @@
-# 按需资料真实配对：预登记准备
+# 按需资料真实配对
+
+已完成全部32次真实观测，决定保留`full`默认，`on-demand`继续作为试验候选。全部尝试输入与缓存token合计下降9.07%，未达到预登记20%；两组原始达线均11/16，但候选的逐配对质量守卫和全部达线守卫未通过。模型与effort保持不变。完整数字、失败时序、来源和归档恢复证据见[结果](RESULTS.md)。以下预登记内容及`policy.json`保持原样，不依据结果改线。
 
 预登记已于2026-10-23T15:04:00.798Z冻结，冻结时真实模型观测为0。政策见 [policy.json](policy.json)，配对完整身份见 [frozen-pair.json](frozen-pair.json)。共同构建来源为06d051eb13ca87cdeb225d55c32424f6e92b25eb，包含票12/15/16/17最终实现；原生Claude Code 2.1.296、MCP合同0.17.0、停滞阈值2。两组除资料策略外的构建、评分代码、输入、资源、预算和调度身份一致；实际结果另存，不改登记门槛。
 
@@ -20,6 +22,6 @@ node --import tsx scripts/agent-eval/context-trial-report.ts --policy <已冻结
 
 入口核对两组冻结身份和预登记单元，按全部尝试原始数值汇总，缺失单元退出3，身份不匹配拒绝产生结果，已有比较报告不覆盖。完整数字通过时仅返回 `requires-source-verification`，不会自动核准真实来源或修改默认；未知、回退消息、范围违例、输出/墙钟升高均不能触发采用。真实采用仍需来源登记和本票的明确决定，原始失败与负结果保留。
 
-原件归档仅用于本次试验：输入清单的格式为 `renderweave-context-trial-archive-inputs/1`，`roots` 每项含唯一 `label` 和源目录 `path`，须覆盖校准准备、两组全部轮次/失败/重试/流日志、报告与冻结资料；不能只选最后成功的轮次。运行 `node --import tsx scripts/agent-eval/archive-context-trial.ts --pack <输入清单.json> --out <新归档目录>` 后，每个文件以SHA-256去重保存，清单保留原相对路径与原根绝对路径，清单自身摘要另存。
+原件归档仅用于本次试验：输入清单的格式为 `renderweave-context-trial-archive-inputs/1`，`roots` 每项含唯一 `label` 和源目录 `path`，须覆盖校准准备、两组全部轮次/失败/重试/流日志、报告与冻结资料；不能只选最后成功的轮次。运行 `node --import tsx scripts/agent-eval/archive-context-trial.ts --pack <输入清单.json> --out <新归档目录>` 后，每个文件以SHA-256去重保存，清单保留原相对路径、目录（含空快照目录）与原根绝对路径，清单自身摘要另存。旧清单无`directories`时仍能恢复已有文件，但不补造未知空目录。
 
 清理工作树前，用同一脚本 `--restore <归档目录> --out <新恢复目录>` 恢复全部原件并逐文件核对SHA，再从公开 `readReview` 抽查代表轮次。恢复不重写记录中的绝对路径；归档保证字节可恢复，不保证移动到任意位置后可直接接续执行。来源登记把CLI初始化模型与实际响应消息中的模型分别列出；提供方未返回的修订保持未知，不能把初始化字段冒称提供方版本证明。

@@ -1,0 +1,1099 @@
+{
+  "format": "renderweave-context-trial-source-registry/1",
+  "createdAt": "2026-10-23T15:51:36.320Z",
+  "plannedLogicalObservations": 32,
+  "completedLogicalObservations": 32,
+  "nativeAttemptRecords": 32,
+  "sourceReports": [
+    {
+      "strategy": "full",
+      "file": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\dispatch\\block-4.report.json",
+      "sha256": "sha256:24d24dc267c3bfa542b0ca8d1c57401dc5026e3d0a41f052d5d07776062123bb",
+      "originalMechanismRealCount": 0,
+      "units": 16,
+      "invalidUnits": 0
+    },
+    {
+      "strategy": "on-demand",
+      "file": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\dispatch\\block-3.report.json",
+      "sha256": "sha256:8f47146aab178403aa785a45cd1fc20c60a91c30449c0df943a3c806a018150c",
+      "originalMechanismRealCount": 0,
+      "units": 16,
+      "invalidUnits": 0
+    }
+  ],
+  "dispatchBlocks": [
+    {
+      "block": 1,
+      "strategy": "full",
+      "repetition": 1,
+      "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+      "startedAt": "2026-10-23T15:06:47.190Z",
+      "endedAt": "2026-10-23T15:17:02.483Z",
+      "exitCode": 1,
+      "hardQuota": false
+    },
+    {
+      "block": 2,
+      "strategy": "on-demand",
+      "repetition": 1,
+      "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+      "startedAt": "2026-10-23T15:18:33.656Z",
+      "endedAt": "2026-10-23T15:27:41.013Z",
+      "exitCode": 1,
+      "hardQuota": false
+    },
+    {
+      "block": 3,
+      "strategy": "on-demand",
+      "repetition": 2,
+      "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+      "startedAt": "2026-10-23T15:28:56.947Z",
+      "endedAt": "2026-10-23T15:38:38.189Z",
+      "exitCode": 1,
+      "hardQuota": false
+    },
+    {
+      "block": 4,
+      "strategy": "full",
+      "repetition": 2,
+      "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+      "startedAt": "2026-10-23T15:40:29.541Z",
+      "endedAt": "2026-10-23T15:50:23.864Z",
+      "exitCode": 1,
+      "hardQuota": false
+    }
+  ],
+  "observations": [
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "ca9622eb-82a6-4e53-b08e-0de2a36249f0",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-definition-extraction\\attempts\\ca9622eb-82a6-4e53-b08e-0de2a36249f0",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 35,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 66,
+      "startedSha256": "sha256:d9ca62bc16236837c4926a7f4f232bb54f32e0b45f5521aa02d30c1b0fe3a7fc",
+      "completionSha256": "sha256:308836030bc07a6354074b7cb2703a2f375c4e466d657c62d0c235b5a03310bc",
+      "roundSha256": "sha256:c01af830f278108c91664f03baaeb7f7d09924edf8562de719de965e83e98cec",
+      "streamSha256": "sha256:846a487a1af7b2086261bc7af177e4043df3858b6b6e2c233db203c105e51a5b",
+      "evaluationSha256": "sha256:9fd7b38bf732bc72aff97647eb0070c5498e1dc2013f53a8daf3cb948dba4fd9"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "a7bd7919-062f-4969-b91d-f8ce642dc395",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-definition-extraction\\attempts\\a7bd7919-062f-4969-b91d-f8ce642dc395",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 21,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 66,
+      "startedSha256": "sha256:70bee0f4feedbe562a2fc243a04c6c70eb62497ac201df5570503c6d425a3ba2",
+      "completionSha256": "sha256:ca33cd5f1cc39e14e4d20fd82af49a043b755aa53cc69786d70727b9e2904ad0",
+      "roundSha256": "sha256:e04694edf53415f3435ca6a9ae5088536bbf4452a18b60e441df1473d0ca28bb",
+      "streamSha256": "sha256:6f04087d66414abb681cc1b4e28cfba52aaad9c23a2658bd6922f1e4a1b71ecb",
+      "evaluationSha256": "sha256:59625db7e67940b8823f43a402987e935a10e1c2cb45d1ff8226116025b111a1"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "cf5a176a-20d9-4288-809c-d2b5bc781e3a",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-dataset-extraction\\attempts\\cf5a176a-20d9-4288-809c-d2b5bc781e3a",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 27,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 72,
+      "startedSha256": "sha256:a281099d6a61962dd5d91e58eef1632b223f57f0dde7375b167a084fa06b2958",
+      "completionSha256": "sha256:8d7d1e4721254d950759094ff5ef23c3e93ab86d4bb565c55de23b30fc9a45a2",
+      "roundSha256": "sha256:fd929b5b4e8262f4d38a110c4b6fac4bc7e6be6451b2c95ec98146aa8ec13f9a",
+      "streamSha256": "sha256:70e37e7f1d4ba46026974650a33c592b1038ac5b0f40c48d7e3685d680353e71",
+      "evaluationSha256": "sha256:80734ac359bd4112fe4a758bf03ee756db9b091e54e80de884abffa91bd7851b"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-dataset-extraction",
+      "attemptId": "8cae1c0e-57ad-44eb-b801-5b338fd90343",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-dataset-extraction\\attempts\\8cae1c0e-57ad-44eb-b801-5b338fd90343",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 36,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 72,
+      "startedSha256": "sha256:bb9602eab4f9efd12aa1778153a411e0f6c261f729703e70d792d970693aefa1",
+      "completionSha256": "sha256:42aa0f2493a0b7fc9b97766b5b36066409235383684d13cf7b4d0e3933baa9a4",
+      "roundSha256": "sha256:129197200fed3064c5e4f2561a875873dba7c0a5b7dc2ce01de0fbc1d78af3fe",
+      "streamSha256": "sha256:f573151b1cd1361e6276c70086f6f3585f8da2813e6acda4ee3a61b65a23699b",
+      "evaluationSha256": "sha256:10f0b34e8fad908f5bea24a447f6f56477d05b8a419ffefbc2d885af38cb87b1"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-template-design",
+      "attemptId": "96c80ec2-5fcb-4020-baf6-df317d9143ef",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-template-design\\attempts\\96c80ec2-5fcb-4020-baf6-df317d9143ef",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 39,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 80,
+      "startedSha256": "sha256:862a8a1658b1a36ef8accc1fe4756ae3cea34caa640c5670cc244d3127ff6994",
+      "completionSha256": "sha256:d1d5bbb6a8f84b7705e20834de7d3a0bd3ca6621e05f779a8d3c4eb5f9f8571f",
+      "roundSha256": "sha256:9e5fc99005db6cd3a5d6a8f7b358f214bd71c226702a655be6a9a482f4779b69",
+      "streamSha256": "sha256:55ec94ea68260af3bf4712cb1c54b70dcd2531666aa7f5160dc6004c203d211d",
+      "evaluationSha256": "sha256:b7ee0bd0793247b9f77ffd88515aeaaf73e472e625aa4aa12b44506ff0a9fea1"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-design",
+      "attemptId": "b153e473-d1bd-4c75-883c-f050126cbd31",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-template-design\\attempts\\b153e473-d1bd-4c75-883c-f050126cbd31",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 43,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:2fb2b002ee279a6ae415ff79b89e865d11afc10469aa25de53e4296c11ae8640",
+      "completionSha256": "sha256:609681ad3880a5595385064a3e74b27eed66585bc89e215be56878f33be9b76a",
+      "roundSha256": "sha256:4aa45cd23acc88d497417e0f025a8d725e8c89034101767d3377ae24d5dd797b",
+      "streamSha256": "sha256:017c16c9105fbc7348ea286f34ebe74a7056e476782cc413084b909c753a68c9",
+      "evaluationSha256": "sha256:dbb914dc2f47d73c6c6f6c67fe28d8625b7e3dccfeaef029dd01327f5d459476"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "a7cca956-d70f-4c2d-ad4d-b63ab73b0c9c",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\zh-template-revision\\attempts\\a7cca956-d70f-4c2d-ad4d-b63ab73b0c9c",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 34,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 86,
+      "startedSha256": "sha256:fc7800eaa30ee5372ae8177b94eb049210c9aa49f250cba108de9746ea213fd4",
+      "completionSha256": "sha256:d8103c14cf3d6e39ac08aa7a14cd0c7b7a951b0968a942beb641adf6e5907cc4",
+      "roundSha256": "sha256:3839905a7ee871a8b486e702aebdcff1eeb796ea264e489e4147a292977ca684",
+      "streamSha256": "sha256:ae3b93f278ea48d6351e46fb174909356db5edab3c7f1651dbd1848a402a3234",
+      "evaluationSha256": "sha256:e280808ad1e64362ffa76b766cc007e22117308eef341570fad56d99ad011d76"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/zh-template-revision",
+      "attemptId": "5ae09753-fe22-4a80-a2f2-91d0937caef9",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\zh-template-revision\\attempts\\5ae09753-fe22-4a80-a2f2-91d0937caef9",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 37,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 86,
+      "startedSha256": "sha256:b20e4b192c415ac8ccfeceb0a7e67a55965e45c72436c6da84b7d5ad16ff5012",
+      "completionSha256": "sha256:e17096e53b02c49b20e9617ebfeaf038fc22f73906eb8f3c8877a6c99d5f51b8",
+      "roundSha256": "sha256:a89b915efe307bba5eee949bc3de32fe1978d13eccec18cb785608aa66d646c3",
+      "streamSha256": "sha256:f22ac87c93340f84eba5fd1627fe1102d0c873566796a9a37fb43dba9a2f2293",
+      "evaluationSha256": "sha256:dae5e430983d759e8cc0ed50de8b4a6d87392a392ec36441df64a703976b7c66"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "7d8fc22f-f500-4509-a8c6-d0ea8e564b9d",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\en-definition-extraction\\attempts\\7d8fc22f-f500-4509-a8c6-d0ea8e564b9d",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 23,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 66,
+      "startedSha256": "sha256:33019b87407c0d4c2de0816b77b42894d8b471deb0f4e4f7c9bc78890cbee0c8",
+      "completionSha256": "sha256:11a830e7ebc66e92d95490fcb559f78236ad9839f4dd7b22a5414392246c59b8",
+      "roundSha256": "sha256:bbdfe86a770e419b9a3f1788c3809c72e51d059e07792f21e6c6f13b2790d088",
+      "streamSha256": "sha256:afe99a6d38077296e97e110c4a63be08576df2e9a15918cd44acb0160eff18a2",
+      "evaluationSha256": "sha256:4fe73d3167760543ae11ccac1d16a8ab9edefdde0a438783ee19eda2fec0a993"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-definition-extraction",
+      "attemptId": "b8648dd4-a282-4722-baa3-44241c5095fd",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\en-definition-extraction\\attempts\\b8648dd4-a282-4722-baa3-44241c5095fd",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 25,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 66,
+      "startedSha256": "sha256:eb7efc1288febe83d1fe7676cee69e5082c288971399fa84e0529cf8e18d49cb",
+      "completionSha256": "sha256:c9b274a6eb8941656b497d1da8e007d8cce27d1a7c0e5ff18fab6c075bac4e3b",
+      "roundSha256": "sha256:58d1f6514e7cefcfc8dd7b7f8ebcf8b172515a67fe797559b23d69fcc756aae0",
+      "streamSha256": "sha256:04499e8fe98a979fa564db90d15c0faf10b1cbe298d14e69c55249ded3d9c277",
+      "evaluationSha256": "sha256:05da30b7e91fb837ef7cc8a6800fcad8085e595c137abef4e9f978c4f2ff1dca"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "8e595e2a-244a-4d74-9570-f48fc520ce30",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\en-dataset-extraction\\attempts\\8e595e2a-244a-4d74-9570-f48fc520ce30",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 31,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 72,
+      "startedSha256": "sha256:1ff582c7540562820f0572d71c0229694efa8e549df1ece750bc867f26632f9b",
+      "completionSha256": "sha256:cd6eb85175361d3736343d2c1f7cb46fa484b458bb950ef87832834a6e98b735",
+      "roundSha256": "sha256:4ac93956fbc8f80132b6f6e695a897ba907c32ba5c3310f650c9bb0efda6cc9e",
+      "streamSha256": "sha256:e53cbe92e435e0785294377a98ebabb7b283a31524f02c5808dd74c0f2517f5b",
+      "evaluationSha256": "sha256:ed469064ea2dcac2d16a7caaf4c9aabd2b40e02ac39b70d33be7f32d64743052"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-dataset-extraction",
+      "attemptId": "fc23413f-7001-4005-a8d0-48cb6a1152bd",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\en-dataset-extraction\\attempts\\fc23413f-7001-4005-a8d0-48cb6a1152bd",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 27,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 72,
+      "startedSha256": "sha256:3f1b382980170fa2acd5ca5aebe68253eaa24b18939d9e8f8474503944ee9bfd",
+      "completionSha256": "sha256:7ff5216b5074a4a7eb4971915199efe7b4e02c39a53d3fc152ace6a20b899971",
+      "roundSha256": "sha256:3ebb82b004a5a3ec905dedb4481cf8e015e33d91eb637c1e71966f8802761b4e",
+      "streamSha256": "sha256:9fd9635d3db6385c51ddd54ffd4c30c47790af7b0ea8feccdfe7ca2645b102e0",
+      "evaluationSha256": "sha256:fa7cdd7ad50580528ec71feb2cc901a2e7101c47a8e1b7761f91a3f096eae074"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-template-design",
+      "attemptId": "0c5b1ea8-5ed3-41cc-9cc3-f1e662c4377a",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\en-template-design\\attempts\\0c5b1ea8-5ed3-41cc-9cc3-f1e662c4377a",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 37,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:ff91813e3941a5931061c18efc05231b84f095ece5240527b981a8106a0e2309",
+      "completionSha256": "sha256:b9e70fb2fd266b165ddc990da970697fac9cff69dc5428d9c4897f300079bcfa",
+      "roundSha256": "sha256:844c5bb625bd8da522096e5201a7e01a93464a213ce7e812efbef268acfc6c36",
+      "streamSha256": "sha256:106de6b76ebda7126912d08186ca4e7ae1e380db1a6fbd645c20cb26d976c224",
+      "evaluationSha256": "sha256:b802241b94578a564720e16c4079c48fdbaeaa5f06ddca1969dfc7a398346032"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-template-design",
+      "attemptId": "678e8fe2-cd66-4c60-b58c-d5eae90d49ef",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\en-template-design\\attempts\\678e8fe2-cd66-4c60-b58c-d5eae90d49ef",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 38,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 80,
+      "startedSha256": "sha256:12ea8682a2f07b393710c5a415476b25ac1e6abee3c91bcc53fe2a98ae0c7269",
+      "completionSha256": "sha256:6e3fb4e6e20f9b5f0786dcd432ba892a7900354a6d65985a174e94a6dae728de",
+      "roundSha256": "sha256:95392f0b71266cd333930c708c6a668dd3d19bdeb42033e45d756f31e906a61d",
+      "streamSha256": "sha256:b6f9ea69c1079c3cc80ba5486b2dc3c69824ff79971be23ef438bf785477191a",
+      "evaluationSha256": "sha256:fe4ac44c12755840c241c1738f8245a170ee5f6eca107965b8123d66707fb0b5"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-1/en-template-revision",
+      "attemptId": "c2372f77-459f-47f8-a7b1-e332a261704c",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-1\\en-template-revision\\attempts\\c2372f77-459f-47f8-a7b1-e332a261704c",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 29,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 86,
+      "startedSha256": "sha256:2e948836d739d871246d66eced772a0547706fb3177cf7e4e91aa66445a74c41",
+      "completionSha256": "sha256:3f9918e55d19cdee138b7b91b67e4e3b3e7f164907cf87553246a08032039fc7",
+      "roundSha256": "sha256:b2d1c7e1b8c1841ec6e0e7fdb79bf9d849fdce1b50fb3edae98b1205796f65a1",
+      "streamSha256": "sha256:3629ffd2107389e5f55ee323e486f44699fb2f1cdbf3b4a8cacd8f0e05937886",
+      "evaluationSha256": "sha256:82a57513fe16d95124ed900a34a05f33996612bb30f1512be662745feec4cbac"
+    },
+    {
+      "strategy": "full",
+      "unit": "run-2/en-template-revision",
+      "attemptId": "e3b78c30-98bb-4da0-aaef-aa405e66fec3",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\full\\run-2\\en-template-revision\\attempts\\e3b78c30-98bb-4da0-aaef-aa405e66fec3",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 37,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 86,
+      "startedSha256": "sha256:abeb205c5276b726222e059a460e92752e91593e6b3281fad19ce8c81c88a27b",
+      "completionSha256": "sha256:ff5a9d6e3e8b2c3832da5f8bbd3b176240f6b1b0ec21dd02d399c65a8cdc5db2",
+      "roundSha256": "sha256:f5c82ecdcc28a3f9a3e4d6699714f8926ccd4def8b11d34b76c8715f6c3c49c3",
+      "streamSha256": "sha256:c49899386ce9d99660b9aee4dc2e231cbf0552f4843d0f80e29e0a4eb2ed3d50",
+      "evaluationSha256": "sha256:860d4f64403a7ccea0cd267e418c03e8e51e83caf666ddf43d88a8f6c4194b68"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-definition-extraction",
+      "attemptId": "29260a52-a2f3-4036-b8eb-241826f77275",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\zh-definition-extraction\\attempts\\29260a52-a2f3-4036-b8eb-241826f77275",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 21,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 68,
+      "startedSha256": "sha256:30126cfdfbd527f141068dc0b92f985c8a45d0d29f711777f4685722abcc3331",
+      "completionSha256": "sha256:691a54e7fc94ad3a327bc418e3f0d3083e6c95f9be932f7d78be8b936c480474",
+      "roundSha256": "sha256:2b42be325e843c927c85d800c0a6ac9808818eea05f0da0d5c595dcc3a73cfd5",
+      "streamSha256": "sha256:8dd8931d9776f1166169585cf1041fb0bdf16f173171fcc30a083860b1a099ad",
+      "evaluationSha256": "sha256:a3f6ae9068c0d5f2a4f3b02e0395ca6e3d3c491dde322d4b594e312bc1a30ee2"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "6ae67b64-121d-49a0-bf26-f596810628c9",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\zh-definition-extraction\\attempts\\6ae67b64-121d-49a0-bf26-f596810628c9",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 30,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 68,
+      "startedSha256": "sha256:23e4fdbc1ca145c80f98f2c0ef6cace2ccd3f53cd8a15aa19f724b6913839ef8",
+      "completionSha256": "sha256:7f1593c73afc9131430a5d3002ad663325f2c73e4204d936e0ffd616d4b5be7c",
+      "roundSha256": "sha256:462bf0ab866995bbac905331118453bf020149460250f469d6f8fefc38c750f1",
+      "streamSha256": "sha256:b999789dd31ab02bd42d58521031856476a5df2f6fce1c69f0d2bc9267151a53",
+      "evaluationSha256": "sha256:9c00baf6a02200dfa6eae65cb921bdb8887ded9847a57ea08fd6e397fb8f580a"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-dataset-extraction",
+      "attemptId": "17101a65-2dbd-44f5-84b3-0b68bda0b192",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\zh-dataset-extraction\\attempts\\17101a65-2dbd-44f5-84b3-0b68bda0b192",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 27,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 74,
+      "startedSha256": "sha256:d886ea1c4357bdd36f4ca0a37814d53f6d248f678e6596f67f4d6ed26f3f9725",
+      "completionSha256": "sha256:e821cd8136dab2d4da41258296301d2ae2fc6b26cec6435ea1352ae02a7596c3",
+      "roundSha256": "sha256:85ea7f1913abb92c2f7e440c7cd58f8bdc5e44215306b671e777b1ed629bfdea",
+      "streamSha256": "sha256:6528e85e68494a019fd2f9e9b4a5317504523c4bd9916524430c3c68b0564474",
+      "evaluationSha256": "sha256:91263d4b80627dd7d6a431597f4928f328d1e97e85c54b76864b4ece60827609"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-dataset-extraction",
+      "attemptId": "8dc57551-7bd7-456f-a804-ef89688ee62b",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\zh-dataset-extraction\\attempts\\8dc57551-7bd7-456f-a804-ef89688ee62b",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 37,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 74,
+      "startedSha256": "sha256:51e82d8563a9e9ed7a2c41ca1ef88f12923185af4b17497b4194998a681f1658",
+      "completionSha256": "sha256:2c49d67b6691e9b234d576a3560796b79ead46979773afaa8caf033a37622624",
+      "roundSha256": "sha256:66a01761232015cb1f3f194beee78bfc33253e65447a25abf2ad7de5ee0f046b",
+      "streamSha256": "sha256:900d210a4791543f69fa9cce66d7794db31b95599249775a39f6ca1234b3ed76",
+      "evaluationSha256": "sha256:2afd70ca5278669a655959faa110ff4329220a150eec14b7051e10ed7bbd4c5a"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-template-design",
+      "attemptId": "6ecc0a1c-6d30-4b0a-a86a-e21564bc553f",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\zh-template-design\\attempts\\6ecc0a1c-6d30-4b0a-a86a-e21564bc553f",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 28,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 82,
+      "startedSha256": "sha256:5442b36776cee83eae9a2f8313a8e897b4b10ca8a83426f041657327ad9dc80f",
+      "completionSha256": "sha256:24e05b3bf72e37cdf26c28b2e8576f2d51e74e32ba4fb4bf6648806ed02878fa",
+      "roundSha256": "sha256:cf99459caebdb71a20af60097b6c7fce43790a057bc18acfe8aefe7a80858acc",
+      "streamSha256": "sha256:6de7de87135ff3cfe689aa41204354f21985504ff65a2ec28fc7623801b6f986",
+      "evaluationSha256": "sha256:e0068b963427243ac7761fbe6566de9c8d7e7027284d956d880074ca70d67d93"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-template-design",
+      "attemptId": "740de619-fa9a-4cb7-89b2-da578d199157",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\zh-template-design\\attempts\\740de619-fa9a-4cb7-89b2-da578d199157",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 44,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 82,
+      "startedSha256": "sha256:c31a05a07a2852a2af60dec069a7c62138330fc905bf75460eea112e3e1d641c",
+      "completionSha256": "sha256:a70d6c4a76c2eea2ada436b40876ac2d236a22ac84747c91b11860c692d8d1b0",
+      "roundSha256": "sha256:3a744148f4fcb40a63752815049a89cad292b6252d79121d43f2f7376dd1ca9a",
+      "streamSha256": "sha256:a25e7e896f68c6d9a1f8d1140486bf1371d5449d521acc92045d59ea4bda4b55",
+      "evaluationSha256": "sha256:5d7aa8ebf1a6b9edc3f993407e96c4068bbe4a24392af83e18614a82e9823fb3"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/zh-template-revision",
+      "attemptId": "e63edd10-e044-42d0-bc51-4b4ffc1d21c7",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\zh-template-revision\\attempts\\e63edd10-e044-42d0-bc51-4b4ffc1d21c7",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 40,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:433901aa37d312e76030708711f2109b48c8175e2c2ba36276357d395e13b24b",
+      "completionSha256": "sha256:f78db1a1c277a0af6661c89ad856ccd9020ce0ae3e19b09b96813a770a76f065",
+      "roundSha256": "sha256:4313645562debdedb22db2253fd9fc6fdf42fea9c6abb4f4c16ca77b78abd99d",
+      "streamSha256": "sha256:5eae18446c83a8ecdde3d7b6c749724b54f7d50fba7a2496c4a1695f0cd56f64",
+      "evaluationSha256": "sha256:44332d6cdb56cbdb3515243792c82b24252694a0ccfe40139238ca81d1ebdf27"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/zh-template-revision",
+      "attemptId": "0aa9b4ea-935d-4d95-8b00-f7345b3dd206",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\zh-template-revision\\attempts\\0aa9b4ea-935d-4d95-8b00-f7345b3dd206",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 45,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:40d44fcacedd7f6cdab98593219331b60c5fad73c797ed8b603a35f6dc7db16f",
+      "completionSha256": "sha256:35dfa931eac507dace4a17f3f787b75f173a8d56c07d16731d9b1de2531a828a",
+      "roundSha256": "sha256:f03731a655136dd937ef9332d77023daf6bd52af6f6aef4896294ba3bd1ebbf6",
+      "streamSha256": "sha256:f6fd6984f8e7f170c50fdff26fcf17bee3ec7c3d4c0639b76e20f6fb98777b5c",
+      "evaluationSha256": "sha256:73565b45357ee929520b24ef4af3e33a7eec546f2c02e23ca2fbaadac22e81b8"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-definition-extraction",
+      "attemptId": "7f3aa0af-b120-401f-ba21-07bd9b25cc7f",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\en-definition-extraction\\attempts\\7f3aa0af-b120-401f-ba21-07bd9b25cc7f",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 31,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 68,
+      "startedSha256": "sha256:46b06d3076503c4bfb47f328c0361801c488558cb639d4a9e9aa24d27b8fc34b",
+      "completionSha256": "sha256:84eb384fcd4f0fda17b6d2d28ba366dd789d0f4cf59c1cbc25019dd5bf82207a",
+      "roundSha256": "sha256:abcd1359e604bb58978552057ae56a3b6081ebdaf93f44aedd670dcc96297204",
+      "streamSha256": "sha256:077f727ec5a7f557e7feaad2f99a672ecfb35a24978753452e827515910d2e05",
+      "evaluationSha256": "sha256:fe180a1314a399e12dfd5e437f9a711db973c39171de351c433e43ac0f4d2ef3"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-definition-extraction",
+      "attemptId": "881dfe0a-2d17-4f7e-b74b-5c77d89e8002",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-definition-extraction\\attempts\\881dfe0a-2d17-4f7e-b74b-5c77d89e8002",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 33,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 68,
+      "startedSha256": "sha256:771c11fdc68e7ca77a0b18b2f3a72f58b3c562f579130bb5e10fabb886141528",
+      "completionSha256": "sha256:06eab912553ee846a0f5e19b328ab34db9b36b09b869d23847f2c328e9dc3405",
+      "roundSha256": "sha256:7c15d5b133b774c1ed48a5b057df75f8f8c0c4d3f509878fee29817368610261",
+      "streamSha256": "sha256:9d78f046afe19aa56ca0c213d314cb61f9cabc57a47f85f4251ae0a4e28ec00b",
+      "evaluationSha256": "sha256:6737303654be62ebf0f09ca005c08c7a864cba30975c440f8551834594837dc9"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-dataset-extraction",
+      "attemptId": "b17dbc54-8cb8-4f6a-b4f1-cd318b3e364c",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\en-dataset-extraction\\attempts\\b17dbc54-8cb8-4f6a-b4f1-cd318b3e364c",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 35,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 74,
+      "startedSha256": "sha256:11746586aea2a301b38831675a9499a6cb1b6bf0ef5a241b5db549d88fc4e037",
+      "completionSha256": "sha256:b79d39649f22ad76651643d2b17cd7523889c0e85eecc69064ff45eb8565f551",
+      "roundSha256": "sha256:536ece867d6b57bad4ab6a59f5e0195d9027aa3fe3d0c955995fe5539589f58b",
+      "streamSha256": "sha256:e94754d7ead927a4af167fe0a29a11572ecb657286ff7452194dfef796f7e146",
+      "evaluationSha256": "sha256:27d1af07b61399778bb0bccdbac3d44c52118c641376c8ef2961f7010d2a6140"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-dataset-extraction",
+      "attemptId": "07c25b00-b5f1-49b6-8b3d-85d6e1f91bdb",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-dataset-extraction\\attempts\\07c25b00-b5f1-49b6-8b3d-85d6e1f91bdb",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 25,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 74,
+      "startedSha256": "sha256:bae8be735eb9df1205c168e23bc60e9302d1bb17be9d7e7c3d9454d1f8e7785c",
+      "completionSha256": "sha256:80448b6bc14730dc5378ca2bfd936cf252da3019d70055baa7207705d252df35",
+      "roundSha256": "sha256:3b86685ab7529005d929299ac9fc6849dd1edf88af7b1a8708add44ad610c933",
+      "streamSha256": "sha256:facc63cd6af28a1467bab55b8975a472b88dfdf8ff6247d91364222bdac62322",
+      "evaluationSha256": "sha256:7f7844c11c99e5c9583831cbbaf1a0c49ffc3bc92e310c7effe73aabaa13099d"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-template-design",
+      "attemptId": "a8255cfa-8ff9-4948-ad5a-b710b05189a7",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\en-template-design\\attempts\\a8255cfa-8ff9-4948-ad5a-b710b05189a7",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 32,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 82,
+      "startedSha256": "sha256:644bd3f9283bbdccd2552d45bb403c77ce7fcf55d16fb72e06d8c8f6ff9bd7ec",
+      "completionSha256": "sha256:af107f63105251e6849ce7f094cc01d3d80eb27b3bd7661d0a627ffcb45fa4d2",
+      "roundSha256": "sha256:c02ffe60a772ef24a78d586cbc63f47955c30bc72b804fb87f8c18e70bc8bbc4",
+      "streamSha256": "sha256:c20963f435b95116c2b54b174e56dc7dabfa47ab6864e8654ed5c5831d1f59db",
+      "evaluationSha256": "sha256:a0e7657ec2f657a61d6174612976e3617ccef37c450eedbd622398c543568ff8"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-design",
+      "attemptId": "91b6ed5d-e200-409b-ae38-468239d7c6e0",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-template-design\\attempts\\91b6ed5d-e200-409b-ae38-468239d7c6e0",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 38,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 90,
+      "startedSha256": "sha256:cc9f915014e5b8512270eee8a81ec24fb025680e33dde8b4ba19b7783dbe07aa",
+      "completionSha256": "sha256:fd083a852820731dcc0a2bf5f582ad727e6769606c5bc98ecedb2003c23d2133",
+      "roundSha256": "sha256:bb2c31edc6a273125b5a5b435aad91cfa47be3c8bc357fc3ae9d3f689bb59e3e",
+      "streamSha256": "sha256:bb1150ccd8ebc47bc228669cb4f37ddb0b3324d169d6df125b74e89ffc78dd00",
+      "evaluationSha256": "sha256:7c46916b1c765baa1e62653b739c462ae4b3ae7a1913f8e3571e828c0e2359ba"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-1/en-template-revision",
+      "attemptId": "afefd518-cb34-44c2-b01b-c3b4a3d575c4",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-1\\en-template-revision\\attempts\\afefd518-cb34-44c2-b01b-c3b4a3d575c4",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 33,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:ee9350c96b23148ea9c7e69da746bbe19256ece927f11935c1113350fff300df",
+      "completionSha256": "sha256:ac020cd4f1f6d8a1fb90d2f41d3778b17d169397110dc6ee5c4bebc7a043fbe5",
+      "roundSha256": "sha256:0ed684499b36862c76ce994fd0651cf47e6cb0426bf40de621ce5394ec1c9aed",
+      "streamSha256": "sha256:575a842f5208770bcdcb753706a6306343107f2ed750bb6a07f1b891459cceaa",
+      "evaluationSha256": "sha256:535dfecb73030cf4a90da4dc7de5e35ad2a6a40d815aa1dca71f6ec3ad2632d9"
+    },
+    {
+      "strategy": "on-demand",
+      "unit": "run-2/en-template-revision",
+      "attemptId": "0c031083-1b0f-45da-b506-f8231c5b1f81",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand\\run-2\\en-template-revision\\attempts\\0c031083-1b0f-45da-b506-f8231c5b1f81",
+      "state": "completed",
+      "nativeExecutorSha256": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+      "registeredNativeVersion": "2.1.296 (Claude Code)",
+      "observedCliVersions": [
+        "2.1.296"
+      ],
+      "initializationModels": [
+        "claude-haiku-5-5"
+      ],
+      "responseMessageModels": [
+        "claude-haiku-5-5"
+      ],
+      "assistantMessages": 37,
+      "resultEvents": 1,
+      "exitCode": 0,
+      "verdict": "qualified",
+      "usageSource": "result",
+      "hasRunError": false,
+      "stopped": null,
+      "providerRevision": null,
+      "verifiedFiles": 88,
+      "startedSha256": "sha256:22ca63e56e9cd4de55374ad8db7e1f1e7a7a54d0915b5bfc999ff1d0bbe57191",
+      "completionSha256": "sha256:7d99e411630d8890c19486379ca3fd291d3951935ae8f5ffa74ab0543373ab4d",
+      "roundSha256": "sha256:cae67415dcfb1309127c859156464aee978ed1197b85b1ef5c31d8adedfb9c5f",
+      "streamSha256": "sha256:0821a7bfbdbb0e9f487c738b933520506b5e55f4b8baf5ee42ec7f77a1e4da5f",
+      "evaluationSha256": "sha256:1bd0f7bfd4c38646a61495aa22dd984ca436fc4b74a8bef24c9864b57fdf627a"
+    }
+  ],
+  "providerRevision": null,
+  "limitations": [
+    "本地原生CLI派发与不可变尝试内容核验，不是远端提供方签名认证",
+    "初始化模型不是独立上游版本证明；响应消息模型另列",
+    "固定合成校准，不证明留出泛化；原机制报告的真实计数保持0"
+  ]
+}
