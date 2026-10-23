@@ -1,0 +1,2727 @@
+{
+  "format": "renderweave-refinement-comparison/1",
+  "date": "2026-10-22",
+  "codeCommit": "2d8d7d0",
+  "priorEvidenceCommit": "ce1800a",
+  "model": "claude-haiku-5-5",
+  "credentials": {
+    "source": "Windows User OPEN_CODE_API_KEY explicitly copied into each child process"
+  },
+  "threshold": 60000,
+  "protocol": "docs/template-design-refinement-protocol.md",
+  "comparableInputs": true,
+  "inputFields": [
+    "sample",
+    "brief",
+    "workspace",
+    "dataset",
+    "request"
+  ],
+  "planDifference": "在 P1 相同七个边界变体和空 styles 之上新增五个 proposed 命名区域；同版本两组用相同计划",
+  "historicalResourceContents": "历史未单独留内容指纹；沿用 P1 的这一限制",
+  "groups": {
+    "before-unlimited": {
+      "n": 2,
+      "measured": 2,
+      "ssim": 0.5407332601179227,
+      "rgb": 0.8645921372141668,
+      "peak": 93877,
+      "wallMs": 301581,
+      "requests": 26.5,
+      "outputTokens": 48434.5,
+      "targets": {
+        "header": {
+          "ssim": 0.5775261179458988,
+          "rgb": 0.8355064332968002
+        },
+        "stations": {
+          "ssim": 0.5400135954864032,
+          "rgb": 0.8914820930463627
+        },
+        "roads": {
+          "ssim": 0.2896383506841844,
+          "rgb": 0.6958316099876649
+        },
+        "next-stop": {
+          "ssim": 0.6653628284475969,
+          "rgb": 0.7614548733611427
+        },
+        "service": {
+          "ssim": 0.5562665260409472,
+          "rgb": 0.9116066902063891
+        }
+      }
+    },
+    "after-unlimited": {
+      "n": 2,
+      "measured": 2,
+      "ssim": 0.5555238256921017,
+      "rgb": 0.883826930990304,
+      "peak": 96978.5,
+      "wallMs": 390600.5,
+      "requests": 20,
+      "outputTokens": 50453.5,
+      "targets": {
+        "header": {
+          "ssim": 0.6559928912419577,
+          "rgb": 0.9018800785722403
+        },
+        "stations": {
+          "ssim": 0.5437262463433176,
+          "rgb": 0.8722413099401958
+        },
+        "roads": {
+          "ssim": 0.33398218851645123,
+          "rgb": 0.8773741425823325
+        },
+        "next-stop": {
+          "ssim": 0.7489381858135513,
+          "rgb": 0.9548760063316948
+        },
+        "service": {
+          "ssim": 0.47358287609771754,
+          "rgb": 0.8879549243244239
+        }
+      }
+    },
+    "before-handoff": {
+      "n": 2,
+      "measured": 2,
+      "ssim": 0.5419606664668415,
+      "rgb": 0.8694185551538802,
+      "peak": 66196,
+      "wallMs": 325578,
+      "requests": 30.5,
+      "outputTokens": null,
+      "targets": {
+        "header": {
+          "ssim": 0.662689842816454,
+          "rgb": 0.8956165464600934
+        },
+        "stations": {
+          "ssim": 0.5186625733741501,
+          "rgb": 0.875890390561678
+        },
+        "roads": {
+          "ssim": 0.282902765501082,
+          "rgb": 0.6865929351341474
+        },
+        "next-stop": {
+          "ssim": 0.6987031127120749,
+          "rgb": 0.8606663552132421
+        },
+        "service": {
+          "ssim": 0.5140228016749698,
+          "rgb": 0.8900432156019532
+        }
+      }
+    },
+    "after-handoff": {
+      "n": 2,
+      "measured": 2,
+      "ssim": 0.5547406147366988,
+      "rgb": 0.8853762457693939,
+      "peak": 78450.5,
+      "wallMs": 439774,
+      "requests": 27,
+      "outputTokens": null,
+      "targets": {
+        "header": {
+          "ssim": 0.6812078055193661,
+          "rgb": 0.905306256079896
+        },
+        "stations": {
+          "ssim": 0.5349690540908258,
+          "rgb": 0.8756769594052904
+        },
+        "roads": {
+          "ssim": 0.31556229061088675,
+          "rgb": 0.8642965558618991
+        },
+        "next-stop": {
+          "ssim": 0.7406095415889185,
+          "rgb": 0.9562070421490365
+        },
+        "service": {
+          "ssim": 0.4775505514748408,
+          "rgb": 0.8864056475198194
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "before-unlimited-1",
+      "version": "before",
+      "group": "unlimited",
+      "repetition": 1,
+      "round": "out/p1-live-key-verified/run-1/m402-template/template",
+      "firstRound": "out/p1-live-key-verified/run-1/m402-template/template",
+      "status": "measured",
+      "sourceCommit": "9b4a832",
+      "mcpContract": "0.9.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 87378,
+      "wallMs": 269560,
+      "requests": 29,
+      "compactions": 0,
+      "outputTokens": 44497,
+      "outputUsageComplete": true,
+      "ssim": 0.5422693375717308,
+      "rgb": 0.863912107056215,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8466408316169756,
+          "ssim": 0.5860924573473933,
+          "elements": [
+            "线路牌主模板/页眉/线路号图",
+            "线路牌主模板/页眉/终点",
+            "线路牌主模板/页眉/票价框/票价",
+            "线路牌主模板/页眉/运营方",
+            "线路牌主模板/站点列[1]/列底/标识行/标识",
+            "线路牌主模板/站点列[2]/列底/标识行/标识[1]/地铁图标",
+            "线路牌主模板/站点列[3]/列底/标识行/标识",
+            "线路牌主模板/站点列[4]/列底/标识行/标识",
+            "线路牌主模板/站点列[5]/列底/标识行/标识",
+            "线路牌主模板/站点列[6]/列底/标识行/标识",
+            "线路牌主模板/站点列[7]/列底/标识行/标识",
+            "线路牌主模板/站点列[8]/列底/标识行/标识"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8849951411811589,
+          "ssim": 0.5394507950651181,
+          "elements": [
+            "线路牌主模板/站点列[1]/列底/标识行/标识",
+            "线路牌主模板/站点列[1]/列底/站名",
+            "线路牌主模板/站点列[2]/列底/标识行/标识[1]/地铁图标",
+            "线路牌主模板/站点列[2]/列底/站名",
+            "线路牌主模板/站点列[3]/列底/标识行/标识",
+            "线路牌主模板/站点列[3]/列底/站名",
+            "线路牌主模板/站点列[4]/列底/标识行/标识",
+            "线路牌主模板/站点列[4]/列底/站名",
+            "线路牌主模板/站点列[4]/列底/地标",
+            "线路牌主模板/站点列[5]/列底/标识行/标识",
+            "线路牌主模板/站点列[5]/列底/站名",
+            "线路牌主模板/站点列[5]/列底/地标"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.6835259437975694,
+          "ssim": 0.29154564552961926,
+          "elements": [
+            "线路牌主模板/道路段[1]/道路名",
+            "线路牌主模板/道路段[4]/段间竖线",
+            "线路牌主模板/道路段[4]/道路名",
+            "线路牌主模板/道路段[5]/段间竖线",
+            "线路牌主模板/道路段[5]/道路名",
+            "线路牌主模板/道路段[6]/段间竖线",
+            "线路牌主模板/道路段[6]/道路名",
+            "线路牌主模板/道路段[8]/段间竖线",
+            "线路牌主模板/道路段[8]/道路名",
+            "线路牌主模板/道路段[10]/段间竖线",
+            "线路牌主模板/道路段[10]/道路名",
+            "线路牌主模板/道路段[11]/段间竖线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8148879911233844,
+          "ssim": 0.6907774589195994,
+          "elements": [
+            "线路牌主模板/页脚/下一站",
+            "线路牌主模板/页脚/服务信息/服务时间",
+            "线路牌主模板/页脚/服务信息/班次[1]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[2]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[3]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[4]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[5]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[6]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[7]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[8]/时刻"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9106236696523154,
+          "ssim": 0.5482082494303333,
+          "elements": [
+            "线路牌主模板/页脚/服务信息/服务时间",
+            "线路牌主模板/页脚/服务信息/班次[7]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[8]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[9]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[10]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[11]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[12]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[13]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[14]/时刻",
+            "线路牌主模板/页脚/服务信息/班次[15]/时刻"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": false,
+      "didResume": false,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "traceSummary": [
+        {
+          "round": "out/p1-live-key-verified/run-1/m402-template/template",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-22T18:54:25.197Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T18:54:31.247Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T18:55:33.831Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T18:56:29.652Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": null,
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-before-unlimited-1.json"
+    },
+    {
+      "id": "before-unlimited-2",
+      "version": "before",
+      "group": "unlimited",
+      "repetition": 2,
+      "round": "out/p1-live-key-verified/run-2/m402-template/template",
+      "firstRound": "out/p1-live-key-verified/run-2/m402-template/template",
+      "status": "measured",
+      "sourceCommit": "9b4a832",
+      "mcpContract": "0.9.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 100376,
+      "wallMs": 333602,
+      "requests": 24,
+      "compactions": 0,
+      "outputTokens": 52372,
+      "outputUsageComplete": true,
+      "ssim": 0.5391971826641146,
+      "rgb": 0.8652721673721187,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8243720349766248,
+          "ssim": 0.5689597785444042,
+          "elements": [
+            "线路牌主模板/页眉/线路号图",
+            "线路牌主模板/页眉/箭头",
+            "线路牌主模板/页眉/终点站名",
+            "线路牌主模板/页眉/票价框/票价",
+            "线路牌主模板/页眉/运营方",
+            "线路牌主模板/站点[1]/列内容/标识",
+            "线路牌主模板/站点[1]/列内容/站名",
+            "线路牌主模板/站点[2]/列内容/标识[1]/标识图",
+            "线路牌主模板/站点[2]/列内容/站名",
+            "线路牌主模板/站点[3]/列内容/标识",
+            "线路牌主模板/站点[3]/列内容/站名",
+            "线路牌主模板/站点[4]/列内容/标识"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8979690449115666,
+          "ssim": 0.5405763959076881,
+          "elements": [
+            "线路牌主模板/站点[1]/列内容/站名",
+            "线路牌主模板/站点[2]/列内容/站名",
+            "线路牌主模板/站点[3]/列内容/站名",
+            "线路牌主模板/站点[4]/列内容/站名",
+            "线路牌主模板/站点[4]/列内容/地标",
+            "线路牌主模板/站点[5]/本站底",
+            "线路牌主模板/站点[5]/列内容/站名",
+            "线路牌主模板/站点[5]/列内容/地标",
+            "线路牌主模板/站点[6]/列内容/站名",
+            "线路牌主模板/站点[6]/列内容/地标",
+            "线路牌主模板/站点[7]/列内容/站名",
+            "线路牌主模板/站点[7]/列内容/地标"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.7081372761777605,
+          "ssim": 0.2877310558387496,
+          "elements": [
+            "线路牌主模板/道路段[1]/道路名",
+            "线路牌主模板/道路段[4]/分隔线",
+            "线路牌主模板/道路段[4]/道路名",
+            "线路牌主模板/道路段[5]/分隔线",
+            "线路牌主模板/道路段[5]/道路名",
+            "线路牌主模板/道路段[6]/分隔线",
+            "线路牌主模板/道路段[6]/道路名",
+            "线路牌主模板/道路段[8]/分隔线",
+            "线路牌主模板/道路段[8]/道路名",
+            "线路牌主模板/道路段[10]/分隔线",
+            "线路牌主模板/道路段[10]/道路名",
+            "线路牌主模板/道路段[11]/分隔线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.708021755598901,
+          "ssim": 0.6399481979755943,
+          "elements": [
+            "线路牌主模板/页脚/下一站",
+            "线路牌主模板/页脚/时刻信息/时刻箭头",
+            "线路牌主模板/页脚/时刻信息/时刻文字/服务时间",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[1]/时刻",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[1]/分隔符",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[2]/时刻",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[2]/分隔符",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[3]/时刻",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[3]/分隔符",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[4]/时刻",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[4]/分隔符",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[5]/时刻"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9125897107604628,
+          "ssim": 0.5643248026515609,
+          "elements": [
+            "线路牌主模板/页脚/时刻信息/时刻文字/服务时间",
+            "线路牌主模板/页脚/时刻信息/时刻文字/班次[15]/时刻"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": false,
+      "didResume": false,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "traceSummary": [
+        {
+          "round": "out/p1-live-key-verified/run-2/m402-template/template",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-22T19:17:17.012Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T19:18:42.090Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": null,
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-before-unlimited-2.json"
+    },
+    {
+      "id": "before-handoff-1",
+      "version": "before",
+      "group": "handoff",
+      "repetition": 1,
+      "round": "out\\p1-handoff-key-verified-1\\resumed",
+      "firstRound": "out\\p1-handoff-key-verified-1\\stopped",
+      "status": "measured",
+      "sourceCommit": "d906463",
+      "mcpContract": "0.9.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 68539,
+      "wallMs": 316980,
+      "requests": 32,
+      "compactions": 0,
+      "outputTokens": null,
+      "outputUsageComplete": false,
+      "ssim": 0.5348348337548674,
+      "rgb": 0.8687215164031156,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8945063769707152,
+          "ssim": 0.6398050363389197,
+          "elements": [
+            "线路牌主模板/页眉/线路号",
+            "线路牌主模板/页眉/方向符",
+            "线路牌主模板/页眉/终点站",
+            "线路牌主模板/页眉/票价/票价文字",
+            "线路牌主模板/页眉/运营方"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8776082944963587,
+          "ssim": 0.5065746898573424,
+          "elements": [
+            "线路牌主模板/车身/站点[1]/底色",
+            "线路牌主模板/车身/站点[1]/列/标识",
+            "线路牌主模板/车身/站点[1]/列/站名",
+            "线路牌主模板/车身/站点[2]/底色",
+            "线路牌主模板/车身/站点[2]/列/标识[1]/图标",
+            "线路牌主模板/车身/站点[2]/列/站名",
+            "线路牌主模板/车身/站点[3]/底色",
+            "线路牌主模板/车身/站点[3]/列/标识",
+            "线路牌主模板/车身/站点[3]/列/站名",
+            "线路牌主模板/车身/站点[4]/底色",
+            "线路牌主模板/车身/站点[4]/列/标识",
+            "线路牌主模板/车身/站点[4]/列/站名"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.6692876838235636,
+          "ssim": 0.32863143262021705,
+          "elements": [
+            "线路牌主模板/车身/道路带[1]/道路名",
+            "线路牌主模板/车身/道路带[4]/分隔线",
+            "线路牌主模板/车身/道路带[4]/道路名",
+            "线路牌主模板/车身/道路带[5]/分隔线",
+            "线路牌主模板/车身/道路带[5]/道路名",
+            "线路牌主模板/车身/道路带[6]/分隔线",
+            "线路牌主模板/车身/道路带[6]/道路名",
+            "线路牌主模板/车身/道路带[8]/分隔线",
+            "线路牌主模板/车身/道路带[8]/道路名",
+            "线路牌主模板/车身/道路带[10]/分隔线",
+            "线路牌主模板/车身/道路带[10]/道路名",
+            "线路牌主模板/车身/道路带[11]/分隔线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8047029865918015,
+          "ssim": 0.6704652412658572,
+          "elements": [
+            "线路牌主模板/页脚/下一站",
+            "线路牌主模板/页脚/服务时间/服务时间文字",
+            "线路牌主模板/页脚/服务时间/班次[1]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[2]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[3]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[4]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[5]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[6]/时刻"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9032320969768627,
+          "ssim": 0.5404320521152148,
+          "elements": [
+            "线路牌主模板/页脚/服务时间/服务时间文字",
+            "线路牌主模板/页脚/服务时间/班次[6]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[7]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[8]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[9]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[10]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[11]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[12]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[13]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[14]/时刻",
+            "线路牌主模板/页脚/服务时间/班次[15]/时刻"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": true,
+      "didResume": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "traceSummary": [
+        {
+          "round": "out\\p1-handoff-key-verified-1\\stopped",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [],
+          "progressSource": null,
+          "progressWarning": "Agent 未保存进度，按候选与原始要求继续",
+          "hasFinalProgress": false,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-1\\resumed",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-22T19:34:27.141Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T19:35:28.612Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": null,
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-before-handoff-1.json"
+    },
+    {
+      "id": "before-handoff-2",
+      "version": "before",
+      "group": "handoff",
+      "repetition": 2,
+      "round": "out\\p1-handoff-key-verified-2\\resumed",
+      "firstRound": "out\\p1-handoff-key-verified-2\\stopped",
+      "status": "measured",
+      "sourceCommit": "d906463",
+      "mcpContract": "0.9.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 63853,
+      "wallMs": 334176,
+      "requests": 29,
+      "compactions": 0,
+      "outputTokens": null,
+      "outputUsageComplete": false,
+      "ssim": 0.5490864991788155,
+      "rgb": 0.870115593904645,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8967267159494715,
+          "ssim": 0.6855746492939883,
+          "elements": [
+            "线路牌主模板/顶栏",
+            "线路牌主模板/线路号",
+            "线路牌主模板/方向符",
+            "线路牌主模板/终点站名",
+            "线路牌主模板/票价底",
+            "线路牌主模板/票价",
+            "线路牌主模板/运营方",
+            "线路牌主模板/站点列表[1]/当前底色",
+            "线路牌主模板/站点列表[1]/列内容/站名",
+            "线路牌主模板/站点列表[2]/当前底色",
+            "线路牌主模板/站点列表[2]/列内容/徽标列[1]/地铁图标",
+            "线路牌主模板/站点列表[3]/当前底色"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8741724866269973,
+          "ssim": 0.5307504568909579,
+          "elements": [
+            "线路牌主模板/站点列表[1]/当前底色",
+            "线路牌主模板/站点列表[1]/列内容/站名",
+            "线路牌主模板/站点列表[2]/当前底色",
+            "线路牌主模板/站点列表[2]/列内容/徽标列[1]/地铁图标",
+            "线路牌主模板/站点列表[2]/列内容/站名",
+            "线路牌主模板/站点列表[3]/当前底色",
+            "线路牌主模板/站点列表[3]/列内容/站名",
+            "线路牌主模板/站点列表[4]/当前底色",
+            "线路牌主模板/站点列表[4]/列内容/站名",
+            "线路牌主模板/站点列表[4]/列内容/地标",
+            "线路牌主模板/站点列表[5]/当前底色",
+            "线路牌主模板/站点列表[5]/列内容/站名"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.7038981864447312,
+          "ssim": 0.23717409838194697,
+          "elements": [
+            "线路牌主模板/道路段列[1]/道路名",
+            "线路牌主模板/道路段列[4]/分隔线",
+            "线路牌主模板/道路段列[4]/道路名",
+            "线路牌主模板/道路段列[5]/分隔线",
+            "线路牌主模板/道路段列[5]/道路名",
+            "线路牌主模板/道路段列[6]/分隔线",
+            "线路牌主模板/道路段列[6]/道路名",
+            "线路牌主模板/道路段列[8]/分隔线",
+            "线路牌主模板/道路段列[8]/道路名",
+            "线路牌主模板/道路段列[10]/分隔线",
+            "线路牌主模板/道路段列[10]/道路名",
+            "线路牌主模板/道路段列[11]/分隔线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9166297238346826,
+          "ssim": 0.7269409841582927,
+          "elements": [
+            "线路牌主模板/下一站",
+            "线路牌主模板/时刻底",
+            "线路牌主模板/服务时间",
+            "线路牌主模板/班次时刻[1]/时刻"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8768543342270437,
+          "ssim": 0.48761355123472483,
+          "elements": [
+            "线路牌主模板/时刻底",
+            "线路牌主模板/服务时间",
+            "线路牌主模板/班次时刻[1]/时刻",
+            "线路牌主模板/班次时刻[2]/时刻",
+            "线路牌主模板/班次时刻[3]/时刻",
+            "线路牌主模板/班次时刻[4]/时刻",
+            "线路牌主模板/班次时刻[5]/时刻",
+            "线路牌主模板/班次时刻[6]/时刻",
+            "线路牌主模板/班次时刻[7]/时刻",
+            "线路牌主模板/班次时刻[8]/时刻",
+            "线路牌主模板/班次时刻[9]/时刻",
+            "线路牌主模板/班次时刻[10]/时刻"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": true,
+      "didResume": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "72ec30c9ebd9bbd83d6d24f203e5c48d01ad7fe59749d8b81e76173ef3d63d11"
+      },
+      "traceSummary": [
+        {
+          "round": "out\\p1-handoff-key-verified-2\\stopped",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-22T19:39:33.353Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": null,
+          "progressWarning": "Agent 未保存进度，按候选与原始要求继续",
+          "hasFinalProgress": false,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        },
+        {
+          "round": "out\\p1-handoff-key-verified-2\\resumed",
+          "guideReads": 0,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-22T19:40:14.258Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-22T19:42:18.892Z",
+              "status": "unavailable",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": null,
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-before-handoff-2.json"
+    },
+    {
+      "id": "after-unlimited-1",
+      "version": "after",
+      "group": "unlimited",
+      "repetition": 1,
+      "round": "out/refinement-live/run-1/m402-template/template",
+      "firstRound": "out/refinement-live/run-1/m402-template/template",
+      "status": "measured",
+      "sourceCommit": "2d8d7d0",
+      "mcpContract": "0.10.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 118661,
+      "wallMs": 568550,
+      "requests": 27,
+      "compactions": 0,
+      "outputTokens": 67458,
+      "outputUsageComplete": true,
+      "ssim": 0.5544459507068202,
+      "rgb": 0.8908185219743335,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.9189051405836903,
+          "ssim": 0.6781865208993868,
+          "elements": [
+            "线路牌主模板/顶栏",
+            "线路牌主模板/站点面板",
+            "线路牌主模板/线路号",
+            "线路牌主模板/箭头一",
+            "线路牌主模板/箭头二",
+            "线路牌主模板/终点标题",
+            "线路牌主模板/票价框",
+            "线路牌主模板/票价",
+            "线路牌主模板/运营方",
+            "线路牌主模板/站点循环[1]/本站底色",
+            "线路牌主模板/站点循环[2]/本站底色",
+            "线路牌主模板/站点循环[3]/本站底色"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8778622538583698,
+          "ssim": 0.537084598761694,
+          "elements": [
+            "线路牌主模板/顶栏",
+            "线路牌主模板/站点面板",
+            "线路牌主模板/道路带",
+            "线路牌主模板/站点循环[1]/本站底色",
+            "线路牌主模板/站点循环[1]/列内容/站点标识循环",
+            "线路牌主模板/站点循环[1]/列内容/站名",
+            "线路牌主模板/站点循环[2]/本站底色",
+            "线路牌主模板/站点循环[2]/列内容/站点标识循环[1]/标识图",
+            "线路牌主模板/站点循环[2]/列内容/站名",
+            "线路牌主模板/站点循环[3]/本站底色",
+            "线路牌主模板/站点循环[3]/列内容/站点标识循环",
+            "线路牌主模板/站点循环[3]/列内容/站名"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.8659744774645568,
+          "ssim": 0.306691875125834,
+          "elements": [
+            "线路牌主模板/道路带",
+            "线路牌主模板/下一站底",
+            "线路牌主模板/服务带底",
+            "线路牌主模板/道路循环[1]/道路名",
+            "线路牌主模板/道路循环[4]/道路名",
+            "线路牌主模板/道路循环[4]/段间竖线",
+            "线路牌主模板/道路循环[5]/道路名",
+            "线路牌主模板/道路循环[5]/段间竖线",
+            "线路牌主模板/道路循环[6]/道路名",
+            "线路牌主模板/道路循环[6]/段间竖线",
+            "线路牌主模板/道路循环[8]/道路名",
+            "线路牌主模板/道路循环[8]/段间竖线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.951543136399701,
+          "ssim": 0.7251800433553549,
+          "elements": [
+            "线路牌主模板/道路带",
+            "线路牌主模板/下一站底",
+            "线路牌主模板/服务带底",
+            "线路牌主模板/道路循环[1]/道路名",
+            "线路牌主模板/道路循环[4]/道路名",
+            "线路牌主模板/道路循环[4]/段间竖线",
+            "线路牌主模板/道路循环[5]/道路名",
+            "线路牌主模板/道路循环[5]/段间竖线",
+            "线路牌主模板/道路循环[6]/道路名",
+            "线路牌主模板/道路循环[6]/段间竖线",
+            "线路牌主模板/道路循环[8]/道路名",
+            "线路牌主模板/道路循环[8]/段间竖线"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8959331567407615,
+          "ssim": 0.4779449548835664,
+          "elements": [
+            "线路牌主模板/道路带",
+            "线路牌主模板/下一站底",
+            "线路牌主模板/服务带底",
+            "线路牌主模板/道路循环[10]/道路名",
+            "线路牌主模板/道路循环[11]/道路名",
+            "线路牌主模板/道路循环[11]/段间竖线",
+            "线路牌主模板/道路循环[14]/道路名",
+            "线路牌主模板/道路循环[14]/段间竖线",
+            "线路牌主模板/道路循环[22]/道路名",
+            "线路牌主模板/道路循环[22]/段间竖线",
+            "线路牌主模板/道路循环[23]/道路名",
+            "线路牌主模板/道路循环[23]/段间竖线"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": false,
+      "didResume": false,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "8055f584f00b40bb10ffb916b653756cbbcf2074b5dc23759c2127067217a40c"
+      },
+      "traceSummary": [
+        {
+          "round": "out/refinement-live/run-1/m402-template/template",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 1,
+          "checkpoints": [
+            {
+              "at": "2026-10-23T01:24:10.326Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T01:27:57.852Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T01:28:23.233Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T01:30:07.129Z",
+              "status": "ready",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": "checkpoint",
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-after-unlimited-1.json"
+    },
+    {
+      "id": "after-unlimited-2",
+      "version": "after",
+      "group": "unlimited",
+      "repetition": 2,
+      "round": "out/refinement-live/run-2/m402-template/template",
+      "firstRound": "out/refinement-live/run-2/m402-template/template",
+      "status": "measured",
+      "sourceCommit": "2d8d7d0",
+      "mcpContract": "0.10.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 75296,
+      "wallMs": 212651,
+      "requests": 13,
+      "compactions": 0,
+      "outputTokens": 33449,
+      "outputUsageComplete": true,
+      "ssim": 0.5566017006773831,
+      "rgb": 0.8768353400062745,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8848550165607902,
+          "ssim": 0.6337992615845285,
+          "elements": [
+            "线路牌主模板/顶栏/线路号",
+            "线路牌主模板/顶栏/双箭头",
+            "线路牌主模板/顶栏/终点标题",
+            "线路牌主模板/顶栏/票价框/票价文字",
+            "线路牌主模板/顶栏/运营方",
+            "线路牌主模板/站点面板/站点循环[1]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[2]/列/标识循环[1]/标识图",
+            "线路牌主模板/站点面板/站点循环[3]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[4]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[5]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[6]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[7]/列/标识循环"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8666203660220219,
+          "ssim": 0.5503678939249411,
+          "elements": [
+            "线路牌主模板/顶栏/双箭头",
+            "线路牌主模板/顶栏/终点标题",
+            "线路牌主模板/顶栏/运营方",
+            "线路牌主模板/站点面板/站点循环[1]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[1]/列/站名",
+            "线路牌主模板/站点面板/站点循环[2]/列/标识循环[1]/标识图",
+            "线路牌主模板/站点面板/站点循环[2]/列/站名",
+            "线路牌主模板/站点面板/站点循环[3]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[3]/列/站名",
+            "线路牌主模板/站点面板/站点循环[4]/列/标识循环",
+            "线路牌主模板/站点面板/站点循环[4]/列/站名",
+            "线路牌主模板/站点面板/站点循环[4]/列/地标"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.888773807700108,
+          "ssim": 0.3612725019070685,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[1]/道路名",
+            "线路牌主模板/道路带/道路循环[4]/分隔线",
+            "线路牌主模板/道路带/道路循环[4]/道路名",
+            "线路牌主模板/道路带/道路循环[5]/分隔线",
+            "线路牌主模板/道路带/道路循环[5]/道路名",
+            "线路牌主模板/道路带/道路循环[6]/分隔线",
+            "线路牌主模板/道路带/道路循环[6]/道路名",
+            "线路牌主模板/道路带/道路循环[8]/分隔线",
+            "线路牌主模板/道路带/道路循环[8]/道路名",
+            "线路牌主模板/道路带/道路循环[10]/分隔线",
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/道路带/道路循环[11]/分隔线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9582088762636884,
+          "ssim": 0.7726963282717478,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[1]/道路名",
+            "线路牌主模板/道路带/道路循环[4]/分隔线",
+            "线路牌主模板/道路带/道路循环[4]/道路名",
+            "线路牌主模板/道路带/道路循环[5]/分隔线",
+            "线路牌主模板/道路带/道路循环[5]/道路名",
+            "线路牌主模板/道路带/道路循环[6]/分隔线",
+            "线路牌主模板/道路带/道路循环[6]/道路名",
+            "线路牌主模板/道路带/道路循环[8]/分隔线",
+            "线路牌主模板/道路带/道路循环[8]/道路名",
+            "线路牌主模板/道路带/道路循环[10]/分隔线",
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/底栏/下一站/下一站标签"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8799766919080864,
+          "ssim": 0.4692207973118687,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/道路带/道路循环[11]/分隔线",
+            "线路牌主模板/道路带/道路循环[11]/道路名",
+            "线路牌主模板/道路带/道路循环[14]/分隔线",
+            "线路牌主模板/道路带/道路循环[14]/道路名",
+            "线路牌主模板/道路带/道路循环[22]/分隔线",
+            "线路牌主模板/道路带/道路循环[22]/道路名",
+            "线路牌主模板/道路带/道路循环[23]/分隔线",
+            "线路牌主模板/道路带/道路循环[23]/道路名",
+            "线路牌主模板/道路带/道路循环[25]/分隔线",
+            "线路牌主模板/道路带/道路循环[25]/道路名",
+            "线路牌主模板/道路带/道路循环[28]/分隔线"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": false,
+      "didResume": false,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "8055f584f00b40bb10ffb916b653756cbbcf2074b5dc23759c2127067217a40c"
+      },
+      "traceSummary": [
+        {
+          "round": "out/refinement-live/run-2/m402-template/template",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-23T02:00:24.014Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T02:00:52.868Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T02:01:14.796Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T02:01:27.030Z",
+              "status": "ready",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": "checkpoint",
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-after-unlimited-2.json"
+    },
+    {
+      "id": "after-handoff-1",
+      "version": "after",
+      "group": "handoff",
+      "repetition": 1,
+      "round": "out\\refinement-handoff-1\\resumed",
+      "firstRound": "out\\refinement-handoff-1\\stopped",
+      "status": "measured",
+      "sourceCommit": "2d8d7d0",
+      "mcpContract": "0.10.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 65457,
+      "wallMs": 425461,
+      "requests": 27,
+      "compactions": 0,
+      "outputTokens": null,
+      "outputUsageComplete": false,
+      "ssim": 0.5660756240526862,
+      "rgb": 0.8874727524519441,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.8966571833306218,
+          "ssim": 0.6754688086123324,
+          "elements": [
+            "线路牌主模板/顶栏/线路号",
+            "线路牌主模板/顶栏/方向箭头",
+            "线路牌主模板/顶栏/终点标题",
+            "线路牌主模板/顶栏/票价框/票价文字",
+            "线路牌主模板/顶栏/运营方",
+            "线路牌主模板/站点面板/停靠列[1]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[2]/列/标识列[1]/图标",
+            "线路牌主模板/站点面板/停靠列[3]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[4]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[5]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[6]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[7]/列/标识列"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8817362965373464,
+          "ssim": 0.548246181881964,
+          "elements": [
+            "线路牌主模板/站点面板/停靠列[1]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[1]/列/站名",
+            "线路牌主模板/站点面板/停靠列[2]/列/标识列[1]/图标",
+            "线路牌主模板/站点面板/停靠列[2]/列/站名",
+            "线路牌主模板/站点面板/停靠列[3]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[3]/列/站名",
+            "线路牌主模板/站点面板/停靠列[4]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[4]/列/站名",
+            "线路牌主模板/站点面板/停靠列[4]/列/地标",
+            "线路牌主模板/站点面板/停靠列[5]/列/标识列",
+            "线路牌主模板/站点面板/停靠列[5]/列/站名",
+            "线路牌主模板/站点面板/停靠列[5]/列/地标"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.8634322661355958,
+          "ssim": 0.3403728790320511,
+          "elements": [
+            "线路牌主模板/道路带/道路段列[1]/道路名",
+            "线路牌主模板/道路带/道路段列[4]/道路名",
+            "线路牌主模板/道路带/道路段列[4]/段间线",
+            "线路牌主模板/道路带/道路段列[5]/道路名",
+            "线路牌主模板/道路带/道路段列[5]/段间线",
+            "线路牌主模板/道路带/道路段列[6]/道路名",
+            "线路牌主模板/道路带/道路段列[6]/段间线",
+            "线路牌主模板/道路带/道路段列[8]/道路名",
+            "线路牌主模板/道路带/道路段列[8]/段间线",
+            "线路牌主模板/道路带/道路段列[10]/道路名",
+            "线路牌主模板/道路带/道路段列[10]/段间线",
+            "线路牌主模板/道路带/道路段列[11]/道路名"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9615149365388774,
+          "ssim": 0.7796070672962097,
+          "elements": [
+            "线路牌主模板/底栏/下一站"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8927566273476893,
+          "ssim": 0.5044513921218825,
+          "elements": [
+            "线路牌主模板/底栏/服务带/服务主行",
+            "线路牌主模板/底栏/服务带/班次时刻列[1]/时刻",
+            "线路牌主模板/底栏/服务带/班次时刻列[1]/分隔符",
+            "线路牌主模板/底栏/服务带/班次时刻列[2]/时刻",
+            "线路牌主模板/底栏/服务带/班次时刻列[2]/分隔符",
+            "线路牌主模板/底栏/服务带/班次时刻列[3]/时刻",
+            "线路牌主模板/底栏/服务带/班次时刻列[3]/分隔符",
+            "线路牌主模板/底栏/服务带/班次时刻列[4]/时刻",
+            "线路牌主模板/底栏/服务带/班次时刻列[4]/分隔符",
+            "线路牌主模板/底栏/服务带/班次时刻列[5]/时刻",
+            "线路牌主模板/底栏/服务带/班次时刻列[5]/分隔符",
+            "线路牌主模板/底栏/服务带/班次时刻列[6]/时刻"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": true,
+      "didResume": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "8055f584f00b40bb10ffb916b653756cbbcf2074b5dc23759c2127067217a40c"
+      },
+      "traceSummary": [
+        {
+          "round": "out\\refinement-handoff-1\\stopped",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [],
+          "progressSource": "none",
+          "progressWarning": "先将本阶段选择、未解决项和下一步写入 state.json，再调用 check_outcome 建立检查点",
+          "hasFinalProgress": false,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        },
+        {
+          "round": "out\\refinement-handoff-1\\resumed",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-23T02:44:36.114Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T02:45:14.297Z",
+              "status": "ready",
+              "hasReviewNote": true
+            },
+            {
+              "at": "2026-10-23T02:45:30.699Z",
+              "status": "ready",
+              "hasReviewNote": true
+            }
+          ],
+          "progressSource": "checkpoint",
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 1129,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-after-handoff-1.json"
+    },
+    {
+      "id": "after-handoff-2",
+      "version": "after",
+      "group": "handoff",
+      "repetition": 2,
+      "round": "out\\refinement-handoff-2\\resumed",
+      "firstRound": "out\\refinement-handoff-2\\stopped",
+      "status": "measured",
+      "sourceCommit": "2d8d7d0",
+      "mcpContract": "0.10.0",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "effort": null,
+        "contextLimit": null,
+        "skills": "disabled",
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "check_outcome"
+        ]
+      },
+      "runtimeStartup": [
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "claudeCodeVersion": "2.1.296",
+          "skills": [],
+          "tools": [
+            "Edit",
+            "Glob",
+            "Read",
+            "Write",
+            "mcp__rw__check_outcome",
+            "mcp__rw__check_templates",
+            "mcp__rw__dsl_reference",
+            "mcp__rw__inspect_layout",
+            "mcp__rw__list_documents",
+            "mcp__rw__list_resources",
+            "mcp__rw__read_document",
+            "mcp__rw__render_draft",
+            "mcp__rw__view_image"
+          ],
+          "mcp": [
+            {
+              "name": "rw",
+              "status": "connected",
+              "source": "dynamic"
+            }
+          ]
+        }
+      ],
+      "verdict": "qualified",
+      "peak": 91444,
+      "wallMs": 454087,
+      "requests": 27,
+      "compactions": 0,
+      "outputTokens": null,
+      "outputUsageComplete": false,
+      "ssim": 0.5434056054207114,
+      "rgb": 0.8832797390868438,
+      "targets": [
+        {
+          "id": "header",
+          "goal": "橙色顶栏：线路号左缘约画板6%，双箭头约27%，终点标题约32%；票价框约73%–89%，运营方靠右。保持线路号与终点标题的显著层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 740,
+            "height": 35.02188183807439
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 0,
+            "width": 3496,
+            "height": 165.55798687089714
+          },
+          "rgbSimilarity": 0.9139553288291702,
+          "ssim": 0.6869468024263998,
+          "elements": [
+            "线路牌主模板/顶栏/线路标题/线路号",
+            "线路牌主模板/顶栏/线路标题/箭头",
+            "线路牌主模板/顶栏/线路标题/终点标题",
+            "线路牌主模板/顶栏/票价框/票价文字",
+            "线路牌主模板/顶栏/运营方",
+            "线路牌主模板/站点面板/站点循环[1]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[2]/列体/标识循环[1]/标识图",
+            "线路牌主模板/站点面板/站点循环[3]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[4]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[5]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[6]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[7]/列体/标识循环"
+          ]
+        },
+        {
+          "id": "stations",
+          "goal": "白色圆角站点面板：图标独立位于站名上方；站名墨迹约从y260延伸到620；35列均布，地标底线对齐，已过灰/本站红底黄/未到黑。逐站同类字号一致。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 34.66083150984682,
+            "width": 740,
+            "height": 98.9277899343545
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 163.8512035010941,
+            "width": 3496,
+            "height": 467.65864332603945
+          },
+          "rgbSimilarity": 0.8696176222732345,
+          "ssim": 0.5216919262996879,
+          "elements": [
+            "线路牌主模板/顶栏/运营方",
+            "线路牌主模板/站点面板/站点循环[1]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[1]/列体/站名",
+            "线路牌主模板/站点面板/站点循环[2]/列体/标识循环[1]/标识图",
+            "线路牌主模板/站点面板/站点循环[2]/列体/站名",
+            "线路牌主模板/站点面板/站点循环[3]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[3]/列体/站名",
+            "线路牌主模板/站点面板/站点循环[4]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[4]/列体/站名",
+            "线路牌主模板/站点面板/站点循环[4]/列体/地标",
+            "线路牌主模板/站点面板/站点循环[5]/列体/标识循环",
+            "线路牌主模板/站点面板/站点循环[5]/列体/站名"
+          ]
+        },
+        {
+          "id": "roads",
+          "goal": "灰色道路带：蓝色道路名跨所含站列，段间竖线对齐道路分组；字距随跨度拉开，文字仍清晰可读。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 133.22757111597375,
+            "width": 740,
+            "height": 10.831509846827133
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 629.8030634573304,
+            "width": 3496,
+            "height": 51.2035010940919
+          },
+          "rgbSimilarity": 0.8651608455882024,
+          "ssim": 0.2907517021897224,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[1]/道路名",
+            "线路牌主模板/道路带/道路循环[4]/段间竖线",
+            "线路牌主模板/道路带/道路循环[4]/道路名",
+            "线路牌主模板/道路带/道路循环[5]/段间竖线",
+            "线路牌主模板/道路带/道路循环[5]/道路名",
+            "线路牌主模板/道路带/道路循环[6]/段间竖线",
+            "线路牌主模板/道路带/道路循环[6]/道路名",
+            "线路牌主模板/道路带/道路循环[8]/段间竖线",
+            "线路牌主模板/道路带/道路循环[8]/道路名",
+            "线路牌主模板/道路带/道路循环[10]/段间竖线",
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/道路带/道路循环[11]/段间竖线"
+          ]
+        },
+        {
+          "id": "next-stop",
+          "goal": "左下白色下一站区域保留站名及地标；文字与右侧服务时间主行形成相近的视觉层级。",
+          "approval": "proposed",
+          "region": {
+            "x": 0,
+            "y": 143.69803063457329,
+            "width": 201.259765625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 0,
+            "y": 679.2997811816192,
+            "width": 950.81640625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.9508991477591957,
+          "ssim": 0.7016120158816274,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[1]/道路名",
+            "线路牌主模板/道路带/道路循环[4]/段间竖线",
+            "线路牌主模板/道路带/道路循环[4]/道路名",
+            "线路牌主模板/道路带/道路循环[5]/段间竖线",
+            "线路牌主模板/道路带/道路循环[5]/道路名",
+            "线路牌主模板/道路带/道路循环[6]/段间竖线",
+            "线路牌主模板/道路带/道路循环[6]/道路名",
+            "线路牌主模板/道路带/道路循环[8]/段间竖线",
+            "线路牌主模板/道路带/道路循环[8]/道路名",
+            "线路牌主模板/道路带/道路循环[10]/段间竖线",
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/底栏/下一站区/下一站文字"
+          ]
+        },
+        {
+          "id": "service",
+          "goal": "右下黄色服务带含主行与时刻行：服务时间和运营说明可辨，时刻用分隔符连续排布。主行墨迹高度约与站名接近，时刻约其一半，避免缩成细小脚注。",
+          "approval": "proposed",
+          "region": {
+            "x": 200.8984375,
+            "y": 143.69803063457329,
+            "width": 539.1015625,
+            "height": 21.301969365426693
+          },
+          "referenceRegion": {
+            "x": 949.109375,
+            "y": 679.2997811816192,
+            "width": 2546.890625,
+            "height": 100.70021881838073
+          },
+          "rgbSimilarity": 0.8800546676919494,
+          "ssim": 0.45064971082779914,
+          "elements": [
+            "线路牌主模板/道路带/道路循环[10]/道路名",
+            "线路牌主模板/道路带/道路循环[11]/段间竖线",
+            "线路牌主模板/道路带/道路循环[11]/道路名",
+            "线路牌主模板/道路带/道路循环[14]/段间竖线",
+            "线路牌主模板/道路带/道路循环[14]/道路名",
+            "线路牌主模板/道路带/道路循环[22]/段间竖线",
+            "线路牌主模板/道路带/道路循环[22]/道路名",
+            "线路牌主模板/道路带/道路循环[23]/段间竖线",
+            "线路牌主模板/道路带/道路循环[23]/道路名",
+            "线路牌主模板/道路带/道路循环[25]/段间竖线",
+            "线路牌主模板/道路带/道路循环[25]/道路名",
+            "线路牌主模板/道路带/道路循环[28]/段间竖线"
+          ]
+        }
+      ],
+      "casesPassed": 8,
+      "cases": 8,
+      "stressPassed": 10,
+      "layoutPassed": 2,
+      "qualityPass": true,
+      "triggered": true,
+      "didResume": true,
+      "inputs": {
+        "sample": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+        "brief": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "workspace": "sha256:c198d3a908d6dccc87904a5a510ffbddf14e495199b9a88c2ed756ab6e1b69bb",
+        "dataset": "ds-m402-wanguocheng",
+        "request": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+        "checks": "8055f584f00b40bb10ffb916b653756cbbcf2074b5dc23759c2127067217a40c"
+      },
+      "traceSummary": [
+        {
+          "round": "out\\refinement-handoff-2\\stopped",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-23T02:49:05.979Z",
+              "status": "ready",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": "checkpoint",
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": false,
+          "restoredReviewNote": false
+        },
+        {
+          "round": "out\\refinement-handoff-2\\resumed",
+          "guideReads": 1,
+          "guideShellReferences": 0,
+          "namedTargetCalls": 0,
+          "checkpoints": [
+            {
+              "at": "2026-10-23T02:52:25.963Z",
+              "status": "ready",
+              "hasReviewNote": false
+            },
+            {
+              "at": "2026-10-23T02:53:44.559Z",
+              "status": "ready",
+              "hasReviewNote": false
+            }
+          ],
+          "progressSource": "checkpoint",
+          "progressWarning": null,
+          "hasFinalProgress": true,
+          "detailedRecordBytes": 0,
+          "restoredProgress": true,
+          "restoredReviewNote": false
+        }
+      ],
+      "report": "docs/agent-eval/reports/template-design-refinement-after-handoff-2.json"
+    }
+  ],
+  "auxiliaryTiming": [
+    {
+      "version": "before",
+      "repetition": 1,
+      "task": "m402-definition/definition",
+      "round": "out/p1-live-key-verified/run-1/m402-definition/definition",
+      "wallMs": 228199,
+      "outputTokens": 37330,
+      "peak": 67251,
+      "requests": 10
+    },
+    {
+      "version": "before",
+      "repetition": 1,
+      "task": "m402-revision/revision",
+      "round": "out/p1-live-key-verified/run-1/m402-revision/revision",
+      "wallMs": 88670,
+      "outputTokens": 13410,
+      "peak": 41281,
+      "requests": 13
+    },
+    {
+      "version": "before",
+      "repetition": 1,
+      "task": "366-transcription/definition",
+      "round": "out/p1-live-key-verified/run-1/366-transcription/definition",
+      "wallMs": 428777,
+      "outputTokens": 55402,
+      "peak": 88939,
+      "requests": 15
+    },
+    {
+      "version": "before",
+      "repetition": 1,
+      "task": "366-transcription/dataset",
+      "round": "out/p1-live-key-verified/run-1/366-transcription/dataset",
+      "wallMs": 267189,
+      "outputTokens": 43298,
+      "peak": 80342,
+      "requests": 13
+    },
+    {
+      "version": "before",
+      "repetition": 2,
+      "task": "m402-definition/definition",
+      "round": "out/p1-live-key-verified/run-2/m402-definition/definition",
+      "wallMs": 206341,
+      "outputTokens": 43161,
+      "peak": 74993,
+      "requests": 12
+    },
+    {
+      "version": "before",
+      "repetition": 2,
+      "task": "m402-revision/revision",
+      "round": "out/p1-live-key-verified/run-2/m402-revision/revision",
+      "wallMs": 77589,
+      "outputTokens": 13704,
+      "peak": 44578,
+      "requests": 13
+    },
+    {
+      "version": "before",
+      "repetition": 2,
+      "task": "366-transcription/definition",
+      "round": "out/p1-live-key-verified/run-2/366-transcription/definition",
+      "wallMs": 186340,
+      "outputTokens": 36778,
+      "peak": 67029,
+      "requests": 12
+    },
+    {
+      "version": "before",
+      "repetition": 2,
+      "task": "366-transcription/dataset",
+      "round": "out/p1-live-key-verified/run-2/366-transcription/dataset",
+      "wallMs": 382678,
+      "outputTokens": 42559,
+      "peak": 90248,
+      "requests": 13
+    },
+    {
+      "version": "after",
+      "repetition": 1,
+      "task": "m402-definition/definition",
+      "round": "out/refinement-live/run-1/m402-definition/definition",
+      "wallMs": 424239,
+      "outputTokens": 30123,
+      "peak": 60394,
+      "requests": 13
+    },
+    {
+      "version": "after",
+      "repetition": 1,
+      "task": "m402-revision/revision",
+      "round": "out/refinement-live/run-1/m402-revision/revision",
+      "wallMs": 163454,
+      "outputTokens": 19451,
+      "peak": 60714,
+      "requests": 17
+    },
+    {
+      "version": "after",
+      "repetition": 1,
+      "task": "366-transcription/definition",
+      "round": "out/refinement-live/run-1/366-transcription/definition",
+      "wallMs": 691702,
+      "outputTokens": 36119,
+      "peak": 65267,
+      "requests": 14
+    },
+    {
+      "version": "after",
+      "repetition": 1,
+      "task": "366-transcription/dataset",
+      "round": "out/refinement-live/run-1/366-transcription/dataset",
+      "wallMs": 467430,
+      "outputTokens": 46704,
+      "peak": 82817,
+      "requests": 11
+    },
+    {
+      "version": "after",
+      "repetition": 2,
+      "task": "m402-definition/definition",
+      "round": "out/refinement-live/run-2/m402-definition/definition",
+      "wallMs": 329108,
+      "outputTokens": 29709,
+      "peak": 58029,
+      "requests": 12
+    },
+    {
+      "version": "after",
+      "repetition": 2,
+      "task": "m402-revision/revision",
+      "round": "out/refinement-live/run-2/m402-revision/revision",
+      "wallMs": 170839,
+      "outputTokens": 19828,
+      "peak": 58070,
+      "requests": 15
+    },
+    {
+      "version": "after",
+      "repetition": 2,
+      "task": "366-transcription/definition",
+      "round": "out/refinement-live/run-2/366-transcription/definition",
+      "wallMs": 653325,
+      "outputTokens": 52214,
+      "peak": 91294,
+      "requests": 17
+    },
+    {
+      "version": "after",
+      "repetition": 2,
+      "task": "366-transcription/dataset",
+      "round": "out/refinement-live/run-2/366-transcription/dataset",
+      "wallMs": 638386,
+      "outputTokens": 42288,
+      "peak": 75831,
+      "requests": 13
+    }
+  ],
+  "note": "全图与命名区域使用同一采样；交接峰值取两轮最大、耗时相加。两样本仅为实测现象，不作稳定因果结论；辅助任务耗时仅提供时段变化线索，不是随机对照。"
+}

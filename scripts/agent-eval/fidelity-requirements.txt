@@ -1,0 +1,3 @@
+flip-evaluator==1.7
+numpy==2.3.3
+Pillow==12.2.0
