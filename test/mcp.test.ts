@@ -29,6 +29,8 @@ async function fingerprint(...dirs: string[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const walk = async (dir: string) => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
+      // 同时运行的产品读者可创建短时协调元数据；只核对业务文档与资源没有被 MCP 修改。
+      if (entry.isDirectory() && /^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) continue;
       const file = join(dir, entry.name);
       if (entry.isDirectory()) await walk(file);
       else if (entry.isSymbolicLink()) result.set(file, 'link');
@@ -95,7 +97,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.12.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.13.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');

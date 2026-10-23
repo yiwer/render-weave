@@ -289,7 +289,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const results = [m402, template, transcription];
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
-      format: 'renderweave-agent-eval/4', mcpContract: '0.12.0', consecutivePasses: 2,
+      format: 'renderweave-agent-eval/4', mcpContract: '0.13.0', consecutivePasses: 2,
       runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       results: [{ status: 'fail', retries: 0 }, { status: 'pass', retries: 0 }, { status: 'pass', retries: 0 }],
       gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4, thinkingTokens: 150 * 4, persistedResults: 0 },

@@ -474,6 +474,9 @@ async function runApply(roundDir: string, options: Record<string, string>, overw
   }
   if (!result.applied) return ExitCodes.failed;
   io.stdout(`${JSON.stringify({
+    status: 'committed', reused: result.reused ?? false, appliedAt: result.applied.appliedAt,
+    ...(result.applied.commitId ? { commitId: result.applied.commitId } : {}),
+    ...(result.applied.contentIdentity ? { contentIdentity: result.applied.contentIdentity } : {}),
     workspace: result.applied.workspace, overwrite: result.applied.overwrite,
     published: result.applied.published.map((item) => ({
       kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files, ...(item.replaced ? { replaced: true } : {}),
@@ -523,8 +526,10 @@ async function runMcp(options: Record<string, string>, io: CliIo): Promise<numbe
   }
   // 工作区只在启动时读一次，作为本轮的只读快照；资源内容按需读取。
   const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
+  const { managedOutcomeCheck } = await import('./agent/checkpoint-host.js');
   const all = createTools({
     workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!), ...(outcome ? { outcome } : {}),
+    checkOutcome: managedOutcomeCheck(),
   });
   const names = options.tools?.split(',').map((name) => name.trim());
   const unknown = names?.filter((name) => !all.some((tool) => tool.name === name)) ?? [];

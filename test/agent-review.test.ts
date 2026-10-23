@@ -272,7 +272,7 @@ describe('应用', () => {
     expect(await readdir(dir)).not.toContain('applied.json');
   });
 
-  it('审核通过后发布为下一个版本，审核时改过的内容以审核结果为准；同一轮不能再应用', async () => {
+  it('审核通过后发布为下一个版本，审核时改过的内容以审核结果为准；重试返回原应用', async () => {
     const workspace = await workspaceCopy();
     const dir = await round({ workspace });
     await approved(dir);
@@ -291,11 +291,11 @@ describe('应用', () => {
     expect((await json(join(workspace, 'compiled-badge-v1.schema.json')))['x-renderweave-static-schema']).toEqual({ name: '胸牌', version: 1 });
     expect(await json(join(workspace, 'schema-greeting-v2.json'))).toEqual({ ...GREETING, version: 2 });
     expect(await json(join(dir, 'applied.json'))).toEqual(result.applied);
-    expect(result.applied).toMatchObject({ format: 'renderweave-applied/1', workspace, overwrite: false });
+    expect(result.applied).toMatchObject({ format: 'renderweave-applied/2', workspace, overwrite: false });
     expect(result.applied!.fingerprints.before).toBe(result.applied!.fingerprints.round);
 
     const again = await applyAgentRound({ roundDir: dir, overwrite: true });
-    expect(codes(again.problems)).toEqual(['apply.alreadyApplied']);
+    expect(again.problems).toEqual([]); expect(again.applied).toEqual(result.applied);
     expect(codes((await changeReview(dir, { type: 'reopen' })).problems)).toEqual(['review.invalid']);
     expect((await readReview(dir)).view!.applied).toEqual(result.applied);
   });
@@ -324,14 +324,14 @@ describe('应用', () => {
     expect(await readFile(join(workspace, 'schema-meeting-v1.json'), 'utf8')).toBe(Buffer.from(before['schema-meeting-v1.json']!, 'base64').toString('utf8'));
   });
 
-  it('写入失败时撤回本次写入，工作区保持原状', async () => {
+  it('创建目标已被占用时写入前拒绝，工作区保持原状', async () => {
     // 工作区里已有一个不是数据定义的同名文件：快照中也有，所以指纹不变；写到胸牌时排他创建失败。
     const workspace = await workspaceCopy({ 'schema-badge-v1.json': { note: '占位，不是数据定义' } });
     const dir = await round({ workspace });
     await approved(dir);
     const before = await contents(workspace);
     const result = await applyAgentRound({ roundDir: dir });
-    expect([codes(result.problems), result.problems[0]!.message]).toEqual([['apply.failed'], expect.stringContaining('已撤回本次写入')]);
+    expect([codes(result.problems), result.problems[0]!.message]).toEqual([['apply.failed'], expect.stringContaining('提交目标状态变化')]);
     expect(await contents(workspace)).toEqual(before);
     expect(await readdir(dir)).not.toContain('applied.json');
   });

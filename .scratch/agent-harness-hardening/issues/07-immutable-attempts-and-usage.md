@@ -45,3 +45,5 @@
 验收偏差：无。通用本地锁的崩溃回收由 05 接续，本票不放宽旧执行器死亡证明；真实模型、留出案例与人工投入汇总由后续统一验收票承担。`CONTEXT.md` 由集成方统一更新。
 
 集成复核（2026-10-23）：修复提交 `54bb2c0`，同步最新集成文档 `a52bc84` 后以 `3b9ef7a` 保留全部历史合入集成分支。`npm run build`、`npm run typecheck`、`git diff --check` 通过；`npx vitest run test/agent-eval-attempts.test.ts test/agent-eval-attempts-cli.test.ts --maxWorkers=1` 在主工作树再次 2 个文件、11 项全部通过（24.07 秒）。未改写两份既有未跟踪评估报告。
+
+05 联动复核（2026-10-23）：合入可恢复本地协调后，尝试封存改为与资料身份一致地忽略协调临时目录，普通同前缀文件与链接不因此放宽。新增公开 `runScenario`/`buildReport` 反例红绿通过；恢复、并发、尝试、CLI 和评估身份 5 个文件、48 项全部通过，具体命令见 [05 验收记录](05-recover-interrupted-apply.md)。

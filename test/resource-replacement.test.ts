@@ -191,9 +191,13 @@ describe('检查与应用资源替换', () => {
   it.runIf(process.platform === 'win32')('清单替换短暂 EPERM 后重新核对工作区，过期报告不能趁重试提交', async () => {
     const report = await check();
     const before = await fs.readFile(join(dir, 'resources.json'));
-    vi.mocked(fs.rename).mockImplementationOnce(async () => {
-      await json(join(workspaceDir, 'changed.json'), {});
-      throw Object.assign(new Error('temporary rename denial'), { code: 'EPERM' });
+    const actual = await vi.importActual<typeof fs>('node:fs/promises'); let failed = false;
+    vi.mocked(fs.rename).mockImplementation(async (source, target) => {
+      if (!failed && String(target).endsWith('resources.json')) {
+        failed = true; await json(join(workspaceDir, 'changed.json'), {});
+        throw Object.assign(new Error('temporary rename denial'), { code: 'EPERM' });
+      }
+      return actual.rename(source, target);
     });
     const result = await apply(report);
     expect(result.replaced).toBeUndefined();

@@ -228,7 +228,10 @@ describe('资源版本公开边界', () => {
   it.runIf(process.platform === 'win32')('清单替换持续 EPERM 时有限失败、保留旧清单并释放写锁', async () => {
     const before = await fs.readFile(manifest(target));
     const actual = await vi.importActual<typeof fs>('node:fs/promises');
-    vi.mocked(fs.rename).mockRejectedValue(Object.assign(new Error('persistent rename denial'), { code: 'EPERM' }));
+    vi.mocked(fs.rename).mockImplementation(async (source, destination) => {
+      if (String(destination).endsWith('resources.json')) throw Object.assign(new Error('persistent rename denial'), { code: 'EPERM' });
+      return actual.rename(source, destination);
+    });
     try {
       expect((await importSource()).problems[0]?.code).toBe(ProblemCodes.resourceWriteFailed);
       expect(await fs.readFile(manifest(target))).toEqual(before);

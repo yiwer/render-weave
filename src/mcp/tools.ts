@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { join, relative } from 'node:path';
 import type { CanvasKit } from 'canvaskit-wasm';
 import { checkAgentOutcome, type OutcomeTarget } from '../agent/outcome.js';
+import type { CheckpointCheck } from '../agent/checkpoints.js';
 import { compareReference, summarizeVisual, visualRegionPage, type VisualReport } from '../agent/visual-comparison.js';
 import type { RevisionDiff } from '../agent/diff.js';
 import type { CoverageAssessment } from '../agent/coverage-verification.js';
@@ -33,7 +34,7 @@ import { ToolInputError, type WorkingDirectory } from './files.js';
 import type { ContentBlock, McpTool, ToolResult } from './server.js';
 
 /** 工具合同版本，也是 initialize 返回的服务版本。 */
-export const MCP_CONTRACT_VERSION = '0.12.0';
+export const MCP_CONTRACT_VERSION = '0.13.0';
 
 /** 草稿预览的 DPI 上限，以及图片最长边的像素上限：超出时降低 DPI。 */
 export const DRAFT_MAX_DPI = 300;
@@ -81,6 +82,8 @@ export interface ToolContext {
   readonly resourcesDir: string;
   /** 本轮任务与已知输入（--outcome-context）；没有时 check_outcome 报工具错误。 */
   readonly outcome?: OutcomeTarget;
+  /** 受管运行交给宿主固定并检查字节；独立 MCP 仍只读当前目录。 */
+  readonly checkOutcome?: () => Promise<CheckpointCheck>;
 }
 
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -473,15 +476,17 @@ export function createTools(context: ToolContext): McpTool[] {
         '查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。' +
         '返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。' +
         '模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。' +
-        `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。不写任何文件。`,
+        `每个候选最多 ${REVISION_MAX_CHANGES} 条差异、约 ${REVISION_MAX_CHARS} 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。`,
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       async call() {
         if (!context.outcome) throw new ToolInputError('服务启动时没有给出本轮任务（--outcome-context），无法核对成果');
         const { task, ...known } = context.outcome;
-        const check = await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
+        const managed = await context.checkOutcome?.();
+        const check = managed?.check ?? await checkAgentOutcome({ task, agentDir: files.root, workspace, context: known });
         // 本工具没有分页参数；渲染、视觉和候选问题必须共享总预算，不能各占 25k 后被服务层拒收。
         const response = (budget: number) => ({
           verdict: check.verdict,
+          ...(managed ? { checkpoint: managed.checkpoint } : {}),
           ...(check.contentIdentity ? { contentIdentity: { id: check.contentIdentity.id, format: check.contentIdentity.format,
             engine: check.contentIdentity.engine, criteria: check.contentIdentity.criteria } } : {}),
           assessment: { ...check.assessment, render: { ...check.assessment.render, ...listed(check.assessment.render.problems, 'problems', budget) },

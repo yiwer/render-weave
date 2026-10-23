@@ -82,6 +82,7 @@
 'use strict';
 let view = null;
 let execution = null;
+let checkpoint = null;
 const $ = (id) => document.getElementById(id);
 /** 只用 textContent 建节点：Agent 写的说明与候选内容都不当作 HTML。 */
 function h(tag, attrs, ...children) {
@@ -112,6 +113,7 @@ async function load() {
   const response = await fetch('/api/review');
   const body = await response.json();
   execution = body.execution ?? null;
+  checkpoint = body.checkpoint ?? null;
   if (!body.view) {
     $('title').textContent = '轮次状态';
     $('status').textContent = body.execution ? '状态已读取' : '无法读取';
@@ -134,6 +136,8 @@ function executionPanel(execution) {
   return h('section', {}, h('h2', {}, `轮次状态：${phases[execution.phase]} · ${statuses[execution.status]}`),
     h('p', {}, execution.committed ? '最终记录已提交。技术、内容/视觉和人工审核结论分别见下方；执行完成不会自动批准或应用。' : execution.diagnostics.join('；')),
     execution.start && h('p', {}, `第 ${execution.start.round} 轮 · ${execution.start.task} · 输入身份 ${execution.start.inputIdentity}`),
+    checkpoint && h('p', {}, `完整检查点已保存：${checkpoint.id} · 内容身份 ${checkpoint.contentIdentity}。来源：宿主恢复候选；可用 --from 开新轮次，不能直接批准或应用。`),
+    checkpoint && h('details', {}, h('summary', {}, '已检查的集合与问题'), h('pre', {}, json({ files: checkpoint.files, check: checkpoint.check }))),
     h('details', {}, h('summary', {}, '固定输入与关键事件'), h('pre', {}, json({ inputs: execution.start?.inputs, events: execution.events }))));
 }
 
@@ -323,6 +327,7 @@ function roundSection() {
   const rows = chain.map((link) => h('tr', { class: link.dir === view.round.dir ? 'edited' : '' },
     h('td', {}, `第 ${link.round} 轮`),
     h('td', {}, link.missing ? h('span', { class: 'chip bad' }, '读不到') : [
+      link.executionStatus ? h('span', { class: 'chip warn' }, link.executionStatus === 'interrupted' ? '原轮次已中断' : `执行状态：${link.executionStatus}`) : '',
       link.verdict ? h('span', { class: `chip ${link.verdict === 'qualified' ? 'ok' : 'bad'}` }, link.verdict === 'qualified' ? '合格' : '不合格') : '',
       ' ', link.review ? h('span', { class: 'chip' }, REVIEW[link.review]) : h('span', { class: 'muted' }, '未审核'),
       link.applied ? [' ', h('span', { class: 'chip accent' }, '已应用')] : '']),
