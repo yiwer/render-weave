@@ -27,6 +27,8 @@
 
 已形成[A01–A20及US01–US64的84条责任映射草稿](../evidence/26-candidate4-preparation/harness-26-evidence-map-candidate4-during-run.md)，区分机制、真实模型、独立审核，不填最终结论；候选4停止后另存[逐票缺口快照](../evidence/26-candidate4-preparation/harness-26-evidence-gaps-candidate4-stopped.md)。两个时间点原件及机器摘要均保留，来源SHA见同目录source-index.json；停止快照的16来源与结果计数/状态共20项只读断言通过。快照中的17限时问题和候选5未冻结属于其记录时点，后续以17/20各自验收为准，不覆写历史快照。
 
+独立复核补充：停止快照中“最终result/round错误核对”不能解读为两个计划都有相同的完整记录链。原38中断尝试只有原生 `is_error=true` 的 result，没有完整 `round.json` 或尝试封存；21的额度尝试另有完整round及封存。两条CLI本地429信封仍按原事件分类，四份历史快照及SHA不变。
+
 已有候选4的36订单/96阶段离线准备（out/harness-holdout-execution-preparation-candidate-4）与12步真人走查材料（out/harness-walkthrough-preparation-candidate-4-v3）；它们没有实际留出观测、绑定执行或人审结论。正常走查拟复用既定留出订单，不重复计费。受控取消/超时及旧轮次只读恢复仅是机制证据，不计真人检查点接续或实际成果审核。
 
 前置真实门槛尚未完成，原38还有有效失败；36留出、人审分钟/修正/最终图片与真人走查均缺。误通过率未知，不能因0观测写成0。本票不勾选完成条目、不改变ready-for-agent状态；后续按依赖图取得同候选有效证据和真人审核后再收口，不以此准备工作关闭本票或其他票。
