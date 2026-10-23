@@ -8,6 +8,7 @@
    - previous/review.json 是审核人对待确认项的处理与意见（如有）；
    - previous/check.json 是 RenderWeave 对上一轮成果的校验结果。
    - previous/checkpoint.json 如存在，表示从宿主完整检查点接续，包含内容身份、被检查集合与问题；它不是正式交回或批准。
+   - 检查点可能由操作者显式选择，未必是时间上最后一次；按其中 ID 和内容身份识别整套来源，不能把“有证据更好”解释为业务全部合格。
 3. {seeds}
 4. outcome.json 按本轮的成果重新写：
    - candidates 按本任务的要求列全，不能只列本轮新改的文件；

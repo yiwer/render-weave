@@ -181,6 +181,8 @@ node dist/bin.js deliver --workspace out/build/workspace --resources out/build/r
 node dist/bin.js agent run --from out/build/r3-template --feedback out/build/feedback.md --out out/build/r3-template-2
 ```
 
+审核页会分别展示最后完整候选和有证据较好的候选，以及两份内容、检查身份和逐项差异。若正式稿退步，可在上述命令加 `--checkpoint better`，从保留的完整集合开新轮次；也可选 `latest` 或页面显示的已发布 ID。没有改善证据时 `better` 会明确拒绝；它不代表整图合格，也不能直接批准或应用。详见[保留候选](agent-candidate-selection.md)。
+
 - 反馈是一份 Markdown，写清哪里不对、要怎样。
 - 下一轮沿用上一轮的任务、示例图、项目说明、基准与出图请求，命令行不能再给；工作区会重新取快照。
 - Agent 拿到上一轮的成果（含你在审核时的修改）、原样记录与反馈，在上一轮的基础上改。
