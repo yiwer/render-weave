@@ -289,6 +289,7 @@ it('有效通过加无效观测保持未完成，退出码为 3', async () => {
   const result = await cli(['--rescore', out, '--reports', reports]);
   expect(result.code, result.stdout + result.stderr).toBe(3);
   const report = await read(join(reports, (await readdir(reports))[0]!));
+  expect(report.totals).toMatchObject({legacyHistoryUnknown: true, usageComplete: false});
   expect(report.gate).toMatchObject({status: 'incomplete', completeness: {planned: 2, pass: 1, fail: 0, invalid: 1, notRun: 0, complete: false}});
 });
 
@@ -297,7 +298,7 @@ it('串联定义与数据集轮次允许动态提示词变化并保留实际上�
   const definition = join(e.root, 'definition-preset'), dataset = join(e.root, 'dataset-preset');
   for (const preset of [definition, dataset]) await mkdir(join(preset, 'candidates'), {recursive: true});
   for (const name of ['route', 'stop']) await writeFile(join(definition, 'candidates', name + '.json'), await readFile(join(repoRoot, 'fixtures/agent-eval/366/des-366-zoom1', name + '.json')));
-  await writeFile(join(definition, 'outcome.json'), JSON.stringify({candidates: ['candidates/route.json', 'candidates/stop.json'], pending: [], notes: '串联定义夹具。'}));
+  await writeFile(join(definition, 'outcome.json'), JSON.stringify({candidates: ['candidates/route.json', 'candidates/stop.json'], pending: [{file: 'candidates/route.json', path: 'routeNo', reason: 'inferred', note: '由操作者采纳'}], notes: '串联定义夹具。'}));
   await writeFile(join(dataset, 'candidates/dataset.json'), await readFile(join(repoRoot, 'fixtures/agent-eval/366/des-366-zoom1/dataset.json')));
   await writeFile(join(dataset, 'outcome.json'), JSON.stringify({candidates: ['candidates/dataset.json'], pending: [], notes: '串联数据集夹具。'}));
   const source = await readFile(e.executor, 'utf8');
@@ -311,6 +312,13 @@ process.argv.splice`));
   expect(result.code, result.stdout + result.stderr).toBe(3);
   const records = (await readFile(evidence, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
   expect(records).toHaveLength(2);
+  const reportFile = /^报告：(.+)$/m.exec(result.stdout)![1]!.trim();
+  const report = await read(reportFile); expect(report.attempts).toHaveLength(2);
+  const original = join(e.out, report.attempts[0].dir, 'round');
+  expect((await read(join(original, 'outcome.json'))).pending).toHaveLength(1);
+  expect(await readdir(original)).not.toContain('review.json');
+  const repeated = await cli(args); expect(repeated.code, repeated.stdout + repeated.stderr).toBe(3);
+  expect((await readFile(evidence, 'utf8')).trim().split('\n')).toHaveLength(2);
   expect(records[0].promptSha256).not.toBe(records[1].promptSha256);
   expect(records[1].inputs.workspace).toMatchObject({fingerprint: expect.any(String)});
   expect(records[1].inputs.definition).toMatchObject({name: '公交线路牌', version: 1});

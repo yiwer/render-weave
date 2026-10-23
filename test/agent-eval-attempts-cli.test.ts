@@ -3,6 +3,7 @@ import {spawn} from 'node:child_process';
 import {mkdtemp, mkdir, readFile, readdir, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {readReview} from '../src/index.js';
 import {repoRoot, resourcesDir} from './support/fixtures.js';
 
 let root: string, args: string[];
@@ -20,9 +21,9 @@ beforeAll(async () => {
     '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-usage-claude.mjs'), preset, usage])];
 });
 afterAll(async () => {await rm(root, {recursive: true, force: true});});
-async function cli() {
+async function cli(selected = args) {
   return new Promise<{code: number | null; stdout: string; stderr: string}>(done => {
-    const child = spawn(process.execPath, [join(repoRoot, 'node_modules/tsx/dist/cli.mjs'), ...args], {
+    const child = spawn(process.execPath, [join(repoRoot, 'node_modules/tsx/dist/cli.mjs'), ...selected], {
       cwd: repoRoot, windowsHide: true, env: {...process.env, RW_ATTEMPTS_KEY: 'offline-key'}, stdio: ['ignore', 'pipe', 'pipe']});
     let stdout = '', stderr = '';
     child.stdout.on('data', chunk => {stdout += String(chunk);}); child.stderr.on('data', chunk => {stderr += String(chunk);});
@@ -47,3 +48,45 @@ it('并行CLI跨进程重复续跑不重复派发或计量，实际会话墙钟�
   expect(await readFile(firstFile, 'utf8')).toBe(firstBytes);
   expect(await readdir(join(root, 'reports'))).toHaveLength(2);
 }, 60000);
+
+it('评估宿主被强退后保留已退出尝试，补跑保留此前用量与未知墙钟', async () => {
+  const marker = join(root, 'held.json'), out = join(root, 'killed'), reports = join(root, 'killed-reports');
+  const selected = [...args];
+  selected[selected.indexOf('--out') + 1] = out;
+  selected[selected.indexOf('--reports') + 1] = reports;
+  selected[selected.indexOf('--label') + 1] = 'killed';
+  selected[selected.indexOf('--jobs') + 1] = '1';
+  const commandIndex = selected.indexOf('--claude-args') + 1;
+  selected[commandIndex] = JSON.stringify([...JSON.parse(selected[commandIndex]!), '', 'hold:' + marker]);
+  const child = spawn(process.execPath, ['--import', 'tsx', ...selected], {cwd: repoRoot, windowsHide: true,
+    env: {...process.env, RW_ATTEMPTS_KEY: 'offline-key'}, stdio: 'ignore'});
+  const closed = new Promise<void>(done => child.on('close', () => done()));
+  const waitUntil = async (test: () => Promise<boolean>) => {
+    const deadline = Date.now() + 20000;
+    while (!await test()) {if (Date.now() > deadline) throw new Error('等待公开执行结果超时'); await new Promise(done => setTimeout(done, 50));}
+  };
+  const exists = async (file: string) => readFile(file).then(() => true, () => false);
+  let held: {pid: number; host: number} | undefined;
+  try {
+    await waitUntil(() => exists(marker)); held = JSON.parse(await readFile(marker, 'utf8'));
+    child.kill('SIGKILL'); await closed;
+    const attemptRoot = join(out, 'run-1/m402-definition/attempts');
+    const firstId = (await readdir(attemptRoot))[0]!;
+    const original = join(attemptRoot, firstId, 'round');
+    try {process.kill(held!.pid, 'SIGKILL');} catch { /* 父进程退出已触发执行器清理 */ }
+    try {process.kill(held!.host, 'SIGKILL');} catch { /* 宿主已结束 */ }
+    await waitUntil(async () => {const state = (await readReview(original)).execution; return state?.status === 'interrupted' || !!state?.committed;});
+    const stream = await readFile(join(original, 'logs/stream.jsonl'));
+    const resumed = await cli(selected); expect(resumed.code, resumed.stdout + resumed.stderr).toBe(0);
+    const file = /^报告：(.+)$/m.exec(resumed.stdout)![1]!.trim(), report = JSON.parse(await readFile(file, 'utf8'));
+    expect(report.attempts).toHaveLength(3);
+    expect(report.totals).toMatchObject({inputTokens: 33, outputTokens: 666, thinkingTokens: 450, unknownUsageAttempts: 0});
+    expect(report.timing).toMatchObject({incompleteSessions: 1, actualWallMs: null, unknownAttemptDurations: 1});
+    expect(await readFile(join(original, 'logs/stream.jsonl'))).toEqual(stream);
+    expect(report.attempts.find((attempt: {id: string}) => attempt.id === firstId).error).toContain('原派发中断或缺少实验封存');
+  } finally {
+    child.kill('SIGKILL');
+    for (const pid of held ? [held.pid, held.host] : []) {try {process.kill(pid, 'SIGKILL');} catch { /* 已退出 */ }}
+    await closed;
+  }
+}, 90000);

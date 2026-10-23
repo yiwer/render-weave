@@ -127,6 +127,7 @@ export interface RoundSummary {
   readonly cacheReadTokens?: number;
   readonly cacheCreationTokens?: number;
   readonly endedBy?: string;
+  readonly stopped?: RoundRecord['run']['stopped'];
   readonly pending?: number;
   readonly toolCalls?: number;
   readonly toolErrors?: number;
@@ -287,12 +288,14 @@ class InvalidUnit extends Error {
 }
 
 /**
- * 发起一轮。瞬时错误只删掉这一个轮次目录再发起（agent run 要求目录为空），单元里已完成的轮次与已应用的工作区不动；
+ * 发起一轮。瞬时错误在新的唯一尝试目录再发起（先前原件不变），单元里已完成的轮次与已应用的工作区不动；
  * 重试用完或遇到额度限制时抛出 InvalidUnit。其他错误照旧：发起失败抛出原错误，轮次记录里的错误留给评分。
  * 续跑时这一轮已有有效轮次记录就不再发起。
  */
 async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOptions & { upstream: UpstreamRecord; unit: string; label: string }): Promise<void> {
-  await restoreAttempt(spec, context.unit);
+  try {await restoreAttempt(spec, context.unit);} catch (error) {
+    throw new EvaluationAborted(error instanceof Error ? error.message : String(error));
+  }
   if ((await roundError(spec.out)) === null) return;
   for (let attempt = 0; ; attempt++) {
     await context.beforeDispatch?.();
@@ -584,7 +587,8 @@ export async function buildReport(options: {
     const unit = unitDir(options.outDir, {id: item.id} as Scenario, item.repetition);
     const stored = await savedAttempts(unit);
     for (const attempt of stored) {
-      const usage = await summarize(join(attempt.dir, 'round'), options.outDir);
+      const usage = await summarize(join(attempt.dir, 'round'), options.outDir, attempt.record.task);
+      try {const record = JSON.parse(await readFile(join(attempt.dir, 'round/round.json'), 'utf8')); if (record?.run && record?.runtime) records.push(record);} catch { /* 中断没有完整轮次 */ }
       attempts.push({id: attempt.record.id, unit: relative(options.outDir, unit).replaceAll('\\', '/'), stage: attempt.record.stage,
         dir: relative(options.outDir, attempt.dir).replaceAll('\\', '/'), startedAt: attempt.record.startedAt, endedAt: attempt.completion?.endedAt ?? null,
         elapsedMs: attempt.completion?.elapsedMs ?? null, experiment: attempt.record.experiment,
@@ -621,7 +625,7 @@ export async function buildReport(options: {
     gate: gate(options.config, options.results, options.plan),
     totals: { wallMs: sum('wallMs'), inputTokens: sum('inputTokens'), outputTokens: sum('outputTokens'), thinkingTokens: sum('thinkingTokens'),
       cacheReadTokens: sum('cacheReadTokens'), cacheCreationTokens: sum('cacheCreationTokens'), toolCalls: sum('toolCalls'), persistedResults: sum('persistedResults'),
-      unknownUsageAttempts, unknownByMetric, usageComplete: unknownUsageAttempts === 0 && !attempts.some(attempt => attempt.state === 'legacy'), legacyHistoryUnknown: attempts.some(attempt => attempt.state === 'legacy') },
+      unknownUsageAttempts, unknownByMetric, usageComplete: unknownUsageAttempts === 0 && attempts.every(attempt => attempt.state === 'completed'), legacyHistoryUnknown: attempts.some(attempt => attempt.state === 'legacy') },
   };
 }
 
@@ -688,12 +692,22 @@ async function approveDefinitions(roundDir: string, workspace: string): Promise<
   return name;
 }
 
-async function summarize(dir: string, outDir: string): Promise<RoundSummary | undefined> {
+async function summarize(dir: string, outDir: string, task?: AgentTaskId): Promise<RoundSummary | undefined> {
   let record: RoundRecord;
   try {
     record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord;
   } catch {
-    return undefined;
+    if (!task) return undefined;
+    // 宿主强退可能只留下完整 result 行；只读取运行时给出的累计用量，不把逐条消息相加。
+    let result: Record<string, any> | undefined;
+    try {for (const line of (await readFile(join(dir, 'logs/stream.jsonl'), 'utf8')).split('\n')) {
+      try {const message = JSON.parse(line); if (message.type === 'result') result = message;} catch { /* 未写完的行没有可信用量 */ }
+    }} catch { /* 无日志则全部用量未知 */ }
+    const usage = result?.usage, number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+    return {task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: 'missing',
+      inputTokens: number(usage?.input_tokens), outputTokens: number(usage?.output_tokens), thinkingTokens: number(usage?.output_tokens_details?.thinking_tokens),
+      cacheReadTokens: number(usage?.cache_read_input_tokens), cacheCreationTokens: number(usage?.cache_creation_input_tokens),
+      ...(result?.subtype ? {endedBy: String(result.subtype)} : {})};
   }
   if (!record?.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   let outcome: RoundOutcome | undefined;
@@ -711,7 +725,7 @@ async function summarize(dir: string, outDir: string): Promise<RoundSummary | un
   const pick = <K extends keyof typeof run>(key: K) => (run[key] === undefined ? {} : { [key]: run[key] });
   return {
     task: record.task, dir: relative(outDir, dir).replaceAll('\\', '/'), verdict: record.verdict,
-    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'),
+    ...pick('wallMs'), ...pick('turns'), ...pick('inputTokens'), ...pick('outputTokens'), ...pick('thinkingTokens'), ...pick('cacheReadTokens'), ...pick('cacheCreationTokens'), ...pick('endedBy'), ...pick('stopped'),
     ...(outcome ? { pending: outcome.pending.length } : {}), ...(toolCalls !== undefined ? { toolCalls, toolErrors } : {}),
     ...(persistedResults !== undefined ? { persistedResults } : {}), ...(firstCheckProblems !== undefined ? { firstCheckProblems } : {}),
     ...(run.error ? { error: run.error } : {}),

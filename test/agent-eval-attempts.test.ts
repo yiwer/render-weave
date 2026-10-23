@@ -63,11 +63,43 @@ it('额度停止保留not-run，重启补无效与未运行单元，已有有效
   expect(repeated.totals).toEqual(final.totals);
 });
 
-it('无usage执行器结束仍保存尝试，报告区分未知和已知小计', async () => {
+it('执行器强退且无usage仍保存尝试，报告区分未知和已知小计', async () => {
   const out = join(root, 'unknown'), startedAt = new Date().toISOString();
   const result = await runScenario(config, scenario(), 1, out, launch([{usage: 'unknown'}]));
   const report = await buildReport({config, label: 'unknown', startedAt, outDir: out, results: [result]});
   expect(report.attempts).toHaveLength(1);
   expect(report.totals).toMatchObject({inputTokens: 0, outputTokens: 0, unknownUsageAttempts: 1, usageComplete: false,
     unknownByMetric: {inputTokens: 1, outputTokens: 1, cacheReadTokens: 1, cacheCreationTokens: 1}});
+});
+
+it('重评分核对尝试原件，改写历史失败日志被拒绝，不能悄悄减少成本', async () => {
+  const out = join(root, 'tamper'), startedAt = new Date().toISOString();
+  const result = await runScenario(config, scenario(), 1, out, launch([{usage: known}]));
+  const report = await buildReport({config, label: 'tamper', startedAt, outDir: out, results: [result]});
+  await writeFile(join(out, report.attempts[0]!.dir, 'round/logs/stream.jsonl'), '');
+  await expect(buildReport({config, label: 'tamper', startedAt, outDir: out, results: [result]})).rejects.toThrow('尝试原件已改变');
+});
+
+it('已完成尝试的启动身份也受保护，修改开始时间不能重写历史', async () => {
+  const out = join(root, 'metadata'), startedAt = new Date().toISOString();
+  const result = await runScenario(config, scenario(), 1, out, launch([{usage: known}]));
+  const report = await buildReport({config, label: 'metadata', startedAt, outDir: out, results: [result]});
+  const file = join(out, report.attempts[0]!.dir, 'started.json');
+  const record = JSON.parse(await readFile(file, 'utf8')); record.startedAt = '2000-01-01T00:00:00Z';
+  await writeFile(file, JSON.stringify(record));
+  await expect(buildReport({config, label: 'metadata', startedAt, outDir: out, results: [result]})).rejects.toThrow('尝试原件已改变');
+});
+
+it('旧派发拥有者尚活时拒绝重派，完成后续跑不产生额外尝试', async () => {
+  const out = join(root, 'live'), startedAt = new Date().toISOString();
+  let release!: () => void, arrived!: () => void;
+  const pending = new Promise<void>(done => {release = done;}), ready = new Promise<void>(done => {arrived = done;});
+  const first = runScenario(config, scenario(), 1, out, async spec => {await launch([])(spec); arrived(); await pending;});
+  await ready;
+  try {await expect(runScenario(config, scenario(), 1, out, launch([]))).rejects.toThrow('尝试拥有者仍存活');}
+  finally {release();}
+  await first;
+  const result = await runScenario(config, scenario(), 1, out, launch([]));
+  const report = await buildReport({config, label: 'live', startedAt, outDir: out, results: [result]});
+  expect(report.attempts).toHaveLength(1); expect(report.totals.outputTokens).toBe(222);
 });

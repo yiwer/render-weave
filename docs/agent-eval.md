@@ -49,7 +49,7 @@ key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KE
 
 | 分类 | 字样 | 处理 |
 |---|---|---|
-| 瞬时 | `500`、`502`、`503`、`529`、`overloaded`、`ECONNRESET`、`ETIMEDOUT`、`socket hang up` | 只删掉出错的那一个轮次目录（`agent run` 要求目录为空）再发起这一轮，最多 2 次，间隔 60、180 秒。366 单元里已完成、已应用的第一轮与工作区不动。重试用完仍是瞬时错误时，该单元记 `invalid` |
+| 瞬时 | `500`、`502`、`503`、`529`、`overloaded`、`ECONNRESET`、`ETIMEDOUT`、`socket hang up` | 在新的唯一尝试目录再次发起这一轮，先前原件保留，最多 2 次，间隔 60、180 秒。366 单元里已完成、已应用的第一轮与工作区不动。重试用完仍是瞬时错误时，该单元记 `invalid` |
 | 额度 | `429`、`rate_limit`（也认 `rate limit`）、`quota`、`usage limit` | 不重试，该单元记 `invalid`；不再发起队列里还没开始的单元，已在跑的单元跑完。OpenCode Go 的 429 是 5 小时额度窗口，各模型共用一个池（M231），几分钟的退避等不到它恢复 |
 | 其他 | 400 参数错误、缺 key、执行器无法启动等 | 照旧：不重试，算未达线 |
 
@@ -87,6 +87,18 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 `--rescore` 另存 `<label>.rescore-<id>.json`，保存评分时间、原清单/首份报告摘要、每个原轮次的内容清单与汇总摘要、新评分器/配置/输入/资源身份。新结论不改写首次结论；旧记录没有的身份保留 `null`。旧实验可重新评分，不能续跑并入新实验。若原报告不在指定报告目录，来源报告摘要为 `null`，不猜测其位置。
 
 案例可配置 `reference` 或 `contentBaseline` 文件路径，分别透传已有 Agent 参考基准和内容基准参数，并按实际字节冻结；它们的合法任务范围与 `agent run` 相同。
+
+## 尝试原件与成本（报告 /4）
+
+每次实际执行保存在单元下的 `attempts/<UUID>/round/`，包含输入副本、执行日志、候选、检查及结果；`started.json` 在派发前原子发布，固定实验、单元阶段、任务输入、开始时间和拥有者；结束时原子写 `completed.json`，固定耗时、错误及含启动记录的文件哈希清单。重试另建 UUID，重评分核对全部已封存原件。用于评分、模拟审核和应用的 `definition/` 等阶段目录是可重建副本，`.attempt.json` 指回原件；审核不改写原始尝试。
+
+报告 `renderweave-agent-eval/4` 的 `attempts` 包含完整计划内已派发的所有尝试，包括失败、重试、未结束及恢复的尝试；每条沿相对目录和 UUID 可核对原日志。`totals` 是全部尝试的**已知小计**，分列输入、输出、缓存读/写、输出内 thinking、工具调用、结果转存和轮次耗时，thinking 不再加进输出。`unknownByMetric` 与 `unknownUsageAttempts` 明确缺失，未结束或历史缺失时 `usageComplete` 为 false；这不是金额估算。若宿主没有写出轮次结果，只能从完整运行时 result 行读取已知累计 token，未写完的行和缺失字段保持未知。
+
+`timing.actualWallMs` 统计有明确起止的评估会话区间并集（并行不重复相加），任一会话未正常结束则为 null；`knownWallMs` 是可证区间小计。`attemptsElapsedMs` 是每次派发从开始到回收的耗时求和，`totals.wallMs` 是运行时报告的执行耗时求和，三者不同。恢复时无法证明的旧尝试结束时间和时长为 null，不用恢复时间伪造；会话间操作者等待不算运行墙钟。
+
+续跑先核对完整性及旧拥有者：旧评估器或执行器仍存活、跨宿主或无法证明退出时拒绝派发。终止后保留旧尝试；有完整宿主终检及实验封存的尝试可重建阶段副本，缺实验封存只保留成本，另行补跑。硬额度停止没有后台等待或自动换模型。重复查询和续跑不增加有效尝试或计量。
+
+历史 /1–/3 报告保持原字节，仍可重新评分；旧阶段只能证明最后保存的一次记录，报告标记 `legacyHistoryUnknown`，被旧运行器删除的历史数量与用量不补 0。没有完整实验身份的旧实验不能继续派发；恢复到新格式也不把旧记录包装成完整历史。
 
 ## 场景与通过线
 
@@ -184,7 +196,7 @@ npx tsx scripts/agent-eval/run.ts --label 2026-10-20-0930 --repetitions 1-2 --mo
 
 ## 报告
 
-报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，新格式为 `renderweave-agent-eval/3`，全计划门槛与完整性分开。旧 `/1`、`/2` 保留历史含义，不自动改判，只能另存重新评分：
+报告存档在 [docs/agent-eval/reports/](agent-eval/reports/)，新格式为 `renderweave-agent-eval/4`，全计划门槛、完整性与全部尝试成本分开。旧 `/1`、`/2`、`/3` 保留历史含义，不自动改判，只能另存重新评分：
 
 | 键 | 内容 |
 |---|---|

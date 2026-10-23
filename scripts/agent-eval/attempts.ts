@@ -1,8 +1,9 @@
 /** 评估尝试原件与兼容阶段视图。实际执行只写唯一目录，已完成原件不再改写。 */
 import {createHash, randomUUID} from 'node:crypto';
-import {cp, mkdir, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
+import {cp, link, mkdir, open, readdir, readFile, rename, rm, unlink} from 'node:fs/promises';
 import {basename, join, relative, resolve} from 'node:path';
 import {hostname} from 'node:os';
+import {readReview} from '../../src/index.js';
 import type {Launcher, RoundSpec} from './eval.js';
 
 export interface AttemptRecord {
@@ -21,6 +22,7 @@ export interface AttemptCompletion {
   readonly elapsedMs: number | null;
   readonly error?: string;
   readonly recovered?: true;
+  readonly eligible?: boolean;
   readonly files: Readonly<Record<string, string>>;
 }
 export interface SavedAttempt {
@@ -38,7 +40,7 @@ async function readJson<T>(file: string): Promise<T | undefined> {
 async function hashes(dir: string, prefix = ''): Promise<Record<string, string>> {
   const result: Record<string, string> = {};
   for (const entry of (await readdir(dir, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name === '.write-lock' || !prefix && ['started.json', 'completed.json'].includes(entry.name)) continue;
+    if (entry.name === '.write-lock' || !prefix && (entry.name === 'completed.json' || /^\.metadata-.*\.tmp$/.test(entry.name))) continue;
     const name = prefix + entry.name, path = join(dir, entry.name);
     if (entry.isSymbolicLink()) throw new Error(`尝试原件包含不能固定的链接：${name}`);
     if (entry.isDirectory()) Object.assign(result, await hashes(path, name + '/'));
@@ -47,7 +49,18 @@ async function hashes(dir: string, prefix = ''): Promise<Record<string, string>>
   return result;
 }
 async function writeNew(file: string, value: unknown): Promise<void> {
-  await writeFile(file, JSON.stringify(value, null, 2) + '\n', {flag: 'wx'});
+  const temporary = join(resolve(file, '..'), '.metadata-' + randomUUID() + '.tmp');
+  const handle = await open(temporary, 'wx');
+  try {await handle.writeFile(JSON.stringify(value, null, 2) + '\n'); await handle.sync();} finally {await handle.close();}
+  try {await link(temporary, file);} finally {await unlink(temporary);}
+}
+async function startAttempt(unit: string, record: AttemptRecord): Promise<string> {
+  const dir = join(unit, 'attempts', record.id), staging = join(unit, '.attempt-' + record.id);
+  await mkdir(staging, {recursive: true});
+  await writeNew(join(staging, 'started.json'), record);
+  await mkdir(join(unit, 'attempts'), {recursive: true});
+  await rename(staging, dir);
+  return dir;
 }
 async function list(unit: string): Promise<SavedAttempt[]> {
   const directory = join(unit, 'attempts');
@@ -110,18 +123,25 @@ export async function restoreAttempt(spec: RoundSpec, unit: string): Promise<voi
   for (const attempt of attempts) {
     if (attempt.completion || attempt.record.legacy) continue;
     const owner = attempt.record.owner;
-    if (owner && owner.pid !== process.pid) {
+    if (owner) {
       let alive = owner.host !== hostname();
       if (!alive) try {process.kill(owner.pid, 0); alive = true;} catch (error) {alive = (error as NodeJS.ErrnoException).code !== 'ESRCH';}
       if (alive) throw new Error(`尝试拥有者仍存活或无法确认退出：${attempt.record.id}`);
     }
-    const round = await readJson<{verdict?: string; run?: unknown}>(join(attempt.dir, 'round/round.json'));
-    if (round?.run && ['qualified', 'unqualified'].includes(round.verdict ?? '')) {
-      const completion: AttemptCompletion = {endedAt: null, elapsedMs: null, recovered: true, files: await hashes(attempt.dir)};
-      await writeNew(join(attempt.dir, 'completed.json'), completion);
+    const inspected = await readReview(join(attempt.dir, 'round'));
+    const execution = inspected.execution;
+    if (inspected.problems.length || !execution || !execution.committed && execution.status !== 'interrupted') {
+      throw new Error(`旧尝试执行器尚可写或无法确认完成：${attempt.record.id}`);
     }
+    const round = await readJson<{verdict?: string; run?: unknown}>(join(attempt.dir, 'round/round.json')).catch(() => undefined);
+    const proof = await readJson<{experiment: string}>(join(attempt.dir, 'round/evaluation.json'));
+    const eligible = execution.committed && !!round?.run && ['qualified', 'unqualified'].includes(round.verdict ?? '')
+      && (!attempt.record.experiment || proof?.experiment === attempt.record.experiment);
+    const completion: AttemptCompletion = {endedAt: null, elapsedMs: null, recovered: true, eligible,
+      ...(!eligible ? {error: '原派发中断或缺少实验封存，不能作为有效观测；保留已知用量'} : {}), files: await hashes(attempt.dir)};
+    await writeNew(join(attempt.dir, 'completed.json'), completion);
   }
-  const completed = (await list(unit)).filter(attempt => attempt.record.stage === basename(spec.out) && attempt.completion).at(-1);
+  const completed = (await list(unit)).filter(attempt => attempt.record.stage === basename(spec.out) && attempt.completion && attempt.completion.eligible !== false).at(-1);
   if (!completed) return;
   const current = await readJson<{id: string}>(join(spec.out, '.attempt.json'));
   if (current?.id !== completed.record.id) await publish(completed, spec.out);
@@ -138,7 +158,7 @@ export async function executeAttempt(spec: RoundSpec, unit: string, launch: Laun
       const id = randomUUID(), dir = join(unit, 'attempts', id), {out: _out, ...input} = spec;
       const record: AttemptRecord = {format: 'renderweave-eval-attempt/1', id, stage: basename(spec.out), task: spec.task,
         startedAt: null, owner: null, experiment: null, input, legacy: true};
-      await mkdir(dir, {recursive: true}); await writeNew(join(dir, 'started.json'), record);
+      await startAttempt(unit, record);
       await cp(spec.out, join(dir, 'round'), {recursive: true});
       await writeNew(join(dir, 'completed.json'), {endedAt: null, elapsedMs: null, files: await hashes(dir)} satisfies AttemptCompletion);
     }
@@ -146,8 +166,8 @@ export async function executeAttempt(spec: RoundSpec, unit: string, launch: Laun
   const id = randomUUID(), dir = join(unit, 'attempts', id), started = Date.now(), {out: _out, ...input} = spec;
   const manifest = await readJson<{identity?: unknown}>(join(unit, '../../eval.json'));
   const record: AttemptRecord = {format: 'renderweave-eval-attempt/1', id, stage: basename(spec.out), task: spec.task,
-    startedAt: new Date(started).toISOString(), owner: {host: hostname(), pid: process.pid}, experiment: manifest?.identity ? sha(JSON.stringify(manifest.identity)) : null, input};
-  await mkdir(dir, {recursive: true}); await writeNew(join(dir, 'started.json'), record);
+    startedAt: new Date(started).toISOString(), owner: {host: hostname(), pid: process.pid}, experiment: manifest?.identity ? 'sha256:' + sha(JSON.stringify(manifest.identity)) : null, input};
+  await startAttempt(unit, record);
   let failure: unknown;
   try {await launch({...spec, out: join(dir, 'round')});} catch (error) {failure = error;}
   const completion: AttemptCompletion = {endedAt: new Date().toISOString(), elapsedMs: Date.now() - started,
