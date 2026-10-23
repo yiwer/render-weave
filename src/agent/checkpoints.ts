@@ -14,6 +14,7 @@ import { checkAgentOutcome, type OutcomeCheck, type OutcomeTarget } from './outc
 import { AgentUsageError, exists, sha256 } from './round-files.js';
 import { readResourceSnapshot } from './content-identity.js';
 import { compareCandidates, type CandidateComparison, type ComparisonBasis } from './candidate-comparison.js';
+import type { ReferenceBaseline } from './style-verification.js';
 
 export type CheckpointSignal = { readonly status: 'saved'; readonly id: string; readonly contentIdentity: string }
   | { readonly status: 'notSaved'; readonly reason: string };
@@ -22,11 +23,15 @@ export interface CheckpointRecord {
   readonly format: 'renderweave-checkpoint/1'; readonly source: 'hostRecovery'; readonly id: string; readonly savedAt: string;
   readonly startSha256: string; readonly files: Readonly<Record<string, string>>; readonly check: OutcomeCheck;
   readonly comparisonBasis?:ComparisonBasis;
+  readonly comparisonReference?:ReferenceBaseline;
 }
 export interface CheckpointView extends CheckpointRecord { readonly contentIdentity: string }
 interface CheckpointRef { readonly id:string; readonly sha256:string }
-interface CandidateSelection { readonly format:'renderweave-candidate-selection/1'; readonly baseline:CheckpointRef; readonly better?:CheckpointRef; readonly comparison:CandidateComparison }
-export interface CandidateSelectionView { readonly latest:CheckpointView; readonly better?:CheckpointView; readonly comparison:CandidateComparison }
+interface CandidateSelection { readonly format:'renderweave-candidate-selection/1'; readonly baseline:CheckpointRef; readonly better?:CheckpointRef; readonly betterProof?:CandidateComparison; readonly comparison:CandidateComparison }
+export interface CandidateDifference { readonly file:string; readonly path:string; readonly change:'added'|'removed'|'changed'; readonly before:unknown; readonly after:unknown }
+export interface CheckpointCandidateView extends CheckpointView { readonly documents:readonly {readonly path:string;readonly document:unknown}[] }
+export interface CandidateSelectionView { readonly latest:CheckpointCandidateView; readonly better?:CheckpointCandidateView; readonly comparison:CandidateComparison; readonly differences:readonly CandidateDifference[] }
+export interface CandidateComparisonView { readonly before:CheckpointCandidateView; readonly after:CheckpointCandidateView; readonly comparison:CandidateComparison; readonly differences:readonly CandidateDifference[] }
 const DEPENDENCY_ERRORS = new Set<string>([ProblemCodes.templateNotFound, ProblemCodes.staticSchemaNotFound,
   ProblemCodes.compiledSchemaMissing, ProblemCodes.definitionRefNotFound, ProblemCodes.datasetNotFound,
   ProblemCodes.resourceUnreadable, ProblemCodes.resourceNotFound, ProblemCodes.datasetResourceNotFound]);
@@ -35,8 +40,8 @@ const DEPENDENCY_ERRORS = new Set<string>([ProblemCodes.templateNotFound, Proble
 export async function claimCheckpointRecovery(source: string, destination: string, checkpointId: string) {
   const path = join(source, 'checkpoint-recovery.json'), owner = { id: randomUUID(), destination };
   await withLocalAccess([source], async () => {
-    const original = await readExecution(source), checkpoint = await readCheckpoint(source);
-    if (original.problems.length || original.execution?.status !== 'interrupted' || checkpoint.problems.length || checkpoint.checkpoint?.id !== checkpointId)
+    const original = await readExecution(source), checkpoint = await readCheckpoint(source,checkpointId);
+    if (original.problems.length || (!original.execution?.committed&&original.execution?.status !== 'interrupted') || checkpoint.problems.length || checkpoint.checkpoint?.id !== checkpointId)
       throw new AgentUsageError('原轮次仍可写、身份不明或检查点已变化，不能取得恢复拥有权');
     if (await exists(path)) {
       try {
@@ -140,12 +145,12 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
     if (reason || !check.contentIdentity) return { check, checkpoint: { status: 'notSaved', reason: reason ?? '检查未形成完整内容身份' } };
     const startBytes=await readFile(join(roundDir,'round-start.json')),start=JSON.parse(startBytes.toString('utf8'));
     const digest=(value:unknown)=>sha256(canonical(value??null));
-    const comparisonBasis:ComparisonBasis={task,workspace:digest(Object.fromEntries(Object.entries(files).filter(([path])=>path.startsWith('snapshot/')))),
+    const comparisonBasis:ComparisonBasis={task,workspace:digest({files:Object.fromEntries(Object.entries(files).filter(([path])=>path.startsWith('snapshot/'))),definition:context.definition??null,dataset:start.inputs.dataset??null}),
       resources:digest(context.resourceIdentity),request:digest(context.request),reference:digest({baseline:context.baseline??null,content:context.contentBaseline??null,image:context.referenceImage?.sha256??null}),
       policy:digest({brief:start.inputs.brief.sha256,requirement:start.inputs.requirement?.sha256??null,feedback:start.inputs.feedback?.sha256??null,revision:context.revision??null}),
       criteria:digest({engine:check.contentIdentity.engine,criteria:check.contentIdentity.criteria,comparison:'candidate-comparison/1'})};
     const record: CheckpointRecord = { format: 'renderweave-checkpoint/1', source: 'hostRecovery', id, savedAt: new Date().toISOString(),
-      startSha256: sha256(startBytes), files, check,comparisonBasis };
+      startSha256: sha256(startBytes), files, check,comparisonBasis,...(context.baseline?{comparisonReference:context.baseline}:{}) };
     await writeAtomicJson(join(stage, 'record.json'), record, true);
     await rename(stage, join(roundDir, 'checkpoints', id));
     // 这个原子指针是唯一提交点；强退留下的目录和临时指针都不能成为最后完整候选。
@@ -157,7 +162,7 @@ async function captureAndCheck(options: Parameters<typeof checkpointChecker>[0])
     if(checkedPrior&&!checkedPrior.checkpoint)throw new Error('先前检查点无法核对，不能覆盖选择记录');
     const comparison=compareCandidates(checkedPrior?.checkpoint,record);
     const selection:CandidateSelection={format:'renderweave-candidate-selection/1',baseline,
-      ...(comparison.status==='improved'?{better:ref}:previousSelection?.better?{better:previousSelection.better}:{}),comparison};
+      ...(comparison.status==='improved'?{better:ref,betterProof:comparison}:previousSelection?.better?{better:previousSelection.better,betterProof:previousSelection.betterProof}:{}),comparison};
     await writeAtomicJson(join(roundDir,'checkpoint.json'),{format:'renderweave-checkpoint-ref/2',...ref,
       history:[...(prior?.history??(prior?[{id:prior.id,sha256:prior.sha256}]:[])),ref],selection});
     return { check, checkpoint: { status: 'saved', id, contentIdentity: check.contentIdentity.id } };
@@ -204,7 +209,51 @@ export async function readCandidateSelection(roundDir:string):Promise<CandidateS
   const pointer=JSON.parse(await readFile(join(roundDir,'checkpoint.json'),'utf8'));
   const selection=pointer.selection as CandidateSelection|undefined;
   if(!selection)return undefined;
-  const latest=await readCheckpoint(roundDir),better=selection.better?await readCheckpoint(roundDir,selection.better.id):undefined;
-  if(!latest.checkpoint||better&&!better.checkpoint)throw new Error('候选选择引用的完整集合无法核对');
-  return {latest:latest.checkpoint,...(better?.checkpoint?{better:better.checkpoint}:{}),comparison:selection.comparison};
+  const latest=await checkpointContents(roundDir,pointer.id),better=selection.better?await checkpointContents(roundDir,selection.better.id):undefined;
+  const against=selection.comparison.from?await checkpointContents(roundDir,selection.comparison.from):undefined;
+  const comparison=compareCandidates(against,latest);
+  if(canonical(comparison)!==canonical(selection.comparison))throw new Error('候选比较证据与实际检查不符');
+  if(better){
+    const proof=selection.betterProof;
+    if(!proof?.from||proof.to!==better.id)throw new Error('较好候选缺少实际改善证据');
+    const actual=compareCandidates(await checkpointContents(roundDir,proof.from),better);
+    if(actual.status!=='improved'||canonical(actual)!==canonical(proof))throw new Error('较好候选无法证明改善');
+  }
+  return {latest,...(better?{better}:{}),comparison,differences:better?candidateDifferences(better,latest):[]};
+}
+
+export async function readSelectedCheckpoint(roundDir:string,selector='latest'){
+  if(selector==='better'){
+    const selection=await readCandidateSelection(roundDir);
+    if(!selection?.better)throw new AgentUsageError('本轮没有有证据较好的候选；可明确选择 --checkpoint latest 或沿用原接续入口');
+    return readCheckpoint(roundDir,selection.better.id);
+  }
+  if(selector!=='latest'&&!/^[a-f0-9-]{36}$/.test(selector))throw new AgentUsageError('--checkpoint 必须是 latest、better 或已发布检查点 ID');
+  return readCheckpoint(roundDir,selector==='latest'?undefined:selector);
+}
+
+export async function readCandidateComparison(roundDir:string,other:{roundDir:string;id:string}):Promise<CandidateComparisonView>{
+  const before=await checkpointContents(other.roundDir,other.id),after=await checkpointContents(roundDir);
+  return {before,after,comparison:compareCandidates(before,after),differences:candidateDifferences(before,after)};
+}
+async function checkpointContents(roundDir:string,id?:string):Promise<CheckpointCandidateView>{
+  const read=await readCheckpoint(roundDir,id);
+  if(!read.checkpoint)throw new Error(read.problems.map(problem=>problem.message).join('；')||'没有完整检查点');
+  const checkpoint=read.checkpoint,root=await WorkingDirectory.open(join(roundDir,'checkpoints',checkpoint.id,'agent'));
+  const documents=await Promise.all(checkpoint.check.candidates.map(async candidate=>({
+    path:candidate.path,document:JSON.parse(Buffer.from(await root.readBytes(candidate.path)).toString('utf8')),
+  })));
+  return {...checkpoint,documents};
+}
+function candidateDifferences(before:CheckpointCandidateView,after:CheckpointCandidateView):CandidateDifference[]{
+  const differences:CandidateDifference[]=[];
+  const walk=(file:string,path:string,left:unknown,right:unknown)=>{
+    if(left===right||(left!==undefined&&right!==undefined&&canonical(left)===canonical(right)))return;
+    if(left!==undefined&&right!==undefined&&((Array.isArray(left)&&Array.isArray(right))||(isRecord(left)&&isRecord(right)))){
+      const a=left as Record<string,unknown>,b=right as Record<string,unknown>;
+      for(const key of new Set([...Object.keys(a),...Object.keys(b)]))walk(file,`${path}/${key.replaceAll('~','~0').replaceAll('/','~1')}`,a[key],b[key]);
+    }else differences.push({file,path,change:left===undefined?'added':right===undefined?'removed':'changed',before:left??null,after:right??null});
+  };
+  for(const file of new Set([...before.documents,...after.documents].map(item=>item.path)))walk(file,'',before.documents.find(item=>item.path===file)?.document,after.documents.find(item=>item.path===file)?.document);
+  return differences;
 }
