@@ -79,3 +79,5 @@ prepare-review.mjs 仅生成独立材料，不派发模型、不批准或应用�
 两生成器均在写入前禁止输出落在来源内，并拒绝来源根及祖先链接，防止复制junction后回写原件。2026-10-23已从生成器CLI验证3项拒绝：源内输出、源根junction、正式包缺evaluation/binding；临时canary原件不变，证据位于 F:/GenCode/render-weave/out/harness-original38-review-guard-check-02/results.json。首次非提权junction创建被Windows权限拒绝，未开展该例；随后在专用目录完成，并只解除已校验本次junction。
 
 修改后的无模型预演03在 C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-original38-review-preflight-03/：一个有效候选、实际与预览均100 DPI/866×610，原轮次所有字节不变、人工未审核。仅为工具预演，不是20候选或本次原38的模型观测；正式绑定的正向验证须使用本次实际封存结果。
+
+候选1发布后另做两项零模型拒绝检查（候选1因来源标签修复将保留为零观测准备版本）：将18旧实验原件配到本次原四绑定时，生成器报“源实验不属于本候选和计划”，且输出目录未创建；英文生成器将输出指向历史轮次子目录时也在渲染前拒绝、未创建目录。证据分别为 `out/harness-original38-review-guard-check-02/old-experiment-rejected.json` 和 `legacy-source-output-rejected.json`。它们只验证防错路径，不生成任何正式审核包，不重判历史成果。
