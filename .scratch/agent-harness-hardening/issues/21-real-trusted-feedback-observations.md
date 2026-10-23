@@ -45,6 +45,10 @@
 
 独立复核原件：`C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness21-candidate3-result-merge-review.md`，SHA256 `41ea8292ed5a24bec5f7e9659671e8ac0a6c71599e894ab4cfbf92b341618447`；同名audit.json为 `39d34203e8a13294092e69e9499f462e467ed0812aec41601d1cf5ca09ab43c8`。602750ms为轮次累计墙钟，不代表仅提供方推理耗时；与尝试、运行会话和启动包装墙钟分别保留。
 
+### 2026-10-23 两代历史结果的只读恢复复验
+
+旧恢复证明未核对新增路径，其可证明范围见[统一更正](../../../docs/agent-eval/archive-restore-boundary-correction.md)。现从原候选2、候选3归档分别恢复到新目录，以候选4公开`readReview(round,{persistArtifacts:false})`读取原16轮、8轮：6,986文件/1,590目录、5,172文件/979目录（含各归档根标签）完整集合及SHA前后相等，归档原件也未变。实际reader身份、命令、view和前后清单见[37轮只读复验](../../../docs/agent-eval/archive-readonly-candidate4.md)及其可复核JSON；本票只引用其中24轮。旧10pass/6fail及7pass/1fail/8not-run仍为原结论，未向候选4补入观测、未进行新模型或独立人审，状态保持needs-triage。
+
 ## Comments
 
 2026-10-23准备：基于集成`de76b55`创建独立`codex/harness-21`工作树，[16槽计划与证据索引](../../../docs/agent-eval/trusted-feedback-acceptance/README.md)已登记，当前全部not-run、真实观测0。22个资源文件已独立复制并逐项核SHA；不复用18观测。20负责从最终候选content准备inputs和binding，21等待交接后唯一派发；没有提前运行模型、准备seed或勾选验收。有效分页流程失败保持fail，原38只有条件引用与独立派发/业务审核分工。

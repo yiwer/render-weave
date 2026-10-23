@@ -42,3 +42,5 @@
 - 已同步主集成`1fdb78a`；冻结运行材料在合入后续资料之前归档，事后归档修复单独标注。没有更改默认行为、MCP合同、校准判据或用户留出素材。
 
 2026-10-23，非压缩合并bc26cd0集成最终958e3b0。主线npm run typecheck、npm run build、git diff --check通过；node node_modules/vitest/vitest.mjs run test/agent-context-trial.test.ts test/agent-context-archive.test.ts --maxWorkers=1，2文件12项全部通过。用主线公开context-trial-report.ts对已入库的冻结政策/配对及block4、block3原报告再次比较，输出另存out/harness18-integration-comparison.json；complete、决定、两组完整汇总、守卫与原comparison逐项一致，仍为retain-full。归档清单SHA保持25faa300298a7dc136a2fc30e3d3ff03b7e1ccc4c8efa4c17a9cf117941ffa8c；未改两份主线预存未跟踪报告或旧比较结果。CONTEXT同步阶段和默认决策能力，19仍待材料核准，20及其后验收不提前算完成。
+
+2026-10-23恢复边界补验：旧验证只能证明清单内字节未变，不能证明公开读取后没有新增缓存，见[统一更正](../../../docs/agent-eval/archive-restore-boundary-correction.md)。现将同一v2归档恢复到全新目录，用候选4公开`readReview(round,{persistArtifacts:false})`读取原8轮；6,205文件/1,983目录（含归档根标签）完整路径集合及SHA读取前后相等，归档本身也未变。实际命令、reader身份与79份统一凭据见[37轮只读复验](../../../docs/agent-eval/archive-readonly-candidate4.md)及其可复核JSON。旧恢复件/证明保留，本次不增加模型观测，不改变retain-full比较结论或本票状态。
