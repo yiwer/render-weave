@@ -20,3 +20,13 @@
 **测试接缝：** 公开 Agent/评估 CLI、公开渲染与 MCP 合同；沿现有全量回归和双平台验收入口。冻结行为以文件身份及派发前错误验证。
 
 **责任边界：** 本票只做兼容检查、打包与冻结。A14 真实四场景仍归[原票 38](../../agent-template-authoring/issues/38-retest-after-quota-recovery.md)；新增可信反馈实跑归 21；真人走查归 26。
+
+## Answer
+
+### 2026-10-23 冻结前审核页资源缺口修复（候选尚未发布）
+
+公开冻结包的 common roots 原来漏掉 `web/`。冻结与 `--verify` 原本成功，但从包内 `dist` 启动公开审核服务后 GET `/` 因缺少 `web/review.html` 导致 `ERR_HTTP_HEADERS_SENT` 崩溃。[红测](../../../out/harness-prefreeze-fixes/candidate-web-red.log)保留此反例，不能以模块可加载代替完整审核入口可用。
+
+修复源码 `a02329a` 将真实 `web/` 字节实拷贝并纳入共同候选身份，没有修改审核服务器。[绿测](../../../out/harness-prefreeze-fixes/candidate-web-green.log)从包内公开 `startReviewServer` 实际请求页面，验证 HTTP 200、类型及页面 SHA 与源文件一致，并确认包内页面改动被验证拒绝；已有工作副本变更回归补了 web 页面，验证旧包字节不变且 `--current` 列出 web 差异。MCP 与候选清单格式不变；候选文件身份因新增资产及评分修复改变。
+
+责任01的额外地标吞报、责任02的透明色适配假通过均在各自票补充缺口与重新验收，本票不代为补写“原已通过”。三项修复的 Windows/Linux 相关五文件均为67项全过、build/typecheck通过，详见同目录持久日志。本票仍 ready-for-agent，全部正式验收项保持待核查；需在吸收修复后完成统一全量、共享样例、最终候选与计划绑定，不能凭本组回归宣称冻结验收完成。
