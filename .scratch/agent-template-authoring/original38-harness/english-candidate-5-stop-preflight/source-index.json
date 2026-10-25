@@ -1,0 +1,17 @@
+{
+  "source": "F:/GenCode/render-weave/out/harness-english-candidate5-stop-preflight",
+  "files": [
+    {
+      "path": "owned-pids.json",
+      "sha256": "d18abedfc62cbe99daa7e3f68bf7292d05eda5fb303cc0bf39db53f75892afff"
+    },
+    {
+      "path": "owned-tree.mjs",
+      "sha256": "88bfc12417bf3da3d4d37e987abb6330a29e717253be22cc02588b7ca885ad2e"
+    },
+    {
+      "path": "verification.json",
+      "sha256": "03f2ec442b4ef4ca0ac616085154ab365f04a3c31b2641f0b2d79814f21b6183"
+    }
+  ]
+}

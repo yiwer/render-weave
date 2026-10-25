@@ -1,0 +1,19 @@
+{
+  "format": "original38-offline-stop-preflight/1",
+  "userLocalDate": "2026-10-25",
+  "startedAtUtc": "2026-10-25T17:50:14.0344016+00:00",
+  "checkedAtUtc": "2026-10-25T17:50:24.0596354+00:00",
+  "scope": "仅本命令新建的无模型Node父子进程",
+  "permissionContext": "require_escalated",
+  "parentPid": 173332,
+  "childPid": 179860,
+  "parentHelper": "F:\\GenCode\\render-weave\\out\\harness-english-candidate5-stop-preflight\\owned-tree.mjs",
+  "childParentVerified": true,
+  "cimQuery": "pass",
+  "terminateBoth": "pass",
+  "remainingOwnedProcesses": 0,
+  "elapsedStopMs": 3121.4884,
+  "modelCalls": 0,
+  "realExecutorCancellationProven": false,
+  "limitation": "验证同权限环境的CIM查询及自建进程终止；不代表实际Claude进程、429检测或所有竞态已覆盖。恢复派发时仍须复核实际进程身份。"
+}

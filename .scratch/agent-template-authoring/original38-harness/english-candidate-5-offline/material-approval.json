@@ -1,0 +1,18 @@
+{
+  "format": "original38-specific-material-approval/1",
+  "status": "approved",
+  "source": "human-user-message-in-this-task",
+  "approver": "用户本人",
+  "approvedAt": "2026-10-24",
+  "approvedAtPrecision": "local-date-only; exact message timestamp unavailable",
+  "recordedOnUserLocalDate": "2026-10-25",
+  "sourceQuestionItemId": "[\"request_user_input_async\",\"call_3673f83214d54f649f550da4edfe506e\",0]",
+  "rawAnswer": "核准此具体材料包（推荐）",
+  "reviewFile": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-preparation-02/REVIEW.md",
+  "inputManifestSha256": "0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4",
+  "packageManifestSha256": "6ffbce6d52a9a64585045d7dad9af38da4df13a6616b22fa1b621414bed937d7",
+  "scope": "TfL161第13页页首，14个显示关键点、39项参考及明确替代字体/图标；1次模板设计，真实缺陷时最多接续1次，各80轮/1小时。",
+  "actualOutcomeApproved": false,
+  "latestUserInstruction": "目前额度还没有恢复，请做其他能完成的工作先",
+  "dispatchAllowedNow": false
+}
