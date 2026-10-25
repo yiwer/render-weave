@@ -104,6 +104,16 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 实际归档/恢复4695文件、762目录，6封存阶段公开只读复验后完整集合/SHA不变；未封存阶段只保全原始字节。第一遍中文2份实际审核包已核验并纳入归档，人工16项/分钟仍空白；纯英文具体材料核准、完整门槛、留出成果及独立人审均未完成。票17可补通用边界数据保留指引后另冻候选，不能回写本次成果。本票改needs-triage，所有未完成验收项保持未勾选，不轮询额度、不自动续跑。
 
+### 2026-10-25 纯英文核准与候选5离线准备
+
+用户已明确核准TfL161第13页具体材料包（14显示关键点、39项参考及替代资源），见M330及[核准原话](../original38-harness/english-candidate-5-offline/material-approval.json)。随后明确额度尚未恢复，先做其他工作；本次未调用或探测模型，未清除候选4停止记录。
+
+候选5 187d36a3…6526 已经公开 freeze --verify/--current、stage --bind/--verify，英文design-1绑定为 ab7d3ddf…c8bec。材料完整目录59文件前后不变（包清单57载荷文件，另2个排除项），34项输入摘要一致；候选5公开引擎离线预检通过2定义/2编译产物/1数据集/9资源/39参考区域。资源样张的39缺项是格式读取预检，非模型业务失败；初版路径规范化错误与v2通过日志均保留。
+
+[离线记录与审核交接](../original38-harness/english-candidate-5-offline/OFFLINE-README.md)、[完整证据索引](../original38-harness/english-candidate-5-offline/evidence-index.json)已保存。完整目录计数的[更正](../original38-harness/english-candidate-5-offline/COUNT-CORRECTION.md)保留，原说明与完整59文件SHA清单未改写。39项审核表绑定候选/阶段身份且人工结论仍空白；首次设计未派发，最多一次真实缺陷接续尚未绑定。额度恢复后的停止能力预检、实际模型观测及成果审核仍须完成，本票不关闭、不勾选缺证条目。
+
+同权限停止能力已作无模型演练：[证明](../original38-harness/english-candidate-5-stop-preflight/verification.json)。仅新建Node父子进程，CIM核对来源后终止两者，复查残留0；停止及复查耗时3121.4884ms。此证据覆盖查询/终止权限，不证明实际Claude取消、429检测或所有竞态已覆盖；恢复派发仍需核对真实进程身份。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。

@@ -1,0 +1,64 @@
+{
+  "format": "original38-english-tfl161-registration/1",
+  "registeredAt": "2026-10-25T17:46:53.572Z",
+  "status": "offline-bound-awaiting-quota-recovery-and-independent-review",
+  "dispatchAllowedNow": false,
+  "quotaBoundary": {
+    "source": "human-user-message-in-this-task",
+    "userLocalDate": "2026-10-25",
+    "rawText": "目前额度还没有恢复，请做其他能完成的工作先",
+    "modelProbes": 0
+  },
+  "executor": {
+    "file": "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+    "sha256": "76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+    "version": "2.1.296 (Claude Code)",
+    "node": "D:\\nodejs\\node.exe",
+    "nodeSha256": "2ffe3acc0458fdde999f50d11809bbe7c9b7ef204dcf17094e325d26ace101d8"
+  },
+  "candidate": {
+    "directory": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-5",
+    "id": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+    "manifestSha256": "c81211854666dd6b9b313945429543a9d8913c65afb31c2aa3d6361a63b6c8ba"
+  },
+  "binding": {
+    "directory": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/design-1.binding",
+    "id": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec",
+    "sha256": "93d2c571edad92b89f7820ea964585ecbf75f299726fd80f89ae3b932219f8de"
+  },
+  "materials": {
+    "directory": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-preparation-02",
+    "inputManifestSha256": "0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4",
+    "packageManifestSha256": "6ffbce6d52a9a64585045d7dad9af38da4df13a6616b22fa1b621414bed937d7",
+    "approvalFile": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/material-approval.json",
+    "approvalSha256": "645899cfde24f2dc867b061afaec7338cabe9494dfd33ad6f805bf3baf987eb1"
+  },
+  "candidateIndependentReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate5-offline-publication-review.md",
+    "sha256": "2fbb1ab95e818153577cf9703675a3551532640bbf8bdd4098a441739246a10f"
+  },
+  "endpointAuthorization": {
+    "file": "F:/GenCode/render-weave/out/harness-original38-candidate-4/endpoint-authorization.json",
+    "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+  },
+  "scopePlanSha256": "9e6bb65467d9d67594f3265cb155c663b4abb9a33f66d451e8e288b4558e8642",
+  "design": {
+    "unit": "original38-en-tfl161/design-1",
+    "out": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1",
+    "status": "not-run",
+    "maxTurns": 80,
+    "timeoutMs": 3600000
+  },
+  "correction": {
+    "status": "conditional-not-run",
+    "requiresActualDefect": true,
+    "maxTurns": 80,
+    "timeoutMs": 3600000,
+    "feedback": null,
+    "binding": null
+  },
+  "modelObservations": 0,
+  "humanReviewMinutes": null,
+  "humanCorrectionMinutes": null,
+  "usage": null
+}

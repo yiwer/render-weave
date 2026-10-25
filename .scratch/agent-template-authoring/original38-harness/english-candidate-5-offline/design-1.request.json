@@ -1,0 +1,52 @@
+{
+  "format": "renderweave-stage-request/1",
+  "unit": "original38-en-tfl161/design-1",
+  "materials": [
+    {
+      "file": "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\input-manifest.json",
+      "sha256": "sha256:0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/material-approval.json",
+      "sha256": "sha256:645899cfde24f2dc867b061afaec7338cabe9494dfd33ad6f805bf3baf987eb1"
+    }
+  ],
+  "args": [
+    "--task",
+    "template-design",
+    "--sample",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\render\\page-13-200dpi.png",
+    "--brief",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\manual-input\\brief.md",
+    "--workspace",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\manual-input\\workspace",
+    "--resources",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\manual-input\\resources",
+    "--request",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\manual-input\\request.json",
+    "--reference",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\manual-input\\reference.json",
+    "--dataset",
+    "ds-original38-en-tfl161-panel",
+    "--domain",
+    "route-sign",
+    "--model",
+    "claude-haiku-5-5",
+    "--small-model",
+    "claude-haiku-5-5",
+    "--endpoint",
+    "https://opencode.ai/inference/go/anthropic",
+    "--context-policy",
+    "full",
+    "--max-turns",
+    "80",
+    "--timeout-ms",
+    "3600000",
+    "--stagnation-threshold",
+    "2",
+    "--out",
+    "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1",
+    "--claude",
+    "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"
+  ]
+}

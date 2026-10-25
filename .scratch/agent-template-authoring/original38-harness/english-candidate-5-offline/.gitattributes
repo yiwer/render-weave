@@ -1,0 +1,3 @@
+* -text
+*.log whitespace=cr-at-eol
+*.mjs whitespace=cr-at-eol
