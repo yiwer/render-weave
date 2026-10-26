@@ -123,6 +123,10 @@ const reviewed=await api.readReview(copy,{persistArtifacts:false});
 if(!reviewed.view)throw new Error('公开审核无法读取：'+JSON.stringify(reviewed.problems));
 const previous=await api.readPreviousRound(copy);
 if(previous.checkpoint)throw new Error('恢复草稿另行登记，本包只取正式交回成果');
+const briefBytes=await readFile(join(copy,'agent/docs/brief.md'));
+if(hash(briefBytes)!==previous.record.inputs.brief?.sha256||hash(await readFile(join(copy,'logs/materials/brief.md')))!==hash(briefBytes))throw new Error('业务说明与封存身份不符');
+const taskBrief={file:'round-copy/agent/docs/brief.md',sha256:hash(briefBytes),text:briefBytes.toString('utf8')};
+const omitBlueNumberBadge=taskBrief.text.includes('站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画');
 let revisionRequirement=null;
 if(previous.record.task==='template-revision'){
   const input=previous.record.inputs.requirement;
@@ -170,22 +174,26 @@ for(let index=0;index<previous.candidates.length;index++){
 }
 const sourceScope=await readFile(resolve(values.scope),'utf8');
 let scope=sourceScope;
+await writeFile(join(out,'source-scope.md'),sourceScope,{flag:'wx'});
 if(revisionRequirement){
   // 原库存的原图事实保留为单独来源；修改审核不能沿用与授权变化冲突的判据。
-  await writeFile(join(out,'source-scope.md'),sourceScope,{flag:'wx'});
   scope='# 本轮模板修改审核范围\n\n修改要求优先于原图描述。以本页展示的封存修改要求为准；Z10、Z12检查授权变化，其他类别及这两类的非目标属性对照修改前固定snapshot保持不变。下表原图事实只供定位，不能覆盖本轮修改要求。\n\n'+sourceScope
     .replace(/^\| Z10 \|.*$/m,'| Z10 | 地标圈号（本轮授权变化） | 以封存修改要求为准：地标紧接竖排站名最后一个字，成为最后一格；有地标与无地标各列的末格底边齐平 | 核对全部适用实例；地标内容、颜色和所属站等非目标属性对照修改前保持不变 |')
     .replace(/^\| Z12 \|.*$/m,'| Z12 | 道路名称（本轮授权变化） | 以封存修改要求为准：道路名两端留白与字间距相同 | 核对全部15段；道路文字、颜色、分组等非目标属性对照修改前保持不变 |');
 }
+scope='# 封存业务说明优先\n\n业务说明与本轮修改要求优先于原图外观；原图不能覆盖客户明确排除的内容。模板修改还须遵守两处授权变化及其余保持，不据业务说明扩增本轮修改范围；若固定输入与修改前基准存在冲突，记录问题或未知，不自行添加修改。\n\n'+scope;
+if(omitBlueNumberBadge)scope=scope.replace(/^\| Z11 \|.*$/m,'| Z11 | 站点上方设施图标（按业务说明） | 蓝色圆形内带数字的标记按封存业务说明不画，正确缺省不能判漏画；仍核对绿色地铁标、红色医院标等其他设施图标 | 核对其他设施图标全部位置、所属站、状态与颜色；修改任务须同时对照修改前保持，冲突记问题或未知 |');
 await writeFile(join(out,'scope.md'),scope,{flag:'wx'});
 const reviewItems=[...scope.matchAll(/^\| (Z\d{2}) \| ([^|]+) \|/gm)].map(match=>({id:match[1],label:match[2].trim(),...(revisionRequirement?{reviewBasis:match[1]==='Z10'?'按封存修改要求：地标为竖排最后一格，各列末格底边齐平；内容、颜色、所属站等非目标属性与修改前保持不变。':match[1]==='Z12'?'按封存修改要求：道路名两端留白与字间距相同；文字、颜色、分组等非目标属性与修改前保持不变。':'非目标保持：与本轮修改前固定snapshot对照；原图仅供定位，完整修改要求优先。',requirementFile:revisionRequirement.file,requirementSha256:revisionRequirement.sha256}:{}),decision:null,allApplicableInstancesReviewed:null,sourceLocation:null,resultLocation:null,evidence:null,comment:null}));
-const blank={allowedDecisions:['accept','issue','unknown','not-applicable'],format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),revisionRequirement,reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:reviewItems,corrections:[],businessAcceptance:null};
+if(omitBlueNumberBadge){const item=reviewItems.find(item=>item.id==='Z11');if(!item)throw new Error('本轮审核库存缺Z11');Object.assign(item,{reviewBasis:'按封存业务说明：站名上方蓝色圆形内带数字标记不画，正确缺省不算漏画；仍核对其他设施图标的位置、所属站、状态与颜色。'+(revisionRequirement?'同时对照修改前非目标保持，不据业务说明扩增本轮修改范围；冲突记录问题或未知。':''),briefFile:taskBrief.file,briefSha256:taskBrief.sha256});}
+const blank={allowedDecisions:['accept','issue','unknown','not-applicable'],format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),taskBrief,revisionRequirement,reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:reviewItems,corrections:[],businessAcceptance:null};
 await writeFile(join(out,'review-template.json'),JSON.stringify(blank,null,2)+'\n',{flag:'wx'});
 const esc=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 const html=['<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><title>原38独立比较</title>',
 '<style>body{font:16px/1.6 system-ui;margin:32px;max-width:1600px;color:#172b4d}img{width:100%;height:auto;border:1px solid #ddd}h2{margin-top:36px}pre{white-space:pre-wrap;background:#f4f6f8;padding:16px}a{color:#1458b0}</style>',
 '<h1>原38 · 独立原始质量比较</h1><p>本包未审核、未批准、未应用。先对照原图记录独立判断，再查看诊断。复制 review-template.json 填写审核记录；工时未计量时保留 null。</p>',
 '<p>实际请求：'+esc(JSON.stringify(request.output))+'；本包以公开读取入口取得的有效候选生成。模式：'+esc(request.mode||'final')+'。</p>',
+'<h2>本轮业务说明优先</h2><p>以下封存业务说明优先于原图外观。客户已明确排除的内容不能按原图判为漏画。'+(revisionRequirement?'本轮仍按下方修改要求限定的两处变化及其余保持核对，不据业务说明扩增本轮修改范围；与修改前基准冲突时记录问题或未知。':'')+'</p><pre>'+esc(taskBrief.text)+'</pre><p><a href="'+esc(taskBrief.file)+'">查看本轮封存业务说明原文</a> · SHA256 '+taskBrief.sha256+'</p>',
 revisionRequirement?'<h2>本轮修改要求优先</h2><p>以下封存修改要求优先于原图与旧样式库存。Z10、Z12按授权变化核对，其他项以及两类中的非目标属性对照修改前基准保持不变。不要把要求改变的位置或间距判作偏离原图。</p><pre>'+esc(revisionRequirement.text)+'</pre><p><a href="'+esc(revisionRequirement.file)+'">查看本轮封存修改要求原文</a> · SHA256 '+revisionRequirement.sha256+'</p>':'',
 '<h2>原图</h2><img alt="原始参考图" src="source'+ext+'">',
 revisionRequirement?'<h2>修改前基准图</h2><p>本轮固定snapshot经公开render按同一实际请求出图，用来核对非目标保持；它不是原图，也不是新模型成果。</p>'+(beforeRevision?.image?'<img alt="修改前固定snapshot基准" src="before-revision.png">':'<p>修改前基准未出图；非目标保持存在证据缺口，不能自动判为接受。</p>'):'',
@@ -203,7 +211,7 @@ if(JSON.stringify(before)!==JSON.stringify(await inventory(copy))||JSON.stringif
 await verifyRuntime();
 await verifyObservation();
 if(JSON.stringify(observationProof)!==originalObservationProof)throw new Error('源实验或尝试记录在打包期间改变');
-const manifest={observationProof,generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/2',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,revisionRequirement,sourceScopeSha256:hash(Buffer.from(sourceScope)),sourceRoundFiles:before,sourceRoundDirectories:directoriesBefore,originalRoundUnchanged:true,copyUnchangedAfterPublicRead:true,publicReadOptions:{persistArtifacts:false},sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:comparison.image?{source:'separate-public-render',dpi:comparison.image.dpi,widthPx:comparison.image.widthPx,heightPx:comparison.image.heightPx}:null,layoutInventory:{nodes:instances.length,textNodes:instances.filter(item=>item.text).length},humanReview:null,files:await inventory(out)};
+const manifest={observationProof,generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/2',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,taskBrief,revisionRequirement,sourceScopeSha256:hash(Buffer.from(sourceScope)),sourceRoundFiles:before,sourceRoundDirectories:directoriesBefore,originalRoundUnchanged:true,copyUnchangedAfterPublicRead:true,publicReadOptions:{persistArtifacts:false},sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:comparison.image?{source:'separate-public-render',dpi:comparison.image.dpi,widthPx:comparison.image.widthPx,heightPx:comparison.image.heightPx}:null,layoutInventory:{nodes:instances.length,textNodes:instances.filter(item=>item.text).length},humanReview:null,files:await inventory(out)};
 await writeFile(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({out,originalRoundUnchanged:true,effectiveCandidates:effectiveFiles.length,actualImage:manifest.actualImage,previewImage:manifest.previewImage,reviewStatus:blank.status}));
 
