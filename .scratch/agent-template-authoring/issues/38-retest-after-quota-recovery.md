@@ -122,6 +122,10 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 [实际成果三图审核包](F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-correction1-candidate-5/review.html)已生成，原图/首次/纠偏并列、39项人审和分钟留空；独立人审、候选5原四场景与完整门槛仍待完成，维持needs-triage，不勾选缺证条目。旧失败、额度停止及原始轮次不覆盖。
 
+### 2026-10-25 用户接受英文实际成果
+
+用户对原图/首次/纠偏审核请求直接回复“确认接受”，已记录[总体接受原话及成果身份](../original38-harness/english-candidate-5-results/human-review-01.json)。39项细分结论、实际审核分钟和是否预看诊断未提供，保留未知，不推断全部分项通过。原始审核包与空表不改，未应用成果；原38完整门槛及其他独立审核仍待完成。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。
