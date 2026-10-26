@@ -1,0 +1,523 @@
+{
+  "format": "renderweave-agent-eval/2",
+  "label": "tds-baseline-1b",
+  "startedAt": "2026-10-26T05:31:21.994Z",
+  "endedAt": "2026-10-26T05:38:40.514Z",
+  "git": {
+    "commit": "64d7bae",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.9.0",
+  "materials": {
+    "agent/README.md": "7b68a94d90b6",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/asset-tag.md": "d56d14ce9453",
+    "agent/domains/boarding-pass.md": "8fc65c8012d5",
+    "agent/domains/clinic-doorplate.md": "f710865d7452",
+    "agent/domains/departure-board.md": "aa26ace9d7ca",
+    "agent/domains/hazmat-label.md": "f41279b0ca30",
+    "agent/domains/metro-strip.md": "ff81999114a9",
+    "agent/domains/order-label.md": "a58443eb9669",
+    "agent/domains/price-tag.md": "9ae5fd2880fe",
+    "agent/domains/route-sign.md": "a63c5a6b3352",
+    "agent/domains/waybill.md": "951196ef452b",
+    "agent/guide.md": "4ae9b7b0d777",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "a31f6af1631f",
+    "agent/reference/template.md": "10134146dc9a",
+    "agent/tasks/dataset-extraction.md": "993227147e04",
+    "agent/tasks/definition-extraction.md": "fde5236a6ff8",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "7554076d5cf0",
+    "agent/tasks/template-revision.md": "3f226dc507e5"
+  },
+  "consecutivePasses": 1,
+  "passLines": {
+    "tds-01-m518": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-02-m162": {
+      "stress": 10,
+      "layoutChecks": 14
+    },
+    "tds-03-price-tag": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-05-asset-card": {
+      "stress": 8,
+      "layoutChecks": 10
+    },
+    "tds-06-metro-strip": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-07-clinic": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-08-waybill": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-09-promo-tag": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-10-gate-screen": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-11-hazmat": {
+      "stress": 8,
+      "layoutChecks": 13
+    },
+    "tds-12-cup-label": {
+      "stress": 9,
+      "layoutChecks": 12
+    },
+    "tds-13-boarding-pass": {
+      "stress": 8,
+      "layoutChecks": 16
+    }
+  },
+  "results": [
+    {
+      "id": "tds-01-m518",
+      "name": "01 M518 横版公交线路牌",
+      "repetition": 1,
+      "status": "invalid",
+      "pass": false,
+      "retries": 0,
+      "invalid": {
+        "kind": "quota",
+        "task": "template-design",
+        "error": "模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded"
+      },
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-01-m518/template",
+          "verdict": "unqualified",
+          "wallMs": 437390,
+          "turns": 50,
+          "inputTokens": 28,
+          "outputTokens": 65491,
+          "thinkingTokens": 50627,
+          "cacheReadTokens": 868239,
+          "cacheCreationTokens": 105347,
+          "endedBy": "success",
+          "toolCalls": 24,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0,
+          "error": "模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded"
+        }
+      ],
+      "checks": {}
+    },
+    {
+      "id": "tds-08-waybill",
+      "name": "08 物流电子面单",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-08-waybill/template",
+          "verdict": "qualified",
+          "wallMs": 411380,
+          "turns": 56,
+          "inputTokens": 50,
+          "outputTokens": 71032,
+          "thinkingTokens": 43072,
+          "cacheReadTokens": 1894277,
+          "cacheCreationTokens": 128258,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 30,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.701
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "收件地址 40 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 1 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 5 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "商品名 20 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有寄件人电话",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "重量三位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "分拣码最长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "分拣码是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "顶栏承运商",
+              "pass": true
+            },
+            {
+              "label": "顶栏服务产品在右侧",
+              "pass": true
+            },
+            {
+              "label": "运单条码 CODE128",
+              "pass": true
+            },
+            {
+              "label": "运单号",
+              "pass": true
+            },
+            {
+              "label": "集散中心",
+              "pass": true
+            },
+            {
+              "label": "收件人",
+              "pass": true
+            },
+            {
+              "label": "收件地址",
+              "pass": true
+            },
+            {
+              "label": "寄件人",
+              "pass": true
+            },
+            {
+              "label": "二维码在寄件区右侧",
+              "pass": true
+            },
+            {
+              "label": "拣货明细商品名",
+              "pass": true
+            },
+            {
+              "label": "拣货明细数量",
+              "pass": true
+            },
+            {
+              "label": "计费重量",
+              "pass": true
+            },
+            {
+              "label": "寄件日期",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 14,
+          "layoutTotal": 14
+        }
+      }
+    },
+    {
+      "id": "tds-11-hazmat",
+      "name": "11 危化品库位标识卡",
+      "repetition": 1,
+      "status": "fail",
+      "pass": false,
+      "retries": 0,
+      "failures": [
+        "压测 7/8，要求至少 8（有严重问题：安全措施 60 字）"
+      ],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-11-hazmat/template",
+          "verdict": "qualified",
+          "wallMs": 416294,
+          "turns": 48,
+          "inputTokens": 42,
+          "outputTokens": 76211,
+          "thinkingTokens": 53521,
+          "cacheReadTokens": 1567995,
+          "cacheCreationTokens": 116603,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 28,
+          "toolErrors": 3,
+          "persistedResults": 0,
+          "firstCheckProblems": 1,
+          "error": "模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded"
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8211
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 1 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 4 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "信号词警告",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "中文品名 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "英文品名 40 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "安全措施 60 字",
+              "severe": 1,
+              "hint": 0,
+              "codes": [
+                "check.failed"
+              ]
+            },
+            {
+              "label": "没有 CAS 与 UN 编号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 7,
+          "checks": [
+            {
+              "label": "中文品名",
+              "pass": true
+            },
+            {
+              "label": "英文品名",
+              "pass": true
+            },
+            {
+              "label": "信号词在右上",
+              "pass": true
+            },
+            {
+              "label": "信号词英文由信号词派生",
+              "pass": true
+            },
+            {
+              "label": "库位",
+              "pass": true
+            },
+            {
+              "label": "易燃象形图",
+              "pass": true
+            },
+            {
+              "label": "健康危害象形图",
+              "pass": true
+            },
+            {
+              "label": "象形图下写类别名称",
+              "pass": true
+            },
+            {
+              "label": "CAS 号",
+              "pass": true
+            },
+            {
+              "label": "有效期",
+              "pass": true
+            },
+            {
+              "label": "应急电话",
+              "pass": true
+            },
+            {
+              "label": "CODE128 条码在右下",
+              "pass": true
+            },
+            {
+              "label": "象形图随类别减少",
+              "pass": true
+            },
+            {
+              "label": "第 4 枚象形图",
+              "pass": true
+            },
+            {
+              "label": "信号词警告配 WARNING",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-12-cup-label",
+      "name": "12 茶饮杯贴",
+      "repetition": 1,
+      "status": "invalid",
+      "pass": false,
+      "retries": 0,
+      "invalid": {
+        "kind": "quota",
+        "task": "template-design",
+        "error": "模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded"
+      },
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-12-cup-label/template",
+          "verdict": "unqualified",
+          "wallMs": 419240,
+          "turns": 50,
+          "inputTokens": 44,
+          "outputTokens": 61700,
+          "thinkingTokens": 44001,
+          "cacheReadTokens": 1431398,
+          "cacheCreationTokens": 99255,
+          "endedBy": "success",
+          "toolCalls": 28,
+          "toolErrors": 4,
+          "persistedResults": 0,
+          "firstCheckProblems": 0,
+          "error": "模型服务报错：API Error: Request rejected (429) · Go usage limit exceeded"
+        }
+      ],
+      "checks": {}
+    }
+  ],
+  "gate": {
+    "status": "fail",
+    "pass": false,
+    "scenarios": [
+      {
+        "id": "tds-01-m518",
+        "name": "01 M518 横版公交线路牌",
+        "outcomes": [
+          "invalid"
+        ],
+        "status": "incomplete"
+      },
+      {
+        "id": "tds-08-waybill",
+        "name": "08 物流电子面单",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-11-hazmat",
+        "name": "11 危化品库位标识卡",
+        "outcomes": [
+          "fail"
+        ],
+        "status": "fail"
+      },
+      {
+        "id": "tds-12-cup-label",
+        "name": "12 茶饮杯贴",
+        "outcomes": [
+          "invalid"
+        ],
+        "status": "incomplete"
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 1684304,
+    "inputTokens": 164,
+    "outputTokens": 274434,
+    "thinkingTokens": 191221,
+    "cacheReadTokens": 5761909,
+    "persistedResults": 0
+  }
+}

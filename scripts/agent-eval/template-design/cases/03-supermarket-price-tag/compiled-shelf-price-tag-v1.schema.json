@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "超市商品价签 v1",
+  "x-renderweave-static-schema": {
+    "name": "超市商品价签",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "storeName",
+    "productName",
+    "unit",
+    "itemNo",
+    "retailPrice",
+    "barcode"
+  ],
+  "properties": {
+    "storeName": {
+      "title": "门店名称",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "storeLogo": {
+      "title": "店标",
+      "type": "string",
+      "pattern": "^res:[A-Za-z0-9][A-Za-z0-9_-]*$",
+      "x-renderweave-type": "image"
+    },
+    "productName": {
+      "title": "品名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "spec": {
+      "title": "规格",
+      "type": "string",
+      "maxLength": 16
+    },
+    "unit": {
+      "title": "计价单位",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 6
+    },
+    "origin": {
+      "title": "产地",
+      "type": "string",
+      "maxLength": 12
+    },
+    "itemNo": {
+      "title": "货号",
+      "type": "string",
+      "pattern": "^[0-9]{7}$"
+    },
+    "features": {
+      "title": "卖点",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    "retailPrice": {
+      "title": "零售价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 99999.99
+    },
+    "memberPrice": {
+      "title": "会员价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 99999.99
+    },
+    "barcode": {
+      "title": "商品条码",
+      "type": "string",
+      "pattern": "^[0-9]{13}$"
+    },
+    "priceChecker": {
+      "title": "物价员",
+      "type": "string",
+      "maxLength": 8
+    },
+    "supervisePhone": {
+      "title": "价格监督电话",
+      "type": "string",
+      "maxLength": 16
+    }
+  }
+}

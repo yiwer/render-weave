@@ -1,0 +1,23 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "诊室门牌",
+  "version": 1,
+  "displayName": "门诊诊室电子门牌（一个诊室一个出诊时段）",
+  "fields": [
+    { "name": "hospital", "displayName": "医院", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 12 } },
+    { "name": "department", "displayName": "科室", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 12 } },
+    { "name": "room", "displayName": "诊室", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 6 } },
+    { "name": "doctorName", "displayName": "医生姓名", "type": "text", "constraints": { "required": true, "minLength": 2, "maxLength": 4 } },
+    { "name": "doctorTitle", "displayName": "职称", "type": "text", "constraints": { "enum": ["主任医师", "副主任医师", "主治医师", "住院医师"] } },
+    { "name": "doctorPhoto", "displayName": "医生照片", "type": "image", "constraints": { "allowedSources": ["resource"] } },
+    { "name": "specialties", "displayName": "擅长", "type": "list", "items": { "type": "text", "constraints": { "minLength": 1, "maxLength": 6 } }, "constraints": { "maxItems": 3 } },
+    { "name": "session", "displayName": "出诊时段", "type": "text", "constraints": { "required": true, "enum": ["上午", "下午", "晚间"] } },
+    { "name": "sessionStart", "displayName": "出诊开始", "type": "time" },
+    { "name": "sessionEnd", "displayName": "出诊结束", "type": "time" },
+    { "name": "currentTicket", "displayName": "正在就诊号码", "type": "text", "constraints": { "pattern": "^[A-Z][0-9]{3}$" } },
+    { "name": "currentName", "displayName": "正在就诊患者", "type": "text", "constraints": { "maxLength": 6 } },
+    { "name": "queue", "displayName": "候诊队列", "type": "list", "items": { "type": "ref", "ref": { "name": "候诊患者", "version": 1 } }, "constraints": { "maxItems": 6 } },
+    { "name": "notice", "displayName": "温馨提示", "type": "text", "constraints": { "maxLength": 30 } },
+    { "name": "checkinUrl", "displayName": "签到二维码内容", "type": "text", "constraints": { "maxLength": 120 } }
+  ]
+}

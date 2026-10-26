@@ -1,0 +1,22 @@
+{
+  "dataset": {
+    "id": "ds-cup-a086-1",
+    "name": "取餐号 A086 第 1 杯",
+    "staticSchema": { "name": "饮品杯贴", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 12：按示例图转录，二维码内容为自拟" }
+  },
+  "data": {
+    "pickupNo": "A086",
+    "orderType": "堂食",
+    "cupIndex": 1,
+    "cupCount": 2,
+    "productName": "云顶芝士多肉葡萄冻(大杯)",
+    "productNameEn": "Cheese Grape Jelly Tea (L)",
+    "options": ["少冰", "三分糖", "加脆波波", "换燕麦奶", "分装芝士"],
+    "note": "打包带走，吸管请多给一根",
+    "orderedAt": "2026-10-25 14:32:00",
+    "store": "科技园旗舰店",
+    "qrContent": "https://tea.example/o/A086-20261025",
+    "tip": "请在1小时内饮用风味最佳"
+  }
+}

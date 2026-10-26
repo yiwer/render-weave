@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "拣货明细 v1",
+  "x-renderweave-static-schema": {
+    "name": "拣货明细",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "qty"
+  ],
+  "properties": {
+    "name": {
+      "title": "商品名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "spec": {
+      "title": "规格",
+      "type": "string",
+      "maxLength": 8
+    },
+    "qty": {
+      "title": "数量",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 999
+    }
+  }
+}

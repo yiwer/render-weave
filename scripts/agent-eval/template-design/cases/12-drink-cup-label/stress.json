@@ -1,0 +1,13 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "没有选项", "data": { "options": null } },
+    { "label": "选项 8 个", "data": { "options": ["少冰", "三分糖", "加脆波波", "换燕麦奶", "分装芝士", "加椰果", "去奶盖", "常温"] } },
+    { "label": "没有备注", "data": { "note": null } },
+    { "label": "商品名 20 字", "data": { "productName": "云顶芝士多肉葡萄冻厚乳波波双拼(超大杯)" } },
+    { "label": "英文商品名 40 字符", "data": { "productNameEn": "Cheese Grape Jelly Tea with Oat Milk (L)" } },
+    { "label": "第 10/12 杯", "data": { "cupIndex": 10, "cupCount": 12 } },
+    { "label": "备注 30 字", "data": { "note": "打包带走，吸管请多给一根，另外请帮忙装一个保温袋，非常感谢您" } },
+    { "label": "外卖、没有提示语", "data": { "orderType": "外卖", "tip": null } }
+  ]
+}

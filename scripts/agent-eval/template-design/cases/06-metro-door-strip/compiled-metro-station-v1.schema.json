@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "导乘站点 v1",
+  "x-renderweave-static-schema": {
+    "name": "导乘站点",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "title": "站名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "nameEn": {
+      "title": "英文站名",
+      "type": "string",
+      "maxLength": 36
+    },
+    "transfers": {
+      "title": "换乘线路",
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "string",
+        "enum": [
+          "2号线",
+          "4号线",
+          "9号线",
+          "14号线"
+        ]
+      }
+    }
+  }
+}

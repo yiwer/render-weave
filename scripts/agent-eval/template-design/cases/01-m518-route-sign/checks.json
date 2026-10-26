@@ -1,0 +1,19 @@
+{
+  "checks": [
+    { "label": "顶栏终点站由站点列表末项派生", "kind": "text", "text": "科技园总站", "region": { "y": [0, 0.22] } },
+    { "label": "线路号铭牌在左上", "kind": "image", "source": "res:route-no-m518", "region": { "x": [0, 0.3], "y": [0, 0.22] } },
+    { "label": "方向箭头在顶栏", "kind": "image", "source": "res:arrow-double-right", "region": { "y": [0, 0.22] } },
+    { "label": "票制票价在顶栏", "kind": "text", "text": "一票制", "region": { "y": [0, 0.22] } },
+    { "label": "运营方在右上", "kind": "text", "text": "巴士集团", "region": { "x": [0.7, 1], "y": [0, 0.22] } },
+    { "label": "地标图片", "kind": "image", "source": "res:landmark-3-svg" },
+    { "label": "设施图标按枚举选图", "kind": "image", "source": "res:icon-hospital-cross" },
+    { "label": "道路带", "kind": "text", "text": "滨河大道" },
+    { "label": "底栏下一站由本站派生", "kind": "text", "text": "会展中心", "region": { "y": [0.8, 1] } },
+    { "label": "底栏首末班", "kind": "text", "text": "06:30", "region": { "y": [0.8, 1] } },
+    { "label": "底栏班次时刻", "kind": "text", "text": "18:30", "region": { "y": [0.8, 1] } },
+    { "label": "已过站弱化为灰色", "kind": "text", "text": "福田高铁站", "color": "#A9A9A9" },
+    { "label": "本站站名突出为红色", "kind": "text", "text": "市民中心", "color": "#E02020" },
+    { "label": "本站 0 时不显示下一站", "kind": "text", "text": "下一站", "absent": true, "variant": { "parameters": { "currentIndex": 0 } } },
+    { "label": "本站为末站时不显示下一站", "kind": "text", "text": "下一站", "absent": true, "variant": { "parameters": { "currentIndex": 20 } } }
+  ]
+}

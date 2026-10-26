@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "候车信息屏 v1",
+  "x-renderweave-static-schema": {
+    "name": "候车信息屏",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "waitingRoom",
+    "gates",
+    "trains"
+  ],
+  "properties": {
+    "waitingRoom": {
+      "title": "候车室",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "gates": {
+      "title": "检票口",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12
+    },
+    "updatedAt": {
+      "title": "更新时刻",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "trains": {
+      "title": "车次",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "x-renderweave-static-schema": {
+          "name": "候车车次",
+          "version": 1
+        },
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trainNo",
+          "terminal",
+          "departure",
+          "status"
+        ],
+        "properties": {
+          "trainNo": {
+            "title": "车次",
+            "type": "string",
+            "pattern": "^[GDCZTK][0-9]{1,4}$"
+          },
+          "terminal": {
+            "title": "终到站",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6
+          },
+          "via": {
+            "title": "途经站点",
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5
+            }
+          },
+          "departure": {
+            "title": "开点",
+            "type": "string",
+            "format": "rw-time",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+            "x-renderweave-type": "time"
+          },
+          "status": {
+            "title": "候车状态",
+            "type": "string",
+            "enum": [
+              "正在检票",
+              "候车中",
+              "停止检票",
+              "晚点"
+            ]
+          }
+        }
+      }
+    },
+    "notice": {
+      "title": "温馨提示",
+      "type": "string",
+      "maxLength": 50
+    }
+  }
+}

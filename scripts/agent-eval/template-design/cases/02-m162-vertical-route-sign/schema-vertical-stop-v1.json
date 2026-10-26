@@ -1,0 +1,15 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "竖版站点",
+  "version": 1,
+  "displayName": "竖版线路牌的停靠站点",
+  "description": "一行站点：站名（所在道路），下面是英文；右侧 0–2 个设施图标",
+  "fields": [
+    { "name": "name", "displayName": "站名", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 14 } },
+    { "name": "road", "displayName": "所在道路", "type": "text", "constraints": { "maxLength": 10 } },
+    { "name": "nameEn", "displayName": "英文站名", "type": "text", "constraints": { "maxLength": 48 } },
+    { "name": "roadEn", "displayName": "英文道路名", "type": "text", "constraints": { "maxLength": 32 } },
+    { "name": "facilities", "displayName": "设施", "type": "list",
+      "items": { "type": "text", "constraints": { "enum": ["地铁", "医院", "体育馆", "火车站"] } }, "constraints": { "maxItems": 2 } }
+  ]
+}

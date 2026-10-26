@@ -1,0 +1,7 @@
+{
+  "template": "导乘图主模板",
+  "dataset": { "id": "ds-line6-kexuecheng" },
+  "parameters": { "currentIndex": 4 },
+  "output": { "width": 1320, "height": 560, "dpi": 40, "format": "png" },
+  "mode": "final"
+}

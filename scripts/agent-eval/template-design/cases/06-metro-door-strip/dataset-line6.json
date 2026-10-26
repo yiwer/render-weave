@@ -1,0 +1,27 @@
+{
+  "dataset": {
+    "id": "ds-line6-kexuecheng",
+    "name": "6号线开往科学城东",
+    "staticSchema": { "name": "地铁导乘图", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 06：按示例图转录；换乘线路按用例文档整理过" }
+  },
+  "data": {
+    "lineNo": "6",
+    "firstTrain": "06:15",
+    "lastTrain": "23:30",
+    "stations": [
+      { "name": "长虹公园", "nameEn": "Changhong Park" },
+      { "name": "金沙江路", "nameEn": "Jinshajiang Road" },
+      { "name": "云山路", "nameEn": "Yunshan Road" },
+      { "name": "世纪大道", "nameEn": "Century Avenue", "transfers": ["2号线", "4号线", "9号线"] },
+      { "name": "源深体育中心", "nameEn": "Yuanshen Stadium" },
+      { "name": "民生路", "nameEn": "Minsheng Road", "transfers": ["14号线"] },
+      { "name": "北洋泾路", "nameEn": "Beiyangjing Road" },
+      { "name": "德平路", "nameEn": "Deping Road" },
+      { "name": "金桥", "nameEn": "Jinqiao" },
+      { "name": "高科西路", "nameEn": "Gaoke West Road" },
+      { "name": "张江高科", "nameEn": "Zhangjiang High-Tech Park" },
+      { "name": "科学城东", "nameEn": "Science City East" }
+    ]
+  }
+}

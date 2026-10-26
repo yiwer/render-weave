@@ -1,0 +1,14 @@
+{
+  "dpi": 30,
+  "cases": [
+    { "label": "12 站本站 4" },
+    { "label": "本站 1（首站）", "parameters": { "currentIndex": 1 } },
+    { "label": "本站 12（末站）", "parameters": { "currentIndex": 12 } },
+    { "label": "2 站", "data": { "stations": { "$take": { "from": "stations", "count": 2 } } }, "parameters": { "currentIndex": 1 } },
+    { "label": "16 站", "data": { "stations": { "$take": { "from": "stations", "count": 16 } } }, "parameters": { "currentIndex": 8 } },
+    { "label": "8 字站名与长英文", "data": { "stations[6].name": "北洋泾路东延伸段", "stations[6].nameEn": "Beiyangjing Road East Extension" } },
+    { "label": "本站换乘 4 条", "data": { "stations[3].transfers": ["2号线", "4号线", "9号线", "14号线"] } },
+    { "label": "本站没有换乘", "data": { "stations[3].transfers": null } },
+    { "label": "本站是 8 字站名", "data": { "stations[3].name": "世纪大道东方路口" }, "parameters": { "currentIndex": 4 } }
+  ]
+}

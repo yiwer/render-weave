@@ -1,0 +1,11 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "拣货明细",
+  "version": 1,
+  "displayName": "面单上的一行拣货明细",
+  "fields": [
+    { "name": "name", "displayName": "商品名", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 20 } },
+    { "name": "spec", "displayName": "规格", "type": "text", "constraints": { "maxLength": 8 } },
+    { "name": "qty", "displayName": "数量", "type": "number", "constraints": { "required": true, "integer": true, "min": 1, "max": 999 } }
+  ]
+}

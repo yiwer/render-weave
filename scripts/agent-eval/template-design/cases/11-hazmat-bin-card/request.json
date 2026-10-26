@@ -1,0 +1,7 @@
+{
+  "template": "危化品库位卡",
+  "dataset": { "id": "ds-hazmat-ethanol-b0402" },
+  "parameters": {},
+  "output": { "width": 200, "height": 150, "dpi": 150, "format": "png" },
+  "mode": "final"
+}

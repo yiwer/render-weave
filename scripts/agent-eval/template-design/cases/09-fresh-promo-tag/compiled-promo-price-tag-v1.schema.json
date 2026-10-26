@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "生鲜促销价签 v1",
+  "x-renderweave-static-schema": {
+    "name": "生鲜促销价签",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "storeName",
+    "productName",
+    "itemNo",
+    "unit",
+    "promoPrice",
+    "barcode"
+  ],
+  "properties": {
+    "storeName": {
+      "title": "门店名称",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "productName": {
+      "title": "品名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "features": {
+      "title": "卖点",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    "origin": {
+      "title": "产地",
+      "type": "string",
+      "maxLength": 12
+    },
+    "grade": {
+      "title": "等级",
+      "type": "string",
+      "maxLength": 6
+    },
+    "spec": {
+      "title": "规格",
+      "type": "string",
+      "maxLength": 12
+    },
+    "itemNo": {
+      "title": "编码",
+      "type": "string",
+      "pattern": "^[0-9]{6}$"
+    },
+    "unit": {
+      "title": "计价单位",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 6
+    },
+    "originalPrice": {
+      "title": "原价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999.99
+    },
+    "promoPrice": {
+      "title": "促销价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999.99
+    },
+    "memberPrice": {
+      "title": "会员专享价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9999.99
+    },
+    "barcode": {
+      "title": "店内码",
+      "type": "string",
+      "pattern": "^[0-9]{13}$"
+    },
+    "traceUrl": {
+      "title": "溯源二维码内容",
+      "type": "string",
+      "maxLength": 120
+    },
+    "priceChecker": {
+      "title": "物价员",
+      "type": "string",
+      "maxLength": 8
+    },
+    "supervisePhone": {
+      "title": "监督电话",
+      "type": "string",
+      "maxLength": 16
+    }
+  }
+}

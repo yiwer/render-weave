@@ -1,0 +1,24 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "电子面单",
+  "version": 1,
+  "displayName": "电商物流电子面单（带拣货明细）",
+  "fields": [
+    { "name": "carrierName", "displayName": "承运商", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 8 } },
+    { "name": "carrierNameEn", "displayName": "承运商英文名", "type": "text", "constraints": { "maxLength": 20 } },
+    { "name": "serviceType", "displayName": "服务产品", "type": "text", "constraints": { "maxLength": 10 } },
+    { "name": "sortCode", "displayName": "分拣码", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 16 } },
+    { "name": "trackingNo", "displayName": "运单号", "type": "text", "constraints": { "required": true, "pattern": "^[A-Z]{2}[0-9]{12}$" } },
+    { "name": "hubName", "displayName": "集散中心", "type": "text", "constraints": { "maxLength": 8 } },
+    { "name": "receiverName", "displayName": "收件人", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 8 } },
+    { "name": "receiverPhone", "displayName": "收件人电话", "type": "text", "constraints": { "required": true, "maxLength": 16 } },
+    { "name": "receiverAddress", "displayName": "收件地址", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 60 } },
+    { "name": "senderName", "displayName": "寄件人", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 10 } },
+    { "name": "senderPhone", "displayName": "寄件人电话", "type": "text", "constraints": { "maxLength": 16 } },
+    { "name": "senderAddress", "displayName": "寄件地址", "type": "text", "constraints": { "maxLength": 40 } },
+    { "name": "qrContent", "displayName": "二维码内容", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 120 } },
+    { "name": "items", "displayName": "拣货明细", "type": "list", "items": { "type": "ref", "ref": { "name": "拣货明细", "version": 1 } }, "constraints": { "required": true, "minItems": 1, "maxItems": 5 } },
+    { "name": "shipDate", "displayName": "寄件日期", "type": "date" },
+    { "name": "weightKg", "displayName": "计费重量（kg）", "type": "number", "constraints": { "min": 0, "max": 999.9 } }
+  ]
+}

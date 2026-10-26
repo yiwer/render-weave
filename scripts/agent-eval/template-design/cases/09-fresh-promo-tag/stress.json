@@ -1,0 +1,13 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "品名 30 字", "data": { "productName": "新疆阿克苏冰糖心红富士苹果特级大果精选散装称重当季鲜采直供装" } },
+    { "label": "没有原价", "data": { "originalPrice": null } },
+    { "label": "没有会员专享价", "data": { "memberPrice": null } },
+    { "label": "没有卖点", "data": { "features": null } },
+    { "label": "卖点 1 个", "data": { "features": ["新疆直采"] } },
+    { "label": "促销价四位整数", "data": { "originalPrice": 1588, "promoPrice": 1288.8, "memberPrice": 1188 } },
+    { "label": "计价单位千克、没有溯源码", "data": { "unit": "千克", "traceUrl": null } },
+    { "label": "没有等级与规格", "data": { "grade": null, "spec": null } }
+  ]
+}

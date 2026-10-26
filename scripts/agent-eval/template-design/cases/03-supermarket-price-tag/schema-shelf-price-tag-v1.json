@@ -1,0 +1,22 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "超市商品价签",
+  "version": 1,
+  "displayName": "超市商品价签（包装商品）",
+  "description": "货架上一件商品一个规格的价签；门店名称、店标、物价员与监督电话随数据集给出",
+  "fields": [
+    { "name": "storeName", "displayName": "门店名称", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 10 } },
+    { "name": "storeLogo", "displayName": "店标", "type": "image", "constraints": { "allowedSources": ["resource"] } },
+    { "name": "productName", "displayName": "品名", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 30 } },
+    { "name": "spec", "displayName": "规格", "type": "text", "constraints": { "maxLength": 16 } },
+    { "name": "unit", "displayName": "计价单位", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 6 } },
+    { "name": "origin", "displayName": "产地", "type": "text", "constraints": { "maxLength": 12 } },
+    { "name": "itemNo", "displayName": "货号", "type": "text", "constraints": { "required": true, "pattern": "^[0-9]{7}$" } },
+    { "name": "features", "displayName": "卖点", "type": "list", "items": { "type": "text", "constraints": { "minLength": 1, "maxLength": 6 } }, "constraints": { "maxItems": 3 } },
+    { "name": "retailPrice", "displayName": "零售价（元）", "type": "number", "constraints": { "required": true, "min": 0, "max": 99999.99 } },
+    { "name": "memberPrice", "displayName": "会员价（元）", "type": "number", "constraints": { "min": 0, "max": 99999.99 } },
+    { "name": "barcode", "displayName": "商品条码", "description": "EAN-13 完整编号，含校验位", "type": "text", "constraints": { "required": true, "pattern": "^[0-9]{13}$" } },
+    { "name": "priceChecker", "displayName": "物价员", "type": "text", "constraints": { "maxLength": 8 } },
+    { "name": "supervisePhone", "displayName": "价格监督电话", "type": "text", "constraints": { "maxLength": 16 } }
+  ]
+}

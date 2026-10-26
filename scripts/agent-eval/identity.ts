@@ -95,6 +95,22 @@ export async function inputIdentity(scenarios: readonly Scenario[]): Promise<Rec
     if (scenario.kind === 'template' || scenario.kind === 'revision') {
       await add(`${scenario.id}/request`, scenario.request);
       for (const file of scenario.workspace.files) await add(`${scenario.id}/workspace/${file}`, join(scenario.workspace.from, file));
+      // 模板设计评估集（M335）：数据驱动的压测与版面检查也是评分输入。
+      if (scenario.scoring) {
+        await add(`${scenario.id}/scoring/stress`, scenario.scoring.stress);
+        await add(`${scenario.id}/scoring/checks`, scenario.scoring.checks);
+      }
+    }
+    // 逐例资源（M334）：字体随配置的共用仓库固定，这里固定素材清单与本例列出的每张图片。
+    if (scenario.resources) {
+      const { from, images } = scenario.resources;
+      await add(`${scenario.id}/resources/resources.json`, join(from, 'resources.json'));
+      const manifest = JSON.parse(await readFile(join(repoPath(from), 'resources.json'), 'utf8')) as { resources: { id: string; file: string }[] };
+      for (const id of images) {
+        const entry = manifest.resources.find((item) => item.id === id);
+        if (!entry) throw new Error(`${from} 的资源清单里没有图片 ${id}`);
+        await add(`${scenario.id}/resources/${id}`, join(from, entry.file));
+      }
     }
     if (scenario.kind === 'revision') {
       await add(`${scenario.id}/requirement`, scenario.requirement);

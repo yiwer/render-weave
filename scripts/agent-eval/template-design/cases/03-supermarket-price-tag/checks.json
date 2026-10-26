@@ -1,0 +1,17 @@
+{
+  "checks": [
+    { "label": "零售价是字号最大的文字", "kind": "largest", "text": ["2.50", "2"] },
+    { "label": "零售价两位小数", "kind": "text", "text": "50", "region": { "x": [0.45, 1], "y": [0.3, 0.85] } },
+    { "label": "会员价", "kind": "text", "text": "1.98" },
+    { "label": "品名", "kind": "text", "text": "高山有机饮用天然水" },
+    { "label": "规格", "kind": "text", "text": "550ml/瓶" },
+    { "label": "产地", "kind": "text", "text": "浙江杭州" },
+    { "label": "货号", "kind": "text", "text": "0086421" },
+    { "label": "卖点标签", "kind": "text", "text": "低钠淡矿" },
+    { "label": "顶栏门店名称", "kind": "text", "text": "鲜生活超市", "region": { "y": [0, 0.25] } },
+    { "label": "店标在左上", "kind": "image", "source": "res:logo-fresh-mart", "region": { "x": [0, 0.25], "y": [0, 0.25] } },
+    { "label": "EAN-13 条码在左下", "kind": "barcode", "format": "EAN-13", "region": { "x": [0, 0.5], "y": [0.6, 1] } },
+    { "label": "物价员在底部", "kind": "text", "text": "张敏", "region": { "y": [0.8, 1] } },
+    { "label": "监督电话在底部", "kind": "text", "text": "12358", "region": { "y": [0.8, 1] } }
+  ]
+}

@@ -4,6 +4,7 @@
  *   数据定义提取只交数据定义（M43），所以不再像验证脚本那样从数据集反推字段。
  * - 转录（366）：站名、地标圈号与设施图标，与人工转录逐站对照（M217）。
  * - 模板（M402）：10 个压测场景（M213）与 M215 的两项版面检查；另记示例请求的问题数与相似度，只作参考。
+ * - 模板（模板设计评估集，M335）：压测与版面检查由用例目录的 stress.json、checks.json 给出，在草稿的问题清单与布局摘要上判断。
  */
 import { loadCanvasKit } from '../../src/canvaskit.js';
 import { loadWorkspace, render, revisionDiff, type RevisionDiff, type Workspace } from '../../src/index.js';
@@ -327,11 +328,15 @@ export interface TemplateScore {
   readonly stress: readonly StressResult[];
   /** 没有严重问题的压测场景数。 */
   readonly stressPassed: number;
-  /** M215 约定一：无地标站名的底边与地标底边齐平，差值毫米，2 mm 以内通过。 */
-  readonly landmarkBaseline: { readonly found: boolean; readonly deltaMm?: number; readonly pass: boolean; readonly reason?: string };
-  /** M215 约定二：绑定 road 的文字为同间隔分布。 */
-  readonly roadAlign: { readonly aligns: readonly string[]; readonly pass: boolean };
+  /** M215 约定一（M402）：无地标站名的底边与地标底边齐平，差值毫米，2 mm 以内通过。 */
+  readonly landmarkBaseline?: { readonly found: boolean; readonly deltaMm?: number; readonly pass: boolean; readonly reason?: string };
+  /** M215 约定二（M402）：绑定 road 的文字为同间隔分布。 */
+  readonly roadAlign?: { readonly aligns: readonly string[]; readonly pass: boolean };
+  /** 模板设计评估集：checks.json 逐项的结果（M335）。 */
+  readonly checks?: readonly CheckResult[];
   readonly layoutPassed: number;
+  /** 版面检查的项数：M402 是 M215 的两项，评估集是 checks.json 的项数。 */
+  readonly layoutTotal: number;
 }
 
 export interface RevisionScore {
@@ -401,12 +406,215 @@ export async function scoreTemplates(options: {
   const road = roadAlign(options.templates.map((entry) => entry.document));
   return {
     sample, stress, stressPassed: stress.filter((row) => row.severe === 0).length,
-    landmarkBaseline: landmark, roadAlign: road, layoutPassed: [landmark.pass, road.pass].filter(Boolean).length,
+    landmarkBaseline: landmark, roadAlign: road, layoutPassed: [landmark.pass, road.pass].filter(Boolean).length, layoutTotal: 2,
+  };
+}
+
+// ---------- 模板（模板设计评估集，M335）----------
+
+/**
+ * 在用例的示例数据集上改数据：键是路径（`a`、`a.b`、`a[0].b`，序号从 0 开始），按写的顺序执行。
+ * 值为 null 时删掉该键；`{"$take": {"from": 列表路径, "count": n}}` 从原数据集的列表循环取 n 项，用来缩短或加长列表。
+ */
+export type DataPatch = Readonly<Record<string, unknown>>;
+
+/** 压测与版面检查的一种出图变化：改数据、改对外参数、改输出宽高（毫米）。 */
+export interface Variation {
+  readonly data?: DataPatch;
+  readonly parameters?: Readonly<Record<string, unknown>>;
+  readonly output?: { readonly width?: number; readonly height?: number };
+}
+
+export interface StressSpec {
+  /** 草稿 DPI，缺省取示例请求的 DPI；大尺寸的牌子写 30，与 M402 压测相同。 */
+  readonly dpi?: number;
+  readonly cases: readonly (Variation & { readonly label: string })[];
+}
+
+/**
+ * 一项版面检查，在示例请求（或 variant 改过的请求）的草稿布局摘要上判断：
+ * - text：有可见文字（文字元素，或条码自带的下方文字）的内容含 text 中的任一个（去掉空白后比较），可再限字号范围、颜色（与片段颜色的 RGB 距离不超过 100）；
+ * - image：有可见图片引用 source 中的任一个资源；
+ * - barcode / qrcode：有可见的条码（可限格式）/ 二维码；
+ * - largest：字号最大的文字片段含 text 中的任一个。
+ * region 限元素框中心在画板上的相对位置（0–1）；absent 为 true 时断言找不到。
+ */
+export interface CaseCheck {
+  readonly label: string;
+  readonly kind: 'text' | 'image' | 'barcode' | 'qrcode' | 'largest';
+  readonly text?: string | readonly string[];
+  readonly source?: string | readonly string[];
+  readonly format?: string;
+  readonly minFontSize?: number;
+  readonly maxFontSize?: number;
+  readonly color?: string;
+  readonly region?: { readonly x?: readonly [number, number]; readonly y?: readonly [number, number] };
+  readonly absent?: boolean;
+  readonly variant?: Variation;
+}
+
+export interface CheckResult { readonly label: string; readonly pass: boolean; readonly detail?: string }
+
+type LayoutNode = {
+  type: string; path: string; x: number; y: number; width: number; height: number; visible: boolean;
+  text?: TextSummary;
+  image?: { source: string; drawn: Box };
+  barcode?: { format: string; symbol: Box; label?: { box: Box; text: TextSummary } };
+  qrcode?: { symbol: Box };
+  children?: LayoutNode[];
+};
+type Box = { x: number; y: number; width: number; height: number };
+type TextSummary = { content: string; fontSize: number; fragments: { text: string; fontSize: number; color: string; placeholder?: true }[] };
+type Layout = { output: { width: number; height: number }; root: LayoutNode };
+
+/** 按 DataPatch 改一份数据，不改原对象。 */
+export function patchData(data: Readonly<Record<string, unknown>>, patch: DataPatch = {}): Record<string, unknown> {
+  const result = structuredClone(data) as Record<string, unknown>;
+  for (const [path, value] of Object.entries(patch)) {
+    const keys = [...path.matchAll(/([^.[\]]+)|\[(\d+)\]/g)].map((match) => (match[2] === undefined ? match[1]! : Number(match[2])));
+    const take = isRecord(value) && isRecord(value['$take']) ? value['$take'] : undefined;
+    const next = take ? cycle(read(data, String(take['from'])), Number(take['count'])) : value;
+    let target: unknown = result;
+    for (const key of keys.slice(0, -1)) target = (target as Record<string | number, unknown>)[key];
+    if (typeof target !== 'object' || target === null) throw new Error(`改数据的路径不存在：${path}`);
+    const last = keys[keys.length - 1]!;
+    if (next === null) {
+      if (Array.isArray(target) && typeof last === 'number') target.splice(last, 1);
+      else delete (target as Record<string | number, unknown>)[last];
+    } else {
+      (target as Record<string | number, unknown>)[last] = structuredClone(next);
+    }
+  }
+  return result;
+}
+
+function read(data: Readonly<Record<string, unknown>>, path: string): unknown {
+  return path.split('.').reduce<unknown>((value, key) => (isRecord(value) ? value[key] : undefined), data);
+}
+
+function cycle(list: unknown, count: number): unknown[] {
+  if (!Array.isArray(list) || list.length === 0 || !Number.isSafeInteger(count) || count < 0) throw new Error('$take 要从非空列表取非负整数项');
+  return Array.from({ length: count }, (_, index) => structuredClone(list[index % list.length]) as unknown);
+}
+
+/** 按布局摘要判断一项检查。 */
+export function evaluateCheck(check: CaseCheck, layout: Layout): CheckResult {
+  const nodes: LayoutNode[] = [];
+  (function walk(node: LayoutNode) { if (node.visible) { nodes.push(node); for (const child of node.children ?? []) walk(child); } })(layout.root);
+  const strip = (value: string) => value.replace(/[\s　]/gu, '');
+  const wanted = (value: string | readonly string[] | undefined) => (value === undefined ? [] : typeof value === 'string' ? [value] : [...value]).map(strip);
+  const inRegion = (box: { x: number; y: number; width: number; height: number }) => {
+    const cx = (box.x + box.width / 2) / layout.output.width, cy = (box.y + box.height / 2) / layout.output.height;
+    const within = (range: readonly [number, number] | undefined, value: number) => !range || (value >= range[0] && value <= range[1]);
+    return within(check.region?.x, cx) && within(check.region?.y, cy);
+  };
+  // 文字既有文字元素，也有条码自带的下方文字（showText）。
+  const texts = nodes.flatMap((node) => [
+    ...(node.text ? [{ text: node.text, box: node as Box }] : []),
+    ...(node.barcode?.label ? [{ text: node.barcode.label.text, box: node.barcode.label.box }] : []),
+  ]);
+  const has = (text: TextSummary) => wanted(check.text).some((value) => strip(text.content).includes(value));
+  let found: Box[] = [];
+  let detail: string | undefined;
+  if (check.kind === 'largest') {
+    const fragments = texts.flatMap((entry) => entry.text.fragments.filter((fragment) => !fragment.placeholder && strip(fragment.text) !== '').map((fragment) => ({ ...entry, fragment })));
+    const max = Math.max(0, ...fragments.map((entry) => entry.fragment.fontSize));
+    const top = fragments.filter((entry) => entry.fragment.fontSize >= max - 0.01);
+    found = top.filter((entry) => wanted(check.text).some((text) => strip(entry.fragment.text).includes(text))).map((entry) => entry.box);
+    detail = `最大字号 ${max.toFixed(1)} mm：${[...new Set(top.map((entry) => entry.fragment.text))].join('、') || '没有文字'}`;
+  } else if (check.kind === 'text') {
+    const near = texts.filter((entry) => has(entry.text));
+    found = near.filter(({ text }) => {
+      if (check.minFontSize !== undefined && text.fontSize < check.minFontSize) return false;
+      if (check.maxFontSize !== undefined && text.fontSize > check.maxFontSize) return false;
+      return check.color === undefined || text.fragments.some((fragment) => colorDistance(fragment.color, check.color!) <= 100);
+    }).map((entry) => entry.box);
+    if (found.length === 0 && near.length > 0) detail = `文字在，但${near.map(({ text }) => `${text.fontSize.toFixed(1)} mm ${text.fragments.map((fragment) => fragment.color).join('/')}`).join('；')}`;
+  } else if (check.kind === 'image') {
+    found = nodes.filter((node) => node.image && wanted(check.source).includes(node.image.source)).map((node) => node.image!.drawn);
+  } else if (check.kind === 'barcode') {
+    found = nodes.filter((node) => node.barcode && (check.format === undefined || node.barcode.format === check.format)).map((node) => node.barcode!.symbol);
+  } else {
+    found = nodes.filter((node) => node.qrcode).map((node) => node.qrcode!.symbol);
+  }
+  const placed = found.filter(inRegion);
+  if (placed.length === 0 && found.length > 0) {
+    const where = found[0]!;
+    detail = `位置不对：中心在 (${((where.x + where.width / 2) / layout.output.width).toFixed(2)}, ${((where.y + where.height / 2) / layout.output.height).toFixed(2)})`;
+  }
+  const pass = check.absent ? placed.length === 0 : placed.length > 0;
+  return { label: check.label, pass, ...(pass || detail === undefined ? {} : { detail }) };
+}
+
+function colorDistance(a: string, b: string): number {
+  const rgb = (hex: string) => [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
+  const [x, y] = [rgb(a), rgb(b)];
+  return Math.hypot(x[0]! - y[0]!, x[1]! - y[1]!, x[2]! - y[2]!);
+}
+
+/**
+ * 模板设计评估集的一个用例打分：templates 叠加在用例工作区（专家版数据定义与数据集）上，按用例的示例请求出图。
+ * 压测按 stress.json 改数据、参数或尺寸，草稿出图记严重问题；版面检查按 checks.json 在布局摘要上判断。
+ * 示例请求按草稿出图的问题数与相似度只作参考；相似度按示例请求的宽高比缩到 400 像素宽比较。
+ * 压测缺省按示例请求的 DPI，stress.json 可另写；版面检查与示例图按示例请求的 DPI。
+ */
+export async function scoreTemplateCase(options: {
+  readonly workspaceDir: string;
+  readonly resourcesDir: string;
+  readonly templates: readonly { readonly name: string; readonly document: unknown }[];
+  readonly request: { readonly template: string; readonly parameters?: Readonly<Record<string, unknown>>; readonly output: { readonly width: number; readonly height: number; readonly dpi: number } };
+  readonly datasetId: string;
+  readonly stress: StressSpec;
+  readonly checks: readonly CaseCheck[];
+  readonly sample: Uint8Array;
+}): Promise<TemplateScore> {
+  const base = await loadWorkspace({ dir: options.workspaceDir, resourcesDir: options.resourcesDir });
+  const names = new Set(options.templates.map((entry) => entry.name));
+  const workspace: Workspace = { ...base, templates: [...base.templates.filter((entry) => !names.has(entry.name)), ...options.templates] };
+  const dataset = base.datasets.find((entry) => entry.id === options.datasetId);
+  if (!dataset) throw new Error(`工作区中没有数据集 ${options.datasetId}`);
+  const data = dataset.document.data as Record<string, unknown>;
+  // 示例图与版面检查按示例请求的 DPI 出草稿：条码、二维码的模块像素与 Agent 用 request.json 自查时相同。
+  const { width, height, dpi: sampleDpi } = options.request.output;
+  const draft = (variation: Variation, dpi: number) => render(workspace, {
+    template: options.request.template, mode: 'draft', parameters: { ...options.request.parameters, ...variation.parameters },
+    output: { width: variation.output?.width ?? width, height: variation.output?.height ?? height, dpi, format: 'png' },
+    dataset: variation.data
+      ? { inline: { dataset: { staticSchema: dataset.document.dataset.staticSchema }, data: patchData(data, variation.data) } }
+      : { id: options.datasetId },
+  });
+  const severeOf = <P extends { level: string }>(problems: readonly P[]) => problems.filter((problem) => problem.level === 'severe');
+
+  const sampleResult = await draft({}, sampleDpi);
+  const shrinkHeight = Math.max(1, Math.round((400 * height) / width));
+  const sample = {
+    severe: severeOf(sampleResult.problems).length, hint: sampleResult.problems.length - severeOf(sampleResult.problems).length,
+    ...(sampleResult.image ? { similarity: await similarity(sampleResult.image.bytes, options.sample, 400, shrinkHeight) } : {}),
+  };
+
+  const stress: StressResult[] = [];
+  for (const row of options.stress.cases) {
+    const result = await draft(row, options.stress.dpi ?? sampleDpi);
+    const severe = severeOf(result.problems);
+    stress.push({ label: row.label, severe: severe.length, hint: result.problems.length - severe.length, codes: [...new Set(severe.map((problem) => problem.code))] });
+  }
+
+  const layouts = new Map<string, Layout | undefined>([['{}', sampleResult.layout as Layout | undefined]]);
+  const checks: CheckResult[] = [];
+  for (const check of options.checks) {
+    const key = JSON.stringify(check.variant ?? {});
+    if (!layouts.has(key)) layouts.set(key, (await draft(check.variant ?? {}, sampleDpi)).layout as Layout | undefined);
+    const layout = layouts.get(key);
+    checks.push(layout ? evaluateCheck(check, layout) : { label: check.label, pass: false, detail: '没有布局摘要' });
+  }
+  return {
+    sample, stress, stressPassed: stress.filter((row) => row.severe === 0).length,
+    checks, layoutPassed: checks.filter((check) => check.pass).length, layoutTotal: checks.length,
   };
 }
 
 /** M215 约定一：取第 1 站（无地标）与第 4 站（有地标），比较无地标站名的底边与地标图片的底边。 */
-export function landmarkBaseline(layout: { root: unknown }, stops: readonly Record<string, unknown>[]): TemplateScore['landmarkBaseline'] {
+export function landmarkBaseline(layout: { root: unknown }, stops: readonly Record<string, unknown>[]): NonNullable<TemplateScore['landmarkBaseline']> {
   if (stops.length < 4) return { found: false, pass: false, reason: '数据集不足 4 站' };
   type Node = { type?: string; path?: string; x?: number; y?: number; height?: number; visible?: boolean; text?: { content?: string; writingMode?: string }; children?: Node[] };
   const nodes: Node[] = [];
@@ -424,7 +632,7 @@ export function landmarkBaseline(layout: { root: unknown }, stops: readonly Reco
 }
 
 /** M215 约定二：静态检查模板中插槽绑定 road 的文字元素是否都是 spaceEvenly。 */
-export function roadAlign(templates: readonly unknown[]): TemplateScore['roadAlign'] {
+export function roadAlign(templates: readonly unknown[]): NonNullable<TemplateScore['roadAlign']> {
   const aligns: string[] = [];
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) { value.forEach(walk); return; }
@@ -439,14 +647,14 @@ export function roadAlign(templates: readonly unknown[]): TemplateScore['roadAli
   return { aligns, pass: aligns.length > 0 && aligns.every((align) => align === 'spaceEvenly') };
 }
 
-/** 两张图都缩到 437 × 98 后逐像素比较。 */
-async function similarity(a: Uint8Array, b: Uint8Array): Promise<number> {
+/** 两张图都缩到同一尺寸后逐像素比较；缺省 437 × 98 是 M402 历次报告的口径。 */
+async function similarity(a: Uint8Array, b: Uint8Array, width = 437, height = 98): Promise<number> {
   const ck = await loadCanvasKit();
   const shrink = (bytes: Uint8Array) => {
     const image = ck.MakeImageFromEncoded(bytes)!;
-    const surface = ck.MakeSurface(437, 98)!;
-    surface.getCanvas().drawImageRect(image, ck.XYWHRect(0, 0, image.width(), image.height()), ck.XYWHRect(0, 0, 437, 98), new ck.Paint());
-    const pixels = surface.makeImageSnapshot().readPixels(0, 0, { width: 437, height: 98, colorType: ck.ColorType.RGBA_8888, alphaType: ck.AlphaType.Unpremul, colorSpace: ck.ColorSpace.SRGB }) as Uint8Array;
+    const surface = ck.MakeSurface(width, height)!;
+    surface.getCanvas().drawImageRect(image, ck.XYWHRect(0, 0, image.width(), image.height()), ck.XYWHRect(0, 0, width, height), new ck.Paint());
+    const pixels = surface.makeImageSnapshot().readPixels(0, 0, { width, height, colorType: ck.ColorType.RGBA_8888, alphaType: ck.AlphaType.Unpremul, colorSpace: ck.ColorSpace.SRGB }) as Uint8Array;
     image.delete();
     surface.delete();
     return pixels;

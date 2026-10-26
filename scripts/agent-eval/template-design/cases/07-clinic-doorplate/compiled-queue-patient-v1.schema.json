@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "候诊患者 v1",
+  "x-renderweave-static-schema": {
+    "name": "候诊患者",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ticket",
+    "name",
+    "status"
+  ],
+  "properties": {
+    "ticket": {
+      "title": "号码",
+      "type": "string",
+      "pattern": "^[A-Z][0-9]{3}$"
+    },
+    "name": {
+      "title": "患者显示名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 6
+    },
+    "note": {
+      "title": "备注",
+      "type": "string",
+      "maxLength": 4
+    },
+    "status": {
+      "title": "状态",
+      "type": "string",
+      "enum": [
+        "候诊中",
+        "准备",
+        "过号"
+      ]
+    }
+  }
+}

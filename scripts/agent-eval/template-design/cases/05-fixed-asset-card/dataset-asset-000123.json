@@ -1,0 +1,19 @@
+{
+  "dataset": {
+    "id": "ds-asset-000123",
+    "name": "图形渲染工作站 RW-M402-000123",
+    "staticSchema": { "name": "固定资产标识卡", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 05：按示例图转录，二维码链接为自拟" }
+  },
+  "data": {
+    "company": "星云科技",
+    "companyLogo": "res:logo-nebula-tech",
+    "assetName": "图形渲染工作站",
+    "assetNo": "RW-M402-000123",
+    "department": "视觉工程部",
+    "keeper": "陈伟",
+    "startDate": "2026-10-15",
+    "location": "研发中心 A座 402",
+    "detailUrl": "https://assets.nebula.example/a/RW-M402-000123"
+  }
+}

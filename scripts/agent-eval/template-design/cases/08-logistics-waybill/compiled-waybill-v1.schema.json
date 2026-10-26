@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "电子面单 v1",
+  "x-renderweave-static-schema": {
+    "name": "电子面单",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "carrierName",
+    "sortCode",
+    "trackingNo",
+    "receiverName",
+    "receiverPhone",
+    "receiverAddress",
+    "senderName",
+    "qrContent",
+    "items"
+  ],
+  "properties": {
+    "carrierName": {
+      "title": "承运商",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "carrierNameEn": {
+      "title": "承运商英文名",
+      "type": "string",
+      "maxLength": 20
+    },
+    "serviceType": {
+      "title": "服务产品",
+      "type": "string",
+      "maxLength": 10
+    },
+    "sortCode": {
+      "title": "分拣码",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16
+    },
+    "trackingNo": {
+      "title": "运单号",
+      "type": "string",
+      "pattern": "^[A-Z]{2}[0-9]{12}$"
+    },
+    "hubName": {
+      "title": "集散中心",
+      "type": "string",
+      "maxLength": 8
+    },
+    "receiverName": {
+      "title": "收件人",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "receiverPhone": {
+      "title": "收件人电话",
+      "type": "string",
+      "maxLength": 16
+    },
+    "receiverAddress": {
+      "title": "收件地址",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "senderName": {
+      "title": "寄件人",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "senderPhone": {
+      "title": "寄件人电话",
+      "type": "string",
+      "maxLength": 16
+    },
+    "senderAddress": {
+      "title": "寄件地址",
+      "type": "string",
+      "maxLength": 40
+    },
+    "qrContent": {
+      "title": "二维码内容",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "items": {
+      "title": "拣货明细",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "x-renderweave-static-schema": {
+          "name": "拣货明细",
+          "version": 1
+        },
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "qty"
+        ],
+        "properties": {
+          "name": {
+            "title": "商品名",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "spec": {
+            "title": "规格",
+            "type": "string",
+            "maxLength": 8
+          },
+          "qty": {
+            "title": "数量",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        }
+      }
+    },
+    "shipDate": {
+      "title": "寄件日期",
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "x-renderweave-type": "date"
+    },
+    "weightKg": {
+      "title": "计费重量（kg）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 999.9
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "dataset": {
+    "id": "ds-m518-kejiyuan",
+    "name": "M518 开往科技园总站",
+    "staticSchema": { "name": "线路牌", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 01：按示例图逐列转录，站名照图上原样" }
+  },
+  "data": {
+    "routeNo": "M518",
+    "routeNoImage": "res:route-no-m518",
+    "fareType": "一票制",
+    "fare": 2,
+    "operator": "巴士集团",
+    "firstDeparture": "06:30",
+    "lastDeparture": "22:00",
+    "serviceNote": "工作日运营",
+    "scheduleType": "定时班车",
+    "departureTimes": ["07:30", "08:00", "08:30", "18:00", "18:30"],
+    "stops": [
+      { "name": "福田高铁站", "road": "深南大道" },
+      { "name": "投资大厦", "road": "深南大道" },
+      { "name": "岗厦地铁站", "road": "深南大道" },
+      { "name": "岗厦北", "road": "深南大道" },
+      { "name": "市民中心", "road": "深南大道", "landmark": "res:landmark-3-svg", "badges": ["地铁"] },
+      { "name": "会展中心", "road": "滨河大道", "landmark": "res:landmark-1-svg", "badges": ["医院"] },
+      { "name": "福华三路口", "road": "滨河大道" },
+      { "name": "大中华广场", "road": "滨河大道" },
+      { "name": "福田区委", "road": "滨河大道", "landmark": "res:landmark-2-svg" },
+      { "name": "东方雅苑委", "road": "滨河大道", "badges": ["地铁"] },
+      { "name": "石厦地铁站", "road": "白石路" },
+      { "name": "新洲村园", "road": "白石路" },
+      { "name": "沙路尾花尾", "road": "白石路" },
+      { "name": "上沙下路口", "road": "白石路" },
+      { "name": "下沙地站", "road": "白石路", "landmark": "res:landmark-1-svg" },
+      { "name": "车公庙地铁站", "road": "科技南路", "badges": ["地铁", "医院"] },
+      { "name": "深大北门", "road": "科技南路", "badges": ["医院"] },
+      { "name": "科技中路", "road": "科技南路" },
+      { "name": "高新南一道", "road": "科技南路" },
+      { "name": "科技园总站", "road": "科技南路" }
+    ]
+  }
+}

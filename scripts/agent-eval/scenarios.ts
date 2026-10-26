@@ -15,6 +15,11 @@ interface ScenarioBase {
   readonly domain?: string;
   readonly reference?: string;
   readonly contentBaseline?: string;
+  /**
+   * 这个场景自己的资源仓库（模板设计评估集，M334）：在单元目录里组一份，只含配置的共用仓库中的字体与 from 目录中列出的图片。
+   * 不写时用配置的共用仓库。
+   */
+  readonly resources?: { readonly from: string; readonly images: readonly string[] };
 }
 
 /** 数据定义提取一轮，按专家字段与 6 项约定评分。 */
@@ -29,6 +34,11 @@ export interface TemplateScenario extends ScenarioBase {
   readonly workspace: { readonly from: string; readonly files: readonly string[] };
   readonly dataset: string;
   readonly request: string;
+  /**
+   * 数据驱动的压测与版面检查（模板设计评估集，M335）：用例目录中的 stress.json 与 checks.json。
+   * 不写时按 M402 的 10 个压测场景与 M215 的两项版面检查。
+   */
+  readonly scoring?: { readonly stress: string; readonly checks: string };
   readonly pass: { readonly stress: number; readonly layoutChecks: number };
 }
 
@@ -73,6 +83,9 @@ export interface EvalConfig {
 }
 
 export const CONFIG_FILE = join(REPO, 'scripts/agent-eval/config.json');
+
+/** 模板设计评估集的配置（M333）：不在 M230 的门槛里，按需用 --config 跑。 */
+export const TEMPLATE_DESIGN_CONFIG = join(REPO, 'scripts/agent-eval/template-design/config.json');
 
 export async function readConfig(file = CONFIG_FILE): Promise<EvalConfig> {
   const config = JSON.parse(await readFile(file, 'utf8')) as EvalConfig;

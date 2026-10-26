@@ -1,0 +1,7 @@
+{
+  "template": "杯贴",
+  "dataset": { "id": "ds-cup-a086-1" },
+  "parameters": {},
+  "output": { "width": 60, "height": 80, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

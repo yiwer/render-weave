@@ -1,0 +1,7 @@
+{
+  "template": "竖版线路牌主模板",
+  "dataset": { "id": "ds-m162-pingshan" },
+  "parameters": { "currentIndex": 2 },
+  "output": { "width": 420, "height": 750, "dpi": 50, "format": "png" },
+  "mode": "final"
+}

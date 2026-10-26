@@ -1,0 +1,2081 @@
+{
+  "format": "renderweave-agent-eval/2",
+  "label": "tds-baseline-1",
+  "startedAt": "2026-10-26T04:41:10.909Z",
+  "endedAt": "2026-10-26T05:29:28.111Z",
+  "git": {
+    "commit": "64d7bae",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.9.0",
+  "materials": {
+    "agent/README.md": "7b68a94d90b6",
+    "agent/briefs/_template.md": "b1e3449e90b4",
+    "agent/domains/_template.md": "000dc69a5869",
+    "agent/domains/asset-tag.md": "d56d14ce9453",
+    "agent/domains/boarding-pass.md": "8fc65c8012d5",
+    "agent/domains/clinic-doorplate.md": "f710865d7452",
+    "agent/domains/departure-board.md": "aa26ace9d7ca",
+    "agent/domains/hazmat-label.md": "c6eb8ebb118e",
+    "agent/domains/metro-strip.md": "ff81999114a9",
+    "agent/domains/order-label.md": "9e2fb075c779",
+    "agent/domains/price-tag.md": "9ae5fd2880fe",
+    "agent/domains/route-sign.md": "a63c5a6b3352",
+    "agent/domains/waybill.md": "a47561b4f3b9",
+    "agent/guide.md": "4ae9b7b0d777",
+    "agent/reference/data-definition.md": "4651af0bf6c0",
+    "agent/reference/outcome.md": "a31f6af1631f",
+    "agent/reference/template.md": "10134146dc9a",
+    "agent/tasks/dataset-extraction.md": "993227147e04",
+    "agent/tasks/definition-extraction.md": "fde5236a6ff8",
+    "agent/tasks/next-round.md": "02bae05b7632",
+    "agent/tasks/template-design.md": "7554076d5cf0",
+    "agent/tasks/template-revision.md": "3f226dc507e5"
+  },
+  "consecutivePasses": 1,
+  "passLines": {
+    "tds-01-m518": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-02-m162": {
+      "stress": 10,
+      "layoutChecks": 14
+    },
+    "tds-03-price-tag": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-05-asset-card": {
+      "stress": 8,
+      "layoutChecks": 10
+    },
+    "tds-06-metro-strip": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-07-clinic": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-08-waybill": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-09-promo-tag": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-10-gate-screen": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-11-hazmat": {
+      "stress": 8,
+      "layoutChecks": 13
+    },
+    "tds-12-cup-label": {
+      "stress": 9,
+      "layoutChecks": 12
+    },
+    "tds-13-boarding-pass": {
+      "stress": 8,
+      "layoutChecks": 16
+    }
+  },
+  "results": [
+    {
+      "id": "tds-01-m518",
+      "name": "01 M518 横版公交线路牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-01-m518/template",
+          "verdict": "qualified",
+          "wallMs": 893091,
+          "turns": 69,
+          "inputTokens": 58,
+          "outputTokens": 94392,
+          "thinkingTokens": 66360,
+          "cacheReadTokens": 2759578,
+          "cacheCreationTokens": 167212,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 37,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8034
+          },
+          "stress": [
+            {
+              "label": "20 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 20（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "30 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "30 站 1300 宽",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站 1300 宽",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有地标与设施",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "顶栏终点站由站点列表末项派生",
+              "pass": true
+            },
+            {
+              "label": "线路号铭牌在左上",
+              "pass": true
+            },
+            {
+              "label": "方向箭头在顶栏",
+              "pass": true
+            },
+            {
+              "label": "票制票价在顶栏",
+              "pass": true
+            },
+            {
+              "label": "运营方在右上",
+              "pass": true
+            },
+            {
+              "label": "地标图片",
+              "pass": true
+            },
+            {
+              "label": "设施图标按枚举选图",
+              "pass": true
+            },
+            {
+              "label": "道路带",
+              "pass": true
+            },
+            {
+              "label": "底栏下一站由本站派生",
+              "pass": true
+            },
+            {
+              "label": "底栏首末班",
+              "pass": true
+            },
+            {
+              "label": "底栏班次时刻",
+              "pass": true
+            },
+            {
+              "label": "已过站弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "本站站名突出为红色",
+              "pass": true
+            },
+            {
+              "label": "本站 0 时不显示下一站",
+              "pass": true
+            },
+            {
+              "label": "本站为末站时不显示下一站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-02-m162",
+      "name": "02 M162 竖版站台线路牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-02-m162/template",
+          "verdict": "qualified",
+          "wallMs": 444191,
+          "turns": 41,
+          "inputTokens": 42,
+          "outputTokens": 67929,
+          "thinkingTokens": 47077,
+          "cacheReadTokens": 1441891,
+          "cacheCreationTokens": 117624,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 23,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8397
+          },
+          "stress": [
+            {
+              "label": "15 站本站 2",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 15（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "长站名与长道路名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "长英文名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "多站两个图标",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有英文与道路",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "线路号在左上",
+              "pass": true
+            },
+            {
+              "label": "顶栏方向由末站派生",
+              "pass": true
+            },
+            {
+              "label": "顶栏英文方向由末站派生",
+              "pass": true
+            },
+            {
+              "label": "运营方标识在右上",
+              "pass": true
+            },
+            {
+              "label": "服务时间",
+              "pass": true
+            },
+            {
+              "label": "票制与票价",
+              "pass": true
+            },
+            {
+              "label": "本站标记",
+              "pass": true
+            },
+            {
+              "label": "英文站名",
+              "pass": true
+            },
+            {
+              "label": "所在道路",
+              "pass": true
+            },
+            {
+              "label": "体育馆图标",
+              "pass": true
+            },
+            {
+              "label": "火车站图标",
+              "pass": true
+            },
+            {
+              "label": "底栏下一站由本站派生",
+              "pass": true
+            },
+            {
+              "label": "底栏英文下一站",
+              "pass": true
+            },
+            {
+              "label": "底栏监督电话",
+              "pass": true
+            },
+            {
+              "label": "本站 0 时不标本站",
+              "pass": true
+            },
+            {
+              "label": "本站为末站时不显示下一站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 16,
+          "layoutTotal": 16
+        }
+      }
+    },
+    {
+      "id": "tds-03-price-tag",
+      "name": "03 超市商品价签",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-03-price-tag/template",
+          "verdict": "qualified",
+          "wallMs": 534184,
+          "turns": 78,
+          "inputTokens": 66,
+          "outputTokens": 66407,
+          "thinkingTokens": 39398,
+          "cacheReadTokens": 2509468,
+          "cacheCreationTokens": 126033,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 37,
+          "toolErrors": 3,
+          "persistedResults": 0,
+          "firstCheckProblems": 16
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.7547
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "品名 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有会员价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有卖点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "卖点 3 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "零售价五位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "规格 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有产地与物价员",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "零售价是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "零售价两位小数",
+              "pass": true
+            },
+            {
+              "label": "会员价",
+              "pass": true
+            },
+            {
+              "label": "品名",
+              "pass": true
+            },
+            {
+              "label": "规格",
+              "pass": true
+            },
+            {
+              "label": "产地",
+              "pass": true
+            },
+            {
+              "label": "货号",
+              "pass": true
+            },
+            {
+              "label": "卖点标签",
+              "pass": true
+            },
+            {
+              "label": "顶栏门店名称",
+              "pass": true
+            },
+            {
+              "label": "店标在左上",
+              "pass": true
+            },
+            {
+              "label": "EAN-13 条码在左下",
+              "pass": true
+            },
+            {
+              "label": "物价员在底部",
+              "pass": true
+            },
+            {
+              "label": "监督电话在底部",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 13,
+          "layoutTotal": 13
+        }
+      }
+    },
+    {
+      "id": "tds-05-asset-card",
+      "name": "05 固定资产标识卡",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-05-asset-card/template",
+          "verdict": "qualified",
+          "wallMs": 178858,
+          "turns": 30,
+          "inputTokens": 32,
+          "outputTokens": 31305,
+          "thinkingTokens": 19764,
+          "cacheReadTokens": 714364,
+          "cacheCreationTokens": 63858,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 16,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8501
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "资产名称 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "存放地点 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "保管人 4 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "编号最长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "待分配：无部门、保管人与日期",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "无单位标识",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "单位名称 10 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "单位标识在左上",
+              "pass": true
+            },
+            {
+              "label": "标题含单位名称",
+              "pass": true
+            },
+            {
+              "label": "资产名称",
+              "pass": true
+            },
+            {
+              "label": "资产编号在左侧信息区",
+              "pass": true
+            },
+            {
+              "label": "使用部门",
+              "pass": true
+            },
+            {
+              "label": "保管人",
+              "pass": true
+            },
+            {
+              "label": "启用日期",
+              "pass": true
+            },
+            {
+              "label": "存放地点",
+              "pass": true
+            },
+            {
+              "label": "二维码在右上",
+              "pass": true
+            },
+            {
+              "label": "CODE128 条码在右下",
+              "pass": true
+            },
+            {
+              "label": "空值时标签保留",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 11,
+          "layoutTotal": 11
+        }
+      }
+    },
+    {
+      "id": "tds-06-metro-strip",
+      "name": "06 地铁屏蔽门导乘图",
+      "repetition": 1,
+      "status": "fail",
+      "pass": false,
+      "retries": 0,
+      "failures": [
+        "压测 8/9，要求至少 9（有严重问题：本站 1（首站））"
+      ],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-06-metro-strip/template",
+          "verdict": "qualified",
+          "wallMs": 1028837,
+          "turns": 69,
+          "inputTokens": 58,
+          "outputTokens": 96918,
+          "thinkingTokens": 69664,
+          "cacheReadTokens": 2781996,
+          "cacheCreationTokens": 158684,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 30,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.907
+          },
+          "stress": [
+            {
+              "label": "12 站本站 4",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1（首站）",
+              "severe": 2,
+              "hint": 0,
+              "codes": [
+                "template.bindingValueInvalid",
+                "template.evaluationInvalid"
+              ]
+            },
+            {
+              "label": "本站 12（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "16 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 字站名与长英文",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站换乘 4 条",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站没有换乘",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站是 8 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "顶栏线路名",
+              "pass": true
+            },
+            {
+              "label": "顶栏英文线路名",
+              "pass": true
+            },
+            {
+              "label": "开往终点由末站派生",
+              "pass": true
+            },
+            {
+              "label": "英文开往终点由末站派生",
+              "pass": true
+            },
+            {
+              "label": "首班时刻",
+              "pass": true
+            },
+            {
+              "label": "末班时刻",
+              "pass": true
+            },
+            {
+              "label": "地铁标志在左上",
+              "pass": true
+            },
+            {
+              "label": "本站圆环",
+              "pass": true
+            },
+            {
+              "label": "本站字样",
+              "pass": true
+            },
+            {
+              "label": "末端方向箭头在右侧",
+              "pass": true
+            },
+            {
+              "label": "本站英文站名",
+              "pass": true
+            },
+            {
+              "label": "换乘标签",
+              "pass": true
+            },
+            {
+              "label": "已过站弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "未到站为正常深色",
+              "pass": true
+            },
+            {
+              "label": "本站为首站时没有已过站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-07-clinic",
+      "name": "07 诊室电子门牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-07-clinic/template",
+          "verdict": "qualified",
+          "wallMs": 542868,
+          "turns": 56,
+          "inputTokens": 44,
+          "outputTokens": 67343,
+          "thinkingTokens": 41095,
+          "cacheReadTokens": 1521583,
+          "cacheCreationTokens": 118532,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 26,
+          "toolErrors": 1,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8969
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "候诊 0 人",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "候诊 6 人",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "开诊前没有正在就诊",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有擅长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "擅长 3 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有照片",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "科室名 12 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "医生姓名 4 字、副主任医师",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "过号与长姓名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "顶栏科室",
+              "pass": true
+            },
+            {
+              "label": "顶栏诊室在右侧",
+              "pass": true
+            },
+            {
+              "label": "顶栏十字图标",
+              "pass": true
+            },
+            {
+              "label": "医生照片在左侧卡片",
+              "pass": true
+            },
+            {
+              "label": "医生姓名",
+              "pass": true
+            },
+            {
+              "label": "职称",
+              "pass": true
+            },
+            {
+              "label": "擅长标签",
+              "pass": true
+            },
+            {
+              "label": "出诊时段",
+              "pass": true
+            },
+            {
+              "label": "正在就诊",
+              "pass": true
+            },
+            {
+              "label": "等候就诊图标",
+              "pass": true
+            },
+            {
+              "label": "候诊患者",
+              "pass": true
+            },
+            {
+              "label": "候诊状态",
+              "pass": true
+            },
+            {
+              "label": "温馨提示图标在底部",
+              "pass": true
+            },
+            {
+              "label": "签到二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "没有正在就诊时不显示号码",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-08-waybill",
+      "name": "08 物流电子面单",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-08-waybill/template",
+          "verdict": "qualified",
+          "wallMs": 636439,
+          "turns": 63,
+          "inputTokens": 66,
+          "outputTokens": 68776,
+          "thinkingTokens": 45515,
+          "cacheReadTokens": 2662412,
+          "cacheCreationTokens": 116712,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 33,
+          "toolErrors": 2,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.7259
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "收件地址 40 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 1 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 5 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "商品名 20 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有寄件人电话",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "重量三位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "分拣码最长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "分拣码是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "顶栏承运商",
+              "pass": true
+            },
+            {
+              "label": "顶栏服务产品在右侧",
+              "pass": true
+            },
+            {
+              "label": "运单条码 CODE128",
+              "pass": true
+            },
+            {
+              "label": "运单号",
+              "pass": true
+            },
+            {
+              "label": "集散中心",
+              "pass": true
+            },
+            {
+              "label": "收件人",
+              "pass": true
+            },
+            {
+              "label": "收件地址",
+              "pass": true
+            },
+            {
+              "label": "寄件人",
+              "pass": true
+            },
+            {
+              "label": "二维码在寄件区右侧",
+              "pass": true
+            },
+            {
+              "label": "拣货明细商品名",
+              "pass": true
+            },
+            {
+              "label": "拣货明细数量",
+              "pass": true
+            },
+            {
+              "label": "计费重量",
+              "pass": true
+            },
+            {
+              "label": "寄件日期",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 14,
+          "layoutTotal": 14
+        }
+      }
+    },
+    {
+      "id": "tds-09-promo-tag",
+      "name": "09 生鲜促销价签",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-09-promo-tag/template",
+          "verdict": "qualified",
+          "wallMs": 793911,
+          "turns": 61,
+          "inputTokens": 50,
+          "outputTokens": 97582,
+          "thinkingTokens": 67763,
+          "cacheReadTokens": 2203413,
+          "cacheCreationTokens": 145975,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 32,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8745
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "品名 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有原价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有会员专享价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有卖点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "卖点 1 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "促销价四位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "计价单位千克、没有溯源码",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有等级与规格",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 9,
+          "checks": [
+            {
+              "label": "促销价整数部分是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "促销价小数部分",
+              "pass": true
+            },
+            {
+              "label": "计价单位在价格区",
+              "pass": true
+            },
+            {
+              "label": "原价",
+              "pass": true
+            },
+            {
+              "label": "会员专享价",
+              "pass": true
+            },
+            {
+              "label": "品名",
+              "pass": true
+            },
+            {
+              "label": "卖点标签",
+              "pass": true
+            },
+            {
+              "label": "编码",
+              "pass": true
+            },
+            {
+              "label": "门店名称在右上",
+              "pass": true
+            },
+            {
+              "label": "闹钟图标在顶栏",
+              "pass": true
+            },
+            {
+              "label": "绿叶角标在右上",
+              "pass": true
+            },
+            {
+              "label": "EAN-13 店内码在左下",
+              "pass": true
+            },
+            {
+              "label": "溯源二维码在底部",
+              "pass": true
+            },
+            {
+              "label": "物价员",
+              "pass": true
+            },
+            {
+              "label": "没有原价时不显示原价",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-10-gate-screen",
+      "name": "10 检票口候车信息屏",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-10-gate-screen/template",
+          "verdict": "qualified",
+          "wallMs": 407740,
+          "turns": 48,
+          "inputTokens": 38,
+          "outputTokens": 45802,
+          "thinkingTokens": 27187,
+          "cacheReadTokens": 1042351,
+          "cacheCreationTokens": 88523,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 26,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8299
+          },
+          "stress": [
+            {
+              "label": "5 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "1 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有途经站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "终到站 6 字、途经站 5 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "晚点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "提示 50 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "全部停止检票",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "检票口在左上",
+              "pass": true
+            },
+            {
+              "label": "候车室名称",
+              "pass": true
+            },
+            {
+              "label": "更新时刻在右上",
+              "pass": true
+            },
+            {
+              "label": "表头",
+              "pass": true
+            },
+            {
+              "label": "车次号",
+              "pass": true
+            },
+            {
+              "label": "终到站",
+              "pass": true
+            },
+            {
+              "label": "途经站点",
+              "pass": true
+            },
+            {
+              "label": "开点",
+              "pass": true
+            },
+            {
+              "label": "正在检票",
+              "pass": true
+            },
+            {
+              "label": "停止检票状态字为红色",
+              "pass": true
+            },
+            {
+              "label": "停止检票整行弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "候车中状态字为黄色",
+              "pass": true
+            },
+            {
+              "label": "温馨提示在底部",
+              "pass": true
+            },
+            {
+              "label": "车次随数据增减",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 14,
+          "layoutTotal": 14
+        }
+      }
+    },
+    {
+      "id": "tds-11-hazmat",
+      "name": "11 危化品库位标识卡",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-11-hazmat/template",
+          "verdict": "qualified",
+          "wallMs": 575888,
+          "turns": 64,
+          "inputTokens": 48,
+          "outputTokens": 81282,
+          "thinkingTokens": 56958,
+          "cacheReadTokens": 1917457,
+          "cacheCreationTokens": 132858,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 30,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 1
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8351
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 1 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 4 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "信号词警告",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "中文品名 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "英文品名 40 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "安全措施 60 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有 CAS 与 UN 编号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "中文品名",
+              "pass": true
+            },
+            {
+              "label": "英文品名",
+              "pass": true
+            },
+            {
+              "label": "信号词在右上",
+              "pass": true
+            },
+            {
+              "label": "信号词英文由信号词派生",
+              "pass": true
+            },
+            {
+              "label": "库位",
+              "pass": true
+            },
+            {
+              "label": "易燃象形图",
+              "pass": true
+            },
+            {
+              "label": "健康危害象形图",
+              "pass": true
+            },
+            {
+              "label": "象形图下写类别名称",
+              "pass": true
+            },
+            {
+              "label": "CAS 号",
+              "pass": true
+            },
+            {
+              "label": "有效期",
+              "pass": true
+            },
+            {
+              "label": "应急电话",
+              "pass": true
+            },
+            {
+              "label": "CODE128 条码在右下",
+              "pass": true
+            },
+            {
+              "label": "象形图随类别减少",
+              "pass": true
+            },
+            {
+              "label": "第 4 枚象形图",
+              "pass": true
+            },
+            {
+              "label": "信号词警告配 WARNING",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-12-cup-label",
+      "name": "12 茶饮杯贴",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-12-cup-label/template",
+          "verdict": "qualified",
+          "wallMs": 521776,
+          "turns": 48,
+          "inputTokens": 42,
+          "outputTokens": 60474,
+          "thinkingTokens": 39544,
+          "cacheReadTokens": 1401715,
+          "cacheCreationTokens": 101113,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 20,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8746
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有选项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "选项 8 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有备注",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "商品名 20 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "英文商品名 40 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "第 10/12 杯",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "备注 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "外卖、没有提示语",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 9,
+          "checks": [
+            {
+              "label": "取餐号是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "取餐号在顶部",
+              "pass": true
+            },
+            {
+              "label": "第几杯由两个整数拼出",
+              "pass": true
+            },
+            {
+              "label": "就餐方式",
+              "pass": true
+            },
+            {
+              "label": "商品名",
+              "pass": true
+            },
+            {
+              "label": "英文商品名",
+              "pass": true
+            },
+            {
+              "label": "定制选项标签",
+              "pass": true
+            },
+            {
+              "label": "备注",
+              "pass": true
+            },
+            {
+              "label": "下单时间到分钟",
+              "pass": true
+            },
+            {
+              "label": "门店",
+              "pass": true
+            },
+            {
+              "label": "二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "没有备注时不显示备注标签",
+              "pass": true
+            },
+            {
+              "label": "第 10/12 杯",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 13,
+          "layoutTotal": 13
+        }
+      }
+    },
+    {
+      "id": "tds-13-boarding-pass",
+      "name": "13 登机牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-13-boarding-pass/template",
+          "verdict": "qualified",
+          "wallMs": 923946,
+          "turns": 81,
+          "inputTokens": 80,
+          "outputTokens": 83266,
+          "thinkingTokens": 43233,
+          "cacheReadTokens": 3424490,
+          "cacheCreationTokens": 137274,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 35,
+          "toolErrors": 2,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.879
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "经济舱",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "头等舱",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "不优先、没有常旅客号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "城市名 8 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "拼音姓名 28 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有登机口与序号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "航班号四位、三位座位排号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "顶栏航空公司",
+              "pass": true
+            },
+            {
+              "label": "出发三字码",
+              "pass": true
+            },
+            {
+              "label": "到达城市",
+              "pass": true
+            },
+            {
+              "label": "航线中的飞机图标",
+              "pass": true
+            },
+            {
+              "label": "航班号",
+              "pass": true
+            },
+            {
+              "label": "登机口",
+              "pass": true
+            },
+            {
+              "label": "座位",
+              "pass": true
+            },
+            {
+              "label": "登机时间",
+              "pass": true
+            },
+            {
+              "label": "舱位徽章在顶栏",
+              "pass": true
+            },
+            {
+              "label": "舱位英文名由舱位派生",
+              "pass": true
+            },
+            {
+              "label": "优先登机标签",
+              "pass": true
+            },
+            {
+              "label": "主副券之间的剪刀",
+              "pass": true
+            },
+            {
+              "label": "副券缩写姓名",
+              "pass": true
+            },
+            {
+              "label": "副券重复航班号",
+              "pass": true
+            },
+            {
+              "label": "副券二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "主券 CODE128 条码",
+              "pass": true
+            },
+            {
+              "label": "经济舱不显示舱位徽章",
+              "pass": true
+            },
+            {
+              "label": "不优先时不显示标签",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 18,
+          "layoutTotal": 18
+        }
+      }
+    }
+  ],
+  "gate": {
+    "status": "fail",
+    "pass": false,
+    "scenarios": [
+      {
+        "id": "tds-01-m518",
+        "name": "01 M518 横版公交线路牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-02-m162",
+        "name": "02 M162 竖版站台线路牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-03-price-tag",
+        "name": "03 超市商品价签",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-05-asset-card",
+        "name": "05 固定资产标识卡",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-06-metro-strip",
+        "name": "06 地铁屏蔽门导乘图",
+        "outcomes": [
+          "fail"
+        ],
+        "status": "fail"
+      },
+      {
+        "id": "tds-07-clinic",
+        "name": "07 诊室电子门牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-08-waybill",
+        "name": "08 物流电子面单",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-09-promo-tag",
+        "name": "09 生鲜促销价签",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-10-gate-screen",
+        "name": "10 检票口候车信息屏",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-11-hazmat",
+        "name": "11 危化品库位标识卡",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-12-cup-label",
+        "name": "12 茶饮杯贴",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-13-boarding-pass",
+        "name": "13 登机牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      }
+    ]
+  },
+  "totals": {
+    "wallMs": 7481729,
+    "inputTokens": 624,
+    "outputTokens": 861476,
+    "thinkingTokens": 563558,
+    "cacheReadTokens": 24380718,
+    "persistedResults": 0
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "资产名称 16 字", "data": { "assetName": "高性能图形渲染与仿真计算工作主机" } },
+    { "label": "存放地点 16 字", "data": { "location": "研发中心A座四楼东侧四零二机房内" } },
+    { "label": "保管人 4 字", "data": { "keeper": "欧阳文静" } },
+    { "label": "编号最长", "data": { "assetNo": "RW-ABC123-000123" } },
+    { "label": "待分配：无部门、保管人与日期", "data": { "department": null, "keeper": null, "startDate": null } },
+    { "label": "无单位标识", "data": { "companyLogo": null } },
+    { "label": "单位名称 10 字", "data": { "company": "星云数字科技集团公司" } }
+  ]
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 40" width="400" height="40">
+  <rect width="400" height="40" fill="#D61F26"/>
+  <g fill="#111111">
+    <polygon points="0,40 40,0 70,0 30,40"/>
+    <polygon points="60,40 100,0 130,0 90,40"/>
+    <polygon points="120,40 160,0 190,0 150,40"/>
+    <polygon points="180,40 220,0 250,0 210,40"/>
+    <polygon points="240,40 280,0 310,0 270,40"/>
+    <polygon points="300,40 340,0 370,0 330,40"/>
+    <polygon points="360,40 400,0 400,25 385,40"/>
+  </g>
+</svg>

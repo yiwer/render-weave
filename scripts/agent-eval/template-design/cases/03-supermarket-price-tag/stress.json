@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "品名 30 字", "data": { "productName": "新疆阿克苏冰糖心红富士苹果特级大果精选礼盒装十二枚入节日礼品" } },
+    { "label": "没有会员价", "data": { "memberPrice": null } },
+    { "label": "没有卖点", "data": { "features": null } },
+    { "label": "卖点 3 个", "data": { "features": ["天然水源", "低钠淡矿", "弱碱性"] } },
+    { "label": "零售价五位整数", "data": { "retailPrice": 12888, "memberPrice": 11888.5 } },
+    { "label": "规格 16 字", "data": { "spec": "550ml×24瓶/箱整箱礼盒装" } },
+    { "label": "没有产地与物价员", "data": { "origin": null, "priceChecker": null } }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "dataset": {
+    "id": "ds-promo-apple",
+    "name": "阿克苏冰糖心红富士苹果（散装称重）",
+    "staticSchema": { "name": "生鲜促销价签", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 09：按示例图转录；店内码校验位已改正，溯源链接为自拟" }
+  },
+  "data": {
+    "storeName": "鲜生活生鲜超市",
+    "productName": "阿克苏冰糖心红富士苹果（散装称重）",
+    "features": ["新疆直采", "脆甜多汁", "当季鲜果"],
+    "origin": "新疆阿克苏",
+    "grade": "特级果",
+    "spec": "果径80-85mm",
+    "itemNo": "204891",
+    "unit": "500g",
+    "originalPrice": 15.8,
+    "promoPrice": 9.8,
+    "memberPrice": 8.8,
+    "barcode": "2104891009802",
+    "traceUrl": "https://trace.freshmart.example/204891",
+    "priceChecker": "王芳",
+    "supervisePhone": "12358"
+  }
+}

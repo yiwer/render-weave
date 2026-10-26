@@ -1,0 +1,14 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "候诊 0 人", "data": { "queue": null } },
+    { "label": "候诊 6 人", "data": { "queue": { "$take": { "from": "queue", "count": 6 } } } },
+    { "label": "开诊前没有正在就诊", "data": { "currentTicket": null, "currentName": null } },
+    { "label": "没有擅长", "data": { "specialties": null } },
+    { "label": "擅长 3 项", "data": { "specialties": ["胃肠镜微创", "慢性胃炎", "幽门螺杆菌"] } },
+    { "label": "没有照片", "data": { "doctorPhoto": null } },
+    { "label": "科室名 12 字", "data": { "department": "消化内科与肝胆胰疾病门诊" } },
+    { "label": "医生姓名 4 字、副主任医师", "data": { "doctorName": "欧阳振华", "doctorTitle": "副主任医师" } },
+    { "label": "过号与长姓名", "data": { "queue[1].status": "过号", "queue[1].name": "司马云飞", "queue[1].note": "加号" } }
+  ]
+}

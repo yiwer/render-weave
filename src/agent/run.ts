@@ -286,7 +286,8 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   if (domainFile) {
     // 以 _ 开头的是给维护者的模板（如 _template.md），不是领域约定包。
     try { if (options.domain!.startsWith('_')) throw new Error(); await requireFile(domainFile, '领域约定'); } catch {
-      const known = (await readdir(join(AGENT_MATERIALS, 'domains'))).filter((file) => file.endsWith('.md') && !file.startsWith('_')).map((file) => file.slice(0, -3));
+      // 排序：readdir 在 Linux 上不保证顺序。
+      const known = (await readdir(join(AGENT_MATERIALS, 'domains'))).filter((file) => file.endsWith('.md') && !file.startsWith('_')).map((file) => file.slice(0, -3)).sort();
       throw new AgentUsageError(`没有领域约定包 ${options.domain}；可用：${known.join('、')}`);
     }
   }

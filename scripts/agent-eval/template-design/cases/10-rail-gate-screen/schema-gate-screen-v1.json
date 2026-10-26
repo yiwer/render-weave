@@ -1,0 +1,13 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "候车信息屏",
+  "version": 1,
+  "displayName": "检票口候车信息屏（一个时刻的画面）",
+  "fields": [
+    { "name": "waitingRoom", "displayName": "候车室", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 10 } },
+    { "name": "gates", "displayName": "检票口", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 12 } },
+    { "name": "updatedAt", "displayName": "更新时刻", "type": "time" },
+    { "name": "trains", "displayName": "车次", "type": "list", "items": { "type": "ref", "ref": { "name": "候车车次", "version": 1 } }, "constraints": { "required": true, "minItems": 1, "maxItems": 8 } },
+    { "name": "notice", "displayName": "温馨提示", "type": "text", "constraints": { "maxLength": 50 } }
+  ]
+}

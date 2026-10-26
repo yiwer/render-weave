@@ -1,0 +1,19 @@
+{
+  "checks": [
+    { "label": "顶栏科室", "kind": "text", "text": "消化内科门诊", "region": { "y": [0, 0.12] } },
+    { "label": "顶栏诊室在右侧", "kind": "text", "text": "3诊室", "region": { "x": [0.6, 1], "y": [0, 0.12] } },
+    { "label": "顶栏十字图标", "kind": "image", "source": "res:icon-medical-cross-white", "region": { "x": [0, 0.2], "y": [0, 0.12] } },
+    { "label": "医生照片在左侧卡片", "kind": "image", "source": "res:avatar-doctor-zhou", "region": { "x": [0, 0.45], "y": [0.1, 0.42] } },
+    { "label": "医生姓名", "kind": "text", "text": "周文博", "region": { "x": [0.35, 1], "y": [0.1, 0.42] } },
+    { "label": "职称", "kind": "text", "text": "主任医师" },
+    { "label": "擅长标签", "kind": "text", "text": "慢性胃炎" },
+    { "label": "出诊时段", "kind": "text", "text": "08:00" },
+    { "label": "正在就诊", "kind": "text", "text": "A018", "region": { "y": [0.38, 0.58] } },
+    { "label": "等候就诊图标", "kind": "image", "source": "res:icon-queue-list" },
+    { "label": "候诊患者", "kind": "text", "text": "王梓涵", "region": { "y": [0.5, 0.92] } },
+    { "label": "候诊状态", "kind": "text", "text": "准备", "region": { "x": [0.6, 1], "y": [0.5, 0.92] } },
+    { "label": "温馨提示图标在底部", "kind": "image", "source": "res:icon-warning-amber", "region": { "y": [0.88, 1] } },
+    { "label": "签到二维码在右下", "kind": "qrcode", "region": { "x": [0.75, 1], "y": [0.82, 1] } },
+    { "label": "没有正在就诊时不显示号码", "kind": "text", "text": "A018", "absent": true, "variant": { "data": { "currentTicket": null, "currentName": null } } }
+  ]
+}

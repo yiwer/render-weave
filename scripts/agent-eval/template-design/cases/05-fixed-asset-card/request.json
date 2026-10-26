@@ -1,0 +1,7 @@
+{
+  "template": "资产标识卡",
+  "dataset": { "id": "ds-asset-000123" },
+  "parameters": {},
+  "output": { "width": 90, "height": 50, "dpi": 600, "format": "png" },
+  "mode": "final"
+}

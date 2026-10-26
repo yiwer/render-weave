@@ -1,0 +1,13 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "候车车次",
+  "version": 1,
+  "displayName": "候车信息屏上的一趟车次",
+  "fields": [
+    { "name": "trainNo", "displayName": "车次", "type": "text", "constraints": { "required": true, "pattern": "^[GDCZTK][0-9]{1,4}$" } },
+    { "name": "terminal", "displayName": "终到站", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 6 } },
+    { "name": "via", "displayName": "途经站点", "type": "list", "items": { "type": "text", "constraints": { "minLength": 1, "maxLength": 5 } }, "constraints": { "maxItems": 3 } },
+    { "name": "departure", "displayName": "开点", "type": "time", "constraints": { "required": true } },
+    { "name": "status", "displayName": "候车状态", "type": "text", "constraints": { "required": true, "enum": ["正在检票", "候车中", "停止检票", "晚点"] } }
+  ]
+}

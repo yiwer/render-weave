@@ -1,0 +1,13 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "地铁导乘图",
+  "version": 1,
+  "displayName": "地铁线路导乘图（单线路单方向）",
+  "fields": [
+    { "name": "lineNo", "displayName": "线路号", "description": "\"6号线\"\"Line 6\"由模板拼接", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 4 } },
+    { "name": "firstTrain", "displayName": "首班", "type": "time" },
+    { "name": "lastTrain", "displayName": "末班", "type": "time" },
+    { "name": "stations", "displayName": "车站", "type": "list",
+      "items": { "type": "ref", "ref": { "name": "导乘站点", "version": 1 } }, "constraints": { "required": true, "minItems": 2, "maxItems": 16 } }
+  ]
+}

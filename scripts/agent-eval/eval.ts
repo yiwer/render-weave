@@ -16,8 +16,8 @@ import type { CleanupEvent } from '../../src/agent/execution.js';
  * 仍拿不到有效结果的单元记为 invalid：它不是一次观测，既不算达线，也不算模型没做出来。
  */
 import { spawn } from 'node:child_process';
-import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { copyFile, link, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { dirname, join, relative } from 'node:path';
 import { AGENT_TASKS, applyAgentRound, changeReview, loadWorkspace, readReview, type AgentTaskId, type RoundOutcome, type RoundRecord } from '../../src/index.js';
 import { MCP_CONTRACT_VERSION } from '../../src/mcp/tools.js';
 import { REPO, repoPath, stageNames, type EvalConfig, type Scenario } from './scenarios.js';
@@ -25,8 +25,8 @@ import {evaluationTiming, executeAttempt, prepareAttempt, restoreAttempt, savedA
 import {scoreFeedback, validateFeedbackScenario, type FeedbackScore} from './feedback.js';
 import {withLocalAccess} from '../../src/local-access.js';
 import {
-  CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplates, scoreTranscription, stopsOf,
-  type ConventionId, type DefinitionScore, type RevisionScore, type TemplateScore, type TranscriptionScore, type TruthStop,
+  CONVENTIONS, scoreDefinitions, scoreRevision, scoreTemplateCase, scoreTemplates, scoreTranscription, stopsOf,
+  type CaseCheck, type ConventionId, type DefinitionScore, type RevisionScore, type StressSpec, type TemplateScore, type TranscriptionScore, type TruthStop,
 } from './score.js';
 
 export interface RoundSpec {
@@ -165,7 +165,7 @@ export async function runScenario(config: EvalConfig, scenario: Scenario, repeti
   await mkdir(unit, { recursive: true });
   const upstream: UpstreamRecord = { retries: (await readUpstream(unit)).retries };
   await rm(join(unit, LAUNCH_FAILURES), { force: true });
-  const base = { ...(scenario.reference ? {reference: repoPath(scenario.reference)} : {}), ...(scenario.contentBaseline ? {contentBaseline: repoPath(scenario.contentBaseline)} : {}), sample: repoPath(scenario.sample), brief: repoPath(scenario.brief), resources: repoPath(config.resources), ...(scenario.domain ? { domain: scenario.domain } : {}) };
+  const base = { ...(scenario.reference ? {reference: repoPath(scenario.reference)} : {}), ...(scenario.contentBaseline ? {contentBaseline: repoPath(scenario.contentBaseline)} : {}), sample: repoPath(scenario.sample), brief: repoPath(scenario.brief), resources: await scenarioResources(config, scenario, unit), ...(scenario.domain ? { domain: scenario.domain } : {}) };
   const round = (spec: RoundSpec) => launchRound(spec, launch, { ...retry, upstream, unit, label: `${scenario.name} 第 ${repetition} 次` });
   const failures: string[] = [];
   try {
@@ -202,6 +202,43 @@ export async function runScenario(config: EvalConfig, scenario: Scenario, repeti
   }
   await writeUpstream(unit, upstream);
   return scoreScenario(config, scenario, repetition, outDir, failures);
+}
+
+/** 单元自己的资源仓库所在的子目录（M334）。 */
+export const UNIT_RESOURCES = 'resources';
+
+/**
+ * 场景的资源仓库：没写 scenario.resources 时是配置的共用仓库；写了时在单元目录里组一份（M334），
+ * 只含共用仓库中的字体与 from 目录中列出的图片，别的场景的素材不出现在 list_resources 里。字体优先硬链接，不行再复制。
+ * 每次都重新组装，换一台设备重新评分也能用。
+ */
+export async function scenarioResources(config: EvalConfig, scenario: Scenario, unit: string): Promise<string> {
+  if (!scenario.resources) return repoPath(config.resources);
+  type Entry = { id: string; kind: string; file: string };
+  const manifest = async (dir: string) => (JSON.parse(await readFile(join(dir, 'resources.json'), 'utf8')) as { resources: Entry[] }).resources;
+  const { from, images: ids } = scenario.resources;
+  const shared = repoPath(config.resources), own = repoPath(from), target = join(unit, UNIT_RESOURCES);
+  const fonts = (await manifest(shared)).filter((entry) => entry.kind === 'font');
+  const library = await manifest(own);
+  const images = ids.map((id) => {
+    const entry = library.find((item) => item.id === id && item.kind === 'image');
+    if (!entry) throw new Error(`${from} 的资源清单里没有图片 ${id}`);
+    return entry;
+  });
+  await rm(target, { recursive: true, force: true });
+  const place = async (dir: string, entry: Entry, hardLink: boolean) => {
+    const to = join(target, entry.file);
+    await mkdir(dirname(to), { recursive: true });
+    if (hardLink) {
+      try { await link(join(dir, entry.file), to); return; } catch { /* 跨卷等情况，退回复制 */ }
+    }
+    await copyFile(join(dir, entry.file), to);
+  };
+  for (const entry of fonts) await place(shared, entry, true);
+  for (const entry of images) await place(own, entry, false);
+  const description = `评估场景 ${scenario.id} 的资源仓库：字体与本场景的图片`;
+  await writeFile(join(target, 'resources.json'), `${JSON.stringify({ description, resources: [...fonts, ...images] }, null, 2)}\n`);
+  return target;
 }
 
 /** 这个单元还要不要跑：没有目录，或上次是 invalid。同一个 --label 接着跑时，已有有效结果的单元跳过。 */
@@ -390,19 +427,25 @@ export async function scoreScenario(config: EvalConfig, scenario: Scenario, repe
     if (documents.length > 0) Object.assign(checks, { definition: scoreDefinitions(documents) });
   }
   if ((scenario.kind === 'template' || scenario.kind === 'revision') && await exists(join(unit, scenario.kind, 'outcome.json'))) {
-    const request = JSON.parse(await readFile(join(unit, scenario.kind, 'request.json'), 'utf8')) as { template: string };
+    const request = JSON.parse(await readFile(join(unit, scenario.kind, 'request.json'), 'utf8')) as Parameters<typeof scoreTemplateCase>[0]['request'];
+    const resourcesDir = await scenarioResources(config, scenario, unit);
     let templates = (await candidates(join(unit, scenario.kind))).filter((entry) => entry.kind === 'template')
       .map((entry) => ({ name: String((entry.document as { name: unknown }).name), document: entry.document }));
     if (scenario.kind === 'revision') {
-      const saved = (await loadWorkspace({ dir: join(unit, 'workspace'), resourcesDir: repoPath(config.resources) })).templates;
+      const saved = (await loadWorkspace({ dir: join(unit, 'workspace'), resourcesDir })).templates;
       Object.assign(checks, { revision: scoreRevision(saved, templates, scenario.allowedTemplates) });
       const names = new Set(templates.map((entry) => entry.name));
       templates = [...saved.filter((entry) => !names.has(entry.name)), ...templates];
     }
-    Object.assign(checks, { template: await scoreTemplates({
-      workspaceDir: join(unit, 'workspace'), resourcesDir: repoPath(config.resources), templates, mainTemplate: request.template,
-      datasetId: scenario.dataset, sample: await readFile(repoPath(scenario.sample)),
-    }) });
+    const sample = await readFile(repoPath(scenario.sample));
+    const workspaceDir = join(unit, 'workspace');
+    Object.assign(checks, { template: scenario.scoring
+      ? await scoreTemplateCase({
+        workspaceDir, resourcesDir, templates, request, datasetId: scenario.dataset, sample,
+        stress: JSON.parse(await readFile(repoPath(scenario.scoring.stress), 'utf8')) as StressSpec,
+        checks: (JSON.parse(await readFile(repoPath(scenario.scoring.checks), 'utf8')) as { checks: CaseCheck[] }).checks,
+      })
+      : await scoreTemplates({ workspaceDir, resourcesDir, templates, mainTemplate: request.template, datasetId: scenario.dataset, sample }) });
   }
   if (scenario.kind === 'transcription' && await exists(join(unit, 'dataset', 'outcome.json'))) {
     // 审核视图里的数据集已把还没处理的待确认项换成候选值（M46），按审核人全部采纳计。
@@ -452,9 +495,12 @@ export function judge(scenario: Scenario, checks: ScenarioResult['checks']): str
       failures.push(`压测 ${score.stressPassed}/${score.stress.length}，要求至少 ${scenario.pass.stress}（有严重问题：${score.stress.filter((row) => row.severe > 0).map((row) => row.label).join('、')}）`);
     }
     if (score.layoutPassed < scenario.pass.layoutChecks) {
-      const missed = [...(score.landmarkBaseline.pass ? [] : [`地标底线${score.landmarkBaseline.deltaMm === undefined ? `（${score.landmarkBaseline.reason ?? '找不到'}）` : ` ${score.landmarkBaseline.deltaMm} mm`}`]),
-        ...(score.roadAlign.pass ? [] : [`道路名对齐 ${score.roadAlign.aligns.join('、') || '找不到'}`])];
-      failures.push(`版面检查 ${score.layoutPassed}/2，要求至少 ${scenario.pass.layoutChecks}（未过：${missed.join('、')}）`);
+      const { landmarkBaseline: landmark, roadAlign: road } = score;
+      const missed = score.checks
+        ? score.checks.filter((check) => !check.pass).map((check) => (check.detail ? `${check.label}（${check.detail}）` : check.label))
+        : [...(!landmark || landmark.pass ? [] : [`地标底线${landmark.deltaMm === undefined ? `（${landmark.reason ?? '找不到'}）` : ` ${landmark.deltaMm} mm`}`]),
+          ...(!road || road.pass ? [] : [`道路名对齐 ${road.aligns.join('、') || '找不到'}`])];
+      failures.push(`版面检查 ${score.layoutPassed}/${score.layoutTotal ?? 2}，要求至少 ${scenario.pass.layoutChecks}（未过：${missed.join('、')}）`);
     }
   } else {
     const score = checks.transcription;
@@ -664,7 +710,7 @@ export function formatReport(report: EvalReport): string {
     lines.push(`- ${result.name} 第 ${result.repetition} 次：${OUTCOME_TEXT[result.status]}${result.retries > 0 ? `（重试 ${result.retries} 次）` : ''}。${usage}`);
     if (result.checks.revision && result.checks.template) {
       const { revision, template } = result.checks;
-      lines.push(`  - 压测 ${template.stressPassed}/${template.stress.length}；版面 ${template.layoutPassed}/2；修改范围违例 ${revision.violations.length}；改动元素 ${revision.changedElements}`);
+      lines.push(`  - 压测 ${template.stressPassed}/${template.stress.length}；版面 ${template.layoutPassed}/${template.layoutTotal ?? 2}；修改范围违例 ${revision.violations.length}；改动元素 ${revision.changedElements}`);
     }
     if (result.checks.transcription) {
       const score = result.checks.transcription;

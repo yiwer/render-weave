@@ -1,0 +1,19 @@
+{
+  "checks": [
+    { "label": "促销价整数部分是字号最大的文字", "kind": "largest", "text": ["9.80", "9"] },
+    { "label": "促销价小数部分", "kind": "text", "text": "80", "region": { "x": [0.55, 1], "y": [0.45, 0.9] } },
+    { "label": "计价单位在价格区", "kind": "text", "text": "500g", "region": { "x": [0.55, 1], "y": [0.45, 0.9] } },
+    { "label": "原价", "kind": "text", "text": "15.80" },
+    { "label": "会员专享价", "kind": "text", "text": "8.80" },
+    { "label": "品名", "kind": "text", "text": "阿克苏冰糖心红富士苹果" },
+    { "label": "卖点标签", "kind": "text", "text": "脆甜多汁" },
+    { "label": "编码", "kind": "text", "text": "204891" },
+    { "label": "门店名称在右上", "kind": "text", "text": "鲜生活生鲜超市", "region": { "x": [0.5, 1], "y": [0, 0.25] } },
+    { "label": "闹钟图标在顶栏", "kind": "image", "source": "res:icon-promo-clock", "region": { "y": [0, 0.25] } },
+    { "label": "绿叶角标在右上", "kind": "image", "source": "res:icon-fresh-leaf", "region": { "x": [0.6, 1], "y": [0, 0.25] } },
+    { "label": "EAN-13 店内码在左下", "kind": "barcode", "format": "EAN-13", "region": { "x": [0, 0.45], "y": [0.7, 1] } },
+    { "label": "溯源二维码在底部", "kind": "qrcode", "region": { "x": [0.25, 0.6], "y": [0.7, 1] } },
+    { "label": "物价员", "kind": "text", "text": "王芳", "region": { "y": [0.8, 1] } },
+    { "label": "没有原价时不显示原价", "kind": "text", "text": "15.80", "absent": true, "variant": { "data": { "originalPrice": null } } }
+  ]
+}

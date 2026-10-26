@@ -1,0 +1,20 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "饮品杯贴",
+  "version": 1,
+  "displayName": "茶饮订单杯贴（一杯一张）",
+  "fields": [
+    { "name": "pickupNo", "displayName": "取餐号", "type": "text", "constraints": { "required": true, "pattern": "^[A-Z][0-9]{3}$" } },
+    { "name": "orderType", "displayName": "就餐方式", "type": "text", "constraints": { "required": true, "enum": ["堂食", "外带", "外卖"] } },
+    { "name": "cupIndex", "displayName": "第几杯", "type": "number", "constraints": { "required": true, "integer": true, "min": 1, "max": 99 } },
+    { "name": "cupCount", "displayName": "共几杯", "type": "number", "constraints": { "required": true, "integer": true, "min": 1, "max": 99 } },
+    { "name": "productName", "displayName": "商品名", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 20 } },
+    { "name": "productNameEn", "displayName": "英文商品名", "type": "text", "constraints": { "maxLength": 40 } },
+    { "name": "options", "displayName": "定制选项", "type": "list", "items": { "type": "text", "constraints": { "minLength": 1, "maxLength": 6 } }, "constraints": { "maxItems": 8 } },
+    { "name": "note", "displayName": "备注", "type": "text", "constraints": { "maxLength": 30 } },
+    { "name": "orderedAt", "displayName": "下单时间", "type": "datetime" },
+    { "name": "store", "displayName": "门店", "type": "text", "constraints": { "maxLength": 12 } },
+    { "name": "qrContent", "displayName": "二维码内容", "type": "text", "constraints": { "maxLength": 120 } },
+    { "name": "tip", "displayName": "提示语", "type": "text", "constraints": { "maxLength": 20 } }
+  ]
+}

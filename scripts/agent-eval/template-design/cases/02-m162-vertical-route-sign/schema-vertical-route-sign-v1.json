@@ -1,0 +1,18 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "竖版线路牌",
+  "version": 1,
+  "displayName": "竖版站台线路牌（单线路单方向）",
+  "fields": [
+    { "name": "routeNo", "displayName": "线路号", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 8 } },
+    { "name": "operatorLogo", "displayName": "运营方标识", "type": "image", "constraints": { "allowedSources": ["resource"] } },
+    { "name": "firstDeparture", "displayName": "首班", "type": "time" },
+    { "name": "lastDeparture", "displayName": "末班", "type": "time" },
+    { "name": "fareType", "displayName": "票制", "type": "text", "constraints": { "maxLength": 8 } },
+    { "name": "fareMin", "displayName": "最低票价（元）", "type": "number", "constraints": { "min": 0, "max": 100 } },
+    { "name": "fareMax", "displayName": "最高票价（元）", "type": "number", "constraints": { "min": 0, "max": 100 } },
+    { "name": "hotline", "displayName": "服务监督电话", "type": "text", "constraints": { "maxLength": 16 } },
+    { "name": "stops", "displayName": "停靠站点", "type": "list",
+      "items": { "type": "ref", "ref": { "name": "竖版站点", "version": 1 } }, "constraints": { "required": true, "minItems": 2, "maxItems": 20 } }
+  ]
+}

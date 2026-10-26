@@ -1,0 +1,18 @@
+{
+  "checks": [
+    { "label": "检票口在左上", "kind": "text", "text": "12A", "region": { "x": [0, 0.4], "y": [0, 0.15] } },
+    { "label": "候车室名称", "kind": "text", "text": "深圳北站", "region": { "y": [0, 0.15] } },
+    { "label": "更新时刻在右上", "kind": "text", "text": "14:25", "region": { "x": [0.7, 1], "y": [0, 0.15] } },
+    { "label": "表头", "kind": "text", "text": "候车状态", "region": { "y": [0.1, 0.3] } },
+    { "label": "车次号", "kind": "text", "text": "G1004" },
+    { "label": "终到站", "kind": "text", "text": "厦门北" },
+    { "label": "途经站点", "kind": "text", "text": "桂林西" },
+    { "label": "开点", "kind": "text", "text": "15:18" },
+    { "label": "正在检票", "kind": "text", "text": "正在检票", "region": { "x": [0.7, 1] } },
+    { "label": "停止检票状态字为红色", "kind": "text", "text": "停止检票", "color": "#E02020" },
+    { "label": "停止检票整行弱化为灰色", "kind": "text", "text": "G6018", "color": "#7A7A7A" },
+    { "label": "候车中状态字为黄色", "kind": "text", "text": "候车中", "color": "#F5C518" },
+    { "label": "温馨提示在底部", "kind": "text", "text": "温馨提示", "region": { "y": [0.88, 1] } },
+    { "label": "车次随数据增减", "kind": "text", "text": "G1004", "absent": true, "variant": { "data": { "trains": { "$take": { "from": "trains", "count": 1 } } } } }
+  ]
+}

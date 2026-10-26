@@ -1,0 +1,19 @@
+{
+  "checks": [
+    { "label": "顶栏线路名", "kind": "text", "text": "6号线", "region": { "x": [0, 0.4], "y": [0, 0.25] } },
+    { "label": "顶栏英文线路名", "kind": "text", "text": "Line6", "region": { "y": [0, 0.25] } },
+    { "label": "开往终点由末站派生", "kind": "text", "text": "科学城东", "region": { "y": [0, 0.25] } },
+    { "label": "英文开往终点由末站派生", "kind": "text", "text": "ScienceCityEast", "region": { "y": [0, 0.25] } },
+    { "label": "首班时刻", "kind": "text", "text": "06:15", "region": { "y": [0, 0.25] } },
+    { "label": "末班时刻", "kind": "text", "text": "23:30", "region": { "y": [0, 0.25] } },
+    { "label": "地铁标志在左上", "kind": "image", "source": "res:icon-metro-circle", "region": { "x": [0, 0.15], "y": [0, 0.25] } },
+    { "label": "本站圆环", "kind": "image", "source": "res:node-current-ring", "region": { "y": [0.25, 0.8] } },
+    { "label": "本站字样", "kind": "text", "text": "本站", "region": { "y": [0.25, 0.8] } },
+    { "label": "末端方向箭头在右侧", "kind": "image", "source": "res:arrow-chevron-teal", "region": { "x": [0.85, 1] } },
+    { "label": "本站英文站名", "kind": "text", "text": "CenturyAvenue" },
+    { "label": "换乘标签", "kind": "text", "text": "14号线", "region": { "y": [0.25, 1] } },
+    { "label": "已过站弱化为灰色", "kind": "text", "text": "长虹公园", "color": "#A8A8A8" },
+    { "label": "未到站为正常深色", "kind": "text", "text": "德平路", "color": "#1A1A1A" },
+    { "label": "本站为首站时没有已过站", "kind": "text", "text": "长虹公园", "color": "#A8A8A8", "absent": true, "variant": { "parameters": { "currentIndex": 1 } } }
+  ]
+}

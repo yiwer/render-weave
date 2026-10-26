@@ -1,0 +1,19 @@
+{
+  "checks": [
+    { "label": "中文品名", "kind": "text", "text": "无水乙醇" },
+    { "label": "英文品名", "kind": "text", "text": "EthanolAnhydrous" },
+    { "label": "信号词在右上", "kind": "text", "text": "危险", "region": { "x": [0.7, 1], "y": [0, 0.22] } },
+    { "label": "信号词英文由信号词派生", "kind": "text", "text": "DANGER", "region": { "x": [0.7, 1], "y": [0, 0.22] } },
+    { "label": "库位", "kind": "text", "text": "B区-04架-02层" },
+    { "label": "易燃象形图", "kind": "image", "source": "res:ghs-flammable" },
+    { "label": "健康危害象形图", "kind": "image", "source": "res:ghs-health-hazard" },
+    { "label": "象形图下写类别名称", "kind": "text", "text": "健康危害" },
+    { "label": "CAS 号", "kind": "text", "text": "64-17-5" },
+    { "label": "有效期", "kind": "text", "text": "2027-10-24" },
+    { "label": "应急电话", "kind": "text", "text": "400-880-9999" },
+    { "label": "CODE128 条码在右下", "kind": "barcode", "format": "CODE128", "region": { "x": [0.55, 1], "y": [0.72, 1] } },
+    { "label": "象形图随类别减少", "kind": "image", "source": "res:ghs-health-hazard", "absent": true, "variant": { "data": { "hazards": ["易燃液体"] } } },
+    { "label": "第 4 枚象形图", "kind": "image", "source": "res:ghs-corrosive", "variant": { "data": { "hazards": ["易燃液体", "刺激性", "健康危害", "腐蚀性"] } } },
+    { "label": "信号词警告配 WARNING", "kind": "text", "text": "WARNING", "variant": { "data": { "signalWord": "警告" } } }
+  ]
+}

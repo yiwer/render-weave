@@ -1,0 +1,23 @@
+{
+  "dataset": {
+    "id": "ds-price-water",
+    "name": "高山有机饮用天然水 550ml",
+    "staticSchema": { "name": "超市商品价签", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 03：按示例图转录" }
+  },
+  "data": {
+    "storeName": "鲜生活超市",
+    "storeLogo": "res:logo-fresh-mart",
+    "productName": "高山有机饮用天然水",
+    "spec": "550ml/瓶",
+    "unit": "瓶",
+    "origin": "浙江杭州",
+    "itemNo": "0086421",
+    "features": ["天然水源", "低钠淡矿"],
+    "retailPrice": 2.5,
+    "memberPrice": 1.98,
+    "barcode": "6901234567892",
+    "priceChecker": "张敏",
+    "supervisePhone": "12358"
+  }
+}

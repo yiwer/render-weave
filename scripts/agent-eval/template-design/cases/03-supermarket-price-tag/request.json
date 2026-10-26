@@ -1,0 +1,7 @@
+{
+  "template": "商品价签",
+  "dataset": { "id": "ds-price-water" },
+  "parameters": {},
+  "output": { "width": 100, "height": 56, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

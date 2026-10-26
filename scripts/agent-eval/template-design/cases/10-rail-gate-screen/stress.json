@@ -1,0 +1,13 @@
+{
+  "dpi": 30,
+  "cases": [
+    { "label": "5 趟" },
+    { "label": "1 趟", "data": { "trains": { "$take": { "from": "trains", "count": 1 } } } },
+    { "label": "8 趟", "data": { "trains": { "$take": { "from": "trains", "count": 8 } } } },
+    { "label": "没有途经站", "data": { "trains[0].via": null } },
+    { "label": "终到站 6 字、途经站 5 字", "data": { "trains[1].terminal": "乌鲁木齐南站", "trains[1].via": ["哈尔滨西站", "呼和浩特东", "石家庄北站"] } },
+    { "label": "晚点", "data": { "trains[2].status": "晚点" } },
+    { "label": "提示 50 字", "data": { "notice": "请持身份证原件在闸机口刷证进站，列车开车前5分钟停止检票。商务座旅客走右侧专用通道，重点旅客找服务台" } },
+    { "label": "全部停止检票", "data": { "trains[0].status": "停止检票", "trains[1].status": "停止检票", "trains[2].status": "停止检票", "trains[3].status": "停止检票" } }
+  ]
+}

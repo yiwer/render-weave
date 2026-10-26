@@ -1,0 +1,12 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "候诊患者",
+  "version": 1,
+  "displayName": "候诊队列中的一位患者",
+  "fields": [
+    { "name": "ticket", "displayName": "号码", "type": "text", "constraints": { "required": true, "pattern": "^[A-Z][0-9]{3}$" } },
+    { "name": "name", "displayName": "患者显示名", "description": "按医院脱敏规则给出的显示文本", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 6 } },
+    { "name": "note", "displayName": "备注", "description": "如复诊、加号", "type": "text", "constraints": { "maxLength": 4 } },
+    { "name": "status", "displayName": "状态", "type": "text", "constraints": { "required": true, "enum": ["候诊中", "准备", "过号"] } }
+  ]
+}

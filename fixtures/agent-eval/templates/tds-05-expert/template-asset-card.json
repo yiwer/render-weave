@@ -1,0 +1,48 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "资产标识卡",
+  "base": { "name": "固定资产标识卡", "version": 1 },
+  "artboard": {
+    "sizeRange": { "width": { "min": 90, "max": 90 }, "height": { "min": 50, "max": 50 } },
+    "minFontSize": 2.5,
+    "fill": "#FFFFFF",
+    "layout": { "mode": "free" },
+    "children": [
+      { "type": "rect", "name": "外框", "fill": "#FFFFFF", "stroke": { "color": "#1C355E", "width": 0.8 }, "cornerRadius": 2,
+        "place": { "left": 0.4, "top": 0.4, "width": { "fixed": 89.2 }, "height": { "fixed": 49.2 } } },
+      { "type": "rect", "name": "顶栏", "fill": "#1C355E", "cornerRadius": { "topLeft": 2, "topRight": 2 },
+        "place": { "left": 0, "top": 0, "width": { "fixed": 90 }, "height": { "fixed": 11 } } },
+      { "type": "image", "name": "单位标识", "source": { "var": "companyLogo" }, "fit": "contain",
+        "place": { "left": 3, "top": 1.5, "width": { "fixed": 8 }, "height": { "fixed": 8 } } },
+      { "type": "text", "name": "标题", "content": [{ "slot": "company" }, { "text": "固定资产标识卡" }],
+        "font": "res:font-hei-bold", "fontSize": 6, "color": "#FFFFFF", "verticalAlign": "center",
+        "fit": { "steps": ["compressGlyphs", "shrink"], "minFontSize": 4 },
+        "place": { "left": 13, "top": 0, "width": { "fixed": 75 }, "height": { "fixed": 11 } } },
+      {
+        "type": "container", "name": "信息区",
+        "layout": { "mode": "stack", "direction": "column", "gap": 0.4, "justifyContent": "start", "alignItems": "start" },
+        "place": { "left": 4, "top": 13, "width": { "fixed": 52 }, "height": { "fixed": 35 } },
+        "children": [
+          { "type": "text", "name": "资产名称", "content": [{ "text": "资产名称：" }, { "slot": "assetName" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } },
+          { "type": "text", "name": "资产编号", "content": [{ "text": "资产编号：" }, { "slot": "assetNo" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } },
+          { "type": "text", "name": "使用部门", "content": [{ "text": "使用部门：" }, { "slot": "department" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } },
+          { "type": "text", "name": "保管人", "content": [{ "text": "保管　人：" }, { "slot": "keeper" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } },
+          { "type": "text", "name": "启用日期", "content": [{ "text": "启用日期：" }, { "slot": "startDate", "format": "yyyy-MM-dd" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } },
+          { "type": "text", "name": "存放地点", "content": [{ "text": "存放地点：" }, { "slot": "location" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#111111",
+            "fit": { "steps": ["compressGlyphs", "shrink"] }, "place": { "width": "fill", "height": { "fixed": 5.4 } } }
+        ]
+      },
+      { "type": "qrcode", "name": "详情二维码", "content": { "var": "detailUrl" }, "errorCorrectionLevel": "M",
+        "place": { "left": 64, "top": 12.5, "width": { "fixed": 20 }, "height": { "fixed": 20 } } },
+      { "type": "text", "name": "扫码说明", "content": [{ "text": "扫码查询资产详情" }], "font": "res:font-hei-regular", "fontSize": 2.6, "color": "#333333",
+        "horizontalAlign": "center", "place": { "left": 58, "top": 32.5, "width": { "fixed": 32 }, "height": { "fixed": 3.6 } } },
+      { "type": "barcode", "name": "编号条码", "format": "CODE128", "content": { "var": "assetNo" }, "showText": true, "font": "res:font-hei-regular", "fontSize": 2.4,
+        "place": { "left": 57, "top": 37, "width": { "fixed": 31 }, "height": { "fixed": 11 } } }
+    ]
+  }
+}

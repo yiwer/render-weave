@@ -1,0 +1,30 @@
+{
+  "dataset": {
+    "id": "ds-waybill-xd882026102509",
+    "name": "运单 XD882026102509",
+    "staticSchema": { "name": "电子面单", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 08：按示例图转录，二维码内容为自拟" }
+  },
+  "data": {
+    "carrierName": "迅达速运",
+    "carrierNameEn": "XUNDA EXPRESS",
+    "serviceType": "次日达·标准快递",
+    "sortCode": "755-W02-08A",
+    "trackingNo": "XD882026102509",
+    "hubName": "深南集散中心",
+    "receiverName": "林晓峰",
+    "receiverPhone": "138****5678",
+    "receiverAddress": "广东省深圳市南山区科技南十二路28号创新大厦 B座 16层",
+    "senderName": "华南智能云仓",
+    "senderPhone": "0755-88990011",
+    "senderAddress": "广东省深圳市宝安区物流园1号仓库",
+    "qrContent": "https://xunda.example/w/XD882026102509",
+    "items": [
+      { "name": "机械键盘无线双模版", "spec": "黑色轴体", "qty": 1 },
+      { "name": "铝合金桌面增高支架", "spec": "深空灰", "qty": 2 },
+      { "name": "Type-C 编织快充线 2m", "spec": "白色", "qty": 1 }
+    ],
+    "shipDate": "2026-10-25",
+    "weightKg": 2.4
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "dataset": {
+    "id": "ds-gate-szb-12ab",
+    "name": "深圳北站 12A/12B 检票口 14:25",
+    "staticSchema": { "name": "候车信息屏", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 10：按示例图转录" }
+  },
+  "data": {
+    "waitingRoom": "深圳北站候车室",
+    "gates": "12A / 12B",
+    "updatedAt": "14:25",
+    "trains": [
+      { "trainNo": "G82", "terminal": "北京西", "via": ["长沙南", "武汉", "郑州东"], "departure": "14:40", "status": "正在检票" },
+      { "trainNo": "G1004", "terminal": "武汉", "via": ["广州南", "韶关", "郴州西"], "departure": "14:52", "status": "候车中" },
+      { "trainNo": "D2312", "terminal": "厦门北", "via": ["惠州南", "潮汕", "漳州"], "departure": "15:05", "status": "候车中" },
+      { "trainNo": "G2962", "terminal": "成都东", "via": ["广州南", "桂林西", "贵阳东"], "departure": "15:18", "status": "候车中" },
+      { "trainNo": "G6018", "terminal": "长沙南", "via": ["虎门", "广州南", "衡阳东"], "departure": "14:15", "status": "停止检票" }
+    ],
+    "notice": "请持身份证原件在闸机口刷证进站，列车开车前5分钟停止检票。商务座旅客请走右侧专用通道。"
+  }
+}

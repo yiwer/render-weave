@@ -1,0 +1,15 @@
+{
+  "checks": [
+    { "label": "单位标识在左上", "kind": "image", "source": "res:logo-nebula-tech", "region": { "x": [0, 0.25], "y": [0, 0.3] } },
+    { "label": "标题含单位名称", "kind": "text", "text": "星云科技", "region": { "y": [0, 0.3] } },
+    { "label": "资产名称", "kind": "text", "text": "图形渲染工作站" },
+    { "label": "资产编号在左侧信息区", "kind": "text", "text": "RW-M402-000123", "region": { "x": [0, 0.7] } },
+    { "label": "使用部门", "kind": "text", "text": "视觉工程部" },
+    { "label": "保管人", "kind": "text", "text": "陈伟" },
+    { "label": "启用日期", "kind": "text", "text": "2026-10-15" },
+    { "label": "存放地点", "kind": "text", "text": "研发中心A座402" },
+    { "label": "二维码在右上", "kind": "qrcode", "region": { "x": [0.65, 1], "y": [0.2, 0.75] } },
+    { "label": "CODE128 条码在右下", "kind": "barcode", "format": "CODE128", "region": { "x": [0.6, 1], "y": [0.65, 1] } },
+    { "label": "空值时标签保留", "kind": "text", "text": "保管人", "variant": { "data": { "keeper": null } } }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "checks": [
+    { "label": "线路号在左上", "kind": "text", "text": "M162", "region": { "x": [0, 0.35], "y": [0, 0.12] } },
+    { "label": "顶栏方向由末站派生", "kind": "text", "text": "坪山高铁站", "region": { "y": [0, 0.12] } },
+    { "label": "顶栏英文方向由末站派生", "kind": "text", "text": "PingshanHigh", "region": { "y": [0, 0.12] } },
+    { "label": "运营方标识在右上", "kind": "image", "source": "res:logo-eastern-bus", "region": { "x": [0.6, 1], "y": [0, 0.12] } },
+    { "label": "服务时间", "kind": "text", "text": "21:30", "region": { "y": [0, 0.12] } },
+    { "label": "票制与票价", "kind": "text", "text": "分段收费", "region": { "y": [0, 0.12] } },
+    { "label": "本站标记", "kind": "text", "text": "本站", "region": { "y": [0.1, 0.92] } },
+    { "label": "英文站名", "kind": "text", "text": "UniversiadeCenter" },
+    { "label": "所在道路", "kind": "text", "text": "龙飞大道" },
+    { "label": "体育馆图标", "kind": "image", "source": "res:icon-sport-center", "region": { "x": [0.7, 1] } },
+    { "label": "火车站图标", "kind": "image", "source": "res:icon-railway-blue", "region": { "x": [0.7, 1] } },
+    { "label": "底栏下一站由本站派生", "kind": "text", "text": "荷坳地铁站", "region": { "y": [0.9, 1] } },
+    { "label": "底栏英文下一站", "kind": "text", "text": "He'aoMetroStation", "region": { "y": [0.9, 1] } },
+    { "label": "底栏监督电话", "kind": "text", "text": "12328", "region": { "y": [0.9, 1] } },
+    { "label": "本站 0 时不标本站", "kind": "text", "text": "本站", "absent": true, "region": { "y": [0.1, 0.92] }, "variant": { "parameters": { "currentIndex": 0 } } },
+    { "label": "本站为末站时不显示下一站", "kind": "text", "text": "下一站", "absent": true, "variant": { "parameters": { "currentIndex": 15 } } }
+  ]
+}

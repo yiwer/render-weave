@@ -1,0 +1,18 @@
+{
+  "checks": [
+    { "label": "分拣码是字号最大的文字", "kind": "largest", "text": ["755-W02-08A", "W02", "755"] },
+    { "label": "顶栏承运商", "kind": "text", "text": "迅达速运", "region": { "y": [0, 0.12] } },
+    { "label": "顶栏服务产品在右侧", "kind": "text", "text": "次日达", "region": { "x": [0.5, 1], "y": [0, 0.12] } },
+    { "label": "运单条码 CODE128", "kind": "barcode", "format": "CODE128", "region": { "x": [0, 0.65], "y": [0.22, 0.45] } },
+    { "label": "运单号", "kind": "text", "text": "XD882026102509" },
+    { "label": "集散中心", "kind": "text", "text": "深南集散中心" },
+    { "label": "收件人", "kind": "text", "text": "林晓峰" },
+    { "label": "收件地址", "kind": "text", "text": "科技南十二路28号" },
+    { "label": "寄件人", "kind": "text", "text": "华南智能云仓" },
+    { "label": "二维码在寄件区右侧", "kind": "qrcode", "region": { "x": [0.7, 1], "y": [0.55, 0.78] } },
+    { "label": "拣货明细商品名", "kind": "text", "text": "铝合金桌面增高支架", "region": { "y": [0.75, 0.95] } },
+    { "label": "拣货明细数量", "kind": "text", "text": ["x2", "×2", "X2"], "region": { "y": [0.75, 0.95] } },
+    { "label": "计费重量", "kind": "text", "text": "2.4kg", "region": { "y": [0.9, 1] } },
+    { "label": "寄件日期", "kind": "text", "text": "2026-10-25", "region": { "y": [0.9, 1] } }
+  ]
+}

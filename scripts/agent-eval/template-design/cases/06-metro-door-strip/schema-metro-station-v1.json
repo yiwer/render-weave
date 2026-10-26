@@ -1,0 +1,12 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "导乘站点",
+  "version": 1,
+  "displayName": "导乘图上的车站",
+  "fields": [
+    { "name": "name", "displayName": "站名", "type": "text", "constraints": { "required": true, "minLength": 1, "maxLength": 8 } },
+    { "name": "nameEn", "displayName": "英文站名", "type": "text", "constraints": { "maxLength": 36 } },
+    { "name": "transfers", "displayName": "换乘线路", "type": "list",
+      "items": { "type": "text", "constraints": { "enum": ["2号线", "4号线", "9号线", "14号线"] } }, "constraints": { "maxItems": 4 } }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "登机牌 v1",
+  "x-renderweave-static-schema": {
+    "name": "登机牌",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "airline",
+    "passengerNameEn",
+    "originCity",
+    "originCode",
+    "destCity",
+    "destCode",
+    "flightNo",
+    "flightDate",
+    "cabinCode",
+    "cabinName",
+    "seat",
+    "ticketNo"
+  ],
+  "properties": {
+    "airline": {
+      "title": "航空公司",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "airlineEn": {
+      "title": "航空公司英文名",
+      "type": "string",
+      "maxLength": 24
+    },
+    "passengerNameEn": {
+      "title": "旅客拼音姓名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 28
+    },
+    "passengerNameCn": {
+      "title": "旅客中文姓名",
+      "type": "string",
+      "maxLength": 6
+    },
+    "passengerNameShort": {
+      "title": "副券缩写姓名",
+      "type": "string",
+      "maxLength": 16
+    },
+    "ffNo": {
+      "title": "常旅客号",
+      "type": "string",
+      "maxLength": 16
+    },
+    "originCity": {
+      "title": "出发城市",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "originCode": {
+      "title": "出发三字码",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "destCity": {
+      "title": "到达城市",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "destCode": {
+      "title": "到达三字码",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "flightNo": {
+      "title": "航班号",
+      "type": "string",
+      "pattern": "^[A-Z0-9]{2}[0-9]{3,4}$"
+    },
+    "flightDate": {
+      "title": "航班日期",
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "x-renderweave-type": "date"
+    },
+    "boardingTime": {
+      "title": "登机时间",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "cabinCode": {
+      "title": "舱位代码",
+      "type": "string",
+      "pattern": "^[A-Z]$"
+    },
+    "cabinName": {
+      "title": "舱位名称",
+      "type": "string",
+      "enum": [
+        "头等舱",
+        "公务舱",
+        "经济舱"
+      ]
+    },
+    "gate": {
+      "title": "登机口",
+      "type": "string",
+      "maxLength": 4
+    },
+    "seat": {
+      "title": "座位",
+      "type": "string",
+      "pattern": "^[0-9]{2,3}[A-K]$"
+    },
+    "seqNo": {
+      "title": "登机序号",
+      "type": "string",
+      "pattern": "^[0-9]{3}$"
+    },
+    "priority": {
+      "title": "优先登机",
+      "type": "boolean"
+    },
+    "ticketNo": {
+      "title": "电子客票号",
+      "type": "string",
+      "pattern": "^[0-9]{13,14}$"
+    },
+    "stubQr": {
+      "title": "副券二维码内容",
+      "type": "string",
+      "maxLength": 120
+    }
+  }
+}

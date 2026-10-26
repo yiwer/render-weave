@@ -1,0 +1,7 @@
+{
+  "template": "电子面单",
+  "dataset": { "id": "ds-waybill-xd882026102509" },
+  "parameters": {},
+  "output": { "width": 100, "height": 134, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

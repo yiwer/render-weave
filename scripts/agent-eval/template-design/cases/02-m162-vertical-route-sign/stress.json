@@ -1,0 +1,15 @@
+{
+  "dpi": 30,
+  "cases": [
+    { "label": "15 站本站 2" },
+    { "label": "本站 0", "parameters": { "currentIndex": 0 } },
+    { "label": "本站 1", "parameters": { "currentIndex": 1 } },
+    { "label": "本站 15（末站）", "parameters": { "currentIndex": 15 } },
+    { "label": "2 站", "data": { "stops": { "$take": { "from": "stops", "count": 2 } } }, "parameters": { "currentIndex": 1 } },
+    { "label": "20 站", "data": { "stops": { "$take": { "from": "stops", "count": 20 } } }, "parameters": { "currentIndex": 18 } },
+    { "label": "长站名与长道路名", "data": { "stops[5].name": "龙岗区人民政府第二办公区", "stops[5].road": "龙城大道辅道" } },
+    { "label": "长英文名", "data": { "stops[7].nameEn": "Shenzhen Universiade Sports Center East Gate", "stops[7].roadEn": "Longfei Boulevard Service Road" } },
+    { "label": "多站两个图标", "data": { "stops[0].facilities": ["地铁", "医院"], "stops[14].facilities": ["火车站", "地铁"] } },
+    { "label": "没有英文与道路", "data": { "stops[3].nameEn": null, "stops[3].roadEn": null, "stops[3].road": null } }
+  ]
+}

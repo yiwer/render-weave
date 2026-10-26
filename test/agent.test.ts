@@ -505,6 +505,8 @@ describe('命令行', () => {
     return { code, stdout: stdout.join(''), stderr: stderr.join('') };
   }
   const base_ = () => ['--task', '数据定义提取', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY'];
+  /** agent/domains/ 下的领域约定包，按名称排序；会议胸牌没有约定包（M222：它是 Agent 参考的示例）。 */
+  const DOMAINS = ['asset-tag', 'boarding-pass', 'clinic-doorplate', 'departure-board', 'hazmat-label', 'metro-strip', 'order-label', 'price-tag', 'route-sign', 'waybill'].join('、');
 
   it('用法错误不创建轮次目录：任务类型、任务顺序、key、轮次目录、领域、示例图与轮数', async () => {
     env(KEY);
@@ -516,8 +518,8 @@ describe('命令行', () => {
         [['--task', '模板辅助修改', '--sample', sample, '--brief', brief, '--resources', resourcesDir, '--key-env', 'RW_TEST_KEY', '--out', out], '模板辅助修改要用 --request'],
         [[...base_(), '--out', out, '--key-env', 'RW_TEST_MISSING_KEY'], '缺少环境变量 RW_TEST_MISSING_KEY'],
         [[...base_(), '--out', base], '轮次目录必须不存在或为空'],
-        [[...base_(), '--out', out, '--domain', 'asset-tag'], '没有领域约定包 asset-tag；可用：price-tag、route-sign'],
-        [[...base_(), '--out', out, '--domain', '_template'], '没有领域约定包 _template；可用：price-tag、route-sign'],
+        [[...base_(), '--out', out, '--domain', 'badge'], `没有领域约定包 badge；可用：${DOMAINS}`],
+        [[...base_(), '--out', out, '--domain', '_template'], `没有领域约定包 _template；可用：${DOMAINS}`],
         [[...base_(), '--out', out, '--sample', brief], '示例图不是 PNG、JPEG 或 WebP'],
         [[...base_(), '--out', out, '--max-turns', '0'], '--max-turns 必须是正整数'],
       ];

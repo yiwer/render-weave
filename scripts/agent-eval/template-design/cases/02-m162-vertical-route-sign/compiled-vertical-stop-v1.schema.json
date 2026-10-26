@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "竖版站点 v1",
+  "x-renderweave-static-schema": {
+    "name": "竖版站点",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "title": "站名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 14
+    },
+    "road": {
+      "title": "所在道路",
+      "type": "string",
+      "maxLength": 10
+    },
+    "nameEn": {
+      "title": "英文站名",
+      "type": "string",
+      "maxLength": 48
+    },
+    "roadEn": {
+      "title": "英文道路名",
+      "type": "string",
+      "maxLength": 32
+    },
+    "facilities": {
+      "title": "设施",
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "string",
+        "enum": [
+          "地铁",
+          "医院",
+          "体育馆",
+          "火车站"
+        ]
+      }
+    }
+  }
+}

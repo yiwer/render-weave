@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "危险性 1 项", "data": { "hazards": ["易燃液体"] } },
+    { "label": "危险性 4 项", "data": { "hazards": ["易燃液体", "刺激性", "健康危害", "腐蚀性"] } },
+    { "label": "信号词警告", "data": { "signalWord": "警告", "hazards": ["刺激性"] } },
+    { "label": "中文品名 16 字", "data": { "nameCn": "二甲基亚砜（DMSO分析纯级别）" } },
+    { "label": "英文品名 40 字符", "data": { "nameEn": "Dimethyl Sulfoxide Analytical Reagent AR" } },
+    { "label": "安全措施 60 字", "data": { "precautions": "远离火源、热源与强氧化剂，工作场所严禁吸烟；穿戴防静电工作服、防护眼镜与防护手套；泄漏时立即用干燥砂土吸收后集中收集处置" } },
+    { "label": "没有 CAS 与 UN 编号", "data": { "casNo": null, "unNo": null } }
+  ]
+}

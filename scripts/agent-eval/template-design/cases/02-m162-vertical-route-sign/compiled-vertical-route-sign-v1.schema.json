@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "竖版线路牌 v1",
+  "x-renderweave-static-schema": {
+    "name": "竖版线路牌",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "routeNo",
+    "stops"
+  ],
+  "properties": {
+    "routeNo": {
+      "title": "线路号",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8
+    },
+    "operatorLogo": {
+      "title": "运营方标识",
+      "type": "string",
+      "pattern": "^res:[A-Za-z0-9][A-Za-z0-9_-]*$",
+      "x-renderweave-type": "image"
+    },
+    "firstDeparture": {
+      "title": "首班",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "lastDeparture": {
+      "title": "末班",
+      "type": "string",
+      "format": "rw-time",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+      "x-renderweave-type": "time"
+    },
+    "fareType": {
+      "title": "票制",
+      "type": "string",
+      "maxLength": 8
+    },
+    "fareMin": {
+      "title": "最低票价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "fareMax": {
+      "title": "最高票价（元）",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "hotline": {
+      "title": "服务监督电话",
+      "type": "string",
+      "maxLength": 16
+    },
+    "stops": {
+      "title": "停靠站点",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 20,
+      "items": {
+        "x-renderweave-static-schema": {
+          "name": "竖版站点",
+          "version": 1
+        },
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "title": "站名",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 14
+          },
+          "road": {
+            "title": "所在道路",
+            "type": "string",
+            "maxLength": 10
+          },
+          "nameEn": {
+            "title": "英文站名",
+            "type": "string",
+            "maxLength": 48
+          },
+          "roadEn": {
+            "title": "英文道路名",
+            "type": "string",
+            "maxLength": 32
+          },
+          "facilities": {
+            "title": "设施",
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "string",
+              "enum": [
+                "地铁",
+                "医院",
+                "体育馆",
+                "火车站"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

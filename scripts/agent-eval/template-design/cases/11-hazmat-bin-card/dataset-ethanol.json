@@ -1,0 +1,24 @@
+{
+  "dataset": {
+    "id": "ds-hazmat-ethanol-b0402",
+    "name": "无水乙醇 B区-04架-02层",
+    "staticSchema": { "name": "危化品库位卡", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 11：按示例图转录，安全措施与应急电话拆成两个字段" }
+  },
+  "data": {
+    "nameCn": "无水乙醇（工业级）",
+    "nameEn": "Ethanol Anhydrous",
+    "signalWord": "危险",
+    "location": "B区-04架-02层",
+    "hazards": ["易燃液体", "刺激性", "健康危害"],
+    "casNo": "64-17-5",
+    "unNo": "UN 1170",
+    "lotNo": "LOT-20261025",
+    "netContent": "25 L / 桶",
+    "storedOn": "2026-10-25",
+    "expiresOn": "2027-10-24",
+    "precautions": "远离火源、热源，工作场所严禁吸烟；穿戴防静电工作服与防护手套。",
+    "emergencyPhone": "0755-119 / 400-880-9999",
+    "barcode": "CHEM-1170-202610"
+  }
+}

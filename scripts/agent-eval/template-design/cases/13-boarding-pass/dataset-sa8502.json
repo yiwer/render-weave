@@ -1,0 +1,31 @@
+{
+  "dataset": {
+    "id": "ds-bp-sa8502-lin",
+    "name": "SA8502 林致远",
+    "staticSchema": { "name": "登机牌", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 13：按示例图转录，副券二维码内容为自拟" }
+  },
+  "data": {
+    "airline": "星海航空",
+    "airlineEn": "STARSEA AIRLINES",
+    "passengerNameEn": "LIN / ZHIYUAN",
+    "passengerNameCn": "林致远",
+    "passengerNameShort": "LIN Z.Y.",
+    "ffNo": "VIP-889201",
+    "originCity": "深圳",
+    "originCode": "SZX",
+    "destCity": "上海虹桥",
+    "destCode": "SHA",
+    "flightNo": "SA8502",
+    "flightDate": "2026-10-25",
+    "boardingTime": "15:10",
+    "cabinCode": "C",
+    "cabinName": "公务舱",
+    "gate": "26A",
+    "seat": "06A",
+    "seqNo": "018",
+    "priority": true,
+    "ticketNo": "99920261025018",
+    "stubQr": "M1LIN/ZHIYUAN SA8502 SZXSHA 06A 018"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "饮品杯贴 v1",
+  "x-renderweave-static-schema": {
+    "name": "饮品杯贴",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pickupNo",
+    "orderType",
+    "cupIndex",
+    "cupCount",
+    "productName"
+  ],
+  "properties": {
+    "pickupNo": {
+      "title": "取餐号",
+      "type": "string",
+      "pattern": "^[A-Z][0-9]{3}$"
+    },
+    "orderType": {
+      "title": "就餐方式",
+      "type": "string",
+      "enum": [
+        "堂食",
+        "外带",
+        "外卖"
+      ]
+    },
+    "cupIndex": {
+      "title": "第几杯",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "cupCount": {
+      "title": "共几杯",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "productName": {
+      "title": "商品名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "productNameEn": {
+      "title": "英文商品名",
+      "type": "string",
+      "maxLength": 40
+    },
+    "options": {
+      "title": "定制选项",
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6
+      }
+    },
+    "note": {
+      "title": "备注",
+      "type": "string",
+      "maxLength": 30
+    },
+    "orderedAt": {
+      "title": "下单时间",
+      "type": "string",
+      "format": "rw-datetime",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+      "x-renderweave-type": "datetime"
+    },
+    "store": {
+      "title": "门店",
+      "type": "string",
+      "maxLength": 12
+    },
+    "qrContent": {
+      "title": "二维码内容",
+      "type": "string",
+      "maxLength": 120
+    },
+    "tip": {
+      "title": "提示语",
+      "type": "string",
+      "maxLength": 20
+    }
+  }
+}

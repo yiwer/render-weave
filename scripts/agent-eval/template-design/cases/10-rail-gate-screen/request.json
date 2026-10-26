@@ -1,0 +1,7 @@
+{
+  "template": "候车信息屏",
+  "dataset": { "id": "ds-gate-szb-12ab" },
+  "parameters": {},
+  "output": { "width": 960, "height": 536, "dpi": 40, "format": "png" },
+  "mode": "final"
+}

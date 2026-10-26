@@ -1,0 +1,7 @@
+{
+  "template": "登机牌",
+  "dataset": { "id": "ds-bp-sa8502-lin" },
+  "parameters": {},
+  "output": { "width": 203, "height": 86, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

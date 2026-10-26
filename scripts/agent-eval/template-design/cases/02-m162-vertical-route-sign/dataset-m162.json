@@ -1,0 +1,35 @@
+{
+  "dataset": {
+    "id": "ds-m162-pingshan",
+    "name": "M162 往坪山高铁站",
+    "staticSchema": { "name": "竖版线路牌", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 02：按示例图逐行转录" }
+  },
+  "data": {
+    "routeNo": "M162",
+    "operatorLogo": "res:logo-eastern-bus",
+    "firstDeparture": "06:30",
+    "lastDeparture": "21:30",
+    "fareType": "分段收费",
+    "fareMin": 2,
+    "fareMax": 6,
+    "hotline": "12328",
+    "stops": [
+      { "name": "龙岗中心城", "road": "龙翔大道", "nameEn": "Longgang Center", "roadEn": "Longxiang Blvd." },
+      { "name": "腾昌花园", "road": "四联路", "nameEn": "Tengchang Garden", "roadEn": "Silian Rd." },
+      { "name": "荷坳地铁站", "road": "龙岗大道", "nameEn": "He'ao Metro Station", "roadEn": "Longgang Blvd.", "facilities": ["地铁"] },
+      { "name": "人民医院", "road": "爱心路", "nameEn": "People's Hospital", "roadEn": "Aixin Rd.", "facilities": ["医院"] },
+      { "name": "龙岗天虹", "road": "双龙路", "nameEn": "Longgang Rainbow", "roadEn": "Shuanglong Rd." },
+      { "name": "留仙一路", "road": "留仙大道", "nameEn": "Liuxian 1st Rd.", "roadEn": "Liuxian Blvd." },
+      { "name": "丹竹头", "road": "沙平路", "nameEn": "Danzhutou", "roadEn": "Shaping Rd." },
+      { "name": "大运中心", "road": "龙飞大道", "nameEn": "Universiade Center", "roadEn": "Longfei Blvd.", "facilities": ["体育馆", "地铁"] },
+      { "name": "爱联社区", "road": "爱联路", "nameEn": "Ailian Community", "roadEn": "Ailian Rd." },
+      { "name": "龙城广场", "road": "龙城大道", "nameEn": "Longcheng Square", "roadEn": "Longcheng Blvd.", "facilities": ["地铁"] },
+      { "name": "坪地中学", "road": "教育路", "nameEn": "Pingdi Middle School", "roadEn": "Jiaoyu Rd." },
+      { "name": "龙岗大运", "road": "黄阁路", "nameEn": "Longgang Universiade", "roadEn": "Huangge Rd." },
+      { "name": "双龙地铁站", "road": "龙岗大道", "nameEn": "Shuanglong Metro Station", "roadEn": "Longgang Blvd.", "facilities": ["地铁"] },
+      { "name": "坪山中心", "road": "坪山大道", "nameEn": "Pingshan Center", "roadEn": "Pingshan Blvd." },
+      { "name": "坪山高铁站", "road": "坪兰路", "nameEn": "Pingshan High-speed Railway Station", "roadEn": "Pinglan Rd.", "facilities": ["火车站"] }
+    ]
+  }
+}

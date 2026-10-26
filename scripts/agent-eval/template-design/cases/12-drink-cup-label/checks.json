@@ -1,0 +1,17 @@
+{
+  "checks": [
+    { "label": "取餐号是字号最大的文字", "kind": "largest", "text": "A086" },
+    { "label": "取餐号在顶部", "kind": "text", "text": "A086", "region": { "y": [0, 0.2] } },
+    { "label": "第几杯由两个整数拼出", "kind": "text", "text": "1/2", "region": { "x": [0.55, 1], "y": [0, 0.2] } },
+    { "label": "就餐方式", "kind": "text", "text": "堂食", "region": { "x": [0.55, 1], "y": [0, 0.2] } },
+    { "label": "商品名", "kind": "text", "text": "云顶芝士多肉葡萄冻" },
+    { "label": "英文商品名", "kind": "text", "text": "CheeseGrapeJellyTea" },
+    { "label": "定制选项标签", "kind": "text", "text": "换燕麦奶" },
+    { "label": "备注", "kind": "text", "text": "吸管请多给一根" },
+    { "label": "下单时间到分钟", "kind": "text", "text": "2026-10-2514:32" },
+    { "label": "门店", "kind": "text", "text": "科技园旗舰店" },
+    { "label": "二维码在右下", "kind": "qrcode", "region": { "x": [0.65, 1], "y": [0.75, 1] } },
+    { "label": "没有备注时不显示备注标签", "kind": "text", "text": "备注", "absent": true, "variant": { "data": { "note": null } } },
+    { "label": "第 10/12 杯", "kind": "text", "text": "10/12", "variant": { "data": { "cupIndex": 10, "cupCount": 12 } } }
+  ]
+}

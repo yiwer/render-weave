@@ -1,0 +1,22 @@
+{
+  "checks": [
+    { "label": "顶栏航空公司", "kind": "text", "text": "星海航空", "region": { "x": [0, 0.6], "y": [0, 0.2] } },
+    { "label": "出发三字码", "kind": "text", "text": "SZX", "region": { "x": [0, 0.72] } },
+    { "label": "到达城市", "kind": "text", "text": "上海虹桥", "region": { "x": [0, 0.72] } },
+    { "label": "航线中的飞机图标", "kind": "image", "source": "res:icon-airplane-navy", "region": { "x": [0, 0.72] } },
+    { "label": "航班号", "kind": "text", "text": "SA8502", "region": { "x": [0, 0.72] } },
+    { "label": "登机口", "kind": "text", "text": "26A", "region": { "x": [0, 0.72] } },
+    { "label": "座位", "kind": "text", "text": "06A", "region": { "x": [0, 0.72] } },
+    { "label": "登机时间", "kind": "text", "text": "15:10" },
+    { "label": "舱位徽章在顶栏", "kind": "image", "source": "res:badge-business-gold", "region": { "y": [0, 0.25] } },
+    { "label": "舱位英文名由舱位派生", "kind": "text", "text": "BUSINESSCLASS", "region": { "y": [0, 0.25] } },
+    { "label": "优先登机标签", "kind": "text", "text": "优先登机", "region": { "x": [0, 0.4], "y": [0.7, 1] } },
+    { "label": "主副券之间的剪刀", "kind": "image", "source": "res:icon-scissors-black", "region": { "x": [0.65, 0.8] } },
+    { "label": "副券缩写姓名", "kind": "text", "text": "LINZ.Y.", "region": { "x": [0.72, 1] } },
+    { "label": "副券重复航班号", "kind": "text", "text": "SA8502", "region": { "x": [0.72, 1] } },
+    { "label": "副券二维码在右下", "kind": "qrcode", "region": { "x": [0.85, 1], "y": [0.7, 1] } },
+    { "label": "主券 CODE128 条码", "kind": "barcode", "format": "CODE128", "region": { "x": [0.45, 0.75], "y": [0.7, 1] } },
+    { "label": "经济舱不显示舱位徽章", "kind": "image", "source": "res:badge-business-gold", "absent": true, "variant": { "data": { "cabinName": "经济舱", "cabinCode": "Y" } } },
+    { "label": "不优先时不显示标签", "kind": "text", "text": "优先登机", "absent": true, "variant": { "data": { "priority": false } } }
+  ]
+}

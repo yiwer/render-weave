@@ -1,0 +1,7 @@
+{
+  "template": "诊室门牌",
+  "dataset": { "id": "ds-clinic-room3-am" },
+  "parameters": {},
+  "output": { "width": 300, "height": 400, "dpi": 96, "format": "png" },
+  "mode": "final"
+}

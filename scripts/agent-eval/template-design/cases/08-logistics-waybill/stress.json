@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "收件地址 40 字", "data": { "receiverAddress": "广东省深圳市南山区粤海街道科技南十二路28号创新大厦B座16层1608室前台代收" } },
+    { "label": "明细 1 行", "data": { "items": { "$take": { "from": "items", "count": 1 } } } },
+    { "label": "明细 5 行", "data": { "items": { "$take": { "from": "items", "count": 5 } } } },
+    { "label": "商品名 20 字", "data": { "items[0].name": "机械键盘无线三模热插拔RGB背光全键无冲" } },
+    { "label": "没有寄件人电话", "data": { "senderPhone": null } },
+    { "label": "重量三位整数", "data": { "weightKg": 128.5, "items[1].qty": 120 } },
+    { "label": "分拣码最长", "data": { "sortCode": "755-W02-08A-B12" } }
+  ]
+}

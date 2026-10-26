@@ -1,0 +1,29 @@
+{
+  "dataset": {
+    "id": "ds-clinic-room3-am",
+    "name": "消化内科 3 诊室上午",
+    "staticSchema": { "name": "诊室门牌", "version": 1 },
+    "origin": { "kind": "manual", "note": "模板设计评估集 07：按示例图转录，签到链接为自拟" }
+  },
+  "data": {
+    "hospital": "第一人民医院",
+    "department": "消化内科门诊",
+    "room": "3诊室",
+    "doctorName": "周文博",
+    "doctorTitle": "主任医师",
+    "doctorPhoto": "res:avatar-doctor-zhou",
+    "specialties": ["胃肠镜微创", "慢性胃炎"],
+    "session": "上午",
+    "sessionStart": "08:00",
+    "sessionEnd": "12:00",
+    "currentTicket": "A018",
+    "currentName": "张晓华",
+    "queue": [
+      { "ticket": "A019", "name": "李建国", "status": "候诊中" },
+      { "ticket": "A020", "name": "王梓涵", "status": "候诊中" },
+      { "ticket": "A021", "name": "赵敏", "note": "复诊", "status": "准备" }
+    ],
+    "notice": "请先在自助机或扫码报到，过号请重新签到",
+    "checkinUrl": "https://hospital1.example/checkin/xhnk-3"
+  }
+}

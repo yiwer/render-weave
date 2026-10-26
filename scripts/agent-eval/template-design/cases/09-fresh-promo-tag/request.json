@@ -1,0 +1,7 @@
+{
+  "template": "促销价签",
+  "dataset": { "id": "ds-promo-apple" },
+  "parameters": {},
+  "output": { "width": 100, "height": 56, "dpi": 300, "format": "png" },
+  "mode": "final"
+}

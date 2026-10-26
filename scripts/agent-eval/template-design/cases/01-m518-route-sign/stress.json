@@ -1,0 +1,17 @@
+{
+  "dpi": 30,
+  "cases": [
+    { "label": "20 站本站 5" },
+    { "label": "本站 0", "parameters": { "currentIndex": 0 } },
+    { "label": "本站 1", "parameters": { "currentIndex": 1 } },
+    { "label": "本站 20（末站）", "parameters": { "currentIndex": 20 } },
+    { "label": "2 站", "data": { "stops": { "$take": { "from": "stops", "count": 2 } } }, "parameters": { "currentIndex": 1 } },
+    { "label": "30 站", "data": { "stops": { "$take": { "from": "stops", "count": 30 } } } },
+    { "label": "30 站 1300 宽", "data": { "stops": { "$take": { "from": "stops", "count": 30 } } }, "output": { "width": 1300 } },
+    { "label": "20 站 1300 宽", "output": { "width": 1300 } },
+    { "label": "8 字站名", "data": { "stops[10].name": "李朗国际珠宝园站" } },
+    { "label": "没有地标与设施", "data": {
+      "stops[4].landmark": null, "stops[5].landmark": null, "stops[8].landmark": null, "stops[14].landmark": null,
+      "stops[4].badges": null, "stops[5].badges": null, "stops[9].badges": null, "stops[15].badges": null, "stops[16].badges": null } }
+  ]
+}

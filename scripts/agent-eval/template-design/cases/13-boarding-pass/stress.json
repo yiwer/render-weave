@@ -1,0 +1,12 @@
+{
+  "cases": [
+    { "label": "示例数据" },
+    { "label": "经济舱", "data": { "cabinName": "经济舱", "cabinCode": "Y", "seat": "38K" } },
+    { "label": "头等舱", "data": { "cabinName": "头等舱", "cabinCode": "F", "seat": "01A" } },
+    { "label": "不优先、没有常旅客号", "data": { "priority": false, "ffNo": null } },
+    { "label": "城市名 8 字", "data": { "originCity": "乌鲁木齐地窝堡", "destCity": "西双版纳嘎洒机场", "originCode": "URC", "destCode": "JHG" } },
+    { "label": "拼音姓名 28 字符", "data": { "passengerNameEn": "OUYANG / ZHONGXIAOMINGTIANYU", "passengerNameShort": "OUYANG Z.X.M.T." } },
+    { "label": "没有登机口与序号", "data": { "gate": null, "seqNo": null } },
+    { "label": "航班号四位、三位座位排号", "data": { "flightNo": "SA1234", "seat": "102C" } }
+  ]
+}
