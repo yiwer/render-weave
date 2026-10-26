@@ -1,0 +1,13 @@
+{
+  "format": "harness-endpoint-authorization/1",
+  "recordedAt": "2026-10-23T17:56:54.074Z",
+  "source": "human-user-message-in-this-task",
+  "questionItemId": "[\"request_user_input_async\",\"call_8fa6a92a2dc64ba3b1b97b5c2378792b\",0]",
+  "question": "是否明确授权本批已批准验收通过 OpenCode Go 的 https://opencode.ai/inference/go/anthropic 端点调用 Claude Haiku 5.5，发送所需样例图片、业务说明、DSL资料与候选、工具反馈（包括后续12例留出材料）？候选、预算和运行命令已固定；只有取得这项具体目的地授权，才能继续真实模型验收。",
+  "answer": "允许按已批准计划发送并验收（推荐）",
+  "endpoint": "https://opencode.ai/inference/go/anthropic",
+  "model": "claude-haiku-5-5",
+  "scope": "本批已批准原38、21、12例留出及相关真人验收所需模型请求；沿已登记候选/预算/停止政策。",
+  "status": "authorized",
+  "priorAutomaticRejection": "已保存且未执行；此次是用户明确目的地授权后的原命令重审，不改路由或执行方式。"
+}

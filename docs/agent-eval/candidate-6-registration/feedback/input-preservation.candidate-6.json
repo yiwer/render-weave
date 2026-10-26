@@ -1,0 +1,2285 @@
+{
+  "format": "renderweave-feedback-preparation-preservation/1",
+  "files": [
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\binding.json",
+      "sha256": "5b71ba3fe3d44cc1890067935b955b2ab952f93544599352e769717812115fec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\config.json",
+      "sha256": "97ae4b06859a4a10075c16e78943cdde41a2000ef98405ba3d92e93fadbad4ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\07ec9dead49fce518e719ee857b94a444b49c8e9a6b600f4bdc8c82bf0da3eb8.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\1a5f0c6c844e2b19d6cf8e43d217a795174be0610360bd5ae193089be029382a.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\24adfdbefc4f2e0aa2c155874a7a9621d3e768471fb0cfaecbfdc7829d562122.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\256165e96156dcf10db1be6fca47d1ec22d11463d47438cde82c147ae10563a6.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\3c231ec853b1fefcd7768c6b8ba05d5f62cd60d0ada0eb8e5f53c8da02e48ff9.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\4aede736be943ee15f9070dfb7274839303377f373ad67acd511778747fc5860.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\4b5160718d8ac5d3ff60708e08d8b44fa6cbe64f747d3b54a4a1568e9f4c436a.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\50599b88459fd74338eb6082d2ca89bf08d46f7c7b5630c0c90b40f33a4f3987.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\61f5093052709d6fbcd0d4d6a59cd8bf6c0e7c603aac33cdf1847e2fd8b34b50.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\71a9b04442b4bae471c4ae209eba909425766284bcaf30f2ab447cb70ed735f9.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\7cf338661d8284fcdc553e25e362345c9ffddac23c9b68ac44f642a154a301a2.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\a38b48fd7e244d711631e9982cb5720d3545dbcbacb78d180b0389c26122a53f.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\af3fe45b40a7e38e18a83795f1934ab37c2a714ddefc930ceb6962626a078dda.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\bab1171df5f83e8a8b206d3a938c4bde7d5dd3e653f85dffb7ad7d0cd35efaa6.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\resources\\d7001413a24b904d8748d2fe68cfe2f716fbce221bdac76a43aae9cfea7b98f5.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\config.json",
+      "sha256": "07d60cf3c00c127776727522ace95beecffe557dbd0c6bd9c4bb4266367abb32"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\config.real-model.json",
+      "sha256": "97ae4b06859a4a10075c16e78943cdde41a2000ef98405ba3d92e93fadbad4ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\content-baseline.json",
+      "sha256": "a6eed7d3de70e6f524fe8d83bd347238fe742000e927ae99a686eaf8a484fc21"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\controlled-initial\\candidates\\dataset.json",
+      "sha256": "162753cd4e3c8b2909359982a79a7dfcb2d0349152b2713b2151071da9d316d9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\controlled-initial\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\feedback.md",
+      "sha256": "3b7b74b91a6968a36ffef8ec37738581b7d8a977ce737a620a66ab3a197dbbed"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\policy.json",
+      "sha256": "cabffabf2b13d9d91f6267c7ae27bd51344f6cd2bcc398aa99229fa8c4e05b64"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\candidates\\dataset.json",
+      "sha256": "162753cd4e3c8b2909359982a79a7dfcb2d0349152b2713b2151071da9d316d9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\docs\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\agent\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\candidates\\dataset.json",
+      "sha256": "162753cd4e3c8b2909359982a79a7dfcb2d0349152b2713b2151071da9d316d9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\check.json",
+      "sha256": "53102f5ac1a2ba5812d2019edb4221b0e96ae412e6e9b9d90ccfde21c79a328c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoint.json",
+      "sha256": "54b92b4a692052381648d8ed670b092560e0abea9e5fd5688b3a4c61edc0fed6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\agent\\candidates\\dataset.json",
+      "sha256": "162753cd4e3c8b2909359982a79a7dfcb2d0349152b2713b2151071da9d316d9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\agent\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\basis.json",
+      "sha256": "785d9837e6ccdf19419071bb324f9d5f6427e94580d3b556fa3dfaef88273e53"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\record.json",
+      "sha256": "eb2fd3136d715317010bacb8e0615b4b276a48bf092f21df222e3e4f1633d378"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\checkpoints\\e87e182f-7c86-4454-842f-e49b424810c0\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\execution-owner.json",
+      "sha256": "a75cfe2a25d23908cb10c2fcb71cf4f1ab0d6516f261ec8523f66da2f16dae68"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\execution.json",
+      "sha256": "88edd6ae6c0a05a383f6ecb7f1a1fc407cbd2610e95bab59010112c003432816"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\content-baseline.json",
+      "sha256": "cc6c4f2db7b151739d53cee47a21f3ddf5c70b2e6211775968a21c2e8e5a4307"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\materials\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\mcp.json",
+      "sha256": "441c3057d2f0002740f64c5dcfb87f09c27b3cc183e59ea02a76e8bddf8e4511"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\outcome-context.json",
+      "sha256": "4140f734efc7f11062103d0cfd2be9c0365c05027b5d01bf27e791b0afa3bfa8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\prompt.md",
+      "sha256": "655a099bcbb70099d3f79a79c51863b445752c583d6eed4544d9ff5fd97a024a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\provenance.json",
+      "sha256": "a4d03edf1fec6d848b1ba1c3d74643cf14c1885d21f1350436051dd5d6c28bfd"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\outcome.json",
+      "sha256": "4240d0682fd85a482e04939c06e55c3445b68e2bfb38d23884d554241b41aa4f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\resources\\049f4c58-75ed-4f2f-aec2-0debec77ba3e\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\round-start.json",
+      "sha256": "818210b973eec681ec802c24f02cba226cf5a83b0fb7d4f230adf2ce5da8c97c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\round.json",
+      "sha256": "bae59d9b9b2d5611e5e1f7cfb57fb9117d33ad7fff92e0776c1adb088a490c03"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\seed\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\workspace\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\dataset-extraction\\workspace\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\content-baseline.json",
+      "sha256": "0a4208c9b573a328554d1618841d1f5041c8429f56f1b14161ff789a9571fe3c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\controlled-initial\\candidates\\definition.json",
+      "sha256": "11f794f3bc8073db82180bfb37dcc19db5e4b9140ddf4047def8e8d2a7cb012e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\controlled-initial\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\feedback.md",
+      "sha256": "9b8502f5fb3bac13fb57182305ddd0fe19ce6947aa2542bf49f1997a342f80b2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\policy.json",
+      "sha256": "b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\candidates\\definition.json",
+      "sha256": "11f794f3bc8073db82180bfb37dcc19db5e4b9140ddf4047def8e8d2a7cb012e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\docs\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\agent\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\candidates\\definition.json",
+      "sha256": "11f794f3bc8073db82180bfb37dcc19db5e4b9140ddf4047def8e8d2a7cb012e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\check.json",
+      "sha256": "ba63279536b40665455dfab20fed8a1518f22fd528b0dc4c2e7cf56dc9c366e6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\checkpoint.json",
+      "sha256": "9c349d45e6b878bafb9be815ad90b89923aa3d1af95611bdad28d4f1882af9f1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\checkpoints\\dc5bd520-2006-4fcc-8ffe-c8808d9ca3c5\\agent\\candidates\\definition.json",
+      "sha256": "11f794f3bc8073db82180bfb37dcc19db5e4b9140ddf4047def8e8d2a7cb012e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\checkpoints\\dc5bd520-2006-4fcc-8ffe-c8808d9ca3c5\\agent\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\checkpoints\\dc5bd520-2006-4fcc-8ffe-c8808d9ca3c5\\basis.json",
+      "sha256": "6e93e97c87ad23231cbaafef4c6d95fc1960bb29f0932726063b67265877f0fe"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\checkpoints\\dc5bd520-2006-4fcc-8ffe-c8808d9ca3c5\\record.json",
+      "sha256": "55f180ee77a0b815a62aebb111e7e41e39a18a0ce85d4bc9bc790bcb3d2aec27"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\execution-owner.json",
+      "sha256": "a13ea2c8a4e2b755298dcbbd584ea202ea889a6eeae5cfc83cd0c9e0c3e54965"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\execution.json",
+      "sha256": "f4cf5fd1d79430a2084462814fabc75a5cd0fa1d58c54ebcda59b5aa944a4b50"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\content-baseline.json",
+      "sha256": "10ef6a9de5058456be0d535eb8896fdac3ad4d5c84c762405adf48a2ec1902b6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\materials\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\mcp.json",
+      "sha256": "f1661dd0fa3ba92ed8eebf13e546a3d8570d0b05d1c971dca84b99cc4f2affc1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\outcome-context.json",
+      "sha256": "340b12aac1861de7720d7a26975243fa625e09653ad1c9ab024d0849c652e1f9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\prompt.md",
+      "sha256": "feea45169652e169c0c8765ffd97fda98b782889eaf400ab7de5ef8ebf43ec93"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\provenance.json",
+      "sha256": "e39fad7051ade70adfb280b4e27c0be099f5876f72db8b298acfc360c9b6154d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\outcome.json",
+      "sha256": "3f156d8cd5b75175a44c177cfa14b6c79cdc3a72a5d618f01d5f6fbffa47cce0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\resources\\593b8966-8154-45c4-abf3-ba51a09825e0\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\round-start.json",
+      "sha256": "1a3a2936267a257843d3e8dc37e120acadb96dc9ad92d15a716ad40bb05c4ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\definition-extraction\\seed\\round.json",
+      "sha256": "97478a7c2d0a8aa973a34fb4981baa4a805b86cfd6a530dabe81dc3c6245aa51"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\reference-workspace\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\reference-workspace\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\reference-workspace\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\reference.json",
+      "sha256": "cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\controlled-initial\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\controlled-initial\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\feedback.md",
+      "sha256": "ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\policy.json",
+      "sha256": "8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\docs\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\docs\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\agent\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\check.json",
+      "sha256": "51f60755b7a8e6a954fba3f63c0d3a991251f0d5a37cc52c15a952c76c5bff7d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoint.json",
+      "sha256": "960cd5a5c4c256b6d516538a0843cb504c799e06567d38466337f303b06dd152"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\agent\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\basis.json",
+      "sha256": "d8460a57cc17fcf88b519cb05b601a509aee5db96dcf972e8fbef3dd46154885"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\record.json",
+      "sha256": "b19774d4e68a554ecb05804dd906a0d566abe5a32d7e7c642e875d4c5fbd15e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\reference-image",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\snapshot\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\checkpoints\\c1aa0804-6418-4038-95f5-c32e9c3f8772\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\execution-owner.json",
+      "sha256": "0d7913cd582633745c778387c1647551bf8b57c008d03c9c85311544b9cd837e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\execution.json",
+      "sha256": "8e5c09be953c6709f3a1d11e9338025a4fed8f99be7349e03397c65e6d86e8a3"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\materials\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\materials\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\mcp.json",
+      "sha256": "ce3a17463c19afbcb4d584d29177544c42b057aa9a395371e2659127a5e924c3"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\outcome-context.json",
+      "sha256": "d19a55449872ce77deb1d87552828ee3243dbcc46ebcd090c5dc18fb7484c51b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\prompt.md",
+      "sha256": "c6fbb140f67b889a231606c6a41f6fddd2d3762e23421149ca353699d86286c5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\provenance.json",
+      "sha256": "ff8f2c43e06a10a8de533fc24bed759b577b276aba53da20fa851ef2c54f5aec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\reference.json",
+      "sha256": "9cc01af587bf8cdb15366319ce815192c6fbff3b6291007d10b23653f48eb74f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\outcome.json",
+      "sha256": "f8ff6b98f3bc563bb0f631e9dff9ccd2366a309671e96dc71db0320fd5223cf9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\resources\\1703f80f-ddcd-4a8e-98cf-800197b479ad\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\round-start.json",
+      "sha256": "0b3c5ae39e1bf433660873282f4731eb1b739f9a328236ee455910bf099d4f38"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\round.json",
+      "sha256": "036ca45387b476c07cb605b0fb2bff9f67301706cc8027414f5d941cd8177246"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\snapshot\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\seed\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\workspace\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\workspace\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-design\\workspace\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\controlled-initial\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\controlled-initial\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\feedback.md",
+      "sha256": "ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\policy.json",
+      "sha256": "8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\docs\\requirement.md",
+      "sha256": "ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\agent\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\check.json",
+      "sha256": "277332c2f133ab67942723ef3c090b9fc158aaabe1f3d7a31b10912fb3e8a508"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoint.json",
+      "sha256": "add1a7510b443f80944edc72cb3bfb5f270c962b6b857f2a837f6450c5722ba6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\agent\\candidates\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\basis.json",
+      "sha256": "0e49fcc8e2b76a5460aeb9e317c31097794fbe7f9ed9361ff5093f5c5a10c05d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\record.json",
+      "sha256": "eb464b32878ca94a88d51f0a2ff332e1b6c5d60809ccd7dcddf1fdc6e1e3991c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\reference-image",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\snapshot\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\checkpoints\\c9181ab4-8a71-49c2-b5bb-a78cf828d55a\\snapshot\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\execution-owner.json",
+      "sha256": "3f68c0300fd581dd6b4e0a1cd6cb59d7642d6a29075e2410e79f19d32f7064ae"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\execution.json",
+      "sha256": "84223b20e0e40537b37fa3defdc9ef6a1b08cd4406bd832ee237fe02fbb30053"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\brief.md",
+      "sha256": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\materials\\requirement.md",
+      "sha256": "ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\mcp.json",
+      "sha256": "56805a1e874b16d3a3084d1eb557539532a0bd6fda995ecdb5c26d2e8823930c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\outcome-context.json",
+      "sha256": "4157cf59853e986b2af375a080c43e99cb5e84fd3f4691c2710bcdf5cc475c77"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\prompt.md",
+      "sha256": "043188905d9d6520169ad8b60fe795e6d6f744c8dc8e2d7effb98a09c709aab9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\provenance.json",
+      "sha256": "ff4f02db9ecde7b57a3a7206ad8c618e2433507c2ebb07d3ebf4651eace72e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\reference.json",
+      "sha256": "9cc01af587bf8cdb15366319ce815192c6fbff3b6291007d10b23653f48eb74f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\sample.png",
+      "sha256": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\outcome.json",
+      "sha256": "9469cd65803754c7fef734ecb93cda544cdd1d619948dc9129c22153e3c8d9b5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\request.json",
+      "sha256": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\requirement.md",
+      "sha256": "ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\resources\\0380579b-596e-4f63-a729-e7bf6e67f514\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\round-start.json",
+      "sha256": "13d1d77bba91f1986587f5b2a137e157c6a8e99ec8ba719398e4d4a9571fbb7f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\round.json",
+      "sha256": "f79751e92611ffcd5ffb6f71f22f943c8de18d082275ecae625b2cbe1cefc913"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\snapshot\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\snapshot\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\snapshot\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\seed\\snapshot\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\workspace\\compiled.json",
+      "sha256": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\workspace\\dataset.json",
+      "sha256": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\workspace\\schema.json",
+      "sha256": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\en\\template-revision\\workspace\\template.json",
+      "sha256": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\preparation.json",
+      "sha256": "9f6e73ee40236de2e4804ad3cefab88dd35312f8653e7bf8129d7cd80593f28c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\real-model-registration.json",
+      "sha256": "e3886547e0a8ad8d8bfeb16dd19d1361ff94402e372cca9626affef5dc6b8ba8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\content-baseline.json",
+      "sha256": "59cb7b1d0f6d7af08b5ec9f839387353911c3c2b756a397869aca5151a43daec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\controlled-initial\\candidates\\dataset.json",
+      "sha256": "b2f2a65d34e4d255beff50d7f6a5d22e13f1546054f0590667d116b725efe827"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\controlled-initial\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\feedback.md",
+      "sha256": "29e61548888c178b4e5dc2796e41d970153752eb2a439ba31f5c0ebbd35256a4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\policy.json",
+      "sha256": "1823caf8492f1541ca79b1b9ccc133f1072c5e4154ff32b20b88dda53ec6658d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\candidates\\dataset.json",
+      "sha256": "b2f2a65d34e4d255beff50d7f6a5d22e13f1546054f0590667d116b725efe827"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\docs\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\agent\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\candidates\\dataset.json",
+      "sha256": "b2f2a65d34e4d255beff50d7f6a5d22e13f1546054f0590667d116b725efe827"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\check.json",
+      "sha256": "21807df8197a106df13633659c3a2d17955e0f38de2f74a171fd2e277d29e12f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoint.json",
+      "sha256": "bfe7ba1975888b91a8947c86e7124e66626d382d8e134138c3b3894047e9d721"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\agent\\candidates\\dataset.json",
+      "sha256": "b2f2a65d34e4d255beff50d7f6a5d22e13f1546054f0590667d116b725efe827"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\agent\\outcome.json",
+      "sha256": "4a4efb9ace9967e94d55fa82aa02ff5d23b71e5b9046d6c3d1c3755a76b3274f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\basis.json",
+      "sha256": "2c754fd6b1886cb130f2383ce3fb29fef1b2f900c4c662678184867b6d897ab2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\record.json",
+      "sha256": "f65e0127b54238ab9c3b0a471e933f4e6e52ad16b22eeb96cf759e86378aa231"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\checkpoints\\33409aba-95ff-4039-b5f9-88d39d57c58d\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\execution-owner.json",
+      "sha256": "10a50d1fca571d7cf3502911e56015091961f978e39818c37f1cb28253f4ba94"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\execution.json",
+      "sha256": "1ed07ec4315d071bb3996052112db4f891aaeafb3ec9e621a691d3e838ca102d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\content-baseline.json",
+      "sha256": "ff696ff5b7cdd50ad03e7d0442dddbebd4b53030b9b99adbd318b47abdf42cca"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\materials\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\mcp.json",
+      "sha256": "b7a520b2ca935ae83fe388a408dceab66b7eb8cd1af18731c4a12e1d9199f43c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\outcome-context.json",
+      "sha256": "7db4e36478920c225c29790c162c4e9d1c35a99fdb51a6539b3d831f1f1c9e47"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\prompt.md",
+      "sha256": "f10a5ebb5c71a5516cff2e7e34f5fd1a6f2d09e680b3a651b1189a1ab500ccd1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\provenance.json",
+      "sha256": "433af93840df95b7015e76eca9dd6f75a11594673ffc67f531828f545874664c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\outcome.json",
+      "sha256": "7c7fd76466a7539b3c942da674766fd67c52857135fdfdc36b8601da03c2d6a2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\resources\\13207aa5-fe6f-498a-ad2e-cb79ccfb4e6b\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\round-start.json",
+      "sha256": "769d804aff7eb0ac4f8f044cc6f0bbdce3906dd319547a626786d33fe427c89d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\round.json",
+      "sha256": "e2862e608685ff5af03aad1abcf0af09a5e6bc39bde693e2e8273167e62c010c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\seed\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\workspace\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\dataset-extraction\\workspace\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\content-baseline.json",
+      "sha256": "0acd9368579a6592e517ff23537a4f110478663262dc0a37b8cf17da66737155"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\controlled-initial\\candidates\\definition.json",
+      "sha256": "f0c8bfa439557ef5962d9c1b88b670679782b556008c49e85ecddfaf3f7a8e45"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\controlled-initial\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\feedback.md",
+      "sha256": "88818a41cd06def02628d27b7a062636c713104579c4cecece925b411cbd0fd2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\policy.json",
+      "sha256": "b51d62e035fa7712b251f9a40180068b2726c884d2d9eff042cd967806f55b2a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\candidates\\definition.json",
+      "sha256": "f0c8bfa439557ef5962d9c1b88b670679782b556008c49e85ecddfaf3f7a8e45"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\docs\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\agent\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\candidates\\definition.json",
+      "sha256": "f0c8bfa439557ef5962d9c1b88b670679782b556008c49e85ecddfaf3f7a8e45"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\check.json",
+      "sha256": "e7ec5a7e0de68d8a6de316aa109c11e311ad95178122878c8a386a7593634e43"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\checkpoint.json",
+      "sha256": "7d20300ef151aa76cc8cd81f2e24ca28ed5259fcb147938d78da603c5e4b8a25"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\checkpoints\\8f5d83b7-107f-44c1-b601-421568fb5903\\agent\\candidates\\definition.json",
+      "sha256": "f0c8bfa439557ef5962d9c1b88b670679782b556008c49e85ecddfaf3f7a8e45"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\checkpoints\\8f5d83b7-107f-44c1-b601-421568fb5903\\agent\\outcome.json",
+      "sha256": "c9308af5dc87000dba3064f631be2be6ae73968a0464e6c1c51361143d6f90ff"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\checkpoints\\8f5d83b7-107f-44c1-b601-421568fb5903\\basis.json",
+      "sha256": "bc49b057b3cb46a1f8202b04353e7087425348f00b6c68af537e3967aedad3de"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\checkpoints\\8f5d83b7-107f-44c1-b601-421568fb5903\\record.json",
+      "sha256": "4012a062061d3d2a4b1abc2bdd96a62c939728bddee3e9645b0a8041ea0efd04"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\execution-owner.json",
+      "sha256": "0c8d5d9decf11897373e5d4f44d27d2146485b7a87c9b243e09cc7f72e21b025"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\execution.json",
+      "sha256": "804e5255d30f0e2749d8c3e0a6fedeb37cd028edf9fd078f1ff06fbea822d3c5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\content-baseline.json",
+      "sha256": "c11590bc96658f00351caf1f839d91254f68b6162efdd74397e2ea6baddb70f1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\materials\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\mcp.json",
+      "sha256": "145f6bae036859c18c51714edb703b111e3395bc713a67a3d79c59f3bdbfabd8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\outcome-context.json",
+      "sha256": "82341385263da5d902c13ae779fad4a1a53619c6b7c2b71b70c956cd4ecee344"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\prompt.md",
+      "sha256": "feea45169652e169c0c8765ffd97fda98b782889eaf400ab7de5ef8ebf43ec93"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\provenance.json",
+      "sha256": "9feb7fa7092e14a22692dd744e789926b86f91ffa3291d4cea9114dab1dc13a3"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\outcome.json",
+      "sha256": "f35d73a395c56fbef8aa2ffebea3f8b4a97cecc1445fa6f769eff691c9562046"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\resources\\6d75a1af-491c-4b7c-aa8b-569e60b07cab\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\round-start.json",
+      "sha256": "08d4f137503c256523cd3ba2a141e89b568258424de9e4ac3bcabc6bdf5d11bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\definition-extraction\\seed\\round.json",
+      "sha256": "7f01147bc9090db0533d7bb7e98cc84a4457175abc1edc29786b569d27eedd54"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\reference-workspace\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\reference-workspace\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\reference-workspace\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\reference.json",
+      "sha256": "3b729f2a115f1c5d166dbc8dc6bb0120e245f1e07f49b899d59f48cab6b15ff0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\controlled-initial\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\controlled-initial\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\feedback.md",
+      "sha256": "42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\policy.json",
+      "sha256": "17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\docs\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\docs\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\agent\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\check.json",
+      "sha256": "c76d76aa1ecb677aa8018c70fa8d37acbe915d60f6fe56722b972d7ccd5198a0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoint.json",
+      "sha256": "d45744be0b1cece3646dfebe08bf2d707c623efd7aac0fbc3fefdc504fa84519"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\agent\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\basis.json",
+      "sha256": "2032a1b960bfc4d5d44a3571ae22a518aa347ffd3c682c95d28ea2c090e983c6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\record.json",
+      "sha256": "bc29b70dc6abf84354f73d3299c38880c190497a4076a7a7fe1cd08b6268a17f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\reference-image",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\snapshot\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\checkpoints\\81276bf8-024e-4fc1-b67b-23b1ae47bd41\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\execution-owner.json",
+      "sha256": "eab35968f739869fcec3474ce1a3d8accc1f948c224d9ec4fe997c189c11eb93"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\execution.json",
+      "sha256": "526021e0923742345fc384cd561cc49914591b81c0242150fe618148a4ca8dbd"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\materials\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\materials\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\mcp.json",
+      "sha256": "2a96597b5a60f295f359626d3c9de21476d53fb56a691185d5deaeb6e1382391"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\outcome-context.json",
+      "sha256": "f18f26c0701a3bdc40a5ce1962cf119e10f24821164ec7f6bb2c699d6b584723"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\prompt.md",
+      "sha256": "64bf9702a2ad3005ba70e62a653024ddf01d15ffa9a1c408c1113ff4582d4d16"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\provenance.json",
+      "sha256": "9d96205562e6e329383a28ccf677d6afa112b0ee47afa0201aaaf3df246109bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\reference.json",
+      "sha256": "a0e7b39b6e7d685da588a472ee2c17b0475675e08d0f3b6e50f4e7907399e501"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\outcome.json",
+      "sha256": "480f5a78aa62bc57c0b7af959f11f32fd699363b248bceedf8c4bb1b66dd17ab"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\resources\\ddb65a8f-8d8d-43b4-8fca-dec2197e83fa\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\round-start.json",
+      "sha256": "4607c3fcd3b790cfaf79c4c4bc9e0633945aef1b6330d3ba0c97ddef8d59fe93"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\round.json",
+      "sha256": "f2779b66cbd696e66773a1a836956d2358fcbb33ddcde9a1d34c28735b07ee78"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\snapshot\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\seed\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\workspace\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\workspace\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-design\\workspace\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\controlled-initial\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\controlled-initial\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\feedback.md",
+      "sha256": "42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\policy.json",
+      "sha256": "17547be0158d404e3526a09209ee3c4c443766cd8973e1d0fc4f4710bb4cfc13"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\docs\\requirement.md",
+      "sha256": "42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\agent\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\check.json",
+      "sha256": "c5a09990598ddbd4e33e67c8bd447408b169d53e5bd5a5a0c185cc376bb717e5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoint.json",
+      "sha256": "ecdab0899a65423af1c0d04083ef8f7ef744a42da57ff5751da7ad3c324f108d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\agent\\candidates\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\agent\\outcome.json",
+      "sha256": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\basis.json",
+      "sha256": "a722a2219dd779123922246b978f1a220decf2cea535adb5f7bac76539c21c03"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\record.json",
+      "sha256": "6600d808f5d0d7ab6e8a3e62ead274a970d4ca9d128b0dd143f46485295c5ecd"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\reference-image",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\snapshot\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\checkpoints\\104f151d-2b6d-4333-9f30-a228948623db\\snapshot\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\execution-owner.json",
+      "sha256": "b4cb8a9be5d54ad95ab7819f4f95c6015321219f825d9d97a0b58cf51abfd78f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\execution.json",
+      "sha256": "fd18aeac1a8c21066bc0fe9baaa439fcc85b073d560b1fd4ca5dfde80b7dac18"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\brief.md",
+      "sha256": "861dc76aca2554c950d6cbea13fb60f7e20ab6250425509beda8c8723de9bee8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\materials\\requirement.md",
+      "sha256": "42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\mcp.json",
+      "sha256": "ec7f1996594df5ce9acb5dad8209eb832c226c009b37da30f08db657b0aefd61"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\outcome-context.json",
+      "sha256": "d9308ac5f49c734ddfe5cf1dbc4959e6cedbfa1bfa512cc56c04d8ed022a48a1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\prompt.md",
+      "sha256": "aae0727e419efeb93fb19bccd1136db07305a12950cc90320f4769bb806f5e4b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\provenance.json",
+      "sha256": "f565abed161ffe77f32c04172f9f32c16479ab260b7cb52a61ededa81a183938"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\reference.json",
+      "sha256": "a0e7b39b6e7d685da588a472ee2c17b0475675e08d0f3b6e50f4e7907399e501"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\sample.png",
+      "sha256": "4d48d46954571e7ba8f596512609f31088e522a19371d0734cd117d88d8ef0b1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\logs\\stream.jsonl",
+      "sha256": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\outcome.json",
+      "sha256": "4c80faa0df4a5b2fac38e057e6f6c36990342a152c486ffaddf38f9d8baaf8c0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\request.json",
+      "sha256": "0df59ac0d19bd789a4d164b6270f07008ad8377868cd7913c7c819c87cc4d611"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\requirement.md",
+      "sha256": "42c7c25eef2b1aab10d811cea37e4eec0986d0d9366e82b15bb4cc25680d37ec"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\resources\\521384ef-b006-43eb-9e57-7499e3c837a7\\test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\round-start.json",
+      "sha256": "853a23f26a4b0914c36f96930f4a5a1eff0db3276b897449024317dcb9691532"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\round.json",
+      "sha256": "b518ae60837747f184b0ebed1e68a71add548da36d22a7a6c98adc20ca85af14"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\snapshot\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\snapshot\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\snapshot\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\seed\\snapshot\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\workspace\\compiled.json",
+      "sha256": "a1aa090ec578445da4a9e0b016c6945ef1f31dce55a302d4c896d35bd7f3d812"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\workspace\\dataset.json",
+      "sha256": "8ab5540f458f1e9e056f9f8918c540f18cbf2220ca9ffbaaa0ad8d1738136846"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\workspace\\schema.json",
+      "sha256": "49daa1654ebdfa403b6a5497af1952a8962c6b2872e817629d4a8fed67346ae9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\inputs\\zh\\template-revision\\workspace\\template.json",
+      "sha256": "000469f2c2dc781e712068f93ff5dc8addb68bb1459d5fa826470e983cb60656"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\plan.json",
+      "sha256": "a2d854510b4f666842d56a1dedb1910af3646d490a1ef3dd67bde79a5c2b85f8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\font-subsets\\LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\font-subsets\\README.md",
+      "sha256": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\font-subsets\\TestSubset-Bold.otf",
+      "sha256": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\font-subsets\\TestSubset-Medium.otf",
+      "sha256": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\font-subsets\\TestSubset-Regular.otf",
+      "sha256": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\fonts\\SourceHanSansCN-Bold.otf",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\fonts\\SourceHanSansCN-Heavy.otf",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\fonts\\SourceHanSansCN-Medium.otf",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\fonts\\SourceHanSansCN-Regular.otf",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\icon-hospital.png",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\icon-metro.png",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\landmark-1.png",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\landmark-2.png",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\landmark-3.png",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\landmark-4.png",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\m402\\route-no-m402.png",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\README.md",
+      "sha256": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\test\\quadrants.jpg",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\test\\quadrants.png",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\test\\quadrants.webp",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\images\\test\\vector.svg",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\resources\\resources.json",
+      "sha256": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+    }
+  ]
+}

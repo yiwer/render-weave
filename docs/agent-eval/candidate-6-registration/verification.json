@@ -1,0 +1,255 @@
+{
+  "format": "renderweave-candidate6-registration-verification/1",
+  "verifiedAt": "2026-10-26T04:30:17.168Z",
+  "candidate": {
+    "directory": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6",
+    "id": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+    "manifestSha256": "6caa67bba49bf23db7b9b2326701a829260eeb517ed625ecd91d1c735d6d712f"
+  },
+  "registrations": {
+    "feedback": {
+      "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\registration.json",
+      "sha256": "fa44cde4782ea604978c07aef4f0ba9cced83410420e8dc2940d8680894ddc2a"
+    },
+    "originalFour": {
+      "file": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\registration.json",
+      "sha256": "598bdc4c40f67ba9ed1a0b08449c37a887cd96d996efed2cde21090ff8874d28"
+    }
+  },
+  "bindings": {
+    "feedback": {
+      "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding",
+      "id": "sha256:528117b478d6b44833ae57217ee94861b1dc4c65c22ee552fa5377ebd9b25643",
+      "sha256": "5b71ba3fe3d44cc1890067935b955b2ab952f93544599352e769717812115fec"
+    },
+    "originalFour": {
+      "directory": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6",
+      "id": "sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a",
+      "sha256": "010c733ff55dafa2d4c03d01d56e60da390183cfec24e16615268640a10cff92"
+    }
+  },
+  "experiments": {
+    "feedback": "sha256:e094c67782b03026354fde7da533b07e104b00e8897053104f5c9bdb092e7c97",
+    "originalFour": "sha256:4062145cb5e1909135878218991f1e1b2b11b2a8dedd9b58409f08a66855de4a"
+  },
+  "sourceCommit": "41ae798cf509afb328dbc58137ad44429fe0dbd9",
+  "generatorSha256": "185c10cb3cc712ef2d404677b1f7b03d50d135c906d07beadc2daf3939607536",
+  "launcher": {
+    "file": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-prefreeze-fixes\\render-weave\\docs\\agent-eval\\candidate-dispatch.mjs",
+    "sha256": "ba5ddd036794323b8a178acdcdca6834d1e12b223e1a37e0c84803e85cfa8357"
+  },
+  "preflights": [
+    {
+      "name": "feedback",
+      "segment": 1,
+      "command": "D:\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\.codex\\worktrees\\harness-prefreeze-fixes\\render-weave\\docs\\agent-eval\\candidate-dispatch.mjs",
+        "--registration",
+        "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\registration.json",
+        "--segment",
+        "1",
+        "--preflight"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "feedback",
+      "segment": 2,
+      "command": "D:\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\.codex\\worktrees\\harness-prefreeze-fixes\\render-weave\\docs\\agent-eval\\candidate-dispatch.mjs",
+        "--registration",
+        "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\registration.json",
+        "--segment",
+        "2",
+        "--preflight"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "original-four",
+      "segment": 1,
+      "command": "D:\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\.codex\\worktrees\\harness-prefreeze-fixes\\render-weave\\docs\\agent-eval\\candidate-dispatch.mjs",
+        "--registration",
+        "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\registration.json",
+        "--segment",
+        "1",
+        "--preflight"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "original-four",
+      "segment": 2,
+      "command": "D:\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\.codex\\worktrees\\harness-prefreeze-fixes\\render-weave\\docs\\agent-eval\\candidate-dispatch.mjs",
+        "--registration",
+        "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\registration.json",
+        "--segment",
+        "2",
+        "--preflight"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "feedback": {
+    "planned": 16,
+    "notRun": 16,
+    "seedFiles": 450,
+    "materialReferences": 40,
+    "resources": 22,
+    "preservedInputFiles": 570
+  },
+  "originalFour": {
+    "businessObservations": 8,
+    "stages": 10,
+    "notRunStages": 10,
+    "preparationFiles": 52,
+    "sourceFiles": 28,
+    "preservedInputFiles": 89
+  },
+  "preservation": {
+    "checkedFiles": 7887,
+    "oldTrees": [
+      {
+        "directory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-5",
+        "files": 576,
+        "directories": 173
+      },
+      {
+        "directory": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-5",
+        "files": 4,
+        "directories": 0
+      }
+    ],
+    "changed": [],
+    "oldCompletePathSetsUnchanged": true
+  },
+  "prohibitedPaths": [
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations",
+      "exists": false
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\evaluation",
+      "exists": false
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\activation.json",
+      "exists": false
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\activation.json",
+      "exists": false
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate6-execution",
+      "exists": false
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\endpoint-authorization.json",
+      "relative": "endpoint-authorization.json",
+      "bytes": 1093,
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\input-preservation.candidate-6.json",
+      "relative": "input-preservation.candidate-6.json",
+      "bytes": 21915,
+      "sha256": "367e4551dd9c25740afeaf6eb6938188aca01b5cab840ac2405ac8901411819e"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\registration.json",
+      "relative": "registration.json",
+      "bytes": 57939,
+      "sha256": "598bdc4c40f67ba9ed1a0b08449c37a887cd96d996efed2cde21090ff8874d28"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\endpoint-authorization.json",
+      "relative": "endpoint-authorization.json",
+      "bytes": 1093,
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\input-evidence.candidate-6.json",
+      "relative": "input-evidence.candidate-6.json",
+      "bytes": 71993,
+      "sha256": "98ed5616cc26d84c51f52fbea31ae2d53cb2b5aee090c14502f979d6bd453524"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\input-preservation.candidate-6.json",
+      "relative": "input-preservation.candidate-6.json",
+      "bytes": 147383,
+      "sha256": "d9b41b783bc888a880346a74613d2c904950ca8d7bf33d59c099a1911c931931"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\registration.json",
+      "relative": "registration.json",
+      "bytes": 36868,
+      "sha256": "fa44cde4782ea604978c07aef4f0ba9cced83410420e8dc2940d8680894ddc2a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\before.json",
+      "relative": "before.json",
+      "bytes": 2080034,
+      "sha256": "1fbf4f970aaeec2db997216eb1a4213a97ea07e1de51a5a92907c7cc1ab62a88"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\feedback-1.stderr.log",
+      "relative": "feedback-1.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\feedback-1.stdout.log",
+      "relative": "feedback-1.stdout.log",
+      "bytes": 489,
+      "sha256": "16dbcc238006dd9ac7b6c0cf9e42b167768e32f24ca561045d781489df5daf61"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\feedback-2.stderr.log",
+      "relative": "feedback-2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\feedback-2.stdout.log",
+      "relative": "feedback-2.stdout.log",
+      "bytes": 489,
+      "sha256": "e31283e8ec31b3ce8de0f81b61a1d8893ff6da74f94ddd4d9211e7071b230ee2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\original-four-1.stderr.log",
+      "relative": "original-four-1.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\original-four-1.stdout.log",
+      "relative": "original-four-1.stdout.log",
+      "bytes": 489,
+      "sha256": "118299b2d3e01c4d8d5b3c1b094501df0bac5c0fb9cb0b981aa8b96e573bb6de"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\original-four-2.stderr.log",
+      "relative": "original-four-2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-candidate6-registration-validation\\original-four-2.stdout.log",
+      "relative": "original-four-2.stdout.log",
+      "bytes": 489,
+      "sha256": "70a91df25bfd54102825e4c843e3d7936cfe4503ba5df6cb03e5373e6d714331"
+    }
+  ],
+  "modelCalls": 0,
+  "bindingsCreated": 0,
+  "activationCreated": false
+}
