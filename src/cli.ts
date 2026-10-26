@@ -424,6 +424,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems), ...check.assessment.render.problems], io);
     if (record.run.error) io.stderr(`${record.run.error}\n`);
     if (result.draft) io.stderr(`已保存中断草稿 ${result.draft}：可用 agent review 查看，完成度未知，不能批准或应用\n`);
+    if (result.cleanup) io.stderr(`${result.cleanup.detail}；成果已提交，本轮后代进程可能仍在运行，告警见 cleanup.json\n`);
     io.stdout(`${JSON.stringify({
       round: result.roundDir, number: record.round, ...(record.inputs.previous ? { previous: record.inputs.previous.dir } : {}), verdict: check.verdict,
       candidates: check.candidates.map((candidate) => ({
@@ -435,6 +436,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       assessment: check.assessment,
       ...(record.run.stopped ? { stopped: record.run.stopped } : {}),
       ...(result.save ? { save: result.save } : {}),
+      ...(result.cleanup ? { cleanup: result.cleanup } : {}),
       usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
     }, null, 2)}\n`);
     if (check.verdict === 'unqualified') io.stderr('成果不合格：问题清单见 check.json；是否带着问题重跑由你决定，不会自动重试\n');

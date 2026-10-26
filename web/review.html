@@ -153,6 +153,7 @@ function executionPanel(execution) {
   const statuses = { running: '运行中', completed: '执行完成', failed: '失败', stopped: '已停止', interrupted: '已中断', pendingRecovery: '待恢复确认' };
   return h('section', {}, h('h2', {}, `轮次状态：${phases[execution.phase]} · ${statuses[execution.status]}`),
     h('p', {}, execution.committed ? '最终记录已提交。技术、内容/视觉和人工审核结论分别见下方；执行完成不会自动批准或应用。' : execution.diagnostics.join('；')),
+    execution.committed && execution.diagnostics.length > 0 && h('p', {}, `告警：${execution.diagnostics.join('；')}`),
     execution.start && h('p', {}, `第 ${execution.start.round} 轮 · ${execution.start.task} · 输入身份 ${execution.start.inputIdentity}`),
     checkpoint && h('p', {}, `完整检查点已保存：${checkpoint.id} · 内容身份 ${checkpoint.contentIdentity}。来源：宿主恢复候选；可用 --from 开新轮次，不能直接批准或应用。`),
     checkpoint && h('details', {}, h('summary', {}, '已检查的集合与问题'), h('pre', {}, json({ files: checkpoint.files, check: checkpoint.check }))),

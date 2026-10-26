@@ -170,6 +170,41 @@ it.skipIf(process.platform === 'win32')('CLI SIGTERM 是用户取消，终止本
   } finally { await terminate(child); await closed; }
 });
 
+async function slowCleanup(name: string, delayMs: string) {
+  const f = await prepared(name);
+  const child = spawn(process.execPath, ['--import', pathToFileURL(join(repoRoot, 'test/support/slow-taskkill.mjs')).href, join(repoRoot, 'dist/bin.js'), ...f.args],
+    { cwd: repoRoot, env: { ...process.env, RW_BUDGET_TEST_KEY: 'test-key', RW_SLOW_TASKKILL_MS: delayMs }, windowsHide: true, stdio: 'pipe' });
+  let output = '', errors = ''; child.stdout!.on('data', bytes => { output += bytes; }); child.stderr!.on('data', bytes => { errors += bytes; });
+  return { f, child, closed: once(child, 'close'), output: () => output, errors: () => errors };
+}
+it.skipIf(process.platform !== 'win32')('taskkill 8 秒才确认时，已提交的成功轮次照常交回，不记清理告警', async () => {
+  const run = await slowCleanup('slow-cleanup', '8000');
+  try {
+    const result = await Promise.race([run.closed, delay(40000).then(() => undefined)]);
+    expect(result, run.errors()).toBeDefined(); expect(result![0], run.errors()).toBe(0);
+    const output = JSON.parse(run.output());
+    expect(output.verdict).toBe('qualified'); expect(output.cleanup).toBeUndefined();
+    await expect(readFile(join(run.f.out, 'cleanup.json'))).rejects.toThrow();
+  } finally { await terminate(run.child); await run.closed; }
+}, 50000);
+it.skipIf(process.platform !== 'win32')('taskkill 一直不返回时，成功轮次保留成果并记清理告警，命令有界退出', async () => {
+  const run = await slowCleanup('hung-cleanup', 'hang'), started = Date.now();
+  try {
+    const result = await Promise.race([run.closed, delay(70000).then(() => undefined)]);
+    expect(result, run.errors()).toBeDefined(); expect(result![0], run.errors()).toBe(0);
+    expect(Date.now() - started).toBeLessThan(70000);
+    const output = JSON.parse(run.output());
+    expect(output).toMatchObject({ verdict: 'qualified', cleanup: { confirmed: false } });
+    expect(run.errors()).toContain('本轮进程树清理未确认');
+    const receipt = JSON.parse(await readFile(join(run.f.out, 'cleanup.json'), 'utf8'));
+    expect(receipt).toMatchObject({ format: 'renderweave-cleanup/1', events: [{ after: 'result' }] });
+    const review = await readReview(run.f.out);
+    expect(review.execution).toMatchObject({ status: 'completed', committed: true });
+    expect(review.execution?.diagnostics.join('\n')).toContain('本轮进程树清理未确认');
+    expect(review.view?.round.source).toBe('agent');
+  } finally { await terminate(run.child); await run.closed; }
+}, 80000);
+
 it('业务宿主被外部强退时明确诊断，不冒充已清理或完成', async () => {
   const f = await prepared('unexpected-host');
   f.args[f.args.indexOf('--claude-args') + 1] = JSON.stringify([join(repoRoot, 'test/support/budget-claude.mjs'), 'crash-host']);

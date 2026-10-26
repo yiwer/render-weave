@@ -813,3 +813,7 @@ M307补记（2026-10-23）：用户查看混合站牌局部对照后评价“这
 用户对 out/harness-original38-english-tfl161-preparation-02/REVIEW.md 明确回复“核准此具体材料包（推荐）”。核准固定 input-manifest SHA 0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4 与 package-manifest SHA 6ffbce6d52a9a64585045d7dad9af38da4df13a6616b22fa1b621414bed937d7：TfL161第13页页首、14个显示关键点、39项参考、已明示替代字体/图标，1次模板设计，存在真实缺陷时最多接续1次，各80轮/1小时。模型看到未经修改的整页PNG，目标范围仍为页首1654×500像素。
 
 核准材料不等于审核实际成果，原包封存时pending-user字段保持原样，核准记录单独追加。用户随后明确“目前额度还没有恢复，请做其他能完成的工作先”，因此仅离线绑定候选5、预检与准备39项空表，不调用/探测模型。既有M329端点授权保留；恢复执行时仍核验身份及停止能力，不覆盖失败、不扩大预算。原38与21、后续留出及真人走查的关闭条件不变。见[核准记录](../../.scratch/agent-template-authoring/original38-harness/english-candidate-5-offline/material-approval.json)。
+
+### M331：进程树清理未确认不丢成果、不记模型失败（2026-10-25）
+
+用户决定修监督器收尾缺陷：原先确认 `taskkill /T` 与宿主退出各只等 5 秒，本机空闲时 taskkill 就要 3.5–4.0 秒；超时后已提交的成功轮次被丢弃，命令报错后还因宿主仍连着 IPC 而一直不退出。现在两项期限各 30 秒；确认不了时监督器写 `cleanup.json`、断开宿主，命令有界退出。成功轮次的最终记录在清理之前已提交，成果照常交回并带告警；停止时不能证明原宿主不再写入，不运行保存进程，以 1 退出。评估把停止后清理未确认（没有 `round.json`、只有 `cleanup.json`）记 `invalid`（`kind: "host"`），不重试、继续派发；回执中的停止原因是硬额度时仍按额度停止派发。见[整轮预算](../agent-budgets.md#可执行的停止边界)与[Agent 评估](../agent-eval.md)。

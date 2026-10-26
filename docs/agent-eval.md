@@ -47,15 +47,16 @@ key 由 `renderweave agent run` 从环境变量读取（缺省 `OPEN_CODE_API_KE
 
 ## 上游错误与续跑
 
-模型服务的报错不是模型没做出来（票据 21）。评估读每轮 `round.json` 的 `run.error` 与发起失败的错误文字，大小写不敏感地分三类：
+模型服务的报错不是模型没做出来（票据 21）。评估读每轮 `round.json` 的 `run.error` 与发起失败的错误文字，大小写不敏感地分四类：
 
 | 分类 | 字样 | 处理 |
 |---|---|---|
 | 瞬时 | `500`、`502`、`503`、`529`、`overloaded`、`ECONNRESET`、`ETIMEDOUT`、`socket hang up` | 在新的唯一尝试目录再次发起这一轮，先前原件保留，最多 2 次，间隔 60、180 秒。366 单元里已完成、已应用的第一轮与工作区不动。重试用完仍是瞬时错误时，该单元记 `invalid` |
 | 额度 | `429`、`rate_limit`（也认 `rate limit`）、`quota`、`usage limit` | 不重试，该单元记 `invalid`；不再发起队列里还没开始的单元，已在跑的单元跑完。OpenCode Go 的 429 是 5 小时额度窗口，各模型共用一个池（M231），几分钟的退避等不到它恢复 |
+| 宿主清理 | `本轮进程树清理未确认`；停止（超时、取消、停滞）后没有 `round.json`、只有轮次目录的 `cleanup.json` | 不重试，该单元记 `invalid`（`kind: "host"`），继续派发其他单元。监督器没能确认原宿主及其后代已结束，按规则不能代它保存停止结果，这一轮没有可评分的观测，不是模型没做出来。回执里的停止原因是硬额度时仍按额度处理（M331） |
 | 其他 | 400 参数错误、缺 key、执行器无法启动等 | 照旧：不重试，算未达线 |
 
-两类字样都有时按额度算。成果合格的轮次不看错误：模型已经交回了。500 的原文是 Claude Code 自己重试之后才报出来的，例如 `API Error: 500 status code (no body). This is a server-side issue, usually temporary`，所以外层只重试 2 次。
+两类字样都有时按额度算。成功轮次的最终记录在进程树清理之前已经提交：清理未确认只在 `cleanup.json` 与命令输出里留告警，照常评分。成果合格的轮次不看错误：模型已经交回了。500 的原文是 Claude Code 自己重试之后才报出来的，例如 `API Error: 500 status code (no body). This is a server-side issue, usually temporary`，所以外层只重试 2 次。
 
 **门槛与完整性**：`invalid` 与 `not-run` 都是缺失的有效观测，不能跳过后宣称全计划通过。`gate.completeness` 分列计划数、通过、失败、无效、未运行和是否完整。
 

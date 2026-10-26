@@ -12,7 +12,7 @@ import type { RoundInputs, RoundRecord, RoundUsage } from './run.js';
 import type { RoundStop } from './supervision.js';
 import { stoppedMessage } from './stopped-round.js';
 
-const OWNER = 'execution-owner.json', STATE = 'execution.json', START = 'round-start.json';
+const OWNER = 'execution-owner.json', STATE = 'execution.json', START = 'round-start.json', CLEANUP = 'cleanup.json';
 const PHASES = ['preparing', 'executing', 'finalizing', 'completed'];
 const STATUSES = ['running', 'completed', 'failed', 'stopped'];
 export type ExecutionPhase = 'preparing' | 'executing' | 'finalizing' | 'completed';
@@ -35,6 +35,14 @@ interface ExecutionRecord {
 export interface RoundExecution extends ExecutionRecord {
   readonly stop?: { readonly reason: RoundStop; readonly usage: RoundUsage; readonly save: 'complete' | 'incomplete' };
   readonly start?: RoundStart; readonly committed: boolean; readonly diagnostics: readonly string[];
+}
+
+/** 监督器没能确认本轮进程树已结束：after 是确认失败时所处的收尾步骤，停止时另记停止原因（此时停止结果没有保存）。 */
+export interface CleanupEvent { readonly at: string; readonly after: 'result' | 'error' | 'stop' | 'save'; readonly detail: string; readonly stop?: RoundStop }
+
+/** 清理告警单独成文件，只由监督器写；不改已提交的最终记录与执行状态，读取时作为诊断列出。 */
+export async function writeCleanupReceipt(dir: string, events: readonly CleanupEvent[]): Promise<void> {
+  await writeAtomicJson(join(dir, CLEANUP), { format: 'renderweave-cleanup/1', events });
 }
 
 export async function writeStopReceipt(dir: string, reason: RoundStop, usage: RoundUsage, ownerPid: number): Promise<void> {
@@ -173,6 +181,13 @@ export async function readExecution(dir: string): Promise<{ execution?: RoundExe
         status = 'stopped'; diagnostics.push(`${stoppedMessage(stop.reason)}；本地保存未完成，只有已提交检查点可接续`);
       }
     } catch { invalid('stop.json', '停止凭据损坏或拥有者身份不匹配'); }
+  }
+  if (await exists(join(dir, CLEANUP))) {
+    try {
+      const value = JSON.parse(await readFile(join(dir, CLEANUP), 'utf8'));
+      if (value.format !== 'renderweave-cleanup/1' || !Array.isArray(value.events) || value.events.some((event: unknown) => !isRecord(event) || typeof event.detail !== 'string')) throw new Error();
+      for (const event of value.events as CleanupEvent[]) diagnostics.push(`${event.detail}；本轮后代进程可能仍在运行`);
+    } catch { diagnostics.push('进程树清理回执损坏，无法确认本轮后代进程已结束'); }
   }
   return { execution: { ...state, status, ...(start ? { start } : {}), ...(stop ? { stop } : {}), committed, diagnostics }, problems };
 }

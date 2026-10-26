@@ -3,6 +3,7 @@ export {classifyError, type ErrorKind} from '../../src/agent/execution-error.js'
 import {readRoundMetrics as summarize, type RoundMetrics as RoundSummary} from '../../src/agent/round-metrics.js';
 export {countPersisted} from '../../src/agent/round-metrics.js';
 import { agentProvenance } from '../../src/agent/provenance.js';
+import type { CleanupEvent } from '../../src/agent/execution.js';
 /**
  * 评估的编排（第三阶段票据 08、验收 A10）：经产品路径（renderweave agent 与 renderweave mcp）发起各场景的轮次，
  * 评分并与通过线对照；每个场景预登记的全部次数达线才算通过。报告只存摘要，不存图片与日志。
@@ -11,6 +12,7 @@ import { agentProvenance } from '../../src/agent/provenance.js';
  * 这只是评估中的模拟，产品本身不自动审核、不自动应用。
  *
  * 上游错误（票据 21）：模型服务的 500/529 与连接中断按轮次重试；额度窗口的 429 停止派发剩下的单元。
+ * 宿主没能确认本轮进程树已结束、因而没有保存停止结果时，同样拿不到观测，不重试。
  * 仍拿不到有效结果的单元记为 invalid：它不是一次观测，既不算达线，也不算模型没做出来。
  */
 import { spawn } from 'node:child_process';
@@ -99,8 +101,8 @@ export interface RetryOptions {
 
 /** 单元拿不到有效结果的原因。 */
 export interface InvalidReason {
-  /** transient：瞬时错误重试用完；quota：额度限制，不重试。 */
-  readonly kind: 'transient' | 'quota';
+  /** transient：瞬时错误重试用完；quota：额度限制，不重试；host：停止后宿主进程树清理未确认，停止结果没有保存，不重试。 */
+  readonly kind: 'transient' | 'quota' | 'host';
   readonly task: AgentTaskId;
   readonly error: string;
 }
@@ -302,7 +304,7 @@ async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOpti
       await (context.sleep ?? wait)(RETRY_DELAYS_MS[attempt]!);
       continue;
     }
-    if (kind === 'transient' || kind === 'quota') throw new InvalidUnit({ kind, task: spec.task, error: error! });
+    if (kind === 'transient' || kind === 'quota' || kind === 'host') throw new InvalidUnit({ kind, task: spec.task, error: error! });
     if (thrown !== undefined) throw thrown;
     return;
   }
@@ -314,12 +316,21 @@ async function launchRound(spec: RoundSpec, launch: Launcher, context: RetryOpti
  */
 async function roundError(dir: string): Promise<{ kind: ErrorKind; error: string } | null | undefined> {
   let record: RoundRecord;
-  try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; } catch { return undefined; }
+  try { record = JSON.parse(await readFile(join(dir, 'round.json'), 'utf8')) as RoundRecord; } catch { return cleanupError(dir); }
   if (!record || !record.run || !['qualified', 'unqualified'].includes(record.verdict)) return undefined;
   if (record.run.stopped?.reason === 'hardQuota') return { kind: 'quota', error: record.run.error ?? `硬额度耗尽（${record.run.stopped.limit}）` };
   const error = record.run.error;
   const kind = error !== undefined ? classifyError(error) : 'other';
   return error !== undefined && kind !== 'other' ? { kind, error } : null;
+}
+
+/** 停止时宿主进程树清理未确认：保存进程没有运行，没有轮次记录，按清理回执记宿主错误；硬额度停止仍按额度停止派发。 */
+async function cleanupError(dir: string): Promise<{ kind: ErrorKind; error: string } | undefined> {
+  let events: readonly CleanupEvent[];
+  try { events = (JSON.parse(await readFile(join(dir, 'cleanup.json'), 'utf8')) as { events: CleanupEvent[] }).events; } catch { return undefined; }
+  const stopped = Array.isArray(events) ? events.find(event => event.after === 'stop') : undefined;
+  if (!stopped) return undefined;
+  return { kind: stopped.stop?.reason === 'hardQuota' ? 'quota' : 'host', error: stopped.detail };
 }
 
 async function readUpstream(unit: string): Promise<UpstreamRecord> {
@@ -342,7 +353,8 @@ function wait(ms: number): Promise<void> {
 }
 
 function invalidText(reason: InvalidReason): string {
-  return `${AGENT_TASKS[reason.task].name}一轮${reason.kind === 'quota' ? '遇到额度限制' : '上游瞬时错误重试用完'}：${reason.error}`;
+  const cause = reason.kind === 'quota' ? '遇到额度限制' : reason.kind === 'host' ? '宿主进程树清理未确认' : '上游瞬时错误重试用完';
+  return `${AGENT_TASKS[reason.task].name}一轮${cause}：${reason.error}`;
 }
 
 /** 按已有的轮次目录评分；重新评分（--rescore）也用它，发起阶段的失败从 launch-failures.json 读回，上游错误从 upstream-errors.json 读回。 */

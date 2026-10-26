@@ -3,6 +3,7 @@ import {spawn} from 'node:child_process';
 import {mkdtemp, mkdir, readFile, readdir, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {readReview} from '../src/index.js';
 import {repoRoot, resourcesDir} from './support/fixtures.js';
 
@@ -21,10 +22,10 @@ beforeAll(async () => {
     '--claude', process.execPath, '--claude-args', JSON.stringify([join(repoRoot, 'test/support/fake-usage-claude.mjs'), preset, usage])];
 });
 afterAll(async () => {await rm(root, {recursive: true, force: true});});
-async function cli(selected = args) {
+async function cli(selected = args, env: Record<string, string> = {}) {
   return new Promise<{code: number | null; stdout: string; stderr: string}>(done => {
     const child = spawn(process.execPath, [join(repoRoot, 'node_modules/tsx/dist/cli.mjs'), ...selected], {
-      cwd: repoRoot, windowsHide: true, env: {...process.env, RW_ATTEMPTS_KEY: 'offline-key'}, stdio: ['ignore', 'pipe', 'pipe']});
+      cwd: repoRoot, windowsHide: true, env: {...process.env, RW_ATTEMPTS_KEY: 'offline-key', ...env}, stdio: ['ignore', 'pipe', 'pipe']});
     let stdout = '', stderr = '';
     child.stdout.on('data', chunk => {stdout += String(chunk);}); child.stderr.on('data', chunk => {stderr += String(chunk);});
     child.on('close', code => done({code, stdout, stderr}));
@@ -89,4 +90,20 @@ it('评估宿主被强退后保留已退出尝试，补跑保留此前用量与�
     for (const pid of held ? [held.pid, held.host] : []) {try {process.kill(pid, 'SIGKILL');} catch { /* 已退出 */ }}
     await closed;
   }
+}, 90000);
+
+it.skipIf(process.platform !== 'win32')('停止后宿主进程树清理未确认：单元记 invalid（host），不算模型未达线', async () => {
+  const selected = [...args];
+  for (const [flag, value] of [['--out', join(root, 'cleanup')], ['--reports', join(root, 'cleanup-reports')], ['--label', 'cleanup'], ['--jobs', '1']] as const)
+    selected[selected.indexOf(flag) + 1] = value;
+  const commandIndex = selected.indexOf('--claude-args') + 1;
+  selected[commandIndex] = JSON.stringify([...JSON.parse(selected[commandIndex]!), '', 'hold:' + join(root, 'cleanup-held.json')]);
+  const result = await cli([...selected, '--repetitions', '1-1', '--timeout-ms', '1500'], {
+    NODE_OPTIONS: `--import=${pathToFileURL(join(repoRoot, 'test/support/slow-taskkill.mjs')).href}`, RW_SLOW_TASKKILL_MS: 'hang'});
+  expect(result.code, result.stdout + result.stderr).toBe(3);
+  const report = JSON.parse(await readFile(/^报告：(.+)$/m.exec(result.stdout)![1]!.trim(), 'utf8'));
+  expect(report.gate.status).toBe('incomplete');
+  const first = report.results.find((unit: {repetition: number}) => unit.repetition === 1);
+  expect(first).toMatchObject({status: 'invalid', failures: [], invalid: {kind: 'host', task: 'definition-extraction'}});
+  expect(first.invalid.error).toContain('本轮进程树清理未确认');
 }, 90000);
