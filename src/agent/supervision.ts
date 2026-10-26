@@ -19,7 +19,7 @@ export interface HostControl { ready(value: PreparedRound): Promise<void>; stop(
 
 /** 没能确认本轮进程树已全部结束。成果是否已提交，由调用方按所处的收尾步骤判断。 */
 export class TreeCleanupError extends Error {
-  constructor(readonly detail: string) { super(`本轮进程树清理未确认：${detail}`); }
+  constructor(readonly detail: string, readonly receiptPersisted = false) { super(`本轮进程树清理未确认：${detail}`); }
 }
 
 export async function terminateOwnedTree(child: ChildProcess, requireLiveRoot = false): Promise<void> {
@@ -73,12 +73,17 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
       release(target);
       if (roundDir) {
         cleanupEvents.push({ at: new Date().toISOString(), after, detail: error.message, ...(given.stop ? { stop: given.stop } : {}) });
-        await writeCleanupReceipt(roundDir, cleanupEvents);
+        try { await writeCleanupReceipt(roundDir, cleanupEvents); }
+        catch (receiptError) {
+          // 诊断写入失败不能遮住已提交成果，也不能抹掉停止原因或声称回执已保存。
+          return new TreeCleanupError(`${error.detail}；清理回执未保存：${safe.text(receiptError instanceof Error ? receiptError.message : String(receiptError))}`);
+        }
+        return new TreeCleanupError(error.detail, true);
       }
       return error;
     }
   };
-  const warned = (value: AgentRunResult, error: TreeCleanupError | undefined): AgentRunResult => error ? { ...value, cleanup: { confirmed: false, detail: error.message } } : value;
+  const warned = (value: AgentRunResult, error: TreeCleanupError | undefined): AgentRunResult => error ? { ...value, cleanup: { confirmed: false, detail: error.message, receiptPersisted: error.receiptPersisted } } : value;
   return new Promise<AgentRunResult>((resolve, reject) => {
     const cancel = () => { void stop({ reason: 'cancelled' }).catch(reject); };
     const close = () => { if (timer) clearTimeout(timer); options.signal?.removeEventListener('abort', cancel); };
@@ -89,7 +94,7 @@ export async function superviseRound(options: AgentRunOptions): Promise<AgentRun
       stopping = true; close(); const stopStarted = performance.now();
       const unconfirmed = await cleanup(child, 'stop', { requireLiveRoot: true, stop: reason });
       // 不能确认原宿主及其后代已结束时，保存进程不能代它提交停止结果。
-      if (unconfirmed) { reject(new TreeCleanupError(`${unconfirmed.detail}；${stoppedMessage(reason)}，未能保存停止结果`)); return; }
+      if (unconfirmed) { reject(new TreeCleanupError(`${unconfirmed.detail}；${reason.reason === 'hardQuota' ? 'hardQuota：' : ''}${stoppedMessage(reason)}，未能保存停止结果`, unconfirmed.receiptPersisted)); return; }
       if (!prepared) { reject(new Error('轮次在固定输入完成前停止；仅保留准备诊断')); return; }
       const usage = { ...knownUsage, wallMs: Date.now() - started };
       const saver = host();

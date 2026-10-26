@@ -82,6 +82,10 @@ export function cliLauncher(runtime: RuntimeOptions = {}): Launcher {
     const result = await execute(process.execPath, args);
     await writeFile(`${spec.out}.log`, `${result.stdout}\n${result.stderr}`);
     if (result.code !== 0 && result.code !== 1) throw new Error(`发起${AGENT_TASKS[spec.task].name}失败（退出码 ${String(result.code)}）：${result.stderr.trim()}`);
+    // 记录都没能写出时仍须保留宿主错误；否则硬额度会丢失、队列会继续派发。
+    // 已保存成果或清理回执仍沿用 roundError 的既有分类与评分。
+    if (result.code === 1 && !await exists(join(spec.out, 'round.json')) && !await exists(join(spec.out, 'cleanup.json')))
+      throw new Error(result.stderr.trim() || `发起${AGENT_TASKS[spec.task].name}失败（退出码 1），没有轮次记录或清理回执`);
   };
 }
 

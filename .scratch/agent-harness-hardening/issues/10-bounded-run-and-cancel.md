@@ -34,3 +34,12 @@
 - Linux Node 22.23.3，镜像 `renderweave-service-test:local`，使用 `--init` 回收强退后的孤儿；只读挂载本工作树到 `/source`，排除 `node_modules`、`service/node_modules`、`.git`、`out`、`outside_context` 后复制到已有依赖的 `/app`，重新 build。独立集成者对最新冻结10加11进程身份夹具运行 `test/agent-candidate-selection.test.ts test/agent-checkpoint.test.ts test/agent-budgets.test.ts --maxWorkers=1`，**43/43 通过**（13+15+15，含实际 SIGTERM）；此前 `test/agent-execution.test.ts --maxWorkers=1` **14/14 通过**。
 - 提交前已同步集成 `1ebd363`（含16凭据边界与11监督器身份夹具）。`npm run build`、`npm run typecheck` 通过；`npx vitest run test/agent-budgets.test.ts -t '模型等待|显式|非法|硬 token' --maxWorkers=1` **8 通过、7 未选取**。16的五文件联动 **71 通过、1 POSIX 条件跳过**与独立权限复核见16票，不重复算作本票新观测。
 - 边界如实保留：有界停止以监督器存活为前提；Windows 业务宿主被外部强退、根 PID 已失效时，不冒充已证明全部后代退出，沿用 `pendingRecovery/interrupted` 核对。远端已接收请求的后续计费未知。没有运行真实模型、没有使用留出素材；停滞判定仍由12实施。
+
+### 2026-10-25 清理回执写入失败补修
+
+在已合入的 M331 修复（`6348aac`，主线基线 `c07534e`）上补齐诊断文件本身写入失败的边界，不改变清理时限或 M331 的派发政策。
+
+- 公开 Agent CLI 红例只注入系统 `taskkill` 立即失败与 `cleanup.json` 原子发布 ENOSPC；`readReview(..., {persistArtifacts:false})` 已确认 `completed/committed=true`，命令却退出 1，已提交成果被回执错误遮住。修复后退出 0、照交 qualified 成果，返回与 stderr 明确回执未保存，`cleanup.receiptPersisted=false`；保存成功时为 true。已知凭据经 `safe.text` 脱敏，不伪造落盘成功。
+- 公开评估 CLI 对照进一步确认：退出 1 且轮次记录和清理回执都不存在时，原启动器吞掉了错误，日志短暂称“达线”、最终报告记未运行，明确硬额度还继续派发。现在仅在两种记录均缺失时交还原分类器；有记录时沿用既有评分。宿主停止路径标记 `hardQuota`，不扩展模型普通文本识别。timeout 清理未确认仍为 host、不重试并继续第二槽；硬额度为 quota、第二槽不派发。
+- Windows 公开 CLI/eval 新增 3 项通过（18.34 秒），正常默认预算、非法硬限制及原用法错误 3 项兼容通过（8.14 秒）；`npm run build`、`npm run typecheck`、`git diff --check` 通过。故障立即返回，未用挂起 30 秒的注入。无全量复跑、无真实模型；Linux 兼容由集成者随后独立验证。
+- 持久证据：`out/harness-cleanup-receipt-fix/` 下的 `windows-red.log`、`windows-classification-diagnosis.log` 保留两阶段红例，`windows-green.log`、`windows-classification-green.log`、`windows-compatibility.log` 与构建/typecheck日志保留修复结果。初次分类测试共用 hold 标记的设置问题另留 `windows-classification-red.log`，修正为每轮独立标记后才形成上述分类红例；不把该初次测试结果混作产品结论。完整命令与 SHA 清单见同目录 `validation.json`。

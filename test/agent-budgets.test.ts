@@ -177,6 +177,28 @@ async function slowCleanup(name: string, delayMs: string) {
   let output = '', errors = ''; child.stdout!.on('data', bytes => { output += bytes; }); child.stderr!.on('data', bytes => { errors += bytes; });
   return { f, child, closed: once(child, 'close'), output: () => output, errors: () => errors };
 }
+it.skipIf(process.platform !== 'win32')('清理回执发布失败不能拒交已提交成果，返回及 stderr 明确回执未保存', async () => {
+  const f = await prepared('cleanup-receipt-failure');
+  const child = spawn(process.execPath, ['--import', pathToFileURL(join(repoRoot, 'test/support/cleanup-receipt-fault.mjs')).href, join(repoRoot, 'dist/bin.js'), ...f.args],
+    { cwd: repoRoot, env: { ...process.env, RW_BUDGET_TEST_KEY: 'test-key' }, windowsHide: true, stdio: 'pipe' });
+  let output = '', errors = ''; child.stdout!.on('data', bytes => { output += bytes; }); child.stderr!.on('data', bytes => { errors += bytes; });
+  const closed = once(child, 'close');
+  try {
+    const result = await Promise.race([closed, delay(20000).then(() => undefined)]);
+    expect(result, errors).toBeDefined();
+    const review = await readReview(f.out, { persistArtifacts: false });
+    expect(review.execution).toMatchObject({ status: 'completed', committed: true });
+    expect(review.view?.round.source).toBe('agent');
+    expect(result![0], errors).toBe(0);
+    const value = JSON.parse(output);
+    expect(value).toMatchObject({ verdict: 'qualified', cleanup: { confirmed: false, receiptPersisted: false } });
+    expect(value.cleanup.detail).toContain('taskkill 退出码 1');
+    expect(value.cleanup.detail).toContain('清理回执未保存');
+    expect(value.cleanup.detail).toContain('[REDACTED]'); expect(output + errors).not.toContain('test-key');
+    expect(errors).toContain('清理回执未保存'); expect(errors).not.toContain('告警见 cleanup.json');
+    await expect(readFile(join(f.out, 'cleanup.json'))).rejects.toThrow();
+  } finally { await terminate(child); await closed; }
+}, 30000);
 it.skipIf(process.platform !== 'win32')('taskkill 8 秒才确认时，已提交的成功轮次照常交回，不记清理告警', async () => {
   const run = await slowCleanup('slow-cleanup', '8000');
   try {

@@ -237,8 +237,8 @@ export interface AgentRunResult {
   readonly outcome?: RoundOutcome;
   /** 宿主恢复草稿，相对轮次目录；不作为正式 outcome 返回。 */
   readonly draft?: string;
-  /** 成果已提交、但没能确认本轮进程树已结束；告警同时写在轮次目录的 cleanup.json。 */
-  readonly cleanup?: { readonly confirmed: false; readonly detail: string };
+  /** 没能确认本轮进程树已结束；receiptPersisted 表示该告警是否已保存到 cleanup.json。 */
+  readonly cleanup?: { readonly confirmed: false; readonly detail: string; readonly receiptPersisted: boolean };
 }
 
 /** 下一轮的候选从哪里开始：写进提示词。 */

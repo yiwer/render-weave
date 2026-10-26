@@ -107,3 +107,23 @@ it.skipIf(process.platform !== 'win32')('停止后宿主进程树清理未确认
   expect(first).toMatchObject({status: 'invalid', failures: [], invalid: {kind: 'host', task: 'definition-extraction'}});
   expect(first.invalid.error).toContain('本轮进程树清理未确认');
 }, 90000);
+
+it.skipIf(process.platform !== 'win32').each(['timeout', 'hardQuota'] as const)('清理回执发布失败仍保留 %s 分类及后续派发政策', async reason => {
+  const selected = [...args], out = join(root, `receipt-${reason}`);
+  for (const [flag, value] of [['--out', out], ['--reports', join(root, `receipt-${reason}-reports`)], ['--label', `receipt-${reason}`], ['--jobs', '1']] as const)
+    selected[selected.indexOf(flag) + 1] = value;
+  const commandIndex = selected.indexOf('--claude-args') + 1;
+  const executor = JSON.parse(selected[commandIndex]!);
+  selected[commandIndex] = JSON.stringify(reason === 'hardQuota'
+    ? [...executor, JSON.stringify({error: {type: 'GoUsageLimitError'}, metadata: {limitName: 'tokens'}})]
+    : [...executor, '', 'hold:receipt-held.json']);
+  const result = await cli([...selected, ...(reason === 'timeout' ? ['--timeout-ms', '1500'] : [])], {
+    NODE_OPTIONS: `--import=${pathToFileURL(join(repoRoot, 'test/support/cleanup-receipt-fault.mjs')).href}`});
+  expect(result.code, result.stdout + result.stderr).toBe(3);
+  const report = JSON.parse(await readFile(/^报告：(.+)$/m.exec(result.stdout)![1]!.trim(), 'utf8'));
+  expect(report.results[0]).toMatchObject({status: 'invalid', failures: [], invalid: {kind: reason === 'hardQuota' ? 'quota' : 'host'}});
+  expect(report.results[0].invalid.error).toContain('清理回执未保存');
+  expect(JSON.stringify(report)).not.toContain('offline-key');
+  expect(report.gate.completeness).toMatchObject({fail: 0, invalid: reason === 'hardQuota' ? 1 : 2, notRun: reason === 'hardQuota' ? 1 : 0});
+  expect(report.attempts).toHaveLength(reason === 'hardQuota' ? 1 : 2);
+}, 45000);

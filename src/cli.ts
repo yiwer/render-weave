@@ -424,7 +424,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems), ...check.assessment.render.problems], io);
     if (record.run.error) io.stderr(`${record.run.error}\n`);
     if (result.draft) io.stderr(`已保存中断草稿 ${result.draft}：可用 agent review 查看，完成度未知，不能批准或应用\n`);
-    if (result.cleanup) io.stderr(`${result.cleanup.detail}；成果已提交，本轮后代进程可能仍在运行，告警见 cleanup.json\n`);
+    if (result.cleanup) io.stderr(`${result.cleanup.detail}；本轮后代进程可能仍在运行，${result.cleanup.receiptPersisted ? '告警见 cleanup.json' : '请保留本次命令输出'}\n`);
     io.stdout(`${JSON.stringify({
       round: result.roundDir, number: record.round, ...(record.inputs.previous ? { previous: record.inputs.previous.dir } : {}), verdict: check.verdict,
       candidates: check.candidates.map((candidate) => ({
