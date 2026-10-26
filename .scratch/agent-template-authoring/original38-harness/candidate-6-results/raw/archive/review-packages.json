@@ -1,0 +1,79 @@
+{
+  "index": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-candidate-6-index-v2",
+  "indexSha256": "783724541109fe998e251784694807b6d2bb51aa7adb944569d263f534acc219",
+  "independentReviewSha256": "3dd2ff0f4ecfc91e8ccf8270fa982998bf6ac94147dea3d23b450e29c0691c42",
+  "packages": [
+    {
+      "name": "zh-template-r1-candidate-6-v2",
+      "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+      "manifestSha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8",
+      "humanItems": 16,
+      "humanReview": null,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      }
+    },
+    {
+      "name": "zh-revision-r1-candidate-6-v3",
+      "attemptId": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+      "manifestSha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db",
+      "humanItems": 16,
+      "humanReview": null,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      }
+    },
+    {
+      "name": "zh-template-r2-candidate-6-v2",
+      "attemptId": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+      "manifestSha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce",
+      "humanItems": 16,
+      "humanReview": null,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      }
+    },
+    {
+      "name": "zh-revision-r2-candidate-6-v2",
+      "attemptId": "9de14c87-0916-464d-ad00-1b5e978d3898",
+      "manifestSha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33",
+      "humanItems": 16,
+      "humanReview": null,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      }
+    }
+  ]
+}

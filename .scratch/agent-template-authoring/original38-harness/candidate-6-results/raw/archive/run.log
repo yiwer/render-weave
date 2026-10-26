@@ -1,0 +1,76 @@
+snapshot-before observations
+snapshot-before candidate
+snapshot-before plan
+snapshot-before zh-candidate-6-index-v2
+snapshot-before zh-template-r1-candidate-6-v2
+snapshot-before zh-revision-r1-candidate-6-v3
+snapshot-before zh-template-r2-candidate-6-v2
+snapshot-before zh-revision-r2-candidate-6-v2
+snapshot-after observations
+snapshot-after candidate
+snapshot-after plan
+snapshot-after zh-candidate-6-index-v2
+snapshot-after zh-template-r1-candidate-6-v2
+snapshot-after zh-revision-r1-candidate-6-v3
+snapshot-after zh-template-r2-candidate-6-v2
+snapshot-after zh-revision-r2-candidate-6-v2
+{
+  "proof": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\verification.json",
+  "proofSha256": "de3e0f1c2a883ab1a298c71903517ecd12aee4d82391537a8bd0ed5d05b742c1",
+  "manifestSha256": "3719599f817789a25bd14f06cd67663e10d9fcb090c3664227177a867c127087",
+  "checks": 132,
+  "findings": [],
+  "files": 5768,
+  "directories": 1037,
+  "publicViews": 10,
+  "keyScan": [
+    {
+      "label": "observations",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 1776
+    },
+    {
+      "label": "candidate",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 3323
+    },
+    {
+      "label": "plan",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 155
+    },
+    {
+      "label": "zh-candidate-6-index-v2",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 3
+    },
+    {
+      "label": "zh-template-r1-candidate-6-v2",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 127
+    },
+    {
+      "label": "zh-revision-r1-candidate-6-v3",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 122
+    },
+    {
+      "label": "zh-template-r2-candidate-6-v2",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 140
+    },
+    {
+      "label": "zh-revision-r2-candidate-6-v2",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 122
+    }
+  ]
+}

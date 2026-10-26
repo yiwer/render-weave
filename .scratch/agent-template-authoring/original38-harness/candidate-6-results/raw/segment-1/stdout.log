@@ -1,0 +1,31 @@
+# Agent 评估 2026-10-25-harness-original38-candidate-6：门槛未完成
+证据类别：模型来源尚需独立核准；已核准真实模型观测 0。
+
+计划 8 次：通过 4、失败 0、无效 0、未运行 4；执行未完成。
+
+模型 claude-haiku-5-5（服务端 claude-haiku-5-5），Claude Code 2.1.296，MCP 合同 0.17.0，提交 17111cf23508a4c759d25b65272a72ea31fa9da0（有未提交改动）。
+
+供应商修订未知；服务模型未观测到变化。
+
+| 场景 | 各次结果 | 门槛 |
+|---|---|---|
+| M402 数据定义 | 达线、未跑 | 未完成 |
+| M402 模板 | 达线、未跑 | 未完成 |
+| M402 模板辅助修改 | 达线、未跑 | 未完成 |
+| 366 数据定义与转录 | 达线、未跑 | 未完成 |
+
+- M402 数据定义 第 1 次：达线。数据定义提取 3.7 分钟 / 38 轮 / 输出 29824
+- M402 模板 第 1 次：达线。模板辅助设计 5.5 分钟 / 44 轮 / 输出 52901 / 首次模板检查 0 个问题
+- M402 模板辅助修改 第 1 次：达线。模板辅助修改 1.4 分钟 / 30 轮 / 输出 11344 / 首次模板检查 0 个问题
+  - 压测 6/10；版面 2/2；修改范围违例 0；改动元素 2
+- 366 数据定义与转录 第 1 次：达线。数据定义提取 8.8 分钟 / 40 轮 / 输出 58942；数据集提取 6.7 分钟 / 34 轮 / 输出 47267
+  - 转录评分器 renderweave-transcription/3，匹配政策 ordered-occurrences/1；站名 58/59，地标 15/15，设施 18/18；逐次出现的对齐与错误位置见报告 checks.transcription
+
+全部尝试已知小计 26.1 分钟（各轮之和），输入 148、输出 200278 tokens，其中思考 141321（不再加到输出）；缓存读/写 3895638/390057。
+用量有未知字段的已保存尝试 0 个；已保存尝试的token用量完整。
+实际派发会话墙钟 26.7 分钟；尝试耗时已知求和 26.2 分钟，0 个尝试耗时未知。
+
+报告：F:\GenCode\render-weave\out\harness-original38-candidate-6\reports\2026-10-25-harness-original38-candidate-6.json
+
+invalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：
+npx tsx scripts/agent-eval/run.ts --label 2026-10-25-harness-original38-candidate-6 --repetitions 2-2 --jobs 1 --out 'F:\GenCode\render-weave\out\harness-original38-candidate-6\evaluation' --reports 'F:\GenCode\render-weave\out\harness-original38-candidate-6\reports' --model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --key-env OPEN_CODE_API_KEY --repeat 2 --config 'F:\GenCode\render-weave\out\harness-acceptance-20\plans\original-four\config.json' --claude 'D:\nodejs\node_global\node_modules\@anthropic-ai\claude-code\bin\claude.exe' --timeout-ms 3600000 --context-policy full --stagnation-threshold 2 --candidate-binding 'F:\GenCode\render-weave\out\harness-acceptance-20\plans\original-four\binding-6'

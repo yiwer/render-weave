@@ -1,0 +1,37 @@
+{
+  "format": "renderweave-context-trial-archive-inputs/1",
+  "roots": [
+    {
+      "label": "observations",
+      "path": "F:/GenCode/render-weave/out/harness-original38-candidate-6"
+    },
+    {
+      "label": "candidate",
+      "path": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6"
+    },
+    {
+      "label": "plan",
+      "path": "F:/GenCode/render-weave/out/harness-acceptance-20/plans/original-four"
+    },
+    {
+      "label": "zh-candidate-6-index-v2",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-candidate-6-index-v2"
+    },
+    {
+      "label": "zh-template-r1-candidate-6-v2",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-6-v2"
+    },
+    {
+      "label": "zh-revision-r1-candidate-6-v3",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-6-v3"
+    },
+    {
+      "label": "zh-template-r2-candidate-6-v2",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r2-candidate-6-v2"
+    },
+    {
+      "label": "zh-revision-r2-candidate-6-v2",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r2-candidate-6-v2"
+    }
+  ]
+}

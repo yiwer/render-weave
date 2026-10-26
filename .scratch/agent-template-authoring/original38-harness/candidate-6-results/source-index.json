@@ -1,0 +1,454 @@
+{
+  "format": "renderweave-original38-result-source-index/1",
+  "createdAt": "2026-10-26T06:16:33.332Z",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "records": [
+    {
+      "file": "raw/registration.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\registration.json",
+      "role": "固定派发身份/材料",
+      "storage": "repository-byte-identical",
+      "bytes": 57939,
+      "sha256": "598bdc4c40f67ba9ed1a0b08449c37a887cd96d996efed2cde21090ff8874d28"
+    },
+    {
+      "file": "raw/activation.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\activation.json",
+      "role": "固定派发身份/材料",
+      "storage": "repository-byte-identical",
+      "bytes": 1569,
+      "sha256": "7e0a92ebdabc9a58514ea60bcaa5aefc94bc62472f120be52b371c16486ef764"
+    },
+    {
+      "file": "raw/endpoint-authorization.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\endpoint-authorization.json",
+      "role": "固定派发身份/材料",
+      "storage": "repository-byte-identical",
+      "bytes": 1093,
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+    },
+    {
+      "file": "raw/input-preservation.candidate-6.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\input-preservation.candidate-6.json",
+      "role": "固定派发身份/材料",
+      "storage": "repository-byte-identical",
+      "bytes": 21915,
+      "sha256": "367e4551dd9c25740afeaf6eb6938188aca01b5cab840ac2405ac8901411819e"
+    },
+    {
+      "file": "raw/segment-1/started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\started.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 1888,
+      "sha256": "f762b1ec0d6643db6c3300aa227c8ca1f49603d12e3278b64ae1c673598a66d1"
+    },
+    {
+      "file": "raw/segment-1/completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\completed.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 2332,
+      "sha256": "8687d747c4fa02fb37f329e0596092de9540a44387546437ff6fac76d103976b"
+    },
+    {
+      "file": "raw/segment-1/reports.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\reports.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 228,
+      "sha256": "9fd7c0fb01ce2248e9a30b049adccf8e2d007cf5608f0b6b301dd048a4047ebe"
+    },
+    {
+      "file": "raw/segment-1/stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\stdout.log",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 2900,
+      "sha256": "8df3996637d8e52b47f90764a6ac6c40407ec2cf531cf09bb78e72e4fbba3632"
+    },
+    {
+      "file": "raw/segment-1/stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\stderr.log",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 405,
+      "sha256": "95af3383d80633ac394013738f883b91c446769d7ff5e0f5c22908ba576615e6"
+    },
+    {
+      "file": "raw/segment-1/report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-1\\report-2026-10-25-harness-original38-candidate-6.json",
+      "role": "固定累计报告，不重复计费",
+      "storage": "repository-byte-identical",
+      "bytes": 83247,
+      "sha256": "be3cd1e7ddd74df5a603a461d485c72519098d3db548f0084b9f641048afdf18"
+    },
+    {
+      "file": "raw/segment-2/started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\started.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 1888,
+      "sha256": "20622310679d30230896e2f499403f60bdc2ef61dda3b5927b6111c8c6c2ab94"
+    },
+    {
+      "file": "raw/segment-2/completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\completed.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 2332,
+      "sha256": "aa4fb8f77b33f5f37ce386758c704dd68046e167b2d6304e78beb5e716b5e0c3"
+    },
+    {
+      "file": "raw/segment-2/reports.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\reports.json",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 498,
+      "sha256": "e8eba7770e0be6cf919cd020abb33fa2f1a3c66fc585305839a9c9a68d178d16"
+    },
+    {
+      "file": "raw/segment-2/stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\stdout.log",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 2810,
+      "sha256": "b1b3a265960a22673d27bf493d1408d852b99e430d91028800f64b0e04aeedaa"
+    },
+    {
+      "file": "raw/segment-2/stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\stderr.log",
+      "role": "实际派发原件",
+      "storage": "repository-byte-identical",
+      "bytes": 405,
+      "sha256": "ad01c3c541383ca122c69a3e42a9b2663b4a4adda8a3318d05fc70aa159071a9"
+    },
+    {
+      "file": "raw/segment-2/report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\dispatch\\segment-2\\report-2026-10-25-harness-original38-candidate-6.segment-e06b63de-580d-4f84-ab30-6f4d87172788.json",
+      "role": "固定累计报告，不重复计费",
+      "storage": "repository-byte-identical",
+      "bytes": 114686,
+      "sha256": "4f1e2eeb27ee0231bf2ededbde5d06eb6ef03ad50e229c373e853a2f4ebca6aa"
+    },
+    {
+      "file": "raw/source-segment-1.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-source-audit\\segment-1-2026-10-26T053404869Z.json",
+      "role": "只读来源审计/同候选共享引用",
+      "storage": "repository-byte-identical",
+      "bytes": 487299,
+      "sha256": "d51a04f52df5445f6abcdd39247a9120b0f72cccd6c6b86bff9a2ea7adb43e16"
+    },
+    {
+      "file": "raw/source-final.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-source-audit\\segment-2-2026-10-26T061122858Z.json",
+      "role": "只读来源审计/同候选共享引用",
+      "storage": "repository-byte-identical",
+      "bytes": 981046,
+      "sha256": "60c7a75405cc39b1da35aefbf470cec2dd23a9efe8d8b079163f9de23c9bbf7d"
+    },
+    {
+      "file": "raw/source-audit.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-source-audit\\audit.mjs",
+      "role": "只读来源审计/同候选共享引用",
+      "storage": "repository-byte-identical",
+      "bytes": 16861,
+      "sha256": "f9f8ee0ef79461415ef1aee765fdedc7c73436e92b966f0962cd706576219b58"
+    },
+    {
+      "file": "raw/conditional-english-reference.candidate-6.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-source-audit\\conditional-english-reference.candidate-6.json",
+      "role": "只读来源审计/同候选共享引用",
+      "storage": "repository-byte-identical",
+      "bytes": 13448,
+      "sha256": "40c7cfb1e4b21427f69b1e82a0f2c87f99bff8a3a2a5eb1a8084b274b8ef4aee"
+    },
+    {
+      "file": "raw/shared-english-reference.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-source-audit\\shared-english-reference.mjs",
+      "role": "只读来源审计/同候选共享引用",
+      "storage": "repository-byte-identical",
+      "bytes": 4779,
+      "sha256": "a68a41e5b984059a9c4d23c7e0b2775589ea6e488e7fb28b7a589c7b8a995603"
+    },
+    {
+      "file": "raw/archive/inputs.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\inputs.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 1256,
+      "sha256": "8b78cb5904e765e40fdf3ee319521ef01fcc9e4ac19788bc2d485d996eaecd74"
+    },
+    {
+      "file": "raw/archive/pack.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\pack.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 798,
+      "sha256": "0353203506a48323b172cc1cd6a4ea9bf7a2ef973162d68120c0c9408357cc62"
+    },
+    {
+      "file": "raw/archive/restore.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restore.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 825,
+      "sha256": "063c1822a02d305712c0e781f33526eae910e498f0c43760b0e9896bd4644170"
+    },
+    {
+      "file": "raw/archive/pack.stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\pack.stdout.log",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 190,
+      "sha256": "6ad425e8024ef2119b5f9070379246bb1e9a13d3a9257766dcb81961ebfc8be4"
+    },
+    {
+      "file": "raw/archive/pack.stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\pack.stderr.log",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "raw/archive/restore.stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restore.stdout.log",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 224,
+      "sha256": "ce9269a06a8214cc6c97104bf42571d28a705b9e35cf48a6b5bf81df84356829"
+    },
+    {
+      "file": "raw/archive/restore.stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restore.stderr.log",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "raw/archive/restored-public-views.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restored-public-views.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 4323,
+      "sha256": "001300551b7d45dc92a24ff5e786e3fe96629ecbca9f028c27b6debac2b463ae"
+    },
+    {
+      "file": "raw/archive/review-packages.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\review-packages.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 2330,
+      "sha256": "b5f5736d193903168e026bbee91173c4519cadeb4ddd1baa736a1fabcb0f42f5"
+    },
+    {
+      "file": "raw/archive/verification.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\verification.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 20365,
+      "sha256": "de3e0f1c2a883ab1a298c71903517ecd12aee4d82391537a8bd0ed5d05b742c1"
+    },
+    {
+      "file": "raw/archive/evidence-index-final.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\evidence-index-final.json",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 3155,
+      "sha256": "ccd5df418b206178207c97eef62f86dc7bd89bb11e776e60ca175f5edded9dcd"
+    },
+    {
+      "file": "raw/archive/run.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\run.log",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 2135,
+      "sha256": "0baf5f5f70c6139d36f07071513b129184a2a45c104a2a91ce767dfabce31018"
+    },
+    {
+      "file": "raw/archive/verify-archive.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\verify-archive.mjs",
+      "role": "实际公开归档恢复只读证据",
+      "storage": "repository-byte-identical",
+      "bytes": 12664,
+      "sha256": "6ebf4589b05d135e330739aa8cd5fe41d4661741e59ffe5aecdf790e4619f14a"
+    },
+    {
+      "file": "raw/archive/manifest.sha256",
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate6-evidence-archive/manifest.sha256",
+      "role": "完整归档清单摘要",
+      "storage": "repository-byte-identical",
+      "bytes": 65,
+      "sha256": "f004fd4405a0750c48cec6cb8e710f84e0073167ff9e2499af58c53ee410066a"
+    },
+    {
+      "file": "raw/review/packages.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-candidate-6-index-v2\\packages.json",
+      "role": "正式四包目录原件",
+      "storage": "repository-byte-identical",
+      "bytes": 11070,
+      "sha256": "783724541109fe998e251784694807b6d2bb51aa7adb944569d263f534acc219"
+    },
+    {
+      "file": "raw/review/independent-final-v2.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate6-review-audit/final-v2.json",
+      "role": "四包独立审核",
+      "storage": "repository-byte-identical",
+      "bytes": 2926,
+      "sha256": "3dd2ff0f4ecfc91e8ccf8270fa982998bf6ac94147dea3d23b450e29c0691c42"
+    },
+    {
+      "file": "raw/review/zh-template-r1-candidate-6-v2/manifest.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-6-v2\\manifest.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 63025,
+      "sha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8"
+    },
+    {
+      "file": "raw/review/zh-template-r1-candidate-6-v2/review-template.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r1-candidate-6-v2\\review-template.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 5457,
+      "sha256": "95bf98c3c5c7ad135ffb44819079bfaa2938c975d2ea9a1207cab80639426022"
+    },
+    {
+      "file": "raw/review/zh-revision-r1-candidate-6-v3/manifest.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-6-v3\\manifest.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 60073,
+      "sha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db"
+    },
+    {
+      "file": "raw/review/zh-revision-r1-candidate-6-v3/review-template.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r1-candidate-6-v3\\review-template.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 10925,
+      "sha256": "fa8f187b759ea40c7928656d21cfdedc2649280c0ec456c255894650ebd2e3da"
+    },
+    {
+      "file": "raw/review/zh-template-r2-candidate-6-v2/manifest.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r2-candidate-6-v2\\manifest.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 70325,
+      "sha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce"
+    },
+    {
+      "file": "raw/review/zh-template-r2-candidate-6-v2/review-template.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-template-r2-candidate-6-v2\\review-template.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 5457,
+      "sha256": "95bf98c3c5c7ad135ffb44819079bfaa2938c975d2ea9a1207cab80639426022"
+    },
+    {
+      "file": "raw/review/zh-revision-r2-candidate-6-v2/manifest.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r2-candidate-6-v2\\manifest.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 60073,
+      "sha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33"
+    },
+    {
+      "file": "raw/review/zh-revision-r2-candidate-6-v2/review-template.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-revision-r2-candidate-6-v2\\review-template.json",
+      "role": "实际审核包身份/空白人工项",
+      "storage": "repository-byte-identical",
+      "bytes": 10925,
+      "sha256": "fa8f187b759ea40c7928656d21cfdedc2649280c0ec456c255894650ebd2e3da"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\source-before.json",
+      "role": "完整文件/目录/SHA清单，留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1225275,
+      "sha256": "4919eb98b34f76efbec4d915d53ae2df81d7b6b7531deceb1fa8c3dc175f7a95"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\source-after.json",
+      "role": "完整文件/目录/SHA清单，留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1225275,
+      "sha256": "4919eb98b34f76efbec4d915d53ae2df81d7b6b7531deceb1fa8c3dc175f7a95"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restored-before-review.json",
+      "role": "完整文件/目录/SHA清单，留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1225275,
+      "sha256": "4919eb98b34f76efbec4d915d53ae2df81d7b6b7531deceb1fa8c3dc175f7a95"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\restored-after-review.json",
+      "role": "完整文件/目录/SHA清单，留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1225275,
+      "sha256": "4919eb98b34f76efbec4d915d53ae2df81d7b6b7531deceb1fa8c3dc175f7a95"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-archive-verification\\archive-before.json",
+      "role": "完整文件/目录/SHA清单，留在持久out",
+      "storage": "external-preserved",
+      "bytes": 691970,
+      "sha256": "0a6171f84dda1711b42818552220d8d49d69543e1f03e65c58181dd29adc8a63"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate6-evidence-archive/manifest.json",
+      "role": "CAS完整清单",
+      "storage": "external-preserved",
+      "bytes": 1377808,
+      "sha256": "3719599f817789a25bd14f06cd67663e10d9fcb090c3664227177a867c127087"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness-acceptance-20/plans/original-four/binding-6/binding.json",
+      "role": "逐计划绑定",
+      "storage": "external-preserved",
+      "bytes": 54219,
+      "sha256": "010c733ff55dafa2d4c03d01d56e60da390183cfec24e16615268640a10cff92"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/candidate.json",
+      "role": "共同候选",
+      "storage": "external-preserved",
+      "bytes": 430949,
+      "sha256": "6caa67bba49bf23db7b9b2326701a829260eeb517ed625ecd91d1c735d6d712f"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-candidate-6-index-v2\\index.html",
+      "role": "人审入口HTML",
+      "storage": "external-preserved",
+      "bytes": 7016,
+      "sha256": "374113e4003e3c2427df51d105f44a62df18309bed4414d95c8c8d218b15d5ac"
+    },
+    {
+      "file": "raw/turn-count-40-47.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate6-source-audit/turn-count-40-47.json",
+      "role": "固定CLI及本轮40/47计数独立证据",
+      "storage": "repository-byte-identical",
+      "bytes": 31522,
+      "sha256": "036538a5cc823bcc1acd8d1cb63d75f6bc154b7ce2bc6d844bdc2ca6361ba098"
+    },
+    {
+      "file": "raw/turn-count-40-47.md",
+      "source": "F:/GenCode/render-weave/out/harness-original38-candidate6-source-audit/turn-count-40-47.md",
+      "role": "固定CLI及本轮40/47计数独立证据",
+      "storage": "repository-byte-identical",
+      "bytes": 2381,
+      "sha256": "450cd6e72372b8c86f945fa35f67ecd63beccef0cb8220c8509e1837d2376b13"
+    }
+  ],
+  "notes": [
+    "原件全部同字节复制，运行/候选/plan/审核包/票21归档源没有新增或修改。",
+    "原报告unverified及真实计数0保持；实际10阶段来源另证。",
+    "初步来源审计MD为分段通用模板；最终JSON已核第二段正常结束和全部10stage，本结果准确记累计8/8。",
+    "归档证据最终索引在进程退出、run.log关闭后另生成，不改变旧票21索引或源目录。",
+    "四个中文包共64空白人工项，不计模型阶段；四英文引用是票21已有观测，countsAsNewObservation=false。"
+  ],
+  "modelCallsByRecordPreparation": 0
+}

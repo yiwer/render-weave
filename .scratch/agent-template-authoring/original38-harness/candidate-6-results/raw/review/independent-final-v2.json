@@ -1,0 +1,79 @@
+{
+  "format": "original38-final-review-package-audit/1",
+  "reviewedAt": "2026-10-26T06:04:10.906Z",
+  "decision": "ready-for-independent-human-review",
+  "blockingFindings": [],
+  "supersedes": "final.json together with final-brief-addendum.md",
+  "briefFullTextHashPriorityVerified": true,
+  "revisionAuthorizationUnexpanded": true,
+  "unchangedImageCount": 14,
+  "previousPackagesPreserved": true,
+  "index": {
+    "file": "F:\\GenCode\\render-weave\\out\\harness-original38-review\\zh-candidate-6-index-v2\\index.html",
+    "sha256": "374113e4003e3c2427df51d105f44a62df18309bed4414d95c8c8d218b15d5ac",
+    "packagesSha256": "783724541109fe998e251784694807b6d2bb51aa7adb944569d263f534acc219",
+    "linksVerified": 19
+  },
+  "sourceVerification": {
+    "file": "F:\\GenCode\\render-weave\\out\\harness-original38-review-tools-candidate-6\\verification-v2.json",
+    "sha256": "77443053ccaca9d0b75622c0a79da81cdf84881d79e66a7c47729da64d2d0ab4"
+  },
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "packages": [
+    {
+      "name": "zh-template-r1-candidate-6-v2",
+      "manifestSha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8",
+      "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+      "sourceFiles": 106,
+      "sourceDirectories": 26,
+      "packageFiles": 127,
+      "requirementShown": false,
+      "humanItemsBlank": 16,
+      "independentPublicRenders": 0
+    },
+    {
+      "name": "zh-revision-r1-candidate-6-v3",
+      "manifestSha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db",
+      "attemptId": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+      "sourceFiles": 102,
+      "sourceDirectories": 22,
+      "packageFiles": 122,
+      "requirementShown": true,
+      "humanItemsBlank": 16,
+      "independentPublicRenders": 0
+    },
+    {
+      "name": "zh-template-r2-candidate-6-v2",
+      "manifestSha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce",
+      "attemptId": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+      "sourceFiles": 119,
+      "sourceDirectories": 30,
+      "packageFiles": 140,
+      "requirementShown": false,
+      "humanItemsBlank": 16,
+      "independentPublicRenders": 0
+    },
+    {
+      "name": "zh-revision-r2-candidate-6-v2",
+      "manifestSha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33",
+      "attemptId": "9de14c87-0916-464d-ad00-1b5e978d3898",
+      "sourceFiles": 102,
+      "sourceDirectories": 22,
+      "packageFiles": 122,
+      "requirementShown": true,
+      "humanItemsBlank": 16,
+      "independentPublicRenders": 0
+    }
+  ],
+  "sourceFiles": 429,
+  "sourceDirectories": 100,
+  "packageFiles": 511,
+  "humanItemsBlank": 64,
+  "sourceCopiesAndPackagesUnchanged": true,
+  "actualDpi": 50,
+  "comparisonDpi": 120,
+  "independentPublicRenders": 0,
+  "readActive366": false,
+  "modelCalls": 0,
+  "businessAcceptance": null
+}

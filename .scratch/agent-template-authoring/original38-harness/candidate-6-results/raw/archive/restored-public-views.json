@@ -1,0 +1,102 @@
+[
+  {
+    "unit": "run-1/m402-definition",
+    "id": "d34ddfe4-5fed-4d53-9eae-40618d5792cd",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-1\\m402-definition\\attempts\\d34ddfe4-5fed-4d53-9eae-40618d5792cd\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-2/m402-definition",
+    "id": "3c240727-c284-408d-b5fb-a13eed0d9955",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-2\\m402-definition\\attempts\\3c240727-c284-408d-b5fb-a13eed0d9955\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-1/m402-template",
+    "id": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-1\\m402-template\\attempts\\7762f3b8-74ac-4567-9c71-0086e81d0fde\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-2/m402-template",
+    "id": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-2\\m402-template\\attempts\\27e30f7e-3976-4d5c-aa00-b2d9403d6ebb\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-1/m402-revision",
+    "id": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-1\\m402-revision\\attempts\\5b3f10ac-1f5a-4c89-9eef-6ab94574d140\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-2/m402-revision",
+    "id": "9de14c87-0916-464d-ad00-1b5e978d3898",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-2\\m402-revision\\attempts\\9de14c87-0916-464d-ad00-1b5e978d3898\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-1/366-transcription",
+    "id": "13ce06cd-da35-4e57-a90e-8e0146a60779",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-1\\366-transcription\\attempts\\13ce06cd-da35-4e57-a90e-8e0146a60779\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-1/366-transcription",
+    "id": "2af2b331-296e-438f-9c0b-1527db1b5154",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-1\\366-transcription\\attempts\\2af2b331-296e-438f-9c0b-1527db1b5154\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-2/366-transcription",
+    "id": "5a0aa97d-1aba-4832-a935-99cab8f5c2d9",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-2\\366-transcription\\attempts\\5a0aa97d-1aba-4832-a935-99cab8f5c2d9\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  },
+  {
+    "unit": "run-2/366-transcription",
+    "id": "43605172-bb73-483a-8969-d55ba85a5084",
+    "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate6-evidence-archive-restored\\observations\\evaluation\\run-2\\366-transcription\\attempts\\43605172-bb73-483a-8969-d55ba85a5084\\round",
+    "committed": true,
+    "status": "completed",
+    "verdict": "qualified",
+    "problems": [],
+    "persistArtifacts": false
+  }
+]

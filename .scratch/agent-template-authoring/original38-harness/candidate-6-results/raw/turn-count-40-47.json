@@ -1,0 +1,1165 @@
+{
+  "format": "renderweave-native-turn-count-review/1",
+  "createdAt": "2026-10-26T06:16:10.800Z",
+  "scope": "candidate6 run-2/366-transcription dataset sealed attempt only",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "bindingId": "sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a",
+  "attemptId": "43605172-bb73-483a-8969-d55ba85a5084",
+  "attemptDirectory": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084",
+  "rawFields": {
+    "requestedMaxTurns": 40,
+    "recordRunTurns": 47,
+    "reportAttemptTurns": 47,
+    "result": {
+      "line": 109,
+      "rawLineSha256": "3d3444d049c7fca1d5f7e0498c937be8c32fdc02a863ea408db16297eec26780",
+      "num_turns": 47,
+      "subtype": "success",
+      "stop_reason": "end_turn",
+      "is_error": false
+    }
+  },
+  "counts": {
+    "eventTypes": {
+      "system": 1,
+      "assistant": 61,
+      "user": 46,
+      "result": 1
+    },
+    "assistantMessageIds": 19,
+    "assistantMessageIdsWithTools": 18,
+    "finalMessageIdsWithoutTools": 1,
+    "uniqueToolUses": 45,
+    "toolResultBlocks": 45,
+    "userEvents": 46,
+    "syntheticUserTextEvents": 1,
+    "successCounterInitialValue": 1,
+    "computedSuccessNumTurns": 47,
+    "mcpToolUses": 33
+  },
+  "assistantGroups": [
+    {
+      "messageId": "msg_011CgQLY5DFyeAMyJcYzDL71",
+      "eventLines": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01T88CfQ4nM4Z7eThcnD7DtW",
+        "toolu_01YP79PoeEJqMAq7eCtA3y1K",
+        "toolu_01R7QzAydqedhdD3b2Ps45LJ"
+      ],
+      "toolNames": [
+        "Glob",
+        "Glob",
+        "mcp__rw__list_documents"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLYCwrKx8yNhBtTRjzH",
+      "eventLines": [
+        9,
+        11,
+        13,
+        15,
+        16
+      ],
+      "contentTypes": [
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_018goCQ54rnxkJHsa4xuvxyd",
+        "toolu_01HF3BPHa71mLJmXwxXwrCLH",
+        "toolu_01JxwTaS5RvrEr3WajpVK2qX",
+        "toolu_01TYPPBNjQ9nKrrfzv7ZzW3X",
+        "toolu_016bpFL2k3pYtvYEvcHHBn9h"
+      ],
+      "toolNames": [
+        "Read",
+        "Read",
+        "Read",
+        "Read",
+        "Read"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLYTUiGDkaxDLrme1WK",
+      "eventLines": [
+        19,
+        20,
+        22,
+        23,
+        26
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01VPDa4dHnPWkJxKdp1qUCch",
+        "toolu_01LQ1Yb179H11GAptyXbVG1p",
+        "toolu_01E7eYMXPdXejGG3whafvDF7",
+        "toolu_01Vwhdzyh3ZYEFgHwRLoRhG8"
+      ],
+      "toolNames": [
+        "mcp__rw__read_document",
+        "mcp__rw__read_document",
+        "mcp__rw__list_resources",
+        "Read"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLYrdVwJmG6V9srPftJ",
+      "eventLines": [
+        29,
+        30,
+        32,
+        34,
+        35
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_019WJNb2yC15oSjecQt6E6Hu",
+        "toolu_01GqVJk96h9rJ47tw7iNPhHp",
+        "toolu_01Q8LSfSkwJ9wCKVQUhRXLT2",
+        "toolu_012PxG2NewGQoj5PRDeDFV2f"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLZUw4UN6pBse1h5W1Q",
+      "eventLines": [
+        38,
+        39,
+        41,
+        42,
+        44,
+        47
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_0143gZgEjPfiykn6NdcbDd5E",
+        "toolu_01XfqucAirTk6TtRWWsNHoZy",
+        "toolu_015HrLE4DVrpQd9TDd6aJr1Y",
+        "toolu_01CpUx8A3Usbh9tf9oakZgKJ",
+        "toolu_01YNymUxp57aeGWZznzSfCEW"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLawx3RfLYXVxd1RhRF",
+      "eventLines": [
+        49,
+        50
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01BCeEHx6ekw7TYkAKDDJM6u"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLddLvxYTsfr2EioMhy",
+      "eventLines": [
+        52,
+        53,
+        55,
+        56,
+        59,
+        60,
+        63,
+        64
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01GDSooop7fKz6T7okUZBFJZ",
+        "toolu_016hqcCzq6Cb9Zd9dgnbHTf1",
+        "toolu_01WUgZt4bNV4D4riS4BuypT8",
+        "toolu_01VkJHfY41fGjbyoCuJvCPyb",
+        "toolu_012LmFSfAubmN5Do9gB6hNSF",
+        "toolu_01GSi5jVx8gZ2DTfSCiDPFmV",
+        "toolu_011QaG5XxcQRU5pShX1yP28t"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLhgVZUbSaS5NnVxiwr",
+      "eventLines": [
+        67,
+        68,
+        70,
+        71,
+        72,
+        73
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01AzQ9CLF5vKw3CmChpgc31n",
+        "toolu_01DqxEk7AXv8Cv8TgfKLen1G",
+        "toolu_01N9aQv787Waw6gpy4YTT3rm",
+        "toolu_01GNuF8sEPQePZA8UaGk4bzs",
+        "toolu_015MCHUjpPyeTFG7eZQTm3vh"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image",
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLmUMAM26sHWr4mJvHS",
+      "eventLines": [
+        78,
+        79
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01RgdXXGzEjAamWLszMxF44H"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLqQZ5HEjuT5ZaVvxm6",
+      "eventLines": [
+        81,
+        82
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01KwgpzopTTVHNdug8AGTQE4"
+      ],
+      "toolNames": [
+        "Write"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLujqJm62D3PbRrX6yt",
+      "eventLines": [
+        84
+      ],
+      "contentTypes": [
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_014JH3jvE9FfSUPJ4ZcmeYQU"
+      ],
+      "toolNames": [
+        "mcp__rw__check_dataset"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLwSz6E14Qr5h37WiC8",
+      "eventLines": [
+        86
+      ],
+      "contentTypes": [
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_017wA9SgHM88p5rJc643zRTr"
+      ],
+      "toolNames": [
+        "mcp__rw__check_dataset"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQLzR7Kb8SRnEUasmYcH",
+      "eventLines": [
+        88,
+        89
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01NZLjCMHGF1jAtf3mgt2WCq"
+      ],
+      "toolNames": [
+        "mcp__rw__view_image"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQM3ZgLe4x6AAJvTs2Tw",
+      "eventLines": [
+        91,
+        92
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01RNjxbU5pXwK129kCHMvKcP"
+      ],
+      "toolNames": [
+        "Write"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQM7oj3qUtzMPKbF7Pco",
+      "eventLines": [
+        94,
+        95
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01EB4wcKG3C9RgWpegWU4Dhy"
+      ],
+      "toolNames": [
+        "mcp__rw__check_outcome"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQMBtvC9dzVTDzjubHLU",
+      "eventLines": [
+        97,
+        98,
+        100
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01HWMJoaTrvJuHoxqCLBXn6q",
+        "toolu_01VsA9ETKwMz2x9YXNWiaKZ6"
+      ],
+      "toolNames": [
+        "Edit",
+        "Edit"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQMFeojfeXNHUCzWzG7L",
+      "eventLines": [
+        102
+      ],
+      "contentTypes": [
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01QGtg4NBSAgbFthSPivHDYX"
+      ],
+      "toolNames": [
+        "mcp__rw__check_outcome"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQMJFpxjXkE4PUAq52gX",
+      "eventLines": [
+        104,
+        105
+      ],
+      "contentTypes": [
+        "thinking",
+        "tool_use"
+      ],
+      "toolUseIds": [
+        "toolu_01Hu2cFZ26pJpRkHMzsWp9eo"
+      ],
+      "toolNames": [
+        "mcp__rw__outcome_feedback"
+      ]
+    },
+    {
+      "messageId": "msg_011CgQMMLbnqUc2crF3pULKB",
+      "eventLines": [
+        107,
+        108
+      ],
+      "contentTypes": [
+        "thinking",
+        "text"
+      ],
+      "toolUseIds": [],
+      "toolNames": []
+    }
+  ],
+  "userEvents": [
+    {
+      "line": 4,
+      "rawLineSha256": "bbfe280d872323c58fa92679dcc78816f8670890dcca9022545db041eef2ea4a",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01T88CfQ4nM4Z7eThcnD7DtW"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 7,
+      "rawLineSha256": "91a748b424f32297b6f08ba715289c32a57c51a717f47142e0caf4637bc6aab9",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01R7QzAydqedhdD3b2Ps45LJ"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 8,
+      "rawLineSha256": "95f46826b4eea6194d4290e5753bb9f30ac966cac65e3f49dac6f4f7b3c47922",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01YP79PoeEJqMAq7eCtA3y1K"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 10,
+      "rawLineSha256": "a74efadebc84ddd65ea563de45b4d205268f1bf67cb2f098cb77e36da09d4d1e",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_018goCQ54rnxkJHsa4xuvxyd"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 12,
+      "rawLineSha256": "a8361c21761a9833dc3b3e5157ec162857096e27799e9358f2debafceefbba7f",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01HF3BPHa71mLJmXwxXwrCLH"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 14,
+      "rawLineSha256": "1d993dda98389b31f458c30af8862c898d2143bac365ca3f7a01080536ea040c",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01JxwTaS5RvrEr3WajpVK2qX"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 17,
+      "rawLineSha256": "c60ae5fd3e1835ded89920e167e8455a6cb30a60a2722dbb454dba74deec24eb",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01TYPPBNjQ9nKrrfzv7ZzW3X"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 18,
+      "rawLineSha256": "d3818559df591ef430d4c4f3d5886df6eb443b85c92d3641e6f0b456831e0c02",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_016bpFL2k3pYtvYEvcHHBn9h"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 21,
+      "rawLineSha256": "6be95fcf725a112bdf118f78dd74b0c18fcaeef117ac8ed672e1727d93a505a9",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01VPDa4dHnPWkJxKdp1qUCch"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 24,
+      "rawLineSha256": "09a0ba41aea63f33b5baf9ba64898a5d93e3fda41cf1164602686878c0ca8d7e",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01LQ1Yb179H11GAptyXbVG1p"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 25,
+      "rawLineSha256": "4435e78e7787ff01036e03a7ce08706bbb0b738fcd8787bc251c5df93913463c",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01E7eYMXPdXejGG3whafvDF7"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 27,
+      "rawLineSha256": "ae039945624f0d6d8ff064e54ee3b4ffb7222d6e38e7eb331c53eba90e90aabb",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01Vwhdzyh3ZYEFgHwRLoRhG8"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 28,
+      "rawLineSha256": "11250559fc3fe3566cf4f430a03767d0338ccd3ce08714d3041670c13338e5e3",
+      "contentTypes": [
+        "text"
+      ],
+      "toolUseIds": [],
+      "isSynthetic": true
+    },
+    {
+      "line": 31,
+      "rawLineSha256": "a2f7e14918a5ac3ece1a96157111585e282bd0d098e561928c51ce6dafee653a",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_019WJNb2yC15oSjecQt6E6Hu"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 33,
+      "rawLineSha256": "c5f2262bda196afd4793583731594c1ebb20c949a8b2542783b6cc9b43bf4c6f",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01GqVJk96h9rJ47tw7iNPhHp"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 36,
+      "rawLineSha256": "5a2526645abe911a5cbbd9be1ce6562ebdc601e7b2bb39d73d9b1148fcdca326",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01Q8LSfSkwJ9wCKVQUhRXLT2"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 37,
+      "rawLineSha256": "dcaca2a9c0cbb5bcccd900553af8cd06d28e7817e5dc4a6f5cc25de40bdd744e",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_012PxG2NewGQoj5PRDeDFV2f"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 40,
+      "rawLineSha256": "559d17630b26bd8e443cdbb5b621969fcb6ddaeffd823d49ea386fe9350e0b19",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_0143gZgEjPfiykn6NdcbDd5E"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 43,
+      "rawLineSha256": "06c1bb3a04af9ae117715830ef27ac87562fd1c9ee09b71f3ba3b7771ac40af2",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01XfqucAirTk6TtRWWsNHoZy"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 45,
+      "rawLineSha256": "f306add3f39b272ea2d8f96dfb875c60526558e5c219e5bd8373e56444f6eb9b",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_015HrLE4DVrpQd9TDd6aJr1Y"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 46,
+      "rawLineSha256": "34f4d8a7fda2b5cc6817901813a48cc4f33c47a48f22759faf417863b682b2fb",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01CpUx8A3Usbh9tf9oakZgKJ"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 48,
+      "rawLineSha256": "70a17f0888e723e50b966b5d1d90ad7199b654815c316305e26135c0c2e8bae7",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01YNymUxp57aeGWZznzSfCEW"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 51,
+      "rawLineSha256": "5e743cebe2a6ccac93214ba7bd78bc192e1b9616281972759f877b1a374844f6",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01BCeEHx6ekw7TYkAKDDJM6u"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 54,
+      "rawLineSha256": "0d62886660344fdacd6deae580e3d2f74f9264747243108b8c44f14a67c26bb3",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01GDSooop7fKz6T7okUZBFJZ"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 57,
+      "rawLineSha256": "04f113cd888bf47d5205e71b893f1d141674d0a1a170024bfa4405822eb6f218",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_016hqcCzq6Cb9Zd9dgnbHTf1"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 58,
+      "rawLineSha256": "f1e514bdd0770fb151cab2cce4010eb467aa3a1d10ec99c4b168b580e2e20e26",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01WUgZt4bNV4D4riS4BuypT8"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 61,
+      "rawLineSha256": "10f4902ff89f445971f53052b5aa995ef68e5bc957fac772537b3f7b6e5cf24a",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01VkJHfY41fGjbyoCuJvCPyb"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 62,
+      "rawLineSha256": "06624dda2e0886ff56cf7371d7bccab5eacee8f9c9a700e635a3bb611f625e40",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_012LmFSfAubmN5Do9gB6hNSF"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 65,
+      "rawLineSha256": "ff3ddde920d5b0288454bb8038e707da52cee406f112ff64dc56b6f5ec144d43",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01GSi5jVx8gZ2DTfSCiDPFmV"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 66,
+      "rawLineSha256": "f52ed181b64dee8bdfb342a022ce29244823048a724c2088fbbe0ed5b4380981",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_011QaG5XxcQRU5pShX1yP28t"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 69,
+      "rawLineSha256": "ee0fac3435ad797959b2550616c895591ad3f008d01db391ee9cd4e1d8b6afa6",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01AzQ9CLF5vKw3CmChpgc31n"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 74,
+      "rawLineSha256": "4656861ba5bfe5d60866d6e9850673fccb2ad2445f8f5fdcb9f812301555fb86",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01DqxEk7AXv8Cv8TgfKLen1G"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 75,
+      "rawLineSha256": "f3f8969248e45bbb828e6723e0fe753b315ce7ef6978dc120c2e40b447e0fc84",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01N9aQv787Waw6gpy4YTT3rm"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 76,
+      "rawLineSha256": "bf12d5f2c0b6f649e11cc613fca8f220138ebc7efc15ab9e68f9e587ca38c7a1",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01GNuF8sEPQePZA8UaGk4bzs"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 77,
+      "rawLineSha256": "178f20ad76863c215c544b7ef18e6db2bea7ba7775ee371f8368cf7f09818476",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_015MCHUjpPyeTFG7eZQTm3vh"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 80,
+      "rawLineSha256": "d2350855ab6856a9b98a1e690f6b55dbc5c835bac143c485392c0e509f566b96",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01RgdXXGzEjAamWLszMxF44H"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 83,
+      "rawLineSha256": "0f0a0ccbb285bcee1fac19d58e2e6bee61f5543e23d075ba29f2e454c1f756a4",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01KwgpzopTTVHNdug8AGTQE4"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 85,
+      "rawLineSha256": "cca330af23fa7a6959092fc2a77bc4c0d476dc8d38acf3acb88b3cf45de7a7e7",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_014JH3jvE9FfSUPJ4ZcmeYQU"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 87,
+      "rawLineSha256": "daff37169e42fe8f9880ab5fa0ea1f4085b2b9367d8a759cb30a87bae03fe3e6",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_017wA9SgHM88p5rJc643zRTr"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 90,
+      "rawLineSha256": "d1132448feab72a0bfb70bfa4a8ab6654e1c73bef7c1edc8a13ddd1b8364227f",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01NZLjCMHGF1jAtf3mgt2WCq"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 93,
+      "rawLineSha256": "3d37eed2427317860c85ac677b1e826b2cae5bffa6ba70211ce7c463ea31110c",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01RNjxbU5pXwK129kCHMvKcP"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 96,
+      "rawLineSha256": "c510b7f326a9b6a2d066576798bc051e24e570efba6916191673b3d5db097cba",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01EB4wcKG3C9RgWpegWU4Dhy"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 99,
+      "rawLineSha256": "4530c9c865eadc2937cfb0cda73a7d496d5c3bb3f4538b46f3bea58c963ffb24",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01HWMJoaTrvJuHoxqCLBXn6q"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 101,
+      "rawLineSha256": "f7a99982b50c938dba1b8a750f4cfc025f8307194cc092f1cec37ff027f955b4",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01VsA9ETKwMz2x9YXNWiaKZ6"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 103,
+      "rawLineSha256": "312cb6874af008350d0124409428b250d82b587f47949b95d07afd85334b3b1b",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01QGtg4NBSAgbFthSPivHDYX"
+      ],
+      "isSynthetic": null
+    },
+    {
+      "line": 106,
+      "rawLineSha256": "30c5ed316c69bf555b7ee36fda389a31912cdfaa90afea6971c7c29b0d4811c5",
+      "contentTypes": [
+        "tool_result"
+      ],
+      "toolUseIds": [
+        "toolu_01Hu2cFZ26pJpRkHMzsWp9eo"
+      ],
+      "isSynthetic": null
+    }
+  ],
+  "executor": {
+    "file": "D:/nodejs/node_global/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+    "sha256": "76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a",
+    "observedCliVersion": "2.1.296",
+    "snippets": [
+      {
+        "offset": 228987648,
+        "length": 40,
+        "meaning": "成功结果消息计数Ot初始化；非延迟slash起于1",
+        "text": "Ot=W.engineDeferredSlash?0:1,gt=null,_t=",
+        "sha256": "368dd060a6f6e40ce40993b7705dfe847c2f69333c91aeab1e080834813e8809"
+      },
+      {
+        "offset": 228987870,
+        "length": 100,
+        "meaning": "每条user事件递增Ot",
+        "text": "lue;if(u.type===\"user\"){if(!W.engineDeferredSlash)Ot++;_t.push(u),It=\"\",tt=!1,Bt=null,Et=void 0,vt=v",
+        "sha256": "91aee03843f6b2dff75e56051a0e25f6a8e4d888d8b335fa439e0dee4d593b22"
+      },
+      {
+        "offset": 228989150,
+        "length": 135,
+        "meaning": "最大工具循环附件的turnCount另存Lt",
+        "text": "e if(u.type===\"attachment\"&&u.attachment.type===\"max_turns_reached\")Lt={turnCount:u.attachment.turnCount,maxTurns:u.attachment.maxTurns",
+        "sha256": "5776caaa371abe44bd9c7ac16b252a4be731acbc7b1a88598fb2c506d6872b61"
+      },
+      {
+        "offset": 228995993,
+        "length": 170,
+        "meaning": "上限错误num_turns使用Lt.turnCount",
+        "text": "===void 0&&Lt?{...M7({startedAt:v,common:{...Jt,is_error:!0,num_turns:Lt.turnCount},variant:{subtype:\"error_max_turns\",errors:[`Reached maximum number of turns (${Lt.maxT",
+        "sha256": "b31bf66f4f7d89e063ace78fab711d8749d3f7728d9e45cb84b6cf049d02e0cf"
+      },
+      {
+        "offset": 228996440,
+        "length": 70,
+        "meaning": "普通success结果num_turns使用Ot",
+        "text": "},is_error:tt,num_turns:Ot},variant:{subtype:\"success\",api_error_statu",
+        "sha256": "9ced71e8857253c939beb57eee4f3c2ea54a4c36be46e968b626cdc93b55d50b"
+      },
+      {
+        "offset": 228850348,
+        "length": 190,
+        "meaning": "工具循环guard传递独立turnCount:tr",
+        "text": ";if(or!==void 0)return yield Zt({type:\"max_turns_reached\",maxTurns:or,turnCount:tr},I),po(p,S),yield*Qt(Me,[...P,...z,...Xe],{stopHookActive:xo}),{reason:\"max_turns\",turnCount:tr};$f(\"query_",
+        "sha256": "57a1a755d4fdc88498798377ff7c6d2e8ed94ce249befb25a764de395e3a1d2b"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/dispatch/segment-2/report-2026-10-25-harness-original38-candidate-6.segment-e06b63de-580d-4f84-ab30-6f4d87172788.json",
+      "bytes": 114686,
+      "sha256": "4f1e2eeb27ee0231bf2ededbde5d06eb6ef03ad50e229c373e853a2f4ebca6aa"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/round/round.json",
+      "bytes": 4053,
+      "sha256": "e2fc26e97e35764dcbcf8e3b9a4f9316233eef925ad47262e7682c8d55aa0bfd"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/round/logs/stream.jsonl",
+      "bytes": 8846023,
+      "sha256": "2d4475f1ee06bc8547cd4d2d5ec11468f13e209770f92317147a6ce7c303ebfe"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/started.json",
+      "bytes": 993,
+      "sha256": "ed0ec2cf273244b8e65cd2232a38f21818e190e3645e2264096ba8910d675ccf"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/completed.json",
+      "bytes": 9318,
+      "sha256": "b4b9bac2c144cc49784bc56eecc264a979c58e7d0d2ea579b3e887f423e97fa4"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/completed.seal.json",
+      "bytes": 9574,
+      "sha256": "dec42f16044ae1a1a1da3de19c231c0add0db840b5fcd586d01b4e8fbff8308a"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/run.ts",
+      "bytes": 60598,
+      "sha256": "84c763bd80a00efa17a5bb5feaea966f3d3af9eacdfeca68d34d2ca51a4fb182"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/usage.ts",
+      "bytes": 2175,
+      "sha256": "3b8ce89677283d9528d1db166bfaa3a8fea9d28e39ca1eeb6da299d4232d1612"
+    },
+    {
+      "file": "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/candidate-2-turn-count-review.md",
+      "bytes": 2241,
+      "sha256": "2fbb2061f2fde54ca7448d74d5acc41ae8892ea38a22bb3c0da7123c33a402a9"
+    }
+  ],
+  "hostCode": {
+    "maxTurnsArgument": {
+      "file": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/run.ts",
+      "line": 493
+    },
+    "nativeTurnRecording": {
+      "file": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/usage.ts",
+      "line": 18
+    }
+  },
+  "officialReference": {
+    "url": "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+    "checkedAt": "2026-10-26T06:16:10.801Z",
+    "sections": [
+      "Turns and messages",
+      "Message types"
+    ],
+    "summary": "当前官方文档说明一份模型响应可按内容块拆成多条assistant事件，同一响应共享message id；maxTurns只计含工具的循环。安装版本结论由同SHA原生二进制片段和本次封存日志共同支持，网页不是安装版本的唯一证据。"
+  },
+  "judgment": "本次47对应46条user事件加初始1，19个模型响应中18个含工具；成功结果num_turns与请求工具循环上限40不是同一计数变量。没有据此证明超预算，也没有触发或验证40上限硬截断。",
+  "limits": [
+    "只计流中可见消息与工具，未额外发起模型或原生执行器。",
+    "本次success不是max-turn限制触发样例，不能证明达到上限时的停止时延或硬截断。",
+    "不改预算、评分、report、round或sealed源；不将45个单工具调用等同45次工具循环。"
+  ],
+  "checks": [
+    {
+      "label": "host requested40",
+      "pass": true
+    },
+    {
+      "label": "native successful47",
+      "pass": true
+    },
+    {
+      "label": "record and report preserve47",
+      "pass": true
+    },
+    {
+      "label": "46users plus initial1",
+      "pass": true
+    },
+    {
+      "label": "19response18toolgroups",
+      "pass": true
+    },
+    {
+      "label": "45unique tool use/results",
+      "pass": true
+    },
+    {
+      "label": "one synthetic non-tool image-size hint",
+      "pass": true
+    },
+    {
+      "label": "no native max-turn error",
+      "pass": true
+    },
+    {
+      "label": "fixed executor matches earlier evidence",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/dispatch/segment-2/report-2026-10-25-harness-original38-candidate-6.segment-e06b63de-580d-4f84-ab30-6f4d87172788.json",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/round/round.json",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/round/logs/stream.jsonl",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/started.json",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/completed.json",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-original38-candidate-6/evaluation/run-2/366-transcription/attempts/43605172-bb73-483a-8969-d55ba85a5084/completed.seal.json",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/run.ts",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/content/src/agent/usage.ts",
+      "pass": true
+    },
+    {
+      "label": "source unchanged: F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/candidate-2-turn-count-review.md",
+      "pass": true
+    }
+  ],
+  "findings": [],
+  "modelCalls": 0,
+  "runnerInvocations": 0
+}

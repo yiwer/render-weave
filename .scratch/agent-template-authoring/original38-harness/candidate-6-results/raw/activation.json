@@ -1,0 +1,32 @@
+{
+  "format": "renderweave-explicit-dispatch-activation/1",
+  "createdAt": "2026-10-26T05:04:23.725Z",
+  "dispatchAuthorized": true,
+  "dispatcher": "root",
+  "segments": [
+    1,
+    2
+  ],
+  "registrationSha256": "598bdc4c40f67ba9ed1a0b08449c37a887cd96d996efed2cde21090ff8874d28",
+  "launcherSha256": "ba5ddd036794323b8a178acdcdca6834d1e12b223e1a37e0c84803e85cfa8357",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "bindingId": "sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a",
+  "independentReview": {
+    "file": "F:/GenCode/render-weave/out/harness-acceptance-20/publication-6/independent-review.json",
+    "sha256": "b45f8895e77b7ef914e5237045a98abd8d7e6c94caf4f6d4c220474d4c52bd7e"
+  },
+  "sourceCommit": "17111cf23508a4c759d25b65272a72ea31fa9da0",
+  "authorization": "票21两段按计划完成且16/16通过、无共享STOP；沿用户已批准同一业务/预算及M329具体端点授权继续原四。任何额度限制立即停止留档，不覆盖有效失败。",
+  "prerequisites": [
+    {
+      "file": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-6/dispatch/segment-1/completed.json",
+      "sha256": "45eb2602ff89e891885006e578cda4e4d24729dd37f0efc01b38b536019a44b9",
+      "requireCompleted": true
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-6/dispatch/segment-2/completed.json",
+      "sha256": "1fd0740107937dc57d86aa2346a3ef8a3a0bb55d0d80b8e8e1900553cca666f5",
+      "requireCompleted": true
+    }
+  ]
+}

@@ -10,11 +10,11 @@
 
 **Trace:** 第三阶段 PRD；2026-10-21 用户要求；[同图复跑报告](../../../docs/agent-arabic-retest.md)。
 
-- [ ] 额度恢复后按新合同运行现有模型评估门槛；代码离线通过不能替代真实模型通过。
+- [x] 额度恢复后按新合同运行现有模型评估门槛；代码离线通过不能替代真实模型通过。
 - [x] 中文受控样例完成真实模型纠偏，保留改前/改后证据、反馈成本和未核实维度。
 - [ ] 英文真实样例验证模型纠偏；已有英文受控工具对照不能代替这项。
 - [ ] 中文、英文真实参考样例补齐独立样式/状态及人工比较；不以零诊断异常宣称全图还原通过。
-- [ ] 本票不以等待额度为理由修改平台限制，也不自动轮询付费模型。
+- [x] 本票不以等待额度为理由修改平台限制，也不自动轮询付费模型。
 
 **测试接缝：** 公开 Agent / 渲染 / CLI 入口；资料变更的真实模型门槛在票据 38 统一验收。各票特有证据见条目。
 
@@ -125,6 +125,20 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 ### 2026-10-25 用户接受英文实际成果
 
 用户对原图/首次/纠偏审核请求直接回复“确认接受”，已记录[总体接受原话及成果身份](../original38-harness/english-candidate-5-results/human-review-01.json)。39项细分结论、实际审核分钟和是否预看诊断未提供，保留未知，不推断全部分项通过。原始审核包与空表不改，未应用成果；原38完整门槛及其他独立审核仍待完成。
+
+### 2026-10-25 候选6四场景完整门槛及待人工审核
+
+候选6按原登记完成四场景各两次，8pass/0fail/0invalid/0not-run，10个实际阶段全部封存。共同候选 `sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1`，原四绑定 `sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a`。实际命令为公开 `candidate-dispatch.mjs --registration <原四根>/registration.json --activation <原四根>/activation.json --segment 1`及`--segment 2`；原四根 `F:/GenCode/render-weave/out/harness-original38-candidate-6`。首段退出3表示4pass/4not-run，第二段退出0、累计8pass；两段未停止，无额度事件、原生API重试或外层重试。没有改模型/预算/答案、自动额度探测或覆盖旧失败。
+
+[完整结果与原件索引](../original38-harness/candidate-6-results/README.md)固定最终报告 SHA `4f1e2eeb27ee0231bf2ededbde5d06eb6ef03ad50e229c373e853a2f4ebca6aa`。原报告unverified/真实计数0不回写，3274项独立来源核查另证10个原生阶段/846封存文件、CLI2.1.296与实际Haiku5.5、10轮末次工具与宿主终检身份一致。两次设计压测10/10；修改各6/10/layout2/范围违例0符合预设门槛，但4项压力问题仍保留。366首遍58/59名称唯一差异“滨河强天桥”对“滨河华强天桥”，第二遍59/59无编辑差异；两遍地标15/15、设施18/18且无额外项。
+
+最终input330/cacheRead10206316/cacheCreation869723/output465145，thinking326540是output子集；两会话墙钟3935615ms，尝试3883756ms，实际账单及人工分钟未知。第二遍366数据集请求40而原生成功计数47的[专项证明](../original38-harness/candidate-6-results/raw/turn-count-40-47.md)保留：46个user事件加初始1，61个assistant事件归并为19个模型响应（18个含工具）；不是同一上限计数，也不宣称硬截断已测。
+
+最新版[四个实际成果审核包](F:/GenCode/render-weave/out/harness-original38-review/zh-candidate-6-index-v2/index.html)明确封存brief排除蓝色数字圈、修改包限定原两处授权；实际50DPI图与120DPI比较图区分。14图与旧包相同，64项人审/分钟仍空。票21的4个英文模板纠偏使用[新的候选6引用清单](../original38-harness/candidate-6-results/raw/conditional-english-reference.candidate-6.json)，绑定其真实seal与最终报告，countsAsNewObservation=false；不更新候选2旧引用、不计作TfL独立业务审核。候选5纯英文用户总体接受仍为上节历史，细项未知不填。
+
+候选6公开pack/restore实际归档恢复8根5768文件/1037目录（另8标签根），manifest `3719599f817789a25bd14f06cd67663e10d9fcb090c3664227177a867c127087`；恢复的10轮 `readReview(...,{persistArtifacts:false})` 后，原件、恢复件、归档完整路径集合及SHA全部不变，132项核查0发现、已知凭据扫描0命中。绝对路径保留，不声称任意迁移可续跑。归档包含最新版四包/index，包不算模型阶段；票21已归档源未改。
+
+据此勾选完整四场景门槛和遵守授权/不自动轮询条款；本票继续needs-triage，独立样式/状态与人工比较仍待完成，不代关22–26或填写人审。CONTEXT由集成方统一更新。本次取证、归档及记录整理新增模型调用0。
 
 ## Comments
 

@@ -1,0 +1,1283 @@
+{
+  "observationProof": {
+    "evaluation": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\evaluation",
+    "bindingDirectory": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6",
+    "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+    "bindingId": "sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a",
+    "experiment": "sha256:4062145cb5e1909135878218991f1e1b2b11b2a8dedd9b58409f08a66855de4a",
+    "unit": {
+      "scenario": "m402-template",
+      "repetition": 1,
+      "stage": "template"
+    },
+    "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+    "evaluationSha256": "82263f34be139cb7f9493a3c70d3d801fd37c33417de73ea6058615e575a6f1e",
+    "bindingSha256": "010c733ff55dafa2d4c03d01d56e60da390183cfec24e16615268640a10cff92",
+    "startedSha256": "26ede9bc50d861216bb185cdd6666d2cea3a2da62a0e7f2231d2c2b73784c167",
+    "completionSealSha256": "145192ab8114de10a6cf749847aeb86e365265fd54396a70bc37f856c496968d",
+    "sourceFiles": {
+      "round/agent/candidates/road-segment.json": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155",
+      "round/agent/candidates/route-sign-main.json": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7",
+      "round/agent/candidates/schedule-time.json": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec",
+      "round/agent/candidates/stop-badge.json": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239",
+      "round/agent/candidates/stop-column.json": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e",
+      "round/agent/docs/brief.md": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+      "round/agent/docs/domain-route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+      "round/agent/docs/dsl-reference.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "round/agent/docs/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "round/agent/docs/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "round/agent/docs/request.json": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+      "round/agent/outcome.json": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b",
+      "round/agent/sample.png": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+      "round/candidates/road-segment.json": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155",
+      "round/candidates/route-sign-main.json": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7",
+      "round/candidates/schedule-time.json": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec",
+      "round/candidates/stop-badge.json": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239",
+      "round/candidates/stop-column.json": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e",
+      "round/check.json": "038cc70817ceb65707f50ac9935999daf10d4cd11d835b9b9f64fe98efd95a6d",
+      "round/checkpoint.json": "8dd3b6cf4eacf39b43fd7ff0de07e3f41cc80c3e3f290bf676fc151aaa344c9b",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/road-segment.json": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/route-sign-main.json": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/schedule-time.json": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-badge.json": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-column.json": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/outcome.json": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/basis.json": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/record.json": "b3a5858cfec608261b5e5a87f2398d947a3f69804ca95418cf13bff3ec0ff526",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-route-sign-v1.schema.json": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-stop-v1.schema.json": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/dataset-m402.json": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-route-sign-v1.json": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0",
+      "round/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-stop-v1.json": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/road-segment.json": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/route-sign-main.json": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/schedule-time.json": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-badge.json": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-column.json": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/outcome.json": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/basis.json": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/record.json": "a7eb18e267f01aaf33d1b42e109933e790c266e3ea7d17ad1771ae29e471c834",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-route-sign-v1.schema.json": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-stop-v1.schema.json": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/dataset-m402.json": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-route-sign-v1.json": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0",
+      "round/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-stop-v1.json": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/road-segment.json": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/route-sign-main.json": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/schedule-time.json": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-badge.json": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-column.json": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/outcome.json": "6fbd86b3c9e8b15e5b0e398ad98b0f53522ecf9a7b796a52c2aab8b63291799b",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/basis.json": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/record.json": "9308c92e236f49dd914c6a3bfe688b9eadd9db8cf8e136e036e5338afe269b8d",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-route-sign-v1.schema.json": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-stop-v1.schema.json": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/dataset-m402.json": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-route-sign-v1.json": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0",
+      "round/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-stop-v1.json": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589",
+      "round/evaluation.json": "2f44a024abfe68ee106c2927f23ecbc231c02e8af461543df5083b99e7c7aab1",
+      "round/execution-owner.json": "a257c2efcc7de9dd8673f6c6e603b4b636c2a86adfd6a931701bf1e4770081de",
+      "round/execution.json": "75dfafb25e83831f7ca691bf6552097a3fc0a895f8643300aa6459db7c9120d5",
+      "round/logs/claude-config/.claude.json": "687ddf627ca07d70322ad3d0a04952b64490a1ef931d52115159baba1ea37bce",
+      "round/logs/claude-config/.last-cleanup": "4c90effb8529a152f8d22e416c6a4b2c34fcade4b16d797a6c3617d036ec3c5c",
+      "round/logs/claude-config/backups/.claude.json.backup.1792991302987": "0fe7959a432bd3de31bb4e95b6b408a54b929013601c62014c0f9063d0109d70",
+      "round/logs/materials/brief.md": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+      "round/logs/materials/domain-route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+      "round/logs/materials/dsl-reference.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "round/logs/materials/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "round/logs/materials/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "round/logs/materials/request.json": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+      "round/logs/mcp.json": "e18911cfe4edadadac96ff41033971186e199ca6456f56802a4fcaa50408196e",
+      "round/logs/outcome-context.json": "c0a025e969a6f7db89014446f66ed42686cfc57700e8d2a428938960c557263e",
+      "round/logs/prompt.md": "4afa417fdc170b8573155b95a1fc71e478029987396f1272fb94901aea970c1f",
+      "round/logs/provenance.json": "f3df10f574cb86ac77bfb762a2943f4c19590536ab39ccef27915968f5f2f776",
+      "round/logs/reference-materials.json": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f",
+      "round/logs/sample.png": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+      "round/logs/stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "round/logs/stream.jsonl": "7a922482f8cce0d720a94a0ebd584278a2ba5267e5dc5a2f0e8a4b06aa2217cf",
+      "round/logs/tools.jsonl": "411a8dc7f07ce82c0ba749a81988d7a6e08214f0727bfa6a19f20f77635aa040",
+      "round/outcome.json": "d237a72993c38dc0a6e337eecb317ec76ae9eca455f8c8216d5c505b31ba8b4c",
+      "round/request.json": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-bold.bin": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-heavy.bin": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-medium.bin": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-regular.bin": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-hospital.bin": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-metro.bin": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/identity.json": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-1.bin": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-2.bin": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-3.bin": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-4.bin": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/resources.json": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/route-no-m402.bin": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-jpg.bin": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-png.bin": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-webp.bin": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "round/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-vector-svg.bin": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "round/round-start.json": "e264ddf2258f5c01fe5c92364530ede71d009f11d4ee2177020a0004e06d1e3c",
+      "round/round.json": "c23fa9735a0865fc358529ef5692f9bab52262fb7910978c28b67b3a9ecc1ac6",
+      "round/snapshot/compiled-route-sign-v1.schema.json": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20",
+      "round/snapshot/compiled-stop-v1.schema.json": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba",
+      "round/snapshot/dataset-m402.json": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692",
+      "round/snapshot/schema-route-sign-v1.json": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0",
+      "round/snapshot/schema-stop-v1.json": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589",
+      "round.log": "cb1ca3897d9a5239d468d60608a2a17beb0daafdb3b6dd003f35f38518efa357",
+      "started.json": "26ede9bc50d861216bb185cdd6666d2cea3a2da62a0e7f2231d2c2b73784c167"
+    }
+  },
+  "generatorSha256": "1568565ba24fd8018d6ae63e22e876503418636cb7c44f734f225cf9a7d1c92c",
+  "candidate": {
+    "id": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+    "manifestSha256": "6caa67bba49bf23db7b9b2326701a829260eeb517ed625ecd91d1c735d6d712f",
+    "directory": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6"
+  },
+  "preflight": false,
+  "format": "original38-review-package/2",
+  "scope": "模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性",
+  "status": "prepared-not-reviewed",
+  "createdAt": "2026-10-26T06:00:49.108Z",
+  "runtime": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6\\content",
+  "rendererBuildId": "sha256:c0fb701cb8a3818bf651151202e60b4ff7893330e0f08328a9faa8d2ee17f1d1",
+  "round": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-6\\evaluation\\run-1\\m402-template\\attempts\\7762f3b8-74ac-4567-9c71-0086e81d0fde\\round",
+  "taskBrief": {
+    "file": "round-copy/agent/docs/brief.md",
+    "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+    "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+  },
+  "revisionRequirement": null,
+  "sourceScopeSha256": "6f268d9740483b005309a4d03379c79d0facfd06a7c33cb683f8691aa81b4f2c",
+  "sourceRoundFiles": [
+    {
+      "path": "agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "agent/docs/brief.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "agent/docs/domain-route-sign.md",
+      "sha256": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded"
+    },
+    {
+      "path": "agent/docs/dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "agent/docs/guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "agent/docs/outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "agent/docs/request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "agent/sample.png",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "check.json",
+      "sha256": "038cc70817ceb65707f50ac9935999daf10d4cd11d835b9b9f64fe98efd95a6d"
+    },
+    {
+      "path": "checkpoint.json",
+      "sha256": "8dd3b6cf4eacf39b43fd7ff0de07e3f41cc80c3e3f290bf676fc151aaa344c9b"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/record.json",
+      "sha256": "b3a5858cfec608261b5e5a87f2398d947a3f69804ca95418cf13bff3ec0ff526"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/record.json",
+      "sha256": "a7eb18e267f01aaf33d1b42e109933e790c266e3ea7d17ad1771ae29e471c834"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/outcome.json",
+      "sha256": "6fbd86b3c9e8b15e5b0e398ad98b0f53522ecf9a7b796a52c2aab8b63291799b"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/record.json",
+      "sha256": "9308c92e236f49dd914c6a3bfe688b9eadd9db8cf8e136e036e5338afe269b8d"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "evaluation.json",
+      "sha256": "2f44a024abfe68ee106c2927f23ecbc231c02e8af461543df5083b99e7c7aab1"
+    },
+    {
+      "path": "execution-owner.json",
+      "sha256": "a257c2efcc7de9dd8673f6c6e603b4b636c2a86adfd6a931701bf1e4770081de"
+    },
+    {
+      "path": "execution.json",
+      "sha256": "75dfafb25e83831f7ca691bf6552097a3fc0a895f8643300aa6459db7c9120d5"
+    },
+    {
+      "path": "logs/claude-config/.claude.json",
+      "sha256": "687ddf627ca07d70322ad3d0a04952b64490a1ef931d52115159baba1ea37bce"
+    },
+    {
+      "path": "logs/claude-config/.last-cleanup",
+      "sha256": "4c90effb8529a152f8d22e416c6a4b2c34fcade4b16d797a6c3617d036ec3c5c"
+    },
+    {
+      "path": "logs/claude-config/backups/.claude.json.backup.1792991302987",
+      "sha256": "0fe7959a432bd3de31bb4e95b6b408a54b929013601c62014c0f9063d0109d70"
+    },
+    {
+      "path": "logs/materials/brief.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "logs/materials/domain-route-sign.md",
+      "sha256": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded"
+    },
+    {
+      "path": "logs/materials/dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "logs/materials/guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "logs/materials/outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "logs/materials/request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "logs/mcp.json",
+      "sha256": "e18911cfe4edadadac96ff41033971186e199ca6456f56802a4fcaa50408196e"
+    },
+    {
+      "path": "logs/outcome-context.json",
+      "sha256": "c0a025e969a6f7db89014446f66ed42686cfc57700e8d2a428938960c557263e"
+    },
+    {
+      "path": "logs/prompt.md",
+      "sha256": "4afa417fdc170b8573155b95a1fc71e478029987396f1272fb94901aea970c1f"
+    },
+    {
+      "path": "logs/provenance.json",
+      "sha256": "f3df10f574cb86ac77bfb762a2943f4c19590536ab39ccef27915968f5f2f776"
+    },
+    {
+      "path": "logs/reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "logs/sample.png",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "logs/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/stream.jsonl",
+      "sha256": "7a922482f8cce0d720a94a0ebd584278a2ba5267e5dc5a2f0e8a4b06aa2217cf"
+    },
+    {
+      "path": "logs/tools.jsonl",
+      "sha256": "411a8dc7f07ce82c0ba749a81988d7a6e08214f0727bfa6a19f20f77635aa040"
+    },
+    {
+      "path": "outcome.json",
+      "sha256": "d237a72993c38dc0a6e337eecb317ec76ae9eca455f8c8216d5c505b31ba8b4c"
+    },
+    {
+      "path": "request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "round-start.json",
+      "sha256": "e264ddf2258f5c01fe5c92364530ede71d009f11d4ee2177020a0004e06d1e3c"
+    },
+    {
+      "path": "round.json",
+      "sha256": "c23fa9735a0865fc358529ef5692f9bab52262fb7910978c28b67b3a9ecc1ac6"
+    },
+    {
+      "path": "snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    }
+  ],
+  "sourceRoundDirectories": [
+    "agent",
+    "agent/candidates",
+    "agent/docs",
+    "agent/scratch",
+    "candidates",
+    "checkpoints",
+    "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2",
+    "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent",
+    "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates",
+    "checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot",
+    "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1",
+    "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent",
+    "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates",
+    "checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot",
+    "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172",
+    "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent",
+    "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates",
+    "checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot",
+    "logs",
+    "logs/claude-config",
+    "logs/claude-config/backups",
+    "logs/claude-config/sessions",
+    "logs/materials",
+    "resources",
+    "resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88",
+    "snapshot"
+  ],
+  "originalRoundUnchanged": true,
+  "copyUnchangedAfterPublicRead": true,
+  "publicReadOptions": {
+    "persistArtifacts": false
+  },
+  "sourceImageSha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6",
+  "outcomeSha256": "d237a72993c38dc0a6e337eecb317ec76ae9eca455f8c8216d5c505b31ba8b4c",
+  "reviewSha256": null,
+  "contentIdentity": {
+    "format": "renderweave-content-identity/1",
+    "engine": "sha256:c0fb701cb8a3818bf651151202e60b4ff7893330e0f08328a9faa8d2ee17f1d1",
+    "criteria": "authoring-check/1",
+    "candidates": {
+      "files": [
+        {
+          "path": "candidates/route-sign-main.json",
+          "sha256": "c690172e57cd55684015d90d35c818fe4d1e5ba525d19fe3fb47e7bc7c013eec"
+        },
+        {
+          "path": "candidates/stop-column.json",
+          "sha256": "4604ab119f42949066b2d1412dda0e4395668e89feb894f681c7138f82b94caf"
+        },
+        {
+          "path": "candidates/road-segment.json",
+          "sha256": "1eb2e8036a0ef79e6b094070cc8e7e9dada613fedb0e4a7530ce357b06d958f5"
+        },
+        {
+          "path": "candidates/stop-badge.json",
+          "sha256": "dd33a28782c23ed6446028a0203b7c11af3f55d74d41c0ded38cf3e2a98a206a"
+        },
+        {
+          "path": "candidates/schedule-time.json",
+          "sha256": "177c10ca9787c90d201fa6c0acfe3925f000e531042721de01694e5e0a57f7d1"
+        }
+      ],
+      "outcome": "d237a72993c38dc0a6e337eecb317ec76ae9eca455f8c8216d5c505b31ba8b4c"
+    },
+    "workspace": "549ce4dc3cf610c02012a6091316cdd36091d7dae67164091929cb50a79bb59d",
+    "request": "3cea68e47f143c081bad0f8f87a8f49a48feaacc4c38b5f28b08b484990f5a77",
+    "reference": "eec2ef0ff5a60f3d8a2ed00635add42b25227f753cd5f6c0239c05caee976367",
+    "resources": [
+      {
+        "id": "font-hei-bold",
+        "kind": "font",
+        "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+        "byteLength": 8569308,
+        "file": "fonts/SourceHanSansCN-Bold.otf"
+      },
+      {
+        "id": "font-hei-medium",
+        "kind": "font",
+        "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+        "byteLength": 8406556,
+        "file": "fonts/SourceHanSansCN-Medium.otf"
+      },
+      {
+        "id": "font-hei-regular",
+        "kind": "font",
+        "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+        "byteLength": 8429224,
+        "file": "fonts/SourceHanSansCN-Regular.otf"
+      },
+      {
+        "id": "icon-hospital",
+        "kind": "image",
+        "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+        "byteLength": 1721,
+        "file": "images/m402/icon-hospital.png"
+      },
+      {
+        "id": "icon-metro",
+        "kind": "image",
+        "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+        "byteLength": 2700,
+        "file": "images/m402/icon-metro.png"
+      },
+      {
+        "id": "landmark-1",
+        "kind": "image",
+        "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+        "byteLength": 2800,
+        "file": "images/m402/landmark-1.png"
+      },
+      {
+        "id": "landmark-2",
+        "kind": "image",
+        "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+        "byteLength": 3445,
+        "file": "images/m402/landmark-2.png"
+      },
+      {
+        "id": "landmark-3",
+        "kind": "image",
+        "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+        "byteLength": 3633,
+        "file": "images/m402/landmark-3.png"
+      },
+      {
+        "id": "landmark-4",
+        "kind": "image",
+        "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+        "byteLength": 3054,
+        "file": "images/m402/landmark-4.png"
+      },
+      {
+        "id": "route-no-m402",
+        "kind": "image",
+        "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+        "byteLength": 28274,
+        "file": "images/m402/route-no-m402.png"
+      }
+    ],
+    "id": "17e0a7307130b92722ceeecde0ac84ea466bd509a35ebbea5091cfdc7950f766"
+  },
+  "effectiveFiles": [
+    {
+      "source": "candidates/route-sign-main.json",
+      "file": "effective-candidates/01.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "source": "candidates/stop-column.json",
+      "file": "effective-candidates/02.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "source": "candidates/road-segment.json",
+      "file": "effective-candidates/03.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "source": "candidates/stop-badge.json",
+      "file": "effective-candidates/04.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "source": "candidates/schedule-time.json",
+      "file": "effective-candidates/05.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    }
+  ],
+  "request": {
+    "template": "线路牌主模板",
+    "dataset": {
+      "id": "ds-m402-wanguocheng"
+    },
+    "parameters": {
+      "currentIndex": 5
+    },
+    "output": {
+      "width": 740,
+      "height": 165,
+      "dpi": 50,
+      "format": "png"
+    },
+    "mode": "final"
+  },
+  "actualImage": {
+    "dpi": 50,
+    "widthPx": 1457,
+    "heightPx": 325
+  },
+  "previewImage": {
+    "source": "separate-public-render",
+    "dpi": 120,
+    "widthPx": 3496,
+    "heightPx": 780
+  },
+  "layoutInventory": {
+    "nodes": 345,
+    "textNodes": 86
+  },
+  "humanReview": null,
+  "files": [
+    {
+      "path": "actual-render.json",
+      "sha256": "279f530c35af6aced1c9f41c106eb81190e4bdfade4896ccb0cad19afc2d274e"
+    },
+    {
+      "path": "actual-request.png",
+      "sha256": "13a65ee2d8d2b2dced682aecec5c356b84d1c93b5cdc85e3bf812eb36369650a"
+    },
+    {
+      "path": "comparison-preview-render.json",
+      "sha256": "23a5c261048c8fee74f752385a4abdf96bb1913bb408747728536aef7bc57b6d"
+    },
+    {
+      "path": "comparison-preview.png",
+      "sha256": "d57371f2cb23378075b9277c925ac8c9505c9ec34e7cea0962097a7731de4eed"
+    },
+    {
+      "path": "effective-candidates/01.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "effective-candidates/02.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "effective-candidates/03.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "effective-candidates/04.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "effective-candidates/05.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "layout-inventory.json",
+      "sha256": "56fea19c54016ec26ac60e886f7b5f5f96c028272ca2eb5dd9983c9f693957e6"
+    },
+    {
+      "path": "observation-source.json",
+      "sha256": "d9d90ad3047144ceef331c18113b70e4490a6680f237869eae4f1140467aa0bc"
+    },
+    {
+      "path": "prepare-review.mjs",
+      "sha256": "1568565ba24fd8018d6ae63e22e876503418636cb7c44f734f225cf9a7d1c92c"
+    },
+    {
+      "path": "public-review.json",
+      "sha256": "2f5599617a854c75bb89f053d18eb16fd21347ff498df481eeaff61206f84b22"
+    },
+    {
+      "path": "review-template.json",
+      "sha256": "95bf98c3c5c7ad135ffb44819079bfaa2938c975d2ea9a1207cab80639426022"
+    },
+    {
+      "path": "review.html",
+      "sha256": "e1fb5de9d7ed567c0bac262a81b4ae6a44db48b137b6a6d9b9b3f7b202e0f91f"
+    },
+    {
+      "path": "round-copy/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "round-copy/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "round-copy/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "round-copy/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "round-copy/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "round-copy/agent/docs/brief.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "round-copy/agent/docs/domain-route-sign.md",
+      "sha256": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded"
+    },
+    {
+      "path": "round-copy/agent/docs/dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "round-copy/agent/docs/guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "round-copy/agent/docs/outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "round-copy/agent/docs/request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "round-copy/agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "round-copy/agent/sample.png",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "round-copy/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "round-copy/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "round-copy/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "round-copy/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "round-copy/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "round-copy/check.json",
+      "sha256": "038cc70817ceb65707f50ac9935999daf10d4cd11d835b9b9f64fe98efd95a6d"
+    },
+    {
+      "path": "round-copy/checkpoint.json",
+      "sha256": "8dd3b6cf4eacf39b43fd7ff0de07e3f41cc80c3e3f290bf676fc151aaa344c9b"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/record.json",
+      "sha256": "b3a5858cfec608261b5e5a87f2398d947a3f69804ca95418cf13bff3ec0ff526"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "round-copy/checkpoints/700221ab-0b56-47fa-b0a6-0242aa2857c2/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/agent/outcome.json",
+      "sha256": "d876ec1652fabde5f92d77177d5955c0d67caa62a7f229bc45e7347851d0772b"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/record.json",
+      "sha256": "a7eb18e267f01aaf33d1b42e109933e790c266e3ea7d17ad1771ae29e471c834"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "round-copy/checkpoints/dc3ab1a9-d436-4b18-8000-314a978980f1/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/road-segment.json",
+      "sha256": "e26bdb9996cfc0c2e77d519ced24f553f01833ec054f152810e1c4f171f53155"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/route-sign-main.json",
+      "sha256": "5904bd55a2412c228875f1f60c7ae30383ae2b564c23171b5e532b40293639e7"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/schedule-time.json",
+      "sha256": "d534cbffc1e53086789cd23d2b11300155bb4462114e4051416d636f5f3a3dec"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-badge.json",
+      "sha256": "3d98f9a9bf2b9fb1c4ed204bf9501e8f138b7c2958d3ed5a562af9908d356239"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/candidates/stop-column.json",
+      "sha256": "0a55d81617c741f6d8bbd5d4dc77a9f524de3897ab8f57c2107a4faa121a034e"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/agent/outcome.json",
+      "sha256": "6fbd86b3c9e8b15e5b0e398ad98b0f53522ecf9a7b796a52c2aab8b63291799b"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/basis.json",
+      "sha256": "2da98228bb1a646a9f99823860c0a96ed42826a7020ccf072ed94c388baec4f5"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/record.json",
+      "sha256": "9308c92e236f49dd914c6a3bfe688b9eadd9db8cf8e136e036e5338afe269b8d"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "round-copy/checkpoints/ebafb0ea-2d25-4eda-becb-1b4cf3219172/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "round-copy/evaluation.json",
+      "sha256": "2f44a024abfe68ee106c2927f23ecbc231c02e8af461543df5083b99e7c7aab1"
+    },
+    {
+      "path": "round-copy/execution-owner.json",
+      "sha256": "a257c2efcc7de9dd8673f6c6e603b4b636c2a86adfd6a931701bf1e4770081de"
+    },
+    {
+      "path": "round-copy/execution.json",
+      "sha256": "75dfafb25e83831f7ca691bf6552097a3fc0a895f8643300aa6459db7c9120d5"
+    },
+    {
+      "path": "round-copy/logs/claude-config/.claude.json",
+      "sha256": "687ddf627ca07d70322ad3d0a04952b64490a1ef931d52115159baba1ea37bce"
+    },
+    {
+      "path": "round-copy/logs/claude-config/.last-cleanup",
+      "sha256": "4c90effb8529a152f8d22e416c6a4b2c34fcade4b16d797a6c3617d036ec3c5c"
+    },
+    {
+      "path": "round-copy/logs/claude-config/backups/.claude.json.backup.1792991302987",
+      "sha256": "0fe7959a432bd3de31bb4e95b6b408a54b929013601c62014c0f9063d0109d70"
+    },
+    {
+      "path": "round-copy/logs/materials/brief.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "round-copy/logs/materials/domain-route-sign.md",
+      "sha256": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded"
+    },
+    {
+      "path": "round-copy/logs/materials/dsl-reference.md",
+      "sha256": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8"
+    },
+    {
+      "path": "round-copy/logs/materials/guide.md",
+      "sha256": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f"
+    },
+    {
+      "path": "round-copy/logs/materials/outcome.md",
+      "sha256": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf"
+    },
+    {
+      "path": "round-copy/logs/materials/request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "round-copy/logs/mcp.json",
+      "sha256": "e18911cfe4edadadac96ff41033971186e199ca6456f56802a4fcaa50408196e"
+    },
+    {
+      "path": "round-copy/logs/outcome-context.json",
+      "sha256": "c0a025e969a6f7db89014446f66ed42686cfc57700e8d2a428938960c557263e"
+    },
+    {
+      "path": "round-copy/logs/prompt.md",
+      "sha256": "4afa417fdc170b8573155b95a1fc71e478029987396f1272fb94901aea970c1f"
+    },
+    {
+      "path": "round-copy/logs/provenance.json",
+      "sha256": "f3df10f574cb86ac77bfb762a2943f4c19590536ab39ccef27915968f5f2f776"
+    },
+    {
+      "path": "round-copy/logs/reference-materials.json",
+      "sha256": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f"
+    },
+    {
+      "path": "round-copy/logs/sample.png",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "round-copy/logs/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "round-copy/logs/stream.jsonl",
+      "sha256": "7a922482f8cce0d720a94a0ebd584278a2ba5267e5dc5a2f0e8a4b06aa2217cf"
+    },
+    {
+      "path": "round-copy/logs/tools.jsonl",
+      "sha256": "411a8dc7f07ce82c0ba749a81988d7a6e08214f0727bfa6a19f20f77635aa040"
+    },
+    {
+      "path": "round-copy/outcome.json",
+      "sha256": "d237a72993c38dc0a6e337eecb317ec76ae9eca455f8c8216d5c505b31ba8b4c"
+    },
+    {
+      "path": "round-copy/request.json",
+      "sha256": "8e972fe9e07640bd6b163a29d87735d1568939c1d4ed3663882375aa3c3c9567"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-bold.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-heavy.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-medium.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/font-hei-regular.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-hospital.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/icon-metro.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/identity.json",
+      "sha256": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-1.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-2.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-3.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/landmark-4.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/resources.json",
+      "sha256": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/route-no-m402.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-jpg.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-png.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-quadrants-webp.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "round-copy/resources/33e7f87d-6e79-47af-9d8d-6d5a7b6a8d88/test-vector-svg.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "round-copy/round-start.json",
+      "sha256": "e264ddf2258f5c01fe5c92364530ede71d009f11d4ee2177020a0004e06d1e3c"
+    },
+    {
+      "path": "round-copy/round.json",
+      "sha256": "c23fa9735a0865fc358529ef5692f9bab52262fb7910978c28b67b3a9ecc1ac6"
+    },
+    {
+      "path": "round-copy/snapshot/compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "round-copy/snapshot/compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "round-copy/snapshot/dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "round-copy/snapshot/schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "round-copy/snapshot/schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "scope.md",
+      "sha256": "2c7db6d2214c38ea6e3fdd628e19f3001272ea765249879e610d10b18e55dbf7"
+    },
+    {
+      "path": "source-binding.json",
+      "sha256": "010c733ff55dafa2d4c03d01d56e60da390183cfec24e16615268640a10cff92"
+    },
+    {
+      "path": "source-eval.json",
+      "sha256": "82263f34be139cb7f9493a3c70d3d801fd37c33417de73ea6058615e575a6f1e"
+    },
+    {
+      "path": "source-scope.md",
+      "sha256": "6f268d9740483b005309a4d03379c79d0facfd06a7c33cb683f8691aa81b4f2c"
+    },
+    {
+      "path": "source.png",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    }
+  ]
+}

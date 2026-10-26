@@ -1,0 +1,32 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+const root='F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-6';
+const out='F:/GenCode/render-weave/out/harness-original38-candidate6-source-audit/conditional-english-reference.candidate-6.json';
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const json=p=>JSON.parse(fs.readFileSync(p));
+const reportFile=path.join(root,'dispatch/segment-2/report-2026-10-25-harness21-candidate-6.segment-5762cd2c-6fab-45d0-9a7f-eb3bc3be51da.json');
+const reportBytes=fs.readFileSync(reportFile),report=JSON.parse(reportBytes);
+assert.equal(sha(reportBytes),'3e12be8957425fc613099f4153796b9df2e9043bfebe87303f8b1740ae855771');
+const reg=json(path.join(root,'registration.json'));
+const sourceAuditFile='F:/GenCode/render-weave/out/harness21-candidate6-source-audit/segment-2-2026-10-26T050440635Z.json';
+const sourceAudit=json(sourceAuditFile);assert.equal(sourceAudit.sourceVerified,true);assert.equal(sourceAudit.findings.length,0);
+const receiver=json('F:/GenCode/render-weave/out/harness-original38-candidate-6/registration.json');
+assert.equal(reg.candidate.id,receiver.candidate.id);
+const entries=[];
+for(const id of ['en-template-design','en-template-revision'])for(const repetition of [1,2]){
+ const unit=`run-${repetition}/${id}`,row=report.results.find(x=>x.id===id&&x.repetition===repetition),attempts=report.attempts.filter(x=>x.unit===unit);
+ assert.equal(row.status,'pass');assert.equal(attempts.length,1);
+ const attempt=attempts[0],dir=path.join(root,'observations',attempt.dir),sealFile=path.join(dir,'completed.seal.json'),sealBytes=fs.readFileSync(sealFile),seal=JSON.parse(sealBytes);
+ assert.equal(sha(JSON.stringify(seal.completion)),seal.sha256);assert.deepEqual(json(path.join(dir,'completed.json')),seal.completion);
+ for(const[file,hash]of Object.entries(seal.completion.files))assert.equal(sha(fs.readFileSync(path.join(dir,file))),hash);
+ const actual=sourceAudit.observations.find(x=>x.attemptId===attempt.id);assert.ok(actual);
+ assert.equal(actual.sealSha256,sha(sealBytes));assert.equal(actual.runtime.maxTurns,80);assert.equal(actual.runtime.roundTimeoutMs,3600000);
+ for(const value of Object.values(row.checks.feedback).filter(x=>typeof x==='boolean'))assert.equal(value,true);
+ const roundFile=path.join(dir,'round/round.json'),evaluationFile=path.join(dir,'round/evaluation.json');
+ entries.push({sourceTicket:'harness21',uniqueDispatchOwner:'root执行票21既定单元',receivingTicket:'original38',unit,id,repetition,task:actual.runtime?json(roundFile).task:null,attemptId:attempt.id,attemptDirectory:dir,seal:{file:sealFile,sha256:sha(sealBytes),sealedFiles:Object.keys(seal.completion.files).length},round:{file:roundFile,sha256:sha(fs.readFileSync(roundFile))},evaluation:{file:evaluationFile,sha256:sha(fs.readFileSync(evaluationFile))},status:row.status,guards:actual.guards,finalContentIdentity:actual.finalContentIdentity,runtime:actual.runtime,usage:actual.usage,countsAsNewObservation:false,representsIndependentTfLReview:false,humanReview:null});
+}
+const value={format:'renderweave-original38-shared-english-reference/1',createdAt:new Date().toISOString(),candidateId:report.candidateBinding.candidateId,sourceBindingId:report.candidateBinding.id,sourceExperimentId:reg.experimentId,receivingBindingId:receiver.binding.id,receivingExperimentId:receiver.experimentId,sourceReport:{file:reportFile,sha256:sha(reportBytes),reportedRealModelObservations:report.evidence.realModelObservations},sourceAudit:{file:sourceAuditFile,sha256:sha(fs.readFileSync(sourceAuditFile))},sourceArchive:{directory:'F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive',manifestSha256:'879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec'},entries,uniqueReferencedObservations:4,countsAsNewObservation:false,newModelCalls:0,notes:['本文件是候选6的新引用清单；旧conditional-english-reference.json属于候选2历史，不更新或代用其身份。','同一共同候选，逐计划绑定/实验不同；这里只引用票21四个指定英文受控纠偏单元，不把票21输入当原四输入。','四单元由票21唯一派发，只占原16观测中的四个槽，不额外派发、不加总为新四次。','受控英文材料不等于用户核准TfL161的独立业务样例；候选5纯英文实际成果与用户总体接受记录另列，不拼入本候选。','引用不代替中英文独立样式/状态人工审核，不填分钟或人工结论。']};
+fs.writeFileSync(out,JSON.stringify(value,null,2)+'\n',{flag:'wx'});
+console.log(JSON.stringify({file:out,sha256:sha(fs.readFileSync(out)),references:entries.length,countsAsNewObservation:false}));

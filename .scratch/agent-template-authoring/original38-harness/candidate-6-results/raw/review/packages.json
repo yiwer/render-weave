@@ -1,0 +1,210 @@
+{
+  "format": "original38-candidate6-review-index/1",
+  "createdAt": "2026-10-26T06:02:17.343Z",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "status": "prepared-not-reviewed",
+  "humanReview": null,
+  "activeMinutes": null,
+  "packages": [
+    {
+      "name": "zh-template-r1-candidate-6-v2",
+      "task": "template",
+      "repetition": 1,
+      "previousName": "zh-template-r1-candidate-6",
+      "unchangedImages": [
+        {
+          "file": "actual-request.png",
+          "sha256": "13a65ee2d8d2b2dced682aecec5c356b84d1c93b5cdc85e3bf812eb36369650a"
+        },
+        {
+          "file": "comparison-preview.png",
+          "sha256": "d57371f2cb23378075b9277c925ac8c9505c9ec34e7cea0962097a7731de4eed"
+        },
+        {
+          "file": "source.png",
+          "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+        }
+      ],
+      "taskBrief": {
+        "file": "../zh-template-r1-candidate-6-v2/round-copy/agent/docs/brief.md",
+        "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+      },
+      "review": "../zh-template-r1-candidate-6-v2/review.html",
+      "reviewTemplate": "../zh-template-r1-candidate-6-v2/review-template.json",
+      "manifest": "../zh-template-r1-candidate-6-v2/manifest.json",
+      "manifestSha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8",
+      "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+      "sourceFiles": 106,
+      "sourceDirectories": 26,
+      "packageFiles": 127,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "requirement": null,
+      "humanReview": null
+    },
+    {
+      "name": "zh-revision-r1-candidate-6-v3",
+      "task": "revision",
+      "repetition": 1,
+      "previousName": "zh-revision-r1-candidate-6-v2",
+      "unchangedImages": [
+        {
+          "file": "actual-request.png",
+          "sha256": "ab331f25c46667ba81ee4c1be65ad0c810e301b502db0001740ab580a33db92b"
+        },
+        {
+          "file": "before-revision.png",
+          "sha256": "060c4519cde63970a81d3c891a619e8cd56d6a30b58a43824b26dae3c5258df5"
+        },
+        {
+          "file": "comparison-preview.png",
+          "sha256": "f66d4d16e96b3209d7dfdfe5b5b02261c27e56d9f5b7ffb4250bca2b00e472f7"
+        },
+        {
+          "file": "source.png",
+          "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+        }
+      ],
+      "taskBrief": {
+        "file": "../zh-revision-r1-candidate-6-v3/round-copy/agent/docs/brief.md",
+        "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+      },
+      "review": "../zh-revision-r1-candidate-6-v3/review.html",
+      "reviewTemplate": "../zh-revision-r1-candidate-6-v3/review-template.json",
+      "manifest": "../zh-revision-r1-candidate-6-v3/manifest.json",
+      "manifestSha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db",
+      "attemptId": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+      "sourceFiles": 102,
+      "sourceDirectories": 22,
+      "packageFiles": 122,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "requirement": {
+        "file": "../zh-revision-r1-candidate-6-v3/round-copy/requirement.md",
+        "sha256": "ee62e16760c0fde471c10955b5a9d54c0b0b1b06aa82a9985b772b2b2bf8a645",
+        "text": "# 修改要求：线路牌模板的两处版面问题\n\n客户验收时指出两处与设计稿不符，其余都保持不变。\n\n1. **地标位置**：带圈数字（地标，`站点格/站名框/地标`）现在被排在站名下方单独的一行，不在站名列里。设计稿中地标是竖排站名的最后一格：有地标的站，地标紧接在站名最后一个字之后；没有地标的站，站名延伸到同一条底线。也就是说，各列最后一格（地标，或无地标站名的最后一个字）的底边齐平。\n2. **道路名分布**：`道路段/道路名` 现在是两端分布，首尾两个字贴着道路段的两端。设计稿是同间隔分布：两端的留白与字间距相同。\n"
+      },
+      "humanReview": null
+    },
+    {
+      "name": "zh-template-r2-candidate-6-v2",
+      "task": "template",
+      "repetition": 2,
+      "previousName": "zh-template-r2-candidate-6",
+      "unchangedImages": [
+        {
+          "file": "actual-request.png",
+          "sha256": "07561b904f9f447dec94aafb3993099bd93f111aa27e9052abd06f8ff0e69bd1"
+        },
+        {
+          "file": "comparison-preview.png",
+          "sha256": "904dfd47ccd7eb9f1796c0d96fec43a2e7872a44a1e6edcdc0ae1775dafebd50"
+        },
+        {
+          "file": "source.png",
+          "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+        }
+      ],
+      "taskBrief": {
+        "file": "../zh-template-r2-candidate-6-v2/round-copy/agent/docs/brief.md",
+        "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+      },
+      "review": "../zh-template-r2-candidate-6-v2/review.html",
+      "reviewTemplate": "../zh-template-r2-candidate-6-v2/review-template.json",
+      "manifest": "../zh-template-r2-candidate-6-v2/manifest.json",
+      "manifestSha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce",
+      "attemptId": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+      "sourceFiles": 119,
+      "sourceDirectories": 30,
+      "packageFiles": 140,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "requirement": null,
+      "humanReview": null
+    },
+    {
+      "name": "zh-revision-r2-candidate-6-v2",
+      "task": "revision",
+      "repetition": 2,
+      "previousName": "zh-revision-r2-candidate-6",
+      "unchangedImages": [
+        {
+          "file": "actual-request.png",
+          "sha256": "7fef9971e3107daf9bc14477542afe48cc77c30c9704b4e75bf26ecc85fd514d"
+        },
+        {
+          "file": "before-revision.png",
+          "sha256": "060c4519cde63970a81d3c891a619e8cd56d6a30b58a43824b26dae3c5258df5"
+        },
+        {
+          "file": "comparison-preview.png",
+          "sha256": "bc6480ce66d34eb9ce3bd4ffe6e8782cd2379bc5ae5f6aa6db329b925bf749c2"
+        },
+        {
+          "file": "source.png",
+          "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+        }
+      ],
+      "taskBrief": {
+        "file": "../zh-revision-r2-candidate-6-v2/round-copy/agent/docs/brief.md",
+        "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+        "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+      },
+      "review": "../zh-revision-r2-candidate-6-v2/review.html",
+      "reviewTemplate": "../zh-revision-r2-candidate-6-v2/review-template.json",
+      "manifest": "../zh-revision-r2-candidate-6-v2/manifest.json",
+      "manifestSha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33",
+      "attemptId": "9de14c87-0916-464d-ad00-1b5e978d3898",
+      "sourceFiles": 102,
+      "sourceDirectories": 22,
+      "packageFiles": 122,
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "source": "separate-public-render",
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "requirement": {
+        "file": "../zh-revision-r2-candidate-6-v2/round-copy/requirement.md",
+        "sha256": "ee62e16760c0fde471c10955b5a9d54c0b0b1b06aa82a9985b772b2b2bf8a645",
+        "text": "# 修改要求：线路牌模板的两处版面问题\n\n客户验收时指出两处与设计稿不符，其余都保持不变。\n\n1. **地标位置**：带圈数字（地标，`站点格/站名框/地标`）现在被排在站名下方单独的一行，不在站名列里。设计稿中地标是竖排站名的最后一格：有地标的站，地标紧接在站名最后一个字之后；没有地标的站，站名延伸到同一条底线。也就是说，各列最后一格（地标，或无地标站名的最后一个字）的底边齐平。\n2. **道路名分布**：`道路段/道路名` 现在是两端分布，首尾两个字贴着道路段的两端。设计稿是同间隔分布：两端的留白与字间距相同。\n"
+      },
+      "humanReview": null
+    }
+  ]
+}

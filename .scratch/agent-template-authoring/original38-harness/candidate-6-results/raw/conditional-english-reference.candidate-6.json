@@ -1,0 +1,302 @@
+{
+  "format": "renderweave-original38-shared-english-reference/1",
+  "createdAt": "2026-10-26T06:14:41.964Z",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "sourceBindingId": "sha256:528117b478d6b44833ae57217ee94861b1dc4c65c22ee552fa5377ebd9b25643",
+  "sourceExperimentId": "sha256:e094c67782b03026354fde7da533b07e104b00e8897053104f5c9bdb092e7c97",
+  "receivingBindingId": "sha256:48a742b1ea7f0d49fa0440d82278a4e015b3a24d3f1247bca789cecbd62d987a",
+  "receivingExperimentId": "sha256:4062145cb5e1909135878218991f1e1b2b11b2a8dedd9b58409f08a66855de4a",
+  "sourceReport": {
+    "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\report-2026-10-25-harness21-candidate-6.segment-5762cd2c-6fab-45d0-9a7f-eb3bc3be51da.json",
+    "sha256": "3e12be8957425fc613099f4153796b9df2e9043bfebe87303f8b1740ae855771",
+    "reportedRealModelObservations": 0
+  },
+  "sourceAudit": {
+    "file": "F:/GenCode/render-weave/out/harness21-candidate6-source-audit/segment-2-2026-10-26T050440635Z.json",
+    "sha256": "ff0419c57cb431608cf17258796bab9b229ea8ba648fc686fe71da26c7489113"
+  },
+  "sourceArchive": {
+    "directory": "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive",
+    "manifestSha256": "879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec"
+  },
+  "entries": [
+    {
+      "sourceTicket": "harness21",
+      "uniqueDispatchOwner": "root执行票21既定单元",
+      "receivingTicket": "original38",
+      "unit": "run-1/en-template-design",
+      "id": "en-template-design",
+      "repetition": 1,
+      "task": "template-design",
+      "attemptId": "934696f3-3078-4956-9245-01bfa29aa65c",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-design\\attempts\\934696f3-3078-4956-9245-01bfa29aa65c",
+      "seal": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-design\\attempts\\934696f3-3078-4956-9245-01bfa29aa65c\\completed.seal.json",
+        "sha256": "db70e7e56f22d37361667831003941ab8cca92cb8f8a9a3086958dcf6d7bd59a",
+        "sealedFiles": 80
+      },
+      "round": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-design\\attempts\\934696f3-3078-4956-9245-01bfa29aa65c\\round\\round.json",
+        "sha256": "053439e0e44d999e8ecbaa3c88b32f47e2bf14d04fcca30365c46f09e16486b5"
+      },
+      "evaluation": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-design\\attempts\\934696f3-3078-4956-9245-01bfa29aa65c\\round\\evaluation.json",
+        "sha256": "39cd478bed466accffa59f2f3a9d2fe782dcbca792dc41fd6b5722e8d008cae5"
+      },
+      "status": "pass",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "finalContentIdentity": "0d3ebd849978fd6b2f8a03bca4754478117159a36a58fb31b644bf3f3b9a5333",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "roundTimeoutMs": 3600000,
+        "stagnationThreshold": 2,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "compare_reference",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "outcome_feedback",
+          "check_outcome"
+        ]
+      },
+      "usage": {
+        "inputTokens": 22,
+        "outputTokens": 12321,
+        "cacheReadTokens": 638694,
+        "cacheCreationTokens": 92327
+      },
+      "countsAsNewObservation": false,
+      "representsIndependentTfLReview": false,
+      "humanReview": null
+    },
+    {
+      "sourceTicket": "harness21",
+      "uniqueDispatchOwner": "root执行票21既定单元",
+      "receivingTicket": "original38",
+      "unit": "run-2/en-template-design",
+      "id": "en-template-design",
+      "repetition": 2,
+      "task": "template-design",
+      "attemptId": "9a2a7381-5c04-4472-bb47-8c5591213265",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-design\\attempts\\9a2a7381-5c04-4472-bb47-8c5591213265",
+      "seal": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-design\\attempts\\9a2a7381-5c04-4472-bb47-8c5591213265\\completed.seal.json",
+        "sha256": "08caeb94dd57d22254c32bed26e9ab18570cb82e993fec3360706e075c9b37d6",
+        "sealedFiles": 80
+      },
+      "round": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-design\\attempts\\9a2a7381-5c04-4472-bb47-8c5591213265\\round\\round.json",
+        "sha256": "9707846aad698ee051eee9b9eba82d15fe3a83f6e00cd7a53aca6e0523d19e32"
+      },
+      "evaluation": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-design\\attempts\\9a2a7381-5c04-4472-bb47-8c5591213265\\round\\evaluation.json",
+        "sha256": "9e51cfa139cdc0ea1196ea9af215408b8e02319b4fb60d05c79fd5de913530d9"
+      },
+      "status": "pass",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "finalContentIdentity": "6494a8ea4f571058a1843b7af8bb717627bad6ef54740ec93ab2339849d2dc41",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "roundTimeoutMs": 3600000,
+        "stagnationThreshold": 2,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "compare_reference",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "outcome_feedback",
+          "check_outcome"
+        ]
+      },
+      "usage": {
+        "inputTokens": 16,
+        "outputTokens": 7331,
+        "cacheReadTokens": 315235,
+        "cacheCreationTokens": 72733
+      },
+      "countsAsNewObservation": false,
+      "representsIndependentTfLReview": false,
+      "humanReview": null
+    },
+    {
+      "sourceTicket": "harness21",
+      "uniqueDispatchOwner": "root执行票21既定单元",
+      "receivingTicket": "original38",
+      "unit": "run-1/en-template-revision",
+      "id": "en-template-revision",
+      "repetition": 1,
+      "task": "template-revision",
+      "attemptId": "9701aa1f-1e36-4fcd-8c6b-1afa19de99ca",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-revision\\attempts\\9701aa1f-1e36-4fcd-8c6b-1afa19de99ca",
+      "seal": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-revision\\attempts\\9701aa1f-1e36-4fcd-8c6b-1afa19de99ca\\completed.seal.json",
+        "sha256": "a60c9e43479fbb907ef3150df0c14065c945ee1b4dc6658bfdb178c7c6b481b8",
+        "sealedFiles": 86
+      },
+      "round": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-revision\\attempts\\9701aa1f-1e36-4fcd-8c6b-1afa19de99ca\\round\\round.json",
+        "sha256": "7633aefa37a58224095cc60217902f2c9c11d3ea072f02e7a7a43c4edd28abbb"
+      },
+      "evaluation": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-1\\en-template-revision\\attempts\\9701aa1f-1e36-4fcd-8c6b-1afa19de99ca\\round\\evaluation.json",
+        "sha256": "18666978a250fcc983478e7b72d90924a8cc4b33d6b0e178ed855f3c3184ce80"
+      },
+      "status": "pass",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "finalContentIdentity": "a11cbccc0eb3760377b592c1683613265feb421c04604381698e59771ea0aae6",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "roundTimeoutMs": 3600000,
+        "stagnationThreshold": 2,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "compare_reference",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "outcome_feedback",
+          "check_outcome"
+        ]
+      },
+      "usage": {
+        "inputTokens": 26,
+        "outputTokens": 8186,
+        "cacheReadTokens": 826490,
+        "cacheCreationTokens": 89816
+      },
+      "countsAsNewObservation": false,
+      "representsIndependentTfLReview": false,
+      "humanReview": null
+    },
+    {
+      "sourceTicket": "harness21",
+      "uniqueDispatchOwner": "root执行票21既定单元",
+      "receivingTicket": "original38",
+      "unit": "run-2/en-template-revision",
+      "id": "en-template-revision",
+      "repetition": 2,
+      "task": "template-revision",
+      "attemptId": "5ebde059-4f1c-4d64-8310-b7633dad2232",
+      "attemptDirectory": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-revision\\attempts\\5ebde059-4f1c-4d64-8310-b7633dad2232",
+      "seal": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-revision\\attempts\\5ebde059-4f1c-4d64-8310-b7633dad2232\\completed.seal.json",
+        "sha256": "aeb8319d92eab9f9af044a8758e66609e4210bd27f72a9f894c5e53fad33a22f",
+        "sealedFiles": 86
+      },
+      "round": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-revision\\attempts\\5ebde059-4f1c-4d64-8310-b7633dad2232\\round\\round.json",
+        "sha256": "057b4c0911058188e0b41c3bae052b7d11287c5e8ef7c1f644da15d8ba67fdc7"
+      },
+      "evaluation": {
+        "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-revision\\attempts\\5ebde059-4f1c-4d64-8310-b7633dad2232\\round\\evaluation.json",
+        "sha256": "ac34fc80d60b688a4254912c8afd7e26ca64a1e3735b592046a5cea7a7410731"
+      },
+      "status": "pass",
+      "guards": {
+        "targetCorrection": true,
+        "nonTargetPreservation": true,
+        "unknownRetained": true,
+        "finalCheckMatches": true,
+        "pagination": true
+      },
+      "finalContentIdentity": "947d15b7726e706558b8018bce4e425d2b0e7dec17e3fdabd841febf64caef15",
+      "runtime": {
+        "model": "claude-haiku-5-5",
+        "smallModel": "claude-haiku-5-5",
+        "protocol": "anthropic",
+        "endpoint": "https://opencode.ai/inference/go/anthropic",
+        "maxTurns": 80,
+        "roundTimeoutMs": 3600000,
+        "stagnationThreshold": 2,
+        "effort": null,
+        "keyEnv": "OPEN_CODE_API_KEY",
+        "tools": "Read,Write,Edit,Glob",
+        "mcpTools": [
+          "list_documents",
+          "read_document",
+          "list_resources",
+          "check_templates",
+          "render_draft",
+          "compare_reference",
+          "inspect_layout",
+          "view_image",
+          "dsl_reference",
+          "outcome_feedback",
+          "check_outcome"
+        ]
+      },
+      "usage": {
+        "inputTokens": 20,
+        "outputTokens": 7675,
+        "cacheReadTokens": 431219,
+        "cacheCreationTokens": 67958
+      },
+      "countsAsNewObservation": false,
+      "representsIndependentTfLReview": false,
+      "humanReview": null
+    }
+  ],
+  "uniqueReferencedObservations": 4,
+  "countsAsNewObservation": false,
+  "newModelCalls": 0,
+  "notes": [
+    "本文件是候选6的新引用清单；旧conditional-english-reference.json属于候选2历史，不更新或代用其身份。",
+    "同一共同候选，逐计划绑定/实验不同；这里只引用票21四个指定英文受控纠偏单元，不把票21输入当原四输入。",
+    "四单元由票21唯一派发，只占原16观测中的四个槽，不额外派发、不加总为新四次。",
+    "受控英文材料不等于用户核准TfL161的独立业务样例；候选5纯英文实际成果与用户总体接受记录另列，不拼入本候选。",
+    "引用不代替中英文独立样式/状态人工审核，不填分钟或人工结论。"
+  ]
+}

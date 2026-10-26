@@ -1,0 +1,190 @@
+{
+  "allowedDecisions": [
+    "accept",
+    "issue",
+    "unknown",
+    "not-applicable"
+  ],
+  "format": "original38-independent-review/1",
+  "status": "not-reviewed",
+  "scopeSha256": "2c7db6d2214c38ea6e3fdd628e19f3001272ea765249879e610d10b18e55dbf7",
+  "taskBrief": {
+    "file": "round-copy/agent/docs/brief.md",
+    "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18",
+    "text": "# 项目说明：M402 公交线路牌模板\n\n- 业务：公交线路牌（领域约定见 domain-route-sign.md，如有）。\n- 示例图：实际尺寸 740 × 165 mm，是 M402 路开往万国城总站方向的设计稿，本站为第 5 站。\n- 主模板：对外参数 currentIndex（number，本站序号，从 1 开始，0 表示不标本站）；被调模板自行命名。\n- 目标范围：宽 740–1500 mm，高 165 mm，站数 2–50。\n- 客户说明：站名上方蓝色圆形内带数字的标记是早期错误设计，忽略，不画。\n"
+  },
+  "revisionRequirement": null,
+  "reviewer": null,
+  "startedAt": null,
+  "endedAt": null,
+  "activeMinutes": null,
+  "autoDiagnosticsSeenBeforeFirstJudgment": null,
+  "originalJudgment": null,
+  "items": [
+    {
+      "id": "Z01",
+      "label": "线路号",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z02",
+      "label": "方向箭头",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z03",
+      "label": "终点大标题",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z04",
+      "label": "票价胶囊",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z05",
+      "label": "运营方",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z06",
+      "label": "大面积底色与圆角",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z07",
+      "label": "普通站名",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z08",
+      "label": "已过站名",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z09",
+      "label": "本站",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z10",
+      "label": "地标圈号",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z11",
+      "label": "站点上方设施图标（按业务说明）",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null,
+      "reviewBasis": "按封存业务说明：站名上方蓝色圆形内带数字标记不画，正确缺省不算漏画；仍核对其他设施图标的位置、所属站、状态与颜色。",
+      "briefFile": "round-copy/agent/docs/brief.md",
+      "briefSha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "id": "Z12",
+      "label": "道路名称",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z13",
+      "label": "下一站区",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z14",
+      "label": "底栏分界箭头",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z15",
+      "label": "服务时间主行",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    },
+    {
+      "id": "Z16",
+      "label": "发车时刻小字",
+      "decision": null,
+      "allApplicableInstancesReviewed": null,
+      "sourceLocation": null,
+      "resultLocation": null,
+      "evidence": null,
+      "comment": null
+    }
+  ],
+  "corrections": [],
+  "businessAcceptance": null
+}
