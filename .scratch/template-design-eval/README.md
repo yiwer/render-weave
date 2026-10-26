@@ -10,3 +10,4 @@
 | 02 | [12 个用例有完整材料、领域约定与用例文档，经引擎校验](issues/02-cases-domains-and-docs.md) | 01 | A2、A4 |
 | 03 | [首轮真实模型基线跑完，逐项复核检查，通过线定稿](issues/03-baseline-and-pass-lines.md) | 01、02 | A5 |
 | 04 | [01、11、12 在现行材料下各重跑一次，确认基线后的修改](issues/04-confirm-reruns-on-final-materials.md) | 03 | A5 |
+| 05 | [地铁导乘图约定提醒按最少站数验证被调模板的适用尺寸](issues/05-metro-strip-minimum-stations.md) | 无 | M338 后续 |

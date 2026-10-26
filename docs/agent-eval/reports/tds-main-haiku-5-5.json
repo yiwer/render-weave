@@ -1,0 +1,3295 @@
+{
+  "evidence": {
+    "kind": "unverified",
+    "realModelObservations": 0,
+    "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+  },
+  "format": "renderweave-agent-eval/4",
+  "label": "tds-main-haiku-5-5",
+  "startedAt": "2026-10-26T08:16:17.794Z",
+  "endedAt": "2026-10-26T09:52:46.315Z",
+  "git": {
+    "commit": "92583af3669a785fb96906a79e4faf94523c45a9",
+    "dirty": true
+  },
+  "runtime": {
+    "model": "claude-haiku-5-5",
+    "smallModel": "claude-haiku-5-5",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "claude-haiku-5-5"
+    ],
+    "servedModelChanged": false,
+    "requestedModelMismatch": false,
+    "providerRevision": null,
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.17.0",
+  "materials": {
+    "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+    "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+    "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+    "agent/domains/asset-tag.md": "d56d14ce94534004dcf37aa7ed6154d8079a33360bc61afdcdce67c06a3cfd30",
+    "agent/domains/boarding-pass.md": "8fc65c8012d54a5f6f76f62db886f91cabf4b5080b17b77fb84ef1dd1067706d",
+    "agent/domains/clinic-doorplate.md": "f710865d7452256f4f23db8acde25294281b77fe0d137814e772e37fa71d8972",
+    "agent/domains/departure-board.md": "aa26ace9d7ca281e9aea8516e7967aefb4f5f46c49bb11f06f2cf68d501a9def",
+    "agent/domains/hazmat-label.md": "103a38e0cb441e85b677c99e55d0a75068879495109eb7c71390651d92712a26",
+    "agent/domains/metro-strip.md": "ff81999114a9378fc4de7059e83f51ce575b11f1a3daf86f45c40ee3e6822e6f",
+    "agent/domains/order-label.md": "65849e9c379457751b864167552602d98342813fd3af00651e54119b4a3356e5",
+    "agent/domains/price-tag.md": "9ae5fd2880fe5e2044e2813343f33c0584dd91454438153d5a4ba005531d1e95",
+    "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+    "agent/domains/waybill.md": "951196ef452b57ce89f5b91a0022caecbdb1dd928343e13f32ce6915b19aa077",
+    "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+    "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+    "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+    "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+    "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+    "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+    "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+    "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+    "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+    "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766"
+  },
+  "consecutivePasses": 1,
+  "passLines": {
+    "tds-01-m518": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-02-m162": {
+      "stress": 10,
+      "layoutChecks": 14
+    },
+    "tds-03-price-tag": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-05-asset-card": {
+      "stress": 8,
+      "layoutChecks": 10
+    },
+    "tds-06-metro-strip": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-07-clinic": {
+      "stress": 10,
+      "layoutChecks": 13
+    },
+    "tds-08-waybill": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-09-promo-tag": {
+      "stress": 9,
+      "layoutChecks": 13
+    },
+    "tds-10-gate-screen": {
+      "stress": 8,
+      "layoutChecks": 12
+    },
+    "tds-11-hazmat": {
+      "stress": 8,
+      "layoutChecks": 13
+    },
+    "tds-12-cup-label": {
+      "stress": 9,
+      "layoutChecks": 12
+    },
+    "tds-13-boarding-pass": {
+      "stress": 8,
+      "layoutChecks": 16
+    }
+  },
+  "results": [
+    {
+      "id": "tds-01-m518",
+      "name": "01 M518 横版公交线路牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-01-m518/template",
+          "verdict": "qualified",
+          "wallMs": 1067050,
+          "usageSource": "result",
+          "turns": 78,
+          "inputTokens": 42,
+          "outputTokens": 103952,
+          "thinkingTokens": 71985,
+          "cacheReadTokens": 2105329,
+          "cacheCreationTokens": 170437,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 36,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8715
+          },
+          "stress": [
+            {
+              "label": "20 站本站 5",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 20（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "30 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "30 站 1300 宽",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站 1300 宽",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有地标与设施",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "顶栏终点站由站点列表末项派生",
+              "pass": true
+            },
+            {
+              "label": "线路号铭牌在左上",
+              "pass": true
+            },
+            {
+              "label": "方向箭头在顶栏",
+              "pass": true
+            },
+            {
+              "label": "票制票价在顶栏",
+              "pass": true
+            },
+            {
+              "label": "运营方在右上",
+              "pass": true
+            },
+            {
+              "label": "地标图片",
+              "pass": true
+            },
+            {
+              "label": "设施图标按枚举选图",
+              "pass": true
+            },
+            {
+              "label": "道路带",
+              "pass": true
+            },
+            {
+              "label": "底栏下一站由本站派生",
+              "pass": true
+            },
+            {
+              "label": "底栏首末班",
+              "pass": true
+            },
+            {
+              "label": "底栏班次时刻",
+              "pass": true
+            },
+            {
+              "label": "已过站弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "本站站名突出为红色",
+              "pass": true
+            },
+            {
+              "label": "本站 0 时不显示下一站",
+              "pass": true
+            },
+            {
+              "label": "本站为末站时不显示下一站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-02-m162",
+      "name": "02 M162 竖版站台线路牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-02-m162/template",
+          "verdict": "qualified",
+          "wallMs": 1682101,
+          "usageSource": "result",
+          "turns": 71,
+          "inputTokens": 102,
+          "outputTokens": 92058,
+          "thinkingTokens": 55748,
+          "cacheReadTokens": 5456304,
+          "cacheCreationTokens": 160917,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 33,
+          "toolErrors": 4,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8306
+          },
+          "stress": [
+            {
+              "label": "15 站本站 2",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 0",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 15（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "20 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "长站名与长道路名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "长英文名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "多站两个图标",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有英文与道路",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "线路号在左上",
+              "pass": true
+            },
+            {
+              "label": "顶栏方向由末站派生",
+              "pass": true
+            },
+            {
+              "label": "顶栏英文方向由末站派生",
+              "pass": true
+            },
+            {
+              "label": "运营方标识在右上",
+              "pass": true
+            },
+            {
+              "label": "服务时间",
+              "pass": true
+            },
+            {
+              "label": "票制与票价",
+              "pass": true
+            },
+            {
+              "label": "本站标记",
+              "pass": true
+            },
+            {
+              "label": "英文站名",
+              "pass": true
+            },
+            {
+              "label": "所在道路",
+              "pass": true
+            },
+            {
+              "label": "体育馆图标",
+              "pass": true
+            },
+            {
+              "label": "火车站图标",
+              "pass": true
+            },
+            {
+              "label": "底栏下一站由本站派生",
+              "pass": true
+            },
+            {
+              "label": "底栏英文下一站",
+              "pass": true
+            },
+            {
+              "label": "底栏监督电话",
+              "pass": true
+            },
+            {
+              "label": "本站 0 时不标本站",
+              "pass": true
+            },
+            {
+              "label": "本站为末站时不显示下一站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 16,
+          "layoutTotal": 16
+        }
+      }
+    },
+    {
+      "id": "tds-03-price-tag",
+      "name": "03 超市商品价签",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-03-price-tag/template",
+          "verdict": "qualified",
+          "wallMs": 710854,
+          "usageSource": "result",
+          "turns": 68,
+          "inputTokens": 58,
+          "outputTokens": 77892,
+          "thinkingTokens": 50383,
+          "cacheReadTokens": 2179404,
+          "cacheCreationTokens": 124038,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 33,
+          "toolErrors": 5,
+          "persistedResults": 0,
+          "firstCheckProblems": 8
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.7605
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "品名 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有会员价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有卖点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "卖点 3 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "零售价五位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "规格 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有产地与物价员",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "零售价是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "零售价两位小数",
+              "pass": true
+            },
+            {
+              "label": "会员价",
+              "pass": true
+            },
+            {
+              "label": "品名",
+              "pass": true
+            },
+            {
+              "label": "规格",
+              "pass": true
+            },
+            {
+              "label": "产地",
+              "pass": true
+            },
+            {
+              "label": "货号",
+              "pass": true
+            },
+            {
+              "label": "卖点标签",
+              "pass": true
+            },
+            {
+              "label": "顶栏门店名称",
+              "pass": true
+            },
+            {
+              "label": "店标在左上",
+              "pass": true
+            },
+            {
+              "label": "EAN-13 条码在左下",
+              "pass": true
+            },
+            {
+              "label": "物价员在底部",
+              "pass": true
+            },
+            {
+              "label": "监督电话在底部",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 13,
+          "layoutTotal": 13
+        }
+      }
+    },
+    {
+      "id": "tds-05-asset-card",
+      "name": "05 固定资产标识卡",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-05-asset-card/template",
+          "verdict": "qualified",
+          "wallMs": 445212,
+          "usageSource": "result",
+          "turns": 46,
+          "inputTokens": 50,
+          "outputTokens": 47840,
+          "thinkingTokens": 28375,
+          "cacheReadTokens": 1441356,
+          "cacheCreationTokens": 81194,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 29,
+          "toolErrors": 11,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.7272
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "资产名称 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "存放地点 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "保管人 4 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "编号最长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "待分配：无部门、保管人与日期",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "无单位标识",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "单位名称 10 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "单位标识在左上",
+              "pass": true
+            },
+            {
+              "label": "标题含单位名称",
+              "pass": true
+            },
+            {
+              "label": "资产名称",
+              "pass": true
+            },
+            {
+              "label": "资产编号在左侧信息区",
+              "pass": true
+            },
+            {
+              "label": "使用部门",
+              "pass": true
+            },
+            {
+              "label": "保管人",
+              "pass": true
+            },
+            {
+              "label": "启用日期",
+              "pass": true
+            },
+            {
+              "label": "存放地点",
+              "pass": true
+            },
+            {
+              "label": "二维码在右上",
+              "pass": true
+            },
+            {
+              "label": "CODE128 条码在右下",
+              "pass": true
+            },
+            {
+              "label": "空值时标签保留",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 11,
+          "layoutTotal": 11
+        }
+      }
+    },
+    {
+      "id": "tds-06-metro-strip",
+      "name": "06 地铁屏蔽门导乘图",
+      "repetition": 1,
+      "status": "fail",
+      "pass": false,
+      "retries": 0,
+      "failures": [
+        "压测 8/9，要求至少 9（有严重问题：2 站）"
+      ],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-06-metro-strip/template",
+          "verdict": "qualified",
+          "wallMs": 1390544,
+          "usageSource": "result",
+          "turns": 67,
+          "inputTokens": 72,
+          "outputTokens": 75908,
+          "thinkingTokens": 49515,
+          "cacheReadTokens": 3237152,
+          "cacheCreationTokens": 142726,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 33,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9199
+          },
+          "stress": [
+            {
+              "label": "12 站本站 4",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 1（首站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站 12（末站）",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "2 站",
+              "severe": 2,
+              "hint": 0,
+              "codes": [
+                "render.sizeOutOfRange"
+              ]
+            },
+            {
+              "label": "16 站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 字站名与长英文",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站换乘 4 条",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站没有换乘",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "本站是 8 字站名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "顶栏线路名",
+              "pass": true
+            },
+            {
+              "label": "顶栏英文线路名",
+              "pass": true
+            },
+            {
+              "label": "开往终点由末站派生",
+              "pass": true
+            },
+            {
+              "label": "英文开往终点由末站派生",
+              "pass": true
+            },
+            {
+              "label": "首班时刻",
+              "pass": true
+            },
+            {
+              "label": "末班时刻",
+              "pass": true
+            },
+            {
+              "label": "地铁标志在左上",
+              "pass": true
+            },
+            {
+              "label": "本站圆环",
+              "pass": true
+            },
+            {
+              "label": "本站字样",
+              "pass": true
+            },
+            {
+              "label": "末端方向箭头在右侧",
+              "pass": true
+            },
+            {
+              "label": "本站英文站名",
+              "pass": true
+            },
+            {
+              "label": "换乘标签",
+              "pass": true
+            },
+            {
+              "label": "已过站弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "未到站为正常深色",
+              "pass": true
+            },
+            {
+              "label": "本站为首站时没有已过站",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-07-clinic",
+      "name": "07 诊室电子门牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-07-clinic/template",
+          "verdict": "qualified",
+          "wallMs": 1107086,
+          "usageSource": "result",
+          "turns": 62,
+          "inputTokens": 60,
+          "outputTokens": 88398,
+          "thinkingTokens": 55941,
+          "cacheReadTokens": 2887712,
+          "cacheCreationTokens": 156504,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 30,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.9358
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "候诊 0 人",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "候诊 6 人",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "开诊前没有正在就诊",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有擅长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "擅长 3 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有照片",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "科室名 12 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "医生姓名 4 字、副主任医师",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "过号与长姓名",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 10,
+          "checks": [
+            {
+              "label": "顶栏科室",
+              "pass": true
+            },
+            {
+              "label": "顶栏诊室在右侧",
+              "pass": true
+            },
+            {
+              "label": "顶栏十字图标",
+              "pass": true
+            },
+            {
+              "label": "医生照片在左侧卡片",
+              "pass": true
+            },
+            {
+              "label": "医生姓名",
+              "pass": true
+            },
+            {
+              "label": "职称",
+              "pass": true
+            },
+            {
+              "label": "擅长标签",
+              "pass": true
+            },
+            {
+              "label": "出诊时段",
+              "pass": true
+            },
+            {
+              "label": "正在就诊",
+              "pass": true
+            },
+            {
+              "label": "等候就诊图标",
+              "pass": true
+            },
+            {
+              "label": "候诊患者",
+              "pass": true
+            },
+            {
+              "label": "候诊状态",
+              "pass": true
+            },
+            {
+              "label": "温馨提示图标在底部",
+              "pass": true
+            },
+            {
+              "label": "签到二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "没有正在就诊时不显示号码",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-08-waybill",
+      "name": "08 物流电子面单",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-08-waybill/template",
+          "verdict": "qualified",
+          "wallMs": 587458,
+          "usageSource": "result",
+          "turns": 46,
+          "inputTokens": 40,
+          "outputTokens": 62290,
+          "thinkingTokens": 39833,
+          "cacheReadTokens": 1365918,
+          "cacheCreationTokens": 112768,
+          "endedBy": "success",
+          "pending": 4,
+          "toolCalls": 24,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8126
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "收件地址 40 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 1 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "明细 5 行",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "商品名 20 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有寄件人电话",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "重量三位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "分拣码最长",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "分拣码是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "顶栏承运商",
+              "pass": true
+            },
+            {
+              "label": "顶栏服务产品在右侧",
+              "pass": true
+            },
+            {
+              "label": "运单条码 CODE128",
+              "pass": true
+            },
+            {
+              "label": "运单号",
+              "pass": true
+            },
+            {
+              "label": "集散中心",
+              "pass": true
+            },
+            {
+              "label": "收件人",
+              "pass": true
+            },
+            {
+              "label": "收件地址",
+              "pass": true
+            },
+            {
+              "label": "寄件人",
+              "pass": true
+            },
+            {
+              "label": "二维码在寄件区右侧",
+              "pass": true
+            },
+            {
+              "label": "拣货明细商品名",
+              "pass": true
+            },
+            {
+              "label": "拣货明细数量",
+              "pass": true
+            },
+            {
+              "label": "计费重量",
+              "pass": true
+            },
+            {
+              "label": "寄件日期",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 14,
+          "layoutTotal": 14
+        }
+      }
+    },
+    {
+      "id": "tds-09-promo-tag",
+      "name": "09 生鲜促销价签",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-09-promo-tag/template",
+          "verdict": "qualified",
+          "wallMs": 880955,
+          "usageSource": "result",
+          "turns": 62,
+          "inputTokens": 68,
+          "outputTokens": 95533,
+          "thinkingTokens": 58852,
+          "cacheReadTokens": 3273380,
+          "cacheCreationTokens": 143967,
+          "endedBy": "success",
+          "pending": 4,
+          "toolCalls": 33,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8867
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "品名 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有原价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有会员专享价",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有卖点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "卖点 1 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "促销价四位整数",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "计价单位千克、没有溯源码",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有等级与规格",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 9,
+          "checks": [
+            {
+              "label": "促销价整数部分是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "促销价小数部分",
+              "pass": true
+            },
+            {
+              "label": "计价单位在价格区",
+              "pass": true
+            },
+            {
+              "label": "原价",
+              "pass": true
+            },
+            {
+              "label": "会员专享价",
+              "pass": true
+            },
+            {
+              "label": "品名",
+              "pass": true
+            },
+            {
+              "label": "卖点标签",
+              "pass": true
+            },
+            {
+              "label": "编码",
+              "pass": true
+            },
+            {
+              "label": "门店名称在右上",
+              "pass": true
+            },
+            {
+              "label": "闹钟图标在顶栏",
+              "pass": true
+            },
+            {
+              "label": "绿叶角标在右上",
+              "pass": true
+            },
+            {
+              "label": "EAN-13 店内码在左下",
+              "pass": true
+            },
+            {
+              "label": "溯源二维码在底部",
+              "pass": true
+            },
+            {
+              "label": "物价员",
+              "pass": true
+            },
+            {
+              "label": "没有原价时不显示原价",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-10-gate-screen",
+      "name": "10 检票口候车信息屏",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-10-gate-screen/template",
+          "verdict": "qualified",
+          "wallMs": 435816,
+          "usageSource": "result",
+          "turns": 35,
+          "inputTokens": 42,
+          "outputTokens": 45090,
+          "thinkingTokens": 28145,
+          "cacheReadTokens": 1271949,
+          "cacheCreationTokens": 85283,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 20,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8435
+          },
+          "stress": [
+            {
+              "label": "5 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "1 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "8 趟",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有途经站",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "终到站 6 字、途经站 5 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "晚点",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "提示 50 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "全部停止检票",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "检票口在左上",
+              "pass": true
+            },
+            {
+              "label": "候车室名称",
+              "pass": true
+            },
+            {
+              "label": "更新时刻在右上",
+              "pass": true
+            },
+            {
+              "label": "表头",
+              "pass": true
+            },
+            {
+              "label": "车次号",
+              "pass": true
+            },
+            {
+              "label": "终到站",
+              "pass": true
+            },
+            {
+              "label": "途经站点",
+              "pass": true
+            },
+            {
+              "label": "开点",
+              "pass": true
+            },
+            {
+              "label": "正在检票",
+              "pass": true
+            },
+            {
+              "label": "停止检票状态字为红色",
+              "pass": true
+            },
+            {
+              "label": "停止检票整行弱化为灰色",
+              "pass": true
+            },
+            {
+              "label": "候车中状态字为黄色",
+              "pass": true
+            },
+            {
+              "label": "温馨提示在底部",
+              "pass": true
+            },
+            {
+              "label": "车次随数据增减",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 14,
+          "layoutTotal": 14
+        }
+      }
+    },
+    {
+      "id": "tds-11-hazmat",
+      "name": "11 危化品库位标识卡",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-11-hazmat/template",
+          "verdict": "qualified",
+          "wallMs": 493885,
+          "usageSource": "result",
+          "turns": 39,
+          "inputTokens": 40,
+          "outputTokens": 64182,
+          "thinkingTokens": 44953,
+          "cacheReadTokens": 1338634,
+          "cacheCreationTokens": 106639,
+          "endedBy": "success",
+          "pending": 1,
+          "toolCalls": 25,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8136
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 1 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "危险性 4 项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "信号词警告",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "中文品名 16 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "英文品名 40 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "安全措施 60 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有 CAS 与 UN 编号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "中文品名",
+              "pass": true
+            },
+            {
+              "label": "英文品名",
+              "pass": true
+            },
+            {
+              "label": "信号词在右上",
+              "pass": true
+            },
+            {
+              "label": "信号词英文由信号词派生",
+              "pass": true
+            },
+            {
+              "label": "库位",
+              "pass": true
+            },
+            {
+              "label": "易燃象形图",
+              "pass": true
+            },
+            {
+              "label": "健康危害象形图",
+              "pass": true
+            },
+            {
+              "label": "象形图下写类别名称",
+              "pass": true
+            },
+            {
+              "label": "CAS 号",
+              "pass": true
+            },
+            {
+              "label": "有效期",
+              "pass": true
+            },
+            {
+              "label": "应急电话",
+              "pass": true
+            },
+            {
+              "label": "CODE128 条码在右下",
+              "pass": true
+            },
+            {
+              "label": "象形图随类别减少",
+              "pass": true
+            },
+            {
+              "label": "第 4 枚象形图",
+              "pass": true
+            },
+            {
+              "label": "信号词警告配 WARNING",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 15,
+          "layoutTotal": 15
+        }
+      }
+    },
+    {
+      "id": "tds-12-cup-label",
+      "name": "12 茶饮杯贴",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-12-cup-label/template",
+          "verdict": "qualified",
+          "wallMs": 990697,
+          "usageSource": "result",
+          "turns": 43,
+          "inputTokens": 46,
+          "outputTokens": 60733,
+          "thinkingTokens": 42727,
+          "cacheReadTokens": 1629661,
+          "cacheCreationTokens": 101573,
+          "endedBy": "success",
+          "pending": 2,
+          "toolCalls": 26,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8674
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有选项",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "选项 8 个",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有备注",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "商品名 20 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "英文商品名 40 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "第 10/12 杯",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "备注 30 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "外卖、没有提示语",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 9,
+          "checks": [
+            {
+              "label": "取餐号是字号最大的文字",
+              "pass": true
+            },
+            {
+              "label": "取餐号在顶部",
+              "pass": true
+            },
+            {
+              "label": "第几杯由两个整数拼出",
+              "pass": true
+            },
+            {
+              "label": "就餐方式",
+              "pass": true
+            },
+            {
+              "label": "商品名",
+              "pass": true
+            },
+            {
+              "label": "英文商品名",
+              "pass": true
+            },
+            {
+              "label": "定制选项标签",
+              "pass": true
+            },
+            {
+              "label": "备注",
+              "pass": true
+            },
+            {
+              "label": "下单时间到分钟",
+              "pass": true
+            },
+            {
+              "label": "门店",
+              "pass": true
+            },
+            {
+              "label": "二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "没有备注时不显示备注标签",
+              "pass": true
+            },
+            {
+              "label": "第 10/12 杯",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 13,
+          "layoutTotal": 13
+        }
+      }
+    },
+    {
+      "id": "tds-13-boarding-pass",
+      "name": "13 登机牌",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/tds-13-boarding-pass/template",
+          "verdict": "qualified",
+          "wallMs": 971816,
+          "usageSource": "result",
+          "turns": 59,
+          "inputTokens": 60,
+          "outputTokens": 96177,
+          "thinkingTokens": 61705,
+          "cacheReadTokens": 3053638,
+          "cacheCreationTokens": 153363,
+          "endedBy": "success",
+          "pending": 3,
+          "toolCalls": 30,
+          "toolErrors": 2,
+          "persistedResults": 0,
+          "firstCheckProblems": 18
+        }
+      ],
+      "checks": {
+        "template": {
+          "sample": {
+            "severe": 0,
+            "hint": 0,
+            "similarity": 0.8833
+          },
+          "stress": [
+            {
+              "label": "示例数据",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "经济舱",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "头等舱",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "不优先、没有常旅客号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "城市名 8 字",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "拼音姓名 28 字符",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "没有登机口与序号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            },
+            {
+              "label": "航班号四位、三位座位排号",
+              "severe": 0,
+              "hint": 0,
+              "codes": []
+            }
+          ],
+          "stressPassed": 8,
+          "checks": [
+            {
+              "label": "顶栏航空公司",
+              "pass": true
+            },
+            {
+              "label": "出发三字码",
+              "pass": true
+            },
+            {
+              "label": "到达城市",
+              "pass": true
+            },
+            {
+              "label": "航线中的飞机图标",
+              "pass": true
+            },
+            {
+              "label": "航班号",
+              "pass": true
+            },
+            {
+              "label": "登机口",
+              "pass": true
+            },
+            {
+              "label": "座位",
+              "pass": true
+            },
+            {
+              "label": "登机时间",
+              "pass": true
+            },
+            {
+              "label": "舱位徽章在顶栏",
+              "pass": true
+            },
+            {
+              "label": "舱位英文名由舱位派生",
+              "pass": true
+            },
+            {
+              "label": "优先登机标签",
+              "pass": true
+            },
+            {
+              "label": "主副券之间的剪刀",
+              "pass": true
+            },
+            {
+              "label": "副券缩写姓名",
+              "pass": true
+            },
+            {
+              "label": "副券重复航班号",
+              "pass": true
+            },
+            {
+              "label": "副券二维码在右下",
+              "pass": true
+            },
+            {
+              "label": "主券 CODE128 条码",
+              "pass": true
+            },
+            {
+              "label": "经济舱不显示舱位徽章",
+              "pass": true
+            },
+            {
+              "label": "不优先时不显示标签",
+              "pass": true
+            }
+          ],
+          "layoutPassed": 18,
+          "layoutTotal": 18
+        }
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "id": "690f0e50-8bff-4a9d-9a0a-aa08a488e64c",
+      "unit": "run-1/tds-01-m518",
+      "stage": "template",
+      "dir": "run-1/tds-01-m518/attempts/690f0e50-8bff-4a9d-9a0a-aa08a488e64c",
+      "startedAt": "2026-10-26T08:16:21.504Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-01-m518/attempts/690f0e50-8bff-4a9d-9a0a-aa08a488e64c/round",
+        "verdict": "missing",
+        "toolCalls": 6,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "inputTokens": 8,
+        "outputTokens": 30,
+        "cacheReadTokens": 54715,
+        "cacheCreationTokens": 36097,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "9e712f28-bcaa-46c2-a4f4-118f4896e158",
+      "unit": "run-1/tds-01-m518",
+      "stage": "template",
+      "dir": "run-1/tds-01-m518/attempts/9e712f28-bcaa-46c2-a4f4-118f4896e158",
+      "startedAt": "2026-10-26T08:23:19.706Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-01-m518/attempts/9e712f28-bcaa-46c2-a4f4-118f4896e158/round",
+        "verdict": "missing",
+        "toolCalls": 16,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0,
+        "inputTokens": 32,
+        "outputTokens": 122,
+        "cacheReadTokens": 951100,
+        "cacheCreationTokens": 100554,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "474e54d7-6268-49e3-bf18-5bd4f08a0eeb",
+      "unit": "run-1/tds-01-m518",
+      "stage": "template",
+      "dir": "run-1/tds-01-m518/attempts/474e54d7-6268-49e3-bf18-5bd4f08a0eeb",
+      "startedAt": "2026-10-26T08:47:02.000Z",
+      "endedAt": "2026-10-26T09:04:51.247Z",
+      "elapsedMs": 1069247,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-01-m518/attempts/474e54d7-6268-49e3-bf18-5bd4f08a0eeb/round",
+        "verdict": "qualified",
+        "wallMs": 1067050,
+        "usageSource": "result",
+        "turns": 78,
+        "inputTokens": 42,
+        "outputTokens": 103952,
+        "thinkingTokens": 71985,
+        "cacheReadTokens": 2105329,
+        "cacheCreationTokens": 170437,
+        "endedBy": "success",
+        "pending": 2,
+        "toolCalls": 36,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "42642842-1247-473e-a445-b834449dffe5",
+      "unit": "run-1/tds-02-m162",
+      "stage": "template",
+      "dir": "run-1/tds-02-m162/attempts/42642842-1247-473e-a445-b834449dffe5",
+      "startedAt": "2026-10-26T08:16:21.729Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-02-m162/attempts/42642842-1247-473e-a445-b834449dffe5/round",
+        "verdict": "missing",
+        "toolCalls": 9,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "inputTokens": 10,
+        "outputTokens": 37,
+        "cacheReadTokens": 91404,
+        "cacheCreationTokens": 37987,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "5123a42d-f26f-4036-a904-9f7f1c58a239",
+      "unit": "run-1/tds-02-m162",
+      "stage": "template",
+      "dir": "run-1/tds-02-m162/attempts/5123a42d-f26f-4036-a904-9f7f1c58a239",
+      "startedAt": "2026-10-26T08:23:20.100Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-02-m162/attempts/5123a42d-f26f-4036-a904-9f7f1c58a239/round",
+        "verdict": "missing",
+        "toolCalls": 22,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 6,
+        "inputTokens": 40,
+        "outputTokens": 197,
+        "cacheReadTokens": 1358192,
+        "cacheCreationTokens": 109547,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "dc7a4f6b-509d-4f6e-9308-f124c2ac7743",
+      "unit": "run-1/tds-02-m162",
+      "stage": "template",
+      "dir": "run-1/tds-02-m162/attempts/dc7a4f6b-509d-4f6e-9308-f124c2ac7743",
+      "startedAt": "2026-10-26T08:47:01.829Z",
+      "endedAt": "2026-10-26T09:15:06.304Z",
+      "elapsedMs": 1684475,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-02-m162/attempts/dc7a4f6b-509d-4f6e-9308-f124c2ac7743/round",
+        "verdict": "qualified",
+        "wallMs": 1682101,
+        "usageSource": "result",
+        "turns": 71,
+        "inputTokens": 102,
+        "outputTokens": 92058,
+        "thinkingTokens": 55748,
+        "cacheReadTokens": 5456304,
+        "cacheCreationTokens": 160917,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 33,
+        "toolErrors": 4,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "b0df8aac-c0d1-495e-bcae-2926c212f6a3",
+      "unit": "run-1/tds-03-price-tag",
+      "stage": "template",
+      "dir": "run-1/tds-03-price-tag/attempts/b0df8aac-c0d1-495e-bcae-2926c212f6a3",
+      "startedAt": "2026-10-26T08:16:21.914Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-03-price-tag/attempts/b0df8aac-c0d1-495e-bcae-2926c212f6a3/round",
+        "verdict": "missing",
+        "toolCalls": 8,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "inputTokens": 10,
+        "outputTokens": 63,
+        "cacheReadTokens": 99601,
+        "cacheCreationTokens": 25297,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "27b39b34-8342-4ffa-8882-65a71f258487",
+      "unit": "run-1/tds-03-price-tag",
+      "stage": "template",
+      "dir": "run-1/tds-03-price-tag/attempts/27b39b34-8342-4ffa-8882-65a71f258487",
+      "startedAt": "2026-10-26T08:23:19.855Z",
+      "endedAt": null,
+      "elapsedMs": null,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "error": "原派发中断或缺少实验封存，不能作为有效观测；保留已知用量",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-03-price-tag/attempts/27b39b34-8342-4ffa-8882-65a71f258487/round",
+        "verdict": "missing",
+        "toolCalls": 22,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0,
+        "inputTokens": 38,
+        "outputTokens": 148,
+        "cacheReadTokens": 1159963,
+        "cacheCreationTokens": 91217,
+        "usageSource": "messages"
+      }
+    },
+    {
+      "id": "73f7972c-5fad-48ad-a6a9-2a47b288c6c3",
+      "unit": "run-1/tds-03-price-tag",
+      "stage": "template",
+      "dir": "run-1/tds-03-price-tag/attempts/73f7972c-5fad-48ad-a6a9-2a47b288c6c3",
+      "startedAt": "2026-10-26T08:47:01.656Z",
+      "endedAt": "2026-10-26T08:58:55.038Z",
+      "elapsedMs": 713382,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-03-price-tag/attempts/73f7972c-5fad-48ad-a6a9-2a47b288c6c3/round",
+        "verdict": "qualified",
+        "wallMs": 710854,
+        "usageSource": "result",
+        "turns": 68,
+        "inputTokens": 58,
+        "outputTokens": 77892,
+        "thinkingTokens": 50383,
+        "cacheReadTokens": 2179404,
+        "cacheCreationTokens": 124038,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 33,
+        "toolErrors": 5,
+        "persistedResults": 0,
+        "firstCheckProblems": 8
+      }
+    },
+    {
+      "id": "bf4aa726-db3b-4f4c-ad42-0186cce3ce8b",
+      "unit": "run-1/tds-05-asset-card",
+      "stage": "template",
+      "dir": "run-1/tds-05-asset-card/attempts/bf4aa726-db3b-4f4c-ad42-0186cce3ce8b",
+      "startedAt": "2026-10-26T08:58:57.141Z",
+      "endedAt": "2026-10-26T09:06:23.776Z",
+      "elapsedMs": 446635,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-05-asset-card/attempts/bf4aa726-db3b-4f4c-ad42-0186cce3ce8b/round",
+        "verdict": "qualified",
+        "wallMs": 445212,
+        "usageSource": "result",
+        "turns": 46,
+        "inputTokens": 50,
+        "outputTokens": 47840,
+        "thinkingTokens": 28375,
+        "cacheReadTokens": 1441356,
+        "cacheCreationTokens": 81194,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 29,
+        "toolErrors": 11,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "2863152e-47ed-429c-89c0-9d6e994aa529",
+      "unit": "run-1/tds-06-metro-strip",
+      "stage": "template",
+      "dir": "run-1/tds-06-metro-strip/attempts/2863152e-47ed-429c-89c0-9d6e994aa529",
+      "startedAt": "2026-10-26T09:04:54.370Z",
+      "endedAt": "2026-10-26T09:28:06.531Z",
+      "elapsedMs": 1392161,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-06-metro-strip/attempts/2863152e-47ed-429c-89c0-9d6e994aa529/round",
+        "verdict": "qualified",
+        "wallMs": 1390544,
+        "usageSource": "result",
+        "turns": 67,
+        "inputTokens": 72,
+        "outputTokens": 75908,
+        "thinkingTokens": 49515,
+        "cacheReadTokens": 3237152,
+        "cacheCreationTokens": 142726,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 33,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "35f74764-e09e-4fc8-9e3f-6014c9ae7a2c",
+      "unit": "run-1/tds-07-clinic",
+      "stage": "template",
+      "dir": "run-1/tds-07-clinic/attempts/35f74764-e09e-4fc8-9e3f-6014c9ae7a2c",
+      "startedAt": "2026-10-26T09:06:26.733Z",
+      "endedAt": "2026-10-26T09:24:55.296Z",
+      "elapsedMs": 1108563,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-07-clinic/attempts/35f74764-e09e-4fc8-9e3f-6014c9ae7a2c/round",
+        "verdict": "qualified",
+        "wallMs": 1107086,
+        "usageSource": "result",
+        "turns": 62,
+        "inputTokens": 60,
+        "outputTokens": 88398,
+        "thinkingTokens": 55941,
+        "cacheReadTokens": 2887712,
+        "cacheCreationTokens": 156504,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 30,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "79dc74a5-ef95-4453-839d-14176cdf9d32",
+      "unit": "run-1/tds-08-waybill",
+      "stage": "template",
+      "dir": "run-1/tds-08-waybill/attempts/79dc74a5-ef95-4453-839d-14176cdf9d32",
+      "startedAt": "2026-10-26T09:15:09.174Z",
+      "endedAt": "2026-10-26T09:24:58.098Z",
+      "elapsedMs": 588924,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-08-waybill/attempts/79dc74a5-ef95-4453-839d-14176cdf9d32/round",
+        "verdict": "qualified",
+        "wallMs": 587458,
+        "usageSource": "result",
+        "turns": 46,
+        "inputTokens": 40,
+        "outputTokens": 62290,
+        "thinkingTokens": 39833,
+        "cacheReadTokens": 1365918,
+        "cacheCreationTokens": 112768,
+        "endedBy": "success",
+        "pending": 4,
+        "toolCalls": 24,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "61371838-8fe1-45df-a0a5-01822d1f0a40",
+      "unit": "run-1/tds-09-promo-tag",
+      "stage": "template",
+      "dir": "run-1/tds-09-promo-tag/attempts/61371838-8fe1-45df-a0a5-01822d1f0a40",
+      "startedAt": "2026-10-26T09:25:00.328Z",
+      "endedAt": "2026-10-26T09:39:43.118Z",
+      "elapsedMs": 882790,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-09-promo-tag/attempts/61371838-8fe1-45df-a0a5-01822d1f0a40/round",
+        "verdict": "qualified",
+        "wallMs": 880955,
+        "usageSource": "result",
+        "turns": 62,
+        "inputTokens": 68,
+        "outputTokens": 95533,
+        "thinkingTokens": 58852,
+        "cacheReadTokens": 3273380,
+        "cacheCreationTokens": 143967,
+        "endedBy": "success",
+        "pending": 4,
+        "toolCalls": 33,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "ac99051d-4b1f-4924-8688-fe22f1e06960",
+      "unit": "run-1/tds-10-gate-screen",
+      "stage": "template",
+      "dir": "run-1/tds-10-gate-screen/attempts/ac99051d-4b1f-4924-8688-fe22f1e06960",
+      "startedAt": "2026-10-26T09:25:01.500Z",
+      "endedAt": "2026-10-26T09:32:19.099Z",
+      "elapsedMs": 437599,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-10-gate-screen/attempts/ac99051d-4b1f-4924-8688-fe22f1e06960/round",
+        "verdict": "qualified",
+        "wallMs": 435816,
+        "usageSource": "result",
+        "turns": 35,
+        "inputTokens": 42,
+        "outputTokens": 45090,
+        "thinkingTokens": 28145,
+        "cacheReadTokens": 1271949,
+        "cacheCreationTokens": 85283,
+        "endedBy": "success",
+        "pending": 2,
+        "toolCalls": 20,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "b8d317ec-a93a-4406-a444-c9b866c74135",
+      "unit": "run-1/tds-11-hazmat",
+      "stage": "template",
+      "dir": "run-1/tds-11-hazmat/attempts/b8d317ec-a93a-4406-a444-c9b866c74135",
+      "startedAt": "2026-10-26T09:28:11.850Z",
+      "endedAt": "2026-10-26T09:36:27.521Z",
+      "elapsedMs": 495671,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-11-hazmat/attempts/b8d317ec-a93a-4406-a444-c9b866c74135/round",
+        "verdict": "qualified",
+        "wallMs": 493885,
+        "usageSource": "result",
+        "turns": 39,
+        "inputTokens": 40,
+        "outputTokens": 64182,
+        "thinkingTokens": 44953,
+        "cacheReadTokens": 1338634,
+        "cacheCreationTokens": 106639,
+        "endedBy": "success",
+        "pending": 1,
+        "toolCalls": 25,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "40033a42-24db-4a1f-9253-ec314691a1c6",
+      "unit": "run-1/tds-12-cup-label",
+      "stage": "template",
+      "dir": "run-1/tds-12-cup-label/attempts/40033a42-24db-4a1f-9253-ec314691a1c6",
+      "startedAt": "2026-10-26T09:32:24.265Z",
+      "endedAt": "2026-10-26T09:48:56.821Z",
+      "elapsedMs": 992556,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-12-cup-label/attempts/40033a42-24db-4a1f-9253-ec314691a1c6/round",
+        "verdict": "qualified",
+        "wallMs": 990697,
+        "usageSource": "result",
+        "turns": 43,
+        "inputTokens": 46,
+        "outputTokens": 60733,
+        "thinkingTokens": 42727,
+        "cacheReadTokens": 1629661,
+        "cacheCreationTokens": 101573,
+        "endedBy": "success",
+        "pending": 2,
+        "toolCalls": 26,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    },
+    {
+      "id": "01dcbfe9-28b5-4ea4-86c6-a2922d6c3814",
+      "unit": "run-1/tds-13-boarding-pass",
+      "stage": "template",
+      "dir": "run-1/tds-13-boarding-pass/attempts/01dcbfe9-28b5-4ea4-86c6-a2922d6c3814",
+      "startedAt": "2026-10-26T09:36:30.794Z",
+      "endedAt": "2026-10-26T09:52:44.215Z",
+      "elapsedMs": 973421,
+      "experiment": "sha256:6e8ddc00da23418d224391404e624d03f62e73ac02c1d37ec721613c5c1da8e3",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/tds-13-boarding-pass/attempts/01dcbfe9-28b5-4ea4-86c6-a2922d6c3814/round",
+        "verdict": "qualified",
+        "wallMs": 971816,
+        "usageSource": "result",
+        "turns": 59,
+        "inputTokens": 60,
+        "outputTokens": 96177,
+        "thinkingTokens": 61705,
+        "cacheReadTokens": 3053638,
+        "cacheCreationTokens": 153363,
+        "endedBy": "success",
+        "pending": 3,
+        "toolCalls": 30,
+        "toolErrors": 2,
+        "persistedResults": 0,
+        "firstCheckProblems": 18
+      }
+    }
+  ],
+  "timing": {
+    "sessions": 3,
+    "incompleteSessions": 2,
+    "actualWallMs": null,
+    "knownWallMs": 3948097,
+    "attemptsElapsedMs": 10785424,
+    "unknownAttemptDurations": 6
+  },
+  "gate": {
+    "status": "fail",
+    "pass": false,
+    "scenarios": [
+      {
+        "id": "tds-01-m518",
+        "name": "01 M518 横版公交线路牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-02-m162",
+        "name": "02 M162 竖版站台线路牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-03-price-tag",
+        "name": "03 超市商品价签",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-05-asset-card",
+        "name": "05 固定资产标识卡",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-06-metro-strip",
+        "name": "06 地铁屏蔽门导乘图",
+        "outcomes": [
+          "fail"
+        ],
+        "status": "fail"
+      },
+      {
+        "id": "tds-07-clinic",
+        "name": "07 诊室电子门牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-08-waybill",
+        "name": "08 物流电子面单",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-09-promo-tag",
+        "name": "09 生鲜促销价签",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-10-gate-screen",
+        "name": "10 检票口候车信息屏",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-11-hazmat",
+        "name": "11 危化品库位标识卡",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-12-cup-label",
+        "name": "12 茶饮杯贴",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "tds-13-boarding-pass",
+        "name": "13 登机牌",
+        "outcomes": [
+          "pass"
+        ],
+        "status": "pass"
+      }
+    ],
+    "completeness": {
+      "planned": 12,
+      "pass": 11,
+      "fail": 1,
+      "invalid": 0,
+      "notRun": 0,
+      "complete": true
+    }
+  },
+  "totals": {
+    "wallMs": 10763474,
+    "inputTokens": 818,
+    "outputTokens": 910650,
+    "thinkingTokens": 588162,
+    "cacheReadTokens": 32955412,
+    "cacheCreationTokens": 1940108,
+    "toolCalls": 435,
+    "persistedResults": 0,
+    "unknownUsageAttempts": 6,
+    "unknownByMetric": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 6,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 0,
+      "toolCalls": 0,
+      "persistedResults": 0,
+      "wallMs": 6
+    },
+    "usageComplete": false,
+    "legacyHistoryUnknown": false
+  },
+  "experimentIdentity": {
+    "format": "renderweave-eval-identity/1",
+    "contextPolicy": {
+      "name": "full",
+      "id": "bba4346f3d861bb507d9131f199176a8f69cbe6dad47012b1a88b1babea76e14",
+      "scope": {
+        "mandatory": [
+          "guide.md",
+          "reference/outcome.md",
+          "brief.md",
+          "domain (if supplied)",
+          "request/requirement/feedback (if supplied)"
+        ],
+        "entry": [
+          "task reference (whole)"
+        ],
+        "deferred": []
+      },
+      "sources": {
+        "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+        "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+        "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+        "agent/domains/asset-tag.md": "d56d14ce94534004dcf37aa7ed6154d8079a33360bc61afdcdce67c06a3cfd30",
+        "agent/domains/boarding-pass.md": "8fc65c8012d54a5f6f76f62db886f91cabf4b5080b17b77fb84ef1dd1067706d",
+        "agent/domains/clinic-doorplate.md": "f710865d7452256f4f23db8acde25294281b77fe0d137814e772e37fa71d8972",
+        "agent/domains/departure-board.md": "aa26ace9d7ca281e9aea8516e7967aefb4f5f46c49bb11f06f2cf68d501a9def",
+        "agent/domains/hazmat-label.md": "103a38e0cb441e85b677c99e55d0a75068879495109eb7c71390651d92712a26",
+        "agent/domains/metro-strip.md": "ff81999114a9378fc4de7059e83f51ce575b11f1a3daf86f45c40ee3e6822e6f",
+        "agent/domains/order-label.md": "65849e9c379457751b864167552602d98342813fd3af00651e54119b4a3356e5",
+        "agent/domains/price-tag.md": "9ae5fd2880fe5e2044e2813343f33c0584dd91454438153d5a4ba005531d1e95",
+        "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+        "agent/domains/waybill.md": "951196ef452b57ce89f5b91a0022caecbdb1dd928343e13f32ce6915b19aa077",
+        "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+        "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+        "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+        "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+        "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+        "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+        "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+        "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+        "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+        "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766",
+        "reference/data-definition": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+        "reference/template": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+        "schema/data-definition": "bc4e8cc089eb326124db8354f662c450061361b8089d0e31063dd3eee7fe52ad",
+        "schema/dataset": "580f001be906a1f39695a8c5b28bd4384003f9149018447cd224e97630eb542c",
+        "schema/template": "b418b2a24de6c150a7acbe25348b447d8620066501806b50ae62e32f6004dc13",
+        "schema/render-request": "0827bc65052602259d6644e230d516639d69224bd7d24073b66b0a3d8b800831",
+        "schema/batch-request": "902f27154049c3d795becfa682d85739de01d56a7544c8dfbd9ea9719fca5290"
+      }
+    },
+    "runtime": {
+      "model": "claude-haiku-5-5",
+      "smallModel": "claude-haiku-5-5",
+      "endpoint": "https://opencode.ai/inference/go/anthropic",
+      "effort": null,
+      "providerRevision": null
+    },
+    "executor": {
+      "command": "C:\\Users\\yiwer\\.local\\bin\\claude.exe",
+      "args": [],
+      "version": "2.1.296 (Claude Code)",
+      "files": {
+        "command": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a"
+      },
+      "node": "v24.21.0"
+    },
+    "budgets": {
+      "maxTurns": {
+        "definition-extraction": 40,
+        "dataset-extraction": 40,
+        "template-design": 80,
+        "template-revision": 80
+      },
+      "roundTimeoutMs": 3600000,
+      "stagnation": 2
+    },
+    "build": {
+      "dist/agent/anthropic-proxy.d.ts": "a3e434583e56e2e915566bdcb0d3679ebc2f64aafcfa80a02eabf0be413200e9",
+      "dist/agent/anthropic-proxy.js": "cb40a5f154035e46ccf971c13dd2a0ba7347ddf88ec7fda1db2cc5e4f391551f",
+      "dist/agent/anthropic-proxy.js.map": "f55e0233d90f2fcaa6fd1220e2e496094b95aae86201655038b3db40573e5404",
+      "dist/agent/assessment.d.ts": "0250411046e310cc7f37ef05c021012bef23dbc7e2cc9f0dc16b3fc45fd019dc",
+      "dist/agent/assessment.js": "cd0379d85c0e83731400d0def4f6d9887fd59c74d554178d677f3aefdd4411a8",
+      "dist/agent/assessment.js.map": "bd95076d29e34e8294a00e87370cee7fb6bb4701a56e53015d48725f17347d7a",
+      "dist/agent/attempt-records.d.ts": "e6ea9924d8a060752b30a0982fa549c8b15e9289546110cc9b9483405c0cba39",
+      "dist/agent/attempt-records.js": "d4ee3f13bc3d1b696e403b2ca55c0b57ca19bc51324b4e5cf97dd276f3c7e80b",
+      "dist/agent/attempt-records.js.map": "ac6fd061497481c16329703157077ae82661ad53efdf3748ee3a7107c0702f72",
+      "dist/agent/candidate-comparison.d.ts": "30a281a8d4f6743a67b3dde5315c6093b3a3f6704c91b659331744e1e4d8f764",
+      "dist/agent/candidate-comparison.js": "f551479d737f7f5c6722e8dde32baafbee4c09411c96d6bf194958361eab6b6b",
+      "dist/agent/candidate-comparison.js.map": "3284fa512303a5fd3b40f9dbbbbc566ab7718126bea3d1070227e59036fd2beb",
+      "dist/agent/candidates.d.ts": "8cd87ac18a00e863127fd5f433363509a0264cbe39b8d27e24eda04a3d3dcaf7",
+      "dist/agent/candidates.js": "93caff27da54744acd80742d79144c467bfc57c01ae4fd4afa91fe6f52cd4503",
+      "dist/agent/candidates.js.map": "2b6ab46e1c981822e7d1456ab5ffb809e1983c8fb0c0ee802129ecb826794be3",
+      "dist/agent/checkpoint-host.d.ts": "5f4df31e74e45a3fccc1ae579fdad5e21e3eb41ae7a4cc65807d93b712ec14d3",
+      "dist/agent/checkpoint-host.js": "11b4c2a69f7a8f4239c095a0e464c51cff2f2f527f59194cdc075a9a3d16bc8c",
+      "dist/agent/checkpoint-host.js.map": "5d885dd69766efab56746d8c5ddbe56770f3350f7f44c4017fb25b49a6456975",
+      "dist/agent/checkpoints.d.ts": "566ea58d697e92af2fbf07c8c46f4dc932bdbb449c552a39962e6856f2ef3b62",
+      "dist/agent/checkpoints.js": "cca4ea0e67b845205179fac32a54e9cea00544aa2b9081a862e791a2ef075e7e",
+      "dist/agent/checkpoints.js.map": "3e7410737ec66f277025dfe9777676fa3786d2c925b15c44d89273327dd5ea78",
+      "dist/agent/content-identity.d.ts": "ec9b3852c5e50b34e7c0f07159b3f7c2d31a5d7fd47978a80b13134b4b5f9dc5",
+      "dist/agent/content-identity.js": "9ea89995ef6e567353b7d70b2d151fb31b71b7c9fd83e2c511d29c7d3c751175",
+      "dist/agent/content-identity.js.map": "9b394cc664d64954b805eefce40048931799593b65a129978e9fa0f2c55856d3",
+      "dist/agent/context-policy.d.ts": "9d7610bf1a869ea1d0351d56eff6e3e1a1c6d77f34dfa760ad2c3dced8ff5f0f",
+      "dist/agent/context-policy.js": "970d84d06dd90cf52add9c183e2c42b74fd150ff4989dda45139ec2a00bffd50",
+      "dist/agent/context-policy.js.map": "e2a2aac065b581028982e0d4e4a56ff49c34a91d57ce53fb02cdfa5cf93500da",
+      "dist/agent/coverage-verification.d.ts": "1316cafa11782831f15d644e5c33045cea143f5fdfe25455bf8ceef7a6c2c090",
+      "dist/agent/coverage-verification.js": "3e7c280e41d47be9230dc505cf37e771dd7c568eff8c8f6d0d640148b6325533",
+      "dist/agent/coverage-verification.js.map": "26fab26def1a3f1f6fb2ffcdf8a32a471426983bd3932aa2aa2531f318e23bfe",
+      "dist/agent/credential-redaction.d.ts": "8394a9d625bbce13aec0addb8ce5d95b48d28689c90156ba29d7b5ae1fd29c17",
+      "dist/agent/credential-redaction.js": "ff7c5bc99b342a4e557a4fde2c227ac1002dc063217af791e62749020fb11875",
+      "dist/agent/credential-redaction.js.map": "e032353511f81eb935730bb814432a999c44c33a05f801fb36435886d70a4a03",
+      "dist/agent/diff.d.ts": "c14a3e5504cb2166a21713dcb00914f49e65954735a43a098901d823d23c06b9",
+      "dist/agent/diff.js": "89109f9fe2f91d8a0bc3031f710b54ea98c747ac5eb73b2c356743a31b86b7c4",
+      "dist/agent/diff.js.map": "77dbbf1825f1a8a665937b0aa01fb858a025eee30a805a3261ca76e2ae5ea031",
+      "dist/agent/execution-error.d.ts": "0040e0a4a245082adef4b2e57de13354a48896827ac0d5e5d60a36b56f7d41b7",
+      "dist/agent/execution-error.js": "3f132eba469918ccb0f3eed8657dd661740efdb1d2cd5950125ac5f47b134202",
+      "dist/agent/execution-error.js.map": "668cf8833a1a6ff81adba69aac71c79f71714bdd32f89f80bc95d4aad6774b0f",
+      "dist/agent/execution.d.ts": "71ad85abd74ef942ad23dc3a1ee7c9599a5d7baa11e6f84f9ff7817d5c692d89",
+      "dist/agent/execution.js": "42a364b87dbb62dc8d1f050791c018b1a045c142e2ada2c4c18a79cedfc15d84",
+      "dist/agent/execution.js.map": "a2be5d2ab621dfd9a26e8817d38672d5754fd7be7e1828a5ce072bc3ef5ea824",
+      "dist/agent/locations.d.ts": "451c1e4d0e2f9de570ee0a98f48fe8c4572b336a1981ee0b19c04508d1866fa4",
+      "dist/agent/locations.js": "9245a091184da3043935bf15b57abc8aba5bdd2a9848e54ff94180312023dfdf",
+      "dist/agent/locations.js.map": "9af1b821f61a836db604df7a91b47c9babed5a2ad6ec20e03416d8cbe62332d0",
+      "dist/agent/mcp-forward.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "dist/agent/mcp-forward.js": "3fd13edd7a3b1b7862a5a826741dfdbd46d39c5385206946a9531a92e095a311",
+      "dist/agent/mcp-forward.js.map": "8ec7fcef057d33080176fb14fb0fd7ef4e242d705cb5e1eabeade7e2ca0616a5",
+      "dist/agent/model-proxy.d.ts": "58c5e0b121ed8aa5ae30223124d22d2293b452aac83df167b6681d0fafb2d4e2",
+      "dist/agent/model-proxy.js": "e1a168d2f8a8f58a226071e3c0848720928b9a04598d757e28b8266047fdb030",
+      "dist/agent/model-proxy.js.map": "64c74fe190f2c8dc758a4fb778bd47556d1ceca29a4361305879f84705ee7639",
+      "dist/agent/orders.d.ts": "512690ba174f7200ff783aed1d1ea79e10cf384e332ddb9579b232d8b1363463",
+      "dist/agent/orders.js": "14cb37178ab2a37e5646e7cf76bc295642613949370451f28aa26c511cfe1188",
+      "dist/agent/orders.js.map": "e1d6fc9f343541ae87203883f11ead83a37d70f056055fce5d4e01191fb8086c",
+      "dist/agent/outcome.d.ts": "8f5cebfabc8dddc2f598c8c7d6912a3a69a443a11817d24f8966a02d1a7ee79b",
+      "dist/agent/outcome.js": "8f2584ff8f54723e99f94ab2eefcd7aa518b21c7eac843880a2673a11e91f6ec",
+      "dist/agent/outcome.js.map": "fdbe55fb0c1ed1b4c75d30da1eba482ae0e3bd0163420e6ff27624ba5643965d",
+      "dist/agent/preview.d.ts": "bd2e009bacf8062a2dc5ef29f4278e26d1ac8a31dd61f9e622c700720fb553e7",
+      "dist/agent/preview.js": "c8cacb9c4256f27378ef0d405fcc24d2472dcd84f10a3aafe6acfd692f135493",
+      "dist/agent/preview.js.map": "5d245e70c592e630e80ca04130c4808853093611c3dd17883d0a9343ef5a788b",
+      "dist/agent/provenance.d.ts": "a9627ead7d1322db231903888861690f38008887d496dca1b4838275e356cfbf",
+      "dist/agent/provenance.js": "da169d2c60647767580fe1385ba6d25071e2cb1bcc49160ed11633351f323792",
+      "dist/agent/provenance.js.map": "df1fa9acd1fa4481cc30774cec712da51578a78d76b29a635eeb7999853b2279",
+      "dist/agent/quota.d.ts": "d85dcb0b34dcfeeb0a778e6c162ccc3b17d30e847901814df8224bbfcd844b75",
+      "dist/agent/quota.js": "5bb9ba56c5206802c3ac4ef37f773338fbadd068f91dff9c6769f36bd56535bc",
+      "dist/agent/quota.js.map": "ba177210bcc7b0abfa0bcce85f21c59285f91d32b4b2bfeac1da510ac53013c8",
+      "dist/agent/review-server.d.ts": "1c84e32001c7899680a7a91d5fd32b98abb0e0e65b5b47841366a81db6ea4cec",
+      "dist/agent/review-server.js": "797cdcd42535fabe5701a58ee8edf1219473ad1ca3512bb850e6ee80994f73ad",
+      "dist/agent/review-server.js.map": "b628e997ad238351028cb9453e398d6cc3b364405d10d283e67f2e248fcae33f",
+      "dist/agent/review.d.ts": "a64726bbcb914733d0e231dc6215e2b82166b66c2f616e8cba7df4f7bf10d34e",
+      "dist/agent/review.js": "b7d28e9a75f5da69472d71c9e28350ba60cde9d553e44dd255868ba839d18d14",
+      "dist/agent/review.js.map": "fb8700cb3ce19e3d217762b44a6aaefce46592a72241c629e7ff994b59f7d30d",
+      "dist/agent/round-files.d.ts": "6a127c1cd409a835ca6c0dfbf99fdf5405d8ccaa54b537e7e58d47eaab96f207",
+      "dist/agent/round-files.js": "95410001fc7f834ec83d716f4f14911a23721b553fd764410727586a060d1b88",
+      "dist/agent/round-files.js.map": "a0e50d7bcaa76902acbffa8a1915f2334817bac7e006d43a8d416c6c53a50ddc",
+      "dist/agent/round-metrics.d.ts": "d22bb8e4c2dcac067cba20f7b1858a665818999f490c5802e677cf8053c1c3e2",
+      "dist/agent/round-metrics.js": "e697c2ff7f7d1c2d01c2f4d2a6e0bfa5825aea5d806204ff29adeed0c5c03e9a",
+      "dist/agent/round-metrics.js.map": "dbe2ab71cb7c3534edb0cad5f5fc3061bf3689aff6776309b3894574d0c7fb9a",
+      "dist/agent/run-worker.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "dist/agent/run-worker.js": "18519c6deb8d9304f3a5110e36cbb1daf9d679cbf3175f27579141b7030b9d1b",
+      "dist/agent/run-worker.js.map": "bb29e0a471885795f0daf2edfd02da201b74cc14d1f8c4de60103a64ee96cafa",
+      "dist/agent/run.d.ts": "64a2715fb87f8373300686a9e23f6104870b6b0746c0b9169396a35d65b24655",
+      "dist/agent/run.js": "d517c0855d5be6c02df0fa4a73eaff7fb23665a92176095131f205cc982bfef2",
+      "dist/agent/run.js.map": "260c6375008d1c7e1f976e723ef53516cfbb4dd0c8703d94b509c53b6ab2eae3",
+      "dist/agent/stagnation.d.ts": "922a6c3ee5a852b37ffff39dbfec2bfa0acb8d5ab42b9a399012ab8099830570",
+      "dist/agent/stagnation.js": "a12774e337524ac92a66986393324ac64ef9292364fd1e085bd926f4c29f25e8",
+      "dist/agent/stagnation.js.map": "35c2f7dfa0fa7f2a542aa70bc9a87aef50ad71e470920f417dd959d7e089c24b",
+      "dist/agent/stopped-round.d.ts": "d661213a9b1286839a9d7b86352d14c191c5152080d4805ee6af090ab67a770a",
+      "dist/agent/stopped-round.js": "056e76da7741abf14179dc85be99740ee4094b83cae335c9d47632bca38fc54e",
+      "dist/agent/stopped-round.js.map": "a650f9df8f426804b366e3b1aabfd0093f8d4a9c138abecc3b443e7657acba95",
+      "dist/agent/style-verification.d.ts": "56eddb8dc1015b605df39892c022c8f96df77611e48de32c57a37f87c6794445",
+      "dist/agent/style-verification.js": "946368b601358e1974bb4ff34a83628822f9bd4f39b7ed410fc9f5be137d9e2d",
+      "dist/agent/style-verification.js.map": "6502480480656983d26d374e9b03ecddfda014e310d847ed48c314d1c3e4d8df",
+      "dist/agent/supervision.d.ts": "c6f93c9c54b5159d760561a5b77a9c6130c1195695c1d395975808b6021a8226",
+      "dist/agent/supervision.js": "850ac57daf96d104024df8cc401d07757bd05e6e3ec7cffb09b9e86eaa82c116",
+      "dist/agent/supervision.js.map": "1bb9b03ce5d89421153ce94fa38f4771bd978b463dfa7651f96cb4442739bc4c",
+      "dist/agent/tasks.d.ts": "38eaed902774bac14a594815bdb1c35bf39a663dead8a44225b5e4726582a068",
+      "dist/agent/tasks.js": "e831b74ef5db881ddd26693d0812f762fc1f74b7ccfec7f3bede9ed030c207ce",
+      "dist/agent/tasks.js.map": "5d6c8ccebb12ff85dc4e3a8e3c4bc5619cae8593a07626260d1aa22700a47c65",
+      "dist/agent/usage.d.ts": "af9267816f46fa45d6321c8ebd92e8c4cec6d83fe6151372763c5dfa7c42ff53",
+      "dist/agent/usage.js": "ba27ca4232a8f67605496330a7eb0dfeb79624c4cc737468b6a81fa93cd57d17",
+      "dist/agent/usage.js.map": "d5d0b21bad43187e34f63bfea0ea6513f74b05f72510facc6537b2609755fe44",
+      "dist/agent/visual-comparison.d.ts": "e99cb18e2ee2297bec388e780af14f6d9363f6c8a36ceebcf5713b1238ba69ca",
+      "dist/agent/visual-comparison.js": "fb719edd554fddd40b0538c9d2575375df0cda6d669310b1134bba673f3a39bd",
+      "dist/agent/visual-comparison.js.map": "d2cbb9129bcb27b48ac72a886f80ec0625a1b7994bc5cce363e7b647fa482ff0",
+      "dist/agent/write-files.d.ts": "0016f1488ca5541b4d9fb1a933db2e22d7835d5f62e8d31b6c6413865a0d606a",
+      "dist/agent/write-files.js": "1833cee5a7c725207b094874a12c8d262b32ecdc6ffcbd7194e4d0846558d9c8",
+      "dist/agent/write-files.js.map": "ee34afbb1980230377dfba2b25f081778ac8da54b97ae814ab40e5d350a12efc",
+      "dist/batch-read.d.ts": "b83d1b5b0ff0a11e72e26cf1705c5ff911d6a5eab30a26fb4866e05e4690b22b",
+      "dist/batch-read.js": "08202c33a965319e48d249aff413635aa3a118a57e1d84a92366a1b675dd1067",
+      "dist/batch-read.js.map": "2ab482dcce2db35e8dd6f751a6a256d61da6689687df52893dcdd0c58d6f0f1e",
+      "dist/bin.d.ts": "43e818adf60173644896298637f47b01d5819b17eda46eaa32d0c7d64724d012",
+      "dist/bin.js": "8039474fd4531d4688fa18c1d5280596b9a34b9a2b0b41f86ef87e0dbd85f1c7",
+      "dist/bin.js.map": "3ae7cc8c3759eefef63dddf1cb6235f6dc608658653b9ba984f6f11be595de3d",
+      "dist/canvaskit.d.ts": "6676410ccc3f5d34236ade1028532e0709f541338106490621c9f79b626d5350",
+      "dist/canvaskit.js": "c9588e7828a9338bfde8af805f75cdb7bedcb2328492f9ac814601e04bfe8923",
+      "dist/canvaskit.js.map": "25e99a69e22d05cb2276eef25d832c5c6655cff2d76b1c1c84e28627728f1cab",
+      "dist/cli.d.ts": "4c58110b34b1c66c8e576383bb3279c39999d4130472cdaf4ee7106d7c6a92a5",
+      "dist/cli.js": "d6cf892c6aa23d9ac89072f28005483d4b7ddfad771edab0630091957968989b",
+      "dist/cli.js.map": "b9e752a8ed286e2737962276e897862438229dcb8413734fa254383e876b7c98",
+      "dist/dataset-validation.d.ts": "c8d237fe2bfd86f2f939f82945f3a40c6d1498f6807b24a1b3e30eae004e7e2a",
+      "dist/dataset-validation.js": "b82a56af65da2e244b191eea3fdf02d05058edefae53fce07ea2ae438f974cb0",
+      "dist/dataset-validation.js.map": "83dd46b1970d1587293122a2c5341d0e48b036f3df9ee1117d347d42bf2ce70b",
+      "dist/decimal.d.ts": "6401935cdf6fcd3b13232b9389a725975aaeee0e2a3c6d0104b0df8002a8de12",
+      "dist/decimal.js": "d39aaf022823790bbc8f488beb7ca70277281dff43dfcbbae76d522e80b18449",
+      "dist/decimal.js.map": "250537dc1ab93248cba77449a0af40f046108ed56c322542edf2f513cfe29679",
+      "dist/display-format.d.ts": "5c1e902d3532ad88fd7740189fcfcadb0d40893b8499f4dcce6ed8104cb2ffa8",
+      "dist/display-format.js": "528efeca0a5dc3dc3a9e33bd0bbf46e19daa32b059295500c4024421268e643b",
+      "dist/display-format.js.map": "463b806f69924414ffb69d6b470b4f4dbde6451082d6d4d74f56b9414fdb2304",
+      "dist/draft.d.ts": "35a8f91f0e44cd474adb49e4c0fbb1005e95cc4092b425ee23fc7d650933c825",
+      "dist/draft.js": "d204f423e4790d7b879350dd12db8d818db8a0cf8cfcf1cbef4b772f1d29c678",
+      "dist/draft.js.map": "9f39fe7225acc8492c2eee6d679e624e504442c68bc8e6b2447eeac3463f4ea4",
+      "dist/draw.d.ts": "31b8c2912190178e4e1c809eec82905cb27c2afcce323474d8625285074b549d",
+      "dist/draw.js": "2a98771da46e37356047610bb6448a23e255331a7d81c484609ebe37aadf5853",
+      "dist/draw.js.map": "b11ae5308fb220564d5c9edc7c3441ce87d1661dd984327e02efb2df81b5d087",
+      "dist/dsl-schema.d.ts": "f32a4706d19093c6cac24d2d11e266b371e67f2445789594a6f93cfa4595b9e2",
+      "dist/dsl-schema.js": "da659ab0904dcf5a89826f242bb312337edf153aca82f5e63b5a841bf84dd487",
+      "dist/dsl-schema.js.map": "7c89e7cafa54a3180650009f8c465f0d210f21552479b49cce778c09edc9135d",
+      "dist/dsl.d.ts": "c25b0c31b0579fada9efde73f9f7de79f06b1e67ffdef1c89e049521a95fc5dc",
+      "dist/dsl.js": "c85f236fcf09e6120218b812e922510da3a4c9c3b09d7d64baf0278daae45b7e",
+      "dist/dsl.js.map": "46b589b54f070f0c5496a3a2257e04926adbabbabd2dc0d427285c3e75d26191",
+      "dist/element-path.d.ts": "a8c0828db60c4251e79cc16e7ea2efe72ceae2a393b913fa1242453c4cca517b",
+      "dist/element-path.js": "ac15ddffa015c4acdcc8c0ef783c47a3b7a639543dee987d752bd20a58d551ca",
+      "dist/element-path.js.map": "4bfc62f4b8a4062a39203275fb7e5d0d420175bd2cac2272642fef3accf0d971",
+      "dist/evaluate.d.ts": "3886e18fd49caf038f754a38c5f0c5c8745613dd1be5b757f02a40398a357fe4",
+      "dist/evaluate.js": "335070137eab5e925953a902d9bad2178d2eeeb7b1e9f84cd05633207cd400a6",
+      "dist/evaluate.js.map": "93fcfddb3041c7bc7a0bae43a8cbdef41b9f57cf83c7368882b6a0e682a86e5b",
+      "dist/image-metadata.d.ts": "55761b69cbd0fb62d25d217af1c7fd85c09235ee2b42252b93253b749cd8008a",
+      "dist/image-metadata.js": "2ea8552c4ce88e3e58f1c629cec26cc54252274e739c81a08e43a9d2c9efa4a8",
+      "dist/image-metadata.js.map": "0352ac777b43e801b20bd4a91e733fcf4345cc2fdf46293dc62498ed001d1fdf",
+      "dist/images.d.ts": "5fe3248ca8d41f7dc40d2290e7f2f13689beac6336a788843c4639e37e20d86a",
+      "dist/images.js": "cf43835b975400e6320d75f4e2aab61dc5213a715b8f1049d0f906b69964162a",
+      "dist/images.js.map": "ecf78bed6341d8c56042f6855fdcc5dbd7bb84b15862716641af0adcae3eba57",
+      "dist/index.d.ts": "1149fb7a846fcf3350d818180068e48a116b2cef9142cec1ae1ed63537e1574d",
+      "dist/index.js": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4",
+      "dist/index.js.map": "e7cf558cba083f20c76aed4971491c6dca074fdb0ccd8e7dc943d3649f86fc72",
+      "dist/layout/barcode.d.ts": "a036c8040586105f59b9bcd67a77de5ad51580dfaf1649e4cd1b055d38a7cf16",
+      "dist/layout/barcode.js": "5f44dc07dcc7d5698c9c5b74aef49ea42980102dc72fc838e57e4e9fb6d56d9b",
+      "dist/layout/barcode.js.map": "b3d29ad7d05d1e710015f3effce3bbba396f06f6ec73853aa2961eee74847602",
+      "dist/layout/image.d.ts": "acec21396fa472c1f9962c4165ef2dc7d1acbb6cf00fe142dac85829f8f7d7b5",
+      "dist/layout/image.js": "0dfaa08e9c248b954b51fc1df256d1bf031f70b6dd4750d828cda47cbf8a63b2",
+      "dist/layout/image.js.map": "0999929087f129b99ee55b8964680befa0d9853fe9e78fa101c74e2151f15b5c",
+      "dist/layout/index.d.ts": "69b07dfdf23074c1184736432146d9d6edf46481a35eecb1b5450251d08c7853",
+      "dist/layout/index.js": "a2345364650ff52dfa94bb3418456376e304cd5a6dd78c431d8ee49cc8b9d06b",
+      "dist/layout/index.js.map": "fc3ea17e86d5b6799593267deda0281abce02b0342a382824ff4f3f49d0dde18",
+      "dist/layout/qrcode.d.ts": "1634d9f69ddee31c7787dd71a2ce66edb44567cf0c071601b58795cdcdf25553",
+      "dist/layout/qrcode.js": "e069c9da4e7180c6a1015255f71824196dff9e0018bbf7bdafd51523b833c445",
+      "dist/layout/qrcode.js.map": "64758ae5be80f04bd5fdd10f27e59154002aa859be6085cb6e00f2eb67a5b7f7",
+      "dist/layout/shapes.d.ts": "9a820742866e9a241c6f1b551be971e6cd75cd132c87e9f2dc50a3f01fbd49a1",
+      "dist/layout/shapes.js": "36b5161c3210cdf85fef9e850ad412d711464acce9618b5f70acbcca14184af5",
+      "dist/layout/shapes.js.map": "bd17991737ee0f8ae5e48dc70fb8214a22172076ebdf213ea924f08d508ffa7d",
+      "dist/layout/shrink-groups.d.ts": "c866f63efba3ef6c5ef809cdfea9b6f030d3e5ed59bc5245f69d55c6c8b1f1c1",
+      "dist/layout/shrink-groups.js": "172d6d396c52d29700930b0102573006aa7afcac46a28bec528fee62493f54e8",
+      "dist/layout/shrink-groups.js.map": "f0397e0dd6553828f177908f372394aed6043eda6faa9b9129c997194e406e27",
+      "dist/layout/text.d.ts": "fdfc601403709eb79577d78e36b1dd28e7dc436727fb6456a558d989e01924e9",
+      "dist/layout/text.js": "fd72d74b3dbc71ca9942d1ca74d94e3004bf049aeab43c2efa34ee96f7cf1839",
+      "dist/layout/text.js.map": "f4fd6d9ee1fdc8b6bee4c0eb3a9268a4b2a7bf79369ef748191499f880670ae7",
+      "dist/layout/types.d.ts": "a955e4b4f8e33cb4ffd1d3349f8887a399a8615b4ec74705dd1959a567c6aa22",
+      "dist/layout/types.js": "80e4e5dde995baf1d0ffef9c8a2ee96a59e7cdcc9d56cbb1546cbb38f6fc7cf2",
+      "dist/layout/types.js.map": "76436a79ba0474fec555344b426c02b861565b585f1c02808841adb0e1978dd3",
+      "dist/local-access.d.ts": "38ec709a9be8b290c7609c4cbe7b243b860ec15f1d256d35e2296f4fab09fe37",
+      "dist/local-access.js": "06c732726662321c99a4cb02edc5d9e195592830e4574f9c75bc271b68666f9b",
+      "dist/local-access.js.map": "0ae7a2230bf3b038fa83f2ee516946887d1a2a67a6f8098752e28cf32626eb45",
+      "dist/local-commit.d.ts": "076139a3aac357a322a8750fbb54a0ffb5f6a53928ed3113eb403df856c31176",
+      "dist/local-commit.js": "80ba66174a0f88c39447c01d474ce67918cc83fcd40f333644f7630f39ca33f7",
+      "dist/local-commit.js.map": "db138c313df8b699dc18f93a89b4cbe62d3c106ec7ac744840256b4f5056068f",
+      "dist/mcp/files.d.ts": "2d3c76272133094d5ef9f0a6f5c869d0db487c1955f9abdbeff176709e24833b",
+      "dist/mcp/files.js": "89fae7a35800589d168cf7d593763fb9e72df4254ea5dc042cc3cd22ff29ecec",
+      "dist/mcp/files.js.map": "71d65cd09730862fb36e70601f8b02e857bd68fb21f84abeac50d8919b04c671",
+      "dist/mcp/outcome-feedback.d.ts": "22437283043bed9c224f36bee03432ccbfb85ecf889974a9b90764c7a98e9432",
+      "dist/mcp/outcome-feedback.js": "e204a2f62aa36c319fdf8383da05cd452833382858f11fa311df7743b74abaf7",
+      "dist/mcp/outcome-feedback.js.map": "ee98f5440eadf898994017077c7574ec624cc33830e9b1ec0291beecd639320e",
+      "dist/mcp/references.d.ts": "7df30cc069a3be37088b99b322ebd7625379b92bfd3ddfe80a0e3579bc4d95eb",
+      "dist/mcp/references.js": "3ce8ae4728e5f482628e29e16c94b66129ab745bfd0e69353856ee563c2f9d68",
+      "dist/mcp/references.js.map": "25b37700e05b2ab4a2d81744e606f05d5e1c748630d53e92018e98496b44d795",
+      "dist/mcp/server.d.ts": "0b284ebf672ff4e5181a6376925a00e33292fac8de1134a71d7d5a4257e0162c",
+      "dist/mcp/server.js": "8d9ba574a77042eb6a978c68f24bdc9261e69e26646e4379ffb46cc77fd38827",
+      "dist/mcp/server.js.map": "38680143bb5c8296a5727f26aa64818078126577f701df430f13822fb0f45b0e",
+      "dist/mcp/tools.d.ts": "54a80aa31cd76082433ccdcc5ef007502c98fd5a2e2413c264065371ca143679",
+      "dist/mcp/tools.js": "d99648ea176d973732fde6a8e8b38d4293a38dd5f4f27b3a26b1289df8abc31a",
+      "dist/mcp/tools.js.map": "b0750d94070c0b8659d2174e8d02e32a0ab65ac24cb95baf63bb4d1855bcde69",
+      "dist/output-records.d.ts": "12696310bf0b7aa1f58116ff9946f699617135c8dd16f8bfd26562961e433d2b",
+      "dist/output-records.js": "baa407e49e785a08feac91183aaf61e0c3fd3e46abb3f1233c4b2bf1cd1a4de8",
+      "dist/output-records.js.map": "4c8b598a0e39daba670ff80067aa3b3ce7725193d84fa37346718fc406d78771",
+      "dist/preflight.d.ts": "89fd8c5bfd7cde83bf17227d7bb488b720cbf467c850a818508078d66a9521fc",
+      "dist/preflight.js": "64536bb3d5d3b654a59c4eb4ea584ec5a57313fff79d860c260b7126393ac16c",
+      "dist/preflight.js.map": "1b9e0153ae17ffdd82655e814e937ead5933784936bbeeb384fce4fb36c98649",
+      "dist/problems.d.ts": "d325dd8cc14a31f983d3041087746d14009d65de8c7c987f67af2d9c841a24cc",
+      "dist/problems.js": "2c8b77a29516fbb599b868c89e76a42c0a66a56ef0c2c1e134e25d45e042b07f",
+      "dist/problems.js.map": "1d35830ec63996c9ee8117fc07a693c5b34835a28ffdbd0846769a78fca44579",
+      "dist/push.d.ts": "498d66f69108df83a366946f612019132f4e391f98789d0b3cc0c28d62dfb278",
+      "dist/push.js": "1c6dfe60c978525db1290b2cf0439ad7dfe1476be3507eb8a8f2567781efaad5",
+      "dist/push.js.map": "4d47a4cd0dcbaf71e0c812f764ec26da38243ae4422052e0eca6304ac7f2fddf",
+      "dist/record-files.d.ts": "82f21ec101747ca8356718efd0d47c17526ca9929f09355c36deb42d798984d9",
+      "dist/record-files.js": "7719ae129bcfc162a145ffffd2262af7fffc7e5d675880b77c32a895e893cbe1",
+      "dist/record-files.js.map": "8fd3e99555fb93210b7c136c1aa31239845644316423350657e6e398ebc562da",
+      "dist/record-input.d.ts": "e4fd2ed18d5e854affa68c619426dbf0bc433d0b44c817b699845015964b6687",
+      "dist/record-input.js": "9bbda90a6a6d5de261d39a0c4f150ba9538921ec4faa4dc5da0d0291d20cdf15",
+      "dist/record-input.js.map": "987b03342a5ed00464f70757b18833193b884891e96d67ffae12137979d30781",
+      "dist/record-stores.d.ts": "2fe752c595378b3d48892e1e3f05b8a9c95af94dc841865577e8315d4e22567d",
+      "dist/record-stores.js": "42ce8308d14b45d43d1d0c984b304efc585d826a4307765b405de22dc8544c35",
+      "dist/record-stores.js.map": "c2960f2f2548f1014dfb9ab555b92577fbfc6bdc5a12876d0fe0b43d7c624b32",
+      "dist/render-evidence.d.ts": "cce581440da331b3afc59c4b63e50e650b48bb3e10809f1ed9a69ebbd2dade1c",
+      "dist/render-evidence.js": "82ebb022b158041b7af8b302536e8ac573bf2007377c55f61e596d57b76fc8bb",
+      "dist/render-evidence.js.map": "a509e95a1cd085408690b60ee298b3cd1a21c6f240f72a9093c8d0e4fb64da84",
+      "dist/render.d.ts": "093e3fc7cf6fc20241daf21f87e193910662ca94b80ce87dadac489fb545c378",
+      "dist/render.js": "35ffee49886f17d7b2683f6073d14c61b31a145e1617ebd463d4c35d2cdc8431",
+      "dist/render.js.map": "0c880ed3cb4872c9f879ff98364ae29cba57ec043b9a904bdfe4d51952c2a403",
+      "dist/renderer-build.d.ts": "d19e68b4bf747ba27f681fe549a4550f09094f2cadeac6c3c5a7380b27a25f31",
+      "dist/renderer-build.js": "d448d41be800942becd3cb1ba90d47baebb01672676da3ecb45967ec55113e9f",
+      "dist/renderer-build.js.map": "bf59121217ce241d5a60a47f345942579f4ff472f8c434f7eaa89e30caf81f78",
+      "dist/request.d.ts": "c5f42fa63f0d4d04cb8b924f309e9ba605954eba0adbf941cce8de062fd3e20c",
+      "dist/request.js": "bc862b3927213d6b5b80d58110324cf89c850eba4fbd7d3b0b515552d2fb464e",
+      "dist/request.js.map": "e1f507c47883a7433e75b28812da3467701cac046c1c4044853f6f22b8d92e19",
+      "dist/resource-impact.d.ts": "034a5b48b8b9e0c8da3afc2e9c8aeb307f8b1af2846e8e0c27c2c0e71511fbbc",
+      "dist/resource-impact.js": "30d709a2524e345342a63a4432cdd1be5f31f1e122c19e86be88e4a72cc40ee8",
+      "dist/resource-impact.js.map": "11b5d7b0f490d71d20053714f599f3a7ab6cace587a8a4c27ec6963c2a9eefaf",
+      "dist/resource-references.d.ts": "b664fbbf25884e2d74b0fa0fb39697cf5c839c5208000f39e9bd22d000014f6c",
+      "dist/resource-references.js": "3968742a712105e8702a3f05b7e4d14a277e534363d5c9383f436a2dcc1e6529",
+      "dist/resource-references.js.map": "3b2c3f710b896fd7b2fcaa12630eb403379a7e9b105e669b3687984b1a989eb2",
+      "dist/resources.d.ts": "1090417a62449617164813045976970f6ce813a0cc166faab4c2c8bfd26cbc46",
+      "dist/resources.js": "f984f4671f33a14830d2fd3236cb4fd7fc71d60c0ccdf4919a42fc11b08cb2ee",
+      "dist/resources.js.map": "f2040fed72485306e4c29ce8e83fb917792d39e05edb61ef50a0a6521dbf39fd",
+      "dist/schema/builtins.d.ts": "d7b3ba283d686ae9c35403eff6efa1c7ab9185a628f2222b3b4c768aae27e2ab",
+      "dist/schema/builtins.js": "d5b8d706f9bec5f03cfaa010979884bf7b05ecc13d877fbc42d477afdbfb25db",
+      "dist/schema/builtins.js.map": "bc4f54744d80d2f4aaf08226191d1faaafda53f4e55647c4e17833f554b64adf",
+      "dist/schema/compile.d.ts": "90346d61b351fdb0cefb25d4412a62629903a0b100ec9cc62b2de47537178f2c",
+      "dist/schema/compile.js": "90a4aca9e8365d6340e314b41be407a7683778d135483a3c57efdfb451ed121e",
+      "dist/schema/compile.js.map": "de3f50545c2f8bea68da1aa9e0578f5944ec89cb14cc55357ad9057afd710a9f",
+      "dist/schema/formats.d.ts": "748cbb26d12bc4d0c7e2c948f7e2248db0a51baca0212752190d029bd2e9bbb5",
+      "dist/schema/formats.js": "56344e091ceb4555b2d7880713f7c1c03bdf0b3aff144b7a68da79d62ce56354",
+      "dist/schema/formats.js.map": "76b5ed5534d7304c650b32765cb590f5e1bde295d829208fef3bee56311e3ef9",
+      "dist/schema/model.d.ts": "dd696e84bd9e4fcb5eae57406c9f9cc34920d48b32d99eeee79461e86e656500",
+      "dist/schema/model.js": "1c4e7942623494bba19a782731bb8f2964bb84e8ed6d92bc9f43cd80333063dc",
+      "dist/schema/model.js.map": "54bd1892d845f8482738a4460dd1f5f56ce89afd846638373ed7dea1992d2c04",
+      "dist/schema/parse.d.ts": "f5a3f5dc2c5a7789d2e8d5b45c769aa6965235825cb41b28699c3aec524b181a",
+      "dist/schema/parse.js": "13f8440d85a6387b5b432f702d2ca3153dff9d27e5c57e316f9a52ff20493eae",
+      "dist/schema/parse.js.map": "935250bff439081ce0736b25dbee88c6377ea00805470c7e03bd2efcbcbc8680",
+      "dist/schema/publish-files.d.ts": "b5c498d47fcdb048608e791c24b4d5b2c6bf0248167acc1226b9c0b66cfc9dd6",
+      "dist/schema/publish-files.js": "7b6a9424989f628ccc7cc83dd35703a4a3588325c2722c2d2fc910a867e374cc",
+      "dist/schema/publish-files.js.map": "e10f75b14f3533d53e7e2fc673e33e29d884754088d1d436096038829803e3cd",
+      "dist/schema/publish.d.ts": "0b339462838236e12bf64fbd61f3c5265ad88b5c511857562c78946e59717d01",
+      "dist/schema/publish.js": "c9e0c3d703af793997bad715dc4d20751fac21091e913f2324fada425afe6653",
+      "dist/schema/publish.js.map": "99a50c04e948853357e1691bd7a463a94f6e412db8bb0100c648cab989220d7f",
+      "dist/svg.d.ts": "5a56bbba473dc89a5f11b522d3055f72001c33208c302b338b35b448851756d5",
+      "dist/svg.js": "d03588ea5b8c77a34085963f5efa382d742b672023813f18837c769018fabd36",
+      "dist/svg.js.map": "cd7e3b206e0c447abf41ddd081dbe158ed077cf4c758255caae996c17884aeb5",
+      "dist/template/check.d.ts": "9fe1b75e7c21032b3f35ffbced2e1aeecee9908e86fa2a73d84338d6f68af275",
+      "dist/template/check.js": "bdeb9e12914a5b00647cd6c97dc99f02c5ae7aaa83919a4f4a24eb23069bb84e",
+      "dist/template/check.js.map": "24a7b3915ee0f012d4c77a12a6ec8d2c91eb5b15443cb37e1e6d93df555cfe92",
+      "dist/template/declarations.d.ts": "5f52ce1ca2797d8431c37839e61f3f70eb2c120b5b3e4fd4a6a0bd92c93af926",
+      "dist/template/declarations.js": "5eb3e19b2e5fc9499ddc76c73825bbc21dcb15faa35f8e0ceaacfc53b433bb32",
+      "dist/template/declarations.js.map": "177a94cc4c453f57a2d4cf32da1800a951b6ef93cba780e6277a3e14c27bec72",
+      "dist/template/describe.d.ts": "2cb629c81c10f45ffca9438d07000250c858852756ae596ef8d30a6f6e6a6591",
+      "dist/template/describe.js": "903dad1ffe1836bd51c164137b6a7147ca47c22db5e61a9c7e16daf91ca9d4c6",
+      "dist/template/describe.js.map": "8a7bfe05ab1c2e23e53e8735851c43dad4553481a20c83d3b9a88e7a1d87e35e",
+      "dist/template/loop.d.ts": "c82b9b44e85088f54e89fb1fcded67d87f9ecdea5183ebce07eb852de58b0380",
+      "dist/template/loop.js": "d87e3804f1331aa14c42dc707bdba212fc75e1e9107c8f6a06567d9898a1d17e",
+      "dist/template/loop.js.map": "df4477e08cafdb4d09e2e1c963ad3352746a6b5be1be420cd32358ba24345105",
+      "dist/template/missing-values.d.ts": "7b420b6bec1394c1396b86855817387d555417d886cdd1b5dc1a6ca34424d3df",
+      "dist/template/missing-values.js": "cfe71bed7e6df5ec4f1d51b4338329a18b7ac869bb440095f437efe7f7a7b023",
+      "dist/template/missing-values.js.map": "16c59206867653a86f299f6e126da355958e4fffc7be0248552944c0f39f9496",
+      "dist/template/model.d.ts": "d89d0269facab9a10d43fc03a864df4460d0105d89a0a3ecba5f4e778a86484b",
+      "dist/template/model.js": "1219e6857de6a29dedb20c18c8200bba81ead0752a4bae6ce775eb9e466e1ddb",
+      "dist/template/model.js.map": "85603d0a247323a034fed997cde1543975970f371a7d917c621bfd37f0fad2a1",
+      "dist/template/parse.d.ts": "affd1b306126d880dd14fd107159f6b2f0121bc75125ef399c1a9c59526bcf64",
+      "dist/template/parse.js": "f1e95cf26443612f82849d4bd8dea999c9eb0ace3fc1c9e7afe5561836a45d2f",
+      "dist/template/parse.js.map": "1f2e3f3c80d0318a9a6d31fd86e152e665bff8df87049205ad21e2032765ea8d",
+      "dist/template/program.d.ts": "86825b8bfc89a7c6cc9f7c3b4d1c37095cbdf1a94652d1df1cfe96a2a3be4efd",
+      "dist/template/program.js": "824e6211590bf668d73bc496f169bbd59f9c351803fdaa37677d3580f1cd537d",
+      "dist/template/program.js.map": "759bbd2dd547578f22fea691335422e278c7065013a7d81e6a4a48c06cb4628f",
+      "dist/template/scope.d.ts": "da1bed71dfcd69420899fd7b64c24c87f9c5dab25ab479c5f4c2d8ffaa6bc8da",
+      "dist/template/scope.js": "b020ed8023086b49a83cdf1339364b2bf14e24bf4ca5b35f1e4dda5c30078359",
+      "dist/template/scope.js.map": "feb418470febb98f7b92265bb65c7c86d10be3951dda00c408dd9b539faeb19e",
+      "dist/template/types.d.ts": "9094bc16c3e0e9cdaea15c7bc31c1944d3db017c594e25f95b972c811d20c44e",
+      "dist/template/types.js": "a71d406061e52393b2a059e3c6003738c1fb01d18082eabe7ec59742b9d2f5c8",
+      "dist/template/types.js.map": "a7da00eec499d8579b486d9e854355c7b55f8ae44bb1d790d0a92bb2545cca20",
+      "dist/text/fallback.d.ts": "ee9fe4884468f97e54be54068f4c1460ab0f497d998efeb9a3e5ce3717be458d",
+      "dist/text/fallback.js": "0b874f67fe1063426aba3bfc847aae59643a91b990324f8fb4c602a29243cb95",
+      "dist/text/fallback.js.map": "140a3472cbedd46a2d748690aa5f27359b16b609f0897e66a812fcaa786b9c06",
+      "dist/text/fonts.d.ts": "e668114847c963910acd824fe5aca9aa1e09c17792bc5c4866ad85e85ab3ffcb",
+      "dist/text/fonts.js": "b4331c7a7836dc282cbc73f852f6d2bbebe6712a415275ac3c4b2b68cf8e657d",
+      "dist/text/fonts.js.map": "71693c92c278420c5f2b06cfe8cf79179c155e07a4eb8f0054d91a88c4b3d0b4",
+      "dist/text/opentype.d.ts": "1cda15a0abeaea6909ab8f31c235f38eab2d635103e8c2d9ebd6008ebfccf0e0",
+      "dist/text/opentype.js": "565206ce042fd5a83772c8b9a29da8a3c2c17cca9f9f7d84596a4613baebcf7d",
+      "dist/text/opentype.js.map": "c0ec06af7805160a5f568f67b0ef7df80075d2440a9f0593b6f291d21070c691",
+      "dist/text/scripts.d.ts": "a7c418c70983c9a3a32d07e49bc8a40b6ff0652de86b67d216032d41fc64c677",
+      "dist/text/scripts.js": "5f93764b2164b70b9f38d326fcc5fb778d6c4eb9b4177a4f7dcc0b5a019633fb",
+      "dist/text/scripts.js.map": "06a1848f4d61ea7c2e020e9d90bde11ba7ecdbe867667d4cbfa3a458a38214ea",
+      "dist/text/shape.d.ts": "fccf7dac2e21785358073a7585938269b203f27509a2db2732d5ad391003f023",
+      "dist/text/shape.js": "43bec195dce1cb4a512e068ed94af1159bb254a4a05e074c44372048855ed54e",
+      "dist/text/shape.js.map": "3927542646a497d360a245b46b7d36e384999fb911675f48ee5e163a014fcec6",
+      "dist/text/vertical.d.ts": "f3bccbefc6df2b0b79b8ba7906828c5600d1b457b559e6434e53ddf51575f07f",
+      "dist/text/vertical.js": "32d4f8f7120f87d469e97be8e9c62b40c4bf8dd8ef924c4ff120287ef10d52d2",
+      "dist/text/vertical.js.map": "e97f1aadff0ceb3dd64bac566a849266ff748084439edfc1d70b0367dacce4f4",
+      "dist/units.d.ts": "9e24d36cf282687ad8dbac0e81444515eb116e94090d0ec51e3b12a445b10cc3",
+      "dist/units.js": "57515f7fbc81de5cf9db8745d34cc4c70a2124db1db03efb23bfdd10ee837365",
+      "dist/units.js.map": "e68d8575c0bec274e1f9a520f695a9138f13c2dfa430578e98f863d934d9f645",
+      "dist/util.d.ts": "1263fcaaa06debf3d8cf18ae1050aae63b8875ab55cd8c67f83aef100c8181ab",
+      "dist/util.js": "dd0f942e624d7f541ce6b7a418619837a774b3728857a6521b93fd98cfb58203",
+      "dist/util.js.map": "0eb154f49cc090d068042b292b831c327ea293815e305bf9dca53fcf18ea8435",
+      "dist/versioned-resources.d.ts": "abc74fd4f8f07396714c69c7d27847690c5c5d52107acf628f87f13ab8340353",
+      "dist/versioned-resources.js": "ba19499c77f3c0ce1ed68a420577dbf13bfe5964ed80c8514851eca012a09f74",
+      "dist/versioned-resources.js.map": "b3d253792eae954fe9345e6a80425f9fc54db7e32cbd0452d896bca4997791d5",
+      "dist/workspace.d.ts": "a7be42a7d7292a014a901ea450590d4948bc5e4b9f6517e932bddb09ee9debfb",
+      "dist/workspace.js": "0fa9b49acdcd71992be2a6e400a46dbd07420236608f21ad5c08dc50c6823809",
+      "dist/workspace.js.map": "e977ca2f259894b7c719cc95d4b8f3850b9e6d46a5a855a08d2973d072f8def6",
+      "package-lock.json": "sha256:34a85e80e41fd49eb18946ffd568d0cb87378b06df220a88bb93e42de091798f"
+    },
+    "mcpContract": "0.17.0",
+    "materials": {
+      "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+      "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+      "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+      "agent/domains/asset-tag.md": "d56d14ce94534004dcf37aa7ed6154d8079a33360bc61afdcdce67c06a3cfd30",
+      "agent/domains/boarding-pass.md": "8fc65c8012d54a5f6f76f62db886f91cabf4b5080b17b77fb84ef1dd1067706d",
+      "agent/domains/clinic-doorplate.md": "f710865d7452256f4f23db8acde25294281b77fe0d137814e772e37fa71d8972",
+      "agent/domains/departure-board.md": "aa26ace9d7ca281e9aea8516e7967aefb4f5f46c49bb11f06f2cf68d501a9def",
+      "agent/domains/hazmat-label.md": "103a38e0cb441e85b677c99e55d0a75068879495109eb7c71390651d92712a26",
+      "agent/domains/metro-strip.md": "ff81999114a9378fc4de7059e83f51ce575b11f1a3daf86f45c40ee3e6822e6f",
+      "agent/domains/order-label.md": "65849e9c379457751b864167552602d98342813fd3af00651e54119b4a3356e5",
+      "agent/domains/price-tag.md": "9ae5fd2880fe5e2044e2813343f33c0584dd91454438153d5a4ba005531d1e95",
+      "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+      "agent/domains/waybill.md": "951196ef452b57ce89f5b91a0022caecbdb1dd928343e13f32ce6915b19aa077",
+      "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+      "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+      "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+      "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+      "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+      "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+      "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766"
+    },
+    "inputs": {
+      "tds-01-m518/sample": "sha256:6666ddb1fa3f05dc5350d9ed69157bc0f383607af0f24cb9e13af64c889d4843",
+      "tds-01-m518/brief": "sha256:61608f4a118fd8f3459bca67d5207b686822cc255d997c900bb8b909632c928b",
+      "tds-01-m518/request": "sha256:2244f8ec43d8ae77b000d79597c7d1e988fc1f3e2a28948633cadc49ada3fad1",
+      "tds-01-m518/workspace/schema-route-sign-v1.json": "sha256:bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0",
+      "tds-01-m518/workspace/schema-stop-v1.json": "sha256:522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589",
+      "tds-01-m518/workspace/compiled-route-sign-v1.schema.json": "sha256:e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20",
+      "tds-01-m518/workspace/compiled-stop-v1.schema.json": "sha256:200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba",
+      "tds-01-m518/workspace/dataset-m518.json": "sha256:b80bc15ee2b38f53029c126d2f270e7bce6f7b526b76181acbd894b11aebe829",
+      "tds-01-m518/scoring/stress": "sha256:b9dd08fe05220e8a8ddfa58a14e43b167117d38f6b513cc9707a08a193b45bd5",
+      "tds-01-m518/scoring/checks": "sha256:bb453fde820c17abd4744184376a336fa137603560ff7fa26eb5234d2baf7bb4",
+      "tds-01-m518/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-01-m518/resources/route-no-m518": "sha256:254a9c3dc8e6cc8302ebde674ad33d1b52eef5076ad764c991324aa7aaa5b2fe",
+      "tds-01-m518/resources/arrow-double-right": "sha256:b57c833d7fd67caf6cde51ec58d28cfd3a60a39fe1d1730a18fb3d28fc73f44c",
+      "tds-01-m518/resources/icon-metro-red": "sha256:456f9a07300b608cade6328ea9dbe5519e641ba08702d3febb13b4da6f6cd655",
+      "tds-01-m518/resources/icon-hospital-cross": "sha256:fe60336ca3ebfd7adf039fedfd1f4627b695b3290e117cce3064156840de3a3f",
+      "tds-01-m518/resources/landmark-1-svg": "sha256:333a8750445400e98d0b3528dbdfbb6fad12c4b3d6f0d0f92abebff43f2ab7d3",
+      "tds-01-m518/resources/landmark-2-svg": "sha256:860ccafd4ab51fa968f827649e1b6223f7851e499cf3b95d92a336581e456f2e",
+      "tds-01-m518/resources/landmark-3-svg": "sha256:da00ec4076ab91e623258c0c63b32183a671615c3fc7cf060d00c88ea7284a86",
+      "tds-01-m518/resources/landmark-4-svg": "sha256:eb6b831ea5ffe911f9126cb4e66e5888740e1f56a017a3e73660206599d671a4",
+      "tds-02-m162/sample": "sha256:32925a42f654d41c7833540a2c1e87e175c5a613259e100e03e545821c7df0dc",
+      "tds-02-m162/brief": "sha256:3f19c05ff3597570c25121a2e05800979873a935a9da66b4a8b143fa5ae75a16",
+      "tds-02-m162/request": "sha256:6c6ef219f153b515cbe7f1ef4eeabc9a547d2b9dfabb5cdd9275a801d5fb5c8f",
+      "tds-02-m162/workspace/schema-vertical-route-sign-v1.json": "sha256:e61bfee5e4821600b3f0d5032030a57cf037b3d326e59c8040c3bb0b382a0ce0",
+      "tds-02-m162/workspace/schema-vertical-stop-v1.json": "sha256:9baca8ded597736ea3e7c74a7f2f8c8ccc2ac435a876d7b8efa6254699c8918e",
+      "tds-02-m162/workspace/compiled-vertical-route-sign-v1.schema.json": "sha256:4544d2febdbdf68c409defe24348b8234e6ce95f07030c3e7695a0ebe9b7a44e",
+      "tds-02-m162/workspace/compiled-vertical-stop-v1.schema.json": "sha256:f1db3655bc2a9cf313165418254c2d887148b25ecd1ed99e81b637edd65cedea",
+      "tds-02-m162/workspace/dataset-m162.json": "sha256:104cf8b932f647d2905572d978dd5669a56acc902232eca269e410886d03039c",
+      "tds-02-m162/scoring/stress": "sha256:6fb570e5c957b8f24bbefebc3337e302f553d7af73f7b8cec2a2595e4adaeb9c",
+      "tds-02-m162/scoring/checks": "sha256:357b341b1d52bc91653abc1ada770fdb0fb57338cc7d45ab3a91aaaeb59111d7",
+      "tds-02-m162/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-02-m162/resources/logo-eastern-bus": "sha256:cabd690dff2117d512ab50437858dc9e3e9826ee2fb7e08732d90c0ab5e1d47f",
+      "tds-02-m162/resources/icon-metro-green": "sha256:8c56e2d17926743c5c75a198272034b19252db54f5fd60d867472cd0c25151c9",
+      "tds-02-m162/resources/icon-hospital-cross": "sha256:fe60336ca3ebfd7adf039fedfd1f4627b695b3290e117cce3064156840de3a3f",
+      "tds-02-m162/resources/icon-sport-center": "sha256:6add61106984019e66f1f063868f504076d717faea93c50483bc7cddc91233f3",
+      "tds-02-m162/resources/icon-railway-blue": "sha256:1820334c1b26c6cea7e76fcb3c559d0b2dfe525b9004d3571229bae9119adfce",
+      "tds-03-price-tag/sample": "sha256:1da2f5a5d2bcbe57db5d1020b4b2c814460d83e752527d7732c6e01cb43c1e0e",
+      "tds-03-price-tag/brief": "sha256:8b6f77c9fcfee79a0e24d1c6703b1c584e11a7a721051bcf245f8696a1686f1e",
+      "tds-03-price-tag/request": "sha256:a4a7f6933f6ec5ed6c3a4c167f9f0334b222a5a1792e09fa018d1a3194691823",
+      "tds-03-price-tag/workspace/schema-shelf-price-tag-v1.json": "sha256:918f9ffedb46914fa0aeebdc3b71bc6a923cc185255bc1298955dee73788beff",
+      "tds-03-price-tag/workspace/compiled-shelf-price-tag-v1.schema.json": "sha256:eddbffb635e9b63d95aa9cbdcb796b07694d1900488859e27efe2fe2cb6d1e0a",
+      "tds-03-price-tag/workspace/dataset-water.json": "sha256:ed865bdacd27affe4ac7087b1824a54cb673429ec6b8d7a4a4eb08ebc6e700e1",
+      "tds-03-price-tag/scoring/stress": "sha256:ef1a82cd6d4c9eed2e8d5cfd52d8ae825aa0ccb8f38fff077d9507628d2e0232",
+      "tds-03-price-tag/scoring/checks": "sha256:1f2062495f741e34e3753ac7462923172e9b30993865eea6782adeacc79c1ac9",
+      "tds-03-price-tag/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-03-price-tag/resources/logo-fresh-mart": "sha256:209ced90bc11fd0c2fd99a5a1c5f1188a43b1fa226dc0e886788c458e4731117",
+      "tds-05-asset-card/sample": "sha256:1b542a1d5dc3ff081da85650d69f7c14bb5a759082b47f59d6ab8088d284075f",
+      "tds-05-asset-card/brief": "sha256:f22c22b2b8da9540cabb31efe8b6337b6b26d2b996e1d7273923634d67000f78",
+      "tds-05-asset-card/request": "sha256:54bc9874e2f933f456c2576fb3ac294ffc8f46677a454a8b8509cce8073bb1b3",
+      "tds-05-asset-card/workspace/schema-asset-card-v1.json": "sha256:ea4def8afa2c9832e06b998cc6afa9650c47a85b2448c91bfc1ee87b731bf86f",
+      "tds-05-asset-card/workspace/compiled-asset-card-v1.schema.json": "sha256:49d14e5f1da5f9c7d6360d5c07b880cdd6dab598b9aafbce081b4bef6c16b863",
+      "tds-05-asset-card/workspace/dataset-asset-000123.json": "sha256:a0acb26224f9a77b3c1d5511624336b5b5a6cb63369b616d5f5c3659d17c698c",
+      "tds-05-asset-card/scoring/stress": "sha256:9019746ad0168bcfcae4abfb761e9b6bf6bd734916b1fbc05822dcfc76150012",
+      "tds-05-asset-card/scoring/checks": "sha256:0b6fde9ee1692e708c46a685e24609ea42973c7eca3e6d6eaab48ddb59ff8ee9",
+      "tds-05-asset-card/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-05-asset-card/resources/logo-nebula-tech": "sha256:217f5c9747e0ec6cb6cb6b5884e84becd170485fdddf7c4817e25ffea975c947",
+      "tds-06-metro-strip/sample": "sha256:a16a706521b19391e277efe458f6391a73f2020426a6fb461400680d7d7c0f6a",
+      "tds-06-metro-strip/brief": "sha256:4b90ec42807e127fccbc3ec6e5c321689c1aecd29c4271a809998588f402194c",
+      "tds-06-metro-strip/request": "sha256:3f62b303c56c62b78f17d2cb7b1b25a063bedb491de1786fcd0a406991c833d7",
+      "tds-06-metro-strip/workspace/schema-metro-station-v1.json": "sha256:dc8080ca8ce592c6fdb43892253f677c402af09b90921bc5479d72aabf111a41",
+      "tds-06-metro-strip/workspace/schema-metro-strip-v1.json": "sha256:7268e91e8292c4914e15c4967279ef3bc6cacc1a818190f84fe4820187331807",
+      "tds-06-metro-strip/workspace/compiled-metro-station-v1.schema.json": "sha256:37f1b65c2df3b61502a4b66edb7526faec10df01d3b164ad749d416a408d608a",
+      "tds-06-metro-strip/workspace/compiled-metro-strip-v1.schema.json": "sha256:f421298c4384d21380e9cdd61dc78521e1956b82cc342f12efd9a2b070fd32cf",
+      "tds-06-metro-strip/workspace/dataset-line6.json": "sha256:bb5ced10dd0123db7b6980464591d60a93f9f5d554f7a6c65f68fb5893eda35e",
+      "tds-06-metro-strip/scoring/stress": "sha256:4247f582103dfacf7e68a7193ee79f805e295e4e4af3b54879b3834642d268f3",
+      "tds-06-metro-strip/scoring/checks": "sha256:aab1734a371374c18126a0e57b956d7fdb5619c19c296e6a6e08cb2e8299676a",
+      "tds-06-metro-strip/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-06-metro-strip/resources/icon-metro-circle": "sha256:7cab35feca739586bf84b143d227b19144a89f529e0fc9e2da4d73470affcd86",
+      "tds-06-metro-strip/resources/icon-clock-outline": "sha256:ae85d23088c76fb29c0bea32628f87190f23a05e58cc116889995190a5934b1b",
+      "tds-06-metro-strip/resources/node-current-ring": "sha256:7e720e0bbce989e36142917f1ec270ef5e7c1036a7fdad30d716b01ce4840f63",
+      "tds-06-metro-strip/resources/arrow-chevron-teal": "sha256:7ec4cb263968c14876cfc15f370e650ac3503dab5007e93c7b6b2d5d2c82e3f9",
+      "tds-07-clinic/sample": "sha256:136d2697e9e21fb5e5cc92f637a9de9c8a97cbfe80d58dde38abd2118ed7b71f",
+      "tds-07-clinic/brief": "sha256:65aa0bf507e100e03049c8b09e1536ffad4cef613dd6232e714ca1e812276ced",
+      "tds-07-clinic/request": "sha256:71e45c3d73a7f0c84393bf313766d3a10631ea6212dcb7bddc5c4cc2e0979684",
+      "tds-07-clinic/workspace/schema-clinic-doorplate-v1.json": "sha256:4cf33991acb24c1a006d3f2e5e2a3a3800afa2736a71bf57fdc2677cb46ce53d",
+      "tds-07-clinic/workspace/schema-queue-patient-v1.json": "sha256:c122c220745102c98b9c0e9c83db3a50e69faf1d0a79c216d0c22280f23cc714",
+      "tds-07-clinic/workspace/compiled-clinic-doorplate-v1.schema.json": "sha256:170c8b79ef18bc1bcca478ea9b645465c38ec699fa4d2f4cdddc3545de2ff1c8",
+      "tds-07-clinic/workspace/compiled-queue-patient-v1.schema.json": "sha256:65ebeae8585ff69e4cae977353642053b24cccdad361d4a31c68e836070ecfd0",
+      "tds-07-clinic/workspace/dataset-room3.json": "sha256:29b14a47f7f72c4ccef5bd01903c18df3f36d1b98ed5c9e568784887d020d77b",
+      "tds-07-clinic/scoring/stress": "sha256:bd0a95810838917502f0cb32727b1111c8df6c1ae42a3ee7084b8b131ddee0d1",
+      "tds-07-clinic/scoring/checks": "sha256:8d40dbae48e643e1785f010c4e86d75daf0a7a89d504f1059d478eef391bfada",
+      "tds-07-clinic/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-07-clinic/resources/icon-medical-cross-white": "sha256:4375ba435727a10a38e83d0e47dd8adaf7d40cbac00f90fd2a76f59707d76433",
+      "tds-07-clinic/resources/avatar-doctor-zhou": "sha256:15001e34d9fc7a102f5b06f86a1a42e184579c117262fe7cd3be22bf071c1cfa",
+      "tds-07-clinic/resources/icon-queue-list": "sha256:cec269798f83f1aae3e703eb460adfe639b1d73d2d5d801738f22932ecbfb147",
+      "tds-07-clinic/resources/icon-warning-amber": "sha256:2c3ca97f7eca334c8d6ee550e7d1287728897250fe39cac272e086b01192eb57",
+      "tds-08-waybill/sample": "sha256:58f06847399def06e03586128c51a4ed80b8ecd0e5c1557b154592c64ae8e081",
+      "tds-08-waybill/brief": "sha256:d0597376896706b801893a1df0578168e170ccd3a1931a4b63caf9e601ae588e",
+      "tds-08-waybill/request": "sha256:c58c02d8371c061dc22ac27170f00c4060f8fc2593fbb32c7510164f2a2acb62",
+      "tds-08-waybill/workspace/schema-pick-item-v1.json": "sha256:82343756ad6fe708220d98a5595792d01f667685cd704633bfabf4227b8857c3",
+      "tds-08-waybill/workspace/schema-waybill-v1.json": "sha256:bc9c06a3a02acf1e5bb3c91d2f9012e84170f9631f72008cf42c243da24c00cd",
+      "tds-08-waybill/workspace/compiled-pick-item-v1.schema.json": "sha256:034f31c35d6c284ea37e490185d0c5ac96bb971205730f6eca85ab6baa358d83",
+      "tds-08-waybill/workspace/compiled-waybill-v1.schema.json": "sha256:4bb9b05b022a201196dfc2293370cfcc408483cfa6bb0203dd07e143d2bdda95",
+      "tds-08-waybill/workspace/dataset-xd882026102509.json": "sha256:efe576dde8d10b31e323d30212541417833b8a8db28a6d156372c42a55b81df1",
+      "tds-08-waybill/scoring/stress": "sha256:d0641bd98e70e384f7abe47dd054adc9bb6e0ce92ac31b2062adabe62b983484",
+      "tds-08-waybill/scoring/checks": "sha256:f095c12436eb7281c0c1f52a56f40f84ba812462b6447a2a5a68518ed9517be3",
+      "tds-08-waybill/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-09-promo-tag/sample": "sha256:86b8aab11a859cf9dfc2e0960d2507799e840fade57daa9b455db2b2a3cfadca",
+      "tds-09-promo-tag/brief": "sha256:637b185cd3c2b3dc1e9b65ed9eadbfd58cf31eac93c353f571f31c5961937939",
+      "tds-09-promo-tag/request": "sha256:715a89ac5cd7eb486205877143ac40190458e65b2b2e0df5a5fce2a23ee5de43",
+      "tds-09-promo-tag/workspace/schema-promo-price-tag-v1.json": "sha256:446c389086aee9ea9a3f7af92ad7070d4761897f89a0ca851515aaeef0bccd06",
+      "tds-09-promo-tag/workspace/compiled-promo-price-tag-v1.schema.json": "sha256:7cf2518446c0754daed74889157af1f3d4cecfbc775e53c267c38b188f4c216e",
+      "tds-09-promo-tag/workspace/dataset-apple.json": "sha256:ca1fde049a9de02c9d11a433a4629bb86d597cbcf80df33df05702213fae1326",
+      "tds-09-promo-tag/scoring/stress": "sha256:96a9bfe8604218e8345c3251634aa866a0c049023a9952ef20311ec97d2b3451",
+      "tds-09-promo-tag/scoring/checks": "sha256:04363cfa42c577884ca61313fed2f2eeb5b9f63ed45889b4cfe51b524a91be89",
+      "tds-09-promo-tag/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-09-promo-tag/resources/icon-promo-clock": "sha256:4b528014a7e0f53f79433a8b44bc87f3856e2be9d2a02080a83f4961363f4c53",
+      "tds-09-promo-tag/resources/icon-fresh-leaf": "sha256:62d2e1c32b2a5486edbad5149cf9371b4d3fdb5c8f454a3db394f5d025ee7500",
+      "tds-10-gate-screen/sample": "sha256:8f3975ad1a8e644d97aab03eeb33848b7ab94e5d4a7cd2c1b597eda92af51d3e",
+      "tds-10-gate-screen/brief": "sha256:f486a83bc3939bd58efdba427a4709bc2e70d4bca99389ef96bd419cce598034",
+      "tds-10-gate-screen/request": "sha256:338f407bbafd3094c8e1ebbbda1d1763c785a88655554e083794b0bddfa1eda4",
+      "tds-10-gate-screen/workspace/schema-gate-screen-v1.json": "sha256:c249be97fedce0a1b8e805b9c894eb63e65c91af00848afcf1dae53b5842eb24",
+      "tds-10-gate-screen/workspace/schema-train-v1.json": "sha256:0ea1226626286a655d173f9c832658370fed9ca0c592bc69b6189c61708b16a0",
+      "tds-10-gate-screen/workspace/compiled-gate-screen-v1.schema.json": "sha256:9b43f89da719aca6e5d6b154877475626725d35f9537fbb1c6bca15cb88f1cf7",
+      "tds-10-gate-screen/workspace/compiled-train-v1.schema.json": "sha256:eb935c7433f6c91693fbb4e15cc077532e2c6b0bd754cdc7b74057585c2f74b1",
+      "tds-10-gate-screen/workspace/dataset-szb-12ab.json": "sha256:5823f4ba816ddb2c31508cd92a72e74688b3c6537e2913e29bca196a88912119",
+      "tds-10-gate-screen/scoring/stress": "sha256:950560097760da34639a21cdb36bfd7fc42dd990e5d860418dbfada7df9ed6b5",
+      "tds-10-gate-screen/scoring/checks": "sha256:327ec4eeea8350b507aa87814c80f71b5b47f95f15d5facaec82862233bd47e5",
+      "tds-10-gate-screen/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-11-hazmat/sample": "sha256:8e9e129349aae1a4cc64ce201507fb334a8a79728fb09b4ce4eb9fec4a175063",
+      "tds-11-hazmat/brief": "sha256:6e638a53b6836b52057f9171705b902bc4166269c4ebbd787b23497002319240",
+      "tds-11-hazmat/request": "sha256:9c1d7ec91894a765dee0c9f653e8cc6b35d7c9fdb3a15bdc6fceeeec25cfdca2",
+      "tds-11-hazmat/workspace/schema-hazmat-bin-card-v1.json": "sha256:9dbf00aa7994afbb1db29ae9c30033a173d96813afa846dbe869f7478dad1118",
+      "tds-11-hazmat/workspace/compiled-hazmat-bin-card-v1.schema.json": "sha256:691209441d9a9a2a4f49982e097b9c59bcf6ee4593603a11a954315809119a5b",
+      "tds-11-hazmat/workspace/dataset-ethanol.json": "sha256:558de33434960aebfb1c8a1b7377202f12a5590e5d3ecf6abc3dffab030a5ac4",
+      "tds-11-hazmat/scoring/stress": "sha256:a3673af2050db82318aea1563b22e8b07415fc93bb8266164c6c9401c0fef034",
+      "tds-11-hazmat/scoring/checks": "sha256:50537ffadbc15e8149c8afab194eab574c2539b7e30f8233cb8efa2da2d34830",
+      "tds-11-hazmat/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-11-hazmat/resources/ghs-flammable": "sha256:e5039a3971f7583c8571238e27afb213ce96b57771a1f1a894a6ce7210dc372f",
+      "tds-11-hazmat/resources/ghs-exclamation": "sha256:b6ca5b28b19ebce19cb0b22245d6f997737bbea4ae081098f6521a96552288bf",
+      "tds-11-hazmat/resources/ghs-health-hazard": "sha256:94823f2590c84946373c23aa9e7b5644f5c0a8d28ccf489cf1603eed839fd547",
+      "tds-11-hazmat/resources/ghs-corrosive": "sha256:9b2494d84ea695d8a443a07c000ef640daff9f94df0cd6c6852fe20128f65b61",
+      "tds-11-hazmat/resources/border-hazard-stripe": "sha256:ec7db215c2d7f5e06e65da015e2affb08766664af78bc04c888900f915526d88",
+      "tds-12-cup-label/sample": "sha256:09e46bd94a72807c7efc8ab8265eb2795696d3cfc3c4c1ea9db5bce088e7b16f",
+      "tds-12-cup-label/brief": "sha256:4665ca4a8caaa17045aad9d4541152f9375b7b9c9a715204fb7022aa26255ef5",
+      "tds-12-cup-label/request": "sha256:36d1ca35a4d3b3e2f16002850bc4901d6fc6c2afd0998e3dd2a7102f6d9fbb85",
+      "tds-12-cup-label/workspace/schema-cup-label-v1.json": "sha256:9c11d3c79b34ff4aaa4fdefddd37247cf955a1e9c935cef5fa707f6edcd63322",
+      "tds-12-cup-label/workspace/compiled-cup-label-v1.schema.json": "sha256:fe32a468fb839fc1a077e6c20470fbe1a0e43307b6b95da34d6d3bacc8774fa8",
+      "tds-12-cup-label/workspace/dataset-a086.json": "sha256:abaafb8f20c41ec5531e59412b6f60f69ad48c8192a429478645043875e24357",
+      "tds-12-cup-label/scoring/stress": "sha256:aedfd3225566942e9db9050da513324a8b8a6bf6316ce0213fb4bda018686d0f",
+      "tds-12-cup-label/scoring/checks": "sha256:e5fe943df168dd91bdb0ffdb91ae580cf12916fa77242c8d0403b240f36c1e17",
+      "tds-12-cup-label/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-13-boarding-pass/sample": "sha256:8bbf817f06f600c2803b7afc4e94fe7d976991031b131ecc62255cb634f3d193",
+      "tds-13-boarding-pass/brief": "sha256:37d3db2326e569e9b84478efab0b7ed4514853f03f61c6f46f3c39c7263ac3a6",
+      "tds-13-boarding-pass/request": "sha256:4d36964a2ac7f55b18820bbe2a2f7af84bd4f3742dc1565d9ba80623a724a5e2",
+      "tds-13-boarding-pass/workspace/schema-boarding-pass-v1.json": "sha256:16e752468bb369ca9e2a5dcb3ee85e1fc6e5a3e1d5ed6b60c7cfc8d6e277ae9b",
+      "tds-13-boarding-pass/workspace/compiled-boarding-pass-v1.schema.json": "sha256:4369d02c8e25cbdf4499160f964578d0d306dc0cba8dedfd8037d2a4f1e1f941",
+      "tds-13-boarding-pass/workspace/dataset-sa8502.json": "sha256:13df04096a3014c847ca5e5560da1c26b2faf53926b5538588c45c07bcde6718",
+      "tds-13-boarding-pass/scoring/stress": "sha256:53767d2763752b692812e78b85e09f5230079e568eb8bed7754edf8b2a40f4a9",
+      "tds-13-boarding-pass/scoring/checks": "sha256:217f7377a7b8343757088c33f14781c7c082c9ff1cb7340f095cf473de8d3eb8",
+      "tds-13-boarding-pass/resources/resources.json": "sha256:b510ca84d9adb93d9b1491051728b20d1efed3c3f922bdf91ccc03cc1f1b99e2",
+      "tds-13-boarding-pass/resources/icon-airplane-navy": "sha256:7e08af79a7702b5b931b4b90de764d131d6cc97d6b83a23d2b906699c619054a",
+      "tds-13-boarding-pass/resources/badge-business-gold": "sha256:379f7a19485ce2ad4efc88f95689c470db44d4045056cf10b6fbe9447cd70b52",
+      "tds-13-boarding-pass/resources/icon-scissors-black": "sha256:5ec9f56a087a52a6f7323e5ed7c776e3dcd75cfedbcdf8ba7c266de17b7b26be"
+    },
+    "resources": {
+      "resource-bytes/font-hei-bold": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "resource-bytes/font-hei-heavy": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "resource-bytes/font-hei-medium": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "resource-bytes/font-hei-regular": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "resource-bytes/icon-hospital": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "resource-bytes/icon-metro": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "resource-bytes/landmark-1": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "resource-bytes/landmark-2": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "resource-bytes/landmark-3": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "resource-bytes/landmark-4": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "resource-bytes/route-no-m402": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "resource-bytes/test-quadrants-jpg": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "resource-bytes/test-quadrants-png": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "resource-bytes/test-quadrants-webp": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "resource-bytes/test-vector-svg": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "resources/font-subsets/LICENSE.txt": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+      "resources/font-subsets/README.md": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda",
+      "resources/font-subsets/TestSubset-Bold.otf": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def",
+      "resources/font-subsets/TestSubset-Medium.otf": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba",
+      "resources/font-subsets/TestSubset-Regular.otf": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1",
+      "resources/fonts/SourceHanSansCN-Bold.otf": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "resources/fonts/SourceHanSansCN-Heavy.otf": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "resources/fonts/SourceHanSansCN-Medium.otf": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "resources/fonts/SourceHanSansCN-Regular.otf": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "resources/images/m402/icon-hospital.png": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "resources/images/m402/icon-metro.png": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "resources/images/m402/landmark-1.png": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "resources/images/m402/landmark-2.png": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "resources/images/m402/landmark-3.png": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "resources/images/m402/landmark-4.png": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "resources/images/m402/route-no-m402.png": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "resources/images/README.md": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a",
+      "resources/images/test/quadrants.jpg": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "resources/images/test/quadrants.png": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "resources/images/test/quadrants.webp": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "resources/images/test/vector.svg": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "resources/resources.json": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+    },
+    "config": "sha256:7e851d1ea7c36043a48c223c2dc0579919ce92729d2d085abaf08549aedb42ca",
+    "scorer": "sha256:52ba733da53fca6e216a30319e30ff26584360af4522627d79142364376a596e",
+    "plan": {
+      "scenarios": [
+        "tds-01-m518",
+        "tds-02-m162",
+        "tds-03-price-tag",
+        "tds-05-asset-card",
+        "tds-06-metro-strip",
+        "tds-07-clinic",
+        "tds-08-waybill",
+        "tds-09-promo-tag",
+        "tds-10-gate-screen",
+        "tds-11-hazmat",
+        "tds-12-cup-label",
+        "tds-13-boarding-pass"
+      ],
+      "repeat": 1,
+      "pairedJobs": null
+    }
+  }
+}
