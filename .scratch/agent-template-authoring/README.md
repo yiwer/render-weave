@@ -61,3 +61,9 @@
 | 38 | [P1 · 额度恢复后复跑原场景并补齐真实模型验收](issues/38-retest-after-quota-recovery.md) | 31、32；[harness 20](../agent-harness-hardening/issues/20-verified-candidate-freeze.md) | 同图复跑：原问题验收；harness A14 真实四场景 |
 | 36 | [P2 · 实测 OCR 对文字覆盖与位置测量的收益，再决定正式接入](issues/36-ocr-measurement-trial.md) | 34 | 同图复跑：OCR 收益 |
 | 37 | [P2 · 减少文本列表与缺省展示产生的重复派生变量](issues/37-text-list-and-fallback-display.md) | 无 | 同图复跑：原问题验收 |
+
+## 业务基准更正
+
+| 编号 | 标题 | 直接阻塞 | 验收映射 |
+|---|---|---|---|
+| 39 | [完整站名保留圈号，统一提取、数据、出图和评分](issues/39-preserve-circled-stop-name-suffixes.md) | 无 | M358；原38更正后验收前置 |

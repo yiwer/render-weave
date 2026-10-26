@@ -4,13 +4,13 @@
 
 **Priority:** P1
 
-**Blocked by:** 31、32；[harness 20：兼容检查通过后冻结同一份待验候选](../../agent-harness-hardening/issues/20-verified-candidate-freeze.md)
+**Blocked by:** 31、32、[39：完整站名语义迁移](39-preserve-circled-stop-name-suffixes.md)；[harness 20：兼容检查通过后冻结同一份待验候选](../../agent-harness-hardening/issues/20-verified-candidate-freeze.md)
 
 **Status:** needs-triage
 
 **Trace:** 第三阶段 PRD；2026-10-21 用户要求；[同图复跑报告](../../../docs/agent-arabic-retest.md)。
 
-- [x] 额度恢复后按新合同运行现有模型评估门槛；代码离线通过不能替代真实模型通过。
+- [ ] 额度恢复后按新合同运行现有模型评估门槛；代码离线通过不能替代真实模型通过。
 - [x] 中文受控样例完成真实模型纠偏，保留改前/改后证据、反馈成本和未核实维度。
 - [ ] 英文真实样例验证模型纠偏；已有英文受控工具对照不能代替这项。
 - [ ] 中文、英文真实参考样例补齐独立样式/状态及人工比较；不以零诊断异常宣称全图还原通过。
@@ -146,6 +146,13 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 用户认为整体做得不错，但明确指出票价/票制样式大小、底部服务时间与班时文字大小和粗细等不符合。已另存[原话、材料身份与覆盖核对](../original38-harness/candidate-6-human-review/README.md)，映射Z04/Z15/Z16。反馈是四包集合层面，未逐包定位；不填其余项通过，不推断逐包相同失败，审核分钟与是否预看诊断未知。
 
 负责人判断为视觉验收尚未通过，需要补充区域样式依据、定位偏差并纠偏。已核实原四自动门槛未检查这些区域的字号/字重；8/8自动达线历史保留，不提升为视觉交付通过。局部修改须区分原基准已有偏差与本轮新增错误，不扩大原两项授权。原38继续needs-triage，后续留出前置仍未满足。原成果、报告、归档、空表均未改写；本次新增模型调用0。
+
+
+### 2026-10-26 M358：站名圈号业务基准更正
+
+用户明确①②是站名的一部分，旧数据源解释错误。已按[更正记录与影响清单](../original38-harness/candidate-6-human-review/NAME-SEMANTICS-CORRECTION.md)撤回旧地标解释；[原话](../original38-harness/candidate-6-human-review/review-02-name-semantics.json)单独保存。旧领域提示、定义约定、转录去圈号与图片底齐评分均依赖该假设；因此本票的完整门槛条目重新待验，原四8/8报告仍保留为旧条件下的历史，不能作为新业务语义通过证据。
+
+本次只完成业务更正、依赖定位和35站中9站的完整名称迁移草案，未完成样例/提示/评分的整体迁移或新候选验证。原38仍needs-triage，视觉字号/字重问题继续待修；21等相关证据适用性须逐项核查，留出前置不放行。没有新模型调用，未改写旧报告、审核包、候选与归档。
 
 ## Comments
 

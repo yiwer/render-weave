@@ -1,0 +1,83 @@
+{
+  "format": "original38-business-truth-correction/1",
+  "recordedAt": "2026-10-26T07:08:27.720Z",
+  "decisionDate": "2026-10-26",
+  "decisionId": "M358",
+  "verbatimResponse": "继续补充：其实① ② 不是地标，而是站名的一部分而已，数据源是错误的",
+  "source": "本会话用户直接更正业务事实",
+  "correction": "站名中的①②等后缀属于完整站名文本，不作为独立地标图片拆分；不得为匹配方便删除",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "supersedes": "M77中将圈号解释为地标图片的业务判断；M215/M216/M217等依赖项需要重判",
+  "historicalOriginalFourGate": "8/8 pass，原报告保留",
+  "correctedBusinessAcceptance": "not-established",
+  "oldOriginalFourEvidenceUsableForCorrectedSemantics": false,
+  "relatedEvidence": "21、M332配对及12例留出需检查共享资料和基准依赖；不因采用同一错误前提就认定通过新业务语义，也不把所有无关机制测试判失败",
+  "scope": "当前M402材料明确受影响；366等共用同一拆分规则，应逐例核对，不把旧landmark编号映射直接称为新的人工真值",
+  "sourceDataset": {
+    "file": "docs/examples/m402-dsl/dataset-m402.json",
+    "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692",
+    "stopCount": 35
+  },
+  "migrationDraft": {
+    "file": "m402-complete-stop-names-draft.json",
+    "status": "draft-not-verified-against-image",
+    "changedStops": [
+      {
+        "position": 4,
+        "oldName": "门诊部",
+        "oldLandmark": "res:landmark-2",
+        "newName": "门诊部②"
+      },
+      {
+        "position": 5,
+        "oldName": "东门",
+        "oldLandmark": "res:landmark-3",
+        "newName": "东门③"
+      },
+      {
+        "position": 6,
+        "oldName": "田贝",
+        "oldLandmark": "res:landmark-2",
+        "newName": "田贝②"
+      },
+      {
+        "position": 7,
+        "oldName": "洪湖公园",
+        "oldLandmark": "res:landmark-2",
+        "newName": "洪湖公园②"
+      },
+      {
+        "position": 8,
+        "oldName": "东晓街道办",
+        "oldLandmark": "res:landmark-1",
+        "newName": "东晓街道办①"
+      },
+      {
+        "position": 9,
+        "oldName": "草埔地铁站",
+        "oldLandmark": "res:landmark-4",
+        "newName": "草埔地铁站④"
+      },
+      {
+        "position": 10,
+        "oldName": "荣超花园",
+        "oldLandmark": "res:landmark-1",
+        "newName": "荣超花园①"
+      },
+      {
+        "position": 28,
+        "oldName": "左庭右院",
+        "oldLandmark": "res:landmark-2",
+        "newName": "左庭右院②"
+      },
+      {
+        "position": 30,
+        "oldName": "石芽岭地铁站",
+        "oldLandmark": "res:landmark-1",
+        "newName": "石芽岭地铁站①"
+      }
+    ]
+  },
+  "humanMinutes": null,
+  "newModelCalls": 0
+}
