@@ -1,0 +1,18 @@
+{
+  "command": [
+    "D:\\nodejs\\node.exe",
+    "node_modules/tsx/dist/cli.mjs",
+    "scripts/agent-eval/archive-context-trial.ts",
+    "--restore",
+    "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive",
+    "--out",
+    "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive-restored"
+  ],
+  "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6\\content",
+  "startedAt": "2026-10-26T05:06:43.538Z",
+  "endedAt": "2026-10-26T05:06:52.138Z",
+  "exitCode": 0,
+  "signal": null,
+  "stdout": "{\"restored\":\"F:\\\\GenCode\\\\render-weave\\\\out\\\\harness21-candidate6-evidence-archive-restored\",\"manifestSha256\":\"879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec\",\"filesVerified\":6369,\"sourceRoots\":2}\n",
+  "stderr": ""
+}

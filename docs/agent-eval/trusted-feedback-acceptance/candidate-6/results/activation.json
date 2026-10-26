@@ -1,0 +1,21 @@
+{
+  "format": "renderweave-explicit-dispatch-activation/1",
+  "createdAt": "2026-10-26T04:38:45.249Z",
+  "dispatchAuthorized": true,
+  "dispatcher": "root",
+  "segments": [
+    1,
+    2
+  ],
+  "registrationSha256": "fa44cde4782ea604978c07aef4f0ba9cced83410420e8dc2940d8680894ddc2a",
+  "launcherSha256": "ba5ddd036794323b8a178acdcdca6834d1e12b223e1a37e0c84803e85cfa8357",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "bindingId": "sha256:528117b478d6b44833ae57217ee94861b1dc4c65c22ee552fa5377ebd9b25643",
+  "independentReview": {
+    "file": "F:/GenCode/render-weave/out/harness-acceptance-20/publication-6/independent-review.json",
+    "sha256": "b45f8895e77b7ef914e5237045a98abd8d7e6c94caf4f6d4c220474d4c52bd7e"
+  },
+  "sourceCommit": "17111cf23508a4c759d25b65272a72ea31fa9da0",
+  "authorization": "沿用户已批准的26票实施与真实模型验收、M329具体端点授权及本次修复验证后继续验收；候选身份因收尾修复更新为6，业务输入与预算不变。遇额度限制即停止留档，不轮询、不换模型。",
+  "prerequisites": []
+}

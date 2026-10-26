@@ -1,0 +1,68 @@
+{
+  "createdAt": "2026-10-26T05:11:06.401Z",
+  "events": [
+    {
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "3aa93c8b-5a43-4b6d-8808-a2825261cee9",
+      "stream": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\zh-definition-extraction\\attempts\\3aa93c8b-5a43-4b6d-8808-a2825261cee9\\round\\logs\\stream.jsonl",
+      "streamSha256": "a6aa00da9f8a7c07641f018fe7e1634246c4f9335ba36867da63642734397a07",
+      "line": 2,
+      "rawLine": "{\"type\":\"system\",\"subtype\":\"api_retry\",\"attempt\":1,\"max_retries\":10,\"retry_delay_ms\":602,\"error_status\":502,\"error\":\"server_error\",\"session_id\":\"0b0b78a5-702f-40d8-809d-865d11f7f394\",\"uuid\":\"9798d5e7-b221-4a09-b8d8-b50bfabf4299\"}",
+      "rawLineSha256": "3c922f21e1c0607a0da4cc83a2c714631673a8a44bf8f04b97857ea4aea3440b",
+      "event": {
+        "type": "system",
+        "subtype": "api_retry",
+        "attempt": 1,
+        "max_retries": 10,
+        "retry_delay_ms": 602,
+        "error_status": 502,
+        "error": "server_error",
+        "session_id": "0b0b78a5-702f-40d8-809d-865d11f7f394",
+        "uuid": "9798d5e7-b221-4a09-b8d8-b50bfabf4299"
+      }
+    },
+    {
+      "unit": "run-2/zh-definition-extraction",
+      "attemptId": "3aa93c8b-5a43-4b6d-8808-a2825261cee9",
+      "stream": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\zh-definition-extraction\\attempts\\3aa93c8b-5a43-4b6d-8808-a2825261cee9\\round\\logs\\stream.jsonl",
+      "streamSha256": "a6aa00da9f8a7c07641f018fe7e1634246c4f9335ba36867da63642734397a07",
+      "line": 41,
+      "rawLine": "{\"type\":\"system\",\"subtype\":\"api_retry\",\"attempt\":1,\"max_retries\":10,\"retry_delay_ms\":583,\"error_status\":502,\"error\":\"server_error\",\"session_id\":\"0b0b78a5-702f-40d8-809d-865d11f7f394\",\"uuid\":\"b063cddb-410e-4c9c-add9-9a4e47aee2ba\"}",
+      "rawLineSha256": "9f6e38a3fe633784d81f32dce117d6e60ef64dee3a37f96b67b6e31f0da167dc",
+      "event": {
+        "type": "system",
+        "subtype": "api_retry",
+        "attempt": 1,
+        "max_retries": 10,
+        "retry_delay_ms": 583,
+        "error_status": 502,
+        "error": "server_error",
+        "session_id": "0b0b78a5-702f-40d8-809d-865d11f7f394",
+        "uuid": "b063cddb-410e-4c9c-add9-9a4e47aee2ba"
+      }
+    },
+    {
+      "unit": "run-2/en-template-revision",
+      "attemptId": "5ebde059-4f1c-4d64-8310-b7633dad2232",
+      "stream": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\observations\\run-2\\en-template-revision\\attempts\\5ebde059-4f1c-4d64-8310-b7633dad2232\\round\\logs\\stream.jsonl",
+      "streamSha256": "d2910e4afef128874021a8bf6a968471cdc82b76b63e69305ef461f7e46b79bc",
+      "line": 2,
+      "rawLine": "{\"type\":\"system\",\"subtype\":\"api_retry\",\"attempt\":1,\"max_retries\":10,\"retry_delay_ms\":585,\"error_status\":502,\"error\":\"server_error\",\"session_id\":\"88f214d0-81a0-42ef-beae-d900eba47479\",\"uuid\":\"7214dccb-b88e-49d1-bc63-e2d00028c22a\"}",
+      "rawLineSha256": "3805342ae09e98c7db36deeed9c8b9e7e190f081735cc11f0cd744aee057cf01",
+      "event": {
+        "type": "system",
+        "subtype": "api_retry",
+        "attempt": 1,
+        "max_retries": 10,
+        "retry_delay_ms": 585,
+        "error_status": 502,
+        "error": "server_error",
+        "session_id": "88f214d0-81a0-42ef-beae-d900eba47479",
+        "uuid": "7214dccb-b88e-49d1-bc63-e2d00028c22a"
+      }
+    }
+  ],
+  "outerAttempts": 16,
+  "outerRetries": 0,
+  "limit": "3条原生CLI内部502重试，未生成额外实验尝试；原始流不改写。"
+}

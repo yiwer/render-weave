@@ -1,0 +1,354 @@
+{
+  "format": "renderweave-harness21-candidate6-archive-verification/1",
+  "createdAt": "2026-10-26T05:07:04.261Z",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "bindingId": "sha256:528117b478d6b44833ae57217ee94861b1dc4c65c22ee552fa5377ebd9b25643",
+  "archive": "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive",
+  "restored": "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive-restored",
+  "manifestSha256": "879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec",
+  "roots": [
+    {
+      "label": "feedback",
+      "original": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-6",
+      "restored": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-evidence-archive-restored\\feedback",
+      "files": 3046,
+      "directories": 1029,
+      "keyScan": {
+        "availableKeys": 1,
+        "knownKeyMatches": 0,
+        "filesScanned": 3046
+      }
+    },
+    {
+      "label": "candidate",
+      "original": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6",
+      "restored": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-evidence-archive-restored\\candidate",
+      "files": 3323,
+      "directories": 360,
+      "keyScan": {
+        "availableKeys": 1,
+        "knownKeyMatches": 0,
+        "filesScanned": 3323
+      }
+    }
+  ],
+  "files": 6369,
+  "directories": 1389,
+  "labelRootDirectories": 2,
+  "publicViews": 16,
+  "checks": [
+    {
+      "label": "feedback:已知凭据扫描仅计数",
+      "pass": true
+    },
+    {
+      "label": "candidate:已知凭据扫描仅计数",
+      "pass": true
+    },
+    {
+      "label": "归档清单SHA",
+      "pass": true
+    },
+    {
+      "label": "归档根集合",
+      "pass": true
+    },
+    {
+      "label": "feedback:原绝对路径保持",
+      "pass": true
+    },
+    {
+      "label": "feedback:归档完整文件集合及SHA",
+      "pass": true
+    },
+    {
+      "label": "feedback:归档完整目录集合",
+      "pass": true
+    },
+    {
+      "label": "candidate:原绝对路径保持",
+      "pass": true
+    },
+    {
+      "label": "candidate:归档完整文件集合及SHA",
+      "pass": true
+    },
+    {
+      "label": "candidate:归档完整目录集合",
+      "pass": true
+    },
+    {
+      "label": "feedback:恢复完整文件/目录/SHA和已知凭据扫描",
+      "pass": true
+    },
+    {
+      "label": "candidate:恢复完整文件/目录/SHA和已知凭据扫描",
+      "pass": true
+    },
+    {
+      "label": "aeacf229-7005-41e8-86bd-4cae233469c2:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "aeacf229-7005-41e8-86bd-4cae233469c2:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "aeacf229-7005-41e8-86bd-4cae233469c2:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "3aa93c8b-5a43-4b6d-8808-a2825261cee9:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "3aa93c8b-5a43-4b6d-8808-a2825261cee9:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "3aa93c8b-5a43-4b6d-8808-a2825261cee9:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "f6da27b5-5c2b-4bad-820c-9df222b59ae5:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "f6da27b5-5c2b-4bad-820c-9df222b59ae5:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "f6da27b5-5c2b-4bad-820c-9df222b59ae5:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "4a50b8e8-e96d-4462-94bb-0336f03a5e67:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "4a50b8e8-e96d-4462-94bb-0336f03a5e67:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "4a50b8e8-e96d-4462-94bb-0336f03a5e67:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "14fc347a-2453-4b98-b9ee-f87d536cb979:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "14fc347a-2453-4b98-b9ee-f87d536cb979:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "14fc347a-2453-4b98-b9ee-f87d536cb979:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "7b702ff9-f406-4fb8-981a-b6a5cef9b782:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "7b702ff9-f406-4fb8-981a-b6a5cef9b782:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "7b702ff9-f406-4fb8-981a-b6a5cef9b782:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "0d91c98e-8910-483f-811d-9e27d7eafdd0:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "0d91c98e-8910-483f-811d-9e27d7eafdd0:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "0d91c98e-8910-483f-811d-9e27d7eafdd0:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "f1de13e4-2204-4ffb-a518-a561de8e2379:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "f1de13e4-2204-4ffb-a518-a561de8e2379:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "f1de13e4-2204-4ffb-a518-a561de8e2379:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "7b09061a-69e7-4edb-a7a9-c2798901cb51:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "7b09061a-69e7-4edb-a7a9-c2798901cb51:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "7b09061a-69e7-4edb-a7a9-c2798901cb51:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "3d1c9575-dce3-408c-93de-3344cb6a98ae:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "3d1c9575-dce3-408c-93de-3344cb6a98ae:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "3d1c9575-dce3-408c-93de-3344cb6a98ae:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "650a71d5-9f04-4cd0-b2bf-08dde0fa54a1:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "650a71d5-9f04-4cd0-b2bf-08dde0fa54a1:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "650a71d5-9f04-4cd0-b2bf-08dde0fa54a1:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "b12796c6-46db-48ee-8a10-77a31644244c:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "b12796c6-46db-48ee-8a10-77a31644244c:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "b12796c6-46db-48ee-8a10-77a31644244c:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "934696f3-3078-4956-9245-01bfa29aa65c:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "934696f3-3078-4956-9245-01bfa29aa65c:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "934696f3-3078-4956-9245-01bfa29aa65c:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "9a2a7381-5c04-4472-bb47-8c5591213265:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "9a2a7381-5c04-4472-bb47-8c5591213265:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "9a2a7381-5c04-4472-bb47-8c5591213265:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "9701aa1f-1e36-4fcd-8c6b-1afa19de99ca:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "9701aa1f-1e36-4fcd-8c6b-1afa19de99ca:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "9701aa1f-1e36-4fcd-8c6b-1afa19de99ca:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "5ebde059-4f1c-4d64-8310-b7633dad2232:恢复公开审核已提交",
+      "pass": true
+    },
+    {
+      "label": "5ebde059-4f1c-4d64-8310-b7633dad2232:恢复执行完成",
+      "pass": true
+    },
+    {
+      "label": "5ebde059-4f1c-4d64-8310-b7633dad2232:恢复公开成果结论",
+      "pass": true
+    },
+    {
+      "label": "feedback:原件完整集合与SHA前后不变",
+      "pass": true
+    },
+    {
+      "label": "feedback:恢复件公开审核前后完整集合与SHA不变",
+      "pass": true
+    },
+    {
+      "label": "candidate:原件完整集合与SHA前后不变",
+      "pass": true
+    },
+    {
+      "label": "candidate:恢复件公开审核前后完整集合与SHA不变",
+      "pass": true
+    },
+    {
+      "label": "归档本体完整文件/目录/SHA前后不变",
+      "pass": true
+    },
+    {
+      "label": "恢复顶层只有两个登记标签",
+      "pass": true
+    }
+  ],
+  "findings": [],
+  "stages": [
+    {
+      "command": [
+        "D:\\nodejs\\node.exe",
+        "node_modules/tsx/dist/cli.mjs",
+        "scripts/agent-eval/archive-context-trial.ts",
+        "--pack",
+        "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\inputs.json",
+        "--out",
+        "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive"
+      ],
+      "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6\\content",
+      "startedAt": "2026-10-26T05:06:38.729Z",
+      "endedAt": "2026-10-26T05:06:42.932Z",
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"archive\":\"F:\\\\GenCode\\\\render-weave\\\\out\\\\harness21-candidate6-evidence-archive\",\"manifestSha256\":\"879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec\",\"files\":6369}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "D:\\nodejs\\node.exe",
+        "node_modules/tsx/dist/cli.mjs",
+        "scripts/agent-eval/archive-context-trial.ts",
+        "--restore",
+        "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive",
+        "--out",
+        "F:/GenCode/render-weave/out/harness21-candidate6-evidence-archive-restored"
+      ],
+      "cwd": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-6\\content",
+      "startedAt": "2026-10-26T05:06:43.538Z",
+      "endedAt": "2026-10-26T05:06:52.138Z",
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"restored\":\"F:\\\\GenCode\\\\render-weave\\\\out\\\\harness21-candidate6-evidence-archive-restored\",\"manifestSha256\":\"879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec\",\"filesVerified\":6369,\"sourceRoots\":2}\n",
+      "stderr": ""
+    }
+  ],
+  "modelCalls": 0,
+  "sourceModified": false,
+  "humanReview": null,
+  "limits": [
+    "通过候选6公开archive-context-trial CLI保存/恢复，公开readReview固定persistArtifacts:false。",
+    "绝对路径字节原样保留；原始source目录仍存在。本次证明同宿主只读审核可读，不声称任意搬迁接续执行。",
+    "16自动成果守卫通过不等同人工业务验收；工时与人工结论未代填。",
+    "已知凭据仅按本进程可用值逐文件匹配并输出计数；未记录任何凭据值。",
+    "候选根供其他计划只读使用；审计没有生成模型请求或修改冻结包。"
+  ]
+}

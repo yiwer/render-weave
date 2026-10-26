@@ -1,0 +1,37 @@
+# Agent 评估 2026-10-25-harness21-candidate-6：门槛未完成
+证据类别：模型来源尚需独立核准；已核准真实模型观测 0。
+
+计划 16 次：通过 8、失败 0、无效 0、未运行 8；执行未完成。
+
+模型 claude-haiku-5-5（服务端 claude-haiku-5-5），Claude Code 2.1.296，MCP 合同 0.17.0，提交 17111cf23508a4c759d25b65272a72ea31fa9da0（有未提交改动）。
+
+供应商修订未知；服务模型未观测到变化。
+
+| 场景 | 各次结果 | 门槛 |
+|---|---|---|
+| zh-definition-extraction | 达线、未跑 | 未完成 |
+| zh-dataset-extraction | 达线、未跑 | 未完成 |
+| zh-template-design | 达线、未跑 | 未完成 |
+| zh-template-revision | 达线、未跑 | 未完成 |
+| en-definition-extraction | 达线、未跑 | 未完成 |
+| en-dataset-extraction | 达线、未跑 | 未完成 |
+| en-template-design | 达线、未跑 | 未完成 |
+| en-template-revision | 达线、未跑 | 未完成 |
+
+- zh-definition-extraction 第 1 次：达线。数据定义提取 0.8 分钟 / 20 轮 / 输出 7169
+- zh-dataset-extraction 第 1 次：达线。数据集提取 1.1 分钟 / 21 轮 / 输出 8558
+- zh-template-design 第 1 次：达线。模板辅助设计 2.6 分钟 / 25 轮 / 输出 12036 / 首次模板检查 0 个问题
+- zh-template-revision 第 1 次：达线。模板辅助修改 1.2 分钟 / 25 轮 / 输出 7654 / 首次模板检查 0 个问题
+- en-definition-extraction 第 1 次：达线。数据定义提取 0.7 分钟 / 17 轮 / 输出 5834
+- en-dataset-extraction 第 1 次：达线。数据集提取 0.9 分钟 / 21 轮 / 输出 8971
+- en-template-design 第 1 次：达线。模板辅助设计 1.4 分钟 / 22 轮 / 输出 12321
+- en-template-revision 第 1 次：达线。模板辅助修改 1.8 分钟 / 27 轮 / 输出 8186 / 首次模板检查 0 个问题
+
+全部尝试已知小计 10.6 分钟（各轮之和），输入 164、输出 70729 tokens，其中思考 34263（不再加到输出）；缓存读/写 3562264/489385。
+用量有未知字段的已保存尝试 0 个；已保存尝试的token用量完整。
+实际派发会话墙钟 11.9 分钟；尝试耗时已知求和 10.9 分钟，0 个尝试耗时未知。
+
+报告：F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-6\reports\2026-10-25-harness21-candidate-6.json
+
+invalid 与没跑的次数还要补跑（遇到额度限制时等额度窗口恢复），已有有效结果的单元会跳过：
+npx tsx scripts/agent-eval/run.ts --label 2026-10-25-harness21-candidate-6 --repetitions 2-2 --jobs 1 --out 'F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-6\observations' --reports 'F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-6\reports' --model claude-haiku-5-5 --small-model claude-haiku-5-5 --endpoint https://opencode.ai/inference/go/anthropic --key-env OPEN_CODE_API_KEY --repeat 2 --config 'F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-6\inputs\config.real-model.json' --claude 'D:\nodejs\node_global\node_modules\@anthropic-ai\claude-code\bin\claude.exe' --timeout-ms 3600000 --context-policy full --stagnation-threshold 2 --candidate-binding 'F:\GenCode\render-weave\out\harness21-trusted-feedback-candidate-6\binding'

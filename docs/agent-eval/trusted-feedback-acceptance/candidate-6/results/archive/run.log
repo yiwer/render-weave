@@ -1,0 +1,28 @@
+snapshot-before feedback
+snapshot-before candidate
+snapshot-after feedback
+snapshot-after candidate
+{
+  "proof": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\verification.json",
+  "proofSha256": "88f21ee3c1a8a39fcf0b7206714b5ae66d2874d1a163d8205ed4cff24079a1d3",
+  "manifestSha256": "879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec",
+  "checks": 66,
+  "findings": [],
+  "files": 6369,
+  "directories": 1389,
+  "publicViews": 16,
+  "keyScan": [
+    {
+      "label": "feedback",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 3046
+    },
+    {
+      "label": "candidate",
+      "availableKeys": 1,
+      "knownKeyMatches": 0,
+      "filesScanned": 3323
+    }
+  ]
+}

@@ -1,0 +1,350 @@
+{
+  "format": "renderweave-result-source-index/1",
+  "createdAt": "2026-10-26T05:11:06.712Z",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "bindingId": "sha256:528117b478d6b44833ae57217ee94861b1dc4c65c22ee552fa5377ebd9b25643",
+  "experimentId": "sha256:e094c67782b03026354fde7da533b07e104b00e8897053104f5c9bdb092e7c97",
+  "records": [
+    {
+      "file": "results/registration.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\registration.json",
+      "role": "预登记与实际激活",
+      "storage": "repository-byte-identical",
+      "bytes": 36868,
+      "sha256": "fa44cde4782ea604978c07aef4f0ba9cced83410420e8dc2940d8680894ddc2a"
+    },
+    {
+      "file": "results/activation.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\activation.json",
+      "role": "预登记与实际激活",
+      "storage": "repository-byte-identical",
+      "bytes": 1123,
+      "sha256": "19600c3c73cf77bb96dbf4d685c2c465b0d4072affafe01d432c9def94bfb7c0"
+    },
+    {
+      "file": "results/endpoint-authorization.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\endpoint-authorization.json",
+      "role": "预登记与实际激活",
+      "storage": "repository-byte-identical",
+      "bytes": 1093,
+      "sha256": "fb9bfc4589e370a25c72fbc79d2fe6da4d6bd3b3ae544ff47d772646f12900cf"
+    },
+    {
+      "file": "results/segment-1/started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\started.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 1904,
+      "sha256": "7af983459da62742f75bb0f2096d1997f58e1151cbe428e28807cbe0df28d996"
+    },
+    {
+      "file": "results/segment-1/completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\completed.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 2348,
+      "sha256": "45eb2602ff89e891885006e578cda4e4d24729dd37f0efc01b38b536019a44b9"
+    },
+    {
+      "file": "results/segment-1/reports.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\reports.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 227,
+      "sha256": "7560d866ec21bc9b314d11ec6fd5344a234826f6b64486a9537785814b62c912"
+    },
+    {
+      "file": "results/segment-1/stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\stdout.log",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 3240,
+      "sha256": "b5b4acf834b3cb2906b16973bdc0e278a5ff0e7af3fd164dd51386d1fe2d9bbf"
+    },
+    {
+      "file": "results/segment-1/stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\stderr.log",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 678,
+      "sha256": "25a19f98e4e46a7ad5abc8c0d9ef3963b95afb2a34cccab871257501bc6e0753"
+    },
+    {
+      "file": "results/segment-2/started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\started.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 1904,
+      "sha256": "fb8845fb58533bb60b0bcb19f1c2f770cd121bc35a6041e7be6273dc44d3e3d7"
+    },
+    {
+      "file": "results/segment-2/completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\completed.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 2348,
+      "sha256": "1fd0740107937dc57d86aa2346a3ef8a3a0bb55d0d80b8e8e1900553cca666f5"
+    },
+    {
+      "file": "results/segment-2/reports.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\reports.json",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 496,
+      "sha256": "6c2420b1e3f0f38dbb3f8983267f82bc7b922f0049b623b11504bf27983c822b"
+    },
+    {
+      "file": "results/segment-2/stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\stdout.log",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 3216,
+      "sha256": "e3500dde7137cd5d2c770ee375e16a25aa364161238eebc26fead5e712d71989"
+    },
+    {
+      "file": "results/segment-2/stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\stderr.log",
+      "role": "独占分段开始/完成和原始输出",
+      "storage": "repository-byte-identical",
+      "bytes": 678,
+      "sha256": "a36cf265236816bf7b6da128bea5f335f8b198437303b0c39b370975f92199e7"
+    },
+    {
+      "file": "results/segment-1/report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-1\\report-2026-10-25-harness21-candidate-6.json",
+      "role": "第一段原始报告（8通过8未运行）",
+      "storage": "repository-byte-identical",
+      "bytes": 417275,
+      "sha256": "4582ecd461db16b42a1f4fe452b4907d45420352e1ac55fbd8054d3e16a3f0b4"
+    },
+    {
+      "file": "results/segment-2/report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\dispatch\\segment-2\\report-2026-10-25-harness21-candidate-6.segment-5762cd2c-6fab-45d0-9a7f-eb3bc3be51da.json",
+      "role": "最终累计原始报告（16通过）",
+      "storage": "repository-byte-identical",
+      "bytes": 667363,
+      "sha256": "3e12be8957425fc613099f4153796b9df2e9043bfebe87303f8b1740ae855771"
+    },
+    {
+      "file": "results/source-audit.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-source-audit\\segment-2-2026-10-26T050440635Z.json",
+      "role": "完整16尝试独立来源/守卫/用量审计",
+      "storage": "repository-byte-identical",
+      "bytes": 1423674,
+      "sha256": "ff0419c57cb431608cf17258796bab9b229ea8ba648fc686fe71da26c7489113"
+    },
+    {
+      "file": "results/source-audit.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-source-audit\\audit-final.mjs",
+      "role": "实际执行的只读审计脚本，不用于模型派发",
+      "storage": "repository-byte-identical",
+      "bytes": 20919,
+      "sha256": "cbb84c8d6f16ffeb137c4481c4a2dc09e38e816aba22a7e79f62f016f8dcf574"
+    },
+    {
+      "file": "results/archive/verification.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\verification.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 10853,
+      "sha256": "88f21ee3c1a8a39fcf0b7206714b5ae66d2874d1a163d8205ed4cff24079a1d3"
+    },
+    {
+      "file": "results/archive/restored-public-views.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restored-public-views.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 6923,
+      "sha256": "7bac5c00a8773c5adb4936a26f99644766c9216d8f9fd608236a17bd68f7f3ae"
+    },
+    {
+      "file": "results/archive/inputs.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\inputs.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 320,
+      "sha256": "fcf86fec346ec52db875b27d246c6c4d30be0fddc0ef3ac28b7d109f34d8ee4c"
+    },
+    {
+      "file": "results/archive/pack.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\pack.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 771,
+      "sha256": "fdf3ddbbecc37e84681725e5448c12b2a4c4efdc20626a9030b1f5ba7ff97f05"
+    },
+    {
+      "file": "results/archive/restore.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restore.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 798,
+      "sha256": "fbf7c76977da44411271f17feaa829380a8b5b6091998c647899d50406f76496"
+    },
+    {
+      "file": "results/archive/pack.stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\pack.stdout.log",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 181,
+      "sha256": "291414ad065deb0ac37f3022c5a0295626032b6622d4956f09d738c748c611c1"
+    },
+    {
+      "file": "results/archive/pack.stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\pack.stderr.log",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "results/archive/restore.stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restore.stdout.log",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 215,
+      "sha256": "d65f17a553aae2cd7c45e75f63291b2aa81fb84bfe9adee533a89461e3471e24"
+    },
+    {
+      "file": "results/archive/restore.stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restore.stderr.log",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "results/archive/evidence-index.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\evidence-index.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 2643,
+      "sha256": "a90fe13e55df92f9080784620b4d8707965188027d1983732a77788750466c2a"
+    },
+    {
+      "file": "results/archive/evidence-index-final.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\evidence-index-final.json",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 7309,
+      "sha256": "eafa215b0466c299edce723ef21b927509f1f7f9585488a494629fa10483271f"
+    },
+    {
+      "file": "results/archive/run.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\run.log",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 768,
+      "sha256": "4d49712da854db31f26c7fda99eeb5a920f3749616e9091f88131b957d8763fe"
+    },
+    {
+      "file": "results/archive/verify-archive.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\verify-archive.mjs",
+      "role": "公开归档/恢复及完整集合只读复验",
+      "storage": "repository-byte-identical",
+      "bytes": 10062,
+      "sha256": "c1a6c1b40cce955ca81fd9eb65778c892b7b259ec4f020e7eba0eb21522eca02"
+    },
+    {
+      "file": "results/archive/manifest.sha256",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-evidence-archive\\manifest.sha256",
+      "role": "归档清单摘要；大清单/块在持久out目录",
+      "storage": "repository-byte-identical",
+      "bytes": 65,
+      "sha256": "88076a125d980db4384bf88b22b3100a5bb2738c6c8a965ec96993d13d4a9943"
+    },
+    {
+      "file": "results/native-retry-evidence.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-result-records\\native-retry-evidence.json",
+      "role": "原始事件逐行核SHA后的独立摘录；不是新尝试",
+      "storage": "repository-byte-identical",
+      "bytes": 3648,
+      "sha256": "401ffba2440fe8393c8efc0ccbf6dafc09aa95719b75950ae856217acf0bf530"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-evidence-archive\\manifest.json",
+      "role": "完整6369文件归档清单",
+      "storage": "external-preserved",
+      "bytes": 1592443,
+      "sha256": "879a6cead7825776d4da008a3f6247e0f0137296d48dc564c66056c3c97b03ec"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-source-audit\\segment-1-2026-10-26T045638456Z.json",
+      "role": "首段固定来源审计，保留历史时点",
+      "storage": "external-preserved",
+      "bytes": 727068,
+      "sha256": "e0518422a7a7e2d391fa2a8995d658bfb6a8126d63636b6091de28ef6695a12d"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-source-audit\\segment-1-2026-10-26T045638456Z.md",
+      "role": "首段审计说明",
+      "storage": "external-preserved",
+      "bytes": 1140,
+      "sha256": "d4784acfa649f985524ae0b5266d436e1ad884056c92a11b65d720f60638dc87"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-source-audit\\audit.mjs",
+      "role": "首段实际审计脚本",
+      "storage": "external-preserved",
+      "bytes": 20579,
+      "sha256": "2bfb4ecc22752b39409c9dd4a796cafbb77dce9e0a22fe0a13a27116af38414c"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\source-before.json",
+      "role": "完整路径集合与字节清单，体积较大留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1423787,
+      "sha256": "afa1bb09839a9893b9a19a83607f157e789705341b8c7ab306f1777c389d3ffb"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\source-after.json",
+      "role": "完整路径集合与字节清单，体积较大留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1423787,
+      "sha256": "afa1bb09839a9893b9a19a83607f157e789705341b8c7ab306f1777c389d3ffb"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restored-before-review.json",
+      "role": "完整路径集合与字节清单，体积较大留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1423787,
+      "sha256": "afa1bb09839a9893b9a19a83607f157e789705341b8c7ab306f1777c389d3ffb"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\restored-after-review.json",
+      "role": "完整路径集合与字节清单，体积较大留在持久out",
+      "storage": "external-preserved",
+      "bytes": 1423787,
+      "sha256": "afa1bb09839a9893b9a19a83607f157e789705341b8c7ab306f1777c389d3ffb"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-candidate6-archive-verification\\archive-before.json",
+      "role": "完整路径集合与字节清单，体积较大留在持久out",
+      "storage": "external-preserved",
+      "bytes": 725686,
+      "sha256": "9fe8b3051889918aa3dc5488e63bcb122ef9896803cea080210b0511a094b046"
+    },
+    {
+      "source": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-6\\binding\\binding.json",
+      "role": "公共绑定身份原件",
+      "storage": "external-preserved",
+      "bytes": 217692,
+      "sha256": "5b71ba3fe3d44cc1890067935b955b2ab952f93544599352e769717812115fec"
+    },
+    {
+      "source": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6/candidate.json",
+      "role": "共同候选清单",
+      "storage": "external-preserved",
+      "bytes": 430949,
+      "sha256": "6caa67bba49bf23db7b9b2326701a829260eeb517ed625ecd91d1c735d6d712f"
+    }
+  ],
+  "notes": [
+    "所有repository-byte-identical文件从既有原件复制，源目录没有新增或改写文件。",
+    "source-audit.json没有重评分或改写官方report；官方realModelObservations=0保留，独立来源核验另记16。",
+    "archive/evidence-index.json生成时run.log尚在追加末尾输出；evidence-index-final.json在退出后核对全部文件，唯一旧SHA差异就是run.log，旧索引不覆盖。",
+    "审计脚本末尾markdown模板沿用“不核第二段运行状态”旧句；实际JSON已核第二段completed与完整16封存，含义是不轮询活动进程；本次RESULTS使用准确完整范围。",
+    "归档原始绝对路径不改写，原目录仍存在，不证明任意跨宿主直接接续。"
+  ],
+  "modelCallsByRecordPreparation": 0
+}

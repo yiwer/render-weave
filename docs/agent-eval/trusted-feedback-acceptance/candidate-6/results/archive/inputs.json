@@ -1,0 +1,13 @@
+{
+  "format": "renderweave-context-trial-archive-inputs/1",
+  "roots": [
+    {
+      "label": "feedback",
+      "path": "F:/GenCode/render-weave/out/harness21-trusted-feedback-candidate-6"
+    },
+    {
+      "label": "candidate",
+      "path": "F:/GenCode/render-weave/out/harness-acceptance-20/candidate-6"
+    }
+  ]
+}
