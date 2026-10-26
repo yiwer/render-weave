@@ -1,0 +1,2291 @@
+{
+  "evidence": {
+    "kind": "real-model",
+    "realModelObservations": 0,
+    "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+  },
+  "format": "renderweave-agent-eval/4",
+  "label": "2026-10-25-pair8-deepseek-en-template-design",
+  "startedAt": "2026-10-26T04:36:55.867Z",
+  "endedAt": "2026-10-26T04:41:08.184Z",
+  "git": {
+    "commit": "c07534eb739685cd5ede0dac1c0aa89aa15fb36d",
+    "dirty": false
+  },
+  "runtime": {
+    "model": "deepseek-v4.1-flash",
+    "smallModel": "deepseek-v4.1-flash",
+    "endpoint": "https://opencode.ai/inference/go/anthropic",
+    "effort": null,
+    "servedModels": [
+      "deepseek-v4.1-flash"
+    ],
+    "servedModelChanged": false,
+    "requestedModelMismatch": false,
+    "providerRevision": null,
+    "claudeCodeVersions": [
+      "2.1.296"
+    ]
+  },
+  "mcpContract": "0.17.0",
+  "materials": {
+    "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+    "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+    "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+    "agent/domains/price-tag.md": "f4b21a3d761814baaca90f34f5b6b5e370c4feebd146ad618be14e8cb0e3d9ae",
+    "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+    "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+    "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+    "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+    "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+    "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+    "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+    "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+    "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+    "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+    "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766"
+  },
+  "consecutivePasses": 2,
+  "passLines": {
+    "zh-definition-extraction": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "zh-dataset-extraction": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "zh-template-design": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "zh-template-revision": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "en-definition-extraction": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "en-dataset-extraction": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "en-template-design": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    },
+    "en-template-revision": {
+      "targetCorrection": true,
+      "nonTargetPreservation": true,
+      "unknownRetained": true
+    }
+  },
+  "results": [
+    {
+      "id": "en-template-design",
+      "name": "en-template-design",
+      "repetition": 1,
+      "status": "pass",
+      "pass": true,
+      "retries": 0,
+      "failures": [],
+      "rounds": [
+        {
+          "task": "template-design",
+          "dir": "run-1/en-template-design/feedback",
+          "verdict": "qualified",
+          "wallMs": 247024,
+          "usageSource": "result",
+          "turns": 32,
+          "inputTokens": 81896,
+          "outputTokens": 11502,
+          "thinkingTokens": 0,
+          "cacheReadTokens": 701184,
+          "cacheCreationTokens": 0,
+          "endedBy": "success",
+          "pending": 0,
+          "toolCalls": 15,
+          "toolErrors": 0,
+          "persistedResults": 0,
+          "firstCheckProblems": 0
+        }
+      ],
+      "checks": {
+        "feedback": {
+          "format": "renderweave-feedback-score/2",
+          "targetCorrection": true,
+          "nonTargetPreservation": true,
+          "unknownRetained": true,
+          "finalCheckMatches": true,
+          "pagination": true,
+          "unchecked": {},
+          "failures": [],
+          "before": {
+            "structure": "valid",
+            "candidates": "valid",
+            "content": "needsReview",
+            "render": {
+              "status": "renderable",
+              "problems": [],
+              "hasImage": true,
+              "blocking": true,
+              "capabilityBlocked": false
+            },
+            "visual": {
+              "reportId": "ea80b56d1689c40ae91bb42bda104dc3456b934eb4a963d4eb5e9f916c4a391f",
+              "status": "needsWork",
+              "coverage": {
+                "approvedRegionsTotal": 24,
+                "approvedRegionsMatched": 24,
+                "repeatedInstancesScanned": 24,
+                "statesCovered": [],
+                "statesMeasured": [
+                  "normal"
+                ],
+                "unknownRegions": 24,
+                "complete": false
+              },
+              "anomalies": [
+                {
+                  "kind": "fontSizeTooSmall",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 5.000 mm，参考 7.000 mm，比值 0.714",
+                  "actualMm": 5,
+                  "expectedMm": 7,
+                  "ratio": 0.7142857142857143
+                },
+                {
+                  "kind": "textMismatch",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：文字与核准内容不同"
+                },
+                {
+                  "kind": "colorMismatch",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：解析后的文字颜色与参考 #172B4DFF 不同"
+                },
+                {
+                  "kind": "sizeDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 29.770 mm，参考 41.376 mm，比值 0.719",
+                  "actualMm": 29.770126342773438,
+                  "expectedMm": 41.37614440917969,
+                  "ratio": 0.7194997689578987
+                },
+                {
+                  "kind": "sizeDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 4.044 mm，参考 5.662 mm，比值 0.714",
+                  "actualMm": 4.044189285486937,
+                  "expectedMm": 5.661864999681711,
+                  "ratio": 0.7142857142857143
+                },
+                {
+                  "kind": "positionDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：位置偏移 Δx=2.904、Δy=-0.168 mm"
+                }
+              ],
+              "anomaliesTotal": 6,
+              "regions": [
+                {
+                  "id": "region-01",
+                  "name": "region-01",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.371185302734375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-01",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-01"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop01",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.371185302734375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-02",
+                  "name": "region-02",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.475433349609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-02",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-02"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop02",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.475433349609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-03",
+                  "name": "region-03",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 8.937343971654773,
+                    "width": 22.434417724609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-03",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-03"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop03",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.434417724609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-04",
+                  "name": "region-04",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.60873413085937,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-04",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-04"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop04",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.608734130859375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1.0000000000000002,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-05",
+                  "name": "region-05",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.454925537109375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-05",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-05"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop05",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.454925537109375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-06",
+                  "name": "region-06",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.52499389648437,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-06",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-06"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop06",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.524993896484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1.0000000000000002,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-07",
+                  "name": "region-07",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 31.93734397165477,
+                    "width": 22.497650146484375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-07",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-07"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop07",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.497650146484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-08",
+                  "name": "region-08",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.504486083984375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-08",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-08"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop08",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.504486083984375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-09",
+                  "name": "region-09",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.448089599609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-09",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-09"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop09",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.448089599609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-10",
+                  "name": "region-10",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.483978271484375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-10",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-10"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop10",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.483978271484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-11",
+                  "name": "region-11",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 54.93734397165477,
+                    "width": 22.371185302734375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-11",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-11"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop11",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.371185302734375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-12",
+                  "name": "region-12",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.475433349609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-12",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-12"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop12",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.475433349609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                }
+              ],
+              "regionsTotal": 24,
+              "sourceFiles": {
+                "calibration-en": "candidates/template.json"
+              },
+              "partialDetails": true,
+              "scope": "all",
+              "note": "数值仅描述核准范围；最终可见性和内容仍需审核。局部图从左到右为参考、候选、半透明叠图。"
+            },
+            "style": {
+              "passed": false,
+              "anomalies": [
+                {
+                  "kind": "fontSizeTooSmall",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 5.000 mm，参考 7.000 mm，比值 0.714",
+                  "actualMm": 5,
+                  "expectedMm": 7,
+                  "ratio": 0.7142857142857143
+                },
+                {
+                  "kind": "textMismatch",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：文字与核准内容不同"
+                },
+                {
+                  "kind": "colorMismatch",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：解析后的文字颜色与参考 #172B4DFF 不同"
+                },
+                {
+                  "kind": "sizeDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 29.770 mm，参考 41.376 mm，比值 0.719",
+                  "actualMm": 29.770126342773438,
+                  "expectedMm": 41.37614440917969,
+                  "ratio": 0.7194997689578987
+                },
+                {
+                  "kind": "sizeDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：实际 4.044 mm，参考 5.662 mm，比值 0.714",
+                  "actualMm": 4.044189285486937,
+                  "expectedMm": 5.661864999681711,
+                  "ratio": 0.7142857142857143
+                },
+                {
+                  "kind": "positionDeviation",
+                  "regionId": "region-22",
+                  "path": "calibration-en/region-22",
+                  "message": "region-22：位置偏移 Δx=2.904、Δy=-0.168 mm"
+                }
+              ],
+              "coverage": {
+                "approvedRegionsTotal": 24,
+                "approvedRegionsMatched": 24,
+                "repeatedInstancesScanned": 24,
+                "statesCovered": [],
+                "statesMeasured": [
+                  "normal"
+                ],
+                "unknownRegions": 24,
+                "complete": false
+              }
+            }
+          },
+          "after": {
+            "structure": "valid",
+            "candidates": "valid",
+            "content": "needsReview",
+            "render": {
+              "status": "renderable",
+              "problems": [],
+              "hasImage": true,
+              "blocking": true,
+              "capabilityBlocked": false
+            },
+            "visual": {
+              "reportId": "ce0118f8ebce908ab23716411a581441a5147391f47465519b761e32b97fef05",
+              "status": "needsReview",
+              "coverage": {
+                "approvedRegionsTotal": 24,
+                "approvedRegionsMatched": 24,
+                "repeatedInstancesScanned": 24,
+                "statesCovered": [],
+                "statesMeasured": [
+                  "normal"
+                ],
+                "unknownRegions": 24,
+                "complete": false
+              },
+              "anomalies": [],
+              "anomaliesTotal": 0,
+              "regions": [
+                {
+                  "id": "region-01",
+                  "name": "region-01",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.371185302734375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-01",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-01"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop01",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.371185302734375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-02",
+                  "name": "region-02",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.475433349609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-02",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-02"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop02",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.475433349609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-03",
+                  "name": "region-03",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 8.937343971654773,
+                    "width": 22.434417724609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-03",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-03"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop03",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.434417724609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-04",
+                  "name": "region-04",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 8.937343971654773,
+                    "width": 22.60873413085937,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-04",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-04"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop04",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 8.937343971654773,
+                        "width": 22.608734130859375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1.0000000000000002,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-05",
+                  "name": "region-05",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.454925537109375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-05",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-05"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop05",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.454925537109375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-06",
+                  "name": "region-06",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.52499389648437,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-06",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-06"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop06",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.524993896484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1.0000000000000002,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-07",
+                  "name": "region-07",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 31.93734397165477,
+                    "width": 22.497650146484375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-07",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-07"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop07",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.497650146484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-08",
+                  "name": "region-08",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 31.93734397165477,
+                    "width": 22.504486083984375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-08",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-08"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop08",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 31.93734397165477,
+                        "width": 22.504486083984375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-09",
+                  "name": "region-09",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.448089599609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-09",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-09"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop09",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.448089599609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-10",
+                  "name": "region-10",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 60.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.483978271484375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-10",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-10"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop10",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 60.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.483978271484375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-11",
+                  "name": "region-11",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 110.33666992187499,
+                    "y": 54.93734397165477,
+                    "width": 22.371185302734375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-11",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-11"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop11",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 110.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.371185302734375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 1.4210854715202004e-14,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-12",
+                  "name": "region-12",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 160.336669921875,
+                    "y": 54.93734397165477,
+                    "width": 22.475433349609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-12",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-12"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop12",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 160.336669921875,
+                        "y": 54.93734397165477,
+                        "width": 22.475433349609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                },
+                {
+                  "id": "region-13",
+                  "name": "region-13",
+                  "state": "normal",
+                  "status": "unknown",
+                  "referenceBoxMm": {
+                    "x": 10.336669921875,
+                    "y": 77.93734397165477,
+                    "width": 22.434417724609375,
+                    "height": 6.825683306902646
+                  },
+                  "instances": [
+                    {
+                      "path": "calibration-en/region-13",
+                      "visibility": {
+                        "status": "unknown",
+                        "reasons": [],
+                        "cumulativeOpacity": 1
+                      },
+                      "sourceLocation": {
+                        "template": "calibration-en",
+                        "path": "calibration-en/region-13"
+                      },
+                      "fontSizeMm": 7,
+                      "fontSizesMm": [
+                        7
+                      ],
+                      "text": "Stop13",
+                      "colors": [
+                        "#172B4DFF"
+                      ],
+                      "box": {
+                        "x": 10.336669921875,
+                        "y": 77.93734397165477,
+                        "width": 22.434417724609375,
+                        "height": 6.825683306902647
+                      },
+                      "deltaMm": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "sizeRatio": {
+                        "width": 1,
+                        "height": 1.0000000000000002
+                      },
+                      "unknown": [
+                        "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                      ]
+                    }
+                  ],
+                  "instancesTotal": 1
+                }
+              ],
+              "regionsTotal": 24,
+              "sourceFiles": {
+                "calibration-en": "candidates/template.json"
+              },
+              "partialDetails": true,
+              "scope": "all",
+              "note": "数值仅描述核准范围；最终可见性和内容仍需审核。局部图从左到右为参考、候选、半透明叠图。"
+            },
+            "style": {
+              "passed": false,
+              "anomalies": [],
+              "coverage": {
+                "approvedRegionsTotal": 24,
+                "approvedRegionsMatched": 24,
+                "repeatedInstancesScanned": 24,
+                "statesCovered": [],
+                "statesMeasured": [
+                  "normal"
+                ],
+                "unknownRegions": 24,
+                "complete": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "id": "d38702f4-c602-4680-ad76-e23623f45774",
+      "unit": "run-1/en-template-design",
+      "stage": "feedback",
+      "dir": "run-1/en-template-design/attempts/d38702f4-c602-4680-ad76-e23623f45774",
+      "startedAt": "2026-10-26T04:36:58.061Z",
+      "endedAt": "2026-10-26T04:41:06.878Z",
+      "elapsedMs": 248817,
+      "experiment": "sha256:2dcddc13f775d1dd276edc39cca2a7cb08613ed8e3c7cd47174c9b92c5ccf3ce",
+      "state": "completed",
+      "usage": {
+        "task": "template-design",
+        "dir": "run-1/en-template-design/attempts/d38702f4-c602-4680-ad76-e23623f45774/round",
+        "verdict": "qualified",
+        "wallMs": 247024,
+        "usageSource": "result",
+        "turns": 32,
+        "inputTokens": 81896,
+        "outputTokens": 11502,
+        "thinkingTokens": 0,
+        "cacheReadTokens": 701184,
+        "cacheCreationTokens": 0,
+        "endedBy": "success",
+        "pending": 0,
+        "toolCalls": 15,
+        "toolErrors": 0,
+        "persistedResults": 0,
+        "firstCheckProblems": 0
+      }
+    }
+  ],
+  "timing": {
+    "sessions": 1,
+    "incompleteSessions": 0,
+    "actualWallMs": 252317,
+    "knownWallMs": 252317,
+    "attemptsElapsedMs": 248817,
+    "unknownAttemptDurations": 0
+  },
+  "gate": {
+    "status": "incomplete",
+    "pass": false,
+    "scenarios": [
+      {
+        "id": "en-template-design",
+        "name": "en-template-design",
+        "outcomes": [
+          "pass",
+          "not-run"
+        ],
+        "status": "incomplete"
+      }
+    ],
+    "completeness": {
+      "planned": 2,
+      "pass": 1,
+      "fail": 0,
+      "invalid": 0,
+      "notRun": 1,
+      "complete": false
+    }
+  },
+  "totals": {
+    "wallMs": 247024,
+    "inputTokens": 81896,
+    "outputTokens": 11502,
+    "thinkingTokens": 0,
+    "cacheReadTokens": 701184,
+    "cacheCreationTokens": 0,
+    "toolCalls": 15,
+    "persistedResults": 0,
+    "unknownUsageAttempts": 0,
+    "unknownByMetric": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 0,
+      "toolCalls": 0,
+      "persistedResults": 0,
+      "wallMs": 0
+    },
+    "usageComplete": true,
+    "legacyHistoryUnknown": false
+  },
+  "experimentIdentity": {
+    "format": "renderweave-eval-identity/1",
+    "contextPolicy": {
+      "name": "full",
+      "id": "b59ce313e3c5727a0db9f3685a2cda3f519962bd22d31b2b0ec368026a936be0",
+      "scope": {
+        "mandatory": [
+          "guide.md",
+          "reference/outcome.md",
+          "brief.md",
+          "domain (if supplied)",
+          "request/requirement/feedback (if supplied)"
+        ],
+        "entry": [
+          "task reference (whole)"
+        ],
+        "deferred": []
+      },
+      "sources": {
+        "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+        "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+        "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+        "agent/domains/price-tag.md": "f4b21a3d761814baaca90f34f5b6b5e370c4feebd146ad618be14e8cb0e3d9ae",
+        "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+        "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+        "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+        "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+        "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+        "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+        "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+        "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+        "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+        "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+        "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766",
+        "reference/data-definition": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+        "reference/template": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+        "schema/data-definition": "bc4e8cc089eb326124db8354f662c450061361b8089d0e31063dd3eee7fe52ad",
+        "schema/dataset": "580f001be906a1f39695a8c5b28bd4384003f9149018447cd224e97630eb542c",
+        "schema/template": "b418b2a24de6c150a7acbe25348b447d8620066501806b50ae62e32f6004dc13",
+        "schema/render-request": "0827bc65052602259d6644e230d516639d69224bd7d24073b66b0a3d8b800831",
+        "schema/batch-request": "902f27154049c3d795becfa682d85739de01d56a7544c8dfbd9ea9719fca5290"
+      }
+    },
+    "runtime": {
+      "model": "deepseek-v4.1-flash",
+      "smallModel": "deepseek-v4.1-flash",
+      "endpoint": "https://opencode.ai/inference/go/anthropic",
+      "effort": null,
+      "providerRevision": null
+    },
+    "executor": {
+      "command": "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+      "args": [],
+      "version": "2.1.296 (Claude Code)",
+      "files": {
+        "command": "sha256:76de74f7694a5bdc03378a5f837c9e132827bf004c98c276bc4e9094ff06769a"
+      },
+      "node": "v24.12.0"
+    },
+    "budgets": {
+      "maxTurns": {
+        "definition-extraction": 40,
+        "dataset-extraction": 40,
+        "template-design": 80,
+        "template-revision": 80
+      },
+      "roundTimeoutMs": 3600000,
+      "stagnation": 2
+    },
+    "build": {
+      "dist/agent/anthropic-proxy.d.ts": "a3e434583e56e2e915566bdcb0d3679ebc2f64aafcfa80a02eabf0be413200e9",
+      "dist/agent/anthropic-proxy.js": "cb40a5f154035e46ccf971c13dd2a0ba7347ddf88ec7fda1db2cc5e4f391551f",
+      "dist/agent/anthropic-proxy.js.map": "f55e0233d90f2fcaa6fd1220e2e496094b95aae86201655038b3db40573e5404",
+      "dist/agent/assessment.d.ts": "0250411046e310cc7f37ef05c021012bef23dbc7e2cc9f0dc16b3fc45fd019dc",
+      "dist/agent/assessment.js": "cd0379d85c0e83731400d0def4f6d9887fd59c74d554178d677f3aefdd4411a8",
+      "dist/agent/assessment.js.map": "bd95076d29e34e8294a00e87370cee7fb6bb4701a56e53015d48725f17347d7a",
+      "dist/agent/attempt-records.d.ts": "e6ea9924d8a060752b30a0982fa549c8b15e9289546110cc9b9483405c0cba39",
+      "dist/agent/attempt-records.js": "d4ee3f13bc3d1b696e403b2ca55c0b57ca19bc51324b4e5cf97dd276f3c7e80b",
+      "dist/agent/attempt-records.js.map": "ac6fd061497481c16329703157077ae82661ad53efdf3748ee3a7107c0702f72",
+      "dist/agent/candidate-comparison.d.ts": "30a281a8d4f6743a67b3dde5315c6093b3a3f6704c91b659331744e1e4d8f764",
+      "dist/agent/candidate-comparison.js": "f551479d737f7f5c6722e8dde32baafbee4c09411c96d6bf194958361eab6b6b",
+      "dist/agent/candidate-comparison.js.map": "3284fa512303a5fd3b40f9dbbbbc566ab7718126bea3d1070227e59036fd2beb",
+      "dist/agent/candidates.d.ts": "8cd87ac18a00e863127fd5f433363509a0264cbe39b8d27e24eda04a3d3dcaf7",
+      "dist/agent/candidates.js": "93caff27da54744acd80742d79144c467bfc57c01ae4fd4afa91fe6f52cd4503",
+      "dist/agent/candidates.js.map": "2b6ab46e1c981822e7d1456ab5ffb809e1983c8fb0c0ee802129ecb826794be3",
+      "dist/agent/checkpoint-host.d.ts": "5f4df31e74e45a3fccc1ae579fdad5e21e3eb41ae7a4cc65807d93b712ec14d3",
+      "dist/agent/checkpoint-host.js": "11b4c2a69f7a8f4239c095a0e464c51cff2f2f527f59194cdc075a9a3d16bc8c",
+      "dist/agent/checkpoint-host.js.map": "5d885dd69766efab56746d8c5ddbe56770f3350f7f44c4017fb25b49a6456975",
+      "dist/agent/checkpoints.d.ts": "566ea58d697e92af2fbf07c8c46f4dc932bdbb449c552a39962e6856f2ef3b62",
+      "dist/agent/checkpoints.js": "cca4ea0e67b845205179fac32a54e9cea00544aa2b9081a862e791a2ef075e7e",
+      "dist/agent/checkpoints.js.map": "3e7410737ec66f277025dfe9777676fa3786d2c925b15c44d89273327dd5ea78",
+      "dist/agent/content-identity.d.ts": "ec9b3852c5e50b34e7c0f07159b3f7c2d31a5d7fd47978a80b13134b4b5f9dc5",
+      "dist/agent/content-identity.js": "9ea89995ef6e567353b7d70b2d151fb31b71b7c9fd83e2c511d29c7d3c751175",
+      "dist/agent/content-identity.js.map": "9b394cc664d64954b805eefce40048931799593b65a129978e9fa0f2c55856d3",
+      "dist/agent/context-policy.d.ts": "9d7610bf1a869ea1d0351d56eff6e3e1a1c6d77f34dfa760ad2c3dced8ff5f0f",
+      "dist/agent/context-policy.js": "970d84d06dd90cf52add9c183e2c42b74fd150ff4989dda45139ec2a00bffd50",
+      "dist/agent/context-policy.js.map": "e2a2aac065b581028982e0d4e4a56ff49c34a91d57ce53fb02cdfa5cf93500da",
+      "dist/agent/coverage-verification.d.ts": "1316cafa11782831f15d644e5c33045cea143f5fdfe25455bf8ceef7a6c2c090",
+      "dist/agent/coverage-verification.js": "3e7c280e41d47be9230dc505cf37e771dd7c568eff8c8f6d0d640148b6325533",
+      "dist/agent/coverage-verification.js.map": "26fab26def1a3f1f6fb2ffcdf8a32a471426983bd3932aa2aa2531f318e23bfe",
+      "dist/agent/credential-redaction.d.ts": "8394a9d625bbce13aec0addb8ce5d95b48d28689c90156ba29d7b5ae1fd29c17",
+      "dist/agent/credential-redaction.js": "ff7c5bc99b342a4e557a4fde2c227ac1002dc063217af791e62749020fb11875",
+      "dist/agent/credential-redaction.js.map": "e032353511f81eb935730bb814432a999c44c33a05f801fb36435886d70a4a03",
+      "dist/agent/diff.d.ts": "c14a3e5504cb2166a21713dcb00914f49e65954735a43a098901d823d23c06b9",
+      "dist/agent/diff.js": "89109f9fe2f91d8a0bc3031f710b54ea98c747ac5eb73b2c356743a31b86b7c4",
+      "dist/agent/diff.js.map": "77dbbf1825f1a8a665937b0aa01fb858a025eee30a805a3261ca76e2ae5ea031",
+      "dist/agent/execution-error.d.ts": "0040e0a4a245082adef4b2e57de13354a48896827ac0d5e5d60a36b56f7d41b7",
+      "dist/agent/execution-error.js": "3f132eba469918ccb0f3eed8657dd661740efdb1d2cd5950125ac5f47b134202",
+      "dist/agent/execution-error.js.map": "668cf8833a1a6ff81adba69aac71c79f71714bdd32f89f80bc95d4aad6774b0f",
+      "dist/agent/execution.d.ts": "71ad85abd74ef942ad23dc3a1ee7c9599a5d7baa11e6f84f9ff7817d5c692d89",
+      "dist/agent/execution.js": "42a364b87dbb62dc8d1f050791c018b1a045c142e2ada2c4c18a79cedfc15d84",
+      "dist/agent/execution.js.map": "a2be5d2ab621dfd9a26e8817d38672d5754fd7be7e1828a5ce072bc3ef5ea824",
+      "dist/agent/locations.d.ts": "451c1e4d0e2f9de570ee0a98f48fe8c4572b336a1981ee0b19c04508d1866fa4",
+      "dist/agent/locations.js": "9245a091184da3043935bf15b57abc8aba5bdd2a9848e54ff94180312023dfdf",
+      "dist/agent/locations.js.map": "9af1b821f61a836db604df7a91b47c9babed5a2ad6ec20e03416d8cbe62332d0",
+      "dist/agent/mcp-forward.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "dist/agent/mcp-forward.js": "3fd13edd7a3b1b7862a5a826741dfdbd46d39c5385206946a9531a92e095a311",
+      "dist/agent/mcp-forward.js.map": "8ec7fcef057d33080176fb14fb0fd7ef4e242d705cb5e1eabeade7e2ca0616a5",
+      "dist/agent/model-proxy.d.ts": "58c5e0b121ed8aa5ae30223124d22d2293b452aac83df167b6681d0fafb2d4e2",
+      "dist/agent/model-proxy.js": "e1a168d2f8a8f58a226071e3c0848720928b9a04598d757e28b8266047fdb030",
+      "dist/agent/model-proxy.js.map": "64c74fe190f2c8dc758a4fb778bd47556d1ceca29a4361305879f84705ee7639",
+      "dist/agent/orders.d.ts": "512690ba174f7200ff783aed1d1ea79e10cf384e332ddb9579b232d8b1363463",
+      "dist/agent/orders.js": "14cb37178ab2a37e5646e7cf76bc295642613949370451f28aa26c511cfe1188",
+      "dist/agent/orders.js.map": "e1d6fc9f343541ae87203883f11ead83a37d70f056055fce5d4e01191fb8086c",
+      "dist/agent/outcome.d.ts": "8f5cebfabc8dddc2f598c8c7d6912a3a69a443a11817d24f8966a02d1a7ee79b",
+      "dist/agent/outcome.js": "8f2584ff8f54723e99f94ab2eefcd7aa518b21c7eac843880a2673a11e91f6ec",
+      "dist/agent/outcome.js.map": "fdbe55fb0c1ed1b4c75d30da1eba482ae0e3bd0163420e6ff27624ba5643965d",
+      "dist/agent/preview.d.ts": "bd2e009bacf8062a2dc5ef29f4278e26d1ac8a31dd61f9e622c700720fb553e7",
+      "dist/agent/preview.js": "c8cacb9c4256f27378ef0d405fcc24d2472dcd84f10a3aafe6acfd692f135493",
+      "dist/agent/preview.js.map": "5d245e70c592e630e80ca04130c4808853093611c3dd17883d0a9343ef5a788b",
+      "dist/agent/provenance.d.ts": "a9627ead7d1322db231903888861690f38008887d496dca1b4838275e356cfbf",
+      "dist/agent/provenance.js": "da169d2c60647767580fe1385ba6d25071e2cb1bcc49160ed11633351f323792",
+      "dist/agent/provenance.js.map": "df1fa9acd1fa4481cc30774cec712da51578a78d76b29a635eeb7999853b2279",
+      "dist/agent/quota.d.ts": "d85dcb0b34dcfeeb0a778e6c162ccc3b17d30e847901814df8224bbfcd844b75",
+      "dist/agent/quota.js": "5bb9ba56c5206802c3ac4ef37f773338fbadd068f91dff9c6769f36bd56535bc",
+      "dist/agent/quota.js.map": "ba177210bcc7b0abfa0bcce85f21c59285f91d32b4b2bfeac1da510ac53013c8",
+      "dist/agent/review-server.d.ts": "1c84e32001c7899680a7a91d5fd32b98abb0e0e65b5b47841366a81db6ea4cec",
+      "dist/agent/review-server.js": "797cdcd42535fabe5701a58ee8edf1219473ad1ca3512bb850e6ee80994f73ad",
+      "dist/agent/review-server.js.map": "b628e997ad238351028cb9453e398d6cc3b364405d10d283e67f2e248fcae33f",
+      "dist/agent/review.d.ts": "a64726bbcb914733d0e231dc6215e2b82166b66c2f616e8cba7df4f7bf10d34e",
+      "dist/agent/review.js": "b7d28e9a75f5da69472d71c9e28350ba60cde9d553e44dd255868ba839d18d14",
+      "dist/agent/review.js.map": "fb8700cb3ce19e3d217762b44a6aaefce46592a72241c629e7ff994b59f7d30d",
+      "dist/agent/round-files.d.ts": "6a127c1cd409a835ca6c0dfbf99fdf5405d8ccaa54b537e7e58d47eaab96f207",
+      "dist/agent/round-files.js": "95410001fc7f834ec83d716f4f14911a23721b553fd764410727586a060d1b88",
+      "dist/agent/round-files.js.map": "a0e50d7bcaa76902acbffa8a1915f2334817bac7e006d43a8d416c6c53a50ddc",
+      "dist/agent/round-metrics.d.ts": "d22bb8e4c2dcac067cba20f7b1858a665818999f490c5802e677cf8053c1c3e2",
+      "dist/agent/round-metrics.js": "e697c2ff7f7d1c2d01c2f4d2a6e0bfa5825aea5d806204ff29adeed0c5c03e9a",
+      "dist/agent/round-metrics.js.map": "dbe2ab71cb7c3534edb0cad5f5fc3061bf3689aff6776309b3894574d0c7fb9a",
+      "dist/agent/run-worker.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "dist/agent/run-worker.js": "18519c6deb8d9304f3a5110e36cbb1daf9d679cbf3175f27579141b7030b9d1b",
+      "dist/agent/run-worker.js.map": "bb29e0a471885795f0daf2edfd02da201b74cc14d1f8c4de60103a64ee96cafa",
+      "dist/agent/run.d.ts": "04ee02a7bdd97fa600810e94766eee5eae012b6d9db0c404bb65a81f69be7f29",
+      "dist/agent/run.js": "7734fcc59813eb15668d203d3b2dfbc827d30680770b415f8ee1e18195d1a1d8",
+      "dist/agent/run.js.map": "3498a857d73fcfec0a69af9acc94b95cf27d274fdd73082db78b2389d44fd1e8",
+      "dist/agent/stagnation.d.ts": "922a6c3ee5a852b37ffff39dbfec2bfa0acb8d5ab42b9a399012ab8099830570",
+      "dist/agent/stagnation.js": "a12774e337524ac92a66986393324ac64ef9292364fd1e085bd926f4c29f25e8",
+      "dist/agent/stagnation.js.map": "35c2f7dfa0fa7f2a542aa70bc9a87aef50ad71e470920f417dd959d7e089c24b",
+      "dist/agent/stopped-round.d.ts": "d661213a9b1286839a9d7b86352d14c191c5152080d4805ee6af090ab67a770a",
+      "dist/agent/stopped-round.js": "056e76da7741abf14179dc85be99740ee4094b83cae335c9d47632bca38fc54e",
+      "dist/agent/stopped-round.js.map": "a650f9df8f426804b366e3b1aabfd0093f8d4a9c138abecc3b443e7657acba95",
+      "dist/agent/style-verification.d.ts": "56eddb8dc1015b605df39892c022c8f96df77611e48de32c57a37f87c6794445",
+      "dist/agent/style-verification.js": "946368b601358e1974bb4ff34a83628822f9bd4f39b7ed410fc9f5be137d9e2d",
+      "dist/agent/style-verification.js.map": "6502480480656983d26d374e9b03ecddfda014e310d847ed48c314d1c3e4d8df",
+      "dist/agent/supervision.d.ts": "bd71137ada125ddfa166f2b68d149f20a2f764fa34e41414ab124143c471475f",
+      "dist/agent/supervision.js": "b97798da34160e90716e77e0573527a2662705e9af80db00775f4e53bdd2d882",
+      "dist/agent/supervision.js.map": "6315ce812f3b39ec7d927aeae109e75479dcbccae4602291a94c6ecf935f5670",
+      "dist/agent/tasks.d.ts": "38eaed902774bac14a594815bdb1c35bf39a663dead8a44225b5e4726582a068",
+      "dist/agent/tasks.js": "e831b74ef5db881ddd26693d0812f762fc1f74b7ccfec7f3bede9ed030c207ce",
+      "dist/agent/tasks.js.map": "5d6c8ccebb12ff85dc4e3a8e3c4bc5619cae8593a07626260d1aa22700a47c65",
+      "dist/agent/usage.d.ts": "af9267816f46fa45d6321c8ebd92e8c4cec6d83fe6151372763c5dfa7c42ff53",
+      "dist/agent/usage.js": "ba27ca4232a8f67605496330a7eb0dfeb79624c4cc737468b6a81fa93cd57d17",
+      "dist/agent/usage.js.map": "d5d0b21bad43187e34f63bfea0ea6513f74b05f72510facc6537b2609755fe44",
+      "dist/agent/visual-comparison.d.ts": "e99cb18e2ee2297bec388e780af14f6d9363f6c8a36ceebcf5713b1238ba69ca",
+      "dist/agent/visual-comparison.js": "fb719edd554fddd40b0538c9d2575375df0cda6d669310b1134bba673f3a39bd",
+      "dist/agent/visual-comparison.js.map": "d2cbb9129bcb27b48ac72a886f80ec0625a1b7994bc5cce363e7b647fa482ff0",
+      "dist/agent/write-files.d.ts": "0016f1488ca5541b4d9fb1a933db2e22d7835d5f62e8d31b6c6413865a0d606a",
+      "dist/agent/write-files.js": "1833cee5a7c725207b094874a12c8d262b32ecdc6ffcbd7194e4d0846558d9c8",
+      "dist/agent/write-files.js.map": "ee34afbb1980230377dfba2b25f081778ac8da54b97ae814ab40e5d350a12efc",
+      "dist/batch-read.d.ts": "b83d1b5b0ff0a11e72e26cf1705c5ff911d6a5eab30a26fb4866e05e4690b22b",
+      "dist/batch-read.js": "08202c33a965319e48d249aff413635aa3a118a57e1d84a92366a1b675dd1067",
+      "dist/batch-read.js.map": "2ab482dcce2db35e8dd6f751a6a256d61da6689687df52893dcdd0c58d6f0f1e",
+      "dist/bin.d.ts": "43e818adf60173644896298637f47b01d5819b17eda46eaa32d0c7d64724d012",
+      "dist/bin.js": "8039474fd4531d4688fa18c1d5280596b9a34b9a2b0b41f86ef87e0dbd85f1c7",
+      "dist/bin.js.map": "3ae7cc8c3759eefef63dddf1cb6235f6dc608658653b9ba984f6f11be595de3d",
+      "dist/canvaskit.d.ts": "6676410ccc3f5d34236ade1028532e0709f541338106490621c9f79b626d5350",
+      "dist/canvaskit.js": "c9588e7828a9338bfde8af805f75cdb7bedcb2328492f9ac814601e04bfe8923",
+      "dist/canvaskit.js.map": "25e99a69e22d05cb2276eef25d832c5c6655cff2d76b1c1c84e28627728f1cab",
+      "dist/cli.d.ts": "4c58110b34b1c66c8e576383bb3279c39999d4130472cdaf4ee7106d7c6a92a5",
+      "dist/cli.js": "e961b7c563cb911dfba44ef88f1d22462ed7713ec4381e8e54475634c5d35571",
+      "dist/cli.js.map": "519dcc4c6d556ed22f3984e30cee20a3ae43d9a166a628629c45701ca57db7e5",
+      "dist/dataset-validation.d.ts": "c8d237fe2bfd86f2f939f82945f3a40c6d1498f6807b24a1b3e30eae004e7e2a",
+      "dist/dataset-validation.js": "b82a56af65da2e244b191eea3fdf02d05058edefae53fce07ea2ae438f974cb0",
+      "dist/dataset-validation.js.map": "83dd46b1970d1587293122a2c5341d0e48b036f3df9ee1117d347d42bf2ce70b",
+      "dist/decimal.d.ts": "6401935cdf6fcd3b13232b9389a725975aaeee0e2a3c6d0104b0df8002a8de12",
+      "dist/decimal.js": "d39aaf022823790bbc8f488beb7ca70277281dff43dfcbbae76d522e80b18449",
+      "dist/decimal.js.map": "250537dc1ab93248cba77449a0af40f046108ed56c322542edf2f513cfe29679",
+      "dist/display-format.d.ts": "5c1e902d3532ad88fd7740189fcfcadb0d40893b8499f4dcce6ed8104cb2ffa8",
+      "dist/display-format.js": "528efeca0a5dc3dc3a9e33bd0bbf46e19daa32b059295500c4024421268e643b",
+      "dist/display-format.js.map": "463b806f69924414ffb69d6b470b4f4dbde6451082d6d4d74f56b9414fdb2304",
+      "dist/draft.d.ts": "35a8f91f0e44cd474adb49e4c0fbb1005e95cc4092b425ee23fc7d650933c825",
+      "dist/draft.js": "d204f423e4790d7b879350dd12db8d818db8a0cf8cfcf1cbef4b772f1d29c678",
+      "dist/draft.js.map": "9f39fe7225acc8492c2eee6d679e624e504442c68bc8e6b2447eeac3463f4ea4",
+      "dist/draw.d.ts": "31b8c2912190178e4e1c809eec82905cb27c2afcce323474d8625285074b549d",
+      "dist/draw.js": "2a98771da46e37356047610bb6448a23e255331a7d81c484609ebe37aadf5853",
+      "dist/draw.js.map": "b11ae5308fb220564d5c9edc7c3441ce87d1661dd984327e02efb2df81b5d087",
+      "dist/dsl-schema.d.ts": "f32a4706d19093c6cac24d2d11e266b371e67f2445789594a6f93cfa4595b9e2",
+      "dist/dsl-schema.js": "da659ab0904dcf5a89826f242bb312337edf153aca82f5e63b5a841bf84dd487",
+      "dist/dsl-schema.js.map": "7c89e7cafa54a3180650009f8c465f0d210f21552479b49cce778c09edc9135d",
+      "dist/dsl.d.ts": "c25b0c31b0579fada9efde73f9f7de79f06b1e67ffdef1c89e049521a95fc5dc",
+      "dist/dsl.js": "c85f236fcf09e6120218b812e922510da3a4c9c3b09d7d64baf0278daae45b7e",
+      "dist/dsl.js.map": "46b589b54f070f0c5496a3a2257e04926adbabbabd2dc0d427285c3e75d26191",
+      "dist/element-path.d.ts": "a8c0828db60c4251e79cc16e7ea2efe72ceae2a393b913fa1242453c4cca517b",
+      "dist/element-path.js": "ac15ddffa015c4acdcc8c0ef783c47a3b7a639543dee987d752bd20a58d551ca",
+      "dist/element-path.js.map": "4bfc62f4b8a4062a39203275fb7e5d0d420175bd2cac2272642fef3accf0d971",
+      "dist/evaluate.d.ts": "3886e18fd49caf038f754a38c5f0c5c8745613dd1be5b757f02a40398a357fe4",
+      "dist/evaluate.js": "335070137eab5e925953a902d9bad2178d2eeeb7b1e9f84cd05633207cd400a6",
+      "dist/evaluate.js.map": "93fcfddb3041c7bc7a0bae43a8cbdef41b9f57cf83c7368882b6a0e682a86e5b",
+      "dist/image-metadata.d.ts": "55761b69cbd0fb62d25d217af1c7fd85c09235ee2b42252b93253b749cd8008a",
+      "dist/image-metadata.js": "2ea8552c4ce88e3e58f1c629cec26cc54252274e739c81a08e43a9d2c9efa4a8",
+      "dist/image-metadata.js.map": "0352ac777b43e801b20bd4a91e733fcf4345cc2fdf46293dc62498ed001d1fdf",
+      "dist/images.d.ts": "5fe3248ca8d41f7dc40d2290e7f2f13689beac6336a788843c4639e37e20d86a",
+      "dist/images.js": "cf43835b975400e6320d75f4e2aab61dc5213a715b8f1049d0f906b69964162a",
+      "dist/images.js.map": "ecf78bed6341d8c56042f6855fdcc5dbd7bb84b15862716641af0adcae3eba57",
+      "dist/index.d.ts": "1149fb7a846fcf3350d818180068e48a116b2cef9142cec1ae1ed63537e1574d",
+      "dist/index.js": "133b260ebe1f5d1ab95c7279ee822f7ed6325bbc9e30be99094198f9ea870fa4",
+      "dist/index.js.map": "e7cf558cba083f20c76aed4971491c6dca074fdb0ccd8e7dc943d3649f86fc72",
+      "dist/layout/barcode.d.ts": "a036c8040586105f59b9bcd67a77de5ad51580dfaf1649e4cd1b055d38a7cf16",
+      "dist/layout/barcode.js": "5f44dc07dcc7d5698c9c5b74aef49ea42980102dc72fc838e57e4e9fb6d56d9b",
+      "dist/layout/barcode.js.map": "b3d29ad7d05d1e710015f3effce3bbba396f06f6ec73853aa2961eee74847602",
+      "dist/layout/image.d.ts": "acec21396fa472c1f9962c4165ef2dc7d1acbb6cf00fe142dac85829f8f7d7b5",
+      "dist/layout/image.js": "0dfaa08e9c248b954b51fc1df256d1bf031f70b6dd4750d828cda47cbf8a63b2",
+      "dist/layout/image.js.map": "0999929087f129b99ee55b8964680befa0d9853fe9e78fa101c74e2151f15b5c",
+      "dist/layout/index.d.ts": "69b07dfdf23074c1184736432146d9d6edf46481a35eecb1b5450251d08c7853",
+      "dist/layout/index.js": "a2345364650ff52dfa94bb3418456376e304cd5a6dd78c431d8ee49cc8b9d06b",
+      "dist/layout/index.js.map": "fc3ea17e86d5b6799593267deda0281abce02b0342a382824ff4f3f49d0dde18",
+      "dist/layout/qrcode.d.ts": "1634d9f69ddee31c7787dd71a2ce66edb44567cf0c071601b58795cdcdf25553",
+      "dist/layout/qrcode.js": "e069c9da4e7180c6a1015255f71824196dff9e0018bbf7bdafd51523b833c445",
+      "dist/layout/qrcode.js.map": "64758ae5be80f04bd5fdd10f27e59154002aa859be6085cb6e00f2eb67a5b7f7",
+      "dist/layout/shapes.d.ts": "9a820742866e9a241c6f1b551be971e6cd75cd132c87e9f2dc50a3f01fbd49a1",
+      "dist/layout/shapes.js": "36b5161c3210cdf85fef9e850ad412d711464acce9618b5f70acbcca14184af5",
+      "dist/layout/shapes.js.map": "bd17991737ee0f8ae5e48dc70fb8214a22172076ebdf213ea924f08d508ffa7d",
+      "dist/layout/shrink-groups.d.ts": "c866f63efba3ef6c5ef809cdfea9b6f030d3e5ed59bc5245f69d55c6c8b1f1c1",
+      "dist/layout/shrink-groups.js": "172d6d396c52d29700930b0102573006aa7afcac46a28bec528fee62493f54e8",
+      "dist/layout/shrink-groups.js.map": "f0397e0dd6553828f177908f372394aed6043eda6faa9b9129c997194e406e27",
+      "dist/layout/text.d.ts": "fdfc601403709eb79577d78e36b1dd28e7dc436727fb6456a558d989e01924e9",
+      "dist/layout/text.js": "fd72d74b3dbc71ca9942d1ca74d94e3004bf049aeab43c2efa34ee96f7cf1839",
+      "dist/layout/text.js.map": "f4fd6d9ee1fdc8b6bee4c0eb3a9268a4b2a7bf79369ef748191499f880670ae7",
+      "dist/layout/types.d.ts": "a955e4b4f8e33cb4ffd1d3349f8887a399a8615b4ec74705dd1959a567c6aa22",
+      "dist/layout/types.js": "80e4e5dde995baf1d0ffef9c8a2ee96a59e7cdcc9d56cbb1546cbb38f6fc7cf2",
+      "dist/layout/types.js.map": "76436a79ba0474fec555344b426c02b861565b585f1c02808841adb0e1978dd3",
+      "dist/local-access.d.ts": "38ec709a9be8b290c7609c4cbe7b243b860ec15f1d256d35e2296f4fab09fe37",
+      "dist/local-access.js": "06c732726662321c99a4cb02edc5d9e195592830e4574f9c75bc271b68666f9b",
+      "dist/local-access.js.map": "0ae7a2230bf3b038fa83f2ee516946887d1a2a67a6f8098752e28cf32626eb45",
+      "dist/local-commit.d.ts": "076139a3aac357a322a8750fbb54a0ffb5f6a53928ed3113eb403df856c31176",
+      "dist/local-commit.js": "80ba66174a0f88c39447c01d474ce67918cc83fcd40f333644f7630f39ca33f7",
+      "dist/local-commit.js.map": "db138c313df8b699dc18f93a89b4cbe62d3c106ec7ac744840256b4f5056068f",
+      "dist/mcp/files.d.ts": "2d3c76272133094d5ef9f0a6f5c869d0db487c1955f9abdbeff176709e24833b",
+      "dist/mcp/files.js": "89fae7a35800589d168cf7d593763fb9e72df4254ea5dc042cc3cd22ff29ecec",
+      "dist/mcp/files.js.map": "71d65cd09730862fb36e70601f8b02e857bd68fb21f84abeac50d8919b04c671",
+      "dist/mcp/outcome-feedback.d.ts": "22437283043bed9c224f36bee03432ccbfb85ecf889974a9b90764c7a98e9432",
+      "dist/mcp/outcome-feedback.js": "e204a2f62aa36c319fdf8383da05cd452833382858f11fa311df7743b74abaf7",
+      "dist/mcp/outcome-feedback.js.map": "ee98f5440eadf898994017077c7574ec624cc33830e9b1ec0291beecd639320e",
+      "dist/mcp/references.d.ts": "7df30cc069a3be37088b99b322ebd7625379b92bfd3ddfe80a0e3579bc4d95eb",
+      "dist/mcp/references.js": "3ce8ae4728e5f482628e29e16c94b66129ab745bfd0e69353856ee563c2f9d68",
+      "dist/mcp/references.js.map": "25b37700e05b2ab4a2d81744e606f05d5e1c748630d53e92018e98496b44d795",
+      "dist/mcp/server.d.ts": "0b284ebf672ff4e5181a6376925a00e33292fac8de1134a71d7d5a4257e0162c",
+      "dist/mcp/server.js": "8d9ba574a77042eb6a978c68f24bdc9261e69e26646e4379ffb46cc77fd38827",
+      "dist/mcp/server.js.map": "38680143bb5c8296a5727f26aa64818078126577f701df430f13822fb0f45b0e",
+      "dist/mcp/tools.d.ts": "54a80aa31cd76082433ccdcc5ef007502c98fd5a2e2413c264065371ca143679",
+      "dist/mcp/tools.js": "d99648ea176d973732fde6a8e8b38d4293a38dd5f4f27b3a26b1289df8abc31a",
+      "dist/mcp/tools.js.map": "b0750d94070c0b8659d2174e8d02e32a0ab65ac24cb95baf63bb4d1855bcde69",
+      "dist/output-records.d.ts": "12696310bf0b7aa1f58116ff9946f699617135c8dd16f8bfd26562961e433d2b",
+      "dist/output-records.js": "baa407e49e785a08feac91183aaf61e0c3fd3e46abb3f1233c4b2bf1cd1a4de8",
+      "dist/output-records.js.map": "4c8b598a0e39daba670ff80067aa3b3ce7725193d84fa37346718fc406d78771",
+      "dist/preflight.d.ts": "89fd8c5bfd7cde83bf17227d7bb488b720cbf467c850a818508078d66a9521fc",
+      "dist/preflight.js": "64536bb3d5d3b654a59c4eb4ea584ec5a57313fff79d860c260b7126393ac16c",
+      "dist/preflight.js.map": "1b9e0153ae17ffdd82655e814e937ead5933784936bbeeb384fce4fb36c98649",
+      "dist/problems.d.ts": "d325dd8cc14a31f983d3041087746d14009d65de8c7c987f67af2d9c841a24cc",
+      "dist/problems.js": "2c8b77a29516fbb599b868c89e76a42c0a66a56ef0c2c1e134e25d45e042b07f",
+      "dist/problems.js.map": "1d35830ec63996c9ee8117fc07a693c5b34835a28ffdbd0846769a78fca44579",
+      "dist/push.d.ts": "498d66f69108df83a366946f612019132f4e391f98789d0b3cc0c28d62dfb278",
+      "dist/push.js": "1c6dfe60c978525db1290b2cf0439ad7dfe1476be3507eb8a8f2567781efaad5",
+      "dist/push.js.map": "4d47a4cd0dcbaf71e0c812f764ec26da38243ae4422052e0eca6304ac7f2fddf",
+      "dist/record-files.d.ts": "82f21ec101747ca8356718efd0d47c17526ca9929f09355c36deb42d798984d9",
+      "dist/record-files.js": "7719ae129bcfc162a145ffffd2262af7fffc7e5d675880b77c32a895e893cbe1",
+      "dist/record-files.js.map": "8fd3e99555fb93210b7c136c1aa31239845644316423350657e6e398ebc562da",
+      "dist/record-input.d.ts": "e4fd2ed18d5e854affa68c619426dbf0bc433d0b44c817b699845015964b6687",
+      "dist/record-input.js": "9bbda90a6a6d5de261d39a0c4f150ba9538921ec4faa4dc5da0d0291d20cdf15",
+      "dist/record-input.js.map": "987b03342a5ed00464f70757b18833193b884891e96d67ffae12137979d30781",
+      "dist/record-stores.d.ts": "2fe752c595378b3d48892e1e3f05b8a9c95af94dc841865577e8315d4e22567d",
+      "dist/record-stores.js": "42ce8308d14b45d43d1d0c984b304efc585d826a4307765b405de22dc8544c35",
+      "dist/record-stores.js.map": "c2960f2f2548f1014dfb9ab555b92577fbfc6bdc5a12876d0fe0b43d7c624b32",
+      "dist/render-evidence.d.ts": "cce581440da331b3afc59c4b63e50e650b48bb3e10809f1ed9a69ebbd2dade1c",
+      "dist/render-evidence.js": "82ebb022b158041b7af8b302536e8ac573bf2007377c55f61e596d57b76fc8bb",
+      "dist/render-evidence.js.map": "a509e95a1cd085408690b60ee298b3cd1a21c6f240f72a9093c8d0e4fb64da84",
+      "dist/render.d.ts": "093e3fc7cf6fc20241daf21f87e193910662ca94b80ce87dadac489fb545c378",
+      "dist/render.js": "35ffee49886f17d7b2683f6073d14c61b31a145e1617ebd463d4c35d2cdc8431",
+      "dist/render.js.map": "0c880ed3cb4872c9f879ff98364ae29cba57ec043b9a904bdfe4d51952c2a403",
+      "dist/renderer-build.d.ts": "d19e68b4bf747ba27f681fe549a4550f09094f2cadeac6c3c5a7380b27a25f31",
+      "dist/renderer-build.js": "d448d41be800942becd3cb1ba90d47baebb01672676da3ecb45967ec55113e9f",
+      "dist/renderer-build.js.map": "bf59121217ce241d5a60a47f345942579f4ff472f8c434f7eaa89e30caf81f78",
+      "dist/request.d.ts": "c5f42fa63f0d4d04cb8b924f309e9ba605954eba0adbf941cce8de062fd3e20c",
+      "dist/request.js": "bc862b3927213d6b5b80d58110324cf89c850eba4fbd7d3b0b515552d2fb464e",
+      "dist/request.js.map": "e1f507c47883a7433e75b28812da3467701cac046c1c4044853f6f22b8d92e19",
+      "dist/resource-impact.d.ts": "034a5b48b8b9e0c8da3afc2e9c8aeb307f8b1af2846e8e0c27c2c0e71511fbbc",
+      "dist/resource-impact.js": "30d709a2524e345342a63a4432cdd1be5f31f1e122c19e86be88e4a72cc40ee8",
+      "dist/resource-impact.js.map": "11b5d7b0f490d71d20053714f599f3a7ab6cace587a8a4c27ec6963c2a9eefaf",
+      "dist/resource-references.d.ts": "b664fbbf25884e2d74b0fa0fb39697cf5c839c5208000f39e9bd22d000014f6c",
+      "dist/resource-references.js": "3968742a712105e8702a3f05b7e4d14a277e534363d5c9383f436a2dcc1e6529",
+      "dist/resource-references.js.map": "3b2c3f710b896fd7b2fcaa12630eb403379a7e9b105e669b3687984b1a989eb2",
+      "dist/resources.d.ts": "1090417a62449617164813045976970f6ce813a0cc166faab4c2c8bfd26cbc46",
+      "dist/resources.js": "f984f4671f33a14830d2fd3236cb4fd7fc71d60c0ccdf4919a42fc11b08cb2ee",
+      "dist/resources.js.map": "f2040fed72485306e4c29ce8e83fb917792d39e05edb61ef50a0a6521dbf39fd",
+      "dist/schema/builtins.d.ts": "d7b3ba283d686ae9c35403eff6efa1c7ab9185a628f2222b3b4c768aae27e2ab",
+      "dist/schema/builtins.js": "d5b8d706f9bec5f03cfaa010979884bf7b05ecc13d877fbc42d477afdbfb25db",
+      "dist/schema/builtins.js.map": "bc4f54744d80d2f4aaf08226191d1faaafda53f4e55647c4e17833f554b64adf",
+      "dist/schema/compile.d.ts": "90346d61b351fdb0cefb25d4412a62629903a0b100ec9cc62b2de47537178f2c",
+      "dist/schema/compile.js": "90a4aca9e8365d6340e314b41be407a7683778d135483a3c57efdfb451ed121e",
+      "dist/schema/compile.js.map": "de3f50545c2f8bea68da1aa9e0578f5944ec89cb14cc55357ad9057afd710a9f",
+      "dist/schema/formats.d.ts": "748cbb26d12bc4d0c7e2c948f7e2248db0a51baca0212752190d029bd2e9bbb5",
+      "dist/schema/formats.js": "56344e091ceb4555b2d7880713f7c1c03bdf0b3aff144b7a68da79d62ce56354",
+      "dist/schema/formats.js.map": "76b5ed5534d7304c650b32765cb590f5e1bde295d829208fef3bee56311e3ef9",
+      "dist/schema/model.d.ts": "dd696e84bd9e4fcb5eae57406c9f9cc34920d48b32d99eeee79461e86e656500",
+      "dist/schema/model.js": "1c4e7942623494bba19a782731bb8f2964bb84e8ed6d92bc9f43cd80333063dc",
+      "dist/schema/model.js.map": "54bd1892d845f8482738a4460dd1f5f56ce89afd846638373ed7dea1992d2c04",
+      "dist/schema/parse.d.ts": "f5a3f5dc2c5a7789d2e8d5b45c769aa6965235825cb41b28699c3aec524b181a",
+      "dist/schema/parse.js": "13f8440d85a6387b5b432f702d2ca3153dff9d27e5c57e316f9a52ff20493eae",
+      "dist/schema/parse.js.map": "935250bff439081ce0736b25dbee88c6377ea00805470c7e03bd2efcbcbc8680",
+      "dist/schema/publish-files.d.ts": "b5c498d47fcdb048608e791c24b4d5b2c6bf0248167acc1226b9c0b66cfc9dd6",
+      "dist/schema/publish-files.js": "7b6a9424989f628ccc7cc83dd35703a4a3588325c2722c2d2fc910a867e374cc",
+      "dist/schema/publish-files.js.map": "e10f75b14f3533d53e7e2fc673e33e29d884754088d1d436096038829803e3cd",
+      "dist/schema/publish.d.ts": "0b339462838236e12bf64fbd61f3c5265ad88b5c511857562c78946e59717d01",
+      "dist/schema/publish.js": "c9e0c3d703af793997bad715dc4d20751fac21091e913f2324fada425afe6653",
+      "dist/schema/publish.js.map": "99a50c04e948853357e1691bd7a463a94f6e412db8bb0100c648cab989220d7f",
+      "dist/svg.d.ts": "5a56bbba473dc89a5f11b522d3055f72001c33208c302b338b35b448851756d5",
+      "dist/svg.js": "d03588ea5b8c77a34085963f5efa382d742b672023813f18837c769018fabd36",
+      "dist/svg.js.map": "cd7e3b206e0c447abf41ddd081dbe158ed077cf4c758255caae996c17884aeb5",
+      "dist/template/check.d.ts": "9fe1b75e7c21032b3f35ffbced2e1aeecee9908e86fa2a73d84338d6f68af275",
+      "dist/template/check.js": "bdeb9e12914a5b00647cd6c97dc99f02c5ae7aaa83919a4f4a24eb23069bb84e",
+      "dist/template/check.js.map": "24a7b3915ee0f012d4c77a12a6ec8d2c91eb5b15443cb37e1e6d93df555cfe92",
+      "dist/template/declarations.d.ts": "5f52ce1ca2797d8431c37839e61f3f70eb2c120b5b3e4fd4a6a0bd92c93af926",
+      "dist/template/declarations.js": "5eb3e19b2e5fc9499ddc76c73825bbc21dcb15faa35f8e0ceaacfc53b433bb32",
+      "dist/template/declarations.js.map": "177a94cc4c453f57a2d4cf32da1800a951b6ef93cba780e6277a3e14c27bec72",
+      "dist/template/describe.d.ts": "2cb629c81c10f45ffca9438d07000250c858852756ae596ef8d30a6f6e6a6591",
+      "dist/template/describe.js": "903dad1ffe1836bd51c164137b6a7147ca47c22db5e61a9c7e16daf91ca9d4c6",
+      "dist/template/describe.js.map": "8a7bfe05ab1c2e23e53e8735851c43dad4553481a20c83d3b9a88e7a1d87e35e",
+      "dist/template/loop.d.ts": "c82b9b44e85088f54e89fb1fcded67d87f9ecdea5183ebce07eb852de58b0380",
+      "dist/template/loop.js": "d87e3804f1331aa14c42dc707bdba212fc75e1e9107c8f6a06567d9898a1d17e",
+      "dist/template/loop.js.map": "df4477e08cafdb4d09e2e1c963ad3352746a6b5be1be420cd32358ba24345105",
+      "dist/template/missing-values.d.ts": "7b420b6bec1394c1396b86855817387d555417d886cdd1b5dc1a6ca34424d3df",
+      "dist/template/missing-values.js": "cfe71bed7e6df5ec4f1d51b4338329a18b7ac869bb440095f437efe7f7a7b023",
+      "dist/template/missing-values.js.map": "16c59206867653a86f299f6e126da355958e4fffc7be0248552944c0f39f9496",
+      "dist/template/model.d.ts": "d89d0269facab9a10d43fc03a864df4460d0105d89a0a3ecba5f4e778a86484b",
+      "dist/template/model.js": "1219e6857de6a29dedb20c18c8200bba81ead0752a4bae6ce775eb9e466e1ddb",
+      "dist/template/model.js.map": "85603d0a247323a034fed997cde1543975970f371a7d917c621bfd37f0fad2a1",
+      "dist/template/parse.d.ts": "affd1b306126d880dd14fd107159f6b2f0121bc75125ef399c1a9c59526bcf64",
+      "dist/template/parse.js": "f1e95cf26443612f82849d4bd8dea999c9eb0ace3fc1c9e7afe5561836a45d2f",
+      "dist/template/parse.js.map": "1f2e3f3c80d0318a9a6d31fd86e152e665bff8df87049205ad21e2032765ea8d",
+      "dist/template/program.d.ts": "86825b8bfc89a7c6cc9f7c3b4d1c37095cbdf1a94652d1df1cfe96a2a3be4efd",
+      "dist/template/program.js": "824e6211590bf668d73bc496f169bbd59f9c351803fdaa37677d3580f1cd537d",
+      "dist/template/program.js.map": "759bbd2dd547578f22fea691335422e278c7065013a7d81e6a4a48c06cb4628f",
+      "dist/template/scope.d.ts": "da1bed71dfcd69420899fd7b64c24c87f9c5dab25ab479c5f4c2d8ffaa6bc8da",
+      "dist/template/scope.js": "b020ed8023086b49a83cdf1339364b2bf14e24bf4ca5b35f1e4dda5c30078359",
+      "dist/template/scope.js.map": "feb418470febb98f7b92265bb65c7c86d10be3951dda00c408dd9b539faeb19e",
+      "dist/template/types.d.ts": "9094bc16c3e0e9cdaea15c7bc31c1944d3db017c594e25f95b972c811d20c44e",
+      "dist/template/types.js": "a71d406061e52393b2a059e3c6003738c1fb01d18082eabe7ec59742b9d2f5c8",
+      "dist/template/types.js.map": "a7da00eec499d8579b486d9e854355c7b55f8ae44bb1d790d0a92bb2545cca20",
+      "dist/text/fallback.d.ts": "ee9fe4884468f97e54be54068f4c1460ab0f497d998efeb9a3e5ce3717be458d",
+      "dist/text/fallback.js": "0b874f67fe1063426aba3bfc847aae59643a91b990324f8fb4c602a29243cb95",
+      "dist/text/fallback.js.map": "140a3472cbedd46a2d748690aa5f27359b16b609f0897e66a812fcaa786b9c06",
+      "dist/text/fonts.d.ts": "e668114847c963910acd824fe5aca9aa1e09c17792bc5c4866ad85e85ab3ffcb",
+      "dist/text/fonts.js": "b4331c7a7836dc282cbc73f852f6d2bbebe6712a415275ac3c4b2b68cf8e657d",
+      "dist/text/fonts.js.map": "71693c92c278420c5f2b06cfe8cf79179c155e07a4eb8f0054d91a88c4b3d0b4",
+      "dist/text/opentype.d.ts": "1cda15a0abeaea6909ab8f31c235f38eab2d635103e8c2d9ebd6008ebfccf0e0",
+      "dist/text/opentype.js": "565206ce042fd5a83772c8b9a29da8a3c2c17cca9f9f7d84596a4613baebcf7d",
+      "dist/text/opentype.js.map": "c0ec06af7805160a5f568f67b0ef7df80075d2440a9f0593b6f291d21070c691",
+      "dist/text/scripts.d.ts": "a7c418c70983c9a3a32d07e49bc8a40b6ff0652de86b67d216032d41fc64c677",
+      "dist/text/scripts.js": "5f93764b2164b70b9f38d326fcc5fb778d6c4eb9b4177a4f7dcc0b5a019633fb",
+      "dist/text/scripts.js.map": "06a1848f4d61ea7c2e020e9d90bde11ba7ecdbe867667d4cbfa3a458a38214ea",
+      "dist/text/shape.d.ts": "fccf7dac2e21785358073a7585938269b203f27509a2db2732d5ad391003f023",
+      "dist/text/shape.js": "43bec195dce1cb4a512e068ed94af1159bb254a4a05e074c44372048855ed54e",
+      "dist/text/shape.js.map": "3927542646a497d360a245b46b7d36e384999fb911675f48ee5e163a014fcec6",
+      "dist/text/vertical.d.ts": "f3bccbefc6df2b0b79b8ba7906828c5600d1b457b559e6434e53ddf51575f07f",
+      "dist/text/vertical.js": "32d4f8f7120f87d469e97be8e9c62b40c4bf8dd8ef924c4ff120287ef10d52d2",
+      "dist/text/vertical.js.map": "e97f1aadff0ceb3dd64bac566a849266ff748084439edfc1d70b0367dacce4f4",
+      "dist/units.d.ts": "9e24d36cf282687ad8dbac0e81444515eb116e94090d0ec51e3b12a445b10cc3",
+      "dist/units.js": "57515f7fbc81de5cf9db8745d34cc4c70a2124db1db03efb23bfdd10ee837365",
+      "dist/units.js.map": "e68d8575c0bec274e1f9a520f695a9138f13c2dfa430578e98f863d934d9f645",
+      "dist/util.d.ts": "1263fcaaa06debf3d8cf18ae1050aae63b8875ab55cd8c67f83aef100c8181ab",
+      "dist/util.js": "dd0f942e624d7f541ce6b7a418619837a774b3728857a6521b93fd98cfb58203",
+      "dist/util.js.map": "0eb154f49cc090d068042b292b831c327ea293815e305bf9dca53fcf18ea8435",
+      "dist/versioned-resources.d.ts": "abc74fd4f8f07396714c69c7d27847690c5c5d52107acf628f87f13ab8340353",
+      "dist/versioned-resources.js": "ba19499c77f3c0ce1ed68a420577dbf13bfe5964ed80c8514851eca012a09f74",
+      "dist/versioned-resources.js.map": "b3d253792eae954fe9345e6a80425f9fc54db7e32cbd0452d896bca4997791d5",
+      "dist/workspace.d.ts": "a7be42a7d7292a014a901ea450590d4948bc5e4b9f6517e932bddb09ee9debfb",
+      "dist/workspace.js": "0fa9b49acdcd71992be2a6e400a46dbd07420236608f21ad5c08dc50c6823809",
+      "dist/workspace.js.map": "e977ca2f259894b7c719cc95d4b8f3850b9e6d46a5a855a08d2973d072f8def6",
+      "package-lock.json": "sha256:34a85e80e41fd49eb18946ffd568d0cb87378b06df220a88bb93e42de091798f"
+    },
+    "mcpContract": "0.17.0",
+    "materials": {
+      "agent/briefs/_template.md": "b1e3449e90b4804542bcd9b875944123eaf236cb4710dab93ca4c5fc42ace18f",
+      "agent/context-catalog.json": "28cd984c5826aefd10810ef38733d9e1023fa44cc08e37c432d5a29e5efa3cd2",
+      "agent/domains/_template.md": "000dc69a5869f6f0cb7c797d8a69e519d6b3d455834aaf94f22fa6c71e4d6f0c",
+      "agent/domains/price-tag.md": "f4b21a3d761814baaca90f34f5b6b5e370c4feebd146ad618be14e8cb0e3d9ae",
+      "agent/domains/route-sign.md": "a63c5a6b3352ced683773cd255d3173b4adbc64a41b62ccbc7bc06307831cded",
+      "agent/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "agent/README.md": "7b68a94d90b6e2b1e41baa6a97337536099ebaa872f1c8fc33e09fb3e80e3003",
+      "agent/reference/data-definition.md": "4651af0bf6c015a060ca9eb87ec2fda66603739c013a9780064ca9df82b5ea79",
+      "agent/reference/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "agent/reference/template.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "agent/tasks/dataset-extraction.md": "993227147e04a20539169c680ff9d2c36c5a37d7e5a6f3a19d942da0a543fc71",
+      "agent/tasks/definition-extraction.md": "fde5236a6ff82e88379fa6af0cda5cdf09ce606987ded364a7f9fd9b8ae25907",
+      "agent/tasks/next-round.md": "0d96b6dad57a680f0dc03dca59fe8d2f865dbc1e879776f50dddaf3e778a8e95",
+      "agent/tasks/template-design.md": "3825a8a6b4dcc4f4a4faf7ab493136c809e6c119aaa4c3b913e48db709a808df",
+      "agent/tasks/template-revision.md": "6bb1dd73863e977a7be0cc45d75e8fbba6762561262e4739118b69fa3385a766"
+    },
+    "inputs": {
+      "en-template-design/sample": "sha256:0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991",
+      "en-template-design/brief": "sha256:14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19",
+      "en-template-design/reference": "sha256:cb5a4e4ec5cf79dd6ebae65a62475b2c5dc8bded7facf3c5bc0c5b6fe276e72e",
+      "en-template-design/feedback": "sha256:ef63fd1704338db938e1f45f901591e7261be30f54012ba8ebf5bdd08e800b09",
+      "en-template-design/policy": "sha256:8c60f644c92d6845c1209dd697199d5800dab8a005622c909d9b48dc835c4002",
+      "en-template-design/seed/agent/candidates/template.json": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0",
+      "en-template-design/seed/agent/docs/brief.md": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19",
+      "en-template-design/seed/agent/docs/dsl-reference.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "en-template-design/seed/agent/docs/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "en-template-design/seed/agent/docs/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "en-template-design/seed/agent/docs/request.json": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a",
+      "en-template-design/seed/agent/outcome.json": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85",
+      "en-template-design/seed/agent/sample.png": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991",
+      "en-template-design/seed/candidates/template.json": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0",
+      "en-template-design/seed/check.json": "2242bda3872e70a9b03c183bdb988fc31819bf6a6b90a1999ce4b372138d3616",
+      "en-template-design/seed/checkpoint.json": "0e64d5b356e3a58d4082df2391045144bc34e2d54c0f163eb0997ab226c989b7",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/agent/candidates/template.json": "754084297f469122f63344606cf00647b9ee6e496329c45dccc3e45b667011d0",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/agent/outcome.json": "65efbb24f3c0fc320c650b33b01d2a246aa9d90e6b1a793e72f29d35be8fac85",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/basis.json": "fae418385a1e9d9a82791a56274cff1547bd0cc7963de2500e1f4e2a4cdf1feb",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/record.json": "ba43efe694adf6d37e5645a10c6d9dc245afa6ca913796789528e36b8a1ad9ab",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/reference-image": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/snapshot/compiled.json": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/snapshot/dataset.json": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7",
+      "en-template-design/seed/checkpoints/c1eea2c1-61db-4a25-87d7-26aa132b0444/snapshot/schema.json": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414",
+      "en-template-design/seed/execution-owner.json": "68854599980a7f4ecffc6b051c73578490e5fa5581706dd92e651a0025eb4961",
+      "en-template-design/seed/execution.json": "a2ae1fc4fa9df1236cdbf1c437fc23ee4cf1f979ae58dd2a2d6292122eb9293a",
+      "en-template-design/seed/logs/materials/brief.md": "14b025587ad0748bffa80105ee1677b17f7b9cb7ddbea63e98a3e34ab4835e19",
+      "en-template-design/seed/logs/materials/dsl-reference.md": "10134146dc9a629ce8d1d3cffc575225a952994e4db886c8e891259f39dabea8",
+      "en-template-design/seed/logs/materials/guide.md": "83a4f196ad5061cae6f3a5d09dace3acf2656f86c94dc8a58c638c26390bbe9f",
+      "en-template-design/seed/logs/materials/outcome.md": "029f1ddcab28e2f9d4d9b346d1ca4a45a082506c1fb043d17c4c6eb2569604bf",
+      "en-template-design/seed/logs/materials/request.json": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a",
+      "en-template-design/seed/logs/mcp.json": "366d59993fa2d857617fe4f99002c74a54e29e5e5eb135deceed80e19439c34b",
+      "en-template-design/seed/logs/outcome-context.json": "658fb5e42f17edf3641dbf15cc446492dfacd5b326492e750cd22165026262a9",
+      "en-template-design/seed/logs/prompt.md": "c6fbb140f67b889a231606c6a41f6fddd2d3762e23421149ca353699d86286c5",
+      "en-template-design/seed/logs/provenance.json": "f3dc43be40e5809d74b0b9866cf97948c8145f779b7ace032fc26cd030f54eba",
+      "en-template-design/seed/logs/reference-materials.json": "06498a3d7a6a1e123db5bf2be0d140b5b96f6b0e8e0e1f5a845a4f8402bb754f",
+      "en-template-design/seed/logs/reference.json": "9cc01af587bf8cdb15366319ce815192c6fbff3b6291007d10b23653f48eb74f",
+      "en-template-design/seed/logs/sample.png": "0c2bde1aea5b213455bf87efb0f80b3f5f860491f46bda8198862769b00ce991",
+      "en-template-design/seed/logs/stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "en-template-design/seed/logs/stream.jsonl": "68b0104ab684f8973e5950b48c06f6222a168cf0c219fb73f714617ae7494e3e",
+      "en-template-design/seed/outcome.json": "f8ff6b98f3bc563bb0f631e9dff9ccd2366a309671e96dc71db0320fd5223cf9",
+      "en-template-design/seed/request.json": "fbe8790ed8da531a5cb4614a65fabf71562b38af411349aa3048c415c22d0d4a",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/font-hei-bold.bin": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/font-hei-heavy.bin": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/font-hei-medium.bin": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/font-hei-regular.bin": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/icon-hospital.bin": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/icon-metro.bin": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/identity.json": "68b97150c7ff8b823c9792f0480bbd2cbb428016963a5a8650b7c0d4541e9a1c",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/landmark-1.bin": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/landmark-2.bin": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/landmark-3.bin": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/landmark-4.bin": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/resources.json": "16b4f2be7dc041da80f21ecd35085dc9daba75e4f79e685ca7e0abee377365eb",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/route-no-m402.bin": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/test-quadrants-jpg.bin": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/test-quadrants-png.bin": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/test-quadrants-webp.bin": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "en-template-design/seed/resources/fd63c41a-e0ff-480d-9678-448d8fdea7d9/test-vector-svg.bin": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "en-template-design/seed/round-start.json": "1dae1479097d518d71e0a3fb44d6a8b7dd840f712a7032fad87782821eda098b",
+      "en-template-design/seed/round.json": "0415da950cb479404c963686d2e172fa5f99650fe5fecd0e628bea1775c60469",
+      "en-template-design/seed/snapshot/compiled.json": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c",
+      "en-template-design/seed/snapshot/dataset.json": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7",
+      "en-template-design/seed/snapshot/schema.json": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414",
+      "en-template-design/inheritedWorkspace/compiled.json": "6f661401fac0a17da480646b145b593a942a1224abc817ec79f29a40e0c6ac4c",
+      "en-template-design/inheritedWorkspace/dataset.json": "93f3cfa592cdbd63298be697c00fc17715573712e17a536f44f22f18437a78d7",
+      "en-template-design/inheritedWorkspace/schema.json": "0b5c0258600ebc767385f23ea9e95eba23d315551a09e21a6333181d84d35414",
+      "en-template-design/inheritedResources/resource-bytes/font-hei-bold": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "en-template-design/inheritedResources/resource-bytes/font-hei-heavy": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "en-template-design/inheritedResources/resource-bytes/font-hei-medium": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "en-template-design/inheritedResources/resource-bytes/font-hei-regular": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "en-template-design/inheritedResources/resource-bytes/icon-hospital": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "en-template-design/inheritedResources/resource-bytes/icon-metro": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "en-template-design/inheritedResources/resource-bytes/landmark-1": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "en-template-design/inheritedResources/resource-bytes/landmark-2": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "en-template-design/inheritedResources/resource-bytes/landmark-3": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "en-template-design/inheritedResources/resource-bytes/landmark-4": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "en-template-design/inheritedResources/resource-bytes/route-no-m402": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "en-template-design/inheritedResources/resource-bytes/test-quadrants-jpg": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "en-template-design/inheritedResources/resource-bytes/test-quadrants-png": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "en-template-design/inheritedResources/resource-bytes/test-quadrants-webp": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "en-template-design/inheritedResources/resource-bytes/test-vector-svg": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "en-template-design/inheritedResources/resources/font-subsets/LICENSE.txt": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+      "en-template-design/inheritedResources/resources/font-subsets/README.md": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda",
+      "en-template-design/inheritedResources/resources/font-subsets/TestSubset-Bold.otf": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def",
+      "en-template-design/inheritedResources/resources/font-subsets/TestSubset-Medium.otf": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba",
+      "en-template-design/inheritedResources/resources/font-subsets/TestSubset-Regular.otf": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1",
+      "en-template-design/inheritedResources/resources/fonts/SourceHanSansCN-Bold.otf": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "en-template-design/inheritedResources/resources/fonts/SourceHanSansCN-Heavy.otf": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "en-template-design/inheritedResources/resources/fonts/SourceHanSansCN-Medium.otf": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "en-template-design/inheritedResources/resources/fonts/SourceHanSansCN-Regular.otf": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "en-template-design/inheritedResources/resources/images/m402/icon-hospital.png": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "en-template-design/inheritedResources/resources/images/m402/icon-metro.png": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "en-template-design/inheritedResources/resources/images/m402/landmark-1.png": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "en-template-design/inheritedResources/resources/images/m402/landmark-2.png": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "en-template-design/inheritedResources/resources/images/m402/landmark-3.png": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "en-template-design/inheritedResources/resources/images/m402/landmark-4.png": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "en-template-design/inheritedResources/resources/images/m402/route-no-m402.png": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "en-template-design/inheritedResources/resources/images/README.md": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a",
+      "en-template-design/inheritedResources/resources/images/test/quadrants.jpg": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "en-template-design/inheritedResources/resources/images/test/quadrants.png": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "en-template-design/inheritedResources/resources/images/test/quadrants.webp": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "en-template-design/inheritedResources/resources/images/test/vector.svg": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "en-template-design/inheritedResources/resources/resources.json": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+    },
+    "resources": {
+      "resource-bytes/font-hei-bold": "sha256:62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "resource-bytes/font-hei-heavy": "sha256:88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "resource-bytes/font-hei-medium": "sha256:a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "resource-bytes/font-hei-regular": "sha256:e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "resource-bytes/icon-hospital": "sha256:c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "resource-bytes/icon-metro": "sha256:ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "resource-bytes/landmark-1": "sha256:e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "resource-bytes/landmark-2": "sha256:30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "resource-bytes/landmark-3": "sha256:4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "resource-bytes/landmark-4": "sha256:07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "resource-bytes/route-no-m402": "sha256:eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "resource-bytes/test-quadrants-jpg": "sha256:050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "resource-bytes/test-quadrants-png": "sha256:815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "resource-bytes/test-quadrants-webp": "sha256:84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "resource-bytes/test-vector-svg": "sha256:77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "resources/font-subsets/LICENSE.txt": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+      "resources/font-subsets/README.md": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda",
+      "resources/font-subsets/TestSubset-Bold.otf": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def",
+      "resources/font-subsets/TestSubset-Medium.otf": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba",
+      "resources/font-subsets/TestSubset-Regular.otf": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1",
+      "resources/fonts/SourceHanSansCN-Bold.otf": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "resources/fonts/SourceHanSansCN-Heavy.otf": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "resources/fonts/SourceHanSansCN-Medium.otf": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "resources/fonts/SourceHanSansCN-Regular.otf": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "resources/images/m402/icon-hospital.png": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112",
+      "resources/images/m402/icon-metro.png": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a",
+      "resources/images/m402/landmark-1.png": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b",
+      "resources/images/m402/landmark-2.png": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839",
+      "resources/images/m402/landmark-3.png": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc",
+      "resources/images/m402/landmark-4.png": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c",
+      "resources/images/m402/route-no-m402.png": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8",
+      "resources/images/README.md": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a",
+      "resources/images/test/quadrants.jpg": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05",
+      "resources/images/test/quadrants.png": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d",
+      "resources/images/test/quadrants.webp": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d",
+      "resources/images/test/vector.svg": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce",
+      "resources/resources.json": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+    },
+    "config": "sha256:ff9fbd6985476f34fd35eaf2926f748fe6abe16ca12f5d64e8cbb81489c65ceb",
+    "scorer": "sha256:d26b841945f0b3a7da307921b47a79ea7d861a7c9531ab2cc26cd1314f0cd96b",
+    "plan": {
+      "scenarios": [
+        "en-template-design"
+      ],
+      "repeat": 2,
+      "pairedJobs": null
+    }
+  }
+}
