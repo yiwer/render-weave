@@ -8,6 +8,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ## 当前阶段与下一步
 
+- **当前 Agent 验收候选（2026-10-25）**：harness 已合入 main；Windows 收尾补修及派发器经独立审查合入 `41ae798`。原4项失败复验通过，Windows相关3整文件44通过/1平台跳过、Linux相关2整文件17通过/6平台跳过；已冻结[候选6](docs/agent-eval/harness-acceptance-candidate-6.md)，原四10阶段及21的16单元全部新绑定，下一步完成两份派发登记复核后串行真实验收，遇额度停止。候选5原包、英文成果与用户总体接受记录保留；不拼入新候选槽位，21–26与原38尚未完成。
+
 - 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 - 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
 - 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
