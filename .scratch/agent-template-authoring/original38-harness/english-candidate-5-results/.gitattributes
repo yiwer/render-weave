@@ -1,0 +1,5 @@
+* -text
+*.json whitespace=cr-at-eol
+*.log whitespace=cr-at-eol
+*.mjs whitespace=cr-at-eol
+correction/feedback.md whitespace=cr-at-eol

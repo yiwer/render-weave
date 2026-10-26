@@ -1,0 +1,32 @@
+{
+  "format": "original38-english-pixel-comparison/1",
+  "role": "automatic-diagnostic-not-independent-human-acceptance",
+  "images": [
+    {
+      "name": "first-actual-request.png",
+      "sha256": "0b70a4a890ff41ec2aa15fc6c4742342e710b59c4b68f713229226328d93e7ef",
+      "width": 1653,
+      "height": 500
+    },
+    {
+      "name": "actual-request.png",
+      "sha256": "0f0610d1b0c3b2b8afefefc5b4680220e08dc3432d1f47ccd5db6778d5c60703",
+      "width": 1653,
+      "height": 500
+    }
+  ],
+  "comparison": "Exact decoded RGBA values; no resizing or image rewriting",
+  "changedPixels": 1200,
+  "changedBounds": {
+    "x": 622,
+    "y": 420,
+    "width": 80,
+    "height": 15
+  },
+  "routeStripForScopeInspection": {
+    "minY": 419,
+    "maxY": 436
+  },
+  "changedPixelsOutsideRouteStrip": 0,
+  "humanAcceptance": null
+}
