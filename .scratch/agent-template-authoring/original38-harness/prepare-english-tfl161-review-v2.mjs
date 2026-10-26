@@ -72,6 +72,9 @@ if(firstPackage){
   same(registration.firstDesign?.status,'completed','登记首次已完成');same(await realpath(registration.firstDesign.out),await realpath(firstProof.round),'登记首次原件');same(hash(await readFile(join(firstProof.round,'round.json'))),registration.firstDesign.roundRecordSha256,'登记首次round记录');
   firstOutcome=(await json(join(firstPackage,'independent-review.json'))).firstOutcome;
   same(firstOutcome.outcomeSha256,firstProof.outcomeSha256,'首次表中的实际outcome');same(firstOutcome.bindingId,firstProof.bindingId,'首次表绑定');same(firstOutcome.actualImage,firstManifest.actualImage,'首次表实际图片');
+  same(firstOutcome.candidateId,firstProof.candidateId,'首次表候选');same(await realpath(firstOutcome.round),await realpath(firstProof.round),'首次表原轮次');
+  same(firstManifest.actualImage,firstProof.actualImage,'首次图片须匹配已绑定来源证明');
+  if(firstProof.actualImage)same(hash(await readFile(join(firstPackage,'actual-request.png'))),firstProof.actualImage.sha256,'首次原始成果图片SHA');
   firstManifestSha256=hash(manifestBytes);firstProofSha256=hash(proofBytes);
 }
 const round=values.round?resolve(values.round):null,out=values.out?resolve(values.out):null;
