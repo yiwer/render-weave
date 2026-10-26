@@ -1,0 +1,21 @@
+{
+  "command": [
+    "D:\\nodejs\\node.exe",
+    "F:/GenCode/render-weave/.scratch/agent-template-authoring/original38-harness/prepare-english-tfl161-review-v2.mjs",
+    "--registration",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-correction-candidate-5\\registration.json",
+    "--first-package",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-review\\en-tfl161-design1-candidate-5",
+    "--round",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-observations-candidate-5\\correction-1",
+    "--out",
+    "F:\\GenCode\\render-weave\\out\\harness-original38-review\\en-tfl161-correction1-candidate-5"
+  ],
+  "startedAt": "2026-10-26T01:30:14.471Z",
+  "endedAt": "2026-10-26T01:30:26.357Z",
+  "exitCode": 0,
+  "signal": null,
+  "error": null,
+  "modelCalls": 0,
+  "humanJudgmentsWritten": 0
+}

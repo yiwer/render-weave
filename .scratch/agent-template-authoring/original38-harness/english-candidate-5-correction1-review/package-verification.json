@@ -1,0 +1,50 @@
+{
+  "candidateVerification": {
+    "command": [
+      "D:\\nodejs\\node.exe",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\node_modules\\tsx\\dist\\cli.mjs",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\scripts\\agent-eval\\freeze.ts",
+      "--verify",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5",
+      "--current"
+    ],
+    "exitCode": 0,
+    "stdout": "{\"candidate\":\"sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526\",\"realModelObservations\":0}\n",
+    "stderr": ""
+  },
+  "stageVerification": {
+    "command": [
+      "D:\\nodejs\\node.exe",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\node_modules\\tsx\\dist\\cli.mjs",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\scripts\\agent-eval\\stage.ts",
+      "--verify",
+      "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-correction-candidate-5\\binding"
+    ],
+    "exitCode": 0,
+    "stdout": "{\"candidate\":\"sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526\",\"binding\":\"sha256:e953de91cb519acf137bdf40c62f2ca7589e4b5634831130bab1a288b5e4dfe4\",\"unit\":\"original38-en-tfl161/correction-1\",\"realModelObservations\":0}\n",
+    "stderr": ""
+  },
+  "finalCandidateVerification": {
+    "command": [
+      "D:\\nodejs\\node.exe",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\node_modules\\tsx\\dist\\cli.mjs",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5\\content\\scripts\\agent-eval\\freeze.ts",
+      "--verify",
+      "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\candidate-5",
+      "--current"
+    ],
+    "exitCode": 0,
+    "stdout": "{\"candidate\":\"sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526\",\"realModelObservations\":0}\n",
+    "stderr": ""
+  },
+  "sourceRoundUnchanged": true,
+  "copyUnchangedAfterPublicRead": true,
+  "materialsUnchanged": true,
+  "firstPackageUnchanged": true,
+  "firstRoundUnchanged": true,
+  "publicReadOptions": {
+    "persistArtifacts": false
+  },
+  "modelCalls": 0,
+  "humanJudgmentsWritten": 0
+}
