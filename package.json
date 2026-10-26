@@ -20,6 +20,7 @@
     "render": "tsx src/bin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "@resvg/resvg-wasm": "2.6.2",
     "@xmldom/xmldom": "0.9.12",
     "ajv": "8.20.0",

@@ -45,6 +45,8 @@ import { withLocalAccess } from '../local-access.js';
 import { contextPolicy, prepareContextPolicy, contextPrompt, contextIdentity, type ContextPolicyIdentity } from './context-policy.js';
 import { referenceTexts } from '../mcp/references.js';
 import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
+import type { AgentExecutor, ExecutorResult, RoundExecutor } from './executor.js';
+import { toolRunnerExecutor } from './tool-runner-executor.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -111,6 +113,8 @@ export interface AgentRunOptions {
   readonly effort?: AgentEffort;
   /** Claude Code 可执行文件与前置参数；测试用假执行器代替。 */
   readonly claude?: { readonly command: string; readonly args?: readonly string[] };
+  /** 执行器：缺省 claude-code；tool-runner 是宿主进程内的原型，不启动 Claude Code，忽略 claude。 */
+  readonly executor?: AgentExecutor;
   /** 输入全部校验通过、创建轮次目录之前调用；命令行在这里打印"开始……"（票据 28）。 */
   readonly onStart?: (roundDir: string) => void;
   /** 固定输入准备完成、执行器启动前显示生效预算。 */
@@ -155,6 +159,8 @@ export interface RoundRecord {
     readonly roundTimeoutMs?: number;
     readonly stagnationThreshold?: number;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
+    /** 只在不是缺省的 claude-code 时记录。 */
+    readonly executor?: AgentExecutor;
   };
   readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: RoundStop };
   readonly verdict: OutcomeCheck['verdict'];
@@ -463,11 +469,11 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   const maxTurns = options.maxTurns ?? task.maxTurns;
   const runtime: RoundRecord['runtime'] = { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns,
     roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnationThreshold: options.stagnationThreshold ?? DEFAULT_STAGNATION_THRESHOLD,
-    effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
+    effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools,
+    ...(options.executor === 'tool-runner' ? { executor: options.executor } : {}) };
   await execution.initialize({ task: task.id, round, startedAt, inputs, runtime });
   await control.ready({ roundDir, record: { task: task.id, round, startedAt, inputs, runtime } });
   const started = Date.now();
-  const mcpConfig = join(logsDir, 'mcp.json');
   const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
   const stagnation = stagnationController({ roundDir, agentDir, threshold: runtime.stagnationThreshold!, stop: control.stop });
   managedMcp = await startCheckpointHost({ check: async () => { const result = await checkpoints.check(); stagnation.checked(result); return result; }, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
@@ -475,7 +481,6 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
     '--reference-bundle',referenceBundle,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
   ] });
-  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
   // 两种模型协议都只给执行器本轮令牌；上游 key 留在宿主。
@@ -483,19 +488,13 @@ export async function runAgentTaskInHost(given: AgentRunOptions, control: HostCo
   let stopped: QuotaStop | undefined;
   const stop = (reason: QuotaStop) => { stopped ??= reason; control.stop(reason); };
   const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
-  Object.assign(env, {
-    CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
-    ANTHROPIC_BASE_URL: proxy.url, ANTHROPIC_AUTH_TOKEN: proxy.token, ANTHROPIC_MODEL: model,
-    ANTHROPIC_DEFAULT_OPUS_MODEL: model, ANTHROPIC_DEFAULT_SONNET_MODEL: model, ANTHROPIC_DEFAULT_HAIKU_MODEL: smallModel,
-    CLAUDE_CODE_SUBAGENT_MODEL: model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
-  });
-  const args = ['-p', '--output-format', 'stream-json', '--verbose', '--model', model, '--restricted', '--tools', task.tools,
-    '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
-    '--max-turns', String(maxTurns), '--no-session-persistence', ...(options.effort ? ['--effort', options.effort] : [])];
+  const executor: RoundExecutor = options.executor === 'tool-runner' ? toolRunnerExecutor : claudeCodeExecutor(options.claude ?? { command: 'claude' });
 
-  let executed: Awaited<ReturnType<typeof execute>>;
+  let executed: ExecutorResult;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token], onUsage: control.usage, onEvent: stagnation.accept });
+    executed = await executor({ cwd: agentDir, prompt, logsDir, model, smallModel, maxTurns, ...(options.effort ? { effort: options.effort } : {}),
+      tools: task.tools, mcp: managedMcp.config, proxy, env, secrets: [options.key, proxy.token], signal: controller.signal, stop,
+      onSpawn: execution.executing, onUsage: control.usage, onEvent: stagnation.accept });
     await stagnation.idle();
   } finally {
     await proxy.close();
@@ -734,8 +733,27 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
   }
 }
 
+/** Claude Code 执行器：受限模式无头运行，只连受管 MCP，模型经本轮代理（ADR-0015、M232）。 */
+function claudeCodeExecutor(claude: NonNullable<AgentRunOptions['claude']>): RoundExecutor {
+  return async (round) => {
+    const mcpConfig = join(round.logsDir, 'mcp.json');
+    await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: round.mcp.command, args: round.mcp.args } } }, null, 2)}\n`);
+    const env: Record<string, string> = {
+      ...round.env,
+      CLAUDE_CONFIG_DIR: join(round.logsDir, 'claude-config'),
+      ANTHROPIC_BASE_URL: round.proxy.url, ANTHROPIC_AUTH_TOKEN: round.proxy.token, ANTHROPIC_MODEL: round.model,
+      ANTHROPIC_DEFAULT_OPUS_MODEL: round.model, ANTHROPIC_DEFAULT_SONNET_MODEL: round.model, ANTHROPIC_DEFAULT_HAIKU_MODEL: round.smallModel,
+      CLAUDE_CODE_SUBAGENT_MODEL: round.model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
+    };
+    const args = ['-p', '--output-format', 'stream-json', '--verbose', '--model', round.model, '--restricted', '--tools', round.tools,
+      '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
+      '--max-turns', String(round.maxTurns), '--no-session-persistence', ...(round.effort ? ['--effort', round.effort] : [])];
+    return execute(claude, args, { ...round, env });
+  };
+}
+
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<ExecutorResult> {
   const redactor = credentialRedactor(context.secrets);
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));

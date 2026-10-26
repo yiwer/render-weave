@@ -27,7 +27,7 @@ export async function scorerIdentity(): Promise<string> {
 export interface ExperimentIdentity {
   readonly contextPolicy: Awaited<ReturnType<typeof contextStrategyIdentity>>;
   readonly format: 'renderweave-eval-identity/1';
-  readonly runtime: { readonly model: string; readonly smallModel: string; readonly endpoint: string; readonly effort: string | null; readonly providerRevision: null };
+  readonly runtime: { readonly model: string; readonly smallModel: string; readonly endpoint: string; readonly effort: string | null; readonly providerRevision: null; readonly executor?: string };
   readonly executor: { readonly command: string; readonly args: readonly string[]; readonly version: string; readonly files: Readonly<Record<string, string>>; readonly node: string };
   readonly budgets: { readonly maxTurns: Readonly<Record<string, number>>; readonly roundTimeoutMs: number | null; readonly stagnation: number | null };
   readonly build: Readonly<Record<string, string>>;
@@ -62,7 +62,7 @@ export async function experimentIdentity(config: EvalConfig, configFile: string,
   return {
     format: 'renderweave-eval-identity/1',
     contextPolicy:await contextStrategyIdentity(contextPolicy(runtime.contextPolicy)),
-    runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null},
+    runtime: {model, smallModel: runtime.smallModel ?? (google ? model : DEFAULT_SMALL_MODEL), endpoint: endpoint.href.replace(/\/$/, ''), effort: runtime.effort ?? null, providerRevision: null, ...(runtime.executor === 'tool-runner' ? {executor: runtime.executor} : {})},
     executor: {command, args, version, files: executorFiles, node: process.version},
     budgets: {maxTurns: Object.fromEntries(Object.values(AGENT_TASKS).map(task => [task.id, runtime.maxTurns ?? task.maxTurns])), roundTimeoutMs: runtime.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnation: runtime.stagnationThreshold ?? DEFAULT_STAGNATION_THRESHOLD},
     build: {...await materialHashes(join(REPO, 'dist'), 'dist'), 'package-lock.json': sha256(await readFile(join(REPO, 'package-lock.json')))},
