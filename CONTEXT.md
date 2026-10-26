@@ -45,7 +45,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 - **正式验收统一用[候选 6](docs/agent-eval/harness-acceptance-candidate-6.md)**（2026-10-25 起；Windows 监督器收尾补修已合入 main）：
   - 已完成：[21 可信反馈真实验收](docs/agent-eval/trusted-feedback-acceptance/candidate-6/RESULTS.md)与[原四场景完整门槛](.scratch/agent-template-authoring/original38-harness/candidate-6-results/README.md)，来源核验及完整归档恢复已独立审核通过；四份中文实际成果审核包已交付（在原设备的 `out/harness-original38-review/zh-candidate-6-index-v2/`，不进版本库）；候选 5 的纯英文成果用户已总体接受，原包保留，不拼入新候选槽位。
-  - 还没完成：原 38 的独立样式/状态判断与审核工时；然后按依赖做公交四类型留出（22 横版线路牌、23 竖版线路牌、24 站牌、25 双语站名，v1.1、M317，用户已提供 12 张候选素材）；最后 26 集成证据与真人走查。
+  - 还没完成：用户已指出票价及底栏文字样式、大小和粗细存在偏差；先按[视觉反馈](.scratch/agent-template-authoring/original38-harness/candidate-6-human-review/README.md)补充区域样式依据并定位、纠偏，再完成原 38 的独立样式/状态判断与审核工时；然后按依赖做公交四类型留出（22 横版线路牌、23 竖版线路牌、24 站牌、25 双语站名，v1.1、M317，用户已提供 12 张候选素材）；最后 26 集成证据与真人走查。
   - 历次候选（2–5）的观测、停止与恢复记录见「已完成的工作」里的 harness 一条。
 - **Tool Runner**（M340，[ADR-0027](docs/adr/0027-agent-loop-driven-in-process-by-tool-runner.md)）：在空闲机器上用一次评估跑满原四场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。托管给客户前还要：威胁建模复核、生产模型渠道、评估身份按执行器区分。
 - **生产化**（v1.0 收费前，[平台化研究](docs/research/2026-10-26-platform-architecture.md)第 6 节 4.x）：单 VM 部署、备份与恢复、登录限频、OTel 与告警、整批导出取舍，都还没开票。

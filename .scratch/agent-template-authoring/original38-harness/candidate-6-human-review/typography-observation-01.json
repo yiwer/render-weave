@@ -1,0 +1,2074 @@
+{
+  "format": "original38-typography-inventory-observation/1",
+  "basis": "已封存实际请求的公开render布局摘要；仅说明实际产物，不是原图字号真值",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "sourceIndex": {
+    "file": "out/harness-original38-review/zh-candidate-6-index-v2/packages.json",
+    "sha256": "783724541109fe998e251784694807b6d2bb51aa7adb944569d263f534acc219"
+  },
+  "sources": [
+    {
+      "file": "out/harness-original38-review/zh-template-r1-candidate-6-v2/layout-inventory.json",
+      "sha256": "56fea19c54016ec26ac60e886f7b5f5f96c028272ca2eb5dd9983c9f693957e6"
+    },
+    {
+      "file": "out/harness-original38-review/zh-revision-r1-candidate-6-v3/layout-inventory.json",
+      "sha256": "c4df4080b072bfe23e02a2cf34e0d5f60797cfa9c767aedf47bada6b94dead86"
+    },
+    {
+      "file": "out/harness-original38-review/zh-template-r2-candidate-6-v2/layout-inventory.json",
+      "sha256": "59f8b0d489ff678d368db091c7508f8fe61df987a34ec1d231fc5d7a2d19649b"
+    },
+    {
+      "file": "out/harness-original38-review/zh-revision-r2-candidate-6-v2/layout-inventory.json",
+      "sha256": "8d93616a362e2901abd6e05ade4640746570af0b17362fe3af3082f77ef8c0d1"
+    }
+  ],
+  "packages": [
+    {
+      "name": "zh-template-r1-candidate-6-v2",
+      "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+      "manifestSha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8",
+      "humanItemConclusions": null,
+      "observedTypography": [
+        {
+          "path": "线路牌主模板/头部/票价/票价文字",
+          "content": "票价：一票制 2元",
+          "font": "res:font-hei-bold",
+          "fontSize": 8,
+          "fragments": [
+            {
+              "text": "票价：",
+              "font": "res:font-hei-bold",
+              "fontSize": 8,
+              "color": "#FF7A00FF",
+              "slant": 0
+            },
+            {
+              "text": "一票制",
+              "font": "res:font-hei-bold",
+              "fontSize": 8,
+              "color": "#FF7A00FF",
+              "slant": 0
+            },
+            {
+              "text": " ",
+              "font": "res:font-hei-bold",
+              "fontSize": 8,
+              "color": "#FF7A00FF",
+              "slant": 0
+            },
+            {
+              "text": "2",
+              "font": "res:font-hei-bold",
+              "fontSize": 8,
+              "color": "#FF7A00FF",
+              "slant": 0
+            },
+            {
+              "text": "元",
+              "font": "res:font-hei-bold",
+              "fontSize": 8,
+              "color": "#FF7A00FF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/始发时间",
+          "content": "始发站服务时间：07:30-22:30",
+          "font": "res:font-hei-bold",
+          "fontSize": 7,
+          "fragments": [
+            {
+              "text": "始发站服务时间：",
+              "font": "res:font-hei-bold",
+              "fontSize": 7,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "07:30",
+              "font": "res:font-hei-bold",
+              "fontSize": 7,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "-",
+              "font": "res:font-hei-bold",
+              "fontSize": 7,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "22:30",
+              "font": "res:font-hei-bold",
+              "fontSize": 7,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/运营说明",
+          "content": "(工作日运营)「定时班车」",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "(",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "工作日运营",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": ")「",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "定时班车",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "」",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[1]/时刻",
+          "content": "08:00",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "08:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[1]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[2]/时刻",
+          "content": "08:25",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "08:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[2]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[3]/时刻",
+          "content": "08:50",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "08:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[3]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[4]/时刻",
+          "content": "09:10",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "09:10",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[4]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[5]/时刻",
+          "content": "09:30",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "09:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[5]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[6]/时刻",
+          "content": "09:50",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "09:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[6]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[7]/时刻",
+          "content": "10:30",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "10:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[7]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[8]/时刻",
+          "content": "17:35",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "17:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[8]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[9]/时刻",
+          "content": "17:50",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "17:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[9]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[10]/时刻",
+          "content": "18:00",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "18:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[10]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[11]/时刻",
+          "content": "18:15",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "18:15",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[11]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[12]/时刻",
+          "content": "18:30",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "18:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[12]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[13]/时刻",
+          "content": "18:50",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "18:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[13]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[14]/时刻",
+          "content": "19:35",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "19:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[14]/斜线",
+          "content": "/",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底部/始发班次/班次信息/班次循环[15]/时刻",
+          "content": "20:25",
+          "font": "res:font-hei-medium",
+          "fontSize": 3.5,
+          "fragments": [
+            {
+              "text": "20:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 3.5,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "zh-revision-r1-candidate-6-v3",
+      "attemptId": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+      "manifestSha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db",
+      "humanItemConclusions": null,
+      "observedTypography": [
+        {
+          "path": "线路牌主模板/顶栏/票价条/票价标签",
+          "content": "票价：",
+          "font": "res:font-hei-medium",
+          "fontSize": 5.5,
+          "fragments": [
+            {
+              "text": "票价：",
+              "font": "res:font-hei-medium",
+              "fontSize": 5.5,
+              "color": "#585858FF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/顶栏/票价条/票价内容",
+          "content": "一票制2元",
+          "font": "res:font-hei-bold",
+          "fontSize": 5.5,
+          "fragments": [
+            {
+              "text": "一票制",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            },
+            {
+              "text": "2",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            },
+            {
+              "text": "元",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/服务时间",
+          "content": "始发站服务时间：07:30-22:30",
+          "font": "res:font-hei-heavy",
+          "fontSize": 8,
+          "fragments": [
+            {
+              "text": "始发站服务时间：",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "07:30",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "-",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "22:30",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/运营说明",
+          "content": "（工作日运营）「定时班车」",
+          "font": "res:font-hei-medium",
+          "fontSize": 4.2,
+          "fragments": [
+            {
+              "text": "（",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "工作日运营",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "）「",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "定时班车",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "」",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[1]/时刻",
+          "content": "08:00/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[2]/时刻",
+          "content": "08:25/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[3]/时刻",
+          "content": "08:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[4]/时刻",
+          "content": "09:10/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:10",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[5]/时刻",
+          "content": "09:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[6]/时刻",
+          "content": "09:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[7]/时刻",
+          "content": "10:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "10:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[8]/时刻",
+          "content": "17:35/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "17:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[9]/时刻",
+          "content": "17:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "17:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[10]/时刻",
+          "content": "18:00/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[11]/时刻",
+          "content": "18:15/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:15",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[12]/时刻",
+          "content": "18:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[13]/时刻",
+          "content": "18:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[14]/时刻",
+          "content": "19:35/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "19:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[15]/时刻",
+          "content": "20:25",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "20:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "zh-template-r2-candidate-6-v2",
+      "attemptId": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+      "manifestSha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce",
+      "humanItemConclusions": null,
+      "observedTypography": [
+        {
+          "path": "线路牌主模板/页眉/票价",
+          "content": "票价：一票制 2元",
+          "font": "res:font-hei-medium",
+          "fontSize": 7,
+          "fragments": [
+            {
+              "text": "票价：",
+              "font": "res:font-hei-medium",
+              "fontSize": 7,
+              "color": "#555555FF",
+              "slant": 0
+            },
+            {
+              "text": "一票制",
+              "font": "res:font-hei-medium",
+              "fontSize": 7,
+              "color": "#FF7F00FF",
+              "slant": 0
+            },
+            {
+              "text": " ",
+              "font": "res:font-hei-medium",
+              "fontSize": 7,
+              "color": "#FF7F00FF",
+              "slant": 0
+            },
+            {
+              "text": "2",
+              "font": "res:font-hei-medium",
+              "fontSize": 7,
+              "color": "#FF7F00FF",
+              "slant": 0
+            },
+            {
+              "text": "元",
+              "font": "res:font-hei-medium",
+              "fontSize": 7,
+              "color": "#FF7F00FF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/始发站时间",
+          "content": "始发站服务时间：07:30-22:30",
+          "font": "res:font-hei-medium",
+          "fontSize": 8,
+          "fragments": [
+            {
+              "text": "始发站服务时间：",
+              "font": "res:font-hei-medium",
+              "fontSize": 8,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "07:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 8,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "-",
+              "font": "res:font-hei-medium",
+              "fontSize": 8,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "22:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 8,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/服务说明",
+          "content": "(工作日运营)「定时班车」",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "(",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "工作日运营",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": ")「",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "定时班车",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            },
+            {
+              "text": "」",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[1]/时刻",
+          "content": "08:00",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "08:00",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[1]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[2]/时刻",
+          "content": "08:25",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "08:25",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[2]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[3]/时刻",
+          "content": "08:50",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "08:50",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[3]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[4]/时刻",
+          "content": "09:10",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "09:10",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[4]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[5]/时刻",
+          "content": "09:30",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "09:30",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[5]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[6]/时刻",
+          "content": "09:50",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "09:50",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[6]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[7]/时刻",
+          "content": "10:30",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "10:30",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[7]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[8]/时刻",
+          "content": "17:35",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "17:35",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[8]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[9]/时刻",
+          "content": "17:50",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "17:50",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[9]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[10]/时刻",
+          "content": "18:00",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "18:00",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[10]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[11]/时刻",
+          "content": "18:15",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "18:15",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[11]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[12]/时刻",
+          "content": "18:30",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "18:30",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[12]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[13]/时刻",
+          "content": "18:50",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "18:50",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[13]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[14]/时刻",
+          "content": "19:35",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "19:35",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[14]/斜线",
+          "content": "/",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "/",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/页脚/始发站/班次说明/班次循环[15]/时刻",
+          "content": "20:25",
+          "font": "res:font-hei-regular",
+          "fontSize": 4.5,
+          "fragments": [
+            {
+              "text": "20:25",
+              "font": "res:font-hei-regular",
+              "fontSize": 4.5,
+              "color": "#222222FF",
+              "slant": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "zh-revision-r2-candidate-6-v2",
+      "attemptId": "9de14c87-0916-464d-ad00-1b5e978d3898",
+      "manifestSha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33",
+      "humanItemConclusions": null,
+      "observedTypography": [
+        {
+          "path": "线路牌主模板/顶栏/票价条/票价标签",
+          "content": "票价：",
+          "font": "res:font-hei-medium",
+          "fontSize": 5.5,
+          "fragments": [
+            {
+              "text": "票价：",
+              "font": "res:font-hei-medium",
+              "fontSize": 5.5,
+              "color": "#585858FF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/顶栏/票价条/票价内容",
+          "content": "一票制2元",
+          "font": "res:font-hei-bold",
+          "fontSize": 5.5,
+          "fragments": [
+            {
+              "text": "一票制",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            },
+            {
+              "text": "2",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            },
+            {
+              "text": "元",
+              "font": "res:font-hei-bold",
+              "fontSize": 5.5,
+              "color": "#F08300FF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/服务时间",
+          "content": "始发站服务时间：07:30-22:30",
+          "font": "res:font-hei-heavy",
+          "fontSize": 8,
+          "fragments": [
+            {
+              "text": "始发站服务时间：",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "07:30",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "-",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            },
+            {
+              "text": "22:30",
+              "font": "res:font-hei-heavy",
+              "fontSize": 8,
+              "color": "#1A1A1AFF",
+              "slant": 12
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/运营说明",
+          "content": "（工作日运营）「定时班车」",
+          "font": "res:font-hei-medium",
+          "fontSize": 4.2,
+          "fragments": [
+            {
+              "text": "（",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "工作日运营",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "）「",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "定时班车",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "」",
+              "font": "res:font-hei-medium",
+              "fontSize": 4.2,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[1]/时刻",
+          "content": "08:00/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[2]/时刻",
+          "content": "08:25/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[3]/时刻",
+          "content": "08:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "08:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[4]/时刻",
+          "content": "09:10/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:10",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[5]/时刻",
+          "content": "09:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[6]/时刻",
+          "content": "09:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "09:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[7]/时刻",
+          "content": "10:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "10:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[8]/时刻",
+          "content": "17:35/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "17:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[9]/时刻",
+          "content": "17:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "17:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[10]/时刻",
+          "content": "18:00/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:00",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[11]/时刻",
+          "content": "18:15/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:15",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[12]/时刻",
+          "content": "18:30/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:30",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[13]/时刻",
+          "content": "18:50/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "18:50",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[14]/时刻",
+          "content": "19:35/",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "19:35",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            },
+            {
+              "text": "/",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        },
+        {
+          "path": "线路牌主模板/底栏/服务信息/说明与时刻/时刻表[15]/时刻",
+          "content": "20:25",
+          "font": "res:font-hei-medium",
+          "fontSize": 4,
+          "fragments": [
+            {
+              "text": "20:25",
+              "font": "res:font-hei-medium",
+              "fontSize": 4,
+              "color": "#1A1A1AFF",
+              "slant": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "referenceFontSizes": null,
+  "referenceExactFontWeights": null,
+  "limitations": [
+    "未判定是模型选择、资料不足或渲染实现造成，不能由这些数值单独归因",
+    "局部修改只授权地标/道路两处，其余偏差须先区分原基准已有与本轮新增",
+    "尺寸/字体值来自实际候选，不能作为参考真值或新通过阈值"
+  ]
+}

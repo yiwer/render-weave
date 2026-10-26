@@ -1,0 +1,79 @@
+{
+  "format": "original38-chinese-human-review-response/1",
+  "recordedAt": "2026-10-26T06:56:46.189Z",
+  "reviewer": "本会话用户（已指定独立审核者）",
+  "source": "用户对四份中文实际成果审核问题的直接回复",
+  "questionItemId": "[\"request_user_input_async\",\"call_b5aa98ce81564dd78c146a25c2f9b152\",0]",
+  "verbatimResponse": "其实做得都不错，但还是有很多地方是不符合的，比如票价票制的样式大小。底部服务时间、班时的文字大小和文字粗细等等",
+  "candidateId": "sha256:9b8a0ada4a0ac2837a0b231eb44e6da4c405910c9ace50064e4972b2afa356b1",
+  "feedbackScope": "对四份成果的集合反馈；未逐一指明第几遍设计或修改，不自动套用为四包相同的逐项失败",
+  "overallAcceptance": null,
+  "overallImpression": "用户认为整体做得不错，同时明确仍有多处不符合",
+  "reportedIssues": [
+    {
+      "id": "Z04",
+      "topic": "票价/票制",
+      "dimensions": [
+        "样式",
+        "大小"
+      ]
+    },
+    {
+      "id": "Z15",
+      "topic": "服务时间文字",
+      "dimensions": [
+        "文字大小",
+        "文字粗细"
+      ]
+    },
+    {
+      "id": "Z16",
+      "topic": "班时文字",
+      "dimensions": [
+        "文字大小",
+        "文字粗细"
+      ]
+    }
+  ],
+  "otherIssues": "用户说等等，尚未穷举",
+  "reviewMinutes": null,
+  "correctionMinutes": null,
+  "diagnosticsSeenBeforeReview": null,
+  "viewedPackageVersion": null,
+  "questionLinkedIndex": "out/harness-original38-review/zh-candidate-6-index/index.html",
+  "latestDeliveredIndex": "out/harness-original38-review/zh-candidate-6-index-v2/index.html",
+  "versionBoundary": "问题原链接是旧索引；已交付新版，具体查看版本未知。新旧14图同字节的证据见final-v2独审，不能将未知页面版本填写为已确认。",
+  "decision": {
+    "owner": "实施负责人",
+    "visualAcceptance": "not-passed",
+    "reason": "明确报告视觉不符合，不能据整体肯定认定已接受；此为项目验收判断，不冒称用户逐包拒绝",
+    "automaticGate": "原四8/8自动达线历史保持；不等于视觉交付通过",
+    "next": "先核对并修正Z04/Z15/Z16区域样式及视觉验收覆盖，再按新登记纠偏与复审；原38保持开放，留出不提前派发"
+  },
+  "packageIdentities": [
+    {
+      "name": "zh-template-r1-candidate-6-v2",
+      "attemptId": "7762f3b8-74ac-4567-9c71-0086e81d0fde",
+      "manifestSha256": "0cf05a21ba3da15a51f7b1a24ed6adde677c720d0611d5cee5c83d2d9c30d8b8",
+      "humanItemConclusions": null
+    },
+    {
+      "name": "zh-revision-r1-candidate-6-v3",
+      "attemptId": "5b3f10ac-1f5a-4c89-9eef-6ab94574d140",
+      "manifestSha256": "1a9cd3fe13e23f66b862d9ad869c1da44791ae848e18b7edbb4a65ed6e8c91db",
+      "humanItemConclusions": null
+    },
+    {
+      "name": "zh-template-r2-candidate-6-v2",
+      "attemptId": "27e30f7e-3976-4d5c-aa00-b2d9403d6ebb",
+      "manifestSha256": "80771c1716fc360b81f14b32c65bbc187c7a566ac38049333396746ca3e3ebce",
+      "humanItemConclusions": null
+    },
+    {
+      "name": "zh-revision-r2-candidate-6-v2",
+      "attemptId": "9de14c87-0916-464d-ad00-1b5e978d3898",
+      "manifestSha256": "cd427ecb96368fc279de763aa6b77777b32a9d28802aa3bdc8c5fde36c719d33",
+      "humanItemConclusions": null
+    }
+  ]
+}
