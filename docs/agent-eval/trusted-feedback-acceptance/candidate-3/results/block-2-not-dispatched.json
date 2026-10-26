@@ -1,0 +1,25 @@
+{
+  "format": "renderweave-feedback-block-not-dispatched/1",
+  "recordedAt": "2026-10-23T19:17:56.488Z",
+  "block": 2,
+  "repetitions": "2-2",
+  "reason": "首段7通过1有效结构范围失败；按root决策不再为该候选派发第二段。评分诊断短路将回14责任修复并另立评分身份，不在当前结果上降线或重判。",
+  "decisionBy": "/root",
+  "plannedObservations": 8,
+  "status": "not-run",
+  "attemptsCreated": 0,
+  "realModelObservations": 0,
+  "candidateId": "sha256:b52cc55359ad9341184657c0dec89811a5c760cdc2003867f8d245059ed0e61c",
+  "bindingId": "sha256:ab144c6db10caa506703b383f8373a2dff3b6503060488e5eba811ee03a5809d",
+  "experimentId": "sha256:519ae413e61d1c3bfa409cbf02ca549e31a7418ff5f518e3f3e2d27584ee9680",
+  "firstBlockReport": [
+    {
+      "file": "harness21-candidate-3.json",
+      "snapshot": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\dispatch\\block-1.report-harness21-candidate-3.json",
+      "sha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47"
+    }
+  ],
+  "notQuota": true,
+  "notInfrastructureInvalid": true,
+  "oldResultsPreserved": true
+}

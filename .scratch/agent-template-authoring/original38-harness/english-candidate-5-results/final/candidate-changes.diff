@@ -1,0 +1,88 @@
+diff --git a/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1/candidates/original38-en-tfl161-panel.json b/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1/candidates/original38-en-tfl161-panel.json
+index 8ed627b..2405470 100644
+--- a/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1/candidates/original38-en-tfl161-panel.json
++++ b/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1/candidates/original38-en-tfl161-panel.json
+@@ -428,6 +428,11 @@
+               "var": "keyPoints"
+             },
+             "template": "tfl161-route-segment",
++            "args": {
++              "index": {
++                "loop": "index"
++              }
++            },
+             "itemLayout": {
+               "direction": "row",
+               "widths": {
+diff --git a/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1/candidates/tfl161-route-segment.json b/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1/candidates/tfl161-route-segment.json
+index 16cd0ef..5757d65 100644
+--- a/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1/candidates/tfl161-route-segment.json
++++ b/F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1/candidates/tfl161-route-segment.json
+@@ -5,6 +5,41 @@
+     "name": "tfl-key-point",
+     "version": 1
+   },
++  "parameters": [
++    {
++      "name": "index",
++      "displayName": "线段序号",
++      "visibility": "public",
++      "type": "number"
++    }
++  ],
++  "derived": [
++    {
++      "name": "grayStrip",
++      "displayName": "灰色线段",
++      "type": "boolean",
++      "op": "branch",
++      "branches": [
++        {
++          "when": {
++            "left": {
++              "var": "index"
++            },
++            "op": "le",
++            "right": {
++              "value": 3
++            }
++          },
++          "then": {
++            "value": true
++          }
++        }
++      ],
++      "otherwise": {
++        "value": false
++      }
++    }
++  ],
+   "artboard": {
+     "sizeRange": {
+       "width": {
+@@ -41,10 +76,10 @@
+         },
+         "states": {
+           "by": {
+-            "var": "tone"
++            "var": "grayStrip"
+           },
+           "cases": {
+-            "gray": {
++            "true": {
+               "fill": "#FFFFFF",
+               "stroke": {
+                 "color": "#404040",
+@@ -74,10 +109,10 @@
+         "fill": "#FFFFFF",
+         "states": {
+           "by": {
+-            "var": "tone"
++            "var": "grayStrip"
+           },
+           "cases": {
+-            "gray": {
++            "true": {
+               "fill": "#404040"
+             }
+           }

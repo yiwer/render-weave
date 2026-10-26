@@ -1,0 +1,208 @@
+{
+  "format": "original38-candidate4-committed-evidence/1",
+  "recordedAt": "2026-10-23T21:02:56.021Z",
+  "files": [
+    {
+      "file": "candidate-4-first-report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\reports\\2026-10-23-harness-original38-candidate-4.json",
+      "bytes": 83309,
+      "sha256": "23ad47e884b17d7a4b24abb96f42a2b5b48be1380d5037378eac47352a34bd6d"
+    },
+    {
+      "file": "candidate-4-post-stop-report.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\post-stop-analysis\\reports\\2026-10-23-harness-original38-candidate-4.rescore-bc8e1e3e-cf2b-47e3-ab5e-ec55f157618d.json",
+      "bytes": 159310,
+      "sha256": "ba960d452e1aa120ef742c854802da8868ed0d72d9caabe4264d251accb09631"
+    },
+    {
+      "file": "candidate-4-registration.results.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\registration.results.json",
+      "bytes": 50343,
+      "sha256": "406ce6e027013aae126a8a445d525e7897b4a8bf91b681079c087e35c849dd45"
+    },
+    {
+      "file": "candidate-4-source-usage-audit.stopped.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\source-usage-audit.final.json",
+      "bytes": 413351,
+      "sha256": "2486f4f61743af290faa75b6a9f9f0f4dca24691b490c5de79ae2255aad024ed"
+    },
+    {
+      "file": "candidate-4-source-usage-audit.initial-stopped.json",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-live-source-usage-candidate4-stopped.json",
+      "bytes": 53772,
+      "sha256": "efc7e60170e663c2c50ee3987f1260f3ab3f0349001ac58b0622b1eacba11d3a"
+    },
+    {
+      "file": "candidate-4-shared-english.results.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\shared-english-reference.results.json",
+      "bytes": 4934,
+      "sha256": "49ee78b7bbaa2cb5c6ebc061f39c149368020378b5e782d4a0ccea513226d87b"
+    },
+    {
+      "file": "candidate-4-archive-verification.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate4-stopped-archive-verification.json",
+      "bytes": 4854,
+      "sha256": "a92983ed1acefcb1eca1da0d2b73a024157b73403d562826d3b84b5983c88b94"
+    },
+    {
+      "file": "candidate-4-archive-manifest.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-archive\\manifest.json",
+      "bytes": 1090014,
+      "sha256": "05bfa461fb18a8dd08374893467a8229fe59dc840caeb457661aa33af8814dc5"
+    },
+    {
+      "file": "candidate-4-stop-control-boundary.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\post-stop-analysis\\stop-control-boundary.json",
+      "bytes": 2718,
+      "sha256": "8a402d32b053fe08f14853831b044528fb7e2c5c6ad6e3329d9cc1a6907c3475"
+    },
+    {
+      "file": "candidate-4-processes-after-stop.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\post-stop-analysis\\processes-after-stop.json",
+      "bytes": 398,
+      "sha256": "29d7ec0bcbce0f654791cc4e22d7ba56cae6433b8f9c3ea16f37044ef06a2049"
+    },
+    {
+      "file": "candidate-4-rescore-verification.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\post-stop-analysis\\verification.json",
+      "bytes": 1272,
+      "sha256": "e89ca516ccfd88a835c6623e3d6c0638300e9c79b997b41c3595f005ae6e73f8"
+    },
+    {
+      "file": "candidate-4-activation.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\activation.json",
+      "bytes": 1564,
+      "sha256": "1ba9b14f60e4391672064b25d517c3e64c320165d3d4ce6d1b5094b5e7f3a338"
+    },
+    {
+      "file": "candidate-4-archive-pack.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate4-stopped-archive-pack.log",
+      "bytes": 191,
+      "sha256": "41bdcb893e2b2e6d45ba33252b977d28d90f068d0f171a1d13ebf119e5357e59"
+    },
+    {
+      "file": "candidate-4-archive-restore.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate4-stopped-archive-restore.log",
+      "bytes": 217,
+      "sha256": "09f3238b2dd455da36ca783e12ee9c3d67003692d60d557490a21e2487b0626b"
+    },
+    {
+      "file": "candidate-4-two-stop-diagnosis.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-original38-candidate4-two-stop-diagnosis.md",
+      "bytes": 6801,
+      "sha256": "08cfa0e884ba293ed3a120ea03c7906727912fbfd0d6e7cfbcce8f54371d7d4b"
+    },
+    {
+      "file": "candidate-4-two-stop-diagnosis.json",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-original38-candidate4-two-stop-diagnosis.json",
+      "bytes": 8134,
+      "sha256": "450ca9b2b03a5d507069ecfdb1c11e668e33f49b7c9e1f6c421cc5434ab8c4e4"
+    },
+    {
+      "file": "candidate-4-independent-source-classification.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-live-source-usage-candidate4-stopped-classified.md",
+      "bytes": 3410,
+      "sha256": "90a95f885a9cdb87e97a099e5ce838b5989b6e1d0467e0f2131003d7f0fde9aa"
+    },
+    {
+      "file": "candidate-4-zh-r1-review-audit.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-zh-r1-candidate4-packages-review.md",
+      "bytes": 3175,
+      "sha256": "fadafd5ecf7cd7eafa4dcbb68a6d8e9f697fb61c90810f7438bd3d0414976295"
+    },
+    {
+      "file": "candidate-4-source-audit.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\source-audit.mjs",
+      "bytes": 21241,
+      "sha256": "00c12c56e286f2328ef40e131b514011e9d2276b846e04dd68d2b16e4f5518a6"
+    },
+    {
+      "file": "candidate-4-finalize-stopped.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\finalize.mjs",
+      "bytes": 13230,
+      "sha256": "0aa887ef7cc18c7fdc1fc58db52de34f19b70f69fb4a3719c5a5b59d82706cb3"
+    },
+    {
+      "file": "candidate-4-verify-restored.mjs",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4-evidence-metadata\\verify-restored.mjs",
+      "bytes": 6949,
+      "sha256": "31705011da517db3a2c3659183545e8f528b1764bc5ea99930f2534ee521ab30"
+    },
+    {
+      "file": "candidate-4-boundary-data-preservation-proposal.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-boundary-data-preservation-proposal.md",
+      "bytes": 4809,
+      "sha256": "559782e27535d8e17f236f886299da8fb314e6d0041091cc23ed9440c07e7586"
+    },
+    {
+      "file": "candidate-4-segment-1-completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-1\\completed.json",
+      "bytes": 79,
+      "sha256": "530636e4e0cc85281657a67d0749eaaf6c083c564b139325ff2a5ab34c63dfb6"
+    },
+    {
+      "file": "candidate-4-segment-1-pid.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-1\\pid.json",
+      "bytes": 85,
+      "sha256": "74ea6274a2042050494ed0890782748c9375a737e78fd5706eea71f6a23b10c2"
+    },
+    {
+      "file": "candidate-4-segment-1-started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-1\\started.json",
+      "bytes": 1607,
+      "sha256": "f92528c7e5384b6088d1ad7269377b407ea6b234fe05b60cef890858552f5e0e"
+    },
+    {
+      "file": "candidate-4-segment-1-stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-1\\stderr.log",
+      "bytes": 472,
+      "sha256": "1fe5d89e22636c22a57f65f01e34efd6dde4bf614df07f271abb7ca549a748df"
+    },
+    {
+      "file": "candidate-4-segment-1-stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-1\\stdout.log",
+      "bytes": 2907,
+      "sha256": "918fbd3e93424c4a7594a15c7c6f40eac5baddc00d813677d04aa0675a5efe21"
+    },
+    {
+      "file": "candidate-4-segment-2-completed.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\completed.json",
+      "bytes": 79,
+      "sha256": "205215cf3aee1f69cedbb5e1be01d171910c4e5190ced11b264fcef20df6e4af"
+    },
+    {
+      "file": "candidate-4-segment-2-operator-stop.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\operator-stop.json",
+      "bytes": 397,
+      "sha256": "dba660aa5f305f238abbb5304a3ed2205936f8a7e2e52150517883ae8471d111"
+    },
+    {
+      "file": "candidate-4-segment-2-pid.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\pid.json",
+      "bytes": 85,
+      "sha256": "bfa2cf74c47f1e7eea595d7f337ba8333a202033760e567f1eb12d312b53cbe8"
+    },
+    {
+      "file": "candidate-4-segment-2-started.json",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\started.json",
+      "bytes": 1607,
+      "sha256": "cc22724f4bf8288b69dcfb68f53e83acaaf6dbc9ffa894ebfeb406d2379e89fd"
+    },
+    {
+      "file": "candidate-4-segment-2-stderr.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\stderr.log",
+      "bytes": 286,
+      "sha256": "cd59d7b9edac490dd868a3b678293eef3f4ce47a352bb945bc8c2add8ca0deaa"
+    },
+    {
+      "file": "candidate-4-segment-2-stdout.log",
+      "source": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-4\\dispatch-segment-2\\stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "secretScan": {
+    "environmentKeyAvailable": true,
+    "matches": 0
+  }
+}

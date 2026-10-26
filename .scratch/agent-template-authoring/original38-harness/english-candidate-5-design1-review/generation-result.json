@@ -1,0 +1,12 @@
+{
+  "humanConclusionsWritten": 0,
+  "command": "prepare-english-tfl161-review.mjs",
+  "endedAt": "2026-10-26T01:13:16.0293964Z",
+  "out": "F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-design1-candidate-5",
+  "registration": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/registration.json",
+  "sourceCommit": "ea1dfc73d6151b44862ff7b7e7668c2f69770000",
+  "exitCode": 0,
+  "startedAt": "2026-10-26T01:13:07.5128868Z",
+  "modelCalls": 0,
+  "round": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1"
+}

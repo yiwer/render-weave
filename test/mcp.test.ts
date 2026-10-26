@@ -10,14 +10,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
 import { applyResourceReplacement, checkResourceReplacement, importResources, initializeResourceStore, mmToPx, readPngInfo } from '../src/index.js';
 import { startMcp, type McpSession, type ToolCall } from './support/mcp-client.js';
-import { m402Dir, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, m402Dir, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const REQUEST = {
   template: '标准线路单边', dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 },
   output: { width: 740, height: 165, dpi: 20 },
 };
 const READ_ONLY_TOOLS = ['list_documents', 'read_document', 'list_resources', 'check_definitions', 'check_dataset', 'check_templates',
-  'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'];
+  'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'outcome_feedback', 'check_outcome'];
 const NOTE = { dslVersion: 'renderweave-schema/1', name: '便签', fields: [{ name: 'title', displayName: '标题', type: 'text', constraints: { required: true, maxLength: 4 } }] };
 
 let base: string, root: string, outside: string, logFile: string;
@@ -29,6 +29,8 @@ async function fingerprint(...dirs: string[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   const walk = async (dir: string) => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
+      // 同时运行的产品读者可创建短时协调元数据；只核对业务文档与资源没有被 MCP 修改。
+      if (entry.isDirectory() && /^\.write-(?:lock|released|abandoned)(?:-|$)/.test(entry.name)) continue;
       const file = join(dir, entry.name);
       if (entry.isDirectory()) await walk(file);
       else if (entry.isSymbolicLink()) result.set(file, 'link');
@@ -95,7 +97,7 @@ describe('协议与工具清单', () => {
     const init = await session.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
     const older = await session.request('initialize', { protocolVersion: '2024-11-05', capabilities: {} });
     const unknown = await session.request('initialize', { protocolVersion: '1999-01-01', capabilities: {} });
-    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.10.0' } });
+    expect(init.result).toEqual({ protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'renderweave', version: '0.17.0' } });
     expect(older.result.protocolVersion).toBe('2024-11-05');
     expect(unknown.result.protocolVersion).toBe('2025-06-18');
     const listed = await session.request('tools/list');
@@ -435,7 +437,7 @@ describe('交回前核对成果', () => {
 
   it('大批修改最多返回 100 条范围并给出总数；长路径也按字符预算截断', async () => {
     const workspace = join(base, 'revision-many-workspace'), dir = join(base, 'revision-many');
-    await cp(singleTextDir, workspace, { recursive: true });
+    await copyWorkspaceFixture(singleTextDir, workspace);
     await mkdir(join(dir, 'candidates'), { recursive: true });
     const saved = JSON.parse(await readFile(join(workspace, 'template-greeting.json'), 'utf8'));
     saved.artboard.children = Array.from({ length: 120 }, (_, i) => ({
@@ -595,7 +597,7 @@ describe('会话结束', () => {
 describe('命令行', () => {
   it('工作区在启动时读入为快照，之后的改动不影响本轮', async () => {
     const workspace = join(base, 'snapshot');
-    await cp(singleTextDir, workspace, { recursive: true });
+    await copyWorkspaceFixture(singleTextDir, workspace);
     const snapshot = startMcp(['--workspace', workspace, '--resources', resourcesDir, '--root', root]);
     const listed = await snapshot.callJson('list_documents');
     await rm(join(workspace, 'template-greeting.json'));

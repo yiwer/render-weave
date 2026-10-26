@@ -1,389 +1,183 @@
-/**
- * 样式与尺寸基准核查测试（票据 34）：
- * - 本次 5.5 mm 站名能被标记为明显偏小；11 mm 是诊断对照，不能硬编码为所有项目的正确值；
- * - 自动检查所有重复实例；视觉核对每种独立样式及普通、本站、已过、终点、最长文本等状态；
- * - 核查记录绑定候选哈希与请求，候选修改后失效；返回覆盖情况与异常，而非只要求调用一次 inspect_layout；
- * - 允许字体替代与合理适配，不能把 OCR 框高直接当 fontSize；DPI 改变不应改变物理尺寸判据；
- * - 先用人工核准区域和现有布局摘要实施，不依赖 OCR 接入。
- */
-import { describe, expect, it } from 'vitest';
-import {
-  hashCandidatesAndRequest,
-  isVerificationValid,
-  loadWorkspace,
-  render,
-  verifyElementStyles,
-  checkAgentOutcome,
-  type ReferenceBaseline,
-  type RenderRequest,
-} from '../src/index.js';
-import { m402Dir, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { compareReference, loadWorkspace, render, verifyElementStyles, type ReferenceBaseline, type Workspace, type RenderRequest } from '../src/index.js';
+import { m402Dir, resourcesDir, textLab, textLabRequest } from './support/fixtures.js';
+import { startMcp } from './support/mcp-client.js';
 
-describe('票据 34：按参考基准核查所有独立样式和状态，自动扫描重复实例', () => {
-  it('条目 1 & 5：本次 5.5 mm 站名能被标记为明显偏小；11 mm 通过；基准动态推算不硬编码', async () => {
-    const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
+const template = (fontSize = 10, left = 10, text = '科技园') => ({ dslVersion: 'renderweave-template/1', name: '对照', base: { name: '空数据定义', version: 1 },
+  artboard: { fill: '#FFFFFF', sizeRange: { width: { min: 10, max: 200 }, height: { min: 10, max: 200 } }, layout: { mode: 'free' }, children: [
+    { type: 'text', name: '站名', content: [{ text }], font: 'res:font-hei-medium', fontSize, color: '#000000', place: { left, top: 10, width: { fixed: 60 }, height: { fixed: 30 } } },
+  ] } });
+const request: RenderRequest = { template: '对照', dataset: { inline: { dataset: { staticSchema: { name: '空数据定义', version: 1 } }, data: {} } }, parameters: {}, output: { width: 100, height: 60, dpi: 50, format: 'png' }, mode: 'draft' };
+let workspace: Workspace, root: string, baseline: ReferenceBaseline, sample: { path: string; sha256: string };
+const overlay = (document: unknown): Workspace => ({ ...workspace, templates: [...workspace.templates, { name: '对照', document, source: 'candidates/main.json' }] });
 
-    // 模拟阿拉伯文站牌参考基准：
-    // 示例图 3200 × 3600 px，画板 800 × 900 mm（4 px/mm）
-    // 站名在原图上的像素高度为 44 px，对应物理高度 11 mm
-    const baseline: ReferenceBaseline = {
-      sampleWidthPx: 3200,
-      sampleHeightPx: 3600,
-      artboardWidthMm: 800,
-      artboardHeightMm: 900,
-      approvedRegions: [
-        {
-          id: 'stop-name-normal',
-          name: '普通站名',
-          sampleRegion: { x: 400, y: 1200, width: 200, height: 44 }, // 高度 44px -> 11mm
-          targetPathPattern: '*站名*',
-          toleranceRatio: { min: 0.65, max: 1.35 },
-        },
-      ],
-    };
+beforeAll(async () => {
+  workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
+  root = await mkdtemp(join(tmpdir(), 'rw-visual-'));
+  await mkdir(join(root, 'candidates'));
+  const result = await render(overlay(template()), request, { comparisonEvidence: true });
+  expect(result.problems).toEqual([]);
+  const ink = result.evidence!.nodes.find((n) => n.path === '对照/站名')!.inkBounds!;
+  const bytes = result.evidence!.image.bytes;
+  sample = { path: join(root, 'reference.png'), sha256: createHash('sha256').update(bytes).digest('hex') };
+  await writeFile(sample.path, bytes);
+  const sx = result.image!.widthPx / request.output.width, sy = result.image!.heightPx / request.output.height;
+  baseline = { sampleWidthPx: result.image!.widthPx, sampleHeightPx: result.image!.heightPx, artboardWidthMm: 100, artboardHeightMm: 60, sampleSha256: sample.sha256,
+    approvedRegions: [{ id: 'stop-name', name: '站名', sampleRegion: { x: ink.x * sx, y: ink.y * sy, width: ink.width * sx, height: ink.height * sy },
+      boxKind: 'ink', targetPathPattern: '对照/站名', expectedText: '科技园', expectedFontSizeMm: 10, expectedColor: '#000000', state: 'normal' }] };
+});
+afterAll(async () => { await rm(root, { recursive: true, force: true }); });
 
-    // 构造 5.5 mm 的模板（原阿拉伯文复跑中的初始偏小候选）
-    const smallTemplate = {
-      dslVersion: 'renderweave-template/1',
-      name: '测试站牌-偏小',
-      base: { name: '线路牌', version: 1 },
-      artboard: {
-        sizeRange: { width: { min: 100, max: 1000 }, height: { min: 100, max: 1000 } },
-        fill: '#FFFFFF',
-        layout: { mode: 'free' },
-        children: [
-          {
-            type: 'text',
-            name: '普通站名',
-            content: [{ text: '科技园站' }],
-            font: 'res:font-hei-medium',
-            fontSize: 5.5, // 5.5 mm
-            color: '#000000',
-            writingMode: 'vertical',
-            place: { left: 100, top: 100, width: { fixed: 20 }, height: { fixed: 80 } },
-          },
-        ],
-      },
-    };
-
-    const request: RenderRequest = {
-      template: '测试站牌-偏小',
-      dataset: { id: 'ds-m402-wanguocheng' },
-      parameters: {},
-      output: { width: 800, height: 900, dpi: 50, format: 'png' },
-      mode: 'draft',
-    };
-
-    const customWorkspace = {
-      ...workspace,
-      templates: [...workspace.templates, { name: '测试站牌-偏小', document: smallTemplate, source: 'smallTemplate' }],
-    };
-
-    const smallResult = await render(customWorkspace, request);
-    expect(smallResult.layout).toBeDefined();
-
-    const { candidatesHash, requestHash } = hashCandidatesAndRequest(
-      [{ name: '测试站牌-偏小', document: smallTemplate }],
-      request,
-    );
-
-    const verificationSmall = verifyElementStyles({
-      layout: smallResult.layout!,
-      baseline,
-      candidatesHash,
-      requestHash,
-    });
-
-    // 验证：5.5 mm 相对预期 10.45~11 mm（比率约 50% < 65%），被明确标记为明显偏小
-    expect(verificationSmall.passed).toBe(false);
-    expect(verificationSmall.anomalies.length).toBeGreaterThan(0);
-    const anomaly = verificationSmall.anomalies.find((a) => a.kind === 'fontSizeTooSmall');
-    expect(anomaly).toBeDefined();
-    expect(anomaly?.actualMm).toBe(5.5);
-    expect(anomaly?.ratio).toBeLessThan(0.65);
-    expect(anomaly?.message).toContain('明显偏小');
-
-    // 对照组：改为 11 mm（诊断对照值）
-    const fixedTemplate = {
-      ...smallTemplate,
-      name: '测试站牌-修正',
-      artboard: {
-        ...smallTemplate.artboard,
-        children: [
-          {
-            ...smallTemplate.artboard.children[0]!,
-            name: '普通站名',
-            fontSize: 11, // 改为 11 mm
-          },
-        ],
-      },
-    };
-
-    const fixedWorkspace = {
-      ...workspace,
-      templates: [...workspace.templates, { name: '测试站牌-修正', document: fixedTemplate, source: 'fixedTemplate' }],
-    };
-    const fixedRequest: RenderRequest = { ...request, template: '测试站牌-修正' };
-    const fixedResult = await render(fixedWorkspace, fixedRequest);
-    expect(fixedResult.layout).toBeDefined();
-
-    const fixedHashes = hashCandidatesAndRequest(
-      [{ name: '测试站牌-修正', document: fixedTemplate }],
-      fixedRequest,
-    );
-
-    const verificationFixed = verifyElementStyles({
-      layout: fixedResult.layout!,
-      baseline,
-      candidatesHash: fixedHashes.candidatesHash,
-      requestHash: fixedHashes.requestHash,
-    });
-
-    // 验证：11 mm 在合理比例内（11/10.45 ≈ 1.05），通过
-    expect(verificationFixed.passed).toBe(true);
-    expect(verificationFixed.anomalies.filter((a) => a.kind === 'fontSizeTooSmall')).toEqual([]);
-
-    // 证明不硬编码 11 mm：若更换参考基准（如标题区域高度 30 mm），11 mm 也会被判定为偏小
-    const largeTitleBaseline: ReferenceBaseline = {
-      ...baseline,
-      approvedRegions: [
-        {
-          id: 'large-title',
-          name: '大标题',
-          sampleRegion: { x: 100, y: 100, width: 300, height: 120 }, // 120px -> 30mm
-          targetPathPattern: '*普通站名*',
-        },
-      ],
-    };
-    const verificationDynamic = verifyElementStyles({
-      layout: fixedResult.layout!,
-      baseline: largeTitleBaseline,
-      candidatesHash: fixedHashes.candidatesHash,
-      requestHash: fixedHashes.requestHash,
-    });
-    // 此时 11 mm 相对 30 mm (11/28.5 ≈ 38%) 也会被标记为偏小，证明判据由基准驱动，非硬编码
-    expect(verificationDynamic.passed).toBe(false);
-    expect(verificationDynamic.anomalies[0]?.kind).toBe('fontSizeTooSmall');
-  });
-
-  it('条目 2：自动检查所有重复实例；视觉核对每种独立样式及普通、本站、已过、终点、最长文本状态', async () => {
-    const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
-    const request: RenderRequest = {
-      template: '标准线路单边',
-      dataset: { id: 'ds-m402-wanguocheng' },
-      parameters: { currentIndex: 5 },
-      output: { width: 740, height: 165, dpi: 50, format: 'png' },
-      mode: 'draft',
-    };
-
-    const result = await render(workspace, request);
-    expect(result.layout).toBeDefined();
-
-    const { candidatesHash, requestHash } = hashCandidatesAndRequest([], request);
-    const verification = verifyElementStyles({
-      layout: result.layout!,
-      candidatesHash,
-      requestHash,
-      parameters: request.parameters,
-    });
-
-    // 验证自动扫描了重复实例
-    expect(verification.coverage.repeatedInstancesScanned).toBeGreaterThanOrEqual(35);
-
-    // 验证覆盖了各关键业务状态
-    const states = verification.coverage.statesCovered;
-    expect(states).toContain('normal');
-    expect(states).toContain('current');
-    expect(states).toContain('passed');
-    expect(states).toContain('terminal');
-    expect(states).toContain('longestText');
-  });
-
-  it('条目 3：核查记录绑定候选哈希与请求，候选修改后失效；返回覆盖情况与异常', async () => {
-    const workspace = await loadWorkspace({ dir: singleTextDir, resourcesDir });
-    const templateDoc = workspace.templates[0]!.document;
-    const request: RenderRequest = {
-      template: '问候牌',
-      dataset: { id: 'ds-greeting' },
-      parameters: {},
-      output: { width: 160, height: 40, dpi: 50, format: 'png' },
-      mode: 'draft',
-    };
-
-    const result = await render(workspace, request);
-    const { candidatesHash, requestHash } = hashCandidatesAndRequest(
-      [{ name: '问候牌', document: templateDoc }],
-      request,
-    );
-
-    const record = verifyElementStyles({
-      layout: result.layout!,
-      candidatesHash,
-      requestHash,
-    });
-
-    expect(record.format).toBe('renderweave-style-verification/1');
-    expect(record.valid).toBe(true);
-    expect(isVerificationValid(record, candidatesHash, requestHash)).toBe(true);
-
-    // 候选修改（哈希变动）-> 核查记录失效
-    const modifiedCandidatesHash = 'changed-hash-123456';
-    expect(isVerificationValid(record, modifiedCandidatesHash, requestHash)).toBe(false);
-
-    // 请求修改（哈希变动）-> 核查记录失效
-    const modifiedRequestHash = 'changed-request-789012';
-    expect(isVerificationValid(record, candidatesHash, modifiedRequestHash)).toBe(false);
-
-    // 返回了完整的覆盖情况统计
-    expect(record.coverage).toHaveProperty('repeatedInstancesScanned');
-    expect(record.coverage).toHaveProperty('statesCovered');
-    expect(record.anomalies).toBeInstanceOf(Array);
-  });
-
-  it('条目 4：DPI 改变不应改变物理尺寸判据；允许合理适配与容差', async () => {
-    const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
-
-    const baseline: ReferenceBaseline = {
-      sampleWidthPx: 3200,
-      sampleHeightPx: 3600,
-      artboardWidthMm: 800,
-      artboardHeightMm: 900,
-      approvedRegions: [
-        {
-          id: 'test-region',
-          name: '站名字号基准',
-          sampleRegion: { x: 100, y: 100, width: 200, height: 80 }, // 80px -> 20mm
-          targetPathPattern: '*站名*',
-          expectedFontSizeMm: 10,
-        },
-      ],
-    };
-
-    // 分别用 50 DPI 与 150 DPI 渲染同一模板
-    const req50: RenderRequest = {
-      template: '标准线路单边',
-      dataset: { id: 'ds-m402-wanguocheng' },
-      parameters: { currentIndex: 5 },
-      output: { width: 740, height: 165, dpi: 50, format: 'png' },
-      mode: 'draft',
-    };
-    const req150: RenderRequest = {
-      ...req50,
-      output: { ...req50.output, dpi: 150 },
-    };
-
-    const res50 = await render(workspace, req50);
-    const res150 = await render(workspace, req150);
-
-    const h50 = hashCandidatesAndRequest([], req50);
-    const h150 = hashCandidatesAndRequest([], req150);
-
-    const v50 = verifyElementStyles({
-      layout: res50.layout!,
-      baseline,
-      candidatesHash: h50.candidatesHash,
-      requestHash: h50.requestHash,
-    });
-
-    const v150 = verifyElementStyles({
-      layout: res150.layout!,
-      baseline,
-      candidatesHash: h150.candidatesHash,
-      requestHash: h150.requestHash,
-    });
-
-    // 验证物理尺寸判据保持绝对一致（DPI 不影响毫米判据）
-    expect(v50.anomalies.length).toBe(v150.anomalies.length);
-    if (v50.anomalies.length > 0) {
-      expect(v50.anomalies[0]!.actualMm).toBe(v150.anomalies[0]!.actualMm);
-      expect(v50.anomalies[0]!.expectedMm).toBe(v150.anomalies[0]!.expectedMm);
-      expect(v50.anomalies[0]!.ratio).toBe(v150.anomalies[0]!.ratio);
-    }
-  });
-
-  it('成果校验集成：checkAgentOutcome 在基准存在且字号偏小时包含样式核查异常提示', async () => {
-    const workspace = await loadWorkspace({ dir: m402Dir, resourcesDir });
-
-    const smallTemplate = {
-      dslVersion: 'renderweave-template/1',
-      name: '标准线路单边',
-      base: { name: '线路牌', version: 1 },
-      artboard: {
-        sizeRange: { width: { min: 700, max: 800 }, height: { min: 150, max: 200 } },
-        fill: '#FFFFFF',
-        layout: { mode: 'free' },
-        children: [
-          {
-            type: 'text',
-            name: '站名',
-            content: [{ text: '科技园' }],
-            font: 'res:font-hei-medium',
-            fontSize: 4, // 4 mm 远低于预期 10 mm
-            color: '#000000',
-            place: { left: 10, top: 10, width: { fixed: 50 }, height: { fixed: 20 } },
-          },
-        ],
-      },
-    };
-
-    const baseline: ReferenceBaseline = {
-      sampleWidthPx: 3200,
-      sampleHeightPx: 3600,
-      artboardWidthMm: 740,
-      artboardHeightMm: 165,
-      approvedRegions: [
-        {
-          id: 'stop-name',
-          name: '站名',
-          sampleRegion: { x: 100, y: 100, width: 200, height: 218 }, // ~10 mm
-          targetPathPattern: '*站名*',
-          expectedFontSizeMm: 10,
-        },
-      ],
-    };
-
-    const request = {
-      template: '标准线路单边',
-      dataset: { id: 'ds-m402-wanguocheng' },
-      parameters: { currentIndex: 5 },
-      output: { width: 740, height: 165, dpi: 50, format: 'png' },
-    };
-
-    // 内存中模拟 checkAgentOutcome
-    const { tmpdir } = await import('node:os');
-    const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
-    const { join } = await import('node:path');
-
-    const tempDir = await mkdtemp(join(tmpdir(), 'rw-outcome-style-'));
+describe('参考比较的反例与闭环', () => {
+  it('多区域视觉诊断与严重渲染问题共享输出预算，最终检查仍可读取', async () => {
+    const dir = join(root, 'large'); await mkdir(join(dir, 'candidates'), { recursive: true });
+    const many = template();
+    many.artboard.children = Array.from({ length: 100 }, (_, i) => ({ ...template(5, 10, 'مرحبا').artboard.children[0]!, name: `站名-${i}` }));
+    await writeFile(join(dir, 'candidates/main.json'), JSON.stringify(many));
+    await writeFile(join(dir, 'outcome.json'), JSON.stringify({ candidates: ['candidates/main.json'], pending: [], notes: '大批量差异复现' }));
+    const context = join(root, 'large-context.json');
+    await writeFile(context, JSON.stringify({ task: 'template-design', request, baseline: { ...baseline, approvedRegions: Array.from({ length: 100 }, (_, i) => ({ ...baseline.approvedRegions[0], id: `stop-${i}`, targetPathPattern: `对照/站名-${i}` })) }, referenceImage: sample }));
+    const session = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', dir, '--outcome-context', context]);
     try {
-      await mkdir(join(tempDir, 'candidates'), { recursive: true });
-      await writeFile(join(tempDir, 'candidates/template-main.json'), JSON.stringify(smallTemplate));
-      await writeFile(
-        join(tempDir, 'outcome.json'),
-        JSON.stringify({
-          candidates: ['candidates/template-main.json'],
-          pending: [],
-          notes: '测试偏小字号',
-        }),
-      );
-
-      const check = await checkAgentOutcome({
-        task: 'template-design',
-        agentDir: tempDir,
-        workspace,
-        context: {
-          request,
-          baseline,
-        },
-      });
-
-      // 验证样式核查已包含在 assessment 中
-      expect(check.assessment.style).toBeDefined();
-      expect(check.assessment.style?.passed).toBe(false);
-      expect(check.styleVerification?.anomalies.length).toBeGreaterThan(0);
-      expect(check.problems.some((p) => p.message.includes('明显偏小'))).toBe(true);
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
+      await session.request('initialize', { protocolVersion: '2025-06-18' });
+      const result = await session.call('check_outcome');
+      expect(result.isError).toBe(false);
+      const text = result.content.find((c) => c.type === 'text')! as { text: string };
+      expect(text.text.length).toBeLessThanOrEqual(40000);
+      const checked = JSON.parse(text.text);
+      expect(checked.verdict).toBe('unqualified'); expect(checked.assessment.render.capabilityBlocked).toBe(true);
+      expect(checked.assessment.visual.anomaliesTotal).toBeGreaterThan(100);
+      expect(checked.problemsTruncated.total).toBeGreaterThan(checked.problems.length);
+      expect(checked.assessment.render.problemsTruncated.byCode['text.unshapedScript']).toBe(100);
+      const ids: string[] = [];
+      let offset: number | null = 0;
+      while (offset !== null) {
+        const page = await session.callJson('compare_reference', { regionOffset: offset });
+        expect(JSON.stringify(page).length).toBeLessThanOrEqual(40000);
+        expect(page.reportId).toBe(checked.assessment.visual.reportId);
+        expect(page.coverage.approvedRegionsTotal).toBe(100);
+        expect(page.regionCatalog.length).toBeGreaterThan(0);
+        expect(page.panels[0].regionId).toBe(page.regionCatalog[0].id);
+        ids.push(...page.regionCatalog.map((region: { id: string }) => region.id));
+        if (page.nextRegionOffset !== null) expect(page.nextRegionOffset).toBeGreaterThan(offset!);
+        offset = page.nextRegionOffset;
+      }
+      expect(ids).toEqual(Array.from({ length: 100 }, (_, i) => `stop-${i}`));
+      const last = await session.callJson('compare_reference', { regions: [ids.at(-1)] });
+      expect(last.regions.map((region: { id: string }) => region.id)).toEqual(['stop-99']);
+      expect((await session.call('compare_reference', { regionOffset: 20, regions: ['stop-99'] })).isError).toBe(true);
+    } finally { await session.close(); }
+  });
+  it('目录因长ID压缩时，图片只取当前目录页内的区域', async () => {
+    const dir = join(root, 'catalog'); await mkdir(join(dir, 'candidates'), { recursive: true });
+    await writeFile(join(dir, 'candidates/main.json'), JSON.stringify(template(5)));
+    const longRegions = Array.from({ length: 3 }, (_, index) => ({ ...baseline.approvedRegions[0]!, id: `${index}-${'x'.repeat(2050)}` }));
+    const context = join(root, 'catalog-context.json');
+    await writeFile(context, JSON.stringify({ task: 'template-design', request, baseline: { ...baseline, approvedRegions: longRegions }, referenceImage: sample }));
+    const session = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', dir, '--outcome-context', context]);
+    try {
+      await session.request('initialize', { protocolVersion: '2025-06-18' });
+      const page = await session.callJson('compare_reference', { templates: ['candidates/main.json'], regionOffset: 1 });
+      expect(page.regionCatalog.map((r: { id: string }) => r.id)).toEqual([longRegions[1]!.id]);
+      expect(page.panels.map((p: { regionId: string }) => p.regionId)).toEqual([longRegions[1]!.id]);
+      expect(page.nextRegionOffset).toBe(2); expect(page.coverage.approvedRegionsTotal).toBe(3);
+    } finally { await session.close(); }
+  });
+  it('无参考不通过；无匹配不通过；不从框高估计字号', async () => {
+    const rendered = await render(overlay(template()), request);
+    const plain = verifyElementStyles({ layout: rendered.layout!, candidatesHash: 'c', requestHash: 'r' });
+    expect(plain.status).toBe('notChecked'); expect(plain.passed).toBe(false); expect(plain.coverage.statesCovered).toEqual([]);
+    const uncalibrated = { ...baseline, approvedRegions: [{ id: 'untyped', name: '未知框', targetPathPattern: '对照/站名', sampleRegion: { x: 0, y: 0, width: 100, height: 100 } }] };
+    const measured = await compareReference({ workspace: overlay(template()), request, baseline: uncalibrated });
+    expect(measured.report?.anomalies).toEqual([]); expect(measured.report?.passed).toBe(false);
+    expect(measured.report?.regions[0]?.status).toBe('unknown');
+  });
+  it('空骨架、字号减半、平移、错字都定位到对应区域', async () => {
+    const empty = template(); empty.artboard.children = [];
+    for (const [document, expected] of [[empty, 'missingRegion'], [template(5), 'fontSizeTooSmall'], [template(10, 16), 'positionDeviation'], [template(10, 10, '科枝园'), 'textMismatch']] as const) {
+      const result = await compareReference({ workspace: overlay(document), request, baseline, sample });
+      expect(result.report?.anomalies.some((a) => a.kind === expected && a.regionId === 'stop-name')).toBe(true);
+      expect(result.report?.status).toBe('needsWork');
     }
+    const normal = await compareReference({ workspace: overlay(template()), request, baseline, sample, includeImages: true });
+    expect(normal.report?.anomalies).toEqual([]);
+    expect(normal.report?.regions[0]?.instances[0]?.sourceLocation).toEqual({ template: '对照', path: '对照/站名' });
+    expect(normal.report?.sourceFiles['对照']).toBe('candidates/main.json');
+    expect(normal.panels).toHaveLength(1);
+    expect(normal.panels[0]?.transform.panelWidth).toBeGreaterThan(0);
+  });
+  it('按实际文字片段字号比较，空锚点仍给未校准总览', async () => {
+    const vertical = template();
+    const node = { ...vertical.artboard.children[0]!, writingMode: 'vertical', content: [{ text: '科技园', fontSize: 5 }] };
+    const small = await compareReference({ workspace: overlay({ ...vertical, artboard: { ...vertical.artboard, children: [node] } }), request, baseline, sample });
+    expect(small.report?.anomalies.some((a) => a.kind === 'fontSizeTooSmall' && a.actualMm === 5)).toBe(true);
+    expect(small.report?.regions[0]?.instances[0]?.fontSizeMm).toBe(5);
+    const overview = await compareReference({ workspace: overlay(template()), request, baseline: { ...baseline, approvedRegions: [] }, sample, includeImages: true });
+    expect(overview.report?.status).toBe('notChecked'); expect(overview.panels[0]?.regionId).toBe('overview');
+    const color = template(); color.artboard.children[0]!.color = '#FF0000';
+    expect((await compareReference({ workspace: overlay(color), request, baseline, sample })).report?.anomalies.some((a) => a.kind === 'colorMismatch')).toBe(true);
+  });
+  it('真实内容的文字证据排除草稿占位', async () => {
+    const lab = await textLab([{ name: 'name', displayName: '站名', type: 'text', constraints: { required: true } }], { children: [
+      { type: 'text', name: '站名', font: 'res:font-hei-regular', fontSize: 5, content: [{ slot: 'name' }], color: '#222222', place: { left: 5, top: 5, width: { fixed: 30 }, height: { fixed: 10 } } },
+    ] });
+    const result = await render(lab, { ...textLabRequest({}, 100, 60, 50), mode: 'draft' }, { comparisonEvidence: true });
+    expect(JSON.stringify(result.layout)).toContain('〔站名〕');
+    expect(JSON.stringify(result.evidence!.layout)).not.toContain('〔站名〕');
+    expect(result.evidence!.nodes.every((n) => !n.inkBounds)).toBe(true);
+  });
+  it('DPI 不改变毫米诊断；报告绑定实际资源、数据、请求和参考', async () => {
+    const first = await compareReference({ workspace: overlay(template(5)), request, baseline, sample });
+    const again = await compareReference({ workspace: overlay(template(5)), request, baseline, sample });
+    expect(again.report?.reportId).toBe(first.report?.reportId);
+    const high = await compareReference({ workspace: overlay(template(5)), request: { ...request, output: { ...request.output, dpi: 100 } }, baseline, sample });
+    expect(high.report?.anomalies).toEqual(first.report?.anomalies);
+    expect(high.report?.reportId).not.toBe(first.report?.reportId);
+    const changed = { ...overlay(template(5)), resources: { ...workspace.resources, get: workspace.resources.get.bind(workspace.resources), list: workspace.resources.list.bind(workspace.resources), read: (id: string) => workspace.resources.read(id === 'font-hei-medium' ? 'font-hei-bold' : id) } };
+    const resourceChanged = await compareReference({ workspace: changed, request, baseline, sample });
+    expect(resourceChanged.report?.provenance.resources['font-hei-medium']).not.toBe(first.report?.provenance.resources['font-hei-medium']);
+    await expect(compareReference({ workspace: overlay(template()), request, baseline, sample: { ...sample, sha256: '0'.repeat(64) } })).rejects.toThrow('已改变');
+    const aspect = await compareReference({ workspace: overlay(template()), request, baseline: { ...baseline, artboardWidthMm: 80 } });
+    expect(aspect.report?.reason).toBe('alignmentUnknown');
+  });
+  it('真实内容证据不包含草稿边框，正式出图仍阻断已知能力问题', async () => {
+    const broken = overlay(template(10, 10, 'مرحبا'));
+    const draft = await render(broken, request, { comparisonEvidence: true });
+    expect(draft.problems.some((p) => p.code === 'text.unshapedScript')).toBe(true);
+    expect(Buffer.from(draft.evidence!.image.bytes).equals(Buffer.from(draft.image!.bytes))).toBe(false);
+    const final = await render(broken, { ...request, mode: 'final' }, { comparisonEvidence: true });
+    expect(final.image).toBeUndefined(); expect(final.evidence).toBeUndefined();
+  });
+  it('重复实例有实际源模板路径，但不能只凭数量声称状态样式已验证', async () => {
+    const m402 = await render(workspace, { template: '标准线路单边', dataset: { id: 'ds-m402-wanguocheng' }, parameters: { currentIndex: 5 }, output: { width: 740, height: 165, dpi: 20, format: 'png' }, mode: 'draft' }, { comparisonEvidence: true });
+    const repeated = m402.evidence!.nodes.filter((n) => /\[\d+\]/.test(n.path) && n.inkBounds);
+    expect(repeated.length).toBeGreaterThan(30);
+    expect(repeated.every((n) => n.source && !n.source.path.includes('['))).toBe(true);
+    const v = verifyElementStyles({ layout: m402.layout!, candidatesHash: 'c', requestHash: 'r', parameters: { currentIndex: 5 } });
+    expect(v.coverage.statesCovered).toEqual([]);
+  });
+  it('经 MCP 比较与 check_outcome 看到相同报告，改候选后复检有 resolved 反馈', async () => {
+    await writeFile(join(root, 'candidates/main.json'), JSON.stringify(template(5)));
+    await writeFile(join(root, 'outcome.json'), JSON.stringify({ candidates: ['candidates/main.json'], pending: [], notes: '初稿' }));
+    const context = join(root, 'context.json');
+    await writeFile(context, JSON.stringify({ task: 'template-design', request: { ...request, mode: 'final' }, baseline, referenceImage: sample }));
+    const session = startMcp(['--workspace', m402Dir, '--resources', resourcesDir, '--root', root, '--outcome-context', context]);
+    try {
+      await session.request('initialize', { protocolVersion: '2025-06-18' });
+      const compared = await session.callJson('compare_reference');
+      const checked = await session.callJson('check_outcome');
+      expect(compared.reportId).toBe(checked.assessment.visual.reportId);
+      expect(checked.assessment.visual.status).toBe('needsWork');
+      await writeFile(join(root, 'candidates/main.json'), JSON.stringify(template()));
+      const fixed = await session.callJson('compare_reference', { regions: ['stop-name'] });
+      expect(fixed.changes.resolved).toBeGreaterThan(0); expect(fixed.anomaliesTotal).toBe(0);
+      expect(fixed.reportId).not.toBe(compared.reportId);
+      expect((await session.call('compare_reference', { regions: ['fake'] })).isError).toBe(true);
+    } finally { await session.close(); }
+    expect(JSON.parse(await readFile(context, 'utf8')).baseline).toEqual(baseline);
   });
 });

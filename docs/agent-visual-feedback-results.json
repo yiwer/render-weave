@@ -1,0 +1,631 @@
+{
+  "recordedAt": "2026-10-23T07:56:34.720Z",
+  "scope": "中文、英文视觉反馈首期提交；完整模型门槛尚未完成",
+  "tests": {
+    "passed": 1052,
+    "skipped": 13,
+    "passedFiles": 58,
+    "skippedFiles": 1,
+    "typecheck": "pass"
+  },
+  "controlled": [
+    {
+      "command": "node --import tsx scripts/accept-agent-visual.mjs",
+      "language": "zh",
+      "cases": [
+        {
+          "id": "baseline",
+          "reportId": "29d0fddc61a28ff1374fa7b9f766eb170c3758dfad9066258d6ac5ae5ec69e65",
+          "status": "needsReview",
+          "anomalies": []
+        },
+        {
+          "id": "skeleton",
+          "reportId": "2061b4d4a8763328dad169504902b1b08c93ee7dd9b67b641219a921480fbebc",
+          "status": "needsWork",
+          "anomalies": [
+            "missingRegion"
+          ]
+        },
+        {
+          "id": "small",
+          "reportId": "6929366cbdd542be7bb1380e929f306f126e42d56438ff38dd16332e3c585c81",
+          "status": "needsWork",
+          "anomalies": [
+            "fontSizeTooSmall",
+            "sizeDeviation",
+            "sizeDeviation"
+          ]
+        },
+        {
+          "id": "moved",
+          "reportId": "d5b922cf2ce44e35ff33a92e486d259272d44ae370586dcc9cd8eebf02b0c8d0",
+          "status": "needsWork",
+          "anomalies": [
+            "positionDeviation"
+          ]
+        },
+        {
+          "id": "typo",
+          "reportId": "82761b2d5d0fa11f97642d5d31e6a0f0f3ebb06fb19ee83bd6595811703c8597",
+          "status": "needsWork",
+          "anomalies": [
+            "textMismatch"
+          ]
+        },
+        {
+          "id": "color",
+          "reportId": "6f00950ab8f7cbad842868b05c1c87231113ead9bd0458a325d9cd0ba2d8fbd9",
+          "status": "needsWork",
+          "anomalies": [
+            "colorMismatch"
+          ]
+        },
+        {
+          "id": "corrected",
+          "reportId": "29d0fddc61a28ff1374fa7b9f766eb170c3758dfad9066258d6ac5ae5ec69e65",
+          "status": "needsReview",
+          "anomalies": []
+        },
+        {
+          "id": "capability-blocked",
+          "reportId": "ce64429165aba9ff7e50b631076422dec0324c2f957ebd169bec50cfe774f0b2",
+          "status": "needsWork",
+          "anomalies": [
+            "textMismatch",
+            "sizeDeviation"
+          ]
+        }
+      ],
+      "dpiInvariant": true,
+      "limitations": [
+        "合成样本验证诊断方向，不证明真实模型任务成功率",
+        "最终遮挡、对比度、复杂变换和未标注区域仍需审核",
+        "未校准整体相似度或通过阈值"
+      ]
+    },
+    {
+      "command": "node --import tsx scripts/accept-agent-visual.mjs",
+      "language": "en",
+      "cases": [
+        {
+          "id": "baseline",
+          "reportId": "24d27591336e2bdc9ca6c26c276f75ccbbb094bb7552d7a7c79b620e46eded67",
+          "status": "needsReview",
+          "anomalies": []
+        },
+        {
+          "id": "skeleton",
+          "reportId": "4f9550835c27a6047bd731ea1af4578ec6357a4a4606fa1b051a6492b91268e1",
+          "status": "needsWork",
+          "anomalies": [
+            "missingRegion"
+          ]
+        },
+        {
+          "id": "small",
+          "reportId": "77660b1290b04c74c7ba4a5c5b75aeccbabce6a8b3606cbed2431b1c8888eda4",
+          "status": "needsWork",
+          "anomalies": [
+            "fontSizeTooSmall",
+            "sizeDeviation",
+            "sizeDeviation"
+          ]
+        },
+        {
+          "id": "moved",
+          "reportId": "bbacdbd48ef0306d7ded11faad463418639db7734a1310de76e9b43fe3e744c3",
+          "status": "needsWork",
+          "anomalies": [
+            "positionDeviation"
+          ]
+        },
+        {
+          "id": "typo",
+          "reportId": "91984bc17da6f571a0e89aa243d78ffdcbbc201a95a3789463ab29425f3bbaaf",
+          "status": "needsWork",
+          "anomalies": [
+            "textMismatch"
+          ]
+        },
+        {
+          "id": "color",
+          "reportId": "8df03c16172616cc47b351e70515867d940b41b1220eadf4ddcc7514b2f683fc",
+          "status": "needsWork",
+          "anomalies": [
+            "colorMismatch"
+          ]
+        },
+        {
+          "id": "corrected",
+          "reportId": "24d27591336e2bdc9ca6c26c276f75ccbbb094bb7552d7a7c79b620e46eded67",
+          "status": "needsReview",
+          "anomalies": []
+        },
+        {
+          "id": "capability-blocked",
+          "reportId": "10cd1781bd2ac6e69bebe7c0ef1244158164c79bea3bc2b4c9f94cba91221909",
+          "status": "needsWork",
+          "anomalies": [
+            "textMismatch",
+            "sizeDeviation",
+            "sizeDeviation"
+          ]
+        }
+      ],
+      "dpiInvariant": true,
+      "limitations": [
+        "合成样本验证诊断方向，不证明真实模型任务成功率",
+        "最终遮挡、对比度、复杂变换和未标注区域仍需审核",
+        "未校准整体相似度或通过阈值"
+      ]
+    }
+  ],
+  "chineseLiveCorrection": [
+    {
+      "mcpContract": "0.10.0",
+      "engine": "sha256:4caa4cb1e426e7833600b56a3e3d1abe69e09ef66dfbdd698ca582d700971625",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "wallMs": 76587,
+        "turns": 23,
+        "inputTokens": 16,
+        "outputTokens": 5964,
+        "thinkingTokens": 2636,
+        "cacheReadTokens": 210223,
+        "cacheCreationTokens": 35245,
+        "servedModel": "claude-haiku-5-5",
+        "claudeCodeVersion": "2.1.296",
+        "endedBy": "success",
+        "exitCode": 0,
+        "mcp": [
+          "rw:connected"
+        ]
+      },
+      "toolErrors": 1,
+      "reports": [
+        {
+          "id": "before",
+          "anomalies": 6,
+          "kinds": [
+            "fontSizeTooSmall",
+            "textMismatch",
+            "colorMismatch",
+            "sizeDeviation",
+            "positionDeviation"
+          ],
+          "status": "needsWork"
+        },
+        {
+          "id": "after",
+          "anomalies": 0,
+          "kinds": [],
+          "status": "needsReview"
+        }
+      ],
+      "allowedChangesOnly": true,
+      "hostReportId": "903ff78ed6f25579bb833a6153d22503e83c8dbc4cc1e74d9aa0bc2ddde04746",
+      "comparisonReportIds": [
+        "7ca14d6413bfaca35654918396a67e7edf464f7b831d163ede88151683eb3f31",
+        "903ff78ed6f25579bb833a6153d22503e83c8dbc4cc1e74d9aa0bc2ddde04746"
+      ],
+      "sourcePath": "out/agent-visual-live/verified/summary.json"
+    },
+    {
+      "mcpContract": "0.10.1",
+      "engine": "sha256:635a378346b033b29da54ff8cee5eb7ed5d5780c20a469fec5e634f78169ae99",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "wallMs": 184673,
+        "turns": 20,
+        "inputTokens": 18,
+        "outputTokens": 4426,
+        "thinkingTokens": 1378,
+        "cacheReadTokens": 242251,
+        "cacheCreationTokens": 41540,
+        "servedModel": "claude-haiku-5-5",
+        "claudeCodeVersion": "2.1.296",
+        "endedBy": "success",
+        "exitCode": 0,
+        "mcp": [
+          "rw:connected"
+        ]
+      },
+      "toolErrors": 0,
+      "reports": [
+        {
+          "id": "before",
+          "anomalies": 6,
+          "kinds": [
+            "fontSizeTooSmall",
+            "textMismatch",
+            "colorMismatch",
+            "sizeDeviation",
+            "positionDeviation"
+          ],
+          "status": "needsWork"
+        },
+        {
+          "id": "after",
+          "anomalies": 0,
+          "kinds": [],
+          "status": "needsReview"
+        }
+      ],
+      "allowedChangesOnly": true,
+      "hostReportId": "da9f24f018439d55d3cac1202f5f53478844bf35cf70de47f98739c663135b72",
+      "comparisonReportIds": [
+        "078354dab3b3505a300162c1c87c0fbd5e77cfcb2825c9e35c006de49a6b46cb",
+        "da9f24f018439d55d3cac1202f5f53478844bf35cf70de47f98739c663135b72"
+      ],
+      "sourcePath": "out/agent-visual-live/verified-0101/summary.json"
+    }
+  ],
+  "modelGateSnapshots": [
+    {
+      "label": "2026-10-22-visual-feedback-0100",
+      "observedAt": "2026-10-23T07:53:08.771Z",
+      "mcpContract": "0.10.0",
+      "engine": "sha256:4caa4cb1e426e7833600b56a3e3d1abe69e09ef66dfbdd698ca582d700971625",
+      "status": "incomplete",
+      "plannedUnits": 8,
+      "completedPassingUnits": 7,
+      "completed": [
+        {
+          "id": "m402-definition",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "definition-extraction",
+              "dir": "run-1/m402-definition/definition",
+              "verdict": "qualified",
+              "wallMs": 600951,
+              "turns": 41,
+              "inputTokens": 34,
+              "outputTokens": 35850,
+              "thinkingTokens": 24177,
+              "cacheReadTokens": 726576,
+              "cacheCreationTokens": 66396,
+              "endedBy": "success",
+              "pending": 4,
+              "toolCalls": 25,
+              "toolErrors": 0,
+              "persistedResults": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-template",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-design",
+              "dir": "run-1/m402-template/template",
+              "verdict": "qualified",
+              "wallMs": 756007,
+              "turns": 47,
+              "inputTokens": 46,
+              "outputTokens": 77570,
+              "thinkingTokens": 51527,
+              "cacheReadTokens": 1884902,
+              "cacheCreationTokens": 127096,
+              "endedBy": "success",
+              "pending": 2,
+              "toolCalls": 30,
+              "toolErrors": 0,
+              "persistedResults": 0,
+              "firstCheckProblems": 1
+            }
+          ]
+        },
+        {
+          "id": "m402-revision",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-revision",
+              "dir": "run-1/m402-revision/revision",
+              "verdict": "qualified",
+              "wallMs": 249602,
+              "turns": 34,
+              "inputTokens": 34,
+              "outputTokens": 27362,
+              "thinkingTokens": 14369,
+              "cacheReadTokens": 865711,
+              "cacheCreationTokens": 71200,
+              "endedBy": "success",
+              "pending": 0,
+              "toolCalls": 15,
+              "toolErrors": 1,
+              "persistedResults": 0,
+              "firstCheckProblems": 0
+            }
+          ]
+        },
+        {
+          "id": "366-transcription",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "definition-extraction",
+              "dir": "run-1/366-transcription/definition",
+              "verdict": "qualified",
+              "wallMs": 664770,
+              "turns": 35,
+              "inputTokens": 28,
+              "outputTokens": 33402,
+              "thinkingTokens": 24759,
+              "cacheReadTokens": 597181,
+              "cacheCreationTokens": 65014,
+              "endedBy": "success",
+              "pending": 3,
+              "toolCalls": 19,
+              "toolErrors": 0,
+              "persistedResults": 0
+            },
+            {
+              "task": "dataset-extraction",
+              "dir": "run-1/366-transcription/dataset",
+              "verdict": "qualified",
+              "wallMs": 1767407,
+              "turns": 44,
+              "inputTokens": 38,
+              "outputTokens": 37434,
+              "thinkingTokens": 24450,
+              "cacheReadTokens": 1019918,
+              "cacheCreationTokens": 92032,
+              "endedBy": "success",
+              "pending": 1,
+              "toolCalls": 28,
+              "toolErrors": 1,
+              "persistedResults": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-definition",
+          "repetition": 2,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "definition-extraction",
+              "dir": "run-2/m402-definition/definition",
+              "verdict": "qualified",
+              "wallMs": 262522,
+              "turns": 29,
+              "inputTokens": 24,
+              "outputTokens": 33097,
+              "thinkingTokens": 24403,
+              "cacheReadTokens": 464816,
+              "cacheCreationTokens": 53071,
+              "endedBy": "success",
+              "pending": 3,
+              "toolCalls": 15,
+              "toolErrors": 0,
+              "persistedResults": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-template",
+          "repetition": 2,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-design",
+              "dir": "run-2/m402-template/template",
+              "verdict": "qualified",
+              "wallMs": 396758,
+              "turns": 51,
+              "inputTokens": 32,
+              "outputTokens": 54754,
+              "thinkingTokens": 35662,
+              "cacheReadTokens": 972231,
+              "cacheCreationTokens": 102582,
+              "endedBy": "success",
+              "pending": 4,
+              "toolCalls": 23,
+              "toolErrors": 0,
+              "persistedResults": 0,
+              "firstCheckProblems": 2
+            }
+          ]
+        },
+        {
+          "id": "m402-revision",
+          "repetition": 2,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-revision",
+              "dir": "run-2/m402-revision/revision",
+              "verdict": "qualified",
+              "wallMs": 332396,
+              "turns": 43,
+              "inputTokens": 44,
+              "outputTokens": 35346,
+              "thinkingTokens": 17091,
+              "cacheReadTokens": 1290714,
+              "cacheCreationTokens": 79418,
+              "endedBy": "success",
+              "pending": 0,
+              "toolCalls": 23,
+              "toolErrors": 9,
+              "persistedResults": 0,
+              "firstCheckProblems": 0
+            }
+          ]
+        }
+      ],
+      "notYetVerified": [
+        {
+          "id": "366-transcription",
+          "repetition": 2
+        }
+      ],
+      "limits": [
+        "运行中的轮次不作失败或通过结论；此快照不是完整门槛报告",
+        "合同与引擎取实际轮次来源；不采用重评分进程自身的版本标识"
+      ]
+    },
+    {
+      "label": "2026-10-23-visual-feedback-0101",
+      "observedAt": "2026-10-23T07:53:05.633Z",
+      "mcpContract": "0.10.1",
+      "engine": "sha256:635a378346b033b29da54ff8cee5eb7ed5d5780c20a469fec5e634f78169ae99",
+      "status": "incomplete",
+      "plannedUnits": 8,
+      "completedPassingUnits": 5,
+      "completed": [
+        {
+          "id": "m402-definition",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "definition-extraction",
+              "dir": "run-1/m402-definition/definition",
+              "verdict": "qualified",
+              "wallMs": 506751,
+              "turns": 35,
+              "inputTokens": 26,
+              "outputTokens": 39369,
+              "thinkingTokens": 28705,
+              "cacheReadTokens": 603220,
+              "cacheCreationTokens": 66596,
+              "endedBy": "success",
+              "pending": 4,
+              "toolCalls": 19,
+              "toolErrors": 0,
+              "persistedResults": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-template",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-design",
+              "dir": "run-1/m402-template/template",
+              "verdict": "qualified",
+              "wallMs": 669455,
+              "turns": 59,
+              "inputTokens": 46,
+              "outputTokens": 72082,
+              "thinkingTokens": 44503,
+              "cacheReadTokens": 1820210,
+              "cacheCreationTokens": 127233,
+              "endedBy": "success",
+              "pending": 3,
+              "toolCalls": 36,
+              "toolErrors": 0,
+              "persistedResults": 0,
+              "firstCheckProblems": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-revision",
+          "repetition": 1,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-revision",
+              "dir": "run-1/m402-revision/revision",
+              "verdict": "qualified",
+              "wallMs": 127017,
+              "turns": 31,
+              "inputTokens": 28,
+              "outputTokens": 10375,
+              "thinkingTokens": 4396,
+              "cacheReadTokens": 574542,
+              "cacheCreationTokens": 49108,
+              "endedBy": "success",
+              "pending": 0,
+              "toolCalls": 7,
+              "toolErrors": 0,
+              "persistedResults": 0,
+              "firstCheckProblems": 1
+            }
+          ]
+        },
+        {
+          "id": "m402-definition",
+          "repetition": 2,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "definition-extraction",
+              "dir": "run-2/m402-definition/definition",
+              "verdict": "qualified",
+              "wallMs": 448232,
+              "turns": 39,
+              "inputTokens": 28,
+              "outputTokens": 46697,
+              "thinkingTokens": 35175,
+              "cacheReadTokens": 689468,
+              "cacheCreationTokens": 71630,
+              "endedBy": "success",
+              "pending": 6,
+              "toolCalls": 24,
+              "toolErrors": 0,
+              "persistedResults": 0
+            }
+          ]
+        },
+        {
+          "id": "m402-template",
+          "repetition": 2,
+          "result": "pass",
+          "rounds": [
+            {
+              "task": "template-design",
+              "dir": "run-2/m402-template/template",
+              "verdict": "qualified",
+              "wallMs": 872261,
+              "turns": 68,
+              "inputTokens": 48,
+              "outputTokens": 80985,
+              "thinkingTokens": 54160,
+              "cacheReadTokens": 1980701,
+              "cacheCreationTokens": 138342,
+              "endedBy": "success",
+              "pending": 4,
+              "toolCalls": 34,
+              "toolErrors": 0,
+              "persistedResults": 0,
+              "firstCheckProblems": 0
+            }
+          ]
+        }
+      ],
+      "notYetVerified": [
+        {
+          "id": "366-transcription",
+          "repetition": 1
+        },
+        {
+          "id": "m402-revision",
+          "repetition": 2
+        },
+        {
+          "id": "366-transcription",
+          "repetition": 2
+        }
+      ],
+      "limits": [
+        "运行中的轮次不作失败或通过结论；此快照不是完整门槛报告",
+        "合同与引擎取实际轮次来源；不采用重评分进程自身的版本标识"
+      ]
+    }
+  ],
+  "englishLiveCorrection": "not-run",
+  "humanRankingCorrelation": "not-verified",
+  "arabicRestoration": "stopped-by-user"
+}

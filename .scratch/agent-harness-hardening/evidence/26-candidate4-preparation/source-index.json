@@ -1,0 +1,31 @@
+{
+  "format": "harness26-preparation-evidence/1",
+  "recordedAt": "2026-10-23T21:12:49.538Z",
+  "files": [
+    {
+      "file": "harness-26-evidence-map-candidate4-during-run.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-26-evidence-map-candidate4-during-run.md",
+      "size": 26523,
+      "sha256": "67ede67a8c48fb91b24b51c2f514498eb761069eb89b01f54dedc8c2da6c0629"
+    },
+    {
+      "file": "harness-26-evidence-map-candidate4-during-run.json",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-26-evidence-map-candidate4-during-run.json",
+      "size": 115437,
+      "sha256": "46f71d813a3421f2b00a2c0cedbb0b75fb431f6e4eeeaca1db7e52123460dbf4"
+    },
+    {
+      "file": "harness-26-evidence-gaps-candidate4-stopped.md",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-26-evidence-gaps-candidate4-stopped.md",
+      "size": 12926,
+      "sha256": "e7439c060df1919c3230136a022bf21feb0b53a23c8de4f70c0ad25761af21c0"
+    },
+    {
+      "file": "harness-26-evidence-gaps-candidate4-stopped.json",
+      "source": "C:\\Users\\Administrator\\.codex\\visualizations\\2026\\10\\23\\01a167fb-6fcb-7771-8713-7be4f73bddf8\\harness-26-evidence-gaps-candidate4-stopped.json",
+      "size": 11776,
+      "sha256": "4841f56af85ad2018d270f5c27560a2f3c08f9d5df6f7b7c63f29482e82d7540"
+    }
+  ],
+  "boundary": "历史固定快照，仅映射与缺口整理；不代替最终候选、真实模型或独立人审验收。"
+}

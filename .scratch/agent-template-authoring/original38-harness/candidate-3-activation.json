@@ -1,0 +1,15 @@
+{
+  "format": "original38-dispatch-activation/1",
+  "activatedAt": "2026-10-23T19:01:26.605Z",
+  "ticket20Merged": true,
+  "integrationCommit": "ad7733ac4173164b0a82bef2650021e74661b6c1",
+  "registrationSha256": "21e4a1c97ce82b6508caa69333ddc51b756200790e97f4843e4ad906d9a768eb",
+  "registrationCommit": "7f80490",
+  "independentReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-candidate3-publication-and-registration-review-v2.md",
+    "sha256": "fdfa6c436f655472447844782b7be75f2dcd74a9b114be5ad85554e4f1f398bf"
+  },
+  "status": "ready-for-planned-real-model-observations",
+  "authorization": "M329：用户已明确批准OpenCode Go具体端点和本批验收材料；本记录确认20发布与登记独立合入，不是人工成果审核。",
+  "segmentPolicy": "先人工观察第1分段完整结果，再决定第2分段；共享硬停止与不派发记录均由launcher拒绝。"
+}

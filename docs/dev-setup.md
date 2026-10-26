@@ -35,7 +35,6 @@ npm test
 
 - **key**：只有一个，放在环境变量 `OPEN_CODE_API_KEY`，由维护者在每台设备上自行设置，不进仓库。
   - Windows：在"编辑账户的环境变量"里新建，然后重开终端；已经打开的终端读不到新变量。
-    已启动的 Codex/IDE 也可能继续给新子进程传旧值。更新用户变量后重启宿主应用，或在发起评估的同一个 PowerShell 进程中执行 `$env:OPEN_CODE_API_KEY = [Environment]::GetEnvironmentVariable('OPEN_CODE_API_KEY', 'User')`。此方式适用于密钥确实配置在用户作用域的设备；只检查值是否一致，不打印密钥。2026-10-22 曾因 Process 旧值与 User 新值不一致，把旧凭据的额度 429 误判成用户指定凭据的额度，见[复核记录](template-design-p1-live-protocol.md)。
   - Linux 与 macOS：在仓库之外的 shell 配置里设置，或者每次会话前设置。
   - 不要把 key 写进仓库、命令行或脚本。renderweave 只从环境变量读取它，不写文件、不打印。
 - **模型**：

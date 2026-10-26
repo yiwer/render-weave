@@ -10,7 +10,11 @@
 
 全程只用 `renderweave` 命令与本机的审核页，不需要读代码，也不手工复制或改写工作区里的文件。各轮的用时见文末「用时与用量参考」。命令细节见 [业务 Agent 任务](agent-tasks.md)，交给 Agent 的资料见 [agent/README.md](../agent/README.md)。
 
+资料默认仍为全量阅读。校准时可显式选择 `--context-policy on-demand`，保留强制约束并通过现有只读参考工具按阶段取资料；候选、问题分页与配对准备见[资料策略](agent-context-policy.md)。它尚无真实模型收益结论，不自动改变默认或 effort。
+
 ## 准备
+
+需要 Agent 在设计中收到区域级偏差与同尺度对照时，按[视觉反馈指南](agent-visual-feedback.md)准备本次核准参考，在模板命令中增加 `--reference reference.json`。提取阶段的可信事实用 `--content-baseline content.json`；基准缺省时结果明确未核查，技术合格不代表还原合格。
 
 **软件**：Node.js 22 或以上，以及 Claude Code（`claude --version` 能运行即可，它只作为 Agent 的运行环境）。在仓库根目录执行一次：
 
@@ -179,6 +183,8 @@ node dist/bin.js deliver --workspace out/build/workspace --resources out/build/r
 node dist/bin.js agent run --from out/build/r3-template --feedback out/build/feedback.md --out out/build/r3-template-2
 ```
 
+审核页会分别展示最后完整候选和有证据较好的候选，以及两份内容、检查身份和逐项差异。若正式稿退步，可在上述命令加 `--checkpoint better`，从保留的完整集合开新轮次；也可选 `latest` 或页面显示的已发布 ID。没有改善证据时 `better` 会明确拒绝；它不代表整图合格，也不能直接批准或应用。详见[保留候选](agent-candidate-selection.md)。
+
 - 反馈是一份 Markdown，写清哪里不对、要怎样。
 - 下一轮沿用上一轮的任务、示例图、项目说明、基准与出图请求，命令行不能再给；工作区会重新取快照。
 - Agent 拿到上一轮的成果（含你在审核时的修改）、原样记录与反馈，在上一轮的基础上改。
@@ -242,3 +248,5 @@ node dist/bin.js template-revisions --server <服务地址> --tenant <租户ID> 
 | 模板辅助修改 | 1–4 分钟，1.2–3.1 万 | 未测 |
 
 每轮的用时、轮数、token 与实际服务的模型记在轮次目录的 `round.json`，审核页底部也会显示。
+
+需要核算完整订单（含失败重试、人工审核/修正及正式交付）时，执行前按[订单成本与人工投入](agent-orders.md)登记范围；分享报告使用白名单摘要。

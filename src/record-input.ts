@@ -1,7 +1,8 @@
 /** 正式交付的输入快照；固定可达模板、静态定义及有类型的资源引用。 */
 import { parseRenderRequest, type RenderRequest } from './request.js';
 import type { Problem } from './problems.js';
-import type { RenderOptions } from './render.js';
+import type { RenderOptions as AllRenderOptions } from './render.js';
+type RenderOptions = Pick<AllRenderOptions, 'fallbackFonts' | 'svgFonts'>;
 import { parseTemplate } from './template/parse.js';
 import { DEFAULT_FALLBACK_FONTS } from './text/fonts.js';
 import { findStaticSchema } from './schema/builtins.js';

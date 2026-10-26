@@ -1,0 +1,63 @@
+{
+  "format": "original38-english-observation-audit/1",
+  "checkedAt": "2026-10-26T01:18:39.194Z",
+  "unit": "original38-en-tfl161/design-1",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "bindingId": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec",
+  "round": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1",
+  "roundSha256": "7568e5bd86530c39ca285f6d4da44e279abd9056181d53ac28f52301beaa34c1",
+  "streamSha256": "598d59d9186b3fc35da94d0061e2532d2185e272c04c8093d8cf1bca0e36f3db",
+  "nativeResults": 1,
+  "nativeErrorEvents": 0,
+  "servedModels": [
+    "claude-haiku-5-5"
+  ],
+  "requestedBudget": {
+    "maxTurns": 80,
+    "timeoutMs": 3600000
+  },
+  "run": {
+    "wallMs": 1431252,
+    "inputTokens": 78,
+    "outputTokens": 88763,
+    "thinkingTokens": 58576,
+    "cacheReadTokens": 4502630,
+    "cacheCreationTokens": 217432,
+    "usageSource": "result",
+    "turns": 72,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "exitCode": 0,
+    "mcp": [
+      "rw:connected"
+    ]
+  },
+  "nativeDurationMs": 1429941,
+  "nativeModelUsage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 78,
+      "outputTokens": 88763,
+      "cacheReadInputTokens": 4502630,
+      "cacheCreationInputTokens": 217432,
+      "webSearchRequests": 0,
+      "costUSD": 0.40647451999999995,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 58576,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "costMeaning": "native list-price estimate only; actual provider charge unknown",
+  "sourceRoundFilesUnchanged": 93,
+  "sourceRoundDirectories": 26,
+  "modelObservation": 1,
+  "automaticVerdict": "qualified",
+  "businessVerdict": null,
+  "humanReviewMinutes": null,
+  "humanCorrectionMinutes": null,
+  "actualDefect": "arrow-04 appearance differs from approved source; see correction/defect-evidence.json",
+  "timeLegendDiagnostic": "分行文本未匹配，不据此认定内容遗漏"
+}

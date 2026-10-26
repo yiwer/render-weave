@@ -1,0 +1,1716 @@
+{
+  "format": "renderweave-feedback-scope-diagnosis/1",
+  "recordedAt": "2026-10-23T19:15:44.774Z",
+  "unit": "run-1/zh-template-design",
+  "attemptId": "ef3615ed-e21f-4151-8607-ac29f15fe731",
+  "immutableRound": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\observations\\run-1\\zh-template-design\\attempts\\ef3615ed-e21f-4151-8607-ac29f15fe731\\round",
+  "sealSha256": "sha256:ca765204eab3db72542b330d7a62eb41db1761cc27a7b09b4e856eeec62b7079",
+  "originalReport": {
+    "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\dispatch\\block-1.report-harness21-candidate-3.json",
+    "sha256": "sha256:13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47",
+    "originalEvidence": {
+      "kind": "real-model",
+      "realModelObservations": 0,
+      "note": "机制结果不计入真实模型验收；真实观测另需冻结候选与执行来源核验"
+    },
+    "gate": {
+      "status": "fail",
+      "pass": false,
+      "scenarios": [
+        {
+          "id": "zh-definition-extraction",
+          "name": "zh-definition-extraction",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "zh-dataset-extraction",
+          "name": "zh-dataset-extraction",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "zh-template-design",
+          "name": "zh-template-design",
+          "outcomes": [
+            "fail",
+            "not-run"
+          ],
+          "status": "fail"
+        },
+        {
+          "id": "zh-template-revision",
+          "name": "zh-template-revision",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-definition-extraction",
+          "name": "en-definition-extraction",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-dataset-extraction",
+          "name": "en-dataset-extraction",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-template-design",
+          "name": "en-template-design",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-template-revision",
+          "name": "en-template-revision",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        }
+      ],
+      "completeness": {
+        "planned": 16,
+        "pass": 7,
+        "fail": 1,
+        "invalid": 0,
+        "notRun": 8,
+        "complete": false
+      }
+    }
+  },
+  "originalScore": {
+    "targetCorrection": false,
+    "nonTargetPreservation": false,
+    "unknownRetained": false,
+    "finalCheckMatches": false,
+    "pagination": false,
+    "failures": [
+      "纠偏目标路径不存在",
+      "目标修正未通过",
+      "非目标保留未通过",
+      "未知范围保留未通过",
+      "最后工具检查与宿主终检身份未通过",
+      "后续页实际取得未通过"
+    ],
+    "before": {
+      "structure": "valid",
+      "candidates": "valid",
+      "content": "needsReview",
+      "render": {
+        "status": "renderable",
+        "problems": [],
+        "hasImage": true,
+        "blocking": true,
+        "capabilityBlocked": false
+      },
+      "visual": {
+        "reportId": "9a2df088fa97032bc9b46ff8c2a3eca41f9c79a7e602f003a449c6facf3bd1ca",
+        "status": "needsWork",
+        "coverage": {
+          "approvedRegionsTotal": 24,
+          "approvedRegionsMatched": 24,
+          "repeatedInstancesScanned": 24,
+          "statesCovered": [],
+          "statesMeasured": [
+            "normal"
+          ],
+          "unknownRegions": 24,
+          "complete": false
+        },
+        "anomalies": [
+          {
+            "kind": "fontSizeTooSmall",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 5.000 mm，参考 7.000 mm，比值 0.714",
+            "actualMm": 5,
+            "expectedMm": 7,
+            "ratio": 0.7142857142857143
+          },
+          {
+            "kind": "textMismatch",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：文字与核准内容不同"
+          },
+          {
+            "kind": "colorMismatch",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：解析后的文字颜色与参考 #172B4DFF 不同"
+          },
+          {
+            "kind": "sizeDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 14.464 mm，参考 20.250 mm，比值 0.714",
+            "actualMm": 14.46435546875,
+            "expectedMm": 20.24969482421875,
+            "ratio": 0.7142999237425814
+          },
+          {
+            "kind": "sizeDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 4.611 mm，参考 6.455 mm，比值 0.714",
+            "actualMm": 4.610595516860485,
+            "expectedMm": 6.454833684489131,
+            "ratio": 0.7142857186142034
+          },
+          {
+            "kind": "positionDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：位置偏移 Δx=2.944、Δy=-0.078 mm"
+          }
+        ],
+        "anomaliesTotal": 6,
+        "regions": [
+          {
+            "id": "region-01",
+            "name": "region-01",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.104644775390625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-01",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-01"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准01",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.104644775390625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-02",
+            "name": "region-02",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.20889282226562,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-02",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-02"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准02",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.208892822265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1.0000000000000002,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-03",
+            "name": "region-03",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 8.238369362279773,
+              "width": 21.167877197265625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-03",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-03"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准03",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.167877197265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-04",
+            "name": "region-04",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.342193603515625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-04",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-04"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准04",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.342193603515625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-05",
+            "name": "region-05",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.188385009765625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-05",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-05"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准05",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.188385009765625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-06",
+            "name": "region-06",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.258453369140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-06",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-06"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准06",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.258453369140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-07",
+            "name": "region-07",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 31.238369362279773,
+              "width": 21.231109619140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-07",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-07"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准07",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.231109619140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-08",
+            "name": "region-08",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.237945556640625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-08",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-08"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准08",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.237945556640625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-09",
+            "name": "region-09",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.181549072265625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-09",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-09"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准09",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.181549072265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-10",
+            "name": "region-10",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.217437744140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-10",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-10"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准10",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.217437744140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-11",
+            "name": "region-11",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 54.23836936227977,
+              "width": 21.104644775390625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-11",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-11"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准11",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.104644775390625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-12",
+            "name": "region-12",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.20889282226562,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-12",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-12"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准12",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.208892822265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1.0000000000000002,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          }
+        ],
+        "regionsTotal": 24,
+        "sourceFiles": {
+          "calibration-zh": "candidates/template.json"
+        },
+        "partialDetails": true,
+        "scope": "all",
+        "note": "数值仅描述核准范围；最终可见性和内容仍需审核。局部图从左到右为参考、候选、半透明叠图。"
+      },
+      "style": {
+        "passed": false,
+        "anomalies": [
+          {
+            "kind": "fontSizeTooSmall",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 5.000 mm，参考 7.000 mm，比值 0.714",
+            "actualMm": 5,
+            "expectedMm": 7,
+            "ratio": 0.7142857142857143
+          },
+          {
+            "kind": "textMismatch",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：文字与核准内容不同"
+          },
+          {
+            "kind": "colorMismatch",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：解析后的文字颜色与参考 #172B4DFF 不同"
+          },
+          {
+            "kind": "sizeDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 14.464 mm，参考 20.250 mm，比值 0.714",
+            "actualMm": 14.46435546875,
+            "expectedMm": 20.24969482421875,
+            "ratio": 0.7142999237425814
+          },
+          {
+            "kind": "sizeDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：实际 4.611 mm，参考 6.455 mm，比值 0.714",
+            "actualMm": 4.610595516860485,
+            "expectedMm": 6.454833684489131,
+            "ratio": 0.7142857186142034
+          },
+          {
+            "kind": "positionDeviation",
+            "regionId": "region-22",
+            "path": "calibration-zh/region-22",
+            "message": "region-22：位置偏移 Δx=2.944、Δy=-0.078 mm"
+          }
+        ],
+        "coverage": {
+          "approvedRegionsTotal": 24,
+          "approvedRegionsMatched": 24,
+          "repeatedInstancesScanned": 24,
+          "statesCovered": [],
+          "statesMeasured": [
+            "normal"
+          ],
+          "unknownRegions": 24,
+          "complete": false
+        }
+      }
+    },
+    "after": {
+      "structure": "valid",
+      "candidates": "valid",
+      "content": "needsReview",
+      "render": {
+        "status": "renderable",
+        "problems": [],
+        "hasImage": true,
+        "blocking": true,
+        "capabilityBlocked": false
+      },
+      "visual": {
+        "reportId": "2b4f7184f3af6d1a736085d9348ac9764e52ef4315a96124b66e93363e36ad4d",
+        "status": "needsReview",
+        "coverage": {
+          "approvedRegionsTotal": 24,
+          "approvedRegionsMatched": 24,
+          "repeatedInstancesScanned": 24,
+          "statesCovered": [],
+          "statesMeasured": [
+            "normal"
+          ],
+          "unknownRegions": 24,
+          "complete": false
+        },
+        "anomalies": [],
+        "anomaliesTotal": 0,
+        "regions": [
+          {
+            "id": "region-01",
+            "name": "region-01",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.104644775390625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-01",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-01"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准01",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.104644775390625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-02",
+            "name": "region-02",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.20889282226562,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-02",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-02"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准02",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.208892822265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1.0000000000000002,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-03",
+            "name": "region-03",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 8.238369362279773,
+              "width": 21.167877197265625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-03",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-03"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准03",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.167877197265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-04",
+            "name": "region-04",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 8.238369362279773,
+              "width": 21.342193603515625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-04",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-04"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准04",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 8.238369362279773,
+                  "width": 21.342193603515625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-05",
+            "name": "region-05",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.188385009765625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-05",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-05"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准05",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.188385009765625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-06",
+            "name": "region-06",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.258453369140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-06",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-06"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准06",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.258453369140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-07",
+            "name": "region-07",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 31.238369362279773,
+              "width": 21.231109619140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-07",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-07"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准07",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.231109619140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-08",
+            "name": "region-08",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 31.238369362279773,
+              "width": 21.237945556640625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-08",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-08"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准08",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 31.23836936227977,
+                  "width": 21.237945556640625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": -3.552713678800501e-15
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-09",
+            "name": "region-09",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.181549072265625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-09",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-09"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准09",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.181549072265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-10",
+            "name": "region-10",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 60.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.217437744140625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-10",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-10"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准10",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 60.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.217437744140625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-11",
+            "name": "region-11",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 110.21020507812499,
+              "y": 54.23836936227977,
+              "width": 21.104644775390625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-11",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-11"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准11",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 110.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.104644775390625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 1.4210854715202004e-14,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-12",
+            "name": "region-12",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 160.210205078125,
+              "y": 54.23836936227977,
+              "width": 21.20889282226562,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-12",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-12"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准12",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 160.210205078125,
+                  "y": 54.23836936227977,
+                  "width": 21.208892822265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1.0000000000000002,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          },
+          {
+            "id": "region-13",
+            "name": "region-13",
+            "state": "normal",
+            "status": "unknown",
+            "referenceBoxMm": {
+              "x": 10.210205078125,
+              "y": 77.23836936227977,
+              "width": 21.167877197265625,
+              "height": 6.482177473604679
+            },
+            "instances": [
+              {
+                "path": "calibration-zh/region-13",
+                "visibility": {
+                  "status": "unknown",
+                  "reasons": [],
+                  "cumulativeOpacity": 1
+                },
+                "sourceLocation": {
+                  "template": "calibration-zh",
+                  "path": "calibration-zh/region-13"
+                },
+                "fontSizeMm": 7,
+                "fontSizesMm": [
+                  7
+                ],
+                "text": "校准13",
+                "colors": [
+                  "#172B4DFF"
+                ],
+                "box": {
+                  "x": 10.210205078125,
+                  "y": 77.23836936227977,
+                  "width": 21.167877197265625,
+                  "height": 6.482177473604679
+                },
+                "deltaMm": {
+                  "x": 0,
+                  "y": 0
+                },
+                "sizeRatio": {
+                  "width": 1,
+                  "height": 1
+                },
+                "unknown": [
+                  "部分遮挡、复杂变换、低对比与感知可读性未核查"
+                ]
+              }
+            ],
+            "instancesTotal": 1
+          }
+        ],
+        "regionsTotal": 24,
+        "sourceFiles": {
+          "calibration-zh": "candidates/template.json"
+        },
+        "partialDetails": true,
+        "scope": "all",
+        "note": "数值仅描述核准范围；最终可见性和内容仍需审核。局部图从左到右为参考、候选、半透明叠图。"
+      },
+      "style": {
+        "passed": false,
+        "anomalies": [],
+        "coverage": {
+          "approvedRegionsTotal": 24,
+          "approvedRegionsMatched": 24,
+          "repeatedInstancesScanned": 24,
+          "statesCovered": [],
+          "statesMeasured": [
+            "normal"
+          ],
+          "unknownRegions": 24,
+          "complete": false
+        }
+      }
+    }
+  },
+  "sourceHashes": {
+    "round.json": "2b94889d4c79cf013de065b3a3f096f991c5bc54eb459e4d2e4b96010b6b349c",
+    "check.json": "1b4e386f26e0c86e731e602ab75244fbd40e62b7eebded2d035b9ca442a76172",
+    "outcome.json": "15d9465a390e9ae2d55a4093a922ca8d1a1562c217953193f2e3ef9db73eb961",
+    "candidates/template.json": "fa7475aa11ce4e5cbdf83359a5e8317fcf16d3446df5c3ac665edb417eb8f23c",
+    "logs/tools.jsonl": "b6ab5e993b9e55ffa5fe0387c695ea5a89f107e4b70837d26a5ca8f1e3227cd2"
+  },
+  "execution": {
+    "verdict": "qualified",
+    "exitCode": 0,
+    "wallMs": 135270,
+    "endedBy": "success",
+    "turns": 28
+  },
+  "policy": {
+    "format": "renderweave-feedback-policy/1",
+    "candidate": "candidates/template.json",
+    "corrections": [
+      {
+        "pointer": "/artboard/children/21/content/0/text",
+        "before": "科枝园",
+        "after": "科技园"
+      },
+      {
+        "pointer": "/artboard/children/21/fontSize",
+        "before": 5,
+        "after": 7
+      },
+      {
+        "pointer": "/artboard/children/21/color",
+        "before": "#FF0000",
+        "after": "#172B4D"
+      },
+      {
+        "pointer": "/artboard/children/21/place/left",
+        "before": 63,
+        "after": 60
+      }
+    ],
+    "unknownIds": [
+      "unmeasured-dimensions"
+    ],
+    "requiredLaterPageRegion": "region-22"
+  },
+  "actualJsonDifferences": [
+    {
+      "operation": "replace",
+      "path": "/artboard/children/21/color",
+      "before": "#FF0000",
+      "after": "#172B4D"
+    },
+    {
+      "operation": "add",
+      "path": "/artboard/children/21/content/0/slot",
+      "after": "stopName"
+    },
+    {
+      "operation": "remove",
+      "path": "/artboard/children/21/content/0/text",
+      "before": "科枝园"
+    },
+    {
+      "operation": "replace",
+      "path": "/artboard/children/21/fontSize",
+      "before": 5,
+      "after": 7
+    },
+    {
+      "operation": "replace",
+      "path": "/artboard/children/21/place/left",
+      "before": 63,
+      "after": 60
+    }
+  ],
+  "independentLogFacts": {
+    "priorDefectPageReads": [
+      {
+        "at": "2026-10-23T19:03:58.127Z",
+        "reportId": "2d3dd3dddfb5a8770682fb892eb85499081787907d577ddcae228ba3c06b2174",
+        "offset": 20,
+        "issueCount": 6
+      }
+    ],
+    "lastCompareMatchesHost": true,
+    "lastCheckMatchesHost": true,
+    "hostUnknownRegions": 24,
+    "hostVisualStatus": "needsReview",
+    "hostVisualAnomalies": 0
+  },
+  "explanation": {
+    "judgement": "有效结构/范围越界：固定text改为动态slot，不仅当前呈现文字不同；按预登记原fail保留",
+    "modelVisibleFeedback": "仅修正文字、字号、颜色、横向位置；其余内容原样保留",
+    "modelVisibleBrief": "保留其余结构和内容",
+    "clarityBoundary": "模型可见反馈未逐字列text键或JSON Pointer；固定精确四路径来自宿主预登记policy。此边界应另讨论，不在当前结果上重判",
+    "scorerShortCircuit": "scoreFeedback在读取目标text路径时抛错；后续非目标/未知/身份/分页守卫未执行，仍为初始false。原始标志不得描述为四项已被独立证伪",
+    "traceV1Caveat": "feedback-trace-block-1.json旧分类按原pagination布尔值推导，受短路影响；其中laterPageDefectReads=1是真实计数，以本诊断独立日志事实说明，不覆盖原分类文件",
+    "modelNotes": "第 2 轮，只按反馈修改 region-22。关键取舍：region-22 的文字改为绑定数据字段 stopName（数据为“科技园”），不再写死；字号 5 mm 改为 7 mm；颜色 #FF0000 改为 #172B4D；横向 left 63 改为 60，消除 Δx 2.944 mm。纵向 top 123 未改，改后复测 Δy 为 0。其余 23 个校准格的文字、字号、颜色与位置未改动。改前参考目录 24 项（两页，全部读完），异常 6 条，全部在 region-22；改后目录 24 项（两页，全部读完），异常 0，changes 显示 resolved 5、new 0、remaining 0。仍未核实或有差异：（1）24 项的 visibility 与 status 均为 unknown，遮挡、复杂变换、低对比与感知可读性未核查；只测量了 normal 状态，没有其他状态。（2）字体 res:font-hei-regular 的视觉字形与示例图接近，但没有字形级的核准。（3）长站名超出格宽：内联数据“科技园北门地铁站换乘中心”需 84 mm，格宽 45 mm，草稿报 layout.textOverflow 严重问题；反馈未授权添加 fit 或改格宽，因此未修改，需由审核人决定（例如给 region-22 加 fit 的 compressGlyphs、shrink 步骤，或加宽格子）。（4）线路号 routeNo 未显示，见待确认项。"
+  },
+  "rescored": false,
+  "realModelCalls": 0
+}

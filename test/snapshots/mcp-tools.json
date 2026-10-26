@@ -222,6 +222,45 @@
       }
     },
     {
+      "name": "compare_reference",
+      "description": "按本轮核准参考比较当前模板：返回缺项、文字、毫米位置与尺寸、颜色差异、实例路径与源模板位置，以及同尺度局部三联图（参考、候选、叠图）。templates 省略时读 outcome.json；始终测量全清单，regions 仅限制详细证据。regionCatalog 给本页区域 ID，nextRegionOffset 非 null 时用 regionOffset 读取下一页；详情截断时用目录 ID 点查。基准、示例图与请求由宿主固定，不能在调用时替换。没有基准明确返回未校准；不报告整体相似度，不写文件。修改后重查，并比较 resolved/new/remaining；交回前仍用 check_outcome 全检。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "templates": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "全部当前模板候选文件；省略时使用 outcome.json 的 candidates"
+          },
+          "regions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "核准参考区域 ID；只限制返回详情，不能代表全图通过"
+          },
+          "regionOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "区域目录起点，缺省0；沿 nextRegionOffset 翻页，每页最多20项，与 regions 互斥"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "inspect_layout",
       "description": "按与 render_draft 相同的输入排版，返回元素的布局摘要：元素路径、类型、位置与尺寸（毫米，相对画板左上角，未计旋转）、是否显示、子元素数；文字另有内容、字体、字号、实际宽高、字距、压缩比（1 为不压缩）与是否溢出，图片、二维码与条形码另有绘制区域。摘要与草稿预览图一致，缺值处是占位文字。elements 是元素路径（如 主模板/面板/列表[3]/名称，循环项带序号），省略时从画板开始；depth 是向下展开的层数，缺省 1；一次最多 300 个元素、约 30000 字符，超出时返回 truncated 与总元素数，再用 elements 指定子树或减小 depth。结果同时给出这些元素上的问题。不写任何文件。",
       "inputSchema": {
@@ -361,23 +400,48 @@
       }
     },
     {
-      "name": "check_outcome",
-      "description": "交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。宿主提供核查计划时，assessment.design 返回不超过8000字符的当前候选边界/样式摘要、未覆盖数量及图像区域；designCase 取单例，designTarget 取命名目标。模板任务先更新 state.json 的选择、未解决项与下一步，checkpoint 反馈进度是否有效；候选绑定随宿主调用日志记录。进度不改变 verdict，像素相似度只作诊断。查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。每个候选最多 100 条差异、约 20000 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。不写任何文件。",
+      "name": "outcome_feedback",
+      "description": "只读续取同一 check_outcome 的完整局部问题；不重新检查当前候选。按 code 或 target 聚类，保留实例、源模板位置、待确认和未知范围。使用 check_outcome 返回的 reportId；同一会话下一次检查使旧报告过期。分页按 nextOffset 继续，超长单项以可无损拼接的 JSON fragment 返回。",
       "inputSchema": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "reportId"
+        ],
         "properties": {
-          "designCase": {
+          "reportId": {
             "type": "string",
-            "minLength": 1,
-            "description": "宿主核查计划中的用例ID；reference 为原始请求。省略时只给全部用例摘要。"
+            "minLength": 1
           },
-          "designTarget": {
-            "type": "string",
-            "minLength": 1,
-            "description": "命名参考区域 ID，按需取目标、核准状态、坐标与路径；与 designCase 每次只选一个。"
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "groupBy": {
+            "enum": [
+              "code",
+              "target"
+            ]
           }
         }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "check_outcome",
+      "description": "交回前核对成果：按 RenderWeave 收到成果后的同一套规则，检查工作目录根上的 outcome.json 与其中列出的候选文件。查 outcome.json 的结构，候选文件的位置与种类，待确认项与图上位置引用的文件和路径（数据定义写字段名，数据集写字段路径，模板写元素路径），再用引擎校验候选。返回结论 verdict、结构/候选/内容/渲染 assessment 与问题清单；有完整出图请求时实际渲染，模板的严重出图问题使 verdict 为 unqualified。内容始终需要审核。render.capabilityBlocked 表示已知引擎能力受阻，应保留候选并交回说明，不要反复修改模板。数据集中落在待确认位置上的问题列在 deferred，留给审核，不影响结论。模板辅助修改另给每个候选的 revision：status 为 modified、unchanged 或 added；changes 列出 path、target、change 与 properties 属性键名，不带 before/after。每个候选最多 100 条差异、约 20000 字符，截断时给 truncated: true 与 total。用它对照修改要求核对范围；范围是否符合要求仍由审核人判断。feedback.reportId 可交给 outcome_feedback 续取同一检查的完整局部问题、差异与未知范围；先读完再修改，分页不重新检查。工具不写工作目录、工作区或资源。受管轮次由宿主固定并检查完整集合，checkpoint.status 为 saved 才表示宿主已保存该内容身份；notSaved 给出原因。保存不等于业务合格或人工批准。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
       },
       "annotations": {
         "readOnlyHint": true,

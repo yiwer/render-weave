@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkResourceReplacement, importResources, initializeResourceStore, loadWorkspace, openResourceRepository,
   openVersionedResourceStore, ProblemCodes, render, ResourceReadError } from '../src/index.js';
 import { runCli } from '../src/cli.js';
-import { m402Dir, resourcesDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, m402Dir, resourcesDir } from './support/fixtures.js';
 
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof fs>();
@@ -228,7 +228,10 @@ describe('资源版本公开边界', () => {
   it.runIf(process.platform === 'win32')('清单替换持续 EPERM 时有限失败、保留旧清单并释放写锁', async () => {
     const before = await fs.readFile(manifest(target));
     const actual = await vi.importActual<typeof fs>('node:fs/promises');
-    vi.mocked(fs.rename).mockRejectedValue(Object.assign(new Error('persistent rename denial'), { code: 'EPERM' }));
+    vi.mocked(fs.rename).mockImplementation(async (source, destination) => {
+      if (String(destination).endsWith('resources.json')) throw Object.assign(new Error('persistent rename denial'), { code: 'EPERM' });
+      return actual.rename(source, destination);
+    });
     try {
       expect((await importSource()).problems[0]?.code).toBe(ProblemCodes.resourceWriteFailed);
       expect(await fs.readFile(manifest(target))).toEqual(before);
@@ -262,7 +265,7 @@ describe('CLI 与实际出图', () => {
   it('临时工作区准备、导入、查询、M402 出图均成功；旧/自动打开/固定映射三个结果一致', async () => {
     const dir = join(root, 'cli-store');
     const workspaceDir = join(root, 'workspace');
-    await fs.cp(m402Dir, workspaceDir, { recursive: true });
+    await copyWorkspaceFixture(m402Dir, workspaceDir);
     const output: string[] = [], errors: string[] = [];
     const io = { stdout: (value: string) => output.push(value), stderr: (value: string) => errors.push(value) };
     expect(await runCli(['resources-init', '--resources', dir], io)).toBe(0);

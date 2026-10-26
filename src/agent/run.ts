@@ -3,23 +3,30 @@
  * 在独占的轮次目录里组装三层资料、DSL 参考、示例图与工作区快照，按受限模式启动一次 Claude Code 无头运行，
  * 只连本仓库的 `renderweave mcp`；结束后校验 Agent 交回的 outcome.json，写出轮次记录、成果与校验结果。
  *
- * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；key 只经环境变量传入，不写任何文件。
- * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 时在本进程起转换代理，Claude Code 只拿到本轮令牌（M232）。
+ * 子进程环境从空白开始，只放系统必需变量与模型配置，不继承宿主的 CLAUDE_*、ANTHROPIC_* 变量；上游 key 只留在宿主内存，执行器环境只传入本轮代理令牌。
+ * 模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；两种协议均经本机代理，Claude Code 只拿到本轮令牌（M232、M321）。
  *
  * 多轮（M58）：带 from 发起下一轮时，沿用上一轮的任务、素材、基准、出图请求与修改要求，工作区重新取快照；
  * 上一轮成果（含审核时的修改）放进 candidates/ 作为起点，原样记录放进 previous/，反馈放进 docs/feedback.md。
  * 模板辅助修改：把主模板调用树中已保存的模板复制进 candidates/ 作为工作副本（M49），并记录各自所基于的保存内容（M51）。
  */
 import { spawn } from 'node:child_process';
+import { startAnthropicProxy } from './anthropic-proxy.js';
+import { credentialRedactor } from './credential-redaction.js';
 import { createWriteStream } from 'node:fs';
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dslDocumentKind } from '../dsl.js';
 import { parseRenderRequest } from '../request.js';
 import { isRecord } from '../util.js';
 import { formatStaticSchemaRef, loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, sameStaticSchema, type StaticSchemaRef } from '../workspace.js';
-import { ROUTE_SIGN_BUSINESS_BASELINE } from './coverage-verification.js';
+import { validateContentBaseline, type BusinessContentBaseline } from './coverage-verification.js';
+import { validateReferenceBaseline, type ReferenceBaseline } from './style-verification.js';
+import { loadCanvasKit } from '../canvaskit.js';
+import { rendererBuildId } from '../renderer-build.js';
+import { agentProvenance, materialHashes } from './provenance.js';
+import { MCP_CONTRACT_VERSION } from '../mcp/tools.js';
 import { templateCallTree } from './diff.js';
 import { locate } from './locations.js';
 import { isGoogleModel, startModelProxy } from './model-proxy.js';
@@ -28,10 +35,16 @@ import { runtimeQuota, type QuotaStop } from './quota.js';
 import { readPreviousRound, type PreviousRound } from './review.js';
 import { AgentUsageError, exists, isDirectory, isFile, sha256, workspaceFingerprint } from './round-files.js';
 import { AGENT_TASKS, type AgentTask, type AgentTaskId, type CandidateKind } from './tasks.js';
-import { writeTemplateDomain, writeTemplateReference } from './materials.js';
-import { observeContext, type ContextStop } from './context-usage.js';
-import { materialFingerprint, resourceFingerprint, restoreHandoff, saveHandoff, writeFeedbackHistory } from './handoff.js';
-import { parseDesignCheckPlan, type DesignCheckPlan } from './design-verification.js';
+import { captureResources, readResourceSnapshot, type ResourceSnapshotRef } from './content-identity.js';
+import { claimExecution, writeAtomicJson } from './execution.js';
+import { checkpointChecker, claimCheckpointRecovery } from './checkpoints.js';
+import { startCheckpointHost } from './checkpoint-host.js';
+import { DEFAULT_STAGNATION_THRESHOLD, stagnationController } from './stagnation.js';
+import { usageCollector } from './usage.js';
+import { withLocalAccess } from '../local-access.js';
+import { contextPolicy, prepareContextPolicy, contextPrompt, contextIdentity, type ContextPolicyIdentity } from './context-policy.js';
+import { referenceTexts } from '../mcp/references.js';
+import { DEFAULT_ROUND_TIMEOUT_MS, superviseRound, type HostControl, type RoundStop } from './supervision.js';
 
 export { AgentUsageError, workspaceFingerprint } from './round-files.js';
 
@@ -51,6 +64,11 @@ const SYSTEM_VARIABLES = ['SystemRoot', 'windir', 'ComSpec', 'PATHEXT', 'Path', 
   'USERDOMAIN', 'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS', 'LANG'];
 
 export interface AgentRunOptions {
+  readonly contextPolicy?: 'full' | 'on-demand';
+  /** 本次人工核准的视觉参考 JSON，与示例图一起固定到宿主目录。 */
+  readonly reference?: string;
+  /** 本次提取事实 JSON；不从领域名称推断样例事实。 */
+  readonly contentBaseline?: string;
   /** 任务类型、示例图、项目说明与资源仓库：带 from 时沿用上一轮，不能再给。 */
   readonly task?: AgentTaskId;
   readonly sample?: string;
@@ -66,29 +84,37 @@ export interface AgentRunOptions {
   readonly dataset?: string;
   /** 示例图对应的出图请求文件：主模板名、参数与输出尺寸；审核页按它重新渲染预览（M52）。模板辅助修改时，主模板就是要修改的已保存模板。 */
   readonly request?: string;
-  /** 宿主指定的边界、样式及参考图核查计划。下一轮沿用，不由 Agent 修改。 */
-  readonly checks?: string;
   /** 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在。 */
   readonly requirement?: string;
   /** 上一轮的轮次目录：下一轮沿用它的输入，拿到它的成果（含审核时的修改）与反馈（M58）。 */
   readonly from?: string;
+  /** 明确从上一轮已发布的完整检查点接续；better 不存在时拒绝，不自动冒称较好。 */
+  readonly checkpoint?: string;
   /** 给下一轮的反馈（Markdown）；带 from 时必须给。 */
   readonly feedback?: string;
-  /** key 的值只在内存中传给子进程；keyEnv 是它所在的环境变量名，只用于记录。 */
+  /** key 的值只留在宿主内存；keyEnv 是它所在的环境变量名，只用于记录。 */
   readonly key: string;
   readonly keyEnv: string;
   readonly model?: string;
   readonly smallModel?: string;
   readonly endpoint?: string;
   readonly maxTurns?: number;
-  /** 单请求有效输入达到此观测阈值后停止并交接；缺省仅观测，不是请求前 token 限额。 */
-  readonly contextLimit?: number;
+  /** 当前适配器不能实时执行硬 token 或费用限额，提供即在启动前拒绝。 */
+  readonly maxTokens?: number;
+  readonly maxCostUsd?: number;
+  /** 整轮墙钟上限（毫秒）；输入校验与准备不计入，缺省 60 分钟。 */
+  readonly roundTimeoutMs?: number;
+  readonly stagnationThreshold?: number;
+  /** 用户取消，只终止此轮所属进程树。 */
+  readonly signal?: AbortSignal;
   /** 推理力度：传给 Claude Code 的 --effort；不给时不传，用 Claude Code 的缺省（票据 23）。 */
   readonly effort?: AgentEffort;
   /** Claude Code 可执行文件与前置参数；测试用假执行器代替。 */
   readonly claude?: { readonly command: string; readonly args?: readonly string[] };
   /** 输入全部校验通过、创建轮次目录之前调用；命令行在这里打印"开始……"（票据 28）。 */
   readonly onStart?: (roundDir: string) => void;
+  /** 固定输入准备完成、执行器启动前显示生效预算。 */
+  readonly onBudget?: (runtime: RoundRecord['runtime']) => void;
 }
 
 /** Claude Code 的 --effort 取值。自适应思考的模型（如 Haiku 5.5）只认它，不认 MAX_THINKING_TOKENS（票据 23）。 */
@@ -96,6 +122,8 @@ export const AGENT_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 export type AgentEffort = (typeof AGENT_EFFORTS)[number];
 
 export interface RoundUsage {
+  /** result 为供应商轮次汇总，messages 仅包含已收到的唯一消息快照，可能不完整。 */
+  readonly usageSource?: 'result' | 'messages';
   readonly wallMs: number;
   readonly turns?: number;
   readonly inputTokens?: number;
@@ -108,11 +136,11 @@ export interface RoundUsage {
   readonly claudeCodeVersion?: string;
   /** Claude Code 的结束方式，如 success、error_max_turns。 */
   readonly endedBy?: string;
-  readonly context?: { readonly requests: number; readonly peakInputTokens: number | null; readonly compactions: number };
 }
 
 /** 轮次记录 round.json：无论成果是否合格都写出。 */
 export interface RoundRecord {
+  readonly execution?: 'renderweave-execution/1';
   readonly format: 'renderweave-round/1';
   readonly task: AgentTaskId;
   readonly round: number;
@@ -124,16 +152,20 @@ export interface RoundRecord {
     readonly model: string; readonly smallModel: string; readonly protocol: 'anthropic' | 'google'; readonly endpoint: string; readonly maxTurns: number;
     /** 推理力度；没设为 null（票据 23）。 */
     readonly effort: AgentEffort | null;
-    readonly contextLimit?: number | null;
-    readonly skills?: 'disabled';
+    readonly roundTimeoutMs?: number;
+    readonly stagnationThreshold?: number;
     readonly keyEnv: string; readonly tools: string; readonly mcpTools: readonly string[];
   };
-  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: QuotaStop;
-    readonly contextStopped?: ContextStop; readonly handoffSha256?: string };
+  readonly run: RoundUsage & { readonly exitCode: number | null; readonly error?: string; readonly mcp?: readonly string[]; readonly stopped?: RoundStop };
   readonly verdict: OutcomeCheck['verdict'];
 }
 
 export interface RoundInputs {
+  readonly contextPolicy?: ContextPolicyIdentity;
+  readonly resourceSnapshot?: ResourceSnapshotRef;
+  readonly reference?: { readonly file: string; readonly sha256: string };
+  readonly contentBaseline?: { readonly file: string; readonly sha256: string };
+  readonly referenceImage?: { readonly file: string; readonly sha256: string };
   readonly sample: { readonly source: string; readonly file: string; readonly sha256: string };
   readonly brief: { readonly source: string; readonly sha256: string };
   readonly domain: string | null;
@@ -146,7 +178,6 @@ export interface RoundInputs {
   readonly dataset?: string | null;
   /** 示例图对应的出图请求：原文件与规范化后存在轮次目录的 request.json。 */
   readonly request?: { readonly source: string; readonly file: 'request.json'; readonly template: string } | null;
-  readonly checks?: { readonly source: string; readonly file: 'design-checks.json'; readonly sha256: string };
   /** 模板辅助修改可以改的已保存模板（主模板的调用树），以及各自所基于的保存内容：工作区中的文件名与内容哈希（M51）。 */
   readonly templates?: readonly TemplateBasis[];
   /** 模板辅助修改的修改要求，存在轮次目录的 requirement.md。 */
@@ -165,6 +196,7 @@ export interface TemplateBasis {
 
 /** 轮次链上的上一环：沿 previous.dir 可以一直追到第 1 轮。 */
 export interface PreviousRef {
+  readonly checkpoint?: { readonly id: string; readonly contentIdentity: string; readonly source: 'hostRecovery' };
   readonly dir: string;
   readonly round: number;
   /** 上一轮成果的哈希；结构不合格、没有成果时为 null。 */
@@ -197,6 +229,8 @@ export interface RoundOutcome {
 }
 
 export interface AgentRunResult {
+  /** 停止后本地保存是否完成；未完成只代表诊断，不能作为正式成果。 */
+  readonly save?: 'complete' | 'incomplete';
   readonly roundDir: string;
   readonly record: RoundRecord;
   readonly check: OutcomeCheck;
@@ -207,6 +241,7 @@ export interface AgentRunResult {
 
 /** 下一轮的候选从哪里开始：写进提示词。 */
 const SEED_NOTES = {
+  checkpoint: 'candidates/ 中是上一轮完整检查点的候选字节；previous/checkpoint.json 记录来源、内容身份和检查结果。它不是人工批准，按反馈重新检查并完整交回。',
   previous: 'candidates/ 中已放好上一轮的成果（含审核时的修改），在它的基础上按反馈修改，不要从头重做。',
   unqualified: 'candidates/ 中已放好上一轮交回的文件。上一轮的成果结构不合格，没有经过审核：按 previous/check.json 的问题与反馈修改。',
   applied: '上一轮的成果已经应用：candidates/ 中放的是应用后最新保存的模板，已含上一轮的修改，在它的基础上按反馈修改。',
@@ -214,21 +249,33 @@ const SEED_NOTES = {
 };
 
 export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResult> {
-  if (given.contextLimit !== undefined && (!Number.isSafeInteger(given.contextLimit) || given.contextLimit < 1)) throw new AgentUsageError('--context-limit 必须是正整数');
+  return superviseRound(given);
+}
+/** 受监督的原轮次宿主；不直接作为产品入口导出。 */
+export async function runAgentTaskInHost(given: AgentRunOptions, control: HostControl): Promise<AgentRunResult> {
+  const selectedContext = contextPolicy(given.contextPolicy);
+  if (given.roundTimeoutMs !== undefined && (!Number.isFinite(given.roundTimeoutMs) || given.roundTimeoutMs <= 0)) throw new AgentUsageError('--timeout-ms 必须是有限正值');
   if (given.from === undefined && given.feedback !== undefined) throw new AgentUsageError('--feedback 只用于带 --from 发起的下一轮');
+  if(given.from===undefined&&given.checkpoint!==undefined)throw new AgentUsageError('--checkpoint 只用于带 --from 发起的下一轮');
   if (given.from !== undefined) checkNextRound(given);
-  const previous = given.from === undefined ? undefined : await readPreviousRound(given.from);
+  const previous = given.from === undefined ? undefined : await readPreviousRound(given.from,{checkpoint:given.checkpoint});
+  if (previous) {
+    const inputs = previous.record.inputs;
+    for (const item of [inputs.reference, inputs.contentBaseline, inputs.referenceImage]) {
+      if (item && sha256(await readFile(join(previous.dir, item.file))) !== item.sha256) throw new AgentUsageError(`上一轮参考资料已改变：${item.file}；要换基准请发起新任务`);
+    }
+  }
   const options = previous ? inherit(given, previous) : given;
   if (options.task === undefined || options.sample === undefined || options.brief === undefined || options.resources === undefined) {
     throw new AgentUsageError('发起第 1 轮要给出任务类型、示例图、项目说明与资源仓库');
   }
   const task = AGENT_TASKS[options.task];
-  const templateTask = task.candidateKinds.includes('template');
   if (!task.implemented) throw new AgentUsageError(`任务类型"${task.name}"尚未实现`);
   checkTaskOrder(task, options);
   await requireFile(options.sample, '示例图');
   // 按文件头定扩展名：文件名与内容不符时，Claude Code 会按扩展名声明错误的图片类型。
-  const extension = imageExtension(await readFile(options.sample));
+  const sampleBytes = await readFile(options.sample);
+  const extension = imageExtension(sampleBytes);
   if (!extension) throw new AgentUsageError(`示例图不是 PNG、JPEG 或 WebP：${options.sample}`);
   await requireFile(options.brief, '项目说明');
   const briefBytes = await readFile(options.brief);
@@ -244,19 +291,32 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (options.workspace !== undefined && !(await isDirectory(options.workspace))) throw new AgentUsageError(`工作区目录无法读取：${options.workspace}`);
   if (task.requires !== 'none' && options.workspace === undefined) throw new AgentUsageError(`${task.name}要用 --workspace 指定已发布的数据定义与已保存的数据集、模板所在的工作区`);
   if (!(await isFile(join(options.resources, 'resources.json')))) throw new AgentUsageError(`资源仓库缺少 resources.json：${options.resources}`);
-  const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
-  const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
+  const { basis, request, revision, initialFingerprint } = await withLocalAccess(options.workspace ? [options.workspace] : [], async () => {
+    const basis = task.requires === 'definition' || task.requires === 'dataset' ? await resolveBasis(task.requires, options) : { definition: null, dataset: null };
+    const request = options.request === undefined ? null : await readRequest(options.request, task.id, basis, options.workspace!, options.dataset);
+    const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
+    return { basis, request, revision, initialFingerprint: options.workspace ? await workspaceFingerprint(options.workspace) : undefined };
+  });
   const dataset = request?.dataset ?? basis.dataset;
-  let designPlan: DesignCheckPlan | undefined;
-  if (options.checks !== undefined) {
-    if (!templateTask) throw new AgentUsageError('--checks 只用于模板设计或修改');
-    try {
-      designPlan = parseDesignCheckPlan(JSON.parse(await readFile(options.checks, 'utf8')));
-      if (designPlan.reference && designPlan.reference.sha256 !== sha256(await readFile(options.sample))) throw new Error('示例图与核查计划的 SHA-256 不符');
-      if (previous?.record.inputs.checks && sha256(await readFile(options.checks)) !== previous.record.inputs.checks.sha256) throw new Error('上一轮核查计划已变化；不能沿用旧输入');
-    } catch (error) { throw new AgentUsageError(`核查计划不可用：${error instanceof Error ? error.message : String(error)}`); }
+  let baseline: ReferenceBaseline | undefined, contentBaseline: BusinessContentBaseline | undefined;
+  if (options.reference) {
+    if (!request || (task.id !== 'template-design' && task.id !== 'template-revision')) throw new AgentUsageError('--reference 只用于有完整请求的模板任务');
+    let input: unknown;
+    try { input = JSON.parse(await readFile(options.reference, 'utf8')); } catch { throw new AgentUsageError('参考基准 JSON 无法读取'); }
+    if (!validateReferenceBaseline(input)) throw new AgentUsageError('参考基准字段不合法');
+    const ck = await loadCanvasKit(), image = ck.MakeImageFromEncoded(sampleBytes);
+    if (!image) throw new AgentUsageError('示例图无法解码');
+    try { if (image.width() !== input.sampleWidthPx || image.height() !== input.sampleHeightPx || input.sampleSha256 && input.sampleSha256 !== sha256(sampleBytes)) throw new AgentUsageError('参考基准与示例图不一致'); }
+    finally { image.delete(); }
+    baseline = { ...input, sampleSha256: sha256(sampleBytes) };
   }
-  const revision = task.id === 'template-revision' ? await revisableTemplates(options.workspace!, request!.template) : undefined;
+  if (options.contentBaseline) {
+    if (task.id !== 'definition-extraction' && task.id !== 'dataset-extraction') throw new AgentUsageError('--content-baseline 只用于提取任务');
+    let input: unknown;
+    try { input = JSON.parse(await readFile(options.contentBaseline, 'utf8')); } catch { throw new AgentUsageError('内容基准 JSON 无法读取'); }
+    if (!validateContentBaseline(input)) throw new AgentUsageError('内容基准字段不合法');
+    contentBaseline = input;
+  }
   // 元素路径只在第 1 轮核对：沿用到下一轮时，上一轮可能已经把那些元素改名或移走并应用了。
   if (revision) await checkRequirement(options.requirement!, previous ? [] : revision);
   if (options.feedback !== undefined) await requireFile(options.feedback, '反馈');
@@ -275,32 +335,36 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   options.onStart?.(roundDir);
 
   const startedAt = new Date().toISOString();
+  const execution = await claimExecution(roundDir, startedAt);
+  let releaseRecovery: (() => Promise<void>) | undefined;
+  let managedMcp: Awaited<ReturnType<typeof startCheckpointHost>> | undefined;
+  try {
+  if (previous?.checkpoint) releaseRecovery = await claimCheckpointRecovery(previous.dir, roundDir, previous.checkpoint.id);
   const round = previous ? previous.round + 1 : 1;
   const agentDir = join(roundDir, 'agent'), snapshotDir = join(roundDir, 'snapshot'), logsDir = join(roundDir, 'logs');
   for (const dir of [join(agentDir, 'docs'), join(agentDir, 'candidates'), join(agentDir, 'scratch'), snapshotDir, logsDir]) await mkdir(dir, { recursive: true });
 
   // 资料：反馈 > 修改要求 > 项目说明 > 领域约定 > 通用做法；DSL 参考与成果格式随任务而定。
+  const references = await referenceTexts();
   const sampleFile = `sample${extension}`;
-  await copyFile(options.sample, join(agentDir, sampleFile));
+  await writeFile(join(agentDir, sampleFile), sampleBytes);
+  await writeFile(join(logsDir, sampleFile), sampleBytes);
+  if (baseline) await writeFile(join(logsDir, 'reference.json'), JSON.stringify(baseline, null, 2));
+  if (contentBaseline) await writeFile(join(logsDir, 'content-baseline.json'), JSON.stringify(contentBaseline, null, 2));
   await copyFile(options.brief, join(agentDir, 'docs/brief.md'));
-  if (templateTask) {
-    await copyFile(join(AGENT_MATERIALS, 'template-core.md'), join(agentDir, 'docs/core.md'));
-    await copyFile(join(AGENT_MATERIALS, 'reference/template-outcome.md'), join(agentDir, 'docs/outcome.md'));
-    await writeTemplateReference(AGENT_MATERIALS, join(agentDir, 'docs'));
-    if (domainFile) await writeTemplateDomain(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
-  } else {
-    await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
-    if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
-    for (const reference of task.references) await copyFile(join(AGENT_MATERIALS, 'reference', `${reference}.md`), join(agentDir, `docs/${reference === 'outcome' ? 'outcome' : 'dsl-reference'}.md`));
+  await copyFile(join(AGENT_MATERIALS, 'guide.md'), join(agentDir, 'docs/guide.md'));
+  if (domainFile) await copyFile(domainFile, join(agentDir, `docs/domain-${options.domain}.md`));
+  for (const reference of task.references) {
+    if (reference === 'outcome') await copyFile(join(AGENT_MATERIALS, 'reference/outcome.md'), join(agentDir, 'docs/outcome.md'));
+    else if (selectedContext === 'full') {
+      if (reference !== 'template' && reference !== 'data-definition') throw new AgentUsageError(`未知 DSL 参考：${reference}`);
+      await writeFile(join(agentDir, 'docs/dsl-reference.md'), references[`reference/${reference}`]);
+    }
   }
+  await prepareContextPolicy(selectedContext, join(agentDir, 'docs'), references);
   if (request) {
     await writeFile(join(agentDir, 'docs/request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
     await writeFile(join(roundDir, 'request.json'), `${JSON.stringify(request.document, null, 2)}\n`);
-  }
-  if (designPlan) {
-    await writeFile(join(roundDir, 'design-checks.json'), `${JSON.stringify(designPlan, null, 2)}\n`);
-    await copyFile(join(roundDir, 'design-checks.json'), join(agentDir, 'docs/design-checks.json'));
-    await copyFile(join(AGENT_MATERIALS, 'reference/visual-refinement.md'), join(agentDir, 'docs/visual-refinement.md'));
   }
   for (const [file, name] of [[options.requirement, 'requirement.md'], [options.feedback, 'feedback.md']] as const) {
     if (file === undefined) continue;
@@ -314,7 +378,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   if (previous) {
     for (const file of previous.files) await writeAt(join(agentDir, 'previous', file.name), file.bytes);
     for (const candidate of previous.candidates) await writeAt(join(agentDir, 'previous', candidate.path), candidate.bytes);
-    basisChanged = revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
+    basisChanged = previous.checkpoint ? false : revision ? (previous.record.inputs.templates ?? []).some((entry) => revision.find((item) => item.name === entry.name)?.sha256 !== entry.sha256) : undefined;
     if (!basisChanged) {
       for (const candidate of previous.candidates) {
         const name = templateName(candidate.bytes);
@@ -322,7 +386,7 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
         seeds.set(candidate.path, candidate.bytes);
       }
     }
-    seedNote = basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
+    seedNote = previous.checkpoint ? SEED_NOTES.checkpoint : basisChanged ? (previous.applied ? SEED_NOTES.applied : SEED_NOTES.rebased) : previous.outcomeSha256 === null ? SEED_NOTES.unqualified : SEED_NOTES.previous;
   }
   for (const [path, bytes] of seeds) await writeAt(join(agentDir, path), bytes);
 
@@ -331,112 +395,131 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
     .replaceAll('{dataset}', dataset ?? '').replaceAll('{template}', request?.template ?? '')
     .replaceAll('{templates}', (revision ?? []).map((entry) => `${entry.name}（candidates/${entry.file}）`).join('、'));
   if (previous) {
-    prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', templateTask ? 'template-next-round.md' : 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
+    prompt += `\n${(await readFile(join(AGENT_MATERIALS, 'tasks', 'next-round.md'), 'utf8')).replaceAll('{round}', String(round)).replaceAll('{seeds}', seedNote)}`;
   }
-  if (designPlan) prompt += '\n本轮有宿主核查计划 docs/design-checks.json。开始设计前读 docs/visual-refinement.md，按计划已有的参考和目标核查；有命名区域才用 check_outcome 的 designTarget 按需取详情。首次骨架及每次核查前保存 state.json，确认 checkpoint 为 ready。\n';
+  prompt = contextPrompt(prompt, selectedContext);
 
   // 工作区快照：只复制工作区读取的顶层 JSON 文件；服务启动时读入，Agent 只能经工具读取。
   let documents = 0;
-  if (options.workspace !== undefined) {
-    for (const file of (await readdir(options.workspace)).filter((name) => name.endsWith('.json')).sort()) {
-      await copyFile(join(options.workspace, file), join(snapshotDir, file));
-      documents++;
+  const resourceSnapshot = await withLocalAccess([...(options.workspace ? [options.workspace] : []), options.resources], async () => {
+    if (options.workspace !== undefined) {
+      if (await workspaceFingerprint(options.workspace) !== initialFingerprint) throw new AgentUsageError('准备期间工作区已变化，请重新发起轮次');
+      for (const file of (await readdir(options.workspace)).filter((name) => name.endsWith('.json')).sort()) {
+        await copyFile(join(options.workspace, file), join(snapshotDir, file));
+        documents++;
+      }
     }
-  }
+    return captureResources(roundDir, options.resources!);
+  });
   const textInput = async <T extends 'requirement.md' | 'feedback.md'>(file: string | undefined, name: T) =>
     (file === undefined ? null : { source: resolve(file), file: name, sha256: sha256(await readFile(file)) });
   const requirement = await textInput(options.requirement, 'requirement.md');
   const feedback = await textInput(options.feedback, 'feedback.md');
+  const pinnedResourcesDir = join(roundDir, resourceSnapshot.directory);
+  const referenceBundle=join(logsDir,'reference-materials.json');
+  await writeFile(referenceBundle,JSON.stringify({format:'renderweave-reference-materials/1',texts:references}));
   const inputs: RoundInputs = {
-    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(await readFile(options.sample)) },
+    contextPolicy: await contextIdentity(selectedContext, join(agentDir, 'docs'),references),
+    resourceSnapshot,
+    sample: { source: resolve(options.sample), file: `agent/${sampleFile}`, sha256: sha256(sampleBytes) },
+    referenceImage: { file: `logs/${sampleFile}`, sha256: sha256(sampleBytes) },
+    ...(baseline ? { reference: { file: 'logs/reference.json', sha256: sha256(await readFile(join(logsDir, 'reference.json'))) } } : {}),
+    ...(contentBaseline ? { contentBaseline: { file: 'logs/content-baseline.json', sha256: sha256(await readFile(join(logsDir, 'content-baseline.json'))) } } : {}),
     brief: { source: resolve(options.brief), sha256: sha256(briefBytes) },
     domain: options.domain ?? null,
-    workspace: { source: options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
+    workspace: { source: previous?.checkpoint ? previous.record.inputs.workspace.source : options.workspace === undefined ? null : resolve(options.workspace), fingerprint: await workspaceFingerprint(snapshotDir), documents },
     resources: resolve(options.resources),
     definition: basis.definition, dataset,
     request: request ? { source: resolve(options.request!), file: 'request.json', template: request.template } : null,
-    ...(designPlan ? { checks: { source: resolve(options.checks!), file: 'design-checks.json', sha256: sha256(await readFile(join(roundDir, 'design-checks.json'))) } } : {}),
     ...(revision ? { templates: revision.map(({ name, file, sha256: digest }) => ({ name, file, sha256: digest })), requirement } : {}),
     ...(previous ? { feedback } : {}),
     previous: previous ? {
       dir: previous.dir, round: previous.round, outcomeSha256: previous.outcomeSha256, reviewSha256: previous.reviewSha256, reviewStatus: previous.reviewStatus,
+      ...(previous.checkpoint ? { checkpoint: previous.checkpoint } : {}),
       ...(basisChanged !== undefined ? { basisChanged } : {}),
     } : null,
   };
 
-  const binding = templateTask ? sha256(JSON.stringify({ workspace: inputs.workspace.fingerprint, sample: inputs.sample.sha256,
-    materials: await materialFingerprint(join(agentDir, 'docs')), resources: await resourceFingerprint(options.resources) })) : '';
-  if (previous && templateTask) {
-    await writeFeedbackHistory(previous.dir, join(agentDir, 'docs'));
-    await restoreHandoff(previous.dir, previous.record.run.handoffSha256, binding, seeds, join(agentDir, 'docs/handoff.md'));
-  }
-  await writeFile(join(logsDir, 'prompt.md'), prompt);
-
   // 交回后的成果校验与交回前的 check_outcome 用同一份上下文；它放在 Agent 工作目录之外，Agent 改不了。
   const context: OutcomeContext = {
-    ...(designPlan ? { designChecks: { plan: designPlan, sampleFile: join(agentDir, sampleFile) } } : {}),
+    resourceIdentity: (await readResourceSnapshot(roundDir, resourceSnapshot)).resources,
     ...(task.id === 'dataset-extraction' && basis.definition ? { definition: basis.definition } : {}),
     ...(request ? { request: { ...request.document, template: request.template } } : {}),
     ...(revision ? { revision: { templates: revision.map((entry) => entry.name) } } : {}),
     // 提取任务要按图上业务内容核对覆盖；项目说明是判断“固定常量”有没有依据的唯一来源。
     ...(task.id === 'definition-extraction' || task.id === 'dataset-extraction' ? { briefText } : {}),
-    ...(options.domain === 'route-sign' && (task.id === 'definition-extraction' || task.id === 'dataset-extraction')
-      ? { contentBaseline: ROUTE_SIGN_BUSINESS_BASELINE }
-      : {}),
+    ...(contentBaseline ? { contentBaseline } : {}),
+    ...(baseline ? { baseline, referenceImage: { path: join(logsDir, sampleFile), sha256: sha256(sampleBytes) } } : {}),
   };
   const outcomeContext = join(logsDir, 'outcome-context.json');
   await writeFile(outcomeContext, `${JSON.stringify({ task: task.id, ...context } satisfies OutcomeTarget, null, 2)}\n`);
+  await writeFile(join(logsDir, 'prompt.md'), prompt);
+  await cp(join(agentDir, 'docs'), join(logsDir, 'materials'), { recursive: true });
+  await writeFile(join(logsDir, 'provenance.json'), JSON.stringify({ ...await agentProvenance(), inputs, engine: await rendererBuildId(),
+    mcpContract: MCP_CONTRACT_VERSION, promptSha256: sha256(Buffer.from(prompt)), actualMaterials: await materialHashes(join(logsDir, 'materials'), 'materials') }, null, 2));
   const maxTurns = options.maxTurns ?? task.maxTurns;
+  const runtime: RoundRecord['runtime'] = { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns,
+    roundTimeoutMs: options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS, stagnationThreshold: options.stagnationThreshold ?? DEFAULT_STAGNATION_THRESHOLD,
+    effort: options.effort ?? null, keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools };
+  await execution.initialize({ task: task.id, round, startedAt, inputs, runtime });
+  await control.ready({ roundDir, record: { task: task.id, round, startedAt, inputs, runtime } });
+  const started = Date.now();
   const mcpConfig = join(logsDir, 'mcp.json');
-  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: process.execPath, args: [
-    BIN, 'mcp', '--workspace', snapshotDir, '--resources', resolve(options.resources), '--root', agentDir, '--outcome-context', outcomeContext,
+  const checkpoints = checkpointChecker({ roundDir, agentDir, snapshotDir, resourcesDir: pinnedResourcesDir, target: { task: task.id, ...context } });
+  const stagnation = stagnationController({ roundDir, agentDir, threshold: runtime.stagnationThreshold!, stop: control.stop });
+  managedMcp = await startCheckpointHost({ check: async () => { const result = await checkpoints.check(); stagnation.checked(result); return result; }, env: Object.fromEntries(SYSTEM_VARIABLES.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]!]])), args: [
+    BIN, 'mcp', '--workspace', snapshotDir, '--resources', pinnedResourcesDir, '--root', agentDir, '--outcome-context', outcomeContext,
+    '--reference-bundle',referenceBundle,
     '--log', join(logsDir, 'tools.jsonl'), '--tools', task.mcpTools.join(','),
-  ] } } }, null, 2)}\n`);
+  ] });
+  await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: managedMcp.config } }, null, 2)}\n`);
   const env: Record<string, string> = Object.fromEntries(SYSTEM_VARIABLES.flatMap((name) => process.env[name] === undefined ? [] : [[name, process.env[name]!]]));
   if (process.platform !== 'win32') env['HOME'] = join(logsDir, 'home');
-  // Gemini：Claude Code 连本机转换代理，拿到的是本轮令牌；上游 key 只留在本进程。
+  // 两种模型协议都只给执行器本轮令牌；上游 key 留在宿主。
   const controller = new AbortController();
   let stopped: QuotaStop | undefined;
-  let contextStopped: ContextStop | undefined;
-  const stop = (reason: QuotaStop) => { stopped ??= reason; controller.abort(); };
-  const observer = observeContext(options.contextLimit, (reason) => { contextStopped ??= reason; controller.abort(); });
-  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : undefined;
+  const stop = (reason: QuotaStop) => { stopped ??= reason; control.stop(reason); };
+  const proxy = google ? await startModelProxy({ upstream: endpoint, key: options.key, log: join(logsDir, 'model-proxy.jsonl'), onHardQuota: stop }) : await startAnthropicProxy({ upstream: endpoint, key: options.key });
   Object.assign(env, {
     CLAUDE_CONFIG_DIR: join(logsDir, 'claude-config'),
-    ANTHROPIC_BASE_URL: proxy?.url ?? endpoint, ANTHROPIC_AUTH_TOKEN: proxy?.token ?? options.key, ANTHROPIC_MODEL: model,
+    ANTHROPIC_BASE_URL: proxy.url, ANTHROPIC_AUTH_TOKEN: proxy.token, ANTHROPIC_MODEL: model,
     ANTHROPIC_DEFAULT_OPUS_MODEL: model, ANTHROPIC_DEFAULT_SONNET_MODEL: model, ANTHROPIC_DEFAULT_HAIKU_MODEL: smallModel,
     CLAUDE_CODE_SUBAGENT_MODEL: model, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', API_TIMEOUT_MS: '600000',
   });
   const args = ['-p', '--output-format', 'stream-json', '--verbose', '--model', model, '--restricted', '--tools', task.tools,
     '--mcp-config', mcpConfig, '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
-    '--max-turns', String(maxTurns), '--no-session-persistence', '--disable-slash-commands', ...(options.effort ? ['--effort', options.effort] : [])];
+    '--max-turns', String(maxTurns), '--no-session-persistence', ...(options.effort ? ['--effort', options.effort] : [])];
 
-  const started = Date.now();
   let executed: Awaited<ReturnType<typeof execute>>;
   try {
-    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, observe: observer.accept });
+    executed = await execute(options.claude ?? { command: 'claude' }, args, { cwd: agentDir, env, prompt, logsDir, signal: controller.signal, stop, onSpawn: execution.executing, secrets: [options.key, proxy.token], onUsage: control.usage, onEvent: stagnation.accept });
+    await stagnation.idle();
   } finally {
-    await proxy?.close();
+    await proxy.close();
+    await checkpoints.idle();
+    await managedMcp.close();
   }
   const { mcp, apiError, ...streamUsage } = await readUsage(join(logsDir, 'stream.jsonl'));
-  const contextReport = observer.report();
-  await writeFile(join(roundDir, 'context.json'), `${JSON.stringify(contextReport, null, 2)}\n`);
-  const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage,
-    context: { requests: contextReport.requests.length, peakInputTokens: contextReport.peakInputTokens, compactions: contextReport.compactions.length } };
+  const usage: RoundUsage = { wallMs: Date.now() - started, ...streamUsage };
+  await execution.finalizing();
 
-  const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: options.resources });
-  const checked = await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context });
-  const check = stopped || contextStopped ? { ...checked, verdict: 'unqualified' as const } : checked;
+  const snapshot = await loadWorkspace({ dir: snapshotDir, resourcesDir: pinnedResourcesDir });
+  const finalCheck = await checkpoints.check();
+  const checked = finalCheck.check;
+  const check = stopped ? { ...checked, verdict: 'unqualified' as const } : checked;
   const recovered = check.submission ? undefined : await recoverCandidates(agentDir, task);
   const draftCheck = recovered ? await checkAgentOutcome({ task: task.id, agentDir, workspace: snapshot, context, recovered }) : undefined;
   const deliverable = draftCheck ?? check;
   const submission = recovered ?? check.submission;
+  await execution.checked();
   let outcome: RoundOutcome | undefined;
   if (submission && deliverable.candidates.length > 0) {
     // 候选文件复制到轮次目录，成为本轮成果；之后审核与应用都读这里。
     for (const candidate of deliverable.candidates) {
       await mkdir(dirname(join(roundDir, candidate.path)), { recursive: true });
-      await copyFile(join(agentDir, candidate.path), join(roundDir, candidate.path));
+      const checkedDir = !recovered && finalCheck.checkpoint.status === 'saved'
+        ? join(roundDir, 'checkpoints', finalCheck.checkpoint.id, 'agent') : agentDir;
+      await copyFile(join(checkedDir, candidate.path), join(roundDir, candidate.path));
     }
     outcome = {
       format: 'renderweave-outcome/1', task: task.id, round,
@@ -466,21 +549,26 @@ export async function runAgentTask(given: AgentRunOptions): Promise<AgentRunResu
   }
   const { submission: _submission, ...checkRecord } = check;
   await writeFile(join(roundDir, 'check.json'), `${JSON.stringify(checkRecord, null, 2)}\n`);
-  const handoffSha256 = templateTask ? await saveHandoff(roundDir, { binding, source: outcome ? 'agent' : recovered ? 'hostRecovery' : 'none',
-    reason: contextStopped ? 'contextLimit' : 'roundEnd',
-    candidates: deliverable.candidates.flatMap((c) => c.sha256 ? [{ path: c.path, sha256: c.sha256 }] : []) }) : undefined;
   const record: RoundRecord = {
-    format: 'renderweave-round/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
-    runtime: { model, smallModel, protocol: google ? 'google' : 'anthropic', endpoint, maxTurns, effort: options.effort ?? null, contextLimit: options.contextLimit ?? null, skills: 'disabled',
-      keyEnv: options.keyEnv, tools: task.tools, mcpTools: task.mcpTools },
-    run: { ...usage, exitCode: executed.exitCode, ...(contextStopped ? { contextStopped } : {}), ...(handoffSha256 ? { handoffSha256 } : {}),
+    format: 'renderweave-round/1', execution: 'renderweave-execution/1', task: task.id, round, startedAt, endedAt: new Date().toISOString(), inputs,
+    runtime,
+    run: { ...usage, wallMs: Date.now() - started, exitCode: executed.exitCode,
       ...(stopped ? { stopped, error: `硬额度耗尽（${stopped.limit}），已停止本轮。额度恢复后用 --from "${roundDir}" --feedback <反馈文件> 续跑` }
-        : contextStopped ? { error: `有效输入达到交接阈值 ${contextStopped.limit}（观测 ${contextStopped.observedInputTokens}）。已保存本轮；用 --from "${roundDir}" --feedback ${templateTask ? `"${join(roundDir, 'handoff-feedback.md')}"` : '<反馈文件>'} --out <新轮次目录> 续跑；新一轮预算需显式指定。` }
-          : executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
+        : executed.error ?? apiError ? { error: executed.error ?? apiError } : {}), ...(mcp ? { mcp } : {}) },
     verdict: check.verdict,
   };
-  await writeFile(join(roundDir, 'round.json'), `${JSON.stringify(record, null, 2)}\n`);
+  await writeAtomicJson(join(roundDir, 'round.json'), record);
+  await execution.finish(record);
   return { roundDir, record, check, ...(outcome ? { outcome } : {}), ...(recovered && deliverable.candidates.length > 0 ? { draft: DRAFT_FILE } : {}) };
+  } catch (error) {
+    await execution.fail().catch(() => undefined);
+    throw error;
+  } finally {
+    await managedMcp?.close();
+    // execute 等待执行器 close 才返回；准备失败没有执行器，检查失败也已结束执行。
+    // 正常错误清理完本轮可写进程后释放恢复权；宿主强退则留给死亡身份核对。
+    await releaseRecovery?.();
+  }
 }
 
 /** 任务顺序（M43）与各任务需要的输入：--definition、--dataset 只接受该任务用得上的那些。 */
@@ -513,7 +601,7 @@ function checkTaskOrder(task: AgentTask, options: AgentRunOptions): void {
 
 /** 下一轮只给反馈与运行参数：任务、素材、基准、出图请求与修改要求都沿用上一轮。 */
 function checkNextRound(given: AgentRunOptions): void {
-  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'checks'] as const;
+  const fixed = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'reference', 'contentBaseline'] as const;
   const repeated = fixed.filter((name) => given[name] !== undefined);
   if (repeated.length > 0) {
     throw new AgentUsageError(`带 --from 发起下一轮时沿用上一轮的输入，不能再给 ${repeated.map((name) => `--${name}`).join('、')}；要换输入就重新发起第 1 轮`);
@@ -525,15 +613,16 @@ function checkNextRound(given: AgentRunOptions): void {
 function inherit(given: AgentRunOptions, previous: PreviousRound): AgentRunOptions {
   const { dir, record: { task, inputs } } = previous;
   return {
-    ...given, task, sample: join(dir, inputs.sample.file), brief: join(dir, 'agent/docs/brief.md'),
+    ...given, task, sample: join(dir, inputs.referenceImage?.file ?? inputs.sample.file), brief: join(dir, previous.checkpoint ? 'logs/materials/brief.md' : 'agent/docs/brief.md'),
+    ...(inputs.reference ? { reference: join(dir, inputs.reference.file) } : {}),
+    ...(inputs.contentBaseline ? { contentBaseline: join(dir, inputs.contentBaseline.file) } : {}),
     ...(previous.resources !== undefined ? { resources: previous.resources } : {}),
     ...(inputs.domain !== null ? { domain: inputs.domain } : {}),
-    ...(inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
+    ...(previous.checkpointWorkspace ? { workspace: previous.checkpointWorkspace } : inputs.workspace.source !== null ? { workspace: inputs.workspace.source } : {}),
     ...(task === 'dataset-extraction' && inputs.definition ? { definition: `${inputs.definition.name}@${inputs.definition.version}` } : {}),
     ...(task !== 'dataset-extraction' && inputs.dataset ? { dataset: inputs.dataset } : {}),
-    ...(inputs.request ? { request: join(dir, 'request.json') } : {}),
-    ...(inputs.checks ? { checks: join(dir, 'design-checks.json') } : {}),
-    ...(inputs.requirement ? { requirement: join(dir, 'requirement.md') } : {}),
+    ...(inputs.request ? { request: join(dir, previous.checkpoint ? 'logs/materials/request.json' : 'request.json') } : {}),
+    ...(inputs.requirement ? { requirement: join(dir, previous.checkpoint ? 'logs/materials/requirement.md' : 'requirement.md') } : {}),
   };
 }
 
@@ -643,11 +732,12 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: readonly string[],
-  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; signal: AbortSignal; stop: (reason: QuotaStop) => void; observe: (event: unknown) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  context: { cwd: string; env: Record<string, string>; prompt: string; logsDir: string; secrets: readonly string[]; signal: AbortSignal; stop: (reason: QuotaStop) => void; onSpawn: (pid: number) => Promise<void>; onUsage: (usage: Omit<RoundUsage, 'wallMs'>) => void; onEvent: (event: Record<string, any>) => void }): Promise<{ exitCode: number | null; error?: string }> {
+  const redactor = credentialRedactor(context.secrets);
   const log = createWriteStream(join(context.logsDir, 'stream.jsonl'));
   const errors = createWriteStream(join(context.logsDir, 'stderr.txt'));
   const result = await new Promise<{ exitCode: number | null; error?: string }>((done) => {
-    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
+    const child = spawn(claude.command, [...(claude.args ?? []), ...args], { cwd: context.cwd, env: context.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     const stop = () => {
       if (!child.pid) return;
       // 只终止本轮的进程树，连同它启动的 MCP；不碰其他 Claude Code 会话。
@@ -659,24 +749,31 @@ async function execute(claude: NonNullable<AgentRunOptions['claude']>, args: rea
     };
     context.signal.addEventListener('abort', stop, { once: true });
     if (context.signal.aborted) stop();
-    let buffer = '';
+    let buffer = ''; const usage = usageCollector();
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => {
       buffer += chunk;
       for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
         const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-        try { const event: unknown = JSON.parse(line); context.observe(event); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
+        try { const event = JSON.parse(redactor.text(line)); usage.accept(event); context.onUsage(usage.read()); context.onEvent(event); const quota = runtimeQuota(event); if (quota) context.stop(quota); } catch { /* 不是完整事件 */ }
       }
     });
-    child.on('error', (error) => done({ exitCode: null, error: `无法启动 ${claude.command}：${error.message}` }));
-    child.stdout.pipe(log);
-    child.stderr.pipe(errors);
+    let executionError: string | undefined;
+    child.on('error', (error) => { executionError = `无法启动 ${claude.command}：${error.message}`; });
+    child.stdout.pipe(redactor.stream()).pipe(log);
+    child.stderr.pipe(redactor.stream()).pipe(errors);
     child.stdin.on('error', () => {});
-    child.stdin.end(context.prompt);
-    child.on('close', (code) => { context.signal.removeEventListener('abort', stop); done({ exitCode: code }); });
+    const recorded = child.pid ? context.onSpawn(child.pid).then(() => { child.stdin.end(context.prompt); }, () => {
+      executionError = '执行器身份无法持久记录，已停止执行器'; stop();
+    }) : Promise.resolve();
+    child.on('close', (code) => {
+      context.signal.removeEventListener('abort', stop);
+      // 极快退出不能越过尚未完成的拥有者记录，否则较慢的 executing 发布会覆盖 completed。
+      void recorded.then(() => done({ exitCode: executionError ? null : code, ...(executionError ? { error: executionError } : {}) }));
+    });
   });
   await Promise.all([new Promise((done) => log.end(done)), new Promise((done) => errors.end(done))]);
-  return result;
+  return { ...result, ...(result.error ? { error: redactor.text(result.error) } : {}) };
 }
 
 /** 抢救已写完整的候选 JSON；不跟随符号链接，不补写 Agent 自述的成果。 */
@@ -699,18 +796,15 @@ async function recoverCandidates(agentDir: string, task: AgentTask): Promise<Sub
 }
 
 /** 从 Claude Code 的流式输出中取用量：初始化消息给出模型、版本与 MCP 状态，结果消息给出轮数与 token。 */
-async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[]; apiError?: string }> {
+export async function readUsage(file: string): Promise<Omit<RoundUsage, 'wallMs'> & { mcp?: string[]; apiError?: string }> {
   let text = '';
   try { text = await readFile(file, 'utf8'); } catch { return {}; }
   const messages = text.split('\n').flatMap((line) => { try { return [JSON.parse(line) as Record<string, any>]; } catch { return []; } });
   const init = messages.find((message) => message['type'] === 'system' && message['subtype'] === 'init');
-  const result = messages.find((message) => message['type'] === 'result');
-  const usage = result?.['usage'] as Record<string, number> | undefined;
-  const number = (value: unknown) => (typeof value === 'number' ? value : undefined);
+  const result = messages.findLast((message) => message['type'] === 'result');
+  const usage = usageCollector(); for (const message of messages) usage.accept(message);
   const fields = {
-    turns: number(result?.['num_turns']), inputTokens: number(usage?.['input_tokens']), outputTokens: number(usage?.['output_tokens']),
-    thinkingTokens: number((usage?.['output_tokens_details'] as Record<string, unknown> | undefined)?.['thinking_tokens']),
-    cacheReadTokens: number(usage?.['cache_read_input_tokens']), cacheCreationTokens: number(usage?.['cache_creation_input_tokens']),
+    ...usage.read(),
     servedModel: typeof init?.['model'] === 'string' ? init['model'] : undefined,
     claudeCodeVersion: typeof init?.['claude_code_version'] === 'string' ? init['claude_code_version'] : undefined,
     endedBy: typeof result?.['subtype'] === 'string' ? result['subtype'] : undefined,

@@ -1,0 +1,21 @@
+{
+  "format": "renderweave-observation-debug-intervention-supplement/1",
+  "unit": "run-2/zh-definition-extraction",
+  "attemptId": "c3e402ab-7c05-47bb-aaee-229080618d48",
+  "supplements": "audit/close-delay-diagnostic.json",
+  "reason": "独立复核要求完整列出后备关闭脚本是否执行；不覆盖原诊断文件。",
+  "source": "当次 exec_command 工具返回，事后保留其原始输出；不是运行时 tee 日志。精确开始时刻未记录，发生于首诊断连接结束后、20:40:47.334Z 状态快照之前。",
+  "command": "node 'C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness21-close-inspector.mjs'\nGet-NetTCPConnection -LocalPort 9229 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess | ConvertTo-Json",
+  "exitCode": 1,
+  "wallTimeSeconds": 1.6587309000000001,
+  "output": "node:internal/deps/undici/undici:15845\r\n      Error.captureStackTrace(err);\r\n            ^\r\n\r\nTypeError: fetch failed\r\n    at node:internal/deps/undici/undici:15845:13\r\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\r\n    at async file:///C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness21-close-inspector.mjs:2:22 {\r\n  [cause]: Error: connect ECONNREFUSED 127.0.0.1:9229\r\n      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {\r\n    errno: -4078,\r\n    code: 'ECONNREFUSED',\r\n    syscall: 'connect',\r\n    address: '127.0.0.1',\r\n    port: 9229\r\n  }\r\n}\r\n\r\nNode.js v24.12.0\r\n",
+  "effect": {
+    "initialHttpDiscoverySucceeded": false,
+    "webSocketCreated": false,
+    "debuggerCommandsSent": 0,
+    "processDebugEndExecuted": false,
+    "declaredOutputCreated": false,
+    "portListenerReturned": false
+  },
+  "interpretation": "该后备脚本在发现端口时即失败，未重新进入 worker。此事实不证明此前收尾延迟的原因，也不改变已发生调试介入的性能/无人介入边界。"
+}

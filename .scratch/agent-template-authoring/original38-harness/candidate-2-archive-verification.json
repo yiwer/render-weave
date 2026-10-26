@@ -1,0 +1,72 @@
+{
+  "format": "renderweave-original38-restore-verification/1",
+  "verifiedAt": "2026-10-23T18:38:31.283Z",
+  "archive": "F:/GenCode/render-weave/out/harness-original38-candidate-2-evidence-archive",
+  "restored": "F:/GenCode/render-weave/out/harness-original38-candidate-2-evidence-restored",
+  "manifestSha256": "0f7f43a8614fa28bff46be0b06e1de779a54701a6bb19632a53b68a99bed122f",
+  "filesVerifiedAfterReview": 4553,
+  "directoriesVerified": 710,
+  "logicalBytes": 742432285,
+  "views": [
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "definition",
+      "attemptId": "5ac7a067-6814-4ae9-a98e-6538f6ca23bc",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\5ac7a067-6814-4ae9-a98e-6538f6ca23bc\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/366-transcription",
+      "stage": "dataset",
+      "attemptId": "f1120c25-edfb-483b-8e27-01220e6b726a",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2-evidence-restored\\original38\\evaluation\\run-1\\366-transcription\\attempts\\f1120c25-edfb-483b-8e27-01220e6b726a\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-definition",
+      "stage": "definition",
+      "attemptId": "023dabfe-338c-4a7f-88ca-9395aa456b71",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2-evidence-restored\\original38\\evaluation\\run-1\\m402-definition\\attempts\\023dabfe-338c-4a7f-88ca-9395aa456b71\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-revision",
+      "stage": "revision",
+      "attemptId": "87439417-f360-4c16-aeda-5c07e23fa14c",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2-evidence-restored\\original38\\evaluation\\run-1\\m402-revision\\attempts\\87439417-f360-4c16-aeda-5c07e23fa14c\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    },
+    {
+      "unit": "run-1/m402-template",
+      "stage": "template",
+      "attemptId": "e1e7bd68-5013-46ba-85a7-16a363601a29",
+      "path": "F:\\GenCode\\render-weave\\out\\harness-original38-candidate-2-evidence-restored\\original38\\evaluation\\run-1\\m402-template\\attempts\\e1e7bd68-5013-46ba-85a7-16a363601a29\\round",
+      "viewPresent": true,
+      "problems": 0,
+      "committed": true,
+      "status": "completed",
+      "verdict": "qualified"
+    }
+  ],
+  "limitations": [
+    "4个业务观测/5个阶段可审核，不改变4not-run或人工未审状态",
+    "审核-v2材料保存并核SHA，没有代填人工评价或重渲染",
+    "原始F盘来源路径仍保留，内部绝对路径未改写；不证明任意迁移直接接续，也没有调用模型"
+  ]
+}

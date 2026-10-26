@@ -110,7 +110,9 @@ describe('评分：用存档的历史成果校准', () => {
     expect(zoom).toMatchObject({ stops: '59/59', names: 58, missing: ['宝安北路南'], unexpected: ['宝安北路'],
       landmarks: { matched: 15, of: 15, extra: 0 }, facilities: { matched: 18, of: 18, extra: 0 } });
     const plain = scoreTranscription(stopsOf(await read(join(FIXTURES, '366/des-366-gd/dataset.json'))), truth);
-    expect(plain).toMatchObject({ stops: '58/59', names: 57, landmarks: { matched: 11, extra: 3 }, facilities: { matched: 14, extra: 1 } });
+    expect(plain).toMatchObject({ stops: '58/59', names: 57, landmarks: { matched: 11, extra: 4 }, facilities: { matched: 14, extra: 1 } });
+    // 新评分把福滨新村的地标 ②（真值 ①）也计为误报；旧规则只数无地标站多报的 3 处。
+    expect(plain.errors.landmarkExtra).toContainEqual({ candidatePosition: 2, truthPosition: 2, value: 2 });
     expect(plain.missing).toContain('油社居民小组');
     // 设施写成英文时按中文类别比较。
     const english = stopsOf(await read(join(FIXTURES, '366/des-366-zoom1/dataset.json')))
@@ -137,7 +139,7 @@ describe('判定与门槛', () => {
       'm402-definition': { conventions: 6, expertFields: 14 },
       'm402-template': { stress: 10, layoutChecks: 2 },
       'm402-revision': { stress: 6, layoutChecks: 2, scopeViolations: 0 },
-      '366-transcription': { names: 57, landmarks: 14, facilities: 17 },
+      '366-transcription': { names: 57, landmarks: 14, facilities: 17, orderViolations: 0, insertions: 0, duplicates: 0, landmarkExtra: 0, facilityExtra: 0 },
     });
     expect(judge(scenario('m402-definition'), {})).toEqual(['没有可评分的数据定义']);
   });
@@ -148,34 +150,33 @@ describe('判定与门槛', () => {
   };
   const statusOf = (...outcomes: UnitStatus[]) => gate(config, outcomes.map((outcome, index) => result('m402-definition', index + 1, outcome))).status;
 
-  it('每个场景要有连续两次达线，门槛才通过', () => {
+  it('每个场景全部计划达线才通过，后续成功不能覆盖有效失败', () => {
     const both = gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, true), result('m402-template', 2, true), result('m402-template', 1, true)]);
-    expect(both).toEqual({ status: 'pass', pass: true, scenarios: [
+    expect(both).toMatchObject({ status: 'pass', pass: true, scenarios: [
       { id: 'm402-definition', name: 'M402 数据定义', outcomes: ['pass', 'pass'], status: 'pass' }, { id: 'm402-template', name: 'M402 模板', outcomes: ['pass', 'pass'], status: 'pass' },
     ] });
     expect(gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, false)]).pass).toBe(false);
-    expect(gate(config, [result('m402-definition', 1, false), result('m402-definition', 2, true), result('m402-definition', 3, true)]).pass).toBe(true);
+    expect(gate(config, [result('m402-definition', 1, false), result('m402-definition', 2, true), result('m402-definition', 3, true)]).pass).toBe(false);
     expect(gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, false), result('m402-definition', 3, true)]).status).toBe('fail');
-    expect(gate(config, [])).toEqual({ status: 'incomplete', pass: false, scenarios: [] });
+    expect(gate(config, [])).toMatchObject({ status: 'incomplete', pass: false, scenarios: [] });
   });
 
-  it('invalid 不是观测：跳过它算连续；有效次数凑不出结论又没注定不过时是 incomplete（票据 21）', () => {
-    // 验收：1 次达线加 1 次 invalid 是 incomplete；2 次达线加 1 次 invalid 是通过，invalid 不打断连续。
+  it('invalid 不是有效观测：无失败但仍有缺失是 incomplete，有效失败优先', () => {
+    // 不再跳过计划中的 invalid：另一次通过不能代替这个槽位。
     expect(statusOf('pass', 'invalid')).toBe('incomplete');
-    expect(statusOf('pass', 'invalid', 'pass')).toBe('pass');
-    expect(statusOf('invalid', 'pass', 'pass')).toBe('pass');
+    expect(statusOf('pass', 'invalid', 'pass')).toBe('incomplete');
+    expect(statusOf('invalid', 'pass', 'pass')).toBe('incomplete');
     expect(statusOf('invalid', 'invalid')).toBe('incomplete');
-    // 把 invalid 都当作达线也凑不出连续两次：注定不过。
+    // 有效失败不能被无效观测掩盖。
     expect(statusOf('fail', 'invalid')).toBe('fail');
     expect(statusOf('invalid', 'fail')).toBe('fail');
-    // invalid 也不延长连续：达线、invalid、未达线只有 1 次连续，补跑第 2 次达线才有 2 次。
-    expect(statusOf('pass', 'invalid', 'fail')).toBe('incomplete');
-    expect(statusOf('fail', 'pass', 'invalid')).toBe('incomplete');
+    expect(statusOf('pass', 'invalid', 'fail')).toBe('fail');
+    expect(statusOf('fail', 'pass', 'invalid')).toBe('fail');
 
     // 按评估清单：计划内没跑的次数（额度熔断后没发起、分段跑还没到）同样是 incomplete；只跑 1 次也凑不出结论。
     const plan = { scenarios: ['m402-definition', 'm402-template', '366-transcription'], repetitions: 2 };
     const planned = gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, true), result('m402-template', 1, true)], plan);
-    expect(planned).toEqual({ status: 'incomplete', pass: false, scenarios: [
+    expect(planned).toMatchObject({ status: 'incomplete', pass: false, scenarios: [
       { id: 'm402-definition', name: 'M402 数据定义', outcomes: ['pass', 'pass'], status: 'pass' },
       { id: 'm402-template', name: 'M402 模板', outcomes: ['pass', 'not-run'], status: 'incomplete' },
       { id: '366-transcription', name: '366 数据定义与转录', outcomes: ['not-run', 'not-run'], status: 'incomplete' },
@@ -184,7 +185,7 @@ describe('判定与门槛', () => {
     // 一个场景注定不过，整体就是未通过，补跑别的场景也改变不了。
     expect(gate(config, [result('m402-definition', 1, true), result('m402-template', 1, false), result('m402-template', 2, false)], plan).status).toBe('fail');
     expect(resumeCommand('label', planned, ['--model', 'gemini-4-argon-contributor', '--out', 'F:\\eval out']))
-      .toBe('npx tsx scripts/agent-eval/run.ts --label label --repetitions 1-2 --model gemini-4-argon-contributor --out "F:\\eval out"');
+      .toBe("npx tsx scripts/agent-eval/run.ts --label label --repetitions 1-2 --model gemini-4-argon-contributor --out 'F:\\eval out'");
     expect(resumeCommand('label', gate(config, [result('m402-definition', 1, true), result('m402-definition', 2, true)]))).toBeUndefined();
   });
 });
@@ -288,7 +289,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const results = [m402, template, transcription];
     const report = await buildReport({ config, label: 'test', startedAt: '2026-10-15T00:00:00.000Z', outDir, results });
     expect(report).toMatchObject({
-      format: 'renderweave-agent-eval/2', mcpContract: '0.10.0', consecutivePasses: 2,
+      format: 'renderweave-agent-eval/4', mcpContract: '0.17.0', consecutivePasses: 2,
       runtime: { model: 'claude-haiku-5-5', servedModels: ['claude-haiku-5-5'], claudeCodeVersions: ['fake-1'] },
       results: [{ status: 'fail', retries: 0 }, { status: 'pass', retries: 0 }, { status: 'pass', retries: 0 }],
       gate: { status: 'fail', pass: false }, totals: { outputTokens: 222 * 4, thinkingTokens: 150 * 4, persistedResults: 0 },
@@ -336,7 +337,7 @@ describe('编排：经产品路径发起轮次（假执行器）', () => {
     const rescored = await tsx(['scripts/agent-eval/run.ts', '--rescore', outDir, '--reports', reports]);
     expect(rescored.code).toBe(0);
     expect(rescored.stdout).toContain('门槛通过');
-    expect(await read(join(reports, 'cli-test.json'))).toMatchObject({ label: 'cli-test', gate: { status: 'pass', pass: true, scenarios: [{ id: 'm402-definition', outcomes: ['pass', 'pass'] }] } });
+    expect(await read(reportPath(rescored.stdout))).toMatchObject({ label: 'cli-test', gate: { status: 'pass', pass: true, scenarios: [{ id: 'm402-definition', outcomes: ['pass', 'pass'] }] } });
 
     expect(await tsx(['scripts/agent-eval/run.ts', '--key-env', 'RW_EVAL_NO_SUCH_KEY'])).toMatchObject({ code: 2, stderr: expect.stringContaining('缺少环境变量 RW_EVAL_NO_SUCH_KEY') });
     process.env['RW_EVAL_TEST_KEY'] = KEY;
@@ -380,7 +381,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(other.map(classifyError)).toEqual(other.map(() => 'other'));
   });
 
-  it('第一次 500、第二次成功：只删出错的轮次目录再发起，留下一个有效轮次目录，单元达线并记重试次数', async () => {
+  it('第一次 500、第二次成功：保留两次尝试与一个当前阶段视图，单元达线并记重试次数', async () => {
     const outDir = join(base, 'eval-retry');
     const calls: AgentTaskId[] = [], slept: number[] = [], logs: string[] = [];
     const launch = flaky({ 'definition-extraction': await definitionFiles(join(FIXTURES, 'definitions/des-gd1')) }, { 'definition-extraction': [{ api: SERVER_500 }] }, calls);
@@ -391,7 +392,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(slept).toEqual([60_000]);
     expect(logs).toEqual([expect.stringContaining('M402 数据定义 第 1 次数据定义提取：上游瞬时错误，60 秒后重试这一轮（1/2）：模型服务报错：API Error: 500')]);
     const unit = unitDir(outDir, scenario('m402-definition'), 1);
-    expect((await readdir(unit)).sort()).toEqual(['definition', 'upstream-errors.json']);
+    expect((await readdir(unit)).sort()).toEqual(['attempts', 'definition', 'upstream-errors.json']);
     expect(await read(join(unit, 'upstream-errors.json'))).toEqual({ retries: [{ task: 'definition-extraction', error: `模型服务报错：${SERVER_500}` }] });
     // 重新评分读回重试次数。
     expect(await scoreScenario(config, scenario('m402-definition'), 1, outDir)).toEqual(result);
@@ -493,7 +494,7 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
 
     const plan = { scenarios: ['m402-definition'], repetitions: 4 };
     const report = await buildReport({ config, label: 'quota', startedAt: '2026-10-19T00:00:00.000Z', outDir, results: queue.results, plan });
-    expect(report.gate).toEqual({ status: 'incomplete', pass: false, scenarios: [{ id: 'm402-definition', name: 'M402 数据定义', outcomes: ['invalid', 'pass', 'not-run', 'not-run'], status: 'incomplete' }] });
+    expect(report.gate).toMatchObject({ status: 'incomplete', pass: false, scenarios: [{ id: 'm402-definition', name: 'M402 数据定义', outcomes: ['invalid', 'pass', 'not-run', 'not-run'], status: 'incomplete' }] });
     const text = formatReport(report);
     expect(text).toContain('门槛未完成');
     expect(text).toContain('| M402 数据定义 | invalid、达线、未跑、未跑 | 未完成 |');
@@ -505,12 +506,12 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(resumed.skipped.map((unit) => unit.repetition)).toEqual([2]);
     expect(resumed.results.map((result) => [result.repetition, result.status]).sort()).toEqual([[1, 'pass'], [3, 'pass'], [4, 'pass']]);
     expect(resumed.held).toEqual([]);
-    expect(await readdir(unitDir(outDir, scenario('m402-definition'), 1))).toEqual(['definition']);
+    expect((await readdir(unitDir(outDir, scenario('m402-definition'), 1))).sort()).toEqual(['attempts', 'definition']);
     const all = await Promise.all([1, 2, 3, 4].map((repetition) => scoreScenario(config, scenario('m402-definition'), repetition, outDir)));
     expect(gate(config, all, plan).status).toBe('pass');
   });
 
-  it('命令行：1 次达线加 1 次 invalid 时门槛未完成、退出码 3；2 次达线加 1 次 invalid 时门槛通过', async () => {
+  it('命令行：达线数量再多也不能替代计划内 invalid，退出码仍为3', async () => {
     const outDir = join(base, 'eval-incomplete');
     const files = { 'definition-extraction': await definitionFiles(join(FIXTURES, 'definitions/des-gd1')) };
     await runScenario(config, scenario('m402-definition'), 1, outDir, launcher(files));
@@ -523,16 +524,16 @@ describe('上游错误：按轮次重试、额度熔断与 invalid（票据 21�
     expect(incomplete.code).toBe(3);
     expect(incomplete.stdout).toContain('门槛未完成');
     expect(incomplete.stdout).toContain('| M402 数据定义 | 达线、invalid | 未完成 |');
-    expect(await read(join(reports, 'incomplete.json'))).toMatchObject({
-      format: 'renderweave-agent-eval/2', gate: { status: 'incomplete', pass: false },
+    expect(await read(reportPath(incomplete.stdout))).toMatchObject({
+      format: 'renderweave-agent-eval/4', gate: { status: 'incomplete', pass: false },
       results: [{ repetition: 1, status: 'pass', retries: 0 }, { repetition: 2, status: 'invalid', retries: 0, failures: [], invalid: { kind: 'quota' } }],
     });
 
     await runScenario(config, scenario('m402-definition'), 3, outDir, launcher(files));
     await manifest(3);
     const passed = await tsx(['scripts/agent-eval/run.ts', '--rescore', outDir, '--reports', reports]);
-    expect(passed.code).toBe(0);
-    expect(passed.stdout).toContain('| M402 数据定义 | 达线、invalid、达线 | 通过 |');
+    expect(passed.code).toBe(3);
+    expect(passed.stdout).toContain('| M402 数据定义 | 达线、invalid、达线 | 未完成 |');
   }, 60_000);
 });
 
@@ -547,6 +548,10 @@ async function tree(...dirs: string[]): Promise<string> {
     }
   }
   return lines.join('\n');
+}
+
+function reportPath(stdout: string): string {
+  return /^报告：(.+)$/m.exec(stdout)![1]!.trim();
 }
 
 function tsx(args: string[]): Promise<{ code: number | null; stdout: string; stderr: string }> {

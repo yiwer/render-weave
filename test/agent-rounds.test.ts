@@ -4,7 +4,7 @@
  * 以及模板已被他人保存时的覆盖与重做（M49–M52、M58）；另有 `agent run` 按任务校验 --definition 与 --dataset（票据 16）。
  */
 import { existsSync } from 'node:fs';
-import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -15,7 +15,7 @@ import {
   AgentUsageError, applyAgentRound, changeReview, deliverBatch, diffTemplate, importResources, initializeResourceStore, loadWorkspace,
   openVersionedResourceStore, readReview, render, runAgentTask, type AgentRunOptions, type ReviewView, type VersionedResourceStore,
 } from '../src/index.js';
-import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 import { startMcp } from './support/mcp-client.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
@@ -76,7 +76,7 @@ afterAll(async () => {
 /** 工作区：single-text 的问候（数据集 ds-greeting、模板问候牌）；saved 时另有已保存的问候横幅与横幅文字。 */
 async function workspace(saved: boolean): Promise<string> {
   const dir = join(base, `workspace-${++count}`);
-  await cp(singleTextDir, dir, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, dir);
   if (saved) {
     await writeFile(join(dir, 'template-banner.json'), JSON.stringify(BANNER, null, 2));
     await writeFile(join(dir, 'template-banner-words.json'), JSON.stringify(WORDS, null, 2));
@@ -147,6 +147,7 @@ describe('受阻成果与中断草稿（票据 31）', () => {
     const arabic = withChildren(WORDS, [{ ...WORDS.artboard.children[0], content: [{ text: 'سلام' }] }]);
     const round = await designRound(dir, { 'outcome.json': DESIGN_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: arabic });
     expect(round.outcome).toBeDefined();
+    expect((await readReview(round.roundDir)).execution).toMatchObject({ status: 'completed', committed: true });
     expect(round.check).toMatchObject({ verdict: 'unqualified', assessment: { structure: 'valid', candidates: 'valid', content: 'needsReview',
       render: { status: 'blocked', hasImage: true, capabilityBlocked: true, blocking: true } } });
     expect(round.check.assessment.render.problems).toContainEqual(expect.objectContaining({ code: 'text.unshapedScript', level: 'severe' }));
@@ -236,8 +237,8 @@ describe('带反馈的下一轮（M58）', () => {
     expect(await readFile(join(agent, 'docs/feedback.md'), 'utf8')).toBe(await readFile(feedback, 'utf8'));
     expect(await readFile(join(second.roundDir, 'feedback.md'), 'utf8')).toBe(await readFile(feedback, 'utf8'));
     const prompt = (await json(join(agent, 'fake-run.json'))).prompt as string;
-    const nextRound = (await readFile(join(repoRoot, 'agent/tasks/template-next-round.md'), 'utf8')).replaceAll('{round}', '2');
-    expect(prompt).toContain('为已发布的 问候 v1 设计模板');
+    const nextRound = (await readFile(join(repoRoot, 'agent/tasks/next-round.md'), 'utf8')).replaceAll('{round}', '2');
+    expect(prompt.startsWith((await readFile(join(repoRoot, 'agent/tasks/template-design.md'), 'utf8')).replaceAll('{sample}', 'sample.png').slice(0, 20))).toBe(true);
     expect(prompt).toContain(nextRound.split('{seeds}')[0]);
     expect(prompt).toContain('candidates/ 中已放好上一轮的成果（含审核时的修改）');
     expect(prompt).not.toMatch(/\{(round|seeds|sample|template|dataset)\}/);
@@ -341,11 +342,11 @@ describe('模板辅助修改：发起与成果', () => {
     expect(prompt).toBe((await readFile(join(repoRoot, 'agent/tasks/template-revision.md'), 'utf8')).replaceAll('{sample}', 'sample.png')
       .replaceAll('{template}', '问候横幅').replaceAll('{dataset}', 'ds-greeting')
       .replaceAll('{templates}', '问候横幅（candidates/template-banner.json）、横幅文字（candidates/template-banner-words.json）'));
-    expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'inspect_layout', 'view_image', 'dsl_reference', 'check_outcome'] });
+    expect(round.record.runtime).toMatchObject({ maxTurns: 80, mcpTools: ['list_documents', 'read_document', 'list_resources', 'check_templates', 'render_draft', 'compare_reference', 'inspect_layout', 'view_image', 'dsl_reference', 'outcome_feedback', 'check_outcome'] });
     expect(await json(join(round.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] },
+      task: 'template-revision', request: BANNER_REQUEST, revision: { templates: ['问候横幅', '横幅文字'] }, resourceIdentity: expect.any(Array),
     });
-    expect(await readFile(join(agent, 'docs/dsl-index.md'), 'utf8')).toContain('完整示例');
+    expect(await readFile(join(agent, 'docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
   });
 
   it('成果带相对已保存模板的结构化差异；没改的只记提示；可以新建模板，调用树以外的已保存模板不能改', async () => {
@@ -454,7 +455,7 @@ describe('模板辅助修改：审核与应用', () => {
       request: { template, mode, items: [{ id: 'banner', ...item }] } });
     expect(delivered.problems).toEqual([]);
     expect(delivered.summary).toMatchObject({ total: 1, delivered: 1 });
-    expect(codes((await applyAgentRound({ roundDir })).problems)).toEqual(['apply.alreadyApplied']);
+    expect((await applyAgentRound({ roundDir })).applied).toEqual(applied.applied);
 
     // 应用之后再带反馈发起下一轮：候选从应用后最新保存的模板开始，已含上一轮的修改。
     const next = await run(undefined, { from: roundDir, feedback: await file('feedback.md', '本站 0 时不标本站。') });
@@ -541,22 +542,26 @@ describe('模板辅助修改：审核与应用', () => {
     expect(await readFile(join(dir, 'template-corner.json'), 'utf8')).toBe('{"note":"别人放的文件"}');
   });
 
-  it.runIf(process.platform === 'win32')('Windows：替换第二个模板失败时，已替换的第一个恢复原内容', async () => {
+  it.runIf(process.platform === 'win32')('Windows：模板替换受阻时公开读取阻断，解除阻碍后恢复全部工作副本', async () => {
     const dir = await workspace(true);
     const bigger = withChildren(WORDS, [{ ...WORDS.artboard.children[0], fontSize: 10 }]);
     const { roundDir } = await revisionRound(dir, { 'outcome.json': REVISION_SUBMISSION, [BANNER_FILE]: PINK_BANNER, [WORDS_FILE]: bigger });
     await approveRevision(roundDir);
-    const banner = await readFile(join(dir, 'template-banner.json')), words = await readFile(join(dir, 'template-banner-words.json'));
+    const words = await readFile(join(dir, 'template-banner-words.json'));
     await chmod(join(dir, 'template-banner-words.json'), 0o444);
     try {
       const failed = await applyAgentRound({ roundDir });
-      expect(codes(failed.problems)).toEqual(['apply.failed']);
-      expect(await readFile(join(dir, 'template-banner.json'))).toEqual(banner);
+      expect(codes(failed.problems)).toEqual(['apply.recoveryRequired']);
       expect(await readFile(join(dir, 'template-banner-words.json'))).toEqual(words);
+      expect((await loadWorkspace({ dir, resourcesDir: storeDir })).problems.some(p => p.code === 'apply.recoveryRequired')).toBe(true);
+      expect((await readReview(roundDir)).view).toBeUndefined();
       expect((await readdir(dir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     } finally {
       await chmod(join(dir, 'template-banner-words.json'), 0o644);
     }
+    expect((await applyAgentRound({ roundDir })).problems).toEqual([]);
+    expect(await json(join(dir, 'template-banner.json'))).toEqual(PINK_BANNER);
+    expect(await json(join(dir, 'template-banner-words.json'))).toEqual(bigger);
   });
 });
 
@@ -605,7 +610,7 @@ describe('agent run 按任务校验 --definition 与 --dataset（票据 16）', 
     const greeting = { name: '问候', version: 1 };
     expect(extraction.record.inputs).toMatchObject({ definition: greeting, dataset: null, request: { template: '问候牌' } });
     expect(await json(join(extraction.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'dataset-extraction', briefText: await readFile(extraction.record.inputs.brief.source, 'utf8'), definition: greeting, request: await json(join(extraction.roundDir, 'request.json')),
+      task: 'dataset-extraction', briefText: await readFile(extraction.record.inputs.brief.source, 'utf8'), definition: greeting, request: await json(join(extraction.roundDir, 'request.json')), resourceIdentity: expect.any(Array),
     });
     expect((await json(join(extraction.roundDir, 'agent/fake-run.json'))).prompt).toContain('按已发布的数据定义 问候 v1，');
 

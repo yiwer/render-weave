@@ -3,7 +3,7 @@
  * 经公开入口审核、应用，断言 RenderWeave 重新渲染的预览、待确认项未处理完之前不能写入数据集（M46）、
  * 写入工作区的内容，以及之后经交付入口正式出图。
  */
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import {
   publishStaticSchema, readOutputRecord, readReview, render, runAgentTask, startReviewServer,
   type AgentRunOptions, type ReviewView, type StaticSchemaEntry, type VersionedResourceStore,
 } from '../src/index.js';
-import { repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
+import { copyWorkspaceFixture, repoRoot, resourcesDir, singleTextDir } from './support/fixtures.js';
 
 const FAKE = fileURLToPath(new URL('./support/fake-claude.mjs', import.meta.url));
 const KEY = `rw-test-key-${Math.random().toString(36).slice(2)}`;
@@ -92,7 +92,7 @@ afterAll(async () => {
 /** 工作区：single-text 的问候，加上已发布的场次 v1、胸牌 v1 与模板胸牌卡。 */
 async function workspace(): Promise<string> {
   const dir = join(base, `workspace-${++count}`);
-  await cp(singleTextDir, dir, { recursive: true });
+  await copyWorkspaceFixture(singleTextDir, dir);
   const published: StaticSchemaEntry[] = [];
   for (const [stem, definition] of [['session', SESSION], ['badge', BADGE]] as const) {
     const result = publishStaticSchema(definition, published);
@@ -146,6 +146,25 @@ const codes = (problems: readonly { code: string }[]) => problems.map((problem) 
 const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 
 describe('发起数据集提取与模板辅助设计', () => {
+  it('正常轮次固定参考输入并保存真实提示词、资料与比较报告；下一轮拒绝被篡改的参考', async () => {
+    const dir = await workspace();
+    const reference = await file('reference.json', { sampleWidthPx: 8, sampleHeightPx: 8, artboardWidthMm: 200, artboardHeightMm: 50, approvedRegions: [] });
+    const sampleBytes = await readFile(join(resourcesDir, 'images/test/quadrants.png'));
+    const dimensions = await import('../src/index.js').then(({ readPngInfo }) => readPngInfo(sampleBytes));
+    await writeFile(reference, JSON.stringify({ sampleWidthPx: dimensions.width, sampleHeightPx: dimensions.height, artboardWidthMm: 200, artboardHeightMm: 50, approvedRegions: [] }));
+    const round = await run({ 'outcome.json': TEMPLATE_SUBMISSION, [BANNER_FILE]: BANNER, [WORDS_FILE]: WORDS },
+      { task: 'template-design', workspace: dir, dataset: 'ds-greeting', request: await file('reference-request.json', BANNER_REQUEST), reference });
+    const known = await json(join(round.roundDir, 'logs/outcome-context.json'));
+    expect(known.baseline.sampleSha256).toBe(round.record.inputs.sample.sha256);
+    expect(known.referenceImage.path).toContain('logs');
+    expect(round.check.assessment.visual?.status).toBe('notChecked');
+    const provenance = await json(join(round.roundDir, 'logs/provenance.json'));
+    expect(provenance.mcpContract).toBe('0.17.0'); expect(provenance.engine).toMatch(/^sha256:/);
+    expect(provenance.actualMaterials['materials/guide.md']).toHaveLength(64);
+    expect(await readFile(join(round.roundDir, 'logs/prompt.md'), 'utf8')).toBe((await json(join(round.roundDir, 'agent/fake-run.json'))).prompt);
+    await writeFile(join(round.roundDir, 'logs/reference.json'), '{}');
+    await expect(run({}, { task: undefined, from: round.roundDir, sample: undefined, brief: undefined, resources: undefined, feedback: join(base, 'brief.md') })).rejects.toThrow('参考资料已改变');
+  });
   it('任务顺序与输入：数据集提取要已发布的数据定义，模板辅助设计要已保存的数据集与出图请求', async () => {
     const dir = await workspace();
     const request = await file('card-request.json', CARD_REQUEST);
@@ -165,8 +184,9 @@ describe('发起数据集提取与模板辅助设计', () => {
       [{ task: 'definition-extraction', request }, '不用出图请求'],
     ];
     for (const [options, message] of cases) {
-      await expect(run({}, options)).rejects.toThrow(AgentUsageError);
-      await expect(run({}, options)).rejects.toThrow(message);
+      const rejected = run({}, options);
+      await expect(rejected).rejects.toThrow(AgentUsageError);
+      await expect(rejected).rejects.toThrow(message);
     }
   });
 
@@ -181,9 +201,9 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(fake.prompt).toBe((await readFile(join(repoRoot, 'agent/tasks/dataset-extraction.md'), 'utf8')).replaceAll('{sample}', 'sample.png').replaceAll('{definition}', '胸牌 v1'));
     expect(fake.prompt).not.toMatch(/\{|线路|站名|M402/);
     expect(await readFile(join(dataset.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/data-definition.md'), 'utf8'));
-    expect((await json(join(dataset.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1)).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft,check_outcome');
+    expect(dataset.record.runtime.mcpTools.join(',')).toBe('list_documents,read_document,list_resources,check_dataset,view_image,dsl_reference,render_draft,outcome_feedback,check_outcome');
     expect(await json(join(dataset.roundDir, 'logs/outcome-context.json'))).toEqual({
-      task: 'dataset-extraction', briefText: await readFile(dataset.record.inputs.brief.source, 'utf8'), definition: { name: '胸牌', version: 1 }, request: withoutDataset,
+      task: 'dataset-extraction', briefText: await readFile(dataset.record.inputs.brief.source, 'utf8'), definition: { name: '胸牌', version: 1 }, request: withoutDataset, resourceIdentity: expect.any(Array),
     });
 
     const template = await templateRound(dir);
@@ -191,11 +211,11 @@ describe('发起数据集提取与模板辅助设计', () => {
     expect(template.record.runtime.maxTurns).toBe(80);
     const prompt = (await json(join(template.roundDir, 'agent/fake-run.json'))).prompt;
     expect(prompt).toContain('主模板名 问候横幅');
-    expect(prompt).toContain('已有数据集 ds-greeting');
-    expect(await readFile(join(template.roundDir, 'agent/docs/dsl-index.md'), 'utf8')).toContain('完整示例');
-    expect((await json(join(template.roundDir, 'logs/mcp.json'))).mcpServers.rw.args.at(-1))
-      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,inspect_layout,view_image,dsl_reference,check_outcome');
-    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')) });
+    expect(prompt).toContain('已保存的 ds-greeting');
+    expect(await readFile(join(template.roundDir, 'agent/docs/dsl-reference.md'), 'utf8')).toBe(await readFile(join(repoRoot, 'agent/reference/template.md'), 'utf8'));
+    expect(template.record.runtime.mcpTools.join(','))
+      .toBe('list_documents,read_document,list_resources,check_templates,render_draft,compare_reference,inspect_layout,view_image,dsl_reference,outcome_feedback,check_outcome');
+    expect(await json(join(template.roundDir, 'logs/outcome-context.json'))).toEqual({ task: 'template-design', request: await json(join(template.roundDir, 'request.json')), resourceIdentity: expect.any(Array) });
   });
 });
 

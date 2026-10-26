@@ -1,0 +1,244 @@
+{
+  "format": "material-preservation/1",
+  "files": [
+    {
+      "path": "approval.json",
+      "sha256": "73079d9a78a252c6f2bf8a9219b89a57eeb4b778a75b009f72401cc4caba9e4d"
+    },
+    {
+      "path": "continuation-plan.json",
+      "sha256": "60f0a464ccea90928e8d3579672846c8610e3e01703e29d4cd6e3dbbbb36de35"
+    },
+    {
+      "path": "facts.json",
+      "sha256": "49a43432c236c796c599ed20a50aa323c2aee357d1398dd221e98982f805f5c3"
+    },
+    {
+      "path": "input-manifest.json",
+      "sha256": "0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4"
+    },
+    {
+      "path": "manual-input/brief.md",
+      "sha256": "b6a4693942a8d4ed609c97baa9eb11e93e4caa50912d0d2e15f7a16b47d3c8f9"
+    },
+    {
+      "path": "manual-input/reference.json",
+      "sha256": "979a32af43bd3b56cc13a6e7c4032ad6303081d29cbc372d775d5458ff9f897f"
+    },
+    {
+      "path": "manual-input/request.json",
+      "sha256": "9e2d29edccee670ded0675646477c4ade0e1f67da2f00df0685fc85457b58fd5"
+    },
+    {
+      "path": "manual-input/resources/fonts/LiberationSans-Bold.ttf",
+      "sha256": "361c61b82d575c5c35fd9157fda8b0194bcfcd0d88ea8521a4fb5dd53d33dddc"
+    },
+    {
+      "path": "manual-input/resources/fonts/LiberationSans-Italic.ttf",
+      "sha256": "832b4406dbef23628800d3aaad21048534ac84d7e3ad955be83b8172ed8ef512"
+    },
+    {
+      "path": "manual-input/resources/fonts/LiberationSans-Regular.ttf",
+      "sha256": "f8ace1f892b2bd9dc1792ba7f097fa7588f84fed48321480e04de5390828221f"
+    },
+    {
+      "path": "manual-input/resources/fonts/LICENSE_LIBERATION",
+      "sha256": "93fed46019c38bbe566b479d22148e2e8a1e85ada614accb0211c37b2c61c19b"
+    },
+    {
+      "path": "manual-input/resources/icons/boat.svg",
+      "sha256": "4da700d5f32d0b5652f3ac621b3da12c89ff3289bed68b69163d0f6aafec07e1"
+    },
+    {
+      "path": "manual-input/resources/icons/dlr.svg",
+      "sha256": "65717686334aed95078ec699858da3b8087f40a5d3acdb96b274a85c10cc9569"
+    },
+    {
+      "path": "manual-input/resources/icons/link-block-like.svg",
+      "sha256": "439463fc0a1561039e4c52f5c38d5c64ac1807f228b232d43b3543ac5cfec404"
+    },
+    {
+      "path": "manual-input/resources/icons/rail-black.svg",
+      "sha256": "e9d64c839842cd35e185e6cba1f982c4a423a49d91c95afac0d9020f1955f9e9"
+    },
+    {
+      "path": "manual-input/resources/icons/rail-gray.svg",
+      "sha256": "ada51db224571f51381235bd32dd665bc3d06789560013d477f4184b77f19ad4"
+    },
+    {
+      "path": "manual-input/resources/icons/roundel-like.svg",
+      "sha256": "7fc2589432b34c9e922205729aa916d897bce8c5d35634a872d5c5eeb0db1778"
+    },
+    {
+      "path": "manual-input/resources/provenance.json",
+      "sha256": "d1ce95b291ca10e9756aa2b5a1428cff1ddf4019c6c44f0cf85b8e22461f83f3"
+    },
+    {
+      "path": "manual-input/resources/resources.json",
+      "sha256": "ed6107c578329fb389a3e39854ddc1a3a531ee7cad83ae77233b9b57a402969a"
+    },
+    {
+      "path": "manual-input/workspace/dataset.json",
+      "sha256": "e4610d87605332e3959bc9bfe26744a4ea684cb9bcf4355fd3eeac52043047b0"
+    },
+    {
+      "path": "manual-input/workspace/key-point.schema.json",
+      "sha256": "8672b1e849ce9d8ed2c13990222dbc79a276da5cd0f8d15ba41caa1f63c7f414"
+    },
+    {
+      "path": "manual-input/workspace/route-panel.schema.json",
+      "sha256": "71adf41b47b74651cb7689f505b62cf22cc4a82df51cabc0ebe6f935ec4df735"
+    },
+    {
+      "path": "manual-input/workspace/tfl-key-point.compiled.json",
+      "sha256": "5092b5dfa8b840c97ec1ae910208c19159abedecddb6eacecc65beae826684f2"
+    },
+    {
+      "path": "manual-input/workspace/tfl-route-panel.compiled.json",
+      "sha256": "a89df50702e079601a4654effddc893595c6e007d99532b1d59a27fd3e80e1ba"
+    },
+    {
+      "path": "measurement/boundary-inspection-only.png",
+      "sha256": "6a51eea51973c44ffc4a2a7b3b2eb5a9f3f3e9b311bee26fb0e3e861e3ed4d08"
+    },
+    {
+      "path": "measurement/measurements.draft.json",
+      "sha256": "9f1ff739caf77278a53aa29bbe953b93fe0314074d8838549961e4f0770b2cf2"
+    },
+    {
+      "path": "measurement/measurements.json",
+      "sha256": "aa32a12997d80acd02a64e67dea820ab0baa281bd92b7383e5e9962c9c151702"
+    },
+    {
+      "path": "measurement/method-and-sensitivity.json",
+      "sha256": "c38dd854d2ec50c48966fad1e9efd0e47775b84b87fe356ad28f3f90db203c9a"
+    },
+    {
+      "path": "measurement/panel-inspection-only.png",
+      "sha256": "45cb68b78ed6d232b2b9bd8cf3447d57111530964bb12a58e32b119cb8938b14"
+    },
+    {
+      "path": "measurement/README.md",
+      "sha256": "a212b83e0bdafde1d1150ccecbe1d9714834f17817b4e6358d9cb8938737dbae"
+    },
+    {
+      "path": "measurement/regions.html",
+      "sha256": "b0927e76832f221d9cae0c7bd11dfc1eac1f5e5b1c3bd795db361b8192672401"
+    },
+    {
+      "path": "measurement/route-and-marker-details.json",
+      "sha256": "c1b186e60f5d0eb8a451b29a9e9d2cab605dcbbaaaa77b65b8ea3e766d5d1fea"
+    },
+    {
+      "path": "measurement/selection-seeds.json",
+      "sha256": "9f92426a1c665909dbf2c9bc9ca7d582abd3df6d0c4682cb35033fd09ee101b4"
+    },
+    {
+      "path": "package-manifest.json",
+      "sha256": "6ffbce6d52a9a64585045d7dad9af38da4df13a6616b22fa1b621414bed937d7"
+    },
+    {
+      "path": "provenance.json",
+      "sha256": "e66b47ddc07f5f9d5cc7c3a867b2cfda3c2051d2d381e8d7f7b1be9428c56a14"
+    },
+    {
+      "path": "README.md",
+      "sha256": "37f80c571c0ff2875c9ea232fe1eae3d5205922c383ab5e23a7ace40f1dcc2e8"
+    },
+    {
+      "path": "render/page-13-200dpi.png",
+      "sha256": "bc51796d5eb21dcb1d966edbc47b96c0a50defe63c55ffb133183f562165260c"
+    },
+    {
+      "path": "REVIEW.md",
+      "sha256": "20450277f69df5d9a362435571d766d2cd1bbe1602509f8c3bec6cca0fc5814d"
+    },
+    {
+      "path": "review/independent-review.blank.json",
+      "sha256": "48a8bb6004c042bca2ec2e7515fc407981352bb102a4123ecfceaa2d1ac63473"
+    },
+    {
+      "path": "review/time-events.blank.json",
+      "sha256": "aae62c1b86adeea4c61e6c599d33ae19f9989ef53eccdea8a5631ca46b15091c"
+    },
+    {
+      "path": "scope-and-plan.json",
+      "sha256": "9e6bb65467d9d67594f3265cb155c663b4abb9a33f66d451e8e288b4558e8642"
+    },
+    {
+      "path": "source/161-north-greenwich.original.pdf",
+      "sha256": "7ccfb254d45cc66374ac181f80b95c2caf0bca13044c3617147587ad00500dc5"
+    },
+    {
+      "path": "source/download-receipt.json",
+      "sha256": "e9243b38249ee6e24d7c11f88487d475e3cdc1631d4708884aeed9030944cf60"
+    },
+    {
+      "path": "source/page-13-image-geometry.json",
+      "sha256": "9d5593281523f1ae4b5b5c55d6c943a0d1d885a312a7e998f4c598d09aae3846"
+    },
+    {
+      "path": "source/pdf-metadata.json",
+      "sha256": "a5255b016d487fdd8d3107ac0090e27e67ee31f0904015e272fa634a2f29a20f"
+    },
+    {
+      "path": "stage-request.design.preparation.json",
+      "sha256": "2cfa7bfdf5551e9456af62ba1a6beed9670fc01bc056934ff8240c7a04a9f148"
+    },
+    {
+      "path": "validation/candidate-engine-equivalence.json",
+      "sha256": "cf6e86778d5e8675f0eab4656a75f43064a99f666dbc2e8f6f2d1540bb51330c"
+    },
+    {
+      "path": "validation/native-executor-preparation.json",
+      "sha256": "5b7ca50a0b9c7a00df7b33f0d215d25beb325879b773f8cf27011d891e100cc8"
+    },
+    {
+      "path": "validation/public-preflight.json",
+      "sha256": "b04eef1df807464730651a112335ec406efefc304387eb2f25f45eb4e2b5ecd2"
+    },
+    {
+      "path": "validation/reference-format-probe.json",
+      "sha256": "8243d553edbdc3fcedb92a04cffcc61ce24a9d72e9e29bcc2fd15606eb01f1d2"
+    },
+    {
+      "path": "validation/rejected-sourcehan-probe/LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+    },
+    {
+      "path": "validation/rejected-sourcehan-probe/resource-probe.png",
+      "sha256": "07d36b90ab7c232c30575e36efabf44207d4252f1db99b4438367440a1af9ade"
+    },
+    {
+      "path": "validation/rejected-sourcehan-probe/SourceHanSansCN-Bold.otf",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "validation/rejected-sourcehan-probe/SourceHanSansCN-Medium.otf",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "validation/rejected-sourcehan-probe/SourceHanSansCN-Regular.otf",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "validation/resource-probe.png",
+      "sha256": "c8b1312f3528a9eb214a161e3abf94cc76171a970cb3c820b9277012e5918a93"
+    },
+    {
+      "path": "validation/resource-probe.template.json",
+      "sha256": "16f720b4cd8c26348822384e314432a48cb1119e94ea3cbdb680ea5cd5d2247e"
+    },
+    {
+      "path": "validation/verify-public-inputs.mjs",
+      "sha256": "a6f5b1d5f9e58c99854218557f50e55f8809e9aa1b9995c858fa0766b16de838"
+    },
+    {
+      "path": "verification.json",
+      "sha256": "2bb1ac2748e4609c2e409077329a72226a5c8c4bc906a5750b8deeaf2902767b"
+    }
+  ],
+  "unchanged": true,
+  "realModelCalls": 0,
+  "credentialsRemovedFromChildren": true
+}

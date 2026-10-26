@@ -1,0 +1,48 @@
+{
+  "format": "original38-zh-review-package-index/1",
+  "createdAt": "2026-10-23T18:17:44.782Z",
+  "candidate": "sha256:72a5e74973ce5f60e501e27060f6bc4a52f51f7b4bd45bbbac39502e0a5b949f",
+  "status": "prepared-not-independently-reviewed",
+  "reviewer": null,
+  "activeMinutes": null,
+  "packages": [
+    {
+      "task": "template",
+      "repetition": 1,
+      "path": "F:/GenCode/render-weave/out/harness-original38-review/zh-template-r1-candidate-2-v2",
+      "manifestSha256": "ffb5787e4f153a21e9329800fad34468dbaa608620c258145ba226e95c4e5fa9",
+      "attemptId": "e1e7bd68-5013-46ba-85a7-16a363601a29",
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "originalRoundUnchanged": true,
+      "reviewItemCount": 16
+    },
+    {
+      "task": "revision",
+      "repetition": 1,
+      "path": "F:/GenCode/render-weave/out/harness-original38-review/zh-revision-r1-candidate-2-v2",
+      "manifestSha256": "155a3e5d9a5892d2255d02d5425be38b4ae32ca2e97fdb6754bed56e5a48c2b2",
+      "attemptId": "87439417-f360-4c16-aeda-5c07e23fa14c",
+      "actualImage": {
+        "dpi": 50,
+        "widthPx": 1457,
+        "heightPx": 325
+      },
+      "previewImage": {
+        "dpi": 120,
+        "widthPx": 3496,
+        "heightPx": 780
+      },
+      "originalRoundUnchanged": true,
+      "reviewItemCount": 16
+    }
+  ]
+}

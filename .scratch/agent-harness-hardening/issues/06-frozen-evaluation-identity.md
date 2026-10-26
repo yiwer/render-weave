@@ -1,0 +1,51 @@
+# 06: 评估续跑拒绝混合条件，重新评分保留原始结论
+
+**What to build:** 固定评估的预登记身份，留存每次派发的实际输入，使合法续跑、条件变更和重新评分都有可核对的外部行为。
+
+**Blocked by:** 无
+
+**Status:** resolved
+
+**Trace:** [父规格](../spec.md) D06、D07、D16；US33–35、US37–38、US48、US63；A12；A14 的受控状态汇总与退出码子项。
+
+真实四场景运行仍归原 38，本票不以取得真实模型门槛为关闭条件。
+
+- [x] 实验开始前固定执行器、请求模型与推理配置、端点身份、时间/轮数及停滞预算、构建、工具合同、提示词生成规则、静态资料/输入、评分器、配置、真值、参考和资源摘要；端点身份不含凭据。
+- [x] 每次派发前保存实际提示词、提供的资料和上游成果/检查点身份，响应后追加可获得的实际服务模型；这些证据不倒填为预登记条件。合法串联或接续的动态提示词变化不被误拒；无法固定的供应商修订及实际模型变化明确显示。
+- [x] 相同实验标识续跑时，改变任一预登记条件均在模型派发前拒绝并列出差异；原实验与成果保持不变，改变条件只能创建新实验。
+- [x] 相同身份只补计划内 invalid 或 not-run 单元；已有有效成功和有效失败均不被覆盖或重新派发，不能通过重复运行替换失败直到成功。
+- [x] 报告列全计划与 pass、fail、invalid、not-run，并单列执行完整性。要求达线的门槛中，有任一有效失败则 fail；无失败但缺次数则 incomplete；齐全达线才 pass。受控的 fail+invalid、pass+invalid、pass+pass 经命令行分别产生失败、未完成、通过结论及对应退出码。
+- [x] 重新评分产生关联原实验、原尝试与新评分器身份的新报告，注明评分时间；原报告及其身份不变。缺少旧身份的信息如实标明，不补造历史条件。
+- [x] 普通续跑可改变并行数，但每段调度条件完整留存；用于质量/成本配对比较的运行能够核对预先固定的调度条件，不能将不同调度的结果伪装成同条件。
+- [x] 同步本票涉及的命令用法、报告格式和兼容说明；旧报告继续可读，不能把无法证明相同身份的旧记录并入新实验。使用受控执行器从公开评估入口验证以上行为，未引入真实模型验收依赖。
+
+**测试接缝：** 公开评估命令的派发结果、退出码、实验清单和报告文件；以受控执行器验证是否发生外部派发，不断言私有比较结构。重新评分读取已保存成果，不调用模型。
+
+
+## Answer
+
+完成日期：2026-10-23。实现遵循 M313；公开测试接缝沿用已确认的 Agent/评估 CLI 与输出文件，没有调用真实模型。
+
+- 冻结身份为 `renderweave-eval-identity/1`，在 `eval.json` 中独占创建，后续保持字节不变。实际构建、执行器版本/文件、提示词规则与资料、配置/真值/参考/资源、运行预算及计划分别摘要。续跑、每次派发（含重试）和签发报告前核验；已有观测的请求模型、预算、输入、资料与合同也检查，不能复制其他条件的轮次充数。
+- 新报告为 `renderweave-agent-eval/3`。全计划的 `pass/fail/invalid/not-run` 与完整性分开；已有有效成功/失败均跳过，空/半写目录可补。普通并行数可变化且每段留存调度，配对模式固定并行数。
+- 每轮启动执行器前保存实际提示词、实际资料和输入/上游身份，动态串联提示词允许变化；实际服务模型在响应后单列变化与请求差异，未知供应商修订保持 `null`。
+- 原报告与实验清单不重写；重新评分另存 UUID 报告，关联原清单/首份报告/原轮次完整内容摘要，并记录新评分器、配置、输入、资源与评分时间。旧实验身份保持未知，只能重新评分，不能接着运行。
+- 评估案例可选 `reference/contentBaseline` 已透传现有 Agent 参数并冻结。`--claude-args` 支持完整受控执行器；续跑命令保留 JSON 引号边界。已保留票据 02 独立离线业务行为入口、票据 03 的 MCP 0.11.0 与资源快照。
+
+验收：`npm run build`、`npm run typecheck`、`git diff --check` 均通过。使用 `node node_modules/vitest/vitest.mjs run … --maxWorkers=1` 运行以下文件，共 104 条通过（65 + 39）：
+
+| 文件 | 已验证行为 |
+|---|---|
+| `test/agent-eval-identity.test.ts`（13 条） | 模型/effort/轮数/端点、实际构建/资料/素材/说明/真值/资源/评分器与执行器版本变化均拒绝；运行中及最后一轮后的变化不能签发混合报告；外来条件轮次拒绝；凭据端点不泄漏；有效失败/成功不替换；invalid 与半写续跑；配对并行限制；三个门槛退出码；重新评分来源与不变性；参考基准透传；派发前证据；串联动态提示词及上游身份；实际服务模型变化 |
+| `test/agent-eval-transcription.test.ts`、`test/agent-eval.test.ts`、`test/agent-dataset-template.test.ts` | 转录判据、四场景编排与门槛、报告兼容、Agent 输入/参考链回归；连同上述文件为 65 条 |
+| `test/agent-template-behavior.test.ts`、`test/agent.test.ts` | 票据 02 离线业务行为与普通 Agent 公共入口，39 条 |
+
+实现入口：`scripts/agent-eval/identity.ts`、`run.ts`、`eval.ts`、`scenarios.ts`；轮次派发证据在 `src/agent/run.ts`；CLI 参数在 `src/cli.ts`。用法与兼容说明见 `docs/agent-eval.md`、`docs/agent-tasks.md`。实施提交 `8ecf571`、`bf8aca0`、`4f7576d`、`8f76622`；已合入集成分支至 `2d09212`（含 01/02/03）。
+
+集成审查补修（2026-10-23）：公开 CLI 反例证实，同模型但核准内容事实不同的外来整轮复制后，原实现仅比较部分字段，仍会签发报告。现由评估宿主在实际派发目录写 `evaluation.json`，绑定完整冻结身份与原始记录、候选、资料、工作区和资源字节；续跑核对完整来源，不改变原报告。并行补跑时复核读取期间记录是否稳定，最终签发前再核验完整记录。`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t "相同模型下复制|同身份续跑|串联定义" --maxWorkers=1`：新增反例先失败，修复后 3 项通过；`npm run typecheck` 与 `git diff --check` 通过。票据 07 的尝试原件按实际 `spec.out` 留存此来源，兼容视图复制时一并保留。
+
+同次审查另以旧资源清单指向 junction/symlink 的公开反例复现：目录扫描遗漏实际读取字节，换图后仍允许续跑。冻结与重新评分现同时通过资源仓库读取每个资源 ID 并摘要，修复后该反例以及续跑、重新评分两项回归通过（命令 `node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts -t "旧资源目录经链接|同身份续跑|重新评分另存" --maxWorkers=1`，3 项通过）。为票据 08 兼容预留 `round-start.json`、`execution.json`、`execution-owner.json` 的原始证据封存。
+
+与 13 集成后：`node node_modules/vitest/vitest.mjs run test/agent-eval-identity.test.ts test/agent-eval.test.ts test/agent-eval-transcription.test.ts test/agent-visibility.test.ts test/agent-style-verification.test.ts test/mcp.test.ts test/render.test.ts --maxWorkers=1`：7 文件 123 项通过；链接修复后完整复跑 `test/agent-eval-identity.test.ts --maxWorkers=1`：15 项通过。构建、类型检查与 diff 检查通过，保留评估报告 /3 与 MCP 0.12.0。
+
+边界与后续交接：时间预算、停滞策略当前未实现，冻结字段如实为 `null`，由票据 10、12 接入实际配置及身份；本票未声称支持它们。票据 07 负责独立尝试目录、重试历史与用量汇总，本票按现存轮次留存重新评分来源；新增尝试目录后应继续沿用不可覆盖与来源摘要原则。真实四场景模型门槛仍由原票 38 留证。`CONTEXT.md` 的关闭更新由集成方统一执行。

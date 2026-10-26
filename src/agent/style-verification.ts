@@ -1,277 +1,171 @@
-/**
- * 样式与尺寸基准核查（票据 34）：
- * 建立原图坐标与物理尺寸基准，结合 CanvasKit 渲染生成的实际布局摘要，
- * 检查元素字号、物理尺寸、间距、独立样式与各业务状态（普通、本站、已过、终点、最长文本等），
- * 自动扫描重复实例，识别尺寸异常（如字号明显偏小），记录绑定候选哈希与请求，修改后失效。
- */
+/** 核准参考与候选布局的多维测量；未测量不能当作通过。 */
 import { createHash } from 'node:crypto';
-import type { LayoutNode, LayoutSummary, TextSummary } from '../layout/index.js';
+import type { LayoutNode, LayoutSummary } from '../layout/index.js';
 import type { RenderRequest } from '../request.js';
-import { roundMm } from '../units.js';
+import type { RenderEvidence } from '../render.js';
+import { isRecord } from '../util.js';
 
-/** 人工核准的原图区域 */
+export interface ReferenceBox { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+export type BusinessState = 'normal' | 'current' | 'passed' | 'terminal' | 'longestText';
 export interface ApprovedRegion {
-  readonly id: string;
-  readonly name: string;
-  /** 原图像素区域（相对示例图左上角） */
-  readonly sampleRegion: {
-    readonly x: number;
-    readonly y: number;
-    readonly width: number;
-    readonly height: number;
-  };
-  /** 目标元素路径匹配模式（通配符 * 或全等，如 "*站名*" 或 "主模板/站点列表[*]/站名"） */
-  readonly targetPathPattern?: string;
-  /** 目标角色（如 stopName, currentStop, routeNo, landmark） */
-  readonly role?: string;
-  /**
-   * 预期字号（毫米，可选）。
-   * 省略时由原图物理框高自动换算：physicalHeightMm * heightToFontRatio（缺省 0.95）。
-   */
-  readonly expectedFontSizeMm?: number;
-  /**
-   * 容差比例：实际值 / 预期值
-   * 低于 min 判定为明显偏小（默认 0.65），高于 max 判定为明显偏大（默认 1.35）。
-   */
-  readonly toleranceRatio?: {
-    readonly min?: number;
-    readonly max?: number;
-  };
+  readonly id: string; readonly name: string; readonly sampleRegion: ReferenceBox;
+  readonly targetPathPattern?: string; readonly targetText?: string; readonly role?: string;
+  /** 不指定框类型时不比较几何；字号只接受显式核准值。 */
+  readonly boxKind?: 'layout' | 'ink';
+  readonly expectedFontSizeMm?: number; readonly expectedText?: string; readonly expectedColor?: string;
+  /** 操作者核准的图片资源原始内容摘要，不从候选或资源名称生成预期值。 */
+  readonly expectedImageSha256?: string;
+  readonly toleranceRatio?: { readonly min?: number; readonly max?: number };
+  readonly positionToleranceMm?: number;
+  /** 同一独立样式的重复项只比尺寸，不把每个实例拉到代表项位置。 */
+  readonly repeat?: boolean;
+  readonly state?: BusinessState;
 }
-
-/** 参考基准 */
 export interface ReferenceBaseline {
-  /** 示例图的像素尺寸 */
-  readonly sampleWidthPx: number;
-  readonly sampleHeightPx: number;
-  /** 画板物理尺寸（毫米） */
-  readonly artboardWidthMm: number;
-  readonly artboardHeightMm: number;
-  /** 人工核准区域列表 */
+  readonly sampleWidthPx: number; readonly sampleHeightPx: number;
+  readonly artboardWidthMm: number; readonly artboardHeightMm: number;
+  readonly boardRegion?: ReferenceBox;
+  readonly sampleSha256?: string;
+  readonly complete?: boolean;
   readonly approvedRegions: readonly ApprovedRegion[];
 }
-
-/** 样式异常 */
 export interface StyleAnomaly {
-  readonly kind: 'fontSizeTooSmall' | 'fontSizeTooLarge' | 'missingStateStyle' | 'sizeDeviation';
-  readonly path: string;
-  readonly elementRole?: string;
-  readonly actualMm: number;
-  readonly expectedMm: number;
-  readonly ratio: number;
-  readonly message: string;
+  readonly kind: 'fontSizeTooSmall' | 'fontSizeTooLarge' | 'missingRegion' | 'sizeDeviation' | 'positionDeviation' | 'textMismatch' | 'colorMismatch' | 'contentInvisible' | 'imageContentMismatch';
+  readonly path: string; readonly regionId: string; readonly elementRole?: string;
+  readonly actualMm?: number; readonly expectedMm?: number; readonly ratio?: number; readonly message: string;
 }
-
-/** 状态覆盖 */
-export type BusinessState = 'normal' | 'current' | 'passed' | 'terminal' | 'longestText';
-
-/** 样式与尺寸核查报告 */
+export interface RegionMeasurement {
+  readonly id: string; readonly name: string; readonly state?: BusinessState;
+  readonly status: 'measured' | 'missing' | 'ambiguous' | 'unknown';
+  readonly referenceBoxMm: ReferenceBox;
+  readonly instances: readonly {
+    readonly path: string; readonly sourceLocation?: { readonly template: string; readonly path: string };
+    readonly fontSizeMm?: number; readonly fontSizesMm?: readonly number[]; readonly text?: string; readonly colors?: readonly string[];
+    readonly box?: ReferenceBox; readonly deltaMm?: { readonly x: number; readonly y: number };
+    readonly sizeRatio?: { readonly width: number; readonly height: number };
+    readonly visibility?: RenderEvidence['nodes'][number]['visibility'];
+    readonly imageContent?: { readonly status: 'matches' | 'mismatch' | 'notChecked'; readonly sha256?: string };
+    readonly unknown: readonly string[];
+  }[];
+}
 export interface StyleVerificationRecord {
-  readonly format: 'renderweave-style-verification/1';
-  readonly verifiedAt: string;
-  readonly candidatesHash: string;
-  readonly requestHash: string;
-  readonly baselineHash: string;
-  /** 候选修改后该字段为 false */
-  readonly valid: boolean;
-  readonly physicalScale: {
-    readonly pxPerMmh: number;
-    readonly pxPerMmv: number;
-  };
-  readonly coverage: {
-    readonly approvedRegionsTotal: number;
-    readonly approvedRegionsMatched: number;
-    readonly repeatedInstancesScanned: number;
-    readonly statesCovered: readonly BusinessState[];
-  };
-  readonly anomalies: readonly StyleAnomaly[];
-  readonly passed: boolean;
+  readonly format: 'renderweave-style-verification/3';
+  readonly candidatesHash: string; readonly requestHash: string; readonly baselineHash: string; readonly valid: boolean;
+  readonly status: 'notChecked' | 'needsWork' | 'needsReview'; readonly reason?: string;
+  readonly physicalScale: { readonly pxPerMmh: number; readonly pxPerMmv: number };
+  readonly coverage: { readonly approvedRegionsTotal: number; readonly approvedRegionsMatched: number;
+    readonly repeatedInstancesScanned: number; readonly statesCovered: readonly BusinessState[]; readonly statesMeasured: readonly BusinessState[]; readonly unknownRegions: number; readonly complete: boolean };
+  readonly regions: readonly RegionMeasurement[]; readonly anomalies: readonly StyleAnomaly[]; readonly passed: boolean;
 }
-
-/** 计算候选文档与请求的联合哈希 */
-export function hashCandidatesAndRequest(candidates: readonly { readonly name?: string; readonly document: unknown }[], request: RenderRequest): {
-  candidatesHash: string;
-  requestHash: string;
-} {
-  const cHash = createHash('sha256')
-    .update(
-      JSON.stringify(
-        candidates.map((c) => ({ name: c.name, doc: c.document })).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
-      ),
-    )
-    .digest('hex');
-  const rHash = createHash('sha256').update(JSON.stringify(request)).digest('hex');
-  return { candidatesHash: cHash, requestHash: rHash };
+export function digest(value: unknown): string { return createHash('sha256').update(JSON.stringify(value)).digest('hex'); }
+export function hashCandidatesAndRequest(candidates: readonly { readonly name?: string; readonly document: unknown }[], request: RenderRequest) {
+  return { candidatesHash: digest(candidates.map((c) => ({ name: c.name, doc: c.document })).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))), requestHash: digest(request) };
 }
-
-/** 核查记录是否仍然有效 */
-export function isVerificationValid(
-  record: StyleVerificationRecord,
-  currentCandidatesHash: string,
-  currentRequestHash: string,
-): boolean {
-  return record.valid && record.candidatesHash === currentCandidatesHash && record.requestHash === currentRequestHash;
+export function isVerificationValid(record: StyleVerificationRecord, candidatesHash: string, requestHash: string, baselineHash?: string): boolean {
+  return record.valid && record.candidatesHash === candidatesHash && record.requestHash === requestHash && record.baselineHash === baselineHash;
 }
-
-/**
- * 校验元素路径是否匹配通配模式
- * 模式支持 * 匹配任意字符（例如 "*站名*" 或 "*[5]/名称"）
- */
 export function matchPath(pattern: string, path: string): boolean {
-  if (pattern === path) return true;
-  if (!pattern.includes('*')) return path.includes(pattern);
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-  return new RegExp(`^${escaped}$`).test(path);
+  return new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`).test(path);
+}
+function box(value: unknown): value is ReferenceBox {
+  return isRecord(value) && ['x', 'y', 'width', 'height'].every((k) => typeof value[k] === 'number' && Number.isFinite(value[k])) &&
+    Number(value['x']) >= 0 && Number(value['y']) >= 0 && Number(value['width']) > 0 && Number(value['height']) > 0;
+}
+export function validateReferenceBaseline(value: unknown): value is ReferenceBaseline {
+  if (!isRecord(value) || !['sampleWidthPx', 'sampleHeightPx', 'artboardWidthMm', 'artboardHeightMm'].every((k) => typeof value[k] === 'number' && Number.isFinite(value[k]) && Number(value[k]) > 0) || !Array.isArray(value['approvedRegions'])) return false;
+  if (value['sampleSha256'] !== undefined && (typeof value['sampleSha256'] !== 'string' || !/^[a-f0-9]{64}$/.test(value['sampleSha256']))) return false;
+  if (value['complete'] !== undefined && typeof value['complete'] !== 'boolean') return false;
+  if (value['boardRegion'] !== undefined && !box(value['boardRegion'])) return false;
+  const board = (value['boardRegion'] ?? { x: 0, y: 0, width: value['sampleWidthPx'], height: value['sampleHeightPx'] }) as ReferenceBox;
+  if (board.x + board.width > Number(value['sampleWidthPx']) || board.y + board.height > Number(value['sampleHeightPx'])) return false;
+  const ids = new Set<string>();
+  return value['approvedRegions'].every((r: unknown) => {
+    if (!isRecord(r) || typeof r['id'] !== 'string' || !r['id'] || ids.has(r['id']) || typeof r['name'] !== 'string' || !box(r['sampleRegion'])) return false;
+    ids.add(r['id']);
+    if (['targetPathPattern', 'targetText', 'expectedText', 'role'].some((k) => r[k] !== undefined && (typeof r[k] !== 'string' || String(r[k]).length > 1000))) return false;
+    if (r['boxKind'] !== undefined && !['layout', 'ink'].includes(String(r['boxKind']))) return false;
+    if (r['state'] !== undefined && !['normal', 'current', 'passed', 'terminal', 'longestText'].includes(String(r['state']))) return false;
+    if (r['repeat'] !== undefined && typeof r['repeat'] !== 'boolean') return false;
+    if (r['expectedColor'] !== undefined && (typeof r['expectedColor'] !== 'string' || !/^#[a-f\d]{6}([a-f\d]{2})?$/i.test(r['expectedColor']))) return false;
+    if (r['expectedImageSha256'] !== undefined && (typeof r['expectedImageSha256'] !== 'string' || !/^[a-f\d]{64}$/.test(r['expectedImageSha256']))) return false;
+    if (r['expectedFontSizeMm'] !== undefined && !(typeof r['expectedFontSizeMm'] === 'number' && Number.isFinite(r['expectedFontSizeMm']) && r['expectedFontSizeMm'] > 0)) return false;
+    if (r['positionToleranceMm'] !== undefined && !(typeof r['positionToleranceMm'] === 'number' && Number.isFinite(r['positionToleranceMm']) && r['positionToleranceMm'] >= 0)) return false;
+    const tolerance = r['toleranceRatio'];
+    if (tolerance !== undefined && (!isRecord(tolerance) || ['min', 'max'].some((k) => tolerance[k] !== undefined && !(typeof tolerance[k] === 'number' && Number.isFinite(tolerance[k]) && Number(tolerance[k]) > 0)) || Number(tolerance['min'] ?? 0.8) > Number(tolerance['max'] ?? 1.2))) return false;
+    const b = r['sampleRegion'];
+    return b.x >= board.x && b.y >= board.y && b.x + b.width <= board.x + board.width && b.y + b.height <= board.y + board.height;
+  });
 }
 
-/**
- * 执行样式与物理尺寸核查
- */
 export function verifyElementStyles(options: {
-  readonly layout: LayoutSummary;
-  readonly baseline?: ReferenceBaseline;
-  readonly candidatesHash: string;
-  readonly requestHash: string;
-  /** 出图参数（如 currentIndex，用于识别状态） */
-  readonly parameters?: Record<string, unknown>;
+  readonly layout: LayoutSummary; readonly baseline?: ReferenceBaseline;
+  readonly candidatesHash: string; readonly requestHash: string;
+  readonly parameters?: Record<string, unknown>; readonly evidence?: RenderEvidence;
+  readonly resourceHashes?: Readonly<Record<string, string>>;
 }): StyleVerificationRecord {
-  const { layout, baseline, candidatesHash, requestHash, parameters } = options;
-  const anomalies: StyleAnomaly[] = [];
-
-  const verifiedAt = new Date().toISOString();
-  const baselineHash = baseline ? createHash('sha256').update(JSON.stringify(baseline)).digest('hex') : '';
-
-  // 1. 全局物理尺度基准（px/mm）
-  const pxPerMmh = baseline ? baseline.sampleWidthPx / baseline.artboardWidthMm : layout.output.widthPx / layout.output.width;
-  const pxPerMmv = baseline ? baseline.sampleHeightPx / baseline.artboardHeightMm : layout.output.heightPx / layout.output.height;
-
-  // 扁平化收集所有可见布局节点
-  const allNodes: LayoutNode[] = [];
-  const walk = (node: LayoutNode) => {
-    if (node.visible !== false) allNodes.push(node);
-    node.children?.forEach(walk);
-  };
-  walk(layout.root);
-
-  // 2. 自动扫描重复实例
-  // 按照路径中是否包含循环/数组下标 [N] 聚类
-  const repeatedPatternMap = new Map<string, LayoutNode[]>();
-  for (const node of allNodes) {
-    if (/\[\d+\]/.test(node.path)) {
-      const genericPath = node.path.replace(/\[\d+\]/g, '[*]');
-      const list = repeatedPatternMap.get(genericPath) ?? [];
-      list.push(node);
-      repeatedPatternMap.set(genericPath, list);
-    }
-  }
-
-  // 3. 业务状态覆盖识别（普通、本站/当前、已过、终点、最长文本）
-  const coveredStates = new Set<BusinessState>();
-  coveredStates.add('normal'); // 只要有实例即有普通态
-
-  const currentIndex = typeof parameters?.['currentIndex'] === 'number' ? parameters['currentIndex'] : undefined;
-
-  // 遍历所有重复的文本实例集合，核实状态与缩字组一致性
-  let repeatedInstancesCount = 0;
-  for (const [_genericPath, nodes] of repeatedPatternMap.entries()) {
-    repeatedInstancesCount += nodes.length;
-    const textNodes = nodes.filter((n): n is LayoutNode & { text: TextSummary } => n.text !== undefined);
-    if (textNodes.length === 0) continue;
-
-    // 状态识别
-    if (textNodes.length >= 2) {
-      coveredStates.add('terminal'); // 首末站
-    }
-
-    if (currentIndex !== undefined && currentIndex > 0) {
-      // 检查本站实例与已过实例
-      const activeNode = nodes.find((n) => matchPath(`*[${currentIndex}]*`, n.path));
-      if (activeNode) coveredStates.add('current');
-      const passedNode = nodes.find((n) => {
-        const match = n.path.match(/\[(\d+)\]/);
-        return match && Number(match[1]) < currentIndex;
-      });
-      if (passedNode) coveredStates.add('passed');
-    }
-
-    // 检查最长文本实例
-    const longest = [...textNodes].sort((a, b) => b.text.content.length - a.text.content.length)[0];
-    if (longest) coveredStates.add('longestText');
-  }
-
-  // 4. 对照人工核准区域比对物理尺寸与字号（基准校验）
-  let matchedRegions = 0;
-  if (baseline && baseline.approvedRegions.length > 0) {
-    for (const region of baseline.approvedRegions) {
-      // 物理参考尺寸（毫米）
-      const physWidthMm = roundMm(region.sampleRegion.width / pxPerMmh);
-      const physHeightMm = roundMm(region.sampleRegion.height / pxPerMmv);
-
-      // 计算预期字号：若未显式指定，按竖排或横排单行高度估算
-      const expectedFontMm =
-        region.expectedFontSizeMm ?? roundMm(Math.min(physWidthMm, physHeightMm) * 0.95);
-
-      const minRatio = region.toleranceRatio?.min ?? 0.65;
-      const maxRatio = region.toleranceRatio?.max ?? 1.35;
-
-      // 在布局节点中寻找匹配的节点
-      const matched = allNodes.filter((node) => {
-        if (region.targetPathPattern && !matchPath(region.targetPathPattern, node.path)) return false;
-        if (region.role && !node.path.toLowerCase().includes(region.role.toLowerCase())) return false;
-        return true;
-      });
-
-      if (matched.length > 0) {
-        matchedRegions++;
-        for (const node of matched) {
-          if (node.text) {
-            const actualFont = node.text.fontSize;
-            const ratio = actualFont / expectedFontMm;
-            if (ratio < minRatio) {
-              anomalies.push({
-                kind: 'fontSizeTooSmall',
-                path: node.path,
-                elementRole: region.name,
-                actualMm: actualFont,
-                expectedMm: expectedFontMm,
-                ratio: Math.round(ratio * 100) / 100,
-                message: `元素“${node.path}”实际字号 ${actualFont} mm 相对参考基准“${region.name}”（预期 ${expectedFontMm} mm，参考框高 ${physHeightMm} mm）明显偏小（比率 ${Math.round(ratio * 100)}% < ${minRatio * 100}%）`,
-              });
-            } else if (ratio > maxRatio) {
-              anomalies.push({
-                kind: 'fontSizeTooLarge',
-                path: node.path,
-                elementRole: region.name,
-                actualMm: actualFont,
-                expectedMm: expectedFontMm,
-                ratio: Math.round(ratio * 100) / 100,
-                message: `元素“${node.path}”实际字号 ${actualFont} mm 相对参考基准“${region.name}”（预期 ${expectedFontMm} mm）明显偏大（比率 ${Math.round(ratio * 100)}% > ${maxRatio * 100}%）`,
-              });
-            }
-          }
-        }
+  const { layout, baseline, candidatesHash, requestHash, evidence } = options;
+  const b = baseline?.boardRegion ?? { x: 0, y: 0, width: baseline?.sampleWidthPx ?? layout.output.widthPx, height: baseline?.sampleHeightPx ?? layout.output.heightPx };
+  const sx = b.width / (baseline?.artboardWidthMm ?? layout.output.width), sy = b.height / (baseline?.artboardHeightMm ?? layout.output.height);
+  const misaligned = baseline && (Math.abs(baseline.artboardWidthMm - layout.output.width) > 0.001 || Math.abs(baseline.artboardHeightMm - layout.output.height) > 0.001 || Math.abs(sx / sy - 1) > 2 / Math.min(b.width, b.height));
+  const nodes: LayoutNode[] = [];
+  const visit = (n: LayoutNode) => { if (!n.visible) return; nodes.push(n); n.children?.forEach(visit); }; visit(layout.root);
+  const anomalies: StyleAnomaly[] = [], regions: RegionMeasurement[] = [];
+  for (const region of misaligned ? [] : baseline?.approvedRegions ?? []) {
+    const ref = { x: (region.sampleRegion.x - b.x) / sx, y: (region.sampleRegion.y - b.y) / sy, width: region.sampleRegion.width / sx, height: region.sampleRegion.height / sy };
+    const selected = nodes.filter((n) => (region.targetPathPattern ? matchPath(region.targetPathPattern, n.path) : region.targetText !== undefined) && (region.targetText === undefined || n.text?.content === region.targetText));
+    if (!region.targetPathPattern && region.targetText === undefined) { regions.push({ id: region.id, name: region.name, status: 'unknown', referenceBoxMm: ref, instances: [] }); continue; }
+    if (!selected.length) anomalies.push({ kind: 'missingRegion', regionId: region.id, path: region.targetPathPattern ?? '', message: `参考项“${region.name}”没有匹配到可见布局元素` });
+    if (selected.length > 1 && !region.repeat) { regions.push({ id: region.id, name: region.name, status: 'ambiguous', referenceBoxMm: ref, instances: [] }); continue; }
+    const instances = selected.map((node) => {
+      const trace = evidence?.nodes.find((n) => n.path === node.path);
+      const unknown: string[] = [];
+      const add = (kind: StyleAnomaly['kind'], message: string, values = {}) => anomalies.push({ kind, regionId: region.id, path: node.path, message, ...values });
+      if (trace?.visibility.status === 'invisible') add('contentInvisible', `${region.name}：实际绘制内容完全不可见（${trace.visibility.reasons.join('、')}）`);
+      const imageHash = node.image ? options.resourceHashes?.[node.image.source.replace(/^res:/, '')] : undefined;
+      const imageContent: RegionMeasurement['instances'][number]['imageContent'] = node.image || region.expectedImageSha256 ? {
+        status: !region.expectedImageSha256 || !imageHash ? 'notChecked' : region.expectedImageSha256 === imageHash ? 'matches' : 'mismatch',
+        ...(imageHash ? {sha256: imageHash} : {}),
+      } : undefined;
+      if (imageContent?.status === 'mismatch') add('imageContentMismatch', `${region.name}：实际图片资源内容与核准摘要不同`);
+      if (imageContent?.status === 'notChecked') unknown.push('图片内容缺少核准事实或实际资源证据');
+      const ratio = (actual: number, expected: number, kind: StyleAnomaly['kind']) => {
+        const r = actual / expected;
+        if (r < (region.toleranceRatio?.min ?? 0.8) || r > (region.toleranceRatio?.max ?? 1.2)) add(kind, `${region.name}：实际 ${actual.toFixed(3)} mm，参考 ${expected.toFixed(3)} mm，比值 ${r.toFixed(3)}`, { actualMm: actual, expectedMm: expected, ratio: r });
+      };
+      const fontSizes = node.text ? [...new Set(node.text.fragments.filter((f) => f.text.length > 0).map((f) => f.fontSize))] : [];
+      if (region.expectedFontSizeMm !== undefined) {
+        if (!fontSizes.length) unknown.push('没有实际文字字号');
+        else for (const size of fontSizes) ratio(size, region.expectedFontSizeMm, size < region.expectedFontSizeMm ? 'fontSizeTooSmall' : 'fontSizeTooLarge');
       }
-    }
+      if (region.expectedText !== undefined && node.text?.content !== region.expectedText) add('textMismatch', `${region.name}：文字与核准内容不同`);
+      const colors = node.text ? [...new Set(node.text.fragments.map((f) => f.color.toUpperCase()))] : undefined;
+      if (region.expectedColor) {
+        const expected = region.expectedColor.toUpperCase().padEnd(9, 'F');
+        if (!colors) unknown.push('未测量该元素颜色');
+        else if (colors.some((c) => c.padEnd(9, 'F') !== expected)) add('colorMismatch', `${region.name}：解析后的文字颜色与参考 ${expected} 不同`);
+      }
+      const actual = region.boxKind === 'layout' ? node : region.boxKind === 'ink' ? trace?.inkBounds : undefined;
+      if (region.boxKind && (!actual || trace?.transformed)) unknown.push('旋转/裁切或墨迹测量不可用');
+      unknown.push('部分遮挡、复杂变换、低对比与感知可读性未核查');
+      if (!region.boxKind && region.expectedFontSizeMm === undefined && region.expectedText === undefined && !region.expectedColor && !region.expectedImageSha256) unknown.push('没有同口径的核准测量');
+      const measuredBox = actual && !trace?.transformed ? { x: actual.x, y: actual.y, width: actual.width, height: actual.height } : undefined;
+      if (measuredBox) {
+        ratio(measuredBox.width, ref.width, 'sizeDeviation'); ratio(measuredBox.height, ref.height, 'sizeDeviation');
+        if (!region.repeat && (Math.abs(measuredBox.x - ref.x) > (region.positionToleranceMm ?? 1) || Math.abs(measuredBox.y - ref.y) > (region.positionToleranceMm ?? 1))) add('positionDeviation', `${region.name}：位置偏移 Δx=${(measuredBox.x - ref.x).toFixed(3)}、Δy=${(measuredBox.y - ref.y).toFixed(3)} mm`);
+      }
+      return { path: node.path, ...(imageContent ? {imageContent} : {}), ...(trace?.visibility ? { visibility: trace.visibility } : {}), ...(trace?.source ? { sourceLocation: trace.source } : {}), ...(node.text ? { ...(fontSizes.length === 1 ? { fontSizeMm: fontSizes[0]! } : {}), fontSizesMm: fontSizes, text: node.text.content, colors } : {}),
+        ...(measuredBox ? { box: measuredBox, deltaMm: { x: measuredBox.x - ref.x, y: measuredBox.y - ref.y }, sizeRatio: { width: measuredBox.width / ref.width, height: measuredBox.height / ref.height } } : {}), unknown };
+    });
+    regions.push({ id: region.id, name: region.name, ...(region.state ? { state: region.state } : {}), status: !selected.length ? 'missing' : instances.some((i) => i.unknown.length) ? 'unknown' : 'measured', referenceBoxMm: ref, instances });
   }
-
-  return {
-    format: 'renderweave-style-verification/1',
-    verifiedAt,
-    candidatesHash,
-    requestHash,
-    baselineHash,
-    valid: true,
-    physicalScale: {
-      pxPerMmh: Math.round(pxPerMmh * 100) / 100,
-      pxPerMmv: Math.round(pxPerMmv * 100) / 100,
-    },
-    coverage: {
-      approvedRegionsTotal: baseline?.approvedRegions.length ?? 0,
-      approvedRegionsMatched: matchedRegions,
-      repeatedInstancesScanned: repeatedInstancesCount,
-      statesCovered: [...coveredStates],
-    },
-    anomalies,
-    passed: anomalies.length === 0,
-  };
+  const unknown = regions.filter((r) => r.status === 'unknown' || r.status === 'ambiguous').length;
+  return { format: 'renderweave-style-verification/3', candidatesHash, requestHash, baselineHash: baseline ? digest(baseline) : '', valid: true,
+    status: !baseline?.approvedRegions.length || misaligned ? 'notChecked' : anomalies.length ? 'needsWork' : 'needsReview',
+    ...(misaligned ? { reason: 'alignmentUnknown' } : !baseline?.approvedRegions.length ? { reason: 'referenceUnavailable' } : {}),
+    physicalScale: { pxPerMmh: sx, pxPerMmv: sy }, coverage: { approvedRegionsTotal: baseline?.approvedRegions.length ?? 0,
+      approvedRegionsMatched: regions.filter((r) => r.instances.length).length, repeatedInstancesScanned: regions.reduce((n, r) => n + r.instances.length, 0),
+      statesCovered: [...new Set(regions.filter((r) => r.status === 'measured' && r.state && !anomalies.some((a) => a.regionId === r.id)).map((r) => r.state!))],
+      statesMeasured: [...new Set(regions.filter((r) => r.state && r.instances.length && r.instances.every((i) => i.unknown.every((u) => u === '部分遮挡、复杂变换、低对比与感知可读性未核查'))).map((r) => r.state!))],
+      unknownRegions: unknown, complete: baseline?.complete === true },
+    regions, anomalies, passed: !!baseline?.approvedRegions.length && !misaligned && !unknown && !anomalies.length && regions.every((r) => r.status === 'measured') };
 }

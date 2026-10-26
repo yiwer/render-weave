@@ -1,3 +1,4 @@
+import {initializeOrderScope, recordOrderEvent, reportOrders, shareOrders} from './agent/orders.js';
 /**
  * 命令行：
  * - render：对一个工作区执行渲染请求，把图片、问题清单与布局摘要写到输出目录。
@@ -31,6 +32,7 @@ import { deliverBatch, readOutputRecord, replayOutputRecord } from './output-rec
 import { readBatch } from './batch-read.js';
 import { publishStaticSchema } from './schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
+import { localAccessProblem, withLocalAccess } from './local-access.js';
 import { AGENT_EFFORTS, AgentUsageError, DEFAULT_KEY_ENV, runAgentTask, type AgentEffort } from './agent/run.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
@@ -39,6 +41,7 @@ import { AGENT_TASKS, findAgentTask } from './agent/tasks.js';
 import { WorkingDirectory } from './mcp/files.js';
 import { serveMcp } from './mcp/server.js';
 import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
+import { referenceTexts } from './mcp/references.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
@@ -71,8 +74,12 @@ const USAGE = `用法：
   renderweave mcp --workspace <目录> --resources <目录> --root <本轮工作目录> [--tools <工具,…>] [--log <调用日志.jsonl>] [--outcome-context <本轮任务.json>]
   renderweave agent run --task <任务类型> --sample <示例图> --brief <项目说明.md> --resources <目录> --out <新轮次目录> [--domain <领域>] [--workspace <目录>]
                         [--definition <名称[@版本]>] [--dataset <数据集ID>] [--request <出图请求.json>] [--requirement <修改要求.md>]
-                        [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--context-limit <输入token>] [--effort <力度>] [--claude <可执行文件>]
+                        [--reference <核准参考.json>] [--content-baseline <内容事实.json>]
+                        [--model <模型>] [--small-model <模型>] [--endpoint <地址>] [--key-env <环境变量名>] [--max-turns <轮数>] [--timeout-ms <整轮毫秒>] [--effort <力度>] [--claude <可执行文件>]
   renderweave agent run --from <上一轮目录> --feedback <反馈.md> --out <新轮次目录> [--model …] [--key-env …] [--max-turns …] [--effort …] [--claude …]
+  renderweave agent order-init --scope <订单范围.json> --out <新登记目录>
+  renderweave agent order-record --order <登记目录> --event <人工或交付事件.json>
+  renderweave agent order-report --order <登记目录> [--share]
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
   renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--rounds <轮次目录>] [--dry-run] [--token-env <环境变量名>]
@@ -105,14 +112,18 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --request     示例图对应的出图请求（主模板名、参数与输出尺寸）：模板辅助设计与模板辅助修改必须给；数据集提取可选，用工作区已有的模板预览
                 模板辅助修改时主模板就是要改的已保存模板，它调用的模板也可以改；数据集写在请求里或用 --dataset 指定
   --requirement 模板辅助修改的修改要求（Markdown）；反引号里以模板名开头的元素路径必须存在
+  --reference   模板任务的人工核准区域、物理尺寸及测量类型 JSON；随本轮固定，未提供时视觉比较返回 notChecked
+  --content-baseline 提取任务的本次内容事实 JSON；显式指定定义、字段、缺值或逐项数值，不从领域名推断
   --from        上一轮的轮次目录：下一轮沿用它的任务、素材、基准、出图请求与修改要求，拿到它的成果（含审核时的修改）
+  --checkpoint  可选，与 --from 一起用：latest、better 或已发布检查点 ID，选择整套宿主保存候选；没有较好证据时 better 明确拒绝
   --feedback    带 --from 时必须给：给下一轮的反馈（Markdown）
   --key-env     可选，key 所在的环境变量名，缺省 OPEN_CODE_API_KEY；key 只经环境变量传入，不写任何文件
   --model       可选，缺省 claude-haiku-5-5（OpenCode Go）；gemini 开头的模型经本机转换代理连接 Google 接口
   --small-model、--endpoint、--max-turns、--claude  可选，轻量任务模型（缺省同为 Haiku，选 Gemini 时与模型相同）、端点、轮数上限与 Claude Code 可执行文件
-  --context-limit  可选的单请求有效输入交接阈值（正整数，包含缓存）；默认只观测，达到后停止并保存。不是请求前硬上限。
-  --checks         模板任务可选的宿主核查计划 JSON；声明边界用例、毫米样式范围和参考图，下一轮沿用。
+  --timeout-ms  整轮墙钟有限正值，缺省 3600000 毫秒；取消/超时后本地保存最多 30000 毫秒。当前不支持 --max-tokens / --max-cost-usd 硬限制
+  --stagnation-threshold  无核准进展的完整修复周期阈值，正整数，缺省 2；完整反馈后再次写候选才停止，正常交回与分页不计
   --effort      可选，推理力度 low、medium、high、xhigh 或 max，传给 Claude Code 的 --effort；不给时用它的缺省
+  --context-policy 可选，full（缺省全量参考）或 on-demand（入口强制约束与按需目录）；不改变 effort 或预算
 
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配
@@ -161,15 +172,18 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'agent run': ['out'],
   'agent review': [],
   'agent apply': [],
+  'agent order-init': ['scope', 'out'],
+  'agent order-report': ['order'],
+  'agent order-record': ['order', 'event'],
   push: ['server', 'tenant', 'workspace', 'resources'],
   'template-revisions': ['server', 'tenant', 'template'],
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
 const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'workspace', 'definition', 'dataset', 'request', 'requirement', 'from', 'feedback',
-  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'context-limit', 'effort', 'claude', 'checks'];
+  'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint', 'context-policy', 'timeout-ms', 'max-tokens', 'max-cost-usd', 'stagnation-threshold'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
-const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
+const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent order-report': ['share'], 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   // agent 带子命令：agent run、agent review、agent apply。
@@ -183,7 +197,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
-    : command === 'mcp' ? ['tools', 'log', 'outcome-context'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
+    : command === 'mcp' ? ['tools', 'log', 'outcome-context', 'reference-bundle'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
     : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
     : command === 'push' ? ['token-env', 'rounds'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
@@ -212,6 +226,9 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   }
   const options = values as Record<string, string>;
   try {
+    if (command === 'agent order-init') { io.stdout(JSON.stringify(await initializeOrderScope(options.out!, JSON.parse(await readFile(options.scope!, 'utf8')))) + '\n'); return 0; }
+    if (command === 'agent order-report') { io.stdout(JSON.stringify(await (values.share ? shareOrders : reportOrders)(options.order!)) + '\n'); return 0; }
+    if (command === 'agent order-record') { io.stdout(JSON.stringify(await recordOrderEvent(options.order!, JSON.parse(await readFile(options.event!, 'utf8')))) + '\n'); return 0; }
     if (command === 'agent review') return await runReview(positionals[0]!, options, values['no-open'] === true, io);
     if (command === 'agent apply') return await runApply(positionals[0]!, options, values['overwrite'] === true, io);
     if (command === 'render') return await runRender(options, io);
@@ -223,6 +240,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'template-revisions') return await runTemplateRevisions(options, io);
     return await runResources(command, options, io);
   } catch (error) {
+    const busy = localAccessProblem(error);
+    if (busy) { reportProblems([busy], io); return ExitCodes.failed; }
     io.stderr(`命令执行失败：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
@@ -237,8 +256,9 @@ async function runRecords(command: string, options: Record<string, string>, io: 
       if (options.options) renderOptions = JSON.parse(await readFile(options.options, 'utf8'));
       if (precision.length) throw new Error(`请求数值超过 15 位有效数字：${precision.join('、')}`);
     } catch (error) { io.stderr(`请求或选项无法读取：${describeError(error)}\n`); return ExitCodes.usage; }
-    const workspace = await loadWorkspaceDocuments(options.workspace!);
-    const opened = await openVersionedResourceStore(options.resources!);
+    const { workspace, opened } = await withLocalAccess([options.workspace!, options.resources!], async () => ({
+      workspace: await loadWorkspaceDocuments(options.workspace!), opened: await openVersionedResourceStore(options.resources!),
+    }));
     reportProblems(opened.problems, io);
     if (!opened.store) return ExitCodes.failed;
     const labels = { delivered: '已交付', previewed: '已预览', failed: '失败', notRun: '未执行' } as const;
@@ -363,30 +383,42 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
     return ExitCodes.usage;
   }
   try {
+    const claudeArgs: unknown = options['claude-args'] === undefined ? undefined : JSON.parse(options['claude-args']);
+    if (claudeArgs !== undefined && (!options.claude || !Array.isArray(claudeArgs) || !claudeArgs.every(value => typeof value === 'string'))) {
+      throw new AgentUsageError('--claude-args 必须与 --claude 一起使用，并提供字符串 JSON 数组');
+    }
     const result = await runAgentTask({
       out: options.out!, key, keyEnv,
+      ...(options['context-policy'] !== undefined ? {contextPolicy: options['context-policy'] as 'full' | 'on-demand'} : {}),
+      ...(io.signal ? { signal: io.signal } : {}),
       ...(task ? { task: task.id } : {}),
       ...(options.sample !== undefined ? { sample: options.sample } : {}),
       ...(options.brief !== undefined ? { brief: options.brief } : {}),
       ...(options.resources !== undefined ? { resources: options.resources } : {}),
       ...(options.requirement !== undefined ? { requirement: options.requirement } : {}),
       ...(options.from !== undefined ? { from: options.from } : {}),
+      ...(options.checkpoint !== undefined ? { checkpoint: options.checkpoint } : {}),
       ...(options.feedback !== undefined ? { feedback: options.feedback } : {}),
       ...(options.domain !== undefined ? { domain: options.domain } : {}),
       ...(options.workspace !== undefined ? { workspace: options.workspace } : {}),
       ...(options.definition !== undefined ? { definition: options.definition } : {}),
       ...(options.dataset !== undefined ? { dataset: options.dataset } : {}),
       ...(options.request !== undefined ? { request: options.request } : {}),
-      ...(options.checks !== undefined ? { checks: options.checks } : {}),
+      ...(options.reference !== undefined ? { reference: options.reference } : {}),
+      ...(options['content-baseline'] !== undefined ? { contentBaseline: options['content-baseline'] } : {}),
       ...(options.model !== undefined ? { model: options.model } : {}),
       ...(options['small-model'] !== undefined ? { smallModel: options['small-model'] } : {}),
       ...(options.endpoint !== undefined ? { endpoint: options.endpoint } : {}),
       ...(maxTurns !== undefined ? { maxTurns } : {}),
-      ...(options['context-limit'] !== undefined ? { contextLimit: Number(options['context-limit']) } : {}),
+      ...(options['timeout-ms'] !== undefined ? { roundTimeoutMs: Number(options['timeout-ms']) } : {}),
+      ...(options['stagnation-threshold'] !== undefined ? { stagnationThreshold: Number(options['stagnation-threshold']) } : {}),
+      ...(options['max-tokens'] !== undefined ? { maxTokens: Number(options['max-tokens']) } : {}),
+      ...(options['max-cost-usd'] !== undefined ? { maxCostUsd: Number(options['max-cost-usd']) } : {}),
       ...(effort !== undefined ? { effort } : {}),
-      ...(options.claude !== undefined ? { claude: { command: options.claude } } : {}),
+      ...(options.claude !== undefined ? { claude: { command: options.claude, ...(claudeArgs ? {args: claudeArgs as string[]} : {}) } } : {}),
       // 输入校验通过后才打印，用法错误时第一行就是错误（票据 28）。
       onStart: () => io.stderr(`开始${task ? task.name : '下一轮'}：轮次目录 ${options.out}${options.from !== undefined ? `，上一轮 ${options.from}` : ''}\n`),
+      onBudget: runtime => io.stderr(`本轮限制：${runtime.roundTimeoutMs} 毫秒，最多 ${runtime.maxTurns} 轮，停滞阈值 ${runtime.stagnationThreshold} 次完整修复机会；停止后本地保存最多 30000 毫秒\n`),
     });
     const { check, record } = result;
     reportProblems([...check.problems, ...check.candidates.flatMap((candidate) => candidate.problems), ...check.assessment.render.problems], io);
@@ -402,8 +434,7 @@ async function runAgent(options: Record<string, string>, io: CliIo): Promise<num
       ...(result.draft ? { draft: result.draft } : {}),
       assessment: check.assessment,
       ...(record.run.stopped ? { stopped: record.run.stopped } : {}),
-      ...(record.run.contextStopped ? { contextStopped: record.run.contextStopped } : {}),
-      context: record.run.context,
+      ...(result.save ? { save: result.save } : {}),
       usage: { wallMs: record.run.wallMs, turns: record.run.turns ?? null, outputTokens: record.run.outputTokens ?? null, endedBy: record.run.endedBy ?? null },
     }, null, 2)}\n`);
     if (check.verdict === 'unqualified') io.stderr('成果不合格：问题清单见 check.json；是否带着问题重跑由你决定，不会自动重试\n');
@@ -421,8 +452,8 @@ async function runReview(roundDir: string, options: Record<string, string>, noOp
     io.stderr('--port 必须是 0–65535 的整数\n');
     return ExitCodes.usage;
   }
-  const { view, problems } = await readReview(roundDir);
-  if (!view) {
+  const { view, execution, problems } = await readReview(roundDir);
+  if (!view && !execution) {
     reportProblems(problems, io);
     return ExitCodes.failed;
   }
@@ -433,9 +464,10 @@ async function runReview(roundDir: string, options: Record<string, string>, noOp
     io.stderr(`审核页无法启动：${describeError(error)}\n`);
     return ExitCodes.failed;
   }
-  const decided = view.pending.filter((item) => item.decision).length;
+  const decided = view?.pending.filter((item) => item.decision).length ?? 0;
   io.stdout(`${server.url}\n`);
-  io.stderr(`审核页：${server.url}（${view.round.taskName}，待确认项 ${view.pending.length} 个，已处理 ${decided} 个）。审核结果随时保存到 review.json；按 Ctrl+C 结束\n`);
+  io.stderr(view ? `审核页：${server.url}（${view.round.taskName}，待确认项 ${view.pending.length} 个，已处理 ${decided} 个）。审核结果随时保存到 review.json；按 Ctrl+C 结束\n`
+    : `轮次状态页：${server.url}（${execution!.phase} / ${execution!.status}）。${execution!.diagnostics.join('；')}；按 Ctrl+C 结束\n`);
   if (!noOpen) openBrowser(server.url, io);
   if (io.signal && !io.signal.aborted) await new Promise((done) => io.signal!.addEventListener('abort', done, { once: true }));
   await server.close();
@@ -466,6 +498,9 @@ async function runApply(roundDir: string, options: Record<string, string>, overw
   }
   if (!result.applied) return ExitCodes.failed;
   io.stdout(`${JSON.stringify({
+    status: 'committed', reused: result.reused ?? false, appliedAt: result.applied.appliedAt,
+    ...(result.applied.commitId ? { commitId: result.applied.commitId } : {}),
+    ...(result.applied.contentIdentity ? { contentIdentity: result.applied.contentIdentity } : {}),
     workspace: result.applied.workspace, overwrite: result.applied.overwrite,
     published: result.applied.published.map((item) => ({
       kind: item.kind, name: item.name, ...(item.version !== undefined ? { version: item.version } : {}), files: item.files, ...(item.replaced ? { replaced: true } : {}),
@@ -515,8 +550,11 @@ async function runMcp(options: Record<string, string>, io: CliIo): Promise<numbe
   }
   // 工作区只在启动时读一次，作为本轮的只读快照；资源内容按需读取。
   const workspace = await loadWorkspace({ dir: options.workspace!, resourcesDir: options.resources! });
+  const { managedOutcomeCheck } = await import('./agent/checkpoint-host.js');
   const all = createTools({
+    references: await referenceTexts(options['reference-bundle']),
     workingDirectory, workspace, workspaceDir: resolve(options.workspace!), resourcesDir: resolve(options.resources!), ...(outcome ? { outcome } : {}),
+    checkOutcome: managedOutcomeCheck(),
   });
   const names = options.tools?.split(',').map((name) => name.trim());
   const unknown = names?.filter((name) => !all.some((tool) => tool.name === name)) ?? [];
@@ -591,28 +629,31 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
     return ExitCodes.usage;
   }
   // 发布只需要已发布的静态数据定义，不读资源仓库。
-  const workspace = await loadWorkspaceDocuments(workspaceDir!);
-  if (workspace.problems.some((problem) => problem.level === 'severe')) {
-    io.stdout(`未发布；${reportProblems(workspace.problems, io)}\n`);
-    return ExitCodes.failed;
-  }
-  const { published, problems } = publishStaticSchema(definition, workspace.staticSchemas);
-  const summary = reportProblems(problems, io);
-  if (!published) {
-    io.stdout(`未发布；${summary}\n`);
-    return ExitCodes.failed;
-  }
-  const version = published.ref.version;
-  const names = publishedFileNames(definitionFile!, version);
   await mkdir(out!, { recursive: true });
-  const schemaFile = join(out!, names.schema);
-  const compiledFile = join(out!, names.compiled);
-  await writeExclusiveJsonFiles([
-    { path: schemaFile, value: published.definition },
-    { path: compiledFile, value: published.compiled },
-  ]);
-  io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
-  return ExitCodes.ok;
+  return withLocalAccess([workspaceDir!, out!], async () => {
+    const workspace = await loadWorkspaceDocuments(workspaceDir!);
+    if (workspace.problems.some((problem) => problem.level === 'severe')) {
+      io.stdout(`未发布；${reportProblems(workspace.problems, io)}\n`);
+      return ExitCodes.failed;
+    }
+    const { published, problems } = publishStaticSchema(definition, workspace.staticSchemas);
+    const summary = reportProblems(problems, io);
+    if (!published) {
+      io.stdout(`未发布；${summary}\n`);
+      return ExitCodes.failed;
+    }
+    const version = published.ref.version;
+    const names = publishedFileNames(definitionFile!, version);
+    await mkdir(out!, { recursive: true });
+    const schemaFile = join(out!, names.schema);
+    const compiledFile = join(out!, names.compiled);
+    await writeExclusiveJsonFiles([
+      { path: schemaFile, value: published.definition },
+      { path: compiledFile, value: published.compiled },
+    ]);
+    io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
+    return ExitCodes.ok;
+  });
 }
 
 /** 服务地址与令牌：令牌只从环境变量读取，缺少时是用法错误。 */

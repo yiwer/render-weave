@@ -1,0 +1,694 @@
+{
+  "format": "original38-tfl161-review/2",
+  "status": "not-run",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "bindingId": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec",
+  "firstOutcome": null,
+  "correctedOutcome": null,
+  "reviewer": null,
+  "humanReviewMinutes": null,
+  "humanCorrectionMinutes": null,
+  "overallConclusion": null,
+  "items": [
+    {
+      "id": "header-route",
+      "sourceRegionPx": {
+        "x": 90,
+        "y": 85,
+        "width": 202,
+        "height": 139
+      },
+      "state": "normal",
+      "text": "161",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "header-direction",
+      "sourceRegionPx": {
+        "x": 386,
+        "y": 87,
+        "width": 564,
+        "height": 28
+      },
+      "state": "normal",
+      "text": "Buses towards North Greenwich",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "header-daily",
+      "sourceRegionPx": {
+        "x": 55,
+        "y": 245,
+        "width": 83,
+        "height": 34
+      },
+      "state": "normal",
+      "text": "Daily",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-01",
+      "sourceRegionPx": {
+        "x": 384,
+        "y": 157,
+        "width": 239,
+        "height": 239
+      },
+      "state": "longestText",
+      "text": "Chislehurst War Memorial",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-02",
+      "sourceRegionPx": {
+        "x": 465,
+        "y": 173,
+        "width": 224,
+        "height": 223
+      },
+      "state": "passed",
+      "text": "Chislehurst / Sainsbury’s",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-03",
+      "sourceRegionPx": {
+        "x": 538,
+        "y": 286,
+        "width": 117,
+        "height": 113
+      },
+      "state": "passed",
+      "text": "Mottingham",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-04",
+      "sourceRegionPx": {
+        "x": 619,
+        "y": 262,
+        "width": 141,
+        "height": 137
+      },
+      "state": "passed",
+      "text": "Eltham Church",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-05",
+      "sourceRegionPx": {
+        "x": 696,
+        "y": 332,
+        "width": 73,
+        "height": 67
+      },
+      "state": "normal",
+      "text": "Eltham",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-06",
+      "sourceRegionPx": {
+        "x": 777,
+        "y": 256,
+        "width": 142,
+        "height": 140
+      },
+      "state": "normal",
+      "text": "Well Hall Road",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-07",
+      "sourceRegionPx": {
+        "x": 861,
+        "y": 225,
+        "width": 173,
+        "height": 171
+      },
+      "state": "normal",
+      "text": "Greenwich Heights",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-08",
+      "sourceRegionPx": {
+        "x": 938,
+        "y": 162,
+        "width": 235,
+        "height": 235
+      },
+      "state": "normal",
+      "text": "Queen Elizabeth Hospital",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-09",
+      "sourceRegionPx": {
+        "x": 1014,
+        "y": 227,
+        "width": 176,
+        "height": 169
+      },
+      "state": "normal",
+      "text": "Woolwich Arsenal",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-10",
+      "sourceRegionPx": {
+        "x": 1096,
+        "y": 251,
+        "width": 151,
+        "height": 145
+      },
+      "state": "normal",
+      "text": "Woolwich Ferry",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-11",
+      "sourceRegionPx": {
+        "x": 1177,
+        "y": 316,
+        "width": 85,
+        "height": 81
+      },
+      "state": "normal",
+      "text": "Charlton",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-12",
+      "sourceRegionPx": {
+        "x": 1255,
+        "y": 179,
+        "width": 223,
+        "height": 220
+      },
+      "state": "normal",
+      "text": "Millennium Leisure Park",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-13",
+      "sourceRegionPx": {
+        "x": 1333,
+        "y": 229,
+        "width": 175,
+        "height": 170
+      },
+      "state": "normal",
+      "text": "Millennium Village",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-14",
+      "sourceRegionPx": {
+        "x": 1414,
+        "y": 241,
+        "width": 163,
+        "height": 158
+      },
+      "state": "terminal",
+      "text": "North Greenwich",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "源字号未知；旋转文字的自动几何可能notChecked，必须用同尺度局部图核对。"
+    },
+    {
+      "id": "key-05-minutes",
+      "sourceRegionPx": {
+        "x": 701,
+        "y": 457,
+        "width": 13,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "3",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-06-minutes",
+      "sourceRegionPx": {
+        "x": 782,
+        "y": 456,
+        "width": 12,
+        "height": 20
+      },
+      "state": "normal",
+      "text": "8",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-07-minutes",
+      "sourceRegionPx": {
+        "x": 857,
+        "y": 457,
+        "width": 24,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "13",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-08-minutes",
+      "sourceRegionPx": {
+        "x": 935,
+        "y": 457,
+        "width": 23,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "15",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-09-minutes",
+      "sourceRegionPx": {
+        "x": 1011,
+        "y": 457,
+        "width": 28,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "25",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-10-minutes",
+      "sourceRegionPx": {
+        "x": 1092,
+        "y": 457,
+        "width": 27,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "28",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-11-minutes",
+      "sourceRegionPx": {
+        "x": 1170,
+        "y": 457,
+        "width": 27,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "36",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-12-minutes",
+      "sourceRegionPx": {
+        "x": 1250,
+        "y": 457,
+        "width": 28,
+        "height": 19
+      },
+      "state": "normal",
+      "text": "44",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-13-minutes",
+      "sourceRegionPx": {
+        "x": 1328,
+        "y": 456,
+        "width": 27,
+        "height": 20
+      },
+      "state": "normal",
+      "text": "46",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-14-minutes",
+      "sourceRegionPx": {
+        "x": 1409,
+        "y": 456,
+        "width": 24,
+        "height": 20
+      },
+      "state": "normal",
+      "text": "51",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "current-marker",
+      "sourceRegionPx": {
+        "x": 482,
+        "y": 461,
+        "width": 135,
+        "height": 16
+      },
+      "state": "current",
+      "text": "You are here",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "time-legend",
+      "sourceRegionPx": {
+        "x": 1453,
+        "y": 427,
+        "width": 123,
+        "height": 69
+      },
+      "state": "normal",
+      "text": "off peak journey time in minutes",
+      "substitution": "font-substitution",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "route-strip",
+      "sourceRegionPx": {
+        "x": 386,
+        "y": 419,
+        "width": 1063,
+        "height": 17
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": null,
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": null
+    },
+    {
+      "id": "key-03-symbol-1",
+      "sourceRegionPx": {
+        "x": 652,
+        "y": 253,
+        "width": 29,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-05-symbol-1",
+      "sourceRegionPx": {
+        "x": 766,
+        "y": 299,
+        "width": 29,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-09-symbol-1",
+      "sourceRegionPx": {
+        "x": 1185,
+        "y": 199,
+        "width": 29,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-09-symbol-2",
+      "sourceRegionPx": {
+        "x": 1211,
+        "y": 157,
+        "width": 45,
+        "height": 45
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-10-symbol-1",
+      "sourceRegionPx": {
+        "x": 1246,
+        "y": 219,
+        "width": 35,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-11-symbol-1",
+      "sourceRegionPx": {
+        "x": 1259,
+        "y": 283,
+        "width": 29,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-14-symbol-1",
+      "sourceRegionPx": {
+        "x": 1463,
+        "y": 373,
+        "width": 22,
+        "height": 21
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-14-symbol-2",
+      "sourceRegionPx": {
+        "x": 1486,
+        "y": 350,
+        "width": 22,
+        "height": 23
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    },
+    {
+      "id": "key-14-symbol-3",
+      "sourceRegionPx": {
+        "x": 1508,
+        "y": 322,
+        "width": 35,
+        "height": 29
+      },
+      "state": "normal",
+      "text": null,
+      "substitution": "manual-svg",
+      "firstConclusion": null,
+      "correctedConclusion": null,
+      "evidence": null,
+      "reviewMinutes": null,
+      "note": "本项使用核准提案SVG资源摘要只校验所选替代资源；外观仍需人工核对，不能当原图字节一致。"
+    }
+  ],
+  "additionalScope": [
+    "route-strip项逐个核对全部14箭头与浅/黑段、边框",
+    "current-marker项另核对橙红框、指针及白字",
+    "全部14标签进入最长文字检查；实际测量最长为key-01，不靠字符数推断"
+  ],
+  "unknowns": [
+    "实际命名本站",
+    "完整实际站序",
+    "源字体和字号",
+    "非确认图标服务语义",
+    "实时运营信息",
+    "最终模型结果及人工工时"
+  ],
+  "preparationOnly": true,
+  "automaticDiagnosticsSeenBeforeReview": null,
+  "reviewStartedAt": null,
+  "reviewCompletedAt": null
+}

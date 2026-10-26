@@ -125,18 +125,18 @@ describe('发起一轮数据定义提取', () => {
       'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL',
       'ANTHROPIC_MODEL', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', 'CLAUDE_CODE_SUBAGENT_MODEL', 'CLAUDE_CONFIG_DIR',
     ]);
-    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: 'https://endpoint.example/anthropic', configDir: join(logs, 'claude-config') });
+    expect(fake).toMatchObject({ hasToken: true, model: 'model-x', baseUrl: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/), configDir: join(logs, 'claude-config') });
+    expect(fake.tokenSha256).not.toBe(createHash('sha256').update(KEY).digest('hex'));
     expect(fake.args).toEqual(['-p', '--output-format', 'stream-json', '--verbose', '--model', 'model-x', '--restricted', '--tools', 'Read,Write,Edit,Glob',
       '--mcp-config', join(logs, 'mcp.json'), '--strict-mcp-config', '--allowedTools', 'mcp__rw', '--permission-mode', 'acceptEdits',
-      '--max-turns', '9', '--no-session-persistence', '--disable-slash-commands']);
+      '--max-turns', '9', '--no-session-persistence']);
     const mcp = JSON.parse(await readFile(join(logs, 'mcp.json'), 'utf8'));
     expect(Object.keys(mcp.mcpServers)).toEqual(['rw']);
-    expect(mcp.mcpServers.rw.args.slice(1)).toEqual(['mcp', '--workspace', join(result.roundDir, 'snapshot'), '--resources', resourcesDir, '--root', agent,
-      '--outcome-context', join(logs, 'outcome-context.json'), '--log', join(logs, 'tools.jsonl'),
-      '--tools', 'list_documents,read_document,list_resources,check_definitions,check_dataset,view_image,dsl_reference,check_outcome']);
-    expect(mcp.mcpServers.rw.args[0]).toMatch(/bin\.js$/);
+    expect(mcp.mcpServers.rw.args[0]).toMatch(/mcp-forward\.js$/);
+    expect(mcp.mcpServers.rw.env).toBeUndefined();
+    expect(result.record.runtime.mcpTools).toEqual(['list_documents','read_document','list_resources','check_definitions','check_dataset','view_image','dsl_reference','outcome_feedback','check_outcome']);
     expect(JSON.parse(await readFile(join(logs, 'outcome-context.json'), 'utf8'))).toEqual({
-      task: 'definition-extraction', briefText: await readFile(result.record.inputs.brief.source, 'utf8'),
+      task: 'definition-extraction', briefText: await readFile(result.record.inputs.brief.source, 'utf8'), resourceIdentity: expect.any(Array),
     });
 
     const leaks = [];
@@ -203,14 +203,16 @@ describe('发起一轮数据定义提取', () => {
 
   it('交回前核对与交回后的校验一致：按本轮交给 MCP 服务的参数调用 check_outcome，结论与问题和 check.json 相同', async () => {
     const result = await run(await preset({ ...QUALIFIED, 'outcome.json': { ...SUBMISSION, pending: [{ ...SUBMISSION.pending[0], path: 'rank' }] } }));
-    const mcp = JSON.parse(await readFile(join(result.roundDir, 'logs/mcp.json'), 'utf8'));
-    const session = startMcp(mcp.mcpServers.rw.args.slice(2));
+    const session = startMcp(['--workspace',join(result.roundDir,'snapshot'),'--resources',join(result.roundDir,result.record.inputs.resourceSnapshot!.directory),
+      '--root',join(result.roundDir,'agent'),'--outcome-context',join(result.roundDir,'logs/outcome-context.json')]);
     const checked = await session.callJson('check_outcome', {});
     expect(await session.close()).toBe(0);
     const record = JSON.parse(await readFile(join(result.roundDir, 'check.json'), 'utf8'));
     expect(record.verdict).toBe('unqualified');
     expect(record.problems[0].message).toContain('没有字段 rank');
     expect(checked).toEqual({ verdict: record.verdict, assessment: record.assessment, problems: record.problems,
+      feedback: {tool:'outcome_feedback',reportId:expect.any(String),total:4,issueTotal:4,unknownTotal:0},
+      contentIdentity: { id: record.contentIdentity.id, format: 'renderweave-content-identity/1', engine: record.contentIdentity.engine, criteria: 'authoring-check/1' },
       candidates: record.candidates.map(({ sha256: _sha256, ...candidate }: Record<string, unknown>) => candidate) });
   });
 });
@@ -270,7 +272,7 @@ describe('选 Gemini 时经本机转换代理（M232）', () => {
     const result = await run(await preset({ 'candidates/schema-session.json': SESSION, '.model-calls.json': Array.from({ length: 8 }, () => call) }), { model: 'gemini-test', endpoint: upstream });
     expect(requests).toHaveLength(1);
     expect(result.record).toMatchObject({ verdict: 'unqualified', run: { stopped: { reason: 'hardQuota', type: 'GoUsageLimitError', limit: 'weekly' } } });
-    expect(result.record.run.error).toContain('--from');
+    expect(result.record.run.error).toContain('仅可查看诊断');
     expect(result.outcome).toBeUndefined();
     expect(JSON.parse(await readFile(join(result.roundDir, 'draft.json'), 'utf8'))).toMatchObject({ source: 'hostRecovery' });
     expect((await proxyLog(result.roundDir))[0]).toMatchObject({ stopped: { limit: 'weekly' } });

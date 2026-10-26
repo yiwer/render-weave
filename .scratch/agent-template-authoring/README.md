@@ -58,6 +58,6 @@
 | 33 | [P1 · 提取成果保留全部业务信息并正确表达未知值](issues/33-extraction-coverage-and-required-fields.md) | 无 | 同图复跑：原问题验收 |
 | 34 | [P1 · 按参考基准核查所有独立样式和状态，自动扫描重复实例](issues/34-verify-element-styles.md) | 31 | 同图复跑：视觉质量 |
 | 35 | [P1 · 普通轮次保存可复现资料，修复用原失败场景验收](issues/35-reproducible-runs-and-acceptance.md) | 无 | 同图复跑：原问题验收 |
-| 38 | [P1 · 额度恢复后复跑原场景并补齐真实模型验收](issues/38-retest-after-quota-recovery.md) | 31、32 | 同图复跑：原问题验收 |
+| 38 | [P1 · 额度恢复后复跑原场景并补齐真实模型验收](issues/38-retest-after-quota-recovery.md) | 31、32；[harness 20](../agent-harness-hardening/issues/20-verified-candidate-freeze.md) | 同图复跑：原问题验收；harness A14 真实四场景 |
 | 36 | [P2 · 实测 OCR 对文字覆盖与位置测量的收益，再决定正式接入](issues/36-ocr-measurement-trial.md) | 34 | 同图复跑：OCR 收益 |
 | 37 | [P2 · 减少文本列表与缺省展示产生的重复派生变量](issues/37-text-list-and-fallback-display.md) | 无 | 同图复跑：原问题验收 |

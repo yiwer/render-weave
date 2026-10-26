@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(path.startsWith(root+'/')||path.startsWith(root+'\\'))
+
+    at verifyManifest (file:///F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/verify-public-inputs-candidate5.mjs:11:145)
+    at async file:///F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/verify-public-inputs-candidate5.mjs:12:20 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.12.0

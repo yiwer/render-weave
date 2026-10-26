@@ -1,0 +1,53 @@
+# 02: 换数据和参数后核查模板的实际业务行为
+
+**What to build:** 维护者能通过实际出图和评估报告确认模板在六类输入变化后仍满足独立业务事实，并同时核对模板修改的目标完成与非目标保留。
+
+**Blocked by:** 无
+
+**Status:** resolved
+
+**Trace:** [父规格](../spec.md) H1、D05；US05–06；A03 的六类反事实及修改范围验证。
+
+- [x] 每个校准案例预先固定输入变化、独立预期和允许联动范围，至少覆盖字段换值、列表增删/同名、模板参数、可选信息、长文本/尺寸、图片资源六类；预期不能从被测候选或模型说明反推。
+- [x] 字段换值后检查实际呈现文字；写死示例值的合法模板即使无严重渲染问题也被拒绝，正常绑定的对照通过。
+- [x] 列表增删及合法同名项变化后检查实际实例数、出现顺序和相应内容；固定数量、漏掉末项或误合并同名项的反例被拒绝。
+- [x] 模板参数变化后检查目标状态和内容；可选信息有值与缺值时检查显示、隐藏及预先允许的排布联动，无效参数或仍占据不该占的位置的反例被拒绝。
+- [x] 长文本与目标尺寸边界按案例政策检查实际可见内容和允许适配；图片资源替换检查核准内容，不能只以资源名称或整图哈希改变证明结果正确。
+- [x] 修改任务同时报告要求涉及的目标是否完成、非目标是否保留和越界差异；合法布局联动需事先声明，不能事后扩大允许范围来解释失败。
+- [x] 从公开渲染结果到评估报告保留输入、事实与输出证据的关联；严重问题为零、内部变量变化或图片不同均不能单独计为业务通过。缺独立事实或无法可靠测量的维度明确未核查，不自动获得完整通过。
+- [x] 案例政策、评估输出说明及本票涉及的合同、资料同步更新；通过合法对照与反例的离线公开入口验证。本票不新增 DSL 语法，不重复原票据 18 的主模板基准检查、33 的内容覆盖或 34 的完整样式验收；真实模型门槛按统一冻结计划另留证。
+
+**测试接缝：** 现有公开渲染入口和评估 CLI；给定合法模板及受控反例，观察实际文字、实例、顺序、状态、可见性与修改范围的报告，不以内部变量或函数调用次数断言完成。
+
+## Answer
+
+2026-10-23 完成。现有评估 CLI 新增离线 `--behavior-policy`，经公开 `render` 对预登记独立事实评分；没有模型调用、DSL 语法或 MCP 合同变更。
+
+- 六类输入变化均有合法对照与反例：字段换值、列表增删/同名/顺序、模板参数状态及内容、可选信息隐藏和空间释放、长文本/尺寸适配、同名图片资源内容替换。写死字段、固定数量、仅漏末项、反序、误合并同名、无效参数、残留占位、过度缩字、出界、错误图案均从实际出图被拒绝。
+- 修改政策预先声明目标事实、源属性范围及输出允许联动；分别报告目标完成、非目标保留、源差异和输出越界。未修改目标、背景越界、未声明移位分别失败；合法联动使用运行前另立的政策与独立报告。
+- 保留政策原字节和 SHA-256、完整工作区、请求、实际图片/布局、实际消费资源字节及核准区域参考。图片逐区域像素比较，不用资源名或全图哈希作为正确性判据。已有目录拒绝覆盖；缺事实、核准字节漂移、排序歧义与不能可靠测量的维度明确 `notChecked`。六类未齐时 `coverage.complete=false`。
+- 成果：[判据实现](../../../scripts/agent-eval/behavior.ts)、[公开入口集成测试](../../../test/agent-template-behavior.test.ts)、[政策合同与校准说明](../../../docs/agent-template-behavior.md)、[原评估说明中的能力边界](../../../docs/agent-eval.md)。
+
+验证命令与结果：
+
+- `node node_modules/typescript/bin/tsc -p tsconfig.build.json`：通过。
+- `node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval.test.ts --maxWorkers=1`：2 文件、31 测试通过（新增 9 项与原有 22 项）；首次原回归有 1 项因隔离工作树缺少 `dist/bin.js` 失败，构建后复跑通过。
+- 补入“恰好漏末项”反例后，`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts --maxWorkers=1`：9 项通过。
+- `node node_modules/typescript/bin/tsc --noEmit`、`git diff --check`：通过。
+- 合入集成分支 `3e5148b`（含票据 01）并保留 `--config` 与 `--behavior-policy` 两个入口后，`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval-transcription.test.ts --maxWorkers=1`：2 文件、28 测试通过；类型检查通过。
+
+验收边界：本票完成离线判据校准；原十项压测仍只表示技术回归，不代表新业务语义全过。布局显示不等于最终像素可见；复杂变换或可能遮挡按未核查保留，需要核准像素或独立审核，自动遮挡扩展归票据 13。没有运行真实模型；统一候选冻结、模型业务证据及跨平台整体回归按后续票据执行。CONTEXT 由集成方统一更新。
+
+### 2026-10-23 冻结前审查缺口与重新验收
+
+冻结前两轴审查确认 `fit` 未消费票13已经提供的实际不可见证据：文字颜色为 `#E6001200` 仍得到 pass；相同全透明图片改用 `opacity: 0` 却只得到 notChecked。原闭合记录没有覆盖透明颜色假通过，且已有有限测量能力未用于本票适配事实。状态在 `a02329a` 重开为 ready-for-agent，本次修复及双平台回归完成后重新关闭。
+
+[公开 CLI 红测](../../../out/harness-prefreeze-fixes/fit-red.log)先观察到应退出 1 的全透明色实际退出 0；修复后 `fit` 对实际绘制证据已确认的完全透明、完全裁切或完全遮挡明确失败，并把原始 `visibility` 依据放进事实的 `actual`。布局 `texts`/`visibility` 两类事实的承诺范围不变。正常对象的 visibility unknown 不独自使字号、压缩及墨迹适配变成未核查；部分遮挡、半透明覆盖、部分裁切与复杂变换仍是未核查，不扩大到感知可读性。
+
+[透明色/透明度绿测](../../../out/harness-prefreeze-fixes/fit-green-02.log)与[完全及部分可见性边界](../../../out/harness-prefreeze-fixes/fit-boundaries.log)通过。首次绿测日志 `fit-green.log` 是测试部分对象匹配器写法失败，修正断言后复跑通过，原日志保留。正常前置矩形及80/160mm对照通过，过度缩字和出界反例仍失败。行为报告保持兼容的 `/1` 格式，新增证据字段；评分源码与冻结候选哈希改变，旧复现原件和旧报告未改。
+
+验证固定源码 `a02329a`（由集成 `d3661a3` 合入票20固定源码 `4f17dc3` 后修复，执行前再次合最新集成为 already up to date）：
+
+- Windows Node 24.12.0：`npm run build`、`npm run typecheck` 通过；`node node_modules/vitest/vitest.mjs run test/agent-template-behavior.test.ts test/agent-eval-transcription.test.ts test/agent-candidate-freeze.test.ts test/agent-visibility.test.ts test/agent-eval-identity.test.ts --maxWorkers=1`：5 文件 67 项全过，753.51 秒，退出 0。
+- Linux Node 22.23.3/npm 10.9.9：独立源码快照和镜像内独立依赖运行同一构建、类型检查及五文件回归，67 项全过，512.58 秒，退出 0。容器镜像 `renderweave-service-test:local`，启动脚本与快照清单保存于 `out/harness-prefreeze-fixes/linux-run.sh`、`linux-files.txt`。
+- 持久日志：[Windows 回归](../../../out/harness-prefreeze-fixes/windows-regression.log)、[Linux 回归](../../../out/harness-prefreeze-fixes/linux-regression.log)；同目录保留两平台 build/typecheck 日志及 Linux runtime。未运行真实模型，不替代20统一全量或后续业务验收。

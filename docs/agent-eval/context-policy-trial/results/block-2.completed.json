@@ -1,0 +1,69 @@
+{
+  "block": 2,
+  "strategy": "on-demand",
+  "repetition": 1,
+  "startedAt": "2026-10-23T15:18:33.656Z",
+  "sourceCommit": "d5775910d0fe70f874b142aca8dbc459235543b0",
+  "node": "D:\\nodejs\\node.exe",
+  "cwd": "C:/Users/Administrator/.codex/worktrees/harness-18/render-weave",
+  "args": [
+    "--import",
+    "tsx",
+    "scripts/agent-eval/run.ts",
+    "--config",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\calibration\\config.json",
+    "--context-policy",
+    "on-demand",
+    "--paired",
+    "--jobs",
+    "1",
+    "--repeat",
+    "2",
+    "--model",
+    "claude-haiku-5-5",
+    "--small-model",
+    "claude-haiku-5-5",
+    "--endpoint",
+    "https://opencode.ai/inference/go/anthropic",
+    "--timeout-ms",
+    "3600000",
+    "--claude",
+    "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe",
+    "--context-pair",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\registration\\pair.json",
+    "--out",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\on-demand",
+    "--reports",
+    "F:\\GenCode\\render-weave\\out\\harness18-context-trial\\reports",
+    "--label",
+    "harness18-on-demand",
+    "--repetitions",
+    "1-1",
+    "--key-env",
+    "OPEN_CODE_API_KEY"
+  ],
+  "keyEnvironment": "OPEN_CODE_API_KEY",
+  "policySha256": "sha256:5a9be81d6765f8d40bd02225fba2f130b9b6521747cd90efad083d62cf7149ce",
+  "pairSha256": "sha256:751f4106b6e1a9d78ed46716677c7cc0a912070edd1b01f1610ec86e422a72da",
+  "plannedObservations": 8,
+  "retryPolicy": {
+    "source": "frozen existing evaluation runner",
+    "transientRetryDelaysMs": [
+      60000,
+      180000
+    ],
+    "hardQuotaRetries": 0
+  },
+  "exitCode": 1,
+  "signal": null,
+  "endedAt": "2026-10-23T15:27:41.013Z",
+  "hardQuota": false,
+  "reports": [
+    {
+      "file": "harness18-on-demand.json",
+      "sha256": "sha256:cd000130fb51344ff4fc0c324e6f722ae34b2a2280308dfaa1769dd5317fc0c0"
+    }
+  ],
+  "stdoutSha256": "sha256:f6d023aca4ef831e9baa32f0d91b1e34659e96d2e94d41c78133bca7699ffd67",
+  "stderrSha256": "sha256:9e4d873cd42fbd4d309938cea7f1c4b187d9baf9da4698632377f98f52ff4cbc"
+}

@@ -1,0 +1,80 @@
+{
+  "format": "renderweave-observation-debug-intervention/1",
+  "createdAt": "2026-10-23T20:42:35.834Z",
+  "unit": "run-2/zh-definition-extraction",
+  "attemptId": "c3e402ab-7c05-47bb-aaee-229080618d48",
+  "candidateId": "sha256:7ce9b838a00faa36038bb1c68e1d9e957380c23ead0d0abedf6dc0c1da449804",
+  "round": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-4\\observations\\run-2\\zh-definition-extraction\\attempts\\c3e402ab-7c05-47bb-aaee-229080618d48\\round",
+  "executionCommittedAt": "2026-10-23T20:30:28.217Z",
+  "debugRequestedAt": "2026-10-23T20:39:14.015Z",
+  "inspectorConnectedAt": "2026-10-23T20:39:47.931Z",
+  "inspectorDisconnectedAt": "2026-10-23T20:39:58.029Z",
+  "attemptSealedAt": "2026-10-23T20:39:58.088Z",
+  "elapsedMs": 626845,
+  "roundWallMs": 54395,
+  "observedActiveResourceTypes": [
+    "PipeWrap",
+    "PipeWrap"
+  ],
+  "stackAvailable": false,
+  "reasonUnknown": true,
+  "diagnosticIntervention": true,
+  "performanceComparable": false,
+  "unattendedCloseProven": false,
+  "endpoint": "127.0.0.1:9229",
+  "pid": 125740,
+  "scope": "临时loopback inspector，仅资源类型和调用位置请求；pause未取得栈，resume及关闭连接。没有env/凭据/heap内容读取、强制Promise、业务写入或模型重跑。",
+  "limits": [
+    "调试连接前已经发生收尾等待；不能从断开后59ms封存推断原因或修复效果",
+    "业务守卫及原生结果按原报告保留；本项不证明无人介入的正常收尾，也不用于性能比较",
+    "原始elapsed和会话时间完整保留，不扣除调试或等待时间；诊断辅助时间单列",
+    "监督预算3600000ms未改变，未触发timeout/取消/额度；未重跑该单元"
+  ],
+  "verification": {
+    "priorFiles": 63,
+    "unchangedPriorFiles": 63,
+    "unchangedDirectories": 24,
+    "addedAfterSnapshot": [
+      "evaluation.json"
+    ],
+    "verifiedSealedFiles": 66,
+    "sealSha256": "963983f66e4f5a4e539f8f6ccc184abc1ad0240dbc8a3bc4ce87dd0abef6b830"
+  },
+  "evidence": [
+    {
+      "file": "audit/close-delay/harness21-candidate4-pending-close-snapshot.json",
+      "sha256": "b942f7585f8576b372d372d6918af862ce0def2e84158402a2a923db0aeb7b36",
+      "bytes": 13656
+    },
+    {
+      "file": "audit/close-delay/harness21-candidate4-pending-close-processes.json",
+      "sha256": "ad26550d56ccd91fc93d3c1a8619df949066331a51fc851a0ec7a307f82ec1f5",
+      "bytes": 4103
+    },
+    {
+      "file": "audit/close-delay/harness21-candidate4-pending-close-inspector.json",
+      "sha256": "df37d3d08a7a42234779d39c3b736452508d1991867d3cf06e0eb1ef7a5d4476",
+      "bytes": 1335
+    },
+    {
+      "file": "audit/close-delay/harness21-pending-close-inspector.mjs",
+      "sha256": "ca6311e2976f37f69978b129895ee453a7f415854088bd1b142c543c4d80ed76",
+      "bytes": 3223
+    },
+    {
+      "file": "audit/close-delay/harness21-close-inspector.mjs",
+      "sha256": "d925e4c2faa111eb84542a3696cdf72feba3c07522b5cdf376d77410016512c8",
+      "bytes": 1324
+    },
+    {
+      "file": "audit/close-delay/harness21-candidate4-pending-close-snapshot.mjs",
+      "sha256": "642edfe2bc729621456dfccc969c4ad0574b0c2e84191cd762be6cedb913de09",
+      "bytes": 2044
+    },
+    {
+      "file": "audit/close-delay/harness21-candidate4-close-delay-evidence.mjs",
+      "sha256": "cf40a0ec58e4af31c48fddf125f147969a10d2b23b9779c1d57f4d3389571bab",
+      "bytes": 4246
+    }
+  ]
+}

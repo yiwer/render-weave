@@ -1,0 +1,718 @@
+{
+  "round": "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-observations-candidate-5\\correction-1",
+  "number": 2,
+  "previous": "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-observations-candidate-5\\design-1",
+  "verdict": "qualified",
+  "candidates": [
+    {
+      "path": "candidates/original38-en-tfl161-panel.json"
+    },
+    {
+      "path": "candidates/tfl161-route-segment.json"
+    },
+    {
+      "path": "candidates/tfl161-station-label.json"
+    }
+  ],
+  "pending": 6,
+  "assessment": {
+    "structure": "valid",
+    "candidates": "valid",
+    "content": "needsReview",
+    "render": {
+      "status": "renderable",
+      "problems": [],
+      "hasImage": true,
+      "blocking": true,
+      "capabilityBlocked": false
+    },
+    "visual": {
+      "reportId": "cec90b395696a92b1e0e181af00fb2ebfa3005d431224609cebd1f634d839eec",
+      "status": "needsWork",
+      "coverage": {
+        "approvedRegionsTotal": 39,
+        "approvedRegionsMatched": 38,
+        "repeatedInstancesScanned": 38,
+        "statesCovered": [],
+        "statesMeasured": [
+          "normal",
+          "current"
+        ],
+        "unknownRegions": 38,
+        "complete": false
+      },
+      "anomalies": [
+        {
+          "kind": "missingRegion",
+          "regionId": "time-legend",
+          "path": "",
+          "message": "参考项“time-legend”没有匹配到可见布局元素"
+        }
+      ],
+      "anomaliesTotal": 1,
+      "regions": [
+        {
+          "id": "header-route",
+          "name": "header-route",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 11.425776905078598,
+            "y": 10.795,
+            "width": 25.644521498065295,
+            "height": 17.653
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/线路号",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "original38-en-tfl161-panel",
+                "path": "original38-en-tfl161-panel/线路号"
+              },
+              "fontSizeMm": 24.5,
+              "fontSizesMm": [
+                24.5
+              ],
+              "text": "161",
+              "colors": [
+                "#000000FF"
+              ],
+              "box": {
+                "x": 11.421562774363476,
+                "y": 10.799737103916705,
+                "width": 24.584723441615456,
+                "height": 17.34619058482349
+              },
+              "deltaMm": {
+                "x": -0.004214130715121556,
+                "y": 0.00473710391670501
+              },
+              "sizeRatio": {
+                "width": 0.9586735101869694,
+                "height": 0.9826199844119125
+              },
+              "unknown": [
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "header-direction",
+          "name": "header-direction",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 49.00388761511487,
+            "y": 11.049,
+            "width": 71.60153527182588,
+            "height": 3.556
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/方向标题",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "original38-en-tfl161-panel",
+                "path": "original38-en-tfl161-panel/方向标题"
+              },
+              "fontSizeMm": 4.7,
+              "fontSizesMm": [
+                4.7
+              ],
+              "text": "Buses towards North Greenwich",
+              "colors": [
+                "#000000FF"
+              ],
+              "box": {
+                "x": 49.004404296874995,
+                "y": 11.046064601950347,
+                "width": 71.81312255859375,
+                "height": 3.451562342420221
+              },
+              "deltaMm": {
+                "x": 0.0005166817601249818,
+                "y": -0.0029353980496527043
+              },
+              "sizeRatio": {
+                "width": 1.002955066339913,
+                "height": 0.9706305799831892
+              },
+              "unknown": [
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "header-daily",
+          "name": "header-daily",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 6.982419219770254,
+            "y": 31.115,
+            "width": 10.53710536801693,
+            "height": 4.318
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/班期",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "original38-en-tfl161-panel",
+                "path": "original38-en-tfl161-panel/班期"
+              },
+              "fontSizeMm": 4.5,
+              "fontSizesMm": [
+                4.5
+              ],
+              "text": "Daily",
+              "colors": [
+                "#000000FF"
+              ],
+              "box": {
+                "x": 7.001025390625,
+                "y": 31.115381001867355,
+                "width": 10.430419921875,
+                "height": 4.19457989372313
+              },
+              "deltaMm": {
+                "x": 0.018606170854746473,
+                "y": 0.00038100186735690045
+              },
+              "sizeRatio": {
+                "width": 0.9898752605752857,
+                "height": 0.9714172982221239
+              },
+              "unknown": [
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-01",
+          "name": "key-01",
+          "state": "longestText",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 48.74998146166868,
+            "y": 19.939,
+            "width": 30.341785336819832,
+            "height": 30.352999999999998
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[1]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Chislehurst War Memorial",
+              "colors": [
+                "#404040FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-02",
+          "name": "key-02",
+          "state": "passed",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 59.03318067623942,
+            "y": 21.971,
+            "width": 28.437489185973398,
+            "height": 28.320999999999998
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[2]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Chislehurst / Sainsbury’s",
+              "colors": [
+                "#404040FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-03",
+          "name": "key-03",
+          "state": "passed",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 68.30075527702539,
+            "y": 36.321999999999996,
+            "width": 14.853509976602176,
+            "height": 14.350999999999999
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[3]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Mottingham",
+              "colors": [
+                "#404040FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-04",
+          "name": "key-04",
+          "state": "passed",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 78.58395449159613,
+            "y": 33.274,
+            "width": 17.90038381795647,
+            "height": 17.399
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[4]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Eltham Church",
+              "colors": [
+                "#404040FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-05",
+          "name": "key-05",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 88.35934139927448,
+            "y": 42.164,
+            "width": 9.267574600785974,
+            "height": 8.509
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[5]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Eltham",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-06",
+          "name": "key-06",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 98.64254061384523,
+            "y": 32.512,
+            "width": 18.027336894679564,
+            "height": 17.78
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[6]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Well Hall Road",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-07",
+          "name": "key-07",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 109.30659905858525,
+            "y": 28.575,
+            "width": 21.962882273095527,
+            "height": 21.717
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[7]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Greenwich Heights",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-08",
+          "name": "key-08",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 119.0819859662636,
+            "y": 20.573999999999998,
+            "width": 29.83397302992745,
+            "height": 29.845
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[8]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Queen Elizabeth Hospital",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-09",
+          "name": "key-09",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 128.73041979721887,
+            "y": 28.829,
+            "width": 22.343741503264813,
+            "height": 21.463
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[9]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Woolwich Arsenal",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-10",
+          "name": "key-10",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 139.1405720885127,
+            "y": 31.877,
+            "width": 19.169914585187424,
+            "height": 18.415
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[10]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Woolwich Ferry",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-11",
+          "name": "key-11",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 149.42377130308344,
+            "y": 40.132,
+            "width": 10.791011521463119,
+            "height": 10.286999999999999
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[11]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Charlton",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        },
+        {
+          "id": "key-12",
+          "name": "key-12",
+          "state": "normal",
+          "status": "unknown",
+          "referenceBoxMm": {
+            "x": 159.32611128748488,
+            "y": 22.733,
+            "width": 28.310536109250304,
+            "height": 27.939999999999998
+          },
+          "instances": [
+            {
+              "path": "original38-en-tfl161-panel/站名列[12]/站名",
+              "visibility": {
+                "status": "unknown",
+                "reasons": [],
+                "cumulativeOpacity": 1
+              },
+              "sourceLocation": {
+                "template": "tfl161-station-label",
+                "path": "tfl161-station-label/站名"
+              },
+              "fontSizeMm": 3.35,
+              "fontSizesMm": [
+                3.35
+              ],
+              "text": "Millennium Leisure Park",
+              "colors": [
+                "#000000FF"
+              ],
+              "unknown": [
+                "旋转/裁切或墨迹测量不可用",
+                "部分遮挡、复杂变换、低对比与感知可读性未核查"
+              ]
+            }
+          ],
+          "instancesTotal": 1
+        }
+      ],
+      "regionsTotal": 39,
+      "sourceFiles": {
+        "original38-en-tfl161-panel": "candidates/original38-en-tfl161-panel.json",
+        "tfl161-station-label": "candidates/tfl161-station-label.json"
+      },
+      "partialDetails": true,
+      "scope": "all",
+      "note": "数值仅描述核准范围；最终可见性和内容仍需审核。局部图从左到右为参考、候选、半透明叠图。"
+    },
+    "style": {
+      "passed": false,
+      "anomalies": [
+        {
+          "kind": "missingRegion",
+          "regionId": "time-legend",
+          "path": "",
+          "message": "参考项“time-legend”没有匹配到可见布局元素"
+        }
+      ],
+      "coverage": {
+        "approvedRegionsTotal": 39,
+        "approvedRegionsMatched": 38,
+        "repeatedInstancesScanned": 38,
+        "statesCovered": [],
+        "statesMeasured": [
+          "normal",
+          "current"
+        ],
+        "unknownRegions": 38,
+        "complete": false
+      }
+    }
+  },
+  "usage": {
+    "wallMs": 232647,
+    "turns": 33,
+    "outputTokens": 18959,
+    "endedBy": "success"
+  }
+}

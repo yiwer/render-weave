@@ -9,6 +9,8 @@ import { loadCanvasKit } from './canvaskit.js';
 import { draftBorders, withDraftPlaceholders } from './draft.js';
 import { preflight, preflightTemplate } from './preflight.js';
 import { draw, type EncodedImage } from './draw.js';
+import { evidenceNodes, type RenderEvidence } from './render-evidence.js';
+export type { RenderEvidence } from './render-evidence.js';
 import { formatElementPath } from './element-path.js';
 import { ImageStore } from './images.js';
 import { evaluate, walkVisible, type EvaluatedTemplate } from './evaluate.js';
@@ -23,6 +25,8 @@ import { resolveGlyphFallbacks } from './text/fallback.js';
 import type { Workspace } from './workspace.js';
 
 export interface RenderResult {
+  /** 可选的草稿比较证据：真实内容在占位与诊断边框之前的图与布局。 */
+  readonly evidence?: RenderEvidence;
   /** 正式出图存在严重问题时没有图片。 */
   readonly image?: EncodedImage;
   readonly problems: readonly Problem[];
@@ -31,6 +35,8 @@ export interface RenderResult {
 }
 
 export interface RenderOptions {
+  /** 仅草稿模式收集；正式模式的 severe 阻断不变。 */
+  readonly comparisonEvidence?: boolean;
   /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
   readonly fallbackFonts?: readonly string[];
   /** SVG 可用的字体资源 ID；缺省为思源黑体四种字重，始终禁用系统字体。 */
@@ -137,6 +143,10 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     problems.push(...rasterized.problems);
     if (request.mode === 'final' && hasSevere(problems)) return { problems, layout: result.summary };
     let drawOps = rasterized.drawOps;
+    const evidence = options.comparisonEvidence && request.mode === 'draft' ? {
+      image: draw(ck, { fonts, images }, drawOps, request.output), layout: result.summary,
+      nodes: evidenceNodes(root, drawOps, fonts, result.summary),
+    } : undefined;
     if (request.mode === 'draft') {
       const preview = withDraftPlaceholders(root);
       let draftRoot = preview.root;
@@ -149,7 +159,7 @@ export async function render(workspace: Workspace, requestInput: unknown, option
       drawOps = [...drawOps, ...draftBorders(draftRoot, result.summary, problems)];
     }
     const image = draw(ck, { fonts, images }, drawOps, request.output);
-    return { image, problems, layout: result.summary };
+    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}) };
   } finally {
     fonts.dispose();
     images.dispose();

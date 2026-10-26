@@ -1,4 +1,5 @@
-export { render, measureRender, preloadRenderer, type RenderResult, type RenderOptions, type RenderMeasure } from './render.js';
+export { render, measureRender, preloadRenderer, type RenderResult, type RenderOptions, type RenderMeasure, type RenderEvidence } from './render.js';
+export { compareReference, type VisualReport, type ReferenceImage, type ComparisonPanel } from './agent/visual-comparison.js';
 /** 模板的对外信息：名称、基准、适用尺寸范围与对外参数；不出图（出图服务的模板列表）。 */
 export { describeTemplate, type TemplateDescription } from './template/describe.js';
 export {
@@ -79,6 +80,8 @@ export {
   type AgentApplyOptions, type AgentApplyResult, type RoundLink, type RevisionView, type TemplateConflict, type PreviousRound,
 } from './agent/review.js';
 export { diffTemplate, revisionDiff, templateCallTree, type TemplateChange, type PropertyChange, type RevisionDiff } from './agent/diff.js';
+export type { CheckpointView, CheckpointSignal, CandidateSelectionView, CandidateComparisonView, CandidateDifference, CheckpointCandidateView } from './agent/checkpoints.js';
+export type { CandidateComparison, CandidateChange, ComparisonBasis } from './agent/candidate-comparison.js';
 export {
   verifyElementStyles, hashCandidatesAndRequest, isVerificationValid, matchPath,
   type ApprovedRegion, type ReferenceBaseline, type StyleAnomaly, type StyleVerificationRecord, type BusinessState,
@@ -90,6 +93,7 @@ export {
   type CoverageVerificationRecord, type ExtractionCoverageScore, type CoverageKind,
 } from './agent/coverage-verification.js';
 export { startReviewServer, type ReviewServer } from './agent/review-server.js';
+export type { RoundExecution, RoundStart, ExecutionEvent, ExecutionPhase, ExecutionStatus } from './agent/execution.js';
 export { AGENT_TASKS, findAgentTask, type AgentTask, type AgentTaskId, type CandidateKind } from './agent/tasks.js';
-export { parseDesignCheckPlan, verifyTemplateDesign, type DesignCheckPlan, type DesignVerification } from './agent/design-verification.js';
-export { compareDesignImages, type ImageDifference, type ImageRegion } from './agent/image-comparison.js';
+
+export {initializeOrderScope, recordOrderEvent, reportOrders, shareOrders, type OrderScope, type OrderDefinition, type OrderPlan} from './agent/orders.js';

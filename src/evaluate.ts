@@ -22,6 +22,8 @@ import { fieldOrigin, MissingValues, type DataOrigin } from './template/missing-
 import { groupLoopItems } from './template/loop.js';
 
 export interface EvaluatedNode {
+  /** 当前实例在原模板内的来源；比较证据使用，不改变 DSL 或布局摘要。 */
+  readonly source?: { readonly template: string; readonly path: string };
   /** 已定位的缺值或静态问题，供草稿画问题边框；不影响正常布局。 */
   readonly previewProblem?: boolean;
   readonly model: ArtboardModel | Exclude<ElementModel, LoopModel | CallModel>;
@@ -102,7 +104,7 @@ class Expander {
     const staticPath = formatElementPath([{ name: scope.template.name }, ...model.path.slice(root.length)]);
     const problem = host.affected.has(formatElementPath(model.path)) || this.inputProblems.some((p) =>
       p.location.kind === 'element' && p.location.path === staticPath);
-    return problem ? { ...node, previewProblem: true } : node;
+    return { ...node, source: { template: scope.template.name, path: staticPath }, ...(problem ? { previewProblem: true } : {}) };
   }
 
   private expandNode(model: ArtboardModel | ElementModel, scope: Scope, host: ResolvingHost, origin: DataOrigin | undefined, root: ElementPath): EvaluatedNode {

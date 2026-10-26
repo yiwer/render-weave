@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-26T01:11:34.045Z",
+  "exitCode": 0,
+  "quotaStopped": false,
+  "monitorError": null,
+  "cancelDelivered": null,
+  "candidate": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "binding": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec"
+}

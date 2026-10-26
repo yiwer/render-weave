@@ -1,0 +1,286 @@
+{
+  "format": "renderweave-feedback-historical-description/1",
+  "current": {
+    "gate": {
+      "status": "incomplete",
+      "pass": false,
+      "scenarios": [
+        {
+          "id": "zh-definition-extraction",
+          "name": "zh-definition-extraction",
+          "outcomes": [
+            "pass",
+            "pass"
+          ],
+          "status": "pass"
+        },
+        {
+          "id": "zh-dataset-extraction",
+          "name": "zh-dataset-extraction",
+          "outcomes": [
+            "pass",
+            "pass"
+          ],
+          "status": "pass"
+        },
+        {
+          "id": "zh-template-design",
+          "name": "zh-template-design",
+          "outcomes": [
+            "pass",
+            "pass"
+          ],
+          "status": "pass"
+        },
+        {
+          "id": "zh-template-revision",
+          "name": "zh-template-revision",
+          "outcomes": [
+            "pass",
+            "pass"
+          ],
+          "status": "pass"
+        },
+        {
+          "id": "en-definition-extraction",
+          "name": "en-definition-extraction",
+          "outcomes": [
+            "pass",
+            "invalid"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-dataset-extraction",
+          "name": "en-dataset-extraction",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-template-design",
+          "name": "en-template-design",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        },
+        {
+          "id": "en-template-revision",
+          "name": "en-template-revision",
+          "outcomes": [
+            "pass",
+            "not-run"
+          ],
+          "status": "incomplete"
+        }
+      ],
+      "completeness": {
+        "planned": 16,
+        "pass": 12,
+        "fail": 0,
+        "invalid": 1,
+        "notRun": 3,
+        "complete": false
+      }
+    },
+    "validRealObservations": 12,
+    "actualNativeAttempts": 13
+  },
+  "historical": [
+    {
+      "generation": 2,
+      "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback\\dispatch\\block-2.report-harness21-candidate-2.segment-d90536c9-ab32-455d-8327-202398fc7643.json",
+      "sha256": "d52b37523959616df1f5cacfdf47b56db09154c90688765f8387f33526045487",
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "zh-definition-extraction",
+            "name": "zh-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-dataset-extraction",
+            "name": "zh-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "zh-template-design",
+            "name": "zh-template-design",
+            "outcomes": [
+              "fail",
+              "pass"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "zh-template-revision",
+            "name": "zh-template-revision",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-definition-extraction",
+            "name": "en-definition-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-dataset-extraction",
+            "name": "en-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "pass"
+            ],
+            "status": "pass"
+          },
+          {
+            "id": "en-template-design",
+            "name": "en-template-design",
+            "outcomes": [
+              "fail",
+              "pass"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "en-template-revision",
+            "name": "en-template-revision",
+            "outcomes": [
+              "fail",
+              "fail"
+            ],
+            "status": "fail"
+          }
+        ],
+        "completeness": {
+          "planned": 16,
+          "pass": 10,
+          "fail": 6,
+          "invalid": 0,
+          "notRun": 0,
+          "complete": true
+        }
+      },
+      "identityDifferent": true,
+      "note": "原分页时序有效失败保留"
+    },
+    {
+      "generation": 3,
+      "file": "F:\\GenCode\\render-weave\\out\\harness21-trusted-feedback-candidate-3\\dispatch\\block-1.report-harness21-candidate-3.json",
+      "sha256": "13ca58f744090f77f2e95273d30c3d0ff6e5fe25f523bbed15a865e5c3f18c47",
+      "gate": {
+        "status": "fail",
+        "pass": false,
+        "scenarios": [
+          {
+            "id": "zh-definition-extraction",
+            "name": "zh-definition-extraction",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "zh-dataset-extraction",
+            "name": "zh-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "zh-template-design",
+            "name": "zh-template-design",
+            "outcomes": [
+              "fail",
+              "not-run"
+            ],
+            "status": "fail"
+          },
+          {
+            "id": "zh-template-revision",
+            "name": "zh-template-revision",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "en-definition-extraction",
+            "name": "en-definition-extraction",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "en-dataset-extraction",
+            "name": "en-dataset-extraction",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "en-template-design",
+            "name": "en-template-design",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          },
+          {
+            "id": "en-template-revision",
+            "name": "en-template-revision",
+            "outcomes": [
+              "pass",
+              "not-run"
+            ],
+            "status": "incomplete"
+          }
+        ],
+        "completeness": {
+          "planned": 16,
+          "pass": 7,
+          "fail": 1,
+          "invalid": 0,
+          "notRun": 8,
+          "complete": false
+        }
+      },
+      "identityDifferent": true,
+      "note": "原结构失败保留；独立guard旧false有短路边界，不等于实际分页失败"
+    }
+  ],
+  "limits": [
+    "历史候选2/3不补本代缺失槽位，不拼接通过率",
+    "本代四类中文各两次有效通过；英文四类各一次有效通过，第2次英文定义额度无效、其余未派发",
+    "未知视觉/状态仍未知；原38独立审核不被受控24区替代"
+  ]
+}

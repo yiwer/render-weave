@@ -1,0 +1,16 @@
+{
+  "format": "original38-post-stop-process-check/1",
+  "observedAt": "2026-10-23T20:54:16.6318054Z",
+  "registeredAndObservedTaskPids": [
+    135680,
+    135408,
+    136212,
+    138824,
+    124448,
+    124724,
+    128204
+  ],
+  "remaining": [],
+  "allAbsent": true,
+  "scope": "仅本次已登记包装进程和已核验终止的子进程PID；不轮询提供方或读取凭据"
+}
