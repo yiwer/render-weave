@@ -1,0 +1,361 @@
+{
+  "format": "renderweave-feedback-preparation-preservation/1",
+  "files": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\m402-dsl\\compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\m402-dsl\\compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\m402-dsl\\dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\m402-dsl\\schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\m402-dsl\\schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\materials\\366-route-sign.png",
+      "sha256": "5923ec33ec2b63b48f717628f668c74fbbb2f22aa6aeef09a5a2b30eacf6ca79"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\docs\\examples\\materials\\m402-route-sign.jpg",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\fixtures\\agent-eval\\templates\\first-test\\template-badge-icon.json",
+      "sha256": "56cbb8e96a2d183930b6199ea7ee6bea8ba5dbbf4b8b6e987452c8f67354bff9"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\fixtures\\agent-eval\\templates\\first-test\\template-road-segment.json",
+      "sha256": "23aa51aa2b13c9caa573de305a9c7e118aadd62e6980093b0e366d91df0d23c2"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\fixtures\\agent-eval\\templates\\first-test\\template-route-sign-main.json",
+      "sha256": "96df4ba9e848faec30bd35db7eccbcf5cfdc8b60e59623ede2082d4476786a4c"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\fixtures\\agent-eval\\templates\\first-test\\template-stop-cell.json",
+      "sha256": "c1f2462ef0a991b61dab647c4585d04ac81473d67bcdebe60b0c244c0dfd8ec3"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\fixtures\\agent-eval\\templates\\first-test\\template-time-item.json",
+      "sha256": "0d64680a94e29d5dd3c63dd67a26c2f79dd5c0e5a80ea8e47be877e282c966b6"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\366\\brief-dataset.md",
+      "sha256": "ad7b6524b1b6b4a99866a865e366be5642c728ec7325de1cebc1645406d10d75"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\366\\brief-definition.md",
+      "sha256": "7f0be2aad3b101a5523ff5651bc677f63306efb313af7cb5df2f92dd973a0680"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\366\\truth.json",
+      "sha256": "d3e27ad7032017a64b90152c0d8985a25e5e0c6089594b9987b852d6fc59bebd"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\m402\\brief-definition.md",
+      "sha256": "65da19b4cf89aebe406e91f3d4ebdeb125187d452d7c52eba3366d19a248d336"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\m402\\brief-template.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\m402\\request-template.json",
+      "sha256": "c30ba1b6b8806342349ec183d3800f1c77a2010db701925a570e6d8c466cd6a1"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\harness-20\\render-weave\\scripts\\agent-eval\\scenarios\\m402\\requirement-m215.md",
+      "sha256": "ee62e16760c0fde471c10955b5a9d54c0b0b1b06aa82a9985b772b2b2bf8a645"
+    },
+    {
+      "path": "F:/GenCode/render-weave/out/harness-acceptance-20/plans/original-four/preparation.json",
+      "sha256": "f5bc0eb01f2ab8f85d7d74326d626cc29f63eb61e1e64f9ce6e87ab64e8f1584"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\binding.json",
+      "sha256": "010c733ff55dafa2d4c03d01d56e60da390183cfec24e16615268640a10cff92"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\config.json",
+      "sha256": "f3d716e322fc351fbbb84fb0066e8d433502312b09ae8207676887fcf4acd52a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\07ec9dead49fce518e719ee857b94a444b49c8e9a6b600f4bdc8c82bf0da3eb8.bin",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\1a5f0c6c844e2b19d6cf8e43d217a795174be0610360bd5ae193089be029382a.bin",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\24adfdbefc4f2e0aa2c155874a7a9621d3e768471fb0cfaecbfdc7829d562122.bin",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\256165e96156dcf10db1be6fca47d1ec22d11463d47438cde82c147ae10563a6.bin",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\3c231ec853b1fefcd7768c6b8ba05d5f62cd60d0ada0eb8e5f53c8da02e48ff9.bin",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\4aede736be943ee15f9070dfb7274839303377f373ad67acd511778747fc5860.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\4b5160718d8ac5d3ff60708e08d8b44fa6cbe64f747d3b54a4a1568e9f4c436a.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\50599b88459fd74338eb6082d2ca89bf08d46f7c7b5630c0c90b40f33a4f3987.bin",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\61f5093052709d6fbcd0d4d6a59cd8bf6c0e7c603aac33cdf1847e2fd8b34b50.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\71a9b04442b4bae471c4ae209eba909425766284bcaf30f2ab447cb70ed735f9.bin",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\7cf338661d8284fcdc553e25e362345c9ffddac23c9b68ac44f642a154a301a2.bin",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\a38b48fd7e244d711631e9982cb5720d3545dbcbacb78d180b0389c26122a53f.bin",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\af3fe45b40a7e38e18a83795f1934ab37c2a714ddefc930ceb6962626a078dda.bin",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\bab1171df5f83e8a8b206d3a938c4bde7d5dd3e653f85dffb7ad7d0cd35efaa6.bin",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\binding-6\\resources\\d7001413a24b904d8748d2fe68cfe2f716fbce221bdac76a43aae9cfea7b98f5.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\config.json",
+      "sha256": "f3d716e322fc351fbbb84fb0066e8d433502312b09ae8207676887fcf4acd52a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\366-transcription\\brief\\brief-definition.md",
+      "sha256": "7f0be2aad3b101a5523ff5651bc677f63306efb313af7cb5df2f92dd973a0680"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\366-transcription\\datasetBrief\\brief-dataset.md",
+      "sha256": "ad7b6524b1b6b4a99866a865e366be5642c728ec7325de1cebc1645406d10d75"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\366-transcription\\sample\\366-route-sign.png",
+      "sha256": "5923ec33ec2b63b48f717628f668c74fbbb2f22aa6aeef09a5a2b30eacf6ca79"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\366-transcription\\truth\\truth.json",
+      "sha256": "d3e27ad7032017a64b90152c0d8985a25e5e0c6089594b9987b852d6fc59bebd"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-definition\\brief\\brief-definition.md",
+      "sha256": "65da19b4cf89aebe406e91f3d4ebdeb125187d452d7c52eba3366d19a248d336"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-definition\\sample\\m402-route-sign.jpg",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\brief\\brief-template.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\request\\request-template.json",
+      "sha256": "c30ba1b6b8806342349ec183d3800f1c77a2010db701925a570e6d8c466cd6a1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\requirement\\requirement-m215.md",
+      "sha256": "ee62e16760c0fde471c10955b5a9d54c0b0b1b06aa82a9985b772b2b2bf8a645"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\sample\\m402-route-sign.jpg",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\savedTemplates\\template-badge-icon.json",
+      "sha256": "56cbb8e96a2d183930b6199ea7ee6bea8ba5dbbf4b8b6e987452c8f67354bff9"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\savedTemplates\\template-road-segment.json",
+      "sha256": "23aa51aa2b13c9caa573de305a9c7e118aadd62e6980093b0e366d91df0d23c2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\savedTemplates\\template-route-sign-main.json",
+      "sha256": "96df4ba9e848faec30bd35db7eccbcf5cfdc8b60e59623ede2082d4476786a4c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\savedTemplates\\template-stop-cell.json",
+      "sha256": "c1f2462ef0a991b61dab647c4585d04ac81473d67bcdebe60b0c244c0dfd8ec3"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\savedTemplates\\template-time-item.json",
+      "sha256": "0d64680a94e29d5dd3c63dd67a26c2f79dd5c0e5a80ea8e47be877e282c966b6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\workspace\\compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\workspace\\compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\workspace\\dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\workspace\\schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-revision\\workspace\\schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\brief\\brief-template.md",
+      "sha256": "680eaa0c4df70dd2de17b1003709145c679621e985fca9555b7b5e07c12eaa18"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\request\\request-template.json",
+      "sha256": "c30ba1b6b8806342349ec183d3800f1c77a2010db701925a570e6d8c466cd6a1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\sample\\m402-route-sign.jpg",
+      "sha256": "583f591b5f08c631162ebac188bcd7ecc999af40cf077d161d05cfdd0a6d75e6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\workspace\\compiled-route-sign-v1.schema.json",
+      "sha256": "e15a7d9f8c5199ad66112ee5b264e577a0c6fecb44b04af30875cbe5a0d95c20"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\workspace\\compiled-stop-v1.schema.json",
+      "sha256": "200f15fc2b92c876ea677a6c15927823fd47bad9bec50c68824ffec056cb29ba"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\workspace\\dataset-m402.json",
+      "sha256": "7d5eb37edb55d55c5f2c4ab608ffc3ee6ac8a59cb84abcf75a945852791ec692"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\workspace\\schema-route-sign-v1.json",
+      "sha256": "bc3b26765fc9459cd91297ff11cd91bec1f26efde09e7d4143e9b9d3525d65f0"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\inputs\\m402-template\\workspace\\schema-stop-v1.json",
+      "sha256": "522a38e27082c81b0b995c45246854d24d2ec729c7adb4c8bfaa201f1e811589"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\original-config.json",
+      "sha256": "3950554ce9fc371d9705eff934fa2b2d1219c8a9ab31709798a56de399cdcaf5"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\font-subsets\\LICENSE.txt",
+      "sha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\font-subsets\\README.md",
+      "sha256": "77fec2f2fdf8e11214e176c05b60d147f61dd01e6fce5634f23ee14acacd0cda"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\font-subsets\\TestSubset-Bold.otf",
+      "sha256": "66486ca9afda887f184344efd5485257f585b438f0e027234cd3fd8db8404def"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\font-subsets\\TestSubset-Medium.otf",
+      "sha256": "24801a248b1c9fdb7541fcb109da55aa8b4c0eefabeed90fbca875b0b9fe63ba"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\font-subsets\\TestSubset-Regular.otf",
+      "sha256": "5d4a3e5e1423ce1aedc572accc683f380e1d237ddf4f1475e76b8f624c985be1"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\fonts\\SourceHanSansCN-Bold.otf",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\fonts\\SourceHanSansCN-Heavy.otf",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\fonts\\SourceHanSansCN-Medium.otf",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\fonts\\SourceHanSansCN-Regular.otf",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\icon-hospital.png",
+      "sha256": "c0850edfe30157b9f96db2e0a635d88c211e9f1a3954429b0e38b08154f52112"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\icon-metro.png",
+      "sha256": "ccc756131c456a65447da62cf3984f3e89da049ea603ca4a83cbdfd477c0b02a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\landmark-1.png",
+      "sha256": "e580ed4d474079a808d55b527e503cb79447249fd850d0a4b8756c02dade8f5b"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\landmark-2.png",
+      "sha256": "30ed2fd2998038ad7ce656b09ce1b7bef8aaa3f5a77e4d4988fad9a38a700839"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\landmark-3.png",
+      "sha256": "4fff532105d9fd4feff992ef334dcc6b3b6ca99e9837f09294364cbe494b7fdc"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\landmark-4.png",
+      "sha256": "07650b21f471a6dbb1fb9a326dc0e1dbe134700f2083486d7bcba91fe104ce9c"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\m402\\route-no-m402.png",
+      "sha256": "eed35ff115bd53acf2b31e0ffb43015e988969352a77ed209defcbfee095f5d8"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\README.md",
+      "sha256": "e14c1c6120139bfa51b457bfe7c4242ae883f5142d54bd1ec5c26f642a4b2f9a"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\test\\quadrants.jpg",
+      "sha256": "050188e9564793da4929c5db80ddf43548f2ba72bd05bcd56f7fcea4c05dea05"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\test\\quadrants.png",
+      "sha256": "815562509f2fc2422b4dfb7c4abf0001fa95a422ce3994e98f78a959730d8a0d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\test\\quadrants.webp",
+      "sha256": "84e7ddd9dcb67e39e307a25a49490c673343bcc9719891ce1c4c51f9c75e529d"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\images\\test\\vector.svg",
+      "sha256": "77e08b9977de22b8d9f567f72dde80f33b10cffe375decfcb2831cbe6a5a74ce"
+    },
+    {
+      "path": "F:\\GenCode\\render-weave\\out\\harness-acceptance-20\\plans\\original-four\\resources\\resources.json",
+      "sha256": "09e6f95ddc138d3ff4dc305fbfa5ab916ec5a705964d3578aeebce7974fac92f"
+    }
+  ]
+}
