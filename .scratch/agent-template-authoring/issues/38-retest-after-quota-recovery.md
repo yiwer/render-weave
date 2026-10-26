@@ -114,6 +114,14 @@ node --import tsx out/agent-builds/visual-feedback-0.10.1/scripts/agent-eval/run
 
 同权限停止能力已作无模型演练：[证明](../original38-harness/english-candidate-5-stop-preflight/verification.json)。仅新建Node父子进程，CIM核对来源后终止两者，复查残留0；停止及复查耗时3121.4884ms。此证据覆盖查询/终止权限，不证明实际Claude取消、429检测或所有竞态已覆盖；恢复派发仍需核对真实进程身份。
 
+### 2026-10-25 候选5纯英文实际验收交接
+
+用户确认额度恢复后，已按核准TfL161材料完成首次设计及唯一一次纠偏，实际UTC为2026-10-26。候选187d36a3…6526、M329目的地、每阶段80轮/1小时预算保持；首次72轮/1431.252秒，纠偏33轮/232.647秒，均退出0。首次原生流发生一次502自动重试后恢复，两阶段均无额度停止，未派发第三阶段。
+
+首次arrow-04与已核准参考不一致，纠偏仅改变第4段线路带1200像素（x622/y420/80×15），其他像素不变。自动qualified不等于业务视觉通过；time-legend仍因跨文本节点匹配报missingRegion，完整文字在实际图上可见。完整来源、用量、已知边界与命令见[实际结果](../original38-harness/english-candidate-5-results/README.md)。
+
+[实际成果三图审核包](F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-correction1-candidate-5/review.html)已生成，原图/首次/纠偏并列、39项人审和分钟留空；独立人审、候选5原四场景与完整门槛仍待完成，维持needs-triage，不勾选缺证条目。旧失败、额度停止及原始轮次不覆盖。
+
 ## Comments
 
 - 2026-10-21：用户确认排序并先实施 31、32；当前 Go 额度耗尽，其他票据按顺序后续推进。

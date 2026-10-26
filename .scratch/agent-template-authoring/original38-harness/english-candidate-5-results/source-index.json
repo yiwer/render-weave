@@ -1,0 +1,185 @@
+{
+  "format": "original38-english-results-source-index/1",
+  "files": [
+    {
+      "path": "first-execution/resume-authorization.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/resume-authorization.json",
+      "bytes": 1130,
+      "sha256": "975884710c966f038df38a34442439c39a898ba08205b64fa358cf8fab3ae825"
+    },
+    {
+      "path": "first-execution/dispatch-design1.mjs",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/dispatch-design1.mjs",
+      "bytes": 4581,
+      "sha256": "84193f263b5c7f90bfc2b43f5ac64d1c695f90434bb1395e1f65c8fd34cc160e"
+    },
+    {
+      "path": "first-execution/started.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/started.json",
+      "bytes": 234,
+      "sha256": "ab74ee25ec4f14b361786cfc024d6b16004d968c95c00abd8c316f87fd16d4db"
+    },
+    {
+      "path": "first-execution/completed.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/completed.json",
+      "bytes": 310,
+      "sha256": "244c37856bc8ceb02490add12237ab7c26998cda37b9d9721fdf0da7f6bd3a99"
+    },
+    {
+      "path": "first-execution/stdout.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/stdout.log",
+      "bytes": 21710,
+      "sha256": "0e04898debc2fca0a450c2888b6ee9839f23b680f1051381dbe8db1a5b5aee35"
+    },
+    {
+      "path": "first-execution/stderr.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/stderr.log",
+      "bytes": 378,
+      "sha256": "949b5902238806d39adf12bac70f90108d818c6f331373e503c56480878210e8"
+    },
+    {
+      "path": "first-execution/observed-result.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-execution-candidate-5/observed-result.json",
+      "bytes": 2149,
+      "sha256": "f33f39116974dbc98084c52b3ec5f31aa59d75d92ba4d6021265f6ebede72582"
+    },
+    {
+      "path": "first-binding/dispatch-start.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/design-1.binding/dispatch-start.json",
+      "bytes": 229,
+      "sha256": "343699896efe803f5468c42688092714ad8eb8babcd61d7d17d9478bc8913eeb"
+    },
+    {
+      "path": "first-binding/dispatch.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/design-1.binding/dispatch.json",
+      "bytes": 12789,
+      "sha256": "ee96a0fbb8ab2bdd9c419aa0a988dcc3b0b6cb67efe595a6bd8319e510af8fa6"
+    },
+    {
+      "path": "correction/feedback.md",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/feedback.md",
+      "bytes": 1631,
+      "sha256": "46c88342cd55fa2b2111e19dfe21d2c90d60d2d77b339efa1a6b659bf82f1456"
+    },
+    {
+      "path": "correction/defect-evidence.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/defect-evidence.json",
+      "bytes": 838,
+      "sha256": "989900e388b9d4145f99aa0e5eb2bae211c758669e621eebefc83ff7baf31b7b"
+    },
+    {
+      "path": "correction/request.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/request.json",
+      "bytes": 1764,
+      "sha256": "dc043833de6c481a07f58d83b5cc7c5f1a0a42ae1078e573c22f8106c0bb2f4f"
+    },
+    {
+      "path": "correction/registration.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/registration.json",
+      "bytes": 3526,
+      "sha256": "fd7ab021d43e4e6821b3dff7155be535259c9fd42c315b3b6054aeca736b54c0"
+    },
+    {
+      "path": "correction/bind.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/bind.log",
+      "bytes": 241,
+      "sha256": "8693a3c87409869bd1c97543f81980bbbeed2b75881a827e5545b0a75cd8d34e"
+    },
+    {
+      "path": "correction/verify.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/verify.log",
+      "bytes": 241,
+      "sha256": "8693a3c87409869bd1c97543f81980bbbeed2b75881a827e5545b0a75cd8d34e"
+    },
+    {
+      "path": "correction-execution/resume-authorization.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/resume-authorization.json",
+      "bytes": 1516,
+      "sha256": "dfd713ce12b46c5bd0be8564ac50e90b7e2607c8cb13a0a6767f870e3d0d34db"
+    },
+    {
+      "path": "correction-execution/dispatch-correction1.mjs",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/dispatch-correction1.mjs",
+      "bytes": 4603,
+      "sha256": "69f7765a6465e8a34c676d797e834d755abc8d78243ff44a65dcd0bc1bb7c512"
+    },
+    {
+      "path": "correction-execution/started.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/started.json",
+      "bytes": 234,
+      "sha256": "c349b28817a186f9da0223bd4a9cdbe08b3abcd7d30085ebe0da337d6dbba891"
+    },
+    {
+      "path": "correction-execution/completed.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/completed.json",
+      "bytes": 310,
+      "sha256": "910a3817af60ecd95d3c7213c98d5e78f069cbbf872e386993570a7d5c3ae97e"
+    },
+    {
+      "path": "correction-execution/stdout.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/stdout.log",
+      "bytes": 21831,
+      "sha256": "e3c86fc5ef636396a5e22f8927b1127c881bcec0f4be06b9cd2a09c3b0c32a0d"
+    },
+    {
+      "path": "correction-execution/stderr.log",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/execution/stderr.log",
+      "bytes": 481,
+      "sha256": "cd415d99be43a10c7592fa1312415c4f63cf8890e3bbf5a691e3402fcd4dff3d"
+    },
+    {
+      "path": "correction-binding/binding.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/binding/binding.json",
+      "bytes": 56825,
+      "sha256": "fbda930dbfed2b63918fac6374a3feeed63a4526c8f0e0f6d0f5f91403fc53ec"
+    },
+    {
+      "path": "correction-binding/request.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/binding/request.json",
+      "bytes": 1764,
+      "sha256": "dc043833de6c481a07f58d83b5cc7c5f1a0a42ae1078e573c22f8106c0bb2f4f"
+    },
+    {
+      "path": "correction-binding/dispatch-start.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/binding/dispatch-start.json",
+      "bytes": 233,
+      "sha256": "f9ac213bfc4883cb2fd0b9fd1f5b72beed194f0c379bec847cad6d059ed5e763"
+    },
+    {
+      "path": "correction-binding/dispatch.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/binding/dispatch.json",
+      "bytes": 11800,
+      "sha256": "ca2ef9788107d4a4832b018caed41599f8f962fe1835d03b63eed171f722cde2"
+    },
+    {
+      "path": "final/observations.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-final-candidate-5/observations.json",
+      "bytes": 7207,
+      "sha256": "515f9ccfc8541849e2275b42dea59edd33d2acd1ba6d07b0dbcc0e8ca376e39d"
+    },
+    {
+      "path": "final/processes-after-completion.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-final-candidate-5/processes-after-completion.json",
+      "bytes": 308,
+      "sha256": "65466d4d52d77cfac6fc7ab6e9b7635df10d942da84258ee9dc9bd4e3b38fc18"
+    },
+    {
+      "path": "final/pixel-comparison.json",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-final-candidate-5/pixel-comparison.json",
+      "bytes": 825,
+      "sha256": "53b4bfed0eecbea963dfd4aa96d4202aad2ea592baf2f1ea9981747f4ff0bd47"
+    },
+    {
+      "path": "final/compare-images.mjs",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-final-candidate-5/compare-images.mjs",
+      "bytes": 1754,
+      "sha256": "6c5c11f5a87aaf38d5fd227c48e3d3b47f47e65e9f037dd7f4d80a9633451ba8"
+    },
+    {
+      "path": "final/candidate-changes.diff",
+      "source": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-final-candidate-5/candidate-changes.diff",
+      "bytes": 2942,
+      "sha256": "21faa6720d7cb6331e5e5987e6d6ae6eb985fcbb4fdf56054de7648c8823209e"
+    }
+  ]
+}

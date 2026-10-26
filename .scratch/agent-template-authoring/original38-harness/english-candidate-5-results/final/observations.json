@@ -1,0 +1,210 @@
+{
+  "format": "original38-english-real-observations/1",
+  "recordedAt": "2026-10-26T01:25:24.224Z",
+  "userLocalDate": "2026-10-25",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "uniqueModelStages": 2,
+  "quotaStops": 0,
+  "rows": [
+    {
+      "stage": "design-1",
+      "round": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1",
+      "roundSha256": "7568e5bd86530c39ca285f6d4da44e279abd9056181d53ac28f52301beaa34c1",
+      "streamSha256": "598d59d9186b3fc35da94d0061e2532d2185e272c04c8093d8cf1bca0e36f3db",
+      "bindingId": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec",
+      "dispatchSha256": "ee96a0fbb8ab2bdd9c419aa0a988dcc3b0b6cb67efe595a6bd8319e510af8fa6",
+      "completed": {
+        "at": "2026-10-26T01:11:34.045Z",
+        "exitCode": 0,
+        "quotaStopped": false,
+        "monitorError": null,
+        "cancelDelivered": null,
+        "candidate": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+        "binding": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec"
+      },
+      "run": {
+        "wallMs": 1431252,
+        "inputTokens": 78,
+        "outputTokens": 88763,
+        "thinkingTokens": 58576,
+        "cacheReadTokens": 4502630,
+        "cacheCreationTokens": 217432,
+        "usageSource": "result",
+        "turns": 72,
+        "servedModel": "claude-haiku-5-5",
+        "claudeCodeVersion": "2.1.296",
+        "endedBy": "success",
+        "exitCode": 0,
+        "mcp": [
+          "rw:connected"
+        ]
+      },
+      "rawNativeUsage": {
+        "input_tokens": 78,
+        "cache_creation_input_tokens": 217432,
+        "cache_read_input_tokens": 4502630,
+        "output_tokens": 88763,
+        "output_tokens_details": {
+          "thinking_tokens": 58576
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 217432
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "nativeModelUsage": {
+        "claude-haiku-5-5": {
+          "inputTokens": 78,
+          "outputTokens": 88763,
+          "cacheReadInputTokens": 4502630,
+          "cacheCreationInputTokens": 217432,
+          "webSearchRequests": 0,
+          "costUSD": 0.40647451999999995,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 58576,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "automaticVerdict": "qualified",
+      "previous": null,
+      "sealedFileCount": 93,
+      "apiErrorEvents": 0,
+      "humanVerdict": null,
+      "humanReviewMinutes": null,
+      "nativeApiRetryEvents": 1,
+      "completeFileSetMatchesDispatch": true,
+      "nativeApiRetries": [
+        {
+          "line": 32,
+          "eventSha256": "ac26286ca143ffa4b5e1fdd8eb54e143fc715f824302f249db10c6cd626df90b",
+          "event": {
+            "type": "system",
+            "subtype": "api_retry",
+            "attempt": 1,
+            "max_retries": 10,
+            "retry_delay_ms": 601,
+            "error_status": 502,
+            "error": "server_error",
+            "session_id": "18377523-4305-4450-800d-e678e3d0a754",
+            "uuid": "beec04fd-53b5-4810-8c05-2df949b4ba89"
+          }
+        }
+      ]
+    },
+    {
+      "stage": "correction-1",
+      "round": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1",
+      "roundSha256": "a5ae3d2e492d90954f982f5640453c289f31ee43ecade4f31a0c5a6c85e8e0e6",
+      "streamSha256": "d06bf4599c2d37bbd179f2580c488c18b2d68b657f99a2438258680db88e4f12",
+      "bindingId": "sha256:e953de91cb519acf137bdf40c62f2ca7589e4b5634831130bab1a288b5e4dfe4",
+      "dispatchSha256": "ca2ef9788107d4a4832b018caed41599f8f962fe1835d03b63eed171f722cde2",
+      "completed": {
+        "at": "2026-10-26T01:23:54.407Z",
+        "exitCode": 0,
+        "quotaStopped": false,
+        "monitorError": null,
+        "cancelDelivered": null,
+        "candidate": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+        "binding": "sha256:e953de91cb519acf137bdf40c62f2ca7589e4b5634831130bab1a288b5e4dfe4"
+      },
+      "run": {
+        "wallMs": 232647,
+        "inputTokens": 30,
+        "outputTokens": 18959,
+        "thinkingTokens": 9819,
+        "cacheReadTokens": 1182190,
+        "cacheCreationTokens": 127457,
+        "usageSource": "result",
+        "turns": 33,
+        "servedModel": "claude-haiku-5-5",
+        "claudeCodeVersion": "2.1.296",
+        "endedBy": "success",
+        "exitCode": 0,
+        "mcp": [
+          "rw:connected"
+        ]
+      },
+      "rawNativeUsage": {
+        "input_tokens": 30,
+        "cache_creation_input_tokens": 127457,
+        "cache_read_input_tokens": 1182190,
+        "output_tokens": 18959,
+        "output_tokens_details": {
+          "thinking_tokens": 9819
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 127457
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "nativeModelUsage": {
+        "claude-haiku-5-5": {
+          "inputTokens": 30,
+          "outputTokens": 18959,
+          "cacheReadInputTokens": 1182190,
+          "cacheCreationInputTokens": 127457,
+          "webSearchRequests": 0,
+          "costUSD": 0.100891605,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 9819,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "automaticVerdict": "qualified",
+      "previous": {
+        "dir": "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-observations-candidate-5\\design-1",
+        "round": 1,
+        "outcomeSha256": "1d534eefa0dcc7f365684d4a9862c6b4bf517b7b6e65ee0ecd20807afe8c3357",
+        "reviewSha256": null,
+        "reviewStatus": null
+      },
+      "sealedFileCount": 89,
+      "apiErrorEvents": 0,
+      "humanVerdict": null,
+      "humanReviewMinutes": null,
+      "nativeApiRetryEvents": 0,
+      "completeFileSetMatchesDispatch": true,
+      "nativeApiRetries": []
+    }
+  ],
+  "totals": {
+    "wallMs": 1663899,
+    "inputTokens": 108,
+    "outputTokens": 107722,
+    "thinkingTokens": 68395,
+    "cacheReadTokens": 5684820,
+    "cacheCreationTokens": 344889
+  },
+  "thinkingTokensAreSubsetOfOutput": true,
+  "providerBilledCost": null,
+  "nativeCostIsListEstimateOnly": true,
+  "humanReviewMinutes": null,
+  "humanCorrectionMinutes": null,
+  "businessAcceptance": null,
+  "noThirdStage": true,
+  "extraStageRetries": 0
+}

@@ -1,0 +1,23 @@
+{
+  "format": "original38-english-resume-authorization/1",
+  "recordedAt": "2026-10-26T01:17:20.052Z",
+  "source": "human-user-message-in-this-task",
+  "rawText": "额度已恢复，继续按已核准的纯英文材料包执行候选5真实验收，完成后给我实际成果审核包；若再次遇到额度限制就停止并保留记录。",
+  "dispatchAuthorized": true,
+  "scope": "本英文correction-1；仅已核准最多一次真实缺陷接续，80轮/1小时，不再新建第三轮",
+  "bindingId": "sha256:e953de91cb519acf137bdf40c62f2ca7589e4b5634831130bab1a288b5e4dfe4",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "registrationSha256": "fd7ab021d43e4e6821b3dff7155be535259c9fd42c315b3b6054aeca736b54c0",
+  "independentReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-english-candidate5-offline-independent-review-20261025.md",
+    "sha256": "acc9ed6bff9cd12733a2ad551ac78cbc6d1a226224483e96a852e721a9503f0b"
+  },
+  "historicalStopRecordsPreserved": true,
+  "retryOnQuota": false,
+  "conditionalBasis": {
+    "feedbackFile": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/feedback.md",
+    "sha256": "46c88342cd55fa2b2111e19dfe21d2c90d60d2d77b339efa1a6b659bf82f1456",
+    "finding": "首轮第4箭头为gray-on-light，核准记录为white-on-black",
+    "reviewerRole": "agent-preparer diagnostic; not independent human verdict"
+  }
+}

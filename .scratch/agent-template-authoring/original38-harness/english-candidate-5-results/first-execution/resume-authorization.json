@@ -1,0 +1,17 @@
+{
+  "format": "original38-english-resume-authorization/1",
+  "recordedAt": "2026-10-26T00:45:08.693Z",
+  "source": "human-user-message-in-this-task",
+  "rawText": "额度已恢复，继续按已核准的纯英文材料包执行候选5真实验收，完成后给我实际成果审核包；若再次遇到额度限制就停止并保留记录。",
+  "dispatchAuthorized": true,
+  "scope": "本英文design-1；真实缺陷时最多一次同候选接续，各80轮/1小时；不派发原四或21或留出",
+  "bindingId": "sha256:ab7d3ddf3000a8d57fdbfb9fc2117711cfc633f4ccbfd7081b34808f256c8bec",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "registrationSha256": "fa522cae9344e1d81f185f68783e19408d27de0fdf56d1faf5ef1a6cd7e755df",
+  "independentReview": {
+    "file": "C:/Users/Administrator/.codex/visualizations/2026/10/23/01a167fb-6fcb-7771-8713-7be4f73bddf8/harness-english-candidate5-offline-independent-review-20261025.md",
+    "sha256": "acc9ed6bff9cd12733a2ad551ac78cbc6d1a226224483e96a852e721a9503f0b"
+  },
+  "historicalStopRecordsPreserved": true,
+  "retryOnQuota": false
+}

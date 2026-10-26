@@ -1,0 +1,18 @@
+{
+  "format": "original38-actual-defect/1",
+  "role": "agent-preparer-not-human-review",
+  "scope": "route-strip arrow-04 and transition",
+  "approvedFact": {
+    "file": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-preparation-02/measurement/route-and-marker-details.json",
+    "sha256": "c1b186e60f5d0eb8a451b29a9e9d2cab605dcbbaaaa77b65b8ea3e766d5d1fea",
+    "expectedAppearance": "white-on-black"
+  },
+  "actual": {
+    "file": "F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-design1-candidate-5/actual-request.png",
+    "sha256": "0b70a4a890ff41ec2aa15fc6c4742342e710b59c4b68f713229226328d93e7ef",
+    "observedAppearance": "gray-on-light"
+  },
+  "firstOutcomePreserved": true,
+  "notClaimedAsDefect": "time-legend匹配诊断；完整词组在实际图中分行显示",
+  "humanConclusion": null
+}

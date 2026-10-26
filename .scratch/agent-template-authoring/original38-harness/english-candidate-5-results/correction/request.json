@@ -1,0 +1,46 @@
+{
+  "format": "renderweave-stage-request/1",
+  "unit": "original38-en-tfl161/correction-1",
+  "materials": [
+    {
+      "file": "F:\\GenCode\\render-weave\\out\\harness-original38-english-tfl161-preparation-02\\input-manifest.json",
+      "sha256": "sha256:0ad8a0fa95054e4b0c9f647385f767b4951c14b140dbbb764c2c3d48ed8e2fb4"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-candidate-5/material-approval.json",
+      "sha256": "sha256:645899cfde24f2dc867b061afaec7338cabe9494dfd33ad6f805bf3baf987eb1"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/feedback.md",
+      "sha256": "sha256:46c88342cd55fa2b2111e19dfe21d2c90d60d2d77b339efa1a6b659bf82f1456"
+    },
+    {
+      "file": "F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-design1-candidate-5/source-proof.json",
+      "sha256": "sha256:cda824519356ff77861d5e01b8fed8308a4d1359cc5838bc9449cdb1dbc52919"
+    }
+  ],
+  "args": [
+    "--from",
+    "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/design-1",
+    "--feedback",
+    "F:/GenCode/render-weave/out/harness-original38-english-tfl161-correction-candidate-5/feedback.md",
+    "--model",
+    "claude-haiku-5-5",
+    "--small-model",
+    "claude-haiku-5-5",
+    "--endpoint",
+    "https://opencode.ai/inference/go/anthropic",
+    "--context-policy",
+    "full",
+    "--max-turns",
+    "80",
+    "--timeout-ms",
+    "3600000",
+    "--stagnation-threshold",
+    "2",
+    "--out",
+    "F:/GenCode/render-weave/out/harness-original38-english-tfl161-observations-candidate-5/correction-1",
+    "--claude",
+    "D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"
+  ]
+}
