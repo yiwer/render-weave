@@ -123,6 +123,14 @@ const reviewed=await api.readReview(copy,{persistArtifacts:false});
 if(!reviewed.view)throw new Error('公开审核无法读取：'+JSON.stringify(reviewed.problems));
 const previous=await api.readPreviousRound(copy);
 if(previous.checkpoint)throw new Error('恢复草稿另行登记，本包只取正式交回成果');
+let revisionRequirement=null;
+if(previous.record.task==='template-revision'){
+  const input=previous.record.inputs.requirement;
+  if(!input?.file||!input.sha256)throw new Error('修改成果缺少封存修改要求');
+  const bytes=await readFile(inside(copy,input.file));
+  if(hash(bytes)!==input.sha256)throw new Error('修改要求与封存身份不符');
+  revisionRequirement={file:'round-copy/'+input.file.split(sep).join('/'),sha256:input.sha256,text:bytes.toString('utf8')};
+}
 if(!previous.record.inputs.resourceSnapshot)throw new Error('缺固定资源，不能使用当前资源代替');
 const resourceRoot=inside(copy,previous.record.inputs.resourceSnapshot.directory);
 const workspace=await api.loadWorkspace({dir:join(copy,'snapshot'),resourcesDir:resourceRoot});
@@ -136,6 +144,10 @@ const result=await api.render(effective,request);
 // 对照图另用公开render生成；不把缓存缺失说成未渲染，也不修改实际请求的DPI。
 const comparisonRequest={...request,mode:'draft',output:{...request.output,dpi:120,format:'png'}};
 const comparison=await api.render(effective,comparisonRequest);
+// 修改前基准使用本轮固定 snapshot，而非参考照片或当前业务工作区。
+const beforeRevision=revisionRequirement?await api.render(workspace,request):null;
+if(beforeRevision?.image)await writeFile(join(out,'before-revision.png'),beforeRevision.image.bytes,{flag:'wx'});
+if(beforeRevision)await writeFile(join(out,'before-revision-render.json'),JSON.stringify({purpose:'修改前固定snapshot，核对非目标保持',request,problems:beforeRevision.problems,image:beforeRevision.image?{dpi:beforeRevision.image.dpi,widthPx:beforeRevision.image.widthPx,heightPx:beforeRevision.image.heightPx,sha256:hash(beforeRevision.image.bytes)}:null},null,2)+'\n',{flag:'wx'});
 const source=inside(copy,previous.record.inputs.sample.file);
 const sourceBytes=await readFile(source);
 const ext=sourceBytes[0]===255&&sourceBytes[1]===216?'.jpg':'.png';
@@ -156,17 +168,27 @@ for(let index=0;index<previous.candidates.length;index++){
   await writeFile(join(out,'effective-candidates',file),item.bytes,{flag:'wx'});
   effectiveFiles.push({source:item.path,file:'effective-candidates/'+file,sha256:hash(item.bytes)});
 }
-const scope=await readFile(resolve(values.scope),'utf8');
+const sourceScope=await readFile(resolve(values.scope),'utf8');
+let scope=sourceScope;
+if(revisionRequirement){
+  // 原库存的原图事实保留为单独来源；修改审核不能沿用与授权变化冲突的判据。
+  await writeFile(join(out,'source-scope.md'),sourceScope,{flag:'wx'});
+  scope='# 本轮模板修改审核范围\n\n修改要求优先于原图描述。以本页展示的封存修改要求为准；Z10、Z12检查授权变化，其他类别及这两类的非目标属性对照修改前固定snapshot保持不变。下表原图事实只供定位，不能覆盖本轮修改要求。\n\n'+sourceScope
+    .replace(/^\| Z10 \|.*$/m,'| Z10 | 地标圈号（本轮授权变化） | 以封存修改要求为准：地标紧接竖排站名最后一个字，成为最后一格；有地标与无地标各列的末格底边齐平 | 核对全部适用实例；地标内容、颜色和所属站等非目标属性对照修改前保持不变 |')
+    .replace(/^\| Z12 \|.*$/m,'| Z12 | 道路名称（本轮授权变化） | 以封存修改要求为准：道路名两端留白与字间距相同 | 核对全部15段；道路文字、颜色、分组等非目标属性对照修改前保持不变 |');
+}
 await writeFile(join(out,'scope.md'),scope,{flag:'wx'});
-const reviewItems=[...scope.matchAll(/^\| (Z\d{2}) \| ([^|]+) \|/gm)].map(match=>({id:match[1],label:match[2].trim(),decision:null,allApplicableInstancesReviewed:null,sourceLocation:null,resultLocation:null,evidence:null,comment:null}));
-const blank={allowedDecisions:['accept','issue','unknown','not-applicable'],format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:reviewItems,corrections:[],businessAcceptance:null};
+const reviewItems=[...scope.matchAll(/^\| (Z\d{2}) \| ([^|]+) \|/gm)].map(match=>({id:match[1],label:match[2].trim(),...(revisionRequirement?{reviewBasis:match[1]==='Z10'?'按封存修改要求：地标为竖排最后一格，各列末格底边齐平；内容、颜色、所属站等非目标属性与修改前保持不变。':match[1]==='Z12'?'按封存修改要求：道路名两端留白与字间距相同；文字、颜色、分组等非目标属性与修改前保持不变。':'非目标保持：与本轮修改前固定snapshot对照；原图仅供定位，完整修改要求优先。',requirementFile:revisionRequirement.file,requirementSha256:revisionRequirement.sha256}:{}),decision:null,allApplicableInstancesReviewed:null,sourceLocation:null,resultLocation:null,evidence:null,comment:null}));
+const blank={allowedDecisions:['accept','issue','unknown','not-applicable'],format:'original38-independent-review/1',status:'not-reviewed',scopeSha256:hash(Buffer.from(scope)),revisionRequirement,reviewer:null,startedAt:null,endedAt:null,activeMinutes:null,autoDiagnosticsSeenBeforeFirstJudgment:null,originalJudgment:null,items:reviewItems,corrections:[],businessAcceptance:null};
 await writeFile(join(out,'review-template.json'),JSON.stringify(blank,null,2)+'\n',{flag:'wx'});
 const esc=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 const html=['<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><title>原38独立比较</title>',
 '<style>body{font:16px/1.6 system-ui;margin:32px;max-width:1600px;color:#172b4d}img{width:100%;height:auto;border:1px solid #ddd}h2{margin-top:36px}pre{white-space:pre-wrap;background:#f4f6f8;padding:16px}a{color:#1458b0}</style>',
 '<h1>原38 · 独立原始质量比较</h1><p>本包未审核、未批准、未应用。先对照原图记录独立判断，再查看诊断。复制 review-template.json 填写审核记录；工时未计量时保留 null。</p>',
 '<p>实际请求：'+esc(JSON.stringify(request.output))+'；本包以公开读取入口取得的有效候选生成。模式：'+esc(request.mode||'final')+'。</p>',
+revisionRequirement?'<h2>本轮修改要求优先</h2><p>以下封存修改要求优先于原图与旧样式库存。Z10、Z12按授权变化核对，其他项以及两类中的非目标属性对照修改前基准保持不变。不要把要求改变的位置或间距判作偏离原图。</p><pre>'+esc(revisionRequirement.text)+'</pre><p><a href="'+esc(revisionRequirement.file)+'">查看本轮封存修改要求原文</a> · SHA256 '+revisionRequirement.sha256+'</p>':'',
 '<h2>原图</h2><img alt="原始参考图" src="source'+ext+'">',
+revisionRequirement?'<h2>修改前基准图</h2><p>本轮固定snapshot经公开render按同一实际请求出图，用来核对非目标保持；它不是原图，也不是新模型成果。</p>'+(beforeRevision?.image?'<img alt="修改前固定snapshot基准" src="before-revision.png">':'<p>修改前基准未出图；非目标保持存在证据缺口，不能自动判为接受。</p>'):'',
 '<h2>实际请求的出图</h2>',result.image?'<img alt="实际请求结果" src="actual-request.png">':'<p>本次实际请求没有出图；记录受阻，不能当成通过。</p>',
 '<h2>高分辨率对照预览</h2><p>用相同有效候选经公开render另画120 DPI草稿，只供人工放大对照；它不代表上述实际请求的正式交付。</p>',
 comparison.image?'<img alt="120 DPI对照草稿" src="comparison-preview.png">':'<p>无对照草稿图片；查看对应渲染记录。</p>',
@@ -181,7 +203,7 @@ if(JSON.stringify(before)!==JSON.stringify(await inventory(copy))||JSON.stringif
 await verifyRuntime();
 await verifyObservation();
 if(JSON.stringify(observationProof)!==originalObservationProof)throw new Error('源实验或尝试记录在打包期间改变');
-const manifest={observationProof,generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/2',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,sourceRoundFiles:before,sourceRoundDirectories:directoriesBefore,originalRoundUnchanged:true,copyUnchangedAfterPublicRead:true,publicReadOptions:{persistArtifacts:false},sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:comparison.image?{source:'separate-public-render',dpi:comparison.image.dpi,widthPx:comparison.image.widthPx,heightPx:comparison.image.heightPx}:null,layoutInventory:{nodes:instances.length,textNodes:instances.filter(item=>item.text).length},humanReview:null,files:await inventory(out)};
+const manifest={observationProof,generatorSha256:hash(generatorBytes),candidate,preflight:!!values.preflight,format:'original38-review-package/2',scope:'模板/修改成果独立比较；首页不显示模型自评，完整原件与公开诊断另存，未自动核准人审独立性',status:'prepared-not-reviewed',createdAt:new Date().toISOString(),runtime,rendererBuildId:await api.rendererBuildId(),round,revisionRequirement,sourceScopeSha256:hash(Buffer.from(sourceScope)),sourceRoundFiles:before,sourceRoundDirectories:directoriesBefore,originalRoundUnchanged:true,copyUnchangedAfterPublicRead:true,publicReadOptions:{persistArtifacts:false},sourceImageSha256:hash(await readFile(source)),outcomeSha256:previous.outcomeSha256,reviewSha256:previous.reviewSha256,contentIdentity:reviewed.view.contentIdentity??null,effectiveFiles,request,actualImage:result.image?{dpi:result.image.dpi,widthPx:result.image.widthPx,heightPx:result.image.heightPx}:null,previewImage:comparison.image?{source:'separate-public-render',dpi:comparison.image.dpi,widthPx:comparison.image.widthPx,heightPx:comparison.image.heightPx}:null,layoutInventory:{nodes:instances.length,textNodes:instances.filter(item=>item.text).length},humanReview:null,files:await inventory(out)};
 await writeFile(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({out,originalRoundUnchanged:true,effectiveCandidates:effectiveFiles.length,actualImage:manifest.actualImage,previewImage:manifest.previewImage,reviewStatus:blank.status}));
 
