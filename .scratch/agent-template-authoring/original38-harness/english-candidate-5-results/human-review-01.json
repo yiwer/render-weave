@@ -1,0 +1,17 @@
+{
+  "format": "original38-english-human-review-response/1",
+  "recordedAt": "2026-10-26T01:48:54.845Z",
+  "reviewer": "本会话用户（已指定独立审核者）",
+  "source": "用户对审核记录问题的直接回复",
+  "verbatimResponse": "确认接受",
+  "candidateId": "sha256:187d36a38bd24950511931a548e67f911cbe87de49e03aaf813a05d174a06526",
+  "package": "F:/GenCode/render-weave/out/harness-original38-review/en-tfl161-correction1-candidate-5",
+  "packageManifestSha256": "154dde04271dd0dc0d2427ffcfef2cfb8c45abe67df1fdb45cdc8d8cecc41b14",
+  "correctedActualImageSha256": "0f0610d1b0c3b2b8afefefc5b4680220e08dc3432d1f47ccd5db6778d5c60703",
+  "overallAcceptance": "accepted",
+  "itemConclusions": null,
+  "reviewMinutes": null,
+  "correctionMinutes": null,
+  "diagnosticsSeenBeforeReview": null,
+  "scope": "仅记录明确表达的总体接受；未提供39项明细、分钟及诊断预看情况，不推断为全部分项通过或完整人审关闭；原始审核包与空表保持不变，未执行agent approve/apply。"
+}
