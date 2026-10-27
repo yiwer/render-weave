@@ -10,6 +10,8 @@ import {repoRoot} from './support/fixtures.js';
 import {runAgentTask,changeReview,applyAgentRound} from '../src/index.js';
 
 let root:string;
+/** 冻结要复制实际安装的整个 node_modules（含 @anthropic-ai/sdk），Windows 上单次约 60–70 秒；用例里还有派发与重检，留足余量。 */
+const FREEZE_TIMEOUT_MS=240_000;
 beforeAll(async()=>{root=await mkdtemp(join(tmpdir(),'rw-candidate-freeze-'));});
 afterAll(async()=>{await rm(root,{recursive:true,force:true,maxRetries:10,retryDelay:100});});
 function execute(args:string[],cwd=repoRoot){
@@ -56,7 +58,7 @@ it('宿主真实强退后没有round.json的完整检查点仍能绑定并通过
   const resumed=await stage(['--dispatch',binding,'--key-env','RW_FREEZE_KEY']);expect(resumed.code,resumed.stderr).toBe(1);
   expect(JSON.parse(await readFile(join(out,'round.json'),'utf8')).inputs.previous.checkpoint.source).toBe('hostRecovery');
   expect(await readFile(join(out,'agent/candidates/schema.json'),'utf8')).toBe(bytes);
-},120000);
+},FREEZE_TIMEOUT_MS);
 it('直接数据集阶段绑定人工应用后的工作区，变化在单次派发前拒绝且不自动审核或应用',async()=>{
   const candidate=join(root,'stage-candidate'),binding=join(root,'stage-binding'),workspace=join(root,'stage-workspace');
   const request=join(root,'stage-request.json'),approval=join(root,'approval.json'),out=join(root,'stage-round');
@@ -102,7 +104,7 @@ it('直接数据集阶段绑定人工应用后的工作区，变化在单次派�
   const target=join(root,'external-schema.json');await rename(file,target);await symlink(target,file,'file');
   const linked=await stage(['--bind',candidate,'--request',request,'--out',join(root,'linked-stage')]);
   expect(linked.code).toBe(2);expect(linked.stderr).toContain('链接');
-},120000);
+},FREEZE_TIMEOUT_MS);
 it('候选内容目录不能换成指向工作目录的链接，即使当前字节相同也拒绝',async()=>{
   const candidate=join(root,'linked-candidate');
   expect((await freeze(['--out',candidate])).code).toBe(0);
@@ -127,7 +129,7 @@ it('冻结实际构建、资料、合同和依赖字节，包内 CLI 可独立�
   const again=await freeze(['--out',out]);
   expect(again.code).not.toBe(0);
   expect(JSON.parse(await readFile(join(out,'candidate.json'),'utf8')).id).toBe(manifest.id);
-});
+},FREEZE_TIMEOUT_MS);
 it('工作目录重新构建或修改资料不会改变已冻结包，当前内容不匹配时列出差异',async()=>{
   const working=join(root,'working-copy'),out=join(root,'unchanging-package');
   expect((await freeze(['--out',working])).code).toBe(0);
@@ -149,7 +151,7 @@ it('工作目录重新构建或修改资料不会改变已冻结包，当前内�
   expect(changed.stderr).toContain(source);
   expect(changed.stderr).toContain(build);
   expect(changed.stderr).toContain(page);
-},120000);
+},FREEZE_TIMEOUT_MS);
 it('冻结后修改资料产生新候选身份，并从旧计划明确列出必须重验的全部单元',async()=>{
   const working=join(root,'revision-working'),old=join(root,'revision-old'),next=join(root,'revision-next');
   const configFile=join(root,'revision-config.json'),executor=join(root,'revision-version.mjs');
@@ -175,7 +177,7 @@ it('冻结后修改资料产生新候选身份，并从旧计划明确列出必�
   expect(result.revalidation.changed).toContain('candidate.files.agent/reference/outcome.md');
   expect(result.revalidation.units).toEqual([{scenario:'m402-definition',repetition:1,stage:'definition'},{scenario:'m402-definition',repetition:2,stage:'definition'}]);
   expect(await readFile(join(old,'candidate.json'),'utf8')).toBe(before);
-},120000);
+},FREEZE_TIMEOUT_MS);
 it('同一共同候选分别绑定不同计划，原始评分配置另存而不锁死校准输入',async()=>{
   const candidate=join(root,'shared-candidate'),executor=join(root,'version-only.mjs');
   await writeFile(executor,"if(process.argv.includes('--version'))console.log('binding-only/1');else throw new Error('不得调用模型');");
@@ -198,7 +200,7 @@ it('同一共同候选分别绑定不同计划，原始评分配置另存而不�
   expect(bindings[0].identity.inputs['m402-definition/sample']).toMatch(/^sha256:/);
   expect(bindings[1].identity.inputs['m402-template/sample']).toMatch(/^sha256:/);
   expect(bindings[1].identity.inputs['m402-definition/sample']).toBeUndefined();
-},120000);
+},FREEZE_TIMEOUT_MS);
 it('计划绑定同一候选后实际派发，改变计划输入在模型启动前拒绝且不改旧记录',async()=>{
   const candidate=join(root,'dispatch-candidate'),binding=join(root,'binding'),configFile=join(root,'config.json');
   const ledger=join(root,'dispatches.txt'),executor=join(root,'executor.mjs');
@@ -237,7 +239,7 @@ if(process.argv.includes('--version'))console.log('candidate-test-executor/1');e
   const linked=await run('linked-resource');
   expect(linked.code).toBe(2);expect(linked.stderr).toContain('绑定资源');
   expect(await readFile(ledger,'utf8')).toBe('dispatch\n');
-},120000);
+},FREEZE_TIMEOUT_MS);
 
 it('冻结包独立提供公开审核页，页面字节纳入身份且改动拒绝验证',async()=>{
   const out=join(root,'review-page-package');
@@ -254,4 +256,4 @@ it('冻结包独立提供公开审核页，页面字节纳入身份且改动拒�
   await writeFile(join(cwd,'web/review.html'),'审核页已变动');
   const changed=await freeze(['--verify',out]);
   expect(changed.code).toBe(2);expect(changed.stderr).toContain('web/review.html');
-},120000);
+},FREEZE_TIMEOUT_MS);
