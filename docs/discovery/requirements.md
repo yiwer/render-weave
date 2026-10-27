@@ -903,3 +903,20 @@ M307补记（2026-10-23）：用户查看混合站牌局部对照后评价“这
 用户决定采用，原话："采用：把这次门槛的 366 失败归因于看图误差，记为决定，把资料改动、两份报告和记录一起提交到 main。" 依据：改动只讲模板里文字元素的排法，出错的是数据集提取看图认地标；其余三个场景 6 次全部达线，各项与以往持平。
 
 本决定只对这一次门槛结论放宽，不改变"任何有效失败都使门槛为 fail""以后成功不能替换已有失败"的评估规则；那份门槛报告的正式结论仍是未通过，原件不改。若 366 的地标误报在后续评估里再次出现，按真实缺陷排查，不再沿用本次的归因。
+
+### M340：产品中的业务 Agent 用 Tool Runner 驱动，不依赖 Claude Code（2026-10-26）
+
+用户要把项目做成 SaaS 加桌面端，不希望再依赖本地无头 Claude Code，问能否用 Claude 的 SDK 实现。
+
+- **研究**（[平台化研究](../research/2026-10-26-platform-architecture.md)）：Agent SDK 为每个 session 启动一个 `claude` 子进程，运行时仍是 Claude Code；Managed Agents 只接 Anthropic 的模型与 key；Client SDK 的 Tool Runner 在自己的进程里驱动循环，工具全由自己定义。
+- **原型**（[Tool Runner 执行器原型](../agent-eval/tool-runner-prototype.md)）：同一构建、Haiku 5.5，修好读图缩放后，M230 四个场景与 Claude Code 执行器各 2/2 达线；四个场景合计用时多 4%，输出 token 少 12%。
+
+用户决定，原话："OK 产品形态先定下来使用tool runner"。
+
+- 产品中的业务 Agent 由 RenderWeave 在服务端进程内用 Tool Runner 驱动；不用无头 Claude Code、Agent SDK 或 Managed Agents。
+- 工具全由 RenderWeave 定义，不提供命令行、通用代码执行、联网与本机环境操作，需要的能力做成领域工具。
+- 桌面端与网页只订阅事件流，展示轮次的执行过程，不运行循环、不持模型 key。
+- 本机 `agent run` 的缺省执行器暂时仍是 Claude Code：Tool Runner 在一次评估里跑满四个场景并通过门槛后，再改缺省。
+- 难以逆转，另写 [ADR-0027](../adr/0027-agent-loop-driven-in-process-by-tool-runner.md)，取代 ADR-0015 的执行方式。
+
+切换条件：正式门槛在 Tool Runner 上没过、在 Claude Code 上过了，且差距能归到 Claude Code 的外壳时，改用 Agent SDK，每轮在一个隔离容器里运行。生产模型渠道、托管前的威胁建模复核另行决定。

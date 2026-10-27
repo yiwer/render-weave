@@ -238,10 +238,10 @@ _Avoid_: 引擎版本
 面向数据定义提取、数据集提取、模板辅助设计或模板辅助修改的委托任务。执行 agent 通过 MCP 服务使用 RenderWeave 的渲染等能力。
 
 **MCP 服务（RenderWeave MCP Server）**：
-RenderWeave 为执行 agent 提供工具的 MCP 服务器，只有读取、校验、草稿预览、识别四类只读工具；agent 以 Claude Code 无头运行，经 MCP 连接本服务（ADR-0015）。
+RenderWeave 为执行 agent 提供工具的 MCP 服务器，只有读取、校验、草稿预览、识别四类只读工具；执行器经 MCP 连接本服务（ADR-0015、ADR-0027）。
 
 **任务轮次（Task Round）**：
-业务 Agent 任务中的一次执行，即一次 Claude Code 无头运行（ADR-0015）；输入为素材、上一轮成果与反馈。
+业务 Agent 任务中的一次执行，即执行器从发起到交回成果的一次 Agent 循环。执行器有两种：Claude Code 无头运行（ADR-0015，本机缺省）和进程内的 Tool Runner（ADR-0027，产品采用）。输入为素材、上一轮成果与反馈。
 _Avoid_: 会话、Attempt
 
 **素材（Source Material）**：

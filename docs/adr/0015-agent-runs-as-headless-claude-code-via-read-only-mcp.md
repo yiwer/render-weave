@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0027
 ---
 
 # 业务 Agent 以 Claude Code 无头运行，经兼容端点调用可替换模型，经只读 MCP 使用能力
@@ -40,3 +40,11 @@ v1.0 的服务端不托管业务 Agent，代建仍在团队机器上用 `renderw
 ## 修订（2026-10-21，ADR-0022）
 
 用户确认“人能做的 Agent 同样能做”。Agent 与人类共用同一套代建 API，按角色授权；Agent 可以直接发布静态数据定义与模板修订，不再强制经人工批准的提案写入。读取、校验、预览仍走 MCP，MCP 合同增加与端点一一对应的写工具，只对服务签发的 Agent 令牌开放，开发者只读会话不变。上文“只读 MCP、成果经人审核”的写入边界由 [ADR-0022](0022-agent-human-capability-parity.md) 取代；每轮独立容器、模型可替换、成果先校验再应用不变。
+
+## 修订（2026-10-26，ADR-0027）
+
+产品中的业务 Agent 改由 RenderWeave 在进程内用 Anthropic Client SDK 的 Tool Runner 驱动，不再依赖 Claude Code（M340，[ADR-0027](0027-agent-loop-driven-in-process-by-tool-runner.md)）。
+
+- 本 ADR 的执行方式（每轮一次受限的 `claude -p`）由 ADR-0027 取代。
+- 过渡期内，本机 `renderweave agent run` 的缺省执行器仍是 Claude Code；Tool Runner 执行器在一次评估里跑满四个场景并通过门槛后，再改缺省。
+- 上文"尚未验证"中的"云上每轮一个独立容器"不再是前提，改为托管前做威胁建模复核（见 ADR-0027）。
