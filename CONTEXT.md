@@ -57,7 +57,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 依据：[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在 M230 四个场景上与 Claude Code 执行器各 2/2 达线。
   - 下一步：在空闲机器上用一次评估跑满四个场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。
   - 托管给客户前：威胁建模复核、生产模型渠道、评估身份按执行器区分（见 ADR-0027）。
-- **下一步**：阶段 5（客户自助做模板）按 5.0、5.1 拆票（[路线图](docs/roadmap.md)，ADR-0022、M297–M299）。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
+- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - [第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）已在阶段 4 落实；不受信任的记录按 PRD 不接收。
 
 ## 已实现能力
@@ -150,6 +150,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
 | [.scratch/agent-template-authoring/](.scratch/agent-template-authoring/README.md) | 第三阶段 PRD（Agent 代建模板的本地闭环，v0.3）与 9 张票据 |
 | [.scratch/template-design-eval/](.scratch/template-design-eval/README.md) | 模板设计评估集的规格与 5 张票据 |
+| [.scratch/authoring-api-and-pages/](.scratch/authoring-api-and-pages/README.md) | 阶段 5.0 P1 PRD（代建接口与人类页面）与 13 张票据 |
 
 ## 关键决定摘要
 
