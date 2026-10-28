@@ -7,10 +7,11 @@ import { spawnSync } from 'node:child_process';
 import { capture, ensureEnv, root, run, up } from './docker.mjs';
 
 const keep = process.argv.includes('--keep');
-// worker 用极小的单项超时、内存上限与换新项数，稳定触发超时、内存超限与子进程换新（票据 06）。
-// 一般的预览远在这些值之内；1 亿像素的草稿在内存上限内放不下，6000 项的压力牌要好几秒但内存不多。
+// worker 用小的单项超时、内存上限与换新项数，稳定触发超时、内存超限与子进程换新（票据 06）。
+// 单项超时照 M302 的规则取（M349）：测试里最慢的正常一项是换新后第一项的 M402 与问候牌的重放，本机约 2 秒，不到 8 秒的三分之一；
+// 16,000 项的压力牌要 17 秒左右，8 秒时内存约 340 MB，稳定超时而不是内存超限。1 亿像素的草稿在 512 MB 内放不下。
 // 停止时 worker 排空本构建排队的批次项（票据 07）；测试结束时队列已空，宽限给 60 秒就够。
-Object.assign(process.env, { RW_RENDER_TIMEOUT_MS: '1500', RW_WORKER_MEMORY: '512m', RW_RENDER_RECYCLE_AFTER: '5', RW_WORKER_STOP_GRACE: '60s' });
+Object.assign(process.env, { RW_RENDER_TIMEOUT_MS: '8000', RW_WORKER_MEMORY: '512m', RW_RENDER_RECYCLE_AFTER: '5', RW_WORKER_STOP_GRACE: '60s' });
 // 接口进程投递 webhook 给 tester 容器里的接收端（票据 11）：放开内网地址，退避与超时缩短，与用例的 TEST_WEBHOOK_CONFIG 一致。
 Object.assign(process.env, { RW_WEBHOOK_ALLOW_PRIVATE: 'true', RW_WEBHOOK_POLL_MS: '20', RW_WEBHOOK_RETRY_BASE_MS: '150', RW_WEBHOOK_MAX_ATTEMPTS: '4', RW_WEBHOOK_TIMEOUT_MS: '600' });
 ensureEnv();

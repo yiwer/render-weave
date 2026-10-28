@@ -57,7 +57,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 依据：[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在 M230 四个场景上与 Claude Code 执行器各 2/2 达线。
   - 下一步：在空闲机器上用一次评估跑满四个场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。
   - 托管给客户前：威胁建模复核、生产模型渠道、评估身份按执行器区分（见 ADR-0027）。
-- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。票据 01 已完成：控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架（[票据](.scratch/authoring-api-and-pages/issues/01-console-new-frame.md)），12 不再受阻；本机 Docker 后端测试有 4 条在 main 上同样会失败：渲染子进程每 5 次换新后冷启动约 3 秒，超过测试的 1.5 秒单项超时，M402 主路径及其连锁、"两个构建"重放随之失败；是否撞上取决于换新落在哪一项，见票据 01 的验收记录。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
+- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。票据 01 已完成：控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架（[票据](.scratch/authoring-api-and-pages/issues/01-console-new-frame.md)），12 不再受阻；本机 Docker 后端测试原有 4 条随运气失败（测试的 1.5 秒单项超时短于换新后冷启动的 M402 与问候牌的重放），测试的单项超时已改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - [第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）已在阶段 4 落实；不受信任的记录按 PRD 不接收。
 
 ## 已实现能力
