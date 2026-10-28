@@ -168,7 +168,8 @@ export function describePreview(name: string, makeBackend: () => Promise<Service
       it('单项超时：调度进程结束子进程，本项失败并写明超时；worker 自动恢复，后续预览照常', async () => {
         const { b } = world;
         const before = await stats();
-        const reply = await preview(b.operator.token, stressRequest(6000));
+        // 16,000 项的压力牌在 worker 里约 17 秒，是 test-docker.mjs 设的 8 秒的两倍多；到 8 秒时内存约 340 MB，在 512 MB 内（M349）。
+        const reply = await preview(b.operator.token, stressRequest(16_000));
         expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
         expect(reply.body.image).toBeUndefined();
         expect(reply.body.problems).toEqual([expect.objectContaining({ code: 'worker.timeout', message: expect.stringContaining(`${timeoutMs}`) })]);
