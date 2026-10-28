@@ -3,6 +3,7 @@
  * 登录、看模板、调参数、填表、预览、出图、下载；每一步的结果再经开放 API 核对，不看控制台的内部状态。
  * 界面按原型方案一（M282）：首页是数据集，编辑页左表单、右草稿预览，出图在侧栏里进行。
  * 票据 14 另有出图记录、用量、资源与管理页（M300、M301）：客户管理员在另一个浏览器上下文里登录，操作员与管理员各看各的。
+ * P1 票据 01 换成标题栏模块下拉与状态栏的新框架：换页走模块下拉（nav），既有用例只改了选择器；新框架另有三条用例。
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
  */
@@ -137,7 +138,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await opened.getByRole('heading', { name: '数据集', level: 1 }).waitFor();
       return (admin = opened);
     };
-    const nav = (target: Page, name: string) => target.getByRole('navigation', { name: '主导航' }).getByRole('link', { name, exact: true });
+    /** 标题栏的模块下拉（P1 票据 01）：点开后找名为 name 的模块。 */
+    const nav = async (target: Page, name: string) => {
+      await target.getByRole('button', { name: '切换模块' }).click();
+      return target.getByRole('menu', { name: '模块' }).getByRole('menuitem', { name, exact: true });
+    };
     const downloadBytes = async (target: Page, click: () => Promise<void>) => {
       const download = target.waitForEvent('download');
       await click();
@@ -156,7 +161,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const { images } = (await adminApi('GET', '/v1/usage')).body as { images: { limit: number; remaining: number } };
       await expect.poll(() => page.getByTestId('quota').textContent()).toBe(`本月剩余 ${images.remaining.toLocaleString('zh-CN')} / ${images.limit.toLocaleString('zh-CN')} 张`);
 
-      await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '模板' }).click();
+      await (await nav(page, '模板')).click();
       const card = page.getByRole('article', { name: `模板 ${BADGE}` });
       await expect.poll(() => card.textContent()).toContain('90–100 × 130–140 mm');
       expect(await card.textContent()).toContain('会议胸牌（胸牌 v1）');
@@ -354,7 +359,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         data: { ...(await datasetJson('badge-e2e-1')).data, fullName: LONG_NAME },
       });
       expect(long.status, long.raw.slice(0, 300)).toBe(201);
-      await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '数据集' }).click();
+      await (await nav(page, '数据集')).click();
       await page.getByLabel('选择 长姓名').check();
       await page.getByLabel('选择 E2E 胸牌', { exact: true }).check();
       await page.getByRole('link', { name: '出图（2 份）' }).click();
@@ -432,6 +437,27 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await tileStatuses()).toEqual(view.items.map((item: { status: string }) => item.status));
     }, 240_000);
 
+    it.skipIf(options.inProcessWorker ?? false)('状态栏（P1 票据 01）：本标签页进行中的批次数，点开是那一批；取消结束后不再算', async () => {
+      // 上一个用例建的二十份压力细牌：出一批要画一阵，提交后状态栏先看到它在进行。
+      const stress = Array.from({ length: 20 }, (_, i) => `stress-${i + 1}`);
+      const running = page.getByRole('contentinfo', { name: '状态栏' }).getByTestId('running-batches');
+      await expect.poll(() => running.textContent(), { timeout: 15_000 }).toBe('没有进行中的批次');
+      await page.goto(`${baseUrl}/console/#/deliver?datasets=${stress.join(',')}`);
+      const stressSheet = page.getByRole('dialog', { name: '20 份数据集' });
+      await stressSheet.getByLabel('宽（mm）').fill('200');
+      await stressSheet.getByLabel('高（mm）').fill('2000');
+      await stressSheet.getByRole('button', { name: '提交 20 张' }).click();
+      await page.getByRole('button', { name: '取消批次' }).waitFor();
+      const id = /batches\/([0-9a-f-]{36})/.exec(page.url())![1]!;
+      await expect.poll(() => running.textContent()).toBe('进行中的批次 1');
+      expect(await running.getAttribute('href')).toBe(`#/batches/${id}`);
+      await page.getByRole('button', { name: '取消批次' }).click();
+      await page.getByRole('button', { name: '确认取消' }).click();
+      expect(await batchFinished()).toBe(id);
+      await expect.poll(() => running.textContent(), { timeout: 15_000 }).toBe('没有进行中的批次');
+      expect((await api('GET', `/v1/batches/${id}`)).body).toMatchObject({ status: 'finished', cancelRequested: true });
+    }, 240_000);
+
     it('出图记录（票据 14）：按时间、模板与批次查询；下载图片；按项与按批次导出，导出包与开放 API 的相同', async () => {
       type Entry = { batchId: string; index: number; id: string; template: string; deliveredAt: string };
       const key = (entry: Entry) => `${entry.batchId}#${entry.index}`;
@@ -442,7 +468,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(route).toHaveLength(6);
       const batchId = route[0]!.batchId;
 
-      await nav(page, '出图记录').click();
+      await (await nav(page, '出图')).click();
       await page.getByRole('heading', { name: '出图记录', level: 1 }).waitFor();
       // 不筛选：与开放 API 的第一页相同，按登记时间倒序。
       await expect.poll(shown).toEqual(all.map(key));
@@ -522,7 +548,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const listen = (request: { url(): string }) => { requested.push(new URL(request.url()).pathname); };
       page.on('request', listen);
 
-      await nav(page, '用量').click();
+      await (await nav(page, '用量')).click();
       await page.getByRole('heading', { name: '用量', level: 1 }).waitFor();
       await expect.poll(() => numbers(page)).toEqual(expected);
       await page.getByRole('heading', { name: `${year} 年 ${Number(month)} 月` }).waitFor();
@@ -534,7 +560,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(requested).not.toContain('/v1/usage/events');
 
       const adminPage = await asAdmin();
-      await nav(adminPage, '用量').click();
+      await (await nav(adminPage, '用量')).click();
       await expect.poll(() => numbers(adminPage)).toEqual(expected);
       const events = (await adminApi('GET', '/v1/usage/events?limit=50')).body.events as { id: string; kind: string; batchId?: string; index?: number }[];
       expect(events.length).toBeGreaterThan(0);
@@ -560,7 +586,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     it('管理员页面（票据 14）：成员与角色；API 密钥只在创建时显示一次、可吊销；webhook 的注册与投递记录；审计日志与开放 API 相同', async () => {
       const adminPage = await asAdmin();
       const other = await world.member(world.b.id, 'operator');
-      await nav(adminPage, '管理').click();
+      await (await nav(adminPage, '管理')).click();
       await adminPage.getByRole('heading', { name: '管理', level: 1 }).waitFor();
       const status = (text: string) => adminPage.getByRole('status').filter({ hasText: text });
 
@@ -678,7 +704,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
     it('资源（票据 14）：操作员上传新资源、没有替换入口；客户管理员替换前看到影响检查的结果，确认后才应用，旧版本保留', async () => {
       const resource = async (id: string) => (await api('GET', `/v1/resources/${id}`)).body as { currentVersion: number; versions: unknown[] };
-      await nav(page, '资源').click();
+      await (await nav(page, '资源')).click();
       await page.getByRole('heading', { name: '资源', level: 1 }).waitFor();
       const ids = ((await api('GET', '/v1/resources')).body.resources as { id: string }[]).map((entry) => entry.id);
       await expect.poll(() => page.getByTestId('resource-row').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-id')))).toEqual(ids);
@@ -695,7 +721,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 替换 landmark-2（M402 数据集的几处地标）：先检查影响；没确认前资源不变。
       const adminPage = await asAdmin();
-      await nav(adminPage, '资源').click();
+      await (await nav(adminPage, '资源')).click();
       const before = await resource('landmark-2'), old = (await api('GET', '/v1/resources/landmark-2/versions/1/content')).bytes;
       await adminPage.getByRole('button', { name: '替换 landmark-2' }).click();
       const sheet = adminPage.getByRole('dialog', { name: '替换 landmark-2' });
@@ -721,7 +747,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     });
 
     it('操作员看不到管理员页面（票据 14）：导航里没有"管理"，直接打开只看到说明；直接调用对应接口被拒绝', async () => {
-      expect(await nav(page, '管理').count()).toBe(0);
+      expect(await (await nav(page, '管理')).count()).toBe(0);
       const requested: string[] = [];
       page.on('request', (request) => requested.push(new URL(request.url()).pathname));
       for (const tab of ['members', 'api-keys', 'webhooks', 'audit']) {
@@ -746,6 +772,147 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(check.status).toBe(403);
       expect(((await adminApi('GET', '/v1/members')).body.members as { id: string }[]).find((entry) => entry.id === world.b.admin.id)).toMatchObject({ role: 'admin', active: true });
     });
+
+    it('新框架（P1 票据 01）：模块下拉按角色只列能进的模块，Ctrl+数字切换；Ctrl+K 只列模块与常用动作；状态栏；旧链接照旧能打开', async () => {
+      const MEMBER = ['数据定义', '模板', '数据集', '出图', '资源', '用量'];
+      const switcher = (target: Page) => target.getByRole('button', { name: '切换模块' });
+      /** 模块下拉里的模块与快捷键，如"数据定义 Control+1"；读完按 Esc 关掉。 */
+      const listed = async (target: Page) => {
+        await switcher(target).click();
+        await target.getByRole('menu', { name: '模块' }).waitFor();
+        const items = await target.getByRole('menu', { name: '模块' }).getByRole('menuitem')
+          .evaluateAll((entries) => entries.map((entry) => `${entry.querySelector('.menu-label')!.textContent} ${entry.getAttribute('aria-keyshortcuts')}`));
+        await target.keyboard.press('Escape');
+        expect(await target.getByRole('menu').count()).toBe(0);
+        return items;
+      };
+      await page.goto(`${baseUrl}/console/#/datasets`);
+      await page.getByRole('heading', { name: '数据集', level: 1 }).waitFor();
+      expect(await listed(page)).toEqual(MEMBER.map((name, index) => `${name} Control+${index + 1}`));
+      const adminPage = await asAdmin();
+      expect(await listed(adminPage)).toEqual([...MEMBER, '管理'].map((name, index) => `${name} Control+${index + 1}`));
+
+      // Ctrl+数字切换模块；数据定义先只读列出已发布的静态数据定义，与开放 API 相同。
+      await page.keyboard.press('Control+1');
+      await page.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
+      expect(hashOf()).toBe('#/definitions');
+      const schemas = (await api('GET', '/v1/static-schemas')).body.staticSchemas as { name: string }[];
+      await expect.poll(() => page.getByTestId('definition-row').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-name'))))
+        .toEqual([...new Set(schemas.map((schema) => schema.name))]);
+      await adminPage.keyboard.press('Control+7');
+      await adminPage.getByRole('heading', { name: '管理', level: 1 }).waitFor();
+      // 出图模块：出图记录与批次两页；批次是本标签页提交过的，状态与已交付张数与开放 API 相同。
+      await page.keyboard.press('Control+4');
+      await page.getByRole('heading', { name: '出图记录', level: 1 }).waitFor();
+      expect(hashOf()).toBe('#/records');
+      await page.getByRole('navigation', { name: '出图' }).getByRole('link', { name: '批次' }).click();
+      await page.getByRole('heading', { name: '批次', level: 1 }).waitFor();
+      const rows = page.getByTestId('batch-row');
+      await expect.poll(() => rows.count()).toBeGreaterThanOrEqual(3);
+      const ids = await rows.evaluateAll((items) => items.map((item) => item.getAttribute('data-id')!));
+      for (const id of ids) {
+        const view = (await api('GET', `/v1/batches/${id}`)).body as { status: string; summary: { delivered: number }; progress: { total: number } };
+        expect(view.status).toBe('finished');
+        await expect.poll(() => rows.and(page.locator(`[data-id="${id}"]`)).textContent()).toContain(`${view.summary.delivered} / ${view.progress.total}`);
+      }
+
+      // Ctrl+K：只列模块与常用动作，按角色；输入几个字筛选，回车打开，焦点落在要做的那一步上；不搜数据集与模板。
+      const commands = (target: Page) => target.getByRole('dialog', { name: '模块与动作' });
+      const options = (target: Page) => commands(target).getByRole('option').evaluateAll((items) => items.map((item) => item.querySelector('span')!.textContent));
+      await page.keyboard.press('Control+k');
+      await commands(page).waitFor();
+      expect(await options(page)).toEqual([...MEMBER, '新建数据集', '从 Excel 导入', '上传资源']);
+      await commands(page).getByRole('combobox').fill('M402');
+      expect(await options(page)).toEqual([]);
+      await commands(page).getByText('这里不搜数据集与模板').waitFor();
+      await commands(page).getByRole('combobox').fill('上传');
+      expect(await options(page)).toEqual(['上传资源']);
+      await page.keyboard.press('Enter');
+      await page.getByRole('heading', { name: '资源', level: 1 }).waitFor();
+      expect(hashOf()).toBe('#/resources');
+      await expect.poll(() => page.evaluate('document.activeElement && document.activeElement.id')).toBe('upload-kind');
+      await page.keyboard.press('Control+k');
+      await commands(page).waitFor();
+      await page.keyboard.press('Escape');
+      expect(await commands(page).count()).toBe(0);
+      await adminPage.keyboard.press('Control+k');
+      await commands(adminPage).waitFor();
+      expect(await options(adminPage)).toEqual([...MEMBER, '管理', '新建数据集', '从 Excel 导入', '上传资源', '管理成员', '创建 API 密钥', '查看审计日志']);
+      await adminPage.keyboard.press('Escape');
+
+      // 状态栏：连接、当前租户、本月剩余与进行中的批次，与开放 API 相同；左栏留给 Agent，现在不显示。
+      const bar = page.getByRole('contentinfo', { name: '状态栏' });
+      const tenant = (await api('GET', '/v1/tenant')).body as { name: string };
+      const { images } = (await adminApi('GET', '/v1/usage')).body as { images: { limit: number; remaining: number } };
+      expect(await bar.getByTestId('connection').textContent()).toBe('已连接');
+      expect(await bar.getByTestId('tenant').textContent()).toBe(tenant.name);
+      await expect.poll(() => bar.getByTestId('quota').textContent()).toBe(`本月剩余 ${images.remaining.toLocaleString('zh-CN')} / ${images.limit.toLocaleString('zh-CN')} 张`);
+      await expect.poll(() => bar.getByTestId('running-batches').textContent(), { timeout: 15_000 }).toBe('没有进行中的批次');
+      expect(await page.getByRole('complementary', { name: 'Agent 对话' }).count()).toBe(0);
+
+      // 旧链接照旧能打开，模块下拉显示它所属的模块。
+      for (const [link, module, shown] of [
+        ['#/import', '数据集', () => page.getByRole('dialog').waitFor()],
+        [`#/datasets/${M402}`, '数据集', () => page.getByRole('heading', { name: 'M402 开往万国城总站', level: 1 }).waitFor()],
+        [`#/batches/${ids[0]}`, '出图', () => page.getByTestId('batch-status').waitFor()],
+        [`#/records?batch=${ids[0]}`, '出图', () => expect.poll(() => page.getByRole('search', { name: '筛选出图记录' }).getByLabel('批次 ID').inputValue()).toBe(ids[0])],
+        [`#/templates/${enc(BADGE)}`, '模板', () => page.getByRole('heading', { name: BADGE, level: 1 }).waitFor()],
+        ['#/usage', '用量', () => page.getByTestId('usage-limit').waitFor()],
+      ] as [string, string, () => Promise<unknown>][]) {
+        await page.goto(`${baseUrl}/console/${link}`);
+        await shown();
+        expect(await switcher(page).getAttribute('aria-label'), link).toBe(`切换模块，当前为${module}`);
+      }
+    }, 120_000);
+
+    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，调和橙不承载文字', async () => {
+      const luminance = (rgb: string) => {
+        const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map((value) => {
+          const c = Number(value) / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+      };
+      const contrast = (a: string, b: string) => {
+        const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (high! + 0.05) / (low! + 0.05);
+      };
+      // 正文与页面底的颜色、带字的元素里用调和橙的、页面比窗口宽出来的像素。
+      const look = () => page.evaluate(`(() => {
+        const body = getComputedStyle(document.body);
+        const orange = [...document.querySelectorAll('body *')].filter((element) => element.childElementCount === 0 && element.textContent.trim()
+          && getComputedStyle(element).color === 'rgb(241, 125, 19)').map((element) => element.textContent.trim());
+        return { color: body.color, background: body.backgroundColor, orange, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
+      const pages: [string, () => Promise<unknown>][] = [
+        ['#/definitions', () => page.getByTestId('definition-row').first().waitFor()],
+        ['#/templates', () => page.getByRole('article', { name: `模板 ${BADGE}` }).waitFor()],
+        ['#/datasets', () => page.getByRole('link', { name: 'M402 开往万国城总站' }).waitFor()],
+        // 布局只看表单与站点表，不等草稿预览：预览排在模板页的缩略图后面，Docker 后端的单项超时只有 1.5 秒。
+        [`#/datasets/${M402}`, () => page.getByLabel('停靠站点 第 8 项 站名', { exact: true }).waitFor()],
+        ['#/records', () => page.getByTestId('record-row').first().waitFor()],
+        ['#/batches', () => page.getByTestId('batch-row').first().waitFor()],
+        ['#/resources', () => page.getByTestId('resource-row').first().waitFor()],
+        ['#/usage', () => page.getByTestId('usage-limit').waitFor()],
+      ];
+      try {
+        for (const width of [1440, 375]) {
+          await page.setViewportSize({ width, height: 900 });
+          for (const [link, shown] of pages) {
+            await page.goto(`${baseUrl}/console/${link}`);
+            await shown();
+            const seen = await look();
+            expect(seen.overflow, `${width} ${link}`).toBe(0);
+            expect(seen.orange, `${width} ${link}`).toEqual([]);
+            expect([seen.color, seen.background], link).toEqual(['rgb(34, 21, 15)', 'rgb(253, 251, 246)']);
+            expect(contrast(seen.color, seen.background)).toBeGreaterThanOrEqual(4.5);
+            expect((await page.getByRole('main').boundingBox())!.width, `${width} ${link}`).toBe(width);
+          }
+        }
+      } finally {
+        await page.setViewportSize({ width: 1440, height: 1000 });
+      }
+    }, 180_000);
 
     it('退出后会话失效，回到登录页；整个过程没有脚本错误，也没有被内容安全策略拦下的资源', async () => {
       await page.getByRole('button', { name: '退出' }).click();

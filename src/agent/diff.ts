@@ -4,8 +4,11 @@
  * - 结构化差异：工作副本相对已保存内容的改动。元素按元素路径比对自身的属性，子元素各自比对；
  *   模板层比对画板以外的键，参数、派生变量与检查项按名称逐项比对。
  */
-import { isRecord } from '../util.js';
+import { canonical, isRecord } from '../util.js';
 import { flattenElements } from './locations.js';
+
+/** 规范化 JSON 比较的写法在 util.ts，数据定义差异与这里共用。 */
+export { canonical };
 
 export interface TemplateChange {
   /** 元素路径，从模板名开始，画板就是模板名；模板层的改动写键名，如 parameters。 */
@@ -82,15 +85,6 @@ export function diffTemplate(before: unknown, after: unknown): TemplateChange[] 
     if (!now.has(path)) changes.push({ path, target: 'element', change: 'removed', before: own(element) });
   }
   return changes;
-}
-
-/** 键排序后的 JSON，用来比较两个值是否相同。 */
-export function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (isRecord(value)) {
-    return `{${Object.keys(value).filter((key) => value[key] !== undefined).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
-  }
-  return JSON.stringify(value) ?? 'undefined';
 }
 
 /** 元素自身的属性：去掉子元素。 */

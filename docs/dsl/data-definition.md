@@ -150,6 +150,50 @@
 
 上文「数据集文档」中的示例就是按"胸牌 v1"填写的。
 
+## 比较两份数据定义
+
+发布新版本之前要知道改了什么。公开入口 `diffDefinition(before, after)` 按字段列出两份数据定义之间的增、删、改，改动细到属性键。输入是解析后的 JSON 文档（与 `checkDslDocument` 相同），纯函数，不读存储。出图服务的发布预检与发布记录用它。
+
+```ts
+import { diffDefinition } from './dist/index.js';
+
+const diff = diffDefinition(publishedV1, draft);
+if (diff.problems.length > 0) { /* 任一份读不了：只有问题清单，没有差异 */ }
+for (const change of diff.fields) console.log(change.path, change.change, change.properties?.map((p) => p.key));
+```
+
+| 结果 | 内容 |
+|---|---|
+| `fields` | 每个有改动的字段一条：`path` 是字段名称，`change` 是 `added`、`removed` 或 `changed`。新增带 `after`、删除带 `before`（数据定义里的原样内容），修改带 `properties`。新增和修改的按改后的次序，删除的接在后面 |
+| `properties` | 改了的属性键，每条有 `key`、`before`、`after`（一边没有就省略）。键：`displayName`、`description`、`required`、`type`；约束 `constraints.maxLength`、`constraints.enum` 等，一个约束一条 |
+| `order` | 字段顺序变了才有：两边都有的字段名称，各按各自的次序。顺序单独标出，不算增删，也不算修改 |
+| `definition` | 数据定义自身的 `name`、`displayName`、`description`；`version` 由发布分配，每次都不同，不参与比较 |
+| `problems` | 任一份读不了时的问题清单，其余三项为空。问题码与 `checkDslDocument` 相同，消息带"改前""改后"；不是数据定义时报 `input.unreadable` |
+
+- **字段名称是身份**（ADR-0005）：改字段名称就是删旧名、加新名，不会出现"改了名称"的修改。被删除的一条带 `affectsBindings: true`，表示按这个名称写的模板绑定和数据集的键不再有对应；新增和修改的没有这个标记。
+- **列表与引用带父路径**：列表元素的键写成 `items.type`、`items.constraints.enum`、`items.ref.version`，引用字段自己的写成 `ref.name`、`ref.version`，路径是它们所在的字段。引用的版本变了就在这里看到。被引用的数据定义自己的字段不展开（那要读另一份数据定义）：需要时把被引用的两个版本各交给 `diffDefinition` 再比一次。
+- **比较的是解析后的内容**：键的先后、`required: false` 与不写、图片省略 `allowedSources` 与两种来源都写，都算没有改动；这与编译产物是否变化一致。比较用的规范化 JSON 与模板差异 `diffTemplate` 是同一个写法。
+- **类型换了**，原类型的约束也各列一条（例如数值换成文本，`constraints.min`、`constraints.max` 各有一条只有 `before`）。
+
+把"场次 v1"的 `title` 改名为 `topic`，`room` 改为必填并放宽长度，`startsAt` 与 `room` 对调，另加 `capacity`，结果是：
+
+```json
+{
+  "problems": [],
+  "definition": [],
+  "fields": [
+    { "path": "topic", "change": "added", "after": { "name": "topic", "displayName": "场次名称", "type": "text", "constraints": { "required": true, "maxLength": 20 } } },
+    { "path": "room", "change": "changed", "properties": [
+      { "key": "required", "before": false, "after": true },
+      { "key": "constraints.maxLength", "before": 10, "after": 30 }
+    ] },
+    { "path": "capacity", "change": "added", "after": { "name": "capacity", "displayName": "容量", "type": "number", "constraints": { "integer": true, "min": 1 } } },
+    { "path": "title", "change": "removed", "before": { "name": "title", "displayName": "场次名称", "type": "text", "constraints": { "required": true, "maxLength": 20 } }, "affectsBindings": true }
+  ],
+  "order": { "before": ["startsAt", "room"], "after": ["room", "startsAt"] }
+}
+```
+
 ## Schema 之外的检查
 
 以下问题 JSON Schema 表达不了，由引擎报告。一致性测试会核对：凡是 Schema 接受、而引擎拒绝的文档，问题都在下面列出的类别里。

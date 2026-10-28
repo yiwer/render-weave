@@ -14,7 +14,7 @@ import { formOf } from '../form/schema.js';
 import { canonicalText, fromJson, toJsonText } from '../form/value.js';
 import { go, href, problemsOf, useLivePreview, useLoad } from '../hooks.js';
 import type { OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateInfo } from '../types.js';
-import { BatchSheet, DeliverSheet, recentBatches } from './deliver.js';
+import { BatchSheet, DeliverSheet } from './deliver.js';
 import { ImportSheet } from './import.js';
 import { sameSchema, schemaText } from './templates.js';
 
@@ -43,7 +43,6 @@ export function DatasetList(props: {
     if (on) next.add(id); else next.delete(id);
     return next;
   });
-  const recent = recentBatches();
 
   return (
     <section className="page">
@@ -110,14 +109,6 @@ export function DatasetList(props: {
           <a className={`button small primary${sameDefinition ? '' : ' disabled'}`} aria-disabled={!sameDefinition || undefined}
             href={sameDefinition ? href(['deliver'], { datasets: selected.map((entry) => entry.id).join(',') }) : undefined}>出图（{selected.length} 份）</a>
         </div>
-      )}
-      {recent.length > 0 && (
-        <section className="card" style={{ marginTop: 24 }} aria-labelledby="recent-batches">
-          <h2 id="recent-batches">本页提交过的出图任务</h2>
-          <ul className="plain">
-            {recent.map((entry) => <li key={entry.id} style={{ padding: '6px 0' }}><a href={href(['batches', entry.id])}>{entry.title} · {entry.template}</a> <span className="muted small">{new Date(entry.at).toLocaleString('zh-CN')}</span></li>)}
-          </ul>
-        </section>
       )}
       {data && props.deliver && (
         <DeliverSheet
