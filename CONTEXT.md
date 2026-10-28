@@ -57,7 +57,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 依据：[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在 M230 四个场景上与 Claude Code 执行器各 2/2 达线。
   - 下一步：在空闲机器上用一次评估跑满四个场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。
   - 托管给客户前：威胁建模复核、生产模型渠道、评估身份按执行器区分（见 ADR-0027）。
-- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。票据 01 已完成：控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架（[票据](.scratch/authoring-api-and-pages/issues/01-console-new-frame.md)），12 不再受阻；本机 Docker 后端测试原有 4 条随运气失败（测试的 1.5 秒单项超时短于换新后冷启动的 M402 与问候牌的重放），测试的单项超时已改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
+- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。票据 02 已完成：`diffDefinition` 给出两份数据定义的字段级差异（[票据](.scratch/authoring-api-and-pages/issues/02-definition-diff.md)），票据 05 的发布预检与 06 的发布页调用它。票据 01 已完成：控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架（[票据](.scratch/authoring-api-and-pages/issues/01-console-new-frame.md)），12 不再受阻；本机 Docker 后端测试原有 4 条随运气失败（测试的 1.5 秒单项超时短于换新后冷启动的 M402 与问候牌的重放），测试的单项超时已改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - [第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）已在阶段 4 落实；不受信任的记录按 PRD 不接收。
 
 ## 已实现能力
@@ -68,7 +68,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 - **DSL 1.0**：数据定义、数据集、模板、渲染请求与批次请求都有人读参考（[docs/dsl/](docs/dsl/README.md)）、JSON Schema（`schemas/`）与一致性测试，兼容策略见 ADR-0016；公开入口 `checkDslDocument`、`dslDocumentKind` 识别并检查单份文档。Agent 参考在 `agent/reference/`。
 - **入口**：渲染入口 `render(workspace, request)` 返回图片、问题清单与布局摘要，这是主接缝；发布静态数据定义是次接缝。CLI `renderweave render` / `publish` 把成果写到输出目录，用法见 [README](README.md)。
-- **数据**：数据定义发布为静态数据定义，并编译出 JSON Schema；数据集按全部字段类型与约束校验。
+- **数据**：数据定义发布为静态数据定义，并编译出 JSON Schema；数据集按全部字段类型与约束校验。公开入口 `diffDefinition(before, after)` 按字段列出两份数据定义之间的增、删、改与属性键，改名是一删一增并标为会影响绑定，字段顺序与列表、引用的子键单独标出，读不了的输入回答问题清单（[用法](docs/dsl/data-definition.md#比较两份数据定义)，P1 票据 02）。
 - **元素与布局**：画板与容器（自由、堆叠及 `wrap`/`crossGap` 自动流式换行、网格，M253）；横排与竖排文本（横竖排片段独立字体与字号、插槽展示格式、常态字间距 `letterSpacing`、横排倾斜、文字描边、竖排方向性标点顺时针旋转 90°，M255、M256）；PNG/JPEG/WebP/SVG 图片（三种适配、可选 `tint` 单色重染，M257，SVG 见 [SVG 说明](docs/render-svg.md)）；矩形、椭圆、线条、多边形、路径（线条、多边形、路径支持 `viewBox` 与 `fit` 随框缩放，M254）。
 - **模板**：模板参数、派生变量（条件分支与 `all`/`any` 复合条件、取项、按分隔符拆取文本 `splitPart`、长度、加减乘除取模，M251）、检查项、绑定、条件显示、状态样式，出图前做静态检查；循环容器（横向或纵向排列，每项等分、随内容或固定尺寸，支持 `reverse` 反序、`slice` 区间切片与 `wrap`/`crossGap` 自动流式换行，M236、M252、M253）与子模板调用（独立作用域）。
 - **线路牌适配**：横向或纵向合并相邻同值项与道路带（M252）；横排按墨迹分布，先收紧字距、再压缩字形、再缩字（M255）；竖排缩字组跨循环与子模板统一字号并按比例缩放片段字号（M256）。缩字下限由模板在画板上声明，缺省 5 mm，价签一类小标签可低到 1.5 mm（M238）。
