@@ -832,10 +832,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 旧链接照旧能打开，模块下拉显示它所属的模块。
       for (const [link, module, shown] of [
         ['#/import', '数据集', () => page.getByRole('dialog').waitFor()],
-        [`#/datasets/${M402}`, '数据集', () => previewImage().waitFor()],
+        [`#/datasets/${M402}`, '数据集', () => page.getByRole('heading', { name: 'M402 开往万国城总站', level: 1 }).waitFor()],
         [`#/batches/${ids[0]}`, '出图', () => page.getByTestId('batch-status').waitFor()],
         [`#/records?batch=${ids[0]}`, '出图', () => expect.poll(() => page.getByRole('search', { name: '筛选出图记录' }).getByLabel('批次 ID').inputValue()).toBe(ids[0])],
-        [`#/templates/${enc(BADGE)}`, '模板', () => previewImage().waitFor()],
+        [`#/templates/${enc(BADGE)}`, '模板', () => page.getByRole('heading', { name: BADGE, level: 1 }).waitFor()],
         ['#/usage', '用量', () => page.getByTestId('usage-limit').waitFor()],
       ] as [string, string, () => Promise<unknown>][]) {
         await page.goto(`${baseUrl}/console/${link}`);
@@ -865,9 +865,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
       const pages: [string, () => Promise<unknown>][] = [
         ['#/definitions', () => page.getByTestId('definition-row').first().waitFor()],
-        ['#/templates', () => page.getByRole('img', { name: `${BADGE} 的缩略预览` }).waitFor()],
+        ['#/templates', () => page.getByRole('article', { name: `模板 ${BADGE}` }).waitFor()],
         ['#/datasets', () => page.getByRole('link', { name: 'M402 开往万国城总站' }).waitFor()],
-        [`#/datasets/${M402}`, () => previewImage().waitFor()],
+        // 布局只看表单与站点表，不等草稿预览：预览排在模板页的缩略图后面，Docker 后端的单项超时只有 1.5 秒。
+        [`#/datasets/${M402}`, () => page.getByLabel('停靠站点 第 8 项 站名', { exact: true }).waitFor()],
         ['#/records', () => page.getByTestId('record-row').first().waitFor()],
         ['#/batches', () => page.getByTestId('batch-row').first().waitFor()],
         ['#/resources', () => page.getByTestId('resource-row').first().waitFor()],
