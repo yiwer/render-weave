@@ -6,6 +6,7 @@
  */
 import { useState } from 'react';
 import { api, saveBlob } from '../api.js';
+import { DeliverTabs } from '../components/module-tabs.js';
 import { PagedFooter } from '../components/paged.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad, usePaged } from '../hooks.js';
@@ -47,6 +48,7 @@ export function RecordsPage(props: { readonly query: URLSearchParams }) {
 
   return (
     <section className="page">
+      <DeliverTabs active="records" />
       <div className="title-row">
         <div>
           <h1>出图记录</h1>

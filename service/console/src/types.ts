@@ -24,7 +24,9 @@ export interface Identity {
   readonly tenantId?: string;
 }
 
-export type TokenKind = 'inputTokens' | 'outputTokens' | 'cacheReadTokens' | 'cacheCreationTokens';
+export interface Tenant { readonly id: string; readonly name: string; readonly createdAt: string }
+
+export type TokenKind ='inputTokens' | 'outputTokens' | 'cacheReadTokens' | 'cacheCreationTokens';
 export type UsageKind = 'image' | TokenKind;
 
 /** 一个计费周期的用量（票据 09）：周期是按 UTC+8 切分的自然月。 */

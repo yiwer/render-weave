@@ -1,15 +1,20 @@
 /**
  * 出图控制台（票据 12，M248、M279、M282）：开放 API 的网页客户端，由接口进程在 /console/ 下提供。
  * 结构按原型方案一，以数据集为中心：首页是数据集，打开一份数据集就是左表单、右草稿预览，出图在侧栏里进行。
- * 票据 14 加了出图记录、资源、用量与管理（M301）：管理只给客户管理员，操作员的导航里没有它。
+ * 票据 14 加了出图记录、资源、用量与管理（M301）：管理只给客户管理员，操作员的模块下拉里没有它。
+ * P1 票据 01 换成原型第 29 版的框架（frame.tsx）：标题栏的模块下拉、Ctrl+K 与状态栏；各页的 # 路由不变，旧链接照旧能打开。
  * 登录后按 # 路由切换页面；界面只做中文。
  */
 import { useEffect, useState } from 'react';
-import { api, onUnauthorized, onUsageChanged, session } from './api.js';
+import { api, onUnauthorized, session } from './api.js';
 import { Logo } from './components/logo.js';
+import { Frame, ROLE } from './frame.js';
 import { href, useRoute } from './hooks.js';
+import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
+import { BatchList } from './pages/batches.js';
 import { DatasetEditor, DatasetList } from './pages/datasets.js';
+import { DefinitionList } from './pages/definitions.js';
 import { BatchPage } from './pages/deliver.js';
 import { LoginPage } from './pages/login.js';
 import { RecordsPage } from './pages/records.js';
@@ -17,8 +22,6 @@ import { ResourcesPage } from './pages/resources.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
 import type { Identity } from './types.js';
-
-const ROLE: Readonly<Record<string, string>> = { admin: '客户管理员', operator: '客户操作员', platformAdmin: '平台管理员', apiKey: 'API 密钥', authoringEngineer: '代建工程师' };
 
 export function App() {
   // undefined：正在确认会话；null：没有登录。
@@ -51,29 +54,12 @@ export function App() {
   return <Shell identity={identity} onLogout={() => void logout()} />;
 }
 
-/**
- * 本月剩余张数：客户管理员与操作员都看得到（M300）。提交、取消批次与批次结束时重新读取；
- * 换页时也读一次，别的成员或 API 密钥出的图在这里看得到。
- */
-function Quota(props: { readonly page: string }) {
-  const [text, setText] = useState<string>();
-  const [version, setVersion] = useState(0);
-  useEffect(() => onUsageChanged(() => setVersion((value) => value + 1)), []);
-  useEffect(() => {
-    let live = true;
-    api.usage().then((usage) => {
-      if (live) setText(`本月剩余 ${usage.images.remaining.toLocaleString('zh-CN')} / ${usage.images.limit.toLocaleString('zh-CN')} 张`);
-    }, () => undefined);
-    return () => { live = false; };
-  }, [props.page, version]);
-  return text ? <span className="quota" data-testid="quota">{text}</span> : null;
-}
-
 function Shell(props: { readonly identity: Identity; readonly onLogout: () => void }) {
   const { path, query } = useRoute();
   const [section = 'datasets', id, sub, subId] = path;
   let page;
   switch (section) {
+    case 'definitions': page = <DefinitionList />; break;
     case 'datasets':
       if (id === 'new') page = <DatasetEditor key={`new:${query.get('template') ?? ''}`} {...(query.get('template') ? { templateName: query.get('template')! } : {})} />;
       else if (id) {
@@ -86,36 +72,17 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
       break;
     case 'import': page = <DatasetList importing={query.get('template') ? { templateName: query.get('template')! } : {}} />; break;
     case 'templates': page = id ? <TemplateStudio name={id} /> : <TemplateList />; break;
-    case 'batches': page = id ? <BatchPage id={id} /> : <DatasetList />; break;
+    case 'batches': page = id ? <BatchPage id={id} /> : <BatchList />; break;
     case 'records': page = <RecordsPage key={query.toString()} query={query} />; break;
     case 'resources': page = <ResourcesPage identity={props.identity} />; break;
     case 'usage': page = <UsagePage identity={props.identity} {...(query.get('period') ? { period: query.get('period')! } : {})} />; break;
     case 'admin': page = <AdminPage identity={props.identity} {...(id ? { tab: id } : {})} />; break;
     default: page = <p className="page muted">没有这个页面。<a href={href(['datasets'])}>回到数据集</a></p>;
   }
-  const active = ['templates', 'records', 'resources', 'usage', 'admin'].includes(section) ? section : 'datasets';
-  const tab = (name: string, label: string) => (
-    <a href={href([name])} className={active === name ? 'active' : undefined} aria-current={active === name ? 'page' : undefined}>{label}</a>
-  );
+  const module = moduleOf(section);
   return (
-    <>
-      <header className="topbar">
-        <a className="brand" href={href(['datasets'])}><Logo />RenderWeave</a>
-        <nav aria-label="主导航">
-          {tab('datasets', '数据集')}
-          {tab('templates', '模板')}
-          {tab('records', '出图记录')}
-          {tab('resources', '资源')}
-          {tab('usage', '用量')}
-          {props.identity.role === 'admin' && tab('admin', '管理')}
-        </nav>
-        <div className="account">
-          <Quota page={path.join('/')} />
-          <span className="who" title={props.identity.email}>{props.identity.email} · {ROLE[props.identity.role] ?? props.identity.role}</span>
-          <button type="button" className="small quiet" onClick={props.onLogout}>退出</button>
-        </div>
-      </header>
-      <main>{page}</main>
-    </>
+    <Frame identity={props.identity} {...(module ? { module } : {})} page={path.join('/')} onLogout={props.onLogout}>
+      {page}
+    </Frame>
   );
 }
