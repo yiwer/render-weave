@@ -2,15 +2,26 @@
  * 账号、租户与鉴权的端点（M247、M261）。客户端点的租户由身份决定，路径里没有租户 ID；
  * 代建端点在 authoring.ts，路径里写目标租户。对象不在本租户时与不存在同样答 404。
  */
-import type { FastifyInstance } from 'fastify';
-import { EmailTakenError, type Identity, type Member, type MemberRole, type NewAuditEvent, type Plan, type TenantScope } from '../backend.js';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { auditCsv } from '../audit.js';
+import { ACTOR_KINDS, EmailTakenError, type ActorKind, type Identity, type Member, type MemberRole, type NewAuditEvent, type Plan, type TenantScope } from '../backend.js';
 import { dummyVerify, generatePassword, generateToken, hashPassword, verifyPassword } from '../credentials.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
+import { INSTANT } from './records.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 会话有效期 12 小时；代建令牌缺省 30 天，最长 365 天。 */
 const SESSION_HOURS = 12;
+/** 审计导出一次至多这么多条；超出时要求缩小时间范围，不悄悄截断。 */
+export const AUDIT_EXPORT_LIMIT = 10_000;
+/** 审计的筛选：主体种类与时间，from 含、to 不含。 */
+const AUDIT_FILTERS = { actorKind: { type: 'string', enum: ACTOR_KINDS }, from: { type: 'string', pattern: INSTANT }, to: { type: 'string', pattern: INSTANT } } as const;
+type AuditFilters = { actorKind?: ActorKind; from?: string; to?: string };
+const auditFilters = (request: FastifyRequest) => {
+  const query = request.query as AuditFilters;
+  return { ...(query.actorKind ? { actorKind: query.actorKind } : {}), ...(query.from ? { from: new Date(query.from) } : {}), ...(query.to ? { to: new Date(query.to) } : {}) };
+};
 const email = { type: 'string', minLength: 3, maxLength: 254, pattern: '^[^@\\s]+@[^@\\s]+$' } as const;
 const name = { type: 'string', minLength: 1, maxLength: 100 } as const;
 const role = { type: 'string', enum: ['admin', 'operator'] } as const;
@@ -195,11 +206,25 @@ export function registerRoutes(app: FastifyInstance, context: ApiContext): void 
 
   app.get('/v1/audit-events', {
     config: { access: 'audit.read' },
-    schema: { querystring: { type: 'object', properties: { limit: { type: 'string', pattern: '^[1-9][0-9]{0,2}$' }, before: { type: 'string', pattern: '^[0-9]{1,18}$' } }, additionalProperties: false } },
+    schema: { querystring: { type: 'object', additionalProperties: false, properties: {
+      limit: { type: 'string', pattern: '^[1-9][0-9]{0,2}$' }, before: { type: 'string', pattern: '^[0-9]{1,18}$' }, ...AUDIT_FILTERS,
+    } } },
   }, async (request) => {
     const query = request.query as { limit?: string; before?: string };
     const limit = Math.min(Number(query.limit ?? 100), 500);
-    const events = await backend.tenant(ownTenant(identityOf(request))).listAudit({ limit, ...(query.before ? { before: query.before } : {}) });
+    const events = await backend.tenant(ownTenant(identityOf(request))).listAudit({ limit, ...(query.before ? { before: query.before } : {}), ...auditFilters(request) });
     return { events, ...(events.length === limit ? { next: events.at(-1)!.id } : {}) };
+  });
+
+  /** 按同样的筛选导出 CSV（P1 票据 03）：按时间倒序，不分页；只读，不记审计。 */
+  app.get('/v1/audit-events/export.csv', {
+    config: { access: 'audit.read' },
+    schema: { querystring: { type: 'object', additionalProperties: false, properties: AUDIT_FILTERS } },
+  }, async (request, reply) => {
+    const events = await backend.tenant(ownTenant(identityOf(request))).listAudit({ limit: AUDIT_EXPORT_LIMIT + 1, ...auditFilters(request) });
+    if (events.length > AUDIT_EXPORT_LIMIT) {
+      throw fail(400, ServiceProblemCodes.requestInvalid, 'request.querystring', `筛选结果超过 ${AUDIT_EXPORT_LIMIT} 条，请缩小时间范围分次导出`);
+    }
+    return reply.type('text/csv; charset=utf-8').header('content-disposition', 'attachment; filename="audit-events.csv"').send(auditCsv(events));
   });
 }

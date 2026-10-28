@@ -14,10 +14,10 @@ import { fileSafe, imageFileName } from './deliver.js';
 
 interface Filters { readonly template: string; readonly batch: string; readonly from: string; readonly to: string }
 const NAMES = ['template', 'batch', 'from', 'to'] as const;
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
+export const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 本地日期（YYYY-MM-DD）的零点，往后推 days 天，写成 ISO 时刻；按日历推，夏令时切换的那天也对。 */
-function dayStart(date: string, days = 0): string {
+export function dayStart(date: string, days = 0): string {
   const [year, month, day] = date.split('-').map(Number) as [number, number, number];
   return new Date(year, month - 1, day + days).toISOString();
 }

@@ -4,7 +4,7 @@
  */
 import {
   EmailTakenError, periodOf,
-  type ApiKeyInfo, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
+  type ActorKind, type ApiKeyInfo, type AuditDiff, type AuditEvent, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type Member, type MemberRole, type NewAuditEvent,
   type PreviewQuota, type Readiness, type RecordCursor, type RecordEntry, type ReplayResult, type ReplayState, type ServiceBackend, type TaskCounts, type TaskResult, type TaskState,
   type Tenant, type TenantScope, type UsageEvent, type UsageKind,
 } from '../backend.js';
@@ -83,9 +83,26 @@ async function finalizeBatch(client: DbClient, blobs: BlobStore, tenantId: strin
 }
 
 async function insertAudit(client: DbClient, tenantId: string | null, event: NewAuditEvent, now: Date): Promise<void> {
-  await client.query(`INSERT INTO audit_events (tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-  [tenantId, now, event.actor.kind, event.actor.id, event.actor.label, event.action, event.object.type, event.object.id, event.crossTenant]);
+  await client.query(`INSERT INTO audit_events (tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant,
+      before_sha256, after_sha256, diff, round, reason)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+  [tenantId, now, event.actor.kind, event.actor.id, event.actor.label, event.action, event.object.type, event.object.id, event.crossTenant,
+    event.beforeSha256 ?? null, event.afterSha256 ?? null, event.diff ? JSON.stringify(event.diff) : null, event.round ?? null, event.reason ?? null]);
+}
+
+interface AuditRow {
+  id: string; tenant_id: string | null; at: Date; actor_kind: ActorKind; actor_id: string; actor_label: string; action: string; object_type: string; object_id: string;
+  cross_tenant: boolean; before_sha256: string | null; after_sha256: string | null; diff: AuditDiff | null; round: string | null; reason: string | null;
+}
+
+/** 审计一行；可空的内容列为空时不出现在事件里，与内存后端一样。 */
+function auditEvent(row: AuditRow): AuditEvent {
+  return {
+    id: row.id, tenantId: row.tenant_id, at: iso(row.at)!, actor: { kind: row.actor_kind, id: row.actor_id, label: row.actor_label },
+    action: row.action, object: { type: row.object_type, id: row.object_id }, crossTenant: row.cross_tenant,
+    ...(row.before_sha256 === null ? {} : { beforeSha256: row.before_sha256 }), ...(row.after_sha256 === null ? {} : { afterSha256: row.after_sha256 }),
+    ...(row.diff === null ? {} : { diff: row.diff }), ...(row.round === null ? {} : { round: row.round }), ...(row.reason === null ? {} : { reason: row.reason }),
+  };
 }
 
 export function createPostgresBackend(options: { readonly db: Db; readonly blobs: BlobStore; readonly migrations: readonly Migration[] }): ServiceBackend {
@@ -153,11 +170,12 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         return true;
       }),
       appendAudit: (event, now) => run((client) => insertAudit(client, tenantId, event, now)),
-      listAudit: ({ limit, before }) => run(async (client) => (await client.query(
-        `SELECT id, tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant FROM audit_events
-          WHERE tenant_id = $1 AND ($2::bigint IS NULL OR id < $2::bigint) ORDER BY id DESC LIMIT $3`, [tenantId, before ?? null, limit])).rows.map(
-        (row): AuditEvent => ({ id: row.id, tenantId: row.tenant_id, at: iso(row.at)!, actor: { kind: row.actor_kind, id: row.actor_id, label: row.actor_label },
-          action: row.action, object: { type: row.object_type, id: row.object_id }, crossTenant: row.cross_tenant }))),
+      listAudit: ({ limit, before, actorKind, from, to }) => run(async (client) => (await client.query<AuditRow>(
+        `SELECT id, tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant, before_sha256, after_sha256, diff, round, reason
+           FROM audit_events
+          WHERE tenant_id = $1 AND ($2::bigint IS NULL OR id < $2::bigint) AND ($3::text IS NULL OR actor_kind = $3)
+            AND ($4::timestamptz IS NULL OR at >= $4) AND ($5::timestamptz IS NULL OR at < $5)
+          ORDER BY id DESC LIMIT $6`, [tenantId, before ?? null, actorKind ?? null, from ?? null, to ?? null, limit])).rows.map(auditEvent)),
       plan: () => run((client) => readPlan(client, tenantId)),
       setPlan: (plan, now) => run(async (client) => {
         await client.query(`INSERT INTO tenant_plans (tenant_id, monthly_images, max_pixels, concurrency, updated_at) VALUES ($1, $2, $3, $4, $5)

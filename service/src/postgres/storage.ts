@@ -89,9 +89,12 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const [found] = (await client.query<{ sha256: string; byte_length: string }>(
         'SELECT sha256, byte_length FROM template_revisions WHERE tenant_id = $1 AND name = $2 AND revision = $3', [tenantId, name, revision])).rows;
       if (!found) return undefined;
+      const [previous] = (await client.query<{ current_revision: number }>(
+        'SELECT current_revision FROM templates WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
       await client.query('UPDATE templates SET current_revision = $3 WHERE tenant_id = $1 AND name = $2', [tenantId, name, revision]);
       await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
-      return (await authoringState(client, tenantId)).templates.find((template) => template.name === name);
+      const template = (await authoringState(client, tenantId)).templates.find((item) => item.name === name)!;
+      return { template, previousRevision: previous!.current_revision };
     }),
   };
 }

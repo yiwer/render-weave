@@ -6,7 +6,7 @@
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
  */
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -653,6 +653,27 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const revoked = auditRows.and(adminPage.locator('[data-action="apiKey.revoke"]')).first();
       expect(await revoked.textContent()).toContain('吊销 API 密钥');
       expect(await revoked.textContent()).toContain(world.b.admin.email);
+
+      // 代建写入的内容哈希与差异摘要（P1 票据 03）：代建工程师推送一个新资源，按主体筛选后看到它的差异，导出筛选结果。
+      const stamp = await readFile(STAMP), stampSha256 = createHash('sha256').update(stamp).digest('hex');
+      expect((await world.call('PUT', `/v1/authoring/tenants/${world.b.id}/contents/${stampSha256}`, world.b.engineer.token, new Uint8Array(stamp))).status).toBe(204);
+      const pushed = await world.call('POST', `/v1/authoring/tenants/${world.b.id}/pushes`, world.b.engineer.token, {
+        documents: [], resources: [{ id: 'audit-stamp', kind: 'image', versions: [{ version: 1, sha256: stampSha256, byteLength: stamp.length }] }] });
+      expect(pushed.status, pushed.raw.slice(0, 300)).toBe(200);
+      await adminPage.getByLabel('主体').selectOption({ label: '代建工程师' });
+      await adminPage.getByRole('search', { name: '筛选审计日志' }).getByRole('button', { name: '查询' }).click();
+      const engineerAudit = (await adminApi('GET', '/v1/audit-events?limit=50&actorKind=authoringToken')).body.events as { id: string }[];
+      await expect.poll(() => auditRows.evaluateAll((items) => items.map((item) => [item.getAttribute('data-id'), item.getAttribute('data-actor-kind')])))
+        .toEqual(engineerAudit.map((entry) => [entry.id, 'authoringToken']));
+      const commit = auditRows.and(adminPage.locator('[data-action="push.commit"]')).first();
+      await commit.getByText('新增 1 · 修改 0 · 删除 0').click();
+      expect(await commit.locator('[data-path="resource:audit-stamp"]').textContent()).toContain(stampSha256.slice(0, 8));
+      expect(await commit.locator(`[data-sha256="${stampSha256}"]`).count()).toBe(1);
+      const exported = await downloadBytes(adminPage, () => adminPage.getByRole('button', { name: '导出 CSV' }).click());
+      expect(exported.name).toMatch(/^audit-events-\d{4}-\d{2}-\d{2}\.csv$/);
+      const lines = exported.bytes.toString('utf8').replace(/^\uFEFF/, '').trim().split('\r\n');
+      expect(lines.slice(1).map((line) => line.split(',')[0])).toEqual(engineerAudit.map((entry) => entry.id));
+      expect(lines.find((line) => line.includes('push.commit'))).toContain(stampSha256);
     }, 180_000);
 
     it('资源（票据 14）：操作员上传新资源、没有替换入口；客户管理员替换前看到影响检查的结果，确认后才应用，旧版本保留', async () => {

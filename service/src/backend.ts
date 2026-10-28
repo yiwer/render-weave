@@ -67,15 +67,46 @@ export type Identity =
   | { readonly kind: 'apiKey'; readonly keyId: string; readonly tenantId: string; readonly name: string }
   | { readonly kind: 'authoringToken'; readonly tokenId: string; readonly label: string; readonly tenantIds: readonly string[] };
 
+export const ACTOR_KINDS = ['member', 'platformUser', 'apiKey', 'authoringToken', 'system'] as const;
+export type ActorKind = (typeof ACTOR_KINDS)[number];
+
 export interface Actor {
-  readonly kind: 'member' | 'platformUser' | 'apiKey' | 'authoringToken' | 'system';
+  readonly kind: ActorKind;
   readonly id: string;
   /** 邮箱、密钥名或令牌标签；不含密钥本身。 */
   readonly label: string;
 }
 
+/** 差异摘要里的一项：路径，如 template:问候牌；改动前后的内容哈希，新增没有前、删除没有后。 */
+export interface AuditDiffPath {
+  readonly path: string;
+  readonly change: 'added' | 'removed' | 'changed';
+  readonly beforeSha256?: string;
+  readonly afterSha256?: string;
+}
+
+/** 代建写入的差异摘要（M347）：增删改计数是全部的，路径至多 AUDIT_DIFF_PATHS 项，见 auditDiff。 */
+export interface AuditDiff {
+  readonly added: number;
+  readonly removed: number;
+  readonly changed: number;
+  readonly paths: readonly AuditDiffPath[];
+}
+
+/**
+ * 代建写入另记的内容（M347、ADR-0022）：一份对象写入前后的内容哈希、差异摘要；轮次与理由给 P2 的 Agent 用。
+ * 都是可选的：别的事件与 0010 迁移之前的旧行没有。
+ */
+export interface AuditContent {
+  readonly beforeSha256?: string;
+  readonly afterSha256?: string;
+  readonly diff?: AuditDiff;
+  readonly round?: string;
+  readonly reason?: string;
+}
+
 /** 审计事件：记人、租户、操作、对象与时间，不记业务数据内容与密钥。追加写入，不改不删。 */
-export interface AuditEvent {
+export interface AuditEvent extends AuditContent {
   readonly id: string;
   readonly tenantId: string | null;
   readonly at: string;
@@ -86,6 +117,15 @@ export interface AuditEvent {
   readonly crossTenant: boolean;
 }
 export type NewAuditEvent = Omit<AuditEvent, 'id' | 'at' | 'tenantId'>;
+
+/** 查审计：按时间倒序；before 是上一页最后一条的 ID；按主体种类与时间筛选，from 含、to 不含。 */
+export interface AuditQuery {
+  readonly limit: number;
+  readonly before?: string;
+  readonly actorKind?: ActorKind;
+  readonly from?: Date;
+  readonly to?: Date;
+}
 
 export interface Readiness {
   readonly ready: boolean;
@@ -365,8 +405,8 @@ export interface TenantStorage {
    */
   push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date }):
     Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number>; readonly recordedRounds: readonly string[] }>;
-  /** 把模板的当前修订指向它已有的一个修订；模板或修订不存在时 undefined。 */
-  setCurrentTemplate(name: string, revision: number): Promise<StoredTemplate | undefined>;
+  /** 把模板的当前修订指向它已有的一个修订，同时答出改之前的当前修订；模板或修订不存在时 undefined。 */
+  setCurrentTemplate(name: string, revision: number): Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | undefined>;
   /**
    * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
    * 与推送、资源提交依次进行。
@@ -637,8 +677,7 @@ export interface TenantScope {
   listApiKeys(): Promise<ApiKeyInfo[]>;
   revokeApiKey(id: string, now: Date): Promise<boolean>;
   appendAudit(event: NewAuditEvent, now: Date): Promise<void>;
-  /** 按时间倒序；before 是上一页最后一条的 ID。 */
-  listAudit(options: { limit: number; before?: string }): Promise<AuditEvent[]>;
+  listAudit(query: AuditQuery): Promise<AuditEvent[]>;
   /** 租户的套餐；没设过时是 DEFAULT_PLAN。 */
   plan(): Promise<Plan>;
   /** 设置套餐；当期计数行已有时一并改它的限额，以后的周期按新套餐。 */

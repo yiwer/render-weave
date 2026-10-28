@@ -221,8 +221,10 @@ export function createMemoryBackend(): ServiceBackend {
         return true;
       },
       appendAudit: async (event, now) => record(tenantId, event, now),
-      async listAudit({ limit, before }) {
-        return audit.filter((event) => event.tenantId === tenantId && (!before || Number(event.id) < Number(before))).reverse().slice(0, limit).map((event) => structuredClone(event));
+      async listAudit({ limit, before, actorKind, from, to }) {
+        return audit.filter((event) => event.tenantId === tenantId && (!before || Number(event.id) < Number(before)) && (!actorKind || event.actor.kind === actorKind)
+          && (!from || Date.parse(event.at) >= from.getTime()) && (!to || Date.parse(event.at) < to.getTime()))
+          .reverse().slice(0, limit).map((event) => structuredClone(event));
       },
       plan: async () => planOf(tenantId),
       async setPlan(plan, now) {
@@ -641,9 +643,10 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
     setCurrentTemplate: (name, revision) => exclusive(async () => {
       const row = templates.get(name), found = row?.revisions.find((item) => item.revision === revision);
       if (!row || !found) return undefined;
+      const previousRevision = row.current;
       row.current = revision;
       documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
-      return template(name, row);
+      return { template: template(name, row), previousRevision };
     }),
   };
 }

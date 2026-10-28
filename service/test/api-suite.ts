@@ -143,6 +143,7 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/api-keys', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/api-keys', body: { name: '矩阵' } }) },
   { route: 'DELETE /v1/api-keys/:keyId', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/api-keys/${randomUUID()}` }) },
   { route: 'GET /v1/audit-events', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/audit-events' }) },
+  { route: 'GET /v1/audit-events/export.csv', allow: ['admin'], request: () => ({ method: 'GET', url: '/v1/audit-events/export.csv' }) },
   { route: 'GET /v1/authoring/tenants/:tenantId', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/workspace', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/workspace` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/push-plans', allow: ['authoringEngineer'],

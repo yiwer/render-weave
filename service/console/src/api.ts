@@ -4,7 +4,7 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, AuditEvent, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
+  ApiKeyInfo, AuditEvent, AuditQuery, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
   StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
@@ -102,7 +102,9 @@ export const api = {
   apiKeys: () => json<{ apiKeys: ApiKeyInfo[] }>('GET', '/v1/api-keys'),
   createApiKey: (name: string) => json<{ key: string; apiKey: ApiKeyInfo }>('POST', '/v1/api-keys', { json: { name } }),
   revokeApiKey: async (id: string) => { await send('DELETE', `/v1/api-keys/${enc(id)}`); },
-  auditEvents: (before?: string) => page<AuditEvent>(`/v1/audit-events${search({ limit: 50, before })}`, 'events'),
+  auditEvents: (query: AuditQuery & { readonly before?: string }) => page<AuditEvent>(`/v1/audit-events${search({ ...query, limit: 50 })}`, 'events'),
+  /** 按同样的筛选导出 CSV；超过服务端的上限时答 400，要缩小时间范围。 */
+  auditExport: async (query: AuditQuery) => (await send('GET', `/v1/audit-events/export.csv${search({ ...query })}`)).blob(),
   webhooks: () => json<{ webhooks: Webhook[] }>('GET', '/v1/webhooks'),
   createWebhook: (body: { url: string; description?: string }) => json<{ webhook: Webhook; secret: string }>('POST', '/v1/webhooks', { json: body }),
   updateWebhook: (id: string, change: { active?: boolean; description?: string }) => json<Webhook>('PATCH', `/v1/webhooks/${enc(id)}`, { json: change }),

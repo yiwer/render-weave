@@ -2,12 +2,14 @@
  * 代建工程师的端点（票据 04、05，M261、M264）：路径里写目标租户，只认令牌被指定的租户；
  * 不是被指定的租户、或租户不存在，都与随机 ID 同样答 404，而且在读请求体之前就答。
  * 每次调用都记进目标租户的审计，标为跨租户操作；不记内容与令牌。
+ * 写入（推送提交、指回旧修订）另记前后内容哈希与差异摘要（P1 票据 03，M347）。
  */
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { NewAuditEvent, TenantScope } from '../backend.js';
+import { auditDiff } from '../audit.js';
+import { documentSource, type AuditContent, type AuthoringState, type NewAuditEvent, type PushWrites, type TenantScope } from '../backend.js';
 import {
-  checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
+  checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushAuditDiff, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
   type PushDiff, type PushManifest,
 } from '../push.js';
 import { actorOf, identityOf, type ApiContext } from './app.js';
@@ -24,8 +26,8 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
   const { backend, now } = context;
   const targets = new WeakMap<FastifyRequest, TenantScope>();
   const target = (request: FastifyRequest) => targets.get(request)!;
-  const audit = (request: FastifyRequest, action: string, object: NewAuditEvent['object']) =>
-    target(request).appendAudit({ actor: actorOf(identityOf(request)), action, object, crossTenant: true }, now());
+  const audit = (request: FastifyRequest, action: string, object: NewAuditEvent['object'], content: AuditContent = {}) =>
+    target(request).appendAudit({ actor: actorOf(identityOf(request)), action, object, crossTenant: true, ...content }, now());
 
   app.register(async (scope) => {
     // 在全局鉴权之后、读请求体之前确定目标租户。
@@ -88,18 +90,19 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
     scope.post('/v1/authoring/tenants/:tenantId/pushes', { config: { access: 'authoring.push' }, bodyLimit: MAX_MANIFEST_BYTES, schema: { body: MANIFEST_SCHEMA } }, async (request) => {
       const manifest = validManifest(request.body);
       const storage = target(request).storage, pushId = randomUUID();
-      let diff: PushDiff | undefined;
+      let diff: PushDiff | undefined, before: AuthoringState | undefined, writes: PushWrites | undefined;
       try {
         const { revisions, recordedRounds } = await storage.push(async (state) => {
+          before = state;
           diff = diffPush(manifest, state);
           if (diff.summary.conflicts) throw new ApiError(409, conflictProblems(diff), { diff });
-          const writes = pushWrites(manifest, diff);
+          writes = pushWrites(manifest, diff);
           const problems = await verifyContents(writes, storage.contents);
           if (problems.length) throw new ApiError(400, problems);
           return writes;
         }, { pushedBy: actorOf(identityOf(request)).label, now: now() });
         const result = { ...diff!, documents: diff!.documents.map((item) => (revisions.has(item.key) && item.kind === 'template' ? { ...item, revision: revisions.get(item.key)! } : item)) };
-        await audit(request, 'push.commit', { type: 'push', id: pushId });
+        await audit(request, 'push.commit', { type: 'push', id: pushId }, { diff: pushAuditDiff(before!, writes!) });
         const usage = { rounds: manifest.rounds?.length ?? 0, recorded: recordedRounds.length, tokens: roundTokens(manifest, recordedRounds) };
         return { pushId, ...result, usage };
       } catch (error) {
@@ -115,7 +118,7 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       return runPreview(context, target(request), request.body);
     });
 
-    /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订。 */
+    /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订；审计记改前改后两个修订的内容哈希。 */
     scope.post('/v1/authoring/tenants/:tenantId/template-current', {
       config: { access: 'authoring.push' },
       schema: { body: { type: 'object', required: ['template', 'revision'], additionalProperties: false,
@@ -124,8 +127,13 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       const { template, revision } = request.body as { template: string; revision: number };
       const updated = await target(request).storage.setCurrentTemplate(template, revision);
       if (!updated) throw notFound();
-      await audit(request, 'template.setCurrent', { type: 'template', id: template });
-      return sortedState({ documents: [], templates: [updated], resources: [] }).templates[0];
+      const sha256Of = (number: number) => updated.template.revisions.find((item) => item.revision === number)!.sha256;
+      const beforeSha256 = sha256Of(updated.previousRevision), afterSha256 = sha256Of(revision);
+      await audit(request, 'template.setCurrent', { type: 'template', id: template }, {
+        beforeSha256, afterSha256,
+        diff: auditDiff(beforeSha256 === afterSha256 ? [] : [{ path: documentSource('template', template), change: 'changed', beforeSha256, afterSha256 }]),
+      });
+      return sortedState({ documents: [], templates: [updated.template], resources: [] }).templates[0];
     });
   });
 }

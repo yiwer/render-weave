@@ -99,6 +99,17 @@ export interface WebhookDelivery {
   readonly attempts: readonly { readonly attempt: number; readonly at: string; readonly durationMs: number; readonly statusCode?: number; readonly error?: string }[];
 }
 
+export const ACTOR_KINDS = ['member', 'apiKey', 'authoringToken', 'platformUser', 'system'] as const;
+export type ActorKind = (typeof ACTOR_KINDS)[number];
+
+/** 代建写入的差异摘要：计数是全部的，路径至多 50 项。 */
+export interface AuditDiff {
+  readonly added: number;
+  readonly removed: number;
+  readonly changed: number;
+  readonly paths: readonly { readonly path: string; readonly change: 'added' | 'removed' | 'changed'; readonly beforeSha256?: string; readonly afterSha256?: string }[];
+}
+
 export interface AuditEvent {
   readonly id: string;
   readonly at: string;
@@ -106,7 +117,16 @@ export interface AuditEvent {
   readonly action: string;
   readonly object: { readonly type: string; readonly id: string };
   readonly crossTenant: boolean;
+  /** 代建写入（API 1.1.0）：写入前后的内容哈希与差异摘要；轮次与理由给 Agent 用。 */
+  readonly beforeSha256?: string;
+  readonly afterSha256?: string;
+  readonly diff?: AuditDiff;
+  readonly round?: string;
+  readonly reason?: string;
 }
+
+/** 审计的筛选：主体种类与时间，from 含、to 不含。 */
+export interface AuditQuery { readonly actorKind?: ActorKind; readonly from?: string; readonly to?: string }
 
 /** 一页结果：next 原样带回就是下一页。 */
 export interface PageOf<T> { readonly items: readonly T[]; readonly next?: string }

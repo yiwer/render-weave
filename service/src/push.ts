@@ -7,8 +7,10 @@
  * - 代建轮次（票据 09）：可选，各轮 round.json 的 token 用量，与推送同一事务记为该租户的用量事件；已记过的轮次跳过，只记不拦。
  */
 import { problem, ServiceProblemCodes, type ServiceProblem } from './api/problems.js';
+import { auditDiff } from './audit.js';
 import {
-  DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites, type StoredDocument, type TokenKind,
+  DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type AuditDiff, type AuditDiffPath, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites,
+  type StoredDocument, type TokenKind,
 } from './backend.js';
 import { classifyWorkspaceDocument, parseJsonKeepingPrecision, parseResourceRef } from './engine.js';
 
@@ -184,6 +186,26 @@ export function pushWrites(manifest: PushManifest, diff: PushDiff): PushWrites {
     }),
     rounds: (manifest.rounds ?? []).map(({ sha256: hash, task, round, ...counts }) => ({ sha256: hash, task, round, tokens: counts })),
   };
+}
+
+/**
+ * 一次推送提交的差异摘要（M347）：改动的文档与资源各一项，带前后内容哈希。推送只新增与更新，不删除。
+ * 模板的前是推送前的当前修订，资源的前是推送前的当前内容版本，后是这次写入的最后一个内容版本。
+ */
+export function pushAuditDiff(state: AuthoringState, writes: PushWrites): AuditDiff {
+  const templates = new Map(state.templates.map((template) => [template.name, template]));
+  const resources = new Map(state.resources.map((resource) => [resource.id, resource]));
+  return auditDiff([
+    ...writes.documents.map((document): AuditDiffPath => ({ path: documentSource(document.kind, document.key), change: 'added', afterSha256: document.sha256 })),
+    ...writes.templates.map((template): AuditDiffPath => {
+      const before = templates.get(template.name), current = before?.revisions.find((item) => item.revision === before.currentRevision);
+      return { path: documentSource('template', template.name), ...(current ? { change: 'changed', beforeSha256: current.sha256 } : { change: 'added' }), afterSha256: template.sha256 };
+    }),
+    ...writes.resources.map((resource): AuditDiffPath => {
+      const before = resources.get(resource.id), current = before?.versions.find((item) => item.version === before.currentVersion);
+      return { path: `resource:${resource.id}`, ...(current ? { change: 'changed', beforeSha256: current.sha256 } : { change: 'added' }), afterSha256: resource.versions.at(-1)!.sha256 };
+    }),
+  ]);
 }
 
 /** 这次新记的轮次的 token 合计。 */

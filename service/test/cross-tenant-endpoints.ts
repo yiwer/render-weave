@@ -38,6 +38,7 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'POST /v1/api-keys', addressesObject: false, request: () => ({ method: 'POST', url: '/v1/api-keys', body: { name: '跨租户检查' } }) },
   { route: 'DELETE /v1/api-keys/:keyId', addressesObject: true, request: (a) => ({ method: 'DELETE', url: `/v1/api-keys/${a.apiKeyId}` }) },
   { route: 'GET /v1/audit-events', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/audit-events' }) },
+  { route: 'GET /v1/audit-events/export.csv', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/audit-events/export.csv' }) },
   { route: 'GET /v1/authoring/tenants/:tenantId', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}` }) },
   // 代建推送（票据 05）：目标租户写在路径里，只认令牌被指定的租户。
   { route: 'GET /v1/authoring/tenants/:tenantId/workspace', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/workspace` }) },

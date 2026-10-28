@@ -8,14 +8,14 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { TOKEN_KINDS, USAGE_KINDS, WEBHOOK_EVENT_TYPES } from '../backend.js';
+import { ACTOR_KINDS, TOKEN_KINDS, USAGE_KINDS, WEBHOOK_EVENT_TYPES } from '../backend.js';
 import { MANIFEST_SCHEMA } from '../push.js';
 import type { Access } from './permissions.js';
 import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.0.0';
+export const API_VERSION = '1.1.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -131,9 +131,18 @@ const SCHEMAS: Record<string, unknown> = {
   ] },
   AuditEvent: object({
     id: str('事件 ID，按时间递增'), tenantId: { type: ['string', 'null'], description: '租户 ID；平台级事件为 null' }, at: instant('时间'),
-    actor: object({ kind: { type: 'string', enum: ['member', 'platformUser', 'apiKey', 'authoringToken', 'system'] }, id: str(), label: str() }),
+    actor: object({ kind: { type: 'string', enum: [...ACTOR_KINDS] }, id: str(), label: str() }),
     action: str('操作，如 batch.create'), object: object({ type: str(), id: str() }), crossTenant: { type: 'boolean', description: '平台管理员或代建工程师的跨租户操作' },
-  }),
+    beforeSha256: { ...sha256, description: '代建写入：对象写入前的内容哈希（1.1.0）' }, afterSha256: { ...sha256, description: '代建写入：对象写入后的内容哈希（1.1.0）' },
+    diff: ref('AuditDiff'), round: str('代建轮次（1.1.0；P2 的 Agent 填写）'), reason: str('写入理由（1.1.0；P2 的 Agent 填写）'),
+  }, ['id', 'tenantId', 'at', 'actor', 'action', 'object', 'crossTenant']),
+  AuditDiff: object({
+    added: int('新增几项'), removed: int('删除几项'), changed: int('修改几项'),
+    paths: array(object({
+      path: str('改动的位置，如 template:问候牌、resource:logo'), change: { type: 'string', enum: ['added', 'removed', 'changed'] },
+      beforeSha256: { ...sha256, description: '改动前的内容哈希；新增没有' }, afterSha256: { ...sha256, description: '改动后的内容哈希；删除没有' },
+    }, ['path', 'change']), '至多 50 项；计数之和大于项数时没列全'),
+  }, ['added', 'removed', 'changed', 'paths'], { description: '代建写入的差异摘要（1.1.0，M347）' }),
 
   // 套餐与用量
   Plan: object({
@@ -366,7 +375,9 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/api-keys': { tag: '租户', summary: '本租户的 API 密钥', replies: [ok(list('apiKeys', 'ApiKey'))] },
   'POST /v1/api-keys': { tag: '租户', summary: '创建 API 密钥，密钥只出现一次', replies: [created(object({ key: str('API 密钥，只出现这一次'), apiKey: ref('ApiKey') }))] },
   'DELETE /v1/api-keys/:keyId': { tag: '租户', summary: '吊销 API 密钥', replies: [none('已吊销')] },
-  'GET /v1/audit-events': { tag: '租户', summary: '本租户的审计日志，按时间倒序', replies: [ok(page('events', 'AuditEvent', '下一页的 before'))] },
+  'GET /v1/audit-events': { tag: '租户', summary: '本租户的审计日志，按时间倒序；可按主体种类与时间筛选（from 含、to 不含）', replies: [ok(page('events', 'AuditEvent', '下一页的 before'))] },
+  'GET /v1/audit-events/export.csv': { tag: '租户', summary: '按同样的筛选把审计导出为 CSV，按时间倒序；一次至多 10,000 条，超出时答 400，要缩小时间范围',
+    replies: [{ status: 200, description: 'UTF-8（带 BOM）的 CSV，列名同 AuditEvent 的字段，差异的路径写成 JSON', binary: ['text/csv'] }] },
 
   'GET /v1/templates': { tag: '模板与预览', summary: '本租户的模板：适用尺寸范围、所用的数据定义与对外参数', replies: [ok(list('templates', 'Template'))] },
   'GET /v1/templates/:name': { tag: '模板与预览', summary: '一个模板', replies: [ok(ref('Template'))] },

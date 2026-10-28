@@ -221,6 +221,11 @@ JSON 请求体里超过 15 位有效数字的数值按双精度读取会失真�
 - **记录内容**：人、租户、操作、对象与时间，不记业务数据内容、密码与令牌。
 - **跨租户标记**：平台管理员与代建工程师对客户租户的操作标为跨租户，记进目标租户的审计，客户管理员能看到。
 - **不属于任何租户的事件**：例如建平台用户、签发代建令牌，记在平台级。
+- **代建写入另记内容**（ADR-0022、M347，P1 票据 03，迁移 0010）：可选字段 `beforeSha256`、`afterSha256`（一份对象写入前后的内容哈希）、`diff`（差异摘要）、`round` 与 `reason`（轮次与理由，给 P2 的 Agent 用，本期留空）。别的事件与迁移之前的旧行没有这些字段。
+  - **差异摘要**：增删改计数是全部的，`paths` 至多 50 项，每项是路径（`种类:键` 或 `resource:资源ID`）、改动与前后内容哈希；计数之和大于项数就说明没列全。
+  - **推送提交**（`push.commit`）：改动的每份文档与资源各一项，模板的前是推送前的当前修订，资源的前是推送前的当前内容版本；事件本身不填前后哈希，一次推送改的是多份对象。
+  - **指回旧修订**（`template.setCurrent`）：前后哈希是改前、改后两个当前修订的内容，差异摘要是这个模板一项；指向内容相同的修订时差异为空。
+- **查询与导出**：`GET /v1/audit-events` 按时间倒序翻页，可按主体种类（`actorKind`：`member`、`apiKey`、`authoringToken`、`platformUser`、`system`）与时间（`from` 含、`to` 不含）筛选。`GET /v1/audit-events/export.csv` 按同样的筛选导出 CSV：列名同接口字段，`diffPaths` 是 JSON；UTF-8 带 BOM、CRLF 换行；以 `=`、`+`、`-`、`@` 开头的格子前加单引号，防 Excel 当公式执行。一次至多 10,000 条，超出答 400，要缩小时间范围分次导出。只有客户管理员能看与导出（`audit.read`），导出不记审计。
 
 ## 代建推送
 
@@ -267,7 +272,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 **读回**：`GET …/workspace` 列出租户的文档（模板为当前修订）、模板的全部修订与资源的全部内容版本；`GET …/contents/{哈希}` 按 SHA-256 读回已登记的原始字节，只上传、没登记的内容答 404。
 
-**审计**：代建端点的每次调用都记进目标租户的审计，标为跨租户：`authoring.access`、`authoring.read`、`content.read`、`content.upload`、`push.plan`、`push.commit`、`push.reject`、`template.setCurrent`。
+**审计**：代建端点的每次调用都记进目标租户的审计，标为跨租户：`authoring.access`、`authoring.read`、`content.read`、`content.upload`、`push.plan`、`push.commit`、`push.reject`、`template.setCurrent`。`push.commit` 与 `template.setCurrent` 另记前后内容哈希与差异摘要，见[审计](#审计)。
 
 ## 模板与草稿预览
 
@@ -560,7 +565,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
     - 成员与角色：改角色、停用与启用；自己的角色与状态不在这里改；新成员与重置密码由平台管理员办理；
     - API 密钥：创建时密钥显示一次，列表只有开头几位，可以吊销；
     - webhook：注册时签名密钥显示一次，停用与启用，查看投递记录（各次尝试的状态码或原因）；
-    - 审计日志：操作人、操作、对象与跨租户标记，一页 50 条。
+    - 审计日志：操作人、操作、对象与跨租户标记，一页 50 条；代建写入另显示前后内容哈希（开头 8 位，悬停看全文）与差异摘要（展开看路径与各自的前后哈希）。可按主体种类与日期筛选，筛选结果导出 CSV（P1 票据 03）。
     - 只出现一次的密钥只放在那一块面板的状态里，关掉、换标签或离开就没了，不写进 sessionStorage。
 - **出图参数**：缺省取模板适用尺寸的下限、120 DPI、PNG。预览与正式交付用同样的尺寸与分辨率，因为低分辨率的草稿会给条码报假问题（M280）。
 - **身份**：只有客户管理员与操作员能用，令牌只放在本标签页的 sessionStorage。顶栏显示本月剩余张数，两种角色都有（M300；票据 12 时只给管理员）。

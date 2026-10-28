@@ -18,7 +18,7 @@ import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './probl
 
 const UUID = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 /** ISO 8601 的时刻，带时区。 */
-const INSTANT = '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:\\d{2})$';
+export const INSTANT = '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:\\d{2})$';
 const INDEX = /^[1-9][0-9]{0,3}$/;
 const FILE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 

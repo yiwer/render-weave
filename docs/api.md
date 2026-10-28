@@ -215,3 +215,4 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.1.0 | 2026-10-27 | 审计补代建写入的内容（P1 票据 03，M347）：`AuditEvent` 加可选的 `beforeSha256`、`afterSha256`、`diff`（增删改计数加至多 50 个路径，各带前后内容哈希）、`round`、`reason`；`GET /v1/audit-events` 加可选的 `actorKind`、`from`、`to` 筛选；新增 `GET /v1/audit-events/export.csv` 按同样的筛选导出 | 兼容，只做加法 |

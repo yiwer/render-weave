@@ -2,7 +2,7 @@
  * 行级安全（ADR-0018 的第二道防线，M262）：应用层写错查询、漏写租户条件时，数据库也不返回、不改动别的租户的行。
  * 用与服务相同的应用账号连库；两个租户各有成员、会话、API 密钥、审计、文档、资源与批次。
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { asPlatform, withTenant, type Db } from '../src/postgres/db.js';
@@ -15,8 +15,9 @@ const PLATFORM_VISIBLE = new Set(['users', 'sessions', 'audit_events', 'authorin
 const PLATFORM_ONLY = ['authoring_token_tenants'];
 
 let db: Db, owner: Db, backend: ServiceBackend;
-const tenants: { id: string; email: string; keyId: string }[] = [];
+const tenants: { id: string; email: string; keyId: string; auditSha256: string }[] = [];
 const bytes = (value: string) => new Uint8Array(Buffer.from(value));
+const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 
 beforeAll(async () => {
   ({ db, backend } = await postgresBackend());
@@ -28,6 +29,11 @@ beforeAll(async () => {
     await scope.createSession(member.id, randomUUID().replaceAll('-', '').padEnd(64, '0'), new Date(Date.now() + 3_600_000));
     const key = await scope.createApiKey({ name: name, tokenHash: randomUUID().replaceAll('-', '').padEnd(64, '1'), prefix: 'rwk_xxxxxx' });
     await scope.appendAudit({ actor: { kind: 'system', id: 'test', label: '测试' }, action: 'test.seed', object: { type: 'tenant', id }, crossTenant: false }, new Date());
+    // 代建写入的审计（P1 票据 03）：前后内容哈希与差异摘要随行，一样只让本租户看到。
+    const auditSha256 = digest(`审计 ${name}`);
+    await scope.appendAudit({ actor: { kind: 'authoringToken', id: 'test', label: '测试' }, action: 'template.setCurrent', object: { type: 'template', id: name }, crossTenant: true,
+      beforeSha256: digest(name), afterSha256: auditSha256, diff: { added: 0, removed: 0, changed: 1, paths: [{ path: `template:${name}`, change: 'changed', afterSha256: auditSha256 }] },
+      round: `轮次 ${name}`, reason: `理由 ${name}` }, new Date());
     await scope.storage.putDocuments([{ source: `${name}.json`, bytes: bytes(`{"name":"${name}"}`) }]);
     expect((await scope.storage.resources.commit([{ type: 'create', id: 'logo', kind: 'image', bytes: bytes(name) }])).problems).toEqual([]);
     const template = bytes(`{"dslVersion":"renderweave-template/1","name":"${name}"}`);
@@ -52,7 +58,7 @@ beforeAll(async () => {
     await scope.tasks.enqueuePreview({ template: '不存在' }, { concurrency: 9, perMinute: 9, staleAfterMs: 60_000 }, new Date());
     const batch = await scope.storage.createBatch();
     await batch.output.write(1, { files: new Map([['problems.json', bytes('[]\n')]]) });
-    tenants.push({ id, email, keyId: key.id });
+    tenants.push({ id, email, keyId: key.id, auditSha256 });
   }
   await backend.platform.createAuthoringToken({ label: '行级安全', tokenHash: 'e'.repeat(64).slice(0, 32) + randomUUID().replaceAll('-', ''), prefix: 'rwa_xxxxxx',
     tenantIds: tenants.map((tenant) => tenant.id), expiresAt: new Date(Date.now() + 3_600_000) });
@@ -88,6 +94,22 @@ it('没设置当前租户时什么也查不到；平台模式也看不到租户�
   }
 });
 
+it('审计的内容哈希与差异摘要：按别的租户的哈希查不到；经后端只读到本租户的', async () => {
+  for (const tenant of tenants) {
+    const others = tenants.filter((other) => other.id !== tenant.id);
+    const rows = await withTenant(db, tenant.id, async (client) => (await client.query(
+      `SELECT tenant_id, after_sha256, diff, round, reason FROM audit_events WHERE after_sha256 IS NOT NULL OR diff IS NOT NULL OR round IS NOT NULL`)).rows);
+    expect(rows.map((row) => [row.tenant_id, row.after_sha256])).toEqual([[tenant.id, tenant.auditSha256]]);
+    for (const other of others) {
+      const found = await withTenant(db, tenant.id, (client) => client.query(`SELECT 1 FROM audit_events WHERE after_sha256 = $1 OR diff::text LIKE '%' || $1 || '%'`, [other.auditSha256]));
+      expect(found.rowCount).toBe(0);
+    }
+    const events = await backend.tenant(tenant.id).listAudit({ limit: 500, actorKind: 'authoringToken' });
+    expect(events.map((event) => event.afterSha256)).toEqual([tenant.auditSha256]);
+    expect(events[0]).toMatchObject({ diff: { changed: 1, paths: [{ afterSha256: tenant.auditSha256 }] }, crossTenant: true });
+  }
+});
+
 it('写别的租户的行被拒绝；漏写条件的更新只改到当前租户', async () => {
   const [a, b] = tenants as [typeof tenants[0], typeof tenants[0]];
   await expect(withTenant(db, a.id, (client) => client.query(
@@ -105,6 +127,7 @@ it('审计、用量事件与 webhook 的事件、尝试只能追加；webhook �
     await expect(withTenant(db, a!.id, (client) => client.query(statement)), statement).rejects.toThrow(/permission denied/);
   }
   await expect(withTenant(db, a!.id, (client) => client.query(`UPDATE audit_events SET action = 'x'`))).rejects.toThrow(/permission denied/);
+  await expect(withTenant(db, a!.id, (client) => client.query(`UPDATE audit_events SET after_sha256 = NULL, diff = NULL`))).rejects.toThrow(/permission denied/);
   await expect(withTenant(db, a!.id, (client) => client.query(`DELETE FROM audit_events`))).rejects.toThrow(/permission denied/);
   await expect(withTenant(db, a!.id, (client) => client.query(`UPDATE usage_events SET quantity = 0`))).rejects.toThrow(/permission denied/);
   await expect(withTenant(db, a!.id, (client) => client.query(`DELETE FROM usage_events`))).rejects.toThrow(/permission denied/);
