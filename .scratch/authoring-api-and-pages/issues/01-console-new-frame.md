@@ -38,15 +38,16 @@
 - 本机浏览器用例（内存后端、Edge）`$env:RW_BROWSER='…msedge.exe'; npx vitest run service/test/console.browser.test.ts`：14 通过、2 跳过（取消批次两条只在 Docker 后端跑）。
 - 内置浏览器（Chromium）里实测 `Ctrl+K` 与 `Ctrl+4` 都由页面接住，没有被浏览器拿去切标签页。
 - Docker 后端 `node service/scripts/test-docker.mjs`（安静时段，第 5 次）：139 条中 135 通过、4 失败，新加的三条都通过，日志 1260 行全部合格。4 条失败在同一台机器上的 main（a72c161，临时 worktree）上一模一样：136 条中 132 通过、4 失败。它们是：
-  - 控制台主路径的 6 张 M402 出成"部分失败"——Docker 后端测试把单项超时压到 1.5 秒，这台机器上 M402 线路牌单项贴着这条线；
+  - 控制台主路径的 6 张 M402 出成"部分失败"：worker 日志里 M402 单项热的时候 0.7–1.5 秒，但测试脚本让渲染子进程每 5 次换新（`RW_RENDER_RECYCLE_AFTER=5`），换新后的第一项要冷启动，约 3 秒，超过 1.5 秒的单项超时；超时又会结束子进程，下一项再冷启动，于是第 4–6 项连着失败；
   - "几份数据集一起出图"与"出图记录"两条是它的连锁（侧栏没关、记录少 3 条）；
-  - `records.docker` 的"两个构建"重放答 `matched: false`，与控制台无关。
+  - `records.docker` 的"两个构建"重放答 `matched: false`，与控制台无关；推断同样是重放撞上冷启动超时，没有单独核实。
+  - 能不能过取决于换新落在哪一项，不是稳定缺陷：票据 03 的会话 27 日晚在本机安静时只跑 console、records 等四个文件，39 条全过。我这边只跑 console 与 records 两个文件（02:01，CPU 28–43%）仍是这 4 条失败。
 - 前 4 次 Docker 运行有 3 次与兄弟 worktree 的整套 vitest 重叠，渲染超时大量触发，作废；一次暴露出新用例在窄窗口里等 M402 草稿预览不稳，已改成等标题与站点表。
 - `npm test`（安静时段）：服务那组全部通过，单独跑 `npx vitest run --project service` 是 13 个文件 103 通过、16 跳过（只在设了 `RW_BROWSER` 时跑的那个文件）。引擎那组 35 个文件、211 条失败：七成是 `agent-*` 用例 60 秒超时，其余多是并行读 `fixtures/resources` 时拿不到锁的 `local.storeBusy`（`src/local-access.ts:45`、`:53` 拿不到锁就直接报忙）。本分支相对 main 在 `src`、`test`、`fixtures`、`scripts`、`schemas`、`agent`、`docs/examples` 与根目录的包和配置上没有任何改动（`git diff --stat main -- …` 为空），引擎那组的输入与 main 逐字节相同；单独重跑 `layout` 里失败的一条是通过的。下一步：在没有别的会话跑测试时用 `npx vitest run --project engine --no-file-parallelism` 复核，`local.storeBusy` 另开票。
 
 **偏差与实施中的判断**（没有记 M 编号，用户不同意时按切换条件改）
 
-- 最后一项的勾选依据：内存后端全部通过；Docker 后端失败的 3 条控制台用例在本机 main 上一模一样地失败，原因是 M402 单项贴着 1.5 秒超时，不是本票的改动。要让 Docker 后端那组在本机稳定全绿，另开票处理测试超时或 worker 资源。
+- 最后一项的勾选依据：内存后端全部通过；Docker 后端失败的 3 条控制台用例在本机 main 上一模一样地失败，原因是子进程换新后冷启动超过 1.5 秒的单项超时，不是本票的改动。要让 Docker 后端那组在本机稳定全绿，另开票调整测试的超时与换新间隔。
 
 - 进行中的批次只数本标签页提交过的：开放 API 没有列批次的端点，本票不加端点。要租户范围的数字，加一个只读的批次列表端点后换掉 `useRunningBatches`。
 - 出图模块打开时是出图记录（租户范围），批次页只列本标签页的。
