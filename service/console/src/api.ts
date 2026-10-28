@@ -5,7 +5,7 @@
  */
 import type {
   ApiKeyInfo, AuditEvent, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
-  StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
+  StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
@@ -44,6 +44,17 @@ const changingUsage = async <T>(request: Promise<T>): Promise<T> => {
   return reply;
 };
 
+/** 连接状态（状态栏）：最近一次请求有没有连上出图服务，不论回答是成功还是问题清单。 */
+let connected = true;
+const connectionListeners = new Set<(connected: boolean) => void>();
+export const isConnected = () => connected;
+export const onConnectionChanged = (listener: (connected: boolean) => void) => { connectionListeners.add(listener); return () => { connectionListeners.delete(listener); }; };
+const reached = (value: boolean) => {
+  if (value === connected) return;
+  connected = value;
+  for (const listener of connectionListeners) listener(value);
+};
+
 const problemOf = (message: string): Problem => ({ code: 'request.failed', level: 'severe', location: { kind: 'input', source: 'request' }, message });
 
 interface RequestOptions {
@@ -63,7 +74,8 @@ async function send(method: string, path: string, options: RequestOptions = {}):
   if (options.bytes !== undefined) { headers['content-type'] = 'application/octet-stream'; body = options.bytes; }
   let response: Response;
   try { response = await fetch(path, { method, headers, ...(body === undefined ? {} : { body }) }); }
-  catch { throw new ApiError(0, [problemOf('连不上出图服务，请检查网络后重试')]); }
+  catch { reached(false); throw new ApiError(0, [problemOf('连不上出图服务，请检查网络后重试')]); }
+  reached(true);
   if (response.ok) return response;
   let parsed: Record<string, unknown> | undefined;
   try { parsed = await response.json() as Record<string, unknown>; } catch { parsed = undefined; }
@@ -91,6 +103,7 @@ export const api = {
   login: (email: string, password: string) => json<{ token: string; identity: Identity }>('POST', '/v1/sessions', { json: { email, password } }),
   logout: async () => { await send('DELETE', '/v1/sessions/current'); },
   me: () => json<Identity>('GET', '/v1/me'),
+  tenant: () => json<Tenant>('GET', '/v1/tenant'),
   usage: (period?: string) => json<Usage>('GET', `/v1/usage${search({ period })}`),
   usageEvents: (query: { readonly period?: string; readonly kind?: UsageKind; readonly before?: string }) =>
     page<UsageEvent>(`/v1/usage/events${search({ ...query, limit: 50 })}`, 'events'),

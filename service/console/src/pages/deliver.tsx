@@ -6,9 +6,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { api, saveBlob, usageChanged } from '../api.js';
+import { DeliverTabs } from '../components/module-tabs.js';
 import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, type ParameterValues } from '../components/parameters.js';
 import { ErrorBox, locationText } from '../components/problems.js';
-import { href, problemsOf } from '../hooks.js';
+import { problemsOf } from '../hooks.js';
 import type { BatchItem, BatchView, ItemStatus, OutputSettings, Problem, TemplateInfo, Usage } from '../types.js';
 
 const RECENT_KEY = 'renderweave.console.batches';
@@ -26,11 +27,15 @@ interface Recent { readonly id: string; readonly title: string; readonly templat
 export function recentBatches(): Recent[] {
   try { return JSON.parse(sessionStorage.getItem(RECENT_KEY) ?? '[]') as Recent[]; } catch { return []; }
 }
+const rememberedListeners = new Set<() => void>();
+/** 记下新批次时通知（状态栏的进行中批次）。返回取消订阅的函数。 */
+export const onRemembered = (listener: () => void) => { rememberedListeners.add(listener); return () => { rememberedListeners.delete(listener); }; };
 export function remember(batch: BatchView, title: string): void {
   try {
     const next = [{ id: batch.id, title, template: batch.template, at: batch.createdAt }, ...recentBatches().filter((entry) => entry.id !== batch.id)].slice(0, 20);
     sessionStorage.setItem(RECENT_KEY, JSON.stringify(next));
   } catch { /* 存不了就不记 */ }
+  for (const listener of rememberedListeners) listener();
 }
 
 interface Sweep { readonly name: string; readonly from: string; readonly to: string }
@@ -333,7 +338,7 @@ function BatchProgress(props: { readonly id: string; readonly layout: 'sheet' | 
     </div>
   );
 
-  if (props.layout === 'page') return <section className="page" aria-labelledby="batch-title">{head}<div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>{body}</div>{foot}</section>;
+  if (props.layout === 'page') return <section className="page" aria-labelledby="batch-title"><DeliverTabs active="batches" />{head}<div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>{body}</div>{foot}</section>;
   return (
     <>
       <div className="scrim" onClick={props.onClose} />
@@ -348,11 +353,4 @@ function BatchProgress(props: { readonly id: string; readonly layout: 'sheet' | 
 
 export const BatchSheet = (props: { readonly id: string; readonly onClose: () => void }) => <BatchProgress id={props.id} layout="sheet" onClose={props.onClose} />;
 
-export function BatchPage(props: { readonly id: string }) {
-  return (
-    <>
-      <nav className="crumbs page" aria-label="位置" style={{ paddingBottom: 0 }}><a href={href(['datasets'])}>数据集</a><span aria-hidden="true">/</span><span>出图任务</span></nav>
-      <BatchProgress id={props.id} layout="page" />
-    </>
-  );
-}
+export const BatchPage = (props: { readonly id: string }) => <BatchProgress id={props.id} layout="page" />;
