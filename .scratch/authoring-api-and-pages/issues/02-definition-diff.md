@@ -47,11 +47,13 @@
   - 纯函数（不改输入、重复调用相同、可序列化）。
 - 变异检查：去掉 `affectsBindings`、让顺序比较恒为否，4 项测试失败，还原后 20 项通过。
 - `npm run typecheck`、`npm run build` 通过。
-- **全量测试**（本票的改动在 `util.ts`、`agent/diff.ts`、`index.ts` 与新文件，没动渲染与服务；`npm run build`、`npm run typecheck` 通过）：
-  - 同机有另外两个会话在跑全量测试，CPU 长期 90–100%，重型用例超时。默认并发的 `npm test` 先后两次分别 45、61 个文件失败，全是超时与抢 `fixtures/resources` 写锁，不是断言错误；
-  - 限 4 个 worker 的 `npx vitest run --maxWorkers=4`：84 个文件里 67 个通过，1,273 项通过、69 项失败、20 项跳过。失败的 15 个文件全是 Agent harness 的重型集成用例（拉子进程、等检查点文件、60–180 秒超时），没有一个碰数据定义或差异；
-  - 这 15 个里单独重跑的结果：`agent-stagnation` 25、`agent-execution` 14、`agent-candidate-selection` 13、`agent-checkpoint` 15、`agent-eval-identity` 19 项全过，`agent-orders` 过；这几个文件正是会 import 被挪动的 `canonical` 的模块；
-  - `agent-context-policy` 的 1 项（真实 CLI 端到端）单独重跑仍卡在 180 秒上限，当时 CPU 100%，不能判断是慢还是错；其余未单独重跑的文件见下方「没做」。
+- **全量测试**（本票改动在 `util.ts`、`agent/diff.ts`、`index.ts` 与新文件，没动渲染与服务）：
+  - 同机有另外两个会话在跑全量测试，CPU 长期 90–100%。默认并发的 `npm test` 先后两次分别 45、61 个文件失败，全是 60–180 秒超时与抢 `fixtures/resources` 写锁，不是断言错误；
+  - 限 4 个 worker 的 `npx vitest run --maxWorkers=4`：84 个文件里 67 个通过，1,273 项通过、69 项失败、20 项跳过，服务（`service` 项目）全部通过；失败的 15 个文件全是 Agent harness 的重型集成用例（拉子进程、等检查点文件），没有一个碰数据定义或差异；
+  - 这 15 个文件逐个单独重跑（含全部会 import 被挪动的 `canonical` 的模块）：`agent-stagnation` 25、`agent-execution` 14、`agent-candidate-selection` 13、`agent-checkpoint` 15、`agent-eval-identity` 19、`agent-concurrency` 9、`agent-resource-identity` 12、`agent-budgets` 17、`agent-eval-feedback-cli` 10、`agent-eval-transcription` 22 项全过，`agent-orders` 通过；`agent-apply-recovery`、`agent-eval` 各有 1 项在批次里超时或抢锁，单独跑通过；
+  - 仍不过的两项与本票无关：
+    - `agent-context-policy` 的"票14双语四任务"（十几次 `tsx` 子进程串起来的真实 CLI 链）在 180 秒用例上限处超时；**已在基线 `a72c161`（本票之前）上同一台机器实测，同样 180 秒超时**；
+    - `agent-candidate-freeze` 的"直接数据集阶段绑定…"在测试里建符号链接时报 `EPERM: operation not permitted, symlink`，是这台 Windows 没有符号链接权限（开发者模式或管理员）；推断，没在基线上跑。
 
 **对验收的偏差与取舍**
 
@@ -61,4 +63,4 @@
 
 **没做 / 下一步**
 
-- **没有拿到干净的全量绿**：`agent-context-policy` 的 1 项和 `agent-candidate-freeze`、`agent-apply-recovery`、`agent-concurrency`、`agent-resource-identity`、`agent-budgets`、`agent-eval`、`agent-eval-feedback-cli`、`agent-eval-transcription` 这些文件没有在不被挤占的机器上单独跑完。下一步：机器空闲时 `npx vitest run --project engine --no-file-parallelism` 跑这几个文件（`agent-eval-transcription` 一个就要 15 分钟以上）；若有失败，先用 `git stash` 之外的方式在基线 worktree 上跑同一个用例对照，再判断是否与本票有关。
+- 没有拿到一次 `npm test` 退出码为 0 的干净全量：这台机器上的两项（`agent-context-policy` 的票 14 链、`agent-candidate-freeze` 的符号链接）本来就不过，其余是负载超时。下一步：在没有其他会话抢 CPU、且有符号链接权限的机器上跑一次 `npm test`，预期这两项之外全绿。
