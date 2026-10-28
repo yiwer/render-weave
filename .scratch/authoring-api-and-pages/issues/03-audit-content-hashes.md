@@ -35,7 +35,7 @@
 - `npx vitest run --project service`：14 个文件通过、1 个跳过，107 项通过、13 项跳过（浏览器用例的本机快速版，要设 `RW_BROWSER`）。
 - Docker 后端（`node service/scripts/test-docker.mjs`）：16 个文件 141 项。整轮跑出 12 个文件通过（含 `audit.docker.test.ts` 4 项、`api`、`push`）；`rls.docker.test.ts` 因本票新加的种子与已有的局部变量同名而失败，改名后与当时超时的 `console`、`metering`、`records` 在本机空闲时重跑，4 个文件 39 项全部通过。行级安全用例新增：按别的租户的内容哈希查不到，审计内容列也不能改。
 - 控制台浏览器用例（Edge，内存后端）：管理员页面那条（含按主体筛选与导出 CSV）通过。
-- 全量 `npm test`：本机没能跑绿，未验证。三次全量都与另一个 worktree（`friendly-bhaskara-1592b7`）的全量测试同时进行，CPU 满载，引擎项目大量 60 秒超时，并有 `fixtures/resources` 的 `local.storeBusy`；本分支没有改引擎的 `src/`、`test/`、`scripts/` 与夹具。单独跑引擎的 layout、render、mcp、schema、agent-eval 共 156 项，154 项通过，另 2 项 agent-eval 单跑一项 55 秒通过（时限 60 秒）。下一步：本机没有别的测试在跑时执行 `npm test`。
+- 全量 `npm test`：2026-10-28 在本机空闲时（没有别的 worktree 在跑测试，也没有 Docker 容器）重跑。84 个文件 1346 项：1158 项通过、168 项失败、20 项跳过。失败全在引擎项目（28 个文件），出图服务项目没有失败。引擎的失败都是 30–240 秒的单项超时，外加 `fixtures/resources` 的 `local.storeBusy`，是本机全并行跑满 CPU 造成的。本分支相对 a72c161 只改了 `service/`、`docs/`、`.scratch/` 与 `CONTEXT.md`，引擎项目测的代码与 main 逐字节相同。此前单独跑引擎的 layout、render、mcp、schema、agent-eval 共 156 项，154 项通过，另 2 项单独跑一项 55 秒通过（时限 60 秒）。要在本机全量跑绿，得降低并行或放宽引擎的时限，不属于本票。
 
 **偏差**
 
