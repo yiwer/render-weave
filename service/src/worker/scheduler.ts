@@ -27,7 +27,7 @@ export interface RunnerStats {
   crashes: number;
   /** 批次取消时结束正在渲染的一项的次数。 */
   cancels: number;
-  /** 渲染子进程换新的次数（超时、内存超限、崩溃、取消或做满项数）。 */
+  /** 渲染子进程换新的次数（超时、内存超限、崩溃、取消、做满项数，或在两项之间退出）。 */
   restarts: number;
   /** 渲染用时（票据 15）：各项从交给渲染器到交回的毫秒数之和，与最慢的一项；逐项的用时在日志里。 */
   renderMs: number;
