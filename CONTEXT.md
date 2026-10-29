@@ -1,74 +1,79 @@
 # RenderWeave 项目上下文
 
-接续工作的入口：当前阶段、下一步、已实现能力与文档地图。本文只放结论和指针。换设备或首次接手时，先照[开发环境与接续](docs/dev-setup.md)准备软件、key 与不进版本库的材料。票据状态以票据文件的 `**Status:**` 行为准；验收细节、测试数量与提交记录分别在票据 `## Answer`、对应的 `docs/*.md` 和 git log 里。
+接续工作的入口：当前阶段、下一步、已实现能力与文档地图。本文只放结论和指针。
+
+- **接手顺序**：先看「当前阶段与下一步」里在进行的两条线，再按对应的票据索引领取票据（规则见 `docs/agents/issue-tracker.md`）。换设备或首次接手时，先照[开发环境与接续](docs/dev-setup.md)准备软件、key 与不进版本库的材料。
+- **事实源**：票据状态以票据文件的 `**Status:**` 行为准；验收细节、测试数量与提交记录分别在票据 `## Answer`、对应的 `docs/*.md` 和 git log 里。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
 
 ## 一句话
 
-RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结构及其出图方式，再用符合定义的数据批量生成 PNG/JPG。首个业务场景是公交线路牌。核心目的（M189）：用户在系统中给出示例图，业务 Agent 辅助完成数据定义与数据集设计，再完成模板设计；Agent 经只读工具使用校验、预览与识别能力，成果经人审核后应用。产品方向（M204–M207，见[产品路线图](docs/roadmap.md)）：对外 SaaS，Agent 是做模板的主入口，网页是看、改与出图的主界面；v1.0 出图服务化、模板由内部团队用 Agent 代建；交互参考 Claude Design（对话加画布、评论定位、实时旋钮），视觉为暖色中性风格（M208）。
+RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结构及其出图方式，再用符合定义的数据批量生成 PNG/JPG。首个业务场景是公交线路牌。
+
+- **产品**（M204–M207，[产品路线图](docs/roadmap.md)）：对外 SaaS。v1.0 把出图做成多租户服务，模板由内部团队用 Agent 代建，已在阶段 4 验收；现在是阶段 5 客户自助做模板。
+- **Agent**：用户给出示例图或数据集，业务 Agent 辅助完成数据定义、数据集与模板（M189）。Agent 与人类共用一套写入能力，缺省直发，租户可要求发布前批准，靠版本、审计与回退控制风险（ADR-0022）；产品中的 Agent 循环由服务端进程内的 Tool Runner 驱动（ADR-0027）。
+- **界面**：交互参考 Claude Design，左栏对话、右侧模块与画布、评论定位、实时旋钮（M208）；方向见[桌面工作台原型](docs/prototypes/desktop-workbench/README.md)。桌面端是包同一份页面的薄壳（M341）。
 
 ## 当前阶段与下一步
 
-- **当前 Agent 验收阶段（2026-10-25）**：Windows 监督器收尾补修已合入 main，正式验收统一使用[候选6](docs/agent-eval/harness-acceptance-candidate-6.md)。[可信反馈真实验收](docs/agent-eval/trusted-feedback-acceptance/candidate-6/RESULTS.md)与[原四场景完整门槛](.scratch/agent-template-authoring/original38-harness/candidate-6-results/README.md)均已完成，来源核验及完整归档恢复已独审通过。[四份中文实际成果审核包](out/harness-original38-review/zh-candidate-6-index-v2/index.html)已交付，当前补齐原38独立样式/状态判断与审核工时，再按依赖推进留出验收。候选5原包、英文成果与用户总体接受记录保留，不拼入新候选槽位；后续为原38独立审核、公交四类型留出与真人走查。
+两条线并行：P1 是阶段 5 的主线；Agent 验收与 Tool Runner 门槛是 P0，P2（服务端 Agent）开工前两边都要完成。阶段 5 的六段划分见[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)。
 
-- 需求探索与业务实体建模已完成。决定逐条记为 M 编号（[需求探索记录](docs/discovery/requirements.md)），难以逆转的写成 [ADR](docs/adr/)。
-- 首期 [渲染流水线](.scratch/render-pipeline/spec.md)：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
-- 第二阶段 [本地生产出图 PRD](.scratch/local-production-output/spec.md)：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
-- 产品路线图见 [docs/roadmap.md](docs/roadmap.md)：阶段 3 Agent 可行性 → 阶段 4 SaaS 第一版（v1.0）→ 阶段 5 客户自助做模板。
-- 第三阶段 [Agent 代建模板的本地闭环 PRD](.scratch/agent-template-authoring/spec.md)（v0.3）：DSL 1.0 与 JSON Schema、`renderweave mcp` 只读工具、`renderweave agent` 任务闭环（提取、审核、应用、多轮、模板修改）、三层资料与评估门槛；9 张票据见[索引](.scratch/agent-template-authoring/README.md)。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
-- **第三阶段 15 张票据全部完成，阶段验收通过**（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）：
-  - DSL 1.0 与 JSON Schema（M223、M224）；
-  - `renderweave mcp` 只读工具（M225）；
-  - `renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；
-  - 三层资料与评估门槛（M230）；
-  - 价签与 366 两张新示例图按[代建指南](docs/agent-guide.md)走完全流程，代建模式可行；A11 由用户本人用 M162 竖版线路牌补测，人工约 30 分钟，到正式出图为止；
-  - 验收后补了交回前核对成果的只读工具 `check_outcome`（票据 10，M233），并让 `view_image` 能看资源仓库中的图片（`res:资源ID`，票据 11，M234）；MCP 合同 0.5.0。
-  - 真人走查之后补了纵向循环（票据 12，M236）：`itemLayout.direction: "column"` 与 `heights`，竖排列表不再靠旋转 90°。这是 DSL 1.x 的第一笔加法。
-  - 修了网格中元素静默重叠的三种情形（票据 13，M237），ADR-0016 补了布局缺陷修正的口径。
-  - 模板在画板上声明缩字下限（票据 14，M238），价签一类小标签可以缩到 5 mm 以下。
-  - 资源命令遇到还不是版本仓库的目录时，提示先 `resources-init` 或从旧目录导入（票据 15，M239）。
-- **DSL 1.x 平面设计能力演进（P1/P2）**（[规格](.scratch/dsl-graphic-capabilities/spec.md)，[索引](.scratch/dsl-graphic-capabilities/README.md)）：7 张票据全部完成（M251–M257），已变基到阶段 4 之上、跑通全量测试（M249），并在更新后的 `agent/reference/template.md` 上复跑通过 Haiku 5.5 评估门槛（[2026-10-19-dsl-graphic-capabilities](docs/agent-eval/reports/2026-10-19-dsl-graphic-capabilities.json)，A08）：
-  - 票据 01（M251）：派生变量支持 `multiply`、`divide`、`mod`、`splitPart`（含 `format` 格式化后拆字）与 `branch` 条件中的 `all` / `any` 复合条件。
-  - 票据 02（M252）：循环容器支持 `reverse`（反序）、`slice`（1-based 闭区间切片）与纵向循环 `mergeBy` / `spanBy: "groupSize"`（`heights: "equal"`）。
-  - 票据 03（M253）：堆叠布局与循环容器 `itemLayout` 支持 `wrap` 自动流式换行与交叉方向行/列间距 `crossGap`（含交叉方向 `"hug"` 自适应撑高/撑宽）。
-  - 票据 04（M254）：矢量图形（`path`、`polygon`、`line`）支持可选 `viewBox` 与 `fit`（`fill` / `contain` / `cover`）随元素框缩放，通过变换路径几何顶点保持描边宽度与虚线不变形。
-  - 票据 05（M255）：文本支持常态字间距 `letterSpacing`（正负毫米数或数值变量）与横排 `fit.steps` 中的 `"tightenSpacing"`（在压缩字形前先将正字距线性收紧至 0）。
-  - 票据 06（M256）：竖排文本的文本片段与变量插槽支持独立设置 `font` 与 `fontSize`（缩字组按比例同步缩放各片段字号），且竖排常见方向性标点自动绕字格中心顺时针旋转 90°。
-  - 票据 07（M257）：图片元素支持可选 `tint` 单色重染（`#RRGGBB`、`#RRGGBBAA` 或颜色变量，支持状态样式覆盖），以 `srcIn` 滤镜替换像素 RGB 并保留原图透明度。
-- **第四阶段 15 张票据全部完成，阶段验收通过**（[第四阶段验收](docs/stage4-acceptance.md)，M302–M304）：出图服务第一版在本机 Docker Compose 上从空环境走完 PRD 的完成标准；真人走查从登录到导出记录，动手约 5 分半钟；容量基线是每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒，M402 线路牌每个 worker 每分钟约 60 张，按物理核数起 worker；OpenAPI 1.0.0 基线定稿。开工前的 ADR：ADR-0017–0020（服务形态与渲染隔离、租户与存储抽象、对象存储中的出图记录、计量与额度，M243）；阶段 4 PRD 见 [出图服务第一版](.scratch/render-service-v1/spec.md)（M244–M249），15 张票据见[索引](.scratch/render-service-v1/README.md)。票据 01（存储接口，M250）、02（批量交付的问题清单与单次渲染对齐，M258）、03（服务骨架，M259、M260）、04（租户、账号与鉴权，M261–M263）、05（代建推送，M264、M265）、06（渲染 worker 与草稿预览，M266、M267）、07（批量正式交付，M268、M269）、10（数据集与资源接口，M270、M271）、08（出图记录的查询、导出与重放，M272、M273）、09（计量与额度，M274、M275）、11（API 合同与 webhook，M276、M277）、12（出图控制台的表单、预览与交付，M278–M282）、13（Excel 导入，M283–M286）、14（控制台的记录、用量、资源与管理，M300、M301）与 15（容量基线与阶段验收，M302–M304）已完成；控制台的结构先做了一轮原型，用户选定方案一（以数据集为中心），原型存档在分支 `prototype/console-v1`。阶段 5 的前置决定已定（[ADR-0022](docs/adr/0022-agent-human-capability-parity.md)、M297–M299）：人类页面与 Agent 同能力写入，Agent 可从示例图或数据集提取数据定义并直接发布；按 5.0、5.1 拆票。部署、字体与计费由用户定下（M240–M242），开发时在本机 Docker 上模拟，对象存储用 S3 协议。第三阶段的后续都已了结；M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+### P1 代建接口与人类页面（阶段 5.0）
 
-  模型改用 OpenCode Go（M232）：缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.7.0 与票据 17 的修改任务提示词上通过四场景评估门槛（2026-10-20-ticket17 的三份报告，见 [Agent 评估](docs/agent-eval.md)），Gemini 已在合同 0.5.0 与票据 14 的 Agent 参考上过评估门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
-- **Agent 外围工具复核（2026-10-19）**：首轮只读复核开了票据 16–21（[外围工具复核](docs/agent-tooling-review.md)）；同日的[二次复核与实测](docs/agent-tooling-evaluation.md)改了排序与方案，新开 22–24。
-  - 已完成：票据 16（`agent run` 按任务校验 `--definition`/`--dataset`）、21（评估区分上游瞬时错误与模型失败）、19 与 22（合同 0.6.0：看图缺省最多 2 倍，工具输出不超过 40,000 字符）、23（推理力度 `--effort`，缺省不改，M291）与 30（提取类单独用 low 也不改：数据定义提取输出降约四成，数据集提取几乎不降，两个提取场景合计只降 24.8%，没到 30%）。
-  - 票据 18 的判据会误伤被调模板，已改写。
-  - 票据 24 已完成：模板辅助修改加入评估，票据 17 的改前基线已存档（M292）。
-  - 票据 17 已完成：`check_outcome` 返回模板修改的差异范围，修改任务在交回前按差异核对范围；合同 0.7.0（M293）。
-  - 还没做：18、20（原计划与 19、22 同批，以后另升合同版本、另跑评估）。阶段 4 的票据顺序不变，这些排在阶段 4 票据的间隙。
-- **阿拉伯文站牌试跑（2026-10-20）**：用一张阿拉伯文公交站牌走完四步（Haiku 做数据定义与数据集，Gemini 做模板），正式出图 0 问题，但阿拉伯文不连写、顺序颠倒：引擎逐字从左往右排，不做塑形与双向排版。用户决定阿拉伯文属于特殊需求，暂不做排版。由此做了：
-  - 票据 26：这类文字报严重问题 `text.unshapedScript`（M288），不再静默画错；
-  - 票据 27：资料补领域约定的适用条件、必填判断、模板分段写法、不按数据取值写分支、文字能力边界、尽早交回成果；不加 MCP 写工具（M290）；
-  - 票据 28：`agent run` 先校验出图请求再打印"开始"，用满轮数时说明原因；
-  - 票据 29：`list_resources` 给字体的字重与覆盖的文字。
-  - **同图复跑（2026-10-20–21）**：[复跑报告](docs/agent-arabic-retest.md)。后续见[票据 31–38](.scratch/agent-template-authoring/README.md#同图复跑后续2026-10-21按执行优先级)。成果评估、受阻草稿与硬额度停止沿用 M294–M296、ADR-0021。2026-10-22 复核远端 33、34 后，按用户批准的 M306 实施可信参考、多维局部反馈与普通轮次来源留存；原错误关闭记录已更正，当前能力及未覆盖边界见[复核报告](docs/agent-33-34-review.md)与[视觉反馈](docs/agent-visual-feedback.md)。原图已补 86 区域独立标注，并完成中文受控样例的真实模型纠偏（[实测](docs/agent-visual-live-acceptance.md)）。合同 0.10.1 补齐区域分页与总输出预算，并已完成同一中文样例的独立真实模型纠偏；用户现已要求聚焦中文、英文（M307），阿文新模板试跑已停止，已有结果只保留为历史诊断。下一步按 38 收齐新版四场景门槛，再补英文真实模型纠偏和中文、英文独立样式/状态审核；中文两次真实纠偏与双语受控验证见[提交结果](docs/agent-visual-feedback-results.md)。两版门槛分别固定构建，未完成项不计通过。
-- **Gemini 长调用（2026-10-20）**：用 Gemini 4 Argon 实跑阿拉伯文站牌时，模板轮 5 次在约 300 秒处失败，根因是转换代理自己用的全局 fetch 有固定 300 秒超时。票据 25 已完成（M287）：代理改走流式 `streamGenerateContent`、连上游改用 `node:http(s)`，失败日志分连接、状态码、流中三个阶段并带底层原因。Gemini 评估门槛没有重跑，按 M232 的先例用真实模型跑一轮数据定义提取核对链路，下一次 Gemini 评估一并覆盖。
-- **Agent harness 实施（2026-10-23）**：[可靠执行与可信验收 PRD](.scratch/agent-harness-hardening/spec.md)及 [26 张实施票](.scratch/agent-harness-hardening/README.md)已获用户批准实施，集成分支为 `codex/agent-harness-hardening`，规格基线 `40d14f1`。01–20 实现已合入；17新增边界资料及重复预检测试的离线回归已通过，候选5已完成纯英文首次设计与一次纠偏，用户已总体接受英文成果，细项和工时仍未知；21真实可信反馈验证已完成，22–26仍未完成。已有实现包括有序转录评分、模板业务行为、固定审核资源、并发提交与崩溃恢复、实验身份、不可覆盖尝试及完整成本、持久轮次状态、完整检查点、有限可见性及可信反馈校准；10 运行时限、15 订单成本与人工投入、16 信任边界均已完成集成；17 按需资料候选已合入，默认仍为全量资料；12 有证据的停滞控制已合入；18 的32次真实配对已完成，按需资料输入加缓存仅下降9.07%且质量守卫未全部通过，保留 full 默认；19 的十二例材料、36订单/96阶段计划与独立审核程序已获用户具体核准，后续实际成果仍需独立审核。决定见 M308–M326、M328、ADR-0023/0024/0025，研究依据见[工程评估](docs/research/2026-10-23-agent-dsl-harness-review.md)。20 已冻结并独立核验持久候选5（187d36a3…6526），原四10阶段与21的16单元已作公共绑定并要求全部重验，见[候选5离线发布](docs/agent-eval/harness-acceptance-candidate-5.md)；候选5的零观测预登记保留，正式计划已更新为候选6；共享停止启动器及两份新登记均已独立核验，当前按登记串行派发。21已取得候选6完整真实模型证据，原38原四门槛正在同候选上执行，再做公交四类型留出与真人走查（v1.1、M317，用户已提供12张候选素材）。原 38 保留既有责任与共享观测唯一派发分工；新增能力是否已完成以各票据的验收记录为准。留出案例须登记真实模板家族、操作者核准和独立审核；同族多例不增加独立家族数，已知校准家族只作回归。
-- **本轮验收进度**：用户已授权具体模型端点（M329）；21候选2的16次真实观测为10通过、6次分页时序有效失败，原件与归档恢复证据已保全，门槛未通过。候选3首段7通过、1严格属性政策有效失败，第二段8槽未派发；[首段结果](docs/agent-eval/trusted-feedback-acceptance/candidate-3/RESULTS.md)保留原报告，四项短路false不能据此声称实际失败。17通用最小修改与语义判断资料、14独立诊断及不持久化审核已独立集成；新恢复副本完整路径集合与SHA复验通过，另存诊断仍保持7通过/1失败/8未派发，见[修复证据](docs/agent-eval/feedback-diagnostics/README.md)。候选4发布与原四/21全量新登记已独立核验合入，两计划已按登记运行并在429后停止；21为12通过、1额度无效、3未运行，完整门槛未完成，原38为4通过、1两站压测有效失败、3未取得结果（含1已启动未封存），[停止及完整恢复](.scratch/agent-template-authoring/original38-harness/candidate-4-results.md)已保全，不自动续跑；旧失败不覆盖，历史恢复新增缓存的[边界更正](docs/agent-eval/archive-restore-boundary-correction.md)继续保留。原38候选2首段4次达线、5个实际阶段已完成来源核对与归档恢复，第二段4次未派发；候选3首段3通过、1失败、第二段4槽未派发，原38已完成4286文件/649目录完整恢复及新reader的5轮只读复验，整体未完成。四组旧归档另37轮已完成[只读恢复复验](docs/agent-eval/archive-readonly-candidate4.md)。混合站牌负面评价保留并停止继续还原；中文旧候选审核包保留，候选4第一遍2份实际包已只读生成并归档，人工结论仍空白；纯英文TfL161材料已获操作者核准并完成候选5公开阶段绑定及离线预检（M330）；用户2026-10-25确认额度恢复，已完成纯英文首次设计及唯一纠偏，两阶段退出0、无额度停止，实际三图审核包已交接且用户总体接受英文成果；候选6原四与21实际观测已完成，细项/工时、留出实际观测和其他人工结论尚未完成，详见[原38进度](.scratch/agent-template-authoring/issues/38-retest-after-quota-recovery.md)。
-- **模板设计评估集（2026-10-25–26）**（[规格](.scratch/template-design-eval/spec.md)，[索引](.scratch/template-design-eval/README.md)，M333–M338）：用用户提供的素材包建 12 个模板辅助设计用例（线路牌横竖版、价签两种与 8 个新领域），另写 8 个领域约定包；评估命令用 `--config` 跑，每例组只含本例图片的资源仓库，按 `stress.json`/`checks.json` 评分，通过线是压测全部、版面 85%（M337）；main 的 Agent 上 Haiku 5.5 达线 11/12、DeepSeek V4.1 Flash（3 小时时限）5/12（M338）。已在 main 上（92583af）。main 的 Agent 上 Haiku 5.5 达线 11/12（06 是模板缺陷），DeepSeek V4.1 Flash 放宽到 3 小时也只有 5/12、每例都超过 60 分钟，模板任务继续用 Haiku（M338）。票据 01–05 已完成：补了 `metro-strip` 约定"按最少站数验证"之后 Haiku 重跑 06 达线（80 轮，正好用到上限）。评估集暴露出通用资料没写"文字元素只有一行、不会自动换行"，已补进 `agent/guide.md` 与 `agent/reference/template.md`；门槛 7/8，366 一次地标误读经补跑 4 次未复现，用户决定采用（M339）。
-- **Agent 执行方式（2026-10-26，M340）**：用户决定产品中的业务 Agent 用 Tool Runner 驱动，不依赖 Claude Code（[ADR-0027](docs/adr/0027-agent-loop-driven-in-process-by-tool-runner.md)）。
-  - 依据：[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在 M230 四个场景上与 Claude Code 执行器各 2/2 达线。
-  - 下一步：在空闲机器上用一次评估跑满四个场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。
-  - 托管给客户前：威胁建模复核、生产模型渠道、评估身份按执行器区分（见 ADR-0027）。
-- **下一步：阶段 5 P1 代建接口与人类页面**（[PRD](.scratch/authoring-api-and-pages/spec.md)、[13 张票据的索引](.scratch/authoring-api-and-pages/README.md)，M343–M348）。阶段 5 分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。界面方向看[桌面工作台原型](docs/prototypes/desktop-workbench/README.md)的截图，票据按画板编号引用。
-  - **已完成（2026-10-27–28）**：01 控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架，数据定义模块先只读；02 引擎公开入口 `diffDefinition` 给出两份数据定义的字段级差异；03 审计记代建写入的前后内容哈希与差异摘要，可按主体筛选、导出 CSV（开放 API 1.1.0）。
-  - **接着做**：04 数据定义草案接口与 12 平台管理页现在就能领取，可以并行；07 模板工作副本接口等 04（要用 04 加的权限名，迁移编号也不冲突）。之后 05 → 06 与 07 → 08、09、10 两条线并行，11 审批策略等 06、09、10，13 阶段验收收尾。按依赖领取票据的规则见 `docs/agents/issue-tracker.md`，开发在独立 worktree 里做（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
-  - **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
-  - **测试现状**（2026-10-28，main `e4780ea`，临时 worktree）：构建、类型检查与服务组测试（110 通过、16 跳过）通过；引擎组 6 个 worker 并行时 1,182 通过、57 失败，失败全在 17 个 `agent-*` 重型集成文件（超时与抢 `fixtures/resources` 写锁的 `local.storeBusy`），票据 01、02 在各自分支上见过同一类失败。这 17 个文件的逐文件串行复核（`npx vitest run --project engine --no-file-parallelism <文件>`）还没有结果。
-  - **已知后续**：状态栏"进行中的批次"只数本标签页提交的，要租户范围得加只读的批次列表端点（票据 01 的偏差）；Docker 后端整组没有在合入 M350 之后的 main 上重跑。
-  - 阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
-- [第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）已在阶段 4 落实；不受信任的记录按 PRD 不接收。
+[PRD](.scratch/authoring-api-and-pages/spec.md)、[13 张票据的索引](.scratch/authoring-api-and-pages/README.md)，规划决定 M343–M348；界面看[原型截图](docs/prototypes/desktop-workbench/README.md#画板)，票据按画板编号引用。
+
+- **已完成（2026-10-27–28）**：01 控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架，数据定义模块先只读；02 引擎公开入口 `diffDefinition` 给出两份数据定义的字段级差异；03 审计记代建写入的前后内容哈希与差异摘要，可按主体筛选、导出 CSV（开放 API 1.1.0）。
+- **接着做**：
+  - 现在就能领取：04 数据定义草案接口、12 平台管理页，可以并行；
+  - 07 模板工作副本接口等 04：要用 04 加的权限名，两张票都加迁移，串行免得编号冲突；
+  - 之后 05 → 06 与 07 → 08、09、10 两条线并行，11 审批策略等 06、09、10，13 阶段验收收尾。
+- **怎么做**：每张票在独立 worktree 里做，合入 main 前确认主检出没有评估在跑（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
+- **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
+- **测试现状**（2026-10-28，main `e4780ea`，临时 worktree）：构建、类型检查与服务组测试（110 通过、16 跳过）通过。引擎组 6 个 worker 并行时 1,182 通过、57 失败，失败全在 17 个 `agent-*` 重型集成文件（超时与抢 `fixtures/resources` 写锁的 `local.storeBusy`），票据 01、02 在各自分支上见过同一类失败；逐文件串行复核的第一份 `agent-candidate-freeze` 仍有 1 条在 71 秒处超过 60 秒时限。Docker 后端整组没有在合入 M350 之后的 main 上重跑。下一步：在空闲机器上对这 17 个文件跑 `npx vitest run --project engine --no-file-parallelism`、再跑一次 `node service/scripts/test-docker.mjs`，分清环境超时与真实缺陷。
+
+### Agent 验收与 Tool Runner 门槛（P0）
+
+缩写：**原四场景**是 M230 的四个评估场景（M402 数据定义、M402 模板、M402 模板辅助修改、366 转录）；**原 38** 是第三阶段票据 38（[额度恢复后的复跑](.scratch/agent-template-authoring/issues/38-retest-after-quota-recovery.md)）；**21–26** 是 [harness 票据](.scratch/agent-harness-hardening/README.md)。
+
+- **正式验收统一用[候选 6](docs/agent-eval/harness-acceptance-candidate-6.md)**（2026-10-25 起；Windows 监督器收尾补修已合入 main）：
+  - 已完成：[21 可信反馈真实验收](docs/agent-eval/trusted-feedback-acceptance/candidate-6/RESULTS.md)与[原四场景完整门槛](.scratch/agent-template-authoring/original38-harness/candidate-6-results/README.md)，来源核验及完整归档恢复已独立审核通过；四份中文实际成果审核包已交付（在原设备的 `out/harness-original38-review/zh-candidate-6-index-v2/`，不进版本库）；候选 5 的纯英文成果用户已总体接受，原包保留，不拼入新候选槽位。
+  - 还没完成：原 38 的独立样式/状态判断与审核工时；然后按依赖做公交四类型留出（22 横版线路牌、23 竖版线路牌、24 站牌、25 双语站名，v1.1、M317，用户已提供 12 张候选素材）；最后 26 集成证据与真人走查。
+  - 历次候选（2–5）的观测、停止与恢复记录见「已完成的工作」里的 harness 一条。
+- **Tool Runner**（M340，[ADR-0027](docs/adr/0027-agent-loop-driven-in-process-by-tool-runner.md)）：在空闲机器上用一次评估跑满原四场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。托管给客户前还要：威胁建模复核、生产模型渠道、评估身份按执行器区分。
+- **生产化**（v1.0 收费前，[平台化研究](docs/research/2026-10-26-platform-architecture.md)第 6 节 4.x）：单 VM 部署、备份与恢复、登录限频、OTel 与告警、整批导出取舍，都还没开票。
+
+### 未排期的后续
+
+- 阶段 4 验收留下的后续（[第四阶段验收](docs/stage4-acceptance.md#后续)），其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
+- Agent 外围工具复核的票据 18（模板设计的主模板基准必须等于数据集选定的数据定义）、20（修正模板参考里的数据定义示例指向）是 `ready-for-agent`，做时另升 MCP 合同版本、另跑评估。
+- 控制台状态栏"进行中的批次"只数本标签页提交的；要租户范围，得加只读的批次列表端点（P1 票据 01 的偏差）。
+
+## 已完成的工作
+
+按时间排，只留结论与指针。
+
+- **需求探索与业务实体建模**：已完成，见[需求探索记录](docs/discovery/requirements.md)与 `docs/model/`。
+- **第一阶段 [渲染流水线](.scratch/render-pipeline/spec.md)**：14 张票据全部 resolved，M402 能从数据集校验一路出到 PNG。收尾审查见 [阶段验收](docs/stage1-acceptance.md)，参考图差异见 [M402 验收记录](docs/examples/m402-acceptance.md)。
+- **第二阶段 [本地生产出图](.scratch/local-production-output/spec.md)**：13 张票据全部 resolved。Windows/Linux 全新环境复跑、跨平台比对与两轴审查见 [第二阶段验收](docs/stage2-acceptance.md)，首次使用见[使用指南](docs/guide.md)。
+- **第三阶段 [Agent 代建模板的本地闭环](.scratch/agent-template-authoring/spec.md)**（v0.3，[索引](.scratch/agent-template-authoring/README.md)）：15 张票据全部完成，阶段验收通过（[第三阶段验收](docs/stage3-acceptance.md)，M231、M235）。依据是 Agent 运行方式验证（[验证记录](docs/agent-validation.md)，M209–M217，ADR-0015）。
+  - DSL 1.0 与 JSON Schema（M223、M224）；`renderweave mcp` 只读工具（M225）；`renderweave agent` 的提取、审核、应用、多轮与模板修改（M226–M229）；三层资料与评估门槛（M230）。
+  - 价签与 366 两张新示例图按[代建指南](docs/agent-guide.md)走完全流程，代建模式可行；A11 由用户本人用 M162 竖版线路牌补测，人工约 30 分钟，到正式出图为止。
+  - 验收后补了：交回前核对成果的 `check_outcome`（M233）、`view_image` 看资源仓库中的图片（M234）、纵向循环（M236，DSL 1.x 的第一笔加法）、网格中元素静默重叠的修正（M237，ADR-0016 补了布局缺陷修正的口径）、画板上声明缩字下限（M238）、资源命令对非版本仓库目录的提示（M239）。
+  - M402 数据定义的评分余量（资料相同的 16 次里 14 次达线）按用户决定不再跟进，资料没变时门槛再因它没过才重新处理（[第三阶段验收](docs/stage3-acceptance.md#后续)）。
+- **DSL 1.x 平面设计能力演进**（[规格](.scratch/dsl-graphic-capabilities/spec.md)，[索引](.scratch/dsl-graphic-capabilities/README.md)）：7 张票据全部完成（M251–M257），已变基到阶段 4 之上、跑通全量测试（M249），并在更新后的 `agent/reference/template.md` 上复跑通过 Haiku 5.5 评估门槛（[2026-10-19-dsl-graphic-capabilities](docs/agent-eval/reports/2026-10-19-dsl-graphic-capabilities.json)）。能力见「已实现能力」的元素、模板与线路牌适配三条。
+- **第四阶段 [出图服务第一版](.scratch/render-service-v1/spec.md)**（v1.0，[索引](.scratch/render-service-v1/README.md)，M244–M249）：15 张票据全部完成，阶段验收通过（[第四阶段验收](docs/stage4-acceptance.md)，M302–M304）。本机 Docker Compose 从空环境走完 PRD 的完成标准；真人走查从登录到导出记录，动手约 5 分半钟；容量基线是每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒，M402 线路牌每个 worker 每分钟约 60 张，按物理核数起 worker；OpenAPI 1.0.0 基线定稿。开工前的 ADR 是 ADR-0017–0020（M243）；部署、字体与计费由用户定下（M240–M242）。控制台的结构先做了一轮原型，用户选定方案一（以数据集为中心），原型存档在分支 `prototype/console-v1`。[第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）都在本阶段落实；不受信任的记录按 PRD 不接收。
+- **模型**（M232）：改用 OpenCode Go，缺省 Claude Haiku 5.5，质量要求高的单子用 Gemini 4 Argon；千问不再使用。Haiku 已在合同 0.7.0 与票据 17 的修改任务提示词上通过四场景评估门槛，Gemini 已在合同 0.5.0 上过门槛（[Agent 评估](docs/agent-eval.md)）。key 只有 `OPEN_CODE_API_KEY` 一个，只经环境变量传入，由维护者在各设备上自行设置，不进仓库。
+- **Agent 外围工具复核（2026-10-19）**：[首轮复核](docs/agent-tooling-review.md)开了票据 16–21，[二次复核与实测](docs/agent-tooling-evaluation.md)新开 22–24。已完成 16、17（M293）、19 与 22（合同 0.6.0）、21、23（`--effort`，M291）、24（M292）与 30（提取类单独用 low 也不改）；18 的判据已改写，18、20 还没做（见「未排期的后续」）。
+- **阿拉伯文站牌试跑（2026-10-20）**：正式出图 0 问题，但引擎不做塑形与双向排版；用户决定阿拉伯文属于特殊需求，暂不做排版。由此做了票据 25–29：Gemini 转换代理改走流式、去掉 300 秒超时（M287，Gemini 评估门槛没有重跑，下一次 Gemini 评估一并覆盖）；这类文字报严重问题 `text.unshapedScript`（M288）；资料补领域约定的适用条件与文字能力边界（M290）；`agent run` 先校验出图请求；`list_resources` 给字体的字重与覆盖的文字（M289）。同图复跑（[复跑报告](docs/agent-arabic-retest.md)）的后续是[票据 31–38](.scratch/agent-template-authoring/README.md#同图复跑后续2026-10-21按执行优先级)：成果评估、受阻草稿与硬额度停止（M294–M296、ADR-0021），可信参考、多维局部反馈与普通轮次来源留存（M306，[复核报告](docs/agent-33-34-review.md)、[视觉反馈](docs/agent-visual-feedback.md)、[实测](docs/agent-visual-live-acceptance.md)、[提交结果](docs/agent-visual-feedback-results.md)）。用户要求聚焦中文、英文（M307），阿文新模板试跑已停止，已有结果只作历史诊断。
+- **Agent harness 实施（2026-10-23 起）**：[可靠执行与可信验收 PRD](.scratch/agent-harness-hardening/spec.md)与 [26 张实施票](.scratch/agent-harness-hardening/README.md)（集成分支 `codex/agent-harness-hardening`，规格基线 `40d14f1`），决定见 M308–M332、ADR-0023–0026，研究依据见[工程评估](docs/research/2026-10-23-agent-dsl-harness-review.md)。
+  - 01–21 已合入：有序转录评分、模板业务行为、固定审核资源、并发提交与崩溃恢复、实验身份、不可覆盖尝试及完整成本、持久轮次状态、完整检查点、运行时限、停滞控制、订单成本与人工投入、信任边界、按需资料候选、可信反馈校准等，能力见「已实现能力」。
+  - 18 的 32 次真实配对：按需资料的输入加缓存只降 9.07%，质量守卫未全部通过，保留全量资料为缺省（[配对结果](docs/agent-eval/context-policy-trial/RESULTS.md)）。
+  - 20 冻结并独立核验了候选 5（[候选 5 离线发布](docs/agent-eval/harness-acceptance-candidate-5.md)），正式计划后来更新为候选 6。
+  - 历次候选的观测与停止：候选 2 的 21 为 10 通过、6 次分页时序有效失败；候选 3 首段 7 通过、1 失败（[首段结果](docs/agent-eval/trusted-feedback-acceptance/candidate-3/RESULTS.md)，[修复证据](docs/agent-eval/feedback-diagnostics/README.md)）；候选 4 两个计划在 429 后停止、不自动续跑（[停止及完整恢复](.scratch/agent-template-authoring/original38-harness/candidate-4-results.md)，[只读恢复复验](docs/agent-eval/archive-readonly-candidate4.md)，[边界更正](docs/agent-eval/archive-restore-boundary-correction.md)）；纯英文 TfL161 材料已核准（M330），候选 5 完成首次设计与一次纠偏。混合站牌的负面评价保留，停止继续还原；旧失败一律保留不覆盖。
+- **模板设计评估集（2026-10-25–26）**（[规格](.scratch/template-design-eval/spec.md)，[索引](.scratch/template-design-eval/README.md)，M333–M339）：12 个模板辅助设计用例（线路牌横竖版、价签两种与 8 个新领域）与 8 个领域约定包；通过线是压测全部、版面 85%（M337）。main 的 Agent 上 Haiku 5.5 达线 11/12（06 补约定后重跑达线），DeepSeek V4.1 Flash 放宽到 3 小时也只有 5/12，模板任务继续用 Haiku（M338）。评估集暴露出通用资料没写"文字元素只有一行、不会自动换行"，已补进资料并采用（M339）。
+- **Agent 执行方式（2026-10-26）**：产品中的业务 Agent 用 Tool Runner 驱动，不依赖 Claude Code（M340，[ADR-0027](docs/adr/0027-agent-loop-driven-in-process-by-tool-runner.md)）；依据是[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在原四场景上与 Claude Code 执行器各 2/2 达线。
+- **阶段 5 规划（2026-10-27）**：分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）；P1 规格与票据见上文。
 
 ## 已实现能力
-
-- **可信反馈校准**：公开准备与评估计划入口提供中文/英文四任务共 8 场景、16 单元，可信基准随任务固定；目标修正、非目标保留及未知范围独立判断，待确认值使用审核有效候选，最后工具检查与宿主终检核对身份。反馈评分`renderweave-feedback-score/2`以null/unchecked区分证据不足与已核查失败；公开`readReview(roundDir, {persistArtifacts:false})`可核查封存轮次而不保存检查/预览缓存，默认交互审核行为不变。24 区域样例含第二页必须处理的缺陷，兼容来源须核对完整实验与轮次身份；机制通过不计真实模型观测；该能力首发 MCP 合同 0.13.1，当前版本随集成升版。入口与边界见 [反馈校准](docs/agent-feedback-calibration.md)。
 
 领域模型文档含未来设计，当前可执行的能力以本节为准。
 
@@ -80,7 +85,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **线路牌适配**：横向或纵向合并相邻同值项与道路带（M252）；横排按墨迹分布，先收紧字距、再压缩字形、再缩字（M255）；竖排缩字组跨循环与子模板统一字号并按比例缩放片段字号（M256）。缩字下限由模板在画板上声明，缺省 5 mm，价签一类小标签可低到 1.5 mm（M238）。
 - **字体与模式**：缺字逐字替代为思源黑体（[字体说明](docs/render-fonts.md)）；阿拉伯文、希伯来文、印度系文字等需要塑形或从右往左的文字报严重问题 `text.unshapedScript`（M288）；草稿显示占位与问题边框，正式模式有严重问题时不出图（[模式说明](docs/render-modes.md)）。
 - **第二阶段已完成**：二维码（[说明](docs/render-qrcode.md)）、CODE128（[说明](docs/render-barcode.md)）、EAN/UPC（[说明](docs/render-retail-barcodes.md)）、资源内容版本的导入与替换（[说明](docs/resources-versioning.md)）、1–1,000 项的批量正式交付、批量草稿预览、逐项记录重放、项间取消与中断后辨认、同批素材硬链接去重、码图模板交付与重放（[说明](docs/output-records.md)，[带码线路牌样例](docs/examples/coded-route-sign/README.md)）。
-- **MCP 只读工具服务**：`renderweave mcp` 提供 12 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大（工作目录内的图片，或用 `res:资源ID` 看资源仓库中的图片，M234）、DSL 参考与交回前核对成果（`check_outcome`，M233）。工具合同 0.10.1 有快照测试：看图缺省最多 2 倍，文字结果不超过 40,000 字符（问题清单与元素检查有上限，大 Schema 返回目录、按 `pointer` 取一段），字体带字重与覆盖的文字（M289）；`check_outcome` 返回模板修改的状态、路径与属性键名，每候选最多 100 条、约 20,000 字符，截断给总数（M293），见 [MCP 工具服务](docs/mcp.md)。
+- **MCP 只读工具服务**：`renderweave mcp` 提供 12 个只读工具：读取工作区快照与资源、校验数据定义/数据集/模板工作副本、草稿预览（工作副本、数据集文件、局部预览）、元素检查、局部放大（工作目录内的图片，或用 `res:资源ID` 看资源仓库中的图片，M234）、DSL 参考与交回前核对成果（`check_outcome`，M233）。工具合同有快照测试，当前版本 0.17.0（历次加法见 [MCP 工具服务](docs/mcp.md#合同与版本)）：看图缺省最多 2 倍，文字结果不超过 40,000 字符（问题清单与元素检查有上限，大 Schema 返回目录、按 `pointer` 取一段），字体带字重与覆盖的文字（M289）；`check_outcome` 返回模板修改的状态、路径与属性键名，每候选最多 100 条、约 20,000 字符，截断给总数（M293），见 [MCP 工具服务](docs/mcp.md)。
 - **业务 Agent 任务**：`renderweave agent run` 支持数据定义提取、数据集提取（`--definition`）、模板辅助设计（`--dataset`、`--request`）与模板辅助修改（`--requirement`，主模板调用树中的已保存模板预置为工作副本），带反馈的下一轮用 `--from`、`--feedback`，在独占轮次目录中组装三层资料与工作区快照，按 ADR-0015 在空白环境里启动 Claude Code，只连 `renderweave mcp`。`--executor tool-runner` 改由宿主进程内的 Tool Runner 驱动同一套工具，读图缩到 2000 像素以内（ADR-0027；原型，本机缺省仍是 Claude Code）。Agent 交回前可用 `check_outcome` 按同一套规则自查；交回的成果先查结构、再经引擎校验，写出 `outcome.json`、`check.json` 与 `round.json`。`agent review` 在本机打开审核页：对照示例图、图上位置与 RenderWeave 重新渲染的草稿预览（M52；模板辅助修改另有修改前的预览与结构化差异），逐项处理待确认项、整体确认，结果存进 `review.json`，并列出轮次链；`agent apply` 只接受审核通过的轮次，工作区变化时列出差异并拒绝（`--overwrite` 覆盖，或带反馈重做），把数据定义发布为下一个版本，数据集与新模板保存为新文件，模板的工作副本替换已保存的模板。见 [业务 Agent 任务](docs/agent-tasks.md)，从示例图到出图与修改的整套操作见 [代建指南](docs/agent-guide.md)。模型缺省为 OpenCode Go 上的 Claude Haiku 5.5；选 Gemini 4 Argon 时 `agent run` 在本机起转换代理，Claude Code 只拿到本轮令牌（M232）。资料在 `agent/`，领域约定包有公交线路牌 `route-sign`、超市商品价签 `price-tag`，以及为模板设计评估集写的 `asset-tag`、`metro-strip`、`clinic-doorplate`、`waybill`、`departure-board`、`hazmat-label`、`order-label`、`boarding-pass`（M336）；审核页在 `web/`。
 - **Agent 评估**：`npx tsx scripts/agent-eval/run.ts` 经产品路径跑 M402 数据定义、M402 模板、M402 模板辅助修改与 366 转录四个场景，按 M211–M217 的检查评分，每个场景连续两次达线门槛才通过；报告只存摘要，存档在 `docs/agent-eval/reports/`。升级 Claude Code、换模型、改资料、改工具合同后必须跑，不进 `npm test`；额度窗口装不下一整遍时可分段跑；上游 500 一类瞬时错误按轮次重试，额度窗口的 429 停止派发并打印续跑命令，结果作废的单元记 `invalid`，门槛可能是 `incomplete`（退出码 3）。模板辅助修改按版面、压测与已保存模板的修改范围评分，另记改动元素数（M292）。报告记思考 token、被转存的工具结果数与模板轮首次检查的问题数，`--effort` 透传给 `agent run`（M291）。Gemini 经 `agent run` 内置的转换代理评估。qwen3.8-max 与 OpenCode Go 上的 Claude Haiku 5.5、Gemini 4 Argon 门槛通过。见 [Agent 评估](docs/agent-eval.md)。门槛之外有模板设计评估集（`--config scripts/agent-eval/template-design/config.json`，12 例，M333–M335）：每例在单元目录里组只含本例图片的资源仓库，按用例的 `stress.json` 压测与 `checks.json` 版面检查评分；通过线是压测全部、版面 85%（M337）。
 - **存储接口**：工作区文档、版本化资源仓库与出图记录都经接口读写，有本地与内存两种实现，同一组合同测试；批量交付拆成"固定"与"交付单项"两步，批次快照可序列化（[说明](docs/storage-interfaces.md)，ADR-0018，M250）。
@@ -105,8 +110,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **参考比较（M306）**：`--reference` 固定人工核准区域、原图与画板尺寸；只读 `compare_reference` 返回真实内容的同尺度三联图、缺项/文字/字号/尺寸/位置/文字颜色差异及源模板/实例位置，和最终检查共用模块。报告绑定实际工作区、数据、资源字节、参考与构建。状态仅来自核准清单；最终遮挡、对比度、复杂变换及未标注部分保持未知，不输出整体分数。
 - **提取覆盖核查（M306）**：`--content-baseline` 提供本次可信字段与数值事实，缺省为未核查；领域名、模型备注不能制造真值。明确严重不一致会阻止技术合格，pending 与预览使用同一有效候选但仍需审核；派生语义等未知项独立列出，总分为 null。
 - **普通轮次来源留存**：与评估共用源码/资料清单生成逻辑，保存实际任务提示词、实际资料副本及哈希、工具合同、引擎标识与固定参考；下一轮检查参考字节再继承。复跑命令见[视觉反馈](docs/agent-visual-feedback.md)。
+- **可信反馈校准**：公开准备与评估计划入口提供中文/英文四任务共 8 场景、16 单元，可信基准随任务固定；目标修正、非目标保留及未知范围独立判断，待确认值使用审核有效候选，最后工具检查与宿主终检核对身份。反馈评分`renderweave-feedback-score/2`以null/unchecked区分证据不足与已核查失败；公开`readReview(roundDir, {persistArtifacts:false})`可核查封存轮次而不保存检查/预览缓存，默认交互审核行为不变。24 区域样例含第二页必须处理的缺陷，兼容来源须核对完整实验与轮次身份；机制通过不计真实模型观测；该能力首发 MCP 合同 0.13.1，当前版本随集成升版。入口与边界见 [反馈校准](docs/agent-feedback-calibration.md)。
 - **harness 已合入能力**：转录评分器 `/3` 按停靠位置核查站序、多报、重复及附属事实，评估配置 `/2` 明确独立真值与容错政策；`--behavior-policy` 从公开渲染入口离线核查六类反事实和修改范围，缺少事实继续未核查（[模板业务行为检查](docs/agent-template-behavior.md)）。MCP 合同已升至 **0.17.0**：审核使用私有固定资源与检查内容身份，相关资源改变使旧批准失效，`reopen` 重新固定资源并核准，覆盖选项不能绕过；历史缺身份记录须重审，损坏不覆盖原检查与预览证据（[Agent 任务](docs/agent-tasks.md)）。应用共享有序写锁并在提交前重核内容身份；读者取得完整工作区快照。评估冻结构建、资料、输入、资源实际字节、判据和运行参数，并对每个实际轮次封存。新轮次持久保留启动与执行状态，强退不会冒充完成；有限可见性核查支持透明、轴对齐裁剪、后绘制不透明矩形完全遮挡，其他情形保持未知。应用以持久提交意图和幂等回执恢复，操作系统拥有权与短锁避免并发恢复破坏新写入。评估每次派发保留独立尝试原件和兼容视图，重试与强退成本、未知用量、实际会话墙钟分别记录。受管 MCP 的完整检查由宿主固定字节后保存检查点，强退接续恢复完整集合，拥有权冲突和损坏副本明确拒绝。候选选择保留最新完整及有证据改善的较好候选；同核准依据下按完整问题、未知范围和核准改善比较，互有得失与不可比较明确区分，审核可看内容差异并按选择接续。可信反馈校准提供中英文四任务、16单元离线计划，固定核准事实和24区域参考，从真实公开入口核对后续页问题、目标修正、非目标保留及终检身份；机制结果不计真实模型观测。监督层可按整轮时限或取消终止本轮进程树并有界保存最后完整检查点；运行时限验收见票10。停滞只在核准必修问题经完整反馈和修复复测仍无进展、执行器继续修复时停止，正常确认、缺页与不足证据不计；阈值默认两周期，实际值进入轮次与实验身份，停止复用有界保存并可新轮次接续（[停滞控制](docs/agent-stagnation.md)）。订单入口固定业务范围，关联全部尝试、原始和人工修正质量、独立人工分钟及正式交付；单位成功订单成本纳入失败订单，未知不补零，分享只输出白名单摘要（[订单成本与人工投入](docs/agent-orders.md)）。Anthropic 与 Google 上游凭据留在宿主，执行器只持本轮代理令牌；已知凭据在进入响应、日志与诊断前脱敏，四类低可信来源的实际拒绝和正常交付分开验证，边界见 [本地信任边界](docs/agent-trust-boundary.md)。可显式选择 full/on-demand 资料策略，默认仍为 full；入口保留强制约束，七份公开参考与 Schema 由宿主固定字节。outcome_feedback 按同一检查身份完整续取问题、差异及未知范围，分页不重检，超长首响应保留状态、计数和续页入口；资料目录、合同与共享样例可自动核对，遗留指向问题继续归原20。候选机制与默认决策边界见[资料策略](docs/agent-context-policy.md)。已完成32次真实配对，输入加缓存下降9.07%，未达20%且质量守卫未全部通过，保留 full 默认；完整负结果、来源及归档恢复见[配对结果](docs/agent-eval/context-policy-trial/RESULTS.md)。本次校准不替代20冻结之后的模型与独立业务验收。共同待验候选已按实际源码、构建、审核页、资料、Schema及运行依赖实拷贝冻结，公开资料路径可定位；原四与可信反馈有独立计划绑定，派发前核对字节，新候选列出全部重验单元。人工审核链逐阶段固定实际工作区与上游应用凭据，保持人工review/apply边界。验证由双平台基线全量和明确责任修复回归组成，原失败保留；冻结不代表模型门槛或独立业务审核通过。
-- **未实现**：URL 图片、动态模板、OCR 接入、在线编辑器；命令行没有跨批次去重（服务端按哈希去重）。
+- **未实现**：URL 图片、动态模板、OCR 接入；网页上编辑数据定义与模板（P1 在做）；服务端托管的业务 Agent 与 Agent 写工具（P2）；桌面端（P5）；命令行没有跨批次去重（服务端按哈希去重）。
 
 ## 文档地图
 
@@ -143,6 +149,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/resources-versioning.md](docs/resources-versioning.md) | 资源导入、替换影响检查、旧版查询与固定版本出图 |
 | [docs/storage-interfaces.md](docs/storage-interfaces.md) | 工作区文档、版本化资源仓库与出图记录的存储接口，本地与内存两种实现，批量交付的固定与交付单项 |
 | [docs/service.md](docs/service.md) | 出图服务：本机一条命令启动、配置的环境变量、进程与命令、健康检查、容量基线、迁移、存储布局、构建标识与镜像、Docker 后端测试 |
+| [docs/api.md](docs/api.md) | 开放 API：鉴权、错误与问题清单、各类端点、webhook、OpenAPI 快照与变更记录 |
+| [docs/research/](docs/research/) | 一手资料研究：Agent 与 DSL harness 工程评估（2026-10-23）、平台化的产品形态与技术选型（2026-10-26） |
 | [docs/dsl/](docs/dsl/README.md) | DSL 1.0 参考：五种文档的写法、Schema 与引擎的分工、Schema 之外的检查、已知限制 |
 | [docs/mcp.md](docs/mcp.md) | `renderweave mcp`：启动、12 个只读工具、草稿预览与元素检查的输入、交回前核对、查看资源图片、路径限制、合同版本 |
 | [docs/agent-guide.md](docs/agent-guide.md) | 代建指南：准备 key 与资料、写项目说明、发起各类任务、审核、应用、出图与修改，命令可以直接复制 |
@@ -155,7 +163,10 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
-| [.scratch/agent-template-authoring/](.scratch/agent-template-authoring/README.md) | 第三阶段 PRD（Agent 代建模板的本地闭环，v0.3）与 9 张票据 |
+| [.scratch/agent-template-authoring/](.scratch/agent-template-authoring/README.md) | 第三阶段 PRD（Agent 代建模板的本地闭环，v0.3）与票据，含外围工具复核与同图复跑后续的票据 16–38 |
+| [.scratch/dsl-graphic-capabilities/](.scratch/dsl-graphic-capabilities/README.md) | DSL 1.x 平面设计能力的规格与 7 张票据 |
+| [.scratch/render-service-v1/](.scratch/render-service-v1/README.md) | 第四阶段 PRD（出图服务第一版）与 15 张票据 |
+| [.scratch/agent-harness-hardening/](.scratch/agent-harness-hardening/README.md) | Agent 可靠执行与可信验收 PRD 与 26 张票据，含公交留出材料与核准记录 |
 | [.scratch/template-design-eval/](.scratch/template-design-eval/README.md) | 模板设计评估集的规格与 5 张票据 |
 | [.scratch/authoring-api-and-pages/](.scratch/authoring-api-and-pages/README.md) | 阶段 5.0 P1 PRD（代建接口与人类页面）与 13 张票据 |
 
@@ -165,7 +176,9 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **模板**：模板是出图函数，所有模板地位平等，沿数据定义引用组合为子模板与循环模板，作用域不继承（ADR-0007）。模板变量分数据字段、模板参数（对外、内部）、派生变量；派生变量是单步运算按名组合，不引入文本表达式（ADR-0004）。模板没有版本，可直接修改与升级基准版本。
 - **呈现**：画板以毫米为单位并声明适用尺寸范围；13 种元素；一块线路牌上站名字号一致，默认 10 mm；站数增加先收窄列间留白，列内不足才统一缩字，最小可读字号 5 mm；长站名仅沿竖排方向压缩字形（最低 60%）。366 参考图的 59 列已验证，见 M135–M136。
 - **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
-- **Agent**：只读工具提供读取、校验、草稿预览、识别；成果经人审核应用（ADR-0001、ADR-0003）。产品中的业务 Agent 由 RenderWeave 在服务端进程内用 Tool Runner 驱动，不依赖 Claude Code（M340，ADR-0027，取代 ADR-0015 的执行方式）；本机 `agent run` 在过渡期仍缺省以受限模式的 Claude Code 无头运行，只连 MCP 服务。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
+- **服务**：渲染在 worker 进程里隔离，带单项超时与内存上限（ADR-0017）；租户共享库、行级安全隔离，存储经接口抽象（ADR-0018）；出图记录按内容哈希存进对象存储，仍自足可重放（ADR-0019）；按自然月额度计出图张数与 token，批量交付先预占（ADR-0020）。开放 API 1.x 只做加法（M246）。
+- **Agent**：工具提供读取、校验、草稿预览与识别（ADR-0001、ADR-0003）；Agent 与人类共用一套代建写入，缺省直发，租户可要求发布前批准，风险靠不可变版本、修订、审计与回退控制（ADR-0022，修订了只读 MCP 与"写入只经提案"的旧边界）；有严重问题的成果不能批准或应用（ADR-0021）。产品中的业务 Agent 由服务端进程内的 Tool Runner 驱动，不依赖 Claude Code（M340，ADR-0027，取代 ADR-0015 的执行方式）；本机 `agent run` 在过渡期仍缺省以受限模式的 Claude Code 无头运行，只连 MCP 服务。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
+- **界面与终端**：网页与桌面是同一份控制台页面，桌面端是 Electron 薄壳，Agent 循环与正式出图只在服务端（M341）；每页左栏的模块上下文对话第一版只读（M342）；不做自由拖拽画布（M205）。
 
 ## 开发
 
@@ -177,7 +190,16 @@ npm test
 npm run typecheck
 npm run render -- render --workspace fixtures/workspaces/single-text --resources fixtures/resources --request fixtures/workspaces/single-text/render-request-greeting.json --out out
 npm run render -- publish --definition <数据定义.json> --workspace <工作区目录> --out <输出目录>
+
+# 出图服务（service/ 是单独的 npm 包，npm test 之前会自动装它的依赖）
+npm run typecheck:service                 # 服务与控制台的类型检查
+npx vitest run --project service          # 服务的快速测试（内存后端）
+node service/scripts/up.mjs               # 本机 Docker Compose 起整套服务
+node service/scripts/test-docker.mjs      # PostgreSQL 加 S3 的 Docker 后端测试，含控制台浏览器用例
 ```
+
+- 开发票据在 `git worktree add` 出来的独立工作区里做：主检出常有 Agent 评估在跑，评估固定 `dist/`、`package-lock.json` 与评估脚本的字节（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
+- 引擎组里 `agent-*` 的重型集成用例在全并行时容易超时或抢 `fixtures/resources` 的写锁（`local.storeBusy`）；全量跑时减少 worker（`--maxWorkers=4`）或逐文件串行（`--no-file-parallelism`）。
 
 - 字体由 `scripts/fetch-fonts.mjs` 按 `scripts/fonts.json` 下载到 `fixtures/resources/fonts/`（不进版本库）。图片夹具由 `scripts/make-image-fixtures.ts` 生成并提交，来源见 `fixtures/resources/images/README.md`。
 - 各票据的验收脚本是 `scripts/accept-*.mjs`，成果写到 `out/`（不进版本库）。快照与 golden 的更新方法见 [CODING_STANDARDS.md](CODING_STANDARDS.md)。
