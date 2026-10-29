@@ -98,6 +98,8 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
 
 ## 6. 已知的坑
 
+- **Windows 上建不了符号链接**：没开"开发者模式"（也不是管理员）时，node 的 `fs.symlink` 报 `EPERM`，引擎组 `agent-candidate-freeze` 里有一条用例因此失败。要它通过，在"设置 → 系统 → 开发者选项"里打开开发者模式。
+- **引擎组重型用例要少并行**：`agent-*` 的集成用例会拉子进程、等检查点文件，全并行时大量超时或抢 `fixtures/resources` 的写锁（`local.storeBusy`）。2026-10-28 实测：6 个 worker 并行 57 条失败，同样 17 个文件逐文件串行只剩 3 条。全量跑用 `--maxWorkers=4`，核对失败时用 `--no-file-parallelism`。
 - **评估在跑时别动它用的检出**：Agent 评估直接用所在检出的 `dist/`，实验身份逐字节固定 `dist/`、`package-lock.json` 与 `scripts/agent-eval/` 的评估脚本，每次派发前核对，变了就停止派发。所以在跑评估的检出里不要 `npm install`、`npm run build` 或改评估脚本；开发票据用 `git worktree add` 另开工作区（`node_modules` 与 `service/node_modules` 各自 `npm ci`，字体可以从主检出拷 `fixtures/resources/fonts/`），合入前先确认没有 `agent-eval`、`agent run`、`vitest` 进程在跑。
 - **Windows 上用 npm 装的 Claude Code**：`npm install -g @anthropic-ai/claude-code@2.1.296` 在全局目录里只放 `claude.cmd` 与 `claude.ps1` 两个 shim。终端里 `claude --version` 能用，但 `agent run` 不经 shell 启动子进程，只认 `.exe`，结果每轮都是"无法启动 claude：spawn claude ENOENT"。
   - 原生程序在 `<npm 全局目录>\node_modules\@anthropic-ai\claude-code\bin\claude.exe`，全局目录用 `npm prefix -g` 查。

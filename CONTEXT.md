@@ -28,7 +28,12 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 之后 05 → 06 与 07 → 08、09、10 两条线并行，11 审批策略等 06、09、10，13 阶段验收收尾。
 - **怎么做**：每张票在独立 worktree 里做，合入 main 前确认主检出没有评估在跑（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
 - **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
-- **测试现状**（2026-10-28，main `e4780ea`，临时 worktree）：构建、类型检查与服务组测试（110 通过、16 跳过）通过。引擎组 6 个 worker 并行时 1,182 通过、57 失败，失败全在 17 个 `agent-*` 重型集成文件（超时与抢 `fixtures/resources` 写锁的 `local.storeBusy`），票据 01、02 在各自分支上见过同一类失败；逐文件串行复核的第一份 `agent-candidate-freeze` 仍有 1 条在 71 秒处超过 60 秒时限。Docker 后端整组没有在合入 M350 之后的 main 上重跑。下一步：在空闲机器上对这 17 个文件跑 `npx vitest run --project engine --no-file-parallelism`、再跑一次 `node service/scripts/test-docker.mjs`，分清环境超时与真实缺陷。
+- **测试现状**（2026-10-28，main `e4780ea`，临时 worktree）：构建、类型检查与服务组测试（110 通过、16 跳过）通过。引擎组 6 个 worker 并行时 1,182 通过、57 失败，全在 17 个 `agent-*` 重型集成文件；这 17 个文件逐文件串行（`--no-file-parallelism`，约 60 分钟）重跑后 256 通过、3 失败，所以其余 54 条是并行下的超时与抢 `fixtures/resources` 写锁的 `local.storeBusy`。剩下 3 条都不是 P1 带来的：
+  - `agent-budgets`「tool 同步检查阻塞仍按整轮预算结束」：单独跑 3 次都失败，在 P1 之前的 `bd54fc7` 上同样失败；故障注入的标记文件 `renderer-blocked` 没写出来，原因未查；
+  - `agent-candidate-freeze`「直接数据集阶段绑定人工应用后的工作区…」：建符号链接报 `EPERM`，本机没开 Windows 开发者模式，已验证 node 在这里建不了符号链接；
+  - `agent-context-policy`「票14双语四任务…」：驱动真实命令行的重型用例超过 180 秒时限，推断是本机慢，没在 `bd54fc7` 上对照。
+
+  Docker 后端整组没有在合入 M350 之后的 main 上重跑。下一步：在开了开发者模式的空闲机器上重跑这 3 条与 `node service/scripts/test-docker.mjs`；`agent-budgets` 那条另查故障注入为什么没触发。
 
 ### Agent 验收与 Tool Runner 门槛（P0）
 
