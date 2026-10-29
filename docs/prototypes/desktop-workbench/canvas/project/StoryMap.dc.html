@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>用户故事地图</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;font-family:'Plus Jakarta Sans','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif;color:#22150F;-webkit-font-smoothing:antialiased}
+a{color:#8E3B24}a:hover{color:#722B18}
+</style>
+</helmet>
+<div style="width:1920px;height:1800px;box-sizing:border-box;padding:56px;background:#FFFFFF;color:#22150F;display:flex;flex-direction:column;gap:28px;overflow:hidden">
+
+  <div style="display:flex;align-items:flex-end;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+      <span style="font-size:13px;font-weight:700;color:#722B18;letter-spacing:1px">RENDERWEAVE · SAAS 桌面端</span>
+      <h1 style="margin:0;font-size:44px;line-height:1.15;font-weight:800;letter-spacing:-0.8px">用户故事地图</h1>
+      <p style="margin:0;font-size:16px;line-height:1.6;color:#5B4334;max-width:1100px">来源：阶段 3 PRD 的 35 条（P3-n）、阶段 4 PRD 的 48 条（P4-n）、M297–M299 与 M340。横向是用户的活动顺序，纵向是发布切片；每张卡片右上角是覆盖它的原型页编号。</p>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;font-size:13px;color:#5B4334;flex:none">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#F6EDDF;border:1px solid #BFAA8E"></span>v1.0 已有</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#F6EDDF;border:1px solid #D19C84"></span>5.0</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#ECE3D3;border:1px solid #D6B19C"></span>5.1</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#FFFFFF;border:1px dashed #A08A74"></span>非界面</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+    <sc-for list="{{roles}}" as="r" hint-placeholder-count="6">
+      <div style="border:1px solid #CDBA9F;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:#FFFFFF">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:32px;height:32px;border-radius:50%;background:#F6EDDF;color:#722B18;display:grid;place-items:center;font-size:14px;font-weight:800">{{r.mark}}</span>
+          <span style="display:flex;flex-direction:column">
+            <span style="font-size:15px;font-weight:800">{{r.name}}</span>
+            <span style="font-size:12px;color:#5B4334">{{r.ids}}</span>
+          </span>
+        </div>
+        <span style="font-size:13px;line-height:1.55;color:#22150F">{{r.goal}}</span>
+        <span style="font-size:12px;line-height:1.5;color:#5B4334">主要原型页：{{r.screens}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:8px">
+      <span style="font-size:12px;font-weight:700;color:#5B4334;align-self:end;padding-bottom:6px">活动 →</span>
+      <sc-for list="{{acts}}" as="a" hint-placeholder-count="10">
+        <div style="background:#22150F;color:#FFFFFF;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:11px;font-weight:700;opacity:0.8">{{a.k}}</span>
+          <span style="font-size:14px;font-weight:700">{{a.name}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:8px;border-top:1px solid #D9C8B0;padding-top:8px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px 4px">
+        <span style="font-size:14px;font-weight:800">v1.0 出图控制台</span>
+        <span style="font-size:12px;line-height:1.5;color:#5B4334">已上线能力，桌面端复用页面</span>
+      </div>
+      <sc-for list="{{r1}}" as="cell" hint-placeholder-count="10">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{cell.items}}" as="c" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;background:#F6EDDF;border:1px solid #BFAA8E">
+              <span style="display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:700;color:#5B4334"><span>{{c.id}}</span><span style="color:#722B18">{{c.s}}</span></span>
+              <span style="font-size:12px;line-height:1.45">{{c.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:8px;border-top:1px solid #D9C8B0;padding-top:8px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px 4px">
+        <span style="font-size:14px;font-weight:800">5.0 服务端 Agent 与人类页面</span>
+        <span style="font-size:12px;line-height:1.5;color:#5B4334">内部代建先用，替掉本机 Claude Code</span>
+      </div>
+      <sc-for list="{{r2}}" as="cell" hint-placeholder-count="10">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{cell.items}}" as="c" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;background:#F6EDDF;border:1px solid #D19C84">
+              <span style="display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:700;color:#722B18"><span>{{c.id}}</span><span>{{c.s}}</span></span>
+              <span style="font-size:12px;line-height:1.45">{{c.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:8px;border-top:1px solid #D9C8B0;padding-top:8px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px 4px">
+        <span style="font-size:14px;font-weight:800">5.1 对客户开放</span>
+        <span style="font-size:12px;line-height:1.5;color:#5B4334">评论、旋钮、向导与额度拦截</span>
+      </div>
+      <sc-for list="{{r3}}" as="cell" hint-placeholder-count="10">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{cell.items}}" as="c" hint-placeholder-count="1">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;background:#ECE3D3;border:1px solid #D6B19C">
+              <span style="display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:700;color:#722B18"><span>{{c.id}}</span><span>{{c.s}}</span></span>
+              <span style="font-size:12px;line-height:1.45">{{c.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:8px;border-top:1px solid #D9C8B0;padding-top:8px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px 4px">
+        <span style="font-size:14px;font-weight:800">非界面</span>
+        <span style="font-size:12px;line-height:1.5;color:#5B4334">API、命令行、运维与执行 Agent 的工具</span>
+      </div>
+      <sc-for list="{{r4}}" as="cell" hint-placeholder-count="10">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{cell.items}}" as="c" hint-placeholder-count="1">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-radius:8px;background:#FFFFFF;border:1px dashed #A08A74">
+              <span style="font-size:11px;font-weight:700;color:#5B4334">{{c.id}}</span>
+              <span style="font-size:12px;line-height:1.45;color:#5B4334">{{c.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;margin-top:auto">
+    <span style="font-size:18px;font-weight:800">原型中定下的设计判断</span>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+      <sc-for list="{{calls}}" as="d" hint-placeholder-count="5">
+        <div style="border:1px solid #CDBA9F;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;background:#F9F4EB">
+          <span style="font-size:14px;font-weight:800">{{d.t}}</span>
+          <span style="font-size:13px;line-height:1.6;color:#5B4334">{{d.b}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const c = (id, t, s) => ({ id, t, s: s || '' });
+    const cells = (cols) => cols.map((items) => ({ items }));
+    return {
+      roles: [
+        { mark: '操', name: '客户操作员', ids: 'P4-1…18', goal: '不写代码，用表单或 Excel 填数据，预览后批量交付，查记录与额度。', screens: '13 14 15 16 18' },
+        { mark: '管', name: '客户管理员', ids: 'P4-19…22，含操作员权限', goal: '管成员与角色、API 密钥、webhook、资源替换，看用量明细与审计。', screens: '17 18 19' },
+        { mark: '作', name: '模板作者 / 代建工程师', ids: 'P3-1…18，P4-32…38，M297–M299', goal: '交给 Agent 示例图或数据集，审核成果，设计数据定义与模板并发布。', screens: '02–12' },
+        { mark: '开', name: '客户开发者', ids: 'P4-23…31', goal: '用 API 密钥提交批次、收 webhook；界面上只拿密钥、看投递记录。', screens: '19' },
+        { mark: '平', name: '平台管理员', ids: 'P4-39…48', goal: '开租户、设套餐、签发代建令牌、看各租户用量与服务状态。', screens: '20' },
+        { mark: '智', name: '执行 Agent', ids: 'P3-19…24', goal: '不是界面用户：在服务端调用领域工具，过程以事件流显示在轮次里。', screens: '04' }
+      ],
+      acts: [
+        { k: 'A', name: '登录与租户' }, { k: 'B', name: '发起任务' }, { k: 'C', name: '跟进轮次' }, { k: 'D', name: '审核与应用' },
+        { k: 'E', name: '设计与发布' }, { k: 'F', name: '填写数据' }, { k: 'G', name: '出图交付' }, { k: 'H', name: '记录与重放' },
+        { k: 'I', name: '资源与用量' }, { k: 'J', name: '管理与平台' }
+      ],
+      r1: cells([
+        [c('P4-1', '邮箱加密码登录', '01'), c('P4-40', '账号由管理员开通、重置密码', '20')],
+        [],
+        [],
+        [],
+        [c('P4-2', '模板列表：缩略、尺寸范围、数据定义', '09'), c('P4-3', '只读预览上调对外参数', '11'), c('P4-36', '每次推送记修订，可指回旧修订', '12')],
+        [c('P4-4', '按显示名称生成表单', '13'), c('P4-5', '九种字段类型', '13'), c('P4-6', '字段级校验问题', '13'), c('P4-7', '图片字段选图或上传', '13'), c('P4-8', '保存、修改、复制数据集', '13'), c('P4-9', 'Excel 一行一个渲染项', '14'), c('P4-10', '逐行逐列问题，问题行不进批次', '14')],
+        [c('P4-11', '整批或单项草稿预览，问题标在图上', '13 15'), c('P4-12', '逐项进度与结果', '15'), c('P4-13', '下载单张或整批压缩包', '15'), c('P4-14', '失败项给出问题说明', '15'), c('P4-15', '取消批次，正在渲染的项也停', '15')],
+        [c('P4-16', '按时间、模板、批次查询', '16'), c('P4-17', '导出包可离线重放', '16')],
+        [c('P4-18', '已用、预占、剩余张数', '18'), c('P4-21', '用量明细', '18'), c('P4-22', '替换资源前看影响', '17')],
+        [c('P4-19', '成员与角色', '19'), c('P4-20', 'API 密钥只显示一次', '19'), c('P4-25/26', 'webhook 与投递记录', '19'), c('P4-39', '租户与套餐', '20'), c('P4-41', '各租户用量与预占', '20'), c('P4-42', '跨租户操作记审计', '19 20')]
+      ]),
+      r2: cells([
+        [c('M261', '代建工程师只进被指定的租户', '标题栏')],
+        [c('P3-1', '一步发起数据定义提取', '03'), c('P3-2', '项目说明：尺寸、范围、命名', '03'), c('P3-3', '选领域约定包', '03'), c('P3-16', '只有图片时先做数据定义', '03'), c('P3-18', '更换模型', '03'), c('M298', '从数据集提取数据定义', '03 07')],
+        [c('P3-5', '每轮交回结构化成果', '04'), c('P3-7', 'RenderWeave 重新渲染的预览', '04'), c('P3-8', '并排对照、局部放大', '04'), c('P3-14', '带反馈再来一轮', '04'), c('P3-17', '用时、轮数与 token', '02 04'), c('M340', '事件流：消息、思考摘要、工具、业务事件', '04')],
+        [c('P3-6', '成果不合格时给问题清单', '05'), c('P3-9', '逐项处理待确认项', '05'), c('P3-10', '待确认项未清不能生成', '05'), c('P3-11', '审核通过后一键应用', '05'), c('P3-12', '未审核不能应用', '05'), c('P3-13', '工作区已变：看差异，覆盖或重做', '05')],
+        [c('M299', '数据定义页：手动、示例图、数据集三入口', '06 07'), c('M299', '模板页：结构化属性、参数、手动微调', '10 11'), c('M299', '发布页：差异、影响、历史、回退', '12'), c('P3-15', '对已保存模板提修改要求', '10 04'), c('P4-33/34', '本地工作区推送，冲突整体拒绝', '12'), c('P4-35', '静态数据定义不可变', '07 08')],
+        [],
+        [c('桌面端', '导出到本地文件夹、完成时系统通知', '15')],
+        [],
+        [c('P4-37', '代建轮次 token 记到客户名下', '18')],
+        [c('ADR-0022', '审计区分人与 Agent 主体', '19')]
+      ]),
+      r3: cells([
+        [c('待定', '试用套餐与自助注册', '—')],
+        [c('M206', '示例图向导', '03'), c('ADR-0020', 'Agent 额度在调用处拦截', '18')],
+        [c('M208', '在预览元素上评论定位', '04 10'), c('M208', '按需生成调节旋钮', '04')],
+        [c('ADR-0022', '默认直发，租户可要求发布前批准', '05 08 19')],
+        [c('M206', '点选元素做小改', '10')],
+        [],
+        [],
+        [],
+        [c('待定', 'Agent 额度的计价单位', '18')],
+        [c('5.1', '远程 MCP 给开发者自己的 Agent', '19')]
+      ]),
+      r4: cells([
+        [c('P4-43', '一条命令起整套服务')],
+        [c('P3-4', '服务端隔离运行，模型 key 不下发到桌面端')],
+        [c('P3-19…23', 'Agent 的校验、预览、元素检查、放大、读参考')],
+        [c('P3-24', '工具本身限定 Agent 能力边界')],
+        [c('P3-25…29', 'DSL 参考、Schema 与兼容策略')],
+        [c('P4-27', '开放 API 管理数据集')],
+        [c('P4-23/24', 'API 提交批次、幂等键'), c('P4-30', '额度不足返回 429 与剩余')],
+        [c('P4-47', '保留旧构建 worker，旧记录可重放')],
+        [c('P4-45/46', '超时、超限与过大请求在入队前拒绝')],
+        [c('P4-28/29/31', 'OpenAPI、问题清单、1.x 只做加法'), c('P4-44/48', '健康检查、日志与容量基线')]
+      ]),
+      calls: [
+        { t: '“会话”在界面上叫任务', b: '一个业务 Agent 任务含一条轮次链；“会话”在系统里已指登录会话（M261），术语表也不让任务轮次叫会话。' },
+        { t: 'Agent 只在服务端运行', b: '循环由 Tool Runner 在服务端驱动（M340）；桌面端订阅事件流，不跑循环、不持模型 key。' },
+        { t: '默认直发，留审计可回退', b: '通过校验的成果可直接发布；租户可要求人工批准；受阻成果不能批准（ADR-0021、ADR-0022）。' },
+        { t: '不做自由拖拽', b: '模板页是检查器、结构化属性、参数旋钮与评论定位，修改走 Agent 或属性面板（M205、M299）。' },
+        { t: '桌面端只加本地能力', b: '拖入素材、导出到本地文件夹、系统通知、本地工作区推送；正式出图仍在服务端计量与记录。' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

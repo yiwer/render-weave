@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线路牌-横版 · 模板设计</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#FDFBF6;font-family:'Plus Jakarta Sans','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif;color:#22150F;-webkit-font-smoothing:antialiased}
+a{color:#722B18}a:hover{color:#561F10}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+code{font-family:'Cascadia Mono',Consolas,ui-monospace,monospace;font-size:12px}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+::placeholder{color:#7F6A59}
+input[type=range],input[type=checkbox],input[type=radio]{accent-color:#F17D13}
+:focus-visible{outline:2px solid #8E3B24;outline-offset:2px}
+.btn-p:hover{background:#722B18 !important;color:#FFFFFF !important}
+.btn:hover,.ghost:hover,.row:hover,.chip:hover,.opt:hover{background:#F8F3EA !important}
+.inp:focus,.field:focus-within{border-color:#8E3B24 !important;outline:none}
+.tab:hover{color:#22150F !important}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker{display:none}
+.menu a:hover,.menu button:hover{background:#F8F3EA}
+/* 外壳：标题栏、左栏 Agent、状态栏 */
+.tb summary:hover,.tb .tbtn:hover{background:#ECE3D3}
+.tb .win button:hover{background:#ECE3D3}
+.tb .win button.close:hover{background:#C42B1C;color:#FFFFFF}
+.modsw .menu a[aria-current="page"]:hover{background:#F6EDDF}
+.agent .chip:hover{background:#FFFFFF !important}
+.agent .abtn:hover{background:#ECE3D3}
+.sb a:hover{color:#22150F !important}
+@media (max-width:1180px){.tb-search{display:none !important}}
+@media (max-width:760px){.sb-wide{display:none !important}}
+.agent-fab,.agent-close{display:none !important}
+@media (max-width:1000px){
+.agent{position:fixed !important;left:0;top:44px;bottom:28px;height:auto !important;z-index:35 !important;transform:translateX(-100%);transition:transform .2s ease;box-shadow:12px 0 32px rgba(34,21,15,0.18)}
+body:has(#agent-open:checked) .agent{transform:none}
+.agent-fab{display:flex !important}
+.agent-close{display:grid !important}
+body:has(#agent-open:checked) .agent-fab{display:none !important}
+}
+/* 动效：织线标志描线、Agent 执行中的织梭、勾选描线与状态微动；系统要求减少动态时全部停下 */
+@keyframes rw-draw{from{stroke-dashoffset:var(--len)}}
+@keyframes rw-shuttle{from{stroke-dashoffset:6px}to{stroke-dashoffset:calc(var(--len) * -1px)}}
+@keyframes rw-ping{0%{transform:scale(1);opacity:.55}80%,100%{transform:scale(2.6);opacity:0}}
+@keyframes rw-bob{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px)}}
+@keyframes rw-rise{from{opacity:0;transform:translateY(6px)}}
+@keyframes rw-twinkle{0%,72%,100%{transform:scale(1) rotate(0)}82%{transform:scale(1.2) rotate(14deg)}91%{transform:scale(.94) rotate(-4deg)}}
+@keyframes rw-grow{from{transform:scaleX(0)}}
+@keyframes rw-stripes{to{background-position:16px 0}}
+@keyframes rw-spin{to{transform:rotate(360deg)}}
+@keyframes rw-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+@keyframes rw-glow{0%{box-shadow:0 0 0 0 rgba(241,125,19,.35)}100%{box-shadow:0 0 0 10px rgba(241,125,19,0)}}
+@keyframes rw-breathe{from{opacity:.35}}
+@keyframes rw-sheet{0%{transform:translateY(-8px);opacity:0}30%,72%{transform:translateY(0);opacity:1}100%{transform:translateY(3px);opacity:0}}
+@keyframes rw-halo{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(1.9);opacity:0}}
+@keyframes rw-fade{from{opacity:0}}
+.rw-mark path{stroke-dasharray:var(--len);animation:rw-draw .9s cubic-bezier(.65,0,.35,1) both}
+.rw-mark path+path{animation-delay:.22s}
+.rw-loom .t{stroke-dasharray:6 var(--len);animation:rw-shuttle 1.6s cubic-bezier(.45,0,.55,1) infinite}
+.rw-loom .t+.t{animation-delay:-.8s}
+.rw-check path,.rw-check circle{stroke-dasharray:var(--len);animation:rw-draw .5s .1s cubic-bezier(.65,0,.35,1) both}
+.rw-check circle+path{animation-delay:.45s}
+.rw-ping{position:relative}
+.rw-ping::after{content:"";position:absolute;inset:0;border-radius:inherit;background:inherit;animation:rw-ping 1.8s cubic-bezier(0,0,.2,1) infinite}
+.rw-bob{animation:rw-bob 2.2s ease-in-out infinite}
+.rw-rise{animation:rw-rise .4s cubic-bezier(.2,.8,.2,1) both}
+.rw-twinkle{transform-box:fill-box;transform-origin:center;animation:rw-twinkle 3.6s ease-in-out infinite}
+.rw-grow{transform-origin:left center;animation:rw-grow .9s cubic-bezier(.2,.8,.2,1) both}
+.rw-stripes{background-image:linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%);background-size:16px 16px;animation:rw-stripes .8s linear infinite}
+.rw-spin{animation:rw-spin .9s linear infinite}
+.rw-breathe{animation:rw-breathe 1.1s ease-in-out infinite alternate}
+.rw-glow{animation:rw-glow 1.6s cubic-bezier(0,0,.2,1) infinite}
+.rw-sheet{transform-box:fill-box;animation:rw-sheet 1.6s cubic-bezier(.3,.7,.3,1) infinite}
+.rw-halo{animation:rw-halo 1.8s cubic-bezier(0,0,.2,1) infinite}
+.rw-fade{animation:rw-fade 1.2s ease-out both}
+.btn-p:hover .rw-go{animation:rw-nudge .8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
+.el{position:relative;outline:1px solid transparent;outline-offset:3px;border-radius:2px;transition:outline-color .12s ease;cursor:default}
+.el:hover{outline-color:rgba(241,125,19,.55)}
+.el.sel{outline:1.5px solid #F17D13}
+.tool:hover{color:#22150F !important}
+.ctx a:hover,.ctx button:hover{background:#F8F3EA}
+.prop input{border:1px solid transparent !important}
+.prop input:hover{border-color:#D9C8B0 !important}
+.prop input:focus{border-color:#8E3B24 !important;background:#FFFFFF !important;outline:none}
+.node:hover{background:#F8F3EA}
+.sw:hover{transform:scale(1.08)}
+@media (max-width:1240px){.insp{flex-basis:248px !important;width:248px !important}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#FDFBF6;color:#22150F">
+  <header class="tb" style="position:sticky;top:0;z-index:30;height:44px;box-sizing:border-box;flex:none;display:flex;align-items:center;gap:8px;padding-left:8px;border-bottom:1px solid #D9C8B0;background:#F5EFE4"><details class="appmenu" style="position:relative;flex:none"><summary aria-label="应用菜单" style="display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;color:#22150F"><svg class="rw-mark" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#F17D13"></rect><path d="M6 8.5c4 0 4 7 8 7s4-7 4-7" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" style="--len:21"></path><path d="M6 15.5c4 0 4-7 8-7" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" style="--len:12"></path></svg>RenderWeave<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;color:#5B4334"><path d="M6 9l6 6 6-6"></path></svg></summary><div class="menu" role="menu" style="position:absolute;top:40px;z-index:40;padding:6px;background:#FFFFFF;border:1px solid #D9C8B0;border-radius:10px;box-shadow:0 16px 40px rgba(34,21,15,0.16);display:flex;flex-direction:column;left:0;width:272px"><span style="display:flex;flex-direction:column;gap:1px;padding:8px 10px 10px"><strong style="font-size:13px">林一</strong><span style="font-size:12px;color:#5B4334">客户管理员 · 青禾公交</span></span><span style="height:1px;background:#D9C8B0;margin:4px 6px"></span><a role="menuitem" href="NewTask.dc.html" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">新建 Agent 任务<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+N</kbd></a><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">打开本地工作区…<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+O</kbd></button><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">在新窗口中打开<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+Shift+N</kbd></button><span style="height:1px;background:#D9C8B0;margin:4px 6px"></span><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">导出到文件夹…<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+E</kbd></button><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">设置<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+,</kbd></button><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">检查更新</button><span style="height:1px;background:#D9C8B0;margin:4px 6px"></span><a role="menuitem" href="Main.dc.html" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">退出登录</a><button type="button" role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;color:#22150F;text-decoration:none;text-align:left;box-sizing:border-box">退出 RenderWeave<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Alt+F4</kbd></button></div></details><label class="tb-search" style="margin-left:auto;flex:0 1 260px;min-width:180px;display:flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 10px;border:1px solid #D9C8B0;border-radius:8px;background:#FFFFFF;color:#5B4334;font-size:13px;box-sizing:border-box"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><input aria-label="搜索或执行命令" placeholder="搜索或执行命令" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font-size:13px"><kbd style="font-family:inherit;font-size:11px;font-weight:600;color:#5B4334;border:1px solid #D9C8B0;border-radius:4px;padding:1px 6px">Ctrl K</kbd></label><details class="modsw" style="position:relative;flex:none"><summary aria-label="切换模块，当前为模板" title="切换模块" style="display:flex;align-items:center;gap:8px;height:30px;padding:0 8px 0 10px;border:1px solid #BFAA8E;border-radius:8px;background:#FFFFFF;font-size:13px;font-weight:600;color:#22150F;cursor:pointer;box-sizing:border-box"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;color:#8E3B24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>模板<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px;color:#5B4334"><path d="M6 9l6 6 6-6"></path></svg></summary><div class="menu" role="menu" style="position:absolute;top:40px;z-index:40;padding:6px;background:#FFFFFF;border:1px solid #D9C8B0;border-radius:10px;box-shadow:0 16px 40px rgba(34,21,15,0.16);display:flex;flex-direction:column;right:0;width:260px"><span style="padding:8px 10px 4px;font-size:11px;font-weight:600;color:#5B4334">设计</span><a role="menuitem" href="TaskList.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><path d="M12 3l1.8 4.6 4.7 1.9-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.9z"></path></svg><span style="flex:1;font-weight:500">工作台</span><span style="min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#F6EDDF;color:#722B18;font-size:11px;font-weight:700;display:grid;place-items:center">2</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+1</kbd></a><a role="menuitem" href="SchemaList.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"></ellipse><path d="M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"></path><path d="M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"></path></svg><span style="flex:1;font-weight:500">数据定义</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+2</kbd></a><a role="menuitem" href="TemplateList.dc.html" aria-current="page" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;background:#F6EDDF;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#8E3B24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg><span style="flex:1;font-weight:600">模板</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+3</kbd></a><span style="padding:8px 10px 4px;font-size:11px;font-weight:600;color:#5B4334">出图</span><a role="menuitem" href="Datasets.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M3 15h18M10 4v16"></path></svg><span style="flex:1;font-weight:500">数据集</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+4</kbd></a><a role="menuitem" href="Batch.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg><span style="flex:1;font-weight:500">出图</span><span style="min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#F6EDDF;color:#722B18;font-size:11px;font-weight:700;display:grid;place-items:center">1</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+5</kbd></a><span style="padding:8px 10px 4px;font-size:11px;font-weight:600;color:#5B4334">租户</span><a role="menuitem" href="Resources.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path></svg><span style="flex:1;font-weight:500">资源</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+6</kbd></a><a role="menuitem" href="Usage.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><path d="M3 20h18"></path><path d="M6 16v-5M11 16V6M16 16v-8"></path></svg><span style="flex:1;font-weight:500">用量</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+7</kbd></a><a role="menuitem" href="Admin.dc.html" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;color:#5B4334"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"></path></svg><span style="flex:1;font-weight:500">管理</span><kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+8</kbd></a></div></details><button type="button" class="tbtn" aria-label="切换租户，当前为青禾公交" style="flex:none;display:flex;align-items:center;gap:8px;height:30px;padding:0 8px 0 5px;border:0;border-radius:8px;background:transparent;font-size:13px;font-weight:600"><span style="width:20px;height:20px;border-radius:6px;background:#0B4F9C;color:#FFFFFF;display:grid;place-items:center;font-size:11px;font-weight:700">青</span>青禾公交<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px;color:#5B4334"><path d="M6 9l6 6 6-6"></path></svg></button><button type="button" class="tbtn" aria-label="通知，2 条未读" style="position:relative;flex:none;width:32px;height:32px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg><span style="position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:#F17D13;border:1.5px solid #F5EFE4"></span></button><span class="win" style="display:flex;flex:none;margin-left:2px"><button type="button" aria-label="最小化" style="width:46px;height:43px;border:0;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M6 12h12"></path></svg></button><button type="button" aria-label="最大化" style="width:46px;height:43px;border:0;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><rect x="5" y="5" width="14" height="14" rx="1.5"></rect></svg></button><button type="button" class="close" aria-label="关闭" style="width:46px;height:43px;border:0;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span></header>
+  <div class="split" style="flex:1;min-height:0;display:flex;align-items:stretch">
+    <input type="checkbox" id="agent-open" class="agent-toggle" aria-label="显示 Agent 对话" style="position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none"><label for="agent-open" class="agent-fab" style="position:fixed;left:16px;bottom:44px;z-index:36;align-items:center;gap:8px;height:40px;padding:0 16px 0 12px;border-radius:999px;background:#22150F;color:#FFFFFF;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(34,21,15,0.25);cursor:pointer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M12 3l1.8 4.6 4.7 1.9-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.9z"></path></svg>Agent</label><aside class="agent" aria-label="Agent 对话" style="flex:0 0 380px;width:380px;max-width:380px;align-self:flex-start;position:sticky;top:44px;z-index:5;height:calc(100vh - 72px);box-sizing:border-box;display:flex;flex-direction:column;background:#F5EFE4;border-right:1px solid #D9C8B0"><div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 12px 10px 16px"><span style="flex:none;width:28px;height:28px;border-radius:8px;background:#F6E2D7;color:#8E3B24;display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path class="rw-twinkle" d="M12 3l1.8 4.6 4.7 1.9-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.9z"></path></svg></span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><strong style="font-size:14px">Agent</strong><span style="font-size:12px;color:#5B4334;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">模板设计 · 线路牌-横版</span></span><label for="agent-open" class="agent-close abtn" aria-label="收起 Agent" title="收起" style="flex:none;width:30px;height:30px;border-radius:8px;place-items:center;color:#5B4334;cursor:pointer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"></path></svg></label><a href="TaskList.dc.html" aria-label="任务历史" title="任务历史" class="abtn" style="flex:none;width:30px;height:30px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></a><a href="NewTask.dc.html" aria-label="新对话" title="新对话 Ctrl+N" class="abtn" style="flex:none;width:30px;height:30px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"></path></svg></a></div><div style="flex:1;min-height:0;overflow:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:16px"><div style="align-self:flex-end;max-width:88%;background:#FFFFFF;border:1px solid #D9C8B0;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;line-height:1.6">线路号再大一点，首末站加粗。</div><div style="display:flex;gap:8px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:#F6E2D7;color:#8E3B24;display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><path class="rw-twinkle" d="M12 3l1.8 4.6 4.7 1.9-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.9z"></path></svg></span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px"><p style="margin:0;font-size:13px;line-height:1.7">线路号改为对外参数 routeNoSize（缺省 18 mm），首末站加粗。已保存工作副本，草稿 0 个严重问题、2 个提示。</p><div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #D9C8B0;border-radius:8px;background:#FFFFFF;font-size:12px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px;color:#5B4334"><path d="M15 6a4 4 0 0 0 4.9 4.9L11 19.8a2.1 2.1 0 0 1-3-3L16.9 8A4 4 0 0 0 15 6z"></path></svg><code style="font-weight:700">edit_candidate</code><span style="flex:1;min-width:0;color:#5B4334;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">header/routeNo、stop/name · 3 处修改</span></div></div></div><div style="display:flex;gap:8px;align-items:flex-start"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:#F6E2D7;color:#8E3B24;display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><path class="rw-twinkle" d="M12 3l1.8 4.6 4.7 1.9-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.9z"></path></svg></span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px"><p style="margin:0;font-size:13px;line-height:1.7">第 11 列“粤宝宝丽路口”压到 74%，还在 70% 的下限之上。要再收紧列间留白吗？</p></div></div></div><div style="flex:none;padding:0 16px 10px;display:flex;flex-wrap:wrap;gap:6px"><button type="button" class="chip" style="height:28px;padding:0 10px;border:1px solid #BFAA8E;border-radius:999px;background:transparent;font-size:12px;font-weight:500;color:#22150F">把字号做成旋钮</button><button type="button" class="chip" style="height:28px;padding:0 10px;border:1px solid #BFAA8E;border-radius:999px;background:transparent;font-size:12px;font-weight:500;color:#22150F">压测 40 站</button></div><div style="flex:none;padding:0 12px 12px"><div class="field" style="border:1px solid #BFAA8E;border-radius:14px;background:#FFFFFF;padding:10px 10px 8px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(34,21,15,0.04)"><code style="align-self:flex-start;font-size:11px;color:#722B18;background:#F6EDDF;border-radius:6px;padding:2px 7px">@{{selPath}}</code><textarea rows="2" aria-label="给 Agent 的消息" placeholder="说要怎么改选中的元素，例如：线路号再大一点" style="border:0;outline:none;resize:none;font-size:14px;line-height:1.55;background:transparent"></textarea><div style="display:flex;align-items:center;gap:2px"><button type="button" aria-label="添加文件" title="添加文件，也可直接拖入" class="abtn" style="flex:none;width:30px;height:30px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;color:#5B4334"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"></path></svg></button><span style="margin-left:4px;font-size:12px;color:#5B4334">Claude Haiku 5.5</span><a class="btn-p" href="Workbench.dc.html" aria-label="发送，Ctrl Enter" title="发送 Ctrl Enter" style="margin-left:auto;flex:none;width:32px;height:32px;border-radius:9px;background:#8E3B24;color:#FFFFFF;display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M12 19V5M6 11l6-6 6 6"></path></svg></a></div></div></div></aside>
+    <div class="mod" style="flex:1;min-width:0;height:calc(100vh - 72px);position:sticky;top:44px;display:flex;flex-direction:column">
+      <div style="flex:none;height:52px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 16px 0 20px;border-bottom:1px solid #D9C8B0">
+        <span style="font-size:13px;color:#5B4334;white-space:nowrap"><a href="TemplateList.dc.html" style="text-decoration:none">模板</a> / <strong style="color:#22150F;font-weight:600">线路牌-横版</strong></span>
+        <span title="基于线路牌 v2 · 修订 12" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#B45309;white-space:nowrap"><span class="rw-breathe" style="width:6px;height:6px;border-radius:50%;background:#B45309"></span>2 处未发布</span>
+        <span role="radiogroup" aria-label="工具" style="margin-left:auto;display:flex;padding:2px;border-radius:9px;background:#F6EDDF">
+          <button type="button" class="tool" role="radio" aria-checked="{{tSelect.on}}" aria-label="选择" title="选择 V" onClick="{{tSelect.pick}}" style="width:30px;height:28px;border:0;border-radius:7px;background:{{tSelect.bg}};box-shadow:{{tSelect.shadow}};color:{{tSelect.fg}};display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M5 3l13 7-6 2-2 6z"></path></svg></button>
+          <button type="button" class="tool" role="radio" aria-checked="{{tComment.on}}" aria-label="评论" title="评论 C" onClick="{{tComment.pick}}" style="width:30px;height:28px;border:0;border-radius:7px;background:{{tComment.bg}};box-shadow:{{tComment.shadow}};color:{{tComment.fg}};display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M4 5h16v11H9l-5 4z"></path></svg></button>
+          <button type="button" class="tool" role="radio" aria-checked="{{tHand.on}}" aria-label="抓手" title="抓手 H" onClick="{{tHand.pick}}" style="width:30px;height:28px;border:0;border-radius:7px;background:{{tHand.bg}};box-shadow:{{tHand.shadow}};color:{{tHand.fg}};display:grid;place-items:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7c0 4-2.5 7-6 7-2.5 0-4-1.2-5.5-3.5L4 13.5a1.5 1.5 0 0 1 2.5-1.6L8 14"></path></svg></button>
+        </span>
+        <select aria-label="预览数据集" class="inp" style="height:32px;max-width:170px;padding:0 8px;border:1px solid #D9C8B0;border-radius:8px;background:transparent;font-size:12px;color:#5B4334"><option>M402 开往万国城总站</option><option>压测：40 站、站名 8 字</option><option>366 开往清水河</option></select>
+        <span role="radiogroup" aria-label="渲染模式" style="display:flex;padding:2px;border-radius:9px;background:#F6EDDF">
+          <button type="button" role="radio" aria-checked="{{draft}}" onClick="{{toDraft}}" style="height:28px;padding:0 10px;border:0;border-radius:7px;background:{{draftBg}};box-shadow:{{draftShadow}};color:{{draftFg}};font-size:12px;font-weight:600">草稿</button>
+          <button type="button" role="radio" aria-checked="{{final}}" onClick="{{toFinal}}" style="height:28px;padding:0 10px;border:0;border-radius:7px;background:{{finalBg}};box-shadow:{{finalShadow}};color:{{finalFg}};font-size:12px;font-weight:600">正式</button>
+        </span>
+        <button type="button" class="btn" title="保存工作副本 Ctrl+S" style="height:32px;padding:0 12px;border:1px solid #BFAA8E;border-radius:9px;background:#FFFFFF;font-size:13px;font-weight:600;white-space:nowrap">保存</button>
+        <a class="btn-p" href="Publish.dc.html" style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:9px;background:#8E3B24;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">发布修订</a>
+      </div>
+
+      <div style="flex:1;min-height:0;display:flex">
+        <div style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:#F3ECE0;background-image:radial-gradient(rgba(91,67,52,.16) 1px,transparent 1px);background-size:20px 20px">
+          <div data-canvas="" onClick="{{closeMenu}}" style="position:relative;flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:56px 40px">
+            <div style="position:relative;width:100%;max-width:760px;display:flex;flex-direction:column;gap:10px">
+                            <div style="position:relative;background:#FFFFFF;border-radius:3px;box-shadow:0 1px 2px rgba(34,21,15,0.08),0 14px 36px rgba(34,21,15,0.12)">
+                <div style="display:flex;align-items:center;gap:14px;background:{{theme}};color:#FFFFFF;padding:12px 18px;border-radius:3px 3px 0 0">
+                  <span class="el {{eRoute.cls}}" onClick="{{eRoute.pick}}" onContextMenu="{{eRoute.ctx}}" style="font-size:{{routePx}}px;font-weight:800;letter-spacing:-0.5px;line-height:1;transition:font-size .15s ease">M402
+                    <sc-if value="{{eRoute.on}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;left:-4px;top:-30px;font-size:11px;font-weight:600;letter-spacing:0;line-height:1;color:#22150F;background:#F17D13;border-radius:4px;padding:4px 6px;white-space:nowrap">routeNo · {{routeMm}} mm</span></sc-if>
+                  </span>
+                  <span class="el {{eDest.cls}}" onClick="{{eDest.pick}}" onContextMenu="{{eDest.ctx}}" style="display:flex;flex-direction:column">
+                    <span style="font-size:10px">开往</span><span style="font-size:17px;font-weight:700">万国城总站</span>
+                    <sc-if value="{{eDest.on}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:-4px;top:-30px;font-size:11px;font-weight:600;line-height:1;color:#22150F;background:#F17D13;border-radius:4px;padding:4px 6px;white-space:nowrap">destination</span></sc-if>
+                  </span>
+                  <sc-if value="{{showFare}}" hint-placeholder-val="{{ true }}">
+                    <span class="el {{eSvc.cls}}" onClick="{{eSvc.pick}}" onContextMenu="{{eSvc.ctx}}" style="margin-left:auto;font-size:10px;line-height:1.5;text-align:right">首末班 06:30–22:30<br>票价 2 元
+                      <sc-if value="{{eSvc.on}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:-4px;top:-30px;font-size:11px;font-weight:600;line-height:1;color:#22150F;background:#F17D13;border-radius:4px;padding:4px 6px;white-space:nowrap;text-align:left">serviceInfo</span></sc-if>
+                    </span>
+                  </sc-if>
+                </div>
+                <div class="el {{eStops.cls}}" onClick="{{eStops.pick}}" onContextMenu="{{eStops.ctx}}" style="position:relative;padding:12px 10px 12px;outline-offset:-2px">
+                  <div style="position:absolute;left:20px;right:20px;top:17px;height:3px;background:{{theme}}"></div>
+                  <div style="position:relative;display:flex;justify-content:space-between">
+                    <sc-for list="{{stops}}" as="s" hint-placeholder-count="15">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:26px">
+                        <span style="width:9px;height:9px;border-radius:50%;background:#FFFFFF;border:2px solid {{theme}}"></span>
+                        <span style="writing-mode:vertical-rl;font-size:15px;line-height:1;letter-spacing:{{s.ls}}px;height:108px;color:#1B2A3A;font-weight:{{s.w}};transform:scaleX({{s.sx}});outline:{{s.mark}};outline-offset:3px">{{s.name}}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{eStops.on}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:-2px;bottom:-28px;font-size:11px;font-weight:600;line-height:1;color:#22150F;background:#F17D13;border-radius:4px;padding:4px 6px;white-space:nowrap">stops · 循环 15 项</span></sc-if>
+                </div>
+                <span aria-label="评论 1" style="position:absolute;left:72%;top:56px;width:22px;height:22px;border-radius:50%;background:#8E3B24;color:#FFFFFF;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(34,21,15,0.3);display:grid;place-items:center;font-size:11px;font-weight:700">1</span>
+                <span aria-label="评论 2" style="position:absolute;left:132px;top:-10px;width:22px;height:22px;border-radius:50%;background:#8E3B24;color:#FFFFFF;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(34,21,15,0.3);display:grid;place-items:center;font-size:11px;font-weight:700">2</span>
+                <span aria-label="评论 3，待处理" style="position:absolute;left:-11px;top:118px;width:22px;height:22px;border-radius:50%;background:#22150F;color:#FFFFFF;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(34,21,15,0.3);display:grid;place-items:center;font-size:11px;font-weight:700"><span class="rw-halo" aria-hidden="true" style="position:absolute;inset:-2px;border-radius:50%;border:2px solid #22150F"></span>3</span>
+              </div>
+              <span style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#5B4334">线路牌-横版 · 1200 × 360 mm<span style="color:#B45309">第 11 列压缩到 74%</span></span>
+            </div>
+
+            <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ctx menu rw-rise" role="menu" aria-label="元素操作" onClick="{{stop}}" style="position:absolute;left:{{menuX}}px;top:{{menuY}}px;z-index:30;width:250px;padding:6px;background:#FFFFFF;border:1px solid #D9C8B0;border-radius:10px;box-shadow:0 16px 40px rgba(34,21,15,0.18);display:flex;flex-direction:column">
+                <code style="padding:6px 10px 8px;font-size:11px;color:#7F6A59">{{selPath}}</code>
+                <a role="menuitem" href="Workbench.dc.html" style="display:flex;align-items:center;height:32px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none">让 Agent 修改这里…<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+I</kbd></a>
+                <button type="button" role="menuitem" onClick="{{toComment}}" style="display:flex;align-items:center;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;text-align:left">在这里留评论<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">C</kbd></button>
+                <button type="button" role="menuitem" style="display:flex;align-items:center;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;text-align:left">复制元素路径<kbd style="margin-left:auto;font-family:inherit;font-size:11px;color:#5B4334">Ctrl+Shift+C</kbd></button>
+                <button type="button" role="menuitem" onClick="{{toTree}}" style="display:flex;align-items:center;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:13px;text-align:left">在结构中定位</button>
+                <a role="menuitem" href="Schema.dc.html" style="display:flex;align-items:center;height:32px;padding:0 10px;border-radius:6px;font-size:13px;color:#22150F;text-decoration:none">打开绑定的字段</a>
+              </div>
+            </sc-if>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:14px;display:flex;align-items:center;gap:10px;pointer-events:none">
+            <span style="pointer-events:auto;display:flex;align-items:center;height:30px;padding:0 4px;border-radius:9px;background:#FFFFFF;box-shadow:0 1px 3px rgba(34,21,15,0.12);font-size:12px">
+              <button type="button" class="tool" aria-label="缩小" title="缩小 Ctrl+-" style="width:26px;height:24px;border:0;border-radius:6px;background:transparent;color:#5B4334;font-size:15px">−</button>
+              <span style="padding:0 4px;font-variant-numeric:tabular-nums">100%</span>
+              <button type="button" class="tool" aria-label="放大" title="放大 Ctrl+=" style="width:26px;height:24px;border:0;border-radius:6px;background:transparent;color:#5B4334;font-size:15px">+</button>
+            </span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#5B4334"><span class="rw-ping" style="width:6px;height:6px;border-radius:50%;background:#2E7D4F"></span><span>{{modeLabel}} · 186 ms · 2 个提示</span></span>
+          </div>
+        </div>
+
+        <aside class="insp" aria-label="检查器" style="flex:0 0 288px;width:288px;min-width:0;display:flex;flex-direction:column;border-left:1px solid #D9C8B0;background:#FDFBF6">
+          <div role="tablist" aria-label="检查器" style="flex:none;display:flex;gap:18px;height:44px;padding:0 16px;border-bottom:1px solid #D9C8B0">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+              <button type="button" class="tab" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="padding:0;margin-bottom:-1px;border:0;border-bottom:2px solid {{t.line}};background:transparent;font-size:13px;font-weight:{{t.weight}};color:{{t.fg}}">{{t.label}}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px">
+            <sc-if value="{{tabProps}}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700">{{cur.name}}</span><code style="color:#7F6A59">{{cur.path}}</code></div>
+                <sc-for list="{{cur.groups}}" as="g" hint-placeholder-count="3">
+                  <div class="prop" style="display:flex;flex-direction:column;gap:2px">
+                    <span style="font-size:11px;font-weight:600;color:#7F6A59;padding-bottom:4px">{{g.title}}</span>
+                    <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+                      <label style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;font-size:12px;color:#5B4334">{{r.k}}
+                        <input value="{{r.v}}" style="min-width:0;height:28px;padding:0 6px;border-radius:6px;background:transparent;font-size:12px;color:#22150F">
+                      </label>
+                    </sc-for>
+                  </div>
+                </sc-for>
+                <div style="display:flex;gap:8px;padding-top:4px">
+                  <a class="btn" href="Workbench.dc.html" style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid #BFAA8E;border-radius:9px;background:#FFFFFF;font-size:12px;font-weight:600;color:#22150F;text-decoration:none">让 Agent 修改</a>
+                  <button type="button" class="btn" onClick="{{toComment}}" style="flex:1;height:32px;border:1px solid #BFAA8E;border-radius:9px;background:#FFFFFF;font-size:12px;font-weight:600">留评论</button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{tabParams}}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:18px">
+                <span style="font-size:11px;font-weight:600;color:#7F6A59">对外参数 · 出图时可改</span>
+                <label style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+                  <span style="display:flex;align-items:baseline;gap:6px">线路号字号<code style="color:#7F6A59">routeNoSize</code><span style="margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums">{{routeMm}} mm</span></span>
+                  <input type="range" min="14" max="24" value="{{routeMm}}" onChange="{{onRoute}}" aria-label="线路号字号">
+                </label>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+                  <span style="display:flex;align-items:baseline;gap:6px">主题色<code style="color:#7F6A59">themeColor</code></span>
+                  <span style="display:flex;gap:8px">
+                    <sc-for list="{{swatches}}" as="w" hint-placeholder-count="4">
+                      <button type="button" class="sw" onClick="{{w.pick}}" aria-label="{{w.label}}" aria-pressed="{{w.on}}" style="width:26px;height:26px;border-radius:50%;border:2px solid #FFFFFF;background:{{w.hex}};box-shadow:0 0 0 1.5px {{w.ring}};transition:transform .12s ease"></button>
+                    </sc-for>
+                  </span>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" checked="{{showFare}}" onChange="{{onFare}}" style="margin:0">显示首末班与票价<code style="color:#7F6A59">showFare</code>
+                </label>
+                <span style="font-size:11px;font-weight:600;color:#7F6A59;padding-top:6px;border-top:1px solid #D9C8B0;padding-top:16px">内部参数 · 只有模板作者能改</span>
+                <div style="display:flex;align-items:baseline;gap:6px;font-size:13px">列间最小留白<code style="color:#7F6A59">gapMin</code><span style="margin-left:auto;font-weight:600">2 mm</span></div>
+                <div style="display:flex;align-items:baseline;gap:6px;font-size:13px">站名缩字下限<code style="color:#7F6A59">stopMinSize</code><span style="margin-left:auto;font-weight:600">8 mm</span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{tabTree}}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <sc-for list="{{tree}}" as="n" hint-placeholder-count="8">
+                  <button type="button" class="node" onClick="{{n.pick}}" aria-pressed="{{n.sel}}" style="display:flex;align-items:center;gap:8px;height:30px;padding:0 8px 0 {{n.pad}}px;border:0;border-radius:6px;background:{{n.bg}};color:{{n.fg}};font-size:13px;font-weight:{{n.weight}};text-align:left">
+                    <span style="width:40px;flex:none;font-size:11px;font-weight:500;color:#7F6A59">{{n.kind}}</span>{{n.name}}
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{tabRules}}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+                  <div style="display:flex;flex-direction:column;gap:3px;padding:12px 0;border-bottom:1px solid #D9C8B0">
+                    <span style="font-size:11px;font-weight:600;color:#7F6A59">{{r.kind}}</span>
+                    <span style="font-size:13px;line-height:1.55">{{r.text}}</span>
+                    <code style="color:#722B18">{{r.path}}</code>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <footer class="sb" aria-label="状态栏" style="position:sticky;bottom:0;z-index:20;height:28px;box-sizing:border-box;flex:none;display:flex;align-items:center;gap:18px;padding:0 14px;border-top:1px solid #D9C8B0;background:#F5EFE4;font-size:12px;white-space:nowrap;overflow:hidden"><span style="display:flex;align-items:center;gap:6px;color:#5B4334;text-decoration:none;flex:none" title="app.renderweave.example"><span style="width:7px;height:7px;border-radius:50%;background:#2E7D4F;flex:none"></span>已连接</span><span class="sb-wide" style="display:flex;align-items:center;gap:6px;color:#5B4334;text-decoration:none;flex:none">本地工作区已同步</span><span style="margin-left:auto"></span><a href="Workbench.dc.html" style="display:flex;align-items:center;gap:6px;color:#5B4334;text-decoration:none;flex:none"><svg class="rw-loom" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#F17D13" stroke-width="2.4" stroke-linecap="round" style="flex:none"><path d="M6 8.5c4 0 4 7 8 7s4-7 4-7" opacity="0.3"></path><path d="M6 15.5c4 0 4-7 8-7" opacity="0.3"></path><path class="t" d="M6 8.5c4 0 4 7 8 7s4-7 4-7" style="--len:21"></path><path class="t" d="M6 15.5c4 0 4-7 8-7" style="--len:12"></path></svg>M402 横版线路牌 · 第 3 轮</a><a href="Batch.dc.html" style="display:flex;align-items:center;gap:6px;color:#5B4334;text-decoration:none;flex:none">批次 31 / 45</a></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'routeNo', tab: 'props', tool: 'select', mode: 'draft', routeMm: 18, theme: '#0B4F9C', showFare: true, menu: null };
+  }
+  renderVals() {
+    const s = this.state;
+    const paths = { routeNo: 'header/routeNo', destination: 'header/destination', serviceInfo: 'header/serviceInfo', stops: 'stops' };
+    const el = (id) => ({
+      on: s.sel === id, cls: s.sel === id ? 'sel' : '',
+      pick: (e) => { e.stopPropagation(); this.setState({ sel: id, menu: null, tab: s.tab === 'tree' ? 'props' : s.tab }); },
+      ctx: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const c = e.currentTarget.closest('[data-canvas]');
+        const box = c.getBoundingClientRect();
+        this.setState({ sel: id, menu: { x: Math.min(e.clientX - box.left + c.scrollLeft, box.width - 262), y: e.clientY - box.top + c.scrollTop } });
+      }
+    });
+    const r = (k, v) => ({ k, v });
+    const details = {
+      routeNo: { name: '线路号', path: paths.routeNo, groups: [
+        { title: '绑定', rows: [r('来源', '字段 routeNo')] },
+        { title: '布局', rows: [r('方式', '横向堆叠 · 第 1 项'), r('位置', 'X 16 · Y 8 mm')] },
+        { title: '文字', rows: [r('字体', '思源黑体 Heavy'), r('字号', '参数 routeNoSize'), r('颜色', '#FFFFFF')] },
+        { title: '适配', rows: [r('顺序', '收紧字距 → 压缩 → 缩字'), r('下限', '压缩 70% · 12 mm')] }
+      ] },
+      destination: { name: '开往', path: paths.destination, groups: [
+        { title: '绑定', rows: [r('来源', '字段 destination')] },
+        { title: '布局', rows: [r('方式', '横向堆叠 · 第 2 项'), r('最宽', '420 mm')] },
+        { title: '文字', rows: [r('字体', '思源黑体 Bold'), r('字号', '9 mm')] },
+        { title: '适配', rows: [r('顺序', '压缩 → 缩字'), r('下限', '压缩 70% · 6 mm')] }
+      ] },
+      serviceInfo: { name: '首末班与票价', path: paths.serviceInfo, groups: [
+        { title: '绑定', rows: [r('来源', '派生变量 serviceLine'), r('显示', '参数 showFare 为是')] },
+        { title: '文字', rows: [r('字体', '思源黑体 Regular'), r('字号', '5 mm'), r('对齐', '右对齐')] }
+      ] },
+      stops: { name: '站点循环', path: paths.stops, groups: [
+        { title: '循环', rows: [r('遍历', '字段 stops'), r('每项', '等分宽度'), r('模板', '站点 · 站点 v1')] },
+        { title: '适配', rows: [r('缩字组', '跨循环统一字号'), r('下限', '参数 stopMinSize')] },
+        { title: '状态样式', rows: [r('首末站', '加粗'), r('换乘', '显示地铁图标')] }
+      ] }
+    };
+    const nodes = [
+      { id: 'artboard', pad: 8, kind: '画板', name: '线路牌-横版' },
+      { id: 'header', pad: 20, kind: '堆叠', name: 'header' },
+      { id: 'routeNo', pad: 32, kind: '文本', name: 'routeNo' },
+      { id: 'destination', pad: 32, kind: '文本', name: 'destination' },
+      { id: 'serviceInfo', pad: 32, kind: '文本', name: 'serviceInfo' },
+      { id: 'stops', pad: 20, kind: '循环', name: 'stops' },
+      { id: 'stop', pad: 32, kind: '子模板', name: '站点' },
+      { id: 'roadBand', pad: 20, kind: '线条', name: 'roadBand' }
+    ];
+    const names = ['建设路总站', '建设路', '中国银行大厦', '门诊部', '东门', '田贝', '洪湖公园', '东晓街道办', '草埔地铁站', '荣超花园', '粤宝宝丽路口', '德兴花园', '莲花山庄', '布吉中学', '万国城总站'];
+    const tabs = [['props', '属性'], ['params', '参数'], ['tree', '结构'], ['rules', '规则']].map(([id, label]) => ({
+      label, on: s.tab === id, line: s.tab === id ? '#F17D13' : 'transparent', weight: s.tab === id ? 600 : 500, fg: s.tab === id ? '#22150F' : '#5B4334',
+      pick: () => this.setState({ tab: id })
+    }));
+    const seg = (on) => ({ bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#22150F' : '#5B4334', shadow: on ? '0 1px 2px rgba(34,21,15,0.12)' : 'none' });
+    const d = seg(s.mode === 'draft'); const f = seg(s.mode === 'final');
+    const tool = (id) => Object.assign({ on: s.tool === id, pick: () => this.setState({ tool: id }) }, seg(s.tool === id));
+    const selectable = details[s.sel] ? s.sel : 'routeNo';
+    return {
+      tSelect: tool('select'), tComment: tool('comment'), tHand: tool('hand'),
+      draft: s.mode === 'draft', final: s.mode === 'final',
+      draftBg: d.bg, draftFg: d.fg, draftShadow: d.shadow, finalBg: f.bg, finalFg: f.fg, finalShadow: f.shadow,
+      toDraft: () => this.setState({ mode: 'draft' }), toFinal: () => this.setState({ mode: 'final' }),
+      modeLabel: s.mode === 'draft' ? '草稿 50 DPI' : '正式 120 DPI',
+      eRoute: el('routeNo'), eDest: el('destination'), eSvc: el('serviceInfo'), eStops: el('stops'),
+      selPath: paths[selectable],
+      cur: details[selectable],
+      menuOpen: !!s.menu, menuX: s.menu ? s.menu.x : 0, menuY: s.menu ? s.menu.y : 0,
+      closeMenu: () => { if (this.state.menu) this.setState({ menu: null }); },
+      stop: (e) => e.stopPropagation(),
+      toComment: () => this.setState({ tool: 'comment', menu: null }),
+      toTree: () => this.setState({ tab: 'tree', menu: null }),
+      tabs, tabProps: s.tab === 'props', tabParams: s.tab === 'params', tabTree: s.tab === 'tree', tabRules: s.tab === 'rules',
+      routeMm: s.routeMm, routePx: Math.round(s.routeMm * 2),
+      onRoute: (e) => this.setState({ routeMm: Number(e.target.value) }),
+      theme: s.theme, showFare: s.showFare, onFare: () => this.setState({ showFare: !s.showFare }),
+      swatches: [['#0B4F9C', '蓝'], ['#0E6B4F', '绿'], ['#C62A1E', '红'], ['#22150F', '深棕']].map(([hex, label]) => ({
+        hex, label: '主题色' + label, on: s.theme === hex, ring: s.theme === hex ? hex : 'transparent', pick: () => this.setState({ theme: hex })
+      })),
+      stops: names.map((name, i) => ({ name, ls: i === 10 ? 0 : 1, w: (i === 0 || i === names.length - 1) ? 700 : 400, sx: i === 10 ? 0.74 : 1, mark: i === 10 ? '1.5px dashed #B45309' : '0 solid transparent' })),
+      tree: nodes.map((n) => ({
+        kind: n.kind, name: n.name, pad: n.pad, sel: n.id === s.sel,
+        bg: n.id === s.sel ? '#F6EDDF' : 'transparent', fg: '#22150F', weight: n.id === s.sel ? 600 : 500,
+        pick: () => this.setState({ sel: details[n.id] ? n.id : s.sel, menu: null })
+      })),
+      rules: [
+        { kind: '条件显示', text: 'showFare 为是时显示首末班与票价', path: 'header/serviceInfo' },
+        { kind: '派生变量', text: 'serviceLine = 首末班 firstBus–lastBus', path: 'serviceInfo.text' },
+        { kind: '状态样式', text: 'metro 为是时显示地铁换乘图标', path: 'stop/metroIcon' },
+        { kind: '状态样式', text: '首站、末站加粗', path: 'stop/name' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

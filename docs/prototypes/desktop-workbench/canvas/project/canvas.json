@@ -1,0 +1,276 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-26T10:00:00Z"
+  },
+  "title": "RenderWeave 桌面工作台原型",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 2220,
+      "w": 1440,
+      "h": 900,
+      "title": "01 登录",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "StoryMap.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1800,
+      "title": "00 用户故事地图"
+    },
+    "TaskList.dc.html": {
+      "x": 1520,
+      "y": 2220,
+      "w": 1440,
+      "h": 940,
+      "title": "02 任务列表",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "NewTask.dc.html": {
+      "x": 3040,
+      "y": 2220,
+      "w": 1440,
+      "h": 1020,
+      "title": "03 新建任务",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Workbench.dc.html": {
+      "x": 0,
+      "y": 3660,
+      "w": 1440,
+      "h": 900,
+      "title": "04 工作台 · 轮次进行中",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Review.dc.html": {
+      "x": 1520,
+      "y": 3660,
+      "w": 1440,
+      "h": 1040,
+      "title": "05 审核数据集",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Schema.dc.html": {
+      "x": 1520,
+      "y": 5120,
+      "w": 1440,
+      "h": 1020,
+      "title": "07 数据定义详情",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "TemplateList.dc.html": {
+      "x": 0,
+      "y": 6560,
+      "w": 1440,
+      "h": 900,
+      "title": "09 模板列表",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "TemplateEditor.dc.html": {
+      "x": 3040,
+      "y": 6560,
+      "w": 1440,
+      "h": 900,
+      "title": "11 模板预览",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Publish.dc.html": {
+      "x": 4560,
+      "y": 6560,
+      "w": 1440,
+      "h": 960,
+      "title": "12 发布模板修订",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Datasets.dc.html": {
+      "x": 0,
+      "y": 7940,
+      "w": 1440,
+      "h": 1120,
+      "title": "13 数据集",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ExcelImport.dc.html": {
+      "x": 1520,
+      "y": 7940,
+      "w": 1440,
+      "h": 900,
+      "title": "14 Excel 导入",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Batch.dc.html": {
+      "x": 3040,
+      "y": 7940,
+      "w": 1440,
+      "h": 900,
+      "title": "15 出图批次",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Records.dc.html": {
+      "x": 4560,
+      "y": 7940,
+      "w": 1440,
+      "h": 900,
+      "title": "16 出图记录",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Resources.dc.html": {
+      "x": 0,
+      "y": 9480,
+      "w": 1440,
+      "h": 900,
+      "title": "17 资源",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Usage.dc.html": {
+      "x": 1520,
+      "y": 9480,
+      "w": 1440,
+      "h": 900,
+      "title": "18 用量",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Admin.dc.html": {
+      "x": 3040,
+      "y": 9480,
+      "w": 1440,
+      "h": 900,
+      "title": "19 管理",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Platform.dc.html": {
+      "x": 4560,
+      "y": 9480,
+      "w": 1440,
+      "h": 900,
+      "title": "20 平台管理 · 租户",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "SchemaList.dc.html": {
+      "expand": "fill",
+      "is_interactive": true,
+      "x": 0,
+      "y": 5120,
+      "w": 1440,
+      "h": 900,
+      "title": "06 数据定义列表"
+    },
+    "SchemaPublish.dc.html": {
+      "expand": "fill",
+      "is_interactive": true,
+      "x": 3040,
+      "y": 5120,
+      "w": 1440,
+      "h": 920,
+      "title": "08 数据定义发布记录"
+    },
+    "TemplateDesign.dc.html": {
+      "expand": "fill",
+      "is_interactive": true,
+      "x": 1520,
+      "y": 6560,
+      "w": 1440,
+      "h": 900,
+      "title": "10 模板设计"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "StoryMap.dc.html",
+    "TaskList.dc.html",
+    "NewTask.dc.html",
+    "Workbench.dc.html",
+    "Review.dc.html",
+    "SchemaList.dc.html",
+    "Schema.dc.html",
+    "SchemaPublish.dc.html",
+    "TemplateList.dc.html",
+    "TemplateDesign.dc.html",
+    "TemplateEditor.dc.html",
+    "Publish.dc.html",
+    "Datasets.dc.html",
+    "ExcelImport.dc.html",
+    "Batch.dc.html",
+    "Records.dc.html",
+    "Resources.dc.html",
+    "Usage.dc.html",
+    "Admin.dc.html",
+    "Platform.dc.html"
+  ],
+  "notes": {
+    "rowStory": {
+      "x": 0,
+      "y": -300,
+      "text": "用户故事分析",
+      "kind": "title1",
+      "maxW": 1920
+    },
+    "rowEntry": {
+      "x": 0,
+      "y": 1920,
+      "text": "入口与任务管理",
+      "kind": "title1",
+      "maxW": 4480
+    },
+    "rowAgent": {
+      "x": 0,
+      "y": 3360,
+      "text": "Agent 工作台",
+      "kind": "title1",
+      "maxW": 2960
+    },
+    "rowDesign": {
+      "x": 0,
+      "y": 4820,
+      "text": "数据定义 · 模板作者",
+      "kind": "title1",
+      "maxW": 4480
+    },
+    "rowOutput": {
+      "x": 0,
+      "y": 7640,
+      "text": "出图 · 客户操作员",
+      "kind": "title1",
+      "maxW": 6000
+    },
+    "rowAdmin": {
+      "x": 0,
+      "y": 9180,
+      "text": "资源、用量与管理",
+      "kind": "title1",
+      "maxW": 6000
+    },
+    "rowTemplate": {
+      "x": 0,
+      "y": 6260,
+      "text": "模板 · 模板作者",
+      "kind": "title1",
+      "maxW": 6000
+    }
+  },
+  "designSystems": []
+}

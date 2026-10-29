@@ -548,7 +548,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 
 ## 出图控制台
 
-客户的管理员与操作员用的网页（M248、M279）。它是开放 API 的客户端，没有自己的后端接口；接口进程把构建好的文件放在 `/console/` 下提供。页面结构按原型方案一（M282），一次性原型存档在分支 `prototype/console-v1`；框架与视觉在阶段 5 P1 换成桌面工作台原型第 29 版（P1 票据 01，M208、M341），原型存档在分支 `prototype/desktop-workbench`。
+客户的管理员与操作员用的网页（M248、M279）。它是开放 API 的客户端，没有自己的后端接口；接口进程把构建好的文件放在 `/console/` 下提供。页面结构按原型方案一（M282），一次性原型存档在分支 `prototype/console-v1`；框架与视觉在阶段 5 P1 换成桌面工作台原型第 29 版（P1 票据 01，M208、M341），原型在 [docs/prototypes/desktop-workbench/](prototypes/desktop-workbench/README.md)。
 
 - **框架**（`service/console/src/frame.tsx`，模块与动作的清单在 `modules.ts`）：
   - 标题栏：品牌、"模块与动作"（`Ctrl+K`）、模块下拉、账号与退出。模块是数据定义、模板、数据集、出图、资源、用量、管理，按角色只列能进的（管理只给客户管理员），`Ctrl+1`… 按列出的顺序切换；

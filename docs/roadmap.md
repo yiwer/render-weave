@@ -78,7 +78,7 @@ v1.0 只把出图做成多租户服务，内容包括：
 
 结论：阶段 5 分六段做。先做不依赖 Agent 门槛的代建接口与人类页面（P1），再把 Agent 搬到服务端并接上同一套写入（P2）。交互预览（P3）与 P2 并行，对客户开放 Agent（P4）放在两者之后，桌面薄壳（P5）只等 P1 的控制台新框架。
 
-依据是桌面工作台原型（画布第 36 版的 21 张画板，存档在分支 `prototype/desktop-workbench`）与仓库现状的逐页对照。出图这条线（画板 13–19）已在阶段 4 做完；缺的集中在代建写入、服务端 Agent、交互预览与桌面壳四块，逐项出处见 [P1 PRD](../.scratch/authoring-api-and-pages/spec.md) 的「当前证据」。
+依据是[桌面工作台原型](prototypes/desktop-workbench/README.md)（画布第 36 版的 21 张画板）与仓库现状的逐页对照。出图这条线（画板 13–19）已在阶段 4 做完；缺的集中在代建写入、服务端 Agent、交互预览与桌面壳四块，逐项出处见 [P1 PRD](../.scratch/authoring-api-and-pages/spec.md) 的「当前证据」。
 
 | 段 | 做什么 | 落地的原型画板 | 做完的标准 | 依赖 |
 |---|---|---|---|---|
@@ -129,6 +129,6 @@ v1.0 只把出图做成多租户服务，内容包括：
 - **v1.x**：先开放人类可操作的数据定义/模板编辑页与发布页，再开放 D 的 Agent 工作台（评论、旋钮、示例图向导、数据集提取）；Agent 与人类同能力写入，见 [ADR-0022](adr/0022-agent-human-capability-parity.md)。
 - **A、B**：保留作为参考。
 
-阶段 5 的界面方向另有一份桌面工作台原型：claude.ai 上的设计画布，21 张画板加一张用户故事地图，源文件存档在分支 `prototype/desktop-workbench`（不进 main），说明见分支上的 `prototype/desktop-workbench/README.md`。它把 D 的方向推到全部模块：左栏常驻 Agent 对话，右侧是模块内容，模块在标题栏右上角下拉切换，桌面端特点由 M341 的薄壳承担。分段见上文「阶段 5 的分段」。
+阶段 5 的界面方向另有一份桌面工作台原型：claude.ai 上的设计画布，21 张画板加一张用户故事地图。2026-10-28 起画板源文件、素材与逐张截图导出在 [docs/prototypes/desktop-workbench/](prototypes/desktop-workbench/README.md)；分支 `prototype/desktop-workbench` 保留第 24–36 版的存档历史。它把 D 的方向推到全部模块：左栏常驻 Agent 对话，右侧是模块内容，模块在标题栏右上角下拉切换，桌面端特点由 M341 的薄壳承担。分段见上文「阶段 5 的分段」。
 
 原型用于讨论界面形态，不作为实现基础。

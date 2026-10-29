@@ -57,7 +57,13 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 依据：[平台化研究](docs/research/2026-10-26-platform-architecture.md)与[执行器原型](docs/agent-eval/tool-runner-prototype.md)，原型在 M230 四个场景上与 Claude Code 执行器各 2/2 达线。
   - 下一步：在空闲机器上用一次评估跑满四个场景并补全量测试，通过后把本机 `agent run` 的缺省改为 Tool Runner。
   - 托管给客户前：威胁建模复核、生产模型渠道、评估身份按执行器区分（见 ADR-0027）。
-- **下一步**：阶段 5（客户自助做模板）分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。P1 代建接口与人类页面的 [PRD](.scratch/authoring-api-and-pages/spec.md) 与 13 张票据（[索引](.scratch/authoring-api-and-pages/README.md)）已获用户确认（M343–M348），票据 `ready-for-agent`，01、02、03 可以并行开工。票据 02 已完成：`diffDefinition` 给出两份数据定义的字段级差异（[票据](.scratch/authoring-api-and-pages/issues/02-definition-diff.md)），票据 05 的发布预检与 06 的发布页调用它。票据 01 已完成：控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架（[票据](.scratch/authoring-api-and-pages/issues/01-console-new-frame.md)），12 不再受阻；票据 03 已完成：审计记代建写入的前后内容哈希与差异摘要，可按主体筛选、导出 CSV（[票据](.scratch/authoring-api-and-pages/issues/03-audit-content-hashes.md)，开放 API 1.1.0），04、07 的写入用它记审计；本机 Docker 后端测试原有 4 条随运气失败（测试的 1.5 秒单项超时短于换新后冷启动的 M402 与问候牌的重放），测试的单项超时已改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过。阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
+- **下一步：阶段 5 P1 代建接口与人类页面**（[PRD](.scratch/authoring-api-and-pages/spec.md)、[13 张票据的索引](.scratch/authoring-api-and-pages/README.md)，M343–M348）。阶段 5 分 P0–P5 六段（[路线图](docs/roadmap.md#阶段-5-的分段2026-10-27)，ADR-0022、M297–M299）；桌面端做 Electron 薄壳（M341），模块上下文对话先只读（M342）。界面方向看[桌面工作台原型](docs/prototypes/desktop-workbench/README.md)的截图，票据按画板编号引用。
+  - **已完成（2026-10-27–28）**：01 控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架，数据定义模块先只读；02 引擎公开入口 `diffDefinition` 给出两份数据定义的字段级差异；03 审计记代建写入的前后内容哈希与差异摘要，可按主体筛选、导出 CSV（开放 API 1.1.0）。
+  - **接着做**：04 数据定义草案接口与 12 平台管理页现在就能领取，可以并行；07 模板工作副本接口等 04（要用 04 加的权限名，迁移编号也不冲突）。之后 05 → 06 与 07 → 08、09、10 两条线并行，11 审批策略等 06、09、10，13 阶段验收收尾。按依赖领取票据的规则见 `docs/agents/issue-tracker.md`，开发在独立 worktree 里做（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
+  - **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
+  - **测试现状**（2026-10-28，main `e4780ea`，临时 worktree）：构建、类型检查与服务组测试（110 通过、16 跳过）通过；引擎组 6 个 worker 并行时 1,182 通过、57 失败，失败全在 17 个 `agent-*` 重型集成文件（超时与抢 `fixtures/resources` 写锁的 `local.storeBusy`），票据 01、02 在各自分支上见过同一类失败。这 17 个文件的逐文件串行复核（`npx vitest run --project engine --no-file-parallelism <文件>`）还没有结果。
+  - **已知后续**：状态栏"进行中的批次"只数本标签页提交的，要租户范围得加只读的批次列表端点（票据 01 的偏差）；Docker 后端整组没有在合入 M350 之后的 main 上重跑。
+  - 阶段 4 验收留下的后续见[第四阶段验收](docs/stage4-acceptance.md#后续)，其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - [第二阶段验收](docs/stage2-acceptance.md#接入服务前必须补的验证)列的接入服务前必须补的验证（资源隔离、执行隔离、容量、存储替代）已在阶段 4 落实；不受信任的记录按 PRD 不接收。
 
 ## 已实现能力
@@ -84,7 +90,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 工作区文档、资源仓库与出图记录有 PostgreSQL 加 S3 实现，与本地、内存实现跑同一组合同用例；
   - 租户、成员与五种身份的鉴权：会话、API 密钥与代建令牌只存哈希，权限按 M247 的矩阵；应用账号加行级安全、跨租户端点清单与审计（M261–M263）；代建写入的审计另记前后内容哈希与差异摘要，可按主体种类与时间筛选、导出 CSV（M347，开放 API 1.1.0）；
   - 代建推送：`renderweave push` 把本地工作区与资源版本仓库推送到客户的租户，先列差异，有冲突整体拒绝，没有冲突一次提交；令牌只经环境变量传入；模板记修订，`template-revisions` 可把当前修订指回旧修订（M264、M265）；
-  - 渲染 worker 与草稿预览：PostgreSQL 任务队列，调度进程加渲染子进程，单项超时、容器内存上限与子进程换新；模板列表与查看，同步草稿预览，入队前用引擎的 `measureRender` 检查像素与展开规模，按租户限并发与频率（M266、M267）；数值按容量基线定：每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒、做满 500 项换新，并发数是 worker 个数 `RW_WORKERS`（M302）；
+  - 渲染 worker 与草稿预览：PostgreSQL 任务队列，调度进程加渲染子进程，单项超时、容器内存上限与子进程换新；模板列表与查看，同步草稿预览，入队前用引擎的 `measureRender` 检查像素与展开规模，按租户限并发与频率（M266、M267）；数值按容量基线定：每个 worker 1 个 CPU、2 GB 内存、单项超时 60 秒、做满 500 项换新，并发数是 worker 个数 `RW_WORKERS`（M302）；渲染子进程在两项之间退出（例如被 cgroup 因内存结束）时换新再交这一项，调度进程不再整个退出（M350）；
   - 批量正式交付：`POST /v1/batches` 固定批次、按项入队，worker 逐项交付出图记录、发布批次清单，可查进度、可取消（正在渲染的一项也能结束）、带幂等键重试；批次只由接受它的构建交付，worker 停止前做完已接受的项，中途退出的项过了租约由同构建重领（M268、M269）；
   - 数据集与资源接口：数据集的新建、读取、修改、复制、列出与只校验，按原始字节存，保存时由引擎的 `checkDataset` 校验，问题与渲染时相同；图片与字体资源的上传、列出与读回，替换先检查影响（引擎的 `resourceImpact`，与本地 `resources-check` 共用），再由管理员凭报告按预期版本应用，提交前在同一把锁里核对工作区指纹（M270、M271）；
   - 出图记录：按时间、模板与批次查询，下载单个文件与整批图片，按项或按批次导出（与本地 `deliver` 的成果逐字节相同，能用 `batch-read`、`record-read`、`replay` 离线核对），读取时逐文件核对哈希；重放按记录里的构建标识交给那个构建的 worker，worker 定期报到，没有那个构建的 worker 时拒绝；镜像按构建保留，Compose 的 `replay` 配置用旧镜像起 worker（M272、M273）；
@@ -145,6 +151,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [docs/agent-eval.md](docs/agent-eval.md) | Agent 评估：必须运行的时机、命令、场景与通过线、评分与校准、报告格式与历次结果；工具在 `scripts/agent-eval/`，报告在 `docs/agent-eval/reports/` |
 | [scripts/agent-eval/template-design/](scripts/agent-eval/template-design/README.md) | 模板设计评估集：12 个用例（样图、项目说明、专家数据定义与数据集、压测、版面检查、用例文档）、图片素材与来源核对 |
 | [web/](web/review.html) | `agent review` 的本地审核页（单个 HTML，由 `src/agent/review-server.ts` 提供） |
+| [docs/prototypes/desktop-workbench/](docs/prototypes/desktop-workbench/README.md) | 阶段 5 桌面工作台原型：从 claude.ai 设计画布导出的 21 张画板源文件、素材与逐张截图，P1 票据按画板编号引用 |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |

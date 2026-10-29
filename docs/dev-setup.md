@@ -54,6 +54,7 @@ npm test
 | 价签示例图 | `C:\Users\yiwer\Pictures\25411738_224650821323_2.jpg` | 从原设备拷贝。它是 1024 × 669 的 JPEG，135,621 字节，SHA-256 `8a131227294c44858973375aaa484d477b6ac4ef75d36faec06c0cf454c0faa9`。放到 `out/samples/pricetag-sample.jpg` 一类被忽略的位置 | 票据 09 的真人计时；重跑价签流程 |
 | 外部项目源码快照 | `outside_context/`（979 MB） | 拷贝 `outside_context/renderweave-external-sources-20261012-205149.zip`，在仓库根解压为 `outside_context/`。说明在包内的 `README.md`，逐文件哈希在 `manifest.json` | 需要引用旧 RenderWeave、rid-rs、design-layout-draw、CloudKiln 的事实时（CONTEXT「外部来源」） |
 | 字体 | `fixtures/resources/fonts/` | `npm run fetch-fonts` | 测试与出图 |
+| 桌面工作台原型的画布运行时 | `docs/prototypes/desktop-workbench/canvas/project/support.js`（被忽略） | 有画布访问权限时用 Claude Code 的 Artifact 工具读画布的 `artifact-type/dc-runtime.js`；没有也不影响开发，看截图即可（[原型说明](prototypes/desktop-workbench/README.md#看稿)） | 本地交互看稿、重截原型截图 |
 | 实跑产物 | `out/`（约 8 GB） | 不需要。各票的结论与数字已写进票据、[第三阶段验收](stage3-acceptance.md)与 `docs/agent-eval/reports/` | 文档中提到的 `out/...` 路径只在原设备上有 |
 
 **价签示例图不能进版本库**：它是带水印与素材编号的第三方素材（M222）。提交前用 `git status` 确认没有把它加进来。M402 与 366 的示例图在 `docs/examples/materials/`，已经在仓库里。
@@ -97,6 +98,7 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
 
 ## 6. 已知的坑
 
+- **评估在跑时别动它用的检出**：Agent 评估直接用所在检出的 `dist/`，实验身份逐字节固定 `dist/`、`package-lock.json` 与 `scripts/agent-eval/` 的评估脚本，每次派发前核对，变了就停止派发。所以在跑评估的检出里不要 `npm install`、`npm run build` 或改评估脚本；开发票据用 `git worktree add` 另开工作区（`node_modules` 与 `service/node_modules` 各自 `npm ci`，字体可以从主检出拷 `fixtures/resources/fonts/`），合入前先确认没有 `agent-eval`、`agent run`、`vitest` 进程在跑。
 - **Windows 上用 npm 装的 Claude Code**：`npm install -g @anthropic-ai/claude-code@2.1.296` 在全局目录里只放 `claude.cmd` 与 `claude.ps1` 两个 shim。终端里 `claude --version` 能用，但 `agent run` 不经 shell 启动子进程，只认 `.exe`，结果每轮都是"无法启动 claude：spawn claude ENOENT"。
   - 原生程序在 `<npm 全局目录>\node_modules\@anthropic-ai\claude-code\bin\claude.exe`，全局目录用 `npm prefix -g` 查。
   - 解决：把这个 `bin` 目录加进 PATH；或者单次运行用 `--claude <claude.exe 的完整路径>`。
