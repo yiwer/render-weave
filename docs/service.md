@@ -610,6 +610,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **单项超时**：到时调度进程结束子进程，本项答 `worker.timeout`。
 - **内存超限**：内存上限是容器的限制（`mem_limit`，不用交换分区）。子进程启动时把自己的 `oom_score_adj` 调到最高，内存不够时内核先结束它；调度进程看本容器 cgroup 的 `memory.events` 里 `oom_kill` 增加了，本项答 `worker.memoryExceeded`。
 - **换新**：子进程在任务之间复用；做满 `RW_RENDER_RECYCLE_AFTER` 项、超时、内存超限、取消或崩溃后换一个新的，换下后立即起新的预热。
+- **两项之间退出**（M350）：子进程在两项之间退出（被内存上限结束、被外部杀掉或自己崩溃）时，调度进程立即换新预热，下一项照常交给新的子进程。这次退出不属于哪一项，只记一次换新与一条警告日志。交任务时才发现子进程已退出或 IPC 已断开（退出还没传到调度进程），这一项还没交到子进程手里，换新后再交一次；仍交不出去答 `worker.crashed`。子进程的 `error` 事件有常驻的监听，交任务、启动或结束子进程失败都不会让调度进程退出。
 - **取消**：渲染批次项时每 200 ms 查看一次批次是否已取消，取消了就结束子进程，本项标为未执行。
 - **没渲染完的批次项**：超时、内存超限或崩溃的项写出问题清单文件，标为失败，没有记录；这一项已登记时以登记的为准。
 - **租约与重领**：批次项的租约是单项超时加 60 秒。worker 中途退出（例如容器被杀）时，过了租约，同构建的 worker 重领。
@@ -735,6 +736,7 @@ RW_REPLAY_IMAGE=renderweave-service:sha256-<构建的十六进制> docker compos
   - 出图控制台的静态文件（`service/test/console.test.ts`）：缓存与内容安全策略的响应头、只回答构建目录里认识的文件、没有构建时的说明、不进路由表与 OpenAPI 描述。
   - 出图控制台的浏览器用例另有本机快速版（`service/test/console.browser.test.ts`）：内存后端、进程内 worker，设了 `RW_BROWSER`（本机 Chromium 内核浏览器的可执行文件）并先构建控制台才运行，否则跳过；取消的用例在快速版里跳过（M281）。
   - 资源用例（`service/test/resources.test.ts`）：替换检查的影响与引擎对本机 M402 工作区的 `resourceImpact` 相同；应用后旧版本内容保留；用过的、工作区已变化的报告被拒绝；同一份报告同时应用两次只有一次成功。
+  - 渲染子进程用例（`service/test/child-runner.test.ts`）用假的子进程脚本代替 render-child：子进程在两项之间自己退出、被外部结束、IPC 已断开，下一项都在新的子进程上照常完成，调度进程不退出（M350）。超时、内存超限与做满项数换新只在 Docker 后端测。
   - 共用的存储合同用例在 `test/support/storage-contract.ts`，本地与内存两种实现在 `test/storage-contract.test.ts` 里跑。
   - `pretest` 会在服务依赖缺失或锁文件变动时自动安装 `service/` 的依赖。
 - **Docker 后端测试**：从空环境起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test/*.docker.test.ts`，再核对服务日志每行都是合格的 JSON。默认前后都清空容器与数据卷，加 `--keep` 保留。
