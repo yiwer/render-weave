@@ -16,7 +16,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
 import { unzip } from './records-suite.js';
-import { RESOURCES_DIR, seedConsoleBadge, seedM402, seedPriceTag, seedStress } from './seed.js';
+import { checkDslDocument } from '../src/engine.js';
+import { RESOURCES_DIR, seedAllElements, seedConsoleBadge, seedM402, seedPriceTag, seedStress } from './seed.js';
 import { xlsxOf } from './xlsx-fixture.js';
 
 export interface ConsoleSuiteOptions {
@@ -80,6 +81,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await seedConsoleBadge(storage, { withFont: false });
       await seedStress(storage);
       await seedPriceTag(storage);
+      await seedAllElements(storage);
       ({ baseUrl, stop } = await options.start(backend));
       browser = await chromium.launch(options.launch);
       context = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
@@ -1035,7 +1037,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
     it('发布模板修订（P1 票据 09）：改字号 → 看差异与对比 → 保存 → 指回上一修订；基准已变时看两边差异，明确选择覆盖才保存；操作员只读', async () => {
       const target = await asAdmin();
-      const open = (hash: string) => target.evaluate((value) => { location.hash = value; }, hash);
+      const open = (hash: string) => target.goto(`${baseUrl}/console/${hash}`);
       const worked = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true'), { timeout: 60_000 });
       const before = await revisionsOf(BADGE), first = before.currentRevision;
 
@@ -1142,6 +1144,360 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 指回最初的修订，别的用例看到的还是原样。
       expect((await server('POST', '/v1/template-current', world.b.admin.token, { template: BADGE, revision: first })).status).toBe(200);
     });
+
+    it('模板设计（P1 票据 08）：点选元素，每种元素改一项属性，写回后通过 checkDslDocument、预览随之变化；撤销、重做、保存；参数、结构、规则；工具栏与右键菜单', async () => {
+      const ALL = '全元素牌', at = (name: string) => `${ALL}/${name}`;
+      const target = await asAdmin(), token = world.b.admin.token;
+      const copyUrl = `/v1/templates/${enc(ALL)}/working-copy`;
+      interface Reply { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: Reply['layout']['root'][] } } }
+      const worked = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST' && response.status() === 200, { timeout: 60_000 });
+      const image = () => target.getByTestId('preview-image');
+      const inspector = () => target.getByRole('complementary', { name: '检查器' });
+      const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const input = (key: string) => fieldOf(key).locator('input[type="text"]').first();
+      /** 没写的属性收在"其他 N 项"里，展开它们才找得到。 */
+      const expand = () => inspector().locator('details:not([open]) > summary').evaluateAll((items) => items.forEach((item) => (item as unknown as { click(): void }).click()));
+      const documentNow = async (name = ALL) => JSON.parse((await server('GET', `/v1/templates/${enc(name)}/working-copy`, token)).body.content as string) as Record<string, unknown>;
+      /** 做一次改动：等预览回来、图变了，再读工作副本，核对 checkDslDocument 没有严重问题。 */
+      const edit = async (action: () => Promise<unknown>, name = ALL) => {
+        const before = await image().getAttribute('src');
+        const preview = worked();
+        await action();
+        const reply = await (await preview).json() as Reply;
+        await expect.poll(() => image().getAttribute('src'), { message: '预览随之变化' }).not.toBe(before);
+        const document = await documentNow(name);
+        expect(checkDslDocument(document).problems.filter((problem) => problem.level === 'severe')).toEqual([]);
+        return { document, reply };
+      };
+
+      // 压测数据是名字里写了压测的数据集，工具栏单独列一组。
+      expect((await server('POST', `/v1/datasets/badge-zhang/copies`, token, { id: 'badge-stress', name: '压测：长姓名' })).status).toBe(201);
+
+      // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
+      await (await nav(target, '模板')).click();
+      const first = worked();
+      await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
+      let layout = (await (await first).json() as Reply).layout;
+      await image().waitFor();
+      expect(await target.getByRole('button', { name: /让 Agent|留评论/ }).count(), 'P2、P4 接入前不显示').toBe(0);
+
+      /** 按布局摘要的元素框点在元素中央。 */
+      const nodeOf = (path: string) => {
+        const walk = (node: Reply['layout']['root']): Reply['layout']['root'] | undefined => (node.path === path ? node : node.children?.map(walk).find(Boolean));
+        return walk(layout.root)!;
+      };
+      const positionOf = async (path: string) => {
+        const box = (await target.getByTestId('design-canvas').boundingBox())!, node = nodeOf(path);
+        return { x: ((node.x + node.width / 2) / layout.output.width) * box.width, y: ((node.y + node.height / 2) / layout.output.height) * box.height };
+      };
+      const clickElement = async (path: string) => {
+        await target.getByTestId('design-canvas').click({ position: await positionOf(path) });
+        await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+        await expand();
+      };
+      const chooseRow = async (path: string) => {
+        await inspector().getByRole('tab', { name: '结构' }).click();
+        await inspector().locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector().getByRole('tab', { name: '属性' }).click();
+        await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+        await expand();
+      };
+
+      // 点选：选中框与元素路径显示在图上，属性面板打开它在模板文档里的位置。
+      await clickElement(at('文字'));
+      expect(await target.getByTestId('select-box').getAttribute('data-path')).toBe(at('文字'));
+      expect(await target.getByTestId('select-tag').textContent()).toBe(at('文字'));
+      expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('text');
+      // 属性面板按 Schema 分组：位置尺寸、文字、颜色、适配、条件显示、状态样式。
+      for (const group of ['位置尺寸', '文字', '颜色', '适配', '条件显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
+      expect(await input('place.left').inputValue()).toBe('2');
+
+      // 每种元素改一项属性。text：字号从绑定变量换成数值。
+      await edit(() => fieldOf('fontSize').locator('select').first().selectOption({ label: '数值' }));
+      let { document, reply } = await edit(() => input('fontSize').fill('8'));
+      const elementIn = (doc: Record<string, unknown>, name: string) => (doc['artboard'] as { children: Record<string, unknown>[] }).children.find((child) => child['name'] === name)!;
+      expect(elementIn(document, '文字')['fontSize']).toBe(8);
+      layout = reply.layout;
+
+      await chooseRow(at('容器'));
+      expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('container');
+      ({ document } = await edit(() => input('fill').fill('#DDEEFF')));
+      expect(elementIn(document, '容器')['fill']).toBe('#DDEEFF');
+
+      await chooseRow(at('循环'));
+      ({ document } = await edit(() => input('itemLayout.heights.fixed').fill('4')));
+      expect(elementIn(document, '循环')['itemLayout']).toMatchObject({ heights: { fixed: 4 } });
+
+      await chooseRow(at('调用'));
+      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
+      ({ document } = await edit(() => input('opacity').fill('0.5')));
+      expect(elementIn(document, '调用')['opacity']).toBe(0.5);
+
+      await clickElement(at('图片'));
+      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
+      ({ document } = await edit(() => input('opacity').fill('0.4')));
+      expect(elementIn(document, '图片')['opacity']).toBe(0.4);
+
+      await clickElement(at('二维码'));
+      // 换成"颜色"写入的初始值是黑色，与缺省相同，图还不变。
+      const qrColor = worked();
+      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
+      await qrColor;
+      ({ document } = await edit(() => input('foreground').fill('#B4532A')));
+      expect(elementIn(document, '二维码')['foreground']).toBe('#B4532A');
+
+      await clickElement(at('条码'));
+      const barColor = worked();
+      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
+      await barColor;
+      ({ document } = await edit(() => input('foreground').fill('#0B4EA2')));
+      expect(elementIn(document, '条码')['foreground']).toBe('#0B4EA2');
+
+      await clickElement(at('矩形'));
+      ({ document } = await edit(() => input('cornerRadius').fill('5')));
+      expect(elementIn(document, '矩形')['cornerRadius']).toBe(5);
+
+      await clickElement(at('椭圆'));
+      ({ document } = await edit(() => input('fill').fill('#123456')));
+      expect(elementIn(document, '椭圆')['fill']).toBe('#123456');
+
+      await clickElement(at('线条'));
+      ({ document } = await edit(() => input('stroke.width').fill('2.5')));
+      expect(elementIn(document, '线条')['stroke']).toEqual({ color: '#2B2824', width: 2.5 });
+
+      await clickElement(at('多边形'));
+      ({ document } = await edit(() => input('fill').fill('#654321')));
+      expect(elementIn(document, '多边形')['fill']).toBe('#654321');
+
+      await clickElement(at('路径'));
+      ({ document, reply } = await edit(() => input('fill').fill('#2E7D4F')));
+      expect(elementIn(document, '路径')['fill']).toBe('#2E7D4F');
+      layout = reply.layout;
+
+      // 画板也是一个可选的对象。
+      await chooseRow(ALL);
+      expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('artboard');
+      ({ document } = await edit(() => input('fill').fill('#FFF8EE')));
+      expect((document['artboard'] as Record<string, unknown>)['fill']).toBe('#FFF8EE');
+
+      // 未发布的改动数来自服务端的结构化差异；工作副本暂存，当前修订不动。
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await target.getByTestId('unpublished-count').filter({ hasText: '13 处未发布' }).waitFor();
+      expect((await server('GET', `/v1/templates/${enc(ALL)}`, token)).body.currentRevision).toBe(1);
+
+      // 撤销与重做：写回工作副本，预览跟着变。
+      const undone = await edit(() => target.getByRole('button', { name: '撤销', exact: true }).click());
+      expect((undone.document['artboard'] as Record<string, unknown>)['fill']).toBe('#FFFFFF');
+      const redone = await edit(() => target.keyboard.press('Control+y'));
+      expect((redone.document['artboard'] as Record<string, unknown>)['fill']).toBe('#FFF8EE');
+
+      // 保存就是暂存：写回失败时看得到未保存的改动数，改动还在页面里，"保存"重试。
+      await target.route('**/working-copy?expectedSha256=*', (route) => route.abort());
+      await input('fill').fill('#FFEEDD');
+      await target.getByTestId('unsaved-count').filter({ hasText: '1 处未保存' }).waitFor();
+      await target.getByTestId('save-failure').waitFor();
+      expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill'], '服务端还是上一次的').toBe('#FFF8EE');
+      await target.unroute('**/working-copy?expectedSha256=*');
+      const retried = worked();
+      await target.getByRole('button', { name: '保存', exact: true }).click();
+      await retried;
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      expect(await target.getByTestId('save-failure').count()).toBe(0);
+      expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill']).toBe('#FFEEDD');
+      // Ctrl+S 立刻写回，不等暂存的延迟。
+      await input('fill').fill('#FFEEDE');
+      const flushed = target.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/working-copy?'));
+      await target.keyboard.press('Control+s');
+      await flushed;
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+
+      // 别处先改了：写回被拒，明确选择才盖过去。
+      const copy = await server('GET', copyUrl, token);
+      const elsewhere = JSON.parse(copy.body.content as string) as Record<string, unknown>;
+      elementIn(elsewhere, '矩形')['opacity'] = 0.9;
+      expect((await server('PUT', `${copyUrl}?expectedSha256=${copy.body.sha256 as string}`, token, elsewhere)).status).toBe(200);
+      await input('fill').fill('#FFEEDF');
+      await target.getByTestId('save-failure').getByRole('button', { name: '用这里的盖过去' }).waitFor();
+      const forced = worked();
+      await target.getByTestId('save-failure').getByRole('button', { name: '用这里的盖过去' }).click();
+      await forced;
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill']).toBe('#FFEEDF');
+
+      // 工具栏：切换样例数据集；正式模式按问题清单说结果；缩放；平移时点图不改选中。
+      await target.getByTestId('select-box').waitFor();
+      const blank = worked();
+      await target.getByLabel('样例数据集').selectOption({ label: '空白数据（显示占位）' });
+      const blankRequest = (await blank).request().postDataJSON() as { dataset: { inline?: unknown } };
+      expect(blankRequest.dataset.inline).toBeDefined();
+      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '正式' }).click();
+      await target.getByText(/正式模式不出图：有 \d+ 个严重问题/).waitFor();
+      await target.getByTestId('final-mode-note').filter({ hasText: '正式出图时不出图' }).waitFor();
+      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
+      const again = worked();
+      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      layout = (await (await again).json() as Reply).layout;
+      await image().waitFor();
+      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '正式' }).click();
+      await target.getByTestId('final-mode-note').filter({ hasText: /没有问题|没有问题边框/ }).waitFor();
+      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
+      expect(await target.getByLabel('样例数据集').locator('optgroup[label="压测数据"] option').allTextContents()).toEqual(['压测：长姓名']);
+      const stress = worked();
+      await target.getByLabel('样例数据集').selectOption('badge-stress');
+      expect(((await stress).request().postDataJSON() as { dataset: { id: string } }).dataset.id).toBe('badge-stress');
+      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      await image().waitFor();
+      const width = (await target.getByTestId('design-canvas').boundingBox())!.width;
+      await target.getByRole('button', { name: '放大' }).click();
+      await target.getByRole('button', { name: '放大' }).click();
+      await target.getByTestId('zoom-level').filter({ hasText: '200%' }).waitFor();
+      await expect.poll(async () => (await target.getByTestId('design-canvas').boundingBox())!.width).toBeGreaterThan(width * 1.9);
+      await target.getByRole('group', { name: '工具' }).getByRole('button', { name: '平移' }).click();
+      const stage = target.getByTestId('design-stage');
+      const scrollOf = () => stage.evaluate((element) => element.scrollTop + element.scrollLeft);
+      const stageBox = (await stage.boundingBox())!, before = await scrollOf();
+      await target.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(stageBox.x + stageBox.width / 2 - 80, stageBox.y + stageBox.height / 2 - 120, { steps: 3 });
+      await target.mouse.up();
+      expect(await scrollOf(), '拖动滚动台面').toBeGreaterThan(before);
+      const pathBefore = await inspector().getByTestId('properties').getAttribute('data-path');
+      expect(pathBefore).toBe(ALL);
+      await target.keyboard.press('v');
+      await target.getByRole('group', { name: '工具' }).getByRole('button', { name: '选择' }).and(target.locator('[aria-pressed="true"]')).waitFor();
+      await target.getByTestId('zoom-level').click();
+      await image().waitFor();
+      await expect.poll(async () => Math.round((await target.getByTestId('design-canvas').boundingBox())!.width)).toBeLessThan(width * 1.1);
+
+      // 右键菜单：复制元素路径、在结构中定位、打开绑定的字段；没有 Agent 与评论。
+      await target.getByTestId('design-canvas').click({ button: 'right', position: await positionOf(at('文字')) });
+      const menu = target.getByTestId('element-menu');
+      await menu.getByRole('menuitem', { name: '复制元素路径' }).waitFor();
+      expect(await menu.getByRole('menuitem', { name: '打开绑定的字段 fullName' }).getAttribute('href')).toBe(`#/definitions/${enc('胸牌')}?field=fullName`);
+      expect(await menu.textContent()).not.toMatch(/Agent|评论/);
+      await menu.getByRole('menuitem', { name: '在结构中定位' }).click();
+      await inspector().getByRole('tab', { name: '结构', selected: true }).waitFor();
+      expect(await inspector().locator(`[data-testid="structure-row"][data-path="${at('文字')}"]`).getAttribute('data-selected')).toBe('true');
+      // 结构与预览双向：结构里选一行，图上出现它的框。
+      await inspector().locator(`[data-testid="structure-row"][data-path="${at('矩形')}"]`).getByRole('button').first().click();
+      await target.locator(`[data-testid="select-box"][data-path="${at('矩形')}"]`).waitFor();
+      await target.getByTestId('design-canvas').click({ button: 'right', position: await positionOf(at('椭圆')) });
+      await menu.getByRole('menuitem', { name: '复制元素路径' }).click();
+      await target.getByRole('status').filter({ hasText: at('椭圆') }).waitFor();
+
+      // 规则页：所选元素相关的检查项（经派生变量连带）、适配规则，改写回。
+      await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
+      await inspector().getByRole('tab', { name: '规则' }).click();
+      await inspector().locator('[data-testid="check-row"][data-name="姓名太长"]').waitFor();
+      expect(await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').count(), '文字没有用照片').toBe(0);
+      await inspector().getByTestId('fit-hint').filter({ hasText: '画板的 2 mm' }).waitFor();
+      expect(await input('fit.compressMin').inputValue()).toBe('0.7');
+      await input('fit.compressMin').fill('0.8');
+      await expect.poll(async () => elementIn(await documentNow(), '文字')['fit']).toMatchObject({ compressMin: 0.8 });
+      await target.getByTestId('design-canvas').click({ position: await positionOf(at('图片')) });
+      await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').waitFor();
+      await inspector().getByText('这个元素没有适配规则').waitFor();
+      // 竖排的文字才有缩字组：写了组名，同组的元素列出来。
+      await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
+      await inspector().getByRole('tab', { name: '属性' }).click();
+      await expand();
+      await fieldOf('writingMode').locator('select').selectOption({ label: '竖排' });
+      await inspector().getByRole('tab', { name: '规则' }).click();
+      await fieldOf('fit.widthOverflow').getByRole('button', { name: '添加' }).click();
+      await input('fit.widthOverflow.shrinkGroup').fill('站名组');
+      await inspector().getByTestId('shrink-group').filter({ hasText: '缩字组 站名组：文字' }).waitFor();
+      await expect.poll(async () => (elementIn(await documentNow(), '文字')['fit'] as { widthOverflow?: unknown }).widthOverflow).toEqual({ shrinkGroup: '站名组' });
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      expect(checkDslDocument(await documentNow()).problems.filter((problem) => problem.level === 'severe')).toEqual([]);
+      // 三步一起撤销：组名、添加缩字组、改竖排。
+      for (let step = 0; step < 3; step++) await target.getByRole('button', { name: '撤销', exact: true }).click();
+      await expect.poll(async () => elementIn(await documentNow(), '文字')['writingMode']).toBeUndefined();
+
+      // 参数页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
+      await inspector().getByRole('tab', { name: '参数' }).click();
+      const parameter = (name: string) => inspector().locator(`[data-testid="parameter-row"][data-name="${name}"]`);
+      await inspector().getByRole('region', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
+      await parameter('accentColor').getByRole('button').first().click();
+      ({ document } = await edit(() => input('default').fill('#0B4EA2')));
+      expect((document['parameters'] as Record<string, unknown>[]).find((item) => item['name'] === 'accentColor')).toMatchObject({ default: '#0B4EA2' });
+      await parameter('nameSize').getByRole('button').first().click();
+      await input('displayName').fill('姓名大小');
+      await input('constraints.max').fill('20');
+      await expect.poll(async () => (await documentNow())['parameters']).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'nameSize', displayName: '姓名大小', constraints: { min: 3, max: 20 } })]));
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await inspector().getByLabel('新参数的名称').fill('footnote');
+      await inspector().getByRole('button', { name: '添加参数' }).click();
+      await parameter('footnote').waitFor();
+      await expect.poll(async () => ((await documentNow())['parameters'] as unknown[]).length).toBe(4);
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await target.getByRole('button', { name: '撤销', exact: true }).click();
+      await expect.poll(async () => ((await documentNow())['parameters'] as unknown[]).length).toBe(3);
+
+      // 结构页打开子模板：预览仍是调用它的模板，改子模板时那张图跟着变；图上点到子模板的元素也切过去。
+      await inspector().getByRole('tab', { name: '结构' }).click();
+      await inspector().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`).getByRole('button', { name: '打开 场次条' }).click();
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
+      await inspector().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').getByRole('button').first().click();
+      await inspector().getByRole('tab', { name: '属性' }).click();
+      await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
+      const child = worked();
+      await input('fontSize').fill('4');
+      const childRequest = await child;
+      expect((childRequest.request().postDataJSON() as { template: string }).template).toBe(ALL);
+      await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":4');
+      await target.locator('nav.crumbs').getByRole('link', { name: ALL }).click();
+      await inspector().getByRole('tab', { name: '属性' }).waitFor();
+      await target.getByTestId('design-canvas').click({ position: await positionOf(`${at('调用')}/场次名称`) });
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
+      await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
+      expect(await target.getByTestId('select-tag').textContent()).toBe(`${at('调用')}/场次名称`);
+      // 跨模板撤销：撤回子模板上的字号。
+      await target.getByRole('button', { name: '撤销', exact: true }).click();
+      await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":3.2');
+      await target.locator('nav.crumbs').getByRole('link', { name: ALL }).click();
+
+      // 发布修订：差异里有这些改动，保存为新修订，回到列表不再有工作副本。
+      await target.getByRole('button', { name: '发布修订' }).click();
+      await target.getByRole('heading', { name: '发布修订 2', level: 1 }).waitFor();
+      await target.locator(`[data-testid="change"][data-path="${at('椭圆')}"]`).waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      await target.getByRole('button', { name: '发布为修订 2' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 2' }).waitFor();
+      expect((await server('GET', `/v1/templates/${enc(ALL)}`, token)).body.currentRevision).toBe(2);
+      // 子模板的工作副本是这次打开才开的，又都撤销了：离开时删掉，不留空的。
+      await expect.poll(async () => (await server('GET', `/v1/templates/${enc('场次条')}/working-copy`, token)).status).toBe(404);
+
+      // 复制为新模板：列表上复制，进设计页；没有修订可比，发布记修订 1。
+      const copied = `全元素牌副本 ${randomUUID().slice(0, 8)}`;
+      await (await nav(target, '模板')).click();
+      const allCard = target.getByRole('article', { name: `模板 ${ALL}` });
+      await allCard.getByRole('button', { name: '复制为新模板' }).click();
+      await allCard.getByLabel('新模板名称').fill(copied);
+      const copiedPreview = worked();
+      await allCard.getByRole('button', { name: '复制', exact: true }).click();
+      await copiedPreview;
+      await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
+      await target.getByRole('button', { name: '发布修订' }).click();
+      await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      expect(await target.getByTestId('compare-current').count(), '没有当前修订可比').toBe(0);
+      await target.getByRole('button', { name: '发布为修订 1' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
+      expect((await server('GET', `/v1/templates/${enc(copied)}`, token)).body.currentRevision).toBe(1);
+
+      // 操作员没有设计页。
+      const reader = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+      reader.setDefaultTimeout(30_000);
+      const operator = await reader.newPage();
+      watch(operator);
+      await operator.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await operator.getByLabel('邮箱').fill(world.b.operator.email);
+      await operator.getByLabel('密码').fill(world.b.operator.password);
+      await operator.getByRole('button', { name: '登录' }).click();
+      await operator.getByText('模板设计只给客户管理员').waitFor();
+      expect((await server('POST', copyUrl, world.b.operator.token)).status, '接口同样拒绝').toBe(403);
+      await reader.close();
+    }, 300_000);
 
     it('退出后会话失效，回到登录页；整个过程没有脚本错误，也没有被内容安全策略拦下的资源', async () => {
       await page.getByRole('button', { name: '退出' }).click();

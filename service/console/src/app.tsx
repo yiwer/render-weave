@@ -21,6 +21,7 @@ import { LoginPage } from './pages/login.js';
 import { PlatformPage } from './pages/platform.js';
 import { RecordsPage } from './pages/records.js';
 import { ResourcesPage } from './pages/resources.js';
+import { TemplateDesign } from './pages/template-design.js';
 import { TemplatePublish } from './pages/template-publish.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
@@ -91,6 +92,8 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
     case 'templates': {
       const root = query.get('in') ?? undefined;
       if (id && sub === 'publish') page = <TemplatePublish key={`${id}\n${root ?? ''}`} name={id} {...(root ? { root } : {})} identity={props.identity} />;
+      // 编辑会话跟着被预览的模板：在它的子模板之间切换时，撤销与未保存的改动都还在。
+      else if (id && sub === 'design') page = <TemplateDesign key={root ?? id} name={id} root={root ?? id} identity={props.identity} />;
       else page = id ? <TemplateStudio name={id} identity={props.identity} /> : <TemplateList identity={props.identity} />;
       break;
     }
