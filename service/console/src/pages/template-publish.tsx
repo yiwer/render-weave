@@ -10,10 +10,11 @@ import { useMemo, useState } from 'react';
 import { api, ApiError } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { countText, ErrorBox, ProblemList } from '../components/problems.js';
+import { PendingRequests } from '../components/publish-requests.js';
 import { changesSummary, RevisionChanges } from '../components/revision-changes.js';
 import { href, problemsOf, useLivePreview, useLoad, type LivePreview } from '../hooks.js';
 import { documentInfo, parseTemplateText } from '../template/document.js';
-import type { DatasetEntry, Identity, Problem, RevisionConflict, TemplateInfo, TemplateRevisions, WorkingCopyCheck } from '../types.js';
+import type { RevisionDiff, DatasetEntry, Identity, Problem, RevisionConflict, TemplateInfo, TemplateRevisions, WorkingCopyCheck } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
 
 const AUDITED = '审计已记下主体与前后内容哈希。';
@@ -131,6 +132,8 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
       <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到模板" />
       {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      <PendingRequests scope="templates" subject={name} canDecide={canPublish} onDecided={loaded.reload} refresh={`${data?.revisions?.currentRevision ?? ''}:${check?.sha256 ?? ''}`}
+        renderChanges={(request) => (request.kind !== 'push' && request.changes ? <RevisionChanges diff={request.changes as RevisionDiff} label="这份申请的改动" empty="内容与当前修订相同。" /> : undefined)} />
       {data && check && data.workingInfo && (
         <Compare key={`${root}\n${data.current?.currentRevision ?? 0}`} root={root} current={data.current} working={data.workingInfo}
           datasets={data.datasets} currentRevision={data.revisions?.currentRevision} version={check.sha256} />

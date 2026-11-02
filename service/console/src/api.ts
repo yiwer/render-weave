@@ -4,14 +4,10 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck,
-  DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview, PreviewReply, Problem,
-  RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant,
-  Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
-
-  ApiKeyInfo, ApprovalPolicy, ApprovalScope, PublishRequest, PublishRequestDetail, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished,
-  ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
-  PlatformOverview, PlanSettings, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
+  ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft,
+  DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
+  PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
+  TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';

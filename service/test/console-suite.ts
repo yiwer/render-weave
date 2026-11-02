@@ -1341,6 +1341,58 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await world.call('PUT', '/v1/approval-policy', world.b.admin.token, { definitions: false })).status).toBe(200);
     });
 
+    /** 代建工程师经开放 API：改模板的第一个颜色，保存。开着审批策略时答 202。 */
+    const engineerSave = async (name: string, color: string) => {
+      const url = `/v1/authoring/tenants/${world.b.id}/templates/${enc(name)}/working-copy`, token = world.b.engineer.token;
+      const existing = await world.call('GET', url, token);
+      const opened = existing.status === 200 ? existing : await world.call('POST', url, token);
+      const content = (await world.call('GET', url, token)).body.content as string;
+      const stashed = await world.call('PUT', `${url}?expectedSha256=${opened.body.sha256}`, token, content.replace(/"#[0-9A-Fa-f]{6}"/, `"${color}"`), { 'content-type': 'application/json' });
+      expect(stashed.status, stashed.raw.slice(0, 300)).toBe(200);
+      const requested = await world.call('POST', `${url}/save`, token, { expectedSha256: stashed.body.sha256 });
+      expect(requested.status, requested.raw.slice(0, 300)).toBe(202);
+      return requested.body.request as { id: string; baseRevision: number };
+    };
+
+    it('审批（P1 票据 11）：发布模板修订页上批准代建工程师的保存；基准变了的申请不能批准，只能标为过期', async () => {
+      const target = await asAdmin(), name = '道路段', path = enc(name);
+      expect((await world.call('PUT', '/v1/approval-policy', world.b.admin.token, { templates: true })).status).toBe(200);
+      const revisionsApi = async () => (await adminApi('GET', `/v1/templates/${path}/revisions`)).body;
+      const before = await revisionsApi();
+      const first = await engineerSave(name, '#123456');
+      await target.goto(`${baseUrl}/console/#/templates/${path}/publish`);
+      await target.reload();
+
+      const row = requestRow(target, first.id);
+      await row.getByRole('button').click();
+      const detail = target.getByTestId('request-detail');
+      await detail.locator('.change').first().waitFor();
+      expect((await revisionsApi()).currentRevision, '申请不改当前修订').toBe(before.currentRevision);
+      await detail.getByRole('button', { name: '批准' }).click();
+      await target.getByTestId('request-notice').filter({ hasText: '已批准并生效' }).waitFor();
+      await target.getByTestId('current-revision').filter({ hasText: String(before.currentRevision + 1) }).waitFor();
+      const after = await revisionsApi();
+      expect(after.currentRevision).toBe(before.currentRevision + 1);
+      expect(after.current).toMatchObject({ source: 'web', action: 'revision', by: world.b.admin.email });
+      expect(after.revisions.at(-1)).toMatchObject({ source: 'web' });
+      expect(after.revisions.at(-1).pushedBy).not.toBe(world.b.admin.email);
+
+      // 申请之后当前修订变了：页面说明原因，不给批准，只能标为过期。
+      const second = await engineerSave(name, '#654321');
+      expect((await adminApi('POST', '/v1/template-current', { template: name, revision: before.currentRevision })).status).toBe(200);
+      await target.reload();
+      await requestRow(target, second.id).getByRole('button').click();
+      await detail.getByTestId('request-stale').filter({ hasText: `当前修订已不是申请时的 ${second.baseRevision}` }).waitFor();
+      expect(await detail.getByRole('button', { name: '批准' }).count()).toBe(0);
+      await detail.getByRole('button', { name: '标为过期' }).click();
+      await target.getByTestId('request-notice').filter({ hasText: '已标为过期' }).waitFor();
+      await requestRow(target, second.id).waitFor({ state: 'detached' });
+      expect((await adminApi('GET', `/v1/publish-requests/${second.id}`)).body).toMatchObject({ status: 'expired', decidedBy: world.b.admin.email });
+
+      expect((await world.call('PUT', '/v1/approval-policy', world.b.admin.token, { templates: false })).status).toBe(200);
+      expect((await world.call('DELETE', `/v1/authoring/tenants/${world.b.id}/templates/${path}/working-copy`, world.b.engineer.token)).status).toBe(204);
+    });
+
     it('平台管理（P1 票据 12）：只进平台；看服务健康；开通租户 → 设套餐 → 建客户管理员，初始密码只显示一次；签发与吊销代建令牌', async () => {
       const platformContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
       platformContext.setDefaultTimeout(30_000);

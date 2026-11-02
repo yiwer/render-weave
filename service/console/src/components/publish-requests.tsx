@@ -110,6 +110,7 @@ function RequestDetail(props: { readonly id: string; readonly canDecide: boolean
 /**
  * 一个范围的待处理申请；没有时什么也不显示。subject 只看这个名称的申请，推送碰到这个范围的也算。
  * renderChanges 让页面用自己的差异组件显示 changes；答 undefined 时用差异摘要。
+ * refresh 变了就重读：页面上直接发布或指回之后，申请可能已经过期。
  */
 export function PendingRequests(props: {
   readonly scope: ApprovalScope;
@@ -117,9 +118,10 @@ export function PendingRequests(props: {
   readonly canDecide: boolean;
   readonly onDecided?: () => void;
   readonly renderChanges?: (request: PublishRequestDetail) => ReactNode;
+  readonly refresh?: string | number | undefined;
 }) {
-  const { scope, subject } = props;
-  const loaded = useLoad(() => api.publishRequests({ status: 'pending', scope }), `publish-requests:${scope}`);
+  const { scope, subject, refresh } = props;
+  const loaded = useLoad(() => api.publishRequests({ status: 'pending', scope }), `publish-requests:${scope}:${refresh ?? ''}`);
   const [open, setOpen] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const requests = (loaded.data?.requests ?? []).filter((request) => subject === undefined || request.kind === 'push' || request.subject === subject);

@@ -229,7 +229,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
       <ErrorBox problems={problems} title="没有另发" />
       <ErrorBox problems={loaded.problems} title="读不到发布记录" />
       {loaded.loading && !data && <p className="muted">正在读取…</p>}
-      <PendingRequests scope="definitions" subject={name} canDecide={canEdit} onDecided={loaded.reload}
+      <PendingRequests scope="definitions" subject={name} canDecide={canEdit} onDecided={loaded.reload} refresh={data?.publications.length}
         renderChanges={(request) => (request.kind === 'definitionPublish' && request.changes ? <DiffList diff={request.changes as DefinitionDiff} /> : undefined)} />
       {drafts.length > 0 && (
         <section className="card">
