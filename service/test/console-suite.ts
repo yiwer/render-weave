@@ -5,6 +5,7 @@
  * 票据 14 另有出图记录、用量、资源与管理页（M300、M301）：客户管理员在另一个浏览器上下文里登录，操作员与管理员各看各的。
  * P1 票据 01 换成标题栏模块下拉与状态栏的新框架：换页走模块下拉（nav），既有用例只改了选择器；新框架另有三条用例。
  * P1 票据 06 的数据定义三页：另起草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发，九种字段类型，操作员只读。
+ * P1 票据 11 的审批：管理页打开开关，代建工程师经开放 API 发起申请，发布记录页与发布模板修订页上退回与批准。
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
  */
@@ -1269,6 +1270,75 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await world.call('POST', `/v1/definitions/${enc('新的')}/draft`, operator, { displayName: '新的' })).status).toBe(403);
       expect((await world.call('POST', `/v1/definitions/${path}/draft/publish`, operator, { expectedSha256: drafted.sha256 })).status).toBe(403);
       expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
+    /** 代建工程师经开放 API：从这个名称的最新版本另起草案，加一个字段，发布。开着审批策略时答 202。 */
+    const engineerPublish = async (name: string, field: string) => {
+      const url = `/v1/authoring/tenants/${world.b.id}/definitions/${enc(name)}/draft`, token = world.b.engineer.token;
+      const versions = ((await adminApi('GET', '/v1/definitions')).body.definitions as any[]).find((item) => item.name === name).versions as { version: number }[];
+      const draft = await world.call('GET', url, token);
+      const opened = draft.status === 200 ? draft : await world.call('POST', url, token, { fromVersion: versions.at(-1)!.version });
+      expect([200, 201], opened.raw.slice(0, 300)).toContain(opened.status);
+      const content = draft.status === 200 ? draft.body.content as string : (await world.call('GET', url, token)).body.content as string, document = JSON.parse(content);
+      document.fields.push({ name: field, displayName: `字段 ${field}`, type: 'text' });
+      const saved = await world.call('PUT', `${url}?expectedSha256=${opened.body.sha256}`, token, `${JSON.stringify(document, null, 2)}\n`, { 'content-type': 'application/json' });
+      expect(saved.status, saved.raw.slice(0, 300)).toBe(200);
+      const requested = await world.call('POST', `${url}/publish`, token, { expectedSha256: saved.body.sha256 });
+      expect(requested.status, requested.raw.slice(0, 300)).toBe(202);
+      return requested.body.request as { id: string; version: number };
+    };
+    const requestRow = (target: Page, id: string) => target.locator(`[data-testid="request-row"][data-id="${id}"]`);
+
+    it('审批（P1 票据 11）：管理页打开开关；代建工程师的发布成为申请；发布记录页上退回要留言，批准后生效；操作员只读', async () => {
+      const target = await asAdmin(), name = '线路牌';
+      await (await nav(target, '管理')).click();
+      await target.getByRole('tab', { name: '审批策略' }).click();
+      const policy = target.getByTestId('approval-policy');
+      expect(await policy.getByTestId('approval-note').textContent()).toContain('缺省直发；有严重问题的成果任何人都不能批准');
+      const definitions = policy.locator('[data-scope="definitions"]').getByRole('checkbox');
+      expect(await definitions.isChecked()).toBe(false);
+      await definitions.check();
+      await policy.locator('[data-scope="definitions"]').filter({ hasText: world.b.admin.email }).waitFor();
+      expect((await adminApi('GET', '/v1/approval-policy')).body.definitions).toMatchObject({ required: true, updatedBy: world.b.admin.email });
+
+      // 退回：没写留言不能确认；退回后这一份不再显示，代建工程师看得到留言。
+      const first = await engineerPublish(name, 'approvalOne');
+      await (await nav(target, '数据定义')).click();
+      await target.getByRole('link', { name: '发布记录' }).click();
+      const row = requestRow(target, first.id);
+      await row.getByRole('button').click();
+      const detail = target.getByTestId('request-detail');
+      await detail.getByTestId('definition-diff').locator('[data-path="approvalOne"][data-change="added"]').waitFor();
+      await detail.getByRole('button', { name: '退回' }).click();
+      const confirm = detail.getByRole('button', { name: '确认退回' });
+      expect(await confirm.isDisabled()).toBe(true);
+      await detail.getByLabel('退回的留言').fill('字段说明写清楚再发');
+      await confirm.click();
+      await target.getByTestId('request-notice').filter({ hasText: '已退回' }).waitFor();
+      await row.waitFor({ state: 'detached' });
+      expect((await world.call('GET', `/v1/authoring/tenants/${world.b.id}/publish-requests/${first.id}`, world.b.engineer.token)).body).toMatchObject({ status: 'rejected', message: '字段说明写清楚再发', decidedBy: world.b.admin.email });
+
+      // 操作员看得到待批准的申请，没有批准与退回。
+      const second = await engineerPublish(name, 'approvalTwo');
+      await page.goto(`${baseUrl}/console/#/definition-publications`);
+      await page.reload();
+      const seen = requestRow(page, second.id);
+      await seen.getByRole('button').click();
+      await page.getByTestId('request-detail').getByText('发布申请由客户管理员处理').waitFor();
+      expect(await page.getByRole('button', { name: '批准' }).count() + await page.getByRole('button', { name: '退回' }).count()).toBe(0);
+
+      // 批准：生效之后新版本出现在发布记录里，主体是批准的人。
+      await target.reload();
+      await requestRow(target, second.id).getByRole('button').click();
+      await target.getByTestId('request-detail').getByRole('button', { name: '批准' }).click();
+      await target.getByTestId('request-notice').filter({ hasText: '已批准并生效' }).waitFor();
+      const published = publicationRow(target, name, second.version);
+      await published.waitFor();
+      expect(await published.getByTestId('publication-actor').textContent()).toBe(world.b.admin.email);
+      expect((await adminApi('GET', `/v1/publish-requests/${second.id}`)).body).toMatchObject({ status: 'approved', decidedBy: world.b.admin.email });
+      expect((await adminApi('GET', `/v1/static-schemas/${enc(name)}/versions/${second.version}`)).status).toBe(200);
+
+      expect((await world.call('PUT', '/v1/approval-policy', world.b.admin.token, { definitions: false })).status).toBe(200);
     });
 
     it('平台管理（P1 票据 12）：只进平台；看服务健康；开通租户 → 设套餐 → 建客户管理员，初始密码只显示一次；签发与吊销代建令牌', async () => {

@@ -451,3 +451,36 @@ export interface BatchView {
   readonly items: readonly BatchItem[];
   readonly problems: readonly Problem[];
 }
+
+/** 审批策略（P1 票据 11）：两个范围各一个开关，缺省关。 */
+export type ApprovalScope = 'definitions' | 'templates';
+export interface ApprovalSetting { readonly required: boolean; readonly updatedAt?: string; readonly updatedBy?: string }
+export type ApprovalPolicy = Readonly<Record<ApprovalScope, ApprovalSetting>>;
+
+/** 发布申请：一次发布或推送留下的待批准记录，固定内容哈希与基准。 */
+export interface PublishRequest {
+  readonly id: string;
+  readonly kind: 'definitionPublish' | 'templateSave' | 'templateSetCurrent' | 'push';
+  readonly subject: string;
+  readonly scopes: readonly ApprovalScope[];
+  readonly status: 'pending' | 'approved' | 'rejected' | 'expired';
+  readonly sha256: string;
+  readonly beforeSha256?: string;
+  readonly baseVersion?: number;
+  readonly version?: number;
+  readonly baseRevision?: number;
+  readonly revision?: number;
+  readonly overwrite?: boolean;
+  readonly diff: { readonly added: number; readonly removed: number; readonly changed: number; readonly paths: readonly { readonly path: string; readonly change: 'added' | 'removed' | 'changed' }[] };
+  readonly requestedBy: { readonly kind: string; readonly id: string; readonly label: string };
+  readonly requestedAt: string;
+  readonly decidedBy?: string;
+  readonly decidedAt?: string;
+  readonly message?: string;
+}
+
+/** 详情：待处理时另有重核结果与它改了什么；changes 的结构随 kind 不同。 */
+export interface PublishRequestDetail extends PublishRequest {
+  readonly changes?: unknown;
+  readonly recheck?: { readonly valid: boolean; readonly message?: string; readonly blockers?: readonly Problem[] };
+}

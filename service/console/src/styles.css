@@ -530,3 +530,11 @@ p.impact-note { display: block; }
   .design-stage { max-height: 60vh; }
   .design-inspector { flex: none; width: 100%; border-left: none; border-top: 1px solid var(--line); }
 }
+
+/* 审批策略与发布申请（P1 票据 11） */
+.approval-scopes { display: grid; gap: 14px; margin-top: 12px; }
+.approval-scopes li { display: grid; gap: 2px; }
+.approval-scopes label { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.approval-scopes input { min-height: 0; }
+.request-reject { display: grid; gap: 6px; margin-top: 12px; max-width: 480px; }
+.request-reject label { font-size: 13px; font-weight: 500; }

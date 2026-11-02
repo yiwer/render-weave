@@ -3,12 +3,14 @@
  * - 发布：先看字段级差异与预检结果（失配的数据集、未全部核对、仍绑定旧版的模板），确认后发布为下一版本；
  * - 发布记录：谁在何时发布了哪一版、改动摘要、内容哈希；选中一行原地展开差异；操作员只读；
  * - 以某一版另发：页面上一键，接口上是两步——从旧版另起草案，再发布成新版本（ADR-0008、M346）。
- * 只调开放 API。审批策略在 P1 票据 11 接入，这里的"待处理"先只有草案。
+ * - 待处理：还没发布的草案，以及代建工程师的发布申请（P1 票据 11）。
+ * 只调开放 API。
  */
 import { useState } from 'react';
 import { api } from '../api.js';
 import { DefinitionTabs } from '../components/module-tabs.js';
 import { ErrorBox } from '../components/problems.js';
+import { PendingRequests } from '../components/publish-requests.js';
 import { constraintText, isRequired, propertyText, typeText } from '../form/definition.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDiff, DefinitionFieldChange, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
@@ -227,6 +229,8 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
       <ErrorBox problems={problems} title="没有另发" />
       <ErrorBox problems={loaded.problems} title="读不到发布记录" />
       {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      <PendingRequests scope="definitions" subject={name} canDecide={canEdit} onDecided={loaded.reload}
+        renderChanges={(request) => (request.kind === 'definitionPublish' && request.changes ? <DiffList diff={request.changes as DefinitionDiff} /> : undefined)} />
       {drafts.length > 0 && (
         <section className="card">
           <h2>还没发布的草案</h2>

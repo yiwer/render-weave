@@ -1,5 +1,5 @@
 /**
- * 管理（票据 14，M301）：只给客户管理员——成员与角色、API 密钥、webhook 与投递记录、审计日志（M247）。
+ * 管理（票据 14，M301）：只给客户管理员——成员与角色、API 密钥、webhook 与投递记录、审批策略（P1 票据 11）、审计日志（M247）。
  * - 操作员打开这一页只看到说明，不请求这些端点；服务端按权限矩阵本来就拒绝（403），这里只是不让人走到那一步；
  * - API 密钥与 webhook 的签名密钥只在创建的回答里出现一次：只放在这一块面板的状态里，关掉、换标签或离开就没了，不写进存储；
  * - 新成员与重置密码由平台管理员办理（v1.0 不做自助注册，M247）；自己的角色与状态不在这里改，免得把自己关在门外。
@@ -10,10 +10,10 @@ import { OneTimeSecret } from '../components/one-time-secret.js';
 import { PagedFooter } from '../components/paged.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad, usePaged } from '../hooks.js';
-import type { ApiKeyInfo, Identity, Member, Problem, Webhook, WebhookDelivery } from '../types.js';
+import type { ApiKeyInfo, ApprovalScope, Identity, Member, Problem, Webhook, WebhookDelivery } from '../types.js';
 import { AuditLog } from './audit-log.js';
 
-const TABS = [['members', '成员'], ['api-keys', 'API 密钥'], ['webhooks', 'webhook'], ['audit', '审计日志']] as const;
+const TABS = [['members', '成员'], ['api-keys', 'API 密钥'], ['webhooks', 'webhook'], ['approval', '审批策略'], ['audit', '审计日志']] as const;
 type Tab = (typeof TABS)[number][0];
 const ROLE: Readonly<Record<Member['role'], string>> = { admin: '客户管理员', operator: '客户操作员' };
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
@@ -26,7 +26,7 @@ export function AdminPage(props: { readonly identity: Identity; readonly tab?: s
         <div className="title-row">
           <div>
             <h1>管理</h1>
-            <p className="lede">管理页面只给客户管理员：成员与角色、API 密钥、webhook 与审计日志。需要时请联系本租户的管理员。</p>
+            <p className="lede">管理页面只给客户管理员：成员与角色、API 密钥、webhook、审批策略与审计日志。需要时请联系本租户的管理员。</p>
           </div>
         </div>
         <p><a href={href(['datasets'])}>回到数据集</a></p>
@@ -38,7 +38,7 @@ export function AdminPage(props: { readonly identity: Identity; readonly tab?: s
       <div className="title-row">
         <div>
           <h1>管理</h1>
-          <p className="lede">本租户的成员、给开发者的 API 密钥、批次结束时的通知，以及谁在什么时候做了什么。</p>
+          <p className="lede">本租户的成员、给开发者的 API 密钥、批次结束时的通知、发布前要不要批准，以及谁在什么时候做了什么。</p>
         </div>
       </div>
       <div className="tabs" role="tablist" aria-label="管理">
@@ -51,8 +51,56 @@ export function AdminPage(props: { readonly identity: Identity; readonly tab?: s
         {tab === 'members' && <Members identity={props.identity} />}
         {tab === 'api-keys' && <ApiKeys />}
         {tab === 'webhooks' && <Webhooks />}
+        {tab === 'approval' && <ApprovalPolicyPanel />}
         {tab === 'audit' && <AuditLog />}
       </div>
+    </section>
+  );
+}
+
+const APPROVAL_SCOPES: readonly { readonly scope: ApprovalScope; readonly label: string; readonly hint: string }[] = [
+  { scope: 'definitions', label: '数据定义发布前需要批准', hint: '代建工程师发布数据定义、或推送新的静态版本时，先成为发布申请。' },
+  { scope: 'templates', label: '模板修订发布前需要批准', hint: '代建工程师保存模板、指回旧修订、或推送模板时，先成为发布申请。' },
+];
+
+/** 审批策略（P1 票据 11）：两个范围各一个开关，改动立即生效并记审计。 */
+function ApprovalPolicyPanel() {
+  const loaded = useLoad(() => api.approvalPolicy(), 'approval-policy');
+  /** 刚点下去、还没收到回答的那一项：开关立刻变，失败了再退回去。 */
+  const [changing, setChanging] = useState<{ readonly scope: ApprovalScope; readonly required: boolean }>();
+  const [problems, setProblems] = useState<readonly Problem[]>();
+  const change = async (scope: ApprovalScope, required: boolean) => {
+    setChanging({ scope, required });
+    setProblems(undefined);
+    try {
+      await api.setApprovalPolicy({ [scope]: required });
+      loaded.reload();
+    } catch (error) {
+      setProblems(problemsOf(error));
+    } finally { setChanging(undefined); }
+  };
+  return (
+    <section className="card" data-testid="approval-policy">
+      <h2>审批策略</h2>
+      <p className="small muted" data-testid="approval-note">缺省直发；有严重问题的成果任何人都不能批准。客户管理员自己的发布直接生效。打开后的待批准申请显示在数据定义的发布记录与模板的发布页上。</p>
+      <ErrorBox problems={problems} title="没有改成" />
+      <ErrorBox problems={loaded.problems} title="读不到审批策略" />
+      {loaded.data && (
+        <ul className="plain approval-scopes">
+          {APPROVAL_SCOPES.map(({ scope, label, hint }) => {
+            const setting = loaded.data![scope];
+            return (
+              <li key={scope} data-scope={scope}>
+                <label>
+                  <input type="checkbox" checked={changing?.scope === scope ? changing.required : setting.required} disabled={changing !== undefined || loaded.loading} onChange={(event) => void change(scope, event.target.checked)} />
+                  <span>{label}</span>
+                </label>
+                <span className="small muted">{hint}{setting.updatedBy && setting.updatedAt ? ` ${setting.updatedBy} 改于 ${time(setting.updatedAt)}。` : ''}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

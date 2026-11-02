@@ -8,6 +8,10 @@ import type {
   DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview, PreviewReply, Problem,
   RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant,
   Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
+
+  ApiKeyInfo, ApprovalPolicy, ApprovalScope, PublishRequest, PublishRequestDetail, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished,
+  ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
+  PlatformOverview, PlanSettings, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
@@ -158,6 +162,12 @@ export const api = {
   staticSchema: (name: string, version: number) => json<StaticSchemaDetail>('GET', `/v1/static-schemas/${enc(name)}/versions/${version}`),
   blankWorkbook: async (name: string, version: number) => (await send('GET', `/v1/static-schemas/${enc(name)}/versions/${version}/workbook`)).blob(),
 
+  approvalPolicy: () => json<ApprovalPolicy>('GET', '/v1/approval-policy'),
+  setApprovalPolicy: (changes: Partial<Record<ApprovalScope, boolean>>) => json<ApprovalPolicy>('PUT', '/v1/approval-policy', { json: changes }),
+  publishRequests: (query: { status?: PublishRequest['status']; scope?: ApprovalScope }) => json<{ requests: PublishRequest[] }>('GET', `/v1/publish-requests${search(query)}`),
+  publishRequest: (id: string) => json<PublishRequestDetail>('GET', `/v1/publish-requests/${enc(id)}`),
+  approvePublishRequest: (id: string) => json<{ request: PublishRequest; result: unknown }>('POST', `/v1/publish-requests/${enc(id)}/approve`),
+  rejectPublishRequest: (id: string, message: string) => json<PublishRequest>('POST', `/v1/publish-requests/${enc(id)}/reject`, { json: { message } }),
   definitions: () => json<{ definitions: Definition[] }>('GET', '/v1/definitions'),
   definition: (name: string) => json<DefinitionDetail>('GET', `/v1/definitions/${enc(name)}`),
   definitionPublications: (name?: string) => json<{ publications: DefinitionPublication[] }>('GET', `/v1/definition-publications${search({ name })}`),
