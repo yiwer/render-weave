@@ -1,7 +1,7 @@
 /**
  * 控制台的框架（P1 票据 01，原型第 29 版，M208、M341）：吸顶的标题栏、吸底的状态栏，中间是当前模块。
  * - 标题栏：品牌、模块与动作（Ctrl+K）、模块下拉（按角色只列能进的模块，Ctrl+数字切换）、账号与退出；
- * - 状态栏：连接、当前租户、本月剩余张数、本标签页进行中的批次；
+ * - 状态栏：连接、当前租户、本月剩余张数、本标签页进行中的批次；平台管理员不属于任何租户，只有连接；
  * - 左栏留给 Agent（P2）：没给 agent 时不显示，右侧模块占满宽度。
  * 模块与动作的清单在 modules.ts；页面本身不知道框架，只经 # 路由切换。
  */
@@ -59,7 +59,7 @@ export function Frame(props: {
   return (
     <div className="frame">
       <header className="titlebar">
-        <a className="brand" href={href(['datasets'])}><Logo />RenderWeave</a>
+        <a className="brand" href={href(modules[0]?.home ?? ['datasets'])}><Logo />RenderWeave</a>
         <span className="titlebar-gap" />
         <button type="button" className="command-button" aria-keyshortcuts="Control+K" aria-haspopup="dialog" onClick={() => setCommands(true)}>
           <Icon d={SEARCH} /><span className="command-label">模块与动作</span><kbd aria-hidden="true">Ctrl K</kbd>
@@ -72,7 +72,7 @@ export function Frame(props: {
         {props.agent && <aside className="agent-pane" aria-label="Agent 对话">{props.agent}</aside>}
         <main className="module">{props.children}</main>
       </div>
-      <StatusBar page={props.page} />
+      {props.identity.kind === 'member' ? <StatusBar page={props.page} /> : <PlatformStatusBar />}
       {commands && <CommandPalette identity={props.identity} modules={modules} onClose={() => setCommands(false)} />}
     </div>
   );
@@ -229,6 +229,16 @@ function Quota(props: { readonly page: string }) {
     return () => { live = false; window.clearInterval(timer); };
   }, [props.page, version, connected]);
   return text ? <span className="quota" data-testid="quota">{text}</span> : null;
+}
+
+/** 平台管理员的状态栏：只有连接。 */
+function PlatformStatusBar() {
+  const connected = useConnected();
+  return (
+    <footer className="statusbar" aria-label="状态栏">
+      <span className="state" data-testid="connection"><span className={`dot ${connected ? 'ok' : 'bad'}`} aria-hidden="true" />{connected ? '已连接' : '连不上出图服务'}</span>
+    </footer>
+  );
 }
 
 /** 状态栏：连接、租户、本月剩余与进行中的批次；窄窗口下先收起租户名。 */

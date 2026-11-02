@@ -7,7 +7,7 @@
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
  */
-import { createHash, createHmac } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -913,6 +913,99 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await page.setViewportSize({ width: 1440, height: 1000 });
       }
     }, 180_000);
+
+    it('平台管理（P1 票据 12）：只进平台；看服务健康；开通租户 → 设套餐 → 建客户管理员，初始密码只显示一次；签发与吊销代建令牌', async () => {
+      const platformContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+      platformContext.setDefaultTimeout(30_000);
+      const target = await platformContext.newPage();
+      watch(target);
+      await target.goto(`${baseUrl}/console/#/datasets`);
+      await target.getByLabel('邮箱').fill(world.platformLogin.email);
+      await target.getByLabel('密码').fill(world.platformLogin.password);
+      await target.getByRole('button', { name: '登录' }).click();
+      // 租户成员的旧链接也回到平台：没有租户内的模块，状态栏只有连接。
+      await target.getByRole('heading', { name: '租户', level: 1 }).waitFor();
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe('#/platform');
+      await target.getByRole('button', { name: '切换模块' }).click();
+      expect(await target.getByRole('menu', { name: '模块' }).getByRole('menuitem').evaluateAll((items) => items.map((item) => item.querySelector('.menu-label')!.textContent))).toEqual(['平台']);
+      await target.keyboard.press('Escape');
+      expect(await target.getByTestId('quota').count()).toBe(0);
+      expect(await target.getByTestId('tenant').count()).toBe(0);
+      await target.getByTestId('connection').filter({ hasText: '已连接' }).waitFor();
+      await target.getByTestId('service-health').filter({ hasText: '接口 就绪' }).waitFor();
+      await target.getByTestId('health-workers').waitFor();
+      await target.getByTestId('health-queue').waitFor();
+      await target.getByText('你对客户租户的每次操作都记进该租户的审计').waitFor();
+      // 环境里已有的租户在列，没设够额度的显示套餐与本月出图。
+      await target.getByTestId('tenant-row').first().waitFor();
+
+      // 开通租户：开通后原地展开，还没设套餐。
+      const tenantName = `平台用例 ${randomUUID().slice(0, 8)}`;
+      await target.getByRole('button', { name: '开通租户' }).click();
+      await target.getByLabel('租户名称').fill(tenantName);
+      await target.getByRole('button', { name: '开通', exact: true }).click();
+      const row = target.locator(`[data-testid="tenant-row"][data-name="${tenantName}"]`);
+      await row.getByTestId('tenant-status').filter({ hasText: '未设套餐' }).waitFor();
+      const detail = target.getByTestId('tenant-detail');
+      await detail.waitFor();
+
+      // 设套餐：回答与开放 API 相同，表格随之更新。
+      await detail.getByLabel('每月出图（张）').fill('500');
+      await detail.getByLabel('单张最大像素（MP）').fill('40');
+      await detail.getByLabel('并发').fill('3');
+      await detail.getByRole('button', { name: '保存套餐' }).click();
+      await row.getByTestId('tenant-images').filter({ hasText: '0 / 500' }).waitFor();
+      await row.getByTestId('tenant-status').filter({ hasText: '正常' }).waitFor();
+      const platformToken = await world.login(world.platformLogin.email, world.platformLogin.password);
+      const created = ((await server('GET', '/v1/platform/tenants', platformToken)).body.tenants as { id: string; name: string }[]).find((tenant) => tenant.name === tenantName)!;
+      expect((await server('GET', `/v1/platform/tenants/${created.id}/plan`, platformToken)).body).toEqual({ monthlyImages: 500, maxPixels: 40_000_000, concurrency: 3 });
+
+      // 建客户管理员：初始密码只显示一次，用它能登录，关掉之后页面上再也没有。
+      const email = `platform-${randomUUID()}@example.test`;
+      await target.getByTestId('tenant-detail').getByLabel('成员邮箱').fill(email);
+      await target.getByTestId('tenant-detail').getByLabel('角色').selectOption('admin');
+      await target.getByRole('button', { name: '创建账号' }).click();
+      const secret = target.getByTestId('one-time-secret');
+      const password = (await secret.textContent())!;
+      expect(password.length).toBeGreaterThan(8);
+      await row.getByTestId('tenant-members').filter({ hasText: '1' }).waitFor();
+      await target.getByRole('button', { name: '我已保存，关闭' }).click();
+      expect(await secret.count()).toBe(0);
+      expect(await target.content()).not.toContain(password);
+      const login = await server('POST', '/v1/sessions', '', { email, password });
+      expect(login.status).toBe(201);
+      expect(login.body.identity).toMatchObject({ kind: 'member', role: 'admin', tenantId: created.id });
+      // 新的客户管理员在审计里看得到平台管理员的每一步，都标为跨租户。
+      const audit = (await server('GET', '/v1/audit-events?limit=500', login.body.token)).body.events as { action: string; crossTenant: boolean; actor: { kind: string } }[];
+      for (const action of ['tenant.create', 'plan.update', 'member.create', 'overview.read']) {
+        expect(audit.find((event) => event.action === action), action).toMatchObject({ crossTenant: true, actor: { kind: 'platformUser' } });
+      }
+
+      // 代建令牌：Ctrl+K 的动作直接到签发；令牌只显示一次，能访问被指定的租户；吊销后失效。
+      await target.keyboard.press('Control+k');
+      await target.getByRole('combobox', { name: '筛选模块与动作' }).fill('签发');
+      await target.keyboard.press('Enter');
+      await target.getByRole('heading', { name: '代建令牌', level: 1 }).waitFor();
+      await expect.poll(() => target.getByLabel('标签').evaluate((element) => element === element.ownerDocument.activeElement)).toBe(true);
+      const label = `平台用例令牌 ${randomUUID().slice(0, 8)}`;
+      await target.getByLabel('标签').fill(label);
+      expect(await target.getByRole('button', { name: '签发', exact: true }).isDisabled(), '没选租户不能签发').toBe(true);
+      await target.getByRole('checkbox', { name: tenantName }).check();
+      await target.getByRole('button', { name: '签发', exact: true }).click();
+      const issued = (await target.getByTestId('one-time-secret').textContent())!;
+      world.secrets.push(issued, password);
+      expect(issued.startsWith('rwa_')).toBe(true);
+      expect((await server('GET', `/v1/authoring/tenants/${created.id}`, issued)).status).toBe(200);
+      await target.getByRole('button', { name: '我已保存，关闭' }).click();
+      const tokenRow = target.locator(`[data-testid="token-row"][data-label="${label}"]`);
+      await tokenRow.getByTestId('token-state').filter({ hasText: '有效' }).waitFor();
+      expect(await tokenRow.textContent()).toContain(tenantName);
+      await tokenRow.getByRole('button', { name: '吊销' }).click();
+      await tokenRow.getByRole('button', { name: '确认吊销' }).click();
+      await tokenRow.getByTestId('token-state').filter({ hasText: '已吊销' }).waitFor();
+      expect((await server('GET', `/v1/authoring/tenants/${created.id}`, issued)).status).toBe(401);
+      await platformContext.close();
+    });
 
     it('退出后会话失效，回到登录页；整个过程没有脚本错误，也没有被内容安全策略拦下的资源', async () => {
       await page.getByRole('button', { name: '退出' }).click();

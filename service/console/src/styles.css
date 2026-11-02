@@ -355,3 +355,18 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
 .loom .shuttle { stroke-dasharray: 6 var(--len); animation: rw-shuttle 1.6s cubic-bezier(.45, 0, .55, 1) infinite; }
 .loom .shuttle + .shuttle { animation-delay: -.8s; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* 平台管理（P1 票据 12）：一行健康、一张租户表，选中的一行原地展开。 */
+.health { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 16px; }
+.inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin: 0 0 16px; }
+.inline-form > .field { flex: 0 1 180px; }
+.inline-form > .field.grow { flex: 1 1 260px; }
+.inline-form > .small { align-self: center; }
+.inline-form > .tenant-picks { flex: 1 1 100%; }
+.tenant-picks { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; border: none; }
+.tenant-picks legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+.tenant-picks .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.link-button { min-height: 0; height: auto; padding: 0; border: none; background: none; color: var(--ink); font-weight: 600; text-align: left; }
+.link-button:hover { color: var(--accent); background: none; }
+.tenant-table tr.selected > td { background: var(--sunken); }
+.tenant-table td[data-testid="tenant-detail"] { padding: 14px 12px 4px; white-space: normal; }

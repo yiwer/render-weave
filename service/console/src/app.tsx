@@ -3,13 +3,14 @@
  * 结构按原型方案一，以数据集为中心：首页是数据集，打开一份数据集就是左表单、右草稿预览，出图在侧栏里进行。
  * 票据 14 加了出图记录、资源、用量与管理（M301）：管理只给客户管理员，操作员的模块下拉里没有它。
  * P1 票据 01 换成原型第 29 版的框架（frame.tsx）：标题栏的模块下拉、Ctrl+K 与状态栏；各页的 # 路由不变，旧链接照旧能打开。
+ * P1 票据 12 加了平台管理：平台管理员登录后只进这一页，没有租户内的模块。
  * 登录后按 # 路由切换页面；界面只做中文。
  */
 import { useEffect, useState } from 'react';
 import { api, onUnauthorized, session } from './api.js';
 import { Logo } from './components/logo.js';
 import { Frame, ROLE } from './frame.js';
-import { href, useRoute } from './hooks.js';
+import { go, href, useRoute } from './hooks.js';
 import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
@@ -17,6 +18,7 @@ import { DatasetEditor, DatasetList } from './pages/datasets.js';
 import { DefinitionList } from './pages/definitions.js';
 import { BatchPage } from './pages/deliver.js';
 import { LoginPage } from './pages/login.js';
+import { PlatformPage } from './pages/platform.js';
 import { RecordsPage } from './pages/records.js';
 import { ResourcesPage } from './pages/resources.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
@@ -40,6 +42,7 @@ export function App() {
 
   if (identity === undefined) return <p className="boot">正在打开…</p>;
   if (identity === null) return <LoginPage {...(notice ? { notice } : {})} onLogin={(next) => { setNotice(undefined); setIdentity(next); }} />;
+  if (identity.kind === 'platformUser') return <PlatformShell identity={identity} onLogout={() => void logout()} />;
   if (identity.kind !== 'member') {
     return (
       <main className="login">
@@ -52,6 +55,19 @@ export function App() {
     );
   }
   return <Shell identity={identity} onLogout={() => void logout()} />;
+}
+
+/** 平台管理员只进平台：别的路由（比如租户成员的旧链接）一律回到平台。 */
+function PlatformShell(props: { readonly identity: Identity; readonly onLogout: () => void }) {
+  const { path } = useRoute();
+  const [section, tab] = path;
+  useEffect(() => { if (section !== 'platform') go(['platform']); }, [section]);
+  const module = moduleOf('platform');
+  return (
+    <Frame identity={props.identity} {...(module ? { module } : {})} page={path.join('/')} onLogout={props.onLogout}>
+      <PlatformPage {...(section === 'platform' && tab ? { tab } : {})} />
+    </Frame>
+  );
 }
 
 function Shell(props: { readonly identity: Identity; readonly onLogout: () => void }) {

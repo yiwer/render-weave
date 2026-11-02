@@ -4,8 +4,8 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, AuditEvent, AuditQuery, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
-  StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
+  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
+  PlatformOverview, PlanSettings, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
@@ -122,6 +122,17 @@ export const api = {
   createWebhook: (body: { url: string; description?: string }) => json<{ webhook: Webhook; secret: string }>('POST', '/v1/webhooks', { json: body }),
   updateWebhook: (id: string, change: { active?: boolean; description?: string }) => json<Webhook>('PATCH', `/v1/webhooks/${enc(id)}`, { json: change }),
   webhookDeliveries: (id: string, before?: string) => page<WebhookDelivery>(`/v1/webhooks/${enc(id)}/deliveries${search({ limit: 50, before })}`, 'deliveries'),
+
+  platformOverview: () => json<PlatformOverview>('GET', '/v1/platform/overview'),
+  platformTenants: () => json<{ tenants: Tenant[] }>('GET', '/v1/platform/tenants'),
+  createTenant: (name: string) => json<Tenant>('POST', '/v1/platform/tenants', { json: { name } }),
+  setPlan: (tenantId: string, plan: PlanSettings) => json<PlanSettings>('PUT', `/v1/platform/tenants/${enc(tenantId)}/plan`, { json: plan }),
+  createTenantMember: (tenantId: string, member: { email: string; role: Member['role'] }) =>
+    json<{ member: Member; initialPassword: string }>('POST', `/v1/platform/tenants/${enc(tenantId)}/members`, { json: member }),
+  authoringTokens: () => json<{ tokens: AuthoringTokenInfo[] }>('GET', '/v1/platform/authoring-tokens'),
+  createAuthoringToken: (body: { label: string; tenantIds: readonly string[]; expiresInDays: number }) =>
+    json<{ token: string; authoringToken: AuthoringTokenInfo }>('POST', '/v1/platform/authoring-tokens', { json: body }),
+  revokeAuthoringToken: async (id: string) => { await send('DELETE', `/v1/platform/authoring-tokens/${enc(id)}`); },
 
   templates: () => json<{ templates: TemplateInfo[] }>('GET', '/v1/templates'),
   template: (name: string) => json<TemplateInfo>('GET', `/v1/templates/${enc(name)}`),

@@ -152,6 +152,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `POST /v1/sessions` | 公开 |
 | `DELETE /v1/sessions/current`、`GET /v1/me` | 持有会话；任何身份 |
 | `GET`、`POST /v1/platform/tenants` | 平台管理员；建租户时可以一并设套餐 |
+| `GET /v1/platform/overview` | 平台管理员；平台管理页的汇总：服务健康，与每个租户的套餐、本月用量和启用的成员数。读到了各租户的用量，记进每个租户的审计（`overview.read`） |
 | `GET`、`PUT /v1/platform/tenants/{租户}/plan`，`GET …/{租户}/usage`、`GET …/{租户}/usage/events` | 平台管理员；见[计量与额度](#计量与额度) |
 | `GET`、`POST /v1/platform/tenants/{租户}/members`，`POST …/members/{成员}/password-reset` | 平台管理员 |
 | `GET`、`POST /v1/platform/authoring-tokens`，`DELETE …/{令牌}` | 平台管理员 |
@@ -589,6 +590,10 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
     - webhook：注册时签名密钥显示一次，停用与启用，查看投递记录（各次尝试的状态码或原因）；
     - 审计日志：操作人、操作、对象与跨租户标记，一页 50 条；代建写入另显示前后内容哈希（开头 8 位，悬停看全文）与差异摘要（展开看路径与各自的前后哈希）。可按主体种类与日期筛选，筛选结果导出 CSV（P1 票据 03）。
     - 只出现一次的密钥只放在那一块面板的状态里，关掉、换标签或离开就没了，不写进 sessionStorage。
+  - **平台**（P1 票据 12）：只给平台管理员，登录后只进这个模块，别的路由回到这里，状态栏只有连接。分两个页签：
+    - 租户：一行服务健康（接口就绪、渲染 worker 报到数与构建、排队与渲染中的任务数），一张租户表（每月出图、本月出图、本月 Agent token、成员数与状态）。状态按额度算：没设套餐、已用加预占到 80% 算接近上限、到 100% 算额度用完。Agent token 只显示用量，按额度拦截是 P4（M242）。点开一行原地改套餐、建成员账号；开通租户之后自动展开。
+    - 代建令牌：列表、签发（标签、有效天数、能访问的租户）与吊销。
+    - 初始密码与代建令牌只显示一次，同"管理"页。页尾写明对客户租户的每次操作都记进该租户的审计。
 - **出图参数**：缺省取模板适用尺寸的下限、120 DPI、PNG。预览与正式交付用同样的尺寸与分辨率，因为低分辨率的草稿会给条码报假问题（M280）。
 - **身份**：只有客户管理员与操作员能用，令牌只放在本标签页的 sessionStorage。状态栏显示本月剩余张数，两种角色都有（M300；票据 12 时只给管理员）。
 - **静态文件**：启动时读进内存，只回答构建目录里认识的类型。index.html 不缓存，带内容哈希的文件长期缓存；内容安全策略只许同源的脚本、样式、请求与字体，图片另许 `blob:` 与 `data:`。这些路由不属于开放 API，不在 OpenAPI 描述里。没有构建时 `/console/` 答 404 并说明怎样构建。

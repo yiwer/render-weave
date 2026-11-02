@@ -2,11 +2,11 @@
  * 控制台的模块（P1 票据 01，M208、M341）：标题栏的模块下拉、Ctrl+数字与 Ctrl+K 都从这张表来。
  * - 一个模块是一组 # 路由的第一段：路由不变，旧链接照旧能打开（出图记录、批次、Excel 导入等仍在原来的地址）；
  * - 按角色只列能进的模块，Ctrl+数字按列出的顺序编号；
- * - 平台管理员的"平台"模块与 Agent 的左栏在后续票据加入（P1 票据 12、P2）。
+ * - 平台管理员只有"平台"一个模块（P1 票据 12）；Agent 的左栏在 P2 加入。
  */
 import type { Identity } from './types.js';
 
-export type ModuleId = 'definitions' | 'templates' | 'datasets' | 'deliver' | 'resources' | 'usage' | 'admin';
+export type ModuleId = 'definitions' | 'templates' | 'datasets' | 'deliver' | 'resources' | 'usage' | 'admin' | 'platform';
 
 export interface ConsoleModule {
   readonly id: ModuleId;
@@ -34,6 +34,8 @@ export const MODULES: readonly ConsoleModule[] = [
   { id: 'usage', label: '用量', home: ['usage'], sections: ['usage'], roles: MEMBERS, icon: 'M3 20h18M6 16v-5M11 16V6M16 16v-8' },
   { id: 'admin', label: '管理', home: ['admin'], sections: ['admin'], roles: ['admin'],
     icon: 'M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2' },
+  { id: 'platform', label: '平台', home: ['platform'], sections: ['platform'], roles: ['platformAdmin'],
+    icon: 'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 10h2a2 2 0 0 1 2 2v9M2 21h20M8 7h4M8 11h4M8 15h4' },
 ];
 
 /** 这个身份能进的模块，按下拉里的顺序。 */
@@ -60,6 +62,7 @@ export const ACTIONS: readonly ConsoleAction[] = [
   { id: 'members', label: '管理成员', path: ['admin', 'members'], roles: ['admin'] },
   { id: 'api-keys', label: '创建 API 密钥', path: ['admin', 'api-keys'], roles: ['admin'] },
   { id: 'audit', label: '查看审计日志', path: ['admin', 'audit'], roles: ['admin'] },
+  { id: 'issue-token', label: '签发代建令牌', path: ['platform', 'tokens'], focus: 'token-label', roles: ['platformAdmin'] },
 ];
 
 export const actionsFor = (identity: Identity): readonly ConsoleAction[] => ACTIONS.filter((action) => action.roles.includes(identity.role));

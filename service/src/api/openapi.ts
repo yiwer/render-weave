@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.2.0';
+export const API_VERSION = '1.3.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -160,6 +160,25 @@ const SCHEMAS: Record<string, unknown> = {
     batchId: uuid('正式交付成功的一张：所属批次'), index: int('项序号', 1),
     round: object({ sha256, task: str('代建任务'), round: int('轮次', 1) }, ['sha256', 'task', 'round'], { description: '代建的一轮：round.json 的 SHA-256、任务与轮次' }),
   }, ['id', 'at', 'period', 'kind', 'quantity']),
+
+  QueueBacklog: object({
+    queued: object({ preview: int(), batchItem: int(), replay: int() }), running: object({ preview: int(), batchItem: int(), replay: int() }),
+    oldestQueuedMs: int('排队最久的一项已经等了多久，毫秒；没有排队的任务时是 0'),
+  }, ['queued', 'running', 'oldestQueuedMs'], { description: '队列积压（跨租户，只有计数）' }),
+  PlatformOverview: object({
+    service: object({
+      ready: { type: 'boolean', description: '接口进程就绪' }, schemaVersion: int('数据库迁移版本'), checks: { type: 'object', additionalProperties: str(), description: '各项检查的结果，ok 是通过' },
+      workers: array(object({ build: str('构建标识'), workers: int('最近报到的 worker 数') }), '在线的 worker，按构建'),
+      queue: { ...ref('QueueBacklog'), description: '没就绪时没有' },
+    }, ['ready', 'checks', 'workers']),
+    period: str('本月的计费周期 YYYY-MM'),
+    tenants: array(object({
+      id: uuid('租户 ID'), name: str(), createdAt: instant('创建时间'), plan: ref('Plan'),
+      images: object({ limit: int('限额'), used: int('已用'), reserved: int('预占'), remaining: int('剩余') }),
+      tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), undefined, { description: '本月代建的 token；只记不拦（M242）' }),
+      members: int('启用的成员数'),
+    })),
+  }, ['service', 'period', 'tenants'], { description: '平台管理页的汇总（1.3.0）' }),
 
   // 模板与预览
   Template: object({
@@ -407,6 +426,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'PUT /v1/platform/tenants/:tenantId/plan': { tag: '平台管理', summary: '设置套餐；当期限额随之改变', replies: [ok(ref('Plan'))] },
   'GET /v1/platform/tenants/:tenantId/usage': { tag: '平台管理', summary: '租户一个计费周期的用量', replies: [ok(ref('Usage'))] },
   'GET /v1/platform/tenants/:tenantId/usage/events': { tag: '平台管理', summary: '租户的用量明细', replies: [ok(object({ period: str(), events: array(ref('UsageEvent')), next: str('下一页的 before') }, ['period', 'events']))] },
+  'GET /v1/platform/overview': { tag: '平台管理', summary: '服务健康，与每个租户的套餐、本月用量和启用的成员数；记进每个租户的审计', replies: [ok(ref('PlatformOverview'))] },
   'GET /v1/platform/builds': { tag: '平台管理', summary: '被出图记录引用的构建与在线的 worker', replies: [ok(list('builds', 'Build'))] },
 
   'GET /v1/tenant': { tag: '租户', summary: '本租户', replies: [ok(ref('Tenant'))] },

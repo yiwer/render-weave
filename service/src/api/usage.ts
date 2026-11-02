@@ -2,11 +2,14 @@
  * 计量与额度的端点（票据 09，ADR-0020、M242）。
  * - 本租户一个计费周期的用量：出图张数的限额、已用、预占与剩余，各种 token 的合计；客户成员与 API 密钥都能看（M300）；
  * - 用量事件的明细只给客户管理员；
- * - 平台管理员设置租户的套餐（每月出图张数、单张最大像素、并发数），并看任一租户的用量与明细，记进该租户的审计。
+ * - 平台管理员设置租户的套餐（每月出图张数、单张最大像素、并发数），并看任一租户的用量与明细，记进该租户的审计；
+ * - 平台管理页的汇总（P1 票据 12）：服务健康，与每个租户的套餐、本月用量和启用的成员数。
  * 周期是按 UTC+8 切分的自然月，写作 YYYY-MM，缺省是当前周期。
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { ENGINE_MAX_PIXELS, PERIOD, periodOf, periodRange, USAGE_KINDS, type Plan, type TenantScope, type UsageKind } from '../backend.js';
+import { readinessWithBacklog } from '../tasks.js';
+import { WORKER_STALE_MS } from '../worker/scheduler.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { notFound, objectId } from './problems.js';
 
@@ -58,6 +61,29 @@ export function registerUsageRoutes(app: FastifyInstance, context: ApiContext): 
 
   app.get('/v1/usage', { config: { access: 'usage.summary' }, schema: USAGE_QUERY }, async (request) => usage(ownScope(request), periodOfQuery(request)));
   app.get('/v1/usage/events', { config: { access: 'usage.read' }, schema: EVENTS_QUERY }, async (request) => events(ownScope(request), request));
+
+  /** 只读汇总：只有计数，不含业务内容。读到了各租户的用量，所以与单独看某个租户的用量一样，记进每个租户的审计（M261）。 */
+  app.get('/v1/platform/overview', { config: { access: 'platform.tenants' } }, async (request) => {
+    const at = now(), period = periodOf(at), actor = actorOf(identityOf(request));
+    const [health, online, tenants] = await Promise.all([readinessWithBacklog(backend, at), backend.workers.online(new Date(at.getTime() - WORKER_STALE_MS)), backend.platform.listTenants()]);
+    return {
+      service: {
+        ready: health.ready, ...(health.schemaVersion === undefined ? {} : { schemaVersion: health.schemaVersion }), checks: health.checks,
+        workers: [...online].map(([build, workers]) => ({ build, workers })).sort((a, b) => (a.build < b.build ? -1 : 1)),
+        ...(health.queue ? { queue: health.queue } : {}),
+      },
+      period,
+      tenants: await Promise.all(tenants.map(async (tenant) => {
+        const scope = backend.tenant(tenant.id);
+        const [plan, counts, members] = await Promise.all([scope.plan(), scope.usage(period), scope.listMembers()]);
+        await scope.appendAudit({ actor, action: 'overview.read', object: { type: 'tenant', id: tenant.id }, crossTenant: true }, at);
+        return {
+          ...tenant, plan, images: { limit: counts.limit, used: counts.used, reserved: counts.reserved, remaining: Math.max(counts.limit - counts.used - counts.reserved, 0) },
+          tokens: counts.tokens, members: members.filter((member) => member.active).length,
+        };
+      })),
+    };
+  });
 
   app.get('/v1/platform/tenants/:tenantId/plan', { config: { access: 'platform.plans' } }, async (request) => (await platformScope(request, 'plan.read')).plan());
   app.put('/v1/platform/tenants/:tenantId/plan', { config: { access: 'platform.plans' }, schema: { body: PLAN_SCHEMA } }, async (request) => {

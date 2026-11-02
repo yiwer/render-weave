@@ -16,6 +16,49 @@ export interface Problem {
   readonly message: string;
 }
 
+/** 套餐（M274）。 */
+export interface PlanSettings {
+  readonly monthlyImages: number;
+  readonly maxPixels: number;
+  readonly concurrency: number;
+}
+
+export interface AuthoringTokenInfo {
+  readonly id: string;
+  readonly label: string;
+  readonly prefix: string;
+  readonly tenantIds: readonly string[];
+  readonly createdAt: string;
+  readonly expiresAt: string;
+  readonly revokedAt?: string;
+}
+
+/** 平台管理页的一行租户。 */
+export interface PlatformTenant {
+  readonly id: string;
+  readonly name: string;
+  readonly createdAt: string;
+  readonly plan: PlanSettings;
+  readonly images: { readonly limit: number; readonly used: number; readonly reserved: number; readonly remaining: number };
+  readonly tokens: Readonly<Record<string, number>>;
+  readonly members: number;
+}
+
+interface TaskCounts { readonly preview: number; readonly batchItem: number; readonly replay: number }
+
+/** GET /v1/platform/overview。 */
+export interface PlatformOverview {
+  readonly service: {
+    readonly ready: boolean;
+    readonly schemaVersion?: number;
+    readonly checks: Readonly<Record<string, string>>;
+    readonly workers: readonly { readonly build: string; readonly workers: number }[];
+    readonly queue?: { readonly queued: TaskCounts; readonly running: TaskCounts; readonly oldestQueuedMs: number };
+  };
+  readonly period: string;
+  readonly tenants: readonly PlatformTenant[];
+}
+
 export interface Identity {
   readonly kind: 'member' | 'platformUser' | 'apiKey' | 'authoringToken';
   readonly role: string;
