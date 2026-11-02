@@ -153,7 +153,7 @@ describe('开放 API 的 OpenAPI 合同', () => {
       }
       if ((operation['parameters'] ?? []).some((parameter: Json) => parameter['in'] === 'query')) {
         const url = `${fill(path, (name) => (name === 'tenantId' && authoring ? a.id : missing[name] ?? randomUUID()))}?unknownParameter=1`;
-        expect(await call(method, url, token, method === 'POST' ? new Uint8Array([1]) : undefined), `${at} 未知的查询参数`)
+        expect(await call(method, url, token, method === 'POST' ? (json ? {} : new Uint8Array([1])) : undefined), `${at} 未知的查询参数`)
           .toMatchObject({ status: 400, body: { problems: [{ code: 'request.invalid' }] } });
         probed.query++;
       }

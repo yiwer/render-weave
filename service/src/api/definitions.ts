@@ -9,24 +9,16 @@
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
-import type { AuditContent, AuditDiff, AuditDiffPath, DefinitionDraft, NewAuditEvent, TenantScope, TenantStorage } from '../backend.js';
+import type { AuditContent, AuditDiff, AuditDiffPath, DefinitionDraft, NewAuditEvent, TenantStorage } from '../backend.js';
 import {
-  checkDataset, describeTemplate, diffDefinition, parseJsonKeepingPrecision, publishStaticSchema, readWorkspaceDocuments, templateFieldUses,
+  checkDataset, describeTemplate, diffDefinition, publishStaticSchema, readWorkspaceDocuments, templateFieldUses,
   type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type TemplateEntry, type Workspace,
 } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
-import type { Permission } from './permissions.js';
-import { ApiError, fail, notFound, problem, ServiceProblemCodes } from './problems.js';
+import { checkedDocument, documentBytes, parsedDocument, staleDraft, type AuthoringAddressing } from './authoring-documents.js';
+import { ApiError, fail, notFound, ServiceProblemCodes } from './problems.js';
 import { parseKey, readJson } from './static-schemas.js';
-
-/** 一种寻址：路径前缀、读取要的权限、目标租户。crossTenant 的身份是我们的内部人员，读取也记审计。 */
-export interface DefinitionAddressing {
-  readonly prefix: string;
-  readonly read: Permission;
-  scopeOf(request: FastifyRequest): TenantScope;
-  readonly crossTenant: boolean;
-}
 
 /** 经接口新建的数据定义名称：1–200 个字符，没有控制字符，首尾没有空白。推送进来的沿用本地的名称。 */
 const NAME = /^(?=[\s\S]{1,200}$)[^\s\p{Cc}](?:[^\p{Cc}]*[^\s\p{Cc}])?$/u;
@@ -46,27 +38,7 @@ const CREATE_SCHEMA = {
 
 const draftSource = (name: string) => `definitionDraft:${name}`;
 const nameOf = (request: FastifyRequest) => (request.params as { name: string }).name;
-const documentBytes = (document: unknown) => new Uint8Array(Buffer.from(`${JSON.stringify(document, null, 2)}\n`));
 const invalid = (source: string, message: string) => fail(400, ServiceProblemCodes.requestInvalid, source, message);
-
-/** 草案的文档已在保存时核对过是 JSON；数值精度也在那时拒绝（M112）。 */
-const parsedDocument = (bytes: Uint8Array): unknown => parseJsonKeepingPrecision(Buffer.from(bytes).toString('utf8'), []);
-
-/** 预期哈希不是当前内容：别人先保存了。回答带当前哈希，读回最新内容再改。 */
-const staleDraft = (current: string, source: string) => new ApiError(409, [problem(ServiceProblemCodes.draftStale, source, `草案已被别人保存，当前内容哈希是 ${current}；读回最新内容再改`)], { currentSha256: current });
-
-/** 保存的请求体：UTF-8 的 JSON 对象，名称与路径一致；否则答 400。 */
-function checkedBody(body: unknown, name: string): Uint8Array {
-  if (!Buffer.isBuffer(body)) throw fail(415, ServiceProblemCodes.requestInvalid, 'request.body', '数据定义要以 application/json 发送');
-  let document: unknown;
-  const tooPrecise: string[] = [];
-  try { document = parseJsonKeepingPrecision(new TextDecoder('utf-8', { fatal: true }).decode(body), tooPrecise); }
-  catch { throw invalid('request.body', '请求体不是合法的 UTF-8 JSON'); }
-  if (typeof document !== 'object' || document === null || Array.isArray(document)) throw invalid('request.body', '数据定义必须是 JSON 对象');
-  if (tooPrecise.length) throw invalid('request.body', `请求中的数值超过 15 位有效数字，按双精度读取会失真：${tooPrecise.join('、')}（M112）`);
-  if ((document as { name?: unknown }).name !== name) throw invalid('request.body.name', `文档的 name 要与路径里的数据定义名称 ${name} 一致；名称是身份，不能在草案里改`);
-  return new Uint8Array(body);
-}
 
 /** 差异摘要的路径：field:字段名称、definition:属性。 */
 const diffPaths = (diff: DefinitionDiff): AuditDiffPath[] => [
@@ -121,7 +93,7 @@ async function staticVersion(storage: TenantStorage, name: string, version: numb
   return definition && documents.some((stored) => stored.kind === 'compiled' && stored.key === key) ? readJson(storage, definition) : undefined;
 }
 
-export function registerDefinitionRoutes(app: FastifyInstance, context: ApiContext, addressing: DefinitionAddressing): void {
+export function registerDefinitionRoutes(app: FastifyInstance, context: ApiContext, addressing: AuthoringAddressing): void {
   const { limits, now } = context;
   const { prefix, read: readAccess, scopeOf, crossTenant } = addressing;
   const url = `${prefix}/definitions`, draftUrl = `${url}/:name/draft`;
@@ -215,7 +187,7 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       const scope = scopeOf(request), name = nameOf(request), storage = scope.storage;
       // 先答"不存在"，再看请求体：别的租户的草案与不存在的回答相同。
       await draftOf(storage, name);
-      const bytes = checkedBody(request.body, name), { expectedSha256 } = request.query as { expectedSha256: string };
+      const bytes = checkedDocument(request.body, name, '数据定义'), { expectedSha256 } = request.query as { expectedSha256: string };
       const before = await storage.contents.get(expectedSha256);
       const result = await storage.saveDefinitionDraft(name, expectedSha256, bytes, writer(request));
       if (!result) throw notFound();

@@ -166,6 +166,9 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/definitions`、`GET /v1/definitions/{名称}/draft`、`GET …/draft/check` | 管理员、操作员、API 密钥；见[数据定义草案](#数据定义草案) |
 | `POST`、`PUT`、`DELETE /v1/definitions/{名称}/draft` | 客户管理员 |
 | `/v1/authoring/tenants/{租户}/definitions…` | 代建工程师，只认被指定的租户；与上面两行同一组操作，读取也记审计 |
+| `GET /v1/template-working-copies`、`GET /v1/templates/{模板名}/working-copy`、`GET …/working-copy/check`、`GET /v1/templates/{模板名}/revisions` | 管理员、操作员、API 密钥；见[模板工作副本](#模板工作副本) |
+| `POST`、`PUT`、`DELETE …/working-copy`、`POST …/working-copy/save`、`POST /v1/templates/{模板名}/copies`、`POST /v1/template-current` | 客户管理员 |
+| `/v1/authoring/tenants/{租户}/template-working-copies`、`…/templates/{模板名}/working-copy…`、`…/copies`、`…/revisions` | 代建工程师；与上面两行同一组操作，读取也记审计 |
 | `GET /v1/templates`、`GET /v1/templates/{模板名}` | 管理员、操作员、API 密钥；见[模板与草稿预览](#模板与草稿预览) |
 | `POST /v1/previews` | 管理员、操作员、API 密钥 |
 | `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
@@ -289,6 +292,17 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **发布**（P1 票据 05，M346）：`publishStaticSchema` 得到下一版本，原文与编译产物按本地 `renderweave publish` 的写法存（缩进两格、末尾换行），逐字节相同；再在一个事务里锁住租户行，核对草案哈希与版本没被占用，成对写进 `workspace_documents`，删除草案。推送进来的同名同版本与它依次进行。版本号在事务外算：算的时候要读全部静态数据定义，不占着事务；算完被占用就答 409，什么也不写。
 - **发布预检**：绑定基于版本的数据集按新编译产物逐份校验，至多 `publishCheckDatasets`（缺省 1,000）份，失配的前 20 份各给至多 5 条问题。预检不改动任何东西；模板与数据集都不随发布改绑定（ADR-0008）。
 - **审计**：`definition.publish` 的对象是 `名称@版本`，前哈希是基于版本的原文，后哈希是新版本的原文，差异摘要逐字段。`definitionDraft.create`、`definitionDraft.save`、`definitionDraft.delete` 都记前后内容哈希。保存的差异摘要逐字段（`field:字段名称`、`definition:属性`）；有一份读不了时只记整份文档（`definitionDraft:名称`）。代建工程师的读取另记 `authoring.read`，客户成员的读取不记。
+
+## 模板工作副本
+
+客户管理员与代建工程师经同一套接口改模板，不必整份推送（P1 票据 07，ADR-0022、M265、M346、M352）。接口写法见[开放 API](api.md#模板工作副本)。
+
+- **存储**：迁移 0012 的 `template_working_copies` 表登记名称、基准修订、内容哈希与最后暂存者，开了行级安全；内容按原始字节存进本租户的内容。写入与推送、资源提交锁住同一行，依次进行。`template_revisions` 加了 `source` 列（`push`、`web`），已有的修订都是 `push`。
+- **不进工作区**：工作副本不在 `workspace_documents` 里，出图、数据集、只读预览与推送的差异都读当前修订。推送不碰工作副本。
+- **预览**：`workingCopies=true` 时接口进程按换上工作副本的工作区做入队前的检查（`measureRender`），任务里带上这个标记，worker 渲染时同样换上。全部工作副本一起换上，改子模板时看父模板的预览也是改过的。
+- **保存**：先用 `checkTemplateStatic` 做静态检查（只换上这一份工作副本，子模板用已保存的，看的就是保存之后的样子），再在一个事务里锁住租户行，核对内容哈希与基准修订，记修订，当前修订指向它，删除工作副本。
+- **元素定位**：引擎的 `render` 加可选输出 `elementLocations`，预览都带上。
+- **审计**：`templateWorkingCopy.create`、`.save`、`.delete`、`.copy` 与 `template.save` 都记前后内容哈希；暂存与保存的差异摘要按结构（`element:元素路径`、`template:键`）。代建工程师的读取另记 `authoring.read`。
 
 ## 模板与草稿预览
 

@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.4.0';
+export const API_VERSION = '1.5.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -43,6 +43,7 @@ export const PROBLEM_STATUS: Readonly<Record<ServiceProblemCode, readonly number
   [ServiceProblemCodes.pushContentMismatch]: [400],
   [ServiceProblemCodes.draftStale]: [409],
   [ServiceProblemCodes.draftVersionTaken]: [409],
+  [ServiceProblemCodes.templateRevisionConflict]: [409],
   [ServiceProblemCodes.limitRequestTooLarge]: [413],
   [ServiceProblemCodes.limitDatasetTooLarge]: [413],
   [ServiceProblemCodes.limitPixelsExceeded]: [413],
@@ -114,8 +115,9 @@ const SCHEMAS: Record<string, unknown> = {
     problems: { type: 'array', minItems: 1, items: ref('Problem') },
     quota: { ...ref('QuotaShortfall'), description: '额度不足（429 quota.exceeded）时：本期的限额、已用、预占、剩余与本批项数' },
     diff: { ...ref('PushDiff'), description: '推送冲突（409 push.conflict）时：逐项差异' },
-    currentSha256: { ...sha256, description: '保存草案时预期哈希不是当前内容（409 draft.stale）：当前内容哈希（1.2.0）' },
-  }, ['problems'], { description: '错误回答：问题清单，额度不足、推送冲突与草案过期时另带说明情况的字段' }),
+    currentSha256: { ...sha256, description: '保存草案或工作副本时预期哈希不是当前内容（409 draft.stale）：当前内容哈希（1.2.0）' },
+    conflict: { ...ref('TemplateRevisionConflict'), description: '保存模板时基准不是当前修订（409 template.revisionConflict）：两边差异（1.5.0）' },
+  }, ['problems'], { description: '错误回答：问题清单，额度不足、推送冲突、草案过期与修订冲突时另带说明情况的字段' }),
   QuotaShortfall: object({ period: str('计费周期 YYYY-MM'), limit: int(), used: int(), reserved: int(), remaining: int(), requested: int() }),
 
   // 账号与租户
@@ -198,6 +200,8 @@ const SCHEMAS: Record<string, unknown> = {
     image: object({ format: { type: 'string', enum: ['png', 'jpeg'] }, widthPx: int(), heightPx: int(), dpi: { type: 'number' }, base64: str('图片字节的 base64') }),
     problems: ref('ProblemList'),
     layout: freeform('布局摘要：元素路径、位置与尺寸（docs/render-modes.md）'),
+    elements: array(object({ path: str('元素路径，同布局摘要'), source: object({ template: str('源模板'), path: str('元素在源模板里的路径，第一段是模板名') }) }),
+      '会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）'),
   }, ['problems'], { description: '草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单' }),
 
   // 批量交付
@@ -333,8 +337,31 @@ const SCHEMAS: Record<string, unknown> = {
   StoredDocument: object({ kind: { type: 'string', enum: ['definition', 'compiled', 'template', 'dataset'] }, key: str(), sha256, byteLength: int() }),
   TemplateRevisions: object({
     name: str('模板名称'), currentRevision: int('当前修订', 1),
-    revisions: array(object({ revision: int('修订号', 1), sha256, byteLength: int(), createdAt: instant('推送时间'), pushedBy: str('推送人') })),
+    revisions: array(object({ revision: int('修订号', 1), sha256, byteLength: int(), createdAt: instant('产生时间'), pushedBy: str('产生它的主体：代建令牌的标签或成员的邮箱'),
+      source: { type: 'string', enum: ['push', 'web'], description: '来源：推送，或保存工作副本（1.5.0）' } })),
   }),
+  TemplateWorkingCopy: object({
+    name: str('模板名称'), baseRevision: int('基于的修订；复制出来的新模板没有', 1), sha256: { ...sha256, description: '当前内容的 SHA-256，暂存与保存时作为预期哈希' }, byteLength: int('字节数'),
+    createdAt: instant('新建时间'), updatedAt: instant('最后暂存时间'), updatedBy: str('最后暂存者：邮箱或代建令牌的标签'),
+  }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy'], { description: '模板工作副本：一个名称至多一份（1.5.0）' }),
+  TemplateRevisionDiff: object({
+    status: { type: 'string', enum: ['modified', 'unchanged', 'added'], description: 'added：没有已保存的内容可比' },
+    changes: array(freeform('一处改动：path 是元素路径或模板层的键，target 是 element 或 template，change 是 added、removed、changed，改了的属性在 properties'), '结构化差异'),
+  }),
+  TemplateRevisionConflict: object({
+    baseRevision: int('工作副本基于的修订；复制出来的新模板没有', 1), currentRevision: int('现在的当前修订', 1),
+    ours: { ...ref('TemplateRevisionDiff'), description: '基准到工作副本：这边改了什么' }, theirs: { ...ref('TemplateRevisionDiff'), description: '基准到当前修订：别人改了什么' },
+  }, ['currentRevision', 'ours', 'theirs']),
+  TemplateWorkingCopyCheck: object({
+    sha256: { ...sha256, description: '检查的是这份内容' }, baseRevision: int('基于的修订', 1), currentRevision: int('现在的当前修订；还没保存过的新模板没有', 1),
+    problems: { ...ref('ProblemList'), description: '模板静态检查的问题，含它调用的模板；有严重问题时不能保存' },
+    changes: { ...ref('TemplateRevisionDiff'), description: '当前修订到工作副本的结构化差异' },
+    conflict: { ...ref('TemplateRevisionConflict'), description: '基准不是当前修订时才有' },
+  }, ['sha256', 'problems', 'changes'], { description: '工作副本的检查（1.5.0）' }),
+  TemplateSaved: object({
+    name: str('模板名称'), revision: int('当前修订', 1), status: { type: 'string', enum: ['saved', 'unchanged'], description: 'unchanged：内容与当前修订字节相同，不记新修订，工作副本照样删除' },
+    sha256: { ...sha256, description: '当前修订的内容哈希' },
+  }, undefined, { description: '保存模板的结果（1.5.0）' }),
   AuthoringState: object({ documents: array(ref('StoredDocument')), templates: array(ref('TemplateRevisions')), resources: array(ref('Resource')) }),
   PushDiff: object({
     summary: object({ added: int(), updated: int(), unchanged: int(), conflicts: int() }),
@@ -372,7 +399,7 @@ const STATUS_TEXT: Readonly<Record<number, string>> = {
 
 // —— 各路由的说明 ——
 
-type Body = 'batchRequest' | 'renderRequest' | 'datasetDocument' | 'definitionDocument' | 'binary';
+type Body = 'batchRequest' | 'renderRequest' | 'datasetDocument' | 'definitionDocument' | 'templateDocument' | 'binary';
 interface Reply {
   readonly status: number;
   readonly description: string;
@@ -421,6 +448,27 @@ function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
   };
 }
 
+/** 模板工作副本与修订（P1 票据 07，M345）：客户端点与代建端点一份实现、一份说明，只差寻址。 */
+function workingCopyDocs(prefix: string, tag: string): Record<string, RouteDoc> {
+  const template = `${prefix}/templates/:name`, copy = `${template}/working-copy`;
+  return {
+    [`GET ${prefix}/template-working-copies`]: { tag, summary: '本租户的模板工作副本', replies: [ok(list('workingCopies', 'TemplateWorkingCopy'))] },
+    [`POST ${copy}`]: { tag, summary: '从当前修订新建工作副本，记基准修订；已有工作副本答 409', errors: [409], replies: [created(ref('TemplateWorkingCopy'))] },
+    [`GET ${copy}`]: { tag, summary: '读工作副本：登记信息与原文', replies: [ok(object({
+      ...(SCHEMAS['TemplateWorkingCopy'] as { properties: Record<string, unknown> }).properties, content: str('工作副本原文，与暂存时逐字节相同，其 SHA-256 是 sha256'),
+    }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy', 'content']))] },
+    [`PUT ${copy}`]: { tag, summary: '暂存：整份替换，带预期 SHA-256；不影响当前修订，出图照旧读当前修订', body: 'templateDocument', errors: [409, 413, 415],
+      description: '按原始字节存。只要求是 UTF-8 的 JSON 对象、name 与路径一致，还没写完的工作副本也能存。', replies: [ok(ref('TemplateWorkingCopy'))] },
+    [`DELETE ${copy}`]: { tag, summary: '丢弃工作副本', replies: [none('已丢弃')] },
+    [`GET ${copy}/check`]: { tag, summary: '模板静态检查与结构化差异，不写任何东西；基准不是当前修订时另给两边差异', replies: [ok(ref('TemplateWorkingCopyCheck'))] },
+    [`POST ${copy}/save`]: { tag, summary: '保存模板：记新修订（字节相同记为不变），当前修订指向它，删除工作副本', errors: [409],
+      description: '模板静态检查有严重问题时答 400。预期哈希不是当前内容答 409 draft.stale。基准不是当前修订答 409 template.revisionConflict，回答带两边差异；overwrite 为 true 才覆盖。',
+      replies: [ok(ref('TemplateSaved'))] },
+    [`POST ${template}/copies`]: { tag, summary: '复制为新模板：内容与基准数据定义取当前修订，成为没有基准修订的工作副本，保存时记修订 1', errors: [409], replies: [created(ref('TemplateWorkingCopy'))] },
+    [`GET ${template}/revisions`]: { tag, summary: '模板的修订历史：修订号、主体、时间与来源', replies: [ok(ref('TemplateRevisions'))] },
+  };
+}
+
 const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /healthz': { tag: '运维', summary: '存活检查', replies: [ok(object({ status: { const: 'ok' }, service: str(), build: str() }))] },
   'GET /readyz': { tag: '运维', summary: '就绪检查：数据库、迁移与对象存储', replies: [
@@ -465,7 +513,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/templates': { tag: '模板与预览', summary: '本租户的模板：适用尺寸范围、所用的数据定义与对外参数', replies: [ok(list('templates', 'Template'))] },
   'GET /v1/templates/:name': { tag: '模板与预览', summary: '一个模板', replies: [ok(ref('Template'))] },
   'POST /v1/previews': { tag: '模板与预览', summary: '草稿预览：同步返回图片与问题清单，不计额度', body: 'renderRequest', errors: [413, 429, 503],
-    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。',
+    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。',
     replies: [ok(ref('PreviewResult'))] },
 
   'POST /v1/batches': { tag: '批量交付', summary: '提交批量正式交付：固定批次后按项异步交付', body: 'batchRequest', errors: [409, 413, 429],
@@ -536,6 +584,9 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions'))] },
   ...definitionDocs('/v1', '数据定义'),
   ...definitionDocs('/v1/authoring/tenants/:tenantId', '代建'),
+  ...workingCopyDocs('/v1', '模板与预览'),
+  ...workingCopyDocs('/v1/authoring/tenants/:tenantId', '代建'),
+  'POST /v1/template-current': { tag: '模板与预览', summary: '把模板的当前修订指向已有的一个修订，可以指回旧修订', errors: [404], replies: [ok(ref('TemplateRevisions'))] },
 };
 
 const PATH_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
@@ -549,6 +600,7 @@ const REQUEST_BODIES: Readonly<Record<Body, { content: Record<string, unknown>; 
   batchRequest: { description: 'DSL 1.0 的批次请求', content: { 'application/json': { schema: ref('BatchRequest') } } },
   renderRequest: { description: 'DSL 1.0 的渲染请求', content: { 'application/json': { schema: ref('RenderRequest') } } },
   datasetDocument: { description: 'DSL 1.0 的数据集文档，按原始字节保存', content: { 'application/json': { schema: ref('DatasetDocument') } } },
+  templateDocument: { description: '模板 DSL 的 JSON 文档，按原始字节保存；可以还有问题，保存模板时才拒绝', content: { 'application/json': { schema: { type: 'object', description: '模板 DSL（renderweave-template/1）' } } } },
   definitionDocument: { description: '数据定义 DSL 的 JSON 文档，按原始字节保存；可以还有问题，由校验回答', content: { 'application/json': { schema: { type: 'object', description: '数据定义 DSL（renderweave-schema/1）' } } } },
   binary: { description: '原始字节', content: { 'application/octet-stream': { schema: { type: 'string', contentMediaType: 'application/octet-stream' } } } },
 };

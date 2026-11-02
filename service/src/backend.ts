@@ -3,7 +3,7 @@
  * 两种实现跑同一组 API 用例：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑（阶段 4 PRD「接缝」）。
  */
 import type {
-  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend,
+  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, ElementLocation, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend,
   WorkspaceDocumentSource,
 } from './engine.js';
 
@@ -337,8 +337,10 @@ export interface TemplateRevision {
   readonly sha256: string;
   readonly byteLength: number;
   readonly createdAt: string;
-  /** 推送者的标签（代建令牌的标签），不含令牌。 */
+  /** 产生它的主体：代建令牌的标签或成员的邮箱，不含令牌。 */
   readonly pushedBy: string;
+  /** 来源：推送，或网页与接口上保存工作副本（P1 票据 07）。 */
+  readonly source: 'push' | 'web';
 }
 
 /** 模板按名称指向当前修订；推送改了内容就记一个新修订，旧修订保留，当前修订可以指回旧修订（M264）。 */
@@ -394,6 +396,28 @@ export interface DefinitionDraft {
   /** 最后保存者的标签（邮箱或代建令牌的标签），不含令牌。 */
   readonly updatedBy: string;
 }
+
+/**
+ * 模板工作副本（P1 票据 07，M346）：一个模板名称还没保存的那一份，每个名称至多一份。
+ * baseRevision 是它基于的修订；复制出来的新模板没有。内容按原始字节存在本租户的内容里。
+ */
+export interface TemplateWorkingCopy {
+  readonly name: string;
+  readonly baseRevision?: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly updatedBy: string;
+}
+
+/** 保存工作副本的结果：记了新修订（saved），内容与当前修订相同（unchanged，M265），或没有写。 */
+export type WorkingCopyCommit =
+  | { readonly status: 'saved'; readonly revision: number; readonly sha256: string }
+  | { readonly status: 'unchanged'; readonly revision: number; readonly sha256: string }
+  | { readonly stale: string }
+  /** 基准不是当前修订：别人先保存了。currentRevision 是现在的当前修订。 */
+  | { readonly conflict: { readonly currentRevision: number } };
 
 /** 发布草案要登记的两份内容：键是"名称@版本"。 */
 export interface PublishedDraft {
@@ -452,6 +476,21 @@ export interface TenantStorage {
    * 草案的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这份草案时 undefined。
    */
   publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
+  /** 本租户全部模板工作副本。 */
+  templateWorkingCopies(): Promise<readonly TemplateWorkingCopy[]>;
+  templateWorkingCopy(name: string): Promise<TemplateWorkingCopy | undefined>;
+  /** 新建工作副本；这个名称已有工作副本时什么也不写，返回 undefined。 */
+  createTemplateWorkingCopy(copy: { readonly name: string; readonly baseRevision?: number; readonly bytes: Uint8Array }, by: DraftWriter): Promise<TemplateWorkingCopy | undefined>;
+  /** 整份替换工作副本（暂存）：只有当前内容哈希等于 expectedSha256 才写，否则答当前哈希（stale）。没有时 undefined。 */
+  saveTemplateWorkingCopy(name: string, expectedSha256: string, bytes: Uint8Array, by: DraftWriter):
+    Promise<{ readonly saved: TemplateWorkingCopy } | { readonly stale: string } | undefined>;
+  /** 丢弃工作副本，答丢弃的那一份；没有时 undefined。 */
+  deleteTemplateWorkingCopy(name: string): Promise<TemplateWorkingCopy | undefined>;
+  /**
+   * 保存模板：在一个事务里核对内容哈希与基准修订，按 M265 记修订（字节与当前修订相同记为不变），当前修订指向它，删除工作副本。
+   * 基准不是当前修订时答 conflict，overwrite 才覆盖。没有这份工作副本时 undefined。与推送、资源提交依次进行。
+   */
+  commitTemplateWorkingCopy(name: string, expectedSha256: string, options: { readonly overwrite: boolean; readonly pushedBy: string; readonly now: Date }): Promise<WorkingCopyCommit | undefined>;
   /**
    * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
    * 与推送、资源提交依次进行。
@@ -490,6 +529,8 @@ export interface TaskResult {
   readonly image?: { readonly format: 'png' | 'jpeg'; readonly widthPx: number; readonly heightPx: number; readonly dpi: number; readonly bytes: Uint8Array };
   readonly problems: readonly ResultProblem[];
   readonly layout?: LayoutSummary;
+  /** 元素实例各自的源模板与位置（P1 票据 07）。 */
+  readonly elements?: readonly ElementLocation[];
 }
 
 /**

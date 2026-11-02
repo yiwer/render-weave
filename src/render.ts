@@ -24,9 +24,18 @@ import { mmToPx } from './units.js';
 import { resolveGlyphFallbacks } from './text/fallback.js';
 import type { Workspace } from './workspace.js';
 
+/** 一个元素实例来自哪里：元素路径（布局摘要里的 path，带循环序号）对应哪个模板文档里的哪个元素。 */
+export interface ElementLocation {
+  readonly path: string;
+  /** 源模板，与元素在这个模板里的路径（不带调用链与循环序号，第一段是模板名）。 */
+  readonly source: { readonly template: string; readonly path: string };
+}
+
 export interface RenderResult {
   /** 可选的草稿比较证据：真实内容在占位与诊断边框之前的图与布局。 */
   readonly evidence?: RenderEvidence;
+  /** 要了 elementLocations 才有：会显示的元素实例各自的来源，出图服务的模板设计页据此从图上点选到模板文档。 */
+  readonly elements?: readonly ElementLocation[];
   /** 正式出图存在严重问题时没有图片。 */
   readonly image?: EncodedImage;
   readonly problems: readonly Problem[];
@@ -37,6 +46,8 @@ export interface RenderResult {
 export interface RenderOptions {
   /** 仅草稿模式收集；正式模式的 severe 阻断不变。 */
   readonly comparisonEvidence?: boolean;
+  /** 回答每个会显示的元素实例的源模板与在模板文档里的位置（P1 票据 07）。 */
+  readonly elementLocations?: boolean;
   /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
   readonly fallbackFonts?: readonly string[];
   /** SVG 可用的字体资源 ID；缺省为思源黑体四种字重，始终禁用系统字体。 */
@@ -68,6 +79,16 @@ export function templateBlocked(workspace: Workspace, template: string): Problem
   if (!preflightTemplate(workspace, template, problems).blocked) return undefined;
   expansionBlocked(problems);
   return problems;
+}
+
+/**
+ * 模板静态检查（P1 票据 07）：根模板与它调用的模板，对各自基准数据定义的检查。不需要数据集，也不出图；blocked 是无法展开。
+ * 问题只有模板一侧的，不含工作区里别的文档的问题。出图服务保存模板前用它。
+ */
+export function checkTemplateStatic(workspace: Workspace, template: string): { problems: Problem[]; blocked: boolean } {
+  const problems: Problem[] = [];
+  const { blocked } = preflightTemplate(workspace, template, problems);
+  return { problems, blocked };
 }
 
 /** 渲染的展开段（同步、不出图）：准备、尺寸范围与求值。无法展开时没有 evaluated，problems 是 render 会返回的完整问题清单。 */
@@ -107,6 +128,12 @@ export function measureRender(workspace: Workspace, requestInput: unknown): { me
   }
   const { width, height, dpi } = request.output;
   return { measure: { widthPx: mmToPx(width, dpi), heightPx: mmToPx(height, dpi), elements, loopItems }, problems };
+}
+
+function elementLocations(root: EvaluatedTemplate['root']): ElementLocation[] {
+  const locations: ElementLocation[] = [];
+  for (const node of walkVisible(root)) if (node.source) locations.push({ path: formatElementPath(node.model.path), source: node.source });
+  return locations;
 }
 
 /** 预先加载绘制引擎（CanvasKit）。出图服务的渲染子进程启动时调用，第一项就不必等加载。 */
@@ -159,7 +186,8 @@ export async function render(workspace: Workspace, requestInput: unknown, option
       drawOps = [...drawOps, ...draftBorders(draftRoot, result.summary, problems)];
     }
     const image = draw(ck, { fonts, images }, drawOps, request.output);
-    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}) };
+    const elements = options.elementLocations ? elementLocations(evaluated.root) : undefined;
+    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}), ...(elements ? { elements } : {}) };
   } finally {
     fonts.dispose();
     images.dispose();

@@ -3,7 +3,7 @@
  * 进程内 worker 与渲染子进程都调这一处；接口进程用同一份工作区做入队前的检查。
  */
 import type { TaskResult, TenantStorage } from './backend.js';
-import { createMemoryResourceRepository, readWorkspaceDocuments, render, type VersionedResourceStore, type Workspace } from './engine.js';
+import { createMemoryResourceRepository, parseJsonKeepingPrecision, readWorkspaceDocuments, render, type VersionedResourceStore, type Workspace } from './engine.js';
 
 /**
  * 打开租户的工作区：全部文档（模板为当前修订）与资源仓库的当前快照。
@@ -31,13 +31,28 @@ export async function loadTenantWorkspace(storage: TenantStorage): Promise<Works
   return (await openTenantWorkspace(storage)).workspace;
 }
 
-/** 渲染一次草稿预览；请求已由接口进程检查过，mode 已是 draft。 */
-export async function renderPreview(storage: TenantStorage, request: unknown): Promise<TaskResult> {
-  const result = await render(await loadTenantWorkspace(storage), request);
+/**
+ * 工作区换上模板工作副本（P1 票据 07）：有工作副本的模板用工作副本，复制出来还没保存的模板也在。
+ * 全部工作副本一起换上，改子模板时看父模板的预览也是改过的；出图与只读预览不走这里，照旧读当前修订。
+ */
+export async function withWorkingCopies(storage: TenantStorage, workspace: Workspace): Promise<Workspace> {
+  const copies = await Promise.all((await storage.templateWorkingCopies()).map(async (copy) => ({
+    name: copy.name, source: `workingCopy:${copy.name}`, document: parseJsonKeepingPrecision(Buffer.from((await storage.contents.get(copy.sha256)) ?? []).toString('utf8'), []),
+  })));
+  const names = new Set(copies.map((copy) => copy.name));
+  return { ...workspace, templates: [...workspace.templates.filter((template) => !names.has(template.name)), ...copies] };
+}
+
+/** 渲染一次草稿预览；请求已由接口进程检查过，mode 已是 draft。任务里的 workingCopies 表示用工作副本预览。 */
+export async function renderPreview(storage: TenantStorage, task: unknown): Promise<TaskResult> {
+  const { workingCopies, ...request } = task as { workingCopies?: boolean };
+  const workspace = await loadTenantWorkspace(storage);
+  const result = await render(workingCopies ? await withWorkingCopies(storage, workspace) : workspace, request, { elementLocations: true });
   const image = result.image;
   return {
     problems: result.problems,
     ...(result.layout ? { layout: result.layout } : {}),
+    ...(result.elements ? { elements: result.elements } : {}),
     ...(image ? { image: { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi, bytes: image.bytes } } : {}),
   };
 }

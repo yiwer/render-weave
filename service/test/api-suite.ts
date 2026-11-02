@@ -187,6 +187,26 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/publish-check`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft/publish', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  // 模板工作副本（P1 票据 07，M345）：同数据定义草案；指回旧修订开放给客户管理员，模板名用不存在的。
+  { route: 'GET /v1/template-working-copies', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/template-working-copies` }) },
+  { route: 'POST /v1/templates/:name/working-copy', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'GET /v1/templates/:name/working-copy', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'PUT /v1/templates/:name/working-copy', allow: ['admin'], request: () => ({ method: 'PUT', url: `/v1/templates/t${randomUUID()}/working-copy?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'DELETE /v1/templates/:name/working-copy', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'GET /v1/templates/:name/working-copy/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/working-copy/check` }) },
+  { route: 'POST /v1/templates/:name/working-copy/save', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/templates/:name/copies', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/templates/:name/revisions', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/revisions` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/template-working-copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/template-working-copies` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'PUT /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'DELETE /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'DELETE', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy/check', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/check` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy/save', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/revisions` }) },
+  { route: 'POST /v1/template-current', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/template-current', body: { template: '矩阵', revision: 1 } }) },
   // 批量交付（票据 07）：提交用不存在的模板，整批拒绝，不需要 worker。
   { route: 'POST /v1/batches', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/batches', body: BLOCKED_BATCH }) },
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
@@ -404,6 +424,9 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       expect(hook.status, hook.raw.slice(0, 300)).toBe(201);
       world.secrets.push(hook.body.secret);
       expect((await call('PATCH', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token, { active: false })).status).toBe(200);
+      // A 的一份模板工作副本：同样。
+      const workingCopy = await call('POST', `/v1/templates/${encodeURIComponent('问候牌')}/working-copy`, a.admin.token);
+      expect(workingCopy.status, workingCopy.raw.slice(0, 300)).toBe(201);
       // A 的一份数据定义草案：另一租户读、改、删、校验都与不存在的名称回答相同。
       const draft = await call('POST', `/v1/definitions/${encodeURIComponent('问候')}/draft`, a.admin.token, { fromVersion: 1 });
       expect(draft.status, draft.raw.slice(0, 300)).toBe(201);

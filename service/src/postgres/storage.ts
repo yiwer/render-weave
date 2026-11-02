@@ -5,7 +5,7 @@
  */
 import {
   documentSource, parseDocumentSource,
-  type AuthoringState, type DefinitionDraft, type StoredDocument, type StoredTemplate, type TemplateRevision, type TenantBatch, type TenantStorage,
+  type AuthoringState, type DefinitionDraft, type StoredDocument, type StoredTemplate, type TemplateRevision, type TemplateWorkingCopy, type TenantBatch, type TenantStorage,
 } from '../backend.js';
 import {
   itemDirectory, manifestBytes, resourceBackend,
@@ -129,6 +129,59 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const [row] = (await client.query<DraftRow>(`DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name])).rows;
       return row && draftRow(row);
     }),
+    templateWorkingCopies: () => withTenant(db, tenantId, async (client) =>
+      (await client.query<CopyRow>(`SELECT ${COPY_COLUMNS} FROM template_working_copies WHERE tenant_id = $1`, [tenantId])).rows.map(copyRow)),
+    templateWorkingCopy: (name) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<CopyRow>(`SELECT ${COPY_COLUMNS} FROM template_working_copies WHERE tenant_id = $1 AND name = $2`, [tenantId, name])).rows;
+      return row && copyRow(row);
+    }),
+    async createTemplateWorkingCopy({ name, baseRevision, bytes }, { updatedBy, now }) {
+      const sha256 = await blobs.put(tenantId, bytes);
+      return withTenant(db, tenantId, async (client) => {
+        await lockTenant(client, tenantId);
+        const [row] = (await client.query<CopyRow>(`INSERT INTO template_working_copies (tenant_id, name, base_revision, sha256, byte_length, created_at, updated_at, updated_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $6, $7) ON CONFLICT (tenant_id, name) DO NOTHING RETURNING ${COPY_COLUMNS}`,
+        [tenantId, name, baseRevision ?? null, sha256, bytes.length, now, updatedBy])).rows;
+        return row && copyRow(row);
+      });
+    },
+    async saveTemplateWorkingCopy(name, expectedSha256, bytes, { updatedBy, now }) {
+      const sha256 = await blobs.put(tenantId, bytes);
+      return withTenant(db, tenantId, async (client) => {
+        await lockTenant(client, tenantId);
+        const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM template_working_copies WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+        if (!current) return undefined;
+        if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+        const [row] = (await client.query<CopyRow>(`UPDATE template_working_copies SET sha256 = $3, byte_length = $4, updated_at = $5, updated_by = $6
+          WHERE tenant_id = $1 AND name = $2 RETURNING ${COPY_COLUMNS}`, [tenantId, name, sha256, bytes.length, now, updatedBy])).rows;
+        return { saved: copyRow(row!) };
+      });
+    },
+    deleteTemplateWorkingCopy: (name) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const [row] = (await client.query<CopyRow>(`DELETE FROM template_working_copies WHERE tenant_id = $1 AND name = $2 RETURNING ${COPY_COLUMNS}`, [tenantId, name])).rows;
+      return row && copyRow(row);
+    }),
+    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now }) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const [copy] = (await client.query<{ base_revision: number | null; sha256: string; byte_length: string }>(
+        'SELECT base_revision, sha256, byte_length FROM template_working_copies WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+      if (!copy) return undefined;
+      if (copy.sha256 !== expectedSha256) return { stale: copy.sha256 };
+      const [current] = (await client.query<{ current_revision: number; sha256: string }>(`SELECT t.current_revision, r.sha256 FROM templates t
+        JOIN template_revisions r ON r.tenant_id = t.tenant_id AND r.name = t.name AND r.revision = t.current_revision WHERE t.tenant_id = $1 AND t.name = $2`, [tenantId, name])).rows;
+      if (current && copy.base_revision !== current.current_revision && !overwrite) return { conflict: { currentRevision: current.current_revision } };
+      await client.query('DELETE FROM template_working_copies WHERE tenant_id = $1 AND name = $2', [tenantId, name]);
+      if (current?.sha256 === copy.sha256) return { status: 'unchanged' as const, revision: current.current_revision, sha256: copy.sha256 };
+      const { next } = (await client.query<{ next: number }>(
+        'SELECT coalesce(max(revision), 0) + 1 AS next FROM template_revisions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows[0]!;
+      await client.query(`INSERT INTO template_revisions (tenant_id, name, revision, sha256, byte_length, pushed_by, created_at, source)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'web')`, [tenantId, name, next, copy.sha256, copy.byte_length, pushedBy, now]);
+      await client.query(`INSERT INTO templates (tenant_id, name, current_revision) VALUES ($1, $2, $3)
+        ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision`, [tenantId, name, next]);
+      await pointTemplate(client, tenantId, name, { sha256: copy.sha256, byteLength: Number(copy.byte_length) });
+      return { status: 'saved' as const, revision: next, sha256: copy.sha256 };
+    }),
     publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
@@ -145,6 +198,13 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
     }),
   };
 }
+
+interface CopyRow { name: string; base_revision: number | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
+const COPY_COLUMNS = 'name, base_revision, sha256, byte_length, created_at, updated_at, updated_by';
+const copyRow = (row: CopyRow): TemplateWorkingCopy => ({
+  name: row.name, ...(row.base_revision === null ? {} : { baseRevision: row.base_revision }), sha256: row.sha256, byteLength: Number(row.byte_length),
+  createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
+});
 
 interface DraftRow { name: string; base_version: number | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
 const DRAFT_COLUMNS = 'name, base_version, sha256, byte_length, created_at, updated_at, updated_by';
@@ -170,10 +230,10 @@ async function pointTemplate(client: DbClient, tenantId: string, name: string, c
 async function authoringState(client: DbClient, tenantId: string): Promise<AuthoringState> {
   const documents = await storedDocuments(client, tenantId);
   const revisions = new Map<string, TemplateRevision[]>();
-  for (const row of (await client.query<{ name: string; revision: number; sha256: string; byte_length: string; pushed_by: string; created_at: Date }>(
-    'SELECT name, revision, sha256, byte_length, pushed_by, created_at FROM template_revisions WHERE tenant_id = $1 ORDER BY revision', [tenantId])).rows) {
+  for (const row of (await client.query<{ name: string; revision: number; sha256: string; byte_length: string; pushed_by: string; created_at: Date; source: TemplateRevision['source'] }>(
+    'SELECT name, revision, sha256, byte_length, pushed_by, created_at, source FROM template_revisions WHERE tenant_id = $1 ORDER BY revision', [tenantId])).rows) {
     const list = revisions.get(row.name) ?? [];
-    list.push({ revision: row.revision, sha256: row.sha256, byteLength: Number(row.byte_length), createdAt: new Date(row.created_at).toISOString(), pushedBy: row.pushed_by });
+    list.push({ revision: row.revision, sha256: row.sha256, byteLength: Number(row.byte_length), createdAt: new Date(row.created_at).toISOString(), pushedBy: row.pushed_by, source: row.source });
     revisions.set(row.name, list);
   }
   const templates = (await client.query<{ name: string; current_revision: number }>(

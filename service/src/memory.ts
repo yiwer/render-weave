@@ -8,7 +8,7 @@ import {
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
   type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
-  type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
+  type TemplateRevision, type TemplateWorkingCopy, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
   type ClaimedDelivery, type Webhook, type WebhookAttempt, type WebhookDelivery, type WebhookEventType,
 } from './backend.js';
 import { batchFinishedEvent, batchManifest, NOT_STARTED, notRunItem } from './batches.js';
@@ -537,6 +537,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
   const documents = new Map<string, { sha256: string; byteLength: number }>();
   const templates = new Map<string, { current: number; revisions: TemplateRevision[] }>();
   const drafts = new Map<string, DefinitionDraft>();
+  const workingCopies = new Map<string, TemplateWorkingCopy>();
   let resources: readonly ResourceManifestEntry[] = [];
   const batches = new Map<string, MemoryBatch>();
   /** 资源提交、推送与改当前修订依次进行，与 PostgreSQL 后端锁住租户的一行相同。 */
@@ -619,7 +620,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       for (const { name, sha256, byteLength } of writes.templates) {
         const row = templates.get(name) ?? { current: 0, revisions: [] };
         const revision = Math.max(0, ...row.revisions.map((item) => item.revision)) + 1;
-        row.revisions.push({ revision, sha256, byteLength, createdAt: now.toISOString(), pushedBy });
+        row.revisions.push({ revision, sha256, byteLength, createdAt: now.toISOString(), pushedBy, source: 'push' });
         row.current = revision;
         templates.set(name, row);
         documents.set(documentSource('template', name), { sha256, byteLength });
@@ -670,6 +671,45 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       const current = drafts.get(name);
       drafts.delete(name);
       return current;
+    }),
+    templateWorkingCopies: async () => [...workingCopies.values()],
+    templateWorkingCopy: async (name) => workingCopies.get(name),
+    createTemplateWorkingCopy: ({ name, baseRevision, bytes }, { updatedBy, now }) => exclusive(async () => {
+      if (workingCopies.has(name)) return undefined;
+      const at = now.toISOString();
+      const copy: TemplateWorkingCopy = { name, ...(baseRevision === undefined ? {} : { baseRevision }), sha256: put(bytes), byteLength: bytes.length, createdAt: at, updatedAt: at, updatedBy };
+      workingCopies.set(name, copy);
+      return copy;
+    }),
+    saveTemplateWorkingCopy: (name, expectedSha256, bytes, { updatedBy, now }) => exclusive(async () => {
+      const current = workingCopies.get(name);
+      if (!current) return undefined;
+      if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+      const saved: TemplateWorkingCopy = { ...current, sha256: put(bytes), byteLength: bytes.length, updatedAt: now.toISOString(), updatedBy };
+      workingCopies.set(name, saved);
+      return { saved };
+    }),
+    deleteTemplateWorkingCopy: (name) => exclusive(async () => {
+      const current = workingCopies.get(name);
+      workingCopies.delete(name);
+      return current;
+    }),
+    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now }) => exclusive(async () => {
+      const copy = workingCopies.get(name);
+      if (!copy) return undefined;
+      if (copy.sha256 !== expectedSha256) return { stale: copy.sha256 };
+      const row = templates.get(name);
+      if (row && copy.baseRevision !== row.current && !overwrite) return { conflict: { currentRevision: row.current } };
+      workingCopies.delete(name);
+      const current = row?.revisions.find((item) => item.revision === row.current);
+      if (row && current?.sha256 === copy.sha256) return { status: 'unchanged' as const, revision: row.current, sha256: copy.sha256 };
+      const target = row ?? { current: 0, revisions: [] };
+      const revision = Math.max(0, ...target.revisions.map((item) => item.revision)) + 1;
+      target.revisions.push({ revision, sha256: copy.sha256, byteLength: copy.byteLength, createdAt: now.toISOString(), pushedBy, source: 'web' });
+      target.current = revision;
+      templates.set(name, target);
+      documents.set(documentSource('template', name), { sha256: copy.sha256, byteLength: copy.byteLength });
+      return { status: 'saved' as const, revision, sha256: copy.sha256 };
     }),
     publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => exclusive(async () => {
       const current = drafts.get(name);

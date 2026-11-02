@@ -108,6 +108,41 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 回退没有单独的端点：从旧版本另起草案（`fromVersion`），再发布成新版本。旧版本不变。
 
+## 模板工作副本
+
+工作副本是一个模板还没保存的那一份（1.5.0）。每个模板至多一份，记它基于哪个修订。暂存不影响当前修订，出图照旧读当前修订。客户管理员用 `/v1/templates/{name}…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/templates/{name}…`，同一组操作；客户操作员与 API 密钥只读。
+
+| 操作 | 端点 | 说明 |
+|---|---|---|
+| 列出 | `GET /v1/template-working-copies` | 本租户全部工作副本，含复制出来还没保存的新模板 |
+| 新建 | `POST /v1/templates/{name}/working-copy` | 从当前修订新建，记基准修订。已有工作副本答 409 `input.duplicate` |
+| 读取 | `GET …/working-copy` | 登记信息与 `content`：原文，与暂存时逐字节相同 |
+| 暂存 | `PUT …/working-copy?expectedSha256=…` | 请求体是模板的 JSON 原文，整份替换。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256` |
+| 检查 | `GET …/working-copy/check` | 只读：`problems` 是模板静态检查的问题，`changes` 是当前修订到工作副本的结构化差异；基准不是当前修订时另有 `conflict` |
+| 保存 | `POST …/working-copy/save` | 请求体 `{ "expectedSha256": "…", "overwrite": false }`，见下 |
+| 丢弃 | `DELETE …/working-copy` | 当前修订不受影响 |
+| 复制为新模板 | `POST /v1/templates/{name}/copies` | 请求体 `{ "name": "新名称" }`。内容与基准数据定义取当前修订，成为没有基准修订的工作副本。名称已有模板或工作副本答 409 |
+| 修订历史 | `GET /v1/templates/{name}/revisions` | 修订号、主体、时间与来源（`push`、`web`） |
+| 指回旧修订 | `POST /v1/template-current` | 请求体 `{ "template": "…", "revision": 1 }`，客户管理员；代建工程师用原来的 `…/template-current` |
+
+**保存**按顺序核对：
+
+1. 预期哈希不是当前内容，答 409 `draft.stale`。
+2. 模板静态检查有严重问题，答 400，问题清单同 `check`。
+3. 基准修订不是当前修订，答 409 `template.revisionConflict`，`conflict` 带 `baseRevision`、`currentRevision`、`ours`（基准到工作副本）与 `theirs`（基准到当前修订）。看过之后带 `overwrite: true` 才覆盖。
+
+通过之后记新修订（来源 `web`），当前修订指向它，删除工作副本，回答 `status: "saved"`。内容与当前修订字节相同时不记修订，回答 `status: "unchanged"`，工作副本照样删除。
+
+**用工作副本预览**：`POST /v1/previews?workingCopies=true`，请求体不变，检查与限制也都一样。有工作副本的模板全部用工作副本，复制出来还没保存的新模板也能预览。不带这个参数时照旧读当前修订。
+
+**元素定位**：预览回答多一个可选的 `elements`，列出会显示的元素实例：
+
+```json
+{ "elements": [ { "path": "标准线路单边/站点面板/站点列[3]/站名", "source": { "template": "停靠站点", "path": "停靠站点/站名" } } ] }
+```
+
+`path` 与布局摘要里的元素路径相同，带调用链与循环序号。`source` 是这个元素所在的模板文档与它在文档里的路径。页面按布局摘要的元素框命中，再按 `source` 打开模板文档里的位置。
+
 ## Excel 导入
 
 一批简单数据（如几百张价签）可以从 Excel 导入，一行一个渲染项（M283–M286）。导入只做预览，确认后再提交批次。
@@ -253,6 +288,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.5.0 | 2026-11-01 | 模板工作副本（P1 票据 07，M346、M352）：新增 `GET /v1/template-working-copies`，`POST`、`GET`、`PUT`、`DELETE /v1/templates/{name}/working-copy`，`GET …/working-copy/check`，`POST …/working-copy/save`，`POST /v1/templates/{name}/copies`，`GET /v1/templates/{name}/revisions`，代建端点是同一组操作；`POST /v1/template-current` 把指回旧修订开放给客户管理员；`POST /v1/previews` 与代建预览加可选的 `workingCopies=true`，回答加可选的 `elements`（元素定位）；修订加 `source`；问题码 `template.revisionConflict`（409，回答带 `conflict`） | 兼容，只做加法 |
 | 1.4.0 | 2026-11-01 | 发布数据定义草案（P1 票据 05，M346）：新增 `POST …/definitions/{name}/draft/publish-check` 与 `POST …/draft/publish`，客户端点与代建端点各一组；问题码 `draft.versionTaken`（409） | 兼容，只做加法 |
 | 1.3.0 | 2026-11-01 | 平台管理页的汇总（P1 票据 12）：新增 `GET /v1/platform/overview`，服务健康（就绪、worker 报到数与构建、队列积压）与每个租户的套餐、本月用量和启用的成员数，记进每个租户的审计（`overview.read`） | 兼容，只做加法 |
 | 1.2.0 | 2026-11-01 | 数据定义草案（P1 票据 04，M345、M346、M351）：新增 `GET /v1/definitions`，`POST`、`GET`、`PUT`、`DELETE /v1/definitions/{name}/draft`，`GET …/draft/check`，代建端点 `/v1/authoring/tenants/{tenantId}/definitions…` 是同一组操作；问题码 `draft.stale`（409，回答带 `currentSha256`）；权限矩阵加 `definitions.write`、`templates.write`、`authoring.publish`、`authoring.approve`、`authoring.policy` | 兼容，只做加法 |

@@ -7,7 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Plan, StoredDocument, TaskResult, TenantScope } from '../backend.js';
 import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem, type RenderMeasure } from '../engine.js';
-import { loadTenantWorkspace } from '../preview.js';
+import { loadTenantWorkspace, withWorkingCopies } from '../preview.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
 import { ApiError, fail, notFound, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
 
@@ -65,7 +65,12 @@ export interface PreviewReply {
   readonly image?: { readonly format: 'png' | 'jpeg'; readonly widthPx: number; readonly heightPx: number; readonly dpi: number; readonly base64: string };
   readonly problems: TaskResult['problems'];
   readonly layout?: TaskResult['layout'];
+  readonly elements?: TaskResult['elements'];
 }
+
+/** 用工作副本预览的查询参数（P1 票据 07）。 */
+export const PREVIEW_QUERY = { querystring: { type: 'object', additionalProperties: false, properties: { workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' } } } } as const;
+export const previewOptions = (query: unknown) => ({ workingCopies: (query as { workingCopies?: string }).workingCopies === 'true' });
 
 /**
  * 引用的已保存数据集超出字节上限时的问题；documents 是租户的文档清单（一个请求读一次，批次的各项共用），source 是请求里数据集的位置。
@@ -94,8 +99,8 @@ export function measureLimitProblems(limits: ServiceLimits, plan: Plan, measure:
   };
 }
 
-/** 一次草稿预览：检查、入队、等结果。客户与代建工程师的端点都走这里。 */
-export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown): Promise<PreviewReply> {
+/** 一次草稿预览：检查、入队、等结果。客户与代建工程师的端点都走这里。workingCopies 时用工作副本，检查与限制都一样。 */
+export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown, options: { readonly workingCopies: boolean } = { workingCopies: false }): Promise<PreviewReply> {
   const { limits, now } = context;
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw fail(400, ServiceProblemCodes.requestInvalid, 'request.body', '预览请求必须是 JSON 对象');
   const input = body as Record<string, unknown>;
@@ -107,14 +112,15 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   const dataset = datasetLimitProblems(limits, (await scope.storage.authoringState()).documents, input['dataset'], 'request.dataset');
   if (dataset.length) throw new ApiError(413, dataset);
 
-  const measured = measureRender(await loadTenantWorkspace(scope.storage), request);
+  const workspace = await loadTenantWorkspace(scope.storage);
+  const measured = measureRender(options.workingCopies ? await withWorkingCopies(scope.storage, workspace) : workspace, request);
   if (!measured.measure) return { problems: measured.problems };
   const plan = await scope.plan();
   const { pixels, expansion } = measureLimitProblems(limits, plan, measured.measure, 'request');
   if (pixels.length) throw new ApiError(413, pixels);
   if (expansion.length) throw new ApiError(413, expansion);
 
-  const queued = await scope.tasks.enqueuePreview(request, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
+  const queued = await scope.tasks.enqueuePreview(options.workingCopies ? { ...request, workingCopies: true } : request, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
   if ('limited' in queued) {
     throw fail(429, ServiceProblemCodes.previewRateLimited, 'request', queued.limited === 'concurrency'
       ? `本租户同时进行的预览已达并发上限 ${plan.concurrency} 个，请等前面的完成`
@@ -141,6 +147,7 @@ function reply(result: TaskResult): PreviewReply {
     ...(image ? { image: { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi, base64: Buffer.from(image.bytes).toString('base64') } } : {}),
     problems: result.problems,
     ...(result.layout ? { layout: result.layout } : {}),
+    ...(result.elements ? { elements: result.elements } : {}),
   };
 }
 
@@ -172,5 +179,5 @@ export function registerPreviewRoutes(app: FastifyInstance, context: ApiContext)
     return found;
   });
 
-  app.post('/v1/previews', { config: { access: 'preview' }, bodyLimit: limits.maxRequestBytes }, async (request) => runPreview(context, scopeOf(request), request.body));
+  app.post('/v1/previews', { config: { access: 'preview' }, bodyLimit: limits.maxRequestBytes, schema: PREVIEW_QUERY }, async (request) => runPreview(context, scopeOf(request), request.body, previewOptions(request.query)));
 }

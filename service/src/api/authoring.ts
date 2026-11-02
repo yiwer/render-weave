@@ -7,15 +7,15 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { auditDiff } from '../audit.js';
-import { documentSource, type AuditContent, type AuthoringState, type NewAuditEvent, type PushWrites, type TenantScope } from '../backend.js';
+import { type AuditContent, type AuthoringState, type NewAuditEvent, type PushWrites, type TenantScope } from '../backend.js';
 import {
   checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushAuditDiff, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
   type PushDiff, type PushManifest,
 } from '../push.js';
 import { actorOf, forbidden, identityOf, type ApiContext } from './app.js';
 import { registerDefinitionRoutes } from './definitions.js';
-import { runPreview } from './previews.js';
+import { registerWorkingCopyRoutes, SET_CURRENT_SCHEMA, setCurrentTemplate } from './template-copies.js';
+import { PREVIEW_QUERY, previewOptions, runPreview } from './previews.js';
 import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
 /** 单份上传内容的上限；思源黑体一类的中文字体约 16 MB。 */
@@ -117,31 +117,19 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
     });
 
     /** 用被指定租户的身份看草稿预览（票据 06）：与客户的预览同一套检查与限制。 */
-    scope.post('/v1/authoring/tenants/:tenantId/previews', { config: { access: 'authoring.preview' }, bodyLimit: context.limits.maxRequestBytes }, async (request) => {
+    scope.post('/v1/authoring/tenants/:tenantId/previews', { config: { access: 'authoring.preview' }, bodyLimit: context.limits.maxRequestBytes, schema: PREVIEW_QUERY }, async (request) => {
       const template = (request.body as { template?: unknown } | null)?.template;
       await audit(request, 'authoring.preview', { type: 'template', id: typeof template === 'string' ? template : '' });
-      return runPreview(context, target(request), request.body);
+      return runPreview(context, target(request), request.body, previewOptions(request.query));
     });
 
     /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订；审计记改前改后两个修订的内容哈希。 */
-    scope.post('/v1/authoring/tenants/:tenantId/template-current', {
-      config: { access: 'authoring.push' },
-      schema: { body: { type: 'object', required: ['template', 'revision'], additionalProperties: false,
-        properties: { template: { type: 'string', minLength: 1, maxLength: 500 }, revision: { type: 'integer', minimum: 1 } } } },
-    }, async (request) => {
-      const { template, revision } = request.body as { template: string; revision: number };
-      const updated = await target(request).storage.setCurrentTemplate(template, revision);
-      if (!updated) throw notFound();
-      const sha256Of = (number: number) => updated.template.revisions.find((item) => item.revision === number)!.sha256;
-      const beforeSha256 = sha256Of(updated.previousRevision), afterSha256 = sha256Of(revision);
-      await audit(request, 'template.setCurrent', { type: 'template', id: template }, {
-        beforeSha256, afterSha256,
-        diff: auditDiff(beforeSha256 === afterSha256 ? [] : [{ path: documentSource('template', template), change: 'changed', beforeSha256, afterSha256 }]),
-      });
-      return sortedState({ documents: [], templates: [updated.template], resources: [] }).templates[0];
-    });
+    scope.post('/v1/authoring/tenants/:tenantId/template-current', { config: { access: 'authoring.push' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request) =>
+      setCurrentTemplate(target(request), request.body, (object, content) => audit(request, 'template.setCurrent', object, content)));
 
-    registerDefinitionRoutes(scope, context, { prefix: '/v1/authoring/tenants/:tenantId', read: 'authoring.read', scopeOf: target, crossTenant: true });
+    const addressing = { prefix: '/v1/authoring/tenants/:tenantId', read: 'authoring.read', scopeOf: target, crossTenant: true } as const;
+    registerDefinitionRoutes(scope, context, addressing);
+    registerWorkingCopyRoutes(scope, context, addressing);
   });
 }
 
