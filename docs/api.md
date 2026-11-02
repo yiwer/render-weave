@@ -81,6 +81,8 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 | 读取 | `GET …/draft` | 登记信息与 `content`：原文，与保存时逐字节相同，它的 SHA-256 就是 `sha256` |
 | 保存 | `PUT …/draft?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
 | 校验与编译预览 | `GET …/draft/check` | 只读，见下 |
+| 发布预检 | `POST …/draft/publish-check` | 请求体 `{ "expectedSha256": "…" }`，只读，见下 |
+| 发布 | `POST …/draft/publish` | 同样的请求体。得到下一个静态数据定义，产物与本地 `renderweave publish` 逐字节相同，然后删除草案。严重问题答 400，问题码与本地发布相同；预期哈希不是当前内容答 409 `draft.stale`；版本刚被别的发布或推送占用答 409 `draft.versionTaken`，什么也没写，重新发布 |
 | 删除 | `DELETE …/draft` | 静态版本不受影响 |
 
 保存只要求请求体是 UTF-8 的 JSON 对象、`name` 与路径一致、数值不超过 15 位有效数字，还没写完的草案也能存。名称是身份，不能在草案里改；要换名称就新建一份。草案不进工作区，渲染、数据集与模板都看不到它。
@@ -96,6 +98,15 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 - `problems` 定位到字段，与发布走同一入口：写了不对的版本号、引用的静态数据定义不存在，这里都报。
 - 没有严重问题时另有 `version`（发布后的版本号）与 `compiled`（编译产物 JSON Schema，与发布的产物相同）。
 - `affectedBindings` 列出与基于的版本相比被删除的字段，改字段名称等于删一个、加一个。`templates` 是当前修订读到这个字段的模板，经过引用读到的也算（`nextStop.landmark` 算用到停靠站点的 `landmark`）。
+
+发布预检回答这些字段，有严重问题时只有 `sha256`、`baseVersion` 与 `problems`：
+
+- `version`：发布后的版本号。
+- `diff`：与基于版本的字段级差异，结构同引擎的 `diffDefinition`。新名称没有基准，字段全算新增。
+- `datasets`：绑定基于版本的数据集按 ID 排序，逐份按新编译产物校验。`total` 是总份数，`checked` 是校验了几份，`mismatched` 是会失配的份数，`samples` 是前 20 份的问题摘要。超过 1,000 份只校验前 1,000 份，`complete` 为 `false`，标为未全部核对。
+- `templates`：基准是这个名称的模板。发布不改动它们，它们照旧绑定各自的版本。
+
+回退没有单独的端点：从旧版本另起草案（`fromVersion`），再发布成新版本。旧版本不变。
 
 ## Excel 导入
 
@@ -242,6 +253,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.4.0 | 2026-11-01 | 发布数据定义草案（P1 票据 05，M346）：新增 `POST …/definitions/{name}/draft/publish-check` 与 `POST …/draft/publish`，客户端点与代建端点各一组；问题码 `draft.versionTaken`（409） | 兼容，只做加法 |
 | 1.3.0 | 2026-11-01 | 平台管理页的汇总（P1 票据 12）：新增 `GET /v1/platform/overview`，服务健康（就绪、worker 报到数与构建、队列积压）与每个租户的套餐、本月用量和启用的成员数，记进每个租户的审计（`overview.read`） | 兼容，只做加法 |
 | 1.2.0 | 2026-11-01 | 数据定义草案（P1 票据 04，M345、M346、M351）：新增 `GET /v1/definitions`，`POST`、`GET`、`PUT`、`DELETE /v1/definitions/{name}/draft`，`GET …/draft/check`，代建端点 `/v1/authoring/tenants/{tenantId}/definitions…` 是同一组操作；问题码 `draft.stale`（409，回答带 `currentSha256`）；权限矩阵加 `definitions.write`、`templates.write`、`authoring.publish`、`authoring.approve`、`authoring.policy` | 兼容，只做加法 |
 | 1.1.0 | 2026-10-27 | 审计补代建写入的内容（P1 票据 03，M347）：`AuditEvent` 加可选的 `beforeSha256`、`afterSha256`、`diff`（增删改计数加至多 50 个路径，各带前后内容哈希）、`round`、`reason`；`GET /v1/audit-events` 加可选的 `actorKind`、`from`、`to` 筛选；新增 `GET /v1/audit-events/export.csv` 按同样的筛选导出 | 兼容，只做加法 |

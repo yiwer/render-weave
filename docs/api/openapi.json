@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -1070,6 +1070,164 @@
           },
           "404": {
             "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/definitions/{name}/draft/publish": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdDefinitionsNameDraftPublish",
+        "tags": [
+          "代建"
+        ],
+        "summary": "把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同",
+        "description": "严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。",
+        "x-access": "authoring.publish",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "expectedSha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "expectedSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionPublished"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/definitions/{name}/draft/publish-check": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdDefinitionsNameDraftPublishCheck",
+        "tags": [
+          "代建"
+        ],
+        "summary": "发布预检，不写任何东西：字段级差异、按新版会失配的数据集份数、基准是这个名称的模板",
+        "description": "绑定基于版本的数据集按 ID 排序逐份校验，超过 1,000 份只校验前面的，datasets.complete 为 false。",
+        "x-access": "authoring.publish",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "expectedSha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "expectedSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionPublishCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
           }
         }
       }
@@ -2802,6 +2960,144 @@
           },
           "404": {
             "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/definitions/{name}/draft/publish": {
+      "post": {
+        "operationId": "postV1DefinitionsNameDraftPublish",
+        "tags": [
+          "数据定义"
+        ],
+        "summary": "把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同",
+        "description": "严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。",
+        "x-access": "authoring.publish",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "expectedSha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "expectedSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionPublished"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/definitions/{name}/draft/publish-check": {
+      "post": {
+        "operationId": "postV1DefinitionsNameDraftPublishCheck",
+        "tags": [
+          "数据定义"
+        ],
+        "summary": "发布预检，不写任何东西：字段级差异、按新版会失配的数据集份数、基准是这个名称的模板",
+        "description": "绑定基于版本的数据集按 ID 排序逐份校验，超过 1,000 份只校验前面的，datasets.complete 为 false。",
+        "x-access": "authoring.publish",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "expectedSha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "expectedSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionPublishCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
           }
         }
       }
@@ -7376,6 +7672,170 @@
             "description": "会影响绑定的字段"
           }
         }
+      },
+      "DefinitionPublishCheck": {
+        "type": "object",
+        "required": [
+          "sha256",
+          "problems"
+        ],
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "预检的是这份内容"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "基于的静态版本；新名称没有"
+          },
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "问题清单；有严重问题时发布会被拒绝，下面的字段都没有"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "发布后的版本号"
+          },
+          "diff": {
+            "type": "object",
+            "description": "与基于版本的字段级差异：definition 是数据定义自身的改动，fields 是逐字段的增删改与属性键，order 是字段顺序的变化",
+            "additionalProperties": true
+          },
+          "datasets": {
+            "type": "object",
+            "required": [
+              "total",
+              "checked",
+              "complete",
+              "mismatched",
+              "samples"
+            ],
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "绑定基于版本的数据集份数"
+              },
+              "checked": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "这次校验了几份"
+              },
+              "complete": {
+                "type": "boolean",
+                "description": "false：超过上限，只校验了前面的，未全部核对"
+              },
+              "mismatched": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "校验的这些里，按新版会失配的份数"
+              },
+              "samples": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "problemCount",
+                    "problems"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "数据集 ID"
+                    },
+                    "problemCount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "严重问题数"
+                    },
+                    "problems": {
+                      "$ref": "#/components/schemas/ProblemList",
+                      "description": "至多 5 条"
+                    }
+                  }
+                },
+                "description": "前 20 份失配的问题摘要"
+              }
+            }
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "base"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "模板名称"
+                },
+                "base": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "version"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "静态数据定义名称"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "版本"
+                    }
+                  },
+                  "description": "模板绑定的版本"
+                }
+              }
+            },
+            "description": "基准是这个名称的模板；发布不改动它们"
+          }
+        },
+        "description": "发布预检（1.4.0）"
+      },
+      "DefinitionPublished": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "definitionSha256",
+          "compiledSha256"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "数据定义名称"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "新版本"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "基于的静态版本；新名称没有"
+          },
+          "definitionSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "静态数据定义原文的 SHA-256"
+          },
+          "compiledSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "编译产物的 SHA-256"
+          }
+        },
+        "description": "发布的结果（1.4.0）"
       },
       "DatasetDocument": {
         "$id": "urn:renderweave:dsl:1:dataset",

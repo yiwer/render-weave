@@ -395,6 +395,13 @@ export interface DefinitionDraft {
   readonly updatedBy: string;
 }
 
+/** 发布草案要登记的两份内容：键是"名称@版本"。 */
+export interface PublishedDraft {
+  readonly key: string;
+  readonly definition: { readonly sha256: string; readonly byteLength: number };
+  readonly compiled: { readonly sha256: string; readonly byteLength: number };
+}
+
 /** 写草案的主体与时间。 */
 export interface DraftWriter {
   readonly updatedBy: string;
@@ -440,6 +447,11 @@ export interface TenantStorage {
     Promise<{ readonly saved: DefinitionDraft } | { readonly stale: string } | undefined>;
   /** 删除草案，答删掉的那一份；没有时 undefined。 */
   deleteDefinitionDraft(name: string): Promise<DefinitionDraft | undefined>;
+  /**
+   * 发布草案（P1 票据 05，M346）：在一个事务里登记静态数据定义的原文与编译产物，再删除草案。内容已先写进本租户的内容。
+   * 草案的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这份草案时 undefined。
+   */
+  publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
   /**
    * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
    * 与推送、资源提交依次进行。

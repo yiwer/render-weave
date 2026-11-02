@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.3.0';
+export const API_VERSION = '1.4.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -42,6 +42,7 @@ export const PROBLEM_STATUS: Readonly<Record<ServiceProblemCode, readonly number
   [ServiceProblemCodes.pushContentMissing]: [400],
   [ServiceProblemCodes.pushContentMismatch]: [400],
   [ServiceProblemCodes.draftStale]: [409],
+  [ServiceProblemCodes.draftVersionTaken]: [409],
   [ServiceProblemCodes.limitRequestTooLarge]: [413],
   [ServiceProblemCodes.limitDatasetTooLarge]: [413],
   [ServiceProblemCodes.limitPixelsExceeded]: [413],
@@ -249,6 +250,23 @@ const SCHEMAS: Record<string, unknown> = {
     }), '会影响绑定的字段'),
   }, ['sha256', 'problems', 'affectedBindings']),
 
+  DefinitionPublishCheck: object({
+    sha256: { ...sha256, description: '预检的是这份内容' }, baseVersion: int('基于的静态版本；新名称没有', 1),
+    problems: { ...ref('ProblemList'), description: '问题清单；有严重问题时发布会被拒绝，下面的字段都没有' },
+    version: int('发布后的版本号', 1),
+    diff: freeform('与基于版本的字段级差异：definition 是数据定义自身的改动，fields 是逐字段的增删改与属性键，order 是字段顺序的变化'),
+    datasets: object({
+      total: int('绑定基于版本的数据集份数'), checked: int('这次校验了几份'), complete: { type: 'boolean', description: 'false：超过上限，只校验了前面的，未全部核对' },
+      mismatched: int('校验的这些里，按新版会失配的份数'),
+      samples: array(object({ id: str('数据集 ID'), problemCount: int('严重问题数'), problems: { ...ref('ProblemList'), description: '至多 5 条' } }), '前 20 份失配的问题摘要'),
+    }),
+    templates: array(object({ name: str('模板名称'), base: { ...staticSchemaRef, description: '模板绑定的版本' } }), '基准是这个名称的模板；发布不改动它们'),
+  }, ['sha256', 'problems'], { description: '发布预检（1.4.0）' }),
+  DefinitionPublished: object({
+    name: str('数据定义名称'), version: int('新版本', 1), baseVersion: int('基于的静态版本；新名称没有', 1),
+    definitionSha256: { ...sha256, description: '静态数据定义原文的 SHA-256' }, compiledSha256: { ...sha256, description: '编译产物的 SHA-256' },
+  }, ['name', 'version', 'definitionSha256', 'compiledSha256'], { description: '发布的结果（1.4.0）' }),
+
   // 数据集与资源
   DatasetDocument: dslSchema('dataset.schema.json'),
   StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str() },
@@ -395,6 +413,11 @@ function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
       description: '按原始字节存。只要求是 UTF-8 的 JSON 对象、name 与路径一致，还没写完的草案也能存；问题由校验回答。', replies: [ok(ref('DefinitionDraft'))] },
     [`GET ${draft}/check`]: { tag, summary: '校验草案并预览编译产物，不写任何东西；列出与基于的版本相比会影响绑定的字段与用到它们的模板', replies: [ok(ref('DefinitionDraftCheck'))] },
     [`DELETE ${draft}`]: { tag, summary: '删除草案', replies: [none('已删除')] },
+    [`POST ${draft}/publish-check`]: { tag, summary: '发布预检，不写任何东西：字段级差异、按新版会失配的数据集份数、基准是这个名称的模板', errors: [409],
+      description: '绑定基于版本的数据集按 ID 排序逐份校验，超过 1,000 份只校验前面的，datasets.complete 为 false。', replies: [ok(ref('DefinitionPublishCheck'))] },
+    [`POST ${draft}/publish`]: { tag, summary: '把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同', errors: [409],
+      description: '严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。',
+      replies: [created(ref('DefinitionPublished'))] },
   };
 }
 

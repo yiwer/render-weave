@@ -20,6 +20,8 @@ export const ServiceProblemCodes = {
   pushContentMismatch: 'push.contentMismatch',
   /** 数据定义草案（P1 票据 04，M346）：保存时带的预期哈希不是当前内容，别人先保存了（409，回答带 currentSha256）。 */
   draftStale: 'draft.stale',
+  /** 发布草案（P1 票据 05）：算好下一版本之后，这个版本被别的发布或推送先写了（409），重新发布就会用再下一个版本。 */
+  draftVersionTaken: 'draft.versionTaken',
   /** 入队前的限制（ADR-0017，票据 06）：超限直接拒绝（413），不占 worker。 */
   limitRequestTooLarge: 'limit.requestTooLarge',
   limitDatasetTooLarge: 'limit.datasetTooLarge',

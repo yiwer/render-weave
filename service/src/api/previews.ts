@@ -39,6 +39,8 @@ export interface ServiceLimits {
   readonly maxImportRows: number;
   /** 各行引用展开的行数合计（几行共用一个关联值时重复计）：1,000 行各 50 个站点。 */
   readonly maxImportReferenceRows: number;
+  /** 发布预检逐份校验的数据集数（M346）：超过时只校验前这么多份，标为未全部核对。 */
+  readonly publishCheckDatasets: number;
 }
 
 export const DEFAULT_LIMITS: ServiceLimits = {
@@ -55,6 +57,7 @@ export const DEFAULT_LIMITS: ServiceLimits = {
   maxWorkbookCells: 500_000,
   maxImportRows: 1_000,
   maxImportReferenceRows: 50_000,
+  publishCheckDatasets: 1_000,
 };
 
 /** 预览的回答：引擎的结果，图片以 base64 放进 JSON。 */

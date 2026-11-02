@@ -286,7 +286,9 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **不进工作区**：草案不在 `workspace_documents` 里，渲染、数据集校验、模板列表与推送的差异都看不到它，发布（票据 05）之后才成为静态数据定义。推送不碰草案。
 - **校验**：走发布的同一入口 `publishStaticSchema`，所以问题与发布时相同，编译产物也与发布的相同。
 - **会影响绑定**：`diffDefinition` 给出删掉的字段，引擎的 `templateFieldUses` 给出每个模板当前修订读到的字段（绑定、插槽、状态样式、派生变量、检查项、调用的数据与实参，路径沿单引用往下走）。读不了的模板不列。
-- **审计**：`definitionDraft.create`、`definitionDraft.save`、`definitionDraft.delete` 都记前后内容哈希。保存的差异摘要逐字段（`field:字段名称`、`definition:属性`）；有一份读不了时只记整份文档（`definitionDraft:名称`）。代建工程师的读取另记 `authoring.read`，客户成员的读取不记。
+- **发布**（P1 票据 05，M346）：`publishStaticSchema` 得到下一版本，原文与编译产物按本地 `renderweave publish` 的写法存（缩进两格、末尾换行），逐字节相同；再在一个事务里锁住租户行，核对草案哈希与版本没被占用，成对写进 `workspace_documents`，删除草案。推送进来的同名同版本与它依次进行。版本号在事务外算：算的时候要读全部静态数据定义，不占着事务；算完被占用就答 409，什么也不写。
+- **发布预检**：绑定基于版本的数据集按新编译产物逐份校验，至多 `publishCheckDatasets`（缺省 1,000）份，失配的前 20 份各给至多 5 条问题。预检不改动任何东西；模板与数据集都不随发布改绑定（ADR-0008）。
+- **审计**：`definition.publish` 的对象是 `名称@版本`，前哈希是基于版本的原文，后哈希是新版本的原文，差异摘要逐字段。`definitionDraft.create`、`definitionDraft.save`、`definitionDraft.delete` 都记前后内容哈希。保存的差异摘要逐字段（`field:字段名称`、`definition:属性`）；有一份读不了时只记整份文档（`definitionDraft:名称`）。代建工程师的读取另记 `authoring.read`，客户成员的读取不记。
 
 ## 模板与草稿预览
 

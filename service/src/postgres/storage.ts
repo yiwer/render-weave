@@ -129,6 +129,20 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const [row] = (await client.query<DraftRow>(`DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name])).rows;
       return row && draftRow(row);
     }),
+    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+      if (!current) return undefined;
+      if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+      const sources = [documentSource('definition', key), documentSource('compiled', key)];
+      const occupied = await client.query('SELECT 1 FROM workspace_documents WHERE tenant_id = $1 AND source = ANY($2::text[])', [tenantId, sources]);
+      if (occupied.rowCount) return { taken: true as const };
+      for (const [source, content] of [[sources[0]!, definition], [sources[1]!, compiled]] as const) {
+        await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)', [tenantId, source, content.sha256, content.byteLength]);
+      }
+      await client.query('DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name]);
+      return { published: true as const };
+    }),
   };
 }
 

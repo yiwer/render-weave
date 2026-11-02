@@ -671,6 +671,16 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       drafts.delete(name);
       return current;
     }),
+    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => exclusive(async () => {
+      const current = drafts.get(name);
+      if (!current) return undefined;
+      if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+      if (documents.has(documentSource('definition', key)) || documents.has(documentSource('compiled', key))) return { taken: true as const };
+      documents.set(documentSource('definition', key), definition);
+      documents.set(documentSource('compiled', key), compiled);
+      drafts.delete(name);
+      return { published: true as const };
+    }),
   };
 }
 
