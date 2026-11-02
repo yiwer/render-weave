@@ -956,11 +956,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const exported = await downloadBytes(target, () => target.getByRole('menuitem', { name: /导出编译产物/ }).click());
       expect(exported.name).toBe('线路牌-v1.schema.json');
       expect(JSON.parse(exported.bytes.toString('utf8'))).toEqual((await versionOf(1)).compiled);
-      await adminContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseUrl });
+      // 剪贴板只在安全上下文里有（本机 127.0.0.1 有，Compose 网络里的 http://api 没有，也授不了权）；没有时把引用写在页面上，让人手动复制。
+      const secure = await target.evaluate('window.isSecureContext');
+      if (secure) await adminContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseUrl });
       await row.getByTestId('definition-uses').click({ button: 'right' });
       await target.getByRole('menuitem', { name: /复制引用/ }).click();
-      // 剪贴板只在安全上下文里有（本机 127.0.0.1 有，Compose 网络里的 http://api 没有）；没有时把引用写在页面上，让人手动复制。
-      if (await target.evaluate('window.isSecureContext')) {
+      if (secure) {
         await target.getByRole('status').filter({ hasText: '已复制' }).waitFor();
         expect(JSON.parse(await target.evaluate('navigator.clipboard.readText()') as string)).toEqual({ name, version: 1 });
       } else {
