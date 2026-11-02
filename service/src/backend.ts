@@ -343,10 +343,22 @@ export interface TemplateRevision {
   readonly source: 'push' | 'web';
 }
 
+/**
+ * 当前修订的来历（P1 票据 10，M348）：推送判定冲突、说明由谁在何时产生。
+ * source 为 push 是推送产生的，或代建工程师自己指回的；web 是保存工作副本，或客户管理员指回的。action 分记新修订与指回。
+ */
+export interface TemplateCurrentOrigin {
+  readonly source: 'push' | 'web';
+  readonly action: 'revision' | 'setCurrent';
+  readonly by: string;
+  readonly at: string;
+}
+
 /** 模板按名称指向当前修订；推送改了内容就记一个新修订，旧修订保留，当前修订可以指回旧修订（M264）。 */
 export interface StoredTemplate {
   readonly name: string;
   readonly currentRevision: number;
+  readonly current: TemplateCurrentOrigin;
   readonly revisions: readonly TemplateRevision[];
 }
 
@@ -458,7 +470,8 @@ export interface TenantStorage {
   push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date }):
     Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number>; readonly recordedRounds: readonly string[] }>;
   /** 把模板的当前修订指向它已有的一个修订，同时答出改之前的当前修订；模板或修订不存在时 undefined。 */
-  setCurrentTemplate(name: string, revision: number): Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | undefined>;
+  setCurrentTemplate(name: string, revision: number, by: { readonly source: TemplateCurrentOrigin['source']; readonly by: string; readonly now: Date }):
+    Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | undefined>;
   /** 本租户全部数据定义草案。 */
   definitionDrafts(): Promise<readonly DefinitionDraft[]>;
   definitionDraft(name: string): Promise<DefinitionDraft | undefined>;

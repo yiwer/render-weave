@@ -8,7 +8,7 @@ import {
   type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
   type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
-  type TemplateRevision, type TemplateWorkingCopy, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
+  type TemplateCurrentOrigin, type TemplateRevision, type TemplateWorkingCopy, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
   type ClaimedDelivery, type Webhook, type WebhookAttempt, type WebhookDelivery, type WebhookEventType,
 } from './backend.js';
 import { batchFinishedEvent, batchManifest, NOT_STARTED, notRunItem } from './batches.js';
@@ -535,7 +535,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
   const contents = new Map<string, Uint8Array>();
   /** 工作区文档：来源 → 内容。推送进来的文档来源是"种类:键"，模板那一行指向当前修订。 */
   const documents = new Map<string, { sha256: string; byteLength: number }>();
-  const templates = new Map<string, { current: number; revisions: TemplateRevision[] }>();
+  const templates = new Map<string, { current: number; origin: TemplateCurrentOrigin; revisions: TemplateRevision[] }>();
   const drafts = new Map<string, DefinitionDraft>();
   const workingCopies = new Map<string, TemplateWorkingCopy>();
   let resources: readonly ResourceManifestEntry[] = [];
@@ -557,8 +557,8 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
     if (!bytes) throw new Error(`内容不存在：${hash}`);
     return new Uint8Array(bytes);
   };
-  const template = (name: string, row: { current: number; revisions: TemplateRevision[] }): StoredTemplate =>
-    ({ name, currentRevision: row.current, revisions: structuredClone(row.revisions) });
+  const template = (name: string, row: { current: number; origin: TemplateCurrentOrigin; revisions: TemplateRevision[] }): StoredTemplate =>
+    ({ name, currentRevision: row.current, current: row.origin, revisions: structuredClone(row.revisions) });
   const state = (): AuthoringState => ({
     documents: [...documents].flatMap(([source, content]) => {
       const parsed = parseDocumentSource(source);
@@ -618,10 +618,11 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       for (const document of writes.documents) documents.set(documentSource(document.kind, document.key), { sha256: document.sha256, byteLength: document.byteLength });
       const revisions = new Map<string, number>();
       for (const { name, sha256, byteLength } of writes.templates) {
-        const row = templates.get(name) ?? { current: 0, revisions: [] };
+        const row = templates.get(name) ?? { current: 0, origin: { source: 'push', action: 'revision', by: pushedBy, at: now.toISOString() }, revisions: [] };
         const revision = Math.max(0, ...row.revisions.map((item) => item.revision)) + 1;
         row.revisions.push({ revision, sha256, byteLength, createdAt: now.toISOString(), pushedBy, source: 'push' });
         row.current = revision;
+        row.origin = { source: 'push', action: 'revision', by: pushedBy, at: now.toISOString() };
         templates.set(name, row);
         documents.set(documentSource('template', name), { sha256, byteLength });
         revisions.set(name, revision);
@@ -642,11 +643,12 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       documents.set(source, stored);
       return { kind: 'dataset' as const, key: id, ...stored };
     }),
-    setCurrentTemplate: (name, revision) => exclusive(async () => {
+    setCurrentTemplate: (name, revision, { source, by, now }) => exclusive(async () => {
       const row = templates.get(name), found = row?.revisions.find((item) => item.revision === revision);
       if (!row || !found) return undefined;
       const previousRevision = row.current;
       row.current = revision;
+      row.origin = { source, action: 'setCurrent', by, at: now.toISOString() };
       documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
       return { template: template(name, row), previousRevision };
     }),
@@ -703,10 +705,12 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       workingCopies.delete(name);
       const current = row?.revisions.find((item) => item.revision === row.current);
       if (row && current?.sha256 === copy.sha256) return { status: 'unchanged' as const, revision: row.current, sha256: copy.sha256 };
-      const target = row ?? { current: 0, revisions: [] };
+      const origin: TemplateCurrentOrigin = { source: 'web', action: 'revision', by: pushedBy, at: now.toISOString() };
+      const target = row ?? { current: 0, origin, revisions: [] };
       const revision = Math.max(0, ...target.revisions.map((item) => item.revision)) + 1;
       target.revisions.push({ revision, sha256: copy.sha256, byteLength: copy.byteLength, createdAt: now.toISOString(), pushedBy, source: 'web' });
       target.current = revision;
+      target.origin = origin;
       templates.set(name, target);
       documents.set(documentSource('template', name), { sha256: copy.sha256, byteLength: copy.byteLength });
       return { status: 'saved' as const, revision, sha256: copy.sha256 };

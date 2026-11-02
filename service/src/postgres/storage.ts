@@ -57,8 +57,9 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
           'SELECT coalesce(max(revision), 0) + 1 AS next FROM template_revisions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows[0]!;
         await client.query(`INSERT INTO template_revisions (tenant_id, name, revision, sha256, byte_length, pushed_by, created_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7)`, [tenantId, name, next, sha256, byteLength, pushedBy, now]);
-        await client.query(`INSERT INTO templates (tenant_id, name, current_revision) VALUES ($1, $2, $3)
-          ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision`, [tenantId, name, next]);
+        await client.query(`INSERT INTO templates (tenant_id, name, current_revision, current_source, current_action, current_by, current_at) VALUES ($1, $2, $3, 'push', 'revision', $4, $5)
+          ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision, current_source = 'push', current_action = 'revision',
+            current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, pushedBy, now]);
         await pointTemplate(client, tenantId, name, { sha256, byteLength });
         revisions.set(name, next);
       }
@@ -84,14 +85,15 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         return { kind: 'dataset' as const, key: id, sha256, byteLength: bytes.length };
       });
     },
-    setCurrentTemplate: (name, revision) => withTenant(db, tenantId, async (client) => {
+    setCurrentTemplate: (name, revision, { source, by, now }) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [found] = (await client.query<{ sha256: string; byte_length: string }>(
         'SELECT sha256, byte_length FROM template_revisions WHERE tenant_id = $1 AND name = $2 AND revision = $3', [tenantId, name, revision])).rows;
       if (!found) return undefined;
       const [previous] = (await client.query<{ current_revision: number }>(
         'SELECT current_revision FROM templates WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
-      await client.query('UPDATE templates SET current_revision = $3 WHERE tenant_id = $1 AND name = $2', [tenantId, name, revision]);
+      await client.query(`UPDATE templates SET current_revision = $3, current_source = $4, current_action = 'setCurrent', current_by = $5, current_at = $6
+        WHERE tenant_id = $1 AND name = $2`, [tenantId, name, revision, source, by, now]);
       await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
       const template = (await authoringState(client, tenantId)).templates.find((item) => item.name === name)!;
       return { template, previousRevision: previous!.current_revision };
@@ -177,8 +179,9 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         'SELECT coalesce(max(revision), 0) + 1 AS next FROM template_revisions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows[0]!;
       await client.query(`INSERT INTO template_revisions (tenant_id, name, revision, sha256, byte_length, pushed_by, created_at, source)
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'web')`, [tenantId, name, next, copy.sha256, copy.byte_length, pushedBy, now]);
-      await client.query(`INSERT INTO templates (tenant_id, name, current_revision) VALUES ($1, $2, $3)
-        ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision`, [tenantId, name, next]);
+      await client.query(`INSERT INTO templates (tenant_id, name, current_revision, current_source, current_action, current_by, current_at) VALUES ($1, $2, $3, 'web', 'revision', $4, $5)
+        ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision, current_source = 'web', current_action = 'revision',
+          current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, pushedBy, now]);
       await pointTemplate(client, tenantId, name, { sha256: copy.sha256, byteLength: Number(copy.byte_length) });
       return { status: 'saved' as const, revision: next, sha256: copy.sha256 };
     }),
@@ -236,9 +239,15 @@ async function authoringState(client: DbClient, tenantId: string): Promise<Autho
     list.push({ revision: row.revision, sha256: row.sha256, byteLength: Number(row.byte_length), createdAt: new Date(row.created_at).toISOString(), pushedBy: row.pushed_by, source: row.source });
     revisions.set(row.name, list);
   }
-  const templates = (await client.query<{ name: string; current_revision: number }>(
-    'SELECT name, current_revision FROM templates WHERE tenant_id = $1', [tenantId])).rows.map((row): StoredTemplate =>
-    ({ name: row.name, currentRevision: row.current_revision, revisions: revisions.get(row.name) ?? [] }));
+  const templates = (await client.query<{ name: string; current_revision: number; current_source: 'push' | 'web'; current_action: 'revision' | 'setCurrent'; current_by: string | null; current_at: Date | null }>(
+    'SELECT name, current_revision, current_source, current_action, current_by, current_at FROM templates WHERE tenant_id = $1', [tenantId])).rows.map((row): StoredTemplate => {
+    const list = revisions.get(row.name) ?? [], revision = list.find((item) => item.revision === row.current_revision);
+    return {
+      name: row.name, currentRevision: row.current_revision, revisions: list,
+      // 迁移 0013 之前的行没有记主体与时间：取当前修订自己的。
+      current: { source: row.current_source, action: row.current_action, by: row.current_by ?? revision?.pushedBy ?? '', at: row.current_at ? new Date(row.current_at).toISOString() : revision?.createdAt ?? '' },
+    };
+  });
   const resources = (await resourceEntries(client, tenantId)).map((entry) => ({
     id: entry.id, kind: entry.kind, currentVersion: entry.currentVersion,
     versions: entry.versions.map(({ version, sha256, byteLength }) => ({ version, sha256, byteLength })),

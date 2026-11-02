@@ -2,7 +2,7 @@
  * 代建推送的差异与冲突（票据 05，M264）：命令行交来清单，服务按自己的当前状态判定新增、更新、不变与冲突。
  * - 静态数据定义与编译产物：同名同版本只能新增；服务端已有而字节不同是冲突（ADR-0008）。
  * - 数据集：同 ID 只能新增；已有而字节不同是冲突，推送不覆盖租户里的数据集。
- * - 模板：按名称对比当前修订，字节不同就记一个新修订。
+ * - 模板：按名称对比当前修订，字节不同就记一个新修订；但带了基于的修订（baseRevision）而当前修订不是它，或没带而当前修订不是推送产生的，算冲突（P1 票据 10，M348）。
  * - 资源：按 ID 对比；种类不同、或两边都有的内容版本字节不同是冲突；本地多出的内容版本追加，服务端多出的不动。
  * - 代建轮次（票据 09）：可选，各轮 round.json 的 token 用量，与推送同一事务记为该租户的用量事件；已记过的轮次跳过，只记不拦。
  */
@@ -10,7 +10,7 @@ import { problem, ServiceProblemCodes, type ServiceProblem } from './api/problem
 import { auditDiff } from './audit.js';
 import {
   DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type AuditDiff, type AuditDiffPath, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites,
-  type StoredDocument, type TokenKind,
+  type StoredDocument, type StoredTemplate, type TokenKind,
 } from './backend.js';
 import { classifyWorkspaceDocument, parseJsonKeepingPrecision, parseResourceRef } from './engine.js';
 
@@ -18,7 +18,8 @@ import { classifyWorkspaceDocument, parseJsonKeepingPrecision, parseResourceRef 
 export type ManifestRound = { readonly sha256: string; readonly task: string; readonly round: number } & Readonly<Partial<Record<TokenKind, number>>>;
 
 export interface PushManifest {
-  readonly documents: readonly StoredDocument[];
+  /** baseRevision 只有模板能带：本地这份内容基于的修订。 */
+  readonly documents: readonly (StoredDocument & { readonly baseRevision?: number })[];
   readonly resources: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly versions: readonly { readonly version: number; readonly sha256: string; readonly byteLength: number }[] }[];
   readonly rounds?: readonly ManifestRound[];
 }
@@ -36,7 +37,10 @@ export const MANIFEST_SCHEMA = {
       type: 'array', maxItems: 5000,
       items: {
         type: 'object', required: ['kind', 'key', 'sha256', 'byteLength'], additionalProperties: false,
-        properties: { kind: { type: 'string', enum: DOCUMENT_KINDS }, key: { type: 'string', minLength: 1, maxLength: 500 }, sha256, byteLength },
+        properties: {
+          kind: { type: 'string', enum: DOCUMENT_KINDS }, key: { type: 'string', minLength: 1, maxLength: 500 }, sha256, byteLength,
+          baseRevision: { type: 'integer', minimum: 1, description: '模板：本地这份内容基于的修订（1.6.0）' },
+        },
       },
     },
     resources: {
@@ -70,6 +74,7 @@ export function checkManifest(manifest: PushManifest): ServiceProblem[] {
   manifest.documents.forEach((document, i) => {
     const source = documentSource(document.kind, document.key);
     if (seen.has(source)) problems.push(problem(ServiceProblemCodes.requestInvalid, `request.body.documents.${i}`, `清单里 ${source} 出现了不止一次`));
+    if (document.baseRevision !== undefined && document.kind !== 'template') problems.push(problem(ServiceProblemCodes.requestInvalid, `request.body.documents.${i}.baseRevision`, '只有模板能带 baseRevision'));
     seen.add(source);
   });
   const ids = new Set<string>();
@@ -120,6 +125,14 @@ export interface PushDiff {
 
 const KIND_NAMES = { image: '图片', font: '字体' } as const;
 
+/** 模板冲突的说明：当前修订由谁在何时、以哪种来源产生。 */
+function templateConflict(template: StoredTemplate, baseRevision: number | undefined): string {
+  const { source, action, by, at } = template.current;
+  const how = action === 'setCurrent' ? '指回' : source === 'web' ? '保存' : '推送';
+  const local = baseRevision === undefined ? '本地没有记基于哪个修订' : `本地基于修订 ${baseRevision}`;
+  return `服务端的当前修订 ${template.currentRevision} 由 ${by} 在 ${at} ${source === 'web' ? '经网页' : '经代建'}${how}产生，${local}，直接推送会盖掉它；先 renderweave pull 取回最新内容，改完再推送`;
+}
+
 function documentConflict(kind: DocumentKind, key: string): string {
   switch (kind) {
     case 'definition': return `服务端已有 ${key}，内容不同；已发布的静态数据定义不可变（ADR-0008），改动请发布为新版本`;
@@ -138,8 +151,12 @@ export function diffPush(manifest: PushManifest, state: AuthoringState): PushDif
     if (local.kind === 'template') {
       const template = templates.get(local.key);
       if (!template) return { kind: local.kind, key: local.key, status: 'added' };
-      const current = template.revisions.find((item) => item.revision === template.currentRevision)!;
-      return { kind: local.kind, key: local.key, status: current.sha256 === local.sha256 ? 'unchanged' : 'updated', currentRevision: template.currentRevision };
+      const current = template.revisions.find((item) => item.revision === template.currentRevision)!, base = { kind: local.kind, key: local.key, currentRevision: template.currentRevision };
+      if (current.sha256 === local.sha256) return { ...base, status: 'unchanged' };
+      // 代建工程师自己指回之后，本地记下的还是旧修订：照 M265 可以接着推送，不算冲突。
+      const pointedBackByEngineer = template.current.source === 'push' && template.current.action === 'setCurrent';
+      const conflict = local.baseRevision === undefined ? template.current.source === 'web' : local.baseRevision !== template.currentRevision && !pointedBackByEngineer;
+      return conflict ? { ...base, status: 'conflict', reason: templateConflict(template, local.baseRevision) } : { ...base, status: 'updated' };
     }
     if (!server) return { kind: local.kind, key: local.key, status: 'added' };
     if (server.sha256 === local.sha256) return { kind: local.kind, key: local.key, status: 'unchanged' };

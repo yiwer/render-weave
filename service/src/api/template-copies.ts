@@ -47,9 +47,10 @@ const overlaid = (workspace: Workspace, name: string, document: unknown): Worksp
 });
 
 /** 指回旧修订：客户管理员与代建工程师的端点都走这里；审计记改前改后两个修订的内容哈希。 */
-export async function setCurrentTemplate(scope: TenantScope, body: unknown, audit: (object: NewAuditEvent['object'], content: AuditContent) => Promise<void>) {
+export async function setCurrentTemplate(scope: TenantScope, body: unknown, origin: { readonly source: 'push' | 'web'; readonly by: string; readonly now: Date },
+  audit: (object: NewAuditEvent['object'], content: AuditContent) => Promise<void>) {
   const { template, revision } = body as { template: string; revision: number };
-  const updated = await scope.storage.setCurrentTemplate(template, revision);
+  const updated = await scope.storage.setCurrentTemplate(template, revision, origin);
   if (!updated) throw notFound();
   const sha256Of = (number: number) => updated.template.revisions.find((item) => item.revision === number)!.sha256;
   const beforeSha256 = sha256Of(updated.previousRevision), afterSha256 = sha256Of(revision);
@@ -228,8 +229,8 @@ export function registerCustomerTemplateRoutes(app: FastifyInstance, context: Ap
   const scopeOf = (request: FastifyRequest) => context.backend.tenant(ownTenant(identityOf(request)));
   registerWorkingCopyRoutes(app, context, { prefix: '/v1', read: 'tenant.read', crossTenant: false, scopeOf });
   app.post('/v1/template-current', { config: { access: 'authoring.publish' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request) => {
-    const scope = scopeOf(request);
-    return setCurrentTemplate(scope, request.body, (object, content) =>
-      scope.appendAudit({ actor: actorOf(identityOf(request)), action: 'template.setCurrent', object, crossTenant: false, ...content }, context.now()));
+    const scope = scopeOf(request), actor = actorOf(identityOf(request));
+    return setCurrentTemplate(scope, request.body, { source: 'web', by: actor.label, now: context.now() }, (object, content) =>
+      scope.appendAudit({ actor, action: 'template.setCurrent', object, crossTenant: false, ...content }, context.now()));
   });
 }

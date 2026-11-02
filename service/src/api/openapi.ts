@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.5.0';
+export const API_VERSION = '1.6.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -337,6 +337,11 @@ const SCHEMAS: Record<string, unknown> = {
   StoredDocument: object({ kind: { type: 'string', enum: ['definition', 'compiled', 'template', 'dataset'] }, key: str(), sha256, byteLength: int() }),
   TemplateRevisions: object({
     name: str('模板名称'), currentRevision: int('当前修订', 1),
+    current: object({
+      source: { type: 'string', enum: ['push', 'web'], description: 'push：推送产生的，或代建工程师自己指回的；web：保存工作副本，或客户管理员指回的' },
+      action: { type: 'string', enum: ['revision', 'setCurrent'], description: 'revision：记了新修订；setCurrent：指回已有的修订' },
+      by: str('产生它的主体'), at: instant('产生的时间'),
+    }, ['source', 'action', 'by', 'at'], { description: '当前修订的来历（1.6.0）' }),
     revisions: array(object({ revision: int('修订号', 1), sha256, byteLength: int(), createdAt: instant('产生时间'), pushedBy: str('产生它的主体：代建令牌的标签或成员的邮箱'),
       source: { type: 'string', enum: ['push', 'web'], description: '来源：推送，或保存工作副本（1.5.0）' } })),
   }),

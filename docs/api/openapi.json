@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -9991,6 +9991,7 @@
         "required": [
           "name",
           "currentRevision",
+          "current",
           "revisions"
         ],
         "properties": {
@@ -10002,6 +10003,43 @@
             "type": "integer",
             "minimum": 1,
             "description": "当前修订"
+          },
+          "current": {
+            "type": "object",
+            "required": [
+              "source",
+              "action",
+              "by",
+              "at"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "push",
+                  "web"
+                ],
+                "description": "push：推送产生的，或代建工程师自己指回的；web：保存工作副本，或客户管理员指回的"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "revision",
+                  "setCurrent"
+                ],
+                "description": "revision：记了新修订；setCurrent：指回已有的修订"
+              },
+              "by": {
+                "type": "string",
+                "description": "产生它的主体"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "产生的时间"
+              }
+            },
+            "description": "当前修订的来历（1.6.0）"
           },
           "revisions": {
             "type": "array",
@@ -10619,6 +10657,11 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 9007199254740991
+                },
+                "baseRevision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "模板：本地这份内容基于的修订（1.6.0）"
                 }
               }
             }

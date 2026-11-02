@@ -51,7 +51,8 @@ export function describePush(name: string, makeBackend: () => Promise<ServiceBac
     /** 本地的样例工作区与资源版本仓库（一张图片、一个字体）。 */
     const local = async (): Promise<Dirs> => {
       const dir = join(root, randomUUID()), workspace = join(dir, 'workspace');
-      await cp(FIXTURE, workspace, { recursive: true });
+      // 别的用例可能正读着这份样例，它的目录里有活动的 .write-lock：不能跟着复制，否则新工作区一上来就是忙的。
+      await cp(FIXTURE, workspace, { recursive: true, filter: (source) => !source.includes('.write-lock') });
       const resources = await repository([
         { type: 'create', id: 'logo', kind: 'image', bytes: await readFile(PNG) },
         { type: 'create', id: 'font-small', kind: 'font', bytes: new Uint8Array(Buffer.from('不是真的字体，只用来核对字节')) },
@@ -125,7 +126,7 @@ export function describePush(name: string, makeBackend: () => Promise<ServiceBac
         });
         expect((await content(target, info.sha256)).bytes.equals(Buffer.from(await store.read(info.id, 1)))).toBe(true);
       }
-      expect(after.templates).toEqual([{ name: '问候牌', currentRevision: 1, revisions: [expect.objectContaining({ revision: 1, pushedBy: target.label })] }]);
+      expect(after.templates).toEqual([{ name: '问候牌', currentRevision: 1, current: expect.objectContaining({ source: 'push', action: 'revision', by: target.label }), revisions: [expect.objectContaining({ revision: 1, pushedBy: target.label, source: 'push' })] }]);
 
       const again = await push(target, dirs);
       expect(again.code, again.stderr).toBe(0);
@@ -155,7 +156,7 @@ export function describePush(name: string, makeBackend: () => Promise<ServiceBac
       expect(JSON.parse(listed.stdout)).toEqual(template);
       const back = await revisions('--current', '1');
       expect(back.code, back.stderr).toBe(0);
-      expect(JSON.parse(back.stdout)).toEqual({ ...template, currentRevision: 1 });
+      expect(JSON.parse(back.stdout)).toEqual({ ...template, currentRevision: 1, current: { source: 'push', action: 'setCurrent', by: target.label, at: expect.any(String) } });
       const current = await state(target);
       expect(entry(current, 'template')).toMatchObject({ sha256: sha256(first), byteLength: first.length });
       expect((await content(target, sha256(first))).bytes.equals(first)).toBe(true);

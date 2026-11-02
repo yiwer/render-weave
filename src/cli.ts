@@ -46,7 +46,7 @@ import { referenceTexts } from './mcp/references.js';
 import { describeError } from './util.js';
 import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
-import { DEFAULT_TOKEN_ENV, pushWorkspace, templateRevisions, type PushDiff, type PushTarget, type ReportedProblem } from './push.js';
+import { DEFAULT_TOKEN_ENV, pullWorkspace, pushWorkspace, templateRevisions, type PushDiff, type PushTarget, type ReportedProblem } from './push.js';
 
 export interface CliIo {
   readonly stdout: (text: string) => void;
@@ -84,6 +84,7 @@ const USAGE = `用法：
   renderweave agent review <轮次目录> [--port <端口>] [--no-open]
   renderweave agent apply <轮次目录> [--workspace <目录>] [--overwrite]
   renderweave push --server <服务地址> --tenant <租户ID> --workspace <目录> --resources <版本仓库> [--rounds <轮次目录>] [--dry-run] [--token-env <环境变量名>]
+  renderweave pull --server <服务地址> --tenant <租户ID> --workspace <目录> [--overwrite] [--token-env <环境变量名>]
   renderweave template-revisions --server <服务地址> --tenant <租户ID> --template <模板名> [--current <修订号>] [--token-env <环境变量名>]
 
 render
@@ -178,6 +179,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'agent order-report': ['order'],
   'agent order-record': ['order', 'event'],
   push: ['server', 'tenant', 'workspace', 'resources'],
+  pull: ['server', 'tenant', 'workspace'],
   'template-revisions': ['server', 'tenant', 'template'],
 };
 /** 第 1 轮必须给 task、sample、brief、resources；带 --from 的下一轮沿用上一轮，不能再给。 */
@@ -185,7 +187,7 @@ const AGENT_RUN_OPTIONAL = ['task', 'sample', 'brief', 'resources', 'domain', 'w
   'model', 'small-model', 'endpoint', 'key-env', 'max-turns', 'effort', 'executor', 'claude', 'claude-args', 'reference', 'content-baseline', 'checkpoint', 'context-policy', 'timeout-ms', 'max-tokens', 'max-cost-usd', 'stagnation-threshold'];
 /** 取一个位置参数（轮次目录）的命令，以及它们的开关。 */
 const POSITIONAL_COMMANDS = new Set(['agent review', 'agent apply']);
-const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent order-report': ['share'], 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'] };
+const COMMAND_FLAGS: Record<string, readonly string[]> = { 'agent order-report': ['share'], 'agent review': ['no-open'], 'agent apply': ['overwrite'], push: ['dry-run'], pull: ['overwrite'] };
 
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   // agent 带子命令：agent run、agent review、agent apply。
@@ -201,7 +203,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
     : command === 'mcp' ? ['tools', 'log', 'outcome-context', 'reference-bundle'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
     : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
-    : command === 'push' ? ['token-env', 'rounds'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
+    : command === 'push' ? ['token-env', 'rounds'] : command === 'pull' ? ['token-env'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
   let positionals: string[];
   try {
@@ -239,6 +241,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'agent run') return await runAgent(options, io);
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     if (command === 'push') return await runPush(options, values['dry-run'] === true, io);
+    if (command === 'pull') return await runPull(options, values['overwrite'] === true, io);
     if (command === 'template-revisions') return await runTemplateRevisions(options, io);
     return await runResources(command, options, io);
   } catch (error) {
@@ -727,6 +730,20 @@ async function runPush(options: Record<string, string>, dryRun: boolean, io: Cli
   else if (conflicts > 0) io.stderr(dryRun ? '有冲突：推送时会整体拒绝\n' : '有冲突，整体拒绝，服务端保持原样\n');
   else if (dryRun && outcome.diff) io.stderr('只列差异，没有提交\n');
   return outcome.pushed || (dryRun && outcome.diff && conflicts === 0) ? ExitCodes.ok : ExitCodes.failed;
+}
+
+async function runPull(options: Record<string, string>, overwrite: boolean, io: CliIo): Promise<number> {
+  const target = pushTarget(options, io);
+  if (!target) return ExitCodes.usage;
+  const outcome = await pullWorkspace({ ...target, workspace: options.workspace!, overwrite });
+  reportProblems(outcome.problems, io);
+  for (const { kind, key, file } of outcome.conflicts) io.stderr(`${overwrite ? '覆盖' : '内容不同'} ${KIND_NAMES[kind] ?? kind} ${key}：${file}\n`);
+  if (outcome.problems.length === 0) {
+    io.stdout(`${JSON.stringify({ tenant: target.tenant, pulled: outcome.pulled, written: outcome.written, unchanged: outcome.unchanged, conflicts: outcome.conflicts }, null, 2)}\n`);
+  }
+  if (outcome.pulled) io.stderr(`已从租户 ${target.tenant} 取回：写入 ${outcome.written.length} 份，不变 ${outcome.unchanged} 份\n`);
+  else if (outcome.conflicts.length) io.stderr('本地已有内容不同的文件，一个文件也没写；确认可以覆盖后加 --overwrite\n');
+  return outcome.pulled ? ExitCodes.ok : ExitCodes.failed;
 }
 
 async function runTemplateRevisions(options: Record<string, string>, io: CliIo): Promise<number> {

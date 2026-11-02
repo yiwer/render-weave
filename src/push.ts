@@ -4,9 +4,13 @@
  * 再请服务在一个事务里提交。新增、更新、冲突由服务按它的当前状态判定。
  * 可以附带代建的轮次目录（票据 09）：各轮 round.json 里的 token 用量随清单交给服务，与推送同一事务记到该租户名下，只记不拦。
  * 代建令牌由调用方从环境变量取得，只放进请求头，不写进任何输出。
+ *
+ * 拉取（P1 票据 10，M348）把租户当前的模板、静态数据定义与编译产物写回本地工作区；本地已有而内容不同的先列出，overwrite 才覆盖。
+ * 推送或拉取成功后在工作区的 .renderweave 目录记下各模板的修订号，下次推送带上，服务据此发现客户在网页上的改动。
+ * 这份记录按租户分开，不是工作区文档：读工作区只看工作区这一层的 .json 文件，所以读工作区与渲染都看不到它。
  */
 import { createHash } from 'node:crypto';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { ProblemCodes, type Problem } from './problems.js';
 import { describeError } from './util.js';
@@ -27,7 +31,7 @@ export type PushRound = { readonly sha256: string; readonly task: string; readon
 
 /** 推送清单：每份文档与每个资源内容版本的身份、SHA-256 与字节数。内容另行上传。可以附带代建轮次的 token 用量。 */
 export interface PushManifest {
-  readonly documents: readonly { readonly kind: PushDocumentKind; readonly key: string; readonly sha256: string; readonly byteLength: number }[];
+  readonly documents: readonly { readonly kind: PushDocumentKind; readonly key: string; readonly sha256: string; readonly byteLength: number; readonly baseRevision?: number }[];
   readonly resources: readonly {
     readonly id: string;
     readonly kind: 'image' | 'font';
@@ -168,6 +172,19 @@ export async function readRounds(dir: string): Promise<{ rounds: PushRound[]; pr
 
 class Unreachable extends Error {}
 
+/** 取字节的回答：内容不是 JSON；失败时 body 是解析出的问题清单。 */
+async function callBytes(target: PushTarget, path: string): Promise<{ status: number; bytes: Uint8Array; body: any }> {
+  const url = `${target.server.replace(/\/+$/, '')}/v1/authoring/tenants/${encodeURIComponent(target.tenant)}${path}`;
+  let response: Response;
+  try { response = await fetch(url, { headers: { authorization: `Bearer ${target.token}` } }); }
+  catch (error) { throw new Unreachable(`无法连接出图服务 ${target.server}：${describeError(error)}`); }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (response.status === 200) return { status: 200, bytes, body: undefined };
+  let parsed: unknown;
+  try { parsed = JSON.parse(Buffer.from(bytes).toString('utf8')); } catch { parsed = undefined; }
+  return { status: response.status, bytes, body: parsed };
+}
+
 /** 调用出图服务。连不上时抛 Unreachable；回答不是 JSON 时 body 为 undefined。 */
 async function call(target: PushTarget, method: string, path: string, body?: unknown): Promise<{ status: number; body: any }> {
   const url = `${target.server.replace(/\/+$/, '')}/v1/authoring/tenants/${encodeURIComponent(target.tenant)}${path}`;
@@ -206,7 +223,14 @@ const unreachable = (error: unknown): ReportedProblem[] => {
 export async function pushWorkspace(options: PushTarget & { readonly workspace: string; readonly resources: string; readonly dryRun: boolean; readonly rounds?: string }): Promise<PushOutcome> {
   const local = await collect(options.workspace, options.resources);
   if (!local.manifest) return { pushed: false, skipped: local.skipped, problems: local.problems };
-  let manifest: PushManifest = local.manifest;
+  const recorded = await readRevisionRecord(options.workspace, options.tenant);
+  let manifest: PushManifest = {
+    ...local.manifest,
+    documents: local.manifest.documents.map((document) => {
+      const baseRevision = document.kind === 'template' ? recorded[document.key] : undefined;
+      return baseRevision === undefined ? document : { ...document, baseRevision };
+    }),
+  };
   if (options.rounds !== undefined) {
     const read = await readRounds(options.rounds);
     if (read.problems.length) return { pushed: false, skipped: local.skipped, problems: read.problems };
@@ -226,10 +250,108 @@ export async function pushWorkspace(options: PushTarget & { readonly workspace: 
       }
     }
     const commit = await call(options, 'POST', '/pushes', manifest);
-    if (commit.status === 200) return { diff: commit.body as PushDiff, pushed: true, skipped: local.skipped, problems: [] };
+    if (commit.status === 200) {
+      const pushed = commit.body as PushDiff;
+      await recordRevisions(options.workspace, options.tenant, Object.fromEntries(pushed.documents.flatMap((document) => {
+        const revision = document.kind === 'template' ? document.revision ?? document.currentRevision : undefined;
+        return revision === undefined ? [] : [[document.key, revision]];
+      })));
+      return { diff: pushed, pushed: true, skipped: local.skipped, problems: [] };
+    }
     return { ...(commit.body?.diff ? { diff: commit.body.diff as PushDiff } : {}), pushed: false, skipped: local.skipped, problems: answerProblems(commit) };
   } catch (error) {
     return { pushed: false, skipped: local.skipped, problems: unreachable(error) };
+  }
+}
+
+/** 本地记下的各模板修订号：工作区的 .renderweave 目录下，按租户一个文件。不是工作区文档。 */
+const recordFile = (workspace: string, tenant: string) => join(workspace, '.renderweave', `template-revisions-${tenant.replace(/[^A-Za-z0-9_-]/g, '_')}.json`);
+
+/** 读不到或读不了时当作没记过：推送不带基于的修订，由服务按当前修订的来源判定。 */
+async function readRevisionRecord(workspace: string, tenant: string): Promise<Readonly<Record<string, number>>> {
+  try {
+    const record = JSON.parse(await readFile(recordFile(workspace, tenant), 'utf8'));
+    return record?.format === 'renderweave-template-revisions/1' ? record.templates as Record<string, number> : {};
+  } catch { return {}; }
+}
+
+/** 合并进本地记录；写临时文件再改名，中途退出不会留下半份。 */
+async function recordRevisions(workspace: string, tenant: string, revisions: Readonly<Record<string, number>>): Promise<void> {
+  const file = recordFile(workspace, tenant);
+  await mkdir(join(workspace, '.renderweave'), { recursive: true });
+  const record = { format: 'renderweave-template-revisions/1', tenant, templates: { ...await readRevisionRecord(workspace, tenant), ...revisions } };
+  await writeFile(`${file}.tmp`, `${JSON.stringify(record, null, 2)}\n`);
+  await rename(`${file}.tmp`, file);
+}
+
+export interface PullOutcome {
+  /** 写进工作区的文件：新建的与覆盖的。 */
+  readonly written: readonly string[];
+  readonly unchanged: number;
+  /** 本地已有而内容不同的文件；没有 overwrite 时一个文件也不写。 */
+  readonly conflicts: readonly { readonly kind: PushDocumentKind; readonly key: string; readonly file: string }[];
+  readonly pulled: boolean;
+  readonly problems: readonly ReportedProblem[];
+}
+
+/** 新文件的文件名，沿用工作区的写法；键里 Windows 不能用的字符换成下划线。 */
+function pulledFileName(kind: PushDocumentKind, key: string): string {
+  const safe = (text: string) => text.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_');
+  if (kind === 'template') return `template-${safe(key)}.json`;
+  const at = key.lastIndexOf('@'), stem = safe(key.slice(0, at)), version = key.slice(at + 1);
+  return kind === 'definition' ? `schema-${stem}-v${version}.json` : `compiled-${stem}-v${version}.schema.json`;
+}
+
+/**
+ * 拉取：读服务端的当前状态，把模板（当前修订）、静态数据定义与编译产物写回工作区。按身份找本地已有的文件，不看文件名。
+ * 字节相同不动；不同的先列出，overwrite 才覆盖，否则一个文件也不写。成功后记下各模板的修订号。数据集与资源不拉：客户的数据不进代建工程师的本地。
+ */
+export async function pullWorkspace(options: PushTarget & { readonly workspace: string; readonly overwrite: boolean }): Promise<PullOutcome> {
+  const failed = (problems: readonly ReportedProblem[]): PullOutcome => ({ written: [], unchanged: 0, conflicts: [], pulled: false, problems });
+  try {
+    const state = await call(options, 'GET', '/workspace');
+    if (state.status !== 200) return failed(answerProblems(state));
+    const remote = (state.body.documents as { kind: PushDocumentKind; key: string; sha256: string }[]).filter((document) => document.kind !== 'dataset');
+
+    await mkdir(options.workspace, { recursive: true });
+    const existing = new Map<string, { file: string; sha256: string }>();
+    const source = localWorkspaceDocuments(options.workspace);
+    for (const entry of await source.list()) {
+      let bytes: Uint8Array, found: ReturnType<typeof classifyWorkspaceDocument>;
+      try {
+        bytes = await entry.read();
+        found = classifyWorkspaceDocument(parseJsonKeepingPrecision(Buffer.from(bytes).toString('utf8'), []));
+      } catch { continue; }
+      if (found.kind === 'definition' || found.kind === 'compiled' || found.kind === 'template') existing.set(`${found.kind}:${found.key}`, { file: entry.source, sha256: sha256(bytes) });
+    }
+
+    const conflicts: { kind: PushDocumentKind; key: string; file: string }[] = [], writes: { file: string; hash: string }[] = [];
+    let unchanged = 0;
+    for (const document of remote) {
+      const local = existing.get(`${document.kind}:${document.key}`);
+      if (local?.sha256 === document.sha256) { unchanged++; continue; }
+      if (local) conflicts.push({ kind: document.kind, key: document.key, file: local.file });
+      writes.push({ file: local?.file ?? join(options.workspace, pulledFileName(document.kind, document.key)), hash: document.sha256 });
+    }
+    if (conflicts.length && !options.overwrite) return { written: [], unchanged, conflicts, pulled: false, problems: [] };
+
+    const contents = new Map<string, Uint8Array>();
+    for (const { hash } of writes) {
+      if (contents.has(hash)) continue;
+      const read = await callBytes(options, `/contents/${hash}`);
+      if (read.status !== 200) return { written: [], unchanged, conflicts, pulled: false, problems: answerProblems({ status: read.status, body: read.body }) };
+      contents.set(hash, read.bytes);
+    }
+    for (const { file, hash } of writes) {
+      await writeFile(`${file}.tmp`, contents.get(hash)!);
+      await rename(`${file}.tmp`, file);
+    }
+    const templates = state.body.templates as { name: string; currentRevision: number }[];
+    await recordRevisions(options.workspace, options.tenant, Object.fromEntries(templates.map((template) => [template.name, template.currentRevision])));
+    return { written: writes.map((item) => item.file), unchanged, conflicts, pulled: true, problems: [] };
+  } catch (error) {
+    if (error instanceof Unreachable) return failed(unreachable(error));
+    return failed([{ level: 'severe', code: ProblemCodes.inputUnreadable, location: { kind: 'input', source: options.workspace }, message: `工作区无法读写：${describeError(error)}` }]);
   }
 }
 

@@ -125,7 +125,7 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
 
     /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订；审计记改前改后两个修订的内容哈希。 */
     scope.post('/v1/authoring/tenants/:tenantId/template-current', { config: { access: 'authoring.push' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request) =>
-      setCurrentTemplate(target(request), request.body, (object, content) => audit(request, 'template.setCurrent', object, content)));
+      setCurrentTemplate(target(request), request.body, { source: 'push', by: actorOf(identityOf(request)).label, now: now() }, (object, content) => audit(request, 'template.setCurrent', object, content)));
 
     const addressing = { prefix: '/v1/authoring/tenants/:tenantId', read: 'authoring.read', scopeOf: target, crossTenant: true } as const;
     registerDefinitionRoutes(scope, context, addressing);
