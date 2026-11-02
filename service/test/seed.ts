@@ -74,6 +74,14 @@ export async function seedConsoleBadge(storage: TenantStorage, options: { readon
   if (committed.problems.length) throw new Error(JSON.stringify(committed.problems));
 }
 
+/** 十二种元素都有的模板（P1 票据 08）：基于胸牌 v1，属性面板的单元测试与模板设计页的浏览器用例共用。 */
+export const ALL_ELEMENTS_FILE = fileURLToPath(new URL('../../fixtures/workspaces/all-elements/template-all-elements.json', import.meta.url));
+
+/** 要先有会议胸牌样例：用它的数据定义、场次条与字体。 */
+export async function seedAllElements(storage: TenantStorage): Promise<void> {
+  await seedDocuments(storage, [new Uint8Array(await readFile(ALL_ELEMENTS_FILE))]);
+}
+
 export const PRICE_TAG_DIR = fileURLToPath(new URL('../../fixtures/workspaces/price-tag/', import.meta.url));
 /** 商品价签样例（票据 13）：字段扁平的数据定义、编译产物、价签模板与卖点子模板。 */
 export const PRICE_TAG_FILES = ['schema-price-tag-v1.json', 'compiled-price-tag-v1.schema.json', 'template-price-tag.json', 'template-feature-chip.json'];

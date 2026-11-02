@@ -1,14 +1,15 @@
 /**
  * 模板：列表（缩略预览、适用尺寸范围、对应的数据定义）与只读预览（参数面板调对外参数，看草稿预览）。
- * 模板在控制台里只读（阶段 4 PRD）；缩略预览用同一数据定义的第一份数据集，没有就用空白数据，草稿里显示占位。
+ * 操作员只读；缩略预览用同一数据定义的第一份数据集，没有就用空白数据，草稿里显示占位。
+ * 客户管理员（P1 票据 08、09）从这里进模板设计与发布修订，也能把模板复制成新模板；还没保存的新模板只有工作副本，单独列出。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, rangeText, type ParameterValues } from '../components/parameters.js';
 import { PreviewCanvas } from '../components/preview-canvas.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
-import { href, queuePreview, useLivePreview, useLoad } from '../hooks.js';
-import type { DatasetEntry, OutputSettings, SchemaRef, StaticSchemaSummary, TemplateInfo } from '../types.js';
+import { go, href, problemsOf, queuePreview, useLivePreview, useLoad } from '../hooks.js';
+import type { DatasetEntry, Identity, OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateInfo, TemplateWorkingCopy } from '../types.js';
 
 export const sameSchema = (a: SchemaRef | undefined, b: SchemaRef | undefined) => Boolean(a && b && a.name === b.name && a.version === b.version);
 
@@ -52,23 +53,73 @@ function Thumbnail(props: { readonly template: TemplateInfo; readonly dataset?: 
   );
 }
 
-export function TemplateList() {
+/** 复制成新模板：内容与基准数据定义取当前修订，成为没有基准修订的工作副本，打开设计继续改。 */
+function CopyTemplate(props: { readonly name: string }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [problems, setProblems] = useState<readonly Problem[]>();
+  const copy = async () => {
+    setBusy(true);
+    setProblems(undefined);
+    try {
+      const created = await api.copyTemplate(props.name, name.trim());
+      go(['templates', created.name, 'design']);
+    } catch (error) { setProblems(problemsOf(error)); }
+    finally { setBusy(false); }
+  };
+  if (!open) return <button type="button" className="small quiet" onClick={() => setOpen(true)}>复制为新模板</button>;
+  return (
+    <form className="inline-form copy-form" aria-label={`复制 ${props.name}`} onSubmit={(event) => { event.preventDefault(); if (name.trim()) void copy(); }}>
+      <div className="field grow">
+        <label htmlFor={`copy-${props.name}`}>新模板名称</label>
+        <input id={`copy-${props.name}`} type="text" autoFocus maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+      </div>
+      <button type="submit" className="small" disabled={!name.trim() || busy}>{busy ? '正在复制…' : '复制'}</button>
+      <button type="button" className="small quiet" onClick={() => setOpen(false)}>取消</button>
+      <ErrorBox problems={problems} title="没有复制" />
+    </form>
+  );
+}
+
+export function TemplateList(props: { readonly identity: Identity }) {
+  const admin = props.identity.role === 'admin';
   const loaded = useLoad(async () => {
-    const [templates, schemas, datasets] = await Promise.all([api.templates(), api.staticSchemas(), api.datasets()]);
-    return { templates: templates.templates, schemas: schemas.staticSchemas, datasets: datasets.datasets };
+    const [templates, schemas, datasets, copies] = await Promise.all([api.templates(), api.staticSchemas(), api.datasets(), api.workingCopies()]);
+    return { templates: templates.templates, schemas: schemas.staticSchemas, datasets: datasets.datasets, copies: copies.workingCopies };
   }, 'templates');
   const { data } = loaded;
+  const copyOf = (name: string): TemplateWorkingCopy | undefined => data?.copies.find((copy) => copy.name === name);
+  const newTemplates = data?.copies.filter((copy) => !data.templates.some((template) => template.name === copy.name)) ?? [];
   return (
     <section className="page">
       <div className="title-row">
         <div>
           <h1>模板</h1>
-          <p className="lede">本租户的模板由 RenderWeave 团队代建，这里只读。可以调对外参数看草稿预览，或者按模板的数据定义新建数据集。</p>
+          <p className="lede">{admin
+            ? '点开设计改位置、文字、颜色与参数，改动先暂存在工作副本里，看过差异与对比再发布为新修订；出图一直读当前修订。'
+            : '本租户的模板由管理员与 RenderWeave 团队维护，这里只读。可以调对外参数看草稿预览，或者按模板的数据定义新建数据集。'}</p>
         </div>
       </div>
       <ErrorBox problems={loaded.problems} title="读不到模板" />
       {loaded.loading && !data && <p className="muted">正在读取…</p>}
-      {data?.templates.length === 0 && <p className="muted">还没有模板。模板由代建团队推送到本租户后出现在这里。</p>}
+      {data?.templates.length === 0 && newTemplates.length === 0 && <p className="muted">还没有模板。模板由代建团队推送到本租户后出现在这里。</p>}
+      {newTemplates.length > 0 && (
+        <div className="card new-templates">
+          <table className="table">
+            <thead><tr><th>还没保存的新模板</th><th>最后暂存</th><th><span className="visually-hidden">操作</span></th></tr></thead>
+            <tbody>
+              {newTemplates.map((copy) => (
+                <tr key={copy.name} data-testid="new-template-row" data-name={copy.name}>
+                  <td>{copy.name}</td>
+                  <td>{copy.updatedBy} · {new Date(copy.updatedAt).toLocaleString('zh-CN')}</td>
+                  <td className="row-actions">{admin && <a className="button small quiet" href={href(['templates', copy.name, 'design'])}>继续设计</a>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="card-grid">
         {data?.templates.map((template) => {
           const sample = data.datasets.find((entry) => sameSchema(entry.staticSchema, template.base));
@@ -84,15 +135,19 @@ export function TemplateList() {
                     <dt>适用尺寸</dt><dd>{template.sizeRange ? rangeText(template.sizeRange) : '—'}</dd>
                     <dt>数据定义</dt><dd>{schemaText(template.base, data.schemas)}</dd>
                     <dt>对外参数</dt><dd>{template.parameters?.length ? template.parameters.map((parameter) => parameter.displayName).join('、') : '无'}</dd>
+                    {copyOf(template.name) && <><dt>工作副本</dt><dd><span className="chip accent" data-testid="working-copy-state">基于修订 {copyOf(template.name)!.baseRevision ?? '—'}，未发布</span></dd></>}
                   </dl>
                 )}
                 {!template.problems && (
                   <div className="actions" style={{ marginTop: 'auto' }}>
-                    <a className="button primary small" href={href(['templates', template.name])}>预览与调参</a>
+                    {admin && <a className="button primary small" href={href(['templates', template.name, 'design'])}>设计</a>}
+                    <a className={`button small ${admin ? 'quiet' : 'primary'}`} href={href(['templates', template.name])}>预览与调参</a>
+                    <a className="button quiet small" href={href(['templates', template.name, 'publish'])}>{admin && copyOf(template.name) ? '发布修订' : '修订历史'}</a>
                     {/* 引擎内置的数据定义（如单值文本）只给子模板用，不能新建数据集。 */}
                     {data.schemas.some((schema) => sameSchema(schema, template.base)) && (
                       <a className="button quiet small" href={href(['datasets', 'new'], { template: template.name })}>用它新建数据集</a>
                     )}
+                    {admin && <CopyTemplate name={template.name} />}
                   </div>
                 )}
               </div>
@@ -104,7 +159,7 @@ export function TemplateList() {
   );
 }
 
-export function TemplateStudio(props: { readonly name: string }) {
+export function TemplateStudio(props: { readonly name: string; readonly identity: Identity }) {
   const loaded = useLoad(async () => {
     const [template, schemas, datasets] = await Promise.all([api.template(props.name), api.staticSchemas(), api.datasets()]);
     return { template, schemas: schemas.staticSchemas, datasets: datasets.datasets.filter((entry) => sameSchema(entry.staticSchema, template.base)) };
@@ -116,7 +171,11 @@ export function TemplateStudio(props: { readonly name: string }) {
       <div className="title-row">
         <div>
           <h1>{props.name}</h1>
-          {data && <div className="meta"><span>只读模板</span><span>数据定义 {schemaText(data.template.base, data.schemas)}</span>{data.template.sizeRange && <span>适用尺寸 {rangeText(data.template.sizeRange)}</span>}</div>}
+          {data && <div className="meta"><span>{props.identity.role === 'admin' ? `当前修订 ${data.template.currentRevision}` : '只读模板'}</span><span>数据定义 {schemaText(data.template.base, data.schemas)}</span>{data.template.sizeRange && <span>适用尺寸 {rangeText(data.template.sizeRange)}</span>}</div>}
+        </div>
+        <div className="actions">
+          {props.identity.role === 'admin' && <a className="button primary" href={href(['templates', props.name, 'design'])}>设计</a>}
+          <a className="button quiet" href={href(['templates', props.name, 'publish'])}>修订历史</a>
         </div>
       </div>
       <ErrorBox problems={loaded.problems} title="读不到模板" />

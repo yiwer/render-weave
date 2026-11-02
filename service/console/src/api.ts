@@ -4,9 +4,10 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished,
-  ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
-  PlatformOverview, PlanSettings, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
+  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck,
+  DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview, PreviewReply, Problem,
+  RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant,
+  Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
@@ -98,6 +99,7 @@ const page = async <T>(path: string, key: string): Promise<PageOf<T>> => {
   return { items: reply[key] as T[], ...(typeof reply['next'] === 'string' ? { next: reply['next'] } : {}) };
 };
 
+export interface PreviewOptions { readonly workingCopies?: boolean }
 export interface RecordQuery { readonly batchId?: string; readonly template?: string; readonly from?: string; readonly to?: string; readonly before?: string }
 
 export const api = {
@@ -137,6 +139,21 @@ export const api = {
 
   templates: () => json<{ templates: TemplateInfo[] }>('GET', '/v1/templates'),
   template: (name: string) => json<TemplateInfo>('GET', `/v1/templates/${enc(name)}`),
+  templateRevisions: (name: string) => json<TemplateRevisions>('GET', `/v1/templates/${enc(name)}/revisions`),
+  /** 指回旧修订：当前修订指向已有的一个修订，审计记前后内容哈希。 */
+  setCurrentTemplate: (template: string, revision: number) => json<TemplateRevisions>('POST', '/v1/template-current', { json: { template, revision } }),
+  copyTemplate: (name: string, newName: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/copies`, { json: { name: newName } }),
+  workingCopies: () => json<{ workingCopies: TemplateWorkingCopy[] }>('GET', '/v1/template-working-copies'),
+  openWorkingCopy: (name: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/working-copy`),
+  workingCopy: (name: string) => json<TemplateWorkingCopy & { readonly content: string }>('GET', `/v1/templates/${enc(name)}/working-copy`),
+  /** 暂存：整份替换；预期哈希不是当前内容时答 409 draft.stale，回答带 currentSha256。 */
+  stashWorkingCopy: (name: string, expectedSha256: string, text: string) =>
+    json<TemplateWorkingCopy>('PUT', `/v1/templates/${enc(name)}/working-copy${search({ expectedSha256 })}`, { jsonText: text }),
+  discardWorkingCopy: async (name: string) => { await send('DELETE', `/v1/templates/${enc(name)}/working-copy`); },
+  checkWorkingCopy: (name: string) => json<WorkingCopyCheck>('GET', `/v1/templates/${enc(name)}/working-copy/check`),
+  /** 保存为新修订：基准不是当前修订时答 409 template.revisionConflict，回答带 conflict；overwrite 才覆盖。 */
+  saveWorkingCopy: (name: string, expectedSha256: string, overwrite = false) =>
+    json<TemplateSaved>('POST', `/v1/templates/${enc(name)}/working-copy/save`, { json: { expectedSha256, ...(overwrite ? { overwrite } : {}) } }),
   staticSchemas: () => json<{ staticSchemas: StaticSchemaSummary[] }>('GET', '/v1/static-schemas'),
   staticSchema: (name: string, version: number) => json<StaticSchemaDetail>('GET', `/v1/static-schemas/${enc(name)}/versions/${version}`),
   blankWorkbook: async (name: string, version: number) => (await send('GET', `/v1/static-schemas/${enc(name)}/versions/${version}/workbook`)).blob(),
@@ -169,7 +186,8 @@ export const api = {
 
   importExcel: (request: { template: string; workbook: string; parameters: unknown; output: unknown }) => json<ExcelImport>('POST', '/v1/excel-imports', { json: request }),
 
-  preview: (request: unknown) => json<PreviewReply>('POST', '/v1/previews', { json: request }),
+  /** workingCopies：有工作副本的模板用工作副本预览，检查与限制都一样。 */
+  preview: (request: unknown, options: PreviewOptions = {}) => json<PreviewReply>('POST', `/v1/previews${options.workingCopies ? '?workingCopies=true' : ''}`, { json: request }),
 
   submitBatch: (request: unknown, idempotencyKey: string) =>
     changingUsage(json<BatchView>('POST', '/v1/batches', { json: request, headers: { 'idempotency-key': idempotencyKey } })),

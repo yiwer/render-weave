@@ -24,6 +24,8 @@ import { LoginPage } from './pages/login.js';
 import { PlatformPage } from './pages/platform.js';
 import { RecordsPage } from './pages/records.js';
 import { ResourcesPage } from './pages/resources.js';
+import { TemplateDesign } from './pages/template-design.js';
+import { TemplatePublish } from './pages/template-publish.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
 import type { Identity } from './types.js';
@@ -95,7 +97,14 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
       page = <DatasetList deliver={{ datasetIds: (query.get('datasets') ?? '').split(',').filter(Boolean), ...(query.get('template') ? { templateName: query.get('template')! } : {}) }} />;
       break;
     case 'import': page = <DatasetList importing={query.get('template') ? { templateName: query.get('template')! } : {}} />; break;
-    case 'templates': page = id ? <TemplateStudio name={id} /> : <TemplateList />; break;
+    case 'templates': {
+      const root = query.get('in') ?? undefined;
+      if (id && sub === 'publish') page = <TemplatePublish key={`${id}\n${root ?? ''}`} name={id} {...(root ? { root } : {})} identity={props.identity} />;
+      // 编辑会话跟着被预览的模板：在它的子模板之间切换时，撤销与未保存的改动都还在。
+      else if (id && sub === 'design') page = <TemplateDesign key={root ?? id} name={id} root={root ?? id} identity={props.identity} />;
+      else page = id ? <TemplateStudio name={id} identity={props.identity} /> : <TemplateList identity={props.identity} />;
+      break;
+    }
     case 'batches': page = id ? <BatchPage id={id} /> : <BatchList />; break;
     case 'records': page = <RecordsPage key={query.toString()} query={query} />; break;
     case 'resources': page = <ResourcesPage identity={props.identity} />; break;

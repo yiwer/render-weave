@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from 'react';
 import type { LivePreview } from '../hooks.js';
-import type { LayoutNode, Problem } from '../types.js';
+import type { LayoutNode, PreviewReply, Problem } from '../types.js';
 import { countText, ErrorBox, ProblemList, type ProblemContext } from './problems.js';
 
 function findNode(node: LayoutNode, path: string): LayoutNode | undefined {
@@ -20,6 +20,22 @@ function findNode(node: LayoutNode, path: string): LayoutNode | undefined {
 /** 零宽或零高的元素至少画 2 mm 的标记，与引擎的问题边框一致。 */
 const MIN_MARK_MM = 2;
 
+/** 定位到元素的问题在图上的框（百分比）；次序就是清单与图上共用的编号。 */
+export function problemMarks(reply: PreviewReply): { readonly problem: Problem; readonly box: { readonly left: number; readonly top: number; readonly width: number; readonly height: number } }[] {
+  const layout = reply.layout;
+  if (!layout || !reply.image) return [];
+  const { width, height } = layout.output, result: { problem: Problem; box: { left: number; top: number; width: number; height: number } }[] = [];
+  for (const problem of reply.problems) {
+    if (problem.location.kind !== 'element') continue;
+    const node = findNode(layout.root, problem.location.path);
+    if (!node || !node.visible) continue;
+    const w = Math.max(node.width, MIN_MARK_MM), h = Math.max(node.height, MIN_MARK_MM);
+    const x = node.x - (w - node.width) / 2, y = node.y - (h - node.height) / 2;
+    result.push({ problem, box: { left: (x / width) * 100, top: (y / height) * 100, width: (w / width) * 100, height: (h / height) * 100 } });
+  }
+  return result;
+}
+
 export function PreviewCanvas(props: {
   readonly preview: LivePreview;
   readonly context?: ProblemContext;
@@ -28,20 +44,7 @@ export function PreviewCanvas(props: {
 }) {
   const { reply, problems: failed, loading, waiting } = props.preview;
   const [selected, setSelected] = useState<Problem>();
-  const marks = useMemo(() => {
-    const layout = reply?.layout;
-    if (!layout || !reply.image) return [];
-    const { width, height } = layout.output, result: { problem: Problem; box: { left: number; top: number; width: number; height: number } }[] = [];
-    for (const problem of reply.problems) {
-      if (problem.location.kind !== 'element') continue;
-      const node = findNode(layout.root, problem.location.path);
-      if (!node || !node.visible) continue;
-      const w = Math.max(node.width, MIN_MARK_MM), h = Math.max(node.height, MIN_MARK_MM);
-      const x = node.x - (w - node.width) / 2, y = node.y - (h - node.height) / 2;
-      result.push({ problem, box: { left: (x / width) * 100, top: (y / height) * 100, width: (w / width) * 100, height: (h / height) * 100 } });
-    }
-    return result;
-  }, [reply]);
+  const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
   const numbers = useMemo(() => new Map(marks.map((mark, index) => [mark.problem, index + 1])), [marks]);
   const select = (problem: Problem) => {
     setSelected(problem);

@@ -1,0 +1,56 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "全元素牌",
+  "base": { "name": "胸牌", "version": 1 },
+  "parameters": [
+    { "name": "accentColor", "displayName": "主色", "visibility": "public", "type": "color", "default": "#B4532A" },
+    { "name": "nameSize", "displayName": "姓名字号", "visibility": "public", "type": "number", "constraints": { "min": 3, "max": 12 }, "default": 5 },
+    { "name": "bandHeight", "displayName": "色带高度", "visibility": "internal", "type": "number", "default": 2 }
+  ],
+  "derived": [
+    { "name": "nameLength", "displayName": "姓名长度", "type": "number", "op": "length", "of": { "var": "fullName" } },
+    { "name": "nameTooLong", "displayName": "姓名太长", "type": "boolean", "op": "branch", "branches": [{ "when": { "left": { "var": "nameLength" }, "op": "gt", "right": { "value": 6 } }, "then": { "value": true } }], "otherwise": { "value": false } },
+    { "name": "noPhoto", "displayName": "没有照片", "type": "boolean", "op": "branch", "branches": [{ "when": { "left": { "var": "photo" }, "op": "empty" }, "then": { "value": true } }], "otherwise": { "value": false } }
+  ],
+  "checks": [
+    { "name": "姓名太长", "problemWhen": { "var": "nameTooLong" }, "level": "hint", "message": "姓名超过六个字，可能放不下" },
+    { "name": "没有照片", "problemWhen": { "var": "noPhoto" }, "level": "hint", "message": "没有照片" }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 100, "max": 120 }, "height": { "min": 150, "max": 170 } },
+    "minFontSize": 2,
+    "fill": "#FFFFFF",
+    "children": [
+      {
+        "type": "container", "name": "容器", "fill": "#F3ECE0", "padding": 1, "cornerRadius": 1,
+        "layout": { "mode": "stack", "direction": "row", "gap": 1 },
+        "place": { "left": 2, "top": 2, "width": { "fixed": 96 }, "height": { "fixed": 12 } },
+        "children": [
+          { "type": "text", "name": "容器内文字", "content": [{ "text": "单位 " }, { "slot": "organization" }], "font": "res:font-hei-medium", "fontSize": 4, "color": "#2B2824", "place": { "height": "fill" } }
+        ]
+      },
+      {
+        "type": "loop", "name": "循环", "list": { "var": "sessions" }, "template": "场次条",
+        "itemLayout": { "direction": "column", "heights": { "fixed": 5 } },
+        "place": { "left": 2, "top": 16, "width": { "fixed": 96 }, "height": { "fixed": 16 } }
+      },
+      {
+        "type": "call", "name": "调用", "template": "场次条", "data": { "var": "mainSession" },
+        "place": { "left": 2, "top": 34, "width": { "fixed": 96 }, "height": { "fixed": 6 } }
+      },
+      {
+        "type": "text", "name": "文字", "content": [{ "slot": "fullName" }], "font": "res:font-hei-medium", "fontSize": { "var": "nameSize" }, "color": { "var": "accentColor" },
+        "horizontalAlign": "start", "fit": { "steps": ["tightenSpacing", "compressGlyphs"], "compressMin": 0.7, "onFail": "hint" },
+        "place": { "left": 2, "top": 42, "width": { "fixed": 60 }, "height": { "fixed": 10 } }
+      },
+      { "type": "image", "name": "图片", "source": { "var": "photo" }, "fit": "contain", "place": { "left": 64, "top": 42, "width": { "fixed": 34 }, "height": { "fixed": 34 } } },
+      { "type": "qrcode", "name": "二维码", "content": { "var": "badgeNo" }, "errorCorrectionLevel": "M", "place": { "left": 2, "top": 54, "width": { "fixed": 22 }, "height": { "fixed": 22 } } },
+      { "type": "barcode", "name": "条码", "content": { "var": "badgeNo" }, "format": "CODE128", "place": { "left": 26, "top": 54, "width": { "fixed": 36 }, "height": { "fixed": 22 } } },
+      { "type": "rect", "name": "矩形", "fill": { "var": "accentColor" }, "cornerRadius": 1, "place": { "left": 2, "top": 80, "width": { "fixed": 22 }, "height": { "fixed": 14 } } },
+      { "type": "ellipse", "name": "椭圆", "fill": "#2E7D4F", "place": { "left": 26, "top": 80, "width": { "fixed": 22 }, "height": { "fixed": 14 } } },
+      { "type": "line", "name": "线条", "from": [0, 7], "to": [22, 7], "stroke": { "color": "#2B2824", "width": 1 }, "place": { "left": 50, "top": 80, "width": { "fixed": 22 }, "height": { "fixed": 14 } } },
+      { "type": "polygon", "name": "多边形", "points": [[0, 14], [11, 0], [22, 14]], "fill": "#7A3EB1", "place": { "left": 74, "top": 80, "width": { "fixed": 22 }, "height": { "fixed": 14 } } },
+      { "type": "path", "name": "路径", "d": "M 0 0 L 40 0 L 40 20 Z", "fill": "#0B4EA2", "place": { "left": 2, "top": 98, "width": { "fixed": 40 }, "height": { "fixed": 20 } } }
+    ]
+  }
+}

@@ -4,7 +4,7 @@
  * - 预览按租户限并发与频率（票据 06）：本页的预览排成一队、一次一个；被限频（429）时等几秒再试，不报错。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, ApiError } from './api.js';
+import { api, ApiError, type PreviewOptions } from './api.js';
 import type { PageOf, PreviewReply, Problem } from './types.js';
 
 export interface Route { readonly path: readonly string[]; readonly query: URLSearchParams }
@@ -96,12 +96,12 @@ let queue: Promise<unknown> = Promise.resolve();
  * 排队出一张草稿预览。stale() 为真时不再发送（页面已换了请求或离开）；
  * 被限频时等 3 秒再试，onWait 告诉页面正在等。
  */
-export function queuePreview(request: unknown, stale: () => boolean, onWait?: (waiting: boolean) => void): Promise<PreviewReply | undefined> {
+export function queuePreview(request: unknown, stale: () => boolean, onWait?: (waiting: boolean) => void, options?: PreviewOptions): Promise<PreviewReply | undefined> {
   const task = async () => {
     for (let attempt = 0; ; attempt++) {
       if (stale()) return undefined;
       try {
-        const reply = await api.preview(request);
+        const reply = await api.preview(request, options);
         onWait?.(false);
         return reply;
       } catch (error) {
@@ -125,9 +125,13 @@ export interface LivePreview {
   readonly refresh: () => void;
 }
 
-/** 请求变了就在 delayMs 之后重新预览；只显示最后一次请求的结果。request 为 undefined 时不预览。 */
-export function useLivePreview(request: unknown, delayMs = 600): LivePreview {
+/**
+ * 请求变了就在 delayMs 之后重新预览；只显示最后一次请求的结果。request 为 undefined 时不预览。
+ * version：请求没变、内容变了（暂存了工作副本）时换一个值，同样重新预览。
+ */
+export function useLivePreview(request: unknown, delayMs = 600, options: PreviewOptions & { readonly version?: string } = {}): LivePreview {
   const text = request === undefined ? '' : JSON.stringify(request);
+  const { workingCopies = false, version } = options;
   const [state, setState] = useState<{ reply?: PreviewReply; problems?: readonly Problem[]; loading: boolean; waiting: boolean }>({ loading: false, waiting: false });
   const [round, setRound] = useState(0);
   const latest = useRef(0), forced = useRef(false);
@@ -138,13 +142,13 @@ export function useLivePreview(request: unknown, delayMs = 600): LivePreview {
     forced.current = false;
     const timer = window.setTimeout(() => {
       setState((previous) => ({ ...previous, loading: true }));
-      queuePreview(JSON.parse(text), stale, (waiting) => { if (!stale()) setState((previous) => ({ ...previous, waiting })); }).then(
+      queuePreview(JSON.parse(text), stale, (waiting) => { if (!stale()) setState((previous) => ({ ...previous, waiting })); }, { workingCopies }).then(
         (reply) => { if (reply && !stale()) setState({ reply, loading: false, waiting: false }); },
         (error: unknown) => { if (!stale()) setState({ problems: problemsOf(error), loading: false, waiting: false }); },
       );
     }, delay);
     return () => { window.clearTimeout(timer); };
-  }, [text, round, delayMs]);
+  }, [text, round, delayMs, workingCopies, version]);
   useEffect(() => () => { latest.current++; }, []);
   return { ...state, refresh: useCallback(() => { forced.current = true; setRound((value) => value + 1); }, []) };
 }
