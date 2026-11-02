@@ -162,6 +162,9 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/authoring/tenants/{租户}` | 代建工程师，只认被指定的租户 |
 | `GET …/authoring/tenants/{租户}/workspace`、`GET …/contents/{哈希}` | 代建工程师；推送的读回，见[代建推送](#代建推送) |
 | `POST …/push-plans`、`PUT …/contents/{哈希}`、`POST …/pushes`、`POST …/template-current` | 代建工程师；推送与改当前修订 |
+| `GET /v1/definitions`、`GET /v1/definitions/{名称}/draft`、`GET …/draft/check` | 管理员、操作员、API 密钥；见[数据定义草案](#数据定义草案) |
+| `POST`、`PUT`、`DELETE /v1/definitions/{名称}/draft` | 客户管理员 |
+| `/v1/authoring/tenants/{租户}/definitions…` | 代建工程师，只认被指定的租户；与上面两行同一组操作，读取也记审计 |
 | `GET /v1/templates`、`GET /v1/templates/{模板名}` | 管理员、操作员、API 密钥；见[模板与草稿预览](#模板与草稿预览) |
 | `POST /v1/previews` | 管理员、操作员、API 密钥 |
 | `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
@@ -273,6 +276,16 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 **读回**：`GET …/workspace` 列出租户的文档（模板为当前修订）、模板的全部修订与资源的全部内容版本；`GET …/contents/{哈希}` 按 SHA-256 读回已登记的原始字节，只上传、没登记的内容答 404。
 
 **审计**：代建端点的每次调用都记进目标租户的审计，标为跨租户：`authoring.access`、`authoring.read`、`content.read`、`content.upload`、`push.plan`、`push.commit`、`push.reject`、`template.setCurrent`。`push.commit` 与 `template.setCurrent` 另记前后内容哈希与差异摘要，见[审计](#审计)。
+
+## 数据定义草案
+
+客户管理员与代建工程师经同一套接口改数据定义的结构，不必整份推送（P1 票据 04，M297、M298、M345、M346、M351）。接口写法见[开放 API](api.md#数据定义草案)。
+
+- **存储**：迁移 0011 的 `definition_drafts` 表登记名称、基于的版本、内容哈希与最后保存者，开了行级安全；内容按原始字节存进本租户的内容，同数据集（M270）。写入与推送、资源提交锁住同一行，依次进行。
+- **不进工作区**：草案不在 `workspace_documents` 里，渲染、数据集校验、模板列表与推送的差异都看不到它，发布（票据 05）之后才成为静态数据定义。推送不碰草案。
+- **校验**：走发布的同一入口 `publishStaticSchema`，所以问题与发布时相同，编译产物也与发布的相同。
+- **会影响绑定**：`diffDefinition` 给出删掉的字段，引擎的 `templateFieldUses` 给出每个模板当前修订读到的字段（绑定、插槽、状态样式、派生变量、检查项、调用的数据与实参，路径沿单引用往下走）。读不了的模板不列。
+- **审计**：`definitionDraft.create`、`definitionDraft.save`、`definitionDraft.delete` 都记前后内容哈希。保存的差异摘要逐字段（`field:字段名称`、`definition:属性`）；有一份读不了时只记整份文档（`definitionDraft:名称`）。代建工程师的读取另记 `authoring.read`，客户成员的读取不记。
 
 ## 模板与草稿预览
 

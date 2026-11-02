@@ -15,6 +15,7 @@ import { registerBatchRoutes } from './batches.js';
 import { registerConsoleRoutes } from './console.js';
 import { registerDatasetRoutes } from './datasets.js';
 import { registerExcelImportRoutes } from './excel-imports.js';
+import { registerCustomerDefinitionRoutes } from './definitions.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
 import { registerRecordRoutes } from './records.js';
 import { registerResourceRoutes } from './resources.js';
@@ -128,6 +129,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerUsageRoutes(app, context);
   registerWebhookRoutes(app, context);
   registerStaticSchemaRoutes(app, context);
+  registerCustomerDefinitionRoutes(app, context);
   registerExcelImportRoutes(app, context);
   // 机器可读的 API 描述（票据 11）：按已注册的路由生成，第一次请求时生成一次。
   let openapi: Record<string, unknown> | undefined;
@@ -136,7 +138,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   return Object.assign(app, { routeTable });
 }
 
-const forbidden = () => fail(403, ServiceProblemCodes.authForbidden, 'request.authorization', '当前身份没有这项操作的权限');
+export const forbidden = () => fail(403, ServiceProblemCodes.authForbidden, 'request.authorization', '当前身份没有这项操作的权限');
 
 /** 从 Authorization: Bearer <令牌> 解析身份。缺少、格式不对、过期或吊销都答 401。 */
 async function authenticate(context: ApiContext, request: FastifyRequest): Promise<Identity> {

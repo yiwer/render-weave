@@ -2,6 +2,8 @@ export { render, measureRender, preloadRenderer, type RenderResult, type RenderO
 export { compareReference, type VisualReport, type ReferenceImage, type ComparisonPanel } from './agent/visual-comparison.js';
 /** 模板的对外信息：名称、基准、适用尺寸范围与对外参数；不出图（出图服务的模板列表）。 */
 export { describeTemplate, type TemplateDescription } from './template/describe.js';
+/** 模板读到了哪些字段：出图服务在草案删字段、改字段名称时，列出用到它们的模板。 */
+export { templateFieldUses, type TemplateFieldUse } from './template/field-uses.js';
 export {
   deliverBatch, readOutputRecord, replayOutputRecord, MAX_BATCH_ITEMS,
   freezeBatch, deliverBatchItem, runFrozenBatch, summarizeBatch, readRecord, replayRecord,

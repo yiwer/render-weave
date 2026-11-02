@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.1.0';
+export const API_VERSION = '1.2.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -41,6 +41,7 @@ export const PROBLEM_STATUS: Readonly<Record<ServiceProblemCode, readonly number
   [ServiceProblemCodes.pushConflict]: [409],
   [ServiceProblemCodes.pushContentMissing]: [400],
   [ServiceProblemCodes.pushContentMismatch]: [400],
+  [ServiceProblemCodes.draftStale]: [409],
   [ServiceProblemCodes.limitRequestTooLarge]: [413],
   [ServiceProblemCodes.limitDatasetTooLarge]: [413],
   [ServiceProblemCodes.limitPixelsExceeded]: [413],
@@ -112,7 +113,8 @@ const SCHEMAS: Record<string, unknown> = {
     problems: { type: 'array', minItems: 1, items: ref('Problem') },
     quota: { ...ref('QuotaShortfall'), description: '额度不足（429 quota.exceeded）时：本期的限额、已用、预占、剩余与本批项数' },
     diff: { ...ref('PushDiff'), description: '推送冲突（409 push.conflict）时：逐项差异' },
-  }, ['problems'], { description: '错误回答：问题清单，额度不足与推送冲突时另带说明情况的字段' }),
+    currentSha256: { ...sha256, description: '保存草案时预期哈希不是当前内容（409 draft.stale）：当前内容哈希（1.2.0）' },
+  }, ['problems'], { description: '错误回答：问题清单，额度不足、推送冲突与草案过期时另带说明情况的字段' }),
   QuotaShortfall: object({ period: str('计费周期 YYYY-MM'), limit: int(), used: int(), reserved: int(), remaining: int(), requested: int() }),
 
   // 账号与租户
@@ -206,6 +208,27 @@ const SCHEMAS: Record<string, unknown> = {
     progress: object({ completed: int('已结束的项'), total: int('项数') }), summary: ref('BatchSummary'), items: array(ref('BatchItem')),
     problems: { ...ref('ProblemList'), description: '批次级问题，如取消' },
   }, ['id', 'template', 'mode', 'build', 'status', 'cancelRequested', 'createdAt', 'progress', 'summary', 'items', 'problems']),
+
+  // 数据定义与草案（1.2.0）
+  DefinitionDraft: object({
+    name: str('数据定义名称'), baseVersion: int('基于的静态版本；新名称没有', 1), sha256: { ...sha256, description: '当前内容的 SHA-256，保存时作为预期哈希' }, byteLength: int('字节数'),
+    createdAt: instant('新建时间'), updatedAt: instant('最后保存时间'), updatedBy: str('最后保存者：邮箱或代建令牌的标签'),
+  }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy'], { description: '数据定义草案：一个名称至多一份' }),
+  Definition: object({
+    name: str('数据定义名称'), displayName: str('显示名称：最新静态版本的；还没发布过时取草案的'),
+    versions: array(object({
+      version: int('版本', 1), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
+    }), '静态版本，按版本号升序'),
+    draft: { ...ref('DefinitionDraft'), description: '草案；没有就是没有草案' },
+  }, ['name', 'displayName', 'versions']),
+  DefinitionDraftCheck: object({
+    sha256: { ...sha256, description: '校验的是这份内容' }, problems: { ...ref('ProblemList'), description: '问题清单，定位到字段；有严重问题时不能发布' },
+    version: int('发布后的版本号；有严重问题时没有', 1), compiled: freeform('编译产物 JSON Schema，与发布产物相同；有严重问题时没有'),
+    affectedBindings: array(object({
+      field: str('与基于的版本相比被删除的字段；改名等于删一个、加一个'),
+      templates: array(object({ name: str('模板名称'), base: { ...staticSchemaRef, description: '模板的基准' } }), '当前修订读到这个字段的模板'),
+    }), '会影响绑定的字段'),
+  }, ['sha256', 'problems', 'affectedBindings']),
 
   // 数据集与资源
   DatasetDocument: dslSchema('dataset.schema.json'),
@@ -312,7 +335,7 @@ const STATUS_TEXT: Readonly<Record<number, string>> = {
 
 // —— 各路由的说明 ——
 
-type Body = 'batchRequest' | 'renderRequest' | 'datasetDocument' | 'binary';
+type Body = 'batchRequest' | 'renderRequest' | 'datasetDocument' | 'definitionDocument' | 'binary';
 interface Reply {
   readonly status: number;
   readonly description: string;
@@ -338,6 +361,23 @@ const created = (json: unknown, description = '已创建'): Reply => ({ status: 
 const none = (description = '成功，没有正文'): Reply => ({ status: 204, description });
 const list = (key: string, item: string, extra: Record<string, unknown> = {}) => object({ [key]: array(ref(item)), ...extra }, [key]);
 const page = (key: string, item: string, cursor: string) => object({ [key]: array(ref(item)), next: str(cursor) }, [key]);
+
+/** 数据定义与草案（P1 票据 04，M345）：客户端点与代建端点一份实现、一份说明，只差寻址。 */
+function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
+  const draft = `${prefix}/definitions/:name/draft`;
+  return {
+    [`GET ${prefix}/definitions`]: { tag, summary: '本租户的数据定义：每个名称的静态版本、各版本被多少数据集与模板使用，以及草案', replies: [ok(list('definitions', 'Definition'))] },
+    [`POST ${draft}`]: { tag, summary: '新建草案：空白，或从某个静态版本另起', errors: [409],
+      description: '这个名称已有草案答 409；空白新建不能用已有静态版本的名称（409），要改它请从某个版本另起。', replies: [created(ref('DefinitionDraft'))] },
+    [`GET ${draft}`]: { tag, summary: '读草案：登记信息与原文', replies: [ok(object({
+      ...(SCHEMAS['DefinitionDraft'] as { properties: Record<string, unknown> }).properties, content: str('草案原文，与保存时逐字节相同，其 SHA-256 是 sha256'),
+    }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy', 'content']))] },
+    [`PUT ${draft}`]: { tag, summary: '整份替换草案，带预期 SHA-256；不是当前内容答 409 并给当前哈希', body: 'definitionDocument', errors: [409, 413, 415],
+      description: '按原始字节存。只要求是 UTF-8 的 JSON 对象、name 与路径一致，还没写完的草案也能存；问题由校验回答。', replies: [ok(ref('DefinitionDraft'))] },
+    [`GET ${draft}/check`]: { tag, summary: '校验草案并预览编译产物，不写任何东西；列出与基于的版本相比会影响绑定的字段与用到它们的模板', replies: [ok(ref('DefinitionDraftCheck'))] },
+    [`DELETE ${draft}`]: { tag, summary: '删除草案', replies: [none('已删除')] },
+  };
+}
 
 const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /healthz': { tag: '运维', summary: '存活检查', replies: [ok(object({ status: { const: 'ok' }, service: str(), build: str() }))] },
@@ -451,6 +491,8 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
       usage: object({ rounds: int('附了几轮'), recorded: int('这次新记了几轮'), tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), []) }) }))] },
   'POST /v1/authoring/tenants/:tenantId/previews': { tag: '代建', summary: '用被指定租户的身份看草稿预览', body: 'renderRequest', errors: [413, 429, 503], replies: [ok(ref('PreviewResult'))] },
   'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions'))] },
+  ...definitionDocs('/v1', '数据定义'),
+  ...definitionDocs('/v1/authoring/tenants/:tenantId', '代建'),
 };
 
 const PATH_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
@@ -464,6 +506,7 @@ const REQUEST_BODIES: Readonly<Record<Body, { content: Record<string, unknown>; 
   batchRequest: { description: 'DSL 1.0 的批次请求', content: { 'application/json': { schema: ref('BatchRequest') } } },
   renderRequest: { description: 'DSL 1.0 的渲染请求', content: { 'application/json': { schema: ref('RenderRequest') } } },
   datasetDocument: { description: 'DSL 1.0 的数据集文档，按原始字节保存', content: { 'application/json': { schema: ref('DatasetDocument') } } },
+  definitionDocument: { description: '数据定义 DSL 的 JSON 文档，按原始字节保存；可以还有问题，由校验回答', content: { 'application/json': { schema: { type: 'object', description: '数据定义 DSL（renderweave-schema/1）' } } } },
   binary: { description: '原始字节', content: { 'application/octet-stream': { schema: { type: 'string', contentMediaType: 'application/octet-stream' } } } },
 };
 

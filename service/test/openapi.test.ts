@@ -112,10 +112,10 @@ describe('开放 API 的 OpenAPI 合同', () => {
 
   it('逐个端点核对错误回答：未鉴权 401，路径里的对象不存在 404，请求体与查询串不合规 400；回答都与描述相符', async () => {
     const { call, a, platform } = world;
-    const tokenFor = (access: string) => {
+    const tokenFor = (access: string, path: string) => {
       if (access === 'authenticated' || access === 'session') return a.operator.token;
       if (access.startsWith('platform.')) return platform;
-      if (access.startsWith('authoring.')) return a.engineer.token;
+      if (path.startsWith('/v1/authoring/')) return a.engineer.token;
       return ROLE_PERMISSIONS.admin.includes(access as Permission) ? a.admin.token : undefined;
     };
     const missing: Record<string, string> = { name: encodeURIComponent(`不存在-${randomUUID()}`), datasetId: encodeURIComponent(`不存在-${randomUUID()}`),
@@ -125,7 +125,7 @@ describe('开放 API 的 OpenAPI 合同', () => {
     for (const { method, path, operation } of operations(doc)) {
       const access = operation['x-access'] as string, at = `${method} ${path}`;
       if (access === 'public') continue;
-      const token = tokenFor(access)!;
+      const token = tokenFor(access, path)!;
       expect(token, at).toBeTruthy();
       const authoring = path.startsWith('/v1/authoring/');
       const params = [...path.matchAll(/\{([A-Za-z0-9]+)\}/g)].map(([, name]) => name!);

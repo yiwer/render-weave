@@ -70,6 +70,33 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
    - 整批图片：`GET /v1/batches/{batchId}/images.zip`；
    - 留档：`GET /v1/batches/{batchId}/export.zip`。导出包能用命令行 `renderweave replay` 离线重放。
 
+## 数据定义草案
+
+草案是一个数据定义名称还没发布的那一份（1.2.0）。每个名称至多一份，记它基于哪个静态版本。客户管理员用 `/v1/definitions…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/definitions…`，同一组操作，请求与回答相同；客户操作员与 API 密钥只读。
+
+| 操作 | 端点 | 说明 |
+|---|---|---|
+| 列出 | `GET /v1/definitions` | 每个名称的静态版本、各版本被多少数据集与模板直接使用，以及草案 |
+| 新建 | `POST /v1/definitions/{name}/draft` | 请求体写 `{ "displayName": "…" }` 是空白新建，写 `{ "fromVersion": 1 }` 是从静态版本另起（复制原文，去掉版本号）。已有草案答 409 `input.duplicate`；空白新建不能用已有静态版本的名称，也答 409 |
+| 读取 | `GET …/draft` | 登记信息与 `content`：原文，与保存时逐字节相同，它的 SHA-256 就是 `sha256` |
+| 保存 | `PUT …/draft?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
+| 校验与编译预览 | `GET …/draft/check` | 只读，见下 |
+| 删除 | `DELETE …/draft` | 静态版本不受影响 |
+
+保存只要求请求体是 UTF-8 的 JSON 对象、`name` 与路径一致、数值不超过 15 位有效数字，还没写完的草案也能存。名称是身份，不能在草案里改；要换名称就新建一份。草案不进工作区，渲染、数据集与模板都看不到它。
+
+校验回答这些字段：
+
+```json
+{ "sha256": "…", "problems": [ { "level": "severe", "code": "definition.constraintConflict",
+    "location": { "kind": "definition", "schema": "线路牌", "path": "fare.constraints" }, "message": "约束冲突：下界 10 大于上界 1" } ],
+  "affectedBindings": [ { "field": "fare", "templates": [ { "name": "标准线路单边", "base": { "name": "线路牌", "version": 1 } } ] } ] }
+```
+
+- `problems` 定位到字段，与发布走同一入口：写了不对的版本号、引用的静态数据定义不存在，这里都报。
+- 没有严重问题时另有 `version`（发布后的版本号）与 `compiled`（编译产物 JSON Schema，与发布的产物相同）。
+- `affectedBindings` 列出与基于的版本相比被删除的字段，改字段名称等于删一个、加一个。`templates` 是当前修订读到这个字段的模板，经过引用读到的也算（`nextStop.landmark` 算用到停靠站点的 `landmark`）。
+
 ## Excel 导入
 
 一批简单数据（如几百张价签）可以从 Excel 导入，一行一个渲染项（M283–M286）。导入只做预览，确认后再提交批次。
@@ -215,4 +242,5 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.2.0 | 2026-11-01 | 数据定义草案（P1 票据 04，M345、M346、M351）：新增 `GET /v1/definitions`，`POST`、`GET`、`PUT`、`DELETE /v1/definitions/{name}/draft`，`GET …/draft/check`，代建端点 `/v1/authoring/tenants/{tenantId}/definitions…` 是同一组操作；问题码 `draft.stale`（409，回答带 `currentSha256`）；权限矩阵加 `definitions.write`、`templates.write`、`authoring.publish`、`authoring.approve`、`authoring.policy` | 兼容，只做加法 |
 | 1.1.0 | 2026-10-27 | 审计补代建写入的内容（P1 票据 03，M347）：`AuditEvent` 加可选的 `beforeSha256`、`afterSha256`、`diff`（增删改计数加至多 50 个路径，各带前后内容哈希）、`round`、`reason`；`GET /v1/audit-events` 加可选的 `actorKind`、`from`、`to` 筛选；新增 `GET /v1/audit-events/export.csv` 按同样的筛选导出 | 兼容，只做加法 |

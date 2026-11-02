@@ -24,12 +24,12 @@ export interface StaticSchemaSummary {
 const VERSION = /^[1-9][0-9]{0,8}$/;
 
 /** 键是"名称@版本"；名称里也可以有 @，按最后一个分开。 */
-function parseKey(key: string): { name: string; version: number } | undefined {
+export function parseKey(key: string): { name: string; version: number } | undefined {
   const at = key.lastIndexOf('@'), version = key.slice(at + 1);
   return at > 0 && VERSION.test(version) ? { name: key.slice(0, at), version: Number(version) } : undefined;
 }
 
-async function readJson(storage: TenantStorage, stored: StoredDocument): Promise<Record<string, unknown> | undefined> {
+export async function readJson(storage: TenantStorage, stored: StoredDocument): Promise<Record<string, unknown> | undefined> {
   const bytes = await storage.contents.get(stored.sha256);
   if (!bytes) return undefined;
   try {

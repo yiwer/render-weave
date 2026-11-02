@@ -8,6 +8,7 @@ export type Permission =
   | 'tenant.read' | 'datasets.write' | 'resources.upload' | 'preview' | 'deliver' | 'records.read' | 'usage.summary'
   | 'members.manage' | 'apiKeys.manage' | 'webhooks.manage' | 'resources.replace' | 'usage.read' | 'audit.read'
   | 'authoring.read' | 'authoring.push' | 'authoring.preview'
+  | 'definitions.write' | 'templates.write' | 'authoring.publish' | 'authoring.approve' | 'authoring.policy'
   | 'platform.tenants' | 'platform.members' | 'platform.authoringTokens' | 'platform.plans';
 
 export type IdentityRole = 'admin' | 'operator' | 'apiKey' | 'authoringEngineer' | 'platformAdmin';
@@ -20,12 +21,13 @@ const OPERATOR: readonly Permission[] = ['tenant.read', 'datasets.write', 'resou
 
 export const ROLE_PERMISSIONS: Readonly<Record<IdentityRole, readonly Permission[]>> = {
   operator: OPERATOR,
-  /** 客户管理员：操作员的全部权限，另管成员、API 密钥与 webhook，替换已有资源，查看用量明细与审计。 */
-  admin: [...OPERATOR, 'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read'],
+  /** 客户管理员：操作员的全部权限，另管成员、API 密钥与 webhook，替换已有资源，查看用量明细与审计；改数据定义与模板、发布、审批（M345）。 */
+  admin: [...OPERATOR, 'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read',
+    'definitions.write', 'templates.write', 'authoring.publish', 'authoring.approve', 'authoring.policy'],
   /** API 密钥：操作员的全部权限加 webhook 管理；不能管成员与密钥，也不能替换已有资源。 */
   apiKey: [...OPERATOR, 'webhooks.manage'],
-  /** 代建工程师：只对被指定的租户读取、推送与预览。 */
-  authoringEngineer: ['authoring.read', 'authoring.push', 'authoring.preview'],
+  /** 代建工程师：只对被指定的租户读取、推送与预览，改数据定义与模板、发布（M345；发布受审批策略约束，票据 11）。 */
+  authoringEngineer: ['authoring.read', 'authoring.push', 'authoring.preview', 'definitions.write', 'templates.write', 'authoring.publish'],
   /** 平台管理员：租户、成员账号、代建令牌与套餐。 */
   platformAdmin: ['platform.tenants', 'platform.members', 'platform.authoringTokens', 'platform.plans'],
 };

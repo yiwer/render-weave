@@ -3,6 +3,7 @@
  * 不是被指定的租户、或租户不存在，都与随机 ID 同样答 404，而且在读请求体之前就答。
  * 每次调用都记进目标租户的审计，标为跨租户操作；不记内容与令牌。
  * 写入（推送提交、指回旧修订）另记前后内容哈希与差异摘要（P1 票据 03，M347）。
+ * 客户也有的操作（数据定义草案）与客户端点共用一份实现，这里只注册第二种寻址（M345）。
  */
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -12,7 +13,8 @@ import {
   checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushAuditDiff, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
   type PushDiff, type PushManifest,
 } from '../push.js';
-import { actorOf, identityOf, type ApiContext } from './app.js';
+import { actorOf, forbidden, identityOf, type ApiContext } from './app.js';
+import { registerDefinitionRoutes } from './definitions.js';
 import { runPreview } from './previews.js';
 import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
@@ -32,8 +34,11 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
   app.register(async (scope) => {
     // 在全局鉴权之后、读请求体之前确定目标租户。
     scope.addHook('onRequest', async (request) => {
-      const identity = identityOf(request), tenantId = objectId((request.params as { tenantId: string }).tenantId);
-      if (identity.kind !== 'authoringToken' || !identity.tenantIds.includes(tenantId)) throw notFound();
+      // 客户管理员也有 definitions.write 这类权限，但代建端点不是给它的：与没有权限一样答 403。
+      const identity = identityOf(request);
+      if (identity.kind !== 'authoringToken') throw forbidden();
+      const tenantId = objectId((request.params as { tenantId: string }).tenantId);
+      if (!identity.tenantIds.includes(tenantId)) throw notFound();
       const tenant = backend.tenant(tenantId);
       if (!(await tenant.get())) throw notFound();
       targets.set(request, tenant);
@@ -135,6 +140,8 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       });
       return sortedState({ documents: [], templates: [updated.template], resources: [] }).templates[0];
     });
+
+    registerDefinitionRoutes(scope, context, { prefix: '/v1/authoring/tenants/:tenantId', read: 'authoring.read', scopeOf: target, crossTenant: true });
   });
 }
 

@@ -18,6 +18,8 @@ export const ServiceProblemCodes = {
   pushContentMissing: 'push.contentMissing',
   /** 代建推送：上传的内容与哈希、字节数、种类或键的声明不符。 */
   pushContentMismatch: 'push.contentMismatch',
+  /** 数据定义草案（P1 票据 04，M346）：保存时带的预期哈希不是当前内容，别人先保存了（409，回答带 currentSha256）。 */
+  draftStale: 'draft.stale',
   /** 入队前的限制（ADR-0017，票据 06）：超限直接拒绝（413），不占 worker。 */
   limitRequestTooLarge: 'limit.requestTooLarge',
   limitDatasetTooLarge: 'limit.datasetTooLarge',

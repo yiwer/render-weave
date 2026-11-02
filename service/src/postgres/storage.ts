@@ -5,7 +5,7 @@
  */
 import {
   documentSource, parseDocumentSource,
-  type AuthoringState, type StoredDocument, type StoredTemplate, type TemplateRevision, type TenantBatch, type TenantStorage,
+  type AuthoringState, type DefinitionDraft, type StoredDocument, type StoredTemplate, type TemplateRevision, type TenantBatch, type TenantStorage,
 } from '../backend.js';
 import {
   itemDirectory, manifestBytes, resourceBackend,
@@ -96,10 +96,50 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const template = (await authoringState(client, tenantId)).templates.find((item) => item.name === name)!;
       return { template, previousRevision: previous!.current_revision };
     }),
+    definitionDrafts: () => withTenant(db, tenantId, async (client) =>
+      (await client.query<DraftRow>(`SELECT ${DRAFT_COLUMNS} FROM definition_drafts WHERE tenant_id = $1`, [tenantId])).rows.map(draftRow)),
+    definitionDraft: (name) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<DraftRow>(`SELECT ${DRAFT_COLUMNS} FROM definition_drafts WHERE tenant_id = $1 AND name = $2`, [tenantId, name])).rows;
+      return row && draftRow(row);
+    }),
+    async createDefinitionDraft({ name, baseVersion, bytes }, { updatedBy, now }) {
+      const sha256 = await blobs.put(tenantId, bytes);
+      return withTenant(db, tenantId, async (client) => {
+        await lockTenant(client, tenantId);
+        const [row] = (await client.query<DraftRow>(`INSERT INTO definition_drafts (tenant_id, name, base_version, sha256, byte_length, created_at, updated_at, updated_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $6, $7) ON CONFLICT (tenant_id, name) DO NOTHING RETURNING ${DRAFT_COLUMNS}`,
+        [tenantId, name, baseVersion ?? null, sha256, bytes.length, now, updatedBy])).rows;
+        return row && draftRow(row);
+      });
+    },
+    async saveDefinitionDraft(name, expectedSha256, bytes, { updatedBy, now }) {
+      const sha256 = await blobs.put(tenantId, bytes);
+      return withTenant(db, tenantId, async (client) => {
+        await lockTenant(client, tenantId);
+        const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+        if (!current) return undefined;
+        if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+        const [row] = (await client.query<DraftRow>(`UPDATE definition_drafts SET sha256 = $3, byte_length = $4, updated_at = $5, updated_by = $6
+          WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name, sha256, bytes.length, now, updatedBy])).rows;
+        return { saved: draftRow(row!) };
+      });
+    },
+    deleteDefinitionDraft: (name) => withTenant(db, tenantId, async (client) => {
+      await lockTenant(client, tenantId);
+      const [row] = (await client.query<DraftRow>(`DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name])).rows;
+      return row && draftRow(row);
+    }),
   };
 }
 
-/** 锁住租户的一行：资源提交、推送、改模板的当前修订与保存数据集依次进行（M260、M264、M270）。 */
+interface DraftRow { name: string; base_version: number | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
+const DRAFT_COLUMNS = 'name, base_version, sha256, byte_length, created_at, updated_at, updated_by';
+const draftRow = (row: DraftRow): DefinitionDraft => ({
+  name: row.name, ...(row.base_version === null ? {} : { baseVersion: row.base_version }), sha256: row.sha256, byteLength: Number(row.byte_length),
+  createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
+});
+
+/** 锁住租户的一行：资源提交、推送、改模板的当前修订、保存数据集与写草案依次进行（M260、M264、M270）。 */
 async function lockTenant(client: DbClient, tenantId: string): Promise<void> {
   await client.query('INSERT INTO resource_stores (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING', [tenantId]);
   await client.query('SELECT tenant_id FROM resource_stores WHERE tenant_id = $1 FOR UPDATE', [tenantId]);

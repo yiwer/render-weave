@@ -115,9 +115,10 @@ export type World = Awaited<ReturnType<typeof createWorld>>;
 const MATRIX: Record<IdentityRole, readonly string[]> = {
   operator: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary'],
   admin: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary',
-    'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read'],
+    'members.manage', 'apiKeys.manage', 'webhooks.manage', 'resources.replace', 'usage.read', 'audit.read',
+    'definitions.write', 'templates.write', 'authoring.publish', 'authoring.approve', 'authoring.policy'],
   apiKey: ['tenant.read', 'datasets.write', 'resources.upload', 'preview', 'deliver', 'records.read', 'usage.summary', 'webhooks.manage'],
-  authoringEngineer: ['authoring.read', 'authoring.push', 'authoring.preview'],
+  authoringEngineer: ['authoring.read', 'authoring.push', 'authoring.preview', 'definitions.write', 'templates.write', 'authoring.publish'],
   platformAdmin: ['platform.tenants', 'platform.members', 'platform.authoringTokens', 'platform.plans'],
 };
 
@@ -162,6 +163,24 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/template-current`, body: { template: '矩阵', revision: 1 } }) },
+  // 数据定义草案（P1 票据 04，M345）：客户管理员写、客户成员与 API 密钥只读，代建工程师走自己的寻址；名称用随机值，另起没有这一版答 404。
+  { route: 'GET /v1/definitions', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/definitions' }) },
+  { route: 'POST /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/draft`, body: { fromVersion: 1 } }) },
+  { route: 'GET /v1/definitions/:name/draft', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}/draft` }) },
+  { route: 'PUT /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'PUT', url: `/v1/definitions/d${randomUUID()}/draft?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'GET /v1/definitions/:name/draft/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}/draft/check` }) },
+  { route: 'DELETE /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/definitions/d${randomUUID()}/draft` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definitions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft`, body: { fromVersion: 1 } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft` }) },
+  { route: 'PUT /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/draft/check', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/check` }) },
+  { route: 'DELETE /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'DELETE', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft` }) },
   // 批量交付（票据 07）：提交用不存在的模板，整批拒绝，不需要 worker。
   { route: 'POST /v1/batches', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/batches', body: BLOCKED_BATCH }) },
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
@@ -378,6 +397,9 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       expect(hook.status, hook.raw.slice(0, 300)).toBe(201);
       world.secrets.push(hook.body.secret);
       expect((await call('PATCH', `/v1/webhooks/${hook.body.webhook.id}`, a.admin.token, { active: false })).status).toBe(200);
+      // A 的一份数据定义草案：另一租户读、改、删、校验都与不存在的名称回答相同。
+      const draft = await call('POST', `/v1/definitions/${encodeURIComponent('问候')}/draft`, a.admin.token, { fromVersion: 1 });
+      expect(draft.status, draft.raw.slice(0, 300)).toBe(201);
       const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', staticSchemaName: '问候', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
         webhookId: hook.body.webhook.id };
       const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, staticSchemaName: `定义-${randomUUID()}`, batchId: randomUUID(),

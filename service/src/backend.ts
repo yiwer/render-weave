@@ -380,6 +380,27 @@ export interface PushWrites {
   readonly rounds?: readonly RoundUsageEntry[];
 }
 
+/**
+ * 数据定义草案（P1 票据 04，M346）：一个数据定义名称还没发布的那一份，每个名称至多一份。
+ * baseVersion 是它基于的静态版本，新名称没有。内容按原始字节存在本租户的内容里，读回与保存时逐字节相同。
+ */
+export interface DefinitionDraft {
+  readonly name: string;
+  readonly baseVersion?: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  /** 最后保存者的标签（邮箱或代建令牌的标签），不含令牌。 */
+  readonly updatedBy: string;
+}
+
+/** 写草案的主体与时间。 */
+export interface DraftWriter {
+  readonly updatedBy: string;
+  readonly now: Date;
+}
+
 /** 本租户按 SHA-256 存放的内容（ADR-0018）：先写内容，再登记；没有登记的内容不会出现在任何读者面前。 */
 export interface ContentStore {
   /** 写入一份内容，返回它的 SHA-256；相同字节只存一份。 */
@@ -407,6 +428,18 @@ export interface TenantStorage {
     Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number>; readonly recordedRounds: readonly string[] }>;
   /** 把模板的当前修订指向它已有的一个修订，同时答出改之前的当前修订；模板或修订不存在时 undefined。 */
   setCurrentTemplate(name: string, revision: number): Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | undefined>;
+  /** 本租户全部数据定义草案。 */
+  definitionDrafts(): Promise<readonly DefinitionDraft[]>;
+  definitionDraft(name: string): Promise<DefinitionDraft | undefined>;
+  /** 新建草案；这个名称已有草案时什么也不写，返回 undefined。与推送、资源提交依次进行。 */
+  createDefinitionDraft(draft: { readonly name: string; readonly baseVersion?: number; readonly bytes: Uint8Array }, by: DraftWriter): Promise<DefinitionDraft | undefined>;
+  /**
+   * 整份替换草案：只有当前内容哈希等于 expectedSha256 才写，否则什么也不写，答当前哈希（stale）。没有这份草案时 undefined。
+   */
+  saveDefinitionDraft(name: string, expectedSha256: string, bytes: Uint8Array, by: DraftWriter):
+    Promise<{ readonly saved: DefinitionDraft } | { readonly stale: string } | undefined>;
+  /** 删除草案，答删掉的那一份；没有时 undefined。 */
+  deleteDefinitionDraft(name: string): Promise<DefinitionDraft | undefined>;
   /**
    * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
    * 与推送、资源提交依次进行。

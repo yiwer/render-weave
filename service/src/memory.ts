@@ -5,7 +5,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   DEFAULT_PLAN, documentSource, EmailTakenError, MAX_ACTIVE_WEBHOOKS, parseDocumentSource, periodOf, TOKEN_KINDS,
-  type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type Identity, type ItemResult, type LoginRecord, type Member,
+  type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
   type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
   type TemplateRevision, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
@@ -536,6 +536,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
   /** 工作区文档：来源 → 内容。推送进来的文档来源是"种类:键"，模板那一行指向当前修订。 */
   const documents = new Map<string, { sha256: string; byteLength: number }>();
   const templates = new Map<string, { current: number; revisions: TemplateRevision[] }>();
+  const drafts = new Map<string, DefinitionDraft>();
   let resources: readonly ResourceManifestEntry[] = [];
   const batches = new Map<string, MemoryBatch>();
   /** 资源提交、推送与改当前修订依次进行，与 PostgreSQL 后端锁住租户的一行相同。 */
@@ -647,6 +648,28 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       row.current = revision;
       documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
       return { template: template(name, row), previousRevision };
+    }),
+    definitionDrafts: async () => [...drafts.values()],
+    definitionDraft: async (name) => drafts.get(name),
+    createDefinitionDraft: ({ name, baseVersion, bytes }, { updatedBy, now }) => exclusive(async () => {
+      if (drafts.has(name)) return undefined;
+      const at = now.toISOString();
+      const draft: DefinitionDraft = { name, ...(baseVersion === undefined ? {} : { baseVersion }), sha256: put(bytes), byteLength: bytes.length, createdAt: at, updatedAt: at, updatedBy };
+      drafts.set(name, draft);
+      return draft;
+    }),
+    saveDefinitionDraft: (name, expectedSha256, bytes, { updatedBy, now }) => exclusive(async () => {
+      const current = drafts.get(name);
+      if (!current) return undefined;
+      if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
+      const saved: DefinitionDraft = { ...current, sha256: put(bytes), byteLength: bytes.length, updatedAt: now.toISOString(), updatedBy };
+      drafts.set(name, saved);
+      return { saved };
+    }),
+    deleteDefinitionDraft: (name) => exclusive(async () => {
+      const current = drafts.get(name);
+      drafts.delete(name);
+      return current;
     }),
   };
 }
