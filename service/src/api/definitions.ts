@@ -1,18 +1,19 @@
 /**
- * 数据定义与草案的端点（P1 票据 04、05，M297、M298、M345、M346）：新建、读取、保存、校验、预检、发布与删除草案，列出本租户的数据定义。
+ * 数据定义与草案的端点（P1 票据 04、05、06，M297、M298、M345、M346、M355）：新建、读取、保存、校验、预检、发布与删除草案，列出本租户的数据定义与发布记录。
  * 一套处理逻辑，两种寻址（M261、M345）：客户端点的租户由身份决定，代建端点在路径里写目标租户；同一操作的请求与回答相同。
  * - 草案按原始字节存，读回的 content 与保存时逐字节相同，sha256 就是它的哈希；保存带预期哈希，不是当前内容答 409（draft.stale）；
  * - 保存只要求是 JSON 对象、名称与路径一致，还没写完的草案也能存；问题由校验回答，与发布同一个入口（publishStaticSchema）；
  * - 草案不进工作区：渲染、数据集与模板看不到它，直到发布。发布走 publishStaticSchema，原文与编译产物按本地 renderweave publish 的写法成对登记，逐字节相同（M278）；
- * - 回退没有单独的操作：从旧版本另起草案（fromVersion），再发布成新版本。旧版本不变（ADR-0008）。
+ * - 回退没有单独的操作：从旧版本另起草案（fromVersion），再发布成新版本。旧版本不变（ADR-0008）；
+ * - 发布记录不另存：谁、何时、基于哪一版读审计（definition.publish、push.commit），内容与差异读不可变的版本本身（M355）。
  * 客户成员的读取不记审计；代建工程师的读取与所有写入都记。写入另记前后内容哈希与差异摘要（M347）。
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
-import type { AuditContent, AuditDiff, AuditDiffPath, DefinitionDraft, NewAuditEvent, TenantStorage } from '../backend.js';
+import { parseDocumentSource, type AuditContent, type AuditDiff, type AuditDiffPath, type AuditEvent, type DefinitionDraft, type NewAuditEvent, type TenantScope, type TenantStorage } from '../backend.js';
 import {
   checkDataset, describeTemplate, diffDefinition, publishStaticSchema, readWorkspaceDocuments, templateFieldUses,
-  type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type TemplateEntry, type Workspace,
+  type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type StaticSchemaRef, type TemplateEntry, type Workspace,
 } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
@@ -72,18 +73,78 @@ function datasetImpact(workspace: Workspace, base: { name: string; version: numb
   return { total: bound.length, checked: checked.length, complete: checked.length === bound.length, mismatched: mismatches.length, samples: mismatches.slice(0, MISMATCH_SAMPLES) };
 }
 
-/** 用到被删字段的模板：按模板当前修订读到的字段，模板读不了时不列。 */
+/** 这个名称的每个字段被哪些模板读到：按模板当前修订，经过引用读到的也算，模板读不了时不列。 */
+function fieldUses(name: string, templates: readonly TemplateEntry[], staticSchemas: readonly StaticSchemaEntry[]): Map<string, { name: string; base: StaticSchemaRef }[]> {
+  const uses = new Map<string, { name: string; base: StaticSchemaRef }[]>();
+  for (const template of [...templates].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+    const base = describeTemplate(template.document).template?.base;
+    if (!base) continue;
+    const fields = new Set(templateFieldUses(template.document, staticSchemas).uses.filter((use) => use.schema.name === name).map((use) => use.field));
+    for (const field of fields) uses.set(field, [...(uses.get(field) ?? []), { name: template.name, base }]);
+  }
+  return uses;
+}
+
+/** 用到被删字段的模板。 */
 function affectedBindings(name: string, removed: readonly string[], templates: readonly TemplateEntry[], staticSchemas: readonly StaticSchemaEntry[]) {
-  const reads = templates.map((template) => ({
-    name: template.name,
-    base: describeTemplate(template.document).template?.base,
-    fields: new Set(templateFieldUses(template.document, staticSchemas).uses.filter((use) => use.schema.name === name).map((use) => use.field)),
+  const uses = fieldUses(name, templates, staticSchemas);
+  return removed.map((field) => ({ field, templates: uses.get(field) ?? [] }));
+}
+
+/** 发布记录读的审计事件：网页与接口上发布、推送提交（M355）。 */
+const PUBLICATION_ACTIONS = ['definition.publish', 'push.commit'], PUBLICATION_EVENTS_PAGE = 200;
+
+/**
+ * 每个静态版本（键是"名称@版本"）是哪个审计事件写下的：从新到旧读，都找到了就停。
+ * 推送的差异摘要只留前 AUDIT_DIFF_PATHS 项，一次推送写入太多文档时靠后的找不到，与审计之前的版本一样回答没有记录。
+ */
+async function publicationEvents(scope: TenantScope, wanted: ReadonlySet<string>): Promise<Map<string, AuditEvent>> {
+  const found = new Map<string, AuditEvent>();
+  const keysOf = (event: AuditEvent) => (event.action === 'definition.publish' ? [event.object.id] : (event.diff?.paths ?? []).flatMap(({ path, change }) => {
+    const source = parseDocumentSource(path);
+    return source?.kind === 'definition' && change === 'added' ? [source.key] : [];
   }));
-  return removed.map((field) => ({
-    field,
-    templates: reads.filter((template) => template.base && template.fields.has(field)).map((template) => ({ name: template.name, base: template.base! }))
-      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
-  }));
+  for (let before: string | undefined; found.size < wanted.size;) {
+    const events = await scope.listAudit({ limit: PUBLICATION_EVENTS_PAGE, actions: PUBLICATION_ACTIONS, ...(before ? { before } : {}) });
+    for (const event of events) for (const key of keysOf(event)) if (wanted.has(key) && !found.has(key)) found.set(key, event);
+    if (events.length < PUBLICATION_EVENTS_PAGE) break;
+    before = events.at(-1)!.id;
+  }
+  return found;
+}
+
+/**
+ * 本租户的发布记录，新的在前：每个静态版本一行，原文与编译产物都在才算有。
+ * 差异与基准比：网页发布的基准是它基于的版本（审计的 beforeSha256），推送没有记基于哪一版，与它的上一版比；都没有就是首个版本，字段全算新增。
+ */
+async function definitionPublications(scope: TenantScope, only: string | undefined) {
+  const storage = scope.storage, documents = (await storage.authoringState()).documents;
+  const compiled = new Map(documents.filter((stored) => stored.kind === 'compiled').map((stored) => [stored.key, stored.sha256]));
+  const versions = documents.flatMap((stored) => {
+    const key = stored.kind === 'definition' && compiled.has(stored.key) ? parseKey(stored.key) : undefined;
+    return key && (only === undefined || key.name === only) ? [{ ...key, key: stored.key, stored, compiledSha256: compiled.get(stored.key)! }] : [];
+  });
+  const events = await publicationEvents(scope, new Set(versions.map((version) => version.key)));
+  const content = new Map(await Promise.all(versions.map(async (version) => [version.key, await readJson(storage, version.stored)] as const)));
+  return versions.flatMap((version) => {
+    const document = content.get(version.key), event = events.get(version.key);
+    if (!document) return [];
+    const siblings = versions.filter((other) => other.name === version.name);
+    const base = event?.action === 'definition.publish'
+      ? siblings.find((other) => other.stored.sha256 === event.beforeSha256)
+      : siblings.filter((other) => other.version < version.version).sort((a, b) => b.version - a.version)[0];
+    const { problems: _none, ...diff } = diffDefinition(baseDocumentOf(base && content.get(base.key), document), document);
+    const displayName = document['displayName'];
+    return [{
+      name: version.name, version: version.version, displayName: typeof displayName === 'string' ? displayName : version.name,
+      sha256: version.stored.sha256, compiledSha256: version.compiledSha256, ...(base ? { baseVersion: base.version, baseSha256: base.stored.sha256 } : {}),
+      ...(event ? { source: event.action === 'push.commit' ? 'push' : 'web', at: event.at, actor: { kind: event.actor.kind, label: event.actor.label } } : {}), diff,
+    }];
+  }).sort((a, b) => {
+    // 新的在前；审计之前的版本没有时间，排在最后。
+    if ((a.at ?? '') !== (b.at ?? '')) return (a.at ?? '') < (b.at ?? '') ? 1 : -1;
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : b.version - a.version;
+  });
 }
 
 /** 一个静态版本的原文；与 /v1/static-schemas 一样，原文与编译产物都在才算有。 */
@@ -110,8 +171,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
   };
 
   /** 本租户的数据定义：每个名称的静态版本、各版本被多少数据集与模板直接使用，以及草案。没有原文或编译产物的版本不列。 */
-  app.get(url, { config: { access: readAccess } }, async (request) => {
-    const scope = scopeOf(request), workspace = await readWorkspaceDocuments(scope.storage.documents);
+  const definitionsOf = async (scope: TenantScope) => {
+    const workspace = await readWorkspaceDocuments(scope.storage.documents);
     const used = new Map<string, { datasets: number; templates: number }>();
     const usage = (key: string) => used.get(key) ?? used.set(key, { datasets: 0, templates: 0 }).get(key)!;
     for (const { document } of workspace.datasets) usage(`${document.dataset.staticSchema.name}@${document.dataset.staticSchema.version}`).datasets++;
@@ -129,8 +190,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       versions.set(ref.name, list);
     }
     const names = [...new Set([...versions.keys(), ...drafts.keys()])].sort();
-    await auditRead(request, { type: 'tenant', id: scope.tenantId });
     return {
+      workspace,
       definitions: await Promise.all(names.map(async (name) => {
         const list = (versions.get(name) ?? []).sort((a, b) => a.version - b.version), draft = drafts.get(name);
         const draftJson = draft && !list.length ? await scope.storage.contents.get(draft.sha256) : undefined;
@@ -138,6 +199,32 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
         return { name, displayName: list.at(-1)?.displayName ?? (typeof draftDisplayName === 'string' ? draftDisplayName : name), versions: list, ...(draft ? { draft } : {}) };
       })),
     };
+  };
+
+  app.get(url, { config: { access: readAccess } }, async (request) => {
+    const scope = scopeOf(request), { definitions } = await definitionsOf(scope);
+    await auditRead(request, { type: 'tenant', id: scope.tenantId });
+    return { definitions };
+  });
+
+  /** 一个数据定义：列表里的一项，加每个字段被哪些模板读到（详情页的"谁在用"，改名与删字段时提示影响）。没有模板读的字段不列。 */
+  app.get(`${url}/:name`, { config: { access: readAccess } }, async (request) => {
+    const scope = scopeOf(request), name = nameOf(request), { workspace, definitions } = await definitionsOf(scope);
+    const definition = definitions.find((item) => item.name === name);
+    if (!definition) throw notFound();
+    await auditRead(request, { type: 'definition', id: name });
+    const uses = fieldUses(name, workspace.templates, workspace.staticSchemas);
+    return { ...definition, fieldUses: [...uses].map(([field, templates]) => ({ field, templates })) };
+  });
+
+  /** 发布记录：操作员也能看，所以不要求读审计的权限；这里只投影发布这一类事件，不暴露别的审计内容（M355）。 */
+  app.get(`${prefix}/definition-publications`, {
+    config: { access: readAccess },
+    schema: { querystring: { type: 'object', additionalProperties: false, properties: { name: { type: 'string', minLength: 1, maxLength: 200, description: '只看这个名称' } } } },
+  }, async (request) => {
+    const scope = scopeOf(request), { name } = request.query as { name?: string };
+    await auditRead(request, { type: 'tenant', id: scope.tenantId });
+    return { publications: await definitionPublications(scope, name) };
   });
 
   /** 新建草案：空白，或从某个静态版本另起（复制原文，去掉版本号）。这个名称已有草案答 409；空白新建不能用已有静态版本的名称，那样草案就没有基准。 */

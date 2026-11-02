@@ -221,9 +221,9 @@ export function createMemoryBackend(): ServiceBackend {
         return true;
       },
       appendAudit: async (event, now) => record(tenantId, event, now),
-      async listAudit({ limit, before, actorKind, from, to }) {
+      async listAudit({ limit, before, actorKind, from, to, actions }) {
         return audit.filter((event) => event.tenantId === tenantId && (!before || Number(event.id) < Number(before)) && (!actorKind || event.actor.kind === actorKind)
-          && (!from || Date.parse(event.at) >= from.getTime()) && (!to || Date.parse(event.at) < to.getTime()))
+          && (!actions || actions.includes(event.action)) && (!from || Date.parse(event.at) >= from.getTime()) && (!to || Date.parse(event.at) < to.getTime()))
           .reverse().slice(0, limit).map((event) => structuredClone(event));
       },
       plan: async () => planOf(tenantId),

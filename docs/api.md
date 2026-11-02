@@ -77,6 +77,8 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 | 操作 | 端点 | 说明 |
 |---|---|---|
 | 列出 | `GET /v1/definitions` | 每个名称的静态版本、各版本被多少数据集与模板直接使用，以及草案 |
+| 一个数据定义 | `GET /v1/definitions/{name}` | 列表里的一项，加 `fieldUses`：每个字段被哪些模板读到，经过引用读到的也算，没有模板读的字段不列（1.7.0） |
+| 发布记录 | `GET /v1/definition-publications` | 见下；可写 `?name=` 只看一个名称（1.7.0） |
 | 新建 | `POST /v1/definitions/{name}/draft` | 请求体写 `{ "displayName": "…" }` 是空白新建，写 `{ "fromVersion": 1 }` 是从静态版本另起（复制原文，去掉版本号）。已有草案答 409 `input.duplicate`；空白新建不能用已有静态版本的名称，也答 409 |
 | 读取 | `GET …/draft` | 登记信息与 `content`：原文，与保存时逐字节相同，它的 SHA-256 就是 `sha256` |
 | 保存 | `PUT …/draft?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
@@ -107,6 +109,18 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 - `templates`：基准是这个名称的模板。发布不改动它们，它们照旧绑定各自的版本。
 
 回退没有单独的端点：从旧版本另起草案（`fromVersion`），再发布成新版本。旧版本不变。
+
+发布记录每个静态版本一行，新的在前。客户操作员与 API 密钥也能读：
+
+```json
+{ "publications": [ { "name": "线路牌", "version": 2, "displayName": "线路牌", "sha256": "…", "compiledSha256": "…",
+    "baseVersion": 1, "baseSha256": "…", "source": "web", "at": "2026-11-01T02:31:00.000Z",
+    "actor": { "kind": "member", "label": "admin@example.com" }, "diff": { "definition": [], "fields": [ { "path": "operator", "change": "added", "after": { } } ] } } ] }
+```
+
+- `sha256` 是这一版原文的内容哈希，`baseSha256` 是基准原文的。
+- `diff` 是与基准的字段级差异，结构同发布预检。基准 `baseVersion`：网页与接口上发布的是它基于的版本，以旧版另发时差异是空的；推送的是它的上一版；首个版本没有，字段全算新增。
+- `source`（`web`、`push`）、`at` 与 `actor` 取自审计；审计里找不到时没有这三项，比如写入早于审计内容（1.1.0），或一次推送写入太多文档、差异摘要没留到这一版。
 
 ## 模板工作副本
 
@@ -288,6 +302,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.7.0 | 2026-11-01 | 数据定义页面要的两个只读端点（P1 票据 06，M355）：新增 `GET /v1/definitions/{name}`（列表项加 `fieldUses`，每个字段被哪些模板读到）与 `GET /v1/definition-publications`（发布记录，操作员也能读），代建端点是同一组操作 | 兼容，只做加法 |
 | 1.6.0 | 2026-11-01 | 推送与网页改动共存（P1 票据 10，M348、M354）：推送清单的模板可以带 `baseRevision`；`TemplateRevisions` 加 `current`（当前修订的来源、动作、主体与时间）；网页上保存或指回之后，从旧内容推送答 409 `push.conflict`，只用推送的租户不受影响 | 兼容，只做加法 |
 | 1.5.0 | 2026-11-01 | 模板工作副本（P1 票据 07，M346、M352）：新增 `GET /v1/template-working-copies`，`POST`、`GET`、`PUT`、`DELETE /v1/templates/{name}/working-copy`，`GET …/working-copy/check`，`POST …/working-copy/save`，`POST /v1/templates/{name}/copies`，`GET /v1/templates/{name}/revisions`，代建端点是同一组操作；`POST /v1/template-current` 把指回旧修订开放给客户管理员；`POST /v1/previews` 与代建预览加可选的 `workingCopies=true`，回答加可选的 `elements`（元素定位）；修订加 `source`；问题码 `template.revisionConflict`（409，回答带 `conflict`） | 兼容，只做加法 |
 | 1.4.0 | 2026-11-01 | 发布数据定义草案（P1 票据 05，M346）：新增 `POST …/definitions/{name}/draft/publish-check` 与 `POST …/draft/publish`，客户端点与代建端点各一组；问题码 `draft.versionTaken`（409） | 兼容，只做加法 |

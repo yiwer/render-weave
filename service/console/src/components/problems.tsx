@@ -21,7 +21,7 @@ export function locationText(problem: Problem, context: ProblemContext = {}): st
     case 'element': return `元素 ${location.path}`;
     case 'check': return `检查项 ${location.template} / ${location.name}`;
     case 'variable': return `变量 ${location.template} / ${location.name}`;
-    case 'definition': return `数据定义 ${location.schema}`;
+    case 'definition': return location.path ? `字段 ${location.path}` : `数据定义 ${location.schema}`;
     case 'input': return INPUT_SOURCES[location.source] ?? location.source;
   }
 }

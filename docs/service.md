@@ -163,7 +163,7 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/authoring/tenants/{租户}` | 代建工程师，只认被指定的租户 |
 | `GET …/authoring/tenants/{租户}/workspace`、`GET …/contents/{哈希}` | 代建工程师；推送的读回，见[代建推送](#代建推送) |
 | `POST …/push-plans`、`PUT …/contents/{哈希}`、`POST …/pushes`、`POST …/template-current` | 代建工程师；推送与改当前修订 |
-| `GET /v1/definitions`、`GET /v1/definitions/{名称}/draft`、`GET …/draft/check` | 管理员、操作员、API 密钥；见[数据定义草案](#数据定义草案) |
+| `GET /v1/definitions`、`GET /v1/definitions/{名称}`、`GET /v1/definition-publications`、`GET /v1/definitions/{名称}/draft`、`GET …/draft/check` | 管理员、操作员、API 密钥；见[数据定义草案](#数据定义草案) |
 | `POST`、`PUT`、`DELETE /v1/definitions/{名称}/draft` | 客户管理员 |
 | `/v1/authoring/tenants/{租户}/definitions…` | 代建工程师，只认被指定的租户；与上面两行同一组操作，读取也记审计 |
 | `GET /v1/template-working-copies`、`GET /v1/templates/{模板名}/working-copy`、`GET …/working-copy/check`、`GET /v1/templates/{模板名}/revisions` | 管理员、操作员、API 密钥；见[模板工作副本](#模板工作副本) |
@@ -293,6 +293,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **会影响绑定**：`diffDefinition` 给出删掉的字段，引擎的 `templateFieldUses` 给出每个模板当前修订读到的字段（绑定、插槽、状态样式、派生变量、检查项、调用的数据与实参，路径沿单引用往下走）。读不了的模板不列。
 - **发布**（P1 票据 05，M346）：`publishStaticSchema` 得到下一版本，原文与编译产物按本地 `renderweave publish` 的写法存（缩进两格、末尾换行），逐字节相同；再在一个事务里锁住租户行，核对草案哈希与版本没被占用，成对写进 `workspace_documents`，删除草案。推送进来的同名同版本与它依次进行。版本号在事务外算：算的时候要读全部静态数据定义，不占着事务；算完被占用就答 409，什么也不写。
 - **发布预检**：绑定基于版本的数据集按新编译产物逐份校验，至多 `publishCheckDatasets`（缺省 1,000）份，失配的前 20 份各给至多 5 条问题。预检不改动任何东西；模板与数据集都不随发布改绑定（ADR-0008）。
+- **发布记录**（P1 票据 06，M355）：`GET /v1/definition-publications` 每个静态版本一行，不另存：谁、何时、来源读审计的 `definition.publish` 与 `push.commit`，内容哈希读版本登记，字段级差异当场算。操作员也能读，别的审计内容照旧只给客户管理员。审计里找不到的版本照样列，只是没有主体与时间。
 - **审计**：`definition.publish` 的对象是 `名称@版本`，前哈希是基于版本的原文，后哈希是新版本的原文，差异摘要逐字段。`definitionDraft.create`、`definitionDraft.save`、`definitionDraft.delete` 都记前后内容哈希。保存的差异摘要逐字段（`field:字段名称`、`definition:属性`）；有一份读不了时只记整份文档（`definitionDraft:名称`）。代建工程师的读取另记 `authoring.read`，客户成员的读取不记。
 
 ## 模板工作副本
@@ -591,7 +592,7 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
   - 各页的 # 路由没有变，旧链接照旧能打开。
 - **页面**：
   - **数据集**是首页：列出本租户的数据集，可以勾几份同一数据定义的一起出图。Excel 导入与几份一起出图都是这一页上的侧栏，属于数据集模块。
-  - **数据定义**：先只读列出已发布的静态数据定义，每个名称一行，带各版本、用到它的模板与数据集份数；草案、详情与发布记录在 P1 票据 06 做。
+  - **数据定义**（P1 票据 06，M355）：列表一个名称一行，带当前版本、草案状态与引用数，右键一行打开、看发布记录、导出编译产物、复制引用、另起草案；详情是一张字段表，选中一行原地展开，草案能手动加改九种字段类型，每次保存后校验，问题定位到字段，改名或删字段前提示影响的模板；发布先看字段级差异与预检（失配的数据集、未全部核对、仍绑定旧版的模板）；发布记录列谁在何时发布了哪一版、改动摘要与内容哈希，可以以某一版另发新版本。操作员只读。
   - **编辑一份数据集**：左边是按编译产物生成的表单，字段用显示名称；右边是草稿预览、对外参数与尺寸。
     - 边填边经 `POST /v1/dataset-checks` 校验，问题显示在字段下面；预览的问题定位到元素的，按布局摘要叠加在图上。
     - 顶层简单字段排成网格；对象的列表能放进单元格时排成表格（一行一项，如停靠站点）；简单值的列表是一排小输入框。

@@ -217,7 +217,114 @@ export interface ExcelImport {
 }
 
 export interface StaticSchemaSummary { readonly name: string; readonly version: number; readonly displayName: string; readonly description?: string }
-export interface StaticSchemaDetail extends StaticSchemaSummary { readonly compiled: Record<string, unknown> }
+export interface StaticSchemaDetail extends StaticSchemaSummary { readonly definition: DefinitionDocument; readonly compiled: Record<string, unknown> }
+
+export type FieldType = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'image' | 'list' | 'ref';
+
+/** 列表的元素：类型、约束与引用（docs/dsl/data-definition.md）。 */
+export interface DefinitionItems { readonly type: FieldType; readonly constraints?: Readonly<Record<string, unknown>>; readonly ref?: SchemaRef }
+
+export interface DefinitionField extends DefinitionItems {
+  readonly name: string;
+  readonly displayName: string;
+  readonly description?: string;
+  readonly items?: DefinitionItems;
+}
+
+/** 数据定义文档。没写完的草案也能存，页面只改 fields，别的键原样带回。 */
+export interface DefinitionDocument {
+  readonly dslVersion: string;
+  readonly name: string;
+  readonly version?: number;
+  readonly displayName?: string;
+  readonly description?: string;
+  readonly fields: readonly DefinitionField[];
+}
+
+/** 数据定义草案（P1 票据 04）：一个名称至多一份，内容哈希是保存时的预期哈希。 */
+export interface DefinitionDraft {
+  readonly name: string;
+  readonly baseVersion?: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly updatedBy: string;
+}
+
+export interface Definition {
+  readonly name: string;
+  readonly displayName: string;
+  readonly versions: readonly { readonly version: number; readonly displayName: string; readonly datasets: number; readonly templates: number }[];
+  readonly draft?: DefinitionDraft;
+}
+
+export interface TemplateBinding { readonly name: string; readonly base: SchemaRef }
+
+/** GET /v1/definitions/{name}：另带每个字段被哪些模板读到。 */
+export interface DefinitionDetail extends Definition {
+  readonly fieldUses: readonly { readonly field: string; readonly templates: readonly TemplateBinding[] }[];
+}
+
+export interface DefinitionDraftCheck {
+  readonly sha256: string;
+  readonly problems: readonly Problem[];
+  readonly version?: number;
+  readonly compiled?: Record<string, unknown>;
+  readonly affectedBindings: readonly { readonly field: string; readonly templates: readonly TemplateBinding[] }[];
+}
+
+export interface DefinitionProperty { readonly key: string; readonly before?: unknown; readonly after?: unknown }
+
+export interface DefinitionFieldChange {
+  readonly path: string;
+  readonly change: 'added' | 'removed' | 'changed';
+  readonly before?: DefinitionField;
+  readonly after?: DefinitionField;
+  readonly properties?: readonly DefinitionProperty[];
+  readonly affectsBindings?: boolean;
+}
+
+/** 引擎 diffDefinition 的结果（去掉 problems）。 */
+export interface DefinitionDiff {
+  readonly definition: readonly DefinitionProperty[];
+  readonly fields: readonly DefinitionFieldChange[];
+  readonly order?: { readonly before: readonly string[]; readonly after: readonly string[] };
+}
+
+/** 发布预检（P1 票据 05）：有严重问题时只有 sha256、baseVersion 与 problems。 */
+export interface DefinitionPublishCheck {
+  readonly sha256: string;
+  readonly baseVersion?: number;
+  readonly problems: readonly Problem[];
+  readonly version?: number;
+  readonly diff?: DefinitionDiff;
+  readonly datasets?: {
+    readonly total: number;
+    readonly checked: number;
+    readonly complete: boolean;
+    readonly mismatched: number;
+    readonly samples: readonly { readonly id: string; readonly problemCount: number; readonly problems: readonly Problem[] }[];
+  };
+  readonly templates?: readonly TemplateBinding[];
+}
+
+export interface DefinitionPublished { readonly name: string; readonly version: number; readonly baseVersion?: number; readonly definitionSha256: string; readonly compiledSha256: string }
+
+/** 发布记录的一行（M355）：谁、何时与来源取自审计，找不到时没有。 */
+export interface DefinitionPublication {
+  readonly name: string;
+  readonly version: number;
+  readonly displayName: string;
+  readonly sha256: string;
+  readonly compiledSha256: string;
+  readonly baseVersion?: number;
+  readonly baseSha256?: string;
+  readonly source?: 'web' | 'push';
+  readonly at?: string;
+  readonly actor?: { readonly kind: string; readonly label: string };
+  readonly diff: DefinitionDiff;
+}
 
 export interface DatasetEntry {
   readonly id: string;

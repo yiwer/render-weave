@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -657,6 +657,75 @@
         }
       }
     },
+    "/v1/authoring/tenants/{tenantId}/definition-publications": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdDefinitionPublications",
+        "tags": [
+          "代建"
+        ],
+        "summary": "发布记录：每个静态版本谁在何时发布、来源、内容哈希与字段级差异，新的在前；可按名称筛选",
+        "description": "操作员也能看。谁、何时读审计，审计里找不到的版本没有这几项；差异读不可变的版本本身。",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "只看这个名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publications"
+                  ],
+                  "properties": {
+                    "publications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DefinitionPublication"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
     "/v1/authoring/tenants/{tenantId}/definitions": {
       "get": {
         "operationId": "getV1AuthoringTenantsTenantIdDefinitions",
@@ -695,6 +764,58 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/definitions/{name}": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdDefinitionsName",
+        "tags": [
+          "代建"
+        ],
+        "summary": "一个数据定义：静态版本、草案与每个字段被哪些模板读到",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionDetail"
                 }
               }
             }
@@ -3225,6 +3346,62 @@
         }
       }
     },
+    "/v1/definition-publications": {
+      "get": {
+        "operationId": "getV1DefinitionPublications",
+        "tags": [
+          "数据定义"
+        ],
+        "summary": "发布记录：每个静态版本谁在何时发布、来源、内容哈希与字段级差异，新的在前；可按名称筛选",
+        "description": "操作员也能看。谁、何时读审计，审计里找不到的版本没有这几项；差异读不可变的版本本身。",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "只看这个名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publications"
+                  ],
+                  "properties": {
+                    "publications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DefinitionPublication"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
     "/v1/definitions": {
       "get": {
         "operationId": "getV1Definitions",
@@ -3260,6 +3437,48 @@
           },
           "403": {
             "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/definitions/{name}": {
+      "get": {
+        "operationId": "getV1DefinitionsName",
+        "tags": [
+          "数据定义"
+        ],
+        "summary": "一个数据定义：静态版本、草案与每个字段被哪些模板读到",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
           }
         }
       }
@@ -8821,6 +9040,206 @@
             "description": "草案；没有就是没有草案"
           }
         }
+      },
+      "DefinitionDetail": {
+        "type": "object",
+        "required": [
+          "name",
+          "displayName",
+          "versions",
+          "fieldUses"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "数据定义名称"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名称：最新静态版本的；还没发布过时取草案的"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "version",
+                "displayName",
+                "datasets",
+                "templates"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "版本"
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "这一版的显示名称"
+                },
+                "datasets": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "绑定这一版的数据集份数"
+                },
+                "templates": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "基准是这一版的模板个数"
+                }
+              }
+            },
+            "description": "静态版本，按版本号升序"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/DefinitionDraft",
+            "description": "草案；没有就是没有草案"
+          },
+          "fieldUses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "templates"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "字段名称"
+                },
+                "templates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "base"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "模板名称"
+                      },
+                      "base": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "version"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "静态数据定义名称"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "版本"
+                          }
+                        },
+                        "description": "模板的基准"
+                      }
+                    }
+                  },
+                  "description": "当前修订读到这个字段的模板，经过引用读到的也算"
+                }
+              }
+            },
+            "description": "被模板读到的字段；没有模板读的不列"
+          }
+        },
+        "description": "一个数据定义（1.7.0）"
+      },
+      "DefinitionPublication": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "displayName",
+          "sha256",
+          "compiledSha256",
+          "diff"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "数据定义名称"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "版本"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "这一版的显示名称"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "这一版原文的 SHA-256"
+          },
+          "compiledSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "编译产物的 SHA-256"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "差异的基准：网页发布是它基于的版本，推送是它的上一版；首个版本没有"
+          },
+          "baseSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "基准原文的 SHA-256"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "web",
+              "push"
+            ],
+            "description": "来源：网页与接口上发布，或推送；审计里没有记录时没有"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "发布时间；审计里没有记录时没有"
+          },
+          "actor": {
+            "type": "object",
+            "required": [
+              "kind",
+              "label"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "member",
+                  "platformUser",
+                  "apiKey",
+                  "authoringToken",
+                  "system"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "description": "邮箱或代建令牌的标签"
+              }
+            },
+            "description": "谁发布的；审计里没有记录时没有"
+          },
+          "diff": {
+            "type": "object",
+            "description": "与基准的字段级差异，结构同发布预检的 diff",
+            "additionalProperties": true
+          }
+        },
+        "description": "发布记录的一行：一个静态版本（1.7.0）"
       },
       "DefinitionDraftCheck": {
         "type": "object",

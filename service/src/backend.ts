@@ -118,13 +118,14 @@ export interface AuditEvent extends AuditContent {
 }
 export type NewAuditEvent = Omit<AuditEvent, 'id' | 'at' | 'tenantId'>;
 
-/** 查审计：按时间倒序；before 是上一页最后一条的 ID；按主体种类与时间筛选，from 含、to 不含。 */
+/** 查审计：按时间倒序；before 是上一页最后一条的 ID；按主体种类与时间筛选，from 含、to 不含；actions 只给服务内部用（发布记录，M355）。 */
 export interface AuditQuery {
   readonly limit: number;
   readonly before?: string;
   readonly actorKind?: ActorKind;
   readonly from?: Date;
   readonly to?: Date;
+  readonly actions?: readonly string[];
 }
 
 export interface Readiness {

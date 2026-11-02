@@ -370,3 +370,39 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
 .link-button:hover { color: var(--accent); background: none; }
 .tenant-table tr.selected > td { background: var(--sunken); }
 .tenant-table td[data-testid="tenant-detail"] { padding: 14px 12px 4px; white-space: normal; }
+
+/* 数据定义（P1 票据 06）：字段表选中一行原地展开；差异逐行，增删改用符号；右键菜单不超出窗口 */
+.row-link { color: var(--ink); font-weight: 600; text-decoration: none; }
+.row-link:hover { color: var(--accent); text-decoration: underline; }
+.definition-table tbody tr { cursor: pointer; }
+.table td.row-tools { width: 44px; text-align: right; padding-top: 0; padding-bottom: 0; }
+.context-menu { position: fixed; top: auto; right: auto; width: 280px; }
+.menu button[role="menuitem"] { width: 100%; min-height: 0; border: none; background: none; justify-content: flex-start; text-align: left; white-space: nowrap; }
+.menu button[role="menuitem"]:hover:not(:disabled), .menu button[role="menuitem"]:focus-visible { background: var(--hover); outline: none; }
+/* 字段表定宽：选中一行展开、加改字段时各列不跳；窄窗口下照旧随内容，在自己的分组里横向滚动 */
+.field-table { table-layout: fixed; }
+.field-table th:nth-child(1) { width: 26%; } .field-table th:nth-child(2) { width: 16%; } .field-table th:nth-child(3) { width: 18%; }
+.field-table th:nth-child(4) { width: 16%; } .field-table th:nth-child(5) { width: 6%; } .field-table th:nth-child(6) { width: 18%; }
+.field-table td { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .field-table { table-layout: auto; } .field-table td { overflow-wrap: normal; } }
+.field-table tr.selected > td, .record-table tr.selected > td { background: var(--sunken); }
+.table td.field-detail { padding: 14px 12px 18px; white-space: normal; }
+.field-tag { margin-left: 10px; font-size: 12px; }
+.field-table .field-problems { margin-top: 4px; }
+.field-editor { display: flex; flex-direction: column; gap: 14px; }
+.check-field { display: inline-flex; align-items: center; gap: 8px; align-self: end; min-height: 38px; font-size: 13px; }
+.tenant-picks.wide, .fields > p.wide { grid-column: 1 / -1; margin: 0; }
+.field-used { margin: 0; }
+.field-actions-gap { flex: 1 1 auto; }
+.impact-note { margin: 0; padding: 10px 14px; border-left: 3px solid var(--warn); border-radius: 0 var(--r) var(--r) 0; background: var(--warn-soft); display: flex; flex-direction: column; gap: 6px; }
+p.impact-note { display: block; }
+.draft-tools { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: -8px 0 16px; font-size: 13px; }
+.check-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 0; }
+.compiled { margin: 0 0 16px; padding: 12px 14px; max-height: 420px; overflow: auto; border-radius: var(--r); background: var(--sunken); font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+.diff-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.diff-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.diff-mark { width: 14px; flex: none; font-family: var(--mono); font-weight: 700; color: var(--muted); }
+.diff-mark.added { color: var(--ok); } .diff-mark.removed { color: var(--bad); } .diff-mark.changed { color: var(--warn); }
+.bad-text { color: var(--bad); }
+.hash { color: var(--muted); }
+.record-table td[data-testid="publication-detail"] .meta { margin: 12px 0; }

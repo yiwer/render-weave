@@ -1,7 +1,16 @@
-/** 模块里几页之间的页签（原型第 29 版的下划线页签）：出图模块里是出图记录与批次。 */
+/** 模块里几页之间的页签（原型第 29 版的下划线页签）：出图模块里是出图记录与批次，数据定义模块里是全部与发布记录。 */
 import { href } from '../hooks.js';
 
 const DELIVER: readonly (readonly [string, string])[] = [['records', '出图记录'], ['batches', '批次']];
+
+export function DefinitionTabs(props: { readonly active: 'all' | 'publications' }) {
+  return (
+    <nav className="module-tabs" aria-label="数据定义">
+      <a href={href(['definitions'])} aria-current={props.active === 'all' ? 'page' : undefined}>全部</a>
+      <a href={href(['definition-publications'])} aria-current={props.active === 'publications' ? 'page' : undefined}>发布记录</a>
+    </nav>
+  );
+}
 
 export function DeliverTabs(props: { readonly active: 'records' | 'batches' }) {
   return (

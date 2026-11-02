@@ -71,6 +71,8 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
     request: (a) => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent(a.staticSchemaName)}/versions/1/workbook` }) },
   // 数据定义草案（P1 票据 04）：名称在路径里，别的租户的与不存在的同样答 404。新建用"从版本另起"：另一租户没有这一版，不会建出同名草案。
   { route: 'GET /v1/definitions', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/definitions' }) },
+  { route: 'GET /v1/definitions/:name', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/definitions/${encodeURIComponent(a.staticSchemaName)}` }) },
+  { route: 'GET /v1/definition-publications', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/definition-publications' }) },
   { route: 'POST /v1/definitions/:name/draft', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/definitions/${encodeURIComponent(a.staticSchemaName)}/draft`, body: { fromVersion: 1 } }) },
   { route: 'GET /v1/definitions/:name/draft', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/definitions/${encodeURIComponent(a.staticSchemaName)}/draft` }) },
@@ -83,6 +85,9 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'POST /v1/definitions/:name/draft/publish', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/definitions/${encodeURIComponent(a.staticSchemaName)}/draft/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/definitions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/definitions` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name', addressesObject: true,
+    request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/definitions/${encodeURIComponent(a.staticSchemaName)}` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definition-publications', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/definition-publications` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/definitions/${encodeURIComponent(a.staticSchemaName)}/draft`, body: { fromVersion: 1 } }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/draft', addressesObject: true,

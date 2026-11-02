@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.6.0';
+export const API_VERSION = '1.7.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -245,6 +245,26 @@ const SCHEMAS: Record<string, unknown> = {
     }), '静态版本，按版本号升序'),
     draft: { ...ref('DefinitionDraft'), description: '草案；没有就是没有草案' },
   }, ['name', 'displayName', 'versions']),
+  DefinitionDetail: object({
+    name: str('数据定义名称'), displayName: str('显示名称：最新静态版本的；还没发布过时取草案的'),
+    versions: array(object({
+      version: int('版本', 1), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
+    }), '静态版本，按版本号升序'),
+    draft: { ...ref('DefinitionDraft'), description: '草案；没有就是没有草案' },
+    fieldUses: array(object({
+      field: str('字段名称'),
+      templates: array(object({ name: str('模板名称'), base: { ...staticSchemaRef, description: '模板的基准' } }), '当前修订读到这个字段的模板，经过引用读到的也算'),
+    }), '被模板读到的字段；没有模板读的不列'),
+  }, ['name', 'displayName', 'versions', 'fieldUses'], { description: '一个数据定义（1.7.0）' }),
+  DefinitionPublication: object({
+    name: str('数据定义名称'), version: int('版本', 1), displayName: str('这一版的显示名称'),
+    sha256: { ...sha256, description: '这一版原文的 SHA-256' }, compiledSha256: { ...sha256, description: '编译产物的 SHA-256' },
+    baseVersion: int('差异的基准：网页发布是它基于的版本，推送是它的上一版；首个版本没有', 1), baseSha256: { ...sha256, description: '基准原文的 SHA-256' },
+    source: { type: 'string', enum: ['web', 'push'], description: '来源：网页与接口上发布，或推送；审计里没有记录时没有' },
+    at: instant('发布时间；审计里没有记录时没有'),
+    actor: { ...object({ kind: { type: 'string', enum: [...ACTOR_KINDS] }, label: str('邮箱或代建令牌的标签') }), description: '谁发布的；审计里没有记录时没有' },
+    diff: freeform('与基准的字段级差异，结构同发布预检的 diff'),
+  }, ['name', 'version', 'displayName', 'sha256', 'compiledSha256', 'diff'], { description: '发布记录的一行：一个静态版本（1.7.0）' }),
   DefinitionDraftCheck: object({
     sha256: { ...sha256, description: '校验的是这份内容' }, problems: { ...ref('ProblemList'), description: '问题清单，定位到字段；有严重问题时不能发布' },
     version: int('发布后的版本号；有严重问题时没有', 1), compiled: freeform('编译产物 JSON Schema，与发布产物相同；有严重问题时没有'),
@@ -436,6 +456,9 @@ function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
   const draft = `${prefix}/definitions/:name/draft`;
   return {
     [`GET ${prefix}/definitions`]: { tag, summary: '本租户的数据定义：每个名称的静态版本、各版本被多少数据集与模板使用，以及草案', replies: [ok(list('definitions', 'Definition'))] },
+    [`GET ${prefix}/definitions/:name`]: { tag, summary: '一个数据定义：静态版本、草案与每个字段被哪些模板读到', replies: [ok(ref('DefinitionDetail'))] },
+    [`GET ${prefix}/definition-publications`]: { tag, summary: '发布记录：每个静态版本谁在何时发布、来源、内容哈希与字段级差异，新的在前；可按名称筛选',
+      description: '操作员也能看。谁、何时读审计，审计里找不到的版本没有这几项；差异读不可变的版本本身。', replies: [ok(list('publications', 'DefinitionPublication'))] },
     [`POST ${draft}`]: { tag, summary: '新建草案：空白，或从某个静态版本另起', errors: [409],
       description: '这个名称已有草案答 409；空白新建不能用已有静态版本的名称（409），要改它请从某个版本另起。', replies: [created(ref('DefinitionDraft'))] },
     [`GET ${draft}`]: { tag, summary: '读草案：登记信息与原文', replies: [ok(object({

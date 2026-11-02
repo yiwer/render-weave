@@ -4,6 +4,7 @@
  * 票据 14 加了出图记录、资源、用量与管理（M301）：管理只给客户管理员，操作员的模块下拉里没有它。
  * P1 票据 01 换成原型第 29 版的框架（frame.tsx）：标题栏的模块下拉、Ctrl+K 与状态栏；各页的 # 路由不变，旧链接照旧能打开。
  * P1 票据 12 加了平台管理：平台管理员登录后只进这一页，没有租户内的模块。
+ * P1 票据 06 加了数据定义的详情、发布与发布记录。
  * 登录后按 # 路由切换页面；界面只做中文。
  */
 import { useEffect, useState } from 'react';
@@ -15,6 +16,8 @@ import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
 import { DatasetEditor, DatasetList } from './pages/datasets.js';
+import { DefinitionDetail } from './pages/definition-detail.js';
+import { DefinitionPublish, DefinitionRecords } from './pages/definition-publish.js';
 import { DefinitionList } from './pages/definitions.js';
 import { BatchPage } from './pages/deliver.js';
 import { LoginPage } from './pages/login.js';
@@ -75,7 +78,12 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
   const [section = 'datasets', id, sub, subId] = path;
   let page;
   switch (section) {
-    case 'definitions': page = <DefinitionList />; break;
+    case 'definitions':
+      if (!id) page = <DefinitionList identity={props.identity} />;
+      else if (sub === 'publish') page = <DefinitionPublish key={id} name={id} identity={props.identity} />;
+      else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
+      break;
+    case 'definition-publications': page = <DefinitionRecords key={query.toString()} identity={props.identity} query={query} />; break;
     case 'datasets':
       if (id === 'new') page = <DatasetEditor key={`new:${query.get('template') ?? ''}`} {...(query.get('template') ? { templateName: query.get('template')! } : {})} />;
       else if (id) {

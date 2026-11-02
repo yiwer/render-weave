@@ -170,12 +170,12 @@ export function createPostgresBackend(options: { readonly db: Db; readonly blobs
         return true;
       }),
       appendAudit: (event, now) => run((client) => insertAudit(client, tenantId, event, now)),
-      listAudit: ({ limit, before, actorKind, from, to }) => run(async (client) => (await client.query<AuditRow>(
+      listAudit: ({ limit, before, actorKind, from, to, actions }) => run(async (client) => (await client.query<AuditRow>(
         `SELECT id, tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant, before_sha256, after_sha256, diff, round, reason
            FROM audit_events
           WHERE tenant_id = $1 AND ($2::bigint IS NULL OR id < $2::bigint) AND ($3::text IS NULL OR actor_kind = $3)
-            AND ($4::timestamptz IS NULL OR at >= $4) AND ($5::timestamptz IS NULL OR at < $5)
-          ORDER BY id DESC LIMIT $6`, [tenantId, before ?? null, actorKind ?? null, from ?? null, to ?? null, limit])).rows.map(auditEvent)),
+            AND ($4::timestamptz IS NULL OR at >= $4) AND ($5::timestamptz IS NULL OR at < $5) AND ($7::text[] IS NULL OR action = ANY($7))
+          ORDER BY id DESC LIMIT $6`, [tenantId, before ?? null, actorKind ?? null, from ?? null, to ?? null, limit, actions ?? null])).rows.map(auditEvent)),
       plan: () => run((client) => readPlan(client, tenantId)),
       setPlan: (plan, now) => run(async (client) => {
         await client.query(`INSERT INTO tenant_plans (tenant_id, monthly_images, max_pixels, concurrency, updated_at) VALUES ($1, $2, $3, $4, $5)

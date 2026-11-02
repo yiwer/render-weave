@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runCli } from '../../src/cli.js';
 import { DEFAULT_LIMITS } from '../src/api/previews.js';
 import type { ServiceBackend, TenantScope, TenantStorage } from '../src/backend.js';
-import { publishStaticSchema } from '../src/engine.js';
+import { publishStaticSchema, readWorkspaceDocuments } from '../src/engine.js';
 import { createWorld, type World } from './api-suite.js';
 import { M402_DIR, seedDocuments, seedGreeting, seedM402 } from './seed.js';
 
@@ -182,6 +182,94 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect({ ...v3.definition, version: 1 }).toEqual(v1.definition);
       expect(v3.definition.version).toBe(3);
       expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).raw).toBe(v2);
+    });
+
+    /** 代建工程师推送一个静态版本：原文与编译产物，都按本地发布的写法。 */
+    const pushVersion = async (target: { id: string; engineer: string }, definition: Record<string, unknown>) => {
+      const key = `${String(definition['name'])}@${String(definition['version'])}`;
+      const { published } = publishStaticSchema(definition, (await readWorkspaceDocuments(backend.tenant(target.id).storage.documents)).staticSchemas);
+      const documents = [{ kind: 'definition', key, bytes: text(published!.definition) }, { kind: 'compiled', key, bytes: text(published!.compiled) }];
+      for (const { bytes } of documents) {
+        const put = await world.call('PUT', `/v1/authoring/tenants/${target.id}/contents/${sha256(bytes)}`, target.engineer, Buffer.from(bytes), { 'content-type': 'application/octet-stream' });
+        expect(put.status, put.raw.slice(0, 300)).toBe(204);
+      }
+      const pushed = await world.call('POST', `/v1/authoring/tenants/${target.id}/pushes`, target.engineer, {
+        documents: documents.map(({ kind, key: documentKey, bytes }) => ({ kind, key: documentKey, sha256: sha256(bytes), byteLength: Buffer.byteLength(bytes) })), resources: [],
+      });
+      expect(pushed.status, pushed.raw.slice(0, 300)).toBe(200);
+      return published!;
+    };
+
+    it('发布记录（票据 06，M355）：操作员也能看，每个版本谁在何时发布、来源、前后内容哈希与差异；以旧版另发的差异是空的；审计之前的版本没有主体', async () => {
+      const target = await tenant(), token = target.admin.token, operator = target.operator.token;
+      const records = async (who = operator, query = '') => {
+        const reply = await world.call('GET', `/v1/definition-publications${query}`, who);
+        expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
+        return reply.body.publications as any[];
+      };
+      const stored = async () => (await world.call('GET', `/v1/authoring/tenants/${target.id}/workspace`, target.engineer)).body.documents as any[];
+      const shaOf = (documents: any[], kind: string, key: string) => documents.find((item) => item.kind === kind && item.key === key).sha256;
+
+      // 种子直接写存储，没有审计：列得出版本，没有主体与时间；首个版本的字段全算新增。
+      const seeded = (await records()).find((item) => item.name === '线路牌');
+      expect(seeded).toMatchObject({ version: 1, displayName: expect.any(String), sha256: shaOf(await stored(), 'definition', '线路牌@1'), compiledSha256: shaOf(await stored(), 'compiled', '线路牌@1') });
+      for (const key of ['actor', 'at', 'source', 'baseVersion', 'baseSha256']) expect(seeded, key).not.toHaveProperty(key);
+      expect((seeded.diff.fields as any[]).every((field) => field.change === 'added')).toBe(true);
+
+      // 客户管理员发布 v2：基于 v1，字段级差异与预检相同，主体是他的邮箱。
+      const { sha256: draftSha } = await editedDraft(token);
+      const check = await preflight(token, draftSha);
+      const v2 = (await publish(token, draftSha)).body;
+      const [newest] = await records();
+      const documents = await stored();
+      expect(newest).toEqual({
+        name: '线路牌', version: 2, displayName: expect.any(String), sha256: v2.definitionSha256, compiledSha256: v2.compiledSha256, baseVersion: 1, baseSha256: shaOf(documents, 'definition', '线路牌@1'),
+        source: 'web', at: expect.any(String), actor: { kind: 'member', label: target.admin.email }, diff: check.diff,
+      });
+
+      // 以 v1 另发：基准是 v1，没有差异。
+      const rollback = await fromVersion(token, 1);
+      await publish(token, rollback.body.sha256);
+      expect((await records())[0]).toMatchObject({ version: 3, baseVersion: 1, source: 'web', diff: { fields: [], definition: [] } });
+
+      // 代建工程师推送 v4：来源是推送，主体是令牌的标签，与上一版比。
+      const { problems: _none, ...v3Document } = { ...(await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/3`, token)).body.definition, problems: [] };
+      const pushed = await pushVersion(target, { ...v3Document, version: 4, description: '推送的说明' });
+      const [fourth] = await records();
+      expect(fourth).toMatchObject({ version: 4, source: 'push', baseVersion: 3, actor: { kind: 'authoringToken' }, diff: { definition: [{ key: 'description', after: '推送的说明' }], fields: [] } });
+      expect(fourth.sha256).toBe(sha256(text(pushed.definition)));
+
+      // 按名称筛选；不存在的名称是空列表。代建端点读到相同的内容，读取记审计。
+      expect((await records(operator, `?name=${ROUTE_SIGN}`)).map((item) => item.version)).toEqual([4, 3, 2, 1]);
+      expect(await records(operator, `?name=${encodeURIComponent('没有这个名称')}`)).toEqual([]);
+      const authored = await world.call('GET', `/v1/authoring/tenants/${target.id}/definition-publications`, target.engineer);
+      expect(authored.body.publications).toEqual(await records());
+      expect((await world.call('GET', '/v1/audit-events?limit=500', token)).body.events.some((event: any) => event.action === 'authoring.read' && event.object.type === 'tenant')).toBe(true);
+    });
+
+    it('一个数据定义（票据 06）：静态版本、草案与每个字段被哪些模板读到，经过引用读到的也算；只读，操作员也能看；不存在答 404', async () => {
+      const target = await tenant(), token = target.admin.token, operator = target.operator.token;
+      const read = async (name: string, who = operator) => world.call('GET', `/v1/definitions/${encodeURIComponent(name)}`, who);
+      const route = (await read('线路牌')).body;
+      const list = (await world.call('GET', '/v1/definitions', operator)).body.definitions as any[];
+      const { fieldUses, ...entry } = route;
+      expect(entry).toEqual(list.find((item) => item.name === '线路牌'));
+      const uses = new Map((fieldUses as any[]).map((item) => [item.field, item.templates]));
+      expect(uses.get('routeNo')).toEqual([{ name: '标准线路单边', base: { name: '线路牌', version: 1 } }]);
+      expect(uses.get('fare')).toEqual([{ name: '标准线路单边', base: { name: '线路牌', version: 1 } }]);
+      // 停靠站点的字段由线路牌的模板经引用读到。
+      expect(new Map(((await read('停靠站点')).body.fieldUses as any[]).map((item) => [item.field, item.templates.map((template: any) => template.name)])).get('name')).toContain('标准线路单边');
+      // 草案也在；与校验的 affectedBindings 同一份。
+      const first = (await fromVersion(token, 1)).body, document = await documentOf(token);
+      document.fields = document.fields.filter((field: any) => field.name !== 'routeNo');
+      await save(token, ROUTE_SIGN, document, first.sha256);
+      expect((await read('线路牌')).body.draft).toMatchObject({ baseVersion: 1 });
+      const check = (await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft/check`, operator)).body;
+      expect(check.affectedBindings).toEqual([{ field: 'routeNo', templates: uses.get('routeNo') }]);
+      // 还没发布过的名称只有草案。
+      await world.call('POST', `/v1/definitions/${encodeURIComponent('全新')}/draft`, token, { displayName: '全新结构' });
+      expect((await read('全新')).body).toMatchObject({ name: '全新', displayName: '全新结构', versions: [], draft: { name: '全新' }, fieldUses: [] });
+      expect((await read(`没有${randomUUID()}`)).status).toBe(404);
     });
 
     it('新名称：没有基准，字段全算新增，发布成 v1；空白草案可以发布；代建工程师走自己的寻址，审计标跨租户', async () => {

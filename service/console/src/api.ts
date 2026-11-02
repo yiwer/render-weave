@@ -4,7 +4,8 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
+  ApiKeyInfo, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft, DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished,
+  ExcelImport, Identity, Member, PageOf, PreviewReply, Problem, RecordEntry, ReplacementCheck, ResourceInfo,
   PlatformOverview, PlanSettings, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery,
 } from './types.js';
 
@@ -139,6 +140,17 @@ export const api = {
   staticSchemas: () => json<{ staticSchemas: StaticSchemaSummary[] }>('GET', '/v1/static-schemas'),
   staticSchema: (name: string, version: number) => json<StaticSchemaDetail>('GET', `/v1/static-schemas/${enc(name)}/versions/${version}`),
   blankWorkbook: async (name: string, version: number) => (await send('GET', `/v1/static-schemas/${enc(name)}/versions/${version}/workbook`)).blob(),
+
+  definitions: () => json<{ definitions: Definition[] }>('GET', '/v1/definitions'),
+  definition: (name: string) => json<DefinitionDetail>('GET', `/v1/definitions/${enc(name)}`),
+  definitionPublications: (name?: string) => json<{ publications: DefinitionPublication[] }>('GET', `/v1/definition-publications${search({ name })}`),
+  createDefinitionDraft: (name: string, body: { displayName: string } | { fromVersion: number }) => json<DefinitionDraft>('POST', `/v1/definitions/${enc(name)}/draft`, { json: body }),
+  definitionDraft: (name: string) => json<DefinitionDraft & { content: string }>('GET', `/v1/definitions/${enc(name)}/draft`),
+  saveDefinitionDraft: (name: string, expectedSha256: string, text: string) => json<DefinitionDraft>('PUT', `/v1/definitions/${enc(name)}/draft${search({ expectedSha256 })}`, { jsonText: text }),
+  deleteDefinitionDraft: async (name: string) => { await send('DELETE', `/v1/definitions/${enc(name)}/draft`); },
+  checkDefinitionDraft: (name: string) => json<DefinitionDraftCheck>('GET', `/v1/definitions/${enc(name)}/draft/check`),
+  publishCheckDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublishCheck>('POST', `/v1/definitions/${enc(name)}/draft/publish-check`, { json: { expectedSha256 } }),
+  publishDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256 } }),
 
   datasets: () => json<{ datasets: DatasetEntry[] }>('GET', '/v1/datasets'),
   datasetText: async (id: string) => (await send('GET', `/v1/datasets/${enc(id)}`)).text(),
