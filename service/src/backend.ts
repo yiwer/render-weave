@@ -445,6 +445,61 @@ export interface DraftWriter {
   readonly now: Date;
 }
 
+/** 审批策略的两个范围（P1 票据 11，ADR-0022）：数据定义发布、模板修订（含指回）。 */
+export const APPROVAL_SCOPES = ['definitions', 'templates'] as const;
+export type ApprovalScope = (typeof APPROVAL_SCOPES)[number];
+/** 一个范围的开关；没改过时只有 required: false，即直发。 */
+export interface ApprovalSetting {
+  readonly required: boolean;
+  readonly updatedAt?: string;
+  readonly updatedBy?: string;
+}
+export type ApprovalPolicy = Readonly<Record<ApprovalScope, ApprovalSetting>>;
+
+export const PUBLISH_REQUEST_KINDS = ['definitionPublish', 'templateSave', 'templateSetCurrent', 'push'] as const;
+export type PublishRequestKind = (typeof PUBLISH_REQUEST_KINDS)[number];
+export const PUBLISH_REQUEST_STATUSES = ['pending', 'approved', 'rejected', 'expired'] as const;
+export type PublishRequestStatus = (typeof PUBLISH_REQUEST_STATUSES)[number];
+
+/** 发布申请（P1 票据 11）：审批策略打开时一次发布或推送留下的待批准记录，固定内容哈希与基准。 */
+export interface PublishRequest {
+  readonly id: string;
+  readonly kind: PublishRequestKind;
+  /** 申请的对象：数据定义或模板的名称；推送是发起者的 ID。同一对象同一种申请同时最多一份待处理。 */
+  readonly subject: string;
+  /** 受约束的范围：推送可能两个都有。 */
+  readonly scopes: readonly ApprovalScope[];
+  readonly status: PublishRequestStatus;
+  /** 固定的内容哈希：草案、工作副本、要指回的修订，或推送清单。 */
+  readonly sha256: string;
+  /** 申请时要被换掉的内容：基于的版本，或当前修订。 */
+  readonly beforeSha256?: string;
+  /** 数据定义：基于的版本，与申请时算出的下一个版本。 */
+  readonly baseVersion?: number;
+  readonly version?: number;
+  /** 模板：申请时的当前修订（新模板没有），指回时另有要指回的修订。 */
+  readonly baseRevision?: number;
+  readonly revision?: number;
+  /** 保存模板：申请时明确要盖过别人先保存的修订。 */
+  readonly overwrite?: boolean;
+  readonly diff: AuditDiff;
+  readonly requestedBy: { readonly kind: ActorKind; readonly id: string; readonly label: string };
+  readonly requestedAt: string;
+  readonly decidedBy?: string;
+  readonly decidedAt?: string;
+  /** 退回的留言，或过期的原因。 */
+  readonly message?: string;
+}
+export type NewPublishRequest = Omit<PublishRequest, 'id' | 'status' | 'requestedAt' | 'decidedBy' | 'decidedAt' | 'message'>;
+
+/** 批准一份申请：与它的内容在同一个事务里生效。申请已经不是待处理时抛 PublishRequestDecided，什么也不写。 */
+export interface PublishRequestApproval {
+  readonly requestId: string;
+  readonly by: string;
+  readonly now: Date;
+}
+export class PublishRequestDecided extends Error {}
+
 /** 本租户按 SHA-256 存放的内容（ADR-0018）：先写内容，再登记；没有登记的内容不会出现在任何读者面前。 */
 export interface ContentStore {
   /** 写入一份内容，返回它的 SHA-256；相同字节只存一份。 */
@@ -468,11 +523,14 @@ export interface TenantStorage {
    * 一次推送：取得最新状态并排除其他推送与资源提交，交给 prepare 算出要写的内容，在一个事务里写入。
    * prepare 抛错时什么也不写。返回写入后的状态与各模板新修订的编号。
    */
-  push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date }):
+  push(prepare: (state: AuthoringState) => Promise<PushWrites>, by: { readonly pushedBy: string; readonly now: Date; readonly approving?: PublishRequestApproval }):
     Promise<{ readonly state: AuthoringState; readonly revisions: ReadonlyMap<string, number>; readonly recordedRounds: readonly string[] }>;
-  /** 把模板的当前修订指向它已有的一个修订，同时答出改之前的当前修订；模板或修订不存在时 undefined。 */
-  setCurrentTemplate(name: string, revision: number, by: { readonly source: TemplateCurrentOrigin['source']; readonly by: string; readonly now: Date }):
-    Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | undefined>;
+  /**
+   * 把模板的当前修订指向它已有的一个修订，同时答出改之前的当前修订；模板或修订不存在时 undefined。
+   * 带了 expectedCurrent（批准申请时）而当前修订已不是它，什么也不写，答 moved。
+   */
+  setCurrentTemplate(name: string, revision: number, by: { readonly source: TemplateCurrentOrigin['source']; readonly by: string; readonly now: Date; readonly expectedCurrent?: number; readonly approving?: PublishRequestApproval }):
+    Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | { readonly moved: number } | undefined>;
   /** 本租户全部数据定义草案。 */
   definitionDrafts(): Promise<readonly DefinitionDraft[]>;
   definitionDraft(name: string): Promise<DefinitionDraft | undefined>;
@@ -489,7 +547,7 @@ export interface TenantStorage {
    * 发布草案（P1 票据 05，M346）：在一个事务里登记静态数据定义的原文与编译产物，再删除草案。内容已先写进本租户的内容。
    * 草案的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这份草案时 undefined。
    */
-  publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
+  publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft, approving?: PublishRequestApproval): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
   /** 本租户全部模板工作副本。 */
   templateWorkingCopies(): Promise<readonly TemplateWorkingCopy[]>;
   templateWorkingCopy(name: string): Promise<TemplateWorkingCopy | undefined>;
@@ -502,9 +560,23 @@ export interface TenantStorage {
   deleteTemplateWorkingCopy(name: string): Promise<TemplateWorkingCopy | undefined>;
   /**
    * 保存模板：在一个事务里核对内容哈希与基准修订，按 M265 记修订（字节与当前修订相同记为不变），当前修订指向它，删除工作副本。
-   * 基准不是当前修订时答 conflict，overwrite 才覆盖。没有这份工作副本时 undefined。与推送、资源提交依次进行。
+   * 基准不是当前修订时答 conflict，overwrite 才覆盖；overwrite 又带了 expectedCurrent（批准申请时），当前修订不是它也答 conflict。
+   * 没有这份工作副本时 undefined。与推送、资源提交依次进行。
    */
-  commitTemplateWorkingCopy(name: string, expectedSha256: string, options: { readonly overwrite: boolean; readonly pushedBy: string; readonly now: Date }): Promise<WorkingCopyCommit | undefined>;
+  commitTemplateWorkingCopy(name: string, expectedSha256: string, options: { readonly overwrite: boolean; readonly pushedBy: string; readonly now: Date; readonly expectedCurrent?: number; readonly approving?: PublishRequestApproval }): Promise<WorkingCopyCommit | undefined>;
+  /** 审批策略（P1 票据 11）：两个范围的开关。 */
+  approvalPolicy(): Promise<ApprovalPolicy>;
+  /** 改开关，只写给出的范围；答改之后的策略。 */
+  setApprovalPolicy(changes: Partial<Record<ApprovalScope, boolean>>, by: DraftWriter): Promise<ApprovalPolicy>;
+  /** 发布申请，新的在前。 */
+  publishRequests(query: { readonly status?: PublishRequestStatus; readonly scope?: ApprovalScope; readonly limit: number }): Promise<readonly PublishRequest[]>;
+  publishRequest(id: string): Promise<PublishRequest | undefined>;
+  /** 这个对象这一种申请的待处理的那一份。 */
+  pendingPublishRequest(kind: PublishRequestKind, subject: string): Promise<PublishRequest | undefined>;
+  /** 记一份待处理申请；同一对象同一种申请已有待处理的时什么也不写，答 undefined。 */
+  createPublishRequest(request: NewPublishRequest, now: Date): Promise<PublishRequest | undefined>;
+  /** 退回或标为过期：只有待处理的才改，别的状态答 undefined。批准不走这里，它与内容同一个事务。 */
+  settlePublishRequest(id: string, settlement: { readonly status: 'rejected' | 'expired'; readonly by: string; readonly now: Date; readonly message: string }): Promise<PublishRequest | undefined>;
   /**
    * 保存一份数据集（票据 10）：新建时这个 ID 还不能有，修改时必须已有；条件不满足时什么也不写，返回 undefined。
    * 与推送、资源提交依次进行。

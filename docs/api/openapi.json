@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -54,6 +54,9 @@
     },
     {
       "name": "数据定义"
+    },
+    {
+      "name": "发布审批"
     }
   ],
   "paths": {
@@ -329,6 +332,85 @@
         }
       }
     },
+    "/v1/approval-policy": {
+      "get": {
+        "operationId": "getV1ApprovalPolicy",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "审批策略：两个范围的开关",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalPolicy"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putV1ApprovalPolicy",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "改审批策略：只写给出的范围；改动记审计",
+        "x-access": "authoring.policy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "definitions": {
+                    "type": "boolean",
+                    "description": "数据定义发布要批准"
+                  },
+                  "templates": {
+                    "type": "boolean",
+                    "description": "模板修订（含指回）要批准"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
     "/v1/audit-events": {
       "get": {
         "operationId": "getV1AuditEvents",
@@ -522,6 +604,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tenant"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/approval-policy": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdApprovalPolicy",
+        "tags": [
+          "代建"
+        ],
+        "summary": "审批策略：两个范围的开关",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalPolicy"
                 }
               }
             }
@@ -1256,6 +1381,16 @@
               }
             }
           },
+          "202": {
+            "description": "审批策略打开：这次发布没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequestAccepted"
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/Error400"
           },
@@ -1431,6 +1566,313 @@
         }
       }
     },
+    "/v1/authoring/tenants/{tenantId}/publish-requests": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdPublishRequests",
+        "tags": [
+          "代建"
+        ],
+        "summary": "发布申请，新的在前；可以按状态与范围筛。不重核，要看现在还能不能批准读详情",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "expired"
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "definitions",
+                "templates"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "至多多少份，缺省 200"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "requests"
+                  ],
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublishRequest"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/publish-requests/{id}": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdPublishRequestsId",
+        "tags": [
+          "代建"
+        ],
+        "summary": "一份发布申请：待处理时另给重核结果与它改了什么",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "发布申请 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "kind",
+                    "subject",
+                    "scopes",
+                    "status",
+                    "sha256",
+                    "diff",
+                    "requestedBy",
+                    "requestedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "申请 ID"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "definitionPublish",
+                        "templateSave",
+                        "templateSetCurrent",
+                        "push"
+                      ],
+                      "description": "definitionPublish 发布数据定义；templateSave 保存模板；templateSetCurrent 指回修订；push 整份推送"
+                    },
+                    "subject": {
+                      "type": "string",
+                      "description": "申请的对象：数据定义或模板的名称；推送是发起者的 ID"
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "definitions",
+                          "templates"
+                        ]
+                      },
+                      "description": "受约束的范围"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "expired"
+                      ],
+                      "description": "pending 待处理；approved 已批准；rejected 已退回；expired 已过期，要重新发起"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "固定的内容哈希：草案、工作副本、要指回的修订，或推送清单"
+                    },
+                    "beforeSha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "申请时要被换掉的内容：基于的版本，或当前修订"
+                    },
+                    "baseVersion": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "数据定义：基于的版本"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+                    },
+                    "baseRevision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "模板：申请时的当前修订，批准时已不是它就过期；新模板没有"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "指回：要指回的修订"
+                    },
+                    "overwrite": {
+                      "type": "boolean",
+                      "description": "保存模板：申请时明确要盖过别人先保存的修订"
+                    },
+                    "diff": {
+                      "$ref": "#/components/schemas/AuditDiff"
+                    },
+                    "requestedBy": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "member",
+                            "platformUser",
+                            "apiKey",
+                            "authoringToken",
+                            "system"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "description": "主体 ID"
+                        },
+                        "label": {
+                          "type": "string",
+                          "description": "主体的标签"
+                        }
+                      }
+                    },
+                    "requestedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "申请的时间"
+                    },
+                    "decidedBy": {
+                      "type": "string",
+                      "description": "处理的人；过期时是让它过期的那次操作的主体"
+                    },
+                    "decidedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "处理的时间"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "退回的留言，或过期的原因"
+                    },
+                    "changes": {
+                      "description": "待处理时：这份申请改了什么。数据定义是字段级差异，模板是结构化差异，推送是按现在的状态算的逐项差异"
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "required": [
+                        "valid"
+                      ],
+                      "properties": {
+                        "valid": {
+                          "type": "boolean",
+                          "description": "false：现在批准会过期"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "不能批准的原因"
+                        },
+                        "blockers": {
+                          "$ref": "#/components/schemas/ProblemList",
+                          "description": "严重问题"
+                        }
+                      },
+                      "description": "待处理时：按现在的状态重核的结果"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
     "/v1/authoring/tenants/{tenantId}/push-plans": {
       "post": {
         "operationId": "postV1AuthoringTenantsTenantIdPushPlans",
@@ -1600,6 +2042,17 @@
                         "description": "内容的 SHA-256，64 位小写十六进制"
                       },
                       "description": "提交前要上传的内容"
+                    },
+                    "approvalScopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "definitions",
+                          "templates"
+                        ]
+                      },
+                      "description": "写入碰到了打开审批策略的范围：提交时整份推送会变成发布申请（1.8.0）"
                     }
                   }
                 }
@@ -1631,6 +2084,7 @@
           "代建"
         ],
         "summary": "提交推送：有冲突整体拒绝",
+        "description": "写入碰到打开了审批策略的范围（静态数据定义、模板）时答 202，整份推送成为一份发布申请：内容要已上传，批准时按当时的状态重算冲突再提交，随附的轮次也等批准时才记；写入的模板有严重问题答 400。",
         "x-access": "authoring.push",
         "parameters": [
           {
@@ -1838,6 +2292,144 @@
               }
             }
           },
+          "202": {
+            "description": "审批策略打开：整份推送没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "summary",
+                    "documents",
+                    "resources",
+                    "request"
+                  ],
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "required": [
+                        "added",
+                        "updated",
+                        "unchanged",
+                        "conflicts"
+                      ],
+                      "properties": {
+                        "added": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "updated": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "conflicts": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "key",
+                          "status"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "definition",
+                              "compiled",
+                              "template",
+                              "dataset"
+                            ]
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "currentRevision": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "提交后新记的修订"
+                          }
+                        }
+                      }
+                    },
+                    "resources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "localVersion"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "image",
+                              "font"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "added",
+                              "updated",
+                              "unchanged",
+                              "conflict"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "localVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "serverVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        }
+                      }
+                    },
+                    "request": {
+                      "$ref": "#/components/schemas/PublishRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/Error400"
           },
@@ -1912,6 +2504,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TemplateRevisions"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "审批策略打开：这次发布没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequestAccepted"
                 }
               }
             }
@@ -2510,6 +3112,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TemplateSaved"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "审批策略打开：这次发布没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequestAccepted"
                 }
               }
             }
@@ -3847,6 +4459,16 @@
               }
             }
           },
+          "202": {
+            "description": "审批策略打开：这次发布没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequestAccepted"
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/Error400"
           },
@@ -5009,6 +5631,421 @@
           },
           "503": {
             "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/publish-requests": {
+      "get": {
+        "operationId": "getV1PublishRequests",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "发布申请，新的在前；可以按状态与范围筛。不重核，要看现在还能不能批准读详情",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "expired"
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "definitions",
+                "templates"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "至多多少份，缺省 200"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "requests"
+                  ],
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublishRequest"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      }
+    },
+    "/v1/publish-requests/{id}": {
+      "get": {
+        "operationId": "getV1PublishRequestsId",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "一份发布申请：待处理时另给重核结果与它改了什么",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "发布申请 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "kind",
+                    "subject",
+                    "scopes",
+                    "status",
+                    "sha256",
+                    "diff",
+                    "requestedBy",
+                    "requestedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "申请 ID"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "definitionPublish",
+                        "templateSave",
+                        "templateSetCurrent",
+                        "push"
+                      ],
+                      "description": "definitionPublish 发布数据定义；templateSave 保存模板；templateSetCurrent 指回修订；push 整份推送"
+                    },
+                    "subject": {
+                      "type": "string",
+                      "description": "申请的对象：数据定义或模板的名称；推送是发起者的 ID"
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "definitions",
+                          "templates"
+                        ]
+                      },
+                      "description": "受约束的范围"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "expired"
+                      ],
+                      "description": "pending 待处理；approved 已批准；rejected 已退回；expired 已过期，要重新发起"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "固定的内容哈希：草案、工作副本、要指回的修订，或推送清单"
+                    },
+                    "beforeSha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "申请时要被换掉的内容：基于的版本，或当前修订"
+                    },
+                    "baseVersion": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "数据定义：基于的版本"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+                    },
+                    "baseRevision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "模板：申请时的当前修订，批准时已不是它就过期；新模板没有"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "指回：要指回的修订"
+                    },
+                    "overwrite": {
+                      "type": "boolean",
+                      "description": "保存模板：申请时明确要盖过别人先保存的修订"
+                    },
+                    "diff": {
+                      "$ref": "#/components/schemas/AuditDiff"
+                    },
+                    "requestedBy": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "member",
+                            "platformUser",
+                            "apiKey",
+                            "authoringToken",
+                            "system"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "description": "主体 ID"
+                        },
+                        "label": {
+                          "type": "string",
+                          "description": "主体的标签"
+                        }
+                      }
+                    },
+                    "requestedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "申请的时间"
+                    },
+                    "decidedBy": {
+                      "type": "string",
+                      "description": "处理的人；过期时是让它过期的那次操作的主体"
+                    },
+                    "decidedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "处理的时间"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "退回的留言，或过期的原因"
+                    },
+                    "changes": {
+                      "description": "待处理时：这份申请改了什么。数据定义是字段级差异，模板是结构化差异，推送是按现在的状态算的逐项差异"
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "required": [
+                        "valid"
+                      ],
+                      "properties": {
+                        "valid": {
+                          "type": "boolean",
+                          "description": "false：现在批准会过期"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "不能批准的原因"
+                        },
+                        "blockers": {
+                          "$ref": "#/components/schemas/ProblemList",
+                          "description": "严重问题"
+                        }
+                      },
+                      "description": "待处理时：按现在的状态重核的结果"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/publish-requests/{id}/approve": {
+      "post": {
+        "operationId": "postV1PublishRequestsIdApprove",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "批准：重核内容哈希、基准与严重问题，相符就生效，不符标为过期",
+        "description": "生效与申请的状态在同一个事务里。重核不符答 409 publishRequest.expired，申请标为过期，要重新发起；申请已经处理过答 409 publishRequest.decided。",
+        "x-access": "authoring.approve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "发布申请 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "request",
+                    "result"
+                  ],
+                  "properties": {
+                    "request": {
+                      "$ref": "#/components/schemas/PublishRequest"
+                    },
+                    "result": {
+                      "description": "生效的结果：与直接发布、保存、指回或推送的回答相同"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/publish-requests/{id}/reject": {
+      "post": {
+        "operationId": "postV1PublishRequestsIdReject",
+        "tags": [
+          "发布审批"
+        ],
+        "summary": "退回：必须留言",
+        "x-access": "authoring.approve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "发布申请 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "pattern": "\\S",
+                    "description": "退回的留言"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
           }
         }
       }
@@ -6414,6 +7451,16 @@
               }
             }
           },
+          "202": {
+            "description": "审批策略打开：这次发布没有生效，成了一份发布申请",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishRequestAccepted"
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/Error400"
           },
@@ -7139,9 +8186,17 @@
           "conflict": {
             "$ref": "#/components/schemas/TemplateRevisionConflict",
             "description": "保存模板时基准不是当前修订（409 template.revisionConflict）：两边差异（1.5.0）"
+          },
+          "request": {
+            "$ref": "#/components/schemas/PublishRequest",
+            "description": "处理发布申请时（409 publishRequest.expired、publishRequest.decided）：申请现在的样子（1.8.0）"
+          },
+          "blockers": {
+            "$ref": "#/components/schemas/ProblemList",
+            "description": "批准时重核发现严重问题（409 publishRequest.expired）：是哪些问题（1.8.0）"
           }
         },
-        "description": "错误回答：问题清单，额度不足、推送冲突、草案过期与修订冲突时另带说明情况的字段"
+        "description": "错误回答：问题清单，额度不足、推送冲突、草案过期、修订冲突与申请过期时另带说明情况的字段"
       },
       "QuotaShortfall": {
         "type": "object",
@@ -10710,6 +11765,197 @@
             }
           }
         }
+      },
+      "ApprovalSetting": {
+        "type": "object",
+        "required": [
+          "required"
+        ],
+        "properties": {
+          "required": {
+            "type": "boolean",
+            "description": "这个范围的发布要不要客户管理员批准；缺省 false，即直发"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最后修改的时间"
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "最后修改的人"
+          }
+        }
+      },
+      "ApprovalPolicy": {
+        "type": "object",
+        "required": [
+          "definitions",
+          "templates"
+        ],
+        "properties": {
+          "definitions": {
+            "$ref": "#/components/schemas/ApprovalSetting",
+            "description": "数据定义发布"
+          },
+          "templates": {
+            "$ref": "#/components/schemas/ApprovalSetting",
+            "description": "模板修订，含指回旧修订"
+          }
+        },
+        "description": "审批策略：两个范围各一个开关（1.8.0）"
+      },
+      "PublishRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "subject",
+          "scopes",
+          "status",
+          "sha256",
+          "diff",
+          "requestedBy",
+          "requestedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "申请 ID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "definitionPublish",
+              "templateSave",
+              "templateSetCurrent",
+              "push"
+            ],
+            "description": "definitionPublish 发布数据定义；templateSave 保存模板；templateSetCurrent 指回修订；push 整份推送"
+          },
+          "subject": {
+            "type": "string",
+            "description": "申请的对象：数据定义或模板的名称；推送是发起者的 ID"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "definitions",
+                "templates"
+              ]
+            },
+            "description": "受约束的范围"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "expired"
+            ],
+            "description": "pending 待处理；approved 已批准；rejected 已退回；expired 已过期，要重新发起"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "固定的内容哈希：草案、工作副本、要指回的修订，或推送清单"
+          },
+          "beforeSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "申请时要被换掉的内容：基于的版本，或当前修订"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "数据定义：基于的版本"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+          },
+          "baseRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "模板：申请时的当前修订，批准时已不是它就过期；新模板没有"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "指回：要指回的修订"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "保存模板：申请时明确要盖过别人先保存的修订"
+          },
+          "diff": {
+            "$ref": "#/components/schemas/AuditDiff"
+          },
+          "requestedBy": {
+            "type": "object",
+            "required": [
+              "kind",
+              "id",
+              "label"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "member",
+                  "platformUser",
+                  "apiKey",
+                  "authoringToken",
+                  "system"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "description": "主体 ID"
+              },
+              "label": {
+                "type": "string",
+                "description": "主体的标签"
+              }
+            }
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "申请的时间"
+          },
+          "decidedBy": {
+            "type": "string",
+            "description": "处理的人；过期时是让它过期的那次操作的主体"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "处理的时间"
+          },
+          "message": {
+            "type": "string",
+            "description": "退回的留言，或过期的原因"
+          }
+        },
+        "description": "发布申请：审批策略打开时一次发布或推送留下的待批准记录（1.8.0）"
+      },
+      "PublishRequestAccepted": {
+        "type": "object",
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/PublishRequest"
+          }
+        },
+        "description": "这次发布没有生效，成了一份待批准的发布申请（1.8.0）"
       },
       "PushDiff": {
         "type": "object",

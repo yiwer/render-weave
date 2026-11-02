@@ -10,7 +10,7 @@
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
-import { parseDocumentSource, type AuditContent, type AuditDiff, type AuditDiffPath, type AuditEvent, type DefinitionDraft, type NewAuditEvent, type TenantScope, type TenantStorage } from '../backend.js';
+import { parseDocumentSource, type AuditContent, type AuditDiff, type AuditDiffPath, type AuditEvent, type DefinitionDraft, type NewAuditEvent, type PublishRequestApproval, type TenantScope, type TenantStorage } from '../backend.js';
 import {
   checkDataset, describeTemplate, diffDefinition, publishStaticSchema, readWorkspaceDocuments, templateFieldUses,
   type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type StaticSchemaRef, type TemplateEntry, type Workspace,
@@ -19,6 +19,7 @@ import { loadTenantWorkspace } from '../preview.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { checkedDocument, documentBytes, parsedDocument, staleDraft, type AuthoringAddressing } from './authoring-documents.js';
 import { ApiError, fail, notFound, ServiceProblemCodes } from './problems.js';
+import { constrainedScopes, expirePending, openPublishRequest, type AuditWriter, type RequestActor } from './publish-requests.js';
 import { parseKey, readJson } from './static-schemas.js';
 
 /** 经接口新建的数据定义名称：1–200 个字符，没有控制字符，首尾没有空白。推送进来的沿用本地的名称。 */
@@ -57,7 +58,41 @@ function saveDiff(name: string, before: Uint8Array | undefined, after: Uint8Arra
 }
 
 /** 与基于的版本比较：新名称没有基准，就与同一份文档去掉全部字段比，字段全算新增。 */
-const baseDocumentOf = (base: unknown, document: unknown) => base ?? { ...(document as object), fields: [] };
+export const baseDocumentOf = (base: unknown, document: unknown) => base ?? { ...(document as object), fields: [] };
+
+interface DraftToPublish {
+  readonly draft: DefinitionDraft;
+  readonly document: unknown;
+  readonly workspace: Pick<Workspace, 'staticSchemas'>;
+  readonly published: PublishedStaticSchema;
+}
+
+/** 发布对内容的改动：基于版本的内容哈希与字段级差异摘要。直接发布与发布申请记同一份。 */
+async function publishChange(storage: TenantStorage, { draft, document, workspace }: Omit<DraftToPublish, 'published'>) {
+  const base = draft.baseVersion === undefined ? undefined : workspace.staticSchemas.find((entry) => entry.ref.name === draft.name && entry.ref.version === draft.baseVersion);
+  const documents = (await storage.authoringState()).documents;
+  const beforeSha256 = base && documents.find((stored) => stored.kind === 'definition' && stored.key === `${draft.name}@${base.ref.version}`)?.sha256;
+  return { ...(beforeSha256 ? { beforeSha256 } : {}), diff: auditDiff(diffPaths(diffDefinition(baseDocumentOf(base?.definition, document), document))) };
+}
+
+/**
+ * 发布草案：原文与编译产物按本地发布的写法存，成对登记，删除草案。批准申请时带 approving，申请与内容在同一个事务里生效。
+ * 算版本与登记之间版本被占用（别的发布或推送）答 409，什么也没写，再发一次就会用下一个版本。
+ */
+export async function commitDraftPublish(scope: TenantScope, { draft, document, workspace, published }: DraftToPublish, audit: AuditWriter, approving?: PublishRequestApproval) {
+  const storage = scope.storage, name = draft.name;
+  const definitionBytes = documentBytes(published.definition), compiledBytes = documentBytes(published.compiled);
+  const key = `${name}@${published.ref.version}`;
+  const [definitionSha256, compiledSha256] = await Promise.all([storage.contents.put(definitionBytes), storage.contents.put(compiledBytes)]);
+  const result = await storage.publishDefinitionDraft(name, draft.sha256, {
+    key, definition: { sha256: definitionSha256, byteLength: definitionBytes.length }, compiled: { sha256: compiledSha256, byteLength: compiledBytes.length },
+  }, approving);
+  if (!result) throw notFound();
+  if ('stale' in result) throw staleDraft(result.stale, 'request.body.expectedSha256');
+  if ('taken' in result) throw fail(409, ServiceProblemCodes.draftVersionTaken, 'request.path.name', `${name} 的版本 ${published.ref.version} 刚被别的发布或推送占用；什么也没写，重新发布`);
+  await audit('definition.publish', { type: 'definition', id: key }, { ...await publishChange(storage, { draft, document, workspace }), afterSha256: definitionSha256 });
+  return { name, version: published.ref.version, ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), definitionSha256, compiledSha256 };
+}
 
 /** 绑定基于版本的数据集逐份按新编译产物校验（M346）：按 ID 排序，超过上限只校验前面的，回答失配份数与前几份的问题摘要。 */
 function datasetImpact(workspace: Workspace, base: { name: string; version: number }, published: PublishedStaticSchema, limit: number) {
@@ -227,6 +262,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
     return { publications: await definitionPublications(scope, name) };
   });
 
+  const requesterOf = (request: FastifyRequest): RequestActor => ({ actor: actorOf(identityOf(request)), now: now(), audit: (action, object, content) => audit(request, action, object, content) });
+
   /** 新建草案：空白，或从某个静态版本另起（复制原文，去掉版本号）。这个名称已有草案答 409；空白新建不能用已有静态版本的名称，那样草案就没有基准。 */
   app.post(draftUrl, { config: { access: 'definitions.write' }, schema: { body: CREATE_SCHEMA } }, async (request, reply) => {
     const scope = scopeOf(request), name = nameOf(request), body = request.body as { displayName?: string; fromVersion?: number };
@@ -282,6 +319,7 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       await audit(request, 'definitionDraft.save', { type: 'definitionDraft', id: name }, {
         beforeSha256: expectedSha256, afterSha256: result.saved.sha256, diff: saveDiff(name, before, bytes, expectedSha256, result.saved.sha256),
       });
+      await expirePending(scope, 'definitionPublish', name, '草案在申请之后又被修改', requesterOf(request), result.saved.sha256);
       return result.saved;
     });
   });
@@ -341,8 +379,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
   });
 
   /**
-   * 发布草案：算出下一版本，原文与编译产物按本地发布的写法存，成对登记，删除草案。严重问题答 400，问题码与本地发布相同。
-   * 算版本与登记之间版本被占用（别的发布或推送）答 409，什么也没写，再发一次就会用下一个版本。
+   * 发布草案：算出下一版本再发布。严重问题答 400，问题码与本地发布相同。
+   * 数据定义范围打开了审批策略时，能批准的主体以外的发布答 202，记一份固定内容哈希与版本的发布申请（P1 票据 11）。
    */
   app.post(`${draftUrl}/publish`, { config: { access: 'authoring.publish' }, schema: { body: PUBLISH_SCHEMA } }, async (request, reply) => {
     const scope = scopeOf(request), name = nameOf(request), storage = scope.storage, { expectedSha256 } = request.body as { expectedSha256: string };
@@ -350,24 +388,19 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
     const workspace = await readWorkspaceDocuments(storage.documents);
     const { published, problems } = publishStaticSchema(document, workspace.staticSchemas);
     if (!published) throw new ApiError(400, problems);
-    const definitionBytes = documentBytes(published.definition), compiledBytes = documentBytes(published.compiled);
-    const key = `${name}@${published.ref.version}`;
-    const [definitionSha256, compiledSha256] = await Promise.all([storage.contents.put(definitionBytes), storage.contents.put(compiledBytes)]);
-    const result = await storage.publishDefinitionDraft(name, expectedSha256, {
-      key, definition: { sha256: definitionSha256, byteLength: definitionBytes.length }, compiled: { sha256: compiledSha256, byteLength: compiledBytes.length },
-    });
-    if (!result) throw notFound();
-    if ('stale' in result) throw staleDraft(result.stale, 'request.body.expectedSha256');
-    if ('taken' in result) throw fail(409, ServiceProblemCodes.draftVersionTaken, 'request.path.name', `${name} 的版本 ${published.ref.version} 刚被别的发布或推送占用；什么也没写，重新发布`);
-    const documents = (await storage.authoringState()).documents;
-    const base = draft.baseVersion === undefined ? undefined : workspace.staticSchemas.find((entry) => entry.ref.name === name && entry.ref.version === draft.baseVersion);
-    const beforeSha256 = base && documents.find((stored) => stored.kind === 'definition' && stored.key === `${name}@${base.ref.version}`)?.sha256;
-    await audit(request, 'definition.publish', { type: 'definition', id: key }, {
-      ...(beforeSha256 ? { beforeSha256 } : {}), afterSha256: definitionSha256,
-      diff: auditDiff(diffPaths(diffDefinition(baseDocumentOf(base?.definition, document), document))),
-    });
+    const requester = requesterOf(request);
+    if ((await constrainedScopes(scope, identityOf(request), ['definitions'])).length) {
+      const publishRequest = await openPublishRequest(scope, {
+        kind: 'definitionPublish', subject: name, scopes: ['definitions'], sha256: draft.sha256, ...await publishChange(storage, { draft, document, workspace }),
+        ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), version: published.ref.version,
+      }, requester);
+      reply.code(202);
+      return { request: publishRequest };
+    }
+    const result = await commitDraftPublish(scope, { draft, document, workspace, published }, requester.audit);
+    await expirePending(scope, 'definitionPublish', name, '草案已被直接发布', requester);
     reply.code(201);
-    return { name, version: published.ref.version, ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), definitionSha256, compiledSha256 };
+    return result;
   });
 
   app.delete(draftUrl, { config: { access: 'definitions.write' } }, async (request, reply) => {
@@ -377,6 +410,7 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
     await audit(request, 'definitionDraft.delete', { type: 'definitionDraft', id: name }, {
       beforeSha256: draft.sha256, diff: auditDiff([{ path: draftSource(name), change: 'removed', beforeSha256: draft.sha256 }]),
     });
+    await expirePending(scope, 'definitionPublish', name, '草案已被删除', requesterOf(request));
     reply.code(204);
   });
 }

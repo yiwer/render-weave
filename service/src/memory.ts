@@ -4,9 +4,9 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  DEFAULT_PLAN, documentSource, EmailTakenError, MAX_ACTIVE_WEBHOOKS, parseDocumentSource, periodOf, TOKEN_KINDS,
-  type ApiKeyInfo, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
-  type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type RecordCursor, type RecordEntry, type RegisteredFile,
+  APPROVAL_SCOPES, DEFAULT_PLAN, documentSource, EmailTakenError, MAX_ACTIVE_WEBHOOKS, parseDocumentSource, periodOf, PublishRequestDecided, TOKEN_KINDS,
+  type ApiKeyInfo, type ApprovalPolicy, type ApprovalScope, type ApprovalSetting, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
+  type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type PublishRequest, type PublishRequestApproval, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
   type TemplateCurrentOrigin, type TemplateRevision, type TemplateWorkingCopy, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
   type ClaimedDelivery, type Webhook, type WebhookAttempt, type WebhookDelivery, type WebhookEventType,
@@ -538,6 +538,16 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
   const templates = new Map<string, { current: number; origin: TemplateCurrentOrigin; revisions: TemplateRevision[] }>();
   const drafts = new Map<string, DefinitionDraft>();
   const workingCopies = new Map<string, TemplateWorkingCopy>();
+  const approvalSettings = new Map<ApprovalScope, ApprovalSetting>();
+  const publishRequests = new Map<string, PublishRequest>();
+  const policy = () => Object.fromEntries(APPROVAL_SCOPES.map((scope) => [scope, approvalSettings.get(scope) ?? { required: false }])) as ApprovalPolicy;
+  /** 批准一份申请，放在内容写入之前：这一步抛错时内容还没动，与事务回滚相同。 */
+  const approve = (approving: PublishRequestApproval | undefined) => {
+    if (!approving) return;
+    const row = publishRequests.get(approving.requestId);
+    if (row?.status !== 'pending') throw new PublishRequestDecided();
+    publishRequests.set(row.id, { ...row, status: 'approved', decidedBy: approving.by, decidedAt: approving.now.toISOString() });
+  };
   let resources: readonly ResourceManifestEntry[] = [];
   const batches = new Map<string, MemoryBatch>();
   /** 资源提交、推送与改当前修订依次进行，与 PostgreSQL 后端锁住租户的一行相同。 */
@@ -612,17 +622,20 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       get: async (hash) => (contents.has(hash) ? read(hash) : undefined),
     },
     authoringState: async () => state(),
-    push: (prepare, { pushedBy, now }) => exclusive(async () => {
+    push: (prepare, { pushedBy, now, approving }) => exclusive(async () => {
       const writes = await prepare(state());
+      approve(approving);
       // prepare 之后不会再失败：一次改完，与事务提交相同。
+      // 批准生效的修订算网页一侧（M354）：内容与主体还是推送的，当前修订的来历是批准的人。
+      const origin = (): TemplateCurrentOrigin => ({ source: approving ? 'web' : 'push', action: 'revision', by: approving?.by ?? pushedBy, at: now.toISOString() });
       for (const document of writes.documents) documents.set(documentSource(document.kind, document.key), { sha256: document.sha256, byteLength: document.byteLength });
       const revisions = new Map<string, number>();
       for (const { name, sha256, byteLength } of writes.templates) {
-        const row = templates.get(name) ?? { current: 0, origin: { source: 'push', action: 'revision', by: pushedBy, at: now.toISOString() }, revisions: [] };
+        const row = templates.get(name) ?? { current: 0, origin: origin(), revisions: [] };
         const revision = Math.max(0, ...row.revisions.map((item) => item.revision)) + 1;
         row.revisions.push({ revision, sha256, byteLength, createdAt: now.toISOString(), pushedBy, source: 'push' });
         row.current = revision;
-        row.origin = { source: 'push', action: 'revision', by: pushedBy, at: now.toISOString() };
+        row.origin = origin();
         templates.set(name, row);
         documents.set(documentSource('template', name), { sha256, byteLength });
         revisions.set(name, revision);
@@ -643,9 +656,11 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       documents.set(source, stored);
       return { kind: 'dataset' as const, key: id, ...stored };
     }),
-    setCurrentTemplate: (name, revision, { source, by, now }) => exclusive(async () => {
+    setCurrentTemplate: (name, revision, { source, by, now, expectedCurrent, approving }) => exclusive(async () => {
       const row = templates.get(name), found = row?.revisions.find((item) => item.revision === revision);
       if (!row || !found) return undefined;
+      if (expectedCurrent !== undefined && row.current !== expectedCurrent) return { moved: row.current };
+      approve(approving);
       const previousRevision = row.current;
       row.current = revision;
       row.origin = { source, action: 'setCurrent', by, at: now.toISOString() };
@@ -696,16 +711,17 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       workingCopies.delete(name);
       return current;
     }),
-    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now }) => exclusive(async () => {
+    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now, expectedCurrent, approving }) => exclusive(async () => {
       const copy = workingCopies.get(name);
       if (!copy) return undefined;
       if (copy.sha256 !== expectedSha256) return { stale: copy.sha256 };
       const row = templates.get(name);
-      if (row && copy.baseRevision !== row.current && !overwrite) return { conflict: { currentRevision: row.current } };
+      if (row && (overwrite ? expectedCurrent !== undefined && row.current !== expectedCurrent : copy.baseRevision !== row.current)) return { conflict: { currentRevision: row.current } };
+      approve(approving);
       workingCopies.delete(name);
       const current = row?.revisions.find((item) => item.revision === row.current);
       if (row && current?.sha256 === copy.sha256) return { status: 'unchanged' as const, revision: row.current, sha256: copy.sha256 };
-      const origin: TemplateCurrentOrigin = { source: 'web', action: 'revision', by: pushedBy, at: now.toISOString() };
+      const origin: TemplateCurrentOrigin = { source: 'web', action: 'revision', by: approving?.by ?? pushedBy, at: now.toISOString() };
       const target = row ?? { current: 0, origin, revisions: [] };
       const revision = Math.max(0, ...target.revisions.map((item) => item.revision)) + 1;
       target.revisions.push({ revision, sha256: copy.sha256, byteLength: copy.byteLength, createdAt: now.toISOString(), pushedBy, source: 'web' });
@@ -715,15 +731,41 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       documents.set(documentSource('template', name), { sha256: copy.sha256, byteLength: copy.byteLength });
       return { status: 'saved' as const, revision, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => exclusive(async () => {
+    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }, approving) => exclusive(async () => {
       const current = drafts.get(name);
       if (!current) return undefined;
       if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
       if (documents.has(documentSource('definition', key)) || documents.has(documentSource('compiled', key))) return { taken: true as const };
+      approve(approving);
       documents.set(documentSource('definition', key), definition);
       documents.set(documentSource('compiled', key), compiled);
       drafts.delete(name);
       return { published: true as const };
+    }),
+    approvalPolicy: async () => policy(),
+    setApprovalPolicy: (changes, { updatedBy, now }) => exclusive(async () => {
+      for (const scope of APPROVAL_SCOPES) {
+        const required = changes[scope];
+        if (required !== undefined) approvalSettings.set(scope, { required, updatedAt: now.toISOString(), updatedBy });
+      }
+      return policy();
+    }),
+    publishRequests: async ({ status, scope, limit }) => [...publishRequests.values()]
+      .filter((row) => (!status || row.status === status) && (!scope || row.scopes.includes(scope))).reverse().slice(0, limit),
+    publishRequest: async (id) => publishRequests.get(id),
+    pendingPublishRequest: async (kind, subject) => [...publishRequests.values()].find((row) => row.status === 'pending' && row.kind === kind && row.subject === subject),
+    createPublishRequest: (request, now) => exclusive(async () => {
+      if ([...publishRequests.values()].some((row) => row.status === 'pending' && row.kind === request.kind && row.subject === request.subject)) return undefined;
+      const row: PublishRequest = { ...structuredClone(request), id: randomUUID(), status: 'pending', requestedAt: now.toISOString() };
+      publishRequests.set(row.id, row);
+      return row;
+    }),
+    settlePublishRequest: (id, { status, by, now, message }) => exclusive(async () => {
+      const row = publishRequests.get(id);
+      if (row?.status !== 'pending') return undefined;
+      const settled: PublishRequest = { ...row, status, decidedBy: by, decidedAt: now.toISOString(), message };
+      publishRequests.set(id, settled);
+      return settled;
     }),
   };
 }

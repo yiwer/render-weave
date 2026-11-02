@@ -4,8 +4,9 @@
  * 每类写入都先写对象、再在一个数据库事务里登记；没登记的对象不会被任何读者看到。
  */
 import {
-  documentSource, parseDocumentSource,
-  type AuthoringState, type DefinitionDraft, type StoredDocument, type StoredTemplate, type TemplateRevision, type TemplateWorkingCopy, type TenantBatch, type TenantStorage,
+  APPROVAL_SCOPES, documentSource, parseDocumentSource, PublishRequestDecided,
+  type ApprovalPolicy, type ApprovalScope, type AuthoringState, type DefinitionDraft, type PublishRequest, type PublishRequestApproval, type StoredDocument, type StoredTemplate, type TemplateRevision,
+  type TemplateWorkingCopy, type TenantBatch, type TenantStorage,
 } from '../backend.js';
 import {
   itemDirectory, manifestBytes, resourceBackend,
@@ -44,9 +45,12 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
     },
     authoringState: () => withTenant(db, tenantId, (client) => authoringState(client, tenantId)),
     // 推送与资源提交锁住租户的同一行，依次进行；prepare 抛错即整个事务回滚。
-    push: (prepare, { pushedBy, now }) => withTenant(db, tenantId, async (client) => {
+    push: (prepare, { pushedBy, now, approving }) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const writes = await prepare(await authoringState(client, tenantId));
+      await approveRequest(client, tenantId, approving);
+      // 批准生效的修订算网页一侧（M354）：内容与主体还是推送的，当前修订的来历是批准的人。
+      const currentSource = approving ? 'web' : 'push', currentBy = approving?.by ?? pushedBy;
       for (const document of writes.documents) {
         await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)',
           [tenantId, documentSource(document.kind, document.key), document.sha256, document.byteLength]);
@@ -57,9 +61,9 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
           'SELECT coalesce(max(revision), 0) + 1 AS next FROM template_revisions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows[0]!;
         await client.query(`INSERT INTO template_revisions (tenant_id, name, revision, sha256, byte_length, pushed_by, created_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7)`, [tenantId, name, next, sha256, byteLength, pushedBy, now]);
-        await client.query(`INSERT INTO templates (tenant_id, name, current_revision, current_source, current_action, current_by, current_at) VALUES ($1, $2, $3, 'push', 'revision', $4, $5)
-          ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision, current_source = 'push', current_action = 'revision',
-            current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, pushedBy, now]);
+        await client.query(`INSERT INTO templates (tenant_id, name, current_revision, current_source, current_action, current_by, current_at) VALUES ($1, $2, $3, $6, 'revision', $4, $5)
+          ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision, current_source = EXCLUDED.current_source, current_action = 'revision',
+            current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, currentBy, now, currentSource]);
         await pointTemplate(client, tenantId, name, { sha256, byteLength });
         revisions.set(name, next);
       }
@@ -85,13 +89,15 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         return { kind: 'dataset' as const, key: id, sha256, byteLength: bytes.length };
       });
     },
-    setCurrentTemplate: (name, revision, { source, by, now }) => withTenant(db, tenantId, async (client) => {
+    setCurrentTemplate: (name, revision, { source, by, now, expectedCurrent, approving }) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [found] = (await client.query<{ sha256: string; byte_length: string }>(
         'SELECT sha256, byte_length FROM template_revisions WHERE tenant_id = $1 AND name = $2 AND revision = $3', [tenantId, name, revision])).rows;
       if (!found) return undefined;
       const [previous] = (await client.query<{ current_revision: number }>(
         'SELECT current_revision FROM templates WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+      if (expectedCurrent !== undefined && previous!.current_revision !== expectedCurrent) return { moved: previous!.current_revision };
+      await approveRequest(client, tenantId, approving);
       await client.query(`UPDATE templates SET current_revision = $3, current_source = $4, current_action = 'setCurrent', current_by = $5, current_at = $6
         WHERE tenant_id = $1 AND name = $2`, [tenantId, name, revision, source, by, now]);
       await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
@@ -164,7 +170,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const [row] = (await client.query<CopyRow>(`DELETE FROM template_working_copies WHERE tenant_id = $1 AND name = $2 RETURNING ${COPY_COLUMNS}`, [tenantId, name])).rows;
       return row && copyRow(row);
     }),
-    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now }) => withTenant(db, tenantId, async (client) => {
+    commitTemplateWorkingCopy: (name, expectedSha256, { overwrite, pushedBy, now, expectedCurrent, approving }) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [copy] = (await client.query<{ base_revision: number | null; sha256: string; byte_length: string }>(
         'SELECT base_revision, sha256, byte_length FROM template_working_copies WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
@@ -172,7 +178,10 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       if (copy.sha256 !== expectedSha256) return { stale: copy.sha256 };
       const [current] = (await client.query<{ current_revision: number; sha256: string }>(`SELECT t.current_revision, r.sha256 FROM templates t
         JOIN template_revisions r ON r.tenant_id = t.tenant_id AND r.name = t.name AND r.revision = t.current_revision WHERE t.tenant_id = $1 AND t.name = $2`, [tenantId, name])).rows;
-      if (current && copy.base_revision !== current.current_revision && !overwrite) return { conflict: { currentRevision: current.current_revision } };
+      if (current && (overwrite ? expectedCurrent !== undefined && current.current_revision !== expectedCurrent : copy.base_revision !== current.current_revision)) {
+        return { conflict: { currentRevision: current.current_revision } };
+      }
+      await approveRequest(client, tenantId, approving);
       await client.query('DELETE FROM template_working_copies WHERE tenant_id = $1 AND name = $2', [tenantId, name]);
       if (current?.sha256 === copy.sha256) return { status: 'unchanged' as const, revision: current.current_revision, sha256: copy.sha256 };
       const { next } = (await client.query<{ next: number }>(
@@ -181,11 +190,11 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'web')`, [tenantId, name, next, copy.sha256, copy.byte_length, pushedBy, now]);
       await client.query(`INSERT INTO templates (tenant_id, name, current_revision, current_source, current_action, current_by, current_at) VALUES ($1, $2, $3, 'web', 'revision', $4, $5)
         ON CONFLICT (tenant_id, name) DO UPDATE SET current_revision = EXCLUDED.current_revision, current_source = 'web', current_action = 'revision',
-          current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, pushedBy, now]);
+          current_by = EXCLUDED.current_by, current_at = EXCLUDED.current_at`, [tenantId, name, next, approving?.by ?? pushedBy, now]);
       await pointTemplate(client, tenantId, name, { sha256: copy.sha256, byteLength: Number(copy.byte_length) });
       return { status: 'saved' as const, revision: next, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }) => withTenant(db, tenantId, async (client) => {
+    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }, approving) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
       if (!current) return undefined;
@@ -193,14 +202,83 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const sources = [documentSource('definition', key), documentSource('compiled', key)];
       const occupied = await client.query('SELECT 1 FROM workspace_documents WHERE tenant_id = $1 AND source = ANY($2::text[])', [tenantId, sources]);
       if (occupied.rowCount) return { taken: true as const };
+      await approveRequest(client, tenantId, approving);
       for (const [source, content] of [[sources[0]!, definition], [sources[1]!, compiled]] as const) {
         await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)', [tenantId, source, content.sha256, content.byteLength]);
       }
       await client.query('DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name]);
       return { published: true as const };
     }),
+    approvalPolicy: () => withTenant(db, tenantId, (client) => approvalPolicy(client, tenantId)),
+    setApprovalPolicy: (changes, { updatedBy, now }) => withTenant(db, tenantId, async (client) => {
+      for (const scope of APPROVAL_SCOPES) {
+        const required = changes[scope];
+        if (required === undefined) continue;
+        await client.query(`INSERT INTO approval_policies (tenant_id, scope, required, updated_at, updated_by) VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (tenant_id, scope) DO UPDATE SET required = EXCLUDED.required, updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by`, [tenantId, scope, required, now, updatedBy]);
+      }
+      return approvalPolicy(client, tenantId);
+    }),
+    publishRequests: ({ status, scope, limit }) => withTenant(db, tenantId, async (client) =>
+      (await client.query<RequestRow>(`SELECT ${REQUEST_COLUMNS} FROM publish_requests
+        WHERE tenant_id = $1 AND ($2::text IS NULL OR status = $2) AND ($3::text IS NULL OR $3 = ANY(scopes)) ORDER BY requested_at DESC, id LIMIT $4`,
+      [tenantId, status ?? null, scope ?? null, limit])).rows.map(requestRow)),
+    publishRequest: (id) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<RequestRow>(`SELECT ${REQUEST_COLUMNS} FROM publish_requests WHERE tenant_id = $1 AND id = $2`, [tenantId, id])).rows;
+      return row && requestRow(row);
+    }),
+    pendingPublishRequest: (kind, subject) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<RequestRow>(`SELECT ${REQUEST_COLUMNS} FROM publish_requests WHERE tenant_id = $1 AND kind = $2 AND subject = $3 AND status = 'pending'`, [tenantId, kind, subject])).rows;
+      return row && requestRow(row);
+    }),
+    createPublishRequest: (request, now) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<RequestRow>(`INSERT INTO publish_requests
+        (tenant_id, id, kind, subject, scopes, sha256, before_sha256, base_version, version, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at)
+        VALUES ($1, gen_random_uuid(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (tenant_id, kind, subject) WHERE status = 'pending' DO NOTHING RETURNING ${REQUEST_COLUMNS}`,
+      [tenantId, request.kind, request.subject, request.scopes, request.sha256, request.beforeSha256 ?? null, request.baseVersion ?? null, request.version ?? null,
+        request.baseRevision ?? null, request.revision ?? null, request.overwrite ?? false, JSON.stringify(request.diff),
+        request.requestedBy.kind, request.requestedBy.id, request.requestedBy.label, now])).rows;
+      return row && requestRow(row);
+    }),
+    settlePublishRequest: (id, { status, by, now, message }) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<RequestRow>(`UPDATE publish_requests SET status = $3, decided_by = $4, decided_at = $5, message = $6
+        WHERE tenant_id = $1 AND id = $2 AND status = 'pending' RETURNING ${REQUEST_COLUMNS}`, [tenantId, id, status, by, now, message])).rows;
+      return row && requestRow(row);
+    }),
   };
 }
+
+async function approvalPolicy(client: DbClient, tenantId: string): Promise<ApprovalPolicy> {
+  const rows = new Map((await client.query<{ scope: ApprovalScope; required: boolean; updated_at: Date; updated_by: string }>(
+    'SELECT scope, required, updated_at, updated_by FROM approval_policies WHERE tenant_id = $1', [tenantId])).rows.map((row) => [row.scope, row]));
+  return Object.fromEntries(APPROVAL_SCOPES.map((scope) => {
+    const row = rows.get(scope);
+    return [scope, row ? { required: row.required, updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by } : { required: false }];
+  })) as ApprovalPolicy;
+}
+
+/** 批准与内容在同一个事务里：申请已经不是待处理时抛错，整个事务回滚，什么也不写。 */
+async function approveRequest(client: DbClient, tenantId: string, approving: PublishRequestApproval | undefined): Promise<void> {
+  if (!approving) return;
+  const updated = await client.query(`UPDATE publish_requests SET status = 'approved', decided_by = $3, decided_at = $4 WHERE tenant_id = $1 AND id = $2 AND status = 'pending'`,
+    [tenantId, approving.requestId, approving.by, approving.now]);
+  if (!updated.rowCount) throw new PublishRequestDecided();
+}
+
+interface RequestRow {
+  id: string; kind: PublishRequest['kind']; subject: string; scopes: ApprovalScope[]; status: PublishRequest['status']; sha256: string; before_sha256: string | null;
+  base_version: number | null; version: number | null; base_revision: number | null; revision: number | null; overwrite: boolean; diff: PublishRequest['diff'];
+  requested_by_kind: PublishRequest['requestedBy']['kind']; requested_by_id: string; requested_by_label: string; requested_at: Date; decided_by: string | null; decided_at: Date | null; message: string | null;
+}
+const REQUEST_COLUMNS = 'id, kind, subject, scopes, status, sha256, before_sha256, base_version, version, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at, decided_by, decided_at, message';
+const requestRow = (row: RequestRow): PublishRequest => ({
+  id: row.id, kind: row.kind, subject: row.subject, scopes: row.scopes, status: row.status, sha256: row.sha256, ...(row.before_sha256 === null ? {} : { beforeSha256: row.before_sha256 }),
+  ...(row.base_version === null ? {} : { baseVersion: row.base_version }), ...(row.version === null ? {} : { version: row.version }),
+  ...(row.base_revision === null ? {} : { baseRevision: row.base_revision }), ...(row.revision === null ? {} : { revision: row.revision }), ...(row.overwrite ? { overwrite: true } : {}),
+  diff: row.diff, requestedBy: { kind: row.requested_by_kind, id: row.requested_by_id, label: row.requested_by_label }, requestedAt: new Date(row.requested_at).toISOString(),
+  ...(row.decided_by === null ? {} : { decidedBy: row.decided_by }), ...(row.decided_at === null ? {} : { decidedAt: new Date(row.decided_at).toISOString() }), ...(row.message === null ? {} : { message: row.message }),
+});
 
 interface CopyRow { name: string; base_revision: number | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
 const COPY_COLUMNS = 'name, base_revision, sha256, byte_length, created_at, updated_at, updated_by';

@@ -24,6 +24,12 @@ export const ServiceProblemCodes = {
   draftVersionTaken: 'draft.versionTaken',
   /** 保存模板（P1 票据 07）：工作副本的基准不是当前修订，别人先保存了（409，回答带两边差异）；显式 overwrite 才覆盖。 */
   templateRevisionConflict: 'template.revisionConflict',
+  /** 发布申请（P1 票据 11）：同一对象已有待处理申请，这次没记下（409）。只在并发时出现：平时新内容会让旧申请过期。 */
+  publishRequestPending: 'publishRequest.pending',
+  /** 批准时重核不符：申请已标为过期，要重新发起（409，回答带申请）。 */
+  publishRequestExpired: 'publishRequest.expired',
+  /** 申请已经批准、退回或过期，不能再处理（409，回答带申请）。 */
+  publishRequestDecided: 'publishRequest.decided',
   /** 入队前的限制（ADR-0017，票据 06）：超限直接拒绝（413），不占 worker。 */
   limitRequestTooLarge: 'limit.requestTooLarge',
   limitDatasetTooLarge: 'limit.datasetTooLarge',

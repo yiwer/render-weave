@@ -19,6 +19,7 @@ export interface TenantObjects {
   readonly datasetId: string;
   readonly resourceId: string;
   readonly webhookId: string;
+  readonly publishRequestId: string;
 }
 
 export interface CrossTenantEndpoint {
@@ -114,6 +115,16 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
     request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/templates/:name/copies', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/copies`, body: { name: '跨租户副本' } }) },
   { route: 'GET /v1/templates/:name/revisions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/revisions` }) },
+  // 审批策略与发布申请（P1 票据 11）：申请 ID 在路径里，别的租户的与不存在的同样答 404。
+  { route: 'GET /v1/approval-policy', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/approval-policy' }) },
+  { route: 'PUT /v1/approval-policy', addressesObject: false, request: () => ({ method: 'PUT', url: '/v1/approval-policy', body: { definitions: false } }) },
+  { route: 'GET /v1/publish-requests', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/publish-requests' }) },
+  { route: 'GET /v1/publish-requests/:id', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/publish-requests/${a.publishRequestId}` }) },
+  { route: 'POST /v1/publish-requests/:id/approve', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/publish-requests/${a.publishRequestId}/approve` }) },
+  { route: 'POST /v1/publish-requests/:id/reject', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/publish-requests/${a.publishRequestId}/reject`, body: { message: '跨租户检查' } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/approval-policy', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/approval-policy` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/publish-requests', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/publish-requests` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/publish-requests/:id', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/publish-requests/${a.publishRequestId}` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/template-working-copies', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/template-working-copies` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/working-copy` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/working-copy` }) },

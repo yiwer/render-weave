@@ -55,6 +55,8 @@ export interface PushDiff {
   readonly resources: readonly { readonly id: string; readonly kind: string; readonly status: string; readonly reason?: string; readonly localVersion: number; readonly serverVersion?: number }[];
   readonly uploads?: readonly string[];
   readonly pushId?: string;
+  /** 只列差异时：写入碰到了打开审批策略的范围，提交会变成发布申请（P1 票据 11）。 */
+  readonly approvalScopes?: readonly string[];
   /** 提交后：附了几轮、这次新记了几轮（其余已记过），以及新记的 token 合计。 */
   readonly usage?: { readonly rounds: number; readonly recorded: number; readonly tokens: Readonly<Record<TokenField, number>> };
 }
@@ -66,7 +68,16 @@ export interface PushTarget {
   readonly token: string;
 }
 
+/** 推送变成的发布申请（P1 票据 11）。 */
+export interface PushedRequest {
+  readonly id: string;
+  readonly status: string;
+  readonly scopes: readonly string[];
+}
+
 export interface PushOutcome {
+  /** 租户打开了审批策略：这次推送没有生效，成了一份待批准的发布申请。 */
+  readonly request?: PushedRequest;
   /** 服务给出的差异；本地有严重问题、连不上服务或请求被拒绝时可能没有。 */
   readonly diff?: PushDiff;
   readonly pushed: boolean;
@@ -250,6 +261,8 @@ export async function pushWorkspace(options: PushTarget & { readonly workspace: 
       }
     }
     const commit = await call(options, 'POST', '/pushes', manifest);
+    // 整份推送变成了发布申请：服务端还没有新修订，本地记录不动；批准后 pull 取回。
+    if (commit.status === 202) return { diff: commit.body as PushDiff, pushed: false, request: (commit.body as { request: PushedRequest }).request, skipped: local.skipped, problems: [] };
     if (commit.status === 200) {
       const pushed = commit.body as PushDiff;
       await recordRevisions(options.workspace, options.tenant, Object.fromEntries(pushed.documents.flatMap((document) => {

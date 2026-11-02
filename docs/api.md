@@ -32,7 +32,7 @@
 
 - `level`：`severe`（严重）或 `hint`（提示）。错误回答里至少有一个严重问题。
 - `location`：问题的位置。请求本身的问题是 `{ "kind": "input", "source": "request.body.url" }` 这样的写法；数据集、模板的问题定位到字段、参数或元素，与命令行相同。
-- 额度不足时另带 `quota`，推送冲突时另带 `diff`。
+- 额度不足时另带 `quota`，推送冲突时另带 `diff`，处理发布申请不成时另带 `request`。
 
 HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
@@ -42,7 +42,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 | 401 | 未鉴权 | `auth.required`、`auth.invalidCredentials` |
 | 403 | 无权限 | `auth.forbidden` |
 | 404 | 不存在；别的租户的对象也答 404 | `request.notFound` |
-| 409 | 与已有内容冲突 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`、`webhook.limitReached` |
+| 409 | 与已有内容冲突 | `member.emailTaken`、`member.lastAdmin`、`push.conflict`、`batch.idempotencyConflict`、`input.duplicate`、`resource.replacementStale`、`webhook.limitReached`、`publishRequest.pending`、`publishRequest.expired`、`publishRequest.decided` |
 | 413 | 超出大小或规模 | `limit.requestTooLarge`、`limit.datasetTooLarge`、`limit.pixelsExceeded`、`limit.expansionExceeded`、`limit.workbookTooLarge` |
 | 415 | 请求体的类型不对 | `request.invalid` |
 | 429 | 额度不足，或超出频率与并发 | `quota.exceeded`、`preview.rateLimited`、`replay.rateLimited` |
@@ -156,6 +156,47 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 ```
 
 `path` 与布局摘要里的元素路径相同，带调用链与循环序号。`source` 是这个元素所在的模板文档与它在文档里的路径。页面按布局摘要的元素框命中，再按 `source` 打开模板文档里的位置。
+
+## 审批策略与发布申请
+
+审批策略是租户按范围设的开关（1.8.0）：`definitions` 管数据定义发布，`templates` 管模板修订，含指回旧修订。缺省都关，即直发。打开后，客户管理员以外的主体发布，不生效，答 202，留下一份**发布申请**；客户管理员自己的发布直接生效。
+
+| 操作 | 端点 | 说明 |
+|---|---|---|
+| 读策略 | `GET /v1/approval-policy` | 两个范围各 `{ "required": false }`，改过的另有 `updatedAt`、`updatedBy` |
+| 改策略 | `PUT /v1/approval-policy` | 客户管理员。请求体 `{ "templates": true }`，只写给出的范围 |
+| 列申请 | `GET /v1/publish-requests` | 新的在前，可以用 `status`、`scope`、`limit` 筛。不重核 |
+| 读申请 | `GET /v1/publish-requests/{id}` | 待处理时另有 `recheck`（现在批准能不能生效）与 `changes`（这份申请改了什么） |
+| 批准 | `POST /v1/publish-requests/{id}/approve` | 客户管理员。回答 `{ "request": …, "result": … }`，`result` 与直接发布的回答相同 |
+| 退回 | `POST /v1/publish-requests/{id}/reject` | 客户管理员。请求体 `{ "message": "…" }`，必须留言 |
+
+代建工程师用 `/v1/authoring/tenants/{租户}` 加同样的路径读策略与申请，看得到结果与退回的留言；批准、退回与改策略只有客户端点。
+
+**哪些写入会变成申请**：
+
+| 写入 | 范围 | 申请的 `kind` | 固定的内容 |
+|---|---|---|---|
+| `POST …/definitions/{name}/draft/publish` | `definitions` | `definitionPublish` | 草案哈希、算出的下一个版本 |
+| `POST …/templates/{name}/working-copy/save` | `templates` | `templateSave` | 工作副本哈希、当前修订 |
+| `POST …/template-current` | `templates` | `templateSetCurrent` | 要指回的修订、当前修订 |
+| `POST …/pushes` | 写入碰到的范围 | `push` | 推送清单的哈希 |
+
+推送写入静态数据定义或编译产物算 `definitions`，写入模板修订算 `templates`；只写数据集与资源的推送不受约束。碰到打开的范围时**整份**变成申请，内容要已上传。`POST …/push-plans` 的回答另有 `approvalScopes`，提前告诉你提交时会这样。
+
+这些写入照常先核对：哈希不对答 409，有严重问题答 400，模板基准不符答 409 `template.revisionConflict`，推送冲突答 409 `push.conflict`。都通过才记申请，回答 `{ "request": { … } }`（推送另带逐项差异）。
+
+**同时最多一份待处理**：同一份草案、工作副本、同一个模板的指回、同一位代建工程师的推送。重发相同的内容答同一份；内容改了，旧申请过期，再记新的。草案或工作副本保存了新内容、被删除或被直接发布时，申请也随之过期。
+
+**批准时重核**，任何一项不符就把申请标为 `expired`，答 409 `publishRequest.expired`，回答带 `request`，有严重问题时另带 `blockers`，要重新发起：
+
+- 内容哈希没变；
+- 数据定义的下一个版本还是申请时的那个；模板的当前修订还是申请时的那个；
+- 推送按当时的状态重算没有冲突，内容都还在；
+- 没有严重问题。
+
+相符就生效，生效与申请的状态在同一个事务里。已经处理过的申请答 409 `publishRequest.decided`。批准产生的修订算网页一侧（M354）：内容与主体还是申请人的，当前修订的来历记批准的人，所以代建工程师从旧内容接着推送会被挡住，`renderweave pull` 之后再改。
+
+**审计**：`publishRequest.create`、`.approve`、`.reject`、`.expire` 各一条，带主体、内容哈希与差异摘要；改策略记 `approvalPolicy.update`。批准生效时另记与直接发布相同的事件（`definition.publish`、`template.save`、`template.setCurrent`、`push.commit`），主体是批准的人。
 
 ## Excel 导入
 
@@ -302,6 +343,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.8.0 | 2026-11-02 | 审批策略与发布申请（P1 票据 11，M347、M358）：新增 `GET`、`PUT /v1/approval-policy`，`GET /v1/publish-requests`、`GET /v1/publish-requests/{id}`，`POST …/approve`、`POST …/reject`，代建端点有同样的读取；发布草案、保存模板、指回与推送加 202 回答：只有租户打开了审批策略才会出现；`push-plans` 的回答加 `approvalScopes`；错误回答加 `request`、`blockers`；新问题码 `publishRequest.pending`、`publishRequest.expired`、`publishRequest.decided` | 兼容，只做加法 |
 | 1.7.0 | 2026-11-01 | 数据定义页面要的两个只读端点（P1 票据 06，M355）：新增 `GET /v1/definitions/{name}`（列表项加 `fieldUses`，每个字段被哪些模板读到）与 `GET /v1/definition-publications`（发布记录，操作员也能读），代建端点是同一组操作 | 兼容，只做加法 |
 | 1.6.0 | 2026-11-01 | 推送与网页改动共存（P1 票据 10，M348、M354）：推送清单的模板可以带 `baseRevision`；`TemplateRevisions` 加 `current`（当前修订的来源、动作、主体与时间）；网页上保存或指回之后，从旧内容推送答 409 `push.conflict`，只用推送的租户不受影响 | 兼容，只做加法 |
 | 1.5.0 | 2026-11-01 | 模板工作副本（P1 票据 07，M346、M352）：新增 `GET /v1/template-working-copies`，`POST`、`GET`、`PUT`、`DELETE /v1/templates/{name}/working-copy`，`GET …/working-copy/check`，`POST …/working-copy/save`，`POST /v1/templates/{name}/copies`，`GET /v1/templates/{name}/revisions`，代建端点是同一组操作；`POST /v1/template-current` 把指回旧修订开放给客户管理员；`POST /v1/previews` 与代建预览加可选的 `workingCopies=true`，回答加可选的 `elements`（元素定位）；修订加 `source`；问题码 `template.revisionConflict`（409，回答带 `conflict`） | 兼容，只做加法 |

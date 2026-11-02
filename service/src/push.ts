@@ -5,14 +5,16 @@
  * - 模板：按名称对比当前修订，字节不同就记一个新修订；但带了基于的修订（baseRevision）而当前修订不是它，或没带而当前修订不是推送产生的，算冲突（P1 票据 10，M348）。
  * - 资源：按 ID 对比；种类不同、或两边都有的内容版本字节不同是冲突；本地多出的内容版本追加，服务端多出的不动。
  * - 代建轮次（票据 09）：可选，各轮 round.json 的 token 用量，与推送同一事务记为该租户的用量事件；已记过的轮次跳过，只记不拦。
+ * - 审批策略（P1 票据 11）：写入碰到打开了策略的范围时，整份推送变成发布申请；批准时走同一个 commitPush，按当时的状态重算冲突。
  */
-import { problem, ServiceProblemCodes, type ServiceProblem } from './api/problems.js';
+import { ApiError, problem, ServiceProblemCodes, type ServiceProblem } from './api/problems.js';
+import type { AuditWriter } from './api/publish-requests.js';
 import { auditDiff } from './audit.js';
 import {
-  DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type AuditDiff, type AuditDiffPath, type AuthoringState, type ContentStore, type DocumentKind, type PushWrites,
-  type StoredDocument, type StoredTemplate, type TokenKind,
+  DOCUMENT_KINDS, documentSource, TOKEN_KINDS, type ApprovalScope, type AuditDiff, type AuditDiffPath, type AuthoringState, type ContentStore, type DocumentKind, type PublishRequestApproval, type PushWrites,
+  type StoredDocument, type StoredTemplate, type TenantScope, type TenantStorage, type TokenKind,
 } from './backend.js';
-import { classifyWorkspaceDocument, parseJsonKeepingPrecision, parseResourceRef } from './engine.js';
+import { checkTemplateStatic, classifyWorkspaceDocument, createMemoryResourceRepository, parseJsonKeepingPrecision, parseResourceRef, readWorkspaceDocuments, type Problem } from './engine.js';
 
 /** 清单里的一轮代建：round.json 的 SHA-256 是这一轮的身份，四种 token 缺了按 0 计。 */
 export type ManifestRound = { readonly sha256: string; readonly task: string; readonly round: number } & Readonly<Partial<Record<TokenKind, number>>>;
@@ -223,6 +225,52 @@ export function pushAuditDiff(state: AuthoringState, writes: PushWrites): AuditD
       return { path: `resource:${resource.id}`, ...(current ? { change: 'changed', beforeSha256: current.sha256 } : { change: 'added' }), afterSha256: resource.versions.at(-1)!.sha256 };
     }),
   ]);
+}
+
+/** 这次写入碰到的审批范围：静态数据定义与编译产物算数据定义，模板修订算模板；数据集与资源不受约束。 */
+export const pushScopes = (writes: PushWrites): ApprovalScope[] => [
+  ...(writes.documents.some((document) => document.kind === 'definition' || document.kind === 'compiled') ? ['definitions' as const] : []),
+  ...(writes.templates.length ? ['templates' as const] : []),
+];
+
+/**
+ * 写入之后，写入的模板有没有严重问题（ADR-0021）：变成申请时与批准时都看。
+ * 推送本身不看这个（M264 由本地发布把关）；申请是要等人批准的，有严重问题的成果任何人都不能批准，早拒绝比让人白看一遍好。
+ */
+export async function pushProblems(storage: TenantStorage, writes: PushWrites): Promise<Problem[]> {
+  const entries = new Map((await storage.documents.list()).map((entry) => [entry.source, entry]));
+  const written = [...writes.documents.map((document) => ({ source: documentSource(document.kind, document.key), sha256: document.sha256 })),
+    ...writes.templates.map((template) => ({ source: documentSource('template', template.name), sha256: template.sha256 }))];
+  for (const { source, sha256 } of written) entries.set(source, { source, read: async () => (await storage.contents.get(sha256))! });
+  const list = [...entries.values()].sort((a, b) => (a.source < b.source ? -1 : a.source > b.source ? 1 : 0));
+  const documents = await readWorkspaceDocuments({ location: 'push', list: async () => list });
+  const workspace = { ...documents, resources: createMemoryResourceRepository([]) };
+  return writes.templates.flatMap(({ name }) => {
+    const { problems } = checkTemplateStatic(workspace, name);
+    return problems.filter((item) => item.level === 'severe');
+  });
+}
+
+/**
+ * 提交一次推送：在一个事务里按最新状态重算差异；有冲突整体拒绝（409），内容没上传或不符也拒绝（400），服务端保持原样。
+ * 批准申请时带 approving，申请与内容在同一个事务里生效。审计记差异摘要，主体由 audit 决定。
+ */
+export async function commitPush(scope: TenantScope, manifest: PushManifest, pushId: string, by: { readonly pushedBy: string; readonly now: Date; readonly approving?: PublishRequestApproval }, audit: AuditWriter) {
+  const storage = scope.storage;
+  let diff: PushDiff | undefined, before: AuthoringState | undefined, writes: PushWrites | undefined;
+  const { revisions, recordedRounds } = await storage.push(async (state) => {
+    before = state;
+    diff = diffPush(manifest, state);
+    if (diff.summary.conflicts) throw new ApiError(409, conflictProblems(diff), { diff });
+    writes = pushWrites(manifest, diff);
+    const problems = await verifyContents(writes, storage.contents);
+    if (problems.length) throw new ApiError(400, problems);
+    return writes;
+  }, by);
+  const result = { ...diff!, documents: diff!.documents.map((item) => (revisions.has(item.key) && item.kind === 'template' ? { ...item, revision: revisions.get(item.key)! } : item)) };
+  await audit('push.commit', { type: 'push', id: pushId }, { diff: pushAuditDiff(before!, writes!) });
+  const usage = { rounds: manifest.rounds?.length ?? 0, recorded: recordedRounds.length, tokens: roundTokens(manifest, recordedRounds) };
+  return { pushId, ...result, usage };
 }
 
 /** 这次新记的轮次的 token 合计。 */

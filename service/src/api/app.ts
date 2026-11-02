@@ -16,6 +16,7 @@ import { registerConsoleRoutes } from './console.js';
 import { registerDatasetRoutes } from './datasets.js';
 import { registerExcelImportRoutes } from './excel-imports.js';
 import { registerCustomerDefinitionRoutes } from './definitions.js';
+import { registerCustomerApprovalRoutes } from './approvals.js';
 import { registerCustomerTemplateRoutes } from './template-copies.js';
 import { DEFAULT_LIMITS, registerPreviewRoutes, type ServiceLimits } from './previews.js';
 import { registerRecordRoutes } from './records.js';
@@ -132,6 +133,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerStaticSchemaRoutes(app, context);
   registerCustomerDefinitionRoutes(app, context);
   registerCustomerTemplateRoutes(app, context);
+  registerCustomerApprovalRoutes(app, context);
   registerExcelImportRoutes(app, context);
   // 机器可读的 API 描述（票据 11）：按已注册的路由生成，第一次请求时生成一次。
   let openapi: Record<string, unknown> | undefined;

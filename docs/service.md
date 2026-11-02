@@ -169,6 +169,9 @@ docker compose exec api node service/dist/main.js platform-admin admin@example.c
 | `GET /v1/template-working-copies`、`GET /v1/templates/{模板名}/working-copy`、`GET …/working-copy/check`、`GET /v1/templates/{模板名}/revisions` | 管理员、操作员、API 密钥；见[模板工作副本](#模板工作副本) |
 | `POST`、`PUT`、`DELETE …/working-copy`、`POST …/working-copy/save`、`POST /v1/templates/{模板名}/copies`、`POST /v1/template-current` | 客户管理员 |
 | `/v1/authoring/tenants/{租户}/template-working-copies`、`…/templates/{模板名}/working-copy…`、`…/copies`、`…/revisions` | 代建工程师；与上面两行同一组操作，读取也记审计 |
+| `GET /v1/approval-policy`、`GET /v1/publish-requests`、`GET /v1/publish-requests/{申请}` | 管理员、操作员、API 密钥；见[审批策略与发布申请](#审批策略与发布申请) |
+| `PUT /v1/approval-policy`、`POST /v1/publish-requests/{申请}/approve`、`POST …/reject` | 客户管理员 |
+| `/v1/authoring/tenants/{租户}/approval-policy`、`…/publish-requests…` | 代建工程师；只读，读取也记审计 |
 | `GET /v1/templates`、`GET /v1/templates/{模板名}` | 管理员、操作员、API 密钥；见[模板与草稿预览](#模板与草稿预览) |
 | `POST /v1/previews` | 管理员、操作员、API 密钥 |
 | `POST /v1/authoring/tenants/{租户}/previews` | 代建工程师，用被指定租户的身份预览 |
@@ -261,6 +264,7 @@ renderweave push --server http://127.0.0.1:8080 --tenant <租户ID> --workspace 
 
 - 字节相同是"不变"。服务端的资源已有更新的内容版本、本地落后时也是"不变"，不覆盖。
 - **模板的冲突**：推送每成功一次，工作区的 `.renderweave/` 记下各模板的修订号，下次推送作为 `baseRevision` 带上。当前修订的来历记在 `templates` 表（迁移 0013）：保存工作副本与客户管理员指回算网页，推送与代建工程师自己指回算推送。工程师自己指回之后接着推送照旧可以（M265）。多台机器上各有记录时，先推送的会让后推送的冲突。冲突说明写明当前修订由谁在何时产生。
+- **审批策略**：写入碰到打开了策略的范围时，命令行报告发布申请的 ID，退出码 0，本地记录不动，`pushed` 为 `false`；`--dry-run` 提前说明。批准之后用 `pull` 取回修订号再接着改，见[审批策略与发布申请](#审批策略与发布申请)。
 - **取回**：`renderweave pull --server --tenant --workspace [--overwrite]` 把租户当前的模板、静态数据定义与编译产物写进本地工作区，令牌规则同推送。按身份找本地已有的文件，字节相同不动，不同的先列出，加 `--overwrite` 才覆盖。数据集与资源不取回。读内容记 `authoring.read` 与 `content.read`。
 - 推送只新增与更新，不删除服务端已有的内容。
 - 有冲突就整体拒绝，服务端保持原样；没有冲突就在一个事务里提交。
@@ -306,6 +310,18 @@ renderweave template-revisions --server … --tenant <租户ID> --template <模�
 - **保存**：先用 `checkTemplateStatic` 做静态检查（只换上这一份工作副本，子模板用已保存的，看的就是保存之后的样子），再在一个事务里锁住租户行，核对内容哈希与基准修订，记修订，当前修订指向它，删除工作副本。
 - **元素定位**：引擎的 `render` 加可选输出 `elementLocations`，预览都带上。
 - **审计**：`templateWorkingCopy.create`、`.save`、`.delete`、`.copy` 与 `template.save` 都记前后内容哈希；暂存与保存的差异摘要按结构（`element:元素路径`、`template:键`）。代建工程师的读取另记 `authoring.read`。
+
+## 审批策略与发布申请
+
+租户可以按范围要求发布前由客户管理员批准，缺省直发（P1 票据 11，ADR-0021、ADR-0022、M358）。接口写法见[开放 API](api.md#审批策略与发布申请)。
+
+- **存储**：迁移 0014 的 `approval_policies` 与 `publish_requests`，都开了行级安全。部分唯一索引保证同一对象同一种申请同时最多一份 `pending`。推送清单存进本租户的内容，没有登记，经 `GET …/contents` 读不到。
+- **谁受约束**：能批准的主体（`authoring.approve`，即客户管理员）自己的发布直接生效，别的主体看范围的开关。开关在写入路径开头读，不进写入的事务：策略刚改的那一刻，正在进行的发布按改之前的算。
+- **申请不改动任何东西**：当前修订、版本、草案与工作副本都不动，出图照旧。
+- **批准**：先重核（`service/src/api/approvals.ts` 的 `recheck`，详情的 `recheck` 也是它），再走直接发布的同一个函数，多传一个 `approving`。存储在写入的同一个事务里把申请从 `pending` 改成 `approved`，已经不是 `pending` 就抛 `PublishRequestDecided`，整个事务回滚。重核与事务之间内容又变了，写入路径照常答 409，批准按过期处理。
+- **过期**：保存新内容、删除或直接发布之后再标过期，不在同一个事务里；中途中断时申请还是 `pending`，批准时的重核会发现内容哈希不符，不会批错内容。
+- **推送的轮次**：等批准时才记用量。退回后再推送，轮次按身份不重复记。
+- **修订上的主体**：保存模板与推送的修订记申请人，`current_by` 记批准的人，`current_source` 是 `web`（M354）。
 
 ## 模板与草稿预览
 

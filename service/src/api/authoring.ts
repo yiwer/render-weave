@@ -7,14 +7,16 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { type AuditContent, type AuthoringState, type NewAuditEvent, type PushWrites, type TenantScope } from '../backend.js';
+import { type AuditContent, type NewAuditEvent, type TenantScope } from '../backend.js';
 import {
-  checkManifest, conflictProblems, diffPush, MANIFEST_SCHEMA, pushAuditDiff, pushWrites, registeredContents, roundTokens, sortedState, verifyContents, writtenContents,
-  type PushDiff, type PushManifest,
+  checkManifest, commitPush, diffPush, MANIFEST_SCHEMA, pushAuditDiff, pushProblems, pushScopes, pushWrites, registeredContents, sortedState, verifyContents, writtenContents,
+  type PushManifest,
 } from '../push.js';
 import { actorOf, forbidden, identityOf, type ApiContext } from './app.js';
+import { registerApprovalReads } from './approvals.js';
 import { registerDefinitionRoutes } from './definitions.js';
-import { registerWorkingCopyRoutes, SET_CURRENT_SCHEMA, setCurrentTemplate } from './template-copies.js';
+import { constrainedScopes, openPublishRequest, type RequestActor } from './publish-requests.js';
+import { registerWorkingCopyRoutes, requestSetCurrent, SET_CURRENT_SCHEMA, setCurrentTemplate } from './template-copies.js';
 import { PREVIEW_QUERY, previewOptions, runPreview } from './previews.js';
 import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
@@ -30,6 +32,7 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
   const target = (request: FastifyRequest) => targets.get(request)!;
   const audit = (request: FastifyRequest, action: string, object: NewAuditEvent['object'], content: AuditContent = {}) =>
     target(request).appendAudit({ actor: actorOf(identityOf(request)), action, object, crossTenant: true, ...content }, now());
+  const requesterOf = (request: FastifyRequest): RequestActor => ({ actor: actorOf(identityOf(request)), now: now(), audit: (action, object, content) => audit(request, action, object, content) });
 
   app.register(async (scope) => {
     // 在全局鉴权之后、读请求体之前确定目标租户。
@@ -81,35 +84,37 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       const manifest = validManifest(request.body);
       const storage = target(request).storage;
       const diff = diffPush(manifest, await storage.authoringState());
-      const needed = diff.summary.conflicts ? [] : writtenContents(pushWrites(manifest, diff));
+      const writes = diff.summary.conflicts ? undefined : pushWrites(manifest, diff), needed = writes ? writtenContents(writes) : [];
       const uploads: string[] = [];
       for (const hash of needed) if (!(await storage.contents.has(hash))) uploads.push(hash);
       await audit(request, 'push.plan', { type: 'tenant', id: target(request).tenantId });
-      return { ...diff, uploads };
+      const approvalScopes = writes ? await constrainedScopes(target(request), identityOf(request), pushScopes(writes)) : [];
+      return { ...diff, uploads, ...(approvalScopes.length ? { approvalScopes } : {}) };
     });
 
     /**
      * 提交：在一个事务里按最新状态重算差异；有冲突整体拒绝（409），内容没上传或不符也拒绝（400），服务端保持原样。
      * 随附的代建轮次在同一事务里记为用量事件（票据 09）：usage 写明附了几轮、这次新记了几轮与新记的 token 合计。
+     * 写入碰到打开了审批策略的范围时，整份推送变成发布申请（P1 票据 11，答 202）：内容要已上传，批准时再按当时的状态提交；轮次也等批准时才记。
      */
-    scope.post('/v1/authoring/tenants/:tenantId/pushes', { config: { access: 'authoring.push' }, bodyLimit: MAX_MANIFEST_BYTES, schema: { body: MANIFEST_SCHEMA } }, async (request) => {
+    scope.post('/v1/authoring/tenants/:tenantId/pushes', { config: { access: 'authoring.push' }, bodyLimit: MAX_MANIFEST_BYTES, schema: { body: MANIFEST_SCHEMA } }, async (request, reply) => {
       const manifest = validManifest(request.body);
-      const storage = target(request).storage, pushId = randomUUID();
-      let diff: PushDiff | undefined, before: AuthoringState | undefined, writes: PushWrites | undefined;
+      const storage = target(request).storage, pushId = randomUUID(), requester = requesterOf(request);
       try {
-        const { revisions, recordedRounds } = await storage.push(async (state) => {
-          before = state;
-          diff = diffPush(manifest, state);
-          if (diff.summary.conflicts) throw new ApiError(409, conflictProblems(diff), { diff });
-          writes = pushWrites(manifest, diff);
-          const problems = await verifyContents(writes, storage.contents);
+        const state = await storage.authoringState(), planned = diffPush(manifest, state);
+        const writes = planned.summary.conflicts ? undefined : pushWrites(manifest, planned);
+        const scopes = writes ? await constrainedScopes(target(request), identityOf(request), pushScopes(writes)) : [];
+        if (writes && scopes.length) {
+          const problems = [...await verifyContents(writes, storage.contents)];
           if (problems.length) throw new ApiError(400, problems);
-          return writes;
-        }, { pushedBy: actorOf(identityOf(request)).label, now: now() });
-        const result = { ...diff!, documents: diff!.documents.map((item) => (revisions.has(item.key) && item.kind === 'template' ? { ...item, revision: revisions.get(item.key)! } : item)) };
-        await audit(request, 'push.commit', { type: 'push', id: pushId }, { diff: pushAuditDiff(before!, writes!) });
-        const usage = { rounds: manifest.rounds?.length ?? 0, recorded: recordedRounds.length, tokens: roundTokens(manifest, recordedRounds) };
-        return { pushId, ...result, usage };
+          const severe = await pushProblems(storage, writes);
+          if (severe.length) throw new ApiError(400, severe);
+          const sha256 = await storage.contents.put(new Uint8Array(Buffer.from(JSON.stringify(manifest))));
+          const publishRequest = await openPublishRequest(target(request), { kind: 'push', subject: requester.actor.id, scopes, sha256, diff: pushAuditDiff(state, writes) }, requester);
+          reply.code(202);
+          return { ...planned, request: publishRequest };
+        }
+        return await commitPush(target(request), manifest, pushId, { pushedBy: requester.actor.label, now: requester.now }, requester.audit);
       } catch (error) {
         if (error instanceof ApiError) await audit(request, 'push.reject', { type: 'push', id: pushId });
         throw error;
@@ -124,12 +129,19 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
     });
 
     /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订；审计记改前改后两个修订的内容哈希。 */
-    scope.post('/v1/authoring/tenants/:tenantId/template-current', { config: { access: 'authoring.push' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request) =>
-      setCurrentTemplate(target(request), request.body, { source: 'push', by: actorOf(identityOf(request)).label, now: now() }, (object, content) => audit(request, 'template.setCurrent', object, content)));
+    scope.post('/v1/authoring/tenants/:tenantId/template-current', { config: { access: 'authoring.push' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request, reply) => {
+      const requester = requesterOf(request);
+      if ((await constrainedScopes(target(request), identityOf(request), ['templates'])).length) {
+        reply.code(202);
+        return { request: await requestSetCurrent(target(request), request.body, requester) };
+      }
+      return setCurrentTemplate(target(request), request.body, { source: 'push', by: requester.actor.label, now: requester.now }, requester.audit);
+    });
 
     const addressing = { prefix: '/v1/authoring/tenants/:tenantId', read: 'authoring.read', scopeOf: target, crossTenant: true } as const;
     registerDefinitionRoutes(scope, context, addressing);
     registerWorkingCopyRoutes(scope, context, addressing);
+    registerApprovalReads(scope, context, addressing);
   });
 }
 

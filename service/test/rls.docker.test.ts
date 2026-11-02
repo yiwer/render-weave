@@ -10,7 +10,7 @@ import { connectOwner, postgresBackend } from './support.js';
 
 const TENANT_TABLES = ['workspace_documents', 'resource_stores', 'resources', 'resource_versions', 'batches', 'batch_items', 'batch_item_files', 'api_keys', 'users', 'sessions', 'audit_events',
   'template_revisions', 'templates', 'render_tasks', 'tenant_plans', 'usage_counters', 'usage_events', 'webhooks', 'webhook_events', 'webhook_deliveries', 'webhook_attempts',
-  'definition_drafts', 'template_working_copies'];
+  'definition_drafts', 'template_working_copies', 'approval_policies', 'publish_requests'];
 /** 平台模式下可见的表；其余租户数据表在平台模式下仍然只认当前租户。代建令牌的租户表只在平台模式下可见。 */
 const PLATFORM_VISIBLE = new Set(['users', 'sessions', 'audit_events', 'authoring_token_tenants']);
 const PLATFORM_ONLY = ['authoring_token_tenants'];
@@ -46,6 +46,9 @@ beforeAll(async () => {
     await scope.storage.createDefinitionDraft({ name, bytes: bytes(`{"name":"${name}"}`) }, { updatedBy: '测试', now: new Date() });
     // 模板工作副本（P1 票据 07）。
     await scope.storage.createTemplateWorkingCopy({ name, bytes: bytes(`{"name":"${name}"}`) }, { updatedBy: '测试', now: new Date() });
+    // 审批策略与发布申请（P1 票据 11）。
+    await scope.storage.setApprovalPolicy({ templates: true }, { updatedBy: '测试', now: new Date() });
+    await scope.storage.createPublishRequest({ kind: 'templateSave', subject: name, scopes: ['templates'], sha256, diff: { added: 0, removed: 0, changed: 0, paths: [] }, requestedBy: { kind: 'system', id: 'test', label: '测试' } }, new Date());
     // 套餐与当期计数：设套餐，再建一个一项的批次预占额度。
     await scope.setPlan({ monthlyImages: 5, maxPixels: 1_000, concurrency: 1 }, new Date());
     // webhook（票据 11）：注册一个，取消批次让它结束，记下事件与投递；Compose 里接口进程的投递任务会来投（连不上），记下尝试。

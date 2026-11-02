@@ -721,11 +721,16 @@ async function runPush(options: Record<string, string>, dryRun: boolean, io: Cli
   reportProblems(outcome.problems, io);
   if (outcome.diff) {
     const { summary, documents, resources, pushId, usage } = outcome.diff;
-    io.stdout(`${JSON.stringify({ tenant: target.tenant, dryRun, pushed: outcome.pushed, ...(pushId ? { pushId } : {}), summary, documents, resources, skipped: outcome.skipped,
+    io.stdout(`${JSON.stringify({ tenant: target.tenant, dryRun, pushed: outcome.pushed, ...(pushId ? { pushId } : {}), ...(outcome.request ? { request: outcome.request.id } : {}), summary, documents, resources, skipped: outcome.skipped,
       ...(usage ? { usage } : {}) }, null, 2)}\n`);
     if (usage?.rounds) io.stderr(`代建 token：附 ${usage.rounds} 轮，新记 ${usage.recorded} 轮${usage.recorded < usage.rounds ? '（其余已记过）' : ''}\n`);
   }
   const conflicts = outcome.diff?.summary.conflicts ?? 0;
+  if (outcome.request) {
+    io.stderr(`租户 ${target.tenant} 打开了审批策略：这次推送成了发布申请 ${outcome.request.id}，等客户管理员批准；批准后用 renderweave pull 取回修订号再接着改\n`);
+    return ExitCodes.ok;
+  }
+  if (dryRun && outcome.diff?.approvalScopes?.length) io.stderr('这个租户打开了审批策略：提交时整份推送会变成发布申请\n');
   if (outcome.pushed) io.stderr(`已推送到租户 ${target.tenant}\n`);
   else if (conflicts > 0) io.stderr(dryRun ? '有冲突：推送时会整体拒绝\n' : '有冲突，整体拒绝，服务端保持原样\n');
   else if (dryRun && outcome.diff) io.stderr('只列差异，没有提交\n');

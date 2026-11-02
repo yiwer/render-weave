@@ -211,6 +211,16 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/revisions` }) },
   { route: 'POST /v1/template-current', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/template-current', body: { template: '矩阵', revision: 1 } }) },
+  // 审批策略与发布申请（P1 票据 11）：对象 ID 用随机值，改策略用什么也不改的请求。
+  { route: 'GET /v1/approval-policy', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/approval-policy' }) },
+  { route: 'PUT /v1/approval-policy', allow: ['admin'], request: () => ({ method: 'PUT', url: '/v1/approval-policy', body: { definitions: false } }) },
+  { route: 'GET /v1/publish-requests', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/publish-requests' }) },
+  { route: 'GET /v1/publish-requests/:id', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/publish-requests/${randomUUID()}` }) },
+  { route: 'POST /v1/publish-requests/:id/approve', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/publish-requests/${randomUUID()}/approve` }) },
+  { route: 'POST /v1/publish-requests/:id/reject', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/publish-requests/${randomUUID()}/reject`, body: { message: '矩阵' } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/approval-policy', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/approval-policy` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/publish-requests', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/publish-requests` }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/publish-requests/:id', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/publish-requests/${randomUUID()}` }) },
   // 批量交付（票据 07）：提交用不存在的模板，整批拒绝，不需要 worker。
   { route: 'POST /v1/batches', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/batches', body: BLOCKED_BATCH }) },
   { route: 'GET /v1/batches/:batchId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/batches/${randomUUID()}` }) },
@@ -434,11 +444,17 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       // A 的一份数据定义草案：另一租户读、改、删、校验都与不存在的名称回答相同。
       const draft = await call('POST', `/v1/definitions/${encodeURIComponent('问候')}/draft`, a.admin.token, { fromVersion: 1 });
       expect(draft.status, draft.raw.slice(0, 300)).toBe(201);
+      // A 的一份发布申请：另一租户读、批准、退回都与不存在的 ID 回答相同。
+      expect((await call('PUT', '/v1/approval-policy', a.admin.token, { definitions: true })).status).toBe(200);
+      const publishRequest = await call('POST', `/v1/authoring/tenants/${a.id}/definitions/${encodeURIComponent('问候')}/draft/publish`, a.engineer.token, { expectedSha256: draft.body.sha256 });
+      expect(publishRequest.status, publishRequest.raw.slice(0, 300)).toBe(202);
+      expect((await call('PUT', '/v1/approval-policy', a.admin.token, { definitions: false })).status).toBe(200);
+      const requestId = publishRequest.body.request.id as string;
       const objects: TenantObjects = { tenantId: a.id, memberId: a.operator.id, apiKeyId: a.key.id, templateName: '问候牌', staticSchemaName: '问候', batchId: batch.body.id, datasetId: 'ds-greeting', resourceId: 'a-logo',
-        webhookId: hook.body.webhook.id };
+        webhookId: hook.body.webhook.id, publishRequestId: requestId };
       const random: TenantObjects = { tenantId: randomUUID(), memberId: randomUUID(), apiKeyId: randomUUID(), templateName: `模板-${randomUUID()}`, staticSchemaName: `定义-${randomUUID()}`, batchId: randomUUID(),
-        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}`, webhookId: randomUUID() };
-      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id, hook.body.webhook.id];
+        datasetId: `ds-${randomUUID()}`, resourceId: `r${randomUUID()}`, webhookId: randomUUID(), publishRequestId: randomUUID() };
+      const aIds = [a.id, a.admin.id, a.operator.id, a.key.id, a.engineer.id, batch.body.id, hook.body.webhook.id, requestId];
       for (const endpoint of CROSS_TENANT_ENDPOINTS) {
         for (const [who, token] of [['B 的管理员', b.admin.token], ['B 的操作员', b.operator.token], ['B 的密钥', b.key.token], ['B 的代建令牌', b.engineer.token]] as const) {
           const request = endpoint.request(objects);

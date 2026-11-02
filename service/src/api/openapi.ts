@@ -8,14 +8,14 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { ACTOR_KINDS, TOKEN_KINDS, USAGE_KINDS, WEBHOOK_EVENT_TYPES } from '../backend.js';
+import { ACTOR_KINDS, APPROVAL_SCOPES, PUBLISH_REQUEST_KINDS, PUBLISH_REQUEST_STATUSES, TOKEN_KINDS, USAGE_KINDS, WEBHOOK_EVENT_TYPES } from '../backend.js';
 import { MANIFEST_SCHEMA } from '../push.js';
 import type { Access } from './permissions.js';
 import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.7.0';
+export const API_VERSION = '1.8.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -44,6 +44,9 @@ export const PROBLEM_STATUS: Readonly<Record<ServiceProblemCode, readonly number
   [ServiceProblemCodes.draftStale]: [409],
   [ServiceProblemCodes.draftVersionTaken]: [409],
   [ServiceProblemCodes.templateRevisionConflict]: [409],
+  [ServiceProblemCodes.publishRequestPending]: [409],
+  [ServiceProblemCodes.publishRequestExpired]: [409],
+  [ServiceProblemCodes.publishRequestDecided]: [409],
   [ServiceProblemCodes.limitRequestTooLarge]: [413],
   [ServiceProblemCodes.limitDatasetTooLarge]: [413],
   [ServiceProblemCodes.limitPixelsExceeded]: [413],
@@ -117,7 +120,9 @@ const SCHEMAS: Record<string, unknown> = {
     diff: { ...ref('PushDiff'), description: '推送冲突（409 push.conflict）时：逐项差异' },
     currentSha256: { ...sha256, description: '保存草案或工作副本时预期哈希不是当前内容（409 draft.stale）：当前内容哈希（1.2.0）' },
     conflict: { ...ref('TemplateRevisionConflict'), description: '保存模板时基准不是当前修订（409 template.revisionConflict）：两边差异（1.5.0）' },
-  }, ['problems'], { description: '错误回答：问题清单，额度不足、推送冲突、草案过期与修订冲突时另带说明情况的字段' }),
+    request: { ...ref('PublishRequest'), description: '处理发布申请时（409 publishRequest.expired、publishRequest.decided）：申请现在的样子（1.8.0）' },
+    blockers: { ...ref('ProblemList'), description: '批准时重核发现严重问题（409 publishRequest.expired）：是哪些问题（1.8.0）' },
+  }, ['problems'], { description: '错误回答：问题清单，额度不足、推送冲突、草案过期、修订冲突与申请过期时另带说明情况的字段' }),
   QuotaShortfall: object({ period: str('计费周期 YYYY-MM'), limit: int(), used: int(), reserved: int(), remaining: int(), requested: int() }),
 
   // 账号与租户
@@ -388,6 +393,20 @@ const SCHEMAS: Record<string, unknown> = {
     sha256: { ...sha256, description: '当前修订的内容哈希' },
   }, undefined, { description: '保存模板的结果（1.5.0）' }),
   AuthoringState: object({ documents: array(ref('StoredDocument')), templates: array(ref('TemplateRevisions')), resources: array(ref('Resource')) }),
+  ApprovalSetting: object({ required: { type: 'boolean', description: '这个范围的发布要不要客户管理员批准；缺省 false，即直发' }, updatedAt: instant('最后修改的时间'), updatedBy: str('最后修改的人') }, ['required']),
+  ApprovalPolicy: object({ definitions: { ...ref('ApprovalSetting'), description: '数据定义发布' }, templates: { ...ref('ApprovalSetting'), description: '模板修订，含指回旧修订' } },
+    undefined, { description: '审批策略：两个范围各一个开关（1.8.0）' }),
+  PublishRequest: object({
+    id: uuid('申请 ID'), kind: { type: 'string', enum: PUBLISH_REQUEST_KINDS, description: 'definitionPublish 发布数据定义；templateSave 保存模板；templateSetCurrent 指回修订；push 整份推送' },
+    subject: str('申请的对象：数据定义或模板的名称；推送是发起者的 ID'), scopes: array({ type: 'string', enum: APPROVAL_SCOPES }, '受约束的范围'),
+    status: { type: 'string', enum: PUBLISH_REQUEST_STATUSES, description: 'pending 待处理；approved 已批准；rejected 已退回；expired 已过期，要重新发起' },
+    sha256: { ...sha256, description: '固定的内容哈希：草案、工作副本、要指回的修订，或推送清单' }, beforeSha256: { ...sha256, description: '申请时要被换掉的内容：基于的版本，或当前修订' },
+    baseVersion: int('数据定义：基于的版本', 1), version: int('数据定义：申请时算出的下一个版本，批准时已被占用就过期', 1),
+    baseRevision: int('模板：申请时的当前修订，批准时已不是它就过期；新模板没有', 1), revision: int('指回：要指回的修订', 1), overwrite: { type: 'boolean', description: '保存模板：申请时明确要盖过别人先保存的修订' },
+    diff: ref('AuditDiff'), requestedBy: object({ kind: { type: 'string', enum: ACTOR_KINDS }, id: str('主体 ID'), label: str('主体的标签') }), requestedAt: instant('申请的时间'),
+    decidedBy: str('处理的人；过期时是让它过期的那次操作的主体'), decidedAt: instant('处理的时间'), message: str('退回的留言，或过期的原因'),
+  }, ['id', 'kind', 'subject', 'scopes', 'status', 'sha256', 'diff', 'requestedBy', 'requestedAt'], { description: '发布申请：审批策略打开时一次发布或推送留下的待批准记录（1.8.0）' }),
+  PublishRequestAccepted: object({ request: ref('PublishRequest') }, undefined, { description: '这次发布没有生效，成了一份待批准的发布申请（1.8.0）' }),
   PushDiff: object({
     summary: object({ added: int(), updated: int(), unchanged: int(), conflicts: int() }),
     documents: array(object({ kind: { type: 'string', enum: ['definition', 'compiled', 'template', 'dataset'] }, key: str(),
@@ -449,6 +468,8 @@ const ok = (json: unknown, description = '成功', status = 200): Reply => ({ st
 const created = (json: unknown, description = '已创建'): Reply => ({ status: 201, description, json });
 const none = (description = '成功，没有正文'): Reply => ({ status: 204, description });
 const list = (key: string, item: string, extra: Record<string, unknown> = {}) => object({ [key]: array(ref(item)), ...extra }, [key]);
+/** 打开了审批策略时，能批准的主体以外的发布答 202（1.8.0）。 */
+const acceptedAsRequest = ok(ref('PublishRequestAccepted'), '审批策略打开：这次发布没有生效，成了一份发布申请', 202);
 const page = (key: string, item: string, cursor: string) => object({ [key]: array(ref(item)), next: str(cursor) }, [key]);
 
 /** 数据定义与草案（P1 票据 04，M345）：客户端点与代建端点一份实现、一份说明，只差寻址。 */
@@ -472,7 +493,7 @@ function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
       description: '绑定基于版本的数据集按 ID 排序逐份校验，超过 1,000 份只校验前面的，datasets.complete 为 false。', replies: [ok(ref('DefinitionPublishCheck'))] },
     [`POST ${draft}/publish`]: { tag, summary: '把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同', errors: [409],
       description: '严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。',
-      replies: [created(ref('DefinitionPublished'))] },
+      replies: [created(ref('DefinitionPublished')), acceptedAsRequest] },
   };
 }
 
@@ -491,9 +512,21 @@ function workingCopyDocs(prefix: string, tag: string): Record<string, RouteDoc> 
     [`GET ${copy}/check`]: { tag, summary: '模板静态检查与结构化差异，不写任何东西；基准不是当前修订时另给两边差异', replies: [ok(ref('TemplateWorkingCopyCheck'))] },
     [`POST ${copy}/save`]: { tag, summary: '保存模板：记新修订（字节相同记为不变），当前修订指向它，删除工作副本', errors: [409],
       description: '模板静态检查有严重问题时答 400。预期哈希不是当前内容答 409 draft.stale。基准不是当前修订答 409 template.revisionConflict，回答带两边差异；overwrite 为 true 才覆盖。',
-      replies: [ok(ref('TemplateSaved'))] },
+      replies: [ok(ref('TemplateSaved')), acceptedAsRequest] },
     [`POST ${template}/copies`]: { tag, summary: '复制为新模板：内容与基准数据定义取当前修订，成为没有基准修订的工作副本，保存时记修订 1', errors: [409], replies: [created(ref('TemplateWorkingCopy'))] },
     [`GET ${template}/revisions`]: { tag, summary: '模板的修订历史：修订号、主体、时间与来源', replies: [ok(ref('TemplateRevisions'))] },
+  };
+}
+
+function approvalDocs(prefix: string, tag: string): Record<string, RouteDoc> {
+  return {
+    [`GET ${prefix}/approval-policy`]: { tag, summary: '审批策略：两个范围的开关', replies: [ok(ref('ApprovalPolicy'))] },
+    [`GET ${prefix}/publish-requests`]: { tag, summary: '发布申请，新的在前；可以按状态与范围筛。不重核，要看现在还能不能批准读详情', replies: [ok(list('requests', 'PublishRequest'))] },
+    [`GET ${prefix}/publish-requests/:id`]: { tag, summary: '一份发布申请：待处理时另给重核结果与它改了什么', replies: [ok(object({
+      ...(SCHEMAS['PublishRequest'] as { properties: Record<string, unknown> }).properties,
+      changes: { description: '待处理时：这份申请改了什么。数据定义是字段级差异，模板是结构化差异，推送是按现在的状态算的逐项差异' },
+      recheck: object({ valid: { type: 'boolean', description: 'false：现在批准会过期' }, message: str('不能批准的原因'), blockers: { ...ref('ProblemList'), description: '严重问题' } }, ['valid'], { description: '待处理时：按现在的状态重核的结果' }),
+    }, ['id', 'kind', 'subject', 'scopes', 'status', 'sha256', 'diff', 'requestedBy', 'requestedAt']))] },
   };
 }
 
@@ -604,21 +637,31 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/authoring/tenants/:tenantId/contents/:sha256': { tag: '代建', summary: '按 SHA-256 读回已登记的内容', replies: [{ status: 200, description: '内容', binary: ['application/octet-stream'] }] },
   'PUT /v1/authoring/tenants/:tenantId/contents/:sha256': { tag: '代建', summary: '上传一份内容，按路径里的 SHA-256 核对', body: 'binary', errors: [413, 415], replies: [none('已上传')] },
   'POST /v1/authoring/tenants/:tenantId/push-plans': { tag: '代建', summary: '推送前的差异，不写任何东西', errors: [413],
-    replies: [ok(object({ ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties, uploads: array(sha256, '提交前要上传的内容') }, ['summary', 'documents', 'resources', 'uploads']))] },
+    replies: [ok(object({ ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties, uploads: array(sha256, '提交前要上传的内容'),
+      approvalScopes: array({ type: 'string', enum: APPROVAL_SCOPES }, '写入碰到了打开审批策略的范围：提交时整份推送会变成发布申请（1.8.0）') }, ['summary', 'documents', 'resources', 'uploads']))] },
   'POST /v1/authoring/tenants/:tenantId/pushes': { tag: '代建', summary: '提交推送：有冲突整体拒绝', errors: [409, 413],
+    description: '写入碰到打开了审批策略的范围（静态数据定义、模板）时答 202，整份推送成为一份发布申请：内容要已上传，批准时按当时的状态重算冲突再提交，随附的轮次也等批准时才记；写入的模板有严重问题答 400。',
     replies: [ok(object({ pushId: uuid('推送 ID'), ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties,
-      usage: object({ rounds: int('附了几轮'), recorded: int('这次新记了几轮'), tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), []) }) }))] },
+      usage: object({ rounds: int('附了几轮'), recorded: int('这次新记了几轮'), tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), []) }) })),
+    ok(object({ ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties, request: ref('PublishRequest') }), '审批策略打开：整份推送没有生效，成了一份发布申请', 202)] },
   'POST /v1/authoring/tenants/:tenantId/previews': { tag: '代建', summary: '用被指定租户的身份看草稿预览', body: 'renderRequest', errors: [413, 429, 503], replies: [ok(ref('PreviewResult'))] },
-  'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions'))] },
+  'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions')), acceptedAsRequest] },
   ...definitionDocs('/v1', '数据定义'),
   ...definitionDocs('/v1/authoring/tenants/:tenantId', '代建'),
   ...workingCopyDocs('/v1', '模板与预览'),
   ...workingCopyDocs('/v1/authoring/tenants/:tenantId', '代建'),
   'POST /v1/template-current': { tag: '模板与预览', summary: '把模板的当前修订指向已有的一个修订，可以指回旧修订', errors: [404], replies: [ok(ref('TemplateRevisions'))] },
+  ...approvalDocs('/v1', '发布审批'),
+  ...approvalDocs('/v1/authoring/tenants/:tenantId', '代建'),
+  'PUT /v1/approval-policy': { tag: '发布审批', summary: '改审批策略：只写给出的范围；改动记审计', replies: [ok(ref('ApprovalPolicy'))] },
+  'POST /v1/publish-requests/:id/approve': { tag: '发布审批', summary: '批准：重核内容哈希、基准与严重问题，相符就生效，不符标为过期', errors: [409],
+    description: '生效与申请的状态在同一个事务里。重核不符答 409 publishRequest.expired，申请标为过期，要重新发起；申请已经处理过答 409 publishRequest.decided。',
+    replies: [ok(object({ request: ref('PublishRequest'), result: { description: '生效的结果：与直接发布、保存、指回或推送的回答相同' } }))] },
+  'POST /v1/publish-requests/:id/reject': { tag: '发布审批', summary: '退回：必须留言', errors: [409], replies: [ok(ref('PublishRequest'))] },
 };
 
 const PATH_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
-  tenantId: uuid('租户 ID'), memberId: uuid('成员 ID'), keyId: uuid('API 密钥 ID'), tokenId: uuid('代建令牌 ID'), batchId: uuid('批次 ID'), webhookId: uuid('webhook ID'),
+  id: uuid('发布申请 ID'), tenantId: uuid('租户 ID'), memberId: uuid('成员 ID'), keyId: uuid('API 密钥 ID'), tokenId: uuid('代建令牌 ID'), batchId: uuid('批次 ID'), webhookId: uuid('webhook ID'),
   name: str('名称'), datasetId: str('数据集 ID'), resourceId: { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9_-]*$', description: '资源 ID' },
   version: { type: 'string', pattern: '^[1-9][0-9]{0,8}$', description: '内容版本' }, index: { type: 'string', pattern: '^[1-9][0-9]{0,3}$', description: '项序号（从 1 起）' },
   sha256,

@@ -4,18 +4,20 @@
  * - 暂存不影响当前修订：出图、只读预览与推送的差异都照旧读当前修订；预览可以指定用工作副本（previews.ts）；
  * - 保存时工作副本的基准不是当前修订答 409 并带两边差异，显式 overwrite 才覆盖，口径同 agent apply --overwrite；
  * - 模板静态检查有严重问题时拒绝保存（ADR-0021）；字节与当前修订相同记为不变（M265），工作副本照样删除；
- * - 指回旧修订（POST /v1/template-current）开放给客户管理员，代建工程师的端点在 authoring.ts，两边走 setCurrentTemplate。
+ * - 指回旧修订（POST /v1/template-current）开放给客户管理员，代建工程师的端点在 authoring.ts，两边走 setCurrentTemplate；
+ * - 模板范围打开了审批策略时，能批准的主体以外的保存与指回答 202，记一份发布申请（P1 票据 11）；申请之后工作副本又被修改，申请随之过期。
  * 客户成员的读取不记审计；代建工程师的读取与所有写入都记。写入另记前后内容哈希与差异摘要（M347）。
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
-import { documentSource, type AuditContent, type AuditDiff, type AuthoringState, type NewAuditEvent, type TenantScope, type TenantStorage, type TemplateWorkingCopy } from '../backend.js';
+import { documentSource, type AuditContent, type AuditDiff, type AuthoringState, type NewAuditEvent, type PublishRequestApproval, type TemplateCurrentOrigin, type TenantScope, type TenantStorage, type TemplateWorkingCopy } from '../backend.js';
 import { checkTemplateStatic, diffTemplate, revisionDiff, type TemplateChange, type Workspace } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { sortedState } from '../push.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { checkedDocument, documentBytes, parsedDocument, staleDraft, type AuthoringAddressing } from './authoring-documents.js';
 import { ApiError, fail, notFound, problem, ServiceProblemCodes } from './problems.js';
+import { constrainedScopes, expirePending, openPublishRequest, type AuditWriter, type RequestActor } from './publish-requests.js';
 
 /** 复制出来的模板名称：1–200 个字符，没有控制字符，首尾没有空白，也没有元素路径用的 / [ ]。推送进来的沿用本地的名称。 */
 const NAME_PATTERN = '^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$';
@@ -35,30 +37,101 @@ const copySource = (name: string) => `templateWorkingCopy:${name}`;
 const changePaths = (changes: readonly TemplateChange[]) => changes.map((change) => ({ path: `${change.target}:${change.path}`, change: change.change }));
 
 /** 模板的当前修订；模板不存在时 undefined。 */
-function currentOf(state: AuthoringState, name: string) {
+export function currentOf(state: AuthoringState, name: string) {
   const template = state.templates.find((candidate) => candidate.name === name);
   const revision = template?.revisions.find((candidate) => candidate.revision === template.currentRevision);
   return template && revision ? { template, revision } : undefined;
 }
 
 /** 工作区换上这一份工作副本，别的模板照旧：保存时的静态检查看的就是保存之后的样子。 */
-const overlaid = (workspace: Workspace, name: string, document: unknown): Workspace => ({
+export const overlaid = (workspace: Workspace, name: string, document: unknown): Workspace => ({
   ...workspace, templates: [...workspace.templates.filter((template) => template.name !== name), { name, document, source: copySource(name) }],
 });
 
-/** 指回旧修订：客户管理员与代建工程师的端点都走这里；审计记改前改后两个修订的内容哈希。 */
-export async function setCurrentTemplate(scope: TenantScope, body: unknown, origin: { readonly source: 'push' | 'web'; readonly by: string; readonly now: Date },
-  audit: (object: NewAuditEvent['object'], content: AuditContent) => Promise<void>) {
+/** 指回旧修订：客户管理员与代建工程师的端点都走这里；审计记改前改后两个修订的内容哈希。批准申请时带 expectedCurrent 与 approving，当前修订变了答 409。 */
+export async function setCurrentTemplate(scope: TenantScope, body: unknown,
+  origin: { readonly source: TemplateCurrentOrigin['source']; readonly by: string; readonly now: Date; readonly expectedCurrent?: number; readonly approving?: PublishRequestApproval },
+  audit: AuditWriter) {
   const { template, revision } = body as { template: string; revision: number };
   const updated = await scope.storage.setCurrentTemplate(template, revision, origin);
   if (!updated) throw notFound();
+  if ('moved' in updated) throw fail(409, ServiceProblemCodes.templateRevisionConflict, 'request.body.revision', `当前修订已变成 ${updated.moved}`);
   const sha256Of = (number: number) => updated.template.revisions.find((item) => item.revision === number)!.sha256;
   const beforeSha256 = sha256Of(updated.previousRevision), afterSha256 = sha256Of(revision);
-  await audit({ type: 'template', id: template }, {
+  await audit('template.setCurrent', { type: 'template', id: template }, {
     beforeSha256, afterSha256,
     diff: auditDiff(beforeSha256 === afterSha256 ? [] : [{ path: documentSource('template', template), change: 'changed', beforeSha256, afterSha256 }]),
   });
   return sortedState({ documents: [], templates: [updated.template], resources: [] }).templates[0];
+}
+
+/** 指回变成申请：固定要指回的修订与申请时的当前修订。模板或修订不存在答 404，要指回的修订有严重问题答 400，同直接保存。 */
+export async function requestSetCurrent(scope: TenantScope, body: unknown, requester: RequestActor) {
+  const { template, revision } = body as { template: string; revision: number }, storage = scope.storage;
+  const current = currentOf(await storage.authoringState(), template), target = current?.template.revisions.find((item) => item.revision === revision);
+  if (!current || !target) throw notFound();
+  const bytes = await storage.contents.get(target.sha256);
+  if (!bytes) throw notFound();
+  const { problems, blocked } = checkTemplateStatic(overlaid(await loadTenantWorkspace(storage), template, parsedDocument(bytes)), template);
+  if (blocked || problems.some((item) => item.level === 'severe')) throw new ApiError(400, problems);
+  const beforeSha256 = current.revision.sha256;
+  return openPublishRequest(scope, {
+    kind: 'templateSetCurrent', subject: template, scopes: ['templates'], sha256: target.sha256, beforeSha256, baseRevision: current.template.currentRevision, revision,
+    diff: auditDiff(beforeSha256 === target.sha256 ? [] : [{ path: documentSource('template', template), change: 'changed', beforeSha256, afterSha256: target.sha256 }]),
+  }, requester);
+}
+
+const documentAt = async (storage: TenantStorage, sha256: string | undefined): Promise<unknown> => {
+  if (sha256 === undefined) return undefined;
+  const bytes = await storage.contents.get(sha256);
+  if (!bytes) throw notFound();
+  return parsedDocument(bytes);
+};
+
+/** 基准不是当前修订时的两边差异：基准到工作副本是这边改的，基准到当前修订是别人改的。 */
+async function conflictOf(storage: TenantStorage, state: AuthoringState, copy: TemplateWorkingCopy, document: unknown) {
+  const current = currentOf(state, copy.name);
+  if (!current || copy.baseRevision === current.template.currentRevision) return undefined;
+  const base = await documentAt(storage, current.template.revisions.find((revision) => revision.revision === copy.baseRevision)?.sha256);
+  return {
+    ...(copy.baseRevision === undefined ? {} : { baseRevision: copy.baseRevision }), currentRevision: current.template.currentRevision,
+    ours: revisionDiff(base, document), theirs: revisionDiff(base, await documentAt(storage, current.revision.sha256)),
+  };
+}
+
+const revisionConflict = async (storage: TenantStorage, copy: TemplateWorkingCopy, document: unknown, currentRevision: number) => {
+  // 事务里看到的当前修订可能比外面读的新：重新读一次再算两边差异。
+  const conflict = await conflictOf(storage, await storage.authoringState(), copy, document);
+  return new ApiError(409, [problem(ServiceProblemCodes.templateRevisionConflict, 'request.body.expectedSha256',
+    `工作副本基于修订 ${copy.baseRevision ?? '（无）'}，当前修订已是 ${currentRevision}；看过两边差异后，明确 overwrite 才覆盖`)], conflict ? { conflict } : {});
+};
+
+interface CopyToCommit {
+  readonly copy: TemplateWorkingCopy;
+  readonly document: unknown;
+  /** 保存前的当前修订与它的内容；新模板没有。 */
+  readonly current: ReturnType<typeof currentOf>;
+  readonly before: Uint8Array | undefined;
+  readonly overwrite: boolean;
+  readonly expectedCurrent?: number | undefined;
+  /** 修订上记的主体：直接保存是保存的人，批准申请时是申请的人。 */
+  readonly pushedBy: string;
+}
+
+/** 保存模板：在一个事务里核对内容与基准并记修订。批准申请时带 approving，申请与内容在同一个事务里生效。 */
+export async function commitCopy(scope: TenantScope, { copy, document, current, before, overwrite, expectedCurrent, pushedBy }: CopyToCommit, requester: RequestActor, approving?: PublishRequestApproval) {
+  const storage = scope.storage, name = copy.name;
+  const result = await storage.commitTemplateWorkingCopy(name, copy.sha256, {
+    overwrite, pushedBy, now: requester.now, ...(expectedCurrent === undefined ? {} : { expectedCurrent }), ...(approving ? { approving } : {}),
+  });
+  if (!result) throw notFound();
+  if ('stale' in result) throw staleDraft(result.stale, 'request.body.expectedSha256', '工作副本');
+  if ('conflict' in result) throw await revisionConflict(storage, copy, document, result.conflict.currentRevision);
+  await requester.audit('template.save', { type: 'template', id: name }, {
+    ...(current ? { beforeSha256: current.revision.sha256 } : {}), afterSha256: result.sha256,
+    diff: auditDiff(changePaths(before === undefined ? [] : diffTemplate(parsedDocument(before), document))),
+  });
+  return { name, revision: result.revision, status: result.status, sha256: result.sha256 };
 }
 
 export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiContext, addressing: AuthoringAddressing): void {
@@ -79,17 +152,7 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     if (!bytes) throw notFound();
     return bytes;
   };
-  const documentAt = async (storage: TenantStorage, sha256: string | undefined): Promise<unknown> => (sha256 === undefined ? undefined : parsedDocument(await contentOf(storage, sha256)));
-  /** 基准不是当前修订时的两边差异：基准到工作副本是这边改的，基准到当前修订是别人改的。 */
-  const conflictOf = async (storage: TenantStorage, state: AuthoringState, copy: TemplateWorkingCopy, document: unknown) => {
-    const current = currentOf(state, copy.name);
-    if (!current || copy.baseRevision === current.template.currentRevision) return undefined;
-    const base = await documentAt(storage, current.template.revisions.find((revision) => revision.revision === copy.baseRevision)?.sha256);
-    return {
-      ...(copy.baseRevision === undefined ? {} : { baseRevision: copy.baseRevision }), currentRevision: current.template.currentRevision,
-      ours: revisionDiff(base, document), theirs: revisionDiff(base, await documentAt(storage, current.revision.sha256)),
-    };
-  };
+  const requesterOf = (request: FastifyRequest): RequestActor => ({ actor: actorOf(identityOf(request)), now: now(), audit: (action, object, content) => audit(request, action, object, content) });
 
   app.get(`${prefix}/template-working-copies`, { config: { access: readAccess } }, async (request) => {
     const scope = scopeOf(request), workingCopies = [...await scope.storage.templateWorkingCopies()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -137,16 +200,18 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
       await audit(request, 'templateWorkingCopy.save', { type: 'templateWorkingCopy', id: name }, {
         beforeSha256: expectedSha256, afterSha256: result.saved.sha256, diff: stashDiff(name, before, bytes, expectedSha256, result.saved.sha256),
       });
+      await expirePending(scope, 'templateSave', name, '工作副本在申请之后又被修改', requesterOf(request), result.saved.sha256);
       return result.saved;
     });
   });
 
   app.delete(copyUrl, { config: { access: 'templates.write' } }, async (request, reply) => {
-    const name = nameOf(request), copy = await scopeOf(request).storage.deleteTemplateWorkingCopy(name);
+    const scope = scopeOf(request), name = nameOf(request), copy = await scope.storage.deleteTemplateWorkingCopy(name);
     if (!copy) throw notFound();
     await audit(request, 'templateWorkingCopy.delete', { type: 'templateWorkingCopy', id: name }, {
       beforeSha256: copy.sha256, diff: auditDiff([{ path: copySource(name), change: 'removed', beforeSha256: copy.sha256 }]),
     });
+    await expirePending(scope, 'templateSave', name, '工作副本已被丢弃', requesterOf(request));
     reply.code(204);
   });
 
@@ -165,8 +230,8 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     };
   });
 
-  /** 保存模板：先做静态检查，再在一个事务里核对内容与基准并记修订。 */
-  app.post(`${copyUrl}/save`, { config: { access: 'authoring.publish' }, schema: { body: SAVE_SCHEMA } }, async (request) => {
+  /** 保存模板：先做静态检查，再在一个事务里核对内容与基准并记修订；模板范围打开了审批策略时，变成发布申请（202）。 */
+  app.post(`${copyUrl}/save`, { config: { access: 'authoring.publish' }, schema: { body: SAVE_SCHEMA } }, async (request, reply) => {
     const scope = scopeOf(request), storage = scope.storage, name = nameOf(request);
     const { expectedSha256, overwrite = false } = request.body as { expectedSha256: string; overwrite?: boolean };
     const copy = await copyOf(storage, name);
@@ -174,21 +239,20 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     const document = parsedDocument(await contentOf(storage, copy.sha256));
     const { problems, blocked } = checkTemplateStatic(overlaid(await loadTenantWorkspace(storage), name, document), name);
     if (blocked || problems.some((item) => item.level === 'severe')) throw new ApiError(400, problems);
-    const state = await storage.authoringState(), before = currentOf(state, name)?.revision.sha256;
-    const beforeDocument = await documentAt(storage, before);
-    const result = await storage.commitTemplateWorkingCopy(name, expectedSha256, { overwrite, pushedBy: actorOf(identityOf(request)).label, now: now() });
-    if (!result) throw notFound();
-    if ('stale' in result) throw staleDraft(result.stale, 'request.body.expectedSha256', '工作副本');
-    if ('conflict' in result) {
-      // 事务里看到的当前修订可能比上面读的新：重新读一次再算两边差异。
-      const conflict = await conflictOf(storage, await storage.authoringState(), copy, document);
-      throw new ApiError(409, [problem(ServiceProblemCodes.templateRevisionConflict, 'request.body.expectedSha256',
-        `工作副本基于修订 ${copy.baseRevision ?? '（无）'}，当前修订已是 ${result.conflict.currentRevision}；看过两边差异后，明确 overwrite 才覆盖`)], conflict ? { conflict } : {});
+    const state = await storage.authoringState(), current = currentOf(state, name), requester = requesterOf(request);
+    const before = current && await contentOf(storage, current.revision.sha256);
+    if ((await constrainedScopes(scope, identityOf(request), ['templates'])).length) {
+      if (current && copy.baseRevision !== current.template.currentRevision && !overwrite) throw await revisionConflict(storage, copy, document, current.template.currentRevision);
+      const publishRequest = await openPublishRequest(scope, {
+        kind: 'templateSave', subject: name, scopes: ['templates'], sha256: copy.sha256, ...(current ? { beforeSha256: current.revision.sha256, baseRevision: current.template.currentRevision } : {}),
+        ...(overwrite ? { overwrite } : {}), diff: auditDiff(changePaths(before === undefined ? [] : diffTemplate(parsedDocument(before), document))),
+      }, requester);
+      reply.code(202);
+      return { request: publishRequest };
     }
-    await audit(request, 'template.save', { type: 'template', id: name }, {
-      ...(before ? { beforeSha256: before } : {}), afterSha256: result.sha256, diff: auditDiff(changePaths(beforeDocument === undefined ? [] : diffTemplate(beforeDocument, document))),
-    });
-    return { name, revision: result.revision, status: result.status, sha256: result.sha256 };
+    const saved = await commitCopy(scope, { copy, document, current, before, overwrite, pushedBy: requester.actor.label }, requester);
+    await expirePending(scope, 'templateSave', name, '工作副本已被直接保存', requester);
+    return saved;
   });
 
   /** 复制为新模板：内容与基准数据定义取当前修订，换新名称，成为没有基准修订的工作副本。 */
@@ -230,7 +294,7 @@ export function registerCustomerTemplateRoutes(app: FastifyInstance, context: Ap
   registerWorkingCopyRoutes(app, context, { prefix: '/v1', read: 'tenant.read', crossTenant: false, scopeOf });
   app.post('/v1/template-current', { config: { access: 'authoring.publish' }, schema: { body: SET_CURRENT_SCHEMA } }, async (request) => {
     const scope = scopeOf(request), actor = actorOf(identityOf(request));
-    return setCurrentTemplate(scope, request.body, { source: 'web', by: actor.label, now: context.now() }, (object, content) =>
-      scope.appendAudit({ actor, action: 'template.setCurrent', object, crossTenant: false, ...content }, context.now()));
+    return setCurrentTemplate(scope, request.body, { source: 'web', by: actor.label, now: context.now() }, (action, object, content = {}) =>
+      scope.appendAudit({ actor, action, object, crossTenant: false, ...content }, context.now()));
   });
 }

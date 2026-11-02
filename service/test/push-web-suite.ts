@@ -242,6 +242,46 @@ export function describePushWeb(name: string, makeBackend: () => Promise<Service
       finally { if (saved2 !== undefined) process.env['RENDERWEAVE_AUTHORING_TOKEN'] = saved2; }
     });
 
+    it('打开审批策略后，推送成为发布申请，本地记录不动；批准后 pull 取回修订号，接着推送', async () => {
+      const target = await tenant(), dirs = await local();
+      expect((await push(target, dirs)).code).toBe(0);
+      expect((await world.call('PUT', '/v1/approval-policy', target.admin.token, { templates: true })).status).toBe(200);
+      await recolor(dirs, '#ABCDEF');
+      const record = join(dirs.workspace, '.renderweave', `template-revisions-${target.id}.json`), recorded = await readFile(record, 'utf8');
+
+      const dry = await push(target, dirs, '--dry-run');
+      expect(dry.code, dry.stderr).toBe(0);
+      expect(dry.stderr).toContain('审批策略');
+
+      const requested = await push(target, dirs);
+      expect(requested.code, requested.stderr).toBe(0);
+      const reply = JSON.parse(requested.stdout);
+      expect(reply).toMatchObject({ pushed: false, summary: { updated: 1 } });
+      expect(requested.stderr).toContain(`发布申请 ${reply.request}`);
+      expect(requested.stderr).toContain('renderweave pull');
+      expect((await state(target)).templates[0].currentRevision).toBe(1);
+      expect(await readFile(record, 'utf8')).toBe(recorded);
+
+      const approved = await world.call('POST', `/v1/publish-requests/${reply.request}/approve`, target.admin.token);
+      expect(approved.status, approved.raw.slice(0, 300)).toBe(200);
+      expect((await state(target)).templates[0]).toMatchObject({ currentRevision: 2, current: { source: 'web', by: target.admin.email } });
+
+      // 批准产生的修订算网页一侧：本地接着改、没 pull 就推送会被挡住。
+      await recolor(dirs, '#123456');
+      const refused = await push(target, dirs);
+      expect(refused.code).toBe(1);
+      expect(refused.stderr).toContain('push.conflict');
+
+      await recolor(dirs, '#ABCDEF');
+      const pulled = await pull(target, dirs.workspace);
+      expect(pulled.code, pulled.stderr).toBe(0);
+      await recolor(dirs, '#654321');
+      const next = await push(target, dirs);
+      expect(next.code, next.stderr).toBe(0);
+      expect(JSON.parse(next.stdout).request).toBeDefined();
+      expect((await world.call('GET', `/v1/publish-requests/${JSON.parse(next.stdout).request}`, target.admin.token)).body).toMatchObject({ status: 'pending', recheck: { valid: true } });
+    });
+
     it('静态数据定义的冲突规则不变；草案与工作副本不受推送影响', async () => {
       const target = await tenant(), dirs = await local();
       expect((await push(target, dirs)).code).toBe(0);
