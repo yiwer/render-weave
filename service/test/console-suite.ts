@@ -1150,7 +1150,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const target = await asAdmin(), token = world.b.admin.token;
       const copyUrl = `/v1/templates/${enc(ALL)}/working-copy`;
       interface Reply { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: Reply['layout']['root'][] } } }
-      const worked = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST' && response.status() === 200, { timeout: 60_000 });
+      /** 等一次工作副本预览；有上一次改动的预览还在路上时，只等请求内容对得上的。 */
+      const worked = (match: (body: { template: string; dataset: { id?: string; inline?: unknown } }) => boolean = () => true) => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST' && response.status() === 200
+        && match(response.request().postDataJSON() as never), { timeout: 60_000 });
+      /** 等这次改动的预览：先等写回工作副本，再等写回之后发出的那一次预览。 */
+      const afterStash = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 })
+        .then(() => target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && request.method() === 'POST', { timeout: 60_000 }))
+        .then(async (request) => (await request.response())!);
       const image = () => target.getByTestId('preview-image');
       const inspector = () => target.getByRole('complementary', { name: '检查器' });
       const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
@@ -1161,7 +1167,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       /** 做一次改动：等预览回来、图变了，再读工作副本，核对 checkDslDocument 没有严重问题。 */
       const edit = async (action: () => Promise<unknown>, name = ALL) => {
         const before = await image().getAttribute('src');
-        const preview = worked();
+        const preview = afterStash();
         await action();
         const reply = await (await preview).json() as Reply;
         await expect.poll(() => image().getAttribute('src'), { message: '预览随之变化' }).not.toBe(before);
@@ -1175,7 +1181,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
       await (await nav(target, '模板')).click();
-      const first = worked();
+      const first = worked((body) => body.template === ALL);
       await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
       let layout = (await (await first).json() as Reply).layout;
       await image().waitFor();
@@ -1240,14 +1246,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       await clickElement(at('二维码'));
       // 换成"颜色"写入的初始值是黑色，与缺省相同，图还不变。
-      const qrColor = worked();
+      const qrColor = afterStash();
       await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
       await qrColor;
       ({ document } = await edit(() => input('foreground').fill('#B4532A')));
       expect(elementIn(document, '二维码')['foreground']).toBe('#B4532A');
 
       await clickElement(at('条码'));
-      const barColor = worked();
+      const barColor = afterStash();
       await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
       await barColor;
       ({ document } = await edit(() => input('foreground').fill('#0B4EA2')));
@@ -1298,7 +1304,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('save-failure').waitFor();
       expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill'], '服务端还是上一次的').toBe('#FFF8EE');
       await target.unroute('**/working-copy?expectedSha256=*');
-      const retried = worked();
+      const retried = afterStash();
       await target.getByRole('button', { name: '保存', exact: true }).click();
       await retried;
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
@@ -1318,7 +1324,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await server('PUT', `${copyUrl}?expectedSha256=${copy.body.sha256 as string}`, token, elsewhere)).status).toBe(200);
       await input('fill').fill('#FFEEDF');
       await target.getByTestId('save-failure').getByRole('button', { name: '用这里的盖过去' }).waitFor();
-      const forced = worked();
+      const forced = afterStash();
       await target.getByTestId('save-failure').getByRole('button', { name: '用这里的盖过去' }).click();
       await forced;
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
@@ -1326,15 +1332,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 工具栏：切换样例数据集；正式模式按问题清单说结果；缩放；平移时点图不改选中。
       await target.getByTestId('select-box').waitFor();
-      const blank = worked();
+      const blank = worked((body) => body.dataset.inline !== undefined);
       await target.getByLabel('样例数据集').selectOption({ label: '空白数据（显示占位）' });
-      const blankRequest = (await blank).request().postDataJSON() as { dataset: { inline?: unknown } };
-      expect(blankRequest.dataset.inline).toBeDefined();
+      await blank;
       await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '正式' }).click();
       await target.getByText(/正式模式不出图：有 \d+ 个严重问题/).waitFor();
       await target.getByTestId('final-mode-note').filter({ hasText: '正式出图时不出图' }).waitFor();
       await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
-      const again = worked();
+      const again = worked((body) => body.dataset.id === 'badge-zhang');
       await target.getByLabel('样例数据集').selectOption('badge-zhang');
       layout = (await (await again).json() as Reply).layout;
       await image().waitFor();
@@ -1342,9 +1347,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('final-mode-note').filter({ hasText: /没有问题|没有问题边框/ }).waitFor();
       await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
       expect(await target.getByLabel('样例数据集').locator('optgroup[label="压测数据"] option').allTextContents()).toEqual(['压测：长姓名']);
-      const stress = worked();
+      const stress = worked((body) => body.dataset.id === 'badge-stress');
       await target.getByLabel('样例数据集').selectOption('badge-stress');
-      expect(((await stress).request().postDataJSON() as { dataset: { id: string } }).dataset.id).toBe('badge-stress');
+      await stress;
       await target.getByLabel('样例数据集').selectOption('badge-zhang');
       await image().waitFor();
       const width = (await target.getByTestId('design-canvas').boundingBox())!.width;
@@ -1440,10 +1445,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await inspector().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').getByRole('button').first().click();
       await inspector().getByRole('tab', { name: '属性' }).click();
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
-      const child = worked();
+      const child = afterStash();
       await input('fontSize').fill('4');
-      const childRequest = await child;
-      expect((childRequest.request().postDataJSON() as { template: string }).template).toBe(ALL);
+      expect(((await child).request().postDataJSON() as { template: string }).template).toBe(ALL);
       await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":4');
       await target.locator('nav.crumbs').getByRole('link', { name: ALL }).click();
       await inspector().getByRole('tab', { name: '属性' }).waitFor();
@@ -1473,7 +1477,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const allCard = target.getByRole('article', { name: `模板 ${ALL}` });
       await allCard.getByRole('button', { name: '复制为新模板' }).click();
       await allCard.getByLabel('新模板名称').fill(copied);
-      const copiedPreview = worked();
+      const copiedPreview = worked((body) => body.template === copied);
       await allCard.getByRole('button', { name: '复制', exact: true }).click();
       await copiedPreview;
       await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
