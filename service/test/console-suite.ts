@@ -1007,6 +1007,142 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await platformContext.close();
     });
 
+    /** 经浏览器打开的接口进程读写工作副本：内容用 mutate 改好后整份暂存，回答新的内容哈希。 */
+    const stash = async (name: string, mutate: (document: Record<string, unknown>) => void) => {
+      const url = `/v1/templates/${enc(name)}/working-copy`, token = world.b.admin.token;
+      let copy = await server('GET', url, token);
+      if (copy.status === 404) {
+        expect((await server('POST', url, token)).status).toBe(201);
+        copy = await server('GET', url, token);
+      }
+      const document = JSON.parse(copy.body.content) as Record<string, unknown>;
+      mutate(document);
+      const saved = await server('PUT', `${url}?expectedSha256=${copy.body.sha256 as string}`, token, document);
+      expect(saved.status, saved.raw.slice(0, 300)).toBe(200);
+      return saved.body.sha256 as string;
+    };
+    /** 按路径找元素：path 不带模板名。 */
+    const elementAt = (document: Record<string, unknown>, ...path: string[]) => {
+      let node = document['artboard'] as Record<string, unknown>;
+      for (const name of path) node = (node['children'] as Record<string, unknown>[]).find((child) => child['name'] === name)!;
+      return node;
+    };
+    const revisionsOf = async (name: string) => (await server('GET', `/v1/templates/${enc(name)}/revisions`, world.b.admin.token)).body as {
+      currentRevision: number; current: { source: string; action: string }; revisions: { revision: number; source: string; pushedBy: string; sha256: string }[];
+    };
+    const auditOf = async (action: string) => ((await server('GET', '/v1/audit-events?limit=500', world.b.admin.token)).body.events as
+      { action: string; actor: { label: string }; object: { id: string }; beforeSha256?: string; afterSha256?: string }[]).filter((event) => event.action === action);
+
+    it('发布模板修订（P1 票据 09）：改字号 → 看差异与对比 → 保存 → 指回上一修订；基准已变时看两边差异，明确选择覆盖才保存；操作员只读', async () => {
+      const target = await asAdmin();
+      const open = (hash: string) => target.evaluate((value) => { location.hash = value; }, hash);
+      const worked = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true'), { timeout: 60_000 });
+      const before = await revisionsOf(BADGE), first = before.currentRevision;
+
+      // 改字号：工作副本改了一处属性、加了一个、删了一个。没有工作副本之前，这一页只有修订历史。
+      await open(`#/templates/${enc(BADGE)}/publish`);
+      await target.getByRole('heading', { name: '修订历史', level: 1 }).waitFor();
+      expect(await target.getByRole('button', { name: /发布为修订/ }).count()).toBe(0);
+      await stash(BADGE, (document) => {
+        const unit = elementAt(document, '单位');
+        unit['fontSize'] = 6.5;
+        unit['letterSpacing'] = 0.1;
+        delete unit['color'];
+      });
+
+      // 看差异：按元素路径列出，标出修改、新增与删除的属性。
+      const compared = worked();
+      await target.reload();
+      await target.getByRole('heading', { name: `发布修订 ${first + 1}`, level: 1 }).waitFor();
+      await compared;
+      const change = target.locator(`[data-testid="change"][data-path="${BADGE}/单位"]`);
+      await change.waitFor();
+      expect(await change.getAttribute('data-change')).toBe('changed');
+      expect(await target.getByTestId('changes-summary').textContent()).toBe('1 个元素');
+      const property = (key: string) => change.locator(`[data-testid="change-property"][data-key="${key}"]`);
+      expect(await property('fontSize').getAttribute('data-change')).toBe('changed');
+      expect(await property('fontSize').textContent()).toMatch(/fontSize修改4→6\.5/);
+      expect(await property('letterSpacing').getAttribute('data-change')).toBe('added');
+      expect(await property('color').getAttribute('data-change')).toBe('removed');
+
+      // 看对比：同一份样例数据集各渲染一张，图不同；换样例数据集两边一起换。
+      const imageOf = (side: string) => target.getByTestId(side).getByRole('img');
+      await imageOf('compare-current').waitFor();
+      await imageOf('compare-working-copy').waitFor();
+      await expect.poll(async () => (await imageOf('compare-working-copy').getAttribute('src')) !== (await imageOf('compare-current').getAttribute('src'))).toBe(true);
+      const previews: { url: string; dataset: unknown }[] = [];
+      const seen = (request: { url(): string; method(): string; postDataJSON(): { dataset: unknown } }) => {
+        if (request.method() === 'POST' && request.url().includes('/v1/previews')) previews.push({ url: request.url(), dataset: request.postDataJSON().dataset });
+      };
+      target.on('request', seen);
+      const blank = worked();
+      await target.getByLabel('样例数据集').selectOption({ label: '空白数据（显示占位）' });
+      await blank;
+      await expect.poll(() => previews.length).toBe(2);
+      target.off('request', seen);
+      expect(previews[0]!.dataset).toEqual(previews[1]!.dataset);
+      expect(previews.map((entry) => entry.url.endsWith('?workingCopies=true')).sort()).toEqual([false, true]);
+      expect(previews[0]!.dataset).toHaveProperty('inline');
+
+      // 保存：记新修订（来源网页），工作副本删除，提示写明审计记下了什么；审计确有前后内容哈希。
+      const beforeSha = before.revisions.find((entry) => entry.revision === first)!.sha256;
+      await target.getByRole('button', { name: `发布为修订 ${first + 1}` }).click();
+      await target.getByRole('status').filter({ hasText: `已保存为修订 ${first + 1}` }).filter({ hasText: '审计已记下主体与前后内容哈希' }).waitFor();
+      const saved = await revisionsOf(BADGE);
+      expect(saved.currentRevision).toBe(first + 1);
+      expect(saved.revisions.at(-1)).toMatchObject({ revision: first + 1, source: 'web', pushedBy: world.b.admin.email });
+      expect((await server('GET', `/v1/templates/${enc(BADGE)}/working-copy`, world.b.admin.token)).status).toBe(404);
+      expect((await auditOf('template.save')).at(0)).toMatchObject({ actor: { label: world.b.admin.email }, object: { id: BADGE }, beforeSha256: beforeSha, afterSha256: saved.revisions.at(-1)!.sha256 });
+
+      // 修订历史：修订号、主体、时间、来源；指回前确认，指回后当前修订变了，审计同样记下。
+      const row = (revision: number) => target.locator(`[data-testid="revision-row"][data-revision="${revision}"]`);
+      await target.getByRole('heading', { name: '修订历史', level: 1 }).waitFor();
+      await row(first + 1).filter({ hasText: '网页' }).filter({ hasText: world.b.admin.email }).waitFor();
+      expect(await row(first + 1).getAttribute('data-current')).toBe('true');
+      expect(await row(first + 1).getByRole('button', { name: '指回' }).count(), '当前修订不用指回').toBe(0);
+      await row(first).getByRole('button', { name: '指回' }).click();
+      expect((await revisionsOf(BADGE)).currentRevision, '确认之前不动').toBe(first + 1);
+      await row(first).getByRole('button', { name: '确认指回' }).click();
+      await target.getByRole('status').filter({ hasText: `当前修订已指回修订 ${first}` }).filter({ hasText: '审计已记下主体与前后内容哈希' }).waitFor();
+      expect(await revisionsOf(BADGE)).toMatchObject({ currentRevision: first, current: { source: 'web', action: 'setCurrent' } });
+      expect((await auditOf('template.setCurrent')).at(0)).toMatchObject({ actor: { label: world.b.admin.email }, beforeSha256: saved.revisions.at(-1)!.sha256, afterSha256: beforeSha });
+      await expect.poll(() => row(first).getAttribute('data-current')).toBe('true');
+
+      // 基准已变：工作副本基于修订 first，别人又把当前修订指向 first + 1。两边差异都摆出来，勾选之后才能覆盖。
+      const sha256 = await stash(BADGE, (document) => { elementAt(document, '身份')['fontSize'] = 5.5; });
+      expect((await server('POST', '/v1/template-current', world.b.admin.token, { template: BADGE, revision: first + 1 })).status).toBe(200);
+      await target.reload();
+      const conflict = target.getByTestId('revision-conflict');
+      await conflict.waitFor();
+      expect(await target.getByRole('button', { name: /发布为修订/ }).count(), '有冲突时没有普通的发布按钮').toBe(0);
+      await conflict.getByTestId('conflict-ours').locator(`[data-testid="change"][data-path="${BADGE}/身份"]`).waitFor();
+      await conflict.getByTestId('conflict-theirs').locator(`[data-testid="change"][data-path="${BADGE}/单位"]`).waitFor();
+      const overwrite = conflict.getByRole('button', { name: '覆盖并发布' });
+      expect(await overwrite.isDisabled()).toBe(true);
+      expect((await server('POST', `/v1/templates/${enc(BADGE)}/working-copy/save`, world.b.admin.token, { expectedSha256: sha256 })).status, '不带覆盖答 409').toBe(409);
+      await conflict.getByRole('checkbox').check();
+      await overwrite.click();
+      await target.getByRole('status').filter({ hasText: `已保存为修订 ${first + 2}` }).waitFor();
+      expect((await revisionsOf(BADGE)).currentRevision).toBe(first + 2);
+
+      // 操作员只读：看得到修订历史，没有指回、设计与发布。
+      const reader = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+      reader.setDefaultTimeout(30_000);
+      const operator = await reader.newPage();
+      watch(operator);
+      await operator.goto(`${baseUrl}/console/#/templates/${enc(BADGE)}/publish`);
+      await operator.getByLabel('邮箱').fill(world.b.operator.email);
+      await operator.getByLabel('密码').fill(world.b.operator.password);
+      await operator.getByRole('button', { name: '登录' }).click();
+      await operator.locator(`[data-testid="revision-row"][data-revision="${first + 2}"]`).waitFor();
+      expect(await operator.getByRole('button', { name: '指回' }).count()).toBe(0);
+      expect(await operator.getByRole('link', { name: '打开设计' }).count()).toBe(0);
+      await reader.close();
+
+      // 指回最初的修订，别的用例看到的还是原样。
+      expect((await server('POST', '/v1/template-current', world.b.admin.token, { template: BADGE, revision: first })).status).toBe(200);
+    });
+
     it('退出后会话失效，回到登录页；整个过程没有脚本错误，也没有被内容安全策略拦下的资源', async () => {
       await page.getByRole('button', { name: '退出' }).click();
       await page.getByRole('button', { name: '登录' }).waitFor();

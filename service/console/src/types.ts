@@ -196,6 +196,59 @@ export interface TemplateInfo {
   readonly problems?: readonly Problem[];
 }
 
+/** 模板工作副本（P1 票据 07）：一个模板至多一份，记它基于哪个修订；复制出来的新模板没有基准。 */
+export interface TemplateWorkingCopy {
+  readonly name: string;
+  readonly baseRevision?: number;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly updatedBy: string;
+}
+
+/** 结构化差异的一处改动（引擎的 revisionDiff）：path 是元素路径或模板层的键，改了的属性在 properties。 */
+export interface TemplateChange {
+  readonly path: string;
+  readonly target: 'element' | 'template';
+  readonly change: 'added' | 'removed' | 'changed';
+  readonly properties?: readonly { readonly key: string; readonly before?: unknown; readonly after?: unknown }[];
+  readonly before?: unknown;
+  readonly after?: unknown;
+}
+
+export interface RevisionDiff {
+  readonly status: 'modified' | 'unchanged' | 'added';
+  readonly changes: readonly TemplateChange[];
+}
+
+/** 基准不是当前修订时的两边差异：ours 是基准到工作副本，theirs 是基准到当前修订。 */
+export interface RevisionConflict {
+  readonly baseRevision?: number;
+  readonly currentRevision: number;
+  readonly ours: RevisionDiff;
+  readonly theirs: RevisionDiff;
+}
+
+export interface WorkingCopyCheck {
+  readonly sha256: string;
+  readonly baseRevision?: number;
+  readonly currentRevision?: number;
+  readonly problems: readonly Problem[];
+  readonly changes: RevisionDiff;
+  readonly conflict?: RevisionConflict;
+}
+
+export interface TemplateSaved { readonly name: string; readonly revision: number; readonly status: 'saved' | 'unchanged'; readonly sha256: string }
+
+export interface TemplateRevisions {
+  readonly name: string;
+  readonly currentRevision: number;
+  /** 当前修订的来历：指回不产生修订，所以另外记（1.6.0）。 */
+  readonly current?: { readonly source: 'push' | 'web'; readonly action: 'revision' | 'setCurrent'; readonly by: string; readonly at: string };
+  readonly revisions: readonly { readonly revision: number; readonly sha256: string; readonly byteLength: number; readonly createdAt: string; readonly pushedBy: string; readonly source: 'push' | 'web' }[];
+}
+
 /** Excel 导入（票据 13）：工作簿里的位置与导入预览。 */
 export interface WorkbookCell { readonly sheet: string; readonly row: number; readonly column?: string; readonly header?: string }
 export type ImportProblem = Problem & { readonly cell?: WorkbookCell };
@@ -263,7 +316,11 @@ export interface PreviewReply {
   readonly image?: { readonly format: 'png' | 'jpeg'; readonly widthPx: number; readonly heightPx: number; readonly dpi: number; readonly base64: string };
   readonly problems: readonly Problem[];
   readonly layout?: { readonly output: { readonly width: number; readonly height: number }; readonly root: LayoutNode };
+  /** 元素定位：会显示的元素实例，path 与布局摘要的元素路径相同，source 是它所在的模板文档与在文档里的路径。 */
+  readonly elements?: readonly ElementLocation[];
 }
+
+export interface ElementLocation { readonly path: string; readonly source: { readonly template: string; readonly path: string } }
 
 export type ItemStatus = 'queued' | 'running' | 'delivered' | 'failed' | 'notRun';
 
