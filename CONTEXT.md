@@ -19,7 +19,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ### P1 代建接口与人类页面（阶段 5.0）
 
-[PRD](.scratch/authoring-api-and-pages/spec.md)、[14 张票据的索引](.scratch/authoring-api-and-pages/README.md)，规划决定 M343–M348；界面看[原型截图](docs/prototypes/desktop-workbench/README.md#画板)，票据按画板编号引用。
+[PRD](.scratch/authoring-api-and-pages/spec.md)、[15 张票据的索引](.scratch/authoring-api-and-pages/README.md)，规划决定 M343–M348；界面看[原型截图](docs/prototypes/desktop-workbench/README.md#画板)，票据按画板编号引用。
 
 - **已完成**：
   - 2026-10-27–28：01 控制台换成标题栏模块下拉、`Ctrl+K` 与状态栏的新框架，数据定义模块先只读；02 引擎公开入口 `diffDefinition`；03 审计记代建写入的前后内容哈希与差异摘要，可按主体筛选、导出 CSV。
@@ -29,6 +29,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 2026-11-02：11 审批策略与发布申请（开放 API 1.8.0，迁移 0014，判断在 M357）。
   - 2026-11-03：14 参照旧 RenderWeave 把数据定义页面重做成数据定义与静态数据定义两个模块（开放 API 1.9.0，判断在 M360）。
 - **接着做**：
+  - 15 控制台的配色与动效对齐画室视频（判断在 M361）：页面与用例已完成（登录页也换成了这支视频），等用户看过定方向。
   - 别的页面要不要照票据 14 的做法对齐原型或旧项目：用户还没定，走查时说过"实现和原型对不上"，登录页、审计日志的原始动作代码、画板 09 与 13–18 的版式都还没动。
   - 13 阶段验收：自动部分已完成（[P1 验收](docs/p1-acceptance.md)），只剩一次真人走查，顺带看"保存"与自动暂存要不要改（M356 的切换条件）。 票据 14 改了数据定义的页面，之后 Docker 后端、验收脚本与 Linux 全量都已重跑（看票据 14 的 Answer）。走查环境由 `accept-p1.mjs --walkthrough` 重建过，步骤改成了复制为草案、加字段、保存、发布。
 - **怎么做**：每张票在独立 worktree 里做，合入 main 前确认主检出没有评估在跑（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
