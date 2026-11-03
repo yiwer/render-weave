@@ -9,6 +9,7 @@ import { api, saveBlob } from '../api.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { Definition, DefinitionDraft, Identity, Problem, SchemaRef } from '../types.js';
+import { DraftSheets, Loading } from '../components/motifs.js';
 
 export const canEditDefinitions = (identity: Identity) => identity.role === 'admin';
 export const definitionPath = (name: string) => ['definitions', name];
@@ -68,7 +69,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
       {creating && <NewDefinition />}
       <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到数据定义" />
-      {loaded.loading && !all && <p className="muted">正在读取…</p>}
+      {loaded.loading && !all && <Loading />}
       {all && (
         <>
           <div className="list-toolbar">
@@ -82,6 +83,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
           </div>
           {drafts.length === 0 && (
             <div className="list-empty" data-testid="drafts-empty">
+              <DraftSheets />
               <strong>{query ? '没有匹配的草案' : '还没有草案'}</strong>
               {!query && <span>新建一份，或者到<a href={href(['static-schemas'])}>静态数据定义</a>从某个版本复制为草案。</span>}
             </div>

@@ -11,6 +11,7 @@ import { problemsOf } from '../hooks.js';
 import type { BatchView, ExcelImport, ImportProblem, OutputSettings, Problem, StaticSchemaSummary, TemplateInfo, Usage, WorkbookCell } from '../types.js';
 import { idempotencyKey, remember } from './deliver.js';
 import { sameSchema, schemaText } from './templates.js';
+import { Loading } from '../components/motifs.js';
 
 /** 文件内容的 base64：分段转换，几 MB 的文件也不会撑爆参数个数。 */
 async function base64Of(file: File): Promise<string> {
@@ -145,7 +146,7 @@ export function ImportSheet(props: {
               onChange={(event) => { void chooseFile(event.target.files?.[0]); event.target.value = ''; }} />
           </div>
           <ErrorBox problems={problems} title="读不了这份文件" />
-          {reading && <p className="muted" role="status">正在读取…</p>}
+          {reading && <Loading role="status" />}
           {preview && (
             <div data-testid="import-preview" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <p data-testid="import-summary" style={{ margin: 0 }}>

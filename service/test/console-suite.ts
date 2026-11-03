@@ -872,7 +872,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       }
     }, 120_000);
 
-    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，调和橙不承载文字', async () => {
+    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，铅笔赭不承载文字', async () => {
       const luminance = (rgb: string) => {
         const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map((value) => {
           const c = Number(value) / 255;
@@ -888,7 +888,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const look = () => page.evaluate(`(() => {
         const body = getComputedStyle(document.body);
         const orange = [...document.querySelectorAll('body *')].filter((element) => element.childElementCount === 0 && element.textContent.trim()
-          && getComputedStyle(element).color === 'rgb(241, 125, 19)').map((element) => element.textContent.trim());
+          && getComputedStyle(element).color === 'rgb(179, 128, 71)').map((element) => element.textContent.trim());
         return { color: body.color, background: body.backgroundColor, orange, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
       })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
       const pages: [string, () => Promise<unknown>][] = [
@@ -917,7 +917,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
             const seen = await look();
             expect(seen.overflow, `${width} ${link}`).toBe(0);
             expect(seen.orange, `${width} ${link}`).toEqual([]);
-            expect([seen.color, seen.background], link).toEqual(['rgb(34, 21, 15)', 'rgb(253, 251, 246)']);
+            expect([seen.color, seen.background], link).toEqual(['rgb(29, 38, 46)', 'rgb(247, 244, 236)']);
             expect(contrast(seen.color, seen.background)).toBeGreaterThanOrEqual(4.5);
             expect((await page.getByRole('main').boundingBox())!.width, `${width} ${link}`).toBe(width);
           }
@@ -1404,6 +1404,74 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fullName');
       expect(await fieldRow(target, 'fullName').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
       expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
+    it('灵动小图（P1 票据 15）：空状态的小图在动，减少动态时停在完成态；校验通过有印章；用量的天平按用量倾斜', async () => {
+      const target = await asAdmin(), name = '胸牌', path = enc(name);
+      await target.goto(`${baseUrl}/console/#/definitions`);
+      await target.getByLabel('搜索数据定义').fill('没有这个');
+      await target.getByTestId('drafts-empty').locator('svg.motif').waitFor();
+      const motion = () => target.evaluate(`(() => { const style = getComputedStyle(document.querySelector('[data-testid="drafts-empty"] svg.motif .m-write')); return [style.animationName, style.strokeDashoffset]; })()`) as Promise<string[]>;
+      const titleThread = () => target.evaluate(`getComputedStyle(document.querySelector('.title-row h1'), '::after').backgroundImage`) as Promise<string>;
+      expect((await motion())[0]).toBe('m-write');
+      expect(await titleThread()).toContain('keyframes');
+      try {
+        await target.emulateMedia({ reducedMotion: 'reduce' });
+        expect(await motion()).toEqual(['none', '0px']);
+        expect(await titleThread()).not.toContain('keyframes');
+      } finally {
+        await target.emulateMedia({ reducedMotion: 'no-preference' });
+      }
+
+      await target.goto(`${baseUrl}/console/#/static-schemas`);
+      await target.getByLabel('搜索静态数据定义').fill('没有这个');
+      await target.getByTestId('versions-empty').locator('svg.motif-graph').waitFor();
+
+      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
+      await target.goto(`${baseUrl}/console/#/definitions/${path}`);
+      await target.reload();
+      await checkPassed(target);
+      await target.getByTestId('check-status').locator('svg.motif-seal').waitFor();
+      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+
+      await target.goto(`${baseUrl}/console/#/usage`);
+      await target.getByTestId('usage-limit').waitFor();
+      const { images } = (await adminApi('GET', '/v1/usage')).body;
+      expect(await target.getByTestId('usage-beam').getAttribute('data-tilt')).toBe(String(Math.round((Math.min((images.used + images.reserved) / Math.max(images.limit, 1), 1) - .5) * 24)));
+    });
+
+    it('登录页（P1 票据 15）：右边是没有声音、没有控件的视频，不放说明文字；减少动态时只放封面，窄窗口不放；密码可以显示', async () => {
+      const open = async (options: { viewport?: { width: number; height: number }; reducedMotion?: 'reduce' }) => {
+        const opened = await browser.newContext({ viewport: options.viewport ?? { width: 1440, height: 900 }, locale: 'zh-CN', ...(options.reducedMotion ? { reducedMotion: options.reducedMotion } : {}) });
+        const tab = await opened.newPage();
+        await tab.goto(`${baseUrl}/console/`);
+        await tab.getByRole('button', { name: '登录' }).waitFor();
+        return { opened, tab };
+      };
+      const { opened, tab } = await open({});
+      try {
+        const video = await tab.evaluate(`(() => { const v = document.querySelector('.login-art video'); return { muted: v.muted, autoplay: v.autoplay, loop: v.loop, controls: v.controls, src: v.getAttribute('src'), poster: v.getAttribute('poster') }; })()`) as { muted: boolean; autoplay: boolean; loop: boolean; controls: boolean; src: string; poster: string };
+        expect(video).toMatchObject({ muted: true, autoplay: true, loop: true, controls: false });
+        const whole = await tab.request.get(`${baseUrl}${video.src}`), part = await tab.request.get(`${baseUrl}${video.src}`, { headers: { range: 'bytes=0-99' } });
+        expect([whole.status(), whole.headers()['content-type']]).toEqual([200, 'video/mp4']);
+        expect([part.status(), (await part.body()).length]).toEqual([206, 100]);
+        expect((await tab.request.get(`${baseUrl}${video.poster}`)).headers()['content-type']).toBe('image/jpeg');
+        expect(await tab.getByText('账号由平台管理员开通').count() + await tab.getByText('出图控制台：').count()).toBe(0);
+        const password = tab.getByLabel('密码');
+        await password.fill('看得见');
+        expect(await password.getAttribute('type')).toBe('password');
+        await tab.getByRole('button', { name: '显示' }).click();
+        expect(await password.getAttribute('type')).toBe('text');
+      } finally {
+        await opened.close();
+      }
+      const still = await open({ reducedMotion: 'reduce' });
+      expect([await still.tab.locator('.login-art video').count(), await still.tab.locator('.login-art img').count()]).toEqual([0, 1]);
+      await still.opened.close();
+      const narrow = await open({ viewport: { width: 375, height: 800 } });
+      expect(await narrow.tab.locator('.login-art').count()).toBe(0);
+      expect(await narrow.tab.evaluate('document.documentElement.scrollWidth - document.documentElement.clientWidth')).toBe(0);
+      await narrow.opened.close();
     });
 
     /** 代建工程师经开放 API：从这个名称的最新版本另起草案，加一个字段，发布。开着审批策略时答 202。 */

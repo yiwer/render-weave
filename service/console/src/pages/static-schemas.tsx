@@ -17,6 +17,7 @@ import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDocument, FieldType, Identity, Problem, SchemaRef } from '../types.js';
 import { documentText } from './definition-studio.js';
 import { canEditDefinitions, copyReference, definitionPath, exportCompiled, openInNewTab, staticSchemaPath } from './definitions.js';
+import { FieldGraph, Loading } from '../components/motifs.js';
 
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 const number = (value: number) => value.toLocaleString('zh-CN');
@@ -94,7 +95,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
       <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到静态数据定义" />
       {notice && <p className="small muted" role="status">{notice}</p>}
-      {loaded.loading && !loaded.data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !loaded.data && <Loading />}
       {loaded.data && (
         <>
           <div className="list-toolbar">
@@ -107,7 +108,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
             <span className="small muted" data-testid="version-count">{versions.length} 个版本</span>
           </div>
           {versions.length === 0 && (
-            <div className="list-empty"><strong>{query ? '没有匹配的版本' : '还没有已发布的版本'}</strong>{!query && <span>在<a href={href(['definitions'])}>数据定义</a>里发布一份草案，或者让代建工程师推送。</span>}</div>
+            <div className="list-empty" data-testid="versions-empty"><FieldGraph /><strong>{query ? '没有匹配的版本' : '还没有已发布的版本'}</strong>{!query && <span>在<a href={href(['definitions'])}>数据定义</a>里发布一份草案，或者让代建工程师推送。</span>}</div>
           )}
           <div className="schema-grid" aria-label="静态数据定义的版本">
             {versions.map((version) => (
@@ -164,7 +165,7 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
       <section className="page">
         {crumbs}
         <ErrorBox problems={loaded.problems} title="读不到这个版本" />
-        {loaded.loading && <p className="muted">正在读取…</p>}
+        {loaded.loading && <Loading />}
       </section>
     );
   }

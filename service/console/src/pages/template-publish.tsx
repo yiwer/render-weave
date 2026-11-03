@@ -16,6 +16,7 @@ import { href, problemsOf, useLivePreview, useLoad, type LivePreview } from '../
 import { documentInfo, parseTemplateText } from '../template/document.js';
 import type { RevisionDiff, DatasetEntry, Identity, Problem, RevisionConflict, TemplateInfo, TemplateRevisions, WorkingCopyCheck } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
+import { Loading } from '../components/motifs.js';
 
 const AUDITED = '审计已记下主体与前后内容哈希。';
 const SOURCE: Readonly<Record<string, string>> = { push: '推送', web: '网页' };
@@ -131,7 +132,7 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
       {notice && <p className="notice" role="status">{notice}<a className="notice-link" href={href(['admin', 'audit'])}>看审计日志</a></p>}
       <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到模板" />
-      {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !data && <Loading />}
       <PendingRequests scope="templates" subject={name} canDecide={canPublish} onDecided={loaded.reload} refresh={`${data?.revisions?.currentRevision ?? ''}:${check?.sha256 ?? ''}`}
         renderChanges={(request) => (request.kind !== 'push' && request.changes ? <RevisionChanges diff={request.changes as RevisionDiff} label="这份申请的改动" empty="内容与当前修订相同。" /> : undefined)} />
       {data && check && data.workingInfo && (

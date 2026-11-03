@@ -1,6 +1,12 @@
-/** 登录：成员用邮箱加密码登录（M247），会话 12 小时；只有客户管理员与操作员能用控制台。 */
-import { useState, type CSSProperties, type FormEvent } from 'react';
+/**
+ * 登录（M247、M361）：成员用邮箱加密码登录，会话 12 小时；只有客户管理员与操作员能用控制台。
+ * 版式照原型：左上品牌，表单直接放在页面上，右边大幅视频，不放说明文字。
+ * 视频没有声音、不放控件；减少动态时只放封面，窄窗口不放（也就不下载）。
+ */
+import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { api, session } from '../api.js';
+import studioPoster from '../assets/login-studio.jpg';
+import studioVideo from '../assets/login-studio.mp4';
 import { Logo } from '../components/logo.js';
 import { ErrorBox } from '../components/problems.js';
 import { problemsOf } from '../hooks.js';
@@ -9,6 +15,7 @@ import type { Identity, Problem } from '../types.js';
 export function LoginPage(props: { readonly notice?: string; readonly onLogin: (identity: Identity) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
 
@@ -26,41 +33,37 @@ export function LoginPage(props: { readonly notice?: string; readonly onLogin: (
 
   return (
     <main className="login">
+      <h1 className="brand login-brand"><Logo size={28} />RenderWeave</h1>
       <form className="login-card" onSubmit={(event) => void submit(event)} aria-label="登录">
-        <h1 className="brand"><Logo />RenderWeave</h1>
-        <p className="muted">出图控制台：填数据、看草稿预览、正式出图与下载。</p>
         {props.notice && <p className="notice" role="status">{props.notice}</p>}
-        <div className="field">
-          <label htmlFor="login-email">邮箱</label>
-          <input id="login-email" type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="login-password">密码</label>
-          <input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+        <input type="email" aria-label="邮箱" placeholder="输入邮箱" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} />
+        <div className="password-field">
+          <input type={showPassword ? 'text' : 'password'} aria-label="密码" placeholder="输入密码" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+          <button type="button" className="link" aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? '隐藏' : '显示'}</button>
         </div>
         <ErrorBox problems={problems} />
-        <button type="submit" className="primary" disabled={busy}>{busy ? '正在登录…' : '登录'}</button>
-        <p className="muted small">账号由平台管理员开通；忘记密码请联系管理员重置。</p>
+        <button type="submit" className="primary" disabled={busy}>
+          {busy ? '正在登录…' : <>登录<svg className="login-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></>}
+        </button>
       </form>
-      <div className="login-art" aria-hidden="true"><Weave /></div>
+      <StudioVideo />
     </main>
   );
 }
 
-/** 登录页右侧的织线图案：经线与纬线交织，两根调和橙的织线上有亮线段流动（减少动态时不动）。 */
-function Weave() {
-  const rows = [60, 120, 180, 240, 300], columns = [70, 150, 230, 310];
+const useMedia = (query: string) => useSyncExternalStore((changed) => {
+  const list = window.matchMedia(query);
+  list.addEventListener('change', changed);
+  return () => list.removeEventListener('change', changed);
+}, () => window.matchMedia(query).matches);
+
+/** 右边的视频：控制台的配色就取自它（M361）。 */
+function StudioVideo() {
+  const wide = useMedia('(min-width: 861px)'), still = useMedia('(prefers-reduced-motion: reduce)');
+  if (!wide) return null;
   return (
-    <svg viewBox="0 0 380 360" fill="none" strokeLinecap="round">
-      {columns.map((x) => <path key={x} d={`M${x} 30v300`} stroke="#D9C8B0" strokeWidth="10" />)}
-      {rows.map((y, row) => (
-        <path key={y} stroke="#BFAA8E" strokeWidth="10"
-          d={`M30 ${y}${columns.map((x, column) => ` Q${x} ${y + ((row + column) % 2 ? 14 : -14)} ${x + 40} ${y}`).join('')}`} />
-      ))}
-      <g className="loom" stroke="#F17D13" strokeWidth="6">
-        <path d="M40 150c90 0 90 80 180 80s90-80 140-80" opacity="0.35" />
-        <path className="shuttle" d="M40 150c90 0 90 80 180 80s90-80 140-80" style={{ '--len': 360 } as CSSProperties} />
-      </g>
-    </svg>
+    <div className="login-art" aria-hidden="true">
+      {still ? <img src={studioPoster} alt="" /> : <video src={studioVideo} poster={studioPoster} autoPlay muted loop playsInline disablePictureInPicture />}
+    </div>
   );
 }

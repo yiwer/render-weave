@@ -19,6 +19,7 @@ import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, writeListItem,
 import { createDesignSession, type DesignDoc, type DesignSession } from '../template/session.js';
 import type { Identity, LayoutNode, PreviewReply, Problem } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
+import { Loading } from '../components/motifs.js';
 
 type Tab = 'properties' | 'parameters' | 'structure' | 'rules';
 const TABS: readonly (readonly [Tab, string])[] = [['properties', '属性'], ['parameters', '参数'], ['structure', '结构'], ['rules', '规则']];
@@ -206,7 +207,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
             <Inspector tab={tab} doc={doc} session={session} selected={selected} reply={reply} locateTick={locateTick} openParameter={openParameter} onOpenParameter={setOpenParameter}
               onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate}
               onMenu={(x, y, path) => { select(name, path); setMenu({ x, y, template: name, path }); }} />
-          ) : <p className="muted">正在读取工作副本…</p>}
+          ) : <Loading>正在读取工作副本…</Loading>}
           <p className="table-note">属性按模板的 Schema 生成，只能填数；出图一直读当前修订，发布之后才生效。</p>
         </aside>
       </div>

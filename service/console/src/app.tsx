@@ -30,6 +30,7 @@ import { TemplatePublish } from './pages/template-publish.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
 import type { Identity } from './types.js';
+import { ThreadOrbit } from './components/motifs.js';
 
 export function App() {
   // undefined：正在确认会话；null：没有登录。
@@ -46,7 +47,7 @@ export function App() {
     setIdentity(null);
   };
 
-  if (identity === undefined) return <p className="boot">正在打开…</p>;
+  if (identity === undefined) return <p className="boot loading"><ThreadOrbit />正在打开…</p>;
   if (identity === null) return <LoginPage {...(notice ? { notice } : {})} onLogin={(next) => { setNotice(undefined); setIdentity(next); }} />;
   if (identity.kind === 'platformUser') return <PlatformShell identity={identity} onLogout={() => void logout()} />;
   if (identity.kind !== 'member') {

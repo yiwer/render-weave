@@ -15,6 +15,7 @@ import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, openS
 import { go, guardNavigation, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionDraft, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary } from '../types.js';
 import { canEditDefinitions, definitionPath, staticSchemaPath } from './definitions.js';
+import { Loading, Seal, ThreadOrbit } from '../components/motifs.js';
 
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 export const documentText = (document: DefinitionDocument) => `${JSON.stringify(document, null, 2)}\n`;
@@ -34,7 +35,7 @@ export function DefinitionDetail(props: { readonly name: string; readonly versio
     <section className="page">
       <nav className="crumbs" aria-label="位置"><a href={href(['definitions'])}>数据定义</a><span aria-hidden="true">/</span><span>{props.name}</span></nav>
       <ErrorBox problems={loaded.problems} title="读不到这个数据定义" />
-      {loaded.loading && <p className="muted">正在读取…</p>}
+      {loaded.loading && <Loading />}
     </section>
   );
 }
@@ -48,7 +49,7 @@ function Studio(props: { readonly detail: Detail; readonly draft: DefinitionDraf
     return (
       <section className="page">
         <ErrorBox problems={loaded.problems} title="读不到草案" />
-        {loaded.loading && <p className="muted">正在读取…</p>}
+        {loaded.loading && <Loading />}
       </section>
     );
   }
@@ -194,15 +195,21 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
               <span>{info.updatedBy} 保存于 {time(info.updatedAt)}</span>
             </p>
           </div>
-          {canEdit && (
-            <div className="actions">
+          <div className="actions">
+            <span role="status" data-testid="check-status">
+              {dirty ? <span className="chip">保存之后校验</span>
+                : !verdict ? (check.problems ? <span className="chip">没有校验</span> : <span className="loading small muted"><ThreadOrbit size={16} />正在校验…</span>)
+                : severe > 0 ? <span className="chip bad">{severe} 个严重问题</span>
+                : <span className="seal-status"><Seal />校验通过</span>}
+            </span>
+            {canEdit && <>
               <span className={dirty ? 'chip warn' : 'chip ok'} data-testid="save-status" role="status">{busy ? '正在保存…' : dirty ? '有没保存的改动' : '已保存'}</span>
               <button type="button" disabled={!dirty || busy} onClick={() => void save()} aria-keyshortcuts="Control+S">保存</button>
               <button type="button" className="primary" disabled={busy || (!dirty && (!verdict || severe > 0))} onClick={() => void publish()} title={!dirty && severe ? '有严重问题，改正之后才能发布' : undefined}>
                 {dirty ? '保存并发布' : verdict?.version ? `发布为 v${verdict.version}` : '发布'}
               </button>
-            </div>
-          )}
+            </>}
+          </div>
         </div>
         {!canEdit && <p className="small muted" role="note">你可以查看草案，改动与发布由客户管理员完成。</p>}
         {stale && (
@@ -278,12 +285,6 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
         )}
         <div className="check-bar">
           <span className="actions">
-            <span role="status" data-testid="check-status">
-              {dirty ? <span className="chip">保存之后校验</span>
-                : !verdict ? <span className="chip">{check.problems ? '没有校验' : '正在校验…'}</span>
-                : severe > 0 ? <span className="chip bad">{severe} 个严重问题</span>
-                : <span className="chip ok">校验通过</span>}
-            </span>
             <button type="button" className="small quiet" disabled={check.loading || dirty} onClick={check.reload}>校验</button>
             <button type="button" className="small quiet" aria-expanded={showCompiled} disabled={!verdict?.compiled} onClick={() => setShowCompiled(!showCompiled)}
               title={verdict?.compiled ? undefined : '改正严重问题之后才有编译产物'}>预览编译产物</button>

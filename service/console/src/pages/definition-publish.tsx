@@ -15,6 +15,7 @@ import { constraintText, isRequired, propertyText, typeText } from '../form/defi
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDiff, DefinitionFieldChange, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
 import { canEditDefinitions, definitionPath, exportCompiled, staticSchemaPath } from './definitions.js';
+import { Loading } from '../components/motifs.js';
 
 const number = (value: number) => value.toLocaleString('zh-CN');
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
@@ -140,7 +141,7 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
       {!canEdit && <p className="muted">发布由客户管理员完成。<a href={href(definitionPath(name))}>回到数据定义</a></p>}
       <ErrorBox problems={problems} title="没有发布" />
       <ErrorBox problems={loaded.problems} title="读不到预检结果" />
-      {loaded.loading && !check && canEdit && <p className="muted">正在预检：比较字段、核对绑定的数据集…</p>}
+      {loaded.loading && !check && canEdit && <Loading>正在预检：比较字段、核对绑定的数据集…</Loading>}
       {check && !check.version && (
         <>
           <ErrorBox problems={check.problems} title="有严重问题，不能发布" />
@@ -228,7 +229,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
       {notice && <p className="status" role="status">{notice}</p>}
       <ErrorBox problems={problems} title="没有另发" />
       <ErrorBox problems={loaded.problems} title="读不到发布记录" />
-      {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !data && <Loading />}
       <PendingRequests scope="definitions" subject={name} canDecide={canEdit} onDecided={loaded.reload} refresh={data?.publications.length}
         renderChanges={(request) => (request.kind === 'definitionPublish' && request.changes ? <DiffList diff={request.changes as DefinitionDiff} /> : undefined)} />
       {drafts.length > 0 && (
