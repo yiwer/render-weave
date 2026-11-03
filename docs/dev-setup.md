@@ -64,10 +64,12 @@ npm test
 **Linux 全量测试**：把会进版本库的文件打成 tar，在容器里从空目录安装，不挂载宿主的 `node_modules`。Windows 上用 Git Bash 执行：
 
 ```bash
-mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=require('fs');const files=fs.readFileSync(0,'utf8').split('\n').filter(f=>f&&fs.existsSync(f)&&fs.statSync(f).isFile());fs.writeFileSync('out/linux/files.txt',files.join('\n')+'\n')" && tar -cf out/linux/snapshot.tar -T out/linux/files.txt && MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W)/out/linux:/fresh" node:22-alpine sh -c "mkdir /work && tar xf /fresh/snapshot.tar -C /work && cd /work && npm ci && npm run build && npm run typecheck && npm run typecheck:service && npm test"
+mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=require('fs');const files=fs.readFileSync(0,'utf8').split('\n').filter(f=>f&&fs.existsSync(f)&&fs.statSync(f).isFile());fs.writeFileSync('out/linux/files.txt',files.join('\n')+'\n')" && tar -cf out/linux/snapshot.tar -T out/linux/files.txt && MSYS_NO_PATHCONV=1 docker run --rm --init -v "$(pwd -W)/out/linux:/fresh" node:22-alpine sh -c "mkdir /work && tar xf /fresh/snapshot.tar -C /work && cd /work && npm ci && npm run build && npm run typecheck && npm run typecheck:service && npm test -- --maxWorkers=4"
 ```
 
 在 Linux 或 macOS 上，把 `$(pwd -W)` 换成 `$(pwd)`，并去掉 `MSYS_NO_PATHCONV=1`。
+
+`--init` 不能省：`agent-*` 的用例会强退宿主，容器里没有 init 就没人回收孤儿进程，进程身份核对不过，十个文件 25 条失败（2026-11-02 实测）。Docker 注入了宿主的本机代理时见「已知的坑」。
 
 **Docker 后端测试**：出图服务的 PostgreSQL 加 S3 后端、行级安全、迁移与健康检查，不进 `npm test`。脚本从空环境构建镜像、起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，结束后清空容器与数据卷：
 
@@ -99,7 +101,7 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
 ## 6. 已知的坑
 
 - **Windows 上建不了符号链接**：没开"开发者模式"（也不是管理员）时，node 的 `fs.symlink` 报 `EPERM`，引擎组 `agent-candidate-freeze` 里有一条用例因此失败。要它通过，在"设置 → 系统 → 开发者选项"里打开开发者模式。
-- **引擎组重型用例要少并行**：`agent-*` 的集成用例会拉子进程、等检查点文件，全并行时大量超时或抢 `fixtures/resources` 的写锁（`local.storeBusy`）。2026-10-28 实测：6 个 worker 并行 57 条失败，同样 17 个文件逐文件串行只剩 3 条。全量跑用 `--maxWorkers=4`，核对失败时用 `--no-file-parallelism`。
+- **引擎组重型用例要少并行**：`agent-*` 的集成用例会拉子进程、等检查点文件，全并行时大量超时或抢 `fixtures/resources` 的写锁（`local.storeBusy`）。2026-10-28 实测：6 个 worker 并行 57 条失败，同样 17 个文件逐文件串行只剩 3 条。全量跑用 `--maxWorkers=4`，核对失败时用 `--no-file-parallelism`。 2026-11-02 在 16 个逻辑核的 Windows 上：不限 worker 58–62 条失败；4 个 worker 6 条；逐文件串行 1 条（`agent-candidate-freeze` 建符号链接报 `EPERM`，要开 Windows 开发者模式）。
 - **Docker Desktop 起不来，报 `engine.sock` 改名失败**：`%LOCALAPPDATA%\docker-secrets-engine\engine.sock` 是上次崩溃留下的 Unix 套接字文件，`rename` 与 `del` 都报"The file cannot be accessed by the system"，错误对话框只给"退出"和"恢复出厂设置"。不要恢复出厂设置：退出 Docker Desktop，把 `docker-secrets-engine` 整个目录改名移开，再启动就好了（2026-11-01 实测）。
 - **新 worktree 里没有字体**：`fixtures/resources/fonts/` 不进版本库，渲染用例要先 `npm run fetch-fonts`，或从已有的检出复制。
 - **同一台机器上不能同时跑两份 Docker 后端测试**：`compose.yaml` 的项目名固定是 `renderweave`，`test-docker.mjs` 开始与结束都 `down -v`，别的 worktree 正在跑的那一轮会丢掉容器，表现是 `worker` 主机名解析不到（`EAI_AGAIN`）、批次等不到结束、预览答 `worker.unavailable`。跑之前用 `docker compose ls` 看 `renderweave` 是否空闲；P1 票据 08、09 与 06 就撞过一次（2026-11-02），独占重跑全过。
