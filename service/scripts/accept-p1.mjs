@@ -141,12 +141,12 @@ try {
   await page.getByRole('menuitem', { name: '复制为草案' }).click();
   await page.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
   await page.getByRole('button', { name: '添加字段' }).click();
-  const inspector = page.getByRole('form', { name: '编辑字段' });
-  await inspector.getByLabel('显示名称', { exact: true }).fill('所属车队');
-  await inspector.getByLabel('字段名称', { exact: true }).fill('depot');
-  await inspector.getByLabel('类型', { exact: true }).selectOption({ label: '文本' });
-  await inspector.getByRole('button', { name: '必填', exact: true }).click();
-  await inspector.getByLabel('最长（字）', { exact: true }).fill('20');
+  const fieldForm = page.getByRole('form', { name: '编辑字段' });
+  await fieldForm.getByLabel('显示名称', { exact: true }).fill('所属车队');
+  await fieldForm.getByLabel('字段名称', { exact: true }).fill('depot');
+  await fieldForm.getByLabel('类型', { exact: true }).selectOption({ label: '文本' });
+  await fieldForm.getByRole('button', { name: '必填', exact: true }).click();
+  await fieldForm.getByLabel('最长（字）', { exact: true }).fill('20');
   await page.locator('[data-testid="field-row"][data-field="depot"]').waitFor();
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByTestId('check-status').filter({ hasText: '校验通过' }).waitFor();

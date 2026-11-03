@@ -69,6 +69,8 @@ mkdir -p out/linux && git ls-files -co --exclude-standard | node -e "const fs=re
 
 在 Linux 或 macOS 上，把 `$(pwd -W)` 换成 `$(pwd)`，并去掉 `MSYS_NO_PATHCONV=1`。
 
+容器里下载字体失败时（`pretest` 报 `fetch failed`，这时构建与类型检查已经过了），先把本机的字体追加进快照：`tar -rf out/linux/snapshot.tar fixtures/resources/fonts/*.otf`，再跑 `docker run` 那一段。
+
 `--init` 不能省：`agent-*` 的用例会强退宿主，容器里没有 init 就没人回收孤儿进程，进程身份核对不过，十个文件 25 条失败（2026-11-02 实测）。Docker 注入了宿主的本机代理时见「已知的坑」。
 
 **Docker 后端测试**：出图服务的 PostgreSQL 加 S3 后端、行级安全、迁移与健康检查，不进 `npm test`。脚本从空环境构建镜像、起全部服务，在 Compose 网络里的 tester 容器中跑 `service/test`，结束后清空容器与数据卷：

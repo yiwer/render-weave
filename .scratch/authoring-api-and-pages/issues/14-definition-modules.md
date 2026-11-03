@@ -40,5 +40,11 @@
 
 **对验收的偏差：**
 
-- Docker 后端、Linux 全量与 `service/scripts/accept-p1.mjs` 没有重跑，它们要独占 Docker，会清掉当时还开着的走查环境。验收脚本的数据定义步骤已按新页面改过，但还没跑过；这些回归归票据 13。
+- 关票时 Docker 后端、Linux 全量与验收脚本都没有重跑，它们要独占 Docker，会清掉当时还开着的走查环境。用户同意后当天重跑，结果见下面。
 - 旧项目的样本验证器、修订历史、可拖动画布等没有做，理由在 M360。
+
+**关票之后重跑（2026-11-03）：**
+
+- `RW_ALPINE_MIRROR=https://mirrors.aliyun.com node service/scripts/test-docker.mjs`：21 个文件，198 项通过；日志 2,599 行全部合格。
+- `node service/scripts/accept-p1.mjs --walkthrough`：15 步全过，报告在 `out/p1/acceptance/2026-11-03T08-39-56-649Z/`（不进版本库）。第一次一启动就报语法错误：改步骤时新加的变量和后面的 `inspector` 重名；改名后通过。
+- Linux 全量（`docs/dev-setup.md` 的命令）：构建与两项类型检查通过；写这段时 `npm test` 还在跑，结果没出。第一次卡在容器里下载字体，把本机字体放进快照后重跑。
