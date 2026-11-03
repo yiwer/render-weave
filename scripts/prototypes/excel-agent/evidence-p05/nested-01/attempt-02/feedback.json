@@ -1,0 +1,38 @@
+{
+  "id": "attempt-02",
+  "requestedScriptHash": "1daf7a6e153372679843d4f1f5476721f3492f3349a32158353f3429f46e88c4",
+  "executedScriptHash": "1daf7a6e153372679843d4f1f5476721f3492f3349a32158353f3429f46e88c4",
+  "injected": false,
+  "status": "passed",
+  "execution": {
+    "status": "completed",
+    "wallMs": 824,
+    "cleanupConfirmed": true,
+    "stderr": ""
+  },
+  "mechanical": {
+    "format": "rw-excel-generic-check/1",
+    "mechanical": "passed",
+    "semantic": "needsReview",
+    "applicable": false,
+    "issues": [],
+    "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+    "planHash": "b837172a6a31b9173f8c2c5df8d42b65b54413e001ec63a0c9779894a0306628",
+    "candidateHash": "ef08573688df9a1f268f3112491dff4c7d2060cbf79eea44d2c23e227ff44ea4",
+    "counts": {
+      "datasets": 1,
+      "sourceCells": 70,
+      "classifiedCells": 70
+    }
+  },
+  "engine": {
+    "passed": true,
+    "identities": true,
+    "results": [
+      {
+        "id": "catalog-01",
+        "problems": []
+      }
+    ]
+  }
+}

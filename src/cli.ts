@@ -34,6 +34,7 @@ import { publishStaticSchema } from './schema/publish.js';
 import { publishedFileNames, writeExclusiveJsonFiles } from './schema/publish-files.js';
 import { localAccessProblem, withLocalAccess } from './local-access.js';
 import { AGENT_EFFORTS, AgentUsageError, DEFAULT_KEY_ENV, runAgentTask, type AgentEffort } from './agent/run.js';
+import { importExcelRound } from './agent/excel-import.js';
 import { AGENT_EXECUTORS, type AgentExecutor } from './agent/executor.js';
 import { applyAgentRound, readReview } from './agent/review.js';
 import { startReviewServer } from './agent/review-server.js';
@@ -128,6 +129,10 @@ agent run（一轮业务 Agent 任务，Claude Code 无头运行，只连 render
   --executor    可选，claude-code（缺省）或 tool-runner（原型：宿主进程内用 Anthropic SDK 的 Tool Runner，不启动 Claude Code）
   --context-policy 可选，full（缺省全量参考）或 on-demand（入口强制约束与按需目录）；不改变 effort 或预算
 
+agent import-excel（重新核验 Excel 提取包，进入正式审核，不执行候选脚本）
+  --from 提取轮次目录 --workspace 工作空间 --out 新审核轮次目录
+  可选 --previous 上一审核轮次 --resources 资源目录 --python Python 可执行文件
+
 agent review（本地审核页，只绑定 127.0.0.1；Ctrl+C 结束）
   --port        可选，端口，缺省由系统分配
   --no-open     可选，不自动打开浏览器，只打印地址
@@ -173,6 +178,7 @@ const COMMAND_OPTIONS: Record<string, readonly string[]> = {
   'resources-apply': ['resources', 'workspace', 'file', 'check'],
   mcp: ['workspace', 'resources', 'root'],
   'agent run': ['out'],
+  'agent import-excel': ['from', 'workspace', 'out'],
   'agent review': [],
   'agent apply': [],
   'agent order-init': ['scope', 'out'],
@@ -202,7 +208,7 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   let values: Options;
   const optional = command === 'render' ? ['versions'] : command === 'resources-check' || command === 'resources-apply' || command === 'deliver' ? ['options']
     : command === 'mcp' ? ['tools', 'log', 'outcome-context', 'reference-bundle'] : command === 'agent run' ? AGENT_RUN_OPTIONAL
-    : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
+    : command === 'agent import-excel' ? ['resources', 'previous', 'python'] : command === 'agent review' ? ['port'] : command === 'agent apply' ? ['workspace']
     : command === 'push' ? ['token-env', 'rounds'] : command === 'pull' ? ['token-env'] : command === 'template-revisions' ? ['token-env', 'current'] : [];
   const flags = COMMAND_FLAGS[command] ?? [];
   let positionals: string[];
@@ -239,6 +245,10 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     if (command === 'publish') return await runPublish(options, io);
     if (command === 'mcp') return await runMcp(options, io);
     if (command === 'agent run') return await runAgent(options, io);
+    if (command === 'agent import-excel') {
+      try { io.stdout(JSON.stringify(await importExcelRound({ from: options.from!, workspace: options.workspace!, out: options.out!, resources: options.resources, previous: options.previous, python: options.python }))+'\n'); return ExitCodes.ok; }
+      catch (error) { io.stderr(`${error instanceof Error ? error.message : String(error)}\n`); return ExitCodes.failed; }
+    }
     if (command === 'deliver' || command === 'batch-read' || command === 'replay' || command === 'record-read') return await runRecords(command, options, io);
     if (command === 'push') return await runPush(options, values['dry-run'] === true, io);
     if (command === 'pull') return await runPull(options, values['overwrite'] === true, io);

@@ -1,0 +1,38 @@
+{
+  "format": "rw-excel-execution-prototype/1",
+  "status": "failed",
+  "cleanupConfirmed": true,
+  "container": "rw-excel-proto-30ca9a7f21ff46d587a14a5bdd985794",
+  "imageId": "sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "image": "python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "scriptHash": "a5c581bdc64ce47a591eaace0b3924b25a0c5b8b889b91218d97398f079e4653",
+  "inputHash": "4e1c2e571d4d04521cb69d7e857631bc46a26782253ebdf5ff3621a7c3dfab30",
+  "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wallMs": 1803,
+  "exitCode": 2,
+  "limits": {
+    "timeoutSeconds": 10.0,
+    "outputBytes": 1048576
+  },
+  "isolation": {
+    "NetworkMode": "none",
+    "ReadonlyRootfs": true,
+    "Memory": 134217728,
+    "MemorySwap": 134217728,
+    "NanoCpus": 500000000,
+    "PidsLimit": 16,
+    "CapDrop": [
+      "ALL"
+    ],
+    "SecurityOpt": [
+      "no-new-privileges"
+    ],
+    "Binds": null,
+    "Tmpfs": {
+      "/tmp": "rw,noexec,nosuid,nodev,size=4m,mode=1777",
+      "/work": "rw,noexec,nosuid,nodev,size=16m,mode=1777"
+    }
+  },
+  "stderr": "Traceback (most recent call last):\n  File \"/work/transform.py\", line 141, in <module>\n    data = evaluate(ds[\"value\"], {}, \"\")\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 83, in evaluate\n    value = evaluate(child, env, path + \"/\" + str(len(out)))\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 95, in evaluate\n    value = evaluate(node[\"item\"], child_env, path + \"/\" + str(len(out)))\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 101, in evaluate\n    c = get_cell(node[\"sheet\"], address)\n  File \"/work/transform.py\", line 36, in get_cell\n    raise ValueError(f\"missing source cell {sheet}!{address}\")\nValueError: missing source cell sheet-1!H4\n",
+  "candidate": null
+}

@@ -1,0 +1,13 @@
+{
+  "id": "attempt-01",
+  "requestedScriptHash": "a5c581bdc64ce47a591eaace0b3924b25a0c5b8b889b91218d97398f079e4653",
+  "executedScriptHash": "a5c581bdc64ce47a591eaace0b3924b25a0c5b8b889b91218d97398f079e4653",
+  "injected": false,
+  "status": "failed",
+  "execution": {
+    "status": "failed",
+    "wallMs": 1803,
+    "cleanupConfirmed": true,
+    "stderr": "Traceback (most recent call last):\n  File \"/work/transform.py\", line 141, in <module>\n    data = evaluate(ds[\"value\"], {}, \"\")\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 83, in evaluate\n    value = evaluate(child, env, path + \"/\" + str(len(out)))\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 95, in evaluate\n    value = evaluate(node[\"item\"], child_env, path + \"/\" + str(len(out)))\n  File \"/work/transform.py\", line 76, in evaluate\n    value = evaluate(child, env, path + \"/\" + esc(name))\n  File \"/work/transform.py\", line 101, in evaluate\n    c = get_cell(node[\"sheet\"], address)\n  File \"/work/transform.py\", line 36, in get_cell\n    raise ValueError(f\"missing source cell {sheet}!{address}\")\nValueError: missing source cell sheet-1!H4\n"
+  }
+}

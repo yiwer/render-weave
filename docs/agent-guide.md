@@ -1,5 +1,7 @@
 # 代建指南：用 Agent 把一张示例图做成可出图的模板
 
+Excel 数据提取走[工作簿审核与应用说明](excel-agent-review.md)：按工作空间 staticSchema 提取，经 `agent import-excel` 接入审核与完整应用。该能力目前位于独立分支 `feature/excel-agent-p05`。
+
 照本页用一张示例图走完代建：
 
 1. 提取数据定义，审核后发布；

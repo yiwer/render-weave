@@ -53,7 +53,7 @@ export async function startReviewServer(options: { readonly roundDir: string; re
       const { view, problems } = await readReview(options.roundDir);
       if (!view) return send(response, 409, { problems });
       const extension = view.round.sample.slice(view.round.sample.lastIndexOf('.') + 1);
-      response.writeHead(200, { 'content-type': IMAGE_TYPES[extension] ?? 'application/octet-stream', 'cache-control': 'no-store' });
+      response.writeHead(200, { 'content-type': extension === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : IMAGE_TYPES[extension] ?? 'application/octet-stream', 'cache-control': 'no-store', ...(extension === 'xlsx' ? { 'content-disposition': 'attachment; filename="source.xlsx"' } : {}) });
       response.end(await readFile(join(view.round.dir, view.round.sample)));
       return;
     }

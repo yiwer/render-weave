@@ -167,6 +167,8 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  /** 固定的工作簿来源、映射、独立检查和修正记录。 */
+  readonly excel?: { readonly file: 'excel/manifest.json'; readonly sha256: string };
   readonly contextPolicy?: ContextPolicyIdentity;
   readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly reference?: { readonly file: string; readonly sha256: string };

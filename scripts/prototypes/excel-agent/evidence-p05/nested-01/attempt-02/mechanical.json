@@ -1,0 +1,15 @@
+{
+  "format": "rw-excel-generic-check/1",
+  "mechanical": "passed",
+  "semantic": "needsReview",
+  "applicable": false,
+  "issues": [],
+  "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+  "planHash": "b837172a6a31b9173f8c2c5df8d42b65b54413e001ec63a0c9779894a0306628",
+  "candidateHash": "ef08573688df9a1f268f3112491dff4c7d2060cbf79eea44d2c23e227ff44ea4",
+  "counts": {
+    "datasets": 1,
+    "sourceCells": 70,
+    "classifiedCells": 70
+  }
+}

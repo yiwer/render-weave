@@ -1,0 +1,23 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "catalog-group",
+  "version": 1,
+  "fields": [
+    {
+      "name": "items",
+      "displayName": "商品列表",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "商品价签",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 1
+      }
+    }
+  ]
+}

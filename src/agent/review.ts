@@ -43,6 +43,7 @@ import { captureResources, contentIdentity, readResourceSnapshot, resourceDiffer
 import { readExecution, type RoundExecution, type RoundStart } from './execution.js';
 import { readCheckpoint, readSelectedCheckpoint, readCandidateSelection, readCandidateComparison, type CandidateComparisonView, type CandidateSelectionView, type CheckpointView } from './checkpoints.js';
 import { localAccessProblem, withLocalAccess } from '../local-access.js';
+import { readExcelEvidence, type ExcelEvidence } from './excel-evidence.js';
 
 export const REVIEW_FILE = 'review.json';
 export const APPLIED_FILE = 'applied.json';
@@ -53,6 +54,8 @@ export type { PreviewView } from './preview.js';
 
 /** 一个待确认项的处理结果。 */
 export interface ReviewDecision {
+  /** Excel 人工改值的理由；本地审核人经受管审核入口填写。 */
+  readonly note?: string;
   /** 待确认项序号，从 1 开始，对应 outcome.json 的 pending。 */
   readonly item: number;
   /** 抄自待确认项，便于直接阅读 review.json。 */
@@ -83,7 +86,7 @@ export interface ReviewRecord {
 
 /** 审核页与调用方可做的操作。 */
 export type ReviewChange =
-  | { readonly type: 'decide'; readonly item: number; readonly action: ReviewAction; readonly value?: unknown }
+  | { readonly type: 'decide'; readonly item: number; readonly action: ReviewAction; readonly value?: unknown; readonly note?: string }
   | { readonly type: 'undecide'; readonly item: number }
   | { readonly type: 'confirmRest'; readonly confirmed: boolean }
   | { readonly type: 'approve'; readonly comment?: string }
@@ -91,6 +94,7 @@ export type ReviewChange =
   | { readonly type: 'reopen' };
 
 export interface ReviewView {
+  readonly excel?: ExcelEvidence;
   readonly contentIdentity?: ContentIdentity;
   readonly round: {
     readonly dir: string;
@@ -342,7 +346,7 @@ const validateReviewRecord = ajv.compile({
     status: { enum: ['inProgress', 'approved', 'rejected'] },
     decisions: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['item', 'file', 'action'], properties: {
       item: { type: 'integer', minimum: 1 }, file: { type: 'string', minLength: 1 }, path: { type: 'string', minLength: 1 },
-      action: { enum: [...REVIEW_ACTIONS] }, value: {},
+      action: { enum: [...REVIEW_ACTIONS] }, value: {}, note: { type: 'string', minLength: 1 },
     } } },
     restConfirmed: { type: 'boolean' },
     comment: { type: 'string' },
@@ -358,6 +362,7 @@ interface RoundCandidate {
 
 /** 读入并核对过的轮次：成果、运行记录、候选、工作区快照与出图请求。 */
 interface AgentRound {
+  readonly excel?: ExcelEvidence;
   readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly resourceIdentity?: readonly ResourceIdentity[];
   readonly recovered: boolean;
@@ -443,6 +448,8 @@ async function changeReviewCaptured(roundDir: string, change: unknown): Promise<
       const pending = pendingItem(item);
       if (!pending) return refuse(`没有待确认项 ${String(item)}`);
       if (!REVIEW_ACTIONS.includes(action as ReviewAction)) return refuse(`处理方式只能是 ${REVIEW_ACTIONS.join('、')}`);
+      if (round.excel && action === 'empty' && pending.path === undefined) return refuse('Excel 提取要求完整集合应用；不能只删除一份候选，请调整提取范围后重新导入');
+      if (round.excel && action === 'edit' && (typeof change['note'] !== 'string' || !change['note'].trim())) return refuse('人工修改请填写原因');
       if (action === 'edit') {
         const invalid = editValueProblem(kindOf(round, pending.file), pending.path, value);
         if (invalid) return refuse(invalid);
@@ -451,6 +458,7 @@ async function changeReviewCaptured(roundDir: string, change: unknown): Promise<
       const decision: ReviewDecision = {
         item: item as number, file: pending.file, ...(pending.path !== undefined ? { path: pending.path } : {}),
         action: action as ReviewAction, ...(action === 'edit' ? { value } : {}),
+        ...(typeof change['note'] === 'string' && change['note'].trim() ? { note: change['note'].trim() } : {}),
       };
       next = { ...record, decisions: [...record.decisions.filter((entry) => entry.item !== item), decision].sort((a, b) => a.item - b.item), updatedAt: now };
       break;
@@ -683,6 +691,7 @@ async function applyCapturedRound(options: AgentApplyOptions): Promise<AgentAppl
     };
     try {
       await commitApplication({ id: commitId, contentIdentity: applied.contentIdentity!, workspace, round: round.dir,
+        ...(round.excel ? { guardFiles: [join(round.dir, 'excel/manifest.json'), join(round.dir, round.record.inputs.sample.file), ...round.excel.artifacts.map(a=>join(round.dir,a.file)), ...round.candidates.map(c=>join(round.dir,c.path))] } : {}),
         files: [...files, { path: join(round.dir, APPLIED_FILE), value: applied, mode: 'create' }] });
     } catch (error) {
       return failed([localAccessProblem(error) ?? severe(ProblemCodes.applyFailed, at(APPLIED_FILE), `应用未完成：${describeError(error)}`)]);
@@ -721,7 +730,7 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     || !Number.isSafeInteger(record.round) || record.round < 1 || typeof record.startedAt !== 'string' || typeof record.endedAt !== 'string'
     || !isRecord(record.run) || !['qualified', 'unqualified'].includes(record.verdict)
     || !isRecord(record.inputs) || !isRecord(record.inputs.workspace) || typeof record.inputs.workspace.fingerprint !== 'string'
-    || typeof record.inputs.sample?.sha256 !== 'string' || typeof record.inputs.sample?.file !== 'string' || !/^agent\/sample\.(png|jpg|webp)$/.test(record.inputs.sample.file)) {
+    || typeof record.inputs.sample?.sha256 !== 'string' || typeof record.inputs.sample?.file !== 'string' || !(record.inputs.excel ? record.task === 'dataset-extraction' && record.inputs.sample.file === 'agent/sample.xlsx' : /^agent\/sample\.(png|jpg|webp)$/.test(record.inputs.sample.file))) {
     return fail('round.json', 'round.json 不是 renderweave-round/1 轮次记录');
   }
   for (const input of [record.inputs.sample, record.inputs.referenceImage, record.inputs.reference, record.inputs.contentBaseline]) {
@@ -731,6 +740,14 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
     } catch (error) { return fail(input.file, `检查依据无法读取：${describeError(error)}`); }
   }
   if (await workspaceFingerprint(join(root, 'snapshot')) !== record.inputs.workspace.fingerprint) return fail('snapshot', '依赖文档快照已改变；不能复用旧检查身份');
+  let excel: ExcelEvidence | undefined;
+  if (record.inputs.excel) {
+    try {
+      excel = await readExcelEvidence(root, record.inputs.excel);
+      if (excel.sourceHash !== record.inputs.sample.sha256 || canonical(excel.definition) !== canonical(record.inputs.definition)
+        || canonical(excel.candidates) !== canonical(outcome.candidates.map(c => ({ file: c.path, id: c.name })))) return fail('excel/manifest.json', '工作簿候选集合或依据与轮次不一致');
+    } catch (error) { return fail('excel/manifest.json', describeError(error)); }
+  }
 
   const candidates: RoundCandidate[] = [];
   for (const candidate of outcome.candidates) {
@@ -789,7 +806,7 @@ async function openRound(dir: string): Promise<{ round?: AgentRound; problems: P
   else if (await exists(join(root, APPLIED_FILE))) return fail(APPLIED_FILE, `应用记录无法读取：${appliedFile}`);
   return {
     round: {
-      dir: root, recovered, outcome, outcomeSha256: sha256(outcomeFile.bytes), record, candidates, workspace,
+      dir: root, recovered, outcome, outcomeSha256: sha256(outcomeFile.bytes), record, candidates, workspace, ...(excel ? { excel } : {}),
       ...(resourcesDir ? { resourcesDir } : {}),
       ...(resourceSnapshot ? { resourceSnapshot, resourceIdentity } : {}),
       context: outcome.task === 'dataset-extraction' && record.inputs.definition ? { definition: record.inputs.definition }
@@ -848,6 +865,7 @@ async function readReviewRecord(round: AgentRound): Promise<{ record: ReviewReco
     if (seen.has(decision.item)) return invalid(`待确认项 ${decision.item} 有多个处理结果`);
     seen.add(decision.item);
     if (decision.action !== 'edit' && decision.value !== undefined) return invalid(`处理结果 ${decision.item}：只有改值带新值`);
+    if (round.excel && decision.action === 'edit' && !decision.note?.trim()) return invalid('Excel 人工改值缺少原因');
     const problem = decision.action === 'edit' ? editValueProblem(kindOf(round, decision.file), decision.path, decision.value) : undefined;
     if (problem) return invalid(`处理结果 ${decision.item}：${problem}`);
   }
@@ -1013,12 +1031,19 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
     };
   });
   const preview = await previewOf(round, state, persistArtifacts);
+  if (round.excel) {
+    for (const candidate of round.candidates) {
+      const document = state.documents.get(candidate.path) as { dataset?: unknown } | undefined;
+      if (!document || canonical(document.dataset) !== canonical((candidate.document as {dataset:unknown}).dataset))
+        problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source: candidate.path }, 'Excel 必须完整应用且保持候选身份与 staticSchema；请重新提取以改变范围或身份'));
+    }
+  }
   const previewBefore = round.outcome.task === 'template-revision' ? await previewBeforeOf(round, persistArtifacts) : undefined;
   problems.push(...tracked.errors);
   if (!round.resourceSnapshot) problems.push(severe(ProblemCodes.reviewInvalid, { kind: 'input', source: REVIEW_FILE },
     '历史轮次没有完整资源身份；保留原记录，先撤回结论，以当前资源重新检查预览并核准'));
   const identity = await contentIdentity({ workspace: round.workspace, candidates: { files: [...state.documents].map(([path, document]) => ({ path, sha256: sha256(canonical(document)) })), outcome: round.outcomeSha256 },
-    request: round.request, reference: { sample: round.record.inputs.sample.sha256, reference: round.record.inputs.reference, contentBaseline: round.record.inputs.contentBaseline }, resources: tracked.used() });
+    request: round.request, reference: { sample: round.record.inputs.sample.sha256, reference: round.record.inputs.reference, contentBaseline: round.record.inputs.contentBaseline, ...(round.record.inputs.excel ? { excel: round.record.inputs.excel } : {}) }, resources: tracked.used() });
   if (round.resourcesDir && !round.applied && round.resourceSnapshot) problems.push(...await resourceDifferences(round.resourcesDir, identity.resources));
   if (persistArtifacts) {
     await mkdir(join(round.dir, 'checks'), { recursive: true });
@@ -1027,6 +1052,7 @@ async function buildView(round: AgentRound, record: ReviewRecord, saved: boolean
     } catch (error) { if (!isRecord(error) || error.code !== 'EEXIST') throw error; }
   }
   const view: Omit<ReviewView, 'canApprove'> = {
+    ...(round.excel ? { excel: round.excel } : {}),
     round: {
       dir: round.dir, source: round.recovered ? 'hostRecovery' : 'agent', task: round.outcome.task, taskName: AGENT_TASKS[round.outcome.task].name, verdict: round.record.verdict,
       sample: round.record.inputs.sample.file, workspace: round.record.inputs.workspace?.source ?? null, notes: round.outcome.notes, usage: round.outcome.usage,

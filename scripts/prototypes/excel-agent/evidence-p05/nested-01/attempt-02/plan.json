@@ -1,0 +1,130 @@
+{
+  "format": "rw-excel-plan/2",
+  "sourceHash": "2e2f34280ee057fc2b919d5b22de95b35319c535f27e8581a26b399796fa8362",
+  "definition": {
+    "name": "catalog",
+    "version": 1
+  },
+  "datasets": [
+    {
+      "id": "catalog-01",
+      "value": {
+        "op": "object",
+        "fields": {
+          "batches": {
+            "op": "array",
+            "items": [
+              {
+                "op": "object",
+                "fields": {
+                  "items": {
+                    "op": "rows",
+                    "start": 2,
+                    "end": 7,
+                    "index": "row",
+                    "item": {
+                      "op": "object",
+                      "fields": {
+                        "productName": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "B{row}",
+                          "as": "display"
+                        },
+                        "spec": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "C{row}",
+                          "as": "display",
+                          "omitIfEmpty": true
+                        },
+                        "unit": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "D{row}",
+                          "as": "display"
+                        },
+                        "origin": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "E{row}",
+                          "as": "display",
+                          "omitIfEmpty": true
+                        },
+                        "itemNo": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "F{row}",
+                          "as": "display"
+                        },
+                        "retailPrice": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "G{row}",
+                          "as": "number"
+                        },
+                        "memberPrice": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "H{row}",
+                          "as": "number",
+                          "omitIfEmpty": true
+                        },
+                        "onSale": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "I{row}",
+                          "as": "boolean",
+                          "values": {
+                            "是": true,
+                            "否": false
+                          },
+                          "omitIfEmpty": true
+                        },
+                        "saleEnds": {
+                          "op": "cell",
+                          "sheet": "sheet-1",
+                          "cell": "J{row}",
+                          "as": "date",
+                          "omitIfEmpty": true
+                        },
+                        "features": {
+                          "op": "split",
+                          "sheet": "sheet-1",
+                          "cell": "K{row}",
+                          "separators": [
+                            "、",
+                            ",",
+                            "；"
+                          ],
+                          "omitIfEmpty": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "context": [
+    {
+      "sheet": "sheet-1",
+      "range": "A1:L1",
+      "reason": "表头行，只用于核对列名，不是数据"
+    },
+    {
+      "sheet": "sheet-1",
+      "range": "A2:A7",
+      "reason": "渲染项 ID，来源身份说明，不属于 商品价签@1 字段"
+    },
+    {
+      "sheet": "sheet-1",
+      "range": "L2:L7",
+      "reason": "备注列，没有目标字段，排除并待确认"
+    }
+  ]
+}

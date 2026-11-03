@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "商品价签 v1",
+  "x-renderweave-static-schema": {
+    "name": "商品价签",
+    "version": 1
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "productName",
+    "unit",
+    "itemNo",
+    "retailPrice"
+  ],
+  "properties": {
+    "productName": {
+      "title": "品名",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "spec": {
+      "title": "规格",
+      "type": "string",
+      "maxLength": 16
+    },
+    "unit": {
+      "title": "单位",
+      "type": "string",
+      "enum": [
+        "个",
+        "瓶",
+        "袋",
+        "盒",
+        "千克"
+      ]
+    },
+    "origin": {
+      "title": "产地",
+      "type": "string",
+      "maxLength": 12
+    },
+    "itemNo": {
+      "title": "货号",
+      "type": "string",
+      "pattern": "^[0-9]{7}$"
+    },
+    "retailPrice": {
+      "title": "零售价",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 99999
+    },
+    "memberPrice": {
+      "title": "会员价",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 99999
+    },
+    "onSale": {
+      "title": "促销",
+      "type": "boolean"
+    },
+    "saleEnds": {
+      "title": "促销截止",
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "x-renderweave-type": "date"
+    },
+    "features": {
+      "title": "卖点",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6
+      }
+    }
+  }
+}

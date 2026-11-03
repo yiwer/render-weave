@@ -6,3 +6,5 @@
 *.pdf binary
 *.ttf binary
 *.otf binary
+# 模型实测证据保留原始换行和字节，避免使已记录的内容哈希失效。
+scripts/prototypes/excel-agent/evidence-p05/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

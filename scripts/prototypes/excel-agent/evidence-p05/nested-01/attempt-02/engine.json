@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "identities": true,
+  "results": [
+    {
+      "id": "catalog-01",
+      "problems": []
+    }
+  ]
+}

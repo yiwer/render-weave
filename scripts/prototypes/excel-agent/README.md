@@ -12,9 +12,9 @@ node --import tsx scripts/prototypes/excel-agent/agent-run.ts --workspace fixtur
 
 已有目录拒绝覆盖。日常转换去掉 `--inject-list-truncation`；它只用于测试宿主注入失败反馈。参数 `--timeout-ms` 控制整轮时间（缺省 10 分钟），`--python` 可指定 Python 可执行文件；模型、渠道和执行器复用现有 Claude Code + OpenCode Go 配置。脚本仅经容器执行，Agent 只有五个任务工具。
 
-本地机制检查：`python -X utf8 scripts/prototypes/excel-agent/test_generic.py`。`generic_check.py` 只负责通用来源核对；引擎逐份校验实际工作空间的 staticSchemas。动态选择字段不等于兼容所有工作簿格式、派生计算或资源字段；当前无资源仓库解析、跨表 join 运算和数据应用。
+本地机制检查：`python -X utf8 scripts/prototypes/excel-agent/test_generic.py`。`generic_check.py` 只负责通用来源核对；引擎逐份校验实际工作空间的 staticSchemas。动态选择字段不等于兼容所有工作簿格式、派生计算或资源字段；当前模型工具无资源仓库解析或跨表 join 运算；数据应用由下述正式导入链路承接。
 
-实际模型记录与原始脚本在 [P04 归档](evidence-p04/README.md)，解释见仓库 `docs/agent-eval/excel-agent-p04.md`。这是本地任务接入入口，还未并入正式 `renderweave agent run` 命令的检查点、人工修订和应用流程。
+实际模型记录与原始脚本在 [P04 归档](evidence-p04/README.md)，解释见仓库 `docs/agent-eval/excel-agent-p04.md`。这是本地提取入口。P05 通过正式 `agent import-excel` 接入审核、人工修订重放与完整应用，见[使用说明](../../../docs/excel-agent-review.md)和[嵌套实测归档](evidence-p05/README.md)；仍未并入 `agent run` 的工作簿运行与检查点。
 
 ## P01–P03 历史原型
 

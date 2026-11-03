@@ -1,0 +1,38 @@
+{
+  "baseCommit": "5438a77d8a6c5f3d8bb376dcc5e5c10f37f0a71c",
+  "phase": "P05 live execution source before post-run review hardening",
+  "files": [
+    {
+      "file": "scripts/prototypes/excel-agent/agent-run.ts",
+      "sha256": "67ef4a7b8c4c0221e6a4633b3ad1aa876cdf0e37f18e0c2b7a655cb9adf73e18"
+    },
+    {
+      "file": "scripts/prototypes/excel-agent/generic_check.py",
+      "sha256": "1e151569764494bd28e086d14c54cbf7dc4a4e71bd9de6ff4731af130caeb2d9"
+    },
+    {
+      "file": "scripts/prototypes/excel-agent/CONTRACT.md",
+      "sha256": "d370827fa8455aeabfed1668e0f6231f51fac6b1b57f661b1364c7f427df0de5"
+    },
+    {
+      "file": "src/agent/run.ts",
+      "sha256": "a2026a794a2527718687ac574eed13fea2d69aaff348f8e8bb1e3ca415ebc517"
+    },
+    {
+      "file": "src/agent/excel-import.ts",
+      "sha256": "8b69e2e6309bafb4527ebed6a54cad9a18e3a6119800f8b5672d93f8b10de7e2"
+    },
+    {
+      "file": "src/agent/excel-evidence.ts",
+      "sha256": "9021a1823ae5faa635a6fe6c62aeb6ca8570849727386f50a32bcf3c189c50be"
+    },
+    {
+      "file": "agent/excel/verify.py",
+      "sha256": "b14658eaa9638cd500e54ff1a5842b170855821f1773cbe30d27f9c49bfc5073"
+    },
+    {
+      "file": "agent/excel/generic_check.py",
+      "sha256": "c0f5cf6241fc32b6a6da3ae71a6f760cbfafdce05d4f86913593c8daef292f98"
+    }
+  ]
+}

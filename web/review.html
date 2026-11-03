@@ -256,8 +256,9 @@ class Viewer {
 const sample = new Viewer('示例图', '单击图片放大，Shift+单击缩小；点"定位"查看它在示例图上的位置。');
 let preview = null, before = null;
 const viewers = () => [sample, preview, before].filter(Boolean);
-sample.setSource('/sample');
 $('viewer').append(sample.node);
+const excelPanel = h('section', { id: 'excel-panel', hidden: true });
+$('viewer').append(excelPanel);
 
 /** 查看区高度随图的比例：宽幅图不留大片空白，竖幅图占满窗口；有预览时两者平分。 */
 function sizeViewports() {
@@ -287,7 +288,7 @@ function syncPreview() {
     else pane.caption.textContent = '出图请求无法渲染，见预览的问题。';
   }
 }
-const locateLink = (location, label) => location ? h('a', { class: 'locate', onclick: () => sample.locate(location, label) }, '定位') : null;
+const locateLink = (location, label) => location && !view?.excel ? h('a', { class: 'locate', onclick: () => sample.locate(location, label) }, '定位') : null;
 
 // ---------- 页面 ----------
 function problemList(problems) {
@@ -296,6 +297,20 @@ function problemList(problems) {
 }
 
 function render() {
+  sample.node.hidden = Boolean(view.excel);
+  excelPanel.hidden = !view.excel;
+  if (view.excel) {
+    const e = view.excel;
+    const sheet = id => e.sheets.find(s => s.id === id)?.name ?? id;
+    excelPanel.replaceChildren(h('h2', {}, 'Excel 来源与人工修正'),
+      h('a', { href: '/sample', download: 'source.xlsx' }, '下载固定原始工作簿'),
+      h('p', {}, `定义：${e.definition.name}@${e.definition.version}；${e.candidates.length} 份数据集。请核对映射、排除区域和每份候选。`),
+      h('details', {}, h('summary', {}, `字段来源（${e.sources.length} 项）`),
+        h('table', {}, h('thead', {}, h('tr', {}, ['数据集', '字段路径', '工作表', '单元格', '规则'].map(t => h('th', {}, t)))),
+          h('tbody', {}, e.sources.map(s => h('tr', {}, [s.datasetId, s.path, sheet(s.sheet), s.cells.join(', '), s.rule].map(t => h('td', {}, t))))))),
+      h('h3', {}, '排除区域与理由'), h('pre', {}, json(e.context)),
+      h('h3', {}, '人工修正重放与冲突'), h('pre', {}, e.corrections.length ? json(e.corrections) : '没有从上一轮重放的修正。'));
+  } else if (!sample.img.src) sample.setSource('/sample');
   const { round, review, applied } = view;
   const editable = review.status === 'inProgress' && !applied && round.source !== 'hostRecovery';
   document.title = `审核 · ${round.taskName}`;
@@ -394,6 +409,7 @@ function pendingCard(item, editable) {
   const labels = choiceLabels(item);
   const initial = decision?.action === 'edit' ? decision.value : item.current !== undefined ? item.current : item.candidate ?? null;
   const value = h('textarea', { hidden: decision?.action !== 'edit', disabled: !editable }, json(initial));
+  const note = h('textarea', { disabled: !editable, placeholder: '人工修改原因（Excel 改值必填）' }, decision?.note ?? '');
   const radio = (action) => h('label', {}, h('input', { type: 'radio', name, value: action, checked: decision?.action === action, disabled: !editable,
     onchange: () => { value.hidden = action !== 'edit'; } }), ` ${labels[action]}`);
   const save = () => {
@@ -402,7 +418,7 @@ function pendingCard(item, editable) {
     if (chosen.value !== 'edit') return change({ type: 'decide', item: item.item, action: chosen.value });
     let parsed;
     try { parsed = JSON.parse(value.value); } catch (error) { return toast(`新值不是有效的 JSON：${error.message}`); }
-    return change({ type: 'decide', item: item.item, action: 'edit', value: parsed });
+    return change({ type: 'decide', item: item.item, action: 'edit', value: parsed, ...(note.value.trim() ? { note: note.value.trim() } : {}) });
   };
   const where = item.path === undefined ? '整份文件' : item.path;
   return h('div', { class: `card${decision ? ' done' : ''}` },
@@ -412,8 +428,9 @@ function pendingCard(item, editable) {
     h('p', { class: 'notes', style: 'margin:6px 0' }, item.note),
     item.candidate !== undefined ? h('div', {}, h('span', { class: 'muted' }, '候选值'), h('pre', {}, json(item.candidate))) : null,
     h('details', {}, h('summary', {}, '候选文件中的当前写法'), h('pre', {}, item.current === undefined ? '（没有值）' : json(item.current))),
-    h('div', { class: 'choices' }, radio('adopt'), radio('edit'), radio('empty')),
+    h('div', { class: 'choices' }, radio('adopt'), radio('edit'), view.excel && item.path === undefined ? null : radio('empty')),
     value,
+    view.excel ? note : null,
     h('div', { class: 'row' }, h('button', { class: 'primary', disabled: !editable, onclick: save }, '保存处理'),
       decision ? h('button', { disabled: !editable, onclick: () => change({ type: 'undecide', item: item.item }) }, '清除处理') : null));
 }
