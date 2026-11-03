@@ -27,7 +27,7 @@ npm test
 ```
 
 - `fetch-fonts` 要联网，按 `scripts/fonts.json` 固定的版本与 SHA-256 下载到 `fixtures/resources/fonts/`。
-- 期望结果：Windows 上 56 个文件、1030 项通过（引擎 43 个文件 930 项，出图服务的内存后端 13 个文件 100 项）。另有 1 个文件 8 项跳过：出图控制台浏览器用例的本机快速版，设了 `RW_BROWSER` 才跑（见[出图服务](service.md#测试)）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上再多 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
+- 期望结果（2026-11-02，P1 收尾）：`npx vitest run --maxWorkers=4` 共 95 个文件 1,488 项，除 `agent-*` 重型用例外全过；这些用例的情况见「已知的坑」与 [P1 验收](p1-acceptance.md#回归与跨平台a01a12)。另有 1 个文件 8 项跳过：出图控制台浏览器用例的本机快速版，设了 `RW_BROWSER` 才跑（见[出图服务](service.md#测试)）。第一次运行时 `pretest` 会安装 `service/` 的依赖。Linux 上再多 4 项跳过，都是 `it.runIf(process.platform === 'win32')` 的 Windows 专用用例。
 
 ## 3. key 与模型服务
 
