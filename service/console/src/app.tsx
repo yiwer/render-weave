@@ -16,7 +16,8 @@ import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
 import { DatasetEditor, DatasetList } from './pages/datasets.js';
-import { DefinitionDetail } from './pages/definition-detail.js';
+import { DefinitionDetail } from './pages/definition-studio.js';
+import { StaticSchemaList, StaticSchemaPage } from './pages/static-schemas.js';
 import { DefinitionPublish, DefinitionRecords } from './pages/definition-publish.js';
 import { DefinitionList } from './pages/definitions.js';
 import { BatchPage } from './pages/deliver.js';
@@ -84,6 +85,11 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
       if (!id) page = <DefinitionList identity={props.identity} />;
       else if (sub === 'publish') page = <DefinitionPublish key={id} name={id} identity={props.identity} />;
       else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('field') ? { field: query.get('field')! } : {})} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
+      break;
+    case 'static-schemas':
+      page = id && sub
+        ? <StaticSchemaPage key={`${id}@${sub}`} name={id} version={sub} identity={props.identity} {...(query.get('field') ? { field: query.get('field')! } : {})} />
+        : <StaticSchemaList identity={props.identity} />;
       break;
     case 'definition-publications': page = <DefinitionRecords key={query.toString()} identity={props.identity} query={query} />; break;
     case 'datasets':

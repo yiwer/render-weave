@@ -4,7 +4,7 @@
  * 复制 M402 样例只是给代建工程师一份本地工作区，推送与拉取会在里面记修订号，不能写进版本库里的样例。
  *
  * 平台管理员在控制台开通租户、设套餐、建客户管理员、签发代建令牌 → 代建工程师推送 M402 →
- * 客户管理员从"线路牌 v1"另起草案、加必填字段，看差异与数据集影响后发布为 v2 →
+ * 客户管理员把"线路牌 v1"复制为草案、加必填字段，看差异与数据集影响后发布为 v2 →
  * 在设计页图上点选线路号、改字号、暂存、看预览，看结构化差异与前后对比后保存为新修订 → 指回上一个修订 →
  * 代建工程师从旧内容推送被挡住，pull 之后再推送成功 → 客户管理员打开模板修订的审批策略，推送变成申请，批准后生效 →
  * 审计里每一步都有主体、前后内容哈希与差异摘要。
@@ -131,25 +131,24 @@ try {
   check(first.code === 0, `首次推送失败：${first.stderr.slice(-2000)}`);
   step('代建工程师推送 M402 的数据定义、模板与资源', { summary: JSON.parse(first.stdout).summary });
 
-  // 客户管理员：另起草案，加必填字段，看差异与数据集影响，发布为 v2。
+  // 客户管理员：复制为草案，加必填字段，看差异与数据集影响，发布为 v2。
   const page = await newPage();
-  await signIn(page, '#/definitions', ADMIN, adminPassword);
-  await page.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
+  await signIn(page, '#/static-schemas', ADMIN, adminPassword);
+  await page.getByRole('heading', { name: '静态数据定义', level: 1 }).waitFor();
   const adminToken = (await expectStatus(call('POST', '/v1/sessions', { body: { email: ADMIN, password: adminPassword } }), 201, '客户管理员登录')).body.token;
   const adminApi = (method, path, body) => call(method, path, { token: adminToken, ...(body === undefined ? {} : { body }) });
-  const row = page.locator(`[data-testid="definition-row"][data-name="${DEFINITION}"]`);
-  await row.getByTestId('definition-version').filter({ hasText: 'v1' }).waitFor();
-  await row.getByTestId('definition-uses').click({ button: 'right' });
-  await page.getByRole('menuitem', { name: /另起草案/ }).click();
+  await page.locator(`[data-testid="version-card"][data-name="${DEFINITION}"][data-version="1"]`).click({ button: 'right' });
+  await page.getByRole('menuitem', { name: '复制为草案' }).click();
   await page.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
   await page.getByRole('button', { name: '添加字段' }).click();
-  await page.getByLabel('显示名称', { exact: true }).fill('所属车队');
-  await page.getByLabel('字段名称', { exact: true }).fill('depot');
-  await page.getByLabel('类型', { exact: true }).selectOption({ label: '文本' });
-  await page.getByLabel('必填', { exact: true }).check();
-  await page.getByLabel('最长（字）', { exact: true }).fill('20');
-  await page.getByRole('button', { name: '加入草案' }).click();
+  const inspector = page.getByRole('form', { name: '编辑字段' });
+  await inspector.getByLabel('显示名称', { exact: true }).fill('所属车队');
+  await inspector.getByLabel('字段名称', { exact: true }).fill('depot');
+  await inspector.getByLabel('类型', { exact: true }).selectOption({ label: '文本' });
+  await inspector.getByRole('button', { name: '必填', exact: true }).click();
+  await inspector.getByLabel('最长（字）', { exact: true }).fill('20');
   await page.locator('[data-testid="field-row"][data-field="depot"]').waitFor();
+  await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByTestId('check-status').filter({ hasText: '校验通过' }).waitFor();
   await page.getByRole('button', { name: '发布为 v2' }).click();
   await page.getByRole('heading', { name: `发布为 ${DEFINITION} v2`, level: 1 }).waitFor();
@@ -165,7 +164,7 @@ try {
   check(await publication.getByTestId('publication-actor').textContent() === ADMIN, '发布记录的主体不是客户管理员');
   const v2 = (await expectStatus(adminApi('GET', `/v1/static-schemas/${enc(DEFINITION)}/versions/2`), 200, '读 v2')).body;
   check(v2.compiled.required.includes('depot'), 'v2 的编译产物没有必填字段 depot');
-  step('客户管理员另起草案、加必填字段，看差异与数据集影响后发布为 v2', { verdict });
+  step('客户管理员复制为草案、加必填字段，看差异与数据集影响后发布为 v2', { verdict });
 
   // 模板设计：M402 样例的线路号是图片，文字版在没有图片时才显示，所以换空白数据点选。
   const revisions = async () => (await expectStatus(adminApi('GET', `/v1/templates/${enc(TEMPLATE)}/revisions`), 200, '读修订历史')).body;

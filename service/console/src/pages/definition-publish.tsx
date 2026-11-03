@@ -8,13 +8,13 @@
  */
 import { useState } from 'react';
 import { api } from '../api.js';
-import { DefinitionTabs } from '../components/module-tabs.js';
+import { StaticSchemaTabs } from '../components/module-tabs.js';
 import { ErrorBox } from '../components/problems.js';
 import { PendingRequests } from '../components/publish-requests.js';
 import { constraintText, isRequired, propertyText, typeText } from '../form/definition.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDiff, DefinitionFieldChange, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
-import { canEditDefinitions, definitionPath, exportCompiled } from './definitions.js';
+import { canEditDefinitions, definitionPath, exportCompiled, staticSchemaPath } from './definitions.js';
 
 const number = (value: number) => value.toLocaleString('zh-CN');
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
@@ -222,8 +222,8 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
   };
   return (
     <section className="page">
-      <div className="title-row"><h1>数据定义</h1></div>
-      <DefinitionTabs active="publications" />
+      <div className="title-row"><h1>静态数据定义</h1></div>
+      <StaticSchemaTabs active="publications" />
       {name && <p className="small muted" data-testid="records-filter">只看 {name} 的发布记录。<a href={href(['definition-publications'])}>看全部</a></p>}
       {notice && <p className="status" role="status">{notice}</p>}
       <ErrorBox problems={problems} title="没有另发" />
@@ -279,7 +279,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                           {publication.baseSha256 && <span>基准 <Hash value={publication.baseSha256} /></span>}
                         </p>
                         <div className="actions">
-                          <a className="button small quiet" href={href(definitionPath(publication.name), { version: String(publication.version) })}>打开这一版</a>
+                          <a className="button small quiet" href={href(staticSchemaPath(publication.name, publication.version))}>打开这一版</a>
                           <button type="button" className="small quiet" onClick={() => void exportCompiled(publication).catch((error: unknown) => setProblems(problemsOf(error)))}>导出编译产物</button>
                           {canEdit && !current && confirming !== key && <button type="button" className="small" disabled={busy} onClick={() => setConfirming(key)}>以这一版另发新版本</button>}
                         </div>

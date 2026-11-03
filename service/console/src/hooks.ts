@@ -15,12 +15,34 @@ function parseHash(): Route {
   return { path: path.split('/').filter(Boolean).map((segment) => decodeURIComponent(segment)), query: new URLSearchParams(query) };
 }
 
+/** 有没保存的改动时拦住换页（数据定义的编辑页，M360）：答 false 就退回原来的地址，页面不重新渲染、改动还在。 */
+let navigationGuard: (() => boolean) | undefined;
+let committedHash = location.hash;
+export function guardNavigation(guard: () => boolean): () => void {
+  navigationGuard = guard;
+  return () => { if (navigationGuard === guard) navigationGuard = undefined; };
+}
+
+const routeListeners = new Set<() => void>();
+function onHashChange() {
+  // 退回原来的地址也会触发一次，那次什么都不用做。
+  if (location.hash === committedHash) return;
+  if (navigationGuard && !navigationGuard()) { location.hash = committedHash; return; }
+  committedHash = location.hash;
+  for (const listener of routeListeners) listener();
+}
+
 export function useRoute(): Route {
   const [route, setRoute] = useState(parseHash);
   useEffect(() => {
     const update = () => setRoute(parseHash());
-    window.addEventListener('hashchange', update);
-    return () => window.removeEventListener('hashchange', update);
+    if (!routeListeners.size) window.addEventListener('hashchange', onHashChange);
+    routeListeners.add(update);
+    committedHash = location.hash;
+    return () => {
+      routeListeners.delete(update);
+      if (!routeListeners.size) window.removeEventListener('hashchange', onHashChange);
+    };
   }, []);
   return route;
 }
