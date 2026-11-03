@@ -1272,6 +1272,20 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
     });
 
+    it('打开绑定的字段（P1 票据 08、13）：地址带 field 时，详情页展开那一行，已发布的版本与草案都一样', async () => {
+      const target = await asAdmin(), name = '胸牌', path = enc(name);
+      const expanded = async () => {
+        await target.goto(`${baseUrl}/console/#/definitions/${path}?field=fullName`);
+        await target.reload();
+        await target.getByTestId('field-detail').waitFor();
+        expect(await fieldRow(target, 'fullName').getByRole('button').first().getAttribute('aria-expanded')).toBe('true');
+      };
+      await expanded();
+      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
+      await expanded();
+      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
     /** 代建工程师经开放 API：从这个名称的最新版本另起草案，加一个字段，发布。开着审批策略时答 202。 */
     const engineerPublish = async (name: string, field: string) => {
       const url = `/v1/authoring/tenants/${world.b.id}/definitions/${enc(name)}/draft`, token = world.b.engineer.token;

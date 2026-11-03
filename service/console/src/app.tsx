@@ -83,7 +83,7 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
     case 'definitions':
       if (!id) page = <DefinitionList identity={props.identity} />;
       else if (sub === 'publish') page = <DefinitionPublish key={id} name={id} identity={props.identity} />;
-      else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
+      else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('field') ? { field: query.get('field')! } : {})} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
       break;
     case 'definition-publications': page = <DefinitionRecords key={query.toString()} identity={props.identity} query={query} />; break;
     case 'datasets':

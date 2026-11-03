@@ -6,7 +6,7 @@
  * - 操作员只读：看得到草案与校验结果，没有任何写入口。
  * 只调开放 API。
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError } from '../api.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { canonical, constraintText, fieldChange, FIELD_TYPES, ITEM_TYPES, itemsOfType, isRequired, NEW_FIELD, problemsByField, typeText, withConstraint, withType } from '../form/definition.js';
@@ -24,7 +24,7 @@ type UseMap = ReadonlyMap<string, readonly TemplateBinding[]>;
 const useMapOf = (detail: Detail): UseMap => new Map(detail.fieldUses.map((use) => [use.field, use.templates]));
 
 /** 路由入口：缺省看草案，没有草案看最新版本；地址里的 version 指定已发布的一版。 */
-export function DefinitionDetail(props: { readonly name: string; readonly version?: string; readonly identity: Identity }) {
+export function DefinitionDetail(props: { readonly name: string; readonly version?: string; readonly field?: string; readonly identity: Identity }) {
   const loaded = useLoad(() => api.definition(props.name), `definition:${props.name}`);
   const detail = loaded.data;
   const header = <nav className="crumbs" aria-label="位置"><a href={href(['definitions'])}>数据定义</a><span aria-hidden="true">/</span><span>{props.name}</span></nav>;
@@ -42,8 +42,8 @@ export function DefinitionDetail(props: { readonly name: string; readonly versio
     <section className="page">
       {header}
       {version === undefined && detail.draft
-        ? <DraftView detail={detail} draft={detail.draft} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} />
-        : <VersionView detail={detail} version={version ?? detail.versions.at(-1)?.version ?? 0} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} />}
+        ? <DraftView detail={detail} draft={detail.draft} field={props.field} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} />
+        : <VersionView detail={detail} version={version ?? detail.versions.at(-1)?.version ?? 0} field={props.field} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} />}
     </section>
   );
 }
@@ -126,7 +126,7 @@ function CompiledPreview(props: { readonly compiled: unknown }) {
 }
 
 /** 已发布的一版：不再改变，只读；客户管理员可以从它另起草案。 */
-function VersionView(props: { readonly detail: Detail; readonly version: number; readonly canEdit: boolean; readonly onChanged: () => void }) {
+function VersionView(props: { readonly detail: Detail; readonly version: number; readonly field: string | undefined; readonly canEdit: boolean; readonly onChanged: () => void }) {
   const { detail, version, canEdit } = props, name = detail.name;
   const loaded = useLoad(() => api.staticSchema(name, version), `static-schema:${name}@${version}`);
   const [open, setOpen] = useState<number>();
@@ -142,6 +142,11 @@ function VersionView(props: { readonly detail: Detail; readonly version: number;
     } catch (error) { setProblems(problemsOf(error)); }
   };
   const fields = schema ? fieldsOf(schema.definition) ?? [] : [];
+  // 地址里写了字段（设计页"打开绑定的字段"）：读到这一版之后展开那一行。
+  useEffect(() => {
+    const index = schema ? (fieldsOf(schema.definition) ?? []).findIndex((field) => field.name === props.field) : -1;
+    if (index >= 0) setOpen(index);
+  }, [schema, props.field]);
   return (
     <>
       <div className="title-row">
@@ -188,7 +193,7 @@ interface Editing {
 }
 
 /** 草案：字段表原地展开编辑，保存之后校验。 */
-function DraftView(props: { readonly detail: Detail; readonly draft: DefinitionDraft; readonly canEdit: boolean; readonly onChanged: () => void }) {
+function DraftView(props: { readonly detail: Detail; readonly draft: DefinitionDraft; readonly field: string | undefined; readonly canEdit: boolean; readonly onChanged: () => void }) {
   const { detail, canEdit } = props, name = detail.name;
   const loaded = useLoad(async () => {
     const reply = await api.definitionDraft(name);
@@ -234,6 +239,11 @@ function DraftView(props: { readonly detail: Detail; readonly draft: DefinitionD
 
   const fields = current ? fieldsOf(current.document) : undefined;
   const baseFields = base.data ? fieldsOf(base.data.definition) : undefined;
+  // 地址里写了字段（设计页"打开绑定的字段"）：读到草案之后展开那一行。
+  useEffect(() => {
+    const read = loaded.data ? fieldsOf(loaded.data.document) ?? [] : [], index = read.findIndex((field) => field.name === props.field);
+    if (index >= 0) setEditing({ index, value: read[index]!, isNew: false });
+  }, [loaded.data, props.field]);
   const dirty = editing !== undefined && (editing.isNew ? canonical(editing.value) !== canonical(NEW_FIELD) : canonical(editing.value) !== canonical(fields?.[editing.index]));
 
   /** 把正在改的这一行写进草案：没有改动不写；新加的一行什么都没填就当没加。 */
