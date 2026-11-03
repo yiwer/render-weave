@@ -1,0 +1,489 @@
+{
+  "format": "rw-excel-plan/2",
+  "sourceHash": "2e2f34280ee057fc2b919d5b22de95b35319c535f27e8581a26b399796fa8362",
+  "definition": {
+    "name": "商品价签",
+    "version": 1
+  },
+  "datasets": [
+    {
+      "id": "0012345",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B2"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C2",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D2"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E2",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F2"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G2",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H2",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I2",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J2",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K2",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "id": "0088012",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B3"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C3",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D3"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E3",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F3"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G3",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H3",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I3",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J3",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K3",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "id": "0300417",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B4"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C4",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D4"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E4",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F4"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G4",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H4",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I4",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J4",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K4",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "id": "0201133",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B5"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C5",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D5"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E5",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F5"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G5",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H5",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I5",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J5",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K5",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "id": "0400025",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B6"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C6",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D6"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E6",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F6"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G6",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H6",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I6",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J6",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K6",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    },
+    {
+      "id": "0500311",
+      "value": {
+        "op": "object",
+        "fields": {
+          "productName": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "B7"
+          },
+          "spec": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "C7",
+            "omitIfEmpty": true
+          },
+          "unit": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "D7"
+          },
+          "origin": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "E7",
+            "omitIfEmpty": true
+          },
+          "itemNo": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "F7"
+          },
+          "retailPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "G7",
+            "as": "number"
+          },
+          "memberPrice": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "H7",
+            "as": "number",
+            "omitIfEmpty": true
+          },
+          "onSale": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "I7",
+            "as": "boolean",
+            "values": {
+              "是": true,
+              "否": false
+            },
+            "omitIfEmpty": true
+          },
+          "saleEnds": {
+            "op": "cell",
+            "sheet": "sheet-1",
+            "cell": "J7",
+            "as": "date",
+            "omitIfEmpty": true
+          },
+          "features": {
+            "op": "split",
+            "sheet": "sheet-1",
+            "cell": "K7",
+            "separators": [
+              "、",
+              ",",
+              "；"
+            ],
+            "omitIfEmpty": true
+          }
+        }
+      }
+    }
+  ],
+  "context": [
+    {
+      "sheet": "sheet-1",
+      "range": "A1:L1",
+      "reason": "表头：列名与字段显示名称对应，仅作分类依据，不作为业务字段"
+    },
+    {
+      "sheet": "sheet-1",
+      "range": "A2:A7",
+      "reason": "身份列：渲染项 ID，作为数据集 id 使用（保留前导零），不是业务字段"
+    },
+    {
+      "sheet": "sheet-1",
+      "range": "L2:L7",
+      "reason": "备注：目标 staticSchema 无对应字段，明确列为未映射的说明区域，待确认"
+    }
+  ]
+}

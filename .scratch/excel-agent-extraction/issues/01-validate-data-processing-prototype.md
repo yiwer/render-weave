@@ -21,6 +21,8 @@
 
 2026-11-03 完成原型验证。独立工作树 `F:/GenCode/render-weave-excel-prototype`，分支 `prototype/excel-agent-p01-p03`，基础提交 `1376daa7a422dbcefffa7ea4b03a9d8ef6e16cf2`。原型源码、夹具和证据在该分支的 `scripts/prototypes/excel-agent/`；结论见[机制报告](../../../docs/agent-eval/excel-data-prototype.md)。
 
+原型归档提交：`c9a32a902a84f535967c603e14a2b0583a54bb93`。暂存版本源码哈希与最终验收记录逐一相符；相关 Markdown 本地链接检查无失效项，`git diff --cached --check` 通过，密钥扫描 26 个文件命中 0。原型工作树提交后干净；主检出仅保留设计与结论，不合入原型运行代码。
+
 运行结果：
 
 - `python -X utf8 scripts/prototypes/excel-agent/accept.py --out out/excel-prototype/acceptance-final`：最终归档 `evidence/results.json` 为 **42/42 通过**，`realModelRun: false`、`productionReady: false`。

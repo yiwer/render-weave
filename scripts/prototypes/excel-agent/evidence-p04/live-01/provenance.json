@@ -1,0 +1,28 @@
+{
+  "sourceHashes": {
+    "scripts/prototypes/excel-agent/accept.py": "6b3471acb14c0489638d2c8e20fb7d8f71965319b509b5854b89c3a709555cbb",
+    "scripts/prototypes/excel-agent/checker.py": "e3fffd71a43bb8e5a41481d249e66b2e4c2e73396fcf024928def7e7bc35d0c3",
+    "scripts/prototypes/excel-agent/generic_check.py": "1e151569764494bd28e086d14c54cbf7dc4a4e71bd9de6ff4731af130caeb2d9",
+    "scripts/prototypes/excel-agent/prototype.py": "d27c8753599f7f1b1865dc096126b253a75225d62550d3687732121b3fe7a858",
+    "scripts/prototypes/excel-agent/sandbox.py": "4be791ec1c77223ab1fbb05d8098c1cb214cf631ae98946018a6f9a97b150fa2",
+    "scripts/prototypes/excel-agent/test_generic.py": "1393d998f5370e460ac49a855ca2953863128f570195a4516e9a499516851b2d",
+    "scripts/prototypes/excel-agent/transform.py": "6539be4a967a897b551db25603c6a31c8a0c57d6d091cb2cbf96bad74ae78e82",
+    "scripts/prototypes/excel-agent/workbook.py": "bc76227563b0fd500592123820e3d4d67b2c08ac8d01b02bcd75630eddda2d56",
+    "scripts/prototypes/excel-agent/agent-run.ts": "67ef4a7b8c4c0221e6a4633b3ad1aa876cdf0e37f18e0c2b7a655cb9adf73e18",
+    "scripts/prototypes/excel-agent/engine-check.ts": "203367b64fb8456ee33c97a540960ff86ff5a902e499ff045c8400318961f609",
+    "scripts/prototypes/excel-agent/CONTRACT.md": "d370827fa8455aeabfed1668e0f6231f51fac6b1b57f661b1364c7f427df0de5",
+    "src/agent/run.ts": "fa18be11b529833bc133d91a138edbc507143bb55e2d09c3dfa7a2487f3ce6bd",
+    "src/agent/anthropic-proxy.ts": "f2598e22b499f4f93fcd4b001b1ac20cd607cc657a30d15203de037629da9b61",
+    "src/mcp/server.ts": "b7d315d52416c59d2ea4ad8ff51df333cdefff4232e0aa7e872210f0a2227598",
+    "dist/agent/mcp-forward.js": "3fd13edd7a3b1b7862a5a826741dfdbd46d39c5385206946a9531a92e095a311",
+    "package-lock.json": "e11e43156266d31ab9a50e7063ca11a5d691c079166a202e55586f99c23ccb7d",
+    "fixtures/excel/price-tags.xlsx": "2e2f34280ee057fc2b919d5b22de95b35319c535f27e8581a26b399796fa8362",
+    "fixtures/excel/price-tags.json": "4cecb3c67416055b2ffedbf3b80d13152238878d36ab239b24ee7bbed5a24251"
+  },
+  "environment": {
+    "python": "Python 3.13.13",
+    "node": "v24.12.0",
+    "docker": "29.2.0"
+  },
+  "snapshotTiming": "执行完成后、源文件未变更时记录"
+}

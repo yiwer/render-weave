@@ -1,0 +1,22 @@
+{
+  "format": "rw-excel-generic-check/1",
+  "mechanical": "failed",
+  "semantic": "needsReview",
+  "applicable": false,
+  "issues": [
+    {
+      "code": "countMismatch",
+      "path": "/datasets/0/data/features",
+      "expected": 2,
+      "actual": 1
+    }
+  ],
+  "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+  "planHash": "4c27802d2c6af83017464d2c47a7eb3aec0ca5330ab4d394f90085830b25ac3f",
+  "candidateHash": "406d50a73ffa894627d19c81987ae47053f0bded4ef7aeb8ea4024fa25970c79",
+  "counts": {
+    "datasets": 6,
+    "sourceCells": 70,
+    "classifiedCells": 70
+  }
+}

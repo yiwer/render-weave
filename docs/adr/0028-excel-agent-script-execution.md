@@ -11,7 +11,7 @@ M359 要求把 `quick_print` 的 Excel 制作表能力接入 RenderWeave，用 C
 
 当前 Claude Code 数据集提取只开放 Read、Write、Edit、Glob 与领域工具（`src/agent/tasks.ts:34`），没有运行转换脚本的能力。ADR-0025 的本地文件边界不是操作系统沙箱；ADR-0027 也明确把开放式代码执行留给独立沙箱与新 ADR。
 
-本草案给出接入方向；后续已用本机 Docker 验证窄原型（M361），尚未完成真实模型闭环与托管隔离复核，不表示代码执行已获生产验收。
+本草案给出接入方向；后续已用本机 Docker 验证窄原型（M361），并在价签 staticSchema 上完成一次真实模型反馈重提测试（M362）；完整业务闭环与托管隔离复核仍待完成，不表示代码执行已获生产验收。
 
 ## 建议决定
 
@@ -44,3 +44,5 @@ M359 要求把 `quick_print` 的 Excel 制作表能力接入 RenderWeave，用 C
 完整处理流程、独立检查与人工修正规则见[流程设计](../excel-agent-workflow.md)（M360）；业务范围与验收见 [Excel Agent 规格](../../.scratch/excel-agent-extraction/spec.md)。
 
 2026-11-03 补充：P01–P03 [原型结论](../agent-eval/excel-data-prototype.md)支持继续做 P04，但未验证真实 Claude 修复、生产宿主崩溃恢复或多租户隔离；因此本文继续保持草案，不将容器配置视为最终生产边界。
+
+同日 P04 接续：用户要求将能力泛化到工作空间 staticSchema，已用非公交价签样本验证本地接入，见[真实测试报告](../agent-eval/excel-agent-p04.md)。此轮证明模型能使用独立反馈重交脚本，未证明自身复杂算法错误修复或生产隔离；草案状态与产品执行器决定保持不变。

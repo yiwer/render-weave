@@ -2,6 +2,8 @@
 
 2026-11-03，M361。P01–P03 的窄原型支持继续做 Claude 编排：固定单元格视图、隔离运行转换脚本、独立核对来源与完整候选这条路径可行。它尚未证明真实制作表的业务语义正确，也未接入产品。
 
+后续 P04 已按工作空间 staticSchema 泛化并进行一次真实模型测试，见[接续报告](excel-agent-p04.md)（M362）；下文保留 P01–P03 当时的观察与边界。
+
 验收状态、命令与提交记录以[票据 01](../../.scratch/excel-agent-extraction/issues/01-validate-data-processing-prototype.md)为准。代码和机器证据单独保留在分支 `prototype/excel-agent-p01-p03`，目录 `scripts/prototypes/excel-agent/`；主线仅保存设计和结论，不把验证脚本直接作为产品实现。
 
 ## 已取得的证据

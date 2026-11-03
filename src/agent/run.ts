@@ -734,7 +734,7 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 /** Claude Code 执行器：受限模式无头运行，只连受管 MCP，模型经本轮代理（ADR-0015、M232）。 */
-function claudeCodeExecutor(claude: NonNullable<AgentRunOptions['claude']>): RoundExecutor {
+export function claudeCodeExecutor(claude: NonNullable<AgentRunOptions['claude']>): RoundExecutor {
   return async (round) => {
     const mcpConfig = join(round.logsDir, 'mcp.json');
     await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: round.mcp.command, args: round.mcp.args } } }, null, 2)}\n`);

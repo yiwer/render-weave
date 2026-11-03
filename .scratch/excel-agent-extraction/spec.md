@@ -118,3 +118,5 @@ Category: enhancement
 已核查以上代码调用链、现有 Agent 工具白名单、Excel 导入边界、两边 git 身份与工作区状态。本次只改规格与决定记录，没有运行旧 Java 测试或真实模型，没有产出可上线功能。
 
 后续机制验证另见[票据 01](issues/01-validate-data-processing-prototype.md)与[原型结论](../../docs/agent-eval/excel-data-prototype.md)（M361）。下一步按 P04 接入真实 Claude Code + OpenCode Go 修复循环；取得实际制作表和人工核准结果后完成业务验证。真实样本不是机制开发的前置条件，原型证据也不等于整体规格或业务验收通过。
+
+2026-11-03 接续（M362）：用户明确泛用范围为工作空间中的 staticSchema。通用入口从选定的发布版本取字段与约束，输出任意对应结构的数据集；本规格中的公交规则仅界定旧模块替代场景。P04 的非公交真实模型测试见[票据 02](issues/02-connect-schema-driven-agent.md)与[报告](../../docs/agent-eval/excel-agent-p04.md)；后续按 P05 接审核、修正与应用，不将首个价签样本扩大为全部定义/工作簿验收。

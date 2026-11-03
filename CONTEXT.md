@@ -53,7 +53,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ### 未排期的后续
 
-- Excel 制作表经 CodingAgent 提取与批量出图（2026-11-03，M359–M361）：[数据处理流程设计](docs/excel-agent-workflow.md)与[机制原型结论](docs/agent-eval/excel-data-prototype.md)已有接续依据，验收记录见[票据 01](.scratch/excel-agent-extraction/issues/01-validate-data-processing-prototype.md)。下一步 P04 接入现有 Claude Code + OpenCode Go，运行真实模型修复循环，再用实际制作表校准业务判据；产品接入与业务验收仍待完成，不替代当前 P0/P1 收尾。[规格](.scratch/excel-agent-extraction/spec.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
+- Excel 经 CodingAgent 按工作空间 staticSchema 提取（2026-11-03，M359–M362）：通用字段映射与本地 Claude Code + OpenCode Go 接入见[首轮真实测试](docs/agent-eval/excel-agent-p04.md)，验收记录见[票据 02](.scratch/excel-agent-extraction/issues/02-connect-schema-driven-agent.md)。下一步 P05 接多候选审核、人工修正与应用，并补复杂定义和实际制作表验证；尚未接正式 Agent 命令或完成业务替代，不改变 P0/P1 收尾。[流程设计](docs/excel-agent-workflow.md)、[规格](.scratch/excel-agent-extraction/spec.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
 - 阶段 4 验收留下的后续（[第四阶段验收](docs/stage4-acceptance.md#后续)），其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - Agent 外围工具复核的票据 18（模板设计的主模板基准必须等于数据集选定的数据定义）、20（修正模板参考里的数据定义示例指向）是 `ready-for-agent`，做时另升 MCP 合同版本、另跑评估。
 - 控制台状态栏"进行中的批次"只数本标签页提交的；要租户范围，得加只读的批次列表端点（P1 票据 01 的偏差）。

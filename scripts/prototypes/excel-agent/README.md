@@ -1,5 +1,23 @@
 # Excel 数据处理验证原型
 
+## P04：工作空间 staticSchema 接入
+
+后续接入在分支 `prototype/excel-agent-p04`。新入口以 `--workspace` 中选定的已发布 `--definition name@version` 为依据，从该定义和编译产物读取字段、引用与约束；运行器与独立检查器不包含公交字段。旧 P01–P03 文件作为历史验证保留，新通用合同见 [CONTRACT.md](CONTRACT.md)。
+
+运行真实模型的一轮测试（先完成下文的依赖安装与 build，并在环境变量设置 `OPEN_CODE_API_KEY`）：
+
+```powershell
+node --import tsx scripts/prototypes/excel-agent/agent-run.ts --workspace fixtures/workspaces/price-tag --definition '商品价签@1' --workbook fixtures/excel/price-tags.xlsx --brief scripts/prototypes/excel-agent/fixtures/price-brief.md --out out/excel-agent-p04/new-run --claude '<claude.exe 的路径>' --inject-list-truncation
+```
+
+已有目录拒绝覆盖。日常转换去掉 `--inject-list-truncation`；它只用于测试宿主注入失败反馈。参数 `--timeout-ms` 控制整轮时间（缺省 10 分钟），`--python` 可指定 Python 可执行文件；模型、渠道和执行器复用现有 Claude Code + OpenCode Go 配置。脚本仅经容器执行，Agent 只有五个任务工具。
+
+本地机制检查：`python -X utf8 scripts/prototypes/excel-agent/test_generic.py`。`generic_check.py` 只负责通用来源核对；引擎逐份校验实际工作空间的 staticSchemas。动态选择字段不等于兼容所有工作簿格式、派生计算或资源字段；当前无资源仓库解析、跨表 join 运算和数据应用。
+
+实际模型记录与原始脚本在 [P04 归档](evidence-p04/README.md)，解释见仓库 `docs/agent-eval/excel-agent-p04.md`。这是本地任务接入入口，还未并入正式 `renderweave agent run` 命令的检查点、人工修订和应用流程。
+
+## P01–P03 历史原型
+
 本原型回答 P01–P03 的机制问题：能否固定 Excel 单元格视图，让 Python 脚本在受限环境全量转换，再由宿主独立发现漏项、错序和伪造来源。结论是该窄路径可行；真实 Claude 调用、业务语义审核和产品接入尚未实现。
 
 这是分支 `prototype/excel-agent-p01-p03` 上的验证代码，不是生产模块。原始记录见 [results.json](evidence/results.json)，可交互查看每项证据的 [report.html](evidence/report.html)。票据位于仓库 `.scratch/excel-agent-extraction/issues/01-validate-data-processing-prototype.md`。
@@ -69,6 +87,6 @@ flowchart LR
 
 容器配置依据：[Docker run](https://docs.docker.com/engine/containers/run/)、[资源约束](https://docs.docker.com/engine/containers/resource_constraints/)、[none 网络](https://docs.docker.com/engine/network/drivers/none/)。本地实测细节优先以归档证据为准。
 
-## 下一步
+## P01–P03 当时的下一步
 
 P04 沿用现有 Claude Code + OpenCode Go，让模型读取区域、提交映射和 Python 脚本，并根据独立错误反馈修复；保留所有尝试、模型身份与成本。先用本夹具固定机制，再用真实制作表及人工核准结果验证语义。此原型不修改现有 Agent 默认执行器或产品工具合同。

@@ -272,4 +272,4 @@ Agent 输出一份可查看的处理计划，不要求用户学习新的 DSL。�
 | `src/agent/review.ts:529`、`:673` | 已有审核后应用与提交回执 | 纳入映射、人工修正和完整候选身份，复用提交恢复机制 |
 | `docs/examples/m402-dsl/render-request-m402.json:4` | 示例以 `currentIndex` 表达当前站 | 逐站请求按具体模板的参数约定生成 |
 
-P01–P03 的机制验证见[原型报告](agent-eval/excel-data-prototype.md)，验收记录以[票据 01](../.scratch/excel-agent-extraction/issues/01-validate-data-processing-prototype.md)为准。下一步 P04 接入真实 Claude Code + OpenCode Go 修复循环，再以实际制作表校准映射和业务判据；原型不等于产品接入完成。
+P01–P03 的机制验证见[原型报告](agent-eval/excel-data-prototype.md)；P04 按用户补充要求，以工作空间的 staticSchema 作为通用边界（M362），对象、列表和字段路径均来自选定定义，公交内容只是示例。已完成的首轮真实测试见[报告](agent-eval/excel-agent-p04.md)，验收记录以[票据 02](../.scratch/excel-agent-extraction/issues/02-connect-schema-driven-agent.md)为准。下一步 P05 接多候选审核、人工修正和应用，并以复杂定义及实际制作表校准；本地入口不等于正式产品接入完成。

@@ -1,0 +1,165 @@
+{
+  "format": "rw-excel-agent-result/2",
+  "passed": true,
+  "realModelRun": true,
+  "productionReady": false,
+  "wallMs": 128666,
+  "execution": {
+    "exitCode": 0
+  },
+  "usage": {
+    "inputTokens": 14,
+    "outputTokens": 30508,
+    "thinkingTokens": 18015,
+    "cacheReadTokens": 128493,
+    "cacheCreationTokens": 49441,
+    "usageSource": "result",
+    "turns": 8,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "mcp": [
+      "rw:connected"
+    ]
+  },
+  "attempts": [
+    {
+      "id": "attempt-01",
+      "requestedScriptHash": "06da9a75342d6a9ffff71e8bf81f836a9b97a015895d8570263be645983e9f38",
+      "executedScriptHash": "d19a0ef8f1428826dc5688cd8a152c1b0cc8a8e63fda6d9b7f5cfd8cb97a3327",
+      "injected": true,
+      "status": "failed",
+      "execution": {
+        "status": "completed",
+        "wallMs": 1715,
+        "cleanupConfirmed": true,
+        "stderr": ""
+      },
+      "mechanical": {
+        "format": "rw-excel-generic-check/1",
+        "mechanical": "failed",
+        "semantic": "needsReview",
+        "applicable": false,
+        "issues": [
+          {
+            "code": "countMismatch",
+            "path": "/datasets/0/data/features",
+            "expected": 2,
+            "actual": 1
+          }
+        ],
+        "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+        "planHash": "4c27802d2c6af83017464d2c47a7eb3aec0ca5330ab4d394f90085830b25ac3f",
+        "candidateHash": "406d50a73ffa894627d19c81987ae47053f0bded4ef7aeb8ea4024fa25970c79",
+        "counts": {
+          "datasets": 6,
+          "sourceCells": 70,
+          "classifiedCells": 70
+        }
+      },
+      "engine": {
+        "passed": true,
+        "identities": true,
+        "results": [
+          {
+            "id": "0012345",
+            "problems": []
+          },
+          {
+            "id": "0088012",
+            "problems": []
+          },
+          {
+            "id": "0300417",
+            "problems": []
+          },
+          {
+            "id": "0201133",
+            "problems": []
+          },
+          {
+            "id": "0400025",
+            "problems": []
+          },
+          {
+            "id": "0500311",
+            "problems": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "attempt-02",
+      "requestedScriptHash": "06da9a75342d6a9ffff71e8bf81f836a9b97a015895d8570263be645983e9f38",
+      "executedScriptHash": "06da9a75342d6a9ffff71e8bf81f836a9b97a015895d8570263be645983e9f38",
+      "injected": false,
+      "status": "passed",
+      "execution": {
+        "status": "completed",
+        "wallMs": 1660,
+        "cleanupConfirmed": true,
+        "stderr": ""
+      },
+      "mechanical": {
+        "format": "rw-excel-generic-check/1",
+        "mechanical": "passed",
+        "semantic": "needsReview",
+        "applicable": false,
+        "issues": [],
+        "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+        "planHash": "4c27802d2c6af83017464d2c47a7eb3aec0ca5330ab4d394f90085830b25ac3f",
+        "candidateHash": "514bb4170e7c0a6284fd5bd4352e7e0b5865db20903d491a4c8723abee44bc37",
+        "counts": {
+          "datasets": 6,
+          "sourceCells": 70,
+          "classifiedCells": 70
+        }
+      },
+      "engine": {
+        "passed": true,
+        "identities": true,
+        "results": [
+          {
+            "id": "0012345",
+            "problems": []
+          },
+          {
+            "id": "0088012",
+            "problems": []
+          },
+          {
+            "id": "0300417",
+            "problems": []
+          },
+          {
+            "id": "0201133",
+            "problems": []
+          },
+          {
+            "id": "0400025",
+            "problems": []
+          },
+          {
+            "id": "0500311",
+            "problems": []
+          }
+        ]
+      }
+    }
+  ],
+  "submission": {
+    "attemptId": "attempt-02",
+    "notes": "商品价签@1 候选已通过机械与引擎检查（attempt-02）：6 个数据集（渲染项 ID 0012345、0088012、0300417、0201133、0400025、0500311，保留前导零），来源 70 个单元格全部归类。未应用、未发布、未出图。\n\nattempt-01 失败的原因是测试宿主注入的列表截断缺陷（截断首个非空列表，实际执行脚本末尾可见），不是映射错误；attempt-02 使用相同的计划与脚本，未注入。该通过结论仅针对本次机械与引擎检查，语义仍需审核。\n\n映射选择：\n- 数据集逐行写为 6 条计划项（plan.datasets），每条用字面单元格引用读取固定视图；未使用 rows 遍历，因为计划根节点必须是对象，且 datasets 是静态列表。脚本按计划解释执行，未手工写入候选值。\n- 可选空值省略：spec（C4、C7）、origin（E6）、memberPrice（H4、H6、H7 以外的空值）、onSale（I4）、saleEnds（J3–J5）、features（K5、K6）。\n- 促销：原生布尔与“是/否”文本均映射为 true/false。\n- 促销截止：J2、J6、J7 为 yyyy/m/d 整数日期序列，按序列转换为 ISO；display 显示为 unsupported，因此采用序列值转换，需要人工核对。\n- 卖点：按“、”、英文逗号、中文分号分隔，保持顺序与重复值。\n- 分类：A 列为身份列（数据集 id）；第 1 行为表头；L 列为备注。",
+    "pending": [
+      "备注列 L2:L7（“新品”“散装”“进口”）目标 staticSchema 无对应字段，已列为未映射说明区域；请确认是否忽略、补充字段或另行处理。",
+      "促销截止 J2、J6、J7 显示格式为 yyyy/m/d 且 display 不可用，已按日期序列转换为 ISO 日期；请人工核对这三个日期。",
+      "字段业务含义与单位需审核：unit 取值（个/瓶/袋/盒/千克）与源 D 列一致，但货号、价格单位与规格文本含义由人工确认。",
+      "会员价为空（H4、H6、H7 之外空值）按规则省略，未推断默认值；请确认业务上是否允许缺失。",
+      "数据集逐行写为 6 条字面计划项，未使用 rows 遍历；如需通用遍历，应由计划合同扩展支持。",
+      "转换结果未应用、未发布、未出图，需审核后再进入后续流程。"
+    ],
+    "semantic": "needsReview",
+    "applicable": false
+  },
+  "actualCharge": "unknown; OpenCode Go 套餐，不以 Claude 显示标价推算扣费"
+}
