@@ -63,6 +63,20 @@ export function describeDefinitions(name: string, makeBackend: () => Promise<Ser
       expect(fresh.draft).not.toHaveProperty('baseVersion');
       expect(stop).not.toHaveProperty('draft');
       expect(sign.draft).toMatchObject({ name: '线路牌', baseVersion: 1, sha256: draft.body.sha256 });
+      // 卡片要的数（M360）：草案的显示名称与字段数；静态版本的字段数与引用深度，线路牌引用了停靠站点。
+      const schemas = (await world.call('GET', '/v1/static-schemas', target.admin.token)).body.staticSchemas as { name: string; displayName: string; fieldCount: number; referenceDepth: number }[];
+      const [stops, line] = [schemas.find((schema) => schema.name === '停靠站点')!, schemas.find((schema) => schema.name === '线路牌')!];
+      expect(fresh.draft).toMatchObject({ displayName: '新结构显示名', fieldCount: 0 });
+      expect(sign.draft).toMatchObject({ displayName: line.displayName, fieldCount: line.fieldCount });
+      expect([stops.referenceDepth, line.referenceDepth]).toEqual([0, 1]);
+      expect(stops.fieldCount).toBeGreaterThan(0);
+      expect(line.fieldCount).toBe(JSON.parse((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft`, target.admin.token)).body.content).fields.length);
+      // 还没写成字段列表的草案也能列，只是没有字段数。
+      const unfinished = await world.call('PUT', `/v1/definitions/${encodeURIComponent('新结构')}/draft?expectedSha256=${fresh.draft.sha256}`, target.admin.token, JSON.stringify({ name: '新结构', displayName: '没写完', fields: '还没想好' }), { 'content-type': 'application/json' });
+      expect(unfinished.status, unfinished.raw.slice(0, 300)).toBe(200);
+      const relisted = (await list()).find((item) => item.name === '新结构');
+      expect(relisted.draft).toMatchObject({ displayName: '没写完' });
+      expect(relisted.draft).not.toHaveProperty('fieldCount');
     });
 
     it('从静态版本另起：复制原文、去掉版本号；空白新建可以用新名称；同名已有草案、已有静态版本、没有这一版、名称不合规都拒绝', async () => {
