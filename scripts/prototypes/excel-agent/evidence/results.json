@@ -1,0 +1,473 @@
+{
+  "format": "rw-excel-prototype-acceptance/1",
+  "passed": 42,
+  "total": 42,
+  "realModelRun": false,
+  "productionReady": false,
+  "sourceSha256": "f8c3376c6a0de096491a967a0e122f5ca82af3f7fd83e5ee8793984e02eec152",
+  "image": "python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "imageId": "sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "cases": [
+    {
+      "name": "双方向不同列组合并范围",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "时间原值及显示值并存",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "完整站名重复值与编码前导零",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "公式缓存不冒充最新值",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "区域分页完整且空格未压缩",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "隐藏工作表与行仍被盘点",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "缺失公式缓存明确标记",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "未支持格式不猜显示文本",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "xml-dtd 被拒绝",
+      "passed": true,
+      "evidence": {
+        "error": "原型拒绝执行：XML 含 DTD 或实体声明\n"
+      }
+    },
+    {
+      "name": "utf16-dtd 被拒绝",
+      "passed": true,
+      "evidence": {
+        "error": "原型拒绝执行：XML 含 DTD 或实体声明\n"
+      }
+    },
+    {
+      "name": "utf16be-dtd 被拒绝",
+      "passed": true,
+      "evidence": {
+        "error": "原型拒绝执行：XML 含 DTD 或实体声明\n"
+      }
+    },
+    {
+      "name": "zip-traversal 被拒绝",
+      "passed": true,
+      "evidence": {
+        "error": "原型拒绝执行：ZIP 路径不合法\n"
+      }
+    },
+    {
+      "name": "zip-budget 被拒绝",
+      "passed": true,
+      "evidence": {
+        "error": "原型拒绝执行：加密或单部件过大\n"
+      }
+    },
+    {
+      "name": "容器完成转换并回收",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "实际容器配置符合限制",
+      "passed": true,
+      "evidence": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "Memory": 134217728,
+        "MemorySwap": 134217728,
+        "NanoCpus": 500000000,
+        "PidsLimit": 16,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges"
+        ],
+        "Binds": null,
+        "Tmpfs": {
+          "/tmp": "rw,noexec,nosuid,nodev,size=4m,mode=1777",
+          "/work": "rw,noexec,nosuid,nodev,size=16m,mode=1777"
+        }
+      }
+    },
+    {
+      "name": "两份候选逐值符合独立真值",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "机械通过不冒充语义通过或可应用",
+      "passed": true,
+      "evidence": {
+        "format": "rw-excel-check-prototype/1",
+        "mechanical": "passed",
+        "semantic": "needsReview",
+        "engineSchema": "notChecked",
+        "applicable": false,
+        "viewHash": "7b03a9c82c4b04396d1e8d868d675f84747560f57eba1c1bd37e9e959c32af9c",
+        "planHash": "97b87aa1d4021276afc61ad0d2f46e0392f5e7a04d5e311becdaa8f361eb4865",
+        "candidateHash": "5183eae878112482c5ca93cd8d4b15aed57f2cb35915ebb2f432d6f412e59127",
+        "counts": {
+          "datasets": 2,
+          "sourceCells": 39,
+          "classifiedCells": 39
+        },
+        "issues": [],
+        "reviewRequired": [
+          "业务区块与字段含义",
+          "排除区域及理由",
+          "目标数据定义的引擎校验"
+        ]
+      }
+    },
+    {
+      "name": "现有引擎公开入口逐份校验通过",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "第二份候选的非法时刻被引擎拒绝",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "同输入脚本离线重放字节相同",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "missing-time 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "countMismatch",
+          "path": "datasets[1].data.stops[1].weekdayTimes",
+          "expected": 2,
+          "actual": 1
+        }
+      ]
+    },
+    {
+      "name": "dedup-time 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "countMismatch",
+          "path": "datasets[1].data.stops[1].fridayTimes",
+          "expected": 2,
+          "actual": 1
+        }
+      ]
+    },
+    {
+      "name": "missing-stop 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "countMismatch",
+          "path": "datasets[1].data.stops",
+          "expected": 2,
+          "actual": 1
+        }
+      ]
+    },
+    {
+      "name": "wrong-order 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[1].code",
+          "expected": "00007",
+          "actual": "00008"
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[1].fridayTimes[1]",
+          "expected": "07:00",
+          "actual": "08:20"
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[1].fridayTimes[2]",
+          "expected": "07:00",
+          "actual": "08:30"
+        },
+        {
+          "code": "countMismatch",
+          "path": "datasets[1].data.stops[1].weekdayTimes",
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[1].weekdayTimes[1]",
+          "expected": "06:40",
+          "actual": "08:00"
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[2].code",
+          "expected": "00008",
+          "actual": "00007"
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[2].fridayTimes[1]",
+          "expected": "08:20",
+          "actual": "07:00"
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[2].fridayTimes[2]",
+          "expected": "08:30",
+          "actual": "07:00"
+        },
+        {
+          "code": "countMismatch",
+          "path": "datasets[1].data.stops[2].weekdayTimes",
+          "expected": 1,
+          "actual": 2
+        },
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[2].weekdayTimes[1]",
+          "expected": "08:00",
+          "actual": "06:40"
+        }
+      ]
+    },
+    {
+      "name": "second-dataset-wrong 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "valueMismatch",
+          "path": "datasets[2].data.direction",
+          "expected": "下行",
+          "actual": "上行"
+        }
+      ]
+    },
+    {
+      "name": "missing-dataset 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "countMismatch",
+          "path": "datasets",
+          "expected": 2,
+          "actual": 1
+        }
+      ]
+    },
+    {
+      "name": "forged-source 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "sourceMissingOrWrong",
+          "expected": {
+            "cells": [
+              "A2"
+            ],
+            "datasetId": "route-1",
+            "path": "direction",
+            "rule": "copy",
+            "sheet": "sheet-1"
+          }
+        },
+        {
+          "code": "sourceExtraOrWrong",
+          "actual": {
+            "cells": [
+              "Z999"
+            ],
+            "datasetId": "route-1",
+            "path": "direction",
+            "rule": "copy",
+            "sheet": "sheet-1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "extra-source 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "sourceExtraOrWrong",
+          "actual": {
+            "cells": [
+              "A2"
+            ],
+            "datasetId": "route-1",
+            "path": "direction",
+            "rule": "copy",
+            "sheet": "sheet-1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "lost-suffix 被独立检查发现",
+      "passed": true,
+      "evidence": [
+        {
+          "code": "valueMismatch",
+          "path": "datasets[1].data.stops[1].name",
+          "expected": "田贝②",
+          "actual": "田贝"
+        }
+      ]
+    },
+    {
+      "name": "未映射工作表不会静默忽略",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "重复消费同一记录区块被发现",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "视图字节改动使旧身份失效",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "可复现脚本缺陷及修复前后差异",
+      "passed": true,
+      "evidence": {
+        "before": "failed",
+        "after": "passed"
+      }
+    },
+    {
+      "name": "无宿主密钥及套接字、非root、只读根、断网",
+      "passed": true,
+      "evidence": {
+        "noHostSecret": true,
+        "noDockerSocket": true,
+        "nonRoot": true,
+        "rootReadonly": true,
+        "networkBlocked": true
+      }
+    },
+    {
+      "name": "timeout 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "timeout",
+        "wallMs": 3159,
+        "cleanupConfirmed": true,
+        "exitCode": null
+      }
+    },
+    {
+      "name": "huge-output 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "outputLimit",
+        "wallMs": 2210,
+        "cleanupConfirmed": true,
+        "exitCode": null
+      }
+    },
+    {
+      "name": "partial-output 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "failed",
+        "wallMs": 1000,
+        "cleanupConfirmed": true,
+        "exitCode": 2
+      }
+    },
+    {
+      "name": "symlink-output 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "failed",
+        "wallMs": 801,
+        "cleanupConfirmed": true,
+        "exitCode": 1
+      }
+    },
+    {
+      "name": "invalid-json 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "invalidOutput",
+        "wallMs": 1749,
+        "cleanupConfirmed": true,
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "memory-budget 停止并回收",
+      "passed": true,
+      "evidence": {
+        "status": "failed",
+        "wallMs": 1809,
+        "cleanupConfirmed": true,
+        "exitCode": 2
+      }
+    },
+    {
+      "name": "进程数限制实际触发",
+      "passed": true,
+      "evidence": {
+        "blocked": true,
+        "started": 14
+      }
+    },
+    {
+      "name": "运行中取消并回收",
+      "passed": true,
+      "evidence": {
+        "status": "cancelled",
+        "cleanupConfirmed": true,
+        "wallMs": 1646
+      }
+    }
+  ],
+  "codeHashes": {
+    "accept.py": "6b3471acb14c0489638d2c8e20fb7d8f71965319b509b5854b89c3a709555cbb",
+    "checker.py": "e3fffd71a43bb8e5a41481d249e66b2e4c2e73396fcf024928def7e7bc35d0c3",
+    "engine-check.ts": "203367b64fb8456ee33c97a540960ff86ff5a902e499ff045c8400318961f609",
+    "prototype.py": "d27c8753599f7f1b1865dc096126b253a75225d62550d3687732121b3fe7a858",
+    "sandbox.py": "4be791ec1c77223ab1fbb05d8098c1cb214cf631ae98946018a6f9a97b150fa2",
+    "transform.py": "6539be4a967a897b551db25603c6a31c8a0c57d6d091cb2cbf96bad74ae78e82",
+    "workbook.py": "bc76227563b0fd500592123820e3d4d67b2c08ac8d01b02bcd75630eddda2d56"
+  },
+  "environment": {
+    "python": "3.13.13",
+    "node": "v24.12.0",
+    "dockerServer": "29.2.0",
+    "engineBasis": "1376daa7a422dbcefffa7ea4b03a9d8ef6e16cf2",
+    "packageLockHash": "e11e43156266d31ab9a50e7063ca11a5d691c079166a202e55586f99c23ccb7d"
+  }
+}

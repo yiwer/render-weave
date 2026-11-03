@@ -1,0 +1,90 @@
+{
+  "format": "rw-excel-engine-prototype/1",
+  "passed": true,
+  "results": [
+    {
+      "dataset": {
+        "dataset": {
+          "id": "route-1",
+          "staticSchema": {
+            "name": "prototype-route",
+            "version": 1
+          }
+        },
+        "data": {
+          "direction": "上行",
+          "lineName": "示例线路",
+          "stops": [
+            {
+              "code": "00007",
+              "fridayTimes": [
+                "07:00",
+                "07:00"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "06:40",
+                "06:50"
+              ]
+            },
+            {
+              "code": "00008",
+              "fridayTimes": [
+                "08:20",
+                "08:30"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "08:00"
+              ]
+            }
+          ]
+        }
+      },
+      "problems": []
+    },
+    {
+      "dataset": {
+        "dataset": {
+          "id": "route-2",
+          "staticSchema": {
+            "name": "prototype-route",
+            "version": 1
+          }
+        },
+        "data": {
+          "direction": "下行",
+          "lineName": "示例线路",
+          "stops": [
+            {
+              "code": "00007",
+              "fridayTimes": [
+                "07:00",
+                "07:00"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "06:40",
+                "06:50",
+                "06:55"
+              ]
+            },
+            {
+              "code": "00008",
+              "fridayTimes": [
+                "08:20",
+                "08:30"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "08:00",
+                "08:10"
+              ]
+            }
+          ]
+        }
+      },
+      "problems": []
+    }
+  ]
+}

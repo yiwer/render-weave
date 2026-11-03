@@ -1,0 +1,477 @@
+{
+  "format": "rw-excel-view-prototype/1",
+  "source": {
+    "sha256": "f8c3376c6a0de096491a967a0e122f5ca82af3f7fd83e5ee8793984e02eec152",
+    "bytes": 5260
+  },
+  "reader": "bounded-ooxml-prototype/1",
+  "date1904": false,
+  "sheets": [
+    {
+      "id": "sheet-1",
+      "name": "上行",
+      "state": "visible",
+      "dimension": null,
+      "merges": [
+        "C4:D4",
+        "E4:F4"
+      ],
+      "cells": [
+        {
+          "address": "A1",
+          "kind": "text",
+          "raw": "示例线路",
+          "value": "示例线路",
+          "numberFormat": "General",
+          "display": "示例线路",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A2",
+          "kind": "text",
+          "raw": "上行",
+          "value": "上行",
+          "numberFormat": "General",
+          "display": "上行",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B4",
+          "kind": "text",
+          "raw": "站名",
+          "value": "站名",
+          "numberFormat": "General",
+          "display": "站名",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C4",
+          "kind": "text",
+          "raw": "周一至周四",
+          "value": "周一至周四",
+          "numberFormat": "General",
+          "display": "周一至周四",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "General",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "E4",
+          "kind": "text",
+          "raw": "周五",
+          "value": "周五",
+          "numberFormat": "General",
+          "display": "周五",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "General",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "G4",
+          "kind": "text",
+          "raw": "站点编码",
+          "value": "站点编码",
+          "numberFormat": "General",
+          "display": "站点编码",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B5",
+          "kind": "text",
+          "raw": "田贝②",
+          "value": "田贝②",
+          "numberFormat": "General",
+          "display": "田贝②",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C5",
+          "kind": "number",
+          "raw": "0.2777777777777778",
+          "value": 0.2777777777777778,
+          "numberFormat": "hh:mm",
+          "display": "06:40",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D5",
+          "kind": "number",
+          "raw": "0.2847222222222222",
+          "value": 0.2847222222222222,
+          "numberFormat": "hh:mm",
+          "display": "06:50",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E5",
+          "kind": "number",
+          "raw": "0.2916666666666667",
+          "value": 0.2916666666666667,
+          "numberFormat": "hh:mm",
+          "display": "07:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F5",
+          "kind": "number",
+          "raw": "0.2916666666666667",
+          "value": 0.2916666666666667,
+          "numberFormat": "hh:mm",
+          "display": "07:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G5",
+          "kind": "text",
+          "raw": "00007",
+          "value": "00007",
+          "numberFormat": "General",
+          "display": "00007",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B6",
+          "kind": "text",
+          "raw": "田贝②",
+          "value": "田贝②",
+          "numberFormat": "General",
+          "display": "田贝②",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C6",
+          "kind": "number",
+          "raw": "0.3333333333333333",
+          "value": 0.3333333333333333,
+          "numberFormat": "hh:mm",
+          "display": "08:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D6",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "hh:mm",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "E6",
+          "kind": "number",
+          "raw": "0.3472222222222222",
+          "value": 0.3472222222222222,
+          "numberFormat": "hh:mm",
+          "display": "08:20",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F6",
+          "kind": "number",
+          "raw": "0.3541666666666667",
+          "value": 0.3541666666666667,
+          "numberFormat": "hh:mm",
+          "display": "08:30",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G6",
+          "kind": "text",
+          "raw": "00008",
+          "value": "00008",
+          "numberFormat": "General",
+          "display": "00008",
+          "displayStatus": "known"
+        }
+      ],
+      "hiddenRows": [],
+      "hiddenColumns": []
+    },
+    {
+      "id": "sheet-2",
+      "name": "下行",
+      "state": "visible",
+      "dimension": null,
+      "merges": [
+        "C4:E4",
+        "F4:G4"
+      ],
+      "cells": [
+        {
+          "address": "A1",
+          "kind": "text",
+          "raw": "示例线路",
+          "value": "示例线路",
+          "numberFormat": "General",
+          "display": "示例线路",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A2",
+          "kind": "text",
+          "raw": "下行",
+          "value": "下行",
+          "numberFormat": "General",
+          "display": "下行",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B4",
+          "kind": "text",
+          "raw": "站名",
+          "value": "站名",
+          "numberFormat": "General",
+          "display": "站名",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C4",
+          "kind": "text",
+          "raw": "周一至周四",
+          "value": "周一至周四",
+          "numberFormat": "General",
+          "display": "周一至周四",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "General",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "E4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "General",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "F4",
+          "kind": "text",
+          "raw": "周五",
+          "value": "周五",
+          "numberFormat": "General",
+          "display": "周五",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "General",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "H4",
+          "kind": "text",
+          "raw": "站点编码",
+          "value": "站点编码",
+          "numberFormat": "General",
+          "display": "站点编码",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B5",
+          "kind": "text",
+          "raw": "田贝②",
+          "value": "田贝②",
+          "numberFormat": "General",
+          "display": "田贝②",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C5",
+          "kind": "number",
+          "raw": "0.2777777777777778",
+          "value": 0.2777777777777778,
+          "numberFormat": "hh:mm",
+          "display": "06:40",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D5",
+          "kind": "number",
+          "raw": "0.2847222222222222",
+          "value": 0.2847222222222222,
+          "numberFormat": "hh:mm",
+          "display": "06:50",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E5",
+          "kind": "number",
+          "raw": "0.2881944444444444",
+          "value": 0.2881944444444444,
+          "numberFormat": "hh:mm",
+          "display": "06:55",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F5",
+          "kind": "number",
+          "raw": "0.2916666666666667",
+          "value": 0.2916666666666667,
+          "numberFormat": "hh:mm",
+          "display": "07:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G5",
+          "kind": "number",
+          "raw": "0.2916666666666667",
+          "value": 0.2916666666666667,
+          "numberFormat": "hh:mm",
+          "display": "07:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "H5",
+          "kind": "text",
+          "raw": "00007",
+          "value": "00007",
+          "numberFormat": "General",
+          "display": "00007",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B6",
+          "kind": "text",
+          "raw": "田贝②",
+          "value": "田贝②",
+          "numberFormat": "General",
+          "display": "田贝②",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C6",
+          "kind": "number",
+          "raw": "0.3333333333333333",
+          "value": 0.3333333333333333,
+          "numberFormat": "hh:mm",
+          "display": "08:00",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D6",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "hh:mm",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "E6",
+          "kind": "number",
+          "raw": "0.3402777777777778",
+          "value": 0.3402777777777778,
+          "numberFormat": "hh:mm",
+          "display": "08:10",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F6",
+          "kind": "number",
+          "raw": "0.3472222222222222",
+          "value": 0.3472222222222222,
+          "numberFormat": "hh:mm",
+          "display": "08:20",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G6",
+          "kind": "number",
+          "raw": "0.3541666666666667",
+          "value": 0.3541666666666667,
+          "numberFormat": "hh:mm",
+          "display": "08:30",
+          "displayStatus": "known"
+        },
+        {
+          "address": "H6",
+          "kind": "text",
+          "raw": "00008",
+          "value": "00008",
+          "numberFormat": "General",
+          "display": "00008",
+          "displayStatus": "known"
+        }
+      ],
+      "hiddenRows": [],
+      "hiddenColumns": []
+    },
+    {
+      "id": "sheet-3",
+      "name": "说明",
+      "state": "visible",
+      "dimension": null,
+      "merges": [],
+      "cells": [
+        {
+          "address": "A1",
+          "kind": "text",
+          "raw": "验证样例，非客户数据",
+          "value": "验证样例，非客户数据",
+          "numberFormat": "General",
+          "display": "验证样例，非客户数据",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A2",
+          "kind": "text",
+          "raw": "公式缓存单独验证",
+          "value": "公式缓存单独验证",
+          "numberFormat": "General",
+          "display": "公式缓存单独验证",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B2",
+          "kind": "number",
+          "raw": "3",
+          "value": 3,
+          "numberFormat": "General",
+          "display": "3",
+          "displayStatus": "valueOnly",
+          "formula": {
+            "text": "1+2",
+            "attributes": {},
+            "cache": "presentUnverified"
+          }
+        }
+      ],
+      "hiddenRows": [],
+      "hiddenColumns": []
+    }
+  ],
+  "issues": [
+    {
+      "code": "formulaUnverified",
+      "sheet": "说明",
+      "cell": "B2"
+    }
+  ],
+  "viewHash": "7b03a9c82c4b04396d1e8d868d675f84747560f57eba1c1bd37e9e959c32af9c"
+}

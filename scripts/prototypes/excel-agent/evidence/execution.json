@@ -1,0 +1,309 @@
+{
+  "format": "rw-excel-execution-prototype/1",
+  "status": "completed",
+  "cleanupConfirmed": true,
+  "container": "rw-excel-proto-db9cc10fa1ec41688e6162d691eca7b5",
+  "imageId": "sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "image": "python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "scriptHash": "6539be4a967a897b551db25603c6a31c8a0c57d6d091cb2cbf96bad74ae78e82",
+  "inputHash": "bd108e44683d2675f2abde570df1b85b29e6f9d1f94cabcbe05dc0c820076c29",
+  "outputHash": "20bd65ffbd8aa9dd4693e71c40bc6a567798d7e39bf591ba048138ca0f398777",
+  "wallMs": 1338,
+  "exitCode": 0,
+  "limits": {
+    "timeoutSeconds": 10,
+    "outputBytes": 1048576
+  },
+  "isolation": {
+    "NetworkMode": "none",
+    "ReadonlyRootfs": true,
+    "Memory": 134217728,
+    "MemorySwap": 134217728,
+    "NanoCpus": 500000000,
+    "PidsLimit": 16,
+    "CapDrop": [
+      "ALL"
+    ],
+    "SecurityOpt": [
+      "no-new-privileges"
+    ],
+    "Binds": null,
+    "Tmpfs": {
+      "/tmp": "rw,noexec,nosuid,nodev,size=4m,mode=1777",
+      "/work": "rw,noexec,nosuid,nodev,size=16m,mode=1777"
+    }
+  },
+  "stderr": "",
+  "candidate": {
+    "datasets": [
+      {
+        "dataset": {
+          "id": "route-1",
+          "staticSchema": {
+            "name": "prototype-route",
+            "version": 1
+          }
+        },
+        "data": {
+          "direction": "上行",
+          "lineName": "示例线路",
+          "stops": [
+            {
+              "code": "00007",
+              "fridayTimes": [
+                "07:00",
+                "07:00"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "06:40",
+                "06:50"
+              ]
+            },
+            {
+              "code": "00008",
+              "fridayTimes": [
+                "08:20",
+                "08:30"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "08:00"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "dataset": {
+          "id": "route-2",
+          "staticSchema": {
+            "name": "prototype-route",
+            "version": 1
+          }
+        },
+        "data": {
+          "direction": "下行",
+          "lineName": "示例线路",
+          "stops": [
+            {
+              "code": "00007",
+              "fridayTimes": [
+                "07:00",
+                "07:00"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "06:40",
+                "06:50",
+                "06:55"
+              ]
+            },
+            {
+              "code": "00008",
+              "fridayTimes": [
+                "08:20",
+                "08:30"
+              ],
+              "name": "田贝②",
+              "weekdayTimes": [
+                "08:00",
+                "08:10"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "sources": [
+      {
+        "datasetId": "route-1",
+        "path": "direction",
+        "sheet": "sheet-1",
+        "cells": [
+          "A2"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "lineName",
+        "sheet": "sheet-1",
+        "cells": [
+          "A1"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[1].code",
+        "sheet": "sheet-1",
+        "cells": [
+          "G5"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[1].fridayTimes",
+        "sheet": "sheet-1",
+        "cells": [
+          "E5",
+          "F5"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[1].name",
+        "sheet": "sheet-1",
+        "cells": [
+          "B5"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[1].weekdayTimes",
+        "sheet": "sheet-1",
+        "cells": [
+          "C5",
+          "D5"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[2].code",
+        "sheet": "sheet-1",
+        "cells": [
+          "G6"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[2].fridayTimes",
+        "sheet": "sheet-1",
+        "cells": [
+          "E6",
+          "F6"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[2].name",
+        "sheet": "sheet-1",
+        "cells": [
+          "B6"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-1",
+        "path": "stops[2].weekdayTimes",
+        "sheet": "sheet-1",
+        "cells": [
+          "C6"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "direction",
+        "sheet": "sheet-2",
+        "cells": [
+          "A2"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "lineName",
+        "sheet": "sheet-2",
+        "cells": [
+          "A1"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[1].code",
+        "sheet": "sheet-2",
+        "cells": [
+          "H5"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[1].fridayTimes",
+        "sheet": "sheet-2",
+        "cells": [
+          "F5",
+          "G5"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[1].name",
+        "sheet": "sheet-2",
+        "cells": [
+          "B5"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[1].weekdayTimes",
+        "sheet": "sheet-2",
+        "cells": [
+          "C5",
+          "D5",
+          "E5"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[2].code",
+        "sheet": "sheet-2",
+        "cells": [
+          "H6"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[2].fridayTimes",
+        "sheet": "sheet-2",
+        "cells": [
+          "F6",
+          "G6"
+        ],
+        "rule": "collect"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[2].name",
+        "sheet": "sheet-2",
+        "cells": [
+          "B6"
+        ],
+        "rule": "copy"
+      },
+      {
+        "datasetId": "route-2",
+        "path": "stops[2].weekdayTimes",
+        "sheet": "sheet-2",
+        "cells": [
+          "C6",
+          "E6"
+        ],
+        "rule": "collect"
+      }
+    ]
+  }
+}
