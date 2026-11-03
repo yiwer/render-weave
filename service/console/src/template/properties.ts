@@ -106,7 +106,7 @@ const ENUM_LABELS: Readonly<Record<string, string>> = {
   start: '开头', center: '居中', end: '末尾', distribute: '分散', spaceEvenly: '均分', spaceBetween: '两端', top: '上', bottom: '下',
   horizontal: '横排', vertical: '竖排', row: '横向', column: '纵向', hug: '随内容', fill: '撑满', equal: '等分', content: '随内容',
   contain: '完整显示', cover: '铺满裁切', 'fit:fill': '拉伸', severe: '严重', hint: '提示', public: '对外', internal: '内部',
-  text: '文字', number: '数字', date: '日期', time: '时刻', datetime: '日期时刻', boolean: '是否', image: '图片', color: '颜色',
+  text: '文本', number: '数值', date: '日期', time: '时刻', datetime: '时间', boolean: '布尔', image: '图片', color: '颜色',
   butt: '平头', round: '圆头', square: '方头', nonzero: '非零', evenodd: '奇偶', current: '当前数据', none: '不传数据',
   free: '自由', stack: '堆叠', grid: '网格', index: '序号', isFirst: '是第一项', isLast: '是最后一项', count: '总项数', groupSize: '合并的项数', groupsize: '合并的项数',
   true: '是', false: '否',

@@ -98,9 +98,12 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         'SELECT current_revision FROM templates WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
       if (expectedCurrent !== undefined && previous!.current_revision !== expectedCurrent) return { moved: previous!.current_revision };
       await approveRequest(client, tenantId, approving);
-      await client.query(`UPDATE templates SET current_revision = $3, current_source = $4, current_action = 'setCurrent', current_by = $5, current_at = $6
-        WHERE tenant_id = $1 AND name = $2`, [tenantId, name, revision, source, by, now]);
-      await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
+      // 指向当前修订什么也不变，来历也不变：不能靠这一步把网页改动变成"代建工程师自己指回的"（M359）。
+      if (revision !== previous!.current_revision) {
+        await client.query(`UPDATE templates SET current_revision = $3, current_source = $4, current_action = 'setCurrent', current_by = $5, current_at = $6
+          WHERE tenant_id = $1 AND name = $2`, [tenantId, name, revision, source, by, now]);
+        await pointTemplate(client, tenantId, name, { sha256: found.sha256, byteLength: Number(found.byte_length) });
+      }
       const template = (await authoringState(client, tenantId)).templates.find((item) => item.name === name)!;
       return { template, previousRevision: previous!.current_revision };
     }),

@@ -1,5 +1,5 @@
 /**
- * 模板设计（P1 票据 08，M205、M299、M355，原型画板 10）：客户管理员不写 DSL 也能做小改。只给客户管理员，操作员看只读预览。
+ * 模板设计（P1 票据 08，M205、M299、M356，原型画板 10）：客户管理员不写 DSL 也能做小改。只给客户管理员，操作员看只读预览。
  * - 左边是工作副本的草稿预览：按布局摘要的元素框点选，按元素定位打开模板文档里的位置；元素在子模板里时切到子模板，预览仍是调用它的模板；
  * - 右边是属性、参数、结构、规则四页，都从模板文档与 Schema 生成（template/properties.ts）；只能填数，不做拖拽；
  * - 每次改动写回工作副本，再重渲染、刷新问题清单（template/session.ts）；撤销与重做只在这一页里；"保存"是立刻暂存，"发布修订"去下一页；
@@ -445,7 +445,7 @@ function PropertiesTab(props: {
   );
 }
 
-const PARAMETER_TYPES: Readonly<Record<string, string>> = { text: '文字', number: '数字', date: '日期', time: '时刻', datetime: '日期时刻', boolean: '是否', image: '图片', color: '颜色' };
+const PARAMETER_TYPES: Readonly<Record<string, string>> = { text: '文本', number: '数值', date: '日期', time: '时刻', datetime: '时间', boolean: '布尔', image: '图片', color: '颜色' };
 
 function ParametersTab(props: {
   readonly doc: DesignDoc; readonly lists: FieldContext['lists']; readonly open?: string; readonly onOpen: (name: string | undefined) => void; readonly onEdit: (document: JsonObject, key: string) => void;

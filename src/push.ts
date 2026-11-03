@@ -376,10 +376,12 @@ export interface TemplateRevisions {
 }
 
 /** 列出服务端一个模板的修订；给了 current 时先把当前修订指向它。 */
-export async function templateRevisions(options: PushTarget & { readonly template: string; readonly current?: number }): Promise<{ template?: TemplateRevisions; problems: readonly ReportedProblem[] }> {
+export async function templateRevisions(options: PushTarget & { readonly template: string; readonly current?: number }): Promise<{ template?: TemplateRevisions; request?: PushedRequest; problems: readonly ReportedProblem[] }> {
   try {
     if (options.current !== undefined) {
       const reply = await call(options, 'POST', '/template-current', { template: options.template, revision: options.current });
+      // 租户打开了审批策略：这次指回没有生效，成了一份发布申请（P1 票据 11）。
+      if (reply.status === 202) return { request: (reply.body as { request: PushedRequest }).request, problems: [] };
       return reply.status === 200 ? { template: reply.body as TemplateRevisions, problems: [] } : { problems: answerProblems(reply) };
     }
     const reply = await call(options, 'GET', '/workspace');

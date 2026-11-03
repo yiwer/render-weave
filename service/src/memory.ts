@@ -662,9 +662,12 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       if (expectedCurrent !== undefined && row.current !== expectedCurrent) return { moved: row.current };
       approve(approving);
       const previousRevision = row.current;
-      row.current = revision;
-      row.origin = { source, action: 'setCurrent', by, at: now.toISOString() };
-      documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
+      // 指向当前修订什么也不变，来历也不变：不能靠这一步把网页改动变成"代建工程师自己指回的"（M359）。
+      if (revision !== previousRevision) {
+        row.current = revision;
+        row.origin = { source, action: 'setCurrent', by, at: now.toISOString() };
+        documents.set(documentSource('template', name), { sha256: found.sha256, byteLength: found.byteLength });
+      }
       return { template: template(name, row), previousRevision };
     }),
     definitionDrafts: async () => [...drafts.values()],

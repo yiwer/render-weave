@@ -153,8 +153,10 @@ describe('开放 API 的 OpenAPI 合同', () => {
       }
       if ((operation['parameters'] ?? []).some((parameter: Json) => parameter['in'] === 'query')) {
         const url = `${fill(path, (name) => (name === 'tenantId' && authoring ? a.id : missing[name] ?? randomUUID()))}?unknownParameter=1`;
-        expect(await call(method, url, token, method === 'POST' ? (json ? {} : new Uint8Array([1])) : undefined), `${at} 未知的查询参数`)
-          .toMatchObject({ status: 400, body: { problems: [{ code: 'request.invalid' }] } });
+        const reply = await call(method, url, token, method === 'POST' ? (json ? {} : new Uint8Array([1])) : undefined);
+        // 预览的查询参数是 1.5.0 才加的，之前不认识的参数都忽略，照旧忽略：改成拒绝是收窄（M359）。
+        if (path.endsWith('/previews')) expect(reply.raw, `${at} 未知的查询参数`).not.toContain('querystring');
+        else expect(reply, `${at} 未知的查询参数`).toMatchObject({ status: 400, body: { problems: [{ code: 'request.invalid' }] } });
         probed.query++;
       }
     }

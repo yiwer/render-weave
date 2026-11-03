@@ -992,7 +992,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await routeNo.getByTestId('field-constraints').textContent()).toBe('1–8 字');
       expect(await routeNo.getByTestId('field-required').textContent()).toBe('是');
       expect(await routeNo.getByTestId('field-uses').textContent()).toBe(ROUTE);
-      expect(await fieldRow(target, 'stops').getByTestId('field-type').textContent()).toBe('列表 · 引用 · 停靠站点 v1');
+      expect(await fieldRow(target, 'stops').getByTestId('field-type').textContent()).toBe('列表 · 数据定义引用 · 停靠站点 v1');
       await target.getByRole('button', { name: '校验', exact: true }).click();
       await checkPassed(target);
 
@@ -1147,22 +1147,22 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       });
       await addField(target, { displayName: '日期', name: 'day', type: '日期' });
       await addField(target, { displayName: '时刻', name: 'at', type: '时刻' });
-      await addField(target, { displayName: '时间', name: 'moment', type: '日期时间' });
-      await addField(target, { displayName: '启用', name: 'enabled', type: '是否' });
+      await addField(target, { displayName: '时间', name: 'moment', type: '时间' });
+      await addField(target, { displayName: '启用', name: 'enabled', type: '布尔' });
       await addField(target, { displayName: '照片', name: 'photo', type: '图片' }, () => target.getByLabel('网址', { exact: true }).uncheck());
       await addField(target, { displayName: '标签', name: 'tags', type: '列表' }, async () => {
         await target.getByLabel('最多项数', { exact: true }).fill('3');
         await target.getByLabel('元素最长（字）', { exact: true }).fill('4');
       });
       await addField(target, { displayName: '站点', name: 'stops', type: '列表' }, async () => {
-        await target.getByLabel('元素类型', { exact: true }).selectOption({ label: '引用' });
+        await target.getByLabel('元素类型', { exact: true }).selectOption({ label: '数据定义引用' });
         await target.getByLabel('元素引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' });
       });
-      await addField(target, { displayName: '下一站', name: 'next', type: '引用' }, async () => { await target.getByLabel('引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' }); });
+      await addField(target, { displayName: '下一站', name: 'next', type: '数据定义引用' }, async () => { await target.getByLabel('引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' }); });
       expect(await fieldRow(target, 'photo').getByTestId('field-constraints').textContent()).toBe('资源仓库');
       expect(await fieldRow(target, 'tags').getByTestId('field-type').textContent()).toBe('列表 · 文本');
       expect(await fieldRow(target, 'tags').getByTestId('field-constraints').textContent()).toBe('最多 3 项，最多 4 字');
-      expect(await fieldRow(target, 'next').getByTestId('field-type').textContent()).toBe('引用 · 停靠站点 v1');
+      expect(await fieldRow(target, 'next').getByTestId('field-type').textContent()).toBe('数据定义引用 · 停靠站点 v1');
 
       // 名称写错的字段：问题定位到那一行，没写完也能存。
       await addField(target, { displayName: '写错的', name: '1bad', type: '文本' });
