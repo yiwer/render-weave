@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "case": "unknown-definition",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "immutable-round",
+      "passed": true,
+      "exitCode": 1
+    }
+  ],
+  "realModelCalls": 0
+}

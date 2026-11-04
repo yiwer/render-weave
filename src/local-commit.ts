@@ -152,6 +152,7 @@ export async function verifyApplicationReceipt(round: string, value: unknown): P
 export async function commitApplication(options: {
   readonly id: string; readonly contentIdentity: string; readonly workspace: string; readonly round: string;
   readonly files: readonly { path: string; value: unknown; mode: 'create' | 'replace' }[];
+  readonly guardFiles?: readonly string[];
 }): Promise<void> {
   options = { ...options, workspace: await realpath(options.workspace), round: await realpath(options.round),
     files: await Promise.all(options.files.map(async file => ({ ...file, path: join(await realpath(dirname(file.path)), basename(file.path)) }))) };
@@ -163,6 +164,7 @@ export async function commitApplication(options: {
   }
   const guards: Record<string, string> = {};
   for (const name of ['review.json', 'round.json', 'outcome.json']) { const path = join(options.round, name); guards[path] = digest(await readFile(path)); }
+  for (const path of options.guardFiles ?? []) { const actual = await realpath(path); guards[actual] = digest(await readFile(actual)); }
   const intent: Intent = { format: 'renderweave-apply-intent/1', id: options.id, contentIdentity: options.contentIdentity,
     workspace: options.workspace, round: options.round, files: changes, baseline: await workspaceState(options.workspace), guards };
   const directory = join(options.round, '.apply-transactions', options.id), journal = join(directory, 'intent.json');

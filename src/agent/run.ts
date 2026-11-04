@@ -167,6 +167,8 @@ export interface RoundRecord {
 }
 
 export interface RoundInputs {
+  /** 固定的工作簿来源、映射、独立检查和修正记录。 */
+  readonly excel?: { readonly file: 'excel/manifest.json'; readonly sha256: string };
   readonly contextPolicy?: ContextPolicyIdentity;
   readonly resourceSnapshot?: ResourceSnapshotRef;
   readonly reference?: { readonly file: string; readonly sha256: string };
@@ -734,7 +736,7 @@ async function checkRequirement(file: string, templates: readonly { readonly nam
 }
 
 /** Claude Code 执行器：受限模式无头运行，只连受管 MCP，模型经本轮代理（ADR-0015、M232）。 */
-function claudeCodeExecutor(claude: NonNullable<AgentRunOptions['claude']>): RoundExecutor {
+export function claudeCodeExecutor(claude: NonNullable<AgentRunOptions['claude']>): RoundExecutor {
   return async (round) => {
     const mcpConfig = join(round.logsDir, 'mcp.json');
     await writeFile(mcpConfig, `${JSON.stringify({ mcpServers: { rw: { type: 'stdio', command: round.mcp.command, args: round.mcp.args } } }, null, 2)}\n`);

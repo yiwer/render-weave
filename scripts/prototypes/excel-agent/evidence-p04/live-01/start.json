@@ -1,0 +1,15 @@
+{
+  "format": "rw-excel-agent-prototype/2",
+  "startedAt": "2026-11-03T10:44:06.460Z",
+  "model": "claude-haiku-5-5",
+  "endpoint": "https://opencode.ai/inference/go/anthropic",
+  "executor": "claude-code",
+  "claudeCodeVersion": "2.1.296 (Claude Code)",
+  "maxTurns": 24,
+  "timeoutMs": 600000,
+  "injection": true,
+  "sourceHash": "2e2f34280ee057fc2b919d5b22de95b35319c535f27e8581a26b399796fa8362",
+  "targetHash": "781507317cb8cacc80b0214020a619ec30e96d92de544317f89ee0732e765b16",
+  "promptHash": "919ac43e9bd5f779074e29fbd8ebf316cbe1d057a230990645e8c9a74cbfdd28",
+  "gitBasis": "c9a32a902a84f535967c603e14a2b0583a54bb93"
+}

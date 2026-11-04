@@ -1,0 +1,127 @@
+{
+  "sourceHash": "f8c3376c6a0de096491a967a0e122f5ca82af3f7fd83e5ee8793984e02eec152",
+  "definition": {
+    "name": "prototype-route",
+    "version": 1
+  },
+  "datasets": [
+    {
+      "id": "route-1",
+      "sheet": "sheet-1",
+      "rows": [
+        5,
+        6
+      ],
+      "fields": {
+        "lineName": {
+          "cells": [
+            "A1"
+          ],
+          "rule": "copy"
+        },
+        "direction": {
+          "cells": [
+            "A2"
+          ],
+          "rule": "copy"
+        }
+      },
+      "recordFields": {
+        "name": {
+          "columns": [
+            "B"
+          ],
+          "rule": "copy"
+        },
+        "weekdayTimes": {
+          "columns": [
+            "C",
+            "D"
+          ],
+          "rule": "collect"
+        },
+        "fridayTimes": {
+          "columns": [
+            "E",
+            "F"
+          ],
+          "rule": "collect"
+        },
+        "code": {
+          "columns": [
+            "G"
+          ],
+          "rule": "copy"
+        }
+      }
+    },
+    {
+      "id": "route-2",
+      "sheet": "sheet-2",
+      "rows": [
+        5,
+        6
+      ],
+      "fields": {
+        "lineName": {
+          "cells": [
+            "A1"
+          ],
+          "rule": "copy"
+        },
+        "direction": {
+          "cells": [
+            "A2"
+          ],
+          "rule": "copy"
+        }
+      },
+      "recordFields": {
+        "name": {
+          "columns": [
+            "B"
+          ],
+          "rule": "copy"
+        },
+        "weekdayTimes": {
+          "columns": [
+            "C",
+            "D",
+            "E"
+          ],
+          "rule": "collect"
+        },
+        "fridayTimes": {
+          "columns": [
+            "F",
+            "G"
+          ],
+          "rule": "collect"
+        },
+        "code": {
+          "columns": [
+            "H"
+          ],
+          "rule": "copy"
+        }
+      }
+    }
+  ],
+  "context": [
+    {
+      "sheet": "sheet-1",
+      "range": "B4:G4",
+      "reason": "人工构造样例的字段表头，语义仍需审核"
+    },
+    {
+      "sheet": "sheet-2",
+      "range": "B4:H4",
+      "reason": "人工构造样例的字段表头，语义仍需审核"
+    },
+    {
+      "sheet": "sheet-3",
+      "range": "A1:B2",
+      "reason": "明确排除的样例说明与演示公式，需审核此排除"
+    }
+  ]
+}

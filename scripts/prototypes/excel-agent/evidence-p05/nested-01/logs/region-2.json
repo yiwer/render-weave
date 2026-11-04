@@ -1,0 +1,47 @@
+{
+  "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573",
+  "sheet": "sheet-1",
+  "range": "I7:L7",
+  "total": 4,
+  "offset": 0,
+  "items": [
+    {
+      "address": "I7",
+      "kind": "boolean",
+      "raw": "1",
+      "value": true,
+      "numberFormat": "General",
+      "display": "true",
+      "displayStatus": "known"
+    },
+    {
+      "address": "J7",
+      "kind": "number",
+      "raw": "46338",
+      "value": 46338,
+      "numberFormat": "yyyy/m/d",
+      "display": null,
+      "displayStatus": "unsupported"
+    },
+    {
+      "address": "K7",
+      "kind": "text",
+      "raw": null,
+      "value": "当季；香甜；软糯",
+      "numberFormat": "General",
+      "display": "当季；香甜；软糯",
+      "displayStatus": "known"
+    },
+    {
+      "address": "L7",
+      "kind": "text",
+      "raw": null,
+      "value": "进口",
+      "numberFormat": "General",
+      "display": "进口",
+      "displayStatus": "known"
+    }
+  ],
+  "nextOffset": null,
+  "merges": []
+}

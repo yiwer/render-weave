@@ -1,0 +1,23 @@
+{
+  "dslVersion": "renderweave-schema/1",
+  "name": "catalog",
+  "version": 1,
+  "fields": [
+    {
+      "name": "batches",
+      "displayName": "批次",
+      "type": "list",
+      "items": {
+        "type": "ref",
+        "ref": {
+          "name": "catalog-group",
+          "version": 1
+        }
+      },
+      "constraints": {
+        "required": true,
+        "minItems": 1
+      }
+    }
+  ]
+}

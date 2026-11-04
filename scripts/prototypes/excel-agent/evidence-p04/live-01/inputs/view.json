@@ -1,0 +1,697 @@
+{
+  "format": "rw-excel-view-prototype/1",
+  "source": {
+    "sha256": "2e2f34280ee057fc2b919d5b22de95b35319c535f27e8581a26b399796fa8362",
+    "bytes": 5787
+  },
+  "reader": "bounded-ooxml-prototype/1",
+  "date1904": false,
+  "sheets": [
+    {
+      "id": "sheet-1",
+      "name": "商品价签",
+      "state": "visible",
+      "dimension": "A1:L7",
+      "merges": [],
+      "cells": [
+        {
+          "address": "A1",
+          "kind": "text",
+          "raw": null,
+          "value": "渲染项 ID",
+          "numberFormat": "General",
+          "display": "渲染项 ID",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B1",
+          "kind": "text",
+          "raw": null,
+          "value": "品名",
+          "numberFormat": "General",
+          "display": "品名",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C1",
+          "kind": "text",
+          "raw": null,
+          "value": "规格",
+          "numberFormat": "General",
+          "display": "规格",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D1",
+          "kind": "text",
+          "raw": null,
+          "value": "单位",
+          "numberFormat": "General",
+          "display": "单位",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E1",
+          "kind": "text",
+          "raw": null,
+          "value": "产地",
+          "numberFormat": "General",
+          "display": "产地",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F1",
+          "kind": "text",
+          "raw": null,
+          "value": "货号",
+          "numberFormat": "General",
+          "display": "货号",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G1",
+          "kind": "text",
+          "raw": null,
+          "value": "零售价",
+          "numberFormat": "General",
+          "display": "零售价",
+          "displayStatus": "known"
+        },
+        {
+          "address": "H1",
+          "kind": "text",
+          "raw": null,
+          "value": "会员价",
+          "numberFormat": "General",
+          "display": "会员价",
+          "displayStatus": "known"
+        },
+        {
+          "address": "I1",
+          "kind": "text",
+          "raw": null,
+          "value": "促销",
+          "numberFormat": "General",
+          "display": "促销",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J1",
+          "kind": "text",
+          "raw": null,
+          "value": "促销截止",
+          "numberFormat": "General",
+          "display": "促销截止",
+          "displayStatus": "known"
+        },
+        {
+          "address": "K1",
+          "kind": "text",
+          "raw": null,
+          "value": "卖点",
+          "numberFormat": "General",
+          "display": "卖点",
+          "displayStatus": "known"
+        },
+        {
+          "address": "L1",
+          "kind": "text",
+          "raw": null,
+          "value": "备注",
+          "numberFormat": "General",
+          "display": "备注",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A2",
+          "kind": "text",
+          "raw": null,
+          "value": "0012345",
+          "numberFormat": "General",
+          "display": "0012345",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B2",
+          "kind": "text",
+          "raw": null,
+          "value": "天然饮用水",
+          "numberFormat": "General",
+          "display": "天然饮用水",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C2",
+          "kind": "text",
+          "raw": null,
+          "value": "550ml",
+          "numberFormat": "General",
+          "display": "550ml",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D2",
+          "kind": "text",
+          "raw": null,
+          "value": "瓶",
+          "numberFormat": "General",
+          "display": "瓶",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E2",
+          "kind": "text",
+          "raw": null,
+          "value": "浙江杭州",
+          "numberFormat": "General",
+          "display": "浙江杭州",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F2",
+          "kind": "text",
+          "raw": null,
+          "value": "0012345",
+          "numberFormat": "@",
+          "display": "0012345",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G2",
+          "kind": "number",
+          "raw": "2",
+          "value": 2,
+          "numberFormat": "General",
+          "display": "2",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "H2",
+          "kind": "number",
+          "raw": "1.8",
+          "value": 1.8,
+          "numberFormat": "General",
+          "display": "1.8",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "I2",
+          "kind": "boolean",
+          "raw": "1",
+          "value": true,
+          "numberFormat": "General",
+          "display": "true",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J2",
+          "kind": "number",
+          "raw": "46356",
+          "value": 46356,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "unsupported"
+        },
+        {
+          "address": "K2",
+          "kind": "text",
+          "raw": null,
+          "value": "天然、弱碱",
+          "numberFormat": "General",
+          "display": "天然、弱碱",
+          "displayStatus": "known"
+        },
+        {
+          "address": "L2",
+          "kind": "text",
+          "raw": null,
+          "value": "新品",
+          "numberFormat": "General",
+          "display": "新品",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A3",
+          "kind": "text",
+          "raw": null,
+          "value": "0088012",
+          "numberFormat": "General",
+          "display": "0088012",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B3",
+          "kind": "text",
+          "raw": null,
+          "value": "冰糖心红富士苹果礼盒",
+          "numberFormat": "General",
+          "display": "冰糖心红富士苹果礼盒",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C3",
+          "kind": "text",
+          "raw": null,
+          "value": "12枚",
+          "numberFormat": "General",
+          "display": "12枚",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D3",
+          "kind": "text",
+          "raw": null,
+          "value": "盒",
+          "numberFormat": "General",
+          "display": "盒",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E3",
+          "kind": "text",
+          "raw": null,
+          "value": "新疆阿克苏",
+          "numberFormat": "General",
+          "display": "新疆阿克苏",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F3",
+          "kind": "text",
+          "raw": null,
+          "value": "0088012",
+          "numberFormat": "@",
+          "display": "0088012",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G3",
+          "kind": "number",
+          "raw": "128",
+          "value": 128,
+          "numberFormat": "General",
+          "display": "128",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "H3",
+          "kind": "number",
+          "raw": "118",
+          "value": 118,
+          "numberFormat": "General",
+          "display": "118",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "I3",
+          "kind": "text",
+          "raw": null,
+          "value": "否",
+          "numberFormat": "General",
+          "display": "否",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J3",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "K3",
+          "kind": "text",
+          "raw": null,
+          "value": "礼盒,节日",
+          "numberFormat": "General",
+          "display": "礼盒,节日",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A4",
+          "kind": "text",
+          "raw": null,
+          "value": "0300417",
+          "numberFormat": "General",
+          "display": "0300417",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B4",
+          "kind": "text",
+          "raw": null,
+          "value": "云南小粒咖啡豆",
+          "numberFormat": "General",
+          "display": "云南小粒咖啡豆",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D4",
+          "kind": "text",
+          "raw": null,
+          "value": "千克",
+          "numberFormat": "General",
+          "display": "千克",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E4",
+          "kind": "text",
+          "raw": null,
+          "value": "云南普洱",
+          "numberFormat": "General",
+          "display": "云南普洱",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F4",
+          "kind": "text",
+          "raw": null,
+          "value": "0300417",
+          "numberFormat": "@",
+          "display": "0300417",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G4",
+          "kind": "number",
+          "raw": "168",
+          "value": 168,
+          "numberFormat": "General",
+          "display": "168",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "J4",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "K4",
+          "kind": "text",
+          "raw": null,
+          "value": "中度烘焙",
+          "numberFormat": "General",
+          "display": "中度烘焙",
+          "displayStatus": "known"
+        },
+        {
+          "address": "L4",
+          "kind": "text",
+          "raw": null,
+          "value": "散装",
+          "numberFormat": "General",
+          "display": "散装",
+          "displayStatus": "known"
+        },
+        {
+          "address": "A5",
+          "kind": "text",
+          "raw": null,
+          "value": "0201133",
+          "numberFormat": "General",
+          "display": "0201133",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B5",
+          "kind": "text",
+          "raw": null,
+          "value": "五常大米",
+          "numberFormat": "General",
+          "display": "五常大米",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C5",
+          "kind": "text",
+          "raw": null,
+          "value": "5kg",
+          "numberFormat": "General",
+          "display": "5kg",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D5",
+          "kind": "text",
+          "raw": null,
+          "value": "袋",
+          "numberFormat": "General",
+          "display": "袋",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E5",
+          "kind": "text",
+          "raw": null,
+          "value": "黑龙江五常",
+          "numberFormat": "General",
+          "display": "黑龙江五常",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F5",
+          "kind": "text",
+          "raw": null,
+          "value": "0201133",
+          "numberFormat": "@",
+          "display": "0201133",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G5",
+          "kind": "number",
+          "raw": "69.90000000000001",
+          "value": 69.9,
+          "numberFormat": "General",
+          "display": "69.90000000000001",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "H5",
+          "kind": "number",
+          "raw": "64.90000000000001",
+          "value": 64.9,
+          "numberFormat": "General",
+          "display": "64.90000000000001",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "I5",
+          "kind": "boolean",
+          "raw": "0",
+          "value": false,
+          "numberFormat": "General",
+          "display": "false",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J5",
+          "kind": "number",
+          "raw": null,
+          "value": null,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "empty"
+        },
+        {
+          "address": "A6",
+          "kind": "text",
+          "raw": null,
+          "value": "0400025",
+          "numberFormat": "General",
+          "display": "0400025",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B6",
+          "kind": "text",
+          "raw": null,
+          "value": "鲜鸡蛋",
+          "numberFormat": "General",
+          "display": "鲜鸡蛋",
+          "displayStatus": "known"
+        },
+        {
+          "address": "C6",
+          "kind": "text",
+          "raw": null,
+          "value": "30枚",
+          "numberFormat": "General",
+          "display": "30枚",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D6",
+          "kind": "text",
+          "raw": null,
+          "value": "盒",
+          "numberFormat": "General",
+          "display": "盒",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F6",
+          "kind": "text",
+          "raw": null,
+          "value": "0400025",
+          "numberFormat": "@",
+          "display": "0400025",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G6",
+          "kind": "number",
+          "raw": "23.8",
+          "value": 23.8,
+          "numberFormat": "General",
+          "display": "23.8",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "I6",
+          "kind": "text",
+          "raw": null,
+          "value": "是",
+          "numberFormat": "General",
+          "display": "是",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J6",
+          "kind": "number",
+          "raw": "46331",
+          "value": 46331,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "unsupported"
+        },
+        {
+          "address": "A7",
+          "kind": "text",
+          "raw": null,
+          "value": "0500311",
+          "numberFormat": "General",
+          "display": "0500311",
+          "displayStatus": "known"
+        },
+        {
+          "address": "B7",
+          "kind": "text",
+          "raw": null,
+          "value": "进口香蕉",
+          "numberFormat": "General",
+          "display": "进口香蕉",
+          "displayStatus": "known"
+        },
+        {
+          "address": "D7",
+          "kind": "text",
+          "raw": null,
+          "value": "千克",
+          "numberFormat": "General",
+          "display": "千克",
+          "displayStatus": "known"
+        },
+        {
+          "address": "E7",
+          "kind": "text",
+          "raw": null,
+          "value": "菲律宾",
+          "numberFormat": "General",
+          "display": "菲律宾",
+          "displayStatus": "known"
+        },
+        {
+          "address": "F7",
+          "kind": "text",
+          "raw": null,
+          "value": "0500311",
+          "numberFormat": "@",
+          "display": "0500311",
+          "displayStatus": "known"
+        },
+        {
+          "address": "G7",
+          "kind": "number",
+          "raw": "7.98",
+          "value": 7.98,
+          "numberFormat": "General",
+          "display": "7.98",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "H7",
+          "kind": "number",
+          "raw": "6.98",
+          "value": 6.98,
+          "numberFormat": "General",
+          "display": "6.98",
+          "displayStatus": "valueOnly"
+        },
+        {
+          "address": "I7",
+          "kind": "boolean",
+          "raw": "1",
+          "value": true,
+          "numberFormat": "General",
+          "display": "true",
+          "displayStatus": "known"
+        },
+        {
+          "address": "J7",
+          "kind": "number",
+          "raw": "46338",
+          "value": 46338,
+          "numberFormat": "yyyy/m/d",
+          "display": null,
+          "displayStatus": "unsupported"
+        },
+        {
+          "address": "K7",
+          "kind": "text",
+          "raw": null,
+          "value": "当季；香甜；软糯",
+          "numberFormat": "General",
+          "display": "当季；香甜；软糯",
+          "displayStatus": "known"
+        },
+        {
+          "address": "L7",
+          "kind": "text",
+          "raw": null,
+          "value": "进口",
+          "numberFormat": "General",
+          "display": "进口",
+          "displayStatus": "known"
+        }
+      ],
+      "hiddenRows": [],
+      "hiddenColumns": []
+    }
+  ],
+  "issues": [
+    {
+      "code": "displayUnsupported",
+      "sheet": "商品价签",
+      "cell": "J2"
+    },
+    {
+      "code": "displayUnsupported",
+      "sheet": "商品价签",
+      "cell": "J6"
+    },
+    {
+      "code": "displayUnsupported",
+      "sheet": "商品价签",
+      "cell": "J7"
+    }
+  ],
+  "viewHash": "690d8745ebf4e735249b2a91cd7ee6797d48cf052fe25ddeb564eb7c82281573"
+}

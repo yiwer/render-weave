@@ -1,0 +1,610 @@
+{
+  "format": "rw-excel-execution-prototype/1",
+  "status": "completed",
+  "cleanupConfirmed": true,
+  "container": "rw-excel-proto-cee3518aa3f2480db14867939e43df9b",
+  "imageId": "sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "image": "python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1",
+  "scriptHash": "d19a0ef8f1428826dc5688cd8a152c1b0cc8a8e63fda6d9b7f5cfd8cb97a3327",
+  "inputHash": "e145ffe5c4ee461314b7ae9dc2313a1349bc8d4ad478b27371eaf3006ac07fe6",
+  "outputHash": "e7e79613d629ad2178a6b5bd008629f74cb281f6c52d1c47459ca064579d91ee",
+  "wallMs": 1715,
+  "exitCode": 0,
+  "limits": {
+    "timeoutSeconds": 10.0,
+    "outputBytes": 1048576
+  },
+  "isolation": {
+    "NetworkMode": "none",
+    "ReadonlyRootfs": true,
+    "Memory": 134217728,
+    "MemorySwap": 134217728,
+    "NanoCpus": 500000000,
+    "PidsLimit": 16,
+    "CapDrop": [
+      "ALL"
+    ],
+    "SecurityOpt": [
+      "no-new-privileges"
+    ],
+    "Binds": null,
+    "Tmpfs": {
+      "/tmp": "rw,noexec,nosuid,nodev,size=4m,mode=1777",
+      "/work": "rw,noexec,nosuid,nodev,size=16m,mode=1777"
+    }
+  },
+  "stderr": "",
+  "candidate": {
+    "datasets": [
+      {
+        "dataset": {
+          "id": "0012345",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "features": [
+            "天然"
+          ],
+          "itemNo": "0012345",
+          "memberPrice": 1.8,
+          "onSale": true,
+          "origin": "浙江杭州",
+          "productName": "天然饮用水",
+          "retailPrice": 2,
+          "saleEnds": "2026-11-30",
+          "spec": "550ml",
+          "unit": "瓶"
+        }
+      },
+      {
+        "dataset": {
+          "id": "0088012",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "features": [
+            "礼盒",
+            "节日"
+          ],
+          "itemNo": "0088012",
+          "memberPrice": 118,
+          "onSale": false,
+          "origin": "新疆阿克苏",
+          "productName": "冰糖心红富士苹果礼盒",
+          "retailPrice": 128,
+          "spec": "12枚",
+          "unit": "盒"
+        }
+      },
+      {
+        "dataset": {
+          "id": "0300417",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "features": [
+            "中度烘焙"
+          ],
+          "itemNo": "0300417",
+          "origin": "云南普洱",
+          "productName": "云南小粒咖啡豆",
+          "retailPrice": 168,
+          "unit": "千克"
+        }
+      },
+      {
+        "dataset": {
+          "id": "0201133",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "itemNo": "0201133",
+          "memberPrice": 64.9,
+          "onSale": false,
+          "origin": "黑龙江五常",
+          "productName": "五常大米",
+          "retailPrice": 69.9,
+          "spec": "5kg",
+          "unit": "袋"
+        }
+      },
+      {
+        "dataset": {
+          "id": "0400025",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "itemNo": "0400025",
+          "onSale": true,
+          "productName": "鲜鸡蛋",
+          "retailPrice": 23.8,
+          "saleEnds": "2026-11-05",
+          "spec": "30枚",
+          "unit": "盒"
+        }
+      },
+      {
+        "dataset": {
+          "id": "0500311",
+          "staticSchema": {
+            "name": "商品价签",
+            "version": 1
+          }
+        },
+        "data": {
+          "features": [
+            "当季",
+            "香甜",
+            "软糯"
+          ],
+          "itemNo": "0500311",
+          "memberPrice": 6.98,
+          "onSale": true,
+          "origin": "菲律宾",
+          "productName": "进口香蕉",
+          "retailPrice": 7.98,
+          "saleEnds": "2026-11-12",
+          "unit": "千克"
+        }
+      }
+    ],
+    "sources": [
+      {
+        "datasetId": "0012345",
+        "path": "/features",
+        "sheet": "sheet-1",
+        "cells": [
+          "K2"
+        ],
+        "rule": "split"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/memberPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "H2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/onSale",
+        "sheet": "sheet-1",
+        "cells": [
+          "I2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/origin",
+        "sheet": "sheet-1",
+        "cells": [
+          "E2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/saleEnds",
+        "sheet": "sheet-1",
+        "cells": [
+          "J2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/spec",
+        "sheet": "sheet-1",
+        "cells": [
+          "C2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0012345",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D2"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/features",
+        "sheet": "sheet-1",
+        "cells": [
+          "K3"
+        ],
+        "rule": "split"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/memberPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "H3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/onSale",
+        "sheet": "sheet-1",
+        "cells": [
+          "I3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/origin",
+        "sheet": "sheet-1",
+        "cells": [
+          "E3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/spec",
+        "sheet": "sheet-1",
+        "cells": [
+          "C3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0088012",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D3"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/features",
+        "sheet": "sheet-1",
+        "cells": [
+          "K4"
+        ],
+        "rule": "split"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F4"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/origin",
+        "sheet": "sheet-1",
+        "cells": [
+          "E4"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B4"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G4"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0300417",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D4"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/memberPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "H5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/onSale",
+        "sheet": "sheet-1",
+        "cells": [
+          "I5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/origin",
+        "sheet": "sheet-1",
+        "cells": [
+          "E5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/spec",
+        "sheet": "sheet-1",
+        "cells": [
+          "C5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0201133",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D5"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/onSale",
+        "sheet": "sheet-1",
+        "cells": [
+          "I6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/saleEnds",
+        "sheet": "sheet-1",
+        "cells": [
+          "J6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/spec",
+        "sheet": "sheet-1",
+        "cells": [
+          "C6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0400025",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D6"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/features",
+        "sheet": "sheet-1",
+        "cells": [
+          "K7"
+        ],
+        "rule": "split"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/itemNo",
+        "sheet": "sheet-1",
+        "cells": [
+          "F7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/memberPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "H7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/onSale",
+        "sheet": "sheet-1",
+        "cells": [
+          "I7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/origin",
+        "sheet": "sheet-1",
+        "cells": [
+          "E7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/productName",
+        "sheet": "sheet-1",
+        "cells": [
+          "B7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/retailPrice",
+        "sheet": "sheet-1",
+        "cells": [
+          "G7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/saleEnds",
+        "sheet": "sheet-1",
+        "cells": [
+          "J7"
+        ],
+        "rule": "cell"
+      },
+      {
+        "datasetId": "0500311",
+        "path": "/unit",
+        "sheet": "sheet-1",
+        "cells": [
+          "D7"
+        ],
+        "rule": "cell"
+      }
+    ]
+  }
+}

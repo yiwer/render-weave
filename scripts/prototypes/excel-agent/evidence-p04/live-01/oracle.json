@@ -1,0 +1,10 @@
+{
+  "format": "rw-excel-independent-oracle/1",
+  "passed": true,
+  "datasets": 6,
+  "expectedFile": "fixtures/excel/price-tags.json",
+  "expectedHash": "4cecb3c67416055b2ffedbf3b80d13152238878d36ab239b24ee7bbed5a24251",
+  "candidateHash": "1874d22336439683048317170727229a5f9bbb31dd26ef5c76ce8c7eb2f8c01b",
+  "scope": "固定合成价签样本的独立业务真值；不代表其他工作簿语义验收",
+  "notExposedToModel": true
+}

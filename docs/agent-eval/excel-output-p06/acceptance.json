@@ -1,0 +1,73 @@
+{
+  "format": "renderweave-excel-output-acceptance/1",
+  "basis": "a05b5db99d4f43f7359f02d3679af0b018213ada",
+  "fixtureOnly": true,
+  "modelCalls": 0,
+  "scenarios": [
+    {
+      "name": "price-tags",
+      "preparation": {
+        "state": "prepared",
+        "items": 6,
+        "skipped": 1,
+        "batches": 2,
+        "directory": "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\price-tags\\prepared"
+      },
+      "state": "delivered",
+      "summary": {
+        "total": 6,
+        "delivered": 6,
+        "previewed": 0,
+        "failed": 0,
+        "notRun": 0,
+        "severe": 0,
+        "hints": 0
+      },
+      "skipped": [
+        {
+          "datasetId": "0400025",
+          "reason": "演示范围：该商品暂不制作价签"
+        }
+      ],
+      "positions": null,
+      "replayMatched": true
+    },
+    {
+      "name": "catalog",
+      "preparation": {
+        "state": "prepared",
+        "items": 5,
+        "skipped": 1,
+        "batches": 1,
+        "directory": "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\catalog\\prepared"
+      },
+      "state": "delivered",
+      "summary": {
+        "total": 5,
+        "delivered": 5,
+        "previewed": 0,
+        "failed": 0,
+        "notRun": 0,
+        "severe": 0,
+        "hints": 0
+      },
+      "skipped": [
+        {
+          "groupId": "catalog",
+          "datasetId": "catalog-01",
+          "path": "/batches/0/items",
+          "index": 2,
+          "reason": "演示范围：第三项不在本次制作范围"
+        }
+      ],
+      "positions": [
+        1,
+        2,
+        4,
+        5,
+        6
+      ],
+      "replayMatched": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "items": 6,
+  "definition": {
+    "name": "catalog",
+    "version": 1
+  },
+  "truth": "fixtures/excel/price-tags.json",
+  "modelCouldReadTruth": false
+}

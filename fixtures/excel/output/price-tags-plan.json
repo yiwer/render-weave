@@ -1,0 +1,9 @@
+{
+  "format": "renderweave-output-plan/1",
+  "mode": "final",
+  "groups": [
+    { "id": "shelf", "template": "商品价签", "datasets": "all", "parameters": { "storeName": "示例生活超市" }, "output": { "width": 100, "height": 50, "dpi": 120, "format": "png" } },
+    { "id": "large", "template": "商品价签", "datasets": ["0012345"], "parameters": { "storeName": "示例生活超市" }, "output": { "width": 120, "height": 60, "dpi": 120, "format": "jpg" } }
+  ],
+  "skipped": [{ "datasetId": "0400025", "reason": "演示范围：该商品暂不制作价签" }]
+}

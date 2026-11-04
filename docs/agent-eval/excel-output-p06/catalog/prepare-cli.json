@@ -1,0 +1,17 @@
+{
+  "args": [
+    "agent",
+    "prepare-output",
+    "--round",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\catalog\\review",
+    "--resources",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\resources",
+    "--plan",
+    "fixtures/excel/output/catalog-plan.json",
+    "--out",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\catalog\\prepared"
+  ],
+  "code": 0,
+  "stdout": "{\"state\":\"prepared\",\"items\":5,\"skipped\":1,\"batches\":1,\"directory\":\"F:\\\\GenCode\\\\render-weave-excel-prototype\\\\out\\\\excel-p06\\\\accept-01\\\\catalog\\\\prepared\"}\n",
+  "stderr": ""
+}

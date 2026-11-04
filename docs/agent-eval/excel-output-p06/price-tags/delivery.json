@@ -1,0 +1,51 @@
+{
+  "format": "renderweave-agent-delivery/1",
+  "state": "delivered",
+  "mode": "final",
+  "preparedSha256": "2685542905a901e22d271872f8e81d4570c89db011e8ebeb403792028e453560",
+  "summary": {
+    "total": 6,
+    "delivered": 6,
+    "previewed": 0,
+    "failed": 0,
+    "notRun": 0,
+    "severe": 0,
+    "hints": 0
+  },
+  "skipped": [
+    {
+      "datasetId": "0400025",
+      "reason": "演示范围：该商品暂不制作价签"
+    }
+  ],
+  "batches": [
+    {
+      "groupId": "shelf",
+      "directory": "0001",
+      "summary": {
+        "total": 5,
+        "delivered": 5,
+        "previewed": 0,
+        "failed": 0,
+        "notRun": 0,
+        "severe": 0,
+        "hints": 0
+      },
+      "problems": []
+    },
+    {
+      "groupId": "large",
+      "directory": "0002",
+      "summary": {
+        "total": 1,
+        "delivered": 1,
+        "previewed": 0,
+        "failed": 0,
+        "notRun": 0,
+        "severe": 0,
+        "hints": 0
+      },
+      "problems": []
+    }
+  ]
+}

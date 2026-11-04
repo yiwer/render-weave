@@ -1,0 +1,76 @@
+{
+  "format": "rw-excel-real-workbook-trial/1",
+  "sourceSha256": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+  "baseCommit": "476c96a9a54e51243ba61c847524ecd5c9405b8c",
+  "definition": "production-direction@1",
+  "modelRun": {
+    "inputTokens": 12,
+    "outputTokens": 17733,
+    "thinkingTokens": 13544,
+    "cacheReadTokens": 118945,
+    "cacheCreationTokens": 62915,
+    "usageSource": "result",
+    "turns": 10,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "mcp": [
+      "rw:connected"
+    ],
+    "wallMs": 83894,
+    "attempts": 1,
+    "injected": false,
+    "scriptMs": 977,
+    "cleanupConfirmed": true
+  },
+  "comparison": {
+    "sourceSha256": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+    "candidate": "run-01\\attempt-01\\candidate.json",
+    "sourceCells": 411,
+    "directions": 2,
+    "stops": [
+      32,
+      32
+    ],
+    "cellDataMatches": true,
+    "differences": [],
+    "uncoveredComments": 10,
+    "businessApproved": false,
+    "fullWorkbookPassed": false
+  },
+  "enginePassed": true,
+  "mechanicalIssues": [
+    {
+      "code": "unreadWorkbookParts",
+      "parts": [
+        "xl/comments1.xml",
+        "xl/drawings/",
+        "xl/drawings/vmlDrawing1.vml"
+      ]
+    }
+  ],
+  "passed": false,
+  "applied": false,
+  "deliveredImages": 0,
+  "actualCharge": "unknown; OpenCode Go 套餐",
+  "humanReviewMs": null,
+  "hashes": {
+    "brief.md": "f2d0a77a1c440e451421c9bb26fdc42b6c75ac61d42ce832101352c72b63b56e",
+    "setup.mjs": "a08bb08fb40a1862c9599720981bcb5c3aba91c025442ead4e681ef4d3c7be8c",
+    "verify_source.py": "125a3d81ba0c8f6e44fbe1202b8a6ad9e9ccf3f332b47cd160af5a3bb266231a",
+    "report.mjs": "77ce8bb552798f6c059d3513a7987752ded527d50472a717227adb91420cb4b9",
+    "independent-expected.json": "1df7f072988480c9df5e61c55945412273c36d24dc1257e2ff03dfa59d935120",
+    "independent-comparison.json": "05e1a57b14283b172c8810e422309a55dc535649a1f16911e54351cd59948cfa",
+    "review.html": "1660898d14ea3e7a0639fadf96195f99b391926e26090ccde2a87b135270c76f",
+    "run-01/inputs/source.xlsx": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+    "run-01/inputs/target.json": "df50ba306bd2b4e37c585767d8b731e27aec107a5525b9b89e529f0587e6e323",
+    "run-01/logs/prompt.md": "30c700ceec559d762656159e967e9457c720f83cfe7c08c306f24ee462fc9112",
+    "run-01/attempt-01/plan.json": "c835f560049d330bd687f39651fd72b6f5047c4521828c8024d0b6782baf6474",
+    "run-01/attempt-01/transform.py": "194cf9cecab7124882b567460ca7125fe778ef255e7b7a547c7e3b4f3d9b71ea",
+    "run-01/attempt-01/candidate.json": "8ba2ef1765d075ca4ee843649fbac9c3391b5624ea973819a91671c57aa67643",
+    "run-01/attempt-01/mechanical.json": "7f362c7a93705d800e84fa759298dd82063485bcf22e9e026a51474561410a5a",
+    "run-01/attempt-01/engine.json": "0e661d588f9d73fffcc7805a72fd0da8e147cf84de161bd7c3dd45263b77c14a",
+    "run-01/start.json": "6b32417f5e8462b381b4667f5884c902adf5ab283c8aa9fe828bc9884b550e86",
+    "run-01/result.json": "31e2d1650753e2b7195fa13589b874c1b5d97ac0db6cfc437e44862febe35c18"
+  }
+}
