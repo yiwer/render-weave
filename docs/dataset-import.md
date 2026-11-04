@@ -13,6 +13,8 @@
 
 原有入口改名为“标准表格批量出图”，仍调用 `/v1/excel-imports`，按标准表头直接生成批量出图请求，合同不变。
 
+目标定义含显示类别时，在任务说明中给出明确的原文对照。`split.values` 可将拆分项转换为定义要求的标量、对象或列表；未知项阻止完成，原文应另存字段。审核的“字段来源”展示分隔符和完整对照，确认时同时核对解释与原文。不得因独立检查通过而默认批准新解释。实例见 [115 显示字段与模板审核](agent-eval/dataset-display-115-review.md)。
+
 ![上传页面](images/dataset-import/upload.png)
 
 ![来源与批注审核页面](images/dataset-import/review.png)

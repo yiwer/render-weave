@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { canonical } from './diff.js';
 import { sha256 } from './round-files.js';
 
-export interface ExcelSource { datasetId: string; path: string; sheet: string; cells: string[]; rule: string; parts?: string[] }
+export interface ExcelSource { datasetId: string; path: string; sheet: string; cells: string[]; rule: string; parts?: string[]; mapping?: { separators: string[]; values: Record<string, unknown> } }
 export interface ExcelComment {
   sheet: string; cell: string; text: string; author: string; part: string;
   vml?: { part: string; shapeId: string; row: number; column: number; anchor: number[]; visible: boolean };
@@ -64,14 +64,14 @@ export function replayExcelCorrections(options: {
       const original = get(old.data, path), after = get(review.data, path);
       // collect/split 的列表项共享一个来源，匹配时保留相对列表位置。
       const anchor = previous.sources.filter(s => s.datasetId === id && (s.path === path || path.startsWith(s.path+'/'))).sort((a,b) => b.path.length-a.path.length)[0];
-      const matches = anchor ? next.sources.filter(s => s.datasetId === id && s.sheet === anchor.sheet && s.rule === anchor.rule && canonical(s.cells) === canonical(anchor.cells) && canonical(s.parts ?? []) === canonical(anchor.parts ?? [])) : [];
+      const matches = anchor ? next.sources.filter(s => s.datasetId === id && s.sheet === anchor.sheet && s.rule === anchor.rule && canonical(s.cells) === canonical(anchor.cells) && canonical(s.parts ?? []) === canonical(anchor.parts ?? []) && canonical(s.mapping ?? null) === canonical(anchor.mapping ?? null)) : [];
       const target = candidates.find(c => c.dataset.id === id);
       const newPath = matches.length === 1 ? matches[0]!.path+path.slice(anchor!.path.length) : path;
       const sameBasis = previous.sourceHash === next.sourceHash && canonical(previous.definition) === canonical(next.definition);
       const compatible = sameBasis && !!target && !!anchor && matches.length === 1 && canonical(get(target.data, newPath)) === canonical(original);
       const correction: ExcelCorrection = { datasetId: id, path: newPath, before: original, after, removed: after === undefined,
         reason: review.reason ?? previous.corrections.find(c => c.datasetId === id && c.path === path)?.reason ?? '沿用上一轮已记录的人工修正', actor: 'local-review', status: compatible ? 'replayed' : 'conflict',
-        ...(!compatible ? { detail: '原件、定义、唯一来源或原候选值不匹配；未自动套用，请明确处理。' } : {}) };
+        ...(!compatible ? { detail: '原件、定义、唯一来源、显示映射规则或原候选值不匹配；未自动套用，请明确处理。' } : {}) };
       if (compatible) set(target.data, newPath, after, after === undefined);
       corrections.push(correction);
     }

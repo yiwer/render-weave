@@ -1,0 +1,127 @@
+{
+  "date": "2026-11-04",
+  "format": "renderweave-display-review-acceptance/1",
+  "jobId": "61f625af-c1e4-4033-977e-e447c634e7d7",
+  "sourceHash": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+  "definition": {
+    "name": "production-direction-view",
+    "version": 1
+  },
+  "approval": "pending",
+  "newModelRuns": 1,
+  "execution": {
+    "model": "claude-haiku-5-5",
+    "wallMs": 259456,
+    "usage": {
+      "inputTokens": 34,
+      "outputTokens": 49590,
+      "thinkingTokens": 20949,
+      "cacheReadTokens": 854832,
+      "cacheCreationTokens": 103096,
+      "usageSource": "result",
+      "turns": 16,
+      "servedModel": "claude-haiku-5-5",
+      "endedBy": "success",
+      "mcp": [
+        "rw:connected"
+      ]
+    },
+    "attempts": [
+      {
+        "id": "attempt-01",
+        "status": "failed",
+        "execution": {
+          "status": "timeout",
+          "wallMs": 12932,
+          "cleanupConfirmed": true,
+          "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 12, in <module>\n    metadata = path.lstat()\n  File \"/usr/local/lib/python3.13/pathlib/_abc.py\", line 437, in lstat\n    return self.stat(follow_symlinks=False)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/pathlib/_local.py\", line 515, in stat\n    return os.stat(self, follow_symlinks=follow_symlinks)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'candidate.json'\n"
+        }
+      },
+      {
+        "id": "attempt-02",
+        "status": "passed",
+        "execution": {
+          "status": "completed",
+          "wallMs": 7276,
+          "cleanupConfirmed": true,
+          "stderr": ""
+        }
+      }
+    ]
+  },
+  "data": {
+    "passed": true,
+    "originalFieldsPreserved": true,
+    "stations": 64,
+    "connections": 22,
+    "counts": {
+      "metro-3": 14,
+      "metro-4": 4,
+      "metro-1": 2,
+      "railway": 2
+    },
+    "comments": 10,
+    "vmlAnchors": 10
+  },
+  "browser": {
+    "passed": true,
+    "jobId": "61f625af-c1e4-4033-977e-e447c634e7d7",
+    "candidatesChecked": 2,
+    "stationValuesChecked": 64,
+    "commentsChecked": 10,
+    "mappingsChecked": 64,
+    "viewports": [
+      1600,
+      800
+    ],
+    "pageErrors": [],
+    "automatedReview": true
+  },
+  "render": {
+    "total": 65,
+    "passed": 65,
+    "stationNamesChecked": 2080,
+    "failures": [],
+    "renderSummary": {
+      "total": 65,
+      "images": 65,
+      "severe": 0,
+      "hints": 0
+    }
+  },
+  "markers": {
+    "images": 65,
+    "checkedMarkers": {
+      "railway": 65,
+      "metro-3": 455,
+      "metro-4": 130,
+      "metro-1": 65
+    },
+    "failures": [],
+    "scope": "编号、来源图标与圆标主色；不证明矢量图标与参考原件形状一致"
+  },
+  "gallery": {
+    "passed": true,
+    "cards": 65,
+    "images": 67,
+    "comments": 10,
+    "filters": true,
+    "narrowOverflow": false,
+    "pageErrors": []
+  },
+  "tests": {
+    "files": 5,
+    "passed": 49
+  },
+  "artifacts": {
+    "verification.json": "fbae7705eb52818c19a0fe496057be2e59beed818ce4229326924ff3b8c72717",
+    "preview/results.json": "6deb61c7ac14988ce585847281158d5726b00eadab3522e2b040f385d2f3f53c",
+    "preview/up-13-1.png": "3c7308ae82cf45ea7b514b415d0d37af0d7c14b39f3d59ee1a02a42ec8559c40",
+    "archive/extraction/submission.json": "8bf54a747cae8e316eed7273928542fe31a0367e1a8d01af3721f38e763a9f8b",
+    "archive/extraction/attempt-02/plan.json": "9f9d99d85a98eab88d07afeaeca0c21f578f90356a14b673994e4b581cf8761b",
+    "archive/extraction/attempt-02/candidate.json": "7ba223c6281b0f7329aa6ac42bf3b86aead8089194970401d7b02c7e344642da"
+  },
+  "humanBusinessReviewHours": null,
+  "actualCharge": "unknown",
+  "productionReady": false
+}

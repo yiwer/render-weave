@@ -12,4 +12,4 @@
 
 格式依据：[Microsoft LegacyDrawing](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.legacydrawing?view=openxml-3.0.1)、[Microsoft OOXML Primer 第 6.5.2 节](https://download.microsoft.com/download/e/1/4/e14fb96f-83b8-4a2a-84db-7fa8acbe061a/Office%20Open%20XML%20Part%203%20-%20Primer.pdf)。实际支持子集以本地读取器和公开入口测试为准。
 
-格式和转换子集见[映射合同](../../scripts/prototypes/excel-agent/CONTRACT.md)。部署正式 CLI 时须连同本目录及 `web/` 发布；仅复制 `dist/` 不足以运行审核功能。尚未承诺完整 Excel 兼容或共享生产环境隔离。
+格式和转换子集见[映射合同](CONTRACT.md)。显示类别通过 `split.values` 显式对照，来源携带规则，未知原文失败；业务规则只写入工作空间任务，不放进通用检查器。部署正式 CLI 时须连同本目录及 `web/` 发布；仅复制 `dist/` 不足以运行审核功能。尚未承诺完整 Excel 兼容或共享生产环境隔离。

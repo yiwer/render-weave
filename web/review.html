@@ -318,7 +318,7 @@ function render() {
           h('tbody', {}, e.sources.map(s => h('tr', {},
             [s.datasetId, s.path, sheet(s.sheet)].map(t => h('td', {}, t)),
             h('td', {}, s.rule === 'comment' ? s.cells.map(cell => h('a', { href: '#' + commentId(s.sheet, cell) }, cell + ' 批注')) : s.cells.join(', ')),
-            h('td', {}, s.rule)))))),
+            h('td', {}, s.rule, s.mapping ? h('div', {}, '显示映射：' + JSON.stringify(s.mapping)) : null)))))),
       h('h3', {}, `批注原文与来源（${(e.comments ?? []).length} 条）`),
       h('p', { class: 'muted' }, '正文排除区域不代表批注已处理。核对每条批注的映射或未映射理由；VML 的行列指向源单元格，显示框位置另列。'),
       h('table', {}, h('thead', {}, h('tr', {}, ['工作表 / 单元格', '批注原文', '作者 / 源部件', 'VML 锚点', '目标字段 / 未映射理由'].map(t => h('th', {}, t)))),

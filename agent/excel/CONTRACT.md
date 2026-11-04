@@ -36,6 +36,10 @@
 - `collect`：`sheet`、`cells` 坐标列表；跳过空值，保留顺序和重复值。
 - `split`：`sheet`、`cell`、`separators` 明确分隔符列表；去掉每项首尾空白和空项，保留顺序和重复值。
 
+`split` 可加 `values` 显式对照表，把每个拆分项转为 JSON 字面量（标量、对象或列表），例如 `{"op":"split","sheet":"sheet-1","cell":"C{row}","separators":["、"],"values":{"冷藏":{"category":"chilled"},"易碎":{"category":"fragile"}}}`。只支持 `as: "display"`；源空白输出空列表，未知项报 `unmappedValue`，不能丢掉或给缺省类别。对照键为去掉首尾空白后的非空原文，最多 200 项；值最多 8 层，计入 20000 节点预算。映射含义仍待业务审核，技术核对不等于批准。
+
+带 `values` 的 split 来源必须增加 `mapping: {separators: [...], values: {...}}`，与计划逐字一致，空列表也保留这条来源。来源 `cells` 仍只列非空原格。审核展示整份对照规则；规则变化时旧人工修改转为冲突，不自动套用。
+
 叶节点 `as` 默认 `display`；`number` 必须来自数值单元格；`boolean` 接受原生布尔，文本需显式 `values` 对照，例如 `{"是":true,"否":false}`；`date` 接受 ISO 日期文本或 `yyyy-mm-dd` / `yyyy/m/d` 格式的整数日期序列并转为 ISO。公式缓存、错误值、未知显示格式均不静默采用。未支持的派生计算应列待确认，不能声明已经独立核对。
 
 `context` 给非数据区域列理由，不能与已提取位置冲突。未分类的非空单元格会报错。分类本身、字段业务含义与单位仍需审核；机械检查不能认证一个自洽但错误的映射。
