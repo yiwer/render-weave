@@ -12,3 +12,4 @@
 | [06：让业务批注进入 Excel 提取与独立审核](issues/06-preserve-workbook-comments.md) | 05 | P07 / A01 / A04；批注来源、VML 判别及同原件复跑 |
 | [07：从待审实表生成可核对的制作计划与试制样张](issues/07-preview-production-plan.md) | 06 | P07 出图前核对；多尺寸清单、完整站序草稿与待确认项 |
 | [08：按用户批准的 115 路样张口径应用并正式交付](issues/08-approved-production-delivery.md) | 07 | P07 实表正式交付；用户批准、完整应用、固定计划与全量重放 |
+| [09：将 115 路示例图接入模板制作模块](issues/09-template-module-115.md) | 08 | 模板辅助设计/修改；显示定义、原图对照、四尺寸联动预览 |
