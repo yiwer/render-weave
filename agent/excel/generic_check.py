@@ -142,9 +142,43 @@ def check(view, plan, candidate, target):
             if not isinstance(separators, list) or not 1 <= len(separators) <= 10 or any(not isinstance(s, str) or not 1 <= len(s) <= 4 for s in separators):
                 raise ValueError('split 要求明确的短分隔符列表')
             value = [v.strip() for v in re.split('|'.join(map(re.escape, separators)), str(values[0])) if v.strip()] if values else []
+            if 'values' in node:
+                choices = node['values']
+                if node.get('as', 'display') != 'display' or not isinstance(choices, dict) or not 1 <= len(choices) <= 200:
+                    raise ValueError('split.values 要求 display 原文和 1–200 项显式对照')
+                def validate_literal(item, level=0):
+                    nonlocal budget
+                    budget += 1
+                    if budget > 20000 or level > 8:
+                        raise ValueError('映射值规模/深度超限')
+                    if isinstance(item, dict):
+                        for key, child in item.items():
+                            if not isinstance(key, str):
+                                raise ValueError('映射对象字段名必须为文本')
+                            validate_literal(child, level+1)
+                    elif isinstance(item, list):
+                        for child in item:
+                            validate_literal(child, level+1)
+                    elif item is not None and type(item) not in (str, bool, int, float):
+                        raise ValueError('映射值必须是 JSON 字面量')
+                    elif type(item) in (int, float) and not math.isfinite(item):
+                        raise ValueError('映射数值必须有限')
+                for key, item in choices.items():
+                    if not isinstance(key, str) or not key or key != key.strip():
+                        raise ValueError('映射键必须是非空且无首尾空白的拆分项')
+                    validate_literal(item)
+                unknown = [token for token in value if token not in choices]
+                if unknown:
+                    issue('unmappedValue', datasetId=dataset, path=path, sheet=sheet, cells=actual_refs, values=unknown)
+                    value = []
+                else:
+                    value = [choices[token] for token in value]
         else:
             value = values
-        traces.append({'datasetId': dataset, 'path': path, 'sheet': sheet, 'cells': actual_refs, 'rule': op})
+        trace = {'datasetId': dataset, 'path': path, 'sheet': sheet, 'cells': actual_refs, 'rule': op}
+        if op == 'split' and 'values' in node:
+            trace['mapping'] = {'separators': node['separators'], 'values': node['values']}
+        traces.append(trace)
         return value
 
     datasets = plan['datasets']

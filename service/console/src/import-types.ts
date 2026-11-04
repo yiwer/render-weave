@@ -11,7 +11,7 @@ export interface ImportReview {
   problems: Problem[];
   excel?: {
     sheets: { id: string; name: string }[];
-    sources: { datasetId: string; path: string; sheet: string; cells: string[]; rule: string; parts?: string[] }[];
+    sources: { datasetId: string; path: string; sheet: string; cells: string[]; rule: string; parts?: string[]; mapping?: { separators: string[]; values: Record<string, unknown> } }[];
     comments?: { sheet: string; cell: string; text: string; author: string; part: string; vml?: { row: number; column: number; anchor: number[]; visible: boolean } }[];
     context: { sheet: string; range: string; reason: string }[];
     commentContext?: { sheet: string; cell: string; reason: string }[];

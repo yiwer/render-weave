@@ -31,6 +31,7 @@ if variant == 'external-rel': parts['xl/worksheets/_rels/sheet1.xml.rels'] = par
 if variant == 'traversal-rel': parts['xl/worksheets/_rels/sheet1.xml.rels'] = parts['xl/worksheets/_rels/sheet1.xml.rels'].replace('../comments1.xml','../../../comments1.xml')
 if variant == 'duplicate-comment': parts['xl/comments1.xml'] = parts['xl/comments1.xml'].replace('ref="C3"','ref="B2"')
 if variant == 'changed-comment': parts['xl/comments1.xml'] = parts['xl/comments1.xml'].replace(' 制作',' 已篡改')
+if variant == 'mapping': parts['xl/worksheets/sheet1.xml'] = parts['xl/worksheets/sheet1.xml'].replace('<t>甲</t>', '<t> 冷藏、易碎、冷藏 </t>')
 if variant == 'unknown-part': parts['xl/drawings/other.xml'] = '<unknown/>'
 if variant == 'orphan': parts['xl/comments2.xml'] = parts['xl/comments1.xml']
 if variant == 'no-vml':
