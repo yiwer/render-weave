@@ -1,6 +1,6 @@
 /**
- * 数据定义的发布与发布记录（P1 票据 06，M346、M355，原型画板 08）。
- * - 发布：先看字段级差异与预检结果（失配的数据集、未全部核对、仍绑定旧版的模板），确认后发布为下一版本；
+ * 数据定义的发布与发布记录（P1 票据 06，M346、M355、M365，原型画板 08）。
+ * - 发布：左边是字段级差异与预检结果（失配的数据集、未全部核对、仍绑定旧版的模板），右边一张确认卡写结论与发布按钮；
  * - 发布记录：谁在何时发布了哪一版、改动摘要、内容哈希；选中一行原地展开差异；操作员只读；
  * - 以某一版另发：页面上一键，接口上是两步——从旧版另起草案，再发布成新版本（ADR-0008、M346）。
  * - 待处理：还没发布的草案，以及代建工程师的发布申请（P1 票据 11）。
@@ -9,11 +9,14 @@
 import { useState } from 'react';
 import { api } from '../api.js';
 import { StaticSchemaTabs } from '../components/module-tabs.js';
-import { ErrorBox } from '../components/problems.js';
+import { Icon, PUBLISH } from '../components/icon.js';
+import { ErrorBox, ProblemList } from '../components/problems.js';
+import { PublishConfirm } from '../components/publish-confirm.js';
 import { PendingRequests } from '../components/publish-requests.js';
-import { constraintText, isRequired, propertyText, typeText } from '../form/definition.js';
+import { constraintText, isRequired, propertyParts, typeText } from '../form/definition.js';
+import { publishVerdict } from '../form/publish-verdict.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
-import type { DefinitionDiff, DefinitionFieldChange, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
+import type { DefinitionDiff, DefinitionFieldChange, DefinitionProperty, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
 import { canEditDefinitions, definitionPath, exportCompiled, staticSchemaPath } from './definitions.js';
 import { Loading } from '../components/motifs.js';
 
@@ -23,6 +26,7 @@ const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 const Hash = (props: { readonly value: string; readonly label?: string }) =>
   <code className="hash" title={props.value} data-sha256={props.value}>{props.label ?? 'sha256'}:{props.value.slice(0, 12)}…</code>;
 
+const isSevere = (problem: Problem) => problem.level === 'severe';
 const MARK: Readonly<Record<DefinitionFieldChange['change'], string>> = { added: '+', removed: '−', changed: '~' };
 
 function changeText(change: DefinitionFieldChange): string {
@@ -30,23 +34,43 @@ function changeText(change: DefinitionFieldChange): string {
     const constraints = constraintText(change.after);
     return `新增${isRequired(change.after) ? '必填' : ''}字段 ${change.after.displayName}，${typeText(change.after)}${constraints ? `，${constraints}` : ''}`;
   }
-  if (change.change === 'removed') return `删除字段 ${change.before?.displayName ?? change.path}${change.affectsBindings ? '；按这个名称写的模板绑定和数据集的键不再有对应' : ''}`;
-  return (change.properties ?? []).map(propertyText).join('；');
+  return `删除字段 ${change.before?.displayName ?? change.path}`;
 }
 
-/** 字段级差异：一行一个字段，增删改用符号。 */
+/** 一条属性改动：旧值划掉，新值加重。 */
+function PropertyChange(props: { readonly property: DefinitionProperty }) {
+  const { label, before, after } = propertyParts(props.property);
+  return <span className="diff-property">{label} <span className="diff-old">{before}</span> → <strong className="diff-new">{after}</strong></span>;
+}
+
+/** 字段级差异：一行一个字段，符号、路径、说明各成一列。 */
 function DiffList(props: { readonly diff: DefinitionDiff }) {
   const { diff } = props;
-  if (!diff.definition.length && !diff.fields.length && !diff.order) return <p className="muted" data-testid="definition-diff">没有字段改动。</p>;
+  if (!diff.definition.length && !diff.fields.length && !diff.order) return <p className="muted publish-sheet-note" data-testid="definition-diff">没有字段改动。</p>;
   return (
     <ul className="diff-list" data-testid="definition-diff">
-      {diff.definition.map((property) => <li key={property.key} data-path={`definition:${property.key}`} data-change="changed"><span className="diff-mark">~</span><span>数据定义的{propertyText(property)}</span></li>)}
-      {diff.fields.map((change) => (
-        <li key={change.path} data-path={change.path} data-change={change.change}>
-          <span className={`diff-mark ${change.change}`}>{MARK[change.change]}</span><code>{change.path}</code><span>{changeText(change)}</span>
+      {diff.definition.map((property) => (
+        <li key={property.key} data-path={`definition:${property.key}`} data-change="changed">
+          <span className="diff-mark changed">~</span><span className="diff-path">数据定义</span>
+          <span className="diff-text"><PropertyChange property={property} /></span>
         </li>
       ))}
-      {diff.order && <li data-path="definition:fieldOrder" data-change="changed"><span className="diff-mark">~</span><span>调整了字段顺序</span></li>}
+      {diff.fields.map((change) => (
+        <li key={change.path} data-path={change.path} data-change={change.change}>
+          <span className={`diff-mark ${change.change}`}>{MARK[change.change]}</span><code className="diff-path" title={change.path}>{change.path}</code>
+          <span className="diff-text">
+            {change.change === 'changed'
+              ? (change.properties ?? []).map((property) => <PropertyChange key={property.key} property={property} />)
+              : <span>{changeText(change)}</span>}
+            {change.change === 'removed' && change.affectsBindings && <small className="diff-warning">按这个名称写的模板绑定和数据集的键不再有对应</small>}
+          </span>
+        </li>
+      ))}
+      {diff.order && (
+        <li data-path="definition:fieldOrder" data-change="changed">
+          <span className="diff-mark changed">~</span><span className="diff-path">字段顺序</span><span className="diff-text">调整了字段顺序</span>
+        </li>
+      )}
     </ul>
   );
 }
@@ -55,10 +79,10 @@ function DiffList(props: { readonly diff: DefinitionDiff }) {
 function DatasetImpact(props: { readonly check: DefinitionPublishCheck }) {
   const { check } = props, datasets = check.datasets!, base = check.baseVersion === undefined ? undefined : `v${check.baseVersion}`;
   return (
-    <section className="card" data-testid="dataset-impact">
+    <section className="publish-section" data-testid="dataset-impact">
       <h2>数据集</h2>
-      {base === undefined ? <p className="muted">这是首个版本，还没有数据集绑定。</p>
-        : datasets.total === 0 ? <p className="muted">没有数据集绑定 {base}。</p>
+      {base === undefined ? <div className="publish-sheet"><p className="muted publish-sheet-note">这是首个版本，还没有数据集绑定。</p></div>
+        : datasets.total === 0 ? <div className="publish-sheet"><p className="muted publish-sheet-note">没有数据集绑定 {base}。</p></div>
         : (
           <>
             {!datasets.complete && (
@@ -66,28 +90,52 @@ function DatasetImpact(props: { readonly check: DefinitionPublishCheck }) {
                 <strong>未全部核对：</strong>绑定 {base} 的数据集共 {number(datasets.total)} 份，这次只校验了前 {number(datasets.checked)} 份。下面的份数只算校验过的。
               </p>
             )}
-            <p data-testid="datasets-verdict">
+            <p className="publish-section-lead" data-testid="datasets-verdict">
               {datasets.complete ? `绑定 ${base} 的 ${number(datasets.total)} 份数据集全部核对：` : '校验过的这些里，'}
               {datasets.mismatched > 0 ? <strong className="bad-text">{number(datasets.mismatched)} 份按新版会失配</strong> : '都能按新版通过校验'}。
             </p>
-            {datasets.samples.length > 0 && (
-              <table className="table" data-testid="dataset-samples">
-                <thead><tr><th>数据集</th><th>严重问题</th><th>比如</th></tr></thead>
-                <tbody>
-                  {datasets.samples.map((sample) => (
-                    <tr key={sample.id} data-id={sample.id}>
-                      <td className="mono"><a href={href(['datasets', sample.id])}>{sample.id}</a></td>
-                      <td>{number(sample.problemCount)} 个</td>
-                      <td>{sample.problems[0]?.message}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {datasets.mismatched > datasets.samples.length && <p className="table-note">只列前 {number(datasets.samples.length)} 份。</p>}
-            <p className="small muted">发布不改动它们：这些数据集继续按 {base} 校验和出图，要用新版时再逐份改。</p>
+            <div className="publish-sheet">
+              {datasets.samples.length > 0 && (
+                <table className="table" data-testid="dataset-samples">
+                  <thead><tr><th>数据集</th><th>严重问题</th><th>比如</th></tr></thead>
+                  <tbody>
+                    {datasets.samples.map((sample) => (
+                      <tr key={sample.id} data-id={sample.id}>
+                        <td className="mono"><a href={href(['datasets', sample.id])}>{sample.id}</a></td>
+                        <td>{number(sample.problemCount)} 个</td>
+                        <td>{sample.problems[0]?.message}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <p className="publish-sheet-foot">
+                {datasets.mismatched > datasets.samples.length && `只列前 ${number(datasets.samples.length)} 份。`}
+                发布不改动它们：这些数据集继续按 {base} 校验和出图，要用新版时再逐份改。
+              </p>
+            </div>
           </>
         )}
+    </section>
+  );
+}
+
+/** 模板影响：谁绑定着哪一版；发布不改动它们。 */
+function TemplateImpact(props: { readonly check: DefinitionPublishCheck }) {
+  const templates = props.check.templates!;
+  return (
+    <section className="publish-section" data-testid="template-impact">
+      <h2>模板</h2>
+      <div className="publish-sheet">
+        {templates.length === 0 ? <p className="muted publish-sheet-note">还没有模板用这个数据定义。</p> : (
+          <>
+            <ul className="plain publish-sheet-rows">
+              {templates.map((template) => <li key={template.name} data-name={template.name}><a href={href(['templates', template.name])}>{template.name}</a><span className="version-badge">绑定 v{template.base.version}</span></li>)}
+            </ul>
+            <p className="publish-sheet-foot">发布不改动它们，它们照旧绑定各自的版本。</p>
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -103,7 +151,7 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
   }, `publish-check:${name}`);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
-  const check = loaded.data?.check;
+  const check = loaded.data?.check, draft = loaded.data?.draft;
   const publish = async () => {
     setBusy(true);
     setProblems(undefined);
@@ -117,7 +165,7 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
     } finally { setBusy(false); }
   };
   return (
-    <section className="page">
+    <section className="page publish-page">
       <nav className="crumbs" aria-label="位置">
         <a href={href(['definitions'])}>数据定义</a><span aria-hidden="true">/</span><a href={href(definitionPath(name))}>{name}</a><span aria-hidden="true">/</span><span>发布</span>
       </nav>
@@ -127,48 +175,57 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
           {check && (
             <p className="meta" data-testid="publish-meta">
               <span>{check.baseVersion === undefined ? '首个版本' : `基于 v${check.baseVersion}`}</span>
+              {draft && <span>{draft.updatedBy} 保存于 {time(draft.updatedAt)}</span>}
               <Hash value={check.sha256} />
             </p>
           )}
         </div>
-        {check?.version && (
-          <div className="actions">
-            <a className="button quiet" href={href(definitionPath(name))}>回到草案</a>
-            <button type="button" className="primary" disabled={busy || loaded.loading} onClick={() => void publish()}>{busy ? '正在发布…' : `发布为 v${check.version}`}</button>
-          </div>
-        )}
       </div>
       {!canEdit && <p className="muted">发布由客户管理员完成。<a href={href(definitionPath(name))}>回到数据定义</a></p>}
-      <ErrorBox problems={problems} title="没有发布" />
       <ErrorBox problems={loaded.problems} title="读不到预检结果" />
       {loaded.loading && !check && canEdit && <Loading>正在预检：比较字段、核对绑定的数据集…</Loading>}
-      {check && !check.version && (
-        <>
-          <ErrorBox problems={check.problems} title="有严重问题，不能发布" />
-          <p><a href={href(definitionPath(name))}>回到草案改正</a></p>
-        </>
-      )}
-      {check?.version && (
-        <>
-          <section className="card">
-            <h2>{check.baseVersion === undefined ? '字段' : `与 v${check.baseVersion} 相比`}</h2>
-            <DiffList diff={check.diff!} />
-          </section>
-          <DatasetImpact check={check} />
-          <section className="card" data-testid="template-impact">
-            <h2>模板</h2>
-            {check.templates!.length === 0 ? <p className="muted">还没有模板用这个数据定义。</p> : (
-              <>
-                <ul className="plain impact">
-                  {check.templates!.map((template) => <li key={template.name} data-name={template.name}><a href={href(['templates', template.name])}>{template.name}</a><span className="muted">（绑定 v{template.base.version}）</span></li>)}
-                </ul>
-                <p className="small muted">发布不改动它们，它们照旧绑定各自的版本。</p>
-              </>
+      {check && (
+        <div className="publish-layout">
+          <PublishConfirm verdict={publishVerdict(check)} busy={busy}
+            {...(check.version === undefined ? {} : { steps: { from: check.baseVersion === undefined ? '草案' : `v${check.baseVersion}`, to: `v${check.version}` } })}>
+            <ErrorBox problems={problems} title="没有发布" />
+            {check.version !== undefined
+              ? (
+                <>
+                  <button type="button" className="primary publish-button" disabled={busy || loaded.loading} onClick={() => void publish()}><Icon d={PUBLISH} />{busy ? '正在发布…' : `发布为 v${check.version}`}</button>
+                  <a className="button quiet" href={href(definitionPath(name))}>回到草案</a>
+                  <p className="publish-note">发布产生新版本，旧版本不变；要回退，就在发布记录里把旧版本再发布一次。</p>
+                </>
+              )
+              : <a className="button primary publish-button" href={href(definitionPath(name))}>回到草案改正</a>}
+          </PublishConfirm>
+          <div className="publish-details">
+            {check.version === undefined
+              ? (
+                <section className="publish-section" role="alert" data-testid="publish-problems">
+                  <h2>要先改正的问题</h2>
+                  <div className="publish-sheet"><ProblemList problems={check.problems.filter(isSevere)} label="发布前要改正的问题" /></div>
+                </section>
+              )
+              : (
+                <>
+                  <section className="publish-section" data-testid="publish-changes">
+                    <h2>{check.baseVersion === undefined ? '字段' : `与 v${check.baseVersion} 相比`}</h2>
+                    <div className="publish-sheet"><DiffList diff={check.diff!} /></div>
+                  </section>
+                  <DatasetImpact check={check} />
+                  <TemplateImpact check={check} />
+                </>
+              )}
+            {check.problems.some((problem) => !isSevere(problem)) && (
+              <section className="publish-section" data-testid="publish-hints">
+                <h2>提示</h2>
+                <div className="publish-sheet"><ProblemList problems={check.problems.filter((problem) => !isSevere(problem))} label="发布前的提示" /></div>
+              </section>
             )}
-          </section>
-        </>
+          </div>
+        </div>
       )}
-      <p className="table-note">每次发布产生一个新版本，旧版本不变；要回退，就在发布记录里把旧版本再发布一次。</p>
     </section>
   );
 }

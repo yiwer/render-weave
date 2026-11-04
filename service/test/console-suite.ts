@@ -942,6 +942,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     /** 静态数据定义的一张卡片（一个版本）、数据定义草案的一张卡片、字段的一行（表单）与字段树上的一个字段。 */
     const versionCard = (target: Page, name: string, version: number) => target.locator(`[data-testid="version-card"][data-name="${name}"][data-version="${version}"]`);
     const draftCard = (target: Page, name: string) => target.locator(`[data-testid="draft-card"][data-name="${name}"]`);
+    const publishedCard = (target: Page, name: string) => target.locator(`[data-testid="published-card"][data-name="${name}"]`);
     const fieldRow = (target: Page, name: string) => target.locator(`[data-testid="field-row"][data-field="${name}"]`);
     const treeField = (target: Page, name: string) => target.locator(`[data-testid="tree-field"][data-field="${name}"]`);
     const publicationRow = (target: Page, name: string, version: number) => target.locator(`[data-testid="publication-row"][data-name="${name}"][data-version="${version}"]`);
@@ -1046,6 +1047,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('save-status').filter({ hasText: '有没保存的改动' }).waitFor();
       await target.getByRole('button', { name: '删除字段', exact: true }).click();
       await target.getByTestId('remove-impact').filter({ hasText: ROUTE }).waitFor();
+      // 有影响的字段用弹窗问：确认按钮总在窗口里，不会落到检查器下面看不见（M363）。
+      const confirmBox = await target.getByRole('dialog', { name: '删除字段' }).getByRole('button', { name: '确认删除字段' }).evaluate((button) => { const box = button.getBoundingClientRect(); return [box.top, box.bottom, button.ownerDocument.documentElement.clientHeight]; });
+      expect(confirmBox[0]).toBeGreaterThanOrEqual(0);
+      expect(confirmBox[1]).toBeLessThanOrEqual(confirmBox[2]!);
       await target.getByRole('button', { name: '留着' }).click();
       await target.getByRole('button', { name: '撤销' }).click();
       await routeNo.waitFor();
@@ -1075,7 +1080,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('check-status').filter({ hasText: '1 个严重问题' }).waitFor();
       expect(await fieldRow(target, 'fare').getByText('已修改').count()).toBe(1);
       expect(await target.getByRole('button', { name: /^发布/ }).isDisabled()).toBe(true);
-      expect(await target.getByRole('button', { name: '预览编译产物' }).isDisabled()).toBe(true);
+      await target.getByRole('button', { name: '编译产物' }).click();
+      await target.getByTestId('compiled-unavailable').filter({ hasText: '改正严重问题' }).waitFor();
       await target.getByRole('list', { name: '校验问题' }).getByRole('button').click();
       await inspector(target).getByLabel('下限', { exact: true }).fill('0');
       await saveDraft(target);
@@ -1099,8 +1105,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 树状图与表单是同一个会话：选中的字段一起走，切换不丢没保存的改动。
       await target.getByRole('button', { name: '树状图' }).click();
       await treeField(target, 'depot').getByRole('button').waitFor();
+      await target.getByTestId('definition-map').waitFor();
+      // 搜索时不匹配的节点变淡，不消失（M364）。
       await target.getByLabel('搜索字段').fill('depot');
-      await treeField(target, 'fare').waitFor({ state: 'detached' });
+      await target.locator('[data-testid="tree-field"][data-field="fare"][data-dimmed="true"]').waitFor();
+      expect(await treeField(target, 'depot').getAttribute('data-dimmed')).toBeNull();
       await target.getByLabel('搜索字段').fill('');
       await treeField(target, 'fare').getByRole('button').click();
       expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fare');
@@ -1108,12 +1117,19 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '表单', exact: true }).click();
       expect(await fieldRow(target, 'fare').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
       expect(await inspector(target).getByLabel('说明', { exact: true }).inputValue()).toBe('没保存的说明');
+      // 数据定义 DSL 是页面上现在的内容；编译产物按存下来的内容算，有没保存的改动时先说明（M364）。
+      await target.getByRole('button', { name: '数据定义 DSL' }).click();
+      const liveDsl = JSON.parse((await target.getByTestId('definition-dsl').textContent())!);
+      expect(liveDsl.fields.find((field: any) => field.name === 'fare').description).toBe('没保存的说明');
+      await target.getByRole('button', { name: '编译产物' }).click();
+      await target.getByTestId('compiled-unavailable').filter({ hasText: '保存之后' }).waitFor();
+      await target.getByRole('button', { name: '表单', exact: true }).click();
       await target.getByRole('button', { name: '撤销' }).click();
       await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
       await checkPassed(target);
 
       // 编译预览与校验接口相同。
-      await target.getByRole('button', { name: '预览编译产物' }).click();
+      await target.getByRole('button', { name: '编译产物' }).click();
       const preview = JSON.parse((await target.getByTestId('compiled-preview').textContent())!);
       const verdict = (await adminApi('GET', `/v1/definitions/${path}/draft/check`)).body;
       expect(preview).toEqual(verdict.compiled);
@@ -1124,6 +1140,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const saved = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
       const preflight = (await adminApi('POST', `/v1/definitions/${path}/draft/publish-check`, { expectedSha256: saved.sha256 })).body;
       await target.getByRole('heading', { name: '发布为 线路牌 v2', level: 1 }).waitFor();
+      // 确认卡先给结论：能发，但有影响要看，数字与预检相同。
+      const confirm = target.getByTestId('publish-confirm');
+      expect(await confirm.getAttribute('data-tone')).toBe('warn');
+      await confirm.getByText('可以发布，有影响要看').waitFor();
+      expect(await confirm.locator('[data-check="datasets"]').getAttribute('data-tone')).toBe('warn');
+      await confirm.locator('[data-check="datasets"]').filter({ hasText: `${preflight.datasets.mismatched} 份数据集按 v2 会失配` }).filter({ hasText: '继续按 v1 校验和出图' }).waitFor();
       const added = target.getByTestId('definition-diff').locator('li[data-path="depot"]');
       expect(await added.getAttribute('data-change')).toBe('added');
       expect(await added.textContent()).toContain('新增必填字段 所属车队，文本，最多 20 字');
@@ -1226,7 +1248,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await card.getByTestId('draft-fields').textContent()).toBe(String(original.fields.length));
       expect(await card.getByTestId('draft-base').textContent()).toBe('还没发布过');
       await target.getByLabel('搜索数据定义').fill('没有这个');
-      await target.getByTestId('drafts-empty').filter({ hasText: '没有匹配的草案' }).waitFor();
+      await target.getByTestId('definitions-empty').filter({ hasText: '没有匹配的数据定义' }).waitFor();
       await target.getByLabel('搜索数据定义').fill('胸牌的');
       await card.waitFor();
       await card.getByRole('button', { name: '删除' }).click();
@@ -1269,6 +1291,17 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await form.getByLabel('最短（字）', { exact: true }).fill('1');
         await form.getByLabel('最长（字）', { exact: true }).fill('20');
         await form.getByLabel('可选值（一行一个）', { exact: true }).fill('甲\n乙');
+        // 可选约束（M363）：打字就算启用，取消勾选就去掉这条，勾上时焦点到输入框。
+        const limits = fieldRow(target, 'title').getByTestId('field-constraints');
+        expect(await form.getByLabel('启用最短（字）').isChecked()).toBe(true);
+        expect(await limits.textContent()).toContain('1–20 字');
+        await form.getByLabel('启用最短（字）').uncheck();
+        expect(await form.getByLabel('最短（字）', { exact: true }).inputValue()).toBe('');
+        expect(await limits.textContent()).toContain('最多 20 字');
+        await form.getByLabel('启用最短（字）').check();
+        expect(await target.evaluate('document.activeElement.id')).toBe('field-minLength');
+        await form.getByLabel('最短（字）', { exact: true }).fill('1');
+        expect(await limits.textContent()).toContain('1–20 字');
         // 必填开关不被字段拉宽：底色到最后一个按钮为止（M362）。
         expect(await form.getByRole('group', { name: '必填状态' }).evaluate((group) => group.getBoundingClientRect().right - group.lastElementChild!.getBoundingClientRect().right)).toBeLessThan(4);
       });
@@ -1302,9 +1335,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await fieldRow(target, '1bad').getByTestId('field-problems').filter({ hasText: '字段名称必须以英文字母开头' }).waitFor();
       await target.getByTestId('check-status').filter({ hasText: '严重问题' }).waitFor();
       await openField(target, '1bad');
+      // 没发布过、没有模板读的字段：直接删，不问，撤销就回来（M363）。
       await target.getByRole('button', { name: '删除字段', exact: true }).click();
-      await target.getByTestId('remove-impact').filter({ hasText: '还没发布过' }).waitFor();
-      await target.getByRole('button', { name: '确认删除字段' }).click();
+      await fieldRow(target, '1bad').waitFor({ state: 'detached' });
+      expect(await target.getByRole('dialog').count()).toBe(0);
+      await target.getByRole('button', { name: '撤销' }).click();
+      await fieldRow(target, '1bad').waitFor();
+      await fieldRow(target, '1bad').getByRole('button', { name: /^删除字段/ }).click();
       await fieldRow(target, '1bad').waitFor({ state: 'detached' });
       await saveDraft(target);
       await checkPassed(target);
@@ -1328,8 +1365,50 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(moved.map((field) => field.name).slice(2, 7)).toEqual(['day', 'dayCopy', 'at', 'enabled', 'moment']);
       expect(moved[2].constraints).toEqual({ required: true });
       await fieldRow(target, 'dayCopy').getByRole('button', { name: /^删除字段/ }).click();
-      await target.getByRole('button', { name: '确认删除字段' }).click();
+      await fieldRow(target, 'dayCopy').waitFor({ state: 'detached' });
       await saveDraft(target);
+
+      // 树状图上拖动节点排序，能撤销；点节点选中，拖过不算点；放大缩小（M364）。
+      await target.getByRole('button', { name: '树状图' }).click();
+      const mapOrder = () => target.getByTestId('tree-field').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field')!));
+      const mapBefore = await mapOrder();
+      const firstBox = (await treeField(target, mapBefore[0]!).boundingBox())!, secondBox = (await treeField(target, mapBefore[1]!).boundingBox())!;
+      await target.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(firstBox.x + firstBox.width / 2, secondBox.y + secondBox.height / 2 + 2, { steps: 8 });
+      await target.mouse.up();
+      await expect.poll(mapOrder).toEqual([mapBefore[1], mapBefore[0], ...mapBefore.slice(2)]);
+      await target.getByTestId('save-status').filter({ hasText: '有没保存的改动' }).waitFor();
+      // 松手就停：之后再移动鼠标，节点不跟着走。
+      expect(await target.locator('.map-field.dragging').count()).toBe(0);
+      const droppedAt = () => treeField(target, mapBefore[1]!).boundingBox();
+      await target.waitForTimeout(400); // 等节点滑到位
+      const dropped = await droppedAt();
+      await target.mouse.move(firstBox.x + 200, firstBox.y + 120, { steps: 4 });
+      expect(await droppedAt()).toEqual(dropped);
+      await target.getByRole('button', { name: '撤销' }).click();
+      await expect.poll(mapOrder).toEqual(mapBefore);
+      await treeField(target, mapBefore[1]!).getByRole('button').click();
+      expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe(mapBefore[1]);
+      // 拖空白处平移，松手就停：之后再移动鼠标，图不跟着走（M364）。
+      const layerAt = () => target.evaluate(`document.querySelector('.map-layer').style.transform`) as Promise<string>;
+      const canvas = (await target.locator('.map-canvas').boundingBox())!, startedAt = await layerAt();
+      await target.mouse.move(canvas.x + 40, canvas.y + canvas.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(canvas.x + 90, canvas.y + canvas.height / 2 + 20, { steps: 4 });
+      await target.mouse.up();
+      const panned = await layerAt();
+      expect(panned).not.toBe(startedAt);
+      await target.mouse.move(canvas.x + 300, canvas.y + 60, { steps: 4 });
+      expect(await layerAt()).toBe(panned);
+      await target.getByRole('button', { name: '适合窗口' }).click();
+      const widthOf = async () => (await treeField(target, mapBefore[0]!).boundingBox())!.width;
+      const fitted = await widthOf();
+      await target.getByRole('button', { name: '缩小' }).click();
+      await expect.poll(widthOf).toBeLessThan(fitted);
+      await target.getByRole('button', { name: '适合窗口' }).click();
+      await expect.poll(widthOf).toBeCloseTo(fitted, 0);
+      await target.getByRole('button', { name: '表单', exact: true }).click();
       await checkPassed(target);
 
       // 别人先保存了：这次改动没有写入，读回最新内容再改。
@@ -1350,11 +1429,31 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 首个版本：没有数据集与模板，发布记录写首个版本；发布的产物能再被开放 API 读出。
       await target.getByRole('button', { name: '发布为 v1' }).click();
+      await target.getByTestId('publish-confirm').getByText('可以发布', { exact: true }).waitFor();
       await target.getByTestId('dataset-impact').filter({ hasText: '这是首个版本' }).waitFor();
       await target.getByTestId('template-impact').filter({ hasText: '还没有模板用这个数据定义' }).waitFor();
       await target.getByRole('button', { name: '发布为 v1' }).click();
       await publicationRow(target, name, 1).getByTestId('publication-summary').filter({ hasText: '首个版本，10 个字段' }).waitFor();
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
+
+      // 发布之后数据定义还在（M366）：草案没了，卡片写最新版本，能搜到；点开看这一版，要改就复制为草案。
+      await (await nav(target, '数据定义')).click();
+      const published = publishedCard(target, name);
+      await published.getByTestId('published-state').filter({ hasText: '已发布 v1' }).waitFor();
+      expect(await published.getByTestId('published-fields').textContent()).toBe('10');
+      expect(await published.getByTestId('published-uses').textContent()).toBe('0 模板 · 0 数据集');
+      expect(await draftCard(target, name).count()).toBe(0);
+      await target.getByLabel('搜索数据定义').fill(name);
+      await published.waitFor();
+      await published.getByRole('button', { name: '复制为草案' }).click();
+      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
+      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).status, '复制出一份基于 v1 的草案').toBe(200);
+      await target.getByRole('button', { name: '删除草案' }).click();
+      await target.getByRole('button', { name: '确认删除草案' }).click();
+      await target.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
+      await publishedCard(target, name).waitFor();
+      await publishedCard(target, name).locator('a').first().click();
+      await target.getByTestId('static-facts').filter({ hasText: 'v1 · 当前' }).waitFor();
 
       // 没有草案时打开这个名称：去最新的静态版本。草案可以删除，已发布的版本不受影响。
       await target.goto(`${baseUrl}/console/#/definitions/${path}`);
@@ -1389,8 +1488,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (const label of ['添加字段', '删除草案', '保存', '撤销', '回到已保存', '确认删除字段']) expect(await page.getByRole('button', { name: label }).count(), label).toBe(0);
       expect(await page.getByRole('button', { name: /^(发布|复制字段|删除字段)/ }).count()).toBe(0);
       expect(await page.getByLabel('显示名称', { exact: true }).getAttribute('readonly')).not.toBeNull();
-      await page.getByRole('button', { name: '预览编译产物' }).click();
+      await page.getByRole('button', { name: '编译产物' }).click();
       await page.getByTestId('compiled-preview').waitFor();
+      await page.getByRole('button', { name: '树状图' }).click();
+      await page.getByTestId('map-status').waitFor();
+      expect(await page.getByTestId('map-status').textContent()).not.toContain('拖动');
 
       // 静态数据定义也一样：右键没有复制为草案，详情页也没有。
       await page.goto(`${baseUrl}/console/#/static-schemas`);
@@ -1466,8 +1568,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const target = await asAdmin(), name = '胸牌', path = enc(name);
       await target.goto(`${baseUrl}/console/#/definitions`);
       await target.getByLabel('搜索数据定义').fill('没有这个');
-      await target.getByTestId('drafts-empty').locator('svg.motif').waitFor();
-      const motion = () => target.evaluate(`(() => { const style = getComputedStyle(document.querySelector('[data-testid="drafts-empty"] svg.motif .m-write')); return [style.animationName, style.strokeDashoffset]; })()`) as Promise<string[]>;
+      await target.getByTestId('definitions-empty').locator('svg.motif').waitFor();
+      const motion = () => target.evaluate(`(() => { const style = getComputedStyle(document.querySelector('[data-testid="definitions-empty"] svg.motif .m-write')); return [style.animationName, style.strokeDashoffset]; })()`) as Promise<string[]>;
       const titleThread = () => target.evaluate(`getComputedStyle(document.querySelector('.title-row h1'), '::after').backgroundImage`) as Promise<string>;
       expect((await motion())[0]).toBe('m-write');
       expect(await titleThread()).toContain('keyframes');
@@ -1791,6 +1893,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const compared = worked();
       await target.reload();
       await target.getByRole('heading', { name: `发布修订 ${first + 1}`, level: 1 }).waitFor();
+      await target.getByTestId('publish-confirm').getByText(`发布后出图读修订 ${first + 1}`).waitFor();
       await compared;
       const change = target.locator(`[data-testid="change"][data-path="${BADGE}/单位"]`);
       await change.waitFor();

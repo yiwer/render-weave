@@ -2,10 +2,10 @@
  * 数据定义页面共用的字段部件（M360）：一行摘要、字段树、谁在用、改名与删字段的影响、这种类型能写的约束。
  * 数据定义的编辑页与静态数据定义的详情页都用；只显示与改值，不调接口。
  */
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { constraintText, isRequired, typeText, withConstraint } from '../form/definition.js';
 import { href } from '../hooks.js';
-import type { DefinitionDocument, DefinitionField, DefinitionItems, Problem, SchemaRef, StaticSchemaSummary, TemplateBinding } from '../types.js';
+import type { DefinitionDocument, DefinitionField, DefinitionItems, FieldType, Problem, SchemaRef, StaticSchemaSummary, TemplateBinding } from '../types.js';
 
 export type UseMap = ReadonlyMap<string, readonly TemplateBinding[]>;
 export const fieldLabel = (field: DefinitionField, index: number) => field.displayName || field.name || `未命名字段 ${index + 1}`;
@@ -36,6 +36,16 @@ export function FieldSummary(props: { readonly field: DefinitionField; readonly 
   );
 }
 
+/** 根对象：字段树与编辑页的表单都从它长出去。 */
+export function TreeRoot(props: { readonly name: string; readonly document: DefinitionDocument }) {
+  return (
+    <header className="tree-root">
+      <span><small>根对象</small><strong>{props.document.displayName || props.name}</strong><code>{props.name}</code></span>
+      <em>{props.document.fields.length} 个字段</em>
+    </header>
+  );
+}
+
 /** 字段树：根是数据定义，下面一层是字段；列表与引用再带一行说明元素是什么。选中一个字段，右边看它的详情。 */
 export function DefinitionTree(props: {
   readonly name: string;
@@ -50,10 +60,7 @@ export function DefinitionTree(props: {
   const { document, selected } = props, fields = document.fields;
   return (
     <section className="definition-tree" data-testid="definition-tree" aria-label={`${document.displayName || props.name} 的字段树`}>
-      <header className="tree-root">
-        <span><small>根对象</small><strong>{document.displayName || props.name}</strong><code>{props.name}</code></span>
-        <em>{fields.length} 个字段</em>
-      </header>
+      <TreeRoot name={props.name} document={document} />
       {fields.length === 0 || props.visible?.size === 0 ? <p className="muted tree-empty">{fields.length ? '没有匹配的字段。' : '还没有字段。'}</p> : (
         <ol className="tree-branches">
           {fields.map((field, index) => {
@@ -106,6 +113,38 @@ export function BindingImpact(props: { readonly kind: 'rename' | 'remove'; reado
   );
 }
 
+/** 这种类型有没有可加的约束（docs/dsl/data-definition.md）：日期、时刻、时间、布尔没有，引用选的是版本。 */
+export const hasConstraints = (type: FieldType) => ['text', 'number', 'image', 'list'].includes(type);
+
+/**
+ * 可选约束的开关（M363，照旧 RenderWeave 的约束卡片）：勾上是展开等着填，写了值才进文档；取消勾选就去掉这条。
+ * 框一直能输入，直接打字也算勾上，不用多点一下。
+ */
+function useOptional(hasValue: boolean, clear: () => void) {
+  const [open, setOpen] = useState(false);
+  const control = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  return {
+    on: open || hasValue, control,
+    toggle: (checked: boolean) => {
+      setOpen(checked);
+      if (checked) control.current?.focus();
+      else clear();
+    },
+  };
+}
+
+function ConstraintCard(props: { readonly id: string; readonly label: string; readonly on: boolean; readonly wide?: boolean; readonly onToggle: (checked: boolean) => void; readonly children: ReactNode }) {
+  return (
+    <div className={`constraint-card${props.on ? ' on' : ''}${props.wide ? ' wide' : ''}`}>
+      <div className="constraint-card-head">
+        <input type="checkbox" aria-label={`启用${props.label}`} checked={props.on} onChange={(event) => props.onToggle(event.target.checked)} />
+        <label htmlFor={props.id}>{props.label}</label>
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
 /** 这种类型能写的约束：字段与列表元素用同一份。label 写在标签前面，元素的约束读作"元素最长（字）"。 */
 export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T; readonly prefix: string; readonly label?: string; readonly onChange: (owner: T) => void; readonly refs: readonly StaticSchemaSummary[] }) {
   const { owner, prefix, onChange, refs } = props, tag = props.label ?? '', c = owner.constraints ?? {};
@@ -119,10 +158,7 @@ export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T
         <>
           {number('minLength', '最短（字）')}
           {number('maxLength', '最长（字）')}
-          <div className="field wide">
-            <label htmlFor={`${prefix}-pattern`}>{tag}正则</label>
-            <input id={`${prefix}-pattern`} type="text" className="mono" spellCheck={false} value={typeof c['pattern'] === 'string' ? c['pattern'] : ''} onChange={(event) => set('pattern', event.target.value || undefined)} />
-          </div>
+          <PatternField id={`${prefix}-pattern`} label={`${tag}正则`} value={typeof c['pattern'] === 'string' ? c['pattern'] : ''} onChange={(value) => set('pattern', value)} />
           <EnumField id={`${prefix}-enum`} label={`${tag}可选值（一行一个）`} value={c['enum']} numeric={false} onChange={(value) => set('enum', value)} />
         </>
       );
@@ -131,7 +167,7 @@ export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T
         <>
           {number('min', '下限', false)}
           {number('max', '上限', false)}
-          <label className="check-field wide"><input type="checkbox" checked={c['integer'] === true} onChange={(event) => set('integer', event.target.checked ? true : undefined)} />{tag}只能是整数</label>
+          <label className={`constraint-card inline wide${c['integer'] === true ? ' on' : ''}`}><input type="checkbox" checked={c['integer'] === true} onChange={(event) => set('integer', event.target.checked ? true : undefined)} />{tag}只能是整数</label>
           <EnumField id={`${prefix}-enum`} label={`${tag}可选值（一行一个）`} value={c['enum']} numeric onChange={(value) => set('enum', value)} />
         </>
       );
@@ -155,19 +191,28 @@ export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T
     case 'ref':
       return <RefField id={`${prefix}-ref`} label={`${tag}引用的数据定义`} value={owner.ref} refs={refs} onChange={(ref) => onChange({ ...owner, ref })} />;
     default:
-      return <p className="small muted wide">这种类型没有{tag}约束。</p>;
+      return <p className="small muted wide">这种类型没有可加的{tag}约束。</p>;
   }
 }
 
 /** 数值输入：自己留着正在打的字（"1."、"-"），写回去的是数值；清空就是没有这条约束。 */
 function NumberField(props: { readonly id: string; readonly label: string; readonly value: number | undefined; readonly whole: boolean; readonly onChange: (value: number | undefined) => void }) {
   const [text, setText] = useState(props.value === undefined ? '' : String(props.value));
+  const optional = useOptional(props.value !== undefined, () => { setText(''); props.onChange(undefined); });
   return (
-    <div className="field">
-      <label htmlFor={props.id}>{props.label}</label>
-      <input id={props.id} type="number" step={props.whole ? 1 : 'any'} {...(props.whole ? { min: 0 } : {})} value={text}
+    <ConstraintCard id={props.id} label={props.label} on={optional.on} onToggle={optional.toggle}>
+      <input ref={optional.control} id={props.id} type="number" step={props.whole ? 1 : 'any'} {...(props.whole ? { min: 0 } : {})} value={text}
         onChange={(event) => { setText(event.target.value); props.onChange(event.target.value === '' ? undefined : Number(event.target.value)); }} />
-    </div>
+    </ConstraintCard>
+  );
+}
+
+function PatternField(props: { readonly id: string; readonly label: string; readonly value: string; readonly onChange: (value: string | undefined) => void }) {
+  const optional = useOptional(Boolean(props.value), () => props.onChange(undefined));
+  return (
+    <ConstraintCard id={props.id} label={props.label} on={optional.on} wide onToggle={optional.toggle}>
+      <input ref={optional.control} id={props.id} type="text" className="mono" spellCheck={false} value={props.value} onChange={(event) => props.onChange(event.target.value || undefined)} />
+    </ConstraintCard>
   );
 }
 
@@ -179,11 +224,11 @@ function EnumField(props: { readonly id: string; readonly label: string; readonl
     const lines = next.split('\n').map((line) => line.trim()).filter(Boolean);
     props.onChange(lines.length ? (props.numeric ? lines.map((line) => (Number.isNaN(Number(line)) ? line : Number(line))) : lines) : undefined);
   };
+  const optional = useOptional(Array.isArray(props.value), () => change(''));
   return (
-    <div className="field wide">
-      <label htmlFor={props.id}>{props.label}</label>
-      <textarea id={props.id} rows={3} value={text} onChange={(event) => change(event.target.value)} />
-    </div>
+    <ConstraintCard id={props.id} label={props.label} on={optional.on} wide onToggle={optional.toggle}>
+      <textarea ref={optional.control} id={props.id} rows={3} value={text} onChange={(event) => change(event.target.value)} />
+    </ConstraintCard>
   );
 }
 

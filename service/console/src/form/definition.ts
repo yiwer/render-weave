@@ -140,6 +140,6 @@ function propertyValue(key: string, value: unknown): string {
   return Array.isArray(value) ? value.join('、') : String(value);
 }
 
-/** 一条属性改动，如"最长 10 → 100"。 */
-export const propertyText = (property: DefinitionProperty) =>
-  `${propertyLabel(property.key)} ${propertyValue(property.key, property.before)} → ${propertyValue(property.key, property.after)}`;
+/** 一条属性改动拆开写，如"最长"、10、100：页面要把改前改后画得不一样。 */
+export const propertyParts = (property: DefinitionProperty) =>
+  ({ label: propertyLabel(property.key), before: propertyValue(property.key, property.before), after: propertyValue(property.key, property.after) });

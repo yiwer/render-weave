@@ -6,7 +6,8 @@
  * 只调开放 API。发布记录在 definition-publish.tsx，同属这个模块。
  */
 import { useEffect, useState, type MouseEvent } from 'react';
-import { api, saveBlob } from '../api.js';
+import { api } from '../api.js';
+import { CodePanel } from '../components/code-panel.js';
 import { ContextMenu, type ContextMenuItem } from '../components/context-menu.js';
 import { DefinitionTree, FieldFacts, FieldSummary, type UseMap } from '../components/definition-fields.js';
 import { StaticSchemaTabs } from '../components/module-tabs.js';
@@ -216,6 +217,7 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
                 {fields.map((item, index) => (
                   <article key={item.name} className={`studio-row${selected === index ? ' selected' : ''}`} data-testid="field-row" data-field={item.name}>
                     <button type="button" className="studio-row-main" aria-pressed={selected === index} aria-label={`查看字段 ${item.displayName || item.name}`} onClick={() => setSelected(index)}>
+                      <span className="tree-number">{String(index + 1).padStart(2, '0')}</span>
                       <FieldSummary field={item} index={index} />
                     </button>
                   </article>
@@ -272,27 +274,5 @@ function CopyToDraft(props: { readonly name: string; readonly version: number; r
       </form>
       <ErrorBox problems={problems} title="没有复制" />
     </>
-  );
-}
-
-/** 只读的代码块：可以复制、下载。 */
-function CodePanel(props: { readonly testid: string; readonly value: unknown; readonly file: string; readonly type: string }) {
-  const text = `${JSON.stringify(props.value, null, 2)}\n`;
-  const [copied, setCopied] = useState<string>();
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied('已复制');
-    } catch { setCopied('浏览器不让复制，请手动选中'); }
-  };
-  return (
-    <section className="code-panel">
-      <div className="actions code-panel-tools">
-        {copied && <span className="small muted" role="status">{copied}</span>}
-        <button type="button" className="small quiet" onClick={() => void copy()}>复制</button>
-        <button type="button" className="small quiet" onClick={() => saveBlob(new Blob([text], { type: props.type }), props.file.replace(/[\\/:*?"<>|]/g, '_'))}>下载</button>
-      </div>
-      <pre className="compiled" data-testid={props.testid} tabIndex={0}>{text}</pre>
-    </section>
   );
 }

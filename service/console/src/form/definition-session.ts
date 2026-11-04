@@ -92,6 +92,15 @@ export function moveField(document: DefinitionDocument, index: number, by: -1 | 
   return withFields(document, next);
 }
 
+/** 把一个字段挪到第 to 个的位置（树状图上拖动排序，M364）；没动或越界答 undefined。 */
+export function moveFieldTo(document: DefinitionDocument, from: number, to: number): DefinitionDocument | undefined {
+  if (from === to || from < 0 || to < 0 || from >= document.fields.length || to >= document.fields.length) return undefined;
+  const next = [...document.fields];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved!);
+  return withFields(document, next);
+}
+
 /** 复制一个字段放在它后面：字段名称是身份，副本换一个不重复的名称。 */
 export function copyField(document: DefinitionDocument, index: number): DefinitionDocument {
   const field = document.fields[index]!, names = new Set(document.fields.map((item) => item.name));

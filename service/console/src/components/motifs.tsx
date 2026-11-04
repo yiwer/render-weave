@@ -58,6 +58,19 @@ export function Hourglass(props: { readonly size?: number }) {
   );
 }
 
+/** 版本之间的织线：两根线交织着从旧版走到新版，信号沿线传过去；发布时传得更快。 */
+export function VersionThread() {
+  const over = 'M2 7c6.2-5.4 11.8-5.4 18 0s11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0';
+  const under = 'M2 7c6.2 5.4 11.8 5.4 18 0s11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0 11.8-5.4 18 0 11.8 5.4 18 0';
+  return (
+    <svg className="motif motif-version-thread" width="166" height="14" viewBox="0 0 166 14" fill="none" aria-hidden="true">
+      <path className="m-slate" d={over} />
+      <path className="m-ochre" d={under} />
+      <path className="m-clay thread-signal" pathLength={100} d={under} />
+    </svg>
+  );
+}
+
 /** 纸页与笔迹：还没有草案。正文一行行写出来；悬停时底下两页散开。 */
 export function DraftSheets(props: { readonly size?: number }) {
   return (

@@ -8,10 +8,13 @@
  */
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { api, ApiError } from '../api.js';
-import { BindingImpact, DefinitionTree, FieldFacts, FieldSummary, fieldLabel, TypeFields, UsedBy, type UseMap } from '../components/definition-fields.js';
+import { CodePanel } from '../components/code-panel.js';
+import { BindingImpact, FieldFacts, FieldSummary, fieldLabel, hasConstraints, TreeRoot, TypeFields, UsedBy, type UseMap } from '../components/definition-fields.js';
+import { DefinitionMap } from '../components/definition-map.js';
+import { Modal } from '../components/modal.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { fieldChange, FIELD_TYPES, ITEM_TYPES, itemsOfType, isRequired, problemsByField, withConstraint, withType } from '../form/definition.js';
-import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, openSession, removeField, replaceField, sessionReducer } from '../form/definition-session.js';
+import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, moveFieldTo, openSession, removeField, replaceField, sessionReducer } from '../form/definition-session.js';
 import { go, guardNavigation, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionDraft, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary } from '../types.js';
 import { canEditDefinitions, definitionPath, staticSchemaPath } from './definitions.js';
@@ -20,6 +23,10 @@ import { Loading, Seal, ThreadOrbit } from '../components/motifs.js';
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 export const documentText = (document: DefinitionDocument) => `${JSON.stringify(document, null, 2)}\n`;
 const typeName = (type: FieldType) => FIELD_TYPES.find((item) => item.type === type)?.label ?? type;
+
+/** 编辑页的四种看法（M364）：两种改字段，两种看文档。 */
+type StudioView = 'form' | 'tree' | 'dsl' | 'compiled';
+const STUDIO_VIEWS: readonly (readonly [StudioView, string])[] = [['form', '表单'], ['tree', '树状图'], ['dsl', '数据定义 DSL'], ['compiled', '编译产物']];
 
 /** 路由入口：有草案就编辑草案，没有就去最新的静态版本；地址里的 field 选中那个字段。 */
 export function DefinitionDetail(props: { readonly name: string; readonly version?: string; readonly field?: string; readonly identity: Identity }) {
@@ -65,13 +72,12 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
   const baseVersion = info.baseVersion;
   const base = useLoad(async () => (baseVersion === undefined ? undefined : api.staticSchema(name, baseVersion)), `draft-base:${name}@${baseVersion ?? ''}`);
   const schemas = useLoad(() => api.staticSchemas(), 'static-schemas');
-  const [view, setView] = useState<'form' | 'tree'>('form');
+  const [view, setView] = useState<StudioView>('form');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
   const [stale, setStale] = useState(false);
   const [notice, setNotice] = useState<string>();
-  const [showCompiled, setShowCompiled] = useState(false);
   const [discarding, setDiscarding] = useState(false);
   const [removing, setRemoving] = useState<number>();
 
@@ -178,6 +184,13 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
     edit(next as unknown as DefinitionDocument, `document:${key}`);
   };
   const selected = session.selected !== undefined && fields?.[session.selected] ? session.selected : undefined;
+  /** 删字段（M363）：只有发布过或被模板读着才有后果，要先问；别的直接删，撤销就回来。 */
+  const hasImpact = (fieldName: string) => Boolean(baseFields?.some((item) => item.name === fieldName)) || (uses.get(fieldName)?.length ?? 0) > 0;
+  const removeAt = (index: number) => {
+    setRemoving(undefined);
+    const count = (fields?.length ?? 1) - 1;
+    edit(removeField(document, index), undefined, count ? Math.min(index, count - 1) : undefined);
+  };
   const query = search.trim().toLocaleLowerCase('zh-CN');
   const visible = (fields ?? []).map((field, index) => ({ field, index }))
     .filter(({ field }) => !query || [field.name, field.displayName, field.description ?? '', typeName(field.type)].some((text) => text.toLocaleLowerCase('zh-CN').includes(query)));
@@ -221,7 +234,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
         {notice && <p className="impact-note" role="status">{notice}</p>}
         <ErrorBox problems={stale ? undefined : problems} title="没有保存" />
 
-        <div className="studio-identity">
+        {view === 'form' && <div className="studio-identity">
           <div className="field">
             <label htmlFor="definition-name">名称</label>
             <input id="definition-name" type="text" className="mono" value={name} readOnly />
@@ -234,15 +247,14 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
             <label htmlFor="definition-description">说明</label>
             <input id="definition-description" type="text" readOnly={!canEdit} value={document.description ?? ''} onChange={(event) => setProperty('description', event.target.value)} />
           </div>
-        </div>
+        </div>}
 
         {!fields && <p className="muted">这份草案还没写成字段列表，页面改不了；问题见下面，或用接口改。</p>}
         {fields && (
           <>
             <div className="studio-toolbar">
               <span className="segmented" role="group" aria-label="看法">
-                <button type="button" className="small" aria-pressed={view === 'form'} onClick={() => setView('form')}>表单</button>
-                <button type="button" className="small" aria-pressed={view === 'tree'} onClick={() => setView('tree')}>树状图</button>
+                {STUDIO_VIEWS.map(([value, label]) => <button key={value} type="button" className="small" aria-pressed={view === value} onClick={() => setView(value)}>{label}</button>)}
               </span>
               {canEdit && (
                 <span className="studio-history" role="group" aria-label="编辑历史">
@@ -251,26 +263,51 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
                   <button type="button" className="small quiet" disabled={!dirty} onClick={() => dispatch({ type: 'restore' })}>回到已保存</button>
                 </span>
               )}
-              <input type="search" className="studio-search" aria-label="搜索字段" placeholder="搜索字段、说明或类型" value={search} onChange={(event) => setSearch(event.target.value)} />
+              {(view === 'form' || view === 'tree') && <input type="search" className="studio-search" aria-label="搜索字段" placeholder="搜索字段、说明或类型" value={search} onChange={(event) => setSearch(event.target.value)} />}
               <span className="small muted studio-kinds" data-testid="field-kinds">{fields.length} 个字段{fields.length ? ` · ${fieldKinds(fields, typeName)}` : ''}</span>
             </div>
-            {view === 'tree'
-              ? <DefinitionTree name={name} document={document} selected={selected} onSelect={(index) => dispatch({ type: 'select', index })} visible={query ? new Set(visible.map(({ index }) => index)) : undefined}
-                  tagOf={(field) => fieldChange(field, baseFields)} problemsOf={(index) => located?.byIndex.get(index)} />
-              : (
-                <div className="studio-rows" aria-label="字段">
-                  {visible.length === 0 && <p className="muted">{fields.length ? '没有匹配的字段。' : canEdit ? '还没有字段，添加第一个。' : '还没有字段。'}</p>}
+            {view === 'tree' && (
+              <DefinitionMap name={name} document={document} selected={selected} onSelect={(index) => dispatch({ type: 'select', index })} visible={query ? new Set(visible.map(({ index }) => index)) : undefined}
+                tagOf={(field) => fieldChange(field, baseFields)} problemsOf={(index) => located?.byIndex.get(index)}
+                {...(canEdit ? {
+                  onMove: (from: number, to: number) => { const next = moveFieldTo(document, from, to); if (next) edit(next, undefined, to); },
+                  onAdd: () => edit(appendField(document), undefined, fields.length),
+                } : {})} />
+            )}
+            {view === 'dsl' && (
+              <>
+                <p className="small muted studio-view-note">这是页面上现在的内容{dirty ? '，还有没保存的改动' : ''}。</p>
+                <CodePanel testid="definition-dsl" value={document} file={`${name}-草案.json`} type="application/json" />
+              </>
+            )}
+            {view === 'compiled' && (
+              verdict?.compiled && !dirty
+                ? <CodePanel testid="compiled-preview" value={verdict.compiled} file={`${name}-草案.schema.json`} type="application/schema+json" />
+                : <p className="muted studio-view-note" role="status" data-testid="compiled-unavailable">{dirty ? '有没保存的改动：编译产物按存下来的内容算，保存之后才能看。' : verdict ? '改正严重问题之后才有编译产物。' : '正在编译…'}</p>
+            )}
+            {view === 'form' && (
+              <section className="definition-tree" aria-label="字段">
+                <TreeRoot name={name} document={document} />
+                {visible.length === 0 && <p className="muted tree-empty">{fields.length ? '没有匹配的字段。' : canEdit ? '还没有字段，添加第一个。' : '还没有字段。'}</p>}
+                <ol className="tree-branches">
                   {visible.map(({ field, index }) => (
-                    <FieldRow key={index} field={field} index={index} total={fields.length} selected={selected === index} canEdit={canEdit} tag={fieldChange(field, baseFields)} problems={located?.byIndex.get(index)} checked={Boolean(located)}
+                    <li key={index}>
+                    <FieldRow field={field} index={index} total={fields.length} selected={selected === index} canEdit={canEdit} tag={fieldChange(field, baseFields)} problems={located?.byIndex.get(index)} checked={Boolean(located)}
                       onSelect={() => dispatch({ type: 'select', index })}
                       onRequired={(required) => edit(replaceField(document, index, withConstraint(field, 'required', required)))}
                       onCopy={() => edit(copyField(document, index), undefined, index + 1)}
-                      onRemove={() => { dispatch({ type: 'select', index }); setRemoving(index); }}
+                      onRemove={() => {
+                        if (!hasImpact(field.name)) { removeAt(index); return; }
+                        dispatch({ type: 'select', index });
+                        setRemoving(index);
+                      }}
                       onMove={(by) => { const next = moveField(document, index, by); if (next) edit(next, undefined, index + by); }} />
+                    </li>
                   ))}
-                </div>
-              )}
-            {canEdit && <button type="button" className="studio-add" onClick={() => edit(appendField(document), undefined, fields.length)}>＋ 添加字段</button>}
+                </ol>
+              </section>
+            )}
+            {canEdit && view === 'form' && <button type="button" className="studio-add" onClick={() => edit(appendField(document), undefined, fields.length)}>＋ 添加字段</button>}
           </>
         )}
 
@@ -286,8 +323,6 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
         <div className="check-bar">
           <span className="actions">
             <button type="button" className="small quiet" disabled={check.loading || dirty} onClick={check.reload}>校验</button>
-            <button type="button" className="small quiet" aria-expanded={showCompiled} disabled={!verdict?.compiled} onClick={() => setShowCompiled(!showCompiled)}
-              title={verdict?.compiled ? undefined : '改正严重问题之后才有编译产物'}>预览编译产物</button>
           </span>
           {canEdit && (discarding
             ? <span className="confirm small">删除这份草案？已发布的版本不受影响。<button type="button" className="small danger" onClick={() => void discard()}>确认删除草案</button><button type="button" className="small quiet" onClick={() => setDiscarding(false)}>取消</button></span>
@@ -302,7 +337,6 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
             }} />
           </section>
         )}
-        {showCompiled && verdict?.compiled && <pre className="compiled" data-testid="compiled-preview" tabIndex={0}>{JSON.stringify(verdict.compiled, null, 2)}</pre>}
       </div>
 
       <aside className="studio-inspector" aria-label="字段检查器">
@@ -313,8 +347,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
                 removing={removing === selected}
                 onChange={(field, key) => edit(replaceField(document, selected, field), `field:${selected}:${key}`)}
                 onCopy={() => edit(copyField(document, selected), undefined, selected + 1)}
-                onAskRemove={() => setRemoving(selected)} onKeep={() => setRemoving(undefined)}
-                onRemove={() => { setRemoving(undefined); const count = fields.length - 1; edit(removeField(document, selected), undefined, count ? Math.min(selected, count - 1) : undefined); }} />
+                hasImpact={hasImpact} onAskRemove={() => setRemoving(selected)} onKeep={() => setRemoving(undefined)} onRemove={() => removeAt(selected)} />
             : (
               <>
                 <header className="field-inspector-head"><h2>{fieldLabel(fields[selected]!, selected)}</h2><code>/{fields[selected]!.name}</code></header>
@@ -336,6 +369,7 @@ function FieldRow(props: {
   return (
     <article className={`studio-row${selected ? ' selected' : ''}`} data-testid="field-row" data-field={field.name}>
       <button type="button" className="studio-row-main" aria-pressed={selected} aria-label={`${canEdit ? '编辑' : '查看'}字段 ${label}`} onClick={props.onSelect}>
+        <span className="tree-number">{String(index + 1).padStart(2, '0')}</span>
         <FieldSummary field={field} index={index} tag={props.tag}
           status={<span className="field-status" data-testid="field-status">{problems?.length ? <span className="bad-text">{problems.length} 个问题</span> : props.checked ? <span className="muted">有效</span> : null}</span>} />
       </button>
@@ -358,7 +392,7 @@ function FieldRow(props: {
 /** 检查器：选中字段的属性，加这种类型能写的约束（docs/dsl/data-definition.md）。 */
 function FieldInspector(props: {
   readonly field: DefinitionField; readonly index: number; readonly total: number; readonly baseFields: readonly DefinitionField[] | undefined; readonly uses: UseMap;
-  readonly refs: readonly StaticSchemaSummary[]; readonly firstRef: SchemaRef | undefined; readonly removing: boolean;
+  readonly refs: readonly StaticSchemaSummary[]; readonly firstRef: SchemaRef | undefined; readonly removing: boolean; readonly hasImpact: (name: string) => boolean;
   readonly onChange: (field: DefinitionField, key: string) => void; readonly onCopy: () => void; readonly onAskRemove: () => void; readonly onKeep: () => void; readonly onRemove: () => void;
 }) {
   const { field: value, index, baseFields, uses, refs, firstRef, onChange } = props;
@@ -379,7 +413,7 @@ function FieldInspector(props: {
         <code>/{value.name}</code>
         <span className="field-inspector-tools">
           <button type="button" className="link" onClick={props.onCopy}>复制</button>
-          <button type="button" className="link danger" onClick={props.onAskRemove}>删除字段</button>
+          <button type="button" className="link danger" onClick={() => { if (props.hasImpact(opened || value.name)) props.onAskRemove(); else props.onRemove(); }}>删除字段</button>
         </span>
       </header>
       <div className="fields">
@@ -409,7 +443,7 @@ function FieldInspector(props: {
           <textarea id="field-description" rows={2} value={value.description ?? ''} onChange={(event) => set('description', event.target.value || undefined)} />
         </div>
       </div>
-      <h3 className="field-inspector-section">约束</h3>
+      <h3 className="field-inspector-section"><span>{value.type === 'ref' ? '引用' : `${typeName(value.type)}约束`}</span>{hasConstraints(value.type) && <small>可选约束</small>}</h3>
       <div className="fields">
         <TypeFields owner={value} prefix="field" onChange={(owner) => onChange(owner, 'constraints')} refs={refs} />
         {value.type === 'list' && (
@@ -427,12 +461,13 @@ function FieldInspector(props: {
       <p className="field-used small"><span className="muted">谁在用：</span><span data-testid="field-used-by"><UsedBy templates={uses.get(opened || value.name)} /></span></p>
       {renamed && <BindingImpact kind="rename" field={opened} published={inBase(opened)} templates={uses.get(opened)} />}
       {props.removing && (
-        <BindingImpact kind="remove" field={opened || value.name || fieldLabel(value, index)} published={inBase(opened || value.name)} templates={uses.get(opened || value.name)}>
-          <div className="actions">
-            <button type="button" className="small danger" onClick={props.onRemove}>确认删除字段</button>
-            <button type="button" className="small quiet" onClick={props.onKeep}>留着</button>
+        <Modal title="删除字段" onClose={props.onKeep}>
+          <BindingImpact kind="remove" field={opened || value.name || fieldLabel(value, index)} published={inBase(opened || value.name)} templates={uses.get(opened || value.name)} />
+          <div className="modal-actions">
+            <button type="button" className="quiet" onClick={props.onKeep}>留着</button>
+            <button type="button" className="danger" onClick={props.onRemove}>确认删除字段</button>
           </div>
-        </BindingImpact>
+        </Modal>
       )}
     </form>
   );
