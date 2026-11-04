@@ -74,7 +74,7 @@ function ParameterInput(props: { readonly parameter: TemplateParameter; readonly
   }
   return (
     <div className="field">
-      <label htmlFor={id}>{parameter.displayName}</label>
+      <div className="actions"><label htmlFor={id}>{parameter.displayName}</label>{parameter.default === undefined && <span className="small muted">必填</span>}</div>
       {input}
     </div>
   );
