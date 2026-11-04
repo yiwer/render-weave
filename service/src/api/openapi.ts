@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.9.0';
+export const API_VERSION = '1.10.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -78,6 +78,8 @@ export const ENGINE_PROBLEM_STATUS: Readonly<Record<string, readonly number[]>> 
 const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const str = (description?: string) => ({ type: 'string', ...(description ? { description } : {}) });
 const int = (description?: string, minimum = 0) => ({ type: 'integer', minimum, ...(description ? { description } : {}) });
+/** 静态数据定义的版本（ADR-0028）：编号，或发布时写的字符串。 */
+const schemaVersion = (description?: string) => ({ type: ['integer', 'string'], minimum: 1, pattern: '^[a-z0-9][a-z0-9._-]{0,63}$', ...(description ? { description } : {}) });
 const instant = (description: string) => ({ type: 'string', format: 'date-time', description });
 const uuid = (description: string) => ({ type: 'string', format: 'uuid', description });
 const sha256 = { type: 'string', pattern: '^[0-9a-f]{64}$', description: '内容的 SHA-256，64 位小写十六进制' };
@@ -86,7 +88,7 @@ const object = (properties: Record<string, unknown>, required: readonly string[]
 const array = (items: unknown, description?: string) => ({ type: 'array', items, ...(description ? { description } : {}) });
 /** 结构由引擎定义、随引擎版本演进的对象：只描述外层，内部见说明里的文档。 */
 const freeform = (description: string) => ({ type: 'object', description, additionalProperties: true });
-const staticSchemaRef = object({ name: str('静态数据定义名称'), version: int('版本', 1) });
+const staticSchemaRef = object({ name: str('静态数据定义名称'), version: schemaVersion('版本') });
 
 function dslSchema(file: string): Record<string, unknown> {
   const { $schema: _schema, ...schema } = JSON.parse(readFileSync(fileURLToPath(new URL(`../../../schemas/${file}`, import.meta.url)), 'utf8')) as Record<string, unknown>;
@@ -240,21 +242,21 @@ const SCHEMAS: Record<string, unknown> = {
 
   // 数据定义与草案（1.2.0）
   DefinitionDraft: object({
-    name: str('数据定义名称'), baseVersion: int('基于的静态版本；新名称没有', 1), sha256: { ...sha256, description: '当前内容的 SHA-256，保存时作为预期哈希' }, byteLength: int('字节数'),
+    name: str('数据定义名称'), baseVersion: schemaVersion('基于的静态版本；新名称没有'), sha256: { ...sha256, description: '当前内容的 SHA-256，保存时作为预期哈希' }, byteLength: int('字节数'),
     createdAt: instant('新建时间'), updatedAt: instant('最后保存时间'), updatedBy: str('最后保存者：邮箱或代建令牌的标签'),
     displayName: str('草案的显示名称；只有列数据定义时有（1.9.0）'), fieldCount: int('草案的字段数；只有列数据定义时有，还没写成字段列表时没有（1.9.0）'),
   }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy'], { description: '数据定义草案：一个名称至多一份' }),
   Definition: object({
     name: str('数据定义名称'), displayName: str('显示名称：最新静态版本的；还没发布过时取草案的'),
     versions: array(object({
-      version: int('版本', 1), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
+      version: schemaVersion('版本'), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
     }), '静态版本，按版本号升序'),
     draft: { ...ref('DefinitionDraft'), description: '草案；没有就是没有草案' },
   }, ['name', 'displayName', 'versions']),
   DefinitionDetail: object({
     name: str('数据定义名称'), displayName: str('显示名称：最新静态版本的；还没发布过时取草案的'),
     versions: array(object({
-      version: int('版本', 1), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
+      version: schemaVersion('版本'), displayName: str('这一版的显示名称'), datasets: int('绑定这一版的数据集份数'), templates: int('基准是这一版的模板个数'),
     }), '静态版本，按版本号升序'),
     draft: { ...ref('DefinitionDraft'), description: '草案；没有就是没有草案' },
     fieldUses: array(object({
@@ -263,17 +265,18 @@ const SCHEMAS: Record<string, unknown> = {
     }), '被模板读到的字段；没有模板读的不列'),
   }, ['name', 'displayName', 'versions', 'fieldUses'], { description: '一个数据定义（1.7.0）' }),
   DefinitionPublication: object({
-    name: str('数据定义名称'), version: int('版本', 1), displayName: str('这一版的显示名称'),
+    name: str('数据定义名称'), version: schemaVersion('版本'), displayName: str('这一版的显示名称'),
     sha256: { ...sha256, description: '这一版原文的 SHA-256' }, compiledSha256: { ...sha256, description: '编译产物的 SHA-256' },
-    baseVersion: int('差异的基准：网页发布是它基于的版本，推送是它的上一版；首个版本没有', 1), baseSha256: { ...sha256, description: '基准原文的 SHA-256' },
+    baseVersion: schemaVersion('差异的基准：网页发布是它基于的版本，推送是它的上一版；首个版本没有'), baseSha256: { ...sha256, description: '基准原文的 SHA-256' },
     source: { type: 'string', enum: ['web', 'push'], description: '来源：网页与接口上发布，或推送；审计里没有记录时没有' },
     at: instant('发布时间；审计里没有记录时没有'),
     actor: { ...object({ kind: { type: 'string', enum: [...ACTOR_KINDS] }, label: str('邮箱或代建令牌的标签') }), description: '谁发布的；审计里没有记录时没有' },
+    note: str('发布时写的说明（1.10.0）'),
     diff: freeform('与基准的字段级差异，结构同发布预检的 diff'),
   }, ['name', 'version', 'displayName', 'sha256', 'compiledSha256', 'diff'], { description: '发布记录的一行：一个静态版本（1.7.0）' }),
   DefinitionDraftCheck: object({
     sha256: { ...sha256, description: '校验的是这份内容' }, problems: { ...ref('ProblemList'), description: '问题清单，定位到字段；有严重问题时不能发布' },
-    version: int('发布后的版本号；有严重问题时没有', 1), compiled: freeform('编译产物 JSON Schema，与发布产物相同；有严重问题时没有'),
+    version: schemaVersion('发布后的版本号；有严重问题时没有'), compiled: freeform('编译产物 JSON Schema，与发布产物相同；有严重问题时没有'),
     affectedBindings: array(object({
       field: str('与基于的版本相比被删除的字段；改名等于删一个、加一个'),
       templates: array(object({ name: str('模板名称'), base: { ...staticSchemaRef, description: '模板的基准' } }), '当前修订读到这个字段的模板'),
@@ -281,9 +284,9 @@ const SCHEMAS: Record<string, unknown> = {
   }, ['sha256', 'problems', 'affectedBindings']),
 
   DefinitionPublishCheck: object({
-    sha256: { ...sha256, description: '预检的是这份内容' }, baseVersion: int('基于的静态版本；新名称没有', 1),
+    sha256: { ...sha256, description: '预检的是这份内容' }, baseVersion: schemaVersion('基于的静态版本；新名称没有'),
     problems: { ...ref('ProblemList'), description: '问题清单；有严重问题时发布会被拒绝，下面的字段都没有' },
-    version: int('发布后的版本号', 1),
+    version: schemaVersion('发布后的版本号'),
     diff: freeform('与基于版本的字段级差异：definition 是数据定义自身的改动，fields 是逐字段的增删改与属性键，order 是字段顺序的变化'),
     datasets: object({
       total: int('绑定基于版本的数据集份数'), checked: int('这次校验了几份'), complete: { type: 'boolean', description: 'false：超过上限，只校验了前面的，未全部核对' },
@@ -293,17 +296,17 @@ const SCHEMAS: Record<string, unknown> = {
     templates: array(object({ name: str('模板名称'), base: { ...staticSchemaRef, description: '模板绑定的版本' } }), '基准是这个名称的模板；发布不改动它们'),
   }, ['sha256', 'problems'], { description: '发布预检（1.4.0）' }),
   DefinitionPublished: object({
-    name: str('数据定义名称'), version: int('新版本', 1), baseVersion: int('基于的静态版本；新名称没有', 1),
+    name: str('数据定义名称'), version: schemaVersion('新版本'), baseVersion: schemaVersion('基于的静态版本；新名称没有'),
     definitionSha256: { ...sha256, description: '静态数据定义原文的 SHA-256' }, compiledSha256: { ...sha256, description: '编译产物的 SHA-256' },
   }, ['name', 'version', 'definitionSha256', 'compiledSha256'], { description: '发布的结果（1.4.0）' }),
 
   // 数据集与资源
   DatasetDocument: dslSchema('dataset.schema.json'),
-  StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str(),
+  StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: schemaVersion('版本'), displayName: str('显示名称'), description: str(),
     fieldCount: int('字段数；只有列表上有（1.9.0）'), referenceDepth: int('引用深度：不引用别的数据定义是 0；只有列表上有（1.9.0）') },
     ['name', 'version', 'displayName']),
   StaticSchema: object({
-    name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str(),
+    name: str('静态数据定义名称'), version: schemaVersion('版本'), displayName: str('显示名称'), description: str(),
     definition: freeform('静态数据定义的原文（DSL 1.0，schemas/data-definition.schema.json）'),
     compiled: freeform('编译产物：JSON Schema 2020-12，title 是显示名称，x-renderweave-type 标明日期、时刻、时间与图片，数据定义引用已内联（ADR-0006）'),
   }, ['name', 'version', 'displayName', 'definition', 'compiled']),
@@ -403,7 +406,7 @@ const SCHEMAS: Record<string, unknown> = {
     subject: str('申请的对象：数据定义或模板的名称；推送是发起者的 ID'), scopes: array({ type: 'string', enum: APPROVAL_SCOPES }, '受约束的范围'),
     status: { type: 'string', enum: PUBLISH_REQUEST_STATUSES, description: 'pending 待处理；approved 已批准；rejected 已退回；expired 已过期，要重新发起' },
     sha256: { ...sha256, description: '固定的内容哈希：草案、工作副本、要指回的修订，或推送清单' }, beforeSha256: { ...sha256, description: '申请时要被换掉的内容：基于的版本，或当前修订' },
-    baseVersion: int('数据定义：基于的版本', 1), version: int('数据定义：申请时算出的下一个版本，批准时已被占用就过期', 1),
+    baseVersion: schemaVersion('数据定义：基于的版本'), version: schemaVersion('数据定义：要发布成的版本，批准时已被占用就过期'), note: str('数据定义：发布时写的说明（1.10.0）'),
     baseRevision: int('模板：申请时的当前修订，批准时已不是它就过期；新模板没有', 1), revision: int('指回：要指回的修订', 1), overwrite: { type: 'boolean', description: '保存模板：申请时明确要盖过别人先保存的修订' },
     diff: ref('AuditDiff'), requestedBy: object({ kind: { type: 'string', enum: ACTOR_KINDS }, id: str('主体 ID'), label: str('主体的标签') }), requestedAt: instant('申请的时间'),
     decidedBy: str('处理的人；过期时是让它过期的那次操作的主体'), decidedAt: instant('处理的时间'), message: str('退回的留言，或过期的原因'),
@@ -493,7 +496,7 @@ function definitionDocs(prefix: string, tag: string): Record<string, RouteDoc> {
     [`DELETE ${draft}`]: { tag, summary: '删除草案', replies: [none('已删除')] },
     [`POST ${draft}/publish-check`]: { tag, summary: '发布预检，不写任何东西：字段级差异、按新版会失配的数据集份数、基准是这个名称的模板', errors: [409],
       description: '绑定基于版本的数据集按 ID 排序逐份校验，超过 1,000 份只校验前面的，datasets.complete 为 false。', replies: [ok(ref('DefinitionPublishCheck'))] },
-    [`POST ${draft}/publish`]: { tag, summary: '把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同', errors: [409],
+    [`POST ${draft}/publish`]: { tag, summary: '把草案发布为一个静态数据定义，草案留着，能接着改（ADR-0028）；产物与本地 renderweave publish 逐字节相同', errors: [409],
       description: '严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。',
       replies: [created(ref('DefinitionPublished')), acceptedAsRequest] },
   };

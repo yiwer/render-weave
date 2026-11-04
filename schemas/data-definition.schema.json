@@ -20,7 +20,7 @@
     },
     "version": {
       "$ref": "#/$defs/version",
-      "description": "可省略；发布时自动分配为同名的最大版本加 1，写明时必须等于该值"
+      "description": "可省略；发布时可以写自定义的字符串（ADR-0028），不写就分配为同名的最大版本加 1，写明时必须等于该值"
     },
     "displayName": {
       "$ref": "#/$defs/nonBlank",
@@ -42,8 +42,10 @@
       "pattern": "\\S"
     },
     "version": {
-      "type": "integer",
-      "minimum": 1
+      "anyOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+      ]
     },
     "count": {
       "type": "integer",

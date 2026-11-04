@@ -5,7 +5,7 @@
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { StoredDocument, TenantStorage } from '../backend.js';
-import { parseJsonKeepingPrecision } from '../engine.js';
+import { formatSchemaVersion, parseJsonKeepingPrecision, parseSchemaVersion, type SchemaVersion } from '../engine.js';
 import { blankSheets } from '../excel-import.js';
 import { writeBlankWorkbook } from '../xlsx.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
@@ -16,17 +16,15 @@ const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 /** 列表里的一项：身份与说明，取自静态数据定义的原文。 */
 export interface StaticSchemaSummary {
   readonly name: string;
-  readonly version: number;
+  readonly version: SchemaVersion;
   readonly displayName: string;
   readonly description?: string;
 }
 
-const VERSION = /^[1-9][0-9]{0,8}$/;
-
 /** 键是"名称@版本"；名称里也可以有 @，按最后一个分开。 */
-export function parseKey(key: string): { name: string; version: number } | undefined {
-  const at = key.lastIndexOf('@'), version = key.slice(at + 1);
-  return at > 0 && VERSION.test(version) ? { name: key.slice(0, at), version: Number(version) } : undefined;
+export function parseKey(key: string): { name: string; version: SchemaVersion } | undefined {
+  const at = key.lastIndexOf('@'), version = parseSchemaVersion(key.slice(at + 1));
+  return at > 0 && version !== undefined ? { name: key.slice(0, at), version } : undefined;
 }
 
 export async function readJson(storage: TenantStorage, stored: StoredDocument): Promise<Record<string, unknown> | undefined> {
@@ -53,7 +51,7 @@ function listFacts(definition: Record<string, unknown> | undefined, byKey: Reado
   return { fieldCount: Array.isArray(definition?.['fields']) ? definition['fields'].length : 0, referenceDepth: depth(definition, new Set()) };
 }
 
-function summaryOf(name: string, version: number, definition: Record<string, unknown> | undefined): StaticSchemaSummary {
+function summaryOf(name: string, version: SchemaVersion, definition: Record<string, unknown> | undefined): StaticSchemaSummary {
   const displayName = definition?.['displayName'], description = definition?.['description'];
   return { name, version, displayName: typeof displayName === 'string' ? displayName : name, ...(typeof description === 'string' ? { description } : {}) };
 }
@@ -67,7 +65,8 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
     const definitions = documents.flatMap((stored) => {
       const key = stored.kind === 'definition' && compiled.has(stored.key) ? parseKey(stored.key) : undefined;
       return key ? [{ ...key, stored }] : [];
-    }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.version - b.version));
+      // 同一个名称里保持登记的先后（ADR-0028）：字符串版本没有大小。
+    }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     const read = await Promise.all(definitions.map(async ({ name, version, stored }) => ({ name, version, definition: await readJson(storage, stored) })));
     const byKey = new Map(read.map((item) => [`${item.name}@${item.version}`, item.definition]));
     return { staticSchemas: read.map(({ name, version, definition }) => ({ ...summaryOf(name, version, definition), ...listFacts(definition, byKey) })) };
@@ -76,14 +75,15 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
   /** 路径里的静态数据定义：原文与编译产物都在才算有。 */
   const staticSchemaOf = async (request: FastifyRequest) => {
     const params = request.params as { name: string; version: string };
-    if (!VERSION.test(params.version)) throw notFound();
-    const storage = storageOf(request), key = `${params.name}@${params.version}`;
+    const version = parseSchemaVersion(params.version);
+    if (version === undefined) throw notFound();
+    const storage = storageOf(request), key = `${params.name}@${version}`;
     const documents = (await storage.authoringState()).documents;
     const definition = documents.find((stored) => stored.kind === 'definition' && stored.key === key);
     const compiled = documents.find((stored) => stored.kind === 'compiled' && stored.key === key);
     const [definitionJson, compiledJson] = await Promise.all([definition && readJson(storage, definition), compiled && readJson(storage, compiled)]);
     if (!definitionJson || !compiledJson) throw notFound();
-    return { summary: summaryOf(params.name, Number(params.version), definitionJson), definition: definitionJson, compiled: compiledJson };
+    return { summary: summaryOf(params.name, version, definitionJson), definition: definitionJson, compiled: compiledJson };
   };
 
   /** 一个静态数据定义：原文与编译产物。控制台按编译产物生成表单，字段用它的 title（显示名称）。 */
@@ -97,7 +97,7 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
     const { summary, compiled } = await staticSchemaOf(request);
     const bytes = await writeBlankWorkbook(blankSheets(compiled, summary.displayName));
     // 文件名带中文：filename* 按 RFC 6266 与 RFC 5987 编码，filename 给只认 ASCII 的客户端。
-    const file = `${summary.name.replace(/[\\/:*?"<>|]/g, '_')}-v${summary.version}.xlsx`;
+    const file = `${summary.name.replace(/[\\/:*?"<>|]/g, '_')}-${formatSchemaVersion(summary.version)}.xlsx`;
     const encoded = encodeURIComponent(file).replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
     return reply.type(XLSX_TYPE).header('content-disposition', `attachment; filename="workbook.xlsx"; filename*=UTF-8''${encoded}`).send(Buffer.from(bytes));
   });

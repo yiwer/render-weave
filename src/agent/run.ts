@@ -224,7 +224,7 @@ export interface RoundOutcome {
     readonly feedbackSha256?: string;
   };
   readonly candidates: readonly { readonly path: string; readonly kind: CandidateKind; readonly name?: string; readonly sha256: string;
-    readonly published?: { readonly name: string; readonly version: number };
+    readonly published?: StaticSchemaRef;
     /** 模板辅助修改的工作副本所基于的保存内容（M51）；新增的模板没有。 */
     readonly revises?: { readonly file: string; readonly sha256: string } }[];
   /** 字段在示例图上的位置，来自 Agent，没有时为空列表。 */
@@ -638,7 +638,9 @@ async function resolveBasis(requires: 'definition' | 'dataset', options: AgentRu
     const match = /^(.+?)(?:@([1-9]\d*))?$/.exec(options.definition);
     const name = match?.[1] ?? options.definition, version = match?.[2] === undefined ? undefined : Number(match[2]);
     const versions = published.filter((entry) => entry.ref.name === name).map((entry) => entry.ref.version);
-    const chosen = version ?? (versions.length > 0 ? Math.max(...versions) : undefined);
+    // 没写版本时取最大的编号；Agent 先不用自定义版本（ADR-0028）。
+    const numbered = versions.filter((item): item is number => typeof item === 'number');
+    const chosen = version ?? (numbered.length > 0 ? Math.max(...numbered) : undefined);
     if (chosen === undefined || !versions.includes(chosen)) {
       throw new AgentUsageError(`工作区中没有已发布的数据定义 ${options.definition}：先做数据定义提取并发布（M43）。${list(published.map((entry) => `${entry.ref.name}@${entry.ref.version}`))}`);
     }

@@ -734,7 +734,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       documents.set(documentSource('template', name), { sha256: copy.sha256, byteLength: copy.byteLength });
       return { status: 'saved' as const, revision, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }, approving) => exclusive(async () => {
+    publishDefinitionDraft: (name, expectedSha256, { key, version, definition, compiled }, approving) => exclusive(async () => {
       const current = drafts.get(name);
       if (!current) return undefined;
       if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
@@ -742,7 +742,7 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       approve(approving);
       documents.set(documentSource('definition', key), definition);
       documents.set(documentSource('compiled', key), compiled);
-      drafts.delete(name);
+      drafts.set(name, { ...current, baseVersion: version });
       return { published: true as const };
     }),
     approvalPolicy: async () => policy(),

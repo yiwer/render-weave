@@ -62,7 +62,7 @@ export function describeDatasets(name: string, makeBackend: () => Promise<Servic
 
       const missing = await call('GET', `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/9`, b.operator.token);
       expect(missing.status).toBe(404);
-      for (const url of [`/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/0`, `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/v1`,
+      for (const url of [`/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/0`, `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/v9`,
         `/v1/static-schemas/${encodeURIComponent('线路牌')}/versions/1`]) {
         const reply = await call('GET', url, url.endsWith('/1') ? a.operator.token : b.operator.token);
         expect(reply.status, url).toBe(404);

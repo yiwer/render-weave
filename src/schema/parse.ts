@@ -7,7 +7,7 @@
  */
 import { ProblemCodes, severe, type Problem, type ProblemCode } from '../problems.js';
 import { isRecord } from '../util.js';
-import { parseStaticSchemaRef } from '../workspace.js';
+import { parseStaticSchemaRef, type SchemaVersion } from '../workspace.js';
 import {
   MAX_SIGNIFICANT_DIGITS,
   type DefinitionModel,
@@ -40,8 +40,8 @@ const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 export interface ParsedDefinition {
   readonly model?: DefinitionModel;
-  /** 文档中写明的版本号；数据定义（未发布）可以不写。 */
-  readonly version?: number;
+  /** 文档中写明的版本；数据定义（未发布）可以不写。 */
+  readonly version?: SchemaVersion;
   readonly problems: Problem[];
 }
 
@@ -57,7 +57,7 @@ class DefinitionReader {
 
   constructor(private readonly schemaName: string) {}
 
-  read(document: unknown): { model?: DefinitionModel; version?: number } {
+  read(document: unknown): { model?: DefinitionModel; version?: SchemaVersion } {
     if (!isRecord(document)) {
       this.fail('', '数据定义必须是 JSON 对象');
       return {};
@@ -66,11 +66,11 @@ class DefinitionReader {
     if (document['dslVersion'] !== 'renderweave-schema/1') this.fail('', '数据定义的 dslVersion 必须是 renderweave-schema/1');
     const name = document['name'];
     if (typeof name !== 'string' || name.trim() === '') this.fail('', '数据定义必须有名称 name');
-    let version: number | undefined;
+    let version: SchemaVersion | undefined;
     if (document['version'] !== undefined) {
       const ref = parseStaticSchemaRef({ name: 'x', version: document['version'] });
       if (ref) version = ref.version;
-      else this.fail('', '版本号 version 必须是正整数');
+      else this.fail('', '版本 version 必须是正整数，或由小写字母、数字、点、下划线、连字符组成的字符串，以字母或数字开头，最长 64 个字符');
     }
     // null 不当作"没写"（M223），与 JSON Schema 一致。
     const displayName = document['displayName'] === undefined ? name : document['displayName'];

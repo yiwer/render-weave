@@ -176,7 +176,9 @@ export interface AuditQuery { readonly actorKind?: ActorKind; readonly from?: st
 /** 一页结果：next 原样带回就是下一页。 */
 export interface PageOf<T> { readonly items: readonly T[]; readonly next?: string }
 
-export interface SchemaRef { readonly name: string; readonly version: number }
+/** 静态数据定义的版本：缺省是编号，也可以是发布时写的字符串（ADR-0028）。 */
+export type SchemaVersion = number | string;
+export interface SchemaRef { readonly name: string; readonly version: SchemaVersion }
 export interface Range { readonly min: number; readonly max: number }
 
 export interface TemplateParameter {
@@ -269,7 +271,7 @@ export interface ExcelImport {
   readonly batch?: { readonly template: string; readonly mode: 'final'; readonly items: readonly Record<string, unknown>[] };
 }
 
-export interface StaticSchemaSummary { readonly name: string; readonly version: number; readonly displayName: string; readonly description?: string; readonly fieldCount?: number; readonly referenceDepth?: number }
+export interface StaticSchemaSummary { readonly name: string; readonly version: SchemaVersion; readonly displayName: string; readonly description?: string; readonly fieldCount?: number; readonly referenceDepth?: number }
 export interface StaticSchemaDetail extends StaticSchemaSummary { readonly definition: DefinitionDocument; readonly compiled: Record<string, unknown> }
 
 export type FieldType = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'image' | 'list' | 'ref';
@@ -288,7 +290,7 @@ export interface DefinitionField extends DefinitionItems {
 export interface DefinitionDocument {
   readonly dslVersion: string;
   readonly name: string;
-  readonly version?: number;
+  readonly version?: SchemaVersion;
   readonly displayName?: string;
   readonly description?: string;
   readonly fields: readonly DefinitionField[];
@@ -300,7 +302,7 @@ export interface DefinitionDraft {
   readonly displayName?: string;
   readonly fieldCount?: number;
   readonly name: string;
-  readonly baseVersion?: number;
+  readonly baseVersion?: SchemaVersion;
   readonly sha256: string;
   readonly byteLength: number;
   readonly createdAt: string;
@@ -311,7 +313,7 @@ export interface DefinitionDraft {
 export interface Definition {
   readonly name: string;
   readonly displayName: string;
-  readonly versions: readonly { readonly version: number; readonly displayName: string; readonly datasets: number; readonly templates: number }[];
+  readonly versions: readonly { readonly version: SchemaVersion; readonly displayName: string; readonly datasets: number; readonly templates: number }[];
   readonly draft?: DefinitionDraft;
 }
 
@@ -325,7 +327,7 @@ export interface DefinitionDetail extends Definition {
 export interface DefinitionDraftCheck {
   readonly sha256: string;
   readonly problems: readonly Problem[];
-  readonly version?: number;
+  readonly version?: SchemaVersion;
   readonly compiled?: Record<string, unknown>;
   readonly affectedBindings: readonly { readonly field: string; readonly templates: readonly TemplateBinding[] }[];
 }
@@ -351,9 +353,9 @@ export interface DefinitionDiff {
 /** 发布预检（P1 票据 05）：有严重问题时只有 sha256、baseVersion 与 problems。 */
 export interface DefinitionPublishCheck {
   readonly sha256: string;
-  readonly baseVersion?: number;
+  readonly baseVersion?: SchemaVersion;
   readonly problems: readonly Problem[];
-  readonly version?: number;
+  readonly version?: SchemaVersion;
   readonly diff?: DefinitionDiff;
   readonly datasets?: {
     readonly total: number;
@@ -365,21 +367,23 @@ export interface DefinitionPublishCheck {
   readonly templates?: readonly TemplateBinding[];
 }
 
-export interface DefinitionPublished { readonly name: string; readonly version: number; readonly baseVersion?: number; readonly definitionSha256: string; readonly compiledSha256: string }
+export interface DefinitionPublished { readonly name: string; readonly version: SchemaVersion; readonly baseVersion?: SchemaVersion; readonly definitionSha256: string; readonly compiledSha256: string }
 
 /** 发布记录的一行（M355）：谁、何时与来源取自审计，找不到时没有。 */
 export interface DefinitionPublication {
   readonly name: string;
-  readonly version: number;
+  readonly version: SchemaVersion;
   readonly displayName: string;
   readonly sha256: string;
   readonly compiledSha256: string;
-  readonly baseVersion?: number;
+  readonly baseVersion?: SchemaVersion;
   readonly baseSha256?: string;
   readonly source?: 'web' | 'push';
   readonly at?: string;
   readonly actor?: { readonly kind: string; readonly label: string };
   readonly diff: DefinitionDiff;
+  /** 发布说明（ADR-0028）。 */
+  readonly note?: string;
 }
 
 export interface DatasetEntry {
@@ -469,8 +473,9 @@ export interface PublishRequest {
   readonly status: 'pending' | 'approved' | 'rejected' | 'expired';
   readonly sha256: string;
   readonly beforeSha256?: string;
-  readonly baseVersion?: number;
-  readonly version?: number;
+  readonly baseVersion?: SchemaVersion;
+  readonly version?: SchemaVersion;
+  readonly note?: string;
   readonly baseRevision?: number;
   readonly revision?: number;
   readonly overwrite?: boolean;

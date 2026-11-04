@@ -422,6 +422,9 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .diff-old { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in oklab, var(--muted) 55%, transparent); }
 .diff-new { font-weight: 600; }
 .diff-warning { font-size: 12px; line-height: 1.5; color: var(--warn); }
+.diff-list.paths li { grid-template-columns: 22px minmax(0, 1fr); }
+.diff-list li.muted { display: block; font-size: 12px; }
+.request-stale-why { font-size: 12px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
 .bad-text { color: var(--bad); }
 .hash { color: var(--muted); }
 .record-table td[data-testid="publication-detail"] .meta { margin: 12px 0; }
@@ -926,3 +929,11 @@ span.publish-discard { align-self: stretch; justify-content: center; }
   .diff-list li { grid-template-columns: 22px minmax(0, 1fr); }
   .diff-text { grid-column: 2; }
 }
+
+/* 发布时写版本与说明（ADR-0028） */
+.publish-field { gap: 4px; }
+.publish-field label { font-size: 13px; font-weight: 500; }
+.publish-field input, .publish-field textarea { width: 100%; }
+.publish-field .hint { font-size: 12px; line-height: 1.5; }
+.publication-note { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--line); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.modal-text { margin: 0; }

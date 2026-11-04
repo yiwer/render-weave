@@ -72,7 +72,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 ## 数据定义草案
 
-草案是一个数据定义名称还没发布的那一份（1.2.0）。每个名称至多一份，记它基于哪个静态版本。客户管理员用 `/v1/definitions…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/definitions…`，同一组操作，请求与回答相同；客户操作员与 API 密钥只读。
+草案是一个数据定义名称可修改的那一份（1.2.0）。发布从它产出一个静态版本，它自己留着，能接着改、再发布（1.10.0）。每个名称至多一份，记它基于哪个静态版本。客户管理员用 `/v1/definitions…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/definitions…`，同一组操作，请求与回答相同；客户操作员与 API 密钥只读。
 
 | 操作 | 端点 | 说明 |
 |---|---|---|
@@ -84,7 +84,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 | 保存 | `PUT …/draft?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
 | 校验与编译预览 | `GET …/draft/check` | 只读，见下 |
 | 发布预检 | `POST …/draft/publish-check` | 请求体 `{ "expectedSha256": "…" }`，只读，见下 |
-| 发布 | `POST …/draft/publish` | 同样的请求体。得到下一个静态数据定义，产物与本地 `renderweave publish` 逐字节相同，然后删除草案。严重问题答 400，问题码与本地发布相同；预期哈希不是当前内容答 409 `draft.stale`；版本刚被别的发布或推送占用答 409 `draft.versionTaken`，什么也没写，重新发布 |
+| 发布 | `POST …/draft/publish` | 同样的请求体，可选 `version`（编号或字符串，不写就是下一个编号）与 `note`（发布说明，至多 2,000 字）。得到一个静态数据定义，产物与本地 `renderweave publish` 逐字节相同；草案留着，基于的版本换成这一版。版本的写法不对、同名已有都答 400。严重问题答 400，问题码与本地发布相同；预期哈希不是当前内容答 409 `draft.stale`；版本刚被别的发布或推送占用答 409 `draft.versionTaken`，什么也没写，重新发布 |
 | 删除 | `DELETE …/draft` | 静态版本不受影响 |
 
 保存只要求请求体是 UTF-8 的 JSON 对象、`name` 与路径一致、数值不超过 15 位有效数字，还没写完的草案也能存。名称是身份，不能在草案里改；要换名称就新建一份。草案不进工作区，渲染、数据集与模板都看不到它。
@@ -108,7 +108,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 - `datasets`：绑定基于版本的数据集按 ID 排序，逐份按新编译产物校验。`total` 是总份数，`checked` 是校验了几份，`mismatched` 是会失配的份数，`samples` 是前 20 份的问题摘要。超过 1,000 份只校验前 1,000 份，`complete` 为 `false`，标为未全部核对。
 - `templates`：基准是这个名称的模板。发布不改动它们，它们照旧绑定各自的版本。
 
-回退没有单独的端点：从旧版本另起草案（`fromVersion`），再发布成新版本。旧版本不变。
+回退没有单独的端点：把旧版本的内容保存到草案（`PUT …/draft`），再发布成新版本；没有草案时从旧版本另起（`fromVersion`）。旧版本不变。
 
 发布记录每个静态版本一行，新的在前。客户操作员与 API 密钥也能读：
 
@@ -176,7 +176,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 | 写入 | 范围 | 申请的 `kind` | 固定的内容 |
 |---|---|---|---|
-| `POST …/definitions/{name}/draft/publish` | `definitions` | `definitionPublish` | 草案哈希、算出的下一个版本 |
+| `POST …/definitions/{name}/draft/publish` | `definitions` | `definitionPublish` | 草案哈希、要发布成的版本、发布说明 |
 | `POST …/templates/{name}/working-copy/save` | `templates` | `templateSave` | 工作副本哈希、当前修订 |
 | `POST …/template-current` | `templates` | `templateSetCurrent` | 要指回的修订、当前修订 |
 | `POST …/pushes` | 写入碰到的范围 | `push` | 推送清单的哈希 |
@@ -190,7 +190,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 **批准时重核**，任何一项不符就把申请标为 `expired`，答 409 `publishRequest.expired`，回答带 `request`，有严重问题时另带 `blockers`，要重新发起：
 
 - 内容哈希没变；
-- 数据定义的下一个版本还是申请时的那个；模板的当前修订还是申请时的那个；
+- 数据定义要发布成的版本还没被占用；模板的当前修订还是申请时的那个；
 - 推送按当时的状态重算没有冲突，内容都还在；
 - 没有严重问题。
 
@@ -343,6 +343,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.10.0 | 2026-11-04 | 发布不影响数据定义，版本可以自定义（ADR-0028，M368）：`POST …/draft/publish` 加可选的 `version` 与 `note`，发布后草案留着，基于的版本换成这一版；`GET /v1/definition-publications` 与发布申请加 `note`；`fromVersion` 可以写字符串。凡是静态数据定义的 `version`、`baseVersion`，从整数放宽成整数或字符串 | **不全是加法**：发布后 `GET …/draft` 不再答 404；用了自定义版本的租户，回答里的 `version` 可能是字符串。没用的租户读到的还是整数 |
 | 1.9.0 | 2026-11-02 | 数据定义与静态数据定义分成两个模块（M360）要的两个数：`GET /v1/static-schemas` 的每一项加 `fieldCount`、`referenceDepth`；`GET /v1/definitions` 的 `draft` 加 `displayName`、`fieldCount` | 兼容，只做加法 |
 | 1.8.0 | 2026-11-02 | 审批策略与发布申请（P1 票据 11，M347、M357）：新增 `GET`、`PUT /v1/approval-policy`，`GET /v1/publish-requests`、`GET /v1/publish-requests/{id}`，`POST …/approve`、`POST …/reject`，代建端点有同样的读取；发布草案、保存模板、指回与推送加 202 回答：只有租户打开了审批策略才会出现；`push-plans` 的回答加 `approvalScopes`；错误回答加 `request`、`blockers`；新问题码 `publishRequest.pending`、`publishRequest.expired`、`publishRequest.decided` | 兼容，只做加法 |
 | 1.7.0 | 2026-11-01 | 数据定义页面要的两个只读端点（P1 票据 06，M355）：新增 `GET /v1/definitions/{name}`（列表项加 `fieldUses`，每个字段被哪些模板读到）与 `GET /v1/definition-publications`（发布记录，操作员也能读），代建端点是同一组操作 | 兼容，只做加法 |

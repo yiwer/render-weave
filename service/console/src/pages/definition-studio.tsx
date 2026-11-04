@@ -7,6 +7,7 @@
  * 这个名称没有草案时去静态数据定义（static-schemas.tsx）。只调开放 API。
  */
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { versionLabel } from '../form/schema-version.js';
 import { api, ApiError } from '../api.js';
 import { CodePanel } from '../components/code-panel.js';
 import { BindingImpact, FieldFacts, FieldSummary, fieldLabel, hasConstraints, TreeRoot, TypeFields, UsedBy, type UseMap } from '../components/definition-fields.js';
@@ -16,12 +17,26 @@ import { ErrorBox, ProblemList } from '../components/problems.js';
 import { fieldChange, FIELD_TYPES, ITEM_TYPES, itemsOfType, isRequired, problemsByField, withConstraint, withType } from '../form/definition.js';
 import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, moveFieldTo, openSession, removeField, replaceField, sessionReducer } from '../form/definition-session.js';
 import { go, guardNavigation, href, problemsOf, useLoad } from '../hooks.js';
-import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionDraft, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary } from '../types.js';
+import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionDraft, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary, SchemaVersion } from '../types.js';
 import { canEditDefinitions, definitionPath, staticSchemaPath } from './definitions.js';
 import { Loading, Seal, ThreadOrbit } from '../components/motifs.js';
 
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 export const documentText = (document: DefinitionDocument) => `${JSON.stringify(document, null, 2)}\n`;
+
+/**
+ * 回退（ADR-0028）：把草案的内容换成某个静态版本的，进编辑页看过再发布。草案一直在，所以不是另起一份；
+ * 没有草案（只经推送发布过）时才从这一版另起。草案现在的内容会被换掉，页面上要先确认。
+ */
+export async function restoreToDraft(name: string, version: SchemaVersion): Promise<void> {
+  const detail = await api.definition(name);
+  if (detail.draft) {
+    const { definition } = await api.staticSchema(name, version);
+    const { version: _version, ...rest } = definition;
+    await api.saveDefinitionDraft(name, detail.draft.sha256, documentText(rest));
+  } else await api.createDefinitionDraft(name, { fromVersion: version });
+  go(definitionPath(name));
+}
 const typeName = (type: FieldType) => FIELD_TYPES.find((item) => item.type === type)?.label ?? type;
 
 /** 编辑页的四种看法（M364）：两种改字段，两种看文档。 */
@@ -203,7 +218,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
           <div>
             <h1>{document.displayName || name}</h1>
             <p className="meta" data-testid="definition-meta">
-              <span>草案 · {baseVersion === undefined ? '还没发布过' : <a href={href(staticSchemaPath(name, baseVersion))}>基于 v{baseVersion}</a>}</span>
+              <span>草案 · {baseVersion === undefined ? '还没发布过' : <a href={href(staticSchemaPath(name, baseVersion))}>基于 {versionLabel(baseVersion)}</a>}</span>
               {changes && <span data-testid="draft-changes">新增 {changes.added}、修改 {changes.changed}、删除 {changes.removed}</span>}
               <span>{info.updatedBy} 保存于 {time(info.updatedAt)}</span>
             </p>
@@ -219,7 +234,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
               <span className={dirty ? 'chip warn' : 'chip ok'} data-testid="save-status" role="status">{busy ? '正在保存…' : dirty ? '有没保存的改动' : '已保存'}</span>
               <button type="button" disabled={!dirty || busy} onClick={() => void save()} aria-keyshortcuts="Control+S">保存</button>
               <button type="button" className="primary" disabled={busy || (!dirty && (!verdict || severe > 0))} onClick={() => void publish()} title={!dirty && severe ? '有严重问题，改正之后才能发布' : undefined}>
-                {dirty ? '保存并发布' : verdict?.version ? `发布为 v${verdict.version}` : '发布'}
+                {dirty ? '保存并发布' : verdict?.version ? `发布为 ${versionLabel(verdict.version)}` : '发布'}
               </button>
             </>}
           </div>
@@ -314,7 +329,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
         {verdict && !dirty && verdict.affectedBindings.length > 0 && (
           <section className="card" data-testid="affected-bindings">
             <h2>会影响绑定</h2>
-            <p className="small muted">与 v{baseVersion} 相比这些字段没有了，改字段名称等于删一个、加一个。下面的模板读这些字段；它们照旧绑定各自的版本，升到新版时要改绑定。</p>
+            <p className="small muted">与 {versionLabel(baseVersion!)} 相比这些字段没有了，改字段名称等于删一个、加一个。下面的模板读这些字段；它们照旧绑定各自的版本，升到新版时要改绑定。</p>
             <ul className="plain impact">
               {verdict.affectedBindings.map((item) => <li key={item.field} data-field={item.field}><code>{item.field}</code>：<UsedBy templates={item.templates} /></li>)}
             </ul>

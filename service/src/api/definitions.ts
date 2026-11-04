@@ -11,10 +11,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
 import { parseDocumentSource, type AuditContent, type AuditDiff, type AuditDiffPath, type AuditEvent, type DefinitionDraft, type NewAuditEvent, type PublishRequestApproval, type TenantScope, type TenantStorage } from '../backend.js';
-import {
-  checkDataset, describeTemplate, diffDefinition, publishStaticSchema, readWorkspaceDocuments, templateFieldUses,
-  type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type StaticSchemaRef, type TemplateEntry, type Workspace,
-} from '../engine.js';
+import { checkDataset, describeTemplate, diffDefinition, publishStaticSchema, readWorkspaceDocuments, templateFieldUses, type DefinitionDiff, type Problem, type PublishedStaticSchema, type StaticSchemaEntry, type StaticSchemaRef, type TemplateEntry, type Workspace, formatStaticSchemaRef, parseSchemaVersion, type SchemaVersion } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { checkedDocument, documentBytes, parsedDocument, staleDraft, type AuthoringAddressing } from './authoring-documents.js';
@@ -26,7 +23,12 @@ import { parseKey, readJson } from './static-schemas.js';
 const NAME = /^(?=[\s\S]{1,200}$)[^\s\p{Cc}](?:[^\p{Cc}]*[^\s\p{Cc}])?$/u;
 const SHA256 = '^[0-9a-f]{64}$';
 /** 发布预检的请求：预期哈希确认看的就是这一份内容，发布用同一结构。 */
-const PUBLISH_SCHEMA = { type: 'object', required: ['expectedSha256'], additionalProperties: false, properties: { expectedSha256: { type: 'string', pattern: SHA256 } } } as const;
+const PUBLISH_CHECK_SCHEMA = { type: 'object', required: ['expectedSha256'], additionalProperties: false, properties: { expectedSha256: { type: 'string', pattern: SHA256 } } } as const;
+/** 发布：version 不写就是下一个编号（ADR-0028），写法由引擎查；note 是发布说明。 */
+const PUBLISH_SCHEMA = {
+  type: 'object', required: ['expectedSha256'], additionalProperties: false,
+  properties: { expectedSha256: { type: 'string', pattern: SHA256 }, version: { anyOf: [{ type: 'integer' }, { type: 'string' }] }, note: { type: 'string', maxLength: 2000 } },
+} as const;
 /** 预检回答前多少份失配数据集的问题摘要，每份至多几条问题（M346）。 */
 const MISMATCH_SAMPLES = 20, SAMPLE_PROBLEMS = 5;
 const CREATE_SCHEMA = {
@@ -34,7 +36,7 @@ const CREATE_SCHEMA = {
   description: '空白新建写 displayName；从静态版本另起写 fromVersion。两者只写一个',
   properties: {
     displayName: { type: 'string', minLength: 1, maxLength: 200, pattern: '\\S' },
-    fromVersion: { type: 'integer', minimum: 1, maximum: 999_999_999 },
+    fromVersion: { anyOf: [{ type: 'integer' }, { type: 'string' }] },
   },
 } as const;
 
@@ -65,6 +67,8 @@ interface DraftToPublish {
   readonly document: unknown;
   readonly workspace: Pick<Workspace, 'staticSchemas'>;
   readonly published: PublishedStaticSchema;
+  /** 发布说明：记在发布的审计事件里，发布记录从那里读。 */
+  readonly note?: string;
 }
 
 /** 发布对内容的改动：基于版本的内容哈希与字段级差异摘要。直接发布与发布申请记同一份。 */
@@ -76,26 +80,26 @@ async function publishChange(storage: TenantStorage, { draft, document, workspac
 }
 
 /**
- * 发布草案：原文与编译产物按本地发布的写法存，成对登记，删除草案。批准申请时带 approving，申请与内容在同一个事务里生效。
+ * 发布草案：原文与编译产物按本地发布的写法存，成对登记；草案留着，能接着改（ADR-0028）。批准申请时带 approving，申请与内容在同一个事务里生效。
  * 算版本与登记之间版本被占用（别的发布或推送）答 409，什么也没写，再发一次就会用下一个版本。
  */
-export async function commitDraftPublish(scope: TenantScope, { draft, document, workspace, published }: DraftToPublish, audit: AuditWriter, approving?: PublishRequestApproval) {
+export async function commitDraftPublish(scope: TenantScope, { draft, document, workspace, published, note }: DraftToPublish, audit: AuditWriter, approving?: PublishRequestApproval) {
   const storage = scope.storage, name = draft.name;
   const definitionBytes = documentBytes(published.definition), compiledBytes = documentBytes(published.compiled);
   const key = `${name}@${published.ref.version}`;
   const [definitionSha256, compiledSha256] = await Promise.all([storage.contents.put(definitionBytes), storage.contents.put(compiledBytes)]);
   const result = await storage.publishDefinitionDraft(name, draft.sha256, {
-    key, definition: { sha256: definitionSha256, byteLength: definitionBytes.length }, compiled: { sha256: compiledSha256, byteLength: compiledBytes.length },
+    key, version: published.ref.version, definition: { sha256: definitionSha256, byteLength: definitionBytes.length }, compiled: { sha256: compiledSha256, byteLength: compiledBytes.length },
   }, approving);
   if (!result) throw notFound();
   if ('stale' in result) throw staleDraft(result.stale, 'request.body.expectedSha256');
-  if ('taken' in result) throw fail(409, ServiceProblemCodes.draftVersionTaken, 'request.path.name', `${name} 的版本 ${published.ref.version} 刚被别的发布或推送占用；什么也没写，重新发布`);
-  await audit('definition.publish', { type: 'definition', id: key }, { ...await publishChange(storage, { draft, document, workspace }), afterSha256: definitionSha256 });
+  if ('taken' in result) throw fail(409, ServiceProblemCodes.draftVersionTaken, 'request.path.name', `${formatStaticSchemaRef(published.ref)} 刚被别的发布或推送占用；什么也没写，重新发布`);
+  await audit('definition.publish', { type: 'definition', id: key }, { ...await publishChange(storage, { draft, document, workspace }), afterSha256: definitionSha256, ...(note ? { reason: note } : {}) });
   return { name, version: published.ref.version, ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), definitionSha256, compiledSha256 };
 }
 
 /** 绑定基于版本的数据集逐份按新编译产物校验（M346）：按 ID 排序，超过上限只校验前面的，回答失配份数与前几份的问题摘要。 */
-function datasetImpact(workspace: Workspace, base: { name: string; version: number }, published: PublishedStaticSchema, limit: number) {
+function datasetImpact(workspace: Workspace, base: StaticSchemaRef, published: PublishedStaticSchema, limit: number) {
   const bound = workspace.datasets.filter(({ document }) => document.dataset.staticSchema.name === base.name && document.dataset.staticSchema.version === base.version)
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const candidate = { staticSchemas: [...workspace.staticSchemas, published], resources: workspace.resources };
@@ -159,7 +163,8 @@ async function definitionPublications(scope: TenantScope, only: string | undefin
     const key = stored.kind === 'definition' && compiled.has(stored.key) ? parseKey(stored.key) : undefined;
     return key && (only === undefined || key.name === only) ? [{ ...key, key: stored.key, stored, compiledSha256: compiled.get(stored.key)! }] : [];
   });
-  const events = await publicationEvents(scope, new Set(versions.map((version) => version.key)));
+  const registered = versions.map((version) => version.key);
+  const events = await publicationEvents(scope, new Set(registered));
   const content = new Map(await Promise.all(versions.map(async (version) => [version.key, await readJson(storage, version.stored)] as const)));
   return versions.flatMap((version) => {
     const document = content.get(version.key), event = events.get(version.key);
@@ -167,23 +172,24 @@ async function definitionPublications(scope: TenantScope, only: string | undefin
     const siblings = versions.filter((other) => other.name === version.name);
     const base = event?.action === 'definition.publish'
       ? siblings.find((other) => other.stored.sha256 === event.beforeSha256)
-      : siblings.filter((other) => other.version < version.version).sort((a, b) => b.version - a.version)[0];
+      : siblings[siblings.indexOf(version) - 1];
     const { problems: _none, ...diff } = diffDefinition(baseDocumentOf(base && content.get(base.key), document), document);
     const displayName = document['displayName'];
     return [{
       name: version.name, version: version.version, displayName: typeof displayName === 'string' ? displayName : version.name,
       sha256: version.stored.sha256, compiledSha256: version.compiledSha256, ...(base ? { baseVersion: base.version, baseSha256: base.stored.sha256 } : {}),
-      ...(event ? { source: event.action === 'push.commit' ? 'push' : 'web', at: event.at, actor: { kind: event.actor.kind, label: event.actor.label } } : {}), diff,
+      ...(event ? { source: event.action === 'push.commit' ? 'push' : 'web', at: event.at, actor: { kind: event.actor.kind, label: event.actor.label } } : {}),
+      ...(event?.action === 'definition.publish' && event.reason ? { note: event.reason } : {}), diff,
     }];
   }).sort((a, b) => {
     // 新的在前；审计之前的版本没有时间，排在最后。
     if ((a.at ?? '') !== (b.at ?? '')) return (a.at ?? '') < (b.at ?? '') ? 1 : -1;
-    return a.name < b.name ? -1 : a.name > b.name ? 1 : b.version - a.version;
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : registered.indexOf(`${b.name}@${b.version}`) - registered.indexOf(`${a.name}@${a.version}`);
   });
 }
 
 /** 一个静态版本的原文；与 /v1/static-schemas 一样，原文与编译产物都在才算有。 */
-async function staticVersion(storage: TenantStorage, name: string, version: number): Promise<Record<string, unknown> | undefined> {
+async function staticVersion(storage: TenantStorage, name: string, version: SchemaVersion): Promise<Record<string, unknown> | undefined> {
   const key = `${name}@${version}`, documents = (await storage.authoringState()).documents;
   const definition = documents.find((stored) => stored.kind === 'definition' && stored.key === key);
   return definition && documents.some((stored) => stored.kind === 'compiled' && stored.key === key) ? readJson(storage, definition) : undefined;
@@ -216,7 +222,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       if (base) usage(`${base.name}@${base.version}`).templates++;
     }
     const drafts = new Map((await scope.storage.definitionDrafts()).map((draft) => [draft.name, draft]));
-    const versions = new Map<string, { version: number; displayName: string; datasets: number; templates: number }[]>();
+    const versions = new Map<string, { version: SchemaVersion; displayName: string; datasets: number; templates: number }[]>();
+    const registered = (await scope.storage.authoringState()).documents.filter((stored) => stored.kind === 'definition').map((stored) => stored.key);
     for (const { ref, definition, compiled } of workspace.staticSchemas) {
       if (definition === undefined || compiled === undefined) continue;
       const displayName = (definition as { displayName?: unknown }).displayName;
@@ -228,7 +235,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
     return {
       workspace,
       definitions: await Promise.all(names.map(async (name) => {
-        const list = (versions.get(name) ?? []).sort((a, b) => a.version - b.version), draft = drafts.get(name);
+        // 版本按发布的先后：字符串版本没有大小，最后一个就是最新的（ADR-0028）。
+        const list = (versions.get(name) ?? []).sort((a, b) => registered.indexOf(`${name}@${a.version}`) - registered.indexOf(`${name}@${b.version}`)), draft = drafts.get(name);
         const draftBytes = draft && await scope.storage.contents.get(draft.sha256);
         const draftDocument = draftBytes ? parsedDocument(draftBytes) as { displayName?: unknown; fields?: unknown } : undefined;
         const draftDisplayName = typeof draftDocument?.displayName === 'string' ? draftDocument.displayName : undefined;
@@ -271,10 +279,12 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
 
   /** 新建草案：空白，或从某个静态版本另起（复制原文，去掉版本号）。这个名称已有草案答 409；空白新建不能用已有静态版本的名称，那样草案就没有基准。 */
   app.post(draftUrl, { config: { access: 'definitions.write' }, schema: { body: CREATE_SCHEMA } }, async (request, reply) => {
-    const scope = scopeOf(request), name = nameOf(request), body = request.body as { displayName?: string; fromVersion?: number };
+    const scope = scopeOf(request), name = nameOf(request), body = request.body as { displayName?: string; fromVersion?: number | string };
     let bytes: Uint8Array;
     if (body.fromVersion !== undefined) {
-      const definition = await staticVersion(scope.storage, name, body.fromVersion);
+      const from = parseSchemaVersion(body.fromVersion);
+      if (from === undefined) throw invalid('request.body.fromVersion', '版本的写法不对');
+      const definition = await staticVersion(scope.storage, name, from);
       if (!definition) throw notFound();
       const { version: _version, ...rest } = definition;
       bytes = documentBytes(rest);
@@ -285,7 +295,8 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       }
       bytes = documentBytes({ dslVersion: 'renderweave-schema/1', name, displayName: body.displayName, fields: [] });
     }
-    const draft = await scope.storage.createDefinitionDraft({ name, ...(body.fromVersion === undefined ? {} : { baseVersion: body.fromVersion }), bytes }, writer(request));
+    const from = parseSchemaVersion(body.fromVersion);
+    const draft = await scope.storage.createDefinitionDraft({ name, ...(from === undefined ? {} : { baseVersion: from }), bytes }, writer(request));
     if (!draft) throw fail(409, ServiceProblemCodes.inputDuplicate, 'request.path.name', `数据定义 ${name} 已有草案；每个名称至多一份`);
     await audit(request, 'definitionDraft.create', { type: 'definitionDraft', id: name }, {
       afterSha256: draft.sha256, diff: auditDiff([{ path: draftSource(name), change: 'added', afterSha256: draft.sha256 }]),
@@ -363,7 +374,7 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
    * 发布预检（只读）：与基于版本的字段级差异、绑定基于版本的数据集按新编译产物会失配多少份、仍绑定旧版本的模板（不改动它们，ADR-0008）。
    * 有严重问题时只答问题，发布也会同样拒绝。
    */
-  app.post(`${draftUrl}/publish-check`, { config: { access: 'authoring.publish' }, schema: { body: PUBLISH_SCHEMA } }, async (request) => {
+  app.post(`${draftUrl}/publish-check`, { config: { access: 'authoring.publish' }, schema: { body: PUBLISH_CHECK_SCHEMA } }, async (request) => {
     const scope = scopeOf(request), name = nameOf(request), { expectedSha256 } = request.body as { expectedSha256: string };
     const { draft, document } = await expectedDraft(scope.storage, name, expectedSha256);
     const workspace = await loadTenantWorkspace(scope.storage);
@@ -388,21 +399,23 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
    * 数据定义范围打开了审批策略时，能批准的主体以外的发布答 202，记一份固定内容哈希与版本的发布申请（P1 票据 11）。
    */
   app.post(`${draftUrl}/publish`, { config: { access: 'authoring.publish' }, schema: { body: PUBLISH_SCHEMA } }, async (request, reply) => {
-    const scope = scopeOf(request), name = nameOf(request), storage = scope.storage, { expectedSha256 } = request.body as { expectedSha256: string };
+    const scope = scopeOf(request), name = nameOf(request), storage = scope.storage;
+    const { expectedSha256, version, note: written } = request.body as { expectedSha256: string; version?: number | string; note?: string };
+    const note = written?.trim() || undefined;
     const { draft, document } = await expectedDraft(storage, name, expectedSha256);
     const workspace = await readWorkspaceDocuments(storage.documents);
-    const { published, problems } = publishStaticSchema(document, workspace.staticSchemas);
+    const { published, problems } = publishStaticSchema(document, workspace.staticSchemas, version === undefined ? {} : { version });
     if (!published) throw new ApiError(400, problems);
     const requester = requesterOf(request);
     if ((await constrainedScopes(scope, identityOf(request), ['definitions'])).length) {
       const publishRequest = await openPublishRequest(scope, {
         kind: 'definitionPublish', subject: name, scopes: ['definitions'], sha256: draft.sha256, ...await publishChange(storage, { draft, document, workspace }),
-        ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), version: published.ref.version,
+        ...(draft.baseVersion === undefined ? {} : { baseVersion: draft.baseVersion }), version: published.ref.version, ...(note ? { note } : {}),
       }, requester);
       reply.code(202);
       return { request: publishRequest };
     }
-    const result = await commitDraftPublish(scope, { draft, document, workspace, published }, requester.audit);
+    const result = await commitDraftPublish(scope, { draft, document, workspace, published, ...(note ? { note } : {}) }, requester.audit);
     await expirePending(scope, 'definitionPublish', name, '草案已被直接发布', requester);
     reply.code(201);
     return result;

@@ -5,7 +5,7 @@
  * 引用不存在或成环时返回问题（M32、M39）。
  */
 import { ProblemCodes, severe, type Problem } from '../problems.js';
-import { formatStaticSchemaRef, type StaticSchemaRef } from '../workspace.js';
+import { formatStaticSchemaRef, type StaticSchemaRef, type SchemaVersion } from '../workspace.js';
 import {
   DATE_PATTERN,
   DATETIME_PATTERN,
@@ -25,7 +25,7 @@ type JsonObject = Record<string, unknown>;
 
 export function compileDefinition(
   model: DefinitionModel,
-  version: number,
+  version: SchemaVersion,
   resolve: DefinitionResolver,
 ): { compiled?: JsonObject; problems: Problem[] } {
   const compiler = new Compiler(resolve, { name: model.name, version });

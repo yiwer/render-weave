@@ -15,7 +15,9 @@ import { basename, join } from 'node:path';
 import { ProblemCodes, type Problem } from './problems.js';
 import { describeError } from './util.js';
 import { openVersionedResourceStore } from './versioned-resources.js';
-import { classifyWorkspaceDocument, localWorkspaceDocuments, memoryWorkspaceDocuments, parseJsonKeepingPrecision, readWorkspaceDocuments } from './workspace.js';
+import {
+  classifyWorkspaceDocument, localWorkspaceDocuments, memoryWorkspaceDocuments, parseJsonKeepingPrecision, readWorkspaceDocuments, formatSchemaVersion, parseSchemaVersion,
+} from './workspace.js';
 
 /** 代建令牌所在的环境变量，缺省名称。 */
 export const DEFAULT_TOKEN_ENV = 'RENDERWEAVE_AUTHORING_TOKEN';
@@ -311,8 +313,8 @@ export interface PullOutcome {
 function pulledFileName(kind: PushDocumentKind, key: string): string {
   const safe = (text: string) => text.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_');
   if (kind === 'template') return `template-${safe(key)}.json`;
-  const at = key.lastIndexOf('@'), stem = safe(key.slice(0, at)), version = key.slice(at + 1);
-  return kind === 'definition' ? `schema-${stem}-v${version}.json` : `compiled-${stem}-v${version}.schema.json`;
+  const at = key.lastIndexOf('@'), stem = safe(key.slice(0, at)), written = key.slice(at + 1), version = formatSchemaVersion(parseSchemaVersion(written) ?? written);
+  return kind === 'definition' ? `schema-${stem}-${version}.json` : `compiled-${stem}-${version}.schema.json`;
 }
 
 /**

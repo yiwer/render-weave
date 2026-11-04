@@ -6,6 +6,7 @@
  * 只调开放 API。编辑页在 definition-studio.tsx，发布与发布记录在 definition-publish.tsx。
  */
 import { useState } from 'react';
+import { versionLabel } from '../form/schema-version.js';
 import { api, saveBlob } from '../api.js';
 import { CLOCK, COPY, Icon, PLUS, PUBLISH, TRASH } from '../components/icon.js';
 import { Modal } from '../components/modal.js';
@@ -21,14 +22,14 @@ export const staticSchemaPath = (name: string, version: number | string) => ['st
 /** 导出一个静态版本的编译产物：写法与发布的产物相同（缩进两格、末尾换行）。 */
 export async function exportCompiled(ref: SchemaRef): Promise<void> {
   const { compiled } = await api.staticSchema(ref.name, ref.version);
-  saveBlob(new Blob([`${JSON.stringify(compiled, null, 2)}\n`], { type: 'application/schema+json' }), `${ref.name.replace(/[\\/:*?"<>|]/g, '_')}-v${ref.version}.schema.json`);
+  saveBlob(new Blob([`${JSON.stringify(compiled, null, 2)}\n`], { type: 'application/schema+json' }), `${ref.name.replace(/[\\/:*?"<>|]/g, '_')}-${versionLabel(ref.version)}.schema.json`);
 }
 
 /** 复制引用：模板的基准、数据集的 staticSchema 与字段的 ref 都这样写。答复制的结果，给页面显示。 */
 export async function copyReference(ref: SchemaRef): Promise<string> {
   try {
     await navigator.clipboard.writeText(JSON.stringify({ name: ref.name, version: ref.version }));
-    return `已复制 ${ref.name} v${ref.version} 的引用`;
+    return `已复制 ${ref.name} ${versionLabel(ref.version)} 的引用`;
   } catch {
     return `浏览器不让复制，请手动写：${JSON.stringify({ name: ref.name, version: ref.version })}`;
   }
@@ -123,7 +124,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
                   <a className="schema-card-body" href={href(definitionPath(name))}>
                     <span className="schema-card-head">
                       <span className="schema-card-title"><strong>{draftName(definition)}</strong><code>{name}</code></span>
-                      <span className="schema-pill" data-testid="draft-base"><span className={`dot ${draft.baseVersion === undefined ? 'accent' : 'ok'}`} aria-hidden="true" />{draft.baseVersion === undefined ? '还没发布过' : `基于 v${draft.baseVersion}`}</span>
+                      <span className="schema-pill" data-testid="draft-base"><span className={`dot ${latest ? 'ok' : 'accent'}`} aria-hidden="true" />{latest ? `已发布 ${versionLabel(latest.version)}` : '还没发布过'}</span>
                     </span>
                     <dl className="schema-facts draft-facts">
                       <div><dt>字段</dt><dd data-testid="draft-fields">{draft.fieldCount ?? '—'}</dd></div>
@@ -136,7 +137,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
                       {removing === name
                         ? (
                           <>
-                            <span className="small">删除这份草案？</span>
+                            <span className="small">删除这份草案？已发布的版本不受影响。</span>
                             <button type="button" className="small danger" onClick={() => void remove(name)}>确认删除</button>
                             <button type="button" className="small quiet" onClick={() => setRemoving(undefined)}>取消</button>
                           </>
@@ -161,7 +162,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
 
 const draftName = (definition: Definition) => definition.draft?.displayName || definition.displayName;
 
-/** 已发布、眼下没有草案的数据定义（M366）：打开看最新版本，要改就从它复制为草案。 */
+/** 只有已发布的版本、没有草案的数据定义（经推送来的，或草案被删了）：打开看最新版本，要改就从它复制为草案。 */
 function PublishedCard(props: {
   readonly definition: DefinitionEntry; readonly latest: LatestVersion; readonly canEdit: boolean;
   readonly onProblems: (problems: readonly Problem[] | undefined) => void;
@@ -184,7 +185,7 @@ function PublishedCard(props: {
       <a className="schema-card-body" href={href(staticSchemaPath(name, latest.version))}>
         <span className="schema-card-head">
           <span className="schema-card-title"><strong>{definition.displayName}</strong><code>{name}</code></span>
-          <span className="schema-pill" data-testid="published-state"><span className="dot ok" aria-hidden="true" />已发布 v{latest.version}</span>
+          <span className="schema-pill" data-testid="published-state"><span className="dot ok" aria-hidden="true" />已发布 {versionLabel(latest.version)}</span>
         </span>
         <dl className="schema-facts draft-facts">
           <div><dt>字段</dt><dd data-testid="published-fields">{latest.fieldCount ?? '—'}</dd></div>

@@ -13,6 +13,20 @@ import { createMemoryBackend } from '../src/memory.js';
 import { createWorld, type World } from './api-suite.js';
 import { breakingChanges } from './openapi-compat.js';
 
+const SCHEMA_VERSION_WIDENED = [
+  'GET /v1/datasets 200.datasets[].staticSchema.version：类型放宽（integer → integer|string）',
+  'POST /v1/datasets 201.dataset.staticSchema.version：类型放宽（integer → integer|string）',
+  'GET /v1/datasets/{datasetId} 200.dataset.staticSchema.version：类型放宽（integer → 任意）',
+  'PUT /v1/datasets/{datasetId} 200.dataset.staticSchema.version：类型放宽（integer → integer|string）',
+  'POST /v1/datasets/{datasetId}/copies 201.dataset.staticSchema.version：类型放宽（integer → integer|string）',
+  'POST /v1/excel-imports 200.staticSchema.version：类型放宽（integer → integer|string）',
+  'POST /v1/excel-imports 200.rows[].dataset.dataset.staticSchema.version：类型放宽（integer → 任意）',
+  'POST /v1/excel-imports 200.batch.items[].dataset：anyOf 的第 2 种形状不再有',
+  'GET /v1/static-schemas 200.staticSchemas[].version：类型放宽（integer → integer|string）',
+  'GET /v1/static-schemas/{name}/versions/{version} 200.version：类型放宽（integer → integer|string）',
+  'GET /v1/templates 200.templates[].base.version：类型放宽（integer → integer|string）',
+  'GET /v1/templates/{name} 200.base.version：类型放宽（integer → integer|string）',
+];
 const BASELINE = fileURLToPath(new URL('../../docs/api/openapi-1.0.0.json', import.meta.url));
 const API_DOC = fileURLToPath(new URL('../../docs/api.md', import.meta.url));
 const METHODS = ['get', 'put', 'post', 'patch', 'delete'];
@@ -70,7 +84,8 @@ describe('开放 API 的 OpenAPI 合同', () => {
 
   it('相对 1.0.0 基线只做了加法；描述变了就要升版本，并在 docs/api.md 的变更记录里写一行', () => {
     const baseline = JSON.parse(readFileSync(BASELINE, 'utf8')) as Json;
-    expect(breakingChanges(baseline, doc)).toEqual([]);
+    // 版本可以是字符串之后（ADR-0028）回答里的版本类型放宽了：只有用了自定义版本的租户才会读到字符串，别的租户读到的还是整数。
+    expect(breakingChanges(baseline, doc)).toEqual(SCHEMA_VERSION_WIDENED);
     const unversioned = (value: Json) => JSON.stringify({ ...value, info: { ...value['info'], version: '' } });
     if (unversioned(baseline) !== unversioned(doc)) expect(doc['info'].version, '描述与 1.0.0 基线不同，要升版本').not.toBe(baseline['info'].version);
     expect(readFileSync(API_DOC, 'utf8')).toContain(`| ${doc['info'].version} |`);

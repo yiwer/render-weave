@@ -3,6 +3,7 @@
  * 数据定义的编辑页与静态数据定义的详情页都用；只显示与改值，不调接口。
  */
 import { useRef, useState, type ReactNode } from 'react';
+import { parseVersion, versionLabel } from '../form/schema-version.js';
 import { constraintText, isRequired, typeText, withConstraint } from '../form/definition.js';
 import { href } from '../hooks.js';
 import type { DefinitionDocument, DefinitionField, DefinitionItems, FieldType, Problem, SchemaRef, StaticSchemaSummary, TemplateBinding } from '../types.js';
@@ -14,7 +15,7 @@ export const fieldLabel = (field: DefinitionField, index: number) => field.displ
 export function UsedBy(props: { readonly templates: readonly TemplateBinding[] | undefined }) {
   const templates = props.templates ?? [];
   if (!templates.length) return <>还没有模板读这个字段</>;
-  return <>{templates.map((template, index) => <span key={template.name}>{index > 0 && '、'}<a href={href(['templates', template.name])}>{template.name}</a><span className="muted">（绑定 v{template.base.version}）</span></span>)}</>;
+  return <>{templates.map((template, index) => <span key={template.name}>{index > 0 && '、'}<a href={href(['templates', template.name])}>{template.name}</a><span className="muted">（绑定 {versionLabel(template.base.version)}）</span></span>)}</>;
 }
 
 /** 字段的一行摘要：类型点、名称、类型、约束。表单、树与只读列表都是它。 */
@@ -242,11 +243,12 @@ function RefField(props: { readonly id: string; readonly label: string; readonly
       <label htmlFor={props.id}>{props.label}</label>
       <select id={props.id} value={props.value ? key(props.value) : ''} onChange={(event) => {
         const at = event.target.value.lastIndexOf('@');
-        props.onChange({ name: event.target.value.slice(0, at), version: Number(event.target.value.slice(at + 1)) });
+        const written = event.target.value.slice(at + 1);
+        props.onChange({ name: event.target.value.slice(0, at), version: parseVersion(written) ?? written });
       }}>
         {!props.value && <option value="">选一个版本</option>}
-        {missing && <option value={key(props.value!)}>{props.value!.name} v{props.value!.version}（不存在）</option>}
-        {props.refs.map((ref) => <option key={key(ref)} value={key(ref)}>{ref.displayName === ref.name ? ref.name : `${ref.displayName}（${ref.name}）`} v{ref.version}</option>)}
+        {missing && <option value={key(props.value!)}>{props.value!.name} {versionLabel(props.value!.version)}（不存在）</option>}
+        {props.refs.map((ref) => <option key={key(ref)} value={key(ref)}>{ref.displayName === ref.name ? ref.name : `${ref.displayName}（${ref.name}）`} {versionLabel(ref.version)}</option>)}
       </select>
     </div>
   );

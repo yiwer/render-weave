@@ -940,12 +940,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     }, 180_000);
 
     /** 静态数据定义的一张卡片（一个版本）、数据定义草案的一张卡片、字段的一行（表单）与字段树上的一个字段。 */
-    const versionCard = (target: Page, name: string, version: number) => target.locator(`[data-testid="version-card"][data-name="${name}"][data-version="${version}"]`);
+    const versionCard = (target: Page, name: string, version: number | string) => target.locator(`[data-testid="version-card"][data-name="${name}"][data-version="${version}"]`);
     const draftCard = (target: Page, name: string) => target.locator(`[data-testid="draft-card"][data-name="${name}"]`);
     const publishedCard = (target: Page, name: string) => target.locator(`[data-testid="published-card"][data-name="${name}"]`);
     const fieldRow = (target: Page, name: string) => target.locator(`[data-testid="field-row"][data-field="${name}"]`);
     const treeField = (target: Page, name: string) => target.locator(`[data-testid="tree-field"][data-field="${name}"]`);
-    const publicationRow = (target: Page, name: string, version: number) => target.locator(`[data-testid="publication-row"][data-name="${name}"][data-version="${version}"]`);
+    const publicationRow = (target: Page, name: string, version: number | string) => target.locator(`[data-testid="publication-row"][data-name="${name}"][data-version="${version}"]`);
     const openField = (target: Page, name: string) => fieldRow(target, name).getByRole('button').first().click();
     const menuLabels = (target: Page) => target.getByRole('menu').getByRole('menuitem').evaluateAll((items) => items.map((item) => item.querySelector('.menu-label')!.textContent));
     const checkPassed = (target: Page) => target.getByTestId('check-status').filter({ hasText: '校验通过' }).waitFor();
@@ -969,7 +969,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     it('静态数据定义与数据定义（P1 票据 06、14）：复制为草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发；每一步都与开放 API 相同', async () => {
       const target = await asAdmin(), name = '线路牌', path = enc(name);
       const definitionsApi = async () => ((await adminApi('GET', '/v1/definitions')).body.definitions as any[]).find((item) => item.name === name);
-      const versionOf = async (version: number) => (await adminApi('GET', `/v1/static-schemas/${path}/versions/${version}`)).body;
+      const versionOf = async (version: number | string) => (await adminApi('GET', `/v1/static-schemas/${path}/versions/${version}`)).body;
       await (await nav(target, '静态数据定义')).click();
       await target.getByRole('heading', { name: '静态数据定义', level: 1 }).waitFor();
 
@@ -1178,37 +1178,62 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await detail.locator('li[data-path="depot"]').waitFor();
       expect(await detail.locator('[data-sha256]').first().getAttribute('data-sha256')).toBe(newest.sha256);
       expect(await detail.locator('[data-sha256]').nth(1).getAttribute('data-sha256')).toBe(newest.baseSha256);
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).status, '草案已删除').toBe(404);
+      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body, '草案留着，基于刚发布的版本（ADR-0028）').toMatchObject({ baseVersion: 2 });
       const compiled = await downloadBytes(target, () => detail.getByRole('button', { name: '导出编译产物' }).click());
       expect(createHash('sha256').update(compiled.bytes).digest('hex'), '导出的字节就是发布的产物').toBe(newest.compiledSha256);
-      expect(await detail.getByRole('button', { name: /另发/ }).count(), '当前版本不用另发').toBe(0);
+      expect(await detail.getByRole('button', { name: /覆盖草案/ }).count(), '当前版本不用回退').toBe(0);
 
-      // 以旧版另发：一键得到内容与 v1 相同的 v3，旧版本不变。
+      // 回退（ADR-0028）：用 v1 的内容覆盖草案，进编辑页看过，发布成自定义的版本；旧版本不变。
       await publicationRow(target, name, 1).getByRole('button').first().click();
-      await detail.getByRole('button', { name: '以这一版另发新版本' }).click();
-      await target.getByTestId('republish-confirm').filter({ hasText: '把 v1 的内容发布为新版本' }).waitFor();
+      await detail.getByRole('button', { name: '用这一版覆盖草案' }).click();
+      await target.getByTestId('restore-confirm').filter({ hasText: '用 v1 的内容覆盖草案' }).filter({ hasText: '不能恢复' }).waitFor();
       const v2Before = (await adminApi('GET', `/v1/static-schemas/${path}/versions/2`)).raw;
-      await target.getByRole('button', { name: '确认以 v1 另发' }).click();
-      await target.getByRole('status').filter({ hasText: '发布为 v3' }).waitFor();
-      const v3 = publicationRow(target, name, 3);
-      await v3.getByTestId('publication-summary').filter({ hasText: '以 v1 的内容另发' }).waitFor();
-      await v3.getByText('当前版本').waitFor();
+      await target.getByRole('button', { name: '确认覆盖草案' }).click();
+      await target.getByTestId('definition-meta').filter({ hasText: '基于 v2' }).waitFor();
+      await checkPassed(target);
+      await target.getByRole('button', { name: '发布为 v3' }).click();
+
+      // 发布页：版本框缺省是下一个编号，写法不对、已经发布过都不让发。
+      await target.getByRole('heading', { name: '发布为 线路牌 v3', level: 1 }).waitFor();
+      const versionBox = target.getByLabel('版本', { exact: true }), versionHint = target.getByTestId('publish-version-hint');
+      expect(await versionBox.inputValue()).toBe('v3');
+      await versionBox.fill('Not Valid');
+      await versionHint.filter({ hasText: '要以小写字母或数字开头' }).waitFor();
+      expect(await target.getByRole('button', { name: '发布', exact: true }).isDisabled()).toBe(true);
+      await versionBox.fill('v1');
+      await versionHint.filter({ hasText: '已经发布过 v1' }).waitFor();
+      expect(await target.getByRole('button', { name: '发布为 v1' }).isDisabled()).toBe(true);
+      await versionBox.fill('2026-08');
+      await target.getByRole('heading', { name: '发布为 线路牌 2026-08', level: 1 }).waitFor();
+      await target.getByTestId('publish-confirm').locator('.version-step.to').filter({ hasText: '2026-08' }).waitFor();
+      await target.getByLabel('发布说明（可选）').fill('回到第一版的字段');
+      await target.getByRole('button', { name: '发布为 2026-08' }).click();
+
+      // 发布记录：写版本，有说明，最新的看发布的先后；旧版本不变。
+      const tagged = publicationRow(target, name, '2026-08');
+      await tagged.getByTestId('publication-summary').filter({ hasText: '删除 depot' }).waitFor();
+      await tagged.getByText('当前版本').waitFor();
+      await target.getByTestId('publication-note').filter({ hasText: '回到第一版的字段' }).waitFor();
       expect(await publicationRow(target, name, 2).getByText('当前版本').count()).toBe(0);
-      const [first, third] = [await versionOf(1), await versionOf(3)];
+      const [first, third] = [await versionOf(1), await versionOf('2026-08')];
       expect({ ...third.definition, version: 1 }).toEqual(first.definition);
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/2`)).raw, '旧版本不变').toBe(v2Before);
-      expect((await records()).map((item) => item.version)).toEqual([3, 2, 1]);
-      expect((await adminApi('GET', '/v1/audit-events?limit=500')).body.events.filter((event: any) => event.action === 'definition.publish').map((event: any) => event.object.id).slice(0, 2)).toEqual(['线路牌@3', '线路牌@2']);
+      expect((await records()).map((item) => item.version)).toEqual(['2026-08', 2, 1]);
+      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body, '发布之后草案还在').toMatchObject({ baseVersion: '2026-08' });
 
       // 看已发布的版本：只读，可以切换；四种看法与开放 API 相同。
       await (await nav(target, '静态数据定义')).click();
-      await versionCard(target, name, 3).getByText('当前版本').waitFor();
+      await versionCard(target, name, '2026-08').getByText('当前版本').waitFor();
+      expect(await versionCard(target, name, '2026-08').getByTestId('version-badge').textContent()).toBe('2026-08');
       expect(await versionCard(target, name, 2).getByText('当前版本').count()).toBe(0);
       await versionCard(target, name, 2).getByText('历史版本').waitFor();
-      await versionCard(target, name, 3).getByRole('link').click();
-      await target.getByTestId('static-facts').filter({ hasText: 'v3 · 当前' }).waitFor();
+      await versionCard(target, name, '2026-08').getByRole('link').click();
+      await target.getByTestId('static-facts').filter({ hasText: '2026-08 · 当前' }).waitFor();
+      await target.getByRole('navigation', { name: '位置' }).getByText(`${name} 2026-08`).waitFor();
+      await target.getByTestId('publication-note').filter({ hasText: '回到第一版的字段' }).waitFor();
       await target.getByLabel('查看的版本').selectOption('2');
       await target.getByTestId('static-facts').filter({ hasText: 'v2' }).waitFor();
+      await target.getByRole('navigation', { name: '位置' }).getByText(`${name} v2`).waitFor();
       await treeField(target, 'depot').getByRole('button').click();
       await target.getByTestId('field-facts').filter({ hasText: '运营这条线路的车队' }).waitFor();
       expect(await target.getByRole('button', { name: '添加字段' }).count()).toBe(0);
@@ -1436,13 +1461,23 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await publicationRow(target, name, 1).getByTestId('publication-summary').filter({ hasText: '首个版本，10 个字段' }).waitFor();
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
 
-      // 发布之后数据定义还在（M366）：草案没了，卡片写最新版本，能搜到；点开看这一版，要改就复制为草案。
+      // 发布之后数据定义还在（ADR-0028）：草案留着，卡片写已发布的版本，点开接着改。
       await (await nav(target, '数据定义')).click();
+      const card = draftCard(target, name);
+      await card.getByTestId('draft-base').filter({ hasText: '已发布 v1' }).waitFor();
+      expect(await card.getByTestId('draft-fields').textContent()).toBe('10');
+      expect(await publishedCard(target, name).count()).toBe(0);
+      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body).toMatchObject({ baseVersion: 1 });
+      await card.getByRole('link').first().click();
+      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
+
+      // 草案删了，已发布的版本不受影响：卡片写最新版本，能搜到；要改就复制为草案；点开看这一版。
+      await target.getByRole('button', { name: '删除草案' }).click();
+      await target.getByRole('button', { name: '确认删除草案' }).click();
       const published = publishedCard(target, name);
       await published.getByTestId('published-state').filter({ hasText: '已发布 v1' }).waitFor();
       expect(await published.getByTestId('published-fields').textContent()).toBe('10');
       expect(await published.getByTestId('published-uses').textContent()).toBe('0 模板 · 0 数据集');
-      expect(await draftCard(target, name).count()).toBe(0);
       await target.getByLabel('搜索数据定义').fill(name);
       await published.waitFor();
       await published.getByRole('button', { name: '复制为草案' }).click();
@@ -1469,17 +1504,17 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     });
 
     it('数据定义（P1 票据 06、14）：客户操作员只读，看得到版本、草案与发布记录，没有任何写入口；直接调用写接口被拒绝', async () => {
-      const name = '线路牌', path = enc(name), drafted = (await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 3 })).body;
+      const name = '线路牌', path = enc(name), drafted = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
       await page.goto(`${baseUrl}/console/#/definitions`);
       const card = draftCard(page, name);
       await card.waitFor();
       expect(await page.getByRole('button', { name: '新建数据定义' }).count()).toBe(0);
-      expect(await card.getByRole('button', { name: '删除' }).count() + await card.getByRole('link', { name: '发布' }).count()).toBe(0);
-      expect(await card.getByTestId('draft-base').textContent()).toBe('基于 v3');
+      expect(await card.getByRole('button', { name: '删除' }).count() + await card.getByRole('link', { name: '发布', exact: true }).count()).toBe(0);
+      expect(await card.getByTestId('draft-base').textContent()).toBe('已发布 2026-08');
 
       // 草案：字段表与校验结果都看得到，检查器是只读的。
       await card.getByRole('link').first().click();
-      await page.getByTestId('definition-meta').filter({ hasText: '基于 v3' }).waitFor();
+      await page.getByTestId('definition-meta').filter({ hasText: '基于 2026-08' }).waitFor();
       await page.getByRole('note').filter({ hasText: '改动与发布由客户管理员完成' }).waitFor();
       await checkPassed(page);
       await openField(page, 'routeNo');
@@ -1510,14 +1545,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await page.getByText('发布由客户管理员完成').waitFor();
       expect(await page.getByRole('button', { name: /^发布/ }).count()).toBe(0);
 
-      // 发布记录：谁、改动摘要与哈希都看得到，没有另发。
+      // 发布记录：谁、改动摘要与哈希都看得到，不能回退。
       await page.goto(`${baseUrl}/console/#/definition-publications`);
       const v2 = publicationRow(page, name, 2);
       await v2.getByTestId('publication-actor').filter({ hasText: world.b.admin.email }).waitFor();
-      await page.locator(`[data-testid="draft-row"][data-name="${name}"]`).waitFor();
       await publicationRow(page, name, 1).getByRole('button').first().click();
       await page.getByTestId('publication-detail').locator('[data-sha256]').first().waitFor();
-      expect(await page.getByRole('button', { name: /另发/ }).count()).toBe(0);
+      expect(await page.getByRole('button', { name: /覆盖草案/ }).count()).toBe(0);
 
       // 权限以开放 API 为准。
       const operator = world.b.operator.token;
@@ -1742,7 +1776,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await adminApi('POST', '/v1/template-current', { template: name, revision: before.currentRevision })).status).toBe(200);
       await target.reload();
       await requestRow(target, second.id).getByRole('button').click();
-      await detail.getByTestId('request-stale').filter({ hasText: `当前修订已不是申请时的 ${second.baseRevision}` }).waitFor();
+      await detail.getByTestId('request-stale').filter({ hasText: `当前修订已不是申请时的 ${second.baseRevision}` }).filter({ hasText: '点"标为过期"收掉它' }).waitFor();
       expect(await detail.getByRole('button', { name: '批准' }).count()).toBe(0);
       await detail.getByRole('button', { name: '标为过期' }).click();
       await target.getByTestId('request-notice').filter({ hasText: '已标为过期' }).waitFor();
@@ -2145,7 +2179,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const retried = afterStash();
       await target.getByRole('button', { name: '保存', exact: true }).click();
       await retried;
-      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await target.getByTestId('unsaved-count').filter({ hasText: '已保存' }).waitFor();
       expect(await target.getByTestId('save-failure').count()).toBe(0);
       expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill']).toBe('#FFEEDD');
       // Ctrl+S 立刻写回，不等暂存的延迟。
@@ -2153,7 +2187,49 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const flushed = target.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/working-copy?'));
       await target.keyboard.press('Control+s');
       await flushed;
-      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await target.getByTestId('unsaved-count').filter({ hasText: '已保存' }).waitFor();
+      expect(await target.getByRole('button', { name: '保存', exact: true }).isDisabled(), '都保存了，没什么可点').toBe(true);
+
+      // 改了没点保存就离开先问（M367）：改动已暂存，不会丢；保存按钮还能点。换页与退出登录都问，答否留在这一页。
+      await input('fill').fill('#FFEEE0');
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存，未保存' }).waitFor();
+      expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill'], '已经暂存').toBe('#FFEEE0');
+      expect(await target.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(false);
+      const question = '这些改动已经暂存，下次打开还在，但你还没点保存。确定离开？', crumb = target.locator('nav.crumbs').getByRole('link', { name: '模板', exact: true });
+      const asked: string[] = [], answerNo = () => { target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); }); };
+      answerNo();
+      await crumb.click();
+      await expect.poll(() => asked).toEqual([question]);
+      await expect.poll(() => target.evaluate('decodeURIComponent(location.hash)')).toBe(`#/templates/${ALL}/design`);
+      expect(await input('fill').inputValue()).toBe('#FFEEE0');
+      answerNo();
+      await target.getByRole('button', { name: '退出', exact: true }).click();
+      await expect.poll(() => asked).toEqual([question, question]);
+      await inspector().getByTestId('properties').waitFor();
+      // 答是：走得了，改动留在工作副本里，下次打开还在。
+      target.once('dialog', (dialog) => { void dialog.accept(); });
+      await crumb.click();
+      await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      expect(((await documentNow())['artboard'] as Record<string, unknown>)['fill']).toBe('#FFEEE0');
+      await target.goBack();
+      await target.getByTestId('unsaved-count').filter({ hasText: '已保存' }).waitFor();
+      await chooseRow(ALL);
+      expect(await input('fill').inputValue()).toBe('#FFEEE0');
+      // 点了保存、或者改回上次保存的内容，都不再问：走到模板列表再回来。
+      await input('fill').fill('#FFEEE1');
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存，未保存' }).waitFor();
+      await target.getByRole('button', { name: '保存', exact: true }).click();
+      await target.getByTestId('unsaved-count').filter({ hasText: '已保存' }).waitFor();
+      await input('fill').fill('#FFEEE2');
+      await target.getByTestId('unsaved-count').filter({ hasText: '已暂存，未保存' }).waitFor();
+      await input('fill').fill('#FFEEE1');
+      await target.getByTestId('unsaved-count').filter({ hasText: '已保存' }).waitFor();
+      await crumb.click();
+      await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      expect(asked, '这次没问').toEqual([question, question]);
+      await target.goBack();
+      await chooseRow(ALL);
+      expect(await input('fill').inputValue()).toBe('#FFEEE1');
 
       // 别处先改了：写回被拒，明确选择才盖过去。
       const copy = await server('GET', copyUrl, token);

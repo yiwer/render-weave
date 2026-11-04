@@ -3,6 +3,7 @@
  * 页面只改字段这一层，文档里别的键与字段上不认识的键原样带回；校验一律以服务端的问题清单为准（M351），这里不判断对错。
  */
 import type { DefinitionField, DefinitionItems, DefinitionProperty, FieldType, Problem, SchemaRef } from '../types.js';
+import { versionLabel } from './schema-version.js';
 
 export const FIELD_TYPES: readonly { readonly type: FieldType; readonly label: string }[] = [
   { type: 'text', label: '文本' }, { type: 'number', label: '数值' }, { type: 'date', label: '日期' }, { type: 'time', label: '时刻' }, { type: 'datetime', label: '时间' },
@@ -12,7 +13,7 @@ export const FIELD_TYPES: readonly { readonly type: FieldType; readonly label: s
 export const ITEM_TYPES = FIELD_TYPES.filter(({ type }) => type !== 'list');
 
 const typeLabel = (type: string) => FIELD_TYPES.find((item) => item.type === type)?.label ?? type;
-const refText = (ref: SchemaRef | undefined) => (ref ? `${ref.name} v${ref.version}` : '没选');
+const refText = (ref: SchemaRef | undefined) => (ref ? `${ref.name} ${versionLabel(ref.version)}` : '没选');
 
 /** 类型一列：列表写元素类型，引用写被引用的版本。 */
 export function typeText(field: Pick<DefinitionField, 'type' | 'items' | 'ref'>): string {

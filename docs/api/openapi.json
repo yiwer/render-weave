@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -1051,8 +1051,12 @@
                       "description": "数据定义名称"
                     },
                     "baseVersion": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                       "description": "基于的静态版本；新名称没有"
                     },
                     "sha256": {
@@ -1155,9 +1159,14 @@
                     "pattern": "\\S"
                   },
                   "fromVersion": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 999999999
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 }
               }
@@ -1335,7 +1344,7 @@
         "tags": [
           "代建"
         ],
-        "summary": "把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同",
+        "summary": "把草案发布为一个静态数据定义，草案留着，能接着改（ADR-0028）；产物与本地 renderweave publish 逐字节相同",
         "description": "严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。",
         "x-access": "authoring.publish",
         "parameters": [
@@ -1373,6 +1382,20 @@
                   "expectedSha256": {
                     "type": "string",
                     "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "version": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
                   }
                 }
               }
@@ -1769,14 +1792,26 @@
                       "description": "申请时要被换掉的内容：基于的版本，或当前修订"
                     },
                     "baseVersion": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                       "description": "数据定义：基于的版本"
                     },
                     "version": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
-                      "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+                      "description": "数据定义：要发布成的版本，批准时已被占用就过期"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "数据定义：发布时写的说明（1.10.0）"
                     },
                     "baseRevision": {
                       "type": "integer",
@@ -4178,8 +4213,12 @@
                       "description": "数据定义名称"
                     },
                     "baseVersion": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                       "description": "基于的静态版本；新名称没有"
                     },
                     "sha256": {
@@ -4272,9 +4311,14 @@
                     "pattern": "\\S"
                   },
                   "fromVersion": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 999999999
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 }
               }
@@ -4432,7 +4476,7 @@
         "tags": [
           "数据定义"
         ],
-        "summary": "把草案发布为下一个静态数据定义，删除草案；产物与本地 renderweave publish 逐字节相同",
+        "summary": "把草案发布为一个静态数据定义，草案留着，能接着改（ADR-0028）；产物与本地 renderweave publish 逐字节相同",
         "description": "严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 draft.stale；版本被别的发布或推送先占了答 409 draft.versionTaken，什么也没写。回退：从旧版本另起草案（fromVersion），再发布成新版本。",
         "x-access": "authoring.publish",
         "parameters": [
@@ -4460,6 +4504,20 @@
                   "expectedSha256": {
                     "type": "string",
                     "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "version": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
                   }
                 }
               }
@@ -5824,14 +5882,26 @@
                       "description": "申请时要被换掉的内容：基于的版本，或当前修订"
                     },
                     "baseVersion": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                       "description": "数据定义：基于的版本"
                     },
                     "version": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
-                      "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+                      "description": "数据定义：要发布成的版本，批准时已被占用就过期"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "数据定义：发布时写的说明（1.10.0）"
                     },
                     "baseRevision": {
                       "type": "integer",
@@ -9157,8 +9227,12 @@
                 "description": "静态数据定义名称"
               },
               "version": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "string"
+                ],
                 "minimum": 1,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                 "description": "版本"
               }
             },
@@ -9436,8 +9510,16 @@
                         "minLength": 1
                       },
                       "version": {
-                        "type": "integer",
-                        "minimum": 1
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
                       }
                     },
                     "description": "所选静态数据定义的确切版本（ADR-0008）"
@@ -9610,8 +9692,16 @@
                         "minLength": 1
                       },
                       "version": {
-                        "type": "integer",
-                        "minimum": 1
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
                       }
                     },
                     "description": "所选静态数据定义的确切版本（ADR-0008）"
@@ -10027,8 +10117,12 @@
             "description": "数据定义名称"
           },
           "baseVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "基于的静态版本；新名称没有"
           },
           "sha256": {
@@ -10095,8 +10189,12 @@
               ],
               "properties": {
                 "version": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
                   "minimum": 1,
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                   "description": "版本"
                 },
                 "displayName": {
@@ -10152,8 +10250,12 @@
               ],
               "properties": {
                 "version": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
                   "minimum": 1,
+                  "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                   "description": "版本"
                 },
                 "displayName": {
@@ -10216,8 +10318,12 @@
                             "description": "静态数据定义名称"
                           },
                           "version": {
-                            "type": "integer",
+                            "type": [
+                              "integer",
+                              "string"
+                            ],
                             "minimum": 1,
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                             "description": "版本"
                           }
                         },
@@ -10250,8 +10356,12 @@
             "description": "数据定义名称"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "版本"
           },
           "displayName": {
@@ -10269,8 +10379,12 @@
             "description": "编译产物的 SHA-256"
           },
           "baseVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "差异的基准：网页发布是它基于的版本，推送是它的上一版；首个版本没有"
           },
           "baseSha256": {
@@ -10315,6 +10429,10 @@
             },
             "description": "谁发布的；审计里没有记录时没有"
           },
+          "note": {
+            "type": "string",
+            "description": "发布时写的说明（1.10.0）"
+          },
           "diff": {
             "type": "object",
             "description": "与基准的字段级差异，结构同发布预检的 diff",
@@ -10341,8 +10459,12 @@
             "description": "问题清单，定位到字段；有严重问题时不能发布"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "发布后的版本号；有严重问题时没有"
           },
           "compiled": {
@@ -10388,8 +10510,12 @@
                             "description": "静态数据定义名称"
                           },
                           "version": {
-                            "type": "integer",
+                            "type": [
+                              "integer",
+                              "string"
+                            ],
                             "minimum": 1,
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                             "description": "版本"
                           }
                         },
@@ -10418,8 +10544,12 @@
             "description": "预检的是这份内容"
           },
           "baseVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "基于的静态版本；新名称没有"
           },
           "problems": {
@@ -10427,8 +10557,12 @@
             "description": "问题清单；有严重问题时发布会被拒绝，下面的字段都没有"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "发布后的版本号"
           },
           "diff": {
@@ -10519,8 +10653,12 @@
                       "description": "静态数据定义名称"
                     },
                     "version": {
-                      "type": "integer",
+                      "type": [
+                        "integer",
+                        "string"
+                      ],
                       "minimum": 1,
+                      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                       "description": "版本"
                     }
                   },
@@ -10547,13 +10685,21 @@
             "description": "数据定义名称"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "新版本"
           },
           "baseVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "基于的静态版本；新名称没有"
           },
           "definitionSha256": {
@@ -10603,8 +10749,16 @@
                     "minLength": 1
                   },
                   "version": {
-                    "type": "integer",
-                    "minimum": 1
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                      }
+                    ]
                   }
                 },
                 "description": "所选静态数据定义的确切版本（ADR-0008）"
@@ -10630,8 +10784,12 @@
             "description": "静态数据定义名称"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "版本"
           },
           "displayName": {
@@ -10668,8 +10826,12 @@
             "description": "静态数据定义名称"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "版本"
           },
           "displayName": {
@@ -10950,8 +11112,12 @@
                 "description": "静态数据定义名称"
               },
               "version": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "string"
+                ],
                 "minimum": 1,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                 "description": "版本"
               }
             },
@@ -11032,8 +11198,12 @@
                 "description": "静态数据定义名称"
               },
               "version": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "string"
+                ],
                 "minimum": 1,
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
                 "description": "版本"
               }
             },
@@ -11907,14 +12077,26 @@
             "description": "申请时要被换掉的内容：基于的版本，或当前修订"
           },
           "baseVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
             "description": "数据定义：基于的版本"
           },
           "version": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "minimum": 1,
-            "description": "数据定义：申请时算出的下一个版本，批准时已被占用就过期"
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+            "description": "数据定义：要发布成的版本，批准时已被占用就过期"
+          },
+          "note": {
+            "type": "string",
+            "description": "数据定义：发布时写的说明（1.10.0）"
           },
           "baseRevision": {
             "type": "integer",

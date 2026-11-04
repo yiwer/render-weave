@@ -2,11 +2,12 @@
  * 数据定义的发布与发布记录（P1 票据 06，M346、M355、M365，原型画板 08）。
  * - 发布：左边是字段级差异与预检结果（失配的数据集、未全部核对、仍绑定旧版的模板），右边一张确认卡写结论与发布按钮；
  * - 发布记录：谁在何时发布了哪一版、改动摘要、内容哈希；选中一行原地展开差异；操作员只读；
- * - 以某一版另发：页面上一键，接口上是两步——从旧版另起草案，再发布成新版本（ADR-0008、M346）。
- * - 待处理：还没发布的草案，以及代建工程师的发布申请（P1 票据 11）。
+ * - 回退：用旧版本的内容覆盖草案，进编辑页看过再发布（ADR-0028）。
+ * - 待处理：代建工程师的发布申请（P1 票据 11）。
  * 只调开放 API。
  */
 import { useState } from 'react';
+import { parseVersion, versionLabel } from '../form/schema-version.js';
 import { api } from '../api.js';
 import { StaticSchemaTabs } from '../components/module-tabs.js';
 import { Icon, PUBLISH } from '../components/icon.js';
@@ -17,6 +18,7 @@ import { constraintText, isRequired, propertyParts, typeText } from '../form/def
 import { publishVerdict } from '../form/publish-verdict.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDiff, DefinitionFieldChange, DefinitionProperty, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
+import { restoreToDraft } from './definition-studio.js';
 import { canEditDefinitions, definitionPath, exportCompiled, staticSchemaPath } from './definitions.js';
 import { Loading } from '../components/motifs.js';
 
@@ -77,7 +79,7 @@ function DiffList(props: { readonly diff: DefinitionDiff }) {
 
 /** 数据集影响：会失配多少份、核对了多少份；发布不改动它们（ADR-0008）。 */
 function DatasetImpact(props: { readonly check: DefinitionPublishCheck }) {
-  const { check } = props, datasets = check.datasets!, base = check.baseVersion === undefined ? undefined : `v${check.baseVersion}`;
+  const { check } = props, datasets = check.datasets!, base = check.baseVersion === undefined ? undefined : `${versionLabel(check.baseVersion)}`;
   return (
     <section className="publish-section" data-testid="dataset-impact">
       <h2>数据集</h2>
@@ -130,7 +132,7 @@ function TemplateImpact(props: { readonly check: DefinitionPublishCheck }) {
         {templates.length === 0 ? <p className="muted publish-sheet-note">还没有模板用这个数据定义。</p> : (
           <>
             <ul className="plain publish-sheet-rows">
-              {templates.map((template) => <li key={template.name} data-name={template.name}><a href={href(['templates', template.name])}>{template.name}</a><span className="version-badge">绑定 v{template.base.version}</span></li>)}
+              {templates.map((template) => <li key={template.name} data-name={template.name}><a href={href(['templates', template.name])}>{template.name}</a><span className="version-badge">绑定 {versionLabel(template.base.version)}</span></li>)}
             </ul>
             <p className="publish-sheet-foot">发布不改动它们，它们照旧绑定各自的版本。</p>
           </>
@@ -146,17 +148,24 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
   const canEdit = canEditDefinitions(props.identity);
   const loaded = useLoad(async () => {
     if (!canEdit) return undefined;
-    const draft = await api.definitionDraft(name);
-    return { draft, check: await api.publishCheckDefinitionDraft(name, draft.sha256) };
+    const [draft, detail] = await Promise.all([api.definitionDraft(name), api.definition(name)]);
+    return { draft, taken: detail.versions.map((item) => item.version), check: await api.publishCheckDefinitionDraft(name, draft.sha256) };
   }, `publish-check:${name}`);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
+  /** 版本框里写的；没动过就是预检给的下一个编号。 */
+  const [written, setWritten] = useState<string>();
+  const [note, setNote] = useState('');
   const check = loaded.data?.check, draft = loaded.data?.draft;
+  const text = written ?? (check?.version === undefined ? '' : versionLabel(check.version));
+  const version = parseVersion(text), label = version === undefined ? undefined : versionLabel(version);
+  const versionProblem = version === undefined ? '要以小写字母或数字开头，可以有点、下划线、连字符，最长 64 个字符'
+    : loaded.data?.taken.includes(version) ? `已经发布过 ${label}，换一个` : undefined;
   const publish = async () => {
     setBusy(true);
     setProblems(undefined);
     try {
-      const published = await api.publishDefinitionDraft(name, check!.sha256);
+      const published = await api.publishDefinitionDraft(name, check!.sha256, { version: version!, ...(note.trim() ? { note: note.trim() } : {}) });
       go(['definition-publications'], { name, version: String(published.version) });
     } catch (error) {
       setProblems(problemsOf(error));
@@ -171,10 +180,10 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
       </nav>
       <div className="title-row">
         <div>
-          <h1>{check?.version ? `发布为 ${name} v${check.version}` : `发布 ${name}`}</h1>
+          <h1>{check?.version && label ? `发布为 ${name} ${label}` : `发布 ${name}`}</h1>
           {check && (
             <p className="meta" data-testid="publish-meta">
-              <span>{check.baseVersion === undefined ? '首个版本' : `基于 v${check.baseVersion}`}</span>
+              <span>{check.baseVersion === undefined ? '首个版本' : `基于 ${versionLabel(check.baseVersion)}`}</span>
               {draft && <span>{draft.updatedBy} 保存于 {time(draft.updatedAt)}</span>}
               <Hash value={check.sha256} />
             </p>
@@ -186,15 +195,24 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
       {loaded.loading && !check && canEdit && <Loading>正在预检：比较字段、核对绑定的数据集…</Loading>}
       {check && (
         <div className="publish-layout">
-          <PublishConfirm verdict={publishVerdict(check)} busy={busy}
-            {...(check.version === undefined ? {} : { steps: { from: check.baseVersion === undefined ? '草案' : `v${check.baseVersion}`, to: `v${check.version}` } })}>
+          <PublishConfirm verdict={publishVerdict(check, version)} busy={busy}
+            {...(check.version === undefined ? {} : { steps: { from: check.baseVersion === undefined ? '草案' : `${versionLabel(check.baseVersion)}`, to: label ?? '？' } })}>
             <ErrorBox problems={problems} title="没有发布" />
             {check.version !== undefined
               ? (
                 <>
-                  <button type="button" className="primary publish-button" disabled={busy || loaded.loading} onClick={() => void publish()}><Icon d={PUBLISH} />{busy ? '正在发布…' : `发布为 v${check.version}`}</button>
+                  <div className="field publish-field">
+                    <label htmlFor="publish-version">版本</label>
+                    <input id="publish-version" type="text" className="mono" spellCheck={false} maxLength={64} value={text} aria-invalid={Boolean(versionProblem)} aria-describedby="publish-version-hint" onChange={(event) => setWritten(event.target.value)} />
+                    <span id="publish-version-hint" className={`hint${versionProblem ? ' bad-text' : ''}`} data-testid="publish-version-hint">{versionProblem ?? '缺省是下一个编号，也可以写 2026-08、v1.2 这样的字符串。'}</span>
+                  </div>
+                  <div className="field publish-field">
+                    <label htmlFor="publish-note">发布说明（可选）</label>
+                    <textarea id="publish-note" rows={2} maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} />
+                  </div>
+                  <button type="button" className="primary publish-button" disabled={busy || loaded.loading || Boolean(versionProblem)} onClick={() => void publish()}><Icon d={PUBLISH} />{busy ? '正在发布…' : label ? `发布为 ${label}` : '发布'}</button>
                   <a className="button quiet" href={href(definitionPath(name))}>回到草案</a>
-                  <p className="publish-note">发布产生新版本，旧版本不变；要回退，就在发布记录里把旧版本再发布一次。</p>
+                  <p className="publish-note">发布不影响数据定义，发布之后能接着改；已发布的版本不变。</p>
                 </>
               )
               : <a className="button primary publish-button" href={href(definitionPath(name))}>回到草案改正</a>}
@@ -210,7 +228,7 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
               : (
                 <>
                   <section className="publish-section" data-testid="publish-changes">
-                    <h2>{check.baseVersion === undefined ? '字段' : `与 v${check.baseVersion} 相比`}</h2>
+                    <h2>{check.baseVersion === undefined ? '字段' : `与 ${versionLabel(check.baseVersion)} 相比`}</h2>
                     <div className="publish-sheet"><DiffList diff={check.diff!} /></div>
                   </section>
                   <DatasetImpact check={check} />
@@ -232,9 +250,9 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
 
 /** 改动摘要：一句话，展开看逐字段的差异。 */
 function summaryText(publication: DefinitionPublication): string {
-  const { diff, baseVersion, version } = publication;
+  const { diff, baseVersion } = publication;
   if (baseVersion === undefined) return `首个版本，${number(diff.fields.length)} 个字段`;
-  if (!diff.fields.length && !diff.definition.length && !diff.order) return baseVersion === version - 1 ? '没有改动' : `以 v${baseVersion} 的内容另发`;
+  if (!diff.fields.length && !diff.definition.length && !diff.order) return '没有改动';
   const names = (change: DefinitionFieldChange['change']) => diff.fields.filter((field) => field.change === change).map((field) => field.path);
   const part = (label: string, list: readonly string[]) => (list.length ? `${label} ${list.slice(0, 3).join('、')}${list.length > 3 ? ` 等 ${list.length} 个` : ''}` : undefined);
   return [
@@ -257,23 +275,15 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
   const [confirming, setConfirming] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
-  const [notice, setNotice] = useState<string>();
   const data = loaded.data;
-  const latest = new Map<string, number>();
-  for (const item of data?.publications ?? []) latest.set(item.name, Math.max(latest.get(item.name) ?? 0, item.version));
-  const drafts = (data?.definitions ?? []).filter((definition) => definition.draft && (!name || definition.name === name));
-  const republish = async (publication: DefinitionPublication) => {
+  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）。
+  const latest = new Map((data?.definitions ?? []).map((definition) => [definition.name, definition.versions.at(-1)?.version]));
+  const hasDraft = (candidate: string) => (data?.definitions ?? []).some((definition) => definition.name === candidate && definition.draft);
+  const restore = async (publication: DefinitionPublication) => {
     setBusy(true);
     setProblems(undefined);
-    setNotice(undefined);
     setConfirming(undefined);
-    try {
-      const draft = await api.createDefinitionDraft(publication.name, { fromVersion: publication.version });
-      const published = await api.publishDefinitionDraft(publication.name, draft.sha256);
-      setNotice(`已把 ${publication.name} v${publication.version} 的内容发布为 v${published.version}`);
-      setOpen(`${publication.name}@${published.version}`);
-      loaded.reload();
-    } catch (error) {
+    try { await restoreToDraft(publication.name, publication.version); } catch (error) {
       setProblems(problemsOf(error));
       loaded.reload();
     } finally { setBusy(false); }
@@ -282,30 +292,12 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
     <section className="page">
       <div className="title-row"><h1>静态数据定义</h1></div>
       <StaticSchemaTabs active="publications" />
-      {name && <p className="small muted" data-testid="records-filter">只看 {name} 的发布记录。<a href={href(['definition-publications'])}>看全部</a></p>}
-      {notice && <p className="status" role="status">{notice}</p>}
-      <ErrorBox problems={problems} title="没有另发" />
+      {name && <p className="small muted" data-testid="records-filter">只看 {name} 的发布记录。<a href={href(['definition-publications'])}>看全部</a> · <a href={href(definitionPath(name))}>回到这个数据定义</a></p>}
+      <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到发布记录" />
       {loaded.loading && !data && <Loading />}
       <PendingRequests scope="definitions" subject={name} canDecide={canEdit} onDecided={loaded.reload} refresh={data?.publications.length}
         renderChanges={(request) => (request.kind === 'definitionPublish' && request.changes ? <DiffList diff={request.changes as DefinitionDiff} /> : undefined)} />
-      {drafts.length > 0 && (
-        <section className="card">
-          <h2>还没发布的草案</h2>
-          <table className="table record-table">
-            <tbody>
-              {drafts.map((definition) => (
-                <tr key={definition.name} data-testid="draft-row" data-name={definition.name}>
-                  <td><a className="row-link" href={href(definitionPath(definition.name))}>{definition.displayName}</a></td>
-                  <td>{definition.draft!.baseVersion ? `基于 v${definition.draft!.baseVersion}` : '还没发布过'}</td>
-                  <td className="muted">{definition.draft!.updatedBy} 保存于 {time(definition.draft!.updatedAt)}</td>
-                  <td><span className="chip accent">草案</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
       {data && (
         <section className="card">
           <h2>已发布</h2>
@@ -319,7 +311,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                   <tr key={key} data-testid="publication-row" data-name={publication.name} data-version={publication.version} className={expanded ? 'selected' : undefined}>
                     <td>
                       <button type="button" className="link-button" aria-expanded={expanded} onClick={() => { setOpen(expanded ? undefined : key); setConfirming(undefined); }}>{publication.displayName}</button>
-                      <span className="muted"> v{publication.version}</span>
+                      <span className="muted"> {versionLabel(publication.version)}</span>
                     </td>
                     <td data-testid="publication-summary">{summaryText(publication)}</td>
                     <td data-testid="publication-actor">{publication.actor?.label ?? <span className="muted">没有记录</span>}</td>
@@ -329,9 +321,10 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                   expanded && (
                     <tr key={`${key}-detail`} className="selected">
                       <td colSpan={5} className="field-detail" data-testid="publication-detail">
+                        {publication.note && <p className="publication-note" data-testid="publication-note">{publication.note}</p>}
                         <DiffList diff={publication.diff} />
                         <p className="meta" data-testid="publication-facts">
-                          <span>{publication.baseVersion === undefined ? '首个版本' : `与 v${publication.baseVersion} 比较`}</span>
+                          <span>{publication.baseVersion === undefined ? '首个版本' : `与 ${versionLabel(publication.baseVersion)} 比较`}</span>
                           {publication.source ? <span>来源：{SOURCE[publication.source]}</span> : <span>审计里没有这一版的记录，不知道谁在何时发布</span>}
                           <span>内容哈希 <Hash value={publication.sha256} /></span>
                           {publication.baseSha256 && <span>基准 <Hash value={publication.baseSha256} /></span>}
@@ -339,14 +332,14 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                         <div className="actions">
                           <a className="button small quiet" href={href(staticSchemaPath(publication.name, publication.version))}>打开这一版</a>
                           <button type="button" className="small quiet" onClick={() => void exportCompiled(publication).catch((error: unknown) => setProblems(problemsOf(error)))}>导出编译产物</button>
-                          {canEdit && !current && confirming !== key && <button type="button" className="small" disabled={busy} onClick={() => setConfirming(key)}>以这一版另发新版本</button>}
+                          {canEdit && !current && confirming !== key && <button type="button" className="small" disabled={busy} onClick={() => setConfirming(key)}>{hasDraft(publication.name) ? '用这一版覆盖草案' : '从这一版另起草案'}</button>}
                         </div>
                         {canEdit && !current && confirming === key && (
-                          <div className="impact-note" data-testid="republish-confirm">
-                            <strong>把 v{publication.version} 的内容发布为新版本。</strong>
-                            <span>旧版本都保持不变，模板与数据集照旧绑定各自的版本。{drafts.some((definition) => definition.name === publication.name) ? '这个名称已有草案，要先发布或删除它。' : ''}</span>
+                          <div className="impact-note" data-testid="restore-confirm">
+                            <strong>{hasDraft(publication.name) ? `用 ${versionLabel(publication.version)} 的内容覆盖草案。` : `从 ${versionLabel(publication.version)} 另起草案。`}</strong>
+                            <span>{hasDraft(publication.name) ? '草案现在的内容会被换掉，不能恢复；已发布的版本都不变。' : '已发布的版本都不变。'}进编辑页看过再发布。</span>
                             <div className="actions">
-                              <button type="button" className="small" disabled={busy} onClick={() => void republish(publication)}>{busy ? '正在另发…' : `确认以 v${publication.version} 另发`}</button>
+                              <button type="button" className="small" disabled={busy} onClick={() => void restore(publication)}>{busy ? '正在处理…' : hasDraft(publication.name) ? '确认覆盖草案' : '确认另起'}</button>
                               <button type="button" className="small quiet" onClick={() => setConfirming(undefined)}>取消</button>
                             </div>
                           </div>
@@ -360,7 +353,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
           </table>
         </section>
       )}
-      <p className="table-note">每次发布产生一个新版本；要回退，就把旧版本的内容再发布一次。</p>
+      <p className="table-note">每次发布产生一个新版本；要回退，就用旧版本的内容覆盖草案，再发布一次。</p>
     </section>
   );
 }
