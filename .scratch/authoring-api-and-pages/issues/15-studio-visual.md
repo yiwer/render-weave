@@ -4,7 +4,7 @@
 
 **Blocked by:** 14
 
-**Status:** ready-for-human
+**Status:** resolved
 
 **Trace:** 用户走查票据 13 时提出"引入一些灵动的 svg，类似 anthropic_svg.tsx；整体配色、视觉方案和 gemini_generated_video_design.mp4 一致"（2026-11-03）；决定在 M361。
 
@@ -16,6 +16,24 @@
 - [x] 减少动态时全部停在完成态；内容安全策略不放宽。
 - [x] 登录页换成这支视频：版式照原型画板 01，左上品牌，表单直接放在页面上，不放说明文字；密码可以显示；减少动态时只放封面，窄窗口不放。
 - [x] 接口进程的静态文件认视频与封面，视频可以按范围读。
-- [ ] 用户看过页面，确认配色、小图和登录页的方向。
+- [x] 用户看过页面，确认配色、小图和登录页的方向（用户选择合入，视为确认）。
 
 **测试接缝：** 控制台浏览器用例（`service/test/console-suite.ts`）：色值与对比度、窄窗口没有横向滚动、小图在动、减少动态时停住、登录页的视频。静态文件的范围读取在 `service/test/console.test.ts`。
+
+## Answer
+
+2026-11-03 完成，决定在 M361。
+
+**成果：** 色板在 `service/console/src/styles.css`；小图在 `components/motifs.tsx`；登录页 `pages/login.tsx` 与 `assets/login-studio.mp4`、`login-studio.jpg`（视频与原型那份字节相同，`git` 里是同一个对象）；静态文件的范围读取在 `service/src/api/console.ts`。开放 API 不变。
+
+**跑过的命令与结果：**
+
+- 回归的命令与结果在 [P1 验收](../../../docs/p1-acceptance.md)「票据 14、15 之后重跑」：Docker 后端 200 项通过，验收脚本 15 步全过，Windows 与 Linux 全量服务侧没有失败。
+- Edge 里实测登录页：视频在播、播完循环、走 206、内容安全策略没拦；减少动态时只请求封面；375 宽的窄窗口不请求视频和封面。
+- 截图和视频并排比过，所有小图放大看过。
+
+**对验收的偏差：**
+
+- Safari 上的播放没有实测，只验证了服务端按范围回答。
+- 沙漏只在放大的图册里看过，没在真实的任务页上看。
+- 字体没换：样例的字体来自 Google Fonts，内容安全策略只许同源（M361）。
