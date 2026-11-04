@@ -53,7 +53,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ### 未排期的后续
 
-- Excel 经 CodingAgent 按工作空间 staticSchema 提取（2026-11-03，M359–M364）：本地提取已接正式审核、修正重放、完整应用，以及通用渲染项准备和固定批次交付。代码在独立分支 `feature/excel-agent-p06`，主检出只同步文档。接续看[票据 04](.scratch/excel-agent-extraction/issues/04-prepare-and-deliver-output.md)、[审核说明](docs/excel-agent-review.md)、[出图接续说明](docs/excel-agent-output.md)及[P06 报告](docs/agent-eval/excel-agent-p06.md)。下一步 P07 用实际制作表及独立业务真值验证完整流程、人工工时和成本；浏览器走查待本机控制连接恢复。提取仍使用 Claude Code + OpenCode Go 原型入口，正式 `agent run` 工作簿检查点、生产隔离及完整替代尚未完成，不改变 P0/P1 收尾。[流程设计](docs/excel-agent-workflow.md)、[规格](.scratch/excel-agent-extraction/spec.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
+- Excel 经 CodingAgent 按工作空间 staticSchema 提取（2026-11-03，M359–M365）：本地提取已接正式审核、修正重放、完整应用，以及通用渲染项准备和固定批次交付。实现保留在独立分支 `feature/excel-agent-p06`，后续实表记录在 `feature/excel-agent-p07`，主检出只同步文档。用户提供的 115 路实际制作表试跑见[票据 05](.scratch/excel-agent-extraction/issues/05-try-user-production-workbook.md)及[实测报告](docs/agent-eval/excel-agent-p07-115.md)。下一步先按[票据 06](.scratch/excel-agent-extraction/issues/06-preserve-workbook-comments.md)补通用批注读取、来源核对和 VML 判别，再用同一原件复跑；之后继续 P07 业务真值、完整出图及人工工时/成本验收。浏览器走查待本机控制连接恢复。提取仍使用 Claude Code + OpenCode Go 原型入口，正式 `agent run` 工作簿检查点、生产隔离及完整替代尚未完成，不改变 P0/P1 收尾。[审核说明](docs/excel-agent-review.md)、[出图接续](docs/excel-agent-output.md)、[流程设计](docs/excel-agent-workflow.md)、[规格](.scratch/excel-agent-extraction/spec.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
 - 阶段 4 验收留下的后续（[第四阶段验收](docs/stage4-acceptance.md#后续)），其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - Agent 外围工具复核的票据 18（模板设计的主模板基准必须等于数据集选定的数据定义）、20（修正模板参考里的数据定义示例指向）是 `ready-for-agent`，做时另升 MCP 合同版本、另跑评估。
 - 控制台状态栏"进行中的批次"只数本标签页提交的；要租户范围，得加只读的批次列表端点（P1 票据 01 的偏差）。
