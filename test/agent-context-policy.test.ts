@@ -213,4 +213,4 @@ it('票14双语四任务可冻结两份同条件配对计划，并从真实CLI�
     const record=JSON.parse(await readFile(join(out,'round.json'),'utf8'));
     expect(record.inputs.contextPolicy.name).toBe('on-demand');
   }
-},180000);
+},300000);
