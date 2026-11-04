@@ -33,7 +33,6 @@ export function DatasetList(props: {
     const [datasets, templates, schemas] = await Promise.all([api.datasets(), api.templates(), api.staticSchemas()]);
     return { datasets: datasets.datasets, templates: templates.templates.filter((template) => !template.problems), schemas: schemas.staticSchemas };
   }, 'datasets');
-  const [template, setTemplate] = useState('');
   const [chosen, setChosen] = useState<ReadonlySet<string>>(() => new Set(props.deliver?.datasetIds ?? []));
   const data = loaded.data;
   const templatesFor = (ref: SchemaRef | undefined) => data?.templates.filter((candidate) => sameSchema(candidate.base, ref)) ?? [];
@@ -53,17 +52,11 @@ export function DatasetList(props: {
           <p className="lede">一份数据集是一个业务对象的数据，比如一条线路、一块胸牌。按数据定义填写，保存后可以修改、复制，随时出图。</p>
         </div>
         {data && (
-          <form className="actions" onSubmit={(event) => { event.preventDefault(); if (template) go(['datasets', 'new'], { template }); }}>
-            <label htmlFor="new-dataset-template" className="visually-hidden">新建数据集用的模板</label>
-            <select id="new-dataset-template" value={template} onChange={(event) => setTemplate(event.target.value)}>
-              <option value="">选择模板…</option>
-              {data.templates.filter((entry) => data.schemas.some((schema) => sameSchema(schema, entry.base))).map((entry) => (
-                <option key={entry.name} value={entry.name}>{entry.name}（{schemaText(entry.base, data.schemas)}）</option>
-              ))}
-            </select>
-            <button type="submit" className="primary" disabled={!template}>新建数据集</button>
-            <a className="button" href={href(['import'], { template: template || undefined })}>从 Excel 导入…</a>
-          </form>
+          <div className="actions">
+            <a className="button primary" href={href(['datasets', 'new'])}>新建数据集</a>
+            <a className="button" href={href(['dataset-imports'])}>智能导入数据集</a>
+            <a className="button" href={href(['import'])}>标准表格批量出图…</a>
+          </div>
         )}
       </div>
       <ErrorBox problems={loaded.problems} title="读不到数据集" />
@@ -78,7 +71,7 @@ export function DatasetList(props: {
               </tr>
             </thead>
             <tbody>
-              {data.datasets.length === 0 && <tr><td colSpan={5} className="muted">还没有数据集。选一个模板，新建第一份。</td></tr>}
+              {data.datasets.length === 0 && <tr><td colSpan={5} className="muted">还没有数据集。选择静态数据定义，新建第一份；保存数据不需要先有模板。</td></tr>}
               {data.datasets.map((entry) => {
                 const usable = templatesFor(entry.staticSchema);
                 return (
@@ -137,7 +130,36 @@ interface EditorInput {
 
 export type EditorSheet = { readonly kind: 'deliver' } | { readonly kind: 'batch'; readonly id: string };
 
-export function DatasetEditor(props: { readonly id?: string; readonly templateName?: string; readonly sheet?: EditorSheet }) {
+/** 不依赖模板的新建入口，所选版本明确写进地址，刷新或分享不会换成最新版。 */
+export function DatasetNew() {
+  const loaded = useLoad(() => api.staticSchemas(), 'dataset-new-schemas');
+  const [selected, setSelected] = useState('');
+  const schemas = loaded.data?.staticSchemas ?? [];
+  const chosen = schemas.find((schema) => JSON.stringify([schema.name, schema.version]) === selected);
+  return <section className="page">
+    <nav className="crumbs" aria-label="位置"><a href={href(['datasets'])}>数据集</a><span aria-hidden="true">/</span><span>新建</span></nav>
+    <div className="title-row"><div><h1>新建数据集</h1><p className="lede">先选择数据要遵循的定义。填写并保存后，可以再选择模板出图。</p></div></div>
+    <ErrorBox problems={loaded.problems} title="读不到静态数据定义" />
+    {loaded.loading && <Loading />}
+    {loaded.data && <form className="card dataset-start" onSubmit={(event) => {
+      event.preventDefault(); if (chosen) go(['datasets', 'new'], { schema: chosen.name, version: String(chosen.version) });
+    }}>
+      <h2>选择静态数据定义</h2>
+      {schemas.length ? <>
+        <div className="field"><label htmlFor="new-dataset-schema">数据定义与版本</label>
+          <select id="new-dataset-schema" required value={selected} onChange={(event) => setSelected(event.target.value)}>
+            <option value="">请选择…</option>
+            {schemas.map((schema) => <option key={JSON.stringify([schema.name, schema.version])} value={JSON.stringify([schema.name, schema.version])}>{schemaText(schema, schemas)}</option>)}
+          </select>
+        </div>
+        {chosen && <p className="soft">这份数据集将使用 <strong>{schemaText(chosen, schemas)}</strong>。保存后仍绑定这一版，定义发布新版本不会改变它。</p>}
+        <div className="actions"><button className="primary" type="submit" disabled={!chosen}>开始填写</button><a className="button quiet" href={href(['datasets'])}>取消</a></div>
+      </> : <div className="soft"><p>还没有可用的静态数据定义。请先由管理员发布数据定义，再创建数据集。</p><a href={href(['static-schemas'])}>查看静态数据定义</a></div>}
+    </form>}
+  </section>;
+}
+
+export function DatasetEditor(props: { readonly id?: string; readonly templateName?: string; readonly schemaName?: string; readonly schemaVersion?: string; readonly sheet?: EditorSheet }) {
   const loaded = useLoad(async (): Promise<EditorInput> => {
     const [templateList, schemas] = await Promise.all([api.templates(), api.staticSchemas()]);
     const templates = templateList.templates.filter((template) => !template.problems);
@@ -148,13 +170,18 @@ export function DatasetEditor(props: { readonly id?: string; readonly templateNa
       data = fromJson(document.data ?? {});
     } else {
       const template = templates.find((candidate) => candidate.name === props.templateName);
-      if (!template?.base) throw new Error('新建数据集要先选模板：数据集按模板的数据定义填写');
-      identity = { staticSchema: template.base };
+      if (props.templateName && !template?.base) throw new Error('指定的模板不可用，请重新选择模板或静态数据定义');
+      const hasSchema = props.schemaName !== undefined || props.schemaVersion !== undefined;
+      if (hasSchema && (!props.schemaName || !/^[1-9]\d*$/.test(props.schemaVersion ?? '') || !Number.isSafeInteger(Number(props.schemaVersion)))) throw new Error('请选择静态数据定义的名称和确切版本');
+      const selected = hasSchema ? { name: props.schemaName!, version: Number(props.schemaVersion) } : template?.base;
+      if (!selected) throw new Error('新建数据集要先选择静态数据定义');
+      if (template && !sameSchema(template.base, selected)) throw new Error('模板使用的静态数据定义与所选版本不一致，请重新选择');
+      identity = { staticSchema: selected };
     }
     const ref = identity['staticSchema'] as SchemaRef;
     const detail = await api.staticSchema(ref.name, ref.version);
     return { templates, schemas: schemas.staticSchemas, identity, data, compiled: detail.compiled };
-  }, `${props.id ?? '新建'}:${props.templateName ?? ''}`);
+  }, JSON.stringify([props.id, props.templateName, props.schemaName, props.schemaVersion]));
 
   return (
     <section className="page">
@@ -270,7 +297,7 @@ function Editor(props: { readonly input: EditorInput; readonly id?: string; read
         <div>
           <h1>{isNew ? '新建数据集' : name.trim() || props.id}</h1>
           <div className="meta" aria-live="polite" data-testid="check-summary">
-            <span>数据定义 {schemaText(staticSchema, input.schemas)}</span>
+            <a href={href(['static-schemas', staticSchema.name, String(staticSchema.version)])}>数据定义 {schemaText(staticSchema, input.schemas)}</a>
             {!isNew && (dirty ? <span className="warn">有未保存的修改</span> : <span>已保存</span>)}
             <span className={severe ? 'bad' : undefined}>{check === undefined ? '正在校验…' : `校验：${countText(check)}`}</span>
             {status && <span className="status" role="status">{status}</span>}
@@ -356,7 +383,9 @@ function Editor(props: { readonly input: EditorInput; readonly id?: string; read
                 </details>
               </div>
             )}
-            <PreviewCanvas preview={preview} context={{ form, parameters: names }} onFieldProblem={focusField} empty={template ? '还没有预览' : '没有可用的模板'} />
+            {template
+              ? <PreviewCanvas preview={preview} context={{ form, parameters: names }} onFieldProblem={focusField} empty="还没有预览" />
+              : <div className="soft"><p>数据可以独立保存。这一版定义还没有可用的模板，添加兼容模板后即可预览和出图。</p><a href={href(['templates'])}>查看模板</a></div>}
           </section>
         </aside>
       </div>

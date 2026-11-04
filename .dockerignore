@@ -5,6 +5,7 @@
 !tsconfig.json
 !tsconfig.build.json
 !src
+!agent/excel
 !schemas
 !service
 service/node_modules

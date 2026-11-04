@@ -10,7 +10,7 @@ import { OneTimeSecret } from '../components/one-time-secret.js';
 import { PagedFooter } from '../components/paged.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad, usePaged } from '../hooks.js';
-import type { ApiKeyInfo, ApprovalScope, Identity, Member, Problem, Webhook, WebhookDelivery } from '../types.js';
+import type { ApiKeyInfo, ApprovalPolicy, ApprovalScope, Identity, Member, Problem, Webhook, WebhookDelivery } from '../types.js';
 import { AuditLog } from './audit-log.js';
 
 const TABS = [['members', '成员'], ['api-keys', 'API 密钥'], ['webhooks', 'webhook'], ['approval', '审批策略'], ['audit', '审计日志']] as const;
@@ -66,6 +66,7 @@ const APPROVAL_SCOPES: readonly { readonly scope: ApprovalScope; readonly label:
 /** 审批策略（P1 票据 11）：两个范围各一个开关，改动立即生效并记审计。 */
 function ApprovalPolicyPanel() {
   const loaded = useLoad(() => api.approvalPolicy(), 'approval-policy');
+  const [saved, setSaved] = useState<ApprovalPolicy>();
   /** 刚点下去、还没收到回答的那一项：开关立刻变，失败了再退回去。 */
   const [changing, setChanging] = useState<{ readonly scope: ApprovalScope; readonly required: boolean }>();
   const [problems, setProblems] = useState<readonly Problem[]>();
@@ -73,8 +74,7 @@ function ApprovalPolicyPanel() {
     setChanging({ scope, required });
     setProblems(undefined);
     try {
-      await api.setApprovalPolicy({ [scope]: required });
-      loaded.reload();
+      setSaved(await api.setApprovalPolicy({ [scope]: required }));
     } catch (error) {
       setProblems(problemsOf(error));
     } finally { setChanging(undefined); }
@@ -88,7 +88,7 @@ function ApprovalPolicyPanel() {
       {loaded.data && (
         <ul className="plain approval-scopes">
           {APPROVAL_SCOPES.map(({ scope, label, hint }) => {
-            const setting = loaded.data![scope];
+            const setting = (saved ?? loaded.data!)[scope];
             return (
               <li key={scope} data-scope={scope}>
                 <label>

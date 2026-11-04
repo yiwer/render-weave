@@ -510,6 +510,7 @@ export interface ContentStore {
 }
 
 export interface TenantStorage {
+  readonly agentJobs: import('./agent-jobs.js').AgentJobStore;
   /** 按原始字节保存工作区文档；同一来源再次保存时指向新内容。 */
   putDocuments(documents: readonly { readonly source: string; readonly bytes: Uint8Array }[]): Promise<void>;
   readonly documents: WorkspaceDocumentSource;

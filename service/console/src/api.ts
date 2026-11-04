@@ -9,6 +9,7 @@ import type {
   PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
   TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
+import type { ImportJob, ImportDetail, ImportCells } from './import-types.js';
 
 const TOKEN_KEY = 'renderweave.console.token';
 
@@ -176,6 +177,14 @@ export const api = {
   publishDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256 } }),
 
   datasets: () => json<{ datasets: DatasetEntry[] }>('GET', '/v1/datasets'),
+  agentJobs: () => json<{ enabled: boolean; jobs: ImportJob[] }>('GET', '/v1/agent-jobs'),
+  agentJob: (id: string) => json<ImportDetail>('GET', `/v1/agent-jobs/${enc(id)}`),
+  createAgentJob: (body: { requestId: string; staticSchema: { name: string; version: number }; workbook: string; filename: string; brief: string }) => json<ImportDetail>('POST', '/v1/agent-jobs', { json: body }),
+  cancelAgentJob: (id: string) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/cancel`),
+  reviewAgentJob: (id: string, body: { revision: number; item: number; document: unknown; reason: string }) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/review`, { json: body }),
+  applyAgentJob: (id: string, revision: number) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/apply`, { json: { revision, confirmed: true } }),
+  agentSource: async (id: string) => (await send('GET', `/v1/agent-jobs/${enc(id)}/source`)).blob(),
+  agentCells: (id: string, query: { sheet?: string; cell?: string; offset?: number }) => json<ImportCells>('GET', `/v1/agent-jobs/${enc(id)}/cells${search(query)}`),
   datasetText: async (id: string) => (await send('GET', `/v1/datasets/${enc(id)}`)).text(),
   createDataset: (text: string) => json<{ dataset: DatasetEntry; problems: Problem[] }>('POST', '/v1/datasets', { jsonText: text }),
   updateDataset: (id: string, text: string) => json<{ dataset: DatasetEntry; problems: Problem[] }>('PUT', `/v1/datasets/${enc(id)}`, { jsonText: text }),

@@ -140,6 +140,10 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   // Excel 导入（票据 13）：租户由身份决定，模板名写在请求体里；另一租户没有这个模板，答问题清单。
   { route: 'POST /v1/excel-imports', addressesObject: false,
     request: (a) => ({ method: 'POST', url: '/v1/excel-imports', body: { template: a.templateName, workbook: 'UEsDBA==', output: { width: 160, height: 40, dpi: 120, format: 'png' } } }) },
+  { route: 'GET /v1/agent-jobs', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/agent-jobs' }) },
+  { route: 'POST /v1/agent-jobs', addressesObject: false, request: () => ({ method: 'POST', url: '/v1/agent-jobs', body: { staticSchema: { name: 'missing', version: 1 }, workbook: 'UEs=', filename: 'test.xlsx', brief: 'test' } }) },
+  ...['', '/source', '/cells'].map(suffix => ({ route: `GET /v1/agent-jobs/:id${suffix}`, addressesObject: true, request: (a: TenantObjects) => ({ method: 'GET' as const, url: `/v1/agent-jobs/${a.batchId}${suffix}` }) })),
+  ...['cancel', 'review', 'apply'].map(action => ({ route: `POST /v1/agent-jobs/:id/${action}`, addressesObject: true, request: (a: TenantObjects) => ({ method: 'POST' as const, url: `/v1/agent-jobs/${a.batchId}/${action}`, body: action === 'review' ? { revision: 1, item: 0, document: {}, reason: '核对' } : action === 'apply' ? { revision: 1, confirmed: true } : {} }) })),
   { route: 'GET /v1/datasets', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/datasets' }) },
   { route: 'POST /v1/datasets', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/datasets', body: dataset(a.datasetId) }) },
   { route: 'POST /v1/dataset-checks', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/dataset-checks', body: dataset(a.datasetId) }) },

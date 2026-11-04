@@ -57,6 +57,8 @@ services:
       context: .
       dockerfile: service/Dockerfile
       target: runtime
+      args:
+        ALPINE_MIRROR: ${RW_ALPINE_MIRROR:-}
     image: renderweave-service:local
     command: ["node", "service/dist/main.js", "setup"]
     environment:
@@ -79,6 +81,7 @@ services:
       <<: [*service-env, *webhook-env]
       RW_RECONCILE_MS: ${RW_RECONCILE_MS:-60000}
       RW_RESERVATION_GRACE_MS: ${RW_RESERVATION_GRACE_MS:-600000}
+      RW_DATASET_AGENT_ENABLED: ${RW_DATASET_AGENT_ENABLED:-false}
     ports:
       - "${RW_API_PORT:-8080}:8080"
     depends_on:

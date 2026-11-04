@@ -15,6 +15,7 @@ import { registerBatchRoutes } from './batches.js';
 import { registerConsoleRoutes } from './console.js';
 import { registerDatasetRoutes } from './datasets.js';
 import { registerExcelImportRoutes } from './excel-imports.js';
+import { registerAgentJobRoutes } from './agent-jobs.js';
 import { registerCustomerDefinitionRoutes } from './definitions.js';
 import { registerCustomerApprovalRoutes } from './approvals.js';
 import { registerCustomerTemplateRoutes } from './template-copies.js';
@@ -33,6 +34,7 @@ declare module 'fastify' {
 }
 
 export interface ApiOptions {
+  readonly datasetAgentEnabled?: boolean;
   readonly backend: ServiceBackend;
   readonly build: string;
   readonly logger: Logger;
@@ -135,6 +137,7 @@ export function createApi(options: ApiOptions): FastifyInstance & { routeTable: 
   registerCustomerTemplateRoutes(app, context);
   registerCustomerApprovalRoutes(app, context);
   registerExcelImportRoutes(app, context);
+  registerAgentJobRoutes(app, context, options.datasetAgentEnabled ?? false);
   // 机器可读的 API 描述（票据 11）：按已注册的路由生成，第一次请求时生成一次。
   let openapi: Record<string, unknown> | undefined;
   app.get('/v1/openapi.json', { config: { access: 'public' } }, async () => (openapi ??= buildOpenApi(routeTable)));

@@ -14,6 +14,7 @@ import {
 import { batchFinishedEvent, batchManifest, NOT_STARTED, notRunItem } from './batches.js';
 import { itemDirectory, manifestBytes, memoryWorkspaceDocuments, resourceBackend, type BatchSource, type RenderMode, type ResourceManifestEntry } from './engine.js';
 import { backlogOf } from './tasks.js';
+import { AgentJobConflict, authoringBasis, type AgentJob } from './agent-jobs.js';
 
 interface UserRow { id: string; tenantId: string | null; email: string; role: MemberRole | 'platformAdmin'; passwordHash: string; active: boolean; createdAt: string }
 interface SessionRow { id: string; userId: string; tenantId: string | null; tokenHash: string; expiresAt: Date; revokedAt?: Date }
@@ -117,7 +118,7 @@ export function createMemoryBackend(): ServiceBackend {
   });
   const storageOf = (tenantId: string) => {
     let storage = storages.get(tenantId);
-    if (!storage) storages.set(tenantId, storage = memoryStorage(meteringOf(tenantId)));
+    if (!storage) storages.set(tenantId, storage = memoryStorage(meteringOf(tenantId), (event, now) => record(tenantId, event, now)));
     return storage;
   };
   const batchItems = (batchId: string) => tasks.filter((task) => task.batchId === batchId).sort((a, b) => a.index! - b.index!);
@@ -530,7 +531,8 @@ export function createMemoryBackend(): ServiceBackend {
 }
 
 /** 一个租户的工作区文档、模板修订、资源仓库与批次，全在内存里。 */
-function memoryStorage(metering: MeteringHooks): MemoryStorage {
+function memoryStorage(metering: MeteringHooks, audit: (event: NewAuditEvent, now: Date) => void): MemoryStorage {
+  const agentJobs = new Map<string, AgentJob>();
   /** 本租户的全部内容，按 SHA-256 存放：工作区文档、模板修订、资源内容版本，以及已上传还没登记的内容。 */
   const contents = new Map<string, Uint8Array>();
   /** 工作区文档：来源 → 内容。推送进来的文档来源是"种类:键"，模板那一行指向当前修订。 */
@@ -622,6 +624,23 @@ function memoryStorage(metering: MeteringHooks): MemoryStorage {
       get: async (hash) => (contents.has(hash) ? read(hash) : undefined),
     },
     authoringState: async () => state(),
+    agentJobs: {
+      list: async () => structuredClone([...agentJobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt))),
+      get: async (id) => structuredClone(agentJobs.get(id)),
+      save: (job, expected, commit = {}) => exclusive(async () => {
+        const old = agentJobs.get(job.id);
+        if ((old?.revision ?? 0) !== expected || job.revision !== expected + 1) throw new AgentJobConflict('任务已更新，请刷新后重试');
+        if (!old && [...agentJobs.values()].filter(j => ['queued', 'running'].includes(j.status)).length >= 4) throw new AgentJobConflict('已有 4 个提取任务，请等待完成');
+        if (commit.basis !== undefined && authoringBasis(state()) !== commit.basis) throw new AgentJobConflict('工作区已改变，请重新核查后保存');
+        const writes = commit.datasets ?? [];
+        if (new Set(writes.map(d => d.id)).size !== writes.length || writes.some(d => documents.has(documentSource('dataset', d.id)))) throw new AgentJobConflict('数据集 ID 已存在，整组没有保存');
+        const prepared = writes.map(d => ({ source: documentSource('dataset', d.id), sha256: put(d.bytes), byteLength: d.bytes.length }));
+        for (const { source, ...content } of prepared) documents.set(source, content);
+        agentJobs.set(job.id, structuredClone(job));
+        if (commit.audit) audit(commit.audit, new Date(job.updatedAt));
+        if (commit.usage) metering.recordRounds([commit.usage], new Date(job.updatedAt));
+      }),
+    },
     push: (prepare, { pushedBy, now, approving }) => exclusive(async () => {
       const writes = await prepare(state());
       approve(approving);

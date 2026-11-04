@@ -7,6 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json tsconfig.build.json ./
 RUN npm ci
 COPY src ./src
+COPY agent/excel ./agent/excel
 RUN npm run build
 # DSL 的 JSON Schema：开放 API 的描述把批次请求、渲染请求与数据集的 Schema 原样收进来（票据 11）。
 COPY schemas ./schemas
@@ -27,7 +28,7 @@ RUN cd service && ../node_modules/.bin/tsc --noEmit -p console && node_modules/.
 # ALPINE_MIRROR 可选：直连 Alpine 源太慢时换成镜像源，如 https://mirrors.aliyun.com（见 docs/dev-setup.md「已知的坑」）。
 FROM node:22-alpine AS test-assets
 ARG ALPINE_MIRROR=
-RUN if [ -n "$ALPINE_MIRROR" ]; then sed -i "s#https://dl-cdn.alpinelinux.org#$ALPINE_MIRROR#" /etc/apk/repositories; fi && apk add --no-cache chromium
+RUN if [ -n "$ALPINE_MIRROR" ]; then sed -i "s#https://dl-cdn.alpinelinux.org#$ALPINE_MIRROR#" /etc/apk/repositories; fi && apk add --no-cache chromium python3
 WORKDIR /app
 COPY scripts/fetch-fonts.mjs scripts/fonts.json scripts/
 COPY fixtures fixtures
@@ -46,11 +47,14 @@ CMD ["node_modules/.bin/vitest", "run", "--config", "service/vitest.docker.confi
 
 # 运行：只有生产依赖。构建标识在镜像里算一次写进 /app/BUILD_ID，供打标签（ADR-0019）；运行时仍按实际文件计算。
 FROM node:22-alpine AS runtime
+ARG ALPINE_MIRROR=
 ENV NODE_ENV=production
 WORKDIR /app
+RUN if [ -n "$ALPINE_MIRROR" ]; then sed -i "s#https://dl-cdn.alpinelinux.org#$ALPINE_MIRROR#" /etc/apk/repositories; fi && apk add --no-cache python3 docker-cli
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=engine /app/dist dist
+COPY --from=engine /app/agent/excel agent/excel
 COPY --from=engine /app/schemas schemas
 COPY service/package.json service/package-lock.json service/
 RUN cd service && npm ci --omit=dev && npm cache clean --force

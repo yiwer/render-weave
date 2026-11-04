@@ -10,7 +10,7 @@
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
  */
 import { createHash, createHmac, randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { chromium, type Browser, type BrowserContext, type LaunchOptions, type Locator, type Page } from 'playwright-core';
@@ -383,7 +383,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
     it('Excel 导入（票据 13）：下载空白表；上传一份价签表，逐行预览，问题定位到单元格；提交能提交的行，批次经开放 API 核对', async () => {
       await page.goto(`${baseUrl}/console/#/datasets`);
-      await page.getByRole('link', { name: '从 Excel 导入…' }).click();
+      await page.getByRole('link', { name: '标准表格批量出图…' }).click();
       const sheet = page.getByRole('dialog');
       await sheet.getByLabel('模板', { exact: true }).selectOption('商品价签');
 
@@ -839,7 +839,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const options = (target: Page) => commands(target).getByRole('option').evaluateAll((items) => items.map((item) => item.querySelector('span')!.textContent));
       await page.keyboard.press('Control+k');
       await commands(page).waitFor();
-      expect(await options(page)).toEqual([...MEMBER, '新建数据集', '从 Excel 导入', '上传资源']);
+      expect(await options(page)).toEqual([...MEMBER, '新建数据集', '智能导入数据集', '标准表格批量出图', '上传资源']);
       await commands(page).getByRole('combobox').fill('M402');
       expect(await options(page)).toEqual([]);
       await commands(page).getByText('这里不搜数据集与模板').waitFor();
@@ -855,7 +855,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await commands(page).count()).toBe(0);
       await adminPage.keyboard.press('Control+k');
       await commands(adminPage).waitFor();
-      expect(await options(adminPage)).toEqual([...MEMBER, '管理', '新建数据集', '从 Excel 导入', '上传资源', '管理成员', '创建 API 密钥', '查看审计日志']);
+      expect(await options(adminPage)).toEqual([...MEMBER, '管理', '新建数据集', '智能导入数据集', '标准表格批量出图', '上传资源', '管理成员', '创建 API 密钥', '查看审计日志']);
       await adminPage.keyboard.press('Escape');
 
       // 状态栏：连接、当前租户、本月剩余与进行中的批次，与开放 API 相同；左栏留给 Agent，现在不显示。
@@ -1889,9 +1889,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const worked = (match: (body: { template: string; dataset: { id?: string; inline?: unknown } }) => boolean = () => true) => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST' && response.status() === 200
         && match(response.request().postDataJSON() as never), { timeout: 60_000 });
       /** 等这次改动的预览：先等写回工作副本，再等写回之后发出的那一次预览。 */
-      const afterStash = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 })
-        .then(() => target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && request.method() === 'POST', { timeout: 60_000 }))
-        .then(async (request) => (await request.response())!);
+      const afterStash = () => {
+        // 两个监听都在动作之前注册；浏览器可能在 PUT 的回调抵达测试进程前就发出了预览请求。
+        const saved = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+        const preview = target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && request.method() === 'POST', { timeout: 60_000 });
+        return Promise.all([saved, preview]).then(async ([, request]) => (await request.response())!);
+      };
       const image = () => target.getByTestId('preview-image');
       const inspector = () => target.getByRole('complementary', { name: '检查器' });
       const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
@@ -2237,6 +2240,72 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await server('POST', copyUrl, world.b.operator.token)).status, '接口同样拒绝').toBe(403);
       await reader.close();
     }, 300_000);
+
+    it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {
+      const created = await world.call('POST', '/v1/platform/tenants', world.platform, { name: '无模板数据集测试' });
+      const owner = await world.member(created.body.id, 'admin'), operator = await world.member(created.body.id, 'operator');
+      const schema = 'inventory-card', token = owner.token, draftUrl = `/v1/definitions/${schema}/draft`;
+      expect((await server('GET', '/v1/templates', token)).body.templates).toEqual([]);
+      const isolated = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+      const target = await isolated.newPage(); watch(target);
+      try {
+        await target.goto(`${baseUrl}/console/#/datasets/new`);
+        await target.getByLabel('邮箱').fill(operator.email);
+        await target.getByLabel('密码').fill(operator.password);
+        await target.getByRole('button', { name: '登录' }).click();
+        await target.getByText('还没有可用的静态数据定义。', { exact: false }).waitFor();
+        for (const version of [1, 2]) {
+          const made = await server('POST', draftUrl, token, version === 1 ? { displayName: '库存卡' } : { fromVersion: 1 });
+          expect(made.status, made.raw).toBe(201);
+          const document = { dslVersion: 'renderweave-schema/1', name: schema, displayName: '库存卡', fields: [
+            { name: 'sku', displayName: '货号', type: 'text', constraints: { required: true } },
+            ...(version === 2 ? [{ name: 'bin', displayName: '库位', type: 'text', constraints: { required: true } }] : []),
+          ] };
+          const saved = await server('PUT', `${draftUrl}?expectedSha256=${made.body.sha256}`, token, document);
+          expect(saved.status, saved.raw).toBe(200);
+          const published = await server('POST', `${draftUrl}/publish`, token, { expectedSha256: saved.body.sha256 });
+          expect(published.status, published.raw).toBe(201);
+        }
+        await target.reload();
+        await target.getByLabel('数据定义与版本').selectOption(JSON.stringify([schema, 1]));
+        await mkdir('out/dataset-module', { recursive: true });
+        await target.screenshot({ path: 'out/dataset-module/new.png', fullPage: true });
+        await target.getByRole('button', { name: '开始填写' }).click();
+        await target.getByLabel('数据集 ID').fill('inventory-001');
+        await target.getByLabel('名称', { exact: true }).fill('一号仓库存卡');
+        await target.getByLabel('货号', { exact: true }).fill('000123');
+        expect(await target.getByLabel('库位', { exact: true }).count()).toBe(0);
+        await target.getByText('数据可以独立保存。', { exact: false }).waitFor();
+        await target.getByRole('button', { name: '保存', exact: true }).click();
+        await target.getByRole('status').filter({ hasText: '已保存数据集 inventory-001' }).waitFor();
+        await target.reload();
+        expect(await target.getByLabel('货号', { exact: true }).inputValue()).toBe('000123');
+        await target.getByLabel('货号', { exact: true }).fill('000124');
+        await target.getByRole('button', { name: '保存', exact: true }).click();
+        await target.getByRole('status').filter({ hasText: '已保存' }).waitFor();
+        const dataset = (await server('GET', '/v1/datasets/inventory-001', operator.token)).body;
+        expect(dataset.dataset.staticSchema).toEqual({ name: schema, version: 1 });
+        expect(dataset.data).toEqual({ sku: '000124' });
+        expect(await target.getByRole('button', { name: '出图…' }).isDisabled()).toBe(true);
+        await target.screenshot({ path: 'out/dataset-module/editor.png', fullPage: true });
+        await target.getByRole('link', { name: /数据定义.*库存卡/ }).click();
+        await target.getByRole('link', { name: '新建数据集', exact: true }).click();
+        await target.getByLabel('货号', { exact: true }).waitFor();
+        expect(new URL(target.url()).hash).toContain('version=1');
+        expect(await target.getByLabel('库位', { exact: true }).count()).toBe(0);
+        await target.goto(`${baseUrl}/console/#/datasets/new?schema=${schema}&version=2oops`);
+        await target.getByText('请选择静态数据定义的名称和确切版本', { exact: true }).waitFor();
+        await target.goto(`${baseUrl}/console/#/datasets/new?schema=${schema}&version=99`);
+        await target.getByText('打不开数据集', { exact: true }).waitFor();
+        expect(await target.getByLabel('数据集 ID').count()).toBe(0);
+        await target.goto(`${baseUrl}/console/#/datasets`);
+        await target.getByRole('link', { name: '一号仓库存卡' }).waitFor();
+        await target.screenshot({ path: 'out/dataset-module/list.png', fullPage: true });
+        await page.goto(`${baseUrl}/console/#/datasets/new?schema=${enc('线路牌')}&version=1&template=${enc(BADGE)}`);
+        await page.getByText('模板使用的静态数据定义与所选版本不一致，请重新选择', { exact: true }).waitFor();
+        expect(await page.getByLabel('数据集 ID').count()).toBe(0);
+      } finally { await isolated.close(); }
+    }, 120_000);
 
     it('退出后会话失效，回到登录页；整个过程没有脚本错误，也没有被内容安全策略拦下的资源', async () => {
       await page.getByRole('button', { name: '退出' }).click();

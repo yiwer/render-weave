@@ -5,7 +5,7 @@
  * - 元素是简单值的列表（如班次时刻）排成一排小输入框；可选值固定的（如站名上方的标识）是一组勾选。
  * 字段用显示名称；每个输入框下面列出服务端问题清单里定位到它的问题（路径与引擎相同，如 stops[8].name），表单自己不判断对错。
  */
-import { Fragment, useId, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { childPath, itemPath, type FieldSpec, type ListField, type NamedField, type ObjectField, type ScalarField } from '../form/schema.js';
 import { fromDateTimeInput, NumberText, toDateTimeInput } from '../form/value.js';
 import type { Problem } from '../types.js';
@@ -86,6 +86,7 @@ function ScalarInput(props: InputProps) {
     'aria-required': (spec.required && !props.inList) || undefined, ...(props.compact ? { 'aria-label': props.label } : {}),
   };
   const text = typeof value === 'string' ? value : '';
+  const [multiline] = useState(() => /[\r\n]/.test(text));
   /** 清空时：对象里的可选字段省略这个键；列表项保留空文本。 */
   const cleared = props.inList ? '' : undefined;
   switch (spec.kind) {
@@ -98,6 +99,7 @@ function ScalarInput(props: InputProps) {
           </select>
         );
       }
+      if (multiline || /[\r\n]/.test(text)) return <textarea {...common} rows={3} value={text} onChange={(event) => onChange(event.target.value === '' ? cleared : event.target.value)} />;
       return <input {...common} type="text" value={text} onChange={(event) => onChange(event.target.value === '' ? cleared : event.target.value)} />;
     case 'number': {
       const raw = value instanceof NumberText ? value.text : typeof value === 'number' ? String(value) : typeof value === 'string' ? value : '';
