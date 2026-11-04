@@ -793,6 +793,17 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await page.goto(`${baseUrl}/console/#/datasets`);
       await page.getByRole('heading', { name: '数据集', level: 1 }).waitFor();
       expect(await listed(page)).toEqual(MEMBER.map((name, index) => `${name} Control+${index + 1}`));
+      // 模块与动作、模块切换紧跟品牌，账号与退出在右边；模块菜单从下拉框左边向右展开（M362）。
+      const rects = () => page.evaluate(`(() => { const of = (selector) => { const box = document.querySelector(selector)?.getBoundingClientRect(); return box && [box.left, box.right]; }; return { brand: of('.brand'), command: of('.command-button'), switcher: of('.switcher-button'), who: of('.who'), menu: of('[role="menu"]'), width: innerWidth }; })()`) as Promise<Record<'brand' | 'command' | 'switcher' | 'who', [number, number]> & { menu?: [number, number]; width: number }>;
+      const titlebar = await rects();
+      expect(titlebar.brand[1]).toBeLessThanOrEqual(titlebar.command[0]);
+      expect(titlebar.command[1]).toBeLessThanOrEqual(titlebar.switcher[0]);
+      expect(titlebar.switcher[1]).toBeLessThan(titlebar.width / 2);
+      expect(titlebar.who[0]).toBeGreaterThan(titlebar.width / 2);
+      await switcher(page).click();
+      await page.getByRole('menu', { name: '模块' }).waitFor();
+      expect((await rects()).menu![0]).toBe(titlebar.switcher[0]);
+      await page.keyboard.press('Escape');
       const adminPage = await asAdmin();
       expect(await listed(adminPage)).toEqual([...MEMBER, '管理'].map((name, index) => `${name} Control+${index + 1}`));
 
@@ -1171,6 +1182,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await (await nav(target, '静态数据定义')).click();
       await versionCard(target, name, 3).getByText('当前版本').waitFor();
       expect(await versionCard(target, name, 2).getByText('当前版本').count()).toBe(0);
+      await versionCard(target, name, 2).getByText('历史版本').waitFor();
       await versionCard(target, name, 3).getByRole('link').click();
       await target.getByTestId('static-facts').filter({ hasText: 'v3 · 当前' }).waitFor();
       await target.getByLabel('查看的版本').selectOption('2');
@@ -1212,6 +1224,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await (await nav(target, '数据定义')).click();
       const card = draftCard(target, copy);
       expect(await card.getByTestId('draft-fields').textContent()).toBe(String(original.fields.length));
+      expect(await card.getByTestId('draft-base').textContent()).toBe('还没发布过');
       await target.getByLabel('搜索数据定义').fill('没有这个');
       await target.getByTestId('drafts-empty').filter({ hasText: '没有匹配的草案' }).waitFor();
       await target.getByLabel('搜索数据定义').fill('胸牌的');
@@ -1225,7 +1238,25 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     it('数据定义（P1 票据 06、14）：新建空白数据定义，手动添加九种字段类型并发布成 v1；名称写错定位到那一行；别人先保存时读回；草案可以删除', async () => {
       const target = await asAdmin(), name = `全字段${randomUUID().slice(0, 8)}`, path = enc(name);
       await target.goto(`${baseUrl}/console/#/definitions`);
-      await target.getByRole('button', { name: '新建数据定义' }).click();
+      // 新建用弹窗（M362）：焦点落在名称上；Esc、取消、点背后的遮罩都关掉，什么也不建，焦点回到按钮；服务端拒绝时错误显示在弹窗里。
+      const opener = target.getByRole('button', { name: '新建数据定义' }), dialog = target.getByRole('dialog', { name: '新建数据定义' });
+      await opener.click();
+      await dialog.waitFor();
+      expect(await target.evaluate('document.activeElement.id')).toBe('new-definition-name');
+      await target.keyboard.press('Escape');
+      await dialog.waitFor({ state: 'detached' });
+      expect(await target.evaluate('document.activeElement.textContent')).toBe('新建数据定义');
+      await opener.click();
+      await dialog.getByRole('button', { name: '取消' }).click();
+      await dialog.waitFor({ state: 'detached' });
+      await opener.click();
+      await dialog.waitFor();
+      await target.mouse.click(8, 300);
+      await dialog.waitFor({ state: 'detached' });
+      await opener.click();
+      await target.getByLabel('名称', { exact: true }).fill('线路牌');
+      await target.getByRole('button', { name: '新建草案' }).click();
+      await dialog.getByText('没有新建').waitFor();
       await target.getByLabel('名称', { exact: true }).fill(name);
       await target.getByLabel('显示名称', { exact: true }).fill('九种字段');
       await target.getByRole('button', { name: '新建草案' }).click();
@@ -1238,6 +1269,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await form.getByLabel('最短（字）', { exact: true }).fill('1');
         await form.getByLabel('最长（字）', { exact: true }).fill('20');
         await form.getByLabel('可选值（一行一个）', { exact: true }).fill('甲\n乙');
+        // 必填开关不被字段拉宽：底色到最后一个按钮为止（M362）。
+        expect(await form.getByRole('group', { name: '必填状态' }).evaluate((group) => group.getBoundingClientRect().right - group.lastElementChild!.getBoundingClientRect().right)).toBeLessThan(4);
       });
       await addField(target, { displayName: '金额', name: 'amount', type: '数值' }, async (form) => {
         await form.getByLabel('下限', { exact: true }).fill('0.5');
@@ -1343,6 +1376,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await card.waitFor();
       expect(await page.getByRole('button', { name: '新建数据定义' }).count()).toBe(0);
       expect(await card.getByRole('button', { name: '删除' }).count() + await card.getByRole('link', { name: '发布' }).count()).toBe(0);
+      expect(await card.getByTestId('draft-base').textContent()).toBe('基于 v3');
 
       // 草案：字段表与校验结果都看得到，检查器是只读的。
       await card.getByRole('link').first().click();
@@ -1404,6 +1438,28 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fullName');
       expect(await fieldRow(target, 'fullName').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
       expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
+    it('下拉（M362）：下拉框是同一个箭头，选项样式同模块下拉；选别的项，宽度不跳，值照旧写回', async () => {
+      const target = await asAdmin();
+      await target.goto(`${baseUrl}/console/#/definitions`);
+      const sort = target.locator('.list-sort select');
+      await sort.waitFor();
+      const look = () => target.evaluate(`(() => {
+        const select = document.querySelector('.list-sort select'), style = getComputedStyle(select), options = [...select.options].map((option) => { const own = getComputedStyle(option); return [option.value, own.minHeight, own.backgroundColor, own.fontWeight]; });
+        return { supported: CSS.supports('appearance', 'base-select'), appearance: style.appearance, arrow: style.backgroundImage, width: select.getBoundingClientRect().width, options, picker: getComputedStyle(select, '::picker(select)').backgroundColor };
+      })()`) as Promise<{ supported: boolean; appearance: string; arrow: string; width: number; options: [string, string, string, string][]; picker: string }>;
+      const shown = await look();
+      expect(shown.arrow).toContain('svg');
+      expect(shown.appearance).toBe(shown.supported ? 'base-select' : 'none');
+      if (shown.supported) {
+        expect(shown.picker).toBe('rgb(253, 252, 248)');
+        expect(shown.options[0]).toEqual(['updated', '34px', 'rgb(238, 230, 216)', '600']);
+        expect(shown.options[1]).toEqual(['oldest', '34px', 'rgba(0, 0, 0, 0)', '400']);
+      }
+      await sort.selectOption('name');
+      expect(await sort.inputValue()).toBe('name');
+      expect((await look()).width).toBe(shown.width);
     });
 
     it('灵动小图（P1 票据 15）：空状态的小图在动，减少动态时停在完成态；校验通过有印章；用量的天平按用量倾斜', async () => {

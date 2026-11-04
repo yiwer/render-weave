@@ -114,19 +114,20 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
             {versions.map((version) => (
               <article key={keyOf(version)} className="schema-card" data-testid="version-card" data-name={version.name} data-version={version.version} onContextMenu={(event) => openMenu(event, version)}>
                 <a className="schema-card-body" href={href(staticSchemaPath(version.name, version.version))}>
-                  <span className="schema-card-head">
-                    <strong>{version.displayName}</strong>
-                    <span className="version-badge" data-testid="version-badge">v{version.version}</span>
-                    {version.current && <span className="chip ok">当前版本</span>}
-                    {version.hasDraft && version.current && <span className="chip accent">有草案</span>}
+                  <span className="schema-card-states">
+                    <span className="schema-pill"><span className={`dot${version.current ? ' ok' : ''}`} aria-hidden="true" />{version.current ? '当前版本' : '历史版本'}</span>
+                    {version.hasDraft && version.current && <span className="schema-pill"><span className="dot accent" aria-hidden="true" />有草案</span>}
                   </span>
-                  <code>{version.name}</code>
+                  <span className="schema-card-title">
+                    <span className="schema-card-name"><strong>{version.displayName}</strong><span className="version-badge" data-testid="version-badge">v{version.version}</span></span>
+                    <code>{version.name}</code>
+                  </span>
                   <dl className="schema-facts">
                     <div><dt>字段</dt><dd data-testid="version-fields">{version.fieldCount ?? '—'}</dd></div>
                     <div><dt>引用深度</dt><dd data-testid="version-depth">{version.referenceDepth ?? '—'}</dd></div>
                     <div><dt>谁在用</dt><dd data-testid="version-uses">{version.uses ? `${number(version.uses.templates)} 模板 · ${number(version.uses.datasets)} 数据集` : '—'}</dd></div>
                   </dl>
-                  <span className="small muted">{version.at ? `发布于 ${time(version.at)}` : '审计里没有发布记录'}</span>
+                  <span className="schema-card-foot">{version.at ? `发布于 ${time(version.at)}` : '审计里没有发布记录'}</span>
                 </a>
                 <button type="button" className="icon schema-card-more" aria-haspopup="menu" aria-label={`${version.displayName} v${version.version} 的更多操作`}
                   onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); setMenu({ version, at: { x: box.left, y: box.bottom + 4 } }); }}>⋯</button>

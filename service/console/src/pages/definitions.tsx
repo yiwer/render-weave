@@ -6,6 +6,8 @@
  */
 import { useState } from 'react';
 import { api, saveBlob } from '../api.js';
+import { CLOCK, Icon, PLUS, PUBLISH, TRASH } from '../components/icon.js';
+import { Modal } from '../components/modal.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { Definition, DefinitionDraft, Identity, Problem, SchemaRef } from '../types.js';
@@ -34,7 +36,9 @@ export async function copyReference(ref: SchemaRef): Promise<string> {
 /** 在新标签页打开：用 window.open 才会带上本标签页的会话（sessionStorage）；target=_blank 的链接带不上，会回到登录页。 */
 export const openInNewTab = (path: readonly string[]) => { window.open(href(path), '_blank'); };
 
+/** 卡片上的时间写到分钟，完整的放在悬停提示里。 */
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
+const shortTime = (at: string) => new Date(at).toLocaleString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 type Sort = 'updated' | 'oldest' | 'name';
 const SORTS: readonly (readonly [Sort, string])[] = [['updated', '最近保存'], ['oldest', '最早保存'], ['name', '名称']];
 type DraftEntry = Definition & { readonly draft: DefinitionDraft };
@@ -64,9 +68,9 @@ export function DefinitionList(props: { readonly identity: Identity }) {
     <section className="page">
       <div className="title-row">
         <h1>数据定义</h1>
-        {canEdit && <button type="button" className="primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>新建数据定义</button>}
+        {canEdit && <button type="button" className="primary" aria-haspopup="dialog" onClick={() => setCreating(true)}><Icon d={PLUS} />新建数据定义</button>}
       </div>
-      {creating && <NewDefinition />}
+      {creating && <NewDefinition onClose={() => setCreating(false)} />}
       <ErrorBox problems={problems} title="没有完成" />
       <ErrorBox problems={loaded.problems} title="读不到数据定义" />
       {loaded.loading && !all && <Loading />}
@@ -94,14 +98,15 @@ export function DefinitionList(props: { readonly identity: Identity }) {
               return (
                 <article key={name} className="schema-card" data-testid="draft-card" data-name={name}>
                   <a className="schema-card-body" href={href(definitionPath(name))}>
-                    <span className="schema-card-head"><strong>{draftName(definition)}</strong><span className="chip accent">草案</span></span>
-                    <code>{name}</code>
-                    <dl className="schema-facts">
+                    <span className="schema-card-head">
+                      <span className="schema-card-title"><strong>{draftName(definition)}</strong><code>{name}</code></span>
+                      <span className="schema-pill" data-testid="draft-base"><span className={`dot ${draft.baseVersion === undefined ? 'accent' : 'ok'}`} aria-hidden="true" />{draft.baseVersion === undefined ? '还没发布过' : `基于 v${draft.baseVersion}`}</span>
+                    </span>
+                    <dl className="schema-facts draft-facts">
                       <div><dt>字段</dt><dd data-testid="draft-fields">{draft.fieldCount ?? '—'}</dd></div>
-                      <div><dt>基于</dt><dd>{draft.baseVersion === undefined ? '还没发布过' : `v${draft.baseVersion}`}</dd></div>
-                      <div><dt>最近保存</dt><dd>{time(draft.updatedAt)}</dd></div>
+                      <div><dt>保存人</dt><dd title={draft.updatedBy}><span className="schema-fact-text">{draft.updatedBy}</span></dd></div>
+                      <div><dt>最近保存</dt><dd title={time(draft.updatedAt)}><Icon d={CLOCK} /><span className="schema-fact-text">{shortTime(draft.updatedAt)}</span></dd></div>
                     </dl>
-                    <span className="small muted">{draft.updatedBy}</span>
                   </a>
                   {canEdit && (
                     <footer className="schema-card-actions">
@@ -115,8 +120,8 @@ export function DefinitionList(props: { readonly identity: Identity }) {
                         )
                         : (
                           <>
-                            <a className="button small quiet" href={href([...definitionPath(name), 'publish'])}>发布</a>
-                            <button type="button" className="small quiet" onClick={() => setRemoving(name)}>删除</button>
+                            <a className="button small quiet card-action publish" href={href([...definitionPath(name), 'publish'])}><Icon d={PUBLISH} />发布</a>
+                            <button type="button" className="small quiet card-action remove" onClick={() => setRemoving(name)}><Icon d={TRASH} />删除</button>
                           </>
                         )}
                     </footer>
@@ -134,7 +139,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
 const draftName = (definition: Definition) => definition.draft?.displayName || definition.displayName;
 
 /** 空白新建：名称是身份，发布后不能改，显示名称写给人看（M89 的中文写在显示名称里，数据定义的名称可以用中文）。 */
-function NewDefinition() {
+function NewDefinition(props: { readonly onClose: () => void }) {
   const [name, setName] = useState(''), [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
@@ -148,20 +153,23 @@ function NewDefinition() {
     finally { setBusy(false); }
   };
   return (
-    <>
-      <form className="inline-form" aria-label="新建数据定义" onSubmit={(event) => { event.preventDefault(); if (name.trim()) void create(); }}>
+    <Modal title="新建数据定义" onClose={props.onClose}>
+      <form className="modal-form" onSubmit={(event) => { event.preventDefault(); if (name.trim()) void create(); }}>
         <div className="field">
           <label htmlFor="new-definition-name">名称</label>
-          <input id="new-definition-name" type="text" autoFocus maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+          <input id="new-definition-name" type="text" maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+          <span className="hint">名称是身份，发布后不能改；模板与数据集按名称和版本引用它。</span>
         </div>
         <div className="field">
           <label htmlFor="new-definition-display-name">显示名称</label>
           <input id="new-definition-display-name" type="text" maxLength={200} placeholder="不填就用名称" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
         </div>
-        <button type="submit" disabled={!name.trim() || busy}>{busy ? '正在新建…' : '新建草案'}</button>
-        <span className="small muted">名称是身份，发布后不能改；模板与数据集按名称和版本引用它。</span>
+        <ErrorBox problems={problems} title="没有新建" />
+        <div className="modal-actions">
+          <button type="button" className="quiet" onClick={props.onClose}>取消</button>
+          <button type="submit" className="primary" disabled={!name.trim() || busy}>{busy ? '正在新建…' : '新建草案'}</button>
+        </div>
       </form>
-      <ErrorBox problems={problems} title="没有新建" />
-    </>
+    </Modal>
   );
 }
