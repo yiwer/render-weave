@@ -1,0 +1,175 @@
+{
+  "format": "rw-excel-comment-trial/1",
+  "sourceSha256": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+  "baseCommit": "ffa81cba9b535fdf3cae95fbef41957ea5ac0b82",
+  "branch": "feature/excel-agent-comments",
+  "target": "production-direction@2",
+  "passed": true,
+  "model": {
+    "inputTokens": 12,
+    "outputTokens": 24011,
+    "thinkingTokens": 17480,
+    "cacheReadTokens": 165669,
+    "cacheCreationTokens": 75613,
+    "usageSource": "result",
+    "turns": 11,
+    "servedModel": "claude-haiku-5-5",
+    "claudeCodeVersion": "2.1.296",
+    "endedBy": "success",
+    "mcp": [
+      "rw:connected"
+    ],
+    "wallMs": 109273,
+    "attempts": 1,
+    "injected": false,
+    "execution": {
+      "status": "completed",
+      "wallMs": 946,
+      "cleanupConfirmed": true,
+      "stderr": ""
+    }
+  },
+  "mechanical": {
+    "format": "rw-excel-generic-check/1",
+    "mechanical": "passed",
+    "semantic": "needsReview",
+    "applicable": false,
+    "issues": [],
+    "viewHash": "88df76a94c0585a16c85652486f6dcbd51dda62ac511d9f1cad8ee069a07f0f7",
+    "planHash": "e7e135f3999cc7e2dd7caaef7f1e6c68e310c5878abf40f625e5e14b623fab93",
+    "candidateHash": "a75bbd16f41bce79b4f696e6812535a0df4e6fd145efae751c65bfca74af1bba",
+    "counts": {
+      "datasets": 2,
+      "sourceCells": 411,
+      "classifiedCells": 411,
+      "comments": 10,
+      "classifiedComments": 10
+    }
+  },
+  "engine": {
+    "passed": true,
+    "identities": true,
+    "results": [
+      {
+        "id": "115-down",
+        "problems": []
+      },
+      {
+        "id": "115-up",
+        "problems": []
+      }
+    ]
+  },
+  "comparison": {
+    "sourceSha256": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+    "candidate": "run-01\\attempt-01\\candidate.json",
+    "sourceCells": 411,
+    "directions": 2,
+    "stops": [
+      32,
+      32
+    ],
+    "cellAndCommentDataMatches": true,
+    "differences": [],
+    "mappedComments": 10,
+    "uncoveredComments": 0,
+    "businessApproved": false,
+    "humanReviewMs": null,
+    "actualCharge": "unknown"
+  },
+  "vml": {
+    "passed": true,
+    "matchedAnchors": 10,
+    "sourcePart": "xl/drawings/vmlDrawing1.vml",
+    "checked": [
+      "shapeId",
+      "zeroBasedTarget",
+      "displayAnchor",
+      "visible"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "browser": "156.0.8078.76",
+    "commentRows": 10,
+    "exactTexts": 10,
+    "sourceLinks": true,
+    "overflows": [
+      {
+        "width": 1600,
+        "overflow": false
+      },
+      {
+        "width": 800,
+        "overflow": false
+      }
+    ],
+    "pageErrors": [],
+    "reviewStatus": "inProgress",
+    "canApprove": false,
+    "applied": false
+  },
+  "validation": {
+    "build": true,
+    "typecheck": true,
+    "initialSuite": {
+      "total": 61,
+      "passed": 61,
+      "failed": 0
+    },
+    "finalComments": {
+      "total": 23,
+      "passed": 23,
+      "failed": 0
+    },
+    "distinctTests": 62,
+    "finalReaderViewUnchanged": "88df76a94c0585a16c85652486f6dcbd51dda62ac511d9f1cad8ee069a07f0f7",
+    "postRunChange": "Visible=false handling; final view equals live model input"
+  },
+  "review": {
+    "status": "inProgress",
+    "applied": false,
+    "deliveredImages": 0,
+    "humanReviewMs": null,
+    "actualCharge": "unknown"
+  },
+  "hashes": {
+    "agent/excel/workbook.py": "bb27cf1c62a6bd385690536a6a2c91fd6e8d0baaeed7911d430c2f666255e3ee",
+    "agent/excel/generic_check.py": "883074202168f016d3d0fb253616ed95fb785168717adbc0de5f89d6b3c2b4e6",
+    "agent/excel/verify.py": "b14658eaa9638cd500e54ff1a5842b170855821f1773cbe30d27f9c49bfc5073",
+    "scripts/prototypes/excel-agent/agent-run.ts": "edf5bc25e75cdb1a4d7e7b96153ea1a5ad582dd1c3c048a745ab218db12efd7f",
+    "scripts/prototypes/excel-agent/CONTRACT.md": "c871b2f9ca46f7a97b2c4dba157c5b8551893ba7c5058c824edc94f19e2a8b43",
+    "src/agent/excel-import.ts": "b061f5d762c44f49db65bd63ff7bd95521038f7a23398f6e8a69553c680091bd",
+    "src/agent/excel-evidence.ts": "11188b5c7beeca131cf592fbef0bdbcddc92d01a95bbd2ed7e0a2d84abd915ea",
+    "web/review.html": "92552260a6792f08fca1247229754aaa6a2f63e030b56d4a71db2aa89e806668",
+    "dist/agent/excel-import.js": "c45629c552a3ff5e347efeebcd6ebd0c3f89975d0c2b3026da9305378dc7a1c2",
+    "dist/agent/excel-evidence.js": "555d30859159a1f09d224f9a2e9952e436b1a6295b136d2dc6b567c42dcf19fc",
+    "test/agent-excel-comments.test.ts": "a92a5ee9785ada96ab43d96e18ed42d33bdc65bd3df860ab6bc4b45a703787bc",
+    "test/support/excel-comments.py": "f68e64494b03c8c9b78405331ea6bd0e19b11793e4d5e965208b69dd0d545bc1"
+  },
+  "artifacts": {
+    "run-01/inputs/source.xlsx": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+    "run-01/inputs/target.json": "b19ff147f55d0462e2f6bec61faafca7aa4273a2d38be8c153e5b5b7a79c0ed1",
+    "run-01/inputs/view.json": "f57aaa9926807603720247915acd841fa7d2258a4aa529287fda9b38a7961827",
+    "run-01/start.json": "87c34c4319d9ff702f66658cad5b290397a18801de78a30992fa7a0749ccaef3",
+    "run-01/result.json": "5b06ff88e7edcc8750d04fbcd3edcbccebdc2087794a3f5a9b72b73de7456d4c",
+    "run-01/attempt-01/candidate.json": "4d9fe79fce5ee7a3e8d6663e83f1a4b7b2b1cc87b4ca398619347fe2c75e0db3",
+    "run-01/attempt-01/plan.json": "94598005d4b83d82b1c038fb177ae402368344c3abf085020fde86ce58ecf8bc",
+    "run-01/attempt-01/transform.py": "89bfe2f355f6d1c2eadc12a494922d52396db70ffda1184531b9ef85be47d53f",
+    "run-01/attempt-01/mechanical.json": "29834dae411eb216c1f408acdc0e69a4a9634ec152812b09d09ee69b4520f956",
+    "review-01/excel/check.json": "29834dae411eb216c1f408acdc0e69a4a9634ec152812b09d09ee69b4520f956",
+    "review-01/excel/manifest.json": "66fbcb055ce17f7cd561de348790d738526d7aa8f969ac2c1161f065bb36b89e",
+    "independent-expected.json": "7ae9f40d51b98389e284828f0357c8a32a75577cdb9245a50e9f95d02f77b6af",
+    "independent-comparison.json": "9e96fc2f07a0e97b1d1b8c8ead3d03fe4bee6cf03e8f33ff98ba8a1b3337b3aa",
+    "verify_source.py": "1bed63875615a7f05a37034c587bcbbf9c49630313fa79fd38b4d934919f9db4",
+    "vml-comparison.json": "76cb01c1fe024402a8b2fe0ca30832fbaff3466561fd147bc8a5192ab542dffa",
+    "verify-vml.py": "aab15956dd00efd1485650693e19d1dfeffcdf2e70ce4b43e3ff6290520d12b5",
+    "browser-check.json": "78e175344208f6ad95c1a24ce0bcd634ef1dc84dcaf3e95c2289eb44107a7bd2",
+    "browser-check.mjs": "8a22ce68642675eccfccebe41e9b0207857345b05d392e155cb93560e82dd8a9",
+    "capture-review.mjs": "5e790cd21b29e1016359c6b60562a943fe34033f060edcc3e3ba9102c97ed0bc",
+    "review.html": "9336357c902035f6652b665d9b83db48a77e38edeb32849bece6ec11198e8a56",
+    "review-comments-clean.png": "bdb8cf494caab3450d5fd88977402ab20ac6b86d2cf281a63c7ec39366694a55",
+    "tests.json": "3c658b9295b2782d90ffba6a40d0f78ab10b9a80b1f61bf7f5fa74f00079b91d",
+    "comment-tests-final.json": "4c70be2e4151d85627543ee3eeda3e1482b62c076104e94062cce49caf358ab6"
+  }
+}

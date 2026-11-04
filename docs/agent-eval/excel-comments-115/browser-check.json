@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "browser": "156.0.8078.76",
+  "commentRows": 10,
+  "exactTexts": 10,
+  "sourceLinks": true,
+  "overflows": [
+    {
+      "width": 1600,
+      "overflow": false
+    },
+    {
+      "width": 800,
+      "overflow": false
+    }
+  ],
+  "pageErrors": [],
+  "reviewStatus": "inProgress",
+  "canApprove": false,
+  "applied": false
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "matchedAnchors": 10,
+  "sourcePart": "xl/drawings/vmlDrawing1.vml",
+  "checked": [
+    "shapeId",
+    "zeroBasedTarget",
+    "displayAnchor",
+    "visible"
+  ]
+}

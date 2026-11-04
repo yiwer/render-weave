@@ -63,6 +63,12 @@
   .toast { position: fixed; right: 20px; bottom: 20px; max-width: 520px; padding: 10px 14px; border-radius: 8px; background: var(--text); color: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.2); display: none; white-space: pre-wrap; z-index: 10; }
   details summary { cursor: pointer; color: var(--accent); }
   a.locate { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  body.excel-review main { grid-template-columns: minmax(0, 1fr); }
+  body.excel-review .viewer { position: static; }
+  body.excel-review #excel-panel { border: 0; padding: 0; }
+  body.excel-review td { overflow-wrap: anywhere; white-space: pre-wrap; }
+  body.excel-review tr[id] { scroll-margin-top: 70px; }
+  body.excel-review tr:target { background: var(--accent-soft); }
 </style>
 </head>
 <body>
@@ -297,17 +303,31 @@ function problemList(problems) {
 }
 
 function render() {
+  document.body.classList.toggle('excel-review', Boolean(view.excel));
   sample.node.hidden = Boolean(view.excel);
   excelPanel.hidden = !view.excel;
   if (view.excel) {
     const e = view.excel;
     const sheet = id => e.sheets.find(s => s.id === id)?.name ?? id;
+    const commentId = (sheet, cell) => 'excel-comment-' + encodeURIComponent(sheet + ':' + cell);
     excelPanel.replaceChildren(h('h2', {}, 'Excel 来源与人工修正'),
       h('a', { href: '/sample', download: 'source.xlsx' }, '下载固定原始工作簿'),
       h('p', {}, `定义：${e.definition.name}@${e.definition.version}；${e.candidates.length} 份数据集。请核对映射、排除区域和每份候选。`),
       h('details', {}, h('summary', {}, `字段来源（${e.sources.length} 项）`),
         h('table', {}, h('thead', {}, h('tr', {}, ['数据集', '字段路径', '工作表', '单元格', '规则'].map(t => h('th', {}, t)))),
-          h('tbody', {}, e.sources.map(s => h('tr', {}, [s.datasetId, s.path, sheet(s.sheet), s.cells.join(', '), s.rule].map(t => h('td', {}, t))))))),
+          h('tbody', {}, e.sources.map(s => h('tr', {},
+            [s.datasetId, s.path, sheet(s.sheet)].map(t => h('td', {}, t)),
+            h('td', {}, s.rule === 'comment' ? s.cells.map(cell => h('a', { href: '#' + commentId(s.sheet, cell) }, cell + ' 批注')) : s.cells.join(', ')),
+            h('td', {}, s.rule)))))),
+      h('h3', {}, `批注原文与来源（${(e.comments ?? []).length} 条）`),
+      h('p', { class: 'muted' }, '正文排除区域不代表批注已处理。核对每条批注的映射或未映射理由；VML 的行列指向源单元格，显示框位置另列。'),
+      h('table', {}, h('thead', {}, h('tr', {}, ['工作表 / 单元格', '批注原文', '作者 / 源部件', 'VML 锚点', '目标字段 / 未映射理由'].map(t => h('th', {}, t)))),
+        h('tbody', {}, (e.comments ?? []).map(c => h('tr', { id: commentId(c.sheet, c.cell) },
+          h('td', {}, sheet(c.sheet) + '!' + c.cell), h('td', {}, h('pre', {}, c.text)),
+          h('td', {}, c.author, h('br'), c.part),
+          h('td', {}, c.vml ? `${c.vml.part} / ${c.vml.shapeId}；零基行列 ${c.vml.row}, ${c.vml.column}；显示框 ${c.vml.anchor.join(', ')}；${c.vml.visible ? '可见' : '隐藏'}` : '原件无 VML 批注显示框'),
+          h('td', {}, e.sources.filter(s => s.rule === 'comment' && s.sheet === c.sheet && s.cells.includes(c.cell)).map(s => `${s.datasetId} ${s.path}`).join('\n') ||
+            (e.commentContext ?? []).filter(x => x.sheet === c.sheet && x.cell === c.cell).map(x => '未映射：' + x.reason).join('\n') || '未分类（请检查证据）'))))),
       h('h3', {}, '排除区域与理由'), h('pre', {}, json(e.context)),
       h('h3', {}, '人工修正重放与冲突'), h('pre', {}, e.corrections.length ? json(e.corrections) : '没有从上一轮重放的修正。'));
   } else if (!sample.img.src) sample.setSource('/sample');

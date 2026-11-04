@@ -64,7 +64,8 @@ async function python(args: string[], ms = 45000) {
 }
 
 await copyFile(resolve(values.workbook!), join(inputs, 'source.xlsx'));
-await python([join(HERE, 'prototype.py'), 'read', join(inputs, 'source.xlsx'), '--out', join(inputs, 'view.json')]);
+const workbookReader = join(REPO, 'agent/excel/workbook.py');
+await python([workbookReader, 'read', '--input', join(inputs, 'source.xlsx'), '--out', join(inputs, 'view.json')]);
 const view = await json(join(inputs, 'view.json'));
 const target = { selected, staticSchemas: workspace.staticSchemas, datasetIds: workspace.datasets.map(d => d.id) };
 await save(join(inputs, 'target.json'), target);
@@ -81,12 +82,12 @@ const fault = `\n# HOST_TEST_FAULT: 首次执行注入，修复时删除本段�
 let sequence = 0;
 const tools: McpTool[] = [
   { name: 'inspect_workbook', description: '查看固定工作簿的源身份、Sheet、范围、合并关系与读取问题，不返回全部单元格。', inputSchema: empty,
-    async call() { return result({ source: view.source, viewHash: view.viewHash, sheets: view.sheets.map(({ cells, ...rest }: any) => ({ ...rest, cellCount: cells.length })), issues: view.issues }); } },
+    async call() { return result({ source: view.source, viewHash: view.viewHash, sheets: view.sheets.map(({ cells, comments = [], ...rest }: any) => ({ ...rest, cellCount: cells.length, commentCount: comments.length, commentCells: comments.map((c: any) => c.cell) })), issues: view.issues }); } },
   { name: 'read_schema', description: '读取工作空间选定的已发布 staticSchema、编译产物与引用定义，字段与约束均以此为准。', inputSchema: empty,
     async call() { return result(target); } },
   { name: 'read_region', description: '按 Sheet id 和 Excel 坐标读有界区域，保留空格、原值、显示值、公式和格式。',
     inputSchema: { type: 'object', properties: { sheet: { type: 'string' }, range: { type: 'string' }, offset: { type: 'integer', minimum: 0 }, pageSize: { type: 'integer', minimum: 1, maximum: 100 } }, required: ['sheet', 'range'], additionalProperties: false },
-    async call(a) { const file = join(logs, `region-${++sequence}.json`); await python([join(HERE, 'prototype.py'), 'region', '--view', join(inputs, 'view.json'), '--sheet', String(a.sheet), '--range', String(a.range), '--offset', String(a.offset ?? 0), '--page-size', String(a.pageSize ?? 80), '--out', file]); return result(await json(file)); } },
+    async call(a) { const file = join(logs, `region-${++sequence}.json`); await python([workbookReader, 'region', '--input', join(inputs, 'view.json'), '--sheet', String(a.sheet), '--range', String(a.range), '--offset', String(a.offset ?? 0), '--page-size', String(a.pageSize ?? 80), '--out', file]); return result(await json(file)); } },
   { name: 'submit_transform', description: '提交通用映射计划和 Python 转换脚本。在隔离环境执行，然后宿主独立核对来源并按固定 staticSchema 校验全部候选。失败应修复再提交。',
     inputSchema: { type: 'object', properties: { plan: { type: 'object' }, script: { type: 'string', minLength: 1, maxLength: 64000 } }, required: ['plan', 'script'], additionalProperties: false },
     async call(a) {
@@ -109,7 +110,7 @@ const tools: McpTool[] = [
         record.execution = { status: execution.status, wallMs: execution.wallMs, cleanupConfirmed: execution.cleanupConfirmed, stderr: execution.stderr };
         if (execution.status === 'completed') {
           await save(join(dir, 'candidate.json'), execution.candidate);
-          await python([join(HERE, 'generic_check.py'), '--view', join(inputs, 'view.json'), '--plan', join(dir, 'plan.json'), '--candidate', join(dir, 'candidate.json'), '--target', join(inputs, 'target.json'), '--out', join(dir, 'mechanical.json')]);
+          await python([join(REPO, 'agent/excel/generic_check.py'), '--view', join(inputs, 'view.json'), '--plan', join(dir, 'plan.json'), '--candidate', join(dir, 'candidate.json'), '--target', join(inputs, 'target.json'), '--out', join(dir, 'mechanical.json')]);
           record.mechanical = await json(join(dir, 'mechanical.json'));
           const bundle = execution.candidate;
           const items = Array.isArray(bundle?.datasets) ? bundle.datasets : [];

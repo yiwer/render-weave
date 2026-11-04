@@ -24,7 +24,17 @@ export async function importExcelRound(options: ImportExcelOptions): Promise<{ r
     const data = await readFile(actual); if (data.length > limit) throw new AgentUsageError(`提取包文件过大：${file}`); return data;
   };
   const result = JSON.parse((await bytes('result.json')).toString('utf8'));
-  const submitted = JSON.parse((await bytes('submission.json')).toString('utf8'));
+  if (result.passed !== true) {
+    const codes = (Array.isArray(result.attempts) ? result.attempts : []).flatMap((a: any) => Array.isArray(a.mechanical?.issues) ? a.mechanical.issues : [])
+      .map((p: any) => typeof p.code === 'string' ? p.code.slice(0, 100) : 'unknown').slice(0, 12);
+    throw new AgentUsageError(`提取包尚未完成，不能进入审核；请查看 result.json 和各次尝试的检查报告${codes.length ? `（${[...new Set(codes)].join('、')}）` : ''}`);
+  }
+  let submitted;
+  try { submitted = JSON.parse((await bytes('submission.json')).toString('utf8')); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new AgentUsageError('提取包缺少 submission.json，模型尚未交回完整成果，不能进入审核');
+    throw error;
+  }
   const start = JSON.parse((await bytes('start.json')).toString('utf8'));
   if (!result.passed || !/^attempt-[0-9]{2}$/.test(submitted.attemptId) || typeof submitted.notes !== 'string' || !Array.isArray(submitted.pending) || submitted.pending.some((p: unknown) => typeof p !== 'string')) throw new AgentUsageError('提取包尚未完成或交回格式非法');
   const attempt = submitted.attemptId;
@@ -69,6 +79,7 @@ export async function importExcelRound(options: ImportExcelOptions): Promise<{ r
     const candidates = structuredClone(bundle.datasets) as any[];
     const evidence: ExcelEvidence = { format: 'renderweave-excel-evidence/1', sourceHash: sha256(captured.get('source.xlsx')!), definition: target.selected.ref,
       artifacts: [], sources: bundle.sources, context: plan.context ?? [], sheets: view.sheets.map((s: any) => ({ id: s.id, name: s.name })), corrections: [],
+      comments: view.sheets.flatMap((s: any) => (s.comments ?? []).map((c: any) => ({ ...c, sheet: s.id }))), commentContext: plan.commentContext ?? [],
       candidates: candidates.map(d => ({ id: d.dataset.id, file: `candidates/dataset-${sha256(d.dataset.id)}.json` })) };
     let previous: RoundRecord['inputs']['previous'] = null;
     if (options.previous) {

@@ -4,12 +4,18 @@ import { join } from 'node:path';
 import { canonical } from './diff.js';
 import { sha256 } from './round-files.js';
 
-export interface ExcelSource { datasetId: string; path: string; sheet: string; cells: string[]; rule: string }
+export interface ExcelSource { datasetId: string; path: string; sheet: string; cells: string[]; rule: string; parts?: string[] }
+export interface ExcelComment {
+  sheet: string; cell: string; text: string; author: string; part: string;
+  vml?: { part: string; shapeId: string; row: number; column: number; anchor: number[]; visible: boolean };
+}
 export interface ExcelCorrection { datasetId: string; path: string; before?: unknown; after?: unknown; removed: boolean; reason: string; actor: 'local-review'; status: 'replayed' | 'conflict'; detail?: string }
 export interface ExcelEvidence {
   format: 'renderweave-excel-evidence/1'; sourceHash: string; definition: { name: string; version: number };
   artifacts: { file: string; sha256: string }[]; sources: ExcelSource[];
   context: { sheet: string; range: string; reason: string }[];
+  comments?: ExcelComment[];
+  commentContext?: { sheet: string; cell: string; reason: string }[];
   sheets: { id: string; name: string }[]; corrections: ExcelCorrection[];
   candidates: { file: string; id: string }[];
 }
@@ -58,7 +64,7 @@ export function replayExcelCorrections(options: {
       const original = get(old.data, path), after = get(review.data, path);
       // collect/split 的列表项共享一个来源，匹配时保留相对列表位置。
       const anchor = previous.sources.filter(s => s.datasetId === id && (s.path === path || path.startsWith(s.path+'/'))).sort((a,b) => b.path.length-a.path.length)[0];
-      const matches = anchor ? next.sources.filter(s => s.datasetId === id && s.sheet === anchor.sheet && s.rule === anchor.rule && canonical(s.cells) === canonical(anchor.cells)) : [];
+      const matches = anchor ? next.sources.filter(s => s.datasetId === id && s.sheet === anchor.sheet && s.rule === anchor.rule && canonical(s.cells) === canonical(anchor.cells) && canonical(s.parts ?? []) === canonical(anchor.parts ?? [])) : [];
       const target = candidates.find(c => c.dataset.id === id);
       const newPath = matches.length === 1 ? matches[0]!.path+path.slice(anchor!.path.length) : path;
       const sameBasis = previous.sourceHash === next.sourceHash && canonical(previous.definition) === canonical(next.definition);

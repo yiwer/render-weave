@@ -19,6 +19,8 @@ def check(view, plan, candidate, target):
     if len(encoded(plan)) > 200000:
         raise ValueError('计划超过 200 KB')
     sheets = {s['id']: {c['address']: c for c in s['cells']} for s in view['sheets']}
+    comments = {s['id']: {c['cell']: c for c in s.get('comments', [])} for s in view['sheets']}
+    used_comments = set()
     issues, traces, used, expected = [], [], set(), []
     budget = 0
     source_budget = 0
@@ -90,10 +92,10 @@ def check(view, plan, candidate, target):
             if any(v is MISSING for v in result):
                 raise ValueError('rows 不允许静默删除记录')
             return result
-        if op not in ('cell', 'collect', 'split'):
-            raise ValueError('仅支持 object/array/rows/cell/collect/split；未知转换需另行明确')
+        if op not in ('cell', 'collect', 'split', 'comment'):
+            raise ValueError('仅支持 object/array/rows/cell/collect/split/comment；未知转换需另行明确')
         sheet = node['sheet']
-        refs = [node['cell']] if op in ('cell', 'split') else node['cells']
+        refs = [node['cell']] if op in ('cell', 'split', 'comment') else node['cells']
         if sheet not in sheets or not isinstance(refs, list) or not 1 <= len(refs) <= 1000:
             raise ValueError('工作表或来源列表无效')
         resolved = [re.sub(r'\{([A-Za-z][A-Za-z0-9_]*)\}', lambda m: str(env[m[1]]), ref) for ref in refs]
@@ -102,6 +104,20 @@ def check(view, plan, candidate, target):
             raise ValueError('来源引用总量超过 200000')
         if len(set(resolved)) != len(resolved):
             raise ValueError('同一映射重复来源坐标')
+        if op == 'comment':
+            ref = resolved[0]
+            coordinates(ref)
+            if node.get('as', 'display') != 'display':
+                raise ValueError('批注只支持原文读取')
+            comment = comments[sheet].get(ref)
+            if comment is None:
+                if node.get('omitIfEmpty') is True:
+                    return MISSING
+                issue('commentMissing', datasetId=dataset, path=path, sheet=sheet, cell=ref)
+                return None
+            used_comments.add((sheet, ref))
+            traces.append({'datasetId': dataset, 'path': path, 'sheet': sheet, 'cells': [ref], 'rule': 'comment', 'parts': [comment['part']]})
+            return comment['text']
         values, actual_refs = [], []
         for ref in resolved:
             coordinates(ref)
@@ -156,6 +172,18 @@ def check(view, plan, candidate, target):
     all_cells = {(s, a) for s, cells in sheets.items() for a, c in cells.items() if c['value'] is not None or 'formula' in c}
     for s, a in sorted(all_cells-classified):
         issue('unclassifiedCell', sheet=s, cell=a)
+    classified_comments = set(used_comments)
+    for context in plan.get('commentContext', []):
+        sheet, cell = context['sheet'], context['cell']
+        source_budget += 1
+        if source_budget > 200000 or sheet not in comments or cell not in comments[sheet] or not isinstance(context.get('reason'), str) or not context['reason'].strip():
+            raise ValueError('未映射批注须有存在的单元格、明确理由且不超出来源上限')
+        if (sheet, cell) in classified_comments:
+            issue('commentClassificationConflict', sheet=sheet, cell=cell)
+        classified_comments.add((sheet, cell))
+    all_comments = {(s, a) for s, entries in comments.items() for a in entries}
+    for s, a in sorted(all_comments-classified_comments):
+        issue('unclassifiedComment', sheet=s, cell=a)
     for part in view['issues']:
         if part['code'] == 'unreadParts':
             issue('unreadWorkbookParts', parts=part['parts'])
@@ -190,7 +218,8 @@ def check(view, plan, candidate, target):
     return {'format': 'rw-excel-generic-check/1', 'mechanical': 'failed' if issues else 'passed',
             'semantic': 'needsReview', 'applicable': False, 'issues': issues,
             'viewHash': view['viewHash'], 'planHash': digest(encoded(plan)), 'candidateHash': digest(encoded(candidate)),
-            'counts': {'datasets': len(expected), 'sourceCells': len(all_cells), 'classifiedCells': len(all_cells & classified)}}
+            'counts': {'datasets': len(expected), 'sourceCells': len(all_cells), 'classifiedCells': len(all_cells & classified),
+                       'comments': len(all_comments), 'classifiedComments': len(all_comments & classified_comments)}}
 
 
 if __name__ == '__main__':

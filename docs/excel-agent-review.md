@@ -1,6 +1,6 @@
 # Excel 提取、审核、修正与应用
 
-本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。后续出图也已接入，当前实现位于分支 `feature/excel-agent-p06`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出仅同步文档。
+本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。后续出图也已接入，批注接入实现位于分支 `feature/excel-agent-comments`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出仅同步文档。
 
 `agent run` 的工作簿输入尚未统一；目前提取使用原型入口，审核与应用使用正式入口。完整流程设计见[流程文档](excel-agent-workflow.md)，本轮证据见[测试报告](agent-eval/excel-agent-p05.md)。
 
@@ -30,6 +30,14 @@ node dist/bin.js agent review out/my-review-01
 可加 `--python '<Python 路径>'`。`--resources` 指定本地资源仓库并固定副本，供引擎校验；它不会从 Excel 图片或任意 URL 自动生成资源。源表格式和转换支持范围仍以[映射合同](../scripts/prototypes/excel-agent/CONTRACT.md)为准。
 
 审核页提供：固定原件下载、数据集字段到工作表/单元格的映射、排除区域及理由、每份完整候选、修正重放及冲突。
+
+传统批注作为独立来源：查看“批注原文与来源”，逐条核对工作表、单元格、原文、作者、源部件、VML 锚点和目标字段。字段来源中的“某格 批注”链接可跳转到原文。批注可能附在空单元格；读取正文不等于已读取批注。`commentContext` 单独记录未映射批注及理由，审核采纳仍需确认这些理由。
+
+目标定义需要保留批注时，为相应对象发布文本字段，用 `comment` 节点映射；不要让模型改动已固定 staticSchema。保留作者文字前缀、换行和空格；没有批注时省略可选字段，原批注存在但文字为空时保留空字符串。映射和脚本来源格式见[合同](../scripts/prototypes/excel-agent/CONTRACT.md)。
+
+VML 的零基 Row/Column 用来核对批注所属单元格，Anchor 八项表示显示框位置。只有全部 Note 图形与批注一一对应时，才把该 VML 记为已覆盖；未知绘图、控件、图片、线程批注和异常关系继续阻止完成。原件没有 VML 时可读取传统批注原文，页面明确没有显示框。实际制作表复跑见[批注报告](agent-eval/excel-agent-comments.md)。
+
+未完成的提取包不能导入。CLI 会提示查看 `result.json` 和尝试检查报告，并列出已有机械错误代码；不要创建假的 `submission.json` 来绕过该门槛。
 
 逐份核对表头含义、映射、顺序、单位和缺省规则。选择“改值”时编辑整份数据集 JSON，并填写修改原因；保留 `dataset` 身份，只修改 `data`。保存后立即重新检查类型和约束。所有候选均需处理，不能只删除其中一份后应用；缩小范围应重新提取。确认剩余内容并核准后才能应用。
 
