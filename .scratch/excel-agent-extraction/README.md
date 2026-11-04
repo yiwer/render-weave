@@ -10,3 +10,4 @@
 | [04：从已应用数据集准备通用渲染项并交付](issues/04-prepare-and-deliver-output.md) | 03 | P06；模板参数、列表位置、完整范围、固定依赖与交付重放 |
 | [05：用用户提供的实际制作表运行一次 CodingAgent](issues/05-try-user-production-workbook.md) | 04 | P07 首次实表探索；独立正文比对、批注缺口与完整失败证据 |
 | [06：让业务批注进入 Excel 提取与独立审核](issues/06-preserve-workbook-comments.md) | 05 | P07 / A01 / A04；批注来源、VML 判别及同原件复跑 |
+| [07：从待审实表生成可核对的制作计划与试制样张](issues/07-preview-production-plan.md) | 06 | P07 出图前核对；多尺寸清单、完整站序草稿与待确认项 |
