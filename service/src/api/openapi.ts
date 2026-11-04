@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.9.0';
+export const API_VERSION = '1.10.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -107,6 +107,24 @@ const PROBLEM_LOCATION = {
 };
 
 const SCHEMAS: Record<string, unknown> = {
+  AgentJob: object({
+    id: uuid('任务 ID'), revision: int('审核并发版本', 1), kind: { const: 'dataset-extraction' },
+    status: { type: 'string', enum: ['queued', 'running', 'needsReview', 'applied', 'failed', 'cancelled'] },
+    createdAt: instant('创建时间'), updatedAt: instant('更新时间'), staticSchema: staticSchemaRef,
+    filename: str('原件文件名'), brief: str('提取要求'), source: object({ file: str(), sha256, byteLength: int() }),
+    events: array(object({ sequence: int('顺序号', 1), at: instant('事件时间'), message: str() })),
+    datasetIds: array(str()), message: str(), usage: freeform('已记录的模型轮次用量；不是实际扣费'),
+  }, ['id', 'revision', 'kind', 'status', 'createdAt', 'updatedAt', 'staticSchema', 'filename', 'brief', 'source', 'events']),
+  AgentJobReply: object({ job: ref('AgentJob'), review: object({
+    candidates: array(freeform('正式审核候选：path/name/document/edited/problems')),
+    pending: array(freeform('正式审核待确认项及修改原因')), problems: array(ref('Problem')),
+    excel: freeform('Excel 证据：原件和定义身份、工作表、字段来源、批注/VML、排除范围及修正记录'),
+    notes: str(), usage: freeform('模型用量'), canApprove: { type: 'boolean' },
+  }, ['candidates', 'pending', 'problems', 'notes', 'usage', 'canApprove']) }, ['job']),
+  AgentJobList: object({ enabled: { type: 'boolean' }, jobs: array(ref('AgentJob')) }),
+  AgentCells: object({ sheets: array(object({ id: str(), name: str() })), sheet: str(),
+    cells: array(freeform('固定读取视图单元格：address/value/display/formula 等')), total: int(), offset: int() }),
+
   Problem: object({
     level: { type: 'string', enum: ['severe', 'hint'], description: '严重（severe）或提示（hint）' },
     code: { type: 'string', description: '问题码：服务的问题码见 docs/api.md，引擎的问题码与命令行相同' },
@@ -533,6 +551,15 @@ function approvalDocs(prefix: string, tag: string): Record<string, RouteDoc> {
 }
 
 const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
+  'GET /v1/agent-jobs': { tag: '数据集智能导入', summary: '列出本租户的 Agent 导入任务与服务启用状态', replies: [ok(ref('AgentJobList'))] },
+  'POST /v1/agent-jobs': { tag: '数据集智能导入', summary: '固定工作簿与静态数据定义，创建后台提取任务；相同 requestId 幂等', replies: [ok(ref('AgentJobReply'), '已入队', 202), ok(ref('AgentJobReply'))], errors: [400, 409, 413, 503] },
+  'GET /v1/agent-jobs/:id': { tag: '数据集智能导入', summary: '读取任务进度及已独立核查的审核材料', replies: [ok(ref('AgentJobReply'))] },
+  'GET /v1/agent-jobs/:id/source': { tag: '数据集智能导入', summary: '下载此任务固定的原始工作簿', replies: [{ status: 200, description: '原始 xlsx', binary: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] }] },
+  'GET /v1/agent-jobs/:id/cells': { tag: '数据集智能导入', summary: '分页读取固定原表单元格，每页最多 100 项', replies: [ok(ref('AgentCells'))] },
+  'POST /v1/agent-jobs/:id/cancel': { tag: '数据集智能导入', summary: '取消未应用的任务，不能撤销已保存的数据集', replies: [ok(ref('AgentJobReply'))], errors: [409] },
+  'POST /v1/agent-jobs/:id/review': { tag: '数据集智能导入', summary: '修改候选并记录原因，按任务 revision 防止覆盖其他人的审核', replies: [ok(ref('AgentJobReply'))], errors: [400, 409] },
+  'POST /v1/agent-jobs/:id/apply': { tag: '数据集智能导入', summary: '复核完整候选后原子创建全部数据集，已成功的任务重试返回原结果', replies: [ok(ref('AgentJobReply'))], errors: [400, 409] },
+
   'GET /healthz': { tag: '运维', summary: '存活检查', replies: [ok(object({ status: { const: 'ok' }, service: str(), build: str() }))] },
   'GET /readyz': { tag: '运维', summary: '就绪检查：数据库、迁移与对象存储', replies: [
     ok(object({ status: { const: 'ready' }, service: str(), build: str(), ready: { const: true }, schemaVersion: int(), checks: { type: 'object', additionalProperties: str() } },
@@ -663,7 +690,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
 };
 
 const PATH_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
-  id: uuid('发布申请 ID'), tenantId: uuid('租户 ID'), memberId: uuid('成员 ID'), keyId: uuid('API 密钥 ID'), tokenId: uuid('代建令牌 ID'), batchId: uuid('批次 ID'), webhookId: uuid('webhook ID'),
+  id: uuid('对象 ID'), tenantId: uuid('租户 ID'), memberId: uuid('成员 ID'), keyId: uuid('API 密钥 ID'), tokenId: uuid('代建令牌 ID'), batchId: uuid('批次 ID'), webhookId: uuid('webhook ID'),
   name: str('名称'), datasetId: str('数据集 ID'), resourceId: { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9_-]*$', description: '资源 ID' },
   version: { type: 'string', pattern: '^[1-9][0-9]{0,8}$', description: '内容版本' }, index: { type: 'string', pattern: '^[1-9][0-9]{0,3}$', description: '项序号（从 1 起）' },
   sha256,

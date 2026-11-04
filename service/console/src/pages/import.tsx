@@ -121,7 +121,7 @@ export function ImportSheet(props: {
       <section className="sheet wide" role="dialog" aria-modal="true" aria-labelledby="import-title">
         <div className="sheet-head">
           <div>
-            <div className="eyebrow">Excel 导入 · 正式交付</div>
+            <div className="eyebrow">标准表格批量出图 · Excel</div>
             <h2 id="import-title" style={{ fontSize: 24, marginTop: 4 }}>{file?.name ?? '从 Excel 导入一批数据'}</h2>
           </div>
           <button type="button" className="icon" aria-label="关闭导入" onClick={props.onClose}>×</button>

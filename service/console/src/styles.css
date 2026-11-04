@@ -556,6 +556,33 @@ p.impact-note { display: block; }
 /* 数据定义与静态数据定义（M360）：卡片列表；编辑页左边字段、右边检查器；详情页多种看法加只读字段信息。 */
 .list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 16px; }
 .list-search { flex: 1 1 280px; min-width: 0; }
+.dataset-start { max-width: 760px; display: grid; gap: 20px; }
+.dataset-start h2, .dataset-start p { margin: 0; }
+.dataset-start .field select { width: 100%; }
+.import-start .field { margin: 18px 0; }
+.import-jobs { list-style: none; padding: 0; margin: 0; }
+.import-jobs li + li { border-top: 1px solid var(--line); }
+.import-jobs a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 16px 0; color: var(--ink); text-decoration: none; }
+.import-jobs strong { overflow-wrap: anywhere; }
+.import-jobs .small { grid-column: 1 / -1; }
+.import-progress { margin-bottom: 20px; }
+.import-progress ol { padding: 0; list-style: none; max-height: 280px; overflow: auto; }
+.import-progress li { display: flex; gap: 18px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.import-progress time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.import-wait { display: grid; justify-items: center; padding: 48px; text-align: center; }
+.import-review-grid { display: grid; grid-template-columns: minmax(300px, .9fr) minmax(350px, 1.1fr); gap: 24px; align-items: start; }
+.import-source, .import-candidates { min-width: 0; }
+.import-source .table-box { max-height: 360px; margin: 16px 0; }
+.import-source .actions { flex-wrap: wrap; }
+.import-cell-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.import-evidence { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.import-evidence .soft { margin-top: 12px; }
+.import-evidence ul { padding-left: 18px; max-height: 360px; overflow: auto; }
+.import-evidence li { margin: 12px 0; overflow-wrap: anywhere; }
+.import-form { padding: 0; border: 0; min-width: 0; margin: 20px 0; }
+.import-confirm { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 24px; border-color: var(--accent); }
+.import-complete { margin-bottom: 24px; }
+@media (max-width: 900px) { .import-review-grid { grid-template-columns: 1fr; } .import-confirm { flex-direction: column; align-items: stretch; } }
 .list-sort { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .list-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 0; text-align: center; color: var(--muted); }
 .list-empty .motif { margin-bottom: 10px; }

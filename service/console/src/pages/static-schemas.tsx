@@ -183,6 +183,8 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
           {document.description && <p className="small muted">{document.description}</p>}
         </div>
         <div className="actions">
+          <a className="button primary" href={href(['datasets', 'new'], { schema: name, version: String(version) })}>新建数据集</a>
+          <a className="button" href={href(['dataset-imports'], { schema: name, version: String(version) })}>智能导入数据集</a>
           <select aria-label="查看的版本" value={version} onChange={(event) => go(staticSchemaPath(name, event.target.value))}>
             {[...detail.versions].reverse().map((item) => <option key={item.version} value={item.version}>v{item.version}{item.version === latest ? ' · 当前' : ''}</option>)}
           </select>

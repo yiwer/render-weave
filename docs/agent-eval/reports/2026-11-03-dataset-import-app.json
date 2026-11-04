@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-03",
+  "scope": "内部工作簿应用模块；合成非公交批注小样，不替代 115 网页业务验收",
+  "engine": {
+    "executor": "tool-runner",
+    "model": "claude-haiku-5-5",
+    "passed": true,
+    "wallMs": 69329,
+    "usage": {
+      "inputTokens": 18,
+      "outputTokens": 5487,
+      "thinkingTokens": 1038,
+      "cacheReadTokens": 55653,
+      "cacheCreationTokens": 13372,
+      "usageSource": "result",
+      "turns": 8,
+      "servedModel": "claude-haiku-5-5",
+      "endedBy": "success",
+      "mcp": [
+        "rw:connected"
+      ]
+    },
+    "attempts": [
+      {
+        "id": "attempt-01",
+        "status": "failed",
+        "injected": false,
+        "scriptHash": "2ba647484812827e76bcf3afe85b97f50b980416a252c83e807604fd0c2a6c2a"
+      },
+      {
+        "id": "attempt-02",
+        "status": "failed",
+        "injected": false,
+        "scriptHash": "159e86c7c8a0e3c4dd544ee93d1e013fb15031d909e1fe6385a8a0f967f9e982"
+      },
+      {
+        "id": "attempt-03",
+        "status": "failed",
+        "injected": false,
+        "scriptHash": "159e86c7c8a0e3c4dd544ee93d1e013fb15031d909e1fe6385a8a0f967f9e982"
+      },
+      {
+        "id": "attempt-04",
+        "status": "passed",
+        "injected": false,
+        "scriptHash": "159e86c7c8a0e3c4dd544ee93d1e013fb15031d909e1fe6385a8a0f967f9e982"
+      }
+    ]
+  },
+  "service": {
+    "passed": true,
+    "jobId": "9f1f8fee-e77b-41d1-bdc0-09cb79438f30",
+    "status": "applied",
+    "sourceHash": "ee7369b1c2fbab75e37ed5b13207b747169aee49b9bb2600da71cb21f880cbf8",
+    "datasetIds": [
+      "material-live-app-01"
+    ],
+    "usage": {
+      "sha256": "e31ed3bc3d5eadc0937071d3f3768006441307f5a9e5e4da1c30d07c881cf22c",
+      "task": "dataset-extraction",
+      "round": 1,
+      "tokens": {
+        "inputTokens": 18,
+        "outputTokens": 5583,
+        "cacheReadTokens": 56299,
+        "cacheCreationTokens": 13402
+      }
+    }
+  },
+  "actualCharge": "unknown",
+  "humanBusinessReviewHours": "unknown",
+  "productionReady": false,
+  "artifacts": "F:/GenCode/render-weave-dataset-import-app/out/dataset-module/live/ 和 live-service/；原始日志不进版本库"
+}

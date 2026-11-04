@@ -8,6 +8,8 @@
 - **请求体**：批量交付、草稿预览与数据集的请求体就是 DSL 1.0 的 JSON Schema（[schemas/](../schemas/)），描述原样收录。
 - **当前版本**：`info.version`，见文末的[变更记录](#变更记录)。
 
+数据集智能导入的页面、任务状态及 1.10.0 新接口见 [使用说明](dataset-import.md)。
+
 ## 鉴权
 
 每个请求带 `Authorization: Bearer <令牌>`。令牌有三种：
@@ -343,6 +345,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.10.0 | 2026-11-03 | 工作簿 Agent 任务、原件与单元格读取、来源审核、取消和整组保存数据集；新增 `/v1/agent-jobs` 接口 | 兼容，只做加法 |
 | 1.9.0 | 2026-11-02 | 数据定义与静态数据定义分成两个模块（M360）要的两个数：`GET /v1/static-schemas` 的每一项加 `fieldCount`、`referenceDepth`；`GET /v1/definitions` 的 `draft` 加 `displayName`、`fieldCount` | 兼容，只做加法 |
 | 1.8.0 | 2026-11-02 | 审批策略与发布申请（P1 票据 11，M347、M357）：新增 `GET`、`PUT /v1/approval-policy`，`GET /v1/publish-requests`、`GET /v1/publish-requests/{id}`，`POST …/approve`、`POST …/reject`，代建端点有同样的读取；发布草案、保存模板、指回与推送加 202 回答：只有租户打开了审批策略才会出现；`push-plans` 的回答加 `approvalScopes`；错误回答加 `request`、`blockers`；新问题码 `publishRequest.pending`、`publishRequest.expired`、`publishRequest.decided` | 兼容，只做加法 |
 | 1.7.0 | 2026-11-01 | 数据定义页面要的两个只读端点（P1 票据 06，M355）：新增 `GET /v1/definitions/{name}`（列表项加 `fieldUses`，每个字段被哪些模板读到）与 `GET /v1/definition-publications`（发布记录，操作员也能读），代建端点是同一组操作 | 兼容，只做加法 |

@@ -1,0 +1,58 @@
+import { randomBytes } from 'node:crypto';
+import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Writable } from 'node:stream';
+import { chromium } from 'playwright-core';
+import { expect, it } from 'vitest';
+import { createApi } from '../src/api/app.js';
+import { createMemoryBackend } from '../src/memory.js';
+import { createLogger } from '../src/log.js';
+import { startAgentWorker } from '../src/agent-worker.js';
+import { createWorld } from './api-suite.js';
+import { seedDocuments } from './seed.js';
+import { commentSchema, commentWorkbook, fixtureExtractor, note } from './agent-jobs-fixture.js';
+
+it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核对批注和 VML、人工改值、整组保存并打开普通数据集', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'rw-job-browser-')), backend = createMemoryBackend(), world = await createWorld(backend);
+  const schema = commentSchema(), storage = backend.tenant(world.b.id).storage;
+  await seedDocuments(storage, [schema.definition, schema.compiled].map(d => Buffer.from(JSON.stringify(d))));
+  const bytes = await commentWorkbook(root), silent = new Writable({ write(_chunk, _encoding, done) { done(); } });
+  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', silent), secretKey: randomBytes(32), passwordCost: 'test', consoleDir: join(process.cwd(), 'service/dist/console'), datasetAgentEnabled: true });
+  const worker = startAgentWorker({ backend, pollMs: 20, extract: fixtureExtractor });
+  const url = await app.listen({ host: '127.0.0.1', port: 0 }), browser = await chromium.launch({ executablePath: process.env['RW_BROWSER']!, headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, locale: 'zh-CN' }); const errors: string[] = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(`${url}/console/#/dataset-imports`);
+    await page.getByLabel('邮箱').fill(world.b.operator.email); await page.getByLabel('密码').fill(world.b.operator.password);
+    await page.getByRole('button', { name: '登录', exact: true }).click();
+    await page.getByLabel('静态数据定义与版本').selectOption(JSON.stringify([schema.ref.name, schema.ref.version]));
+    await page.getByLabel('Excel 工作簿').setInputFiles({ name: '物料批注.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: bytes });
+    await page.getByLabel('需要提取什么').fill('整理两份物料卡，保留全部正文与批注，按原表核对。');
+    await mkdir('out/dataset-module', { recursive: true });
+    await page.screenshot({ path: 'out/dataset-module/import-upload.png', fullPage: true });
+    await page.getByRole('button', { name: '开始提取', exact: true }).click();
+    await page.waitForURL(/dataset-imports\/[0-9a-f-]+/); await page.reload();
+    await page.getByRole('heading', { name: /候选数据集/ }).waitFor();
+    await page.locator('.import-source').getByText(note.trim(), { exact: true }).waitFor();
+    await page.getByText('批注显示位置', { exact: true }).first().click();
+    await page.getByText(/VML 零基行 1、列 1/).waitFor();
+    await page.screenshot({ path: 'out/dataset-module/import-review.png', fullPage: true });
+    expect(await page.getByLabel('批注', { exact: true }).inputValue()).toBe(note);
+    await page.getByLabel('名称', { exact: true }).fill('甲（业务核准）');
+    expect(await page.getByRole('button', { name: '保存修改', exact: true }).isDisabled()).toBe(true);
+    await page.getByLabel('修改原因').fill('根据制作要求补充说明');
+    await page.getByRole('button', { name: '保存修改', exact: true }).click();
+    await page.getByText(/修改原因：根据制作要求补充说明/).waitFor();
+    await page.getByLabel('我已核对全部候选、字段来源、批注及排除范围').check();
+    await page.getByRole('button', { name: '确认保存 2 份数据集', exact: true }).click();
+    await page.getByRole('heading', { name: '已保存 2 份数据集', exact: true }).waitFor();
+    await page.screenshot({ path: 'out/dataset-module/import-saved.png', fullPage: true });
+    await page.locator('.import-complete a').first().click();
+    await page.locator('[data-path="label"] input').waitFor();
+    expect(await page.locator('[data-path="label"] input').inputValue()).toBe('甲（业务核准）');
+    expect(await page.getByLabel('批注', { exact: true }).inputValue()).toBe(note);
+    expect(errors).toEqual([]);
+  } finally { await browser.close(); await worker.stop(); await app.close(); await world.app.close(); await rm(root, { recursive: true, force: true }); }
+}, 60000);

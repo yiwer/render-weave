@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -16,6 +16,9 @@
     }
   ],
   "tags": [
+    {
+      "name": "数据集智能导入"
+    },
     {
       "name": "运维"
     },
@@ -190,6 +193,501 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs": {
+      "get": {
+        "operationId": "getV1AgentJobs",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "列出本租户的 Agent 导入任务与服务启用状态",
+        "x-access": "tenant.read",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1AgentJobs",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "固定工作簿与静态数据定义，创建后台提取任务；相同 requestId 幂等",
+        "x-access": "datasets.write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "staticSchema",
+                  "workbook",
+                  "filename",
+                  "brief"
+                ],
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                  },
+                  "staticSchema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  "workbook": {
+                    "type": "string",
+                    "minLength": 4
+                  },
+                  "filename": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "brief": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 12000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "已入队",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}": {
+      "get": {
+        "operationId": "getV1AgentJobsId",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "读取任务进度及已独立核查的审核材料",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}/apply": {
+      "post": {
+        "operationId": "postV1AgentJobsIdApply",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "复核完整候选后原子创建全部数据集，已成功的任务重试返回原结果",
+        "x-access": "datasets.write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "revision",
+                  "confirmed"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "confirmed": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}/cancel": {
+      "post": {
+        "operationId": "postV1AgentJobsIdCancel",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "取消未应用的任务，不能撤销已保存的数据集",
+        "x-access": "datasets.write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}/cells": {
+      "get": {
+        "operationId": "getV1AgentJobsIdCells",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "分页读取固定原表单元格，每页最多 100 项",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          },
+          {
+            "name": "sheet",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "cell",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{1,3}[1-9][0-9]*$"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{1,6}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCells"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}/review": {
+      "post": {
+        "operationId": "postV1AgentJobsIdReview",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "修改候选并记录原因，按任务 revision 防止覆盖其他人的审核",
+        "x-access": "datasets.write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "revision",
+                  "item",
+                  "document",
+                  "reason"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "item": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "document": {
+                    "type": "object"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentJobReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/agent-jobs/{id}/source": {
+      "get": {
+        "operationId": "getV1AgentJobsIdSource",
+        "tags": [
+          "数据集智能导入"
+        ],
+        "summary": "下载此任务固定的原始工作簿",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "对象 ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "原始 xlsx",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
           }
         }
       }
@@ -1695,7 +2193,7 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "发布申请 ID"
+              "description": "对象 ID"
             }
           }
         ],
@@ -5750,7 +6248,7 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "发布申请 ID"
+              "description": "对象 ID"
             }
           }
         ],
@@ -5954,7 +6452,7 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "发布申请 ID"
+              "description": "对象 ID"
             }
           }
         ],
@@ -6012,7 +6510,7 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "发布申请 ID"
+              "description": "对象 ID"
             }
           }
         ],
@@ -8007,6 +8505,275 @@
       }
     },
     "schemas": {
+      "AgentJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "revision",
+          "kind",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "staticSchema",
+          "filename",
+          "brief",
+          "source",
+          "events"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "任务 ID"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "审核并发版本"
+          },
+          "kind": {
+            "const": "dataset-extraction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "needsReview",
+              "applied",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          },
+          "staticSchema": {
+            "type": "object",
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "静态数据定义名称"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "版本"
+              }
+            }
+          },
+          "filename": {
+            "type": "string",
+            "description": "原件文件名"
+          },
+          "brief": {
+            "type": "string",
+            "description": "提取要求"
+          },
+          "source": {
+            "type": "object",
+            "required": [
+              "file",
+              "sha256",
+              "byteLength"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "内容的 SHA-256，64 位小写十六进制"
+              },
+              "byteLength": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "sequence",
+                "at",
+                "message"
+              ],
+              "properties": {
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "顺序号"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "事件时间"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "datasetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "usage": {
+            "type": "object",
+            "description": "已记录的模型轮次用量；不是实际扣费",
+            "additionalProperties": true
+          }
+        }
+      },
+      "AgentJobReply": {
+        "type": "object",
+        "required": [
+          "job"
+        ],
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/AgentJob"
+          },
+          "review": {
+            "type": "object",
+            "required": [
+              "candidates",
+              "pending",
+              "problems",
+              "notes",
+              "usage",
+              "canApprove"
+            ],
+            "properties": {
+              "candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "正式审核候选：path/name/document/edited/problems",
+                  "additionalProperties": true
+                }
+              },
+              "pending": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "正式审核待确认项及修改原因",
+                  "additionalProperties": true
+                }
+              },
+              "problems": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "excel": {
+                "type": "object",
+                "description": "Excel 证据：原件和定义身份、工作表、字段来源、批注/VML、排除范围及修正记录",
+                "additionalProperties": true
+              },
+              "notes": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "description": "模型用量",
+                "additionalProperties": true
+              },
+              "canApprove": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "AgentJobList": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "jobs"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentJob"
+            }
+          }
+        }
+      },
+      "AgentCells": {
+        "type": "object",
+        "required": [
+          "sheets",
+          "sheet",
+          "cells",
+          "total",
+          "offset"
+        ],
+        "properties": {
+          "sheets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "固定读取视图单元格：address/value/display/formula 等",
+              "additionalProperties": true
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "Problem": {
         "type": "object",
         "required": [

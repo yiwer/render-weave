@@ -29,9 +29,10 @@ import { childRunner } from './worker/child-runner.js';
 import { createWorkerHealthServer } from './worker/health.js';
 import { startScheduler } from './worker/scheduler.js';
 import { startWebhookDispatcher } from './webhooks.js';
+import { startAgentWorker } from './agent-worker.js';
 
 const [command, argument] = process.argv.slice(2);
-const COMMANDS = ['setup', 'api', 'worker', 'platform-admin'] as const;
+const COMMANDS = ['setup', 'api', 'worker', 'agent-worker', 'platform-admin'] as const;
 
 async function main(): Promise<void> {
   if (command === 'build-id') {
@@ -39,12 +40,12 @@ async function main(): Promise<void> {
     return;
   }
   if (!COMMANDS.includes(command as never)) {
-    process.stderr.write('用法：node service/dist/main.js setup|api|worker|build-id|platform-admin <邮箱>\n');
+    process.stderr.write('用法：node service/dist/main.js setup|api|worker|agent-worker|build-id|platform-admin <邮箱>\n');
     process.exitCode = 2;
     return;
   }
   const build = await rendererBuildId();
-  const service = command === 'worker' ? 'worker' : command === 'api' ? 'api' : 'setup';
+  const service = command === 'worker' || command === 'agent-worker' ? 'worker' : command === 'api' ? 'api' : 'setup';
   let logger: Logger = createLogger(service, build, process.env['RW_LOG_LEVEL'] || 'info');
   try {
     if (command === 'setup') {
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
       const app = createApi({
         backend, build, logger, secretKey: webhooks.secretKey, allowPrivateWebhooks: webhooks.config.allowPrivate,
         consoleDir: fileURLToPath(new URL('./console/', import.meta.url)),
+        datasetAgentEnabled: process.env['RW_DATASET_AGENT_ENABLED'] === 'true',
       });
       await app.listen({ host: '0.0.0.0', port: config.port });
       const reconciler = startReconciler({ backend, logger, ...reconcile });
@@ -102,6 +104,11 @@ async function main(): Promise<void> {
         await reconciler.stop();
         await app.close();
       };
+    } else if (command === 'agent-worker') {
+      if (!process.env['OPEN_CODE_API_KEY']) throw new ConfigError('agent-worker 缺少 OPEN_CODE_API_KEY');
+      const agent = startAgentWorker({ backend, onError: () => logger.error('Agent 任务处理失败，查看任务状态及部署配置') });
+      logger.info({ schemaVersion }, '数据集 Agent worker 就绪');
+      close = () => agent.stop();
     } else {
       const worker = loadWorkerConfig(process.env);
       const runner = childRunner({ script: fileURLToPath(new URL('./worker/render-child.js', import.meta.url)), timeoutMs: worker.renderTimeoutMs, recycleAfter: worker.recycleAfter, logger });

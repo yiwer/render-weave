@@ -15,7 +15,8 @@ import { go, href, useRoute } from './hooks.js';
 import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
-import { DatasetEditor, DatasetList } from './pages/datasets.js';
+import { DatasetEditor, DatasetList, DatasetNew } from './pages/datasets.js';
+import { DatasetImports, DatasetImportDetail } from './pages/dataset-imports.js';
 import { DefinitionDetail } from './pages/definition-studio.js';
 import { StaticSchemaList, StaticSchemaPage } from './pages/static-schemas.js';
 import { DefinitionPublish, DefinitionRecords } from './pages/definition-publish.js';
@@ -94,11 +95,17 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
       break;
     case 'definition-publications': page = <DefinitionRecords key={query.toString()} identity={props.identity} query={query} />; break;
     case 'datasets':
-      if (id === 'new') page = <DatasetEditor key={`new:${query.get('template') ?? ''}`} {...(query.get('template') ? { templateName: query.get('template')! } : {})} />;
+      if (id === 'new') page = query.has('template') || query.has('schema') || query.has('version')
+        ? <DatasetEditor key={`new:${query.toString()}`} {...(query.has('template') ? { templateName: query.get('template')! } : {})}
+          {...(query.has('schema') ? { schemaName: query.get('schema')! } : {})} {...(query.has('version') ? { schemaVersion: query.get('version')! } : {})} />
+        : <DatasetNew />;
       else if (id) {
         page = <DatasetEditor key={id} id={id} {...(query.get('template') ? { templateName: query.get('template')! } : {})}
           sheet={sub === 'deliver' ? { kind: 'deliver' } : sub === 'batches' && subId ? { kind: 'batch', id: subId } : undefined} />;
       } else page = <DatasetList />;
+      break;
+    case 'dataset-imports':
+      page = id ? <DatasetImportDetail key={id} id={id} /> : <DatasetImports key={query.toString()} {...(query.get('schema') ? { schemaName: query.get('schema')! } : {})} {...(query.get('version') ? { schemaVersion: query.get('version')! } : {})} />;
       break;
     case 'deliver':
       page = <DatasetList deliver={{ datasetIds: (query.get('datasets') ?? '').split(',').filter(Boolean), ...(query.get('template') ? { templateName: query.get('template')! } : {}) }} />;

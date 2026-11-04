@@ -30,7 +30,7 @@ export const MODULES: readonly ConsoleModule[] = [
     icon: 'M12 3l9 4.5-9 4.5-9-4.5zM3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5' },
   { id: 'templates', label: '模板', home: ['templates'], sections: ['templates'], roles: MEMBERS, icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 9h18M9 9v11' },
   // 选几份数据集出图（#/deliver）是数据集列表上开的侧栏，算数据集；批次与出图记录算出图。
-  { id: 'datasets', label: '数据集', home: ['datasets'], sections: ['datasets', 'import', 'deliver'], roles: MEMBERS,
+  { id: 'datasets', label: '数据集', home: ['datasets'], sections: ['datasets', 'dataset-imports', 'import', 'deliver'], roles: MEMBERS,
     icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18M3 15h18M10 4v16' },
   { id: 'deliver', label: '出图', home: ['records'], sections: ['records', 'batches'], roles: MEMBERS, icon: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5' },
   { id: 'resources', label: '资源', home: ['resources'], sections: ['resources'], roles: MEMBERS, icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM11 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 16l-5-5-9 9' },
@@ -59,8 +59,9 @@ export interface ConsoleAction {
 
 /** Ctrl+K 里的常用动作：只是去哪一页、做哪一步，不搜数据集、模板这类对象。 */
 export const ACTIONS: readonly ConsoleAction[] = [
-  { id: 'new-dataset', label: '新建数据集', path: ['datasets'], focus: 'new-dataset-template', roles: MEMBERS },
-  { id: 'import', label: '从 Excel 导入', path: ['import'], roles: MEMBERS },
+  { id: 'new-dataset', label: '新建数据集', path: ['datasets', 'new'], focus: 'new-dataset-schema', roles: MEMBERS },
+  { id: 'smart-import', label: '智能导入数据集', path: ['dataset-imports'], roles: MEMBERS },
+  { id: 'import', label: '标准表格批量出图', path: ['import'], roles: MEMBERS },
   { id: 'upload', label: '上传资源', path: ['resources'], focus: 'upload-kind', roles: MEMBERS },
   { id: 'members', label: '管理成员', path: ['admin', 'members'], roles: ['admin'] },
   { id: 'api-keys', label: '创建 API 密钥', path: ['admin', 'api-keys'], roles: ['admin'] },

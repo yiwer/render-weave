@@ -15,9 +15,34 @@ import {
 import { sha256Hex, type BlobStore } from './blobs.js';
 import { isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
 import { recordRounds, settleItem } from './metering.js';
+import { AgentJobConflict, authoringBasis, type AgentJob } from '../agent-jobs.js';
 
 export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): TenantStorage {
   return {
+    agentJobs: {
+      list: () => withTenant(db, tenantId, async client => (await client.query<{ document: AgentJob }>('SELECT document FROM agent_jobs WHERE tenant_id = $1 ORDER BY document->>\'createdAt\' DESC', [tenantId])).rows.map(r => r.document)),
+      get: (id) => withTenant(db, tenantId, async client => (await client.query<{ document: AgentJob }>('SELECT document FROM agent_jobs WHERE tenant_id = $1 AND id = $2', [tenantId, id])).rows[0]?.document),
+      async save(job, expected, commit = {}) {
+        const writes = await Promise.all((commit.datasets ?? []).map(async d => ({ id: d.id, sha256: await blobs.put(tenantId, d.bytes), byteLength: d.bytes.length })));
+        await withTenant(db, tenantId, async client => {
+          await lockTenant(client, tenantId);
+          const old = (await client.query('SELECT revision FROM agent_jobs WHERE tenant_id = $1 AND id = $2', [tenantId, job.id])).rows[0];
+          if ((old?.revision ?? 0) !== expected || job.revision !== expected + 1) throw new AgentJobConflict('任务已更新，请刷新后重试');
+          if (!old && Number((await client.query("SELECT count(*) FROM agent_jobs WHERE tenant_id = $1 AND document->>'status' IN ('queued','running')", [tenantId])).rows[0].count) >= 4) throw new AgentJobConflict('已有 4 个提取任务，请等待完成');
+          const state = await authoringState(client, tenantId);
+          if (commit.basis !== undefined && authoringBasis(state) !== commit.basis) throw new AgentJobConflict('工作区已改变，请重新核查后保存');
+          if (new Set(writes.map(d => d.id)).size !== writes.length || writes.some(d => state.documents.some(s => s.kind === 'dataset' && s.key === d.id))) throw new AgentJobConflict('数据集 ID 已存在，整组没有保存');
+          for (const d of writes) await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1,$2,$3,$4)', [tenantId, documentSource('dataset', d.id), d.sha256, d.byteLength]);
+          await client.query('INSERT INTO agent_jobs (tenant_id, id, revision, document) VALUES ($1,$2,$3,$4) ON CONFLICT (tenant_id,id) DO UPDATE SET revision = EXCLUDED.revision, document = EXCLUDED.document', [tenantId, job.id, job.revision, JSON.stringify(job)]);
+          if (commit.audit) {
+            const e = commit.audit;
+            await client.query('INSERT INTO audit_events (tenant_id, at, actor_kind, actor_id, actor_label, action, object_type, object_id, cross_tenant, before_sha256, after_sha256, reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,false,$9,$10,$11)',
+              [tenantId, job.updatedAt, e.actor.kind, e.actor.id, e.actor.label, e.action, e.object.type, e.object.id, e.beforeSha256 ?? null, e.afterSha256 ?? null, e.reason ?? null]);
+          }
+          if (commit.usage) await recordRounds(client, tenantId, [commit.usage], new Date(job.updatedAt));
+        });
+      },
+    },
     async putDocuments(documents) {
       const stored: { source: string; sha256: string; byteLength: number }[] = [];
       for (const { source, bytes } of documents) stored.push({ source, sha256: await blobs.put(tenantId, bytes), byteLength: bytes.length });

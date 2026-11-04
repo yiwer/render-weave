@@ -233,6 +233,10 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: () => ({ method: 'GET', url: `/v1/static-schemas/${encodeURIComponent('问候')}/versions/1/workbook` }) },
   // Excel 导入（票据 13）：用不存在的模板，读工作簿之前就答问题清单。
   { route: 'POST /v1/excel-imports', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/excel-imports', body: BLOCKED_IMPORT }) },
+  { route: 'GET /v1/agent-jobs', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/agent-jobs' }) },
+  { route: 'POST /v1/agent-jobs', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/agent-jobs', body: { staticSchema: { name: '问候', version: 1 }, workbook: 'UEs=', filename: 'test.xlsx', brief: '提取' } }) },
+  ...['', '/source', '/cells'].map(suffix => ({ route: `GET /v1/agent-jobs/:id${suffix}`, allow: ['admin', 'operator', 'apiKey'] as IdentityRole[], request: () => ({ method: 'GET' as const, url: `/v1/agent-jobs/${randomUUID()}${suffix}` }) })),
+  ...['cancel', 'review', 'apply'].map(action => ({ route: `POST /v1/agent-jobs/:id/${action}`, allow: ['admin', 'operator', 'apiKey'] as IdentityRole[], request: () => ({ method: 'POST' as const, url: `/v1/agent-jobs/${randomUUID()}/${action}`, body: action === 'review' ? { revision: 1, item: 0, document: {}, reason: '核对' } : action === 'apply' ? { revision: 1, confirmed: true } : {} }) })),
   { route: 'GET /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/datasets' }) },
   { route: 'GET /v1/datasets/:datasetId', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/datasets/ds-${randomUUID()}` }) },
   { route: 'POST /v1/datasets', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/datasets', body: MATRIX_DATASET }) },
