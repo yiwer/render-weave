@@ -6,7 +6,7 @@
  */
 import type { Identity } from './types.js';
 
-export type ModuleId = 'definitions' | 'templates' | 'datasets' | 'deliver' | 'resources' | 'usage' | 'admin' | 'platform';
+export type ModuleId = 'definitions' | 'static-schemas' | 'templates' | 'datasets' | 'deliver' | 'resources' | 'usage' | 'admin' | 'platform';
 
 export interface ConsoleModule {
   readonly id: ModuleId;
@@ -23,8 +23,11 @@ export interface ConsoleModule {
 const MEMBERS = ['admin', 'operator'];
 
 export const MODULES: readonly ConsoleModule[] = [
-  { id: 'definitions', label: '数据定义', home: ['definitions'], sections: ['definitions', 'definition-publications'], roles: MEMBERS,
+  { id: 'definitions', label: '数据定义', home: ['definitions'], sections: ['definitions'], roles: MEMBERS,
     icon: 'M4.5 5.5c0-1.4 3.4-2.5 7.5-2.5s7.5 1.1 7.5 2.5-3.4 2.5-7.5 2.5-7.5-1.1-7.5-2.5zM4.5 5.5v13c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-13M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5' },
+  // 发布之后不可变的版本（M360）：发布记录也在这里。
+  { id: 'static-schemas', label: '静态数据定义', home: ['static-schemas'], sections: ['static-schemas', 'definition-publications'], roles: MEMBERS,
+    icon: 'M12 3l9 4.5-9 4.5-9-4.5zM3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5' },
   { id: 'templates', label: '模板', home: ['templates'], sections: ['templates'], roles: MEMBERS, icon: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 9h18M9 9v11' },
   // 选几份数据集出图（#/deliver）是数据集列表上开的侧栏，算数据集；批次与出图记录算出图。
   { id: 'datasets', label: '数据集', home: ['datasets'], sections: ['datasets', 'import', 'deliver'], roles: MEMBERS,

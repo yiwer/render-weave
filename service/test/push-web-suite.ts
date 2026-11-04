@@ -242,6 +242,29 @@ export function describePushWeb(name: string, makeBackend: () => Promise<Service
       finally { if (saved2 !== undefined) process.env['RENDERWEAVE_AUTHORING_TOKEN'] = saved2; }
     });
 
+    it('指回当前修订不改来历，旧内容的推送照样被挡住；打开审批策略后，命令行指回成为发布申请，退出码 0', async () => {
+      const target = await tenant(), dirs = await local();
+      expect((await push(target, dirs)).code).toBe(0);
+      const revisions = (...extra: string[]) => cli(['template-revisions', '--server', server, '--tenant', target.id, '--template', '问候牌', ...extra], target.token);
+      const saved = await webSave(target, '#ABCDEF');
+      const before = (await state(target)).templates[0].current;
+      expect((await revisions('--current', String(saved.revision))).code).toBe(0);
+      expect((await state(target)).templates[0].current, '什么也没变').toEqual(before);
+      await recolor(dirs, '#000000');
+      const refused = await push(target, dirs);
+      expect(refused.code).toBe(1);
+      expect(refused.stderr).toContain('push.conflict');
+
+      expect((await world.call('PUT', '/v1/approval-policy', target.admin.token, { templates: true })).status).toBe(200);
+      const requested = await revisions('--current', '1');
+      expect(requested.code, requested.stderr).toBe(0);
+      const id = JSON.parse(requested.stdout).request as string;
+      expect(requested.stderr).toContain(`发布申请 ${id}`);
+      expect((await state(target)).templates[0].currentRevision, '申请不改当前修订').toBe(saved.revision);
+      expect((await world.call('POST', `/v1/publish-requests/${id}/approve`, target.admin.token)).status).toBe(200);
+      expect((await state(target)).templates[0]).toMatchObject({ currentRevision: 1, current: { source: 'web', action: 'setCurrent', by: target.admin.email } });
+    });
+
     it('打开审批策略后，推送成为发布申请，本地记录不动；批准后 pull 取回修订号，接着推送', async () => {
       const target = await tenant(), dirs = await local();
       expect((await push(target, dirs)).code).toBe(0);

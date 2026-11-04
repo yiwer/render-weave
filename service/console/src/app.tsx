@@ -16,7 +16,8 @@ import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
 import { DatasetEditor, DatasetList } from './pages/datasets.js';
-import { DefinitionDetail } from './pages/definition-detail.js';
+import { DefinitionDetail } from './pages/definition-studio.js';
+import { StaticSchemaList, StaticSchemaPage } from './pages/static-schemas.js';
 import { DefinitionPublish, DefinitionRecords } from './pages/definition-publish.js';
 import { DefinitionList } from './pages/definitions.js';
 import { BatchPage } from './pages/deliver.js';
@@ -29,6 +30,7 @@ import { TemplatePublish } from './pages/template-publish.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
 import type { Identity } from './types.js';
+import { ThreadOrbit } from './components/motifs.js';
 
 export function App() {
   // undefined：正在确认会话；null：没有登录。
@@ -45,7 +47,7 @@ export function App() {
     setIdentity(null);
   };
 
-  if (identity === undefined) return <p className="boot">正在打开…</p>;
+  if (identity === undefined) return <p className="boot loading"><ThreadOrbit />正在打开…</p>;
   if (identity === null) return <LoginPage {...(notice ? { notice } : {})} onLogin={(next) => { setNotice(undefined); setIdentity(next); }} />;
   if (identity.kind === 'platformUser') return <PlatformShell identity={identity} onLogout={() => void logout()} />;
   if (identity.kind !== 'member') {
@@ -83,7 +85,12 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
     case 'definitions':
       if (!id) page = <DefinitionList identity={props.identity} />;
       else if (sub === 'publish') page = <DefinitionPublish key={id} name={id} identity={props.identity} />;
-      else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
+      else page = <DefinitionDetail key={`${id}:${query.get('version') ?? ''}`} name={id} identity={props.identity} {...(query.get('field') ? { field: query.get('field')! } : {})} {...(query.get('version') ? { version: query.get('version')! } : {})} />;
+      break;
+    case 'static-schemas':
+      page = id && sub
+        ? <StaticSchemaPage key={`${id}@${sub}`} name={id} version={sub} identity={props.identity} {...(query.get('field') ? { field: query.get('field')! } : {})} />
+        : <StaticSchemaList identity={props.identity} />;
       break;
     case 'definition-publications': page = <DefinitionRecords key={query.toString()} identity={props.identity} query={query} />; break;
     case 'datasets':

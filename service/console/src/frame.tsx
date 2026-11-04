@@ -1,12 +1,13 @@
 /**
  * 控制台的框架（P1 票据 01，原型第 29 版，M208、M341）：吸顶的标题栏、吸底的状态栏，中间是当前模块。
- * - 标题栏：品牌、模块与动作（Ctrl+K）、模块下拉（按角色只列能进的模块，Ctrl+数字切换）、账号与退出；
+ * - 标题栏：左边是品牌、模块与动作（Ctrl+K）、模块下拉（按角色只列能进的模块，Ctrl+数字切换），右边是账号与退出（M362）；
  * - 状态栏：连接、当前租户、本月剩余张数、本标签页进行中的批次；平台管理员不属于任何租户，只有连接；
  * - 左栏留给 Agent（P2）：没给 agent 时不显示，右侧模块占满宽度。
  * 模块与动作的清单在 modules.ts；页面本身不知道框架，只经 # 路由切换。
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { api, isConnected, onConnectionChanged, onUsageChanged } from './api.js';
+import { CHEVRON, Icon, SEARCH } from './components/icon.js';
 import { Logo, Loom } from './components/logo.js';
 import { go, href, useLoad } from './hooks.js';
 import { actionsFor, modulesFor, type ConsoleModule } from './modules.js';
@@ -14,12 +15,6 @@ import { useRunningBatches } from './pages/batches.js';
 import type { Identity } from './types.js';
 
 export const ROLE: Readonly<Record<string, string>> = { admin: '客户管理员', operator: '客户操作员', platformAdmin: '平台管理员', apiKey: 'API 密钥', authoringEngineer: '代建工程师' };
-
-const Icon = (props: { readonly d: string }) => (
-  <svg className="icon" viewBox="0 0 24 24" aria-hidden="true"><path d={props.d} /></svg>
-);
-const CHEVRON = 'M6 9l6 6 6-6';
-const SEARCH = 'M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0zM20 20l-3.5-3.5';
 
 /** Ctrl（macOS 上是 ⌘）加数字或 K：返回数字 1–9、'k'，别的按键返回 undefined。按物理键位认数字，换了键盘布局也一样。 */
 function shortcutOf(event: KeyboardEvent): number | 'k' | undefined {
@@ -60,11 +55,11 @@ export function Frame(props: {
     <div className="frame">
       <header className="titlebar">
         <a className="brand" href={href(modules[0]?.home ?? ['datasets'])}><Logo />RenderWeave</a>
-        <span className="titlebar-gap" />
         <button type="button" className="command-button" aria-keyshortcuts="Control+K" aria-haspopup="dialog" onClick={() => setCommands(true)}>
           <Icon d={SEARCH} /><span className="command-label">模块与动作</span><kbd aria-hidden="true">Ctrl K</kbd>
         </button>
         <ModuleSwitcher modules={modules} {...(props.module ? { current: props.module } : {})} />
+        <span className="titlebar-gap" />
         <span className="who" title={props.identity.email}>{props.identity.email} · {ROLE[props.identity.role] ?? props.identity.role}</span>
         <button type="button" className="small quiet" onClick={props.onLogout}>退出</button>
       </header>

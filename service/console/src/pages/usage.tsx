@@ -8,6 +8,7 @@ import { PagedFooter } from '../components/paged.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, useLoad, usePaged } from '../hooks.js';
 import type { Identity, TokenKind, Usage, UsageEvent, UsageKind } from '../types.js';
+import { Loading, UsageBeam } from '../components/motifs.js';
 
 const KIND: Readonly<Record<UsageKind, string>> = {
   image: '出图张数', inputTokens: '输入 token', outputTokens: '输出 token', cacheReadTokens: '缓存读 token', cacheCreationTokens: '缓存写 token',
@@ -35,7 +36,7 @@ export function UsagePage(props: { readonly identity: Identity; readonly period?
         </form>
       </div>
       <ErrorBox problems={loaded.problems} title="读不到用量" />
-      {loaded.loading && !usage && <p className="muted">正在读取…</p>}
+      {loaded.loading && !usage && <Loading />}
       {usage && <Summary usage={usage} />}
       {usage && (props.identity.role === 'admin'
         ? <Events period={usage.period} />
@@ -59,12 +60,15 @@ function Summary(props: { readonly usage: Usage }) {
         <h2 id="usage-title">{periodTitle(usage.period)}</h2>
         <span className="muted small">{day(usage.start)} 至 {day(usage.end, true)}（北京时间）</span>
       </div>
+      <div className="usage-stats">
       <dl className="summary stats">
         {stat('limit', '限额')}
         {stat('used', '已用', '交付成功的张数')}
         {stat('reserved', '预占', '进行中的批次还没交付的张数')}
         {stat('remaining', '剩余', '限额 − 已用 − 预占')}
       </dl>
+      <UsageBeam ratio={(images.used + images.reserved) / Math.max(images.limit, 1)} />
+      </div>
       <div className="progress" role="img" aria-label={`已用 ${number(images.used)} 张，预占 ${number(images.reserved)} 张，限额 ${number(images.limit)} 张`} style={{ marginTop: 16 }}>
         <div className="done" style={{ width: `${(images.used / total) * 100}%` }} />
         <div className="reserved" style={{ width: `${(images.reserved / total) * 100}%` }} />

@@ -5,8 +5,8 @@
 import type { DefinitionField, DefinitionItems, DefinitionProperty, FieldType, Problem, SchemaRef } from '../types.js';
 
 export const FIELD_TYPES: readonly { readonly type: FieldType; readonly label: string }[] = [
-  { type: 'text', label: '文本' }, { type: 'number', label: '数值' }, { type: 'date', label: '日期' }, { type: 'time', label: '时刻' }, { type: 'datetime', label: '日期时间' },
-  { type: 'boolean', label: '是否' }, { type: 'image', label: '图片' }, { type: 'list', label: '列表' }, { type: 'ref', label: '引用' },
+  { type: 'text', label: '文本' }, { type: 'number', label: '数值' }, { type: 'date', label: '日期' }, { type: 'time', label: '时刻' }, { type: 'datetime', label: '时间' },
+  { type: 'boolean', label: '布尔' }, { type: 'image', label: '图片' }, { type: 'list', label: '列表' }, { type: 'ref', label: '数据定义引用' },
 ];
 /** 列表的元素不能又是列表（M33）。 */
 export const ITEM_TYPES = FIELD_TYPES.filter(({ type }) => type !== 'list');
