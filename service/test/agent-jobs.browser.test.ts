@@ -18,7 +18,7 @@ it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核�
   const schema = commentSchema(), storage = backend.tenant(world.b.id).storage;
   await seedDocuments(storage, [schema.definition, schema.compiled].map(d => Buffer.from(JSON.stringify(d))));
   const bytes = await commentWorkbook(root), silent = new Writable({ write(_chunk, _encoding, done) { done(); } });
-  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', silent), secretKey: randomBytes(32), passwordCost: 'test', consoleDir: join(process.cwd(), 'service/dist/console'), datasetAgentEnabled: true });
+  const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', silent), secretKey: randomBytes(32), passwordCost: 'test', consoleDir: join(process.cwd(), 'service/dist/console'), datasetAgentEnabled: true, limits: { maxWorkbookBytes: 10240 } });
   const worker = startAgentWorker({ backend, pollMs: 20, extract: fixtureExtractor });
   const url = await app.listen({ host: '127.0.0.1', port: 0 }), browser = await chromium.launch({ executablePath: process.env['RW_BROWSER']!, headless: true });
   try {
@@ -28,6 +28,14 @@ it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核�
     await page.getByLabel('邮箱').fill(world.b.operator.email); await page.getByLabel('密码').fill(world.b.operator.password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
     await page.getByLabel('静态数据定义与版本').selectOption(JSON.stringify([schema.ref.name, schema.ref.version]));
+    await page.getByText('.xlsx，最大 10 KiB。保留工作表、合并关系与传统批注。', { exact: true }).waitFor();
+    let uploads = 0;
+    page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/v1/agent-jobs')) uploads++; });
+    await page.getByLabel('Excel 工作簿').setInputFiles({ name: '超限.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.alloc(10241) });
+    await page.getByLabel('需要提取什么').fill('核对上传上限');
+    await page.getByRole('button', { name: '开始提取', exact: true }).click();
+    await page.getByText('工作簿不能超过 10 KiB', { exact: true }).waitFor();
+    expect(uploads).toBe(0);
     await page.getByLabel('Excel 工作簿').setInputFiles({ name: '物料批注.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: bytes });
     await page.getByLabel('需要提取什么').fill('整理两份物料卡，保留全部正文与批注，按原表核对。');
     await mkdir('out/dataset-module', { recursive: true });
@@ -40,6 +48,9 @@ it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核�
     await page.getByText(/VML 零基行 1、列 1/).waitFor();
     await page.screenshot({ path: 'out/dataset-module/import-review.png', fullPage: true });
     expect(await page.getByLabel('批注', { exact: true }).inputValue()).toBe(note);
+    await page.getByLabel('正在核对', { exact: true }).selectOption('1');
+    expect(await page.getByLabel('批注', { exact: true }).inputValue()).toBe(note);
+    await page.getByLabel('正在核对', { exact: true }).selectOption('0');
     await page.getByLabel('名称', { exact: true }).fill('甲（业务核准）');
     expect(await page.getByRole('button', { name: '保存修改', exact: true }).isDisabled()).toBe(true);
     await page.getByLabel('修改原因').fill('根据制作要求补充说明');

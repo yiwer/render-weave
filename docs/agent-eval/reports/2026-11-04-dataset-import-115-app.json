@@ -1,0 +1,110 @@
+{
+  "date": "2026-11-04",
+  "jobId": "f10f692b-254b-452b-8e8b-49c676fc28f0",
+  "sourceSha256": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+  "definition": {
+    "name": "production-direction",
+    "version": 2
+  },
+  "status": "applied",
+  "model": "claude-haiku-5-5",
+  "executor": "tool-runner",
+  "wallMs": 153890,
+  "usage": {
+    "inputTokens": 24,
+    "outputTokens": 23542,
+    "thinkingTokens": 11185,
+    "cacheReadTokens": 393399,
+    "cacheCreationTokens": 73605,
+    "usageSource": "result",
+    "turns": 11,
+    "servedModel": "claude-haiku-5-5",
+    "endedBy": "success",
+    "mcp": [
+      "rw:connected"
+    ]
+  },
+  "attempts": [
+    {
+      "id": "attempt-01",
+      "status": "failed",
+      "executionStatus": null,
+      "injected": false,
+      "scriptHash": "a241f49f43b4032246f00a7a7a80f8f7e0fe65a91f0a42f5d1e108fad5c244c8",
+      "errorKind": "docker-attach-exit-timeout"
+    },
+    {
+      "id": "attempt-02",
+      "status": "failed",
+      "executionStatus": "timeout",
+      "injected": false,
+      "scriptHash": "a241f49f43b4032246f00a7a7a80f8f7e0fe65a91f0a42f5d1e108fad5c244c8",
+      "errorKind": null
+    },
+    {
+      "id": "attempt-03",
+      "status": "passed",
+      "executionStatus": "completed",
+      "injected": false,
+      "scriptHash": "a241f49f43b4032246f00a7a7a80f8f7e0fe65a91f0a42f5d1e108fad5c244c8",
+      "errorKind": null
+    }
+  ],
+  "verification": {
+    "passed": true,
+    "jobId": "f10f692b-254b-452b-8e8b-49c676fc28f0",
+    "sourceHash": "469774248cc9055307c5430c6282417ba179e11000bc0e2e92531c8661a357e0",
+    "staticSchema": {
+      "name": "production-direction",
+      "version": 2
+    },
+    "datasets": [
+      {
+        "id": "115-down-app",
+        "stops": 32
+      },
+      {
+        "id": "115-up-app",
+        "stops": 32
+      }
+    ],
+    "nonemptyCells": 411,
+    "matchedComments": 10,
+    "matchedVmlAnchors": 10,
+    "independentTruthMatches": true,
+    "previouslyApprovedDataMatches": true,
+    "approvalBasis": "沿用同一原件、相同定义及完全一致的已批准业务字段；新验收数据集 ID 不覆盖原工作空间",
+    "newHumanBusinessReview": false,
+    "humanBusinessReviewHours": null,
+    "actualCharge": "unknown"
+  },
+  "browser": {
+    "passed": true,
+    "jobId": "f10f692b-254b-452b-8e8b-49c676fc28f0",
+    "datasetIds": [
+      "115-down-app",
+      "115-up-app"
+    ],
+    "template": "production-115",
+    "currentIndex": 13,
+    "width": 525,
+    "height": 135,
+    "dpi": 120,
+    "stationNamesMatched": 32,
+    "currentAndNextMatched": true,
+    "problems": [],
+    "pageErrors": []
+  },
+  "sandboxFollowup": {
+    "replayUnchanged": true,
+    "replayStatus": "completed",
+    "replayMs": 5023,
+    "timeoutStatus": "timeout",
+    "timeoutCleanup": true,
+    "timeoutMs": 1680
+  },
+  "newModelCalls": 1,
+  "humanBusinessReviewHours": null,
+  "actualCharge": "unknown",
+  "productionReady": false
+}

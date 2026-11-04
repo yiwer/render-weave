@@ -50,7 +50,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ### 未排期的后续
 
-- Excel 经 CodingAgent 按工作空间 staticSchema 提取（M363–M375）：本地读取/批注/VML/审核/出图与应用内数据集模块已实现。应用支持无模板新建、智能上传、后台进度、来源核对、人工改值和整组保存；`/v1/agent-jobs`、迁移 0015、独立 `agent-worker`，使用 Tool Runner + Claude/OpenCode Go，开关默认关闭。见 [模块说明](docs/dataset-import.md)及[票据](.scratch/dataset-import-app/README.md)。下一步在启用的应用内用同一 115 原件做业务走查；新模板显示字段仍须进入可重放审核。历史实表和模板产物在 `F:/GenCode/render-weave-excel-prototype/out/`；人工业务审核工时与实际扣费未知。内部实现不取消 P0/P1 生产门槛，隔离及模型渠道复核仍待收口，见 [ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
+- Excel 经 CodingAgent 按工作空间 staticSchema 提取（M363–M376）：本地读取/批注/VML/审核/出图与应用内数据集模块已实现。应用支持无模板新建、智能上传、后台进度、来源核对、人工改值和整组保存；`/v1/agent-jobs`、迁移 0015、独立 `agent-worker`，使用 Tool Runner + Claude/OpenCode Go，开关默认关闭。见 [模块说明](docs/dataset-import.md)及[票据](.scratch/dataset-import-app/README.md)。同一 115 原件的本地网页自动走查已完成，原件独立核对及沿用已有批准的保存/兼容模板预览见 [记录](docs/agent-eval/dataset-import-115-app.md)。下一步将参考图模板新增显示字段纳入可重放审核，再接正式出图；本轮不计新增人工业务审核。历史实表和模板产物在 `F:/GenCode/render-weave-excel-prototype/out/`；人工业务审核工时与实际扣费未知。内部实现不取消 P0/P1 生产门槛，隔离及模型渠道复核仍待收口，见 [ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
 - 阶段 4 验收留下的后续（[第四阶段验收](docs/stage4-acceptance.md#后续)），其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - Agent 外围工具复核的票据 18（模板设计的主模板基准必须等于数据集选定的数据定义）、20（修正模板参考里的数据定义示例指向）是 `ready-for-agent`，做时另升 MCP 合同版本、另跑评估。
 - 控制台状态栏"进行中的批次"只数本标签页提交的；要租户范围，得加只读的批次列表端点（P1 票据 01 的偏差）。

@@ -59,15 +59,15 @@ docker pull python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc5
 - 入队 `requestId` 支持同内容重试；审核用 `revision` 拒绝过期覆盖；已应用任务再次提交返回同一 ID 集合，不重复写入。
 - worker 领取任务后有 15 分钟租约。取消会停止模型和转换；租约过期只标失败，不自动再次调用模型。失败后从原件重新发起，产生新任务；不自动继承上轮人工修改。
 
-首版限制：`.xlsx` 最大 16 MiB，每租户至多 4 个排队/执行任务；每个 worker 串行处理，轮次 10 分钟、24 轮工具交互、6 次转换尝试，每次脚本 10 秒。单次归档最多 100 MiB/2000 文件。只支持已验证的传统批注与纯 Note VML；不把现代线程批注或 `.xls` 标为已支持。当前提取使用空资源仓库，含图片资源引用的定义暂不纳入验收范围。
+首版限制：`.xlsx` 默认最大 5 MiB，以任务列表返回的 `maxWorkbookBytes` 为准（宿主证据包最多接收 16 MiB），每租户至多 4 个排队/执行任务；每个 worker 串行处理，轮次 10 分钟、24 轮工具交互、6 次转换尝试，每次脚本 10 秒。单次归档最多 100 MiB/2000 文件。只支持已验证的传统批注与纯 Note VML；不把现代线程批注或 `.xls` 标为已支持。当前提取使用空资源仓库，含图片资源引用的定义暂不纳入验收范围。
 
 ## 接口与代码入口
 
-OpenAPI **1.10.0**，完整描述见 [openapi.json](api/openapi.json)。查询要求 `tenant.read`，创建、取消、修改和确认要求 `datasets.write`。这是数据集确认保存，不增加模板/定义的管理员发布审批。
+OpenAPI **1.11.0**，完整描述见 [openapi.json](api/openapi.json)。查询要求 `tenant.read`，创建、取消、修改和确认要求 `datasets.write`。这是数据集确认保存，不增加模板/定义的管理员发布审批。
 
 | 接口 | 用途 |
 |---|---|
-| `GET /v1/agent-jobs` | 开关状态、租户任务记录 |
+| `GET /v1/agent-jobs` | 开关状态、上传字节上限、租户任务记录 |
 | `POST /v1/agent-jobs` | 上传 base64 工作簿并入队 |
 | `GET /v1/agent-jobs/:id` | 状态、事件、候选和审核资料 |
 | `GET /v1/agent-jobs/:id/source` | 下载固定原件 |
@@ -80,6 +80,6 @@ OpenAPI **1.10.0**，完整描述见 [openapi.json](api/openapi.json)。查询�
 
 ## 验证边界
 
-浏览器测试使用确定性模型接缝，真实读取器、独立检查、审核、HTTP 与数据集写入；另做真实 Claude + OpenCode Go 小样和完整服务任务实测，结果见 [验收票据](../.scratch/dataset-import-app/issues/03-smart-import-module.md)。这证明本次模块链路，不替代同一 115 原件的新版网页验收、生产隔离复核或 P0/P1 原有门槛。
+浏览器测试使用确定性模型接缝，真实读取器、独立检查、审核、HTTP 与数据集写入；另做真实 Claude + OpenCode Go 小样和完整服务任务实测，结果见 [验收票据](../.scratch/dataset-import-app/issues/03-smart-import-module.md)。同一 115 原件的新版网页自动走查及兼容模板预览已补做，见 [现场说明](agent-eval/dataset-import-115-app.md)。这些验证不替代新增显示投影的业务核准、生产隔离复核或 P0/P1 原有门槛。
 
 模型上报的 token 按轮次身份登记；进程硬崩溃前未落盘的用量可能缺失，不能据此结算。**人工业务审核工时、实际扣费未知。**

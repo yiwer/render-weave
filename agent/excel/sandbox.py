@@ -65,6 +65,7 @@ def run_script(script: str, inputs: dict, *, timeout=10.0, output_limit=1048576,
         inspection = json.loads(docker("inspect", name))[0]
         proc = subprocess.Popen(["docker", "start", "--attach", "--interactive", name],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        execution_started = time.monotonic()
         def collect(pipe, key):
             try:
                 while block := pipe.read(4096):
@@ -94,7 +95,7 @@ def run_script(script: str, inputs: dict, *, timeout=10.0, output_limit=1048576,
             if overflow.is_set():
                 status = "outputLimit"
                 break
-            if time.monotonic() - started >= timeout:
+            if time.monotonic() - execution_started >= timeout:
                 status = "timeout"
                 break
             time.sleep(0.02)
@@ -103,7 +104,12 @@ def run_script(script: str, inputs: dict, *, timeout=10.0, output_limit=1048576,
         if proc.poll() is None:
             docker("rm", "--force", name)
             created, cleanup = False, True
-            proc.wait(timeout=10)
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                # 容器已经删除，Docker CLI 的附着连接仍可能卡住；它也属于本轮。
+                proc.kill()
+                proc.wait(timeout=10)
         for reader in readers:
             reader.join(timeout=5)
         if any(r.is_alive() for r in readers):
@@ -116,14 +122,15 @@ def run_script(script: str, inputs: dict, *, timeout=10.0, output_limit=1048576,
                 status = "failed"
     finally:
         # Ctrl+C、解析失败、超时均回收本任务容器；不清理其他容器。
-        if created:
-            try:
+        try:
+            if created:
                 docker("rm", "--force", name)
                 cleanup = True
-            finally:
-                if proc is not None and proc.poll() is None:
-                    proc.kill()
-                    proc.wait(timeout=10)
+        finally:
+            # 即使前面已删除容器（created=False），也必须回收附着进程。
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=10)
     candidate = None
     if status == "completed":
         try:

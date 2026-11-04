@@ -16,7 +16,7 @@ let world: Awaited<ReturnType<typeof createWorld>>, worker: ReturnType<typeof st
 beforeAll(async () => {
   backend = await makeBackend();
   root = await mkdtemp(join(tmpdir(), 'rw-job-test-'));
-  workbook = await commentWorkbook(root); world = await createWorld(backend, { api: { datasetAgentEnabled: true } });
+  workbook = await commentWorkbook(root); world = await createWorld(backend, { api: { datasetAgentEnabled: true, limits: { maxWorkbookBytes: 8192 } } });
   const schema = commentSchema();
   await seedDocuments(backend.tenant(world.b.id).storage, [schema.definition, schema.compiled].map(d => Buffer.from(JSON.stringify(d))));
   worker = startAgentWorker({ backend, extract: fixtureExtractor, pollMs: 20 });
@@ -31,6 +31,14 @@ const ready = async (id: string) => {
   await expect.poll(async () => (await world.call('GET', `/v1/agent-jobs/${id}`, world.b.operator.token)).body.job?.status, { timeout: 15000 }).toBe('needsReview');
   return (await world.call('GET', `/v1/agent-jobs/${id}`, world.b.operator.token)).body;
 };
+it('上限由服务配置返回，超限原件不能入队', async () => {
+  const limits = await world.call('GET', '/v1/agent-jobs', world.b.operator.token);
+  expect(limits.body.maxWorkbookBytes).toBe(8192);
+  const bytes = Buffer.alloc(8193); bytes[0] = 0x50; bytes[1] = 0x4b;
+  const reply = await world.call('POST', '/v1/agent-jobs', world.b.operator.token, { staticSchema: commentSchema().ref, workbook: bytes.toString('base64'), filename: '超限.xlsx', brief: 'test' });
+  expect(reply.status, reply.raw).toBe(413);
+  expect((await world.call('GET', '/v1/agent-jobs', world.b.operator.token)).body.jobs).toHaveLength(0);
+});
 it('上传幂等、关闭页面后仍完成；固定原件与批注可查，人工改值有原因，应用整组且可幂等重试', async () => {
   const { id, body } = await create();
   expect((await world.call('POST', '/v1/agent-jobs', world.b.operator.token, body)).status).toBe(200);

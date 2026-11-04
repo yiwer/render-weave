@@ -368,7 +368,7 @@ function Editor(props: { readonly input: EditorInput; readonly id?: string; read
             <div className="card-head">
               <h2>草稿预览</h2>
               <label className="actions small muted" htmlFor="editor-template">模板
-                <select id="editor-template" value={templateName} onChange={(event) => chooseTemplate(event.target.value)}>
+                <select aria-label="模板" id="editor-template" value={templateName} onChange={(event) => chooseTemplate(event.target.value)}>
                   {templates.length === 0 && <option value="">没有用这个数据定义的模板</option>}
                   {templates.map((candidate) => <option key={candidate.name} value={candidate.name}>{candidate.name}</option>)}
                 </select>

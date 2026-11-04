@@ -31,6 +31,7 @@ const withReview = <T>(storage: TenantStorage, job: AgentJob, work: (root: strin
 });
 
 export function registerAgentJobRoutes(app: FastifyInstance, context: ApiContext, enabled: boolean): void {
+  const maxWorkbookBytes = Math.min(context.limits.maxWorkbookBytes, 16 * 1024 * 1024);
   const scopeOf = (request: FastifyRequest) => context.backend.tenant(ownTenant(identityOf(request)));
   const read = async (request: FastifyRequest) => {
     const id = (request.params as { id: string }).id;
@@ -41,8 +42,8 @@ export function registerAgentJobRoutes(app: FastifyInstance, context: ApiContext
   const save = async (storage: TenantStorage, ...args: Parameters<TenantStorage['agentJobs']['save']>) => {
     try { await storage.agentJobs.save(...args); } catch (e) { if (e instanceof AgentJobConflict) throw conflict(e.message); throw e; }
   };
-  app.get('/v1/agent-jobs', { config: { access: 'tenant.read' } }, async request => ({ enabled, jobs: (await scopeOf(request).storage.agentJobs.list()).map(summary) }));
-  app.post('/v1/agent-jobs', { config: { access: 'datasets.write' }, bodyLimit: Math.ceil(context.limits.maxWorkbookBytes * 4 / 3) + 65536,
+  app.get('/v1/agent-jobs', { config: { access: 'tenant.read' } }, async request => ({ enabled, maxWorkbookBytes, jobs: (await scopeOf(request).storage.agentJobs.list()).map(summary) }));
+  app.post('/v1/agent-jobs', { config: { access: 'datasets.write' }, bodyLimit: Math.ceil(maxWorkbookBytes * 4 / 3) + 65536,
     schema: { body: { type: 'object', additionalProperties: false, required: ['staticSchema', 'workbook', 'filename', 'brief'], properties: {
       requestId: { type: 'string', pattern: uuid.source }, staticSchema: refSchema,
       workbook: { type: 'string', minLength: 4 }, filename: { type: 'string', minLength: 1, maxLength: 200 }, brief: { type: 'string', minLength: 1, maxLength: 12000 },
@@ -52,7 +53,7 @@ export function registerAgentJobRoutes(app: FastifyInstance, context: ApiContext
     const body = request.body as { requestId?: string; staticSchema: AgentJob['staticSchema']; workbook: string; filename: string; brief: string };
     if (!/^[A-Za-z0-9+/]*={0,2}$/.test(body.workbook) || body.workbook.length % 4) throw fail(400, ServiceProblemCodes.requestInvalid, 'request.workbook', '工作簿不是有效的 base64');
     const bytes = Buffer.from(body.workbook, 'base64');
-    if (bytes.length > context.limits.maxWorkbookBytes) throw fail(413, ServiceProblemCodes.limitWorkbookTooLarge, 'request.workbook', '工作簿超过文件大小上限');
+    if (bytes.length > maxWorkbookBytes) throw fail(413, ServiceProblemCodes.limitWorkbookTooLarge, 'request.workbook', '工作簿超过文件大小上限');
     if (!body.filename.toLowerCase().endsWith('.xlsx') || bytes[0] !== 0x50 || bytes[1] !== 0x4b) throw fail(400, ServiceProblemCodes.importWorkbookUnreadable, 'request.workbook', '请上传 .xlsx 工作簿');
     const scope = scopeOf(request), storage = scope.storage, id = body.requestId ?? randomUUID();
     const old = await storage.agentJobs.get(id), sha256 = contentHash(bytes);
