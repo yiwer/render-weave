@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.8.0';
+export const API_VERSION = '1.9.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -242,6 +242,7 @@ const SCHEMAS: Record<string, unknown> = {
   DefinitionDraft: object({
     name: str('数据定义名称'), baseVersion: int('基于的静态版本；新名称没有', 1), sha256: { ...sha256, description: '当前内容的 SHA-256，保存时作为预期哈希' }, byteLength: int('字节数'),
     createdAt: instant('新建时间'), updatedAt: instant('最后保存时间'), updatedBy: str('最后保存者：邮箱或代建令牌的标签'),
+    displayName: str('草案的显示名称；只有列数据定义时有（1.9.0）'), fieldCount: int('草案的字段数；只有列数据定义时有，还没写成字段列表时没有（1.9.0）'),
   }, ['name', 'sha256', 'byteLength', 'createdAt', 'updatedAt', 'updatedBy'], { description: '数据定义草案：一个名称至多一份' }),
   Definition: object({
     name: str('数据定义名称'), displayName: str('显示名称：最新静态版本的；还没发布过时取草案的'),
@@ -298,7 +299,8 @@ const SCHEMAS: Record<string, unknown> = {
 
   // 数据集与资源
   DatasetDocument: dslSchema('dataset.schema.json'),
-  StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str() },
+  StaticSchemaSummary: object({ name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str(),
+    fieldCount: int('字段数；只有列表上有（1.9.0）'), referenceDepth: int('引用深度：不引用别的数据定义是 0；只有列表上有（1.9.0）') },
     ['name', 'version', 'displayName']),
   StaticSchema: object({
     name: str('静态数据定义名称'), version: int('版本', 1), displayName: str('显示名称'), description: str(),

@@ -10,6 +10,7 @@ import { OneTimeSecret } from '../components/one-time-secret.js';
 import { ErrorBox } from '../components/problems.js';
 import { href, problemsOf, useLoad } from '../hooks.js';
 import type { AuthoringTokenInfo, Member, PlatformOverview, PlatformTenant, Problem } from '../types.js';
+import { Loading } from '../components/motifs.js';
 
 const number = (value: number) => value.toLocaleString('zh-CN');
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
@@ -95,7 +96,7 @@ function Tenants() {
       )}
       <ErrorBox problems={problems} title="没有开通" />
       <ErrorBox problems={loaded.problems} title="读不到租户" />
-      {loaded.loading && !overview && <p className="muted">正在读取…</p>}
+      {loaded.loading && !overview && <Loading />}
       {overview && (
         <div className="card">
           <table className="table tenant-table">

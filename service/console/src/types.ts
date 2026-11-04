@@ -269,7 +269,7 @@ export interface ExcelImport {
   readonly batch?: { readonly template: string; readonly mode: 'final'; readonly items: readonly Record<string, unknown>[] };
 }
 
-export interface StaticSchemaSummary { readonly name: string; readonly version: number; readonly displayName: string; readonly description?: string }
+export interface StaticSchemaSummary { readonly name: string; readonly version: number; readonly displayName: string; readonly description?: string; readonly fieldCount?: number; readonly referenceDepth?: number }
 export interface StaticSchemaDetail extends StaticSchemaSummary { readonly definition: DefinitionDocument; readonly compiled: Record<string, unknown> }
 
 export type FieldType = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'image' | 'list' | 'ref';
@@ -296,6 +296,9 @@ export interface DefinitionDocument {
 
 /** 数据定义草案（P1 票据 04）：一个名称至多一份，内容哈希是保存时的预期哈希。 */
 export interface DefinitionDraft {
+  /** 只有列数据定义时才有。 */
+  readonly displayName?: string;
+  readonly fieldCount?: number;
   readonly name: string;
   readonly baseVersion?: number;
   readonly sha256: string;

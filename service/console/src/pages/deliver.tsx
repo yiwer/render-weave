@@ -11,6 +11,7 @@ import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, type Par
 import { ErrorBox, locationText } from '../components/problems.js';
 import { problemsOf } from '../hooks.js';
 import type { BatchItem, BatchView, ItemStatus, OutputSettings, Problem, TemplateInfo, Usage } from '../types.js';
+import { Hourglass, Seal } from '../components/motifs.js';
 
 const RECENT_KEY = 'renderweave.console.batches';
 /** 一批最多 1,000 项（DSL 1.0 的批次请求）。 */
@@ -271,7 +272,7 @@ function BatchProgress(props: { readonly id: string; readonly layout: 'sheet' | 
       <div>
         <div className="eyebrow">出图任务 <code>{props.id.slice(0, 8)}</code>{batch && ` · 提交于 ${new Date(batch.createdAt).toLocaleString('zh-CN')}`}</div>
         <h2 id="batch-title" style={{ fontSize: props.layout === 'sheet' ? 24 : 30, marginTop: 4 }}>
-          {batch?.template ?? '出图任务'} {batch && <span className={`chip ${tone}`} data-testid="batch-status" style={{ verticalAlign: 'middle' }}>{stateText}</span>}
+          {batch?.template ?? '出图任务'} {batch && !finished && !cancelled && <Hourglass />}{batch && finished && !cancelled && !batch.summary.failed && <Seal size={20} />} {batch && <span className={`chip ${tone}`} data-testid="batch-status" style={{ verticalAlign: 'middle' }}>{stateText}</span>}
         </h2>
       </div>
       {props.onClose && <button type="button" className="icon" aria-label="关闭出图任务" onClick={props.onClose}>×</button>}

@@ -229,9 +229,14 @@ export function registerDefinitionRoutes(app: FastifyInstance, context: ApiConte
       workspace,
       definitions: await Promise.all(names.map(async (name) => {
         const list = (versions.get(name) ?? []).sort((a, b) => a.version - b.version), draft = drafts.get(name);
-        const draftJson = draft && !list.length ? await scope.storage.contents.get(draft.sha256) : undefined;
-        const draftDisplayName = draftJson && (parsedDocument(draftJson) as { displayName?: unknown }).displayName;
-        return { name, displayName: list.at(-1)?.displayName ?? (typeof draftDisplayName === 'string' ? draftDisplayName : name), versions: list, ...(draft ? { draft } : {}) };
+        const draftBytes = draft && await scope.storage.contents.get(draft.sha256);
+        const draftDocument = draftBytes ? parsedDocument(draftBytes) as { displayName?: unknown; fields?: unknown } : undefined;
+        const draftDisplayName = typeof draftDocument?.displayName === 'string' ? draftDocument.displayName : undefined;
+        return {
+          name, displayName: list.at(-1)?.displayName ?? draftDisplayName ?? name, versions: list,
+          // 草案卡片要显示的：显示名称与字段数。还没写成字段列表的草案没有字段数（M360）。
+          ...(draft ? { draft: { ...draft, ...(draftDisplayName ? { displayName: draftDisplayName } : {}), ...(Array.isArray(draftDocument?.fields) ? { fieldCount: draftDocument.fields.length } : {}) } } : {}),
+        };
       })),
     };
   };

@@ -63,6 +63,12 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       return { document, sha256: stashed.body.sha256 as string };
     };
 
+    it('预览照旧忽略不认识的查询参数：加了 workingCopies 不改变已有请求的回答（只做加法）', async () => {
+      const target = await tenant();
+      const reply = await preview(target.operator.token, greetingPreview(), '?somethingElse=1');
+      expect(reply.image).toBeDefined();
+    });
+
     it('新建记基准修订，暂存整份替换、按原始字节存、带预期哈希；每个模板至多一份；可以丢弃；不合规答 400', async () => {
       const target = await tenant(), token = target.admin.token;
       expect((await open(token, encodeURIComponent('没有这个模板'))).status).toBe(404);

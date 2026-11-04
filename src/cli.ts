@@ -761,6 +761,11 @@ async function runTemplateRevisions(options: Record<string, string>, io: CliIo):
   if (!target) return ExitCodes.usage;
   const result = await templateRevisions({ ...target, template: options.template!, ...(current !== undefined ? { current } : {}) });
   reportProblems(result.problems, io);
+  if (result.request) {
+    io.stdout(`${JSON.stringify({ template: options.template, request: result.request.id }, null, 2)}\n`);
+    io.stderr(`租户 ${target.tenant} 打开了审批策略：这次指回成了发布申请 ${result.request.id}，等客户管理员批准\n`);
+    return ExitCodes.ok;
+  }
   if (!result.template) return ExitCodes.failed;
   io.stdout(`${JSON.stringify(result.template, null, 2)}\n`);
   return ExitCodes.ok;

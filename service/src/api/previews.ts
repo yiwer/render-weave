@@ -69,7 +69,7 @@ export interface PreviewReply {
 }
 
 /** 用工作副本预览的查询参数（P1 票据 07）。 */
-export const PREVIEW_QUERY = { querystring: { type: 'object', additionalProperties: false, properties: { workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' } } } } as const;
+export const PREVIEW_QUERY = { querystring: { type: 'object', properties: { workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' } } } } as const;
 export const previewOptions = (query: unknown) => ({ workingCopies: (query as { workingCopies?: string }).workingCopies === 'true' });
 
 /**

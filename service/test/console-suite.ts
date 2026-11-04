@@ -4,7 +4,7 @@
  * 界面按原型方案一（M282）：首页是数据集，编辑页左表单、右草稿预览，出图在侧栏里进行。
  * 票据 14 另有出图记录、用量、资源与管理页（M300、M301）：客户管理员在另一个浏览器上下文里登录，操作员与管理员各看各的。
  * P1 票据 01 换成标题栏模块下拉与状态栏的新框架：换页走模块下拉（nav），既有用例只改了选择器；新框架另有三条用例。
- * P1 票据 06 的数据定义三页：另起草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发，九种字段类型，操作员只读。
+ * P1 票据 06、14 的数据定义与静态数据定义：复制为草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发，九种字段类型，操作员只读。
  * P1 票据 11 的审批：管理页打开开关，代建工程师经开放 API 发起申请，发布记录页与发布模板修订页上退回与批准。
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
@@ -13,7 +13,7 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { chromium, type Browser, type BrowserContext, type LaunchOptions, type Page } from 'playwright-core';
+import { chromium, type Browser, type BrowserContext, type LaunchOptions, type Locator, type Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
@@ -778,7 +778,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     });
 
     it('新框架（P1 票据 01）：模块下拉按角色只列能进的模块，Ctrl+数字切换；Ctrl+K 只列模块与常用动作；状态栏；旧链接照旧能打开', async () => {
-      const MEMBER = ['数据定义', '模板', '数据集', '出图', '资源', '用量'];
+      const MEMBER = ['数据定义', '静态数据定义', '模板', '数据集', '出图', '资源', '用量'];
       const switcher = (target: Page) => target.getByRole('button', { name: '切换模块' });
       /** 模块下拉里的模块与快捷键，如"数据定义 Control+1"；读完按 Esc 关掉。 */
       const listed = async (target: Page) => {
@@ -796,17 +796,20 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const adminPage = await asAdmin();
       expect(await listed(adminPage)).toEqual([...MEMBER, '管理'].map((name, index) => `${name} Control+${index + 1}`));
 
-      // Ctrl+数字切换模块；数据定义列出已发布的静态数据定义，与开放 API 相同。
+      // Ctrl+数字切换模块；静态数据定义列出已发布的版本，与开放 API 相同。
       await page.keyboard.press('Control+1');
       await page.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
       expect(hashOf()).toBe('#/definitions');
-      const schemas = (await api('GET', '/v1/static-schemas')).body.staticSchemas as { name: string }[];
-      await expect.poll(() => page.getByTestId('definition-row').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-name'))))
-        .toEqual([...new Set(schemas.map((schema) => schema.name))]);
-      await adminPage.keyboard.press('Control+7');
+      await page.keyboard.press('Control+2');
+      await page.getByRole('heading', { name: '静态数据定义', level: 1 }).waitFor();
+      expect(hashOf()).toBe('#/static-schemas');
+      const schemas = (await api('GET', '/v1/static-schemas')).body.staticSchemas as { name: string; version: number }[];
+      await expect.poll(() => page.getByTestId('version-card').evaluateAll((cards) => cards.map((card) => `${card.getAttribute('data-name')}@${card.getAttribute('data-version')}`).sort()))
+        .toEqual(schemas.map((schema) => `${schema.name}@${schema.version}`).sort());
+      await adminPage.keyboard.press('Control+8');
       await adminPage.getByRole('heading', { name: '管理', level: 1 }).waitFor();
       // 出图模块：出图记录与批次两页；批次是本标签页提交过的，状态与已交付张数与开放 API 相同。
-      await page.keyboard.press('Control+4');
+      await page.keyboard.press('Control+5');
       await page.getByRole('heading', { name: '出图记录', level: 1 }).waitFor();
       expect(hashOf()).toBe('#/records');
       await page.getByRole('navigation', { name: '出图' }).getByRole('link', { name: '批次' }).click();
@@ -869,7 +872,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       }
     }, 120_000);
 
-    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，调和橙不承载文字', async () => {
+    it('新框架（P1 票据 01）：窄窗口下模块占满宽度、没有横向滚动；正文与背景对比度不低于 4.5，铅笔赭不承载文字', async () => {
       const luminance = (rgb: string) => {
         const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map((value) => {
           const c = Number(value) / 255;
@@ -885,12 +888,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const look = () => page.evaluate(`(() => {
         const body = getComputedStyle(document.body);
         const orange = [...document.querySelectorAll('body *')].filter((element) => element.childElementCount === 0 && element.textContent.trim()
-          && getComputedStyle(element).color === 'rgb(241, 125, 19)').map((element) => element.textContent.trim());
+          && getComputedStyle(element).color === 'rgb(179, 128, 71)').map((element) => element.textContent.trim());
         return { color: body.color, background: body.backgroundColor, orange, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
       })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
       const pages: [string, () => Promise<unknown>][] = [
-        ['#/definitions', () => page.getByTestId('definition-row').first().waitFor()],
+        ['#/definitions', () => page.getByTestId('draft-card').first().waitFor()],
         [`#/definitions/${enc('线路牌')}`, () => page.getByTestId('field-row').first().waitFor()],
+        ['#/static-schemas', () => page.getByTestId('version-card').first().waitFor()],
+        [`#/static-schemas/${enc('线路牌')}/1`, () => page.getByTestId('tree-field').first().waitFor()],
         ['#/definition-publications', () => page.getByTestId('publication-row').first().waitFor()],
         ['#/templates', () => page.getByRole('article', { name: `模板 ${BADGE}` }).waitFor()],
         ['#/datasets', () => page.getByRole('link', { name: 'M402 开往万国城总站' }).waitFor()],
@@ -901,6 +906,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         ['#/resources', () => page.getByTestId('resource-row').first().waitFor()],
         ['#/usage', () => page.getByTestId('usage-limit').waitFor()],
       ];
+      // 编辑页只有草案才进得去。
+      expect((await adminApi('POST', `/v1/definitions/${enc('线路牌')}/draft`, { fromVersion: 1 })).status).toBe(201);
       try {
         for (const width of [1440, 375]) {
           await page.setViewportSize({ width, height: 900 });
@@ -910,59 +917,82 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
             const seen = await look();
             expect(seen.overflow, `${width} ${link}`).toBe(0);
             expect(seen.orange, `${width} ${link}`).toEqual([]);
-            expect([seen.color, seen.background], link).toEqual(['rgb(34, 21, 15)', 'rgb(253, 251, 246)']);
+            expect([seen.color, seen.background], link).toEqual(['rgb(29, 38, 46)', 'rgb(247, 244, 236)']);
             expect(contrast(seen.color, seen.background)).toBeGreaterThanOrEqual(4.5);
             expect((await page.getByRole('main').boundingBox())!.width, `${width} ${link}`).toBe(width);
           }
         }
       } finally {
         await page.setViewportSize({ width: 1440, height: 1000 });
+        expect((await world.call('DELETE', `/v1/definitions/${enc('线路牌')}/draft`, world.b.admin.token)).status).toBe(204);
       }
     }, 180_000);
 
-    /** 数据定义的一行（列表）与字段表的一行（详情）。 */
-    const definitionRow = (target: Page, name: string) => target.locator(`[data-testid="definition-row"][data-name="${name}"]`);
+    /** 静态数据定义的一张卡片（一个版本）、数据定义草案的一张卡片、字段的一行（表单）与字段树上的一个字段。 */
+    const versionCard = (target: Page, name: string, version: number) => target.locator(`[data-testid="version-card"][data-name="${name}"][data-version="${version}"]`);
+    const draftCard = (target: Page, name: string) => target.locator(`[data-testid="draft-card"][data-name="${name}"]`);
     const fieldRow = (target: Page, name: string) => target.locator(`[data-testid="field-row"][data-field="${name}"]`);
+    const treeField = (target: Page, name: string) => target.locator(`[data-testid="tree-field"][data-field="${name}"]`);
     const publicationRow = (target: Page, name: string, version: number) => target.locator(`[data-testid="publication-row"][data-name="${name}"][data-version="${version}"]`);
     const openField = (target: Page, name: string) => fieldRow(target, name).getByRole('button').first().click();
     const menuLabels = (target: Page) => target.getByRole('menu').getByRole('menuitem').evaluateAll((items) => items.map((item) => item.querySelector('.menu-label')!.textContent));
     const checkPassed = (target: Page) => target.getByTestId('check-status').filter({ hasText: '校验通过' }).waitFor();
-    /** 添加字段：填共同的属性，别的由 fill 填；加入草案后等校验回来。 */
-    const addField = async (target: Page, field: { displayName: string; name: string; type: string; required?: boolean }, fill?: () => Promise<void>) => {
+    const inspector = (target: Page) => target.getByRole('form', { name: '编辑字段' });
+    const saveDraft = async (target: Page) => {
+      await target.getByRole('button', { name: '保存', exact: true }).click();
+      await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
+    };
+    /** 添加字段：填共同的属性，别的由 fill 填。改动先留在页面上，要保存才写草案。 */
+    const addField = async (target: Page, field: { displayName: string; name: string; type: string; required?: boolean }, fill?: (form: Locator) => Promise<void>) => {
       await target.getByRole('button', { name: '添加字段' }).click();
-      await target.getByLabel('显示名称', { exact: true }).fill(field.displayName);
-      await target.getByLabel('字段名称', { exact: true }).fill(field.name);
-      await target.getByLabel('类型', { exact: true }).selectOption({ label: field.type });
-      if (field.required) await target.getByLabel('必填', { exact: true }).check();
-      await fill?.();
-      await target.getByRole('button', { name: '加入草案' }).click();
+      const form = inspector(target);
+      await form.getByLabel('显示名称', { exact: true }).fill(field.displayName);
+      await form.getByLabel('字段名称', { exact: true }).fill(field.name);
+      await form.getByLabel('类型', { exact: true }).selectOption({ label: field.type });
+      if (field.required) await form.getByRole('button', { name: '必填', exact: true }).click();
+      await fill?.(form);
       await fieldRow(target, field.name).waitFor();
     };
 
-    it('数据定义（P1 票据 06）：另起草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发；每一步都与开放 API 相同', async () => {
+    it('静态数据定义与数据定义（P1 票据 06、14）：复制为草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发；每一步都与开放 API 相同', async () => {
       const target = await asAdmin(), name = '线路牌', path = enc(name);
       const definitionsApi = async () => ((await adminApi('GET', '/v1/definitions')).body.definitions as any[]).find((item) => item.name === name);
       const versionOf = async (version: number) => (await adminApi('GET', `/v1/static-schemas/${path}/versions/${version}`)).body;
-      await (await nav(target, '数据定义')).click();
-      await target.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
+      await (await nav(target, '静态数据定义')).click();
+      await target.getByRole('heading', { name: '静态数据定义', level: 1 }).waitFor();
 
-      // 列表：当前版本、草案状态与引用数；"从示例图提取""从数据集提取"在 P2 接入前不显示。
-      const row = definitionRow(target, name), listed = await definitionsApi();
-      await row.getByTestId('definition-version').filter({ hasText: 'v1' }).waitFor();
-      expect(await row.getByTestId('definition-uses').textContent()).toBe(`${listed.versions[0].templates} 个模板 · ${listed.versions[0].datasets} 份数据集`);
-      await row.getByTestId('definition-status').filter({ hasText: '已发布' }).waitFor();
+      // 卡片：版本、字段数、引用深度与谁在用，都与开放 API 相同；"从示例图提取""从数据集提取"在 P2 接入前不显示。
+      const card = versionCard(target, name, 1), listed = await definitionsApi();
+      await card.getByTestId('version-badge').filter({ hasText: 'v1' }).waitFor();
+      await card.getByText('当前版本').waitFor();
+      const all = (await adminApi('GET', '/v1/static-schemas')).body.staticSchemas as { name: string; version: number; fieldCount: number; referenceDepth: number }[];
+      const summary = all.find((item) => item.name === name && item.version === 1)!;
+      expect(summary).toMatchObject({ fieldCount: (await versionOf(1)).definition.fields.length, referenceDepth: 1 });
+      expect(await card.getByTestId('version-fields').textContent()).toBe(String(summary.fieldCount));
+      expect(await card.getByTestId('version-depth').textContent()).toBe('1');
+      expect(await card.getByTestId('version-uses').textContent()).toBe(`${listed.versions[0].templates} 模板 · ${listed.versions[0].datasets} 数据集`);
       expect(await target.getByText('示例图').count() + await target.getByText('从数据集').count()).toBe(0);
 
-      // 右键一行：导出编译产物与开放 API 相同，复制引用，在新标签页打开时带着会话。
-      await row.getByTestId('definition-uses').click({ button: 'right' });
-      expect(await menuLabels(target)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '从这一版另起草案']);
+      // 搜索与排序。
+      const shown = () => target.getByTestId('version-card').evaluateAll((cards) => cards.map((item) => item.getAttribute('data-name')));
+      await target.getByLabel('搜索静态数据定义').fill('线路');
+      await expect.poll(shown).toEqual([name]);
+      await target.getByLabel('搜索静态数据定义').fill('');
+      await target.getByLabel('排序').selectOption('nameDesc');
+      const descending = all.map((item) => item.name).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+      await expect.poll(shown).toEqual(descending);
+      await target.getByLabel('排序').selectOption('newest');
+
+      // 右键一张卡片：导出编译产物与开放 API 相同，复制引用，在新标签页打开时带着会话。
+      await card.click({ button: 'right' });
+      expect(await menuLabels(target)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '复制为草案']);
       const exported = await downloadBytes(target, () => target.getByRole('menuitem', { name: /导出编译产物/ }).click());
       expect(exported.name).toBe('线路牌-v1.schema.json');
       expect(JSON.parse(exported.bytes.toString('utf8'))).toEqual((await versionOf(1)).compiled);
       // 剪贴板只在安全上下文里有（本机 127.0.0.1 有，Compose 网络里的 http://api 没有，也授不了权）；没有时把引用写在页面上，让人手动复制。
       const secure = await target.evaluate('window.isSecureContext');
       if (secure) await adminContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseUrl });
-      await row.getByTestId('definition-uses').click({ button: 'right' });
+      await card.click({ button: 'right' });
       await target.getByRole('menuitem', { name: /复制引用/ }).click();
       if (secure) {
         await target.getByRole('status').filter({ hasText: '已复制' }).waitFor();
@@ -970,76 +1000,105 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       } else {
         await target.getByRole('status').filter({ hasText: JSON.stringify({ name, version: 1 }) }).waitFor();
       }
-      await row.getByRole('button', { name: /更多操作/ }).click();
+      await card.getByRole('button', { name: /更多操作/ }).click();
       const [tab] = await Promise.all([adminContext.waitForEvent('page'), target.getByRole('menuitem', { name: '在新标签页打开' }).click()]);
-      await tab.getByTestId('definition-meta').filter({ hasText: 'v1' }).waitFor();
+      await tab.getByTestId('static-facts').filter({ hasText: 'v1' }).waitFor();
       await tab.close();
-      await row.getByTestId('definition-uses').click({ button: 'right' });
+      await card.click({ button: 'right' });
       await target.getByRole('menuitem', { name: '查看发布记录' }).click();
       await publicationRow(target, name, 1).waitFor();
       await target.getByTestId('records-filter').filter({ hasText: name }).waitFor();
       expect(await publicationRow(target, name, 1).getByTestId('publication-actor').textContent(), '种子直接写存储，审计里没有').toBe('没有记录');
-      await (await nav(target, '数据定义')).click();
+      await (await nav(target, '静态数据定义')).click();
 
-      // 从这一版另起草案：进详情，字段表列谁在用。
-      await row.getByTestId('definition-uses').click({ button: 'right' });
-      await target.getByRole('menuitem', { name: /另起草案/ }).click();
+      // 从这一版复制为草案：进编辑页，表单列字段，检查器看谁在用。
+      await card.click({ button: 'right' });
+      await target.getByRole('menuitem', { name: /复制为草案/ }).click();
       await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
       const draft = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
       expect(draft).toMatchObject({ baseVersion: 1, updatedBy: world.b.admin.email });
       const routeNo = fieldRow(target, 'routeNo');
       expect(await routeNo.getByTestId('field-type').textContent()).toBe('文本');
       expect(await routeNo.getByTestId('field-constraints').textContent()).toBe('1–8 字');
-      expect(await routeNo.getByTestId('field-required').textContent()).toBe('是');
-      expect(await routeNo.getByTestId('field-uses').textContent()).toBe(ROUTE);
-      expect(await fieldRow(target, 'stops').getByTestId('field-type').textContent()).toBe('列表 · 引用 · 停靠站点 v1');
+      expect(await routeNo.getByTestId('field-required').textContent()).toBe('必填');
+      expect(await fieldRow(target, 'stops').getByTestId('field-type').textContent()).toBe('列表 · 数据定义引用 · 停靠站点 v1');
       await target.getByRole('button', { name: '校验', exact: true }).click();
       await checkPassed(target);
 
-      // 改字段名称、删字段：提示会影响的模板；取消之后草案没变。
+      // 改字段名称、删字段：提示会影响的模板；撤销、重做、回到已保存都不碰草案。
       await openField(target, 'routeNo');
       await target.getByTestId('field-used-by').filter({ hasText: ROUTE }).waitFor();
-      await target.getByLabel('字段名称', { exact: true }).fill('lineNo');
+      await inspector(target).getByLabel('字段名称', { exact: true }).fill('lineNo');
       const renameImpact = target.getByTestId('rename-impact');
       await renameImpact.filter({ hasText: ROUTE }).waitFor();
       expect(await renameImpact.textContent()).toContain('改字段名称等于删掉 routeNo');
-      await target.getByRole('button', { name: '删除字段' }).click();
+      await target.getByTestId('save-status').filter({ hasText: '有没保存的改动' }).waitFor();
+      await target.getByRole('button', { name: '删除字段', exact: true }).click();
       await target.getByTestId('remove-impact').filter({ hasText: ROUTE }).waitFor();
       await target.getByRole('button', { name: '留着' }).click();
-      await target.getByRole('button', { name: '取消改动' }).click();
-      expect(await target.getByTestId('field-detail').count()).toBe(0);
+      await target.getByRole('button', { name: '撤销' }).click();
       await routeNo.waitFor();
+      await target.getByRole('button', { name: '重做' }).click();
+      await fieldRow(target, 'lineNo').waitFor();
+      await target.getByRole('button', { name: '回到已保存' }).click();
+      await routeNo.waitFor();
+      await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
       expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.sha256).toBe(draft.sha256);
+
+      // 有没保存的改动时换页先问：答否留在这里，改动还在；保存之后不再问。
+      await inspector(target).getByLabel('说明', { exact: true }).fill('还没保存');
+      const asked: string[] = [];
+      target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
+      await target.getByRole('navigation', { name: '位置' }).getByRole('link', { name: '数据定义' }).click();
+      await expect.poll(() => asked).toEqual(['这份草案有没保存的改动，离开就丢了。确定离开？']);
+      await expect.poll(() => target.evaluate('location.hash')).toBe(`#/definitions/${path}`);
+      expect(await inspector(target).getByLabel('说明', { exact: true }).inputValue()).toBe('还没保存');
+      await target.getByRole('button', { name: '回到已保存' }).click();
 
       // 校验的问题定位到字段：严重问题时不能发布，改正之后恢复。
       await openField(target, 'fare');
-      await target.getByLabel('下限', { exact: true }).fill('200');
-      await target.getByRole('button', { name: '保存字段' }).click();
+      await inspector(target).getByLabel('下限', { exact: true }).fill('200');
+      await target.getByTestId('check-status').filter({ hasText: '保存之后校验' }).waitFor();
+      await saveDraft(target);
       await fieldRow(target, 'fare').getByTestId('field-problems').filter({ hasText: '下界 200 大于上界 100' }).waitFor();
       await target.getByTestId('check-status').filter({ hasText: '1 个严重问题' }).waitFor();
       expect(await fieldRow(target, 'fare').getByText('已修改').count()).toBe(1);
       expect(await target.getByRole('button', { name: /^发布/ }).isDisabled()).toBe(true);
       expect(await target.getByRole('button', { name: '预览编译产物' }).isDisabled()).toBe(true);
       await target.getByRole('list', { name: '校验问题' }).getByRole('button').click();
-      await target.getByLabel('下限', { exact: true }).fill('0');
-      await target.getByRole('button', { name: '保存字段' }).click();
+      await inspector(target).getByLabel('下限', { exact: true }).fill('0');
+      await saveDraft(target);
       await checkPassed(target);
       expect(await fieldRow(target, 'fare').getByText('已修改').count(), '改回去了').toBe(0);
 
-      // 手动加一个必填字段。选另一行时先保存当前这行。
-      await addField(target, { displayName: '所属车队', name: 'depot', type: '文本', required: true }, () => target.getByLabel('最长（字）', { exact: true }).fill('20'));
+      // 手动加一个必填字段。
+      await addField(target, { displayName: '所属车队', name: 'depot', type: '文本', required: true }, (form) => form.getByLabel('最长（字）', { exact: true }).fill('20'));
       const depot = fieldRow(target, 'depot');
       expect(await depot.getByTestId('field-constraints').textContent()).toBe('最多 20 字');
-      expect(await depot.getByTestId('field-required').textContent()).toBe('是');
+      expect(await depot.getByTestId('field-required').textContent()).toBe('必填');
       expect(await depot.getByText('新增').count()).toBe(1);
       await target.getByTestId('draft-changes').filter({ hasText: '新增 1、修改 0、删除 0' }).waitFor();
-      await checkPassed(target);
-      await openField(target, 'depot');
-      await target.getByLabel('说明', { exact: true }).fill('运营这条线路的车队');
-      await openField(target, 'fare');
+      await inspector(target).getByLabel('说明', { exact: true }).fill('运营这条线路的车队');
+      await target.keyboard.press('Control+s');
+      await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
       await expect.poll(async () => JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content).fields.at(-1))
         .toEqual({ name: 'depot', displayName: '所属车队', type: 'text', constraints: { required: true, maxLength: 20 }, description: '运营这条线路的车队' });
-      await openField(target, 'fare');
+      await checkPassed(target);
+
+      // 树状图与表单是同一个会话：选中的字段一起走，切换不丢没保存的改动。
+      await target.getByRole('button', { name: '树状图' }).click();
+      await treeField(target, 'depot').getByRole('button').waitFor();
+      await target.getByLabel('搜索字段').fill('depot');
+      await treeField(target, 'fare').waitFor({ state: 'detached' });
+      await target.getByLabel('搜索字段').fill('');
+      await treeField(target, 'fare').getByRole('button').click();
+      expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fare');
+      await inspector(target).getByLabel('说明', { exact: true }).fill('没保存的说明');
+      await target.getByRole('button', { name: '表单', exact: true }).click();
+      expect(await fieldRow(target, 'fare').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
+      expect(await inspector(target).getByLabel('说明', { exact: true }).inputValue()).toBe('没保存的说明');
+      await target.getByRole('button', { name: '撤销' }).click();
+      await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
       await checkPassed(target);
 
       // 编译预览与校验接口相同。
@@ -1108,23 +1167,62 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await records()).map((item) => item.version)).toEqual([3, 2, 1]);
       expect((await adminApi('GET', '/v1/audit-events?limit=500')).body.events.filter((event: any) => event.action === 'definition.publish').map((event: any) => event.object.id).slice(0, 2)).toEqual(['线路牌@3', '线路牌@2']);
 
-      // 看已发布的版本：只读，可以切换。
-      await (await nav(target, '数据定义')).click();
-      await row.getByTestId('definition-version').filter({ hasText: 'v3' }).waitFor();
-      await row.getByRole('link').click();
-      await target.getByTestId('definition-meta').filter({ hasText: 'v3 · 当前版本' }).waitFor();
+      // 看已发布的版本：只读，可以切换；四种看法与开放 API 相同。
+      await (await nav(target, '静态数据定义')).click();
+      await versionCard(target, name, 3).getByText('当前版本').waitFor();
+      expect(await versionCard(target, name, 2).getByText('当前版本').count()).toBe(0);
+      await versionCard(target, name, 3).getByRole('link').click();
+      await target.getByTestId('static-facts').filter({ hasText: 'v3 · 当前' }).waitFor();
       await target.getByLabel('查看的版本').selectOption('2');
-      await target.getByTestId('definition-meta').filter({ hasText: 'v2' }).waitFor();
-      await fieldRow(target, 'depot').waitFor();
-      await openField(target, 'depot');
-      await target.getByTestId('field-detail').filter({ hasText: '运营这条线路的车队' }).waitFor();
+      await target.getByTestId('static-facts').filter({ hasText: 'v2' }).waitFor();
+      await treeField(target, 'depot').getByRole('button').click();
+      await target.getByTestId('field-facts').filter({ hasText: '运营这条线路的车队' }).waitFor();
       expect(await target.getByRole('button', { name: '添加字段' }).count()).toBe(0);
+      await target.getByRole('tab', { name: '字段表单' }).click();
+      await fieldRow(target, 'depot').waitFor();
+      await target.getByRole('tab', { name: '编译产物 JSON Schema' }).click();
+      const second = await versionOf(2);
+      expect(JSON.parse((await target.getByTestId('compiled-json-schema').textContent())!)).toEqual(second.compiled);
+      await target.getByRole('tab', { name: '数据定义 DSL' }).click();
+      expect(JSON.parse((await target.getByTestId('definition-dsl').textContent())!)).toEqual(second.definition);
       await target.getByLabel('查看的版本').selectOption('1');
-      await target.getByTestId('definition-meta').filter({ hasText: 'v1' }).waitFor();
-      expect(await fieldRow(target, 'depot').count()).toBe(0);
+      await target.getByTestId('static-facts').filter({ hasText: 'v1' }).waitFor();
+      await treeField(target, 'routeNo').waitFor();
+      expect(await treeField(target, 'depot').count()).toBe(0);
     });
 
-    it('数据定义（P1 票据 06）：新建空白数据定义，手动添加九种字段类型并发布成 v1；名称写错定位到那一行；草案可以删除', async () => {
+    it('静态数据定义（P1 票据 14）：详情页复制为草案，同名接着发下一版，换名称是一份新的数据定义；草案卡片能搜索、能删除', async () => {
+      const target = await asAdmin(), name = '胸牌', path = enc(name), copy = `胸牌副本${randomUUID().slice(0, 8)}`;
+      const original = (await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).body.definition;
+      await target.goto(`${baseUrl}/console/#/static-schemas/${path}/1`);
+      await target.getByRole('button', { name: '复制为草案' }).click();
+      const form = target.getByRole('form', { name: '复制为草案' });
+      await form.getByText(`发布时成为 ${name} 的下一版`).waitFor();
+      await form.getByLabel('草案的名称').fill(copy);
+      await form.getByText('这是一份新的数据定义').waitFor();
+      await form.getByLabel('显示名称').fill('胸牌的副本');
+      await form.getByRole('button', { name: '复制', exact: true }).click();
+      await target.getByRole('heading', { name: '胸牌的副本', level: 1 }).waitFor();
+      await target.getByTestId('definition-meta').filter({ hasText: '还没发布过' }).waitFor();
+      const document = JSON.parse((await adminApi('GET', `/v1/definitions/${enc(copy)}/draft`)).body.content);
+      expect(document).toMatchObject({ name: copy, displayName: '胸牌的副本', fields: original.fields });
+      expect(document.version, '草案不带版本号').toBeUndefined();
+
+      // 草案卡片：字段数、基于、搜索；删除要确认。
+      await (await nav(target, '数据定义')).click();
+      const card = draftCard(target, copy);
+      expect(await card.getByTestId('draft-fields').textContent()).toBe(String(original.fields.length));
+      await target.getByLabel('搜索数据定义').fill('没有这个');
+      await target.getByTestId('drafts-empty').filter({ hasText: '没有匹配的草案' }).waitFor();
+      await target.getByLabel('搜索数据定义').fill('胸牌的');
+      await card.waitFor();
+      await card.getByRole('button', { name: '删除' }).click();
+      await card.getByRole('button', { name: '确认删除' }).click();
+      await card.waitFor({ state: 'detached' });
+      expect((await adminApi('GET', `/v1/definitions/${enc(copy)}/draft`)).status).toBe(404);
+    });
+
+    it('数据定义（P1 票据 06、14）：新建空白数据定义，手动添加九种字段类型并发布成 v1；名称写错定位到那一行；别人先保存时读回；草案可以删除', async () => {
       const target = await asAdmin(), name = `全字段${randomUUID().slice(0, 8)}`, path = enc(name);
       await target.goto(`${baseUrl}/console/#/definitions`);
       await target.getByRole('button', { name: '新建数据定义' }).click();
@@ -1136,43 +1234,46 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByText('还没有字段，添加第一个。').waitFor();
       await checkPassed(target);
 
-      await addField(target, { displayName: '标题', name: 'title', type: '文本', required: true }, async () => {
-        await target.getByLabel('最短（字）', { exact: true }).fill('1');
-        await target.getByLabel('最长（字）', { exact: true }).fill('20');
-        await target.getByLabel('可选值（一行一个）', { exact: true }).fill('甲\n乙');
+      await addField(target, { displayName: '标题', name: 'title', type: '文本', required: true }, async (form) => {
+        await form.getByLabel('最短（字）', { exact: true }).fill('1');
+        await form.getByLabel('最长（字）', { exact: true }).fill('20');
+        await form.getByLabel('可选值（一行一个）', { exact: true }).fill('甲\n乙');
       });
-      await addField(target, { displayName: '金额', name: 'amount', type: '数值' }, async () => {
-        await target.getByLabel('下限', { exact: true }).fill('0.5');
-        await target.getByLabel('上限', { exact: true }).fill('100');
+      await addField(target, { displayName: '金额', name: 'amount', type: '数值' }, async (form) => {
+        await form.getByLabel('下限', { exact: true }).fill('0.5');
+        await form.getByLabel('上限', { exact: true }).fill('100');
       });
       await addField(target, { displayName: '日期', name: 'day', type: '日期' });
       await addField(target, { displayName: '时刻', name: 'at', type: '时刻' });
-      await addField(target, { displayName: '时间', name: 'moment', type: '日期时间' });
-      await addField(target, { displayName: '启用', name: 'enabled', type: '是否' });
-      await addField(target, { displayName: '照片', name: 'photo', type: '图片' }, () => target.getByLabel('网址', { exact: true }).uncheck());
-      await addField(target, { displayName: '标签', name: 'tags', type: '列表' }, async () => {
-        await target.getByLabel('最多项数', { exact: true }).fill('3');
-        await target.getByLabel('元素最长（字）', { exact: true }).fill('4');
+      await addField(target, { displayName: '时间', name: 'moment', type: '时间' });
+      await addField(target, { displayName: '启用', name: 'enabled', type: '布尔' });
+      await addField(target, { displayName: '照片', name: 'photo', type: '图片' }, (form) => form.getByLabel('网址', { exact: true }).uncheck());
+      await addField(target, { displayName: '标签', name: 'tags', type: '列表' }, async (form) => {
+        await form.getByLabel('最多项数', { exact: true }).fill('3');
+        await form.getByLabel('元素最长（字）', { exact: true }).fill('4');
       });
-      await addField(target, { displayName: '站点', name: 'stops', type: '列表' }, async () => {
-        await target.getByLabel('元素类型', { exact: true }).selectOption({ label: '引用' });
-        await target.getByLabel('元素引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' });
+      await addField(target, { displayName: '站点', name: 'stops', type: '列表' }, async (form) => {
+        await form.getByLabel('元素类型', { exact: true }).selectOption({ label: '数据定义引用' });
+        await form.getByLabel('元素引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' });
       });
-      await addField(target, { displayName: '下一站', name: 'next', type: '引用' }, async () => { await target.getByLabel('引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' }); });
+      await addField(target, { displayName: '下一站', name: 'next', type: '数据定义引用' }, async (form) => { await form.getByLabel('引用的数据定义', { exact: true }).selectOption({ value: '停靠站点@1' }); });
       expect(await fieldRow(target, 'photo').getByTestId('field-constraints').textContent()).toBe('资源仓库');
       expect(await fieldRow(target, 'tags').getByTestId('field-type').textContent()).toBe('列表 · 文本');
       expect(await fieldRow(target, 'tags').getByTestId('field-constraints').textContent()).toBe('最多 3 项，最多 4 字');
-      expect(await fieldRow(target, 'next').getByTestId('field-type').textContent()).toBe('引用 · 停靠站点 v1');
+      expect(await fieldRow(target, 'next').getByTestId('field-type').textContent()).toBe('数据定义引用 · 停靠站点 v1');
+      await target.getByTestId('field-kinds').filter({ hasText: '10 个字段' }).filter({ hasText: '列表 2' }).waitFor();
 
       // 名称写错的字段：问题定位到那一行，没写完也能存。
       await addField(target, { displayName: '写错的', name: '1bad', type: '文本' });
+      await saveDraft(target);
       await fieldRow(target, '1bad').getByTestId('field-problems').filter({ hasText: '字段名称必须以英文字母开头' }).waitFor();
       await target.getByTestId('check-status').filter({ hasText: '严重问题' }).waitFor();
       await openField(target, '1bad');
-      await target.getByRole('button', { name: '删除字段' }).click();
+      await target.getByRole('button', { name: '删除字段', exact: true }).click();
       await target.getByTestId('remove-impact').filter({ hasText: '还没发布过' }).waitFor();
       await target.getByRole('button', { name: '确认删除字段' }).click();
       await fieldRow(target, '1bad').waitFor({ state: 'detached' });
+      await saveDraft(target);
       await checkPassed(target);
 
       const document = JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content);
@@ -1184,11 +1285,18 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(document.fields[8].items).toEqual({ type: 'ref', ref: { name: '停靠站点', version: 1 } });
       expect(document.fields[9].ref).toEqual({ name: '停靠站点', version: 1 });
 
-      // 上移一行：顺序写进草案。
-      await openField(target, 'enabled');
-      await target.getByRole('button', { name: '上移' }).click();
-      await expect.poll(async () => JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content).fields[4].name).toBe('enabled');
-      await target.getByRole('button', { name: '取消改动' }).click();
+      // 上移一行、切必填、复制一行：保存之后写进草案。
+      await fieldRow(target, 'enabled').getByRole('button', { name: /^上移字段/ }).click();
+      await fieldRow(target, 'day').getByTestId('field-required').click();
+      await fieldRow(target, 'day').getByRole('button', { name: /^复制字段/ }).click();
+      await fieldRow(target, 'dayCopy').waitFor();
+      await saveDraft(target);
+      const moved = JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content).fields as any[];
+      expect(moved.map((field) => field.name).slice(2, 7)).toEqual(['day', 'dayCopy', 'at', 'enabled', 'moment']);
+      expect(moved[2].constraints).toEqual({ required: true });
+      await fieldRow(target, 'dayCopy').getByRole('button', { name: /^删除字段/ }).click();
+      await target.getByRole('button', { name: '确认删除字段' }).click();
+      await saveDraft(target);
       await checkPassed(target);
 
       // 别人先保存了：这次改动没有写入，读回最新内容再改。
@@ -1196,13 +1304,15 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const other = await world.call('PUT', `/v1/definitions/${path}/draft?expectedSha256=${current.sha256}`, world.b.admin.token, current.content.replace('"九种字段"', '"九种字段（别人改的）"'), { 'content-type': 'application/json' });
       expect(other.status, other.raw.slice(0, 300)).toBe(200);
       await openField(target, 'day');
-      await target.getByLabel('说明', { exact: true }).fill('不会写入');
-      await target.getByRole('button', { name: '保存字段' }).click();
+      await inspector(target).getByLabel('说明', { exact: true }).fill('不会写入');
+      await target.getByRole('button', { name: '保存', exact: true }).click();
       await target.getByRole('alert').filter({ hasText: '别人刚保存过这份草案' }).waitFor();
       expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.sha256).toBe(other.body.sha256);
       await target.getByRole('button', { name: '读回最新内容' }).click();
       await target.getByRole('heading', { name: '九种字段（别人改的）', level: 1 }).waitFor();
       expect(await target.getByRole('alert').count()).toBe(0);
+      expect(await inspector(target).getByLabel('说明', { exact: true }).inputValue(), '读回之后不留没写入的内容').toBe('');
+      await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
       await checkPassed(target);
 
       // 首个版本：没有数据集与模板，发布记录写首个版本；发布的产物能再被开放 API 读出。
@@ -1213,44 +1323,52 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await publicationRow(target, name, 1).getByTestId('publication-summary').filter({ hasText: '首个版本，10 个字段' }).waitFor();
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
 
-      // 草案可以删除；已发布的版本不受影响。
-      await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 });
+      // 没有草案时打开这个名称：去最新的静态版本。草案可以删除，已发布的版本不受影响。
       await target.goto(`${baseUrl}/console/#/definitions/${path}`);
+      await target.getByTestId('static-facts').filter({ hasText: 'v1 · 当前' }).waitFor();
+      await target.getByRole('button', { name: '复制为草案' }).click();
+      await target.getByRole('form', { name: '复制为草案' }).getByRole('button', { name: '复制', exact: true }).click();
       await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
       await target.getByRole('button', { name: '删除草案' }).click();
       await target.getByRole('button', { name: '确认删除草案' }).click();
-      await target.getByTestId('definition-meta').filter({ hasText: 'v1 · 当前版本' }).waitFor();
+      await target.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
       expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).status).toBe(404);
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
     });
 
-    it('数据定义（P1 票据 06）：客户操作员只读，看得到版本、草案与发布记录，没有任何写入口；直接调用写接口被拒绝', async () => {
+    it('数据定义（P1 票据 06、14）：客户操作员只读，看得到版本、草案与发布记录，没有任何写入口；直接调用写接口被拒绝', async () => {
       const name = '线路牌', path = enc(name), drafted = (await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 3 })).body;
       await page.goto(`${baseUrl}/console/#/definitions`);
-      const row = definitionRow(page, name);
-      await row.getByTestId('definition-status').filter({ hasText: '有草案' }).waitFor();
+      const card = draftCard(page, name);
+      await card.waitFor();
       expect(await page.getByRole('button', { name: '新建数据定义' }).count()).toBe(0);
-      await row.getByTestId('definition-uses').click({ button: 'right' });
-      expect(await menuLabels(page)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用']);
-      await page.keyboard.press('Escape');
-      expect(await page.getByRole('menu').count()).toBe(0);
+      expect(await card.getByRole('button', { name: '删除' }).count() + await card.getByRole('link', { name: '发布' }).count()).toBe(0);
 
-      // 草案：字段表与校验结果都看得到，展开是只读的。
-      await row.getByRole('link').click();
+      // 草案：字段表与校验结果都看得到，检查器是只读的。
+      await card.getByRole('link').first().click();
       await page.getByTestId('definition-meta').filter({ hasText: '基于 v3' }).waitFor();
       await page.getByRole('note').filter({ hasText: '改动与发布由客户管理员完成' }).waitFor();
       await checkPassed(page);
       await openField(page, 'routeNo');
       await page.getByTestId('field-used-by').filter({ hasText: ROUTE }).waitFor();
-      expect(await page.getByTestId('field-detail').locator('input, select, textarea').count()).toBe(0);
-      for (const label of ['添加字段', '删除草案', '改显示名称与说明', '保存字段', '删除字段']) expect(await page.getByRole('button', { name: label }).count(), label).toBe(0);
-      expect(await page.getByRole('button', { name: /^发布/ }).count()).toBe(0);
+      expect(await page.getByRole('complementary', { name: '字段检查器' }).locator('input, select, textarea').count()).toBe(0);
+      for (const label of ['添加字段', '删除草案', '保存', '撤销', '回到已保存', '确认删除字段']) expect(await page.getByRole('button', { name: label }).count(), label).toBe(0);
+      expect(await page.getByRole('button', { name: /^(发布|复制字段|删除字段)/ }).count()).toBe(0);
+      expect(await page.getByLabel('显示名称', { exact: true }).getAttribute('readonly')).not.toBeNull();
       await page.getByRole('button', { name: '预览编译产物' }).click();
       await page.getByTestId('compiled-preview').waitFor();
-      // 已发布的版本也一样；没有另起草案的入口。
-      await page.getByLabel('查看的版本').selectOption('1');
-      await page.getByTestId('definition-meta').filter({ hasText: 'v1' }).waitFor();
-      expect(await page.getByRole('button', { name: /另起草案/ }).count()).toBe(0);
+
+      // 静态数据定义也一样：右键没有复制为草案，详情页也没有。
+      await page.goto(`${baseUrl}/console/#/static-schemas`);
+      const version = versionCard(page, name, 1);
+      await version.click({ button: 'right' });
+      expect(await menuLabels(page)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用']);
+      await page.keyboard.press('Escape');
+      expect(await page.getByRole('menu').count()).toBe(0);
+      await version.getByRole('link').click();
+      await page.getByTestId('static-facts').filter({ hasText: 'v1' }).waitFor();
+      expect(await page.getByRole('button', { name: '复制为草案' }).count() + await page.getByRole('link', { name: '打开草案' }).count()).toBe(0);
+
       // 发布这一步：只说明由谁来做，不发预检。
       await page.goto(`${baseUrl}/console/#/definitions/${path}/publish`);
       await page.getByText('发布由客户管理员完成').waitFor();
@@ -1270,6 +1388,90 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await world.call('POST', `/v1/definitions/${enc('新的')}/draft`, operator, { displayName: '新的' })).status).toBe(403);
       expect((await world.call('POST', `/v1/definitions/${path}/draft/publish`, operator, { expectedSha256: drafted.sha256 })).status).toBe(403);
       expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
+    it('打开绑定的字段（P1 票据 08、13、14）：地址带 field 时选中那个字段；没有草案去静态版本，有草案进编辑页', async () => {
+      const target = await asAdmin(), name = '胸牌', path = enc(name);
+      await target.goto(`${baseUrl}/console/#/definitions/${path}?field=fullName`);
+      await target.reload();
+      await target.getByTestId('field-facts').filter({ hasText: 'fullName' }).waitFor();
+      expect(await target.evaluate('location.hash')).toBe(`#/static-schemas/${path}/1?field=fullName`);
+      expect(await treeField(target, 'fullName').getByRole('button').getAttribute('aria-pressed')).toBe('true');
+      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
+      await target.goto(`${baseUrl}/console/#/definitions/${path}?field=fullName`);
+      await target.reload();
+      await inspector(target).waitFor();
+      expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fullName');
+      expect(await fieldRow(target, 'fullName').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
+      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+    });
+
+    it('灵动小图（P1 票据 15）：空状态的小图在动，减少动态时停在完成态；校验通过有印章；用量的天平按用量倾斜', async () => {
+      const target = await asAdmin(), name = '胸牌', path = enc(name);
+      await target.goto(`${baseUrl}/console/#/definitions`);
+      await target.getByLabel('搜索数据定义').fill('没有这个');
+      await target.getByTestId('drafts-empty').locator('svg.motif').waitFor();
+      const motion = () => target.evaluate(`(() => { const style = getComputedStyle(document.querySelector('[data-testid="drafts-empty"] svg.motif .m-write')); return [style.animationName, style.strokeDashoffset]; })()`) as Promise<string[]>;
+      const titleThread = () => target.evaluate(`getComputedStyle(document.querySelector('.title-row h1'), '::after').backgroundImage`) as Promise<string>;
+      expect((await motion())[0]).toBe('m-write');
+      expect(await titleThread()).toContain('keyframes');
+      try {
+        await target.emulateMedia({ reducedMotion: 'reduce' });
+        expect(await motion()).toEqual(['none', '0px']);
+        expect(await titleThread()).not.toContain('keyframes');
+      } finally {
+        await target.emulateMedia({ reducedMotion: 'no-preference' });
+      }
+
+      await target.goto(`${baseUrl}/console/#/static-schemas`);
+      await target.getByLabel('搜索静态数据定义').fill('没有这个');
+      await target.getByTestId('versions-empty').locator('svg.motif-graph').waitFor();
+
+      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
+      await target.goto(`${baseUrl}/console/#/definitions/${path}`);
+      await target.reload();
+      await checkPassed(target);
+      await target.getByTestId('check-status').locator('svg.motif-seal').waitFor();
+      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+
+      await target.goto(`${baseUrl}/console/#/usage`);
+      await target.getByTestId('usage-limit').waitFor();
+      const { images } = (await adminApi('GET', '/v1/usage')).body;
+      expect(await target.getByTestId('usage-beam').getAttribute('data-tilt')).toBe(String(Math.round((Math.min((images.used + images.reserved) / Math.max(images.limit, 1), 1) - .5) * 24)));
+    });
+
+    it('登录页（P1 票据 15）：右边是没有声音、没有控件的视频，不放说明文字；减少动态时只放封面，窄窗口不放；密码可以显示', async () => {
+      const open = async (options: { viewport?: { width: number; height: number }; reducedMotion?: 'reduce' }) => {
+        const opened = await browser.newContext({ viewport: options.viewport ?? { width: 1440, height: 900 }, locale: 'zh-CN', ...(options.reducedMotion ? { reducedMotion: options.reducedMotion } : {}) });
+        const tab = await opened.newPage();
+        await tab.goto(`${baseUrl}/console/`);
+        await tab.getByRole('button', { name: '登录' }).waitFor();
+        return { opened, tab };
+      };
+      const { opened, tab } = await open({});
+      try {
+        const video = await tab.evaluate(`(() => { const v = document.querySelector('.login-art video'); return { muted: v.muted, autoplay: v.autoplay, loop: v.loop, controls: v.controls, src: v.getAttribute('src'), poster: v.getAttribute('poster') }; })()`) as { muted: boolean; autoplay: boolean; loop: boolean; controls: boolean; src: string; poster: string };
+        expect(video).toMatchObject({ muted: true, autoplay: true, loop: true, controls: false });
+        const whole = await tab.request.get(`${baseUrl}${video.src}`), part = await tab.request.get(`${baseUrl}${video.src}`, { headers: { range: 'bytes=0-99' } });
+        expect([whole.status(), whole.headers()['content-type']]).toEqual([200, 'video/mp4']);
+        expect([part.status(), (await part.body()).length]).toEqual([206, 100]);
+        expect((await tab.request.get(`${baseUrl}${video.poster}`)).headers()['content-type']).toBe('image/jpeg');
+        expect(await tab.getByText('账号由平台管理员开通').count() + await tab.getByText('出图控制台：').count()).toBe(0);
+        const password = tab.getByLabel('密码');
+        await password.fill('看得见');
+        expect(await password.getAttribute('type')).toBe('password');
+        await tab.getByRole('button', { name: '显示' }).click();
+        expect(await password.getAttribute('type')).toBe('text');
+      } finally {
+        await opened.close();
+      }
+      const still = await open({ reducedMotion: 'reduce' });
+      expect([await still.tab.locator('.login-art video').count(), await still.tab.locator('.login-art img').count()]).toEqual([0, 1]);
+      await still.opened.close();
+      const narrow = await open({ viewport: { width: 375, height: 800 } });
+      expect(await narrow.tab.locator('.login-art').count()).toBe(0);
+      expect(await narrow.tab.evaluate('document.documentElement.scrollWidth - document.documentElement.clientWidth')).toBe(0);
+      await narrow.opened.close();
     });
 
     /** 代建工程师经开放 API：从这个名称的最新版本另起草案，加一个字段，发布。开着审批策略时答 202。 */
@@ -1303,8 +1505,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 退回：没写留言不能确认；退回后这一份不再显示，代建工程师看得到留言。
       const first = await engineerPublish(name, 'approvalOne');
-      await (await nav(target, '数据定义')).click();
-      await target.getByRole('link', { name: '发布记录' }).click();
+      await (await nav(target, '静态数据定义')).click();
+      await target.getByRole('navigation', { name: '静态数据定义' }).getByRole('link', { name: '发布记录' }).click();
       const row = requestRow(target, first.id);
       await row.getByRole('button').click();
       const detail = target.getByTestId('request-detail');

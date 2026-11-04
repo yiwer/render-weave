@@ -59,17 +59,18 @@ async function prepared(name: string) {
 it.each(['final', 'tool'])('%s 同步检查阻塞仍按整轮预算结束，保留超时诊断而非完成成果', async mode => {
   const f = await prepared(`${mode}-render`), marker = join(f.dir, 'renderer-blocked');
   if (mode === 'tool') f.args[f.args.indexOf('--claude-args') + 1] = JSON.stringify([join(repoRoot, 'test/support/fake-checkpoint.mjs'), f.preset]);
-  const child = spawn(process.execPath, ['--import', pathToFileURL(join(repoRoot, 'test/support/budget-fault.mjs')).href, join(repoRoot, 'dist/bin.js'), ...f.args, '--timeout-ms', '1500'],
+  // 预算要够子进程走到同步检查：太紧时还没卡住就超时了，标记文件没写，这条用例验证不到要验证的（P1 票据 13 发现）。
+  const child = spawn(process.execPath, ['--import', pathToFileURL(join(repoRoot, 'test/support/budget-fault.mjs')).href, join(repoRoot, 'dist/bin.js'), ...f.args, '--timeout-ms', '5000'],
     { cwd: repoRoot, env: { ...process.env, RW_BUDGET_TEST_KEY: 'test-key', RW_BUDGET_FAULT_MARKER: marker }, windowsHide: true, detached: process.platform !== 'win32', stdio: 'pipe' });
   let output = '', errors = ''; child.stdout!.on('data', bytes => { output += bytes; }); child.stderr!.on('data', bytes => { errors += bytes; });
   const closed = once(child, 'close'), started = Date.now();
   try {
-    const result = await Promise.race([closed, delay(10000).then(() => undefined)]);
+    const result = await Promise.race([closed, delay(20000).then(() => undefined)]);
     expect(result, errors).toBeDefined();
     expect(await readFile(marker, 'utf8').catch(() => `${errors}\n${output}`)).toMatch(/^\d+$/);
-    expect(Date.now() - started).toBeLessThan(10000);
+    expect(Date.now() - started).toBeLessThan(20000);
     expect(result![0]).toBe(1);
-    expect(JSON.parse(output).stopped).toMatchObject({ reason: 'timeout', roundTimeoutMs: 1500 });
+    expect(JSON.parse(output).stopped).toMatchObject({ reason: 'timeout', roundTimeoutMs: 5000 });
     const review = await readReview(f.out);
     expect(review.execution?.status).toBe('stopped');
     expect(review.view?.round.source).not.toBe('agent');

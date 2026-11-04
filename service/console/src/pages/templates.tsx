@@ -10,6 +10,7 @@ import { PreviewCanvas } from '../components/preview-canvas.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { go, href, problemsOf, queuePreview, useLivePreview, useLoad } from '../hooks.js';
 import type { DatasetEntry, Identity, OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateInfo, TemplateWorkingCopy } from '../types.js';
+import { Loading } from '../components/motifs.js';
 
 export const sameSchema = (a: SchemaRef | undefined, b: SchemaRef | undefined) => Boolean(a && b && a.name === b.name && a.version === b.version);
 
@@ -102,7 +103,7 @@ export function TemplateList(props: { readonly identity: Identity }) {
         </div>
       </div>
       <ErrorBox problems={loaded.problems} title="读不到模板" />
-      {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !data && <Loading />}
       {data?.templates.length === 0 && newTemplates.length === 0 && <p className="muted">还没有模板。模板由代建团队推送到本租户后出现在这里。</p>}
       {newTemplates.length > 0 && (
         <div className="card new-templates">

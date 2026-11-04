@@ -17,6 +17,7 @@ import type { OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateI
 import { BatchSheet, DeliverSheet } from './deliver.js';
 import { ImportSheet } from './import.js';
 import { sameSchema, schemaText } from './templates.js';
+import { Loading } from '../components/motifs.js';
 
 /** 跨页面的一句提示（如保存后跳到数据集页）。 */
 let flash: string | undefined;
@@ -66,7 +67,7 @@ export function DatasetList(props: {
         )}
       </div>
       <ErrorBox problems={loaded.problems} title="读不到数据集" />
-      {loaded.loading && !data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !data && <Loading />}
       {data && (
         <div className="card" style={{ padding: '8px 12px' }}>
           <table className="table">
@@ -162,7 +163,7 @@ export function DatasetEditor(props: { readonly id?: string; readonly templateNa
         <span>{props.id === undefined ? '新建' : props.id}</span>
       </nav>
       <ErrorBox problems={loaded.problems} title="打不开数据集" />
-      {loaded.loading && !loaded.data && <p className="muted">正在读取…</p>}
+      {loaded.loading && !loaded.data && <Loading />}
       {loaded.data && <Editor key={`${props.id ?? ''}:${JSON.stringify(loaded.data.identity['staticSchema'] ?? '')}`}
         input={loaded.data} {...(props.id === undefined ? {} : { id: props.id })} {...(props.templateName ? { templateName: props.templateName } : {})}
         {...(props.sheet ? { sheet: props.sheet } : {})} />}

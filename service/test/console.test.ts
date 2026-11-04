@@ -26,10 +26,29 @@ describe('出图控制台的静态文件', () => {
     await mkdir(join(dir, 'assets'));
     await writeFile(join(dir, 'index.html'), '<!doctype html><title>控制台</title>');
     await writeFile(join(dir, 'assets', 'index-1a2b3c.js'), 'console.log(1)');
+    await writeFile(join(dir, 'assets', 'clip-1a2b3c.mp4'), '0123456789');
     await writeFile(join(dir, 'notes.md'), '不认识的类型不提供');
     await writeFile(join(tmpdir(), 'rw-console-outside.html'), '目录之外');
   });
   afterAll(async () => { await rm(dir, { recursive: true, force: true }); });
+
+  it('视频可以按范围读：要多少答多少，写错或超出答 416；别的文件不按范围答', async () => {
+    const app = api(dir);
+    const range = async (url: string, value?: string) => app.inject({ method: 'GET', url, ...(value ? { headers: { range: value } } : {}) });
+    const whole = await range('/console/assets/clip-1a2b3c.mp4');
+    expect([whole.statusCode, whole.headers['content-type'], whole.headers['accept-ranges'], whole.body]).toEqual([200, 'video/mp4', 'bytes', '0123456789']);
+    for (const [value, body, span] of [['bytes=2-4', '234', 'bytes 2-4/10'], ['bytes=7-', '789', 'bytes 7-9/10'], ['bytes=-2', '89', 'bytes 8-9/10'], ['bytes=8-99', '89', 'bytes 8-9/10']] as const) {
+      const part = await range('/console/assets/clip-1a2b3c.mp4', value);
+      expect([part.statusCode, part.body, part.headers['content-range']], value).toEqual([206, body, span]);
+      expect(part.headers['content-security-policy']).toBe(CONSOLE_CSP);
+    }
+    for (const value of ['bytes=10-', 'bytes=-0', 'bytes=5-2', 'items=0-1', 'bytes=-']) {
+      const refused = await range('/console/assets/clip-1a2b3c.mp4', value);
+      expect([refused.statusCode, refused.headers['content-range']], value).toEqual([416, 'bytes */10']);
+    }
+    const script = await range('/console/assets/index-1a2b3c.js', 'bytes=0-1');
+    expect([script.statusCode, script.headers['accept-ranges']]).toEqual([200, undefined]);
+  });
 
   it('index.html 不缓存，带内容哈希的文件长期缓存；都带内容安全策略；根路径转到 /console/', async () => {
     const app = api(dir);

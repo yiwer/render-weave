@@ -38,6 +38,21 @@ export async function readJson(storage: TenantStorage, stored: StoredDocument): 
   } catch { return undefined; }
 }
 
+/** 字段引用的数据定义：引用字段自己的，加列表元素的。 */
+function referencesOf(definition: Record<string, unknown> | undefined): string[] {
+  const fields = Array.isArray(definition?.['fields']) ? definition['fields'] as Record<string, unknown>[] : [];
+  return fields.flatMap((field) => [field, field['items'] as Record<string, unknown> | undefined]).flatMap((owner) => {
+    const ref = owner?.['type'] === 'ref' ? owner['ref'] as { name?: unknown; version?: unknown } | undefined : undefined;
+    return ref ? [`${String(ref.name)}@${String(ref.version)}`] : [];
+  });
+}
+
+/** 列表上的两个数（M360）：字段数，与引用深度。不引用别的数据定义时深度是 0；静态版本不可变，引用只能指向更早的，不会成环，seen 只是防坏数据。 */
+function listFacts(definition: Record<string, unknown> | undefined, byKey: ReadonlyMap<string, Record<string, unknown> | undefined>) {
+  const depth = (current: Record<string, unknown> | undefined, seen: ReadonlySet<string>): number => Math.max(0, ...referencesOf(current).map((key) => (seen.has(key) ? 0 : 1 + depth(byKey.get(key), new Set([...seen, key])))));
+  return { fieldCount: Array.isArray(definition?.['fields']) ? definition['fields'].length : 0, referenceDepth: depth(definition, new Set()) };
+}
+
 function summaryOf(name: string, version: number, definition: Record<string, unknown> | undefined): StaticSchemaSummary {
   const displayName = definition?.['displayName'], description = definition?.['description'];
   return { name, version, displayName: typeof displayName === 'string' ? displayName : name, ...(typeof description === 'string' ? { description } : {}) };
@@ -53,7 +68,9 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
       const key = stored.kind === 'definition' && compiled.has(stored.key) ? parseKey(stored.key) : undefined;
       return key ? [{ ...key, stored }] : [];
     }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.version - b.version));
-    return { staticSchemas: await Promise.all(definitions.map(async ({ name, version, stored }) => summaryOf(name, version, await readJson(storage, stored)))) };
+    const read = await Promise.all(definitions.map(async ({ name, version, stored }) => ({ name, version, definition: await readJson(storage, stored) })));
+    const byKey = new Map(read.map((item) => [`${item.name}@${item.version}`, item.definition]));
+    return { staticSchemas: read.map(({ name, version, definition }) => ({ ...summaryOf(name, version, definition), ...listFacts(definition, byKey) })) };
   });
 
   /** 路径里的静态数据定义：原文与编译产物都在才算有。 */
