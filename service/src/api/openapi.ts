@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.10.0';
+export const API_VERSION = '1.11.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -121,7 +121,7 @@ const SCHEMAS: Record<string, unknown> = {
     excel: freeform('Excel 证据：原件和定义身份、工作表、字段来源、批注/VML、排除范围及修正记录'),
     notes: str(), usage: freeform('模型用量'), canApprove: { type: 'boolean' },
   }, ['candidates', 'pending', 'problems', 'notes', 'usage', 'canApprove']) }, ['job']),
-  AgentJobList: object({ enabled: { type: 'boolean' }, jobs: array(ref('AgentJob')) }),
+  AgentJobList: object({ enabled: { type: 'boolean' }, maxWorkbookBytes: int('当前允许上传的工作簿原始字节数上限', 1), jobs: array(ref('AgentJob')) }),
   AgentCells: object({ sheets: array(object({ id: str(), name: str() })), sheet: str(),
     cells: array(freeform('固定读取视图单元格：address/value/display/formula 等')), total: int(), offset: int() }),
 

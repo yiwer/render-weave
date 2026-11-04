@@ -26,6 +26,8 @@ export function DatasetImports(props: { schemaName?: string; schemaVersion?: str
   const [busy, setBusy] = useState(false), [problems, setProblems] = useState<readonly Problem[]>();
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const data = loaded.data, chosen = data?.schemas.find(s => selectValue(s) === selected);
+  const maxWorkbookBytes = data?.maxWorkbookBytes ?? 0;
+  const sizeLimit = maxWorkbookBytes >= 1024 * 1024 ? `${maxWorkbookBytes / (1024 * 1024)} MiB` : `${maxWorkbookBytes / 1024} KiB`;
   const reset = () => { setRequestId(crypto.randomUUID()); setProblems(undefined); };
   useEffect(() => {
     if (!data?.jobs.some(active)) return;
@@ -35,7 +37,7 @@ export function DatasetImports(props: { schemaName?: string; schemaVersion?: str
     if (!file || !chosen || !brief.trim()) return;
     setBusy(true); setProblems(undefined);
     try {
-      if (file.size > 16 * 1024 * 1024) throw new Error('工作簿不能超过 16 MiB');
+      if (file.size > maxWorkbookBytes) throw new Error(`工作簿不能超过 ${sizeLimit}`);
       const reply = await api.createAgentJob({ requestId, staticSchema: { name: chosen.name, version: chosen.version }, filename: file.name, workbook: await base64(file), brief: brief.trim() });
       go(['dataset-imports', reply.job.id]);
     } catch (e) { setProblems(problemsOf(e)); } finally { setBusy(false); }
@@ -55,7 +57,7 @@ export function DatasetImports(props: { schemaName?: string; schemaVersion?: str
             <option value="">请选择…</option>{data.schemas.map(s => <option key={selectValue(s)} value={selectValue(s)}>{schemaText(s, data.schemas)}</option>)}
           </select>
         </div>
-        <div className="field"><label htmlFor="smart-workbook">Excel 工作簿</label><input id="smart-workbook" type="file" accept=".xlsx" required disabled={busy} onChange={e => { reset(); setFile(e.target.files?.[0]); }} /><p className="help">.xlsx，最大 16 MiB。保留工作表、合并关系与传统批注。</p></div>
+        <div className="field"><label htmlFor="smart-workbook">Excel 工作簿</label><input id="smart-workbook" type="file" accept=".xlsx" required disabled={busy} onChange={e => { reset(); setFile(e.target.files?.[0]); }} /><p className="help">.xlsx，最大 {sizeLimit}。保留工作表、合并关系与传统批注。</p></div>
         <div className="field"><label htmlFor="import-brief">需要提取什么</label><textarea id="import-brief" required maxLength={12000} rows={5} value={brief} disabled={busy} onChange={e => { reset(); setBrief(e.target.value); }} placeholder="例如：每个门店生成一份数据集，保留全部商品及顺序；备注和批注也需要核对。" /></div>
         <ErrorBox problems={problems} title="没有开始导入" />
         <div className="actions"><button className="primary" type="submit" disabled={busy || !data.enabled || !chosen || !file || !brief.trim()}>{busy ? '正在上传…' : '开始提取'}</button><a href={href(['datasets', 'new'])}>手动创建数据集</a></div>
@@ -137,7 +139,7 @@ function ImportReviewPanel({ detail, review, onChanged, onDirty }: { detail: Imp
     <ErrorBox problems={problems} title="修改或保存没有完成" />
     <div className="import-review-grid">
       <aside className="card import-source"><div className="card-head"><h2>原表与来源</h2><span className="small muted">只读</span></div>
-        <label className="field">工作表<select value={source.sheet ?? cells.data?.sheet ?? ''} onChange={e => setSource({ sheet: e.target.value, offset: 0 })}>{review.excel?.sheets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label className="field">工作表<select aria-label="工作表" value={source.sheet ?? cells.data?.sheet ?? ''} onChange={e => setSource({ sheet: e.target.value, offset: 0 })}>{review.excel?.sheets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
         {source.cell && <p className="small">定位到 {source.cell} <button type="button" className="quiet small" onClick={() => setSource({ sheet: source.sheet, offset: 0 })}>查看整表</button></p>}
         <ErrorBox problems={cells.problems} title="读不到原表" />
         <div className="table-box"><table className="table"><thead><tr><th>单元格</th><th>原文 / 显示值</th></tr></thead><tbody>{cells.data?.cells.map(c => <tr key={c.address}><td className="mono">{c.address}</td><td className="import-cell-text">{c.display ?? String(c.value ?? '')}{c.formula && <div className="small muted">公式：{c.formula}</div>}</td></tr>)}</tbody></table></div>
@@ -146,7 +148,7 @@ function ImportReviewPanel({ detail, review, onChanged, onDirty }: { detail: Imp
         <details className="import-evidence"><summary>字段来源（{sources.length}）</summary><ul>{sources.map((s, i) => <li key={i}><span className="mono">{s.path}</span> · {sheetName(s.sheet)} {s.cells.map(cell => <button type="button" key={cell} className="quiet small" onClick={() => setSource({ sheet: s.sheet, cell, offset: 0 })}>{cell}</button>)}<div className="small muted">{s.rule}</div></li>)}</ul></details>
         <details className="import-evidence"><summary>排除范围与批注处理说明</summary><ul>{review.excel?.context.map((c, i) => <li key={i}>{sheetName(c.sheet)} {c.range}：{c.reason}</li>)}{review.excel?.commentContext?.map((c, i) => <li key={`c-${i}`}>{sheetName(c.sheet)} {c.cell} 批注：{c.reason}</li>)}</ul></details>
       </aside>
-      <div className="import-candidates"><section className="card"><h2>候选数据集 <span className="muted">{review.candidates.length} 份</span></h2><label className="field">正在核对<select value={index} onChange={e => choose(Number(e.target.value))} disabled={busy}>{review.candidates.map((c, i) => <option key={c.path} value={i}>{c.name ?? `数据集 ${i + 1}`}{c.edited ? ' · 已人工修改' : ''}</option>)}</select></label>
+      <div className="import-candidates"><section className="card"><h2>候选数据集 <span className="muted">{review.candidates.length} 份</span></h2><label className="field">正在核对<select aria-label="正在核对" value={index} onChange={e => choose(Number(e.target.value))} disabled={busy}>{review.candidates.map((c, i) => <option key={c.path} value={i}>{c.name ?? `数据集 ${i + 1}`}{c.edited ? ' · 已人工修改' : ''}</option>)}</select></label>
         <p className="small muted">{review.notes}</p>{review.pending.filter(p => p.file === candidate?.path).map(p => <p key={p.item} className="soft import-cell-text">{p.note}{p.decision?.note && <><br />修改原因：{p.decision.note}</>}</p>)}
         <ErrorBox problems={loaded.problems} title="读不到数据定义" />
         {form && <fieldset disabled={readonly || busy} className="import-form"><DatasetForm spec={form} value={value} title={loaded.data?.displayName ?? '数据'} path="" onChange={v => { setValue(v); setConfirmed(false); }} problems={problemsByPath(candidate?.problems ?? [])} /></fieldset>}

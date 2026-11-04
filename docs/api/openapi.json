@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.10.0",
+    "version": "1.11.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；1.x 只做加法，客户端应忽略不认识的属性与枚举值。说明见 docs/api.md。"
   },
   "servers": [
@@ -8711,11 +8711,17 @@
         "type": "object",
         "required": [
           "enabled",
+          "maxWorkbookBytes",
           "jobs"
         ],
         "properties": {
           "enabled": {
             "type": "boolean"
+          },
+          "maxWorkbookBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前允许上传的工作簿原始字节数上限"
           },
           "jobs": {
             "type": "array",

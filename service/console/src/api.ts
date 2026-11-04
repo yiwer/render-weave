@@ -177,7 +177,7 @@ export const api = {
   publishDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256 } }),
 
   datasets: () => json<{ datasets: DatasetEntry[] }>('GET', '/v1/datasets'),
-  agentJobs: () => json<{ enabled: boolean; jobs: ImportJob[] }>('GET', '/v1/agent-jobs'),
+  agentJobs: () => json<{ enabled: boolean; maxWorkbookBytes: number; jobs: ImportJob[] }>('GET', '/v1/agent-jobs'),
   agentJob: (id: string) => json<ImportDetail>('GET', `/v1/agent-jobs/${enc(id)}`),
   createAgentJob: (body: { requestId: string; staticSchema: { name: string; version: number }; workbook: string; filename: string; brief: string }) => json<ImportDetail>('POST', '/v1/agent-jobs', { json: body }),
   cancelAgentJob: (id: string) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/cancel`),
