@@ -102,6 +102,8 @@ npx tsx scripts/agent-eval/run.ts --label <名称> --model gemini-4-argon-contri
 
 ## 6. 已知的坑
 
+- **宿主运行的 API 与渲染 worker 必须一起更新**：不要在服务运行时覆盖它们使用的 `dist/`。批次固定磁盘构建，worker 只领取匹配构建；只重启 API 或只重建文件会出现“进程 ready，但批次一直排队”。开发环境先排空已有任务，再构建并同步重启 API/worker；比对 `node service/dist/main.js build-id`、API `/healthz` 与 worker `/readyz` 的构建标识。若已有批次卡住，启动与该批次匹配的构建处理，不改写批次构建或用重复提交掩盖问题。使用不可变运行目录或镜像可避免覆盖；本机实测记录见 [票据 06](../.scratch/dataset-import-app/issues/06-queued-delivery.md)。
+
 - **Windows 上建不了符号链接**：没开"开发者模式"（也不是管理员）时，node 的 `fs.symlink` 报 `EPERM`，引擎组 `agent-candidate-freeze` 里有一条用例因此失败。要它通过，在"设置 → 系统 → 开发者选项"里打开开发者模式。
 - **引擎组重型用例要少并行**：`agent-*` 的集成用例会拉子进程、等检查点文件，全并行时大量超时或抢 `fixtures/resources` 的写锁（`local.storeBusy`）。2026-10-28 实测：6 个 worker 并行 57 条失败，同样 17 个文件逐文件串行只剩 3 条。全量跑用 `--maxWorkers=4`，核对失败时用 `--no-file-parallelism`。 2026-11-02 在 16 个逻辑核的 Windows 上：不限 worker 58–62 条失败；4 个 worker 6 条；逐文件串行 1 条（`agent-candidate-freeze` 建符号链接报 `EPERM`，要开 Windows 开发者模式）。
 - **Docker Desktop 起不来，报 `engine.sock` 改名失败**：`%LOCALAPPDATA%\docker-secrets-engine\engine.sock` 是上次崩溃留下的 Unix 套接字文件，`rename` 与 `del` 都报"The file cannot be accessed by the system"，错误对话框只给"退出"和"恢复出厂设置"。不要恢复出厂设置：退出 Docker Desktop，把 `docker-secrets-engine` 整个目录改名移开，再启动就好了（2026-11-01 实测）。

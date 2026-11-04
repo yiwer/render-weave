@@ -94,6 +94,14 @@ export function DeliverSheet(props: {
   const title = props.datasets.length === 1 ? props.datasets[0]!.name || props.datasets[0]!.id : `${props.datasets.length} 份数据集`;
 
   const submit = async () => {
+    // 先检查展开后的每项：范围参数由 sweep 提供，不能只看面板里的单值。
+    const missing = (template?.parameters ?? []).filter(parameter => parameter.default === undefined
+      && items.some(item => item.parameters[parameter.name] === undefined));
+    if (missing.length) {
+      setProblems(missing.map(parameter => ({ code: 'parameter.missing', level: 'severe',
+        location: { kind: 'parameter', name: parameter.name }, message: `请填写“${parameter.displayName}”后再提交。` })));
+      return;
+    }
     setBusy(true);
     setProblems(undefined);
     try {
