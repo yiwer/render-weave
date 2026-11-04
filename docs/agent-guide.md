@@ -1,6 +1,6 @@
 # 代建指南：用 Agent 把一张示例图做成可出图的模板
 
-Excel 数据提取走[工作簿审核与应用说明](excel-agent-review.md)：按工作空间 staticSchema 提取，经 `agent import-excel` 接入审核与完整应用。应用后按[出图接续说明](excel-agent-output.md)准备通用渲染项并交付。该能力目前位于独立分支 `feature/excel-agent-p06`。
+Excel 数据提取走[工作簿审核与应用说明](excel-agent-review.md)：按工作空间 staticSchema 提取，经 `agent import-excel` 接入审核与完整应用。应用后按[出图接续说明](excel-agent-output.md)准备通用渲染项并交付。实现已合入 `main`；提取仍使用本地原型入口，应用中的任务、审核和整组保存按[应用接入方案](excel-agent-app-integration.md)继续实施。
 
 照本页用一张示例图走完代建：
 

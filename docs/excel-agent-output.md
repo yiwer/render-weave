@@ -2,7 +2,7 @@
 
 P06 增加 `agent prepare-output` 与 `agent deliver-output`。前者核对已经审核应用的数据、生成标准批次请求并固定依赖；后者使用固定快照交付图片。输入仍来自工作空间 staticSchema，模板和对外参数决定如何出图，代码不包含线路、站点或商品字段分支。
 
-实现位于 `feature/excel-agent-p06`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出同步文档。前置流程见[提取与审核](excel-agent-review.md)，实例与边界见[P06 报告](agent-eval/excel-agent-p06.md)。
+实现已合入 `main`（2026-11-03，`417ca6e`）；历史实例产物仍在工作树 `F:\GenCode\render-weave-excel-prototype`。前置流程见[提取与审核](excel-agent-review.md)，实例与边界见[P06 报告](agent-eval/excel-agent-p06.md)，服务化接续见[应用接入方案](excel-agent-app-integration.md)。
 
 ## 1. 准备数据与版本资源仓库
 

@@ -50,7 +50,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 
 ### 未排期的后续
 
-- Excel 经 CodingAgent 按工作空间 staticSchema 提取（2026-11-03，M363–M373）：本地提取已接正式审核、修正重放、完整应用、通用渲染项准备和固定批次交付；传统批注、独立来源核对及纯 Note VML 锚点已接通。接续保留在独立分支 `feature/excel-template-115`（含此前实现），主检出只同步文档。用户 115 路原件的探索、批注复跑与交付见[票据索引](.scratch/excel-agent-extraction/README.md)及[交付说明](docs/agent-eval/excel-production-delivery-115.md)；按用户新参考图调用模板模块产生的候选见[票据 09](.scratch/excel-agent-extraction/issues/09-template-module-115.md)和[模板接续说明](docs/agent-eval/excel-template-115.md)。下一步先核准新图标、字号及各尺寸版式，将新增显示字段纳入正式可重放的数据审核，再应用新模板出图；正式 `agent run` 工作簿检查点与生产隔离继续待收口。人工业务审核工时与实际扣费未知，不能宣称成本验收完成。提取仍使用 Claude Code + OpenCode Go 原型入口，完整旧模块替代尚未完成，不改变 P0/P1 收尾。[审核说明](docs/excel-agent-review.md)、[出图接续](docs/excel-agent-output.md)、[流程设计](docs/excel-agent-workflow.md)、[规格](.scratch/excel-agent-extraction/spec.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
+- Excel 经 CodingAgent 按工作空间 staticSchema 提取（M363–M374）：本地提取、批注/VML 独立核对、审核修正、完整应用、通用出图计划与交付已合入 `main`。历史实测和模板候选产物仍在 `F:/GenCode/render-weave-excel-prototype/out/`，见[实表票据](.scratch/excel-agent-extraction/README.md)及[模板接续说明](docs/agent-eval/excel-template-115.md)。当前接着做[按静态数据定义创建数据集](.scratch/dataset-import-app/issues/02-create-by-static-schema.md)：模板改为可选，数据集模块承担智能导入入口；工作簿后台任务、审核与整组保存并入 P2，见[应用接入方案](docs/excel-agent-app-integration.md)。本地模型仍为 Claude Code + OpenCode Go 原型入口，正式 `agent run` 工作簿检查点与生产隔离未收口；新模板显示字段仍须进入可重放审核。人工业务审核工时与实际扣费未知。此接续不取消 P0/P1 门槛。[审核说明](docs/excel-agent-review.md)、[出图接续](docs/excel-agent-output.md)、[流程设计](docs/excel-agent-workflow.md)、[ADR 草案](docs/adr/0028-excel-agent-script-execution.md)。
 - 阶段 4 验收留下的后续（[第四阶段验收](docs/stage4-acceptance.md#后续)），其中整批导出包按项展开字体（千项 M402 约 33 GB）要先定取舍。
 - Agent 外围工具复核的票据 18（模板设计的主模板基准必须等于数据集选定的数据定义）、20（修正模板参考里的数据定义示例指向）是 `ready-for-agent`，做时另升 MCP 合同版本、另跑评估。
 - 控制台状态栏"进行中的批次"只数本标签页提交的；要租户范围，得加只读的批次列表端点（P1 票据 01 的偏差）。
@@ -120,6 +120,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 可观测与维护：worker 的就绪检查带队列积压、存活检查带渲染用时；接口进程队列不空时定期记一行积压，并删掉过了保留期的预览与重放任务行（M303）；
   - 验收与容量：`service/scripts/accept-stage4.mjs` 从空环境走完完成标准，`service/scripts/capacity.mjs` 测单项画像、千项长批次、多个 worker 与长期负载（M304）；
   - 开放 API 用例跑内存后端进 `npm test`，跑 PostgreSQL 加 S3 后端在 Docker 后端测试 `node service/scripts/test-docker.mjs`；控制台的浏览器用例在 Docker 后端测试里跑（[出图服务](docs/service.md)，M259–M286）。
+- **按静态数据定义提取工作簿（本地）**：Claude Code + OpenCode Go 生成转换脚本；正式 `agent import-excel` 独立核查来源、传统批注和 VML 锚点，接入审核、修正重放与完整应用；`agent prepare-output` / `agent deliver-output` 固定依赖并交付。提取入口仍在原型目录，网页智能导入与后台 Agent 任务未实现（[使用说明](docs/excel-agent-review.md)、[应用接入方案](docs/excel-agent-app-integration.md)）。
 - **成果与中断处理（M294、M295）**：MCP 合同 0.10.0 的 `check_outcome` 分开评估结构、候选、内容待审核及完整请求的实际渲染；已知能力受阻保留成果说明，严重问题继续阻止批准与应用。未交回有效 outcome 时，宿主另存带哈希的 `draft.json`，可查看但不能批准；`--from` 恢复候选。应用前在当前工作区重渲染。明确硬额度错误会封住 Google 代理后续请求并停止本轮执行器，记录 `run.stopped` 和续跑入口；直连仅在运行时明确报告同类错误时停止。普通限流与瞬时错误保持原处理。
 - **参考比较（M306）**：`--reference` 固定人工核准区域、原图与画板尺寸；只读 `compare_reference` 返回真实内容的同尺度三联图、缺项/文字/字号/尺寸/位置/文字颜色差异及源模板/实例位置，和最终检查共用模块。报告绑定实际工作区、数据、资源字节、参考与构建。状态仅来自核准清单；最终遮挡、对比度、复杂变换及未标注部分保持未知，不输出整体分数。
 - **提取覆盖核查（M306）**：`--content-baseline` 提供本次可信字段与数值事实，缺省为未核查；领域名、模型备注不能制造真值。明确严重不一致会阻止技术合格，pending 与预览使用同一有效候选但仍需审核；派生语义等未知项独立列出，总分为 null。

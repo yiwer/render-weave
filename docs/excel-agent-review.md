@@ -1,6 +1,6 @@
 # Excel 提取、审核、修正与应用
 
-本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。后续出图也已接入，批注接入实现位于分支 `feature/excel-agent-comments`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出仅同步文档。
+本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。后续出图与批注接入均已合入 `main`（2026-11-03，`417ca6e`）。以下旧工作树路径用于定位历史实测产物；新任务可在当前检出运行。网页和服务端接续见[应用接入方案](excel-agent-app-integration.md)。
 
 `agent run` 的工作簿输入尚未统一；目前提取使用原型入口，审核与应用使用正式入口。完整流程设计见[流程文档](excel-agent-workflow.md)，本轮证据见[测试报告](agent-eval/excel-agent-p05.md)。
 
