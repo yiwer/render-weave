@@ -1,6 +1,6 @@
 # Excel 提取、审核、修正与应用
 
-本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。实现位于分支 `feature/excel-agent-p05`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出仅同步文档。
+本地链路以工作空间已发布的 staticSchema 为目标，支持多份候选和嵌套对象列表。模型执行沿用 Claude Code + OpenCode Go；完成的提取包通过正式 `agent import-excel` 重新核验，再进入既有 `agent review` / `agent apply`。后续出图也已接入，当前实现位于分支 `feature/excel-agent-p06`，工作树 `F:\GenCode\render-weave-excel-prototype`；主检出仅同步文档。
 
 `agent run` 的工作簿输入尚未统一；目前提取使用原型入口，审核与应用使用正式入口。完整流程设计见[流程文档](excel-agent-workflow.md)，本轮证据见[测试报告](agent-eval/excel-agent-p05.md)。
 
@@ -54,4 +54,4 @@ node dist/bin.js agent apply out/my-review-02
 
 应用保存完整候选集合，记录既有提交回执；重复执行返回同一结果。应用前再次核对原件、映射、定义、候选和审核身份。提交中断后由公开读取/应用入口恢复；证据被修改则保留冲突，不能跳过恢复检查。
 
-数据应用不等于出图。后续按模板选择和参数准备渲染请求，再走既有出图、交付入口。P06 接续这部分，不能把本阶段的通过扩大为完整业务替代。
+数据应用后，按[出图接续说明](excel-agent-output.md)使用 `agent prepare-output` 固定模板、参数、渲染项和资源，再由 `agent deliver-output` 交付。准备、正式交付、预览、失败和未执行分别记录。完整业务替代仍需实际制作表验收。

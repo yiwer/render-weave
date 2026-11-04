@@ -7,3 +7,4 @@
 | [01：验证工作簿读取、隔离转换和独立核对](issues/01-validate-data-processing-prototype.md) | 无 | P01–P03；A01/A02/A03/A04/A06/A08/A09 的机制子集 |
 | [02：按工作空间 staticSchema 接入 Claude 并运行一轮测试](issues/02-connect-schema-driven-agent.md) | 01 | P04；通用字段映射、真实模型反馈重提与非公交样本 |
 | [03：将 Excel 候选接入审核、修正重放与完整应用](issues/03-review-correct-apply.md) | 02 | P05；正式审核、来源匹配修正、完整提交与嵌套定义实测 |
+| [04：从已应用数据集准备通用渲染项并交付](issues/04-prepare-and-deliver-output.md) | 03 | P06；模板参数、列表位置、完整范围、固定依赖与交付重放 |

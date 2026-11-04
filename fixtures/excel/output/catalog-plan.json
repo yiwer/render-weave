@@ -1,0 +1,9 @@
+{
+  "format": "renderweave-output-plan/1",
+  "mode": "final",
+  "groups": [
+    { "id": "catalog", "template": "目录商品卡", "datasets": "all", "output": { "width": 120, "height": 55, "dpi": 120, "format": "png" },
+      "forEach": { "path": "/batches/0/items", "parameter": "productIndex", "indexBase": 1, "skip": [{ "index": 2, "reason": "演示范围：第三项不在本次制作范围" }] }
+    }
+  ]
+}

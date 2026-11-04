@@ -1,0 +1,54 @@
+{
+  "build": "sha256:963a26389aad8a4e6089bb225243493814d100b9bc916448ed279232a2a6fce8",
+  "baseCommit": "a05b5db99d4f43f7359f02d3679af0b018213ada",
+  "files": [
+    {
+      "file": "src/agent/output-plan.ts",
+      "sha256": "1f753e5fe0cbe8359763a7a64949d554bce520f193f98acc9d0127065854dd92"
+    },
+    {
+      "file": "src/cli.ts",
+      "sha256": "364395e3d4a89927500249dfff2a9ca160238e8ff6b9b9530e3334efc80f9335"
+    },
+    {
+      "file": "src/bin.ts",
+      "sha256": "e73efb960dd9e07fd44a74f3f860e3f3421538172b859073af6e7154d758434a"
+    },
+    {
+      "file": "src/index.ts",
+      "sha256": "cf2ef5cc648fd24228ad2d599e3658914220b17652dc0035ed1ac33f1ea4a05c"
+    },
+    {
+      "file": "dist/agent/output-plan.js",
+      "sha256": "1f84a9c20514f3e46fe943447d10a587ea9adc3637e84bb573cb82c940ed4045"
+    },
+    {
+      "file": "dist/cli.js",
+      "sha256": "89be91fac719bc9cb3d0f74f85e03aeba395375e0834fb44826f111d80e47bba"
+    },
+    {
+      "file": "dist/bin.js",
+      "sha256": "d77701c70ce8167ca5197b5155b5701650382d2b476a9f186cabe01d1ef22791"
+    },
+    {
+      "file": "scripts/accept-excel-output.mjs",
+      "sha256": "953096d318e3b4415ef498a61a5029e9b0395b5d4672c016c71111a5846993a7"
+    },
+    {
+      "file": "fixtures/excel/output/price-tags-plan.json",
+      "sha256": "f78b45ac2336d4ebe3785f13763e2f9ae1c2d5fbf89124336b1943a5ac772e4b"
+    },
+    {
+      "file": "fixtures/excel/output/catalog-plan.json",
+      "sha256": "cda69189dfb5b3ff0653492389b7aa01d02db83ebc8c4d1a6cf1ea1323c9ac3c"
+    },
+    {
+      "file": "fixtures/excel/output/template-catalog-item.json",
+      "sha256": "131688191cfdbd33e952a85b3d8d350fd066255a74cfc0b811f51125512ac56b"
+    },
+    {
+      "file": "package-lock.json",
+      "sha256": "e11e43156266d31ab9a50e7063ca11a5d691c079166a202e55586f99c23ccb7d"
+    }
+  ]
+}

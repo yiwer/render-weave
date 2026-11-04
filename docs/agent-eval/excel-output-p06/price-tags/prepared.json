@@ -1,0 +1,108 @@
+{
+  "format": "renderweave-prepared-output/1",
+  "state": "prepared",
+  "build": "sha256:963a26389aad8a4e6089bb225243493814d100b9bc916448ed279232a2a6fce8",
+  "mode": "final",
+  "source": {
+    "roundDir": "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\price-tags\\review",
+    "commitId": "10cd39dd-d14a-4a03-a604-c36ab8457bcd",
+    "appliedSha256": "3d2cbc47127f0db99b291c834c31b717e90a635f619e654a3b4b335442280bf9"
+  },
+  "files": [
+    {
+      "file": "plan.json",
+      "sha256": "4fb9af1d134dbe3412987a229ca8ee3cb156ac87229d5df5d7c6c05113c8a19b",
+      "byteLength": 786
+    },
+    {
+      "file": "batch-001.json",
+      "sha256": "bfad3281f274af3a9dd2acccd206a1c75a85e08853b0782821a65b7640be8e35",
+      "byteLength": 23688
+    },
+    {
+      "file": "request-001.json",
+      "sha256": "6040dcba2ee3d92c655f8ab7dd02e46a9a4afdc41016906ca0dceefb30603e45",
+      "byteLength": 1549
+    },
+    {
+      "file": "asset-62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "byteLength": 8569308
+    },
+    {
+      "file": "asset-88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "byteLength": 8808068
+    },
+    {
+      "file": "asset-a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "byteLength": 8406556
+    },
+    {
+      "file": "asset-e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "byteLength": 8429224
+    },
+    {
+      "file": "batch-002.json",
+      "sha256": "e61014d334948450e3e7be044ad578f7b9e2caa3aee531672da5036a242f05c7",
+      "byteLength": 22001
+    },
+    {
+      "file": "request-002.json",
+      "sha256": "b4b005d71f933d4825e0c9febe5e7daa273efa626a8edbdef4c18ed964973c3e",
+      "byteLength": 366
+    }
+  ],
+  "batches": [
+    {
+      "groupId": "shelf",
+      "snapshot": "batch-001.json",
+      "request": "request-001.json"
+    },
+    {
+      "groupId": "large",
+      "snapshot": "batch-002.json",
+      "request": "request-002.json"
+    }
+  ],
+  "items": [
+    {
+      "groupId": "shelf",
+      "datasetId": "0012345",
+      "id": "[\"shelf\",\"0012345\",null]"
+    },
+    {
+      "groupId": "shelf",
+      "datasetId": "0088012",
+      "id": "[\"shelf\",\"0088012\",null]"
+    },
+    {
+      "groupId": "shelf",
+      "datasetId": "0300417",
+      "id": "[\"shelf\",\"0300417\",null]"
+    },
+    {
+      "groupId": "shelf",
+      "datasetId": "0201133",
+      "id": "[\"shelf\",\"0201133\",null]"
+    },
+    {
+      "groupId": "shelf",
+      "datasetId": "0500311",
+      "id": "[\"shelf\",\"0500311\",null]"
+    },
+    {
+      "groupId": "large",
+      "datasetId": "0012345",
+      "id": "[\"large\",\"0012345\",null]"
+    }
+  ],
+  "skipped": [
+    {
+      "datasetId": "0400025",
+      "reason": "演示范围：该商品暂不制作价签"
+    }
+  ]
+}

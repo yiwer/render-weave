@@ -1,0 +1,101 @@
+{
+  "format": "renderweave-prepared-output/1",
+  "state": "prepared",
+  "build": "sha256:963a26389aad8a4e6089bb225243493814d100b9bc916448ed279232a2a6fce8",
+  "mode": "final",
+  "source": {
+    "roundDir": "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\catalog\\review",
+    "commitId": "82180de6-9b63-40ca-9b15-88a5c3ff5c05",
+    "appliedSha256": "3da1f48dcc8cafc06a087833391235ed1969ba4ed844f00eb128d685adc93345"
+  },
+  "files": [
+    {
+      "file": "plan.json",
+      "sha256": "bfbe3ad6631a5f34cd6b983cd211062d7f99209c03021cce464e4fd183fa70f6",
+      "byteLength": 567
+    },
+    {
+      "file": "batch-001.json",
+      "sha256": "4e0e313a19405d1359b99c462fcec4a3242e78e3430f30f7c479f2f8b1e3a913",
+      "byteLength": 24861
+    },
+    {
+      "file": "request-001.json",
+      "sha256": "7284f492c0a8bc82f0f32107ce54132c7f7ad302ec58cebc16b4c1ac7e8875ab",
+      "byteLength": 1497
+    },
+    {
+      "file": "asset-62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6.bin",
+      "sha256": "62383707c086a32f3afd5e293f34c7eff64c7fea31f579fdc6cbe34d920519a6",
+      "byteLength": 8569308
+    },
+    {
+      "file": "asset-88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c.bin",
+      "sha256": "88c749b0a54a0800124ded6544e399302ed224aa49992ea364b88769f825c54c",
+      "byteLength": 8808068
+    },
+    {
+      "file": "asset-a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01.bin",
+      "sha256": "a94e558a2fe972bee4f46bce0843abff37063fd68c33f1e7d9058f6f09432b01",
+      "byteLength": 8406556
+    },
+    {
+      "file": "asset-e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4.bin",
+      "sha256": "e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4",
+      "byteLength": 8429224
+    }
+  ],
+  "batches": [
+    {
+      "groupId": "catalog",
+      "snapshot": "batch-001.json",
+      "request": "request-001.json"
+    }
+  ],
+  "items": [
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 0,
+      "id": "[\"catalog\",\"catalog-01\",0]"
+    },
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 1,
+      "id": "[\"catalog\",\"catalog-01\",1]"
+    },
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 3,
+      "id": "[\"catalog\",\"catalog-01\",3]"
+    },
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 4,
+      "id": "[\"catalog\",\"catalog-01\",4]"
+    },
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 5,
+      "id": "[\"catalog\",\"catalog-01\",5]"
+    }
+  ],
+  "skipped": [
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 2,
+      "reason": "演示范围：第三项不在本次制作范围"
+    }
+  ]
+}

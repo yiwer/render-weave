@@ -25,6 +25,7 @@ export { checkDslDocument, dslDocumentKind, type DslDocumentCheck, type DslDocum
 /** 两份数据定义之间按字段列出增、删、改与改动的属性键；字段名称是身份，改名是一删一增（出图服务的发布前差异）。 */
 export { diffDefinition, type DefinitionDiff, type FieldChange, type FieldOrderChange } from './definition-diff.js';
 export { importExcelRound, type ImportExcelOptions } from './agent/excel-import.js';
+export { prepareAgentOutput, deliverAgentOutput, type AgentOutputPlan, type PreparedAgentOutput, type AgentOutputDelivery, type OutputPosition } from './agent/output-plan.js';
 export { parseRenderRequest, type RenderRequest, type RenderMode, type OutputFormat } from './request.js';
 export {
   loadWorkspace,

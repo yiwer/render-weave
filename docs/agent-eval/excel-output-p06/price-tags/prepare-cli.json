@@ -1,0 +1,17 @@
+{
+  "args": [
+    "agent",
+    "prepare-output",
+    "--round",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\price-tags\\review",
+    "--resources",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\resources",
+    "--plan",
+    "fixtures/excel/output/price-tags-plan.json",
+    "--out",
+    "F:\\GenCode\\render-weave-excel-prototype\\out\\excel-p06\\accept-01\\price-tags\\prepared"
+  ],
+  "code": 0,
+  "stdout": "{\"state\":\"prepared\",\"items\":6,\"skipped\":1,\"batches\":2,\"directory\":\"F:\\\\GenCode\\\\render-weave-excel-prototype\\\\out\\\\excel-p06\\\\accept-01\\\\price-tags\\\\prepared\"}\n",
+  "stderr": ""
+}

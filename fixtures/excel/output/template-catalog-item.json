@@ -1,0 +1,22 @@
+{
+  "dslVersion": "renderweave-template/1",
+  "name": "目录商品卡",
+  "base": { "name": "catalog", "version": 1 },
+  "parameters": [
+    { "name": "productIndex", "displayName": "商品序号", "visibility": "public", "type": "number", "constraints": { "integer": true, "min": 1 } }
+  ],
+  "derived": [
+    { "name": "batch", "displayName": "批次", "type": "ref", "ref": { "name": "catalog-group", "version": 1 }, "op": "pickItem", "list": { "var": "batches" }, "position": "first" },
+    { "name": "product", "displayName": "商品", "type": "ref", "ref": { "name": "商品价签", "version": 1 }, "op": "pickItem", "list": { "var": "batch.items" }, "position": { "index": { "var": "productIndex" } } }
+  ],
+  "artboard": {
+    "sizeRange": { "width": { "min": 100, "max": 140 }, "height": { "min": 40, "max": 70 } },
+    "fill": "#FFFFFF", "padding": 4, "layout": { "mode": "stack", "direction": "column", "gap": 3 },
+    "children": [
+      { "type": "text", "name": "商品名", "content": [{ "slot": "product.productName" }], "font": "res:font-hei-medium", "fontSize": 5, "place": { "width": "fill" }, "fit": { "steps": ["compressGlyphs", "shrink"], "onFail": "severe" } },
+      { "type": "text", "name": "货号", "content": [{ "text": "货号 " }, { "slot": "product.itemNo" }], "font": "res:font-hei-medium", "fontSize": 3 },
+      { "type": "text", "name": "售价", "content": [{ "text": "¥" }, { "slot": "product.retailPrice", "format": "0.00" }], "font": "res:font-hei-medium", "fontSize": 8, "color": "#C8102E" },
+      { "type": "text", "name": "序号", "content": [{ "text": "目录序号 " }, { "slot": "productIndex" }], "font": "res:font-hei-medium", "fontSize": 3 }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "format": "renderweave-agent-delivery/1",
+  "state": "delivered",
+  "mode": "final",
+  "preparedSha256": "e5d1e88a4af584f6b3caff48282973d72b2439aa53a1b970ccfa3bb1cd5538ab",
+  "summary": {
+    "total": 5,
+    "delivered": 5,
+    "previewed": 0,
+    "failed": 0,
+    "notRun": 0,
+    "severe": 0,
+    "hints": 0
+  },
+  "skipped": [
+    {
+      "groupId": "catalog",
+      "datasetId": "catalog-01",
+      "path": "/batches/0/items",
+      "index": 2,
+      "reason": "演示范围：第三项不在本次制作范围"
+    }
+  ],
+  "batches": [
+    {
+      "groupId": "catalog",
+      "directory": "0001",
+      "summary": {
+        "total": 5,
+        "delivered": 5,
+        "previewed": 0,
+        "failed": 0,
+        "notRun": 0,
+        "severe": 0,
+        "hints": 0
+      },
+      "problems": []
+    }
+  ]
+}
