@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright-core';
 import yauzl from 'yauzl';
-import { capture, ensureEnv, root, run, up } from './docker.mjs';
+import { capture, ensureEnv, ensureProjectFree, root, run, up } from './docker.mjs';
 import {
   API, call, expectStatus, finished, m402Items, M402_DIR, openTenant, platformLogin, PRICE_TAG_DIR, push, renderweave, resourceStore, sleep, submit, webhookReceiver,
 } from './stage4.mjs';
@@ -27,6 +27,7 @@ if (!browserPath) {
   console.error('请设 RW_BROWSER：本机 Chromium 内核浏览器的可执行文件，如 C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe');
   process.exit(2);
 }
+ensureProjectFree();
 const out = join(root, 'out/stage4/acceptance', new Date().toISOString().replace(/[:.]/g, '-'));
 await mkdir(out, { recursive: true });
 const steps = [];
