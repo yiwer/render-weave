@@ -2142,8 +2142,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (const group of ['位置尺寸', '文字', '颜色', '适配', '条件显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
       expect(await input('place.left').inputValue()).toBe('2');
 
-      // 每种元素改一项属性。text：字号从绑定变量换成数值。
-      await edit(() => fieldOf('fontSize').locator('select').first().selectOption({ label: '数值' }));
+      // 每种元素改一项属性。text：字号断开绑定，当前值 5 变成字面值，图不变；再改成 8。
+      await expect.poll(() => fieldOf('fontSize').getByTestId('bound-chip').textContent()).toContain('5');
+      const unbound = afterStash();
+      await fieldOf('fontSize').getByTestId('unbind-button').click();
+      await unbound;
+      expect(await input('fontSize').inputValue(), '断开时当前值变成字面值').toBe('5');
       let { document, reply } = await edit(() => input('fontSize').fill('8'));
       const elementIn = (doc: Record<string, unknown>, name: string) => (doc['artboard'] as { children: Record<string, unknown>[] }).children.find((child) => child['name'] === name)!;
       expect(elementIn(document, '文字')['fontSize']).toBe(8);
@@ -2159,27 +2163,18 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(elementIn(document, '循环')['itemLayout']).toMatchObject({ heights: { fixed: 4 } });
 
       await chooseRow(at('调用'));
-      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
       ({ document } = await edit(() => input('opacity').fill('0.5')));
       expect(elementIn(document, '调用')['opacity']).toBe(0.5);
 
       await clickElement(at('图片'));
-      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
       ({ document } = await edit(() => input('opacity').fill('0.4')));
       expect(elementIn(document, '图片')['opacity']).toBe(0.4);
 
       await clickElement(at('二维码'));
-      // 换成"颜色"写入的初始值是黑色，与缺省相同，图还不变。
-      const qrColor = afterStash();
-      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
-      await qrColor;
       ({ document } = await edit(() => input('foreground').fill('#B4532A')));
       expect(elementIn(document, '二维码')['foreground']).toBe('#B4532A');
 
       await clickElement(at('条码'));
-      const barColor = afterStash();
-      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
-      await barColor;
       ({ document } = await edit(() => input('foreground').fill('#0B4EA2')));
       expect(elementIn(document, '条码')['foreground']).toBe('#0B4EA2');
 
@@ -2782,6 +2777,126 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 收尾：丢掉工作副本与试值。
       expect((await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token)).status).toBe(204);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 09）：值格能绑定、断开、提取为参数，来源链跳到真正的参数；数值拖标签松手才写回', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const stopDocument = async () => JSON.parse((await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token)).body.content as string) as { parameters: { name: string }[]; artboard: unknown };
+      /** 站名这个元素在文档里的样子。 */
+      const stopName = async () => {
+        const find = (node: Record<string, unknown>): Record<string, unknown> | undefined => (node['name'] === '站名' ? node : ((node['children'] ?? []) as Record<string, unknown>[]).map(find).find(Boolean));
+        return find((await stopDocument()).artboard as Record<string, unknown>)!;
+      };
+      await side.getByRole('button', { name: '展开 站点面板' }).click();
+      await side.getByRole('button', { name: '展开 站点列' }).click();
+      await side.getByRole('button', { name: '展开 名称区' }).click();
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      await inspector.locator('details:not([open]) > summary').evaluateAll((items) => items.forEach((item) => (item as unknown as { click(): void }).click()));
+
+      // 绑定态：显示名称与当前值；值从主模板的内部参数来。
+      const size = field('fontSize');
+      await expect.poll(() => size.getByTestId('bound-chip').textContent()).toContain('站名字号');
+      await expect.poll(() => size.getByTestId('bound-chip').textContent()).toContain('10');
+      await expect.poll(() => size.getByTestId('value-origin').textContent()).toBe(`来自 ${ROOT}「站名字号」（内部参数）`);
+      // 被状态覆盖：颜色前有圆点，写明哪些取值；字号没有。
+      expect(await field('color').getByTestId('state-dot').getAttribute('title')).toContain('已过站、本站');
+      expect(await size.getByTestId('state-dot').count()).toBe(0);
+      // 不能绑定：字体没有按钮，写明原因。
+      expect(await field('font').getByTestId('bind-button').count()).toBe(0);
+      await field('font').locator('input').first().focus();
+      await field('font').getByTestId('no-binding').filter({ hasText: '用状态样式' }).waitFor();
+
+      // 弹层只列类型相符的变量，分组、带当前值；Esc 关掉，不动选中。
+      await field('color').getByTestId('bound-chip').click();
+      const popover = field('color').getByTestId('binding-popover');
+      const option = (name: string) => popover.locator(`[data-testid="binding-option"][data-name="${name}"]`);
+      await option('passedColor').waitFor();
+      expect(await option('stopNameSize').count(), '数值不能绑颜色').toBe(0);
+      expect(await option('name').count(), '文本不能绑颜色').toBe(0);
+      expect(await popover.getByRole('region', { name: '参数' }).count()).toBe(1);
+      expect(await option('nameColor').getAttribute('aria-pressed')).toBe('true');
+      await target.keyboard.press('Escape');
+      expect(await popover.count()).toBe(0);
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+
+      // 换绑定：写回 { var }。
+      await field('color').getByTestId('bound-chip').click();
+      const rebound = stashed();
+      await option('passedColor').click();
+      await rebound;
+      expect((await stopName())['color']).toEqual({ var: 'passedColor' });
+
+      // 断开：当前值变成字面值。
+      await expect.poll(() => field('color').getByTestId('bound-chip').textContent()).toContain('已过站');
+      const cut = stashed();
+      await field('color').getByTestId('unbind-button').click();
+      await cut;
+      expect((await stopName())['color']).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(await field('color').getByTestId('value-cell').getAttribute('data-state')).toBe('literal');
+
+      // 提取为参数：起名可改，存当前值，一步撤销。
+      await field('color').getByTestId('bind-button').click();
+      await popover.getByRole('button', { name: '提取为参数' }).click();
+      const naming = popover.getByRole('form', { name: '提取为参数' });
+      expect(await naming.getByLabel('名称', { exact: true }).inputValue()).toBe('color');
+      expect(await naming.getByLabel('显示名称').inputValue()).toBe('站名颜色');
+      await naming.getByLabel('名称', { exact: true }).fill('passedColor');
+      await naming.getByRole('alert').filter({ hasText: '已经有' }).waitFor();
+      expect(await naming.getByRole('button', { name: '提取并绑定' }).isDisabled()).toBe(true);
+      await naming.getByLabel('名称', { exact: true }).fill('stopTextColor');
+      const extracted = stashed();
+      await naming.getByRole('button', { name: '提取并绑定' }).click();
+      await extracted;
+      expect((await stopName())['color']).toEqual({ var: 'stopTextColor' });
+      expect((await stopDocument()).parameters.map((item) => item.name)).toContain('stopTextColor');
+      await expect.poll(() => field('color').getByTestId('bound-chip').textContent()).toContain('站名颜色');
+      const undone = stashed();
+      await target.keyboard.press('Control+z');
+      await undone;
+      expect((await stopDocument()).parameters.map((item) => item.name), '参数和绑定一起撤销').not.toContain('stopTextColor');
+      expect((await stopName())['color']).toMatch(/^#/);
+
+      // 拖标签：拖的时候只改显示，松手才写回。
+      const label = field('letterSpacing').locator('label').first(), box = (await label.boundingBox())!;
+      let writes = 0;
+      const countWrites = (request: { method(): string; url(): string }) => { if (request.method() === 'PUT' && request.url().includes('/working-copy?')) writes++; };
+      target.on('request', countWrites);
+      await target.mouse.move(box.x + 8, box.y + box.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(box.x + 38, box.y + box.height / 2, { steps: 4 });
+      await expect.poll(() => field('letterSpacing').locator('input[type="text"]').first().inputValue()).toBe('3');
+      expect(writes, '还没松手').toBe(0);
+      const dragged = stashed();
+      await target.mouse.up();
+      await dragged;
+      target.off('request', countWrites);
+      expect(writes).toBe(1);
+      expect((await stopName())['letterSpacing']).toBe(3);
+
+      // 经循环信息传入的写明是循环序号。
+      await side.getByRole('tab', { name: '变量' }).click();
+      await side.locator('[data-name="index"]').getByRole('button').click();
+      await inspector.getByTestId('value-origin').filter({ hasText: '循环序号，由循环 站点列 传入' }).waitFor();
+
+      // 来源链一键跳过去：右边是主模板的参数。
+      await side.locator('[data-name="stopNameSize"]').getByRole('button').click();
+      await inspector.getByTestId('value-origin').getByRole('button', { name: `${ROOT}「站名字号」` }).click();
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
+      await expect.poll(() => target.url()).toContain(`/templates/${enc(ROOT)}/design`);
+      await expect.poll(() => inspector.getByTestId('value-origin').textContent()).toBe('来自 本模板「站名字号」（内部参数）');
+
+      // 收尾：丢掉工作副本。
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
       await leaveDesign(target, ROOT);
     }, 180_000);
 

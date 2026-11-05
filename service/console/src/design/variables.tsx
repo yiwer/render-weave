@@ -4,9 +4,11 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from '../api.js';
-import { FieldRow, type FieldContext } from '../components/property-fields.js';
+import { FieldRow, OriginLine, type FieldContext } from '../components/property-fields.js';
+import { TYPE_GLYPHS, ValueText } from '../components/value-text.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { href, useLoad } from '../hooks.js';
+import { describeOrigin } from '../template/binding.js';
 import { elementVariables, flatElements, isObject, variableClosure, type JsonObject } from '../template/document.js';
 import { listItemPanel, writeListItem } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
@@ -15,7 +17,6 @@ import type { ElementInspection, InspectedValue, InspectedVariable } from '../ty
 export type VariableKind = 'field' | 'parameter' | 'derived' | 'check';
 export interface VariableSelection { readonly template: string; readonly name: string; readonly kind: VariableKind }
 
-const TYPE_GLYPHS: Readonly<Record<string, string>> = { text: 'T', number: '#', date: '日', time: '时', datetime: '刻', boolean: '?', image: '图', color: '色', list: '≡', ref: '{}' };
 const OPERATIONS: Readonly<Record<string, string>> = { branch: '条件分支', pickItem: '取项', splitPart: '拆取文本', length: '长度', add: '加', subtract: '减', multiply: '乘', divide: '除', mod: '取模' };
 
 /** 这个元素实例的求值结果：改动、样例或实例变了才问；问不到不影响别的。 */
@@ -34,21 +35,6 @@ export function useInspection(request: unknown, element: string | undefined, ver
     return () => { stale = true; window.clearTimeout(timer); };
   }, [text, element, version]);
   return inspection;
-}
-
-export function ValueText(props: { readonly value: InspectedValue | undefined; readonly type?: string }) {
-  const { value } = props;
-  if (value === undefined || value === null) return <span className="value-text faint">空</span>;
-  if (typeof value === 'object') {
-    if ('list' in value) return <span className="value-text">{value.list} 项</span>;
-    const name = value.fields['name'] ?? value.fields['title'];
-    return <span className="value-text">{typeof name === 'string' ? `{ ${name} }` : '{…}'}</span>;
-  }
-  if (typeof value === 'boolean') return <span className="value-text">{value ? '是' : '否'}</span>;
-  if (value === '') return <span className="value-text faint">空文本</span>;
-  if (props.type === 'color') return <span className="value-text"><i className="value-swatch" style={{ background: String(value) }} aria-hidden="true" />{String(value)}</span>;
-  const text = String(value);
-  return <span className="value-text" title={text}>{text.startsWith('res:') ? text.slice(4) : text}</span>;
 }
 
 const namedList = (document: JsonObject, list: string): readonly JsonObject[] => (Array.isArray(document[list]) ? (document[list] as unknown[]).filter(isObject) : []);
@@ -158,6 +144,7 @@ function Uses(props: { readonly document: JsonObject; readonly template: string;
 /** 右边：选中的变量。参数与检查项能改；字段属于数据定义，只读；派生变量的编辑器在票据 16，这里先看。 */
 export function VariableInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selection: VariableSelection; readonly inspection?: ElementInspection; readonly lists: FieldContext['lists'];
+  readonly documentOf: (template: string) => JsonObject | undefined;
   readonly onElement: (path: string) => void; readonly onVariable: (selection: VariableSelection) => void; readonly onClear: () => void;
 }) {
   const { doc, session, selection, inspection } = props, { name, kind } = selection, document = doc.document;
@@ -183,6 +170,7 @@ export function VariableInspector(props: {
         <span className="small muted">{kindText} · <span className="mono">{name}</span></span>
       </div>
       {known && <p className="small muted variable-current" data-testid="variable-current">当前样例取值：<ValueText value={known.value} type={known.type} /></p>}
+      {known?.origin && <OriginLine text={describeOrigin(known.origin, doc.name, props.documentOf)} onOpen={(link) => props.onVariable({ template: link.template, name: link.name, kind: link.kind })} />}
       {kind === 'field' && (
         <section className="prop-section" aria-label="字段">
           <p className="small muted">字段属于数据定义，这里只读。<a href={href(['definitions', base], { field: name })}>打开数据定义的这个字段</a></p>

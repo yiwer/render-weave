@@ -291,7 +291,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         {panels.right && (
           <aside className="design-panel right" aria-label="检查器">
             <div className="design-panel-body">
-              {doc ? <DesignInspector doc={doc} session={session} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
+              {doc ? <DesignInspector doc={doc} session={session} documentOf={documentOf} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}

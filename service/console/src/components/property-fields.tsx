@@ -1,18 +1,40 @@
 /**
- * 属性面板的字段（P1 票据 08）：把生成规则给的可编辑项画出来，改动交给 onWrite；只能填数，没有拖拽（M205）。
+ * 属性面板的字段（P1 票据 08）：把生成规则给的可编辑项画出来，改动交给 onWrite。
  * 输入框里的草稿留在这里：不合法的不写回，标红并说明；撤销、换元素时跟着文档里的值走。
+ * 能绑定的属性画成值格（模板设计页票据 09）：字面值、没写、绑定三种样子，绑定与断开写回同一个入口。
  */
-import { useEffect, useId, useRef, useState } from 'react';
-import type { Editor, FieldPath, PropertyField } from '../template/properties.js';
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { boundName, currentLiteral, unboundValue, type OriginLink, type OriginText, type ScopeVariable } from '../template/binding.js';
+import type { Bindable, Editor, FieldPath, PropertyField } from '../template/properties.js';
+import { BindingPopover } from './binding-popover.js';
+import { Icon, LINK, UNLINK } from './icon.js';
+import { ValueText } from './value-text.js';
+
+/** 值格要的页面能力。没有它时（列表项的编辑）字段按老样子画变体下拉。 */
+export interface BindingHost {
+  /** 这个模板作用域里的变量，带当前样例的值。 */
+  readonly variables: readonly ScopeVariable[];
+  readonly taken: ReadonlySet<string>;
+  suggest(field: PropertyField): { readonly name: string; readonly displayName: string };
+  extract(field: PropertyField, bindable: Bindable, value: unknown, name: string, displayName: string): void;
+  describe(variable: ScopeVariable): OriginText | undefined;
+  /** 来源链与"查看变量"跳过去。 */
+  open(link: Pick<OriginLink, 'template' | 'name' | 'kind'>): void;
+  /** 状态样式在哪些取值下覆盖这一项；没有时是空的。 */
+  overriddenBy(field: PropertyField): readonly string[];
+}
 
 export interface FieldContext {
   /** now：选项与开关立刻写回，打字才等停顿。 */
   onWrite(path: FieldPath, value: unknown, options?: { readonly now?: boolean }): void;
   /** 建议的选项：<datalist> 的 ID，由页面按变量、字段与资源生成。 */
   readonly lists: Readonly<Record<'variable' | 'field' | 'font' | 'image', string>>;
+  readonly binding?: BindingHost;
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** 没写时的提示：引擎的缺省值淡色显示，不知道时写"缺省"。 */
+const placeholderOf = (field: PropertyField, required = '') => (field.required ? required : field.fallback !== undefined ? String(field.fallback) : '缺省');
 
 /** 草稿：合法才写回。外面的值变了（撤销、重做）就换成外面的值，自己写回的不算。 */
 function useDraft(value: unknown, format: (value: unknown) => string) {
@@ -37,8 +59,8 @@ function numberError(editor: Extract<Editor, { kind: 'number' }>, value: number)
   return undefined;
 }
 
-function NumberInput(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'number' }>; readonly context: FieldContext }) {
-  const { field, editor } = props;
+function NumberInput(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'number' }>; readonly context: FieldContext; readonly live?: number | undefined }) {
+  const { field, editor, live } = props;
   const { draft, setDraft, error, setError, written } = useDraft(field.value, (value) => (typeof value === 'number' ? String(value) : ''));
   const change = (text: string) => {
     setDraft(text);
@@ -57,7 +79,7 @@ function NumberInput(props: { readonly id: string; readonly field: PropertyField
   };
   return (
     <>
-      <input id={props.id} type="text" inputMode="decimal" className="prop-number" value={draft} aria-invalid={error ? true : undefined} placeholder={field.required ? '' : '缺省'}
+      <input id={props.id} type="text" inputMode="decimal" className="prop-number" value={live === undefined ? draft : String(live)} aria-invalid={error ? true : undefined} placeholder={placeholderOf(field)}
         onChange={(event) => change(event.target.value)} />
       {error && <span className="prop-error" role="alert">{error}</span>}
     </>
@@ -84,7 +106,7 @@ function TextInput(props: { readonly id: string; readonly field: PropertyField; 
   return (
     <>
       <input id={props.id} type="text" value={draft} aria-invalid={error ? true : undefined} {...(editor.suggest ? { list: context.lists[editor.suggest] } : {})}
-        placeholder={field.required ? '' : '缺省'} onChange={(event) => change(event.target.value)} />
+        placeholder={placeholderOf(field)} onChange={(event) => change(event.target.value)} />
       {error && <span className="prop-error" role="alert">{error}</span>}
     </>
   );
@@ -110,7 +132,7 @@ function ColorInput(props: { readonly id: string; readonly field: PropertyField;
     <span className="color-input">
       {/* 取色器只认 #RRGGBB，带透明度的取前 6 位显示。 */}
       <input type="color" aria-label={`${field.label}（取色）`} value={/^#[0-9a-fA-F]{6}/.test(draft) ? draft.slice(0, 7).toLowerCase() : '#000000'} onChange={(event) => write(event.target.value.toUpperCase())} />
-      <input id={props.id} type="text" value={draft} aria-invalid={error ? true : undefined} placeholder={field.required ? '#RRGGBB' : '缺省'} onChange={(event) => write(event.target.value)} />
+      <input id={props.id} type="text" value={draft} aria-invalid={error ? true : undefined} placeholder={placeholderOf(field, '#RRGGBB')} onChange={(event) => write(event.target.value)} />
       {error && <span className="prop-error" role="alert">{error}</span>}
     </span>
   );
@@ -145,11 +167,81 @@ function JsonInput(props: { readonly id: string; readonly field: PropertyField; 
 function Choice(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'choice' }>; readonly context: FieldContext }) {
   const { field, editor, context } = props;
   const selected = editor.options.findIndex((option) => same(option.value, field.value));
+  const fallback = field.fallback === undefined ? undefined : editor.options.find((option) => same(option.value, field.fallback));
   return (
     <select id={props.id} value={selected} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.options[index]!.value, { now: true }); }}>
-      {(!field.required || selected < 0) && <option value={-1}>缺省</option>}
+      {(!field.required || selected < 0) && <option value={-1}>{fallback ? `缺省（${fallback.label}）` : '缺省'}</option>}
       {editor.options.map((option, index) => <option key={index} value={index}>{option.label}</option>)}
     </select>
+  );
+}
+
+/** 来源链：这个变量真正的值在哪，一键跳过去。 */
+export function OriginLine(props: { readonly text: OriginText; readonly onOpen: (link: OriginLink) => void }) {
+  const { text } = props;
+  return (
+    <p className="value-origin small" data-testid="value-origin">
+      {text.before}
+      {text.link && <button type="button" className="link" onClick={() => props.onOpen(text.link!)}>{text.link.label}</button>}
+      {text.after}
+    </p>
+  );
+}
+
+/**
+ * 值格：绑定时是灰底条（显示名称与当前值），点开换绑定，旁边断开；断开时当前值变成字面值，图不变。
+ * 没绑定时是字面值的输入框，没写就淡色显示缺省值；右边的按钮打开绑定弹层。写成对象的变体（分别设置）在下拉里选。
+ */
+function ValueCell(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'variants' }>; readonly bindable: Bindable; readonly host: BindingHost; readonly context: FieldContext; readonly live?: number | undefined }) {
+  const { id, field, editor, bindable, host, context, live } = props;
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const name = boundName(field.value), variable = name === undefined ? undefined : host.variables.find((item) => item.name === name);
+  const origin = variable && host.describe(variable);
+  const literals = editor.variants.flatMap((variant, index) => (boundName(variant.initial) === undefined ? [{ variant, index }] : []));
+  // 字面值之外还有对象形态的变体（内边距分别设置）才要下拉；是与否由字面值的选择框管。
+  const choose = bindable.type !== 'boolean' && literals.length > 1;
+  const scalar = !editor.editor || editor.editor.kind === bindable.literal.kind;
+  const shown = scalar ? bindable.literal : editor.editor!;
+  const activeLiteral = name === undefined && editor.active >= 0 ? editor.active : literals.find(({ variant }) => typeof variant.initial !== 'object')?.index ?? literals[0]?.index ?? 0;
+  const suggested = host.suggest(field);
+  const button = (label: string) => (
+    <button type="button" className="value-action" aria-label={label} title={label} aria-expanded={open} data-testid="bind-button" onClick={() => setOpen(!open)}><Icon d={LINK} /></button>
+  );
+  return (
+    <div className="value-cell" data-testid="value-cell" data-state={name !== undefined ? 'bound' : field.value === undefined ? 'unset' : 'literal'}>
+      <div className="value-cell-row">
+        {name !== undefined ? (
+          <>
+            <button type="button" className="value-bound" data-testid="bound-chip" aria-label={`${field.label}绑定了 ${variable?.label ?? name}，点开换绑定`} aria-expanded={open} title={name} onClick={() => setOpen(!open)}>
+              <span className="value-bound-name">{variable?.label ?? name}</span>
+              <ValueText value={variable?.value} type={variable?.type ?? bindable.type} />
+            </button>
+            <button type="button" className="value-action" aria-label="断开绑定" title="断开绑定：当前值变成字面值" data-testid="unbind-button" onClick={() => context.onWrite(field.path, unboundValue(bindable, variable?.value), { now: true })}><Icon d={UNLINK} /></button>
+          </>
+        ) : (
+          <>
+            {choose && (
+              <select className="prop-variant" aria-label={`${field.label}的写法`} value={activeLiteral} onChange={(event) => context.onWrite(field.path, editor.variants[Number(event.target.value)]!.initial, { now: true })}>
+                {literals.map(({ variant, index }) => <option key={index} value={index}>{variant.label}</option>)}
+              </select>
+            )}
+            {/* 字面值的输入框不随"没写→写了"重建，否则打第一个字就丢焦点。 */}
+            <EditorView key={scalar ? 'literal' : editor.active} id={id} field={field} editor={shown} context={context} live={live} />
+            {button('绑定变量')}
+          </>
+        )}
+      </div>
+      {origin && <OriginLine text={origin} onOpen={host.open} />}
+      {open && (
+        <BindingPopover type={bindable.type} label={field.label} {...(name !== undefined ? { current: name } : {})} variables={host.variables}
+          extract={{ value: currentLiteral(field, bindable, variable?.value), name: suggested.name, displayName: suggested.displayName, taken: host.taken }}
+          onPick={(next) => { context.onWrite(field.path, { var: next }, { now: true }); close(); }}
+          onExtract={(next, displayName) => { host.extract(field, bindable, currentLiteral(field, bindable, variable?.value), next, displayName); close(); }}
+          onOpen={(target) => { const base = target.name.split('.')[0]!; close(); host.open({ template: '', name: base, kind: target.kind }); }}
+          onClose={close} />
+      )}
+    </div>
   );
 }
 
@@ -258,14 +350,16 @@ function MapEditor(props: { readonly field: PropertyField; readonly editor: Extr
   );
 }
 
-function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext }) {
-  const { id, field, editor, context } = props;
+function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext; readonly live?: number | undefined }) {
+  const { id, field, editor, context, live } = props;
   switch (editor.kind) {
-    case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} />;
+    case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} live={live} />;
     case 'text': return <TextInput id={id} field={field} editor={editor} context={context} />;
     case 'color': return <ColorInput id={id} field={field} context={context} />;
     case 'choice': return <Choice id={id} field={field} editor={editor} context={context} />;
-    case 'variants': return <Variants id={id} field={field} editor={editor} context={context} />;
+    case 'variants': return editor.bindable && context.binding
+      ? <ValueCell id={id} field={field} editor={editor} bindable={editor.bindable} host={context.binding} context={context} live={live} />
+      : <Variants id={id} field={field} editor={editor} context={context} />;
     case 'group': return <Group field={field} editor={editor} context={context} />;
     case 'list': return <ListEditor field={field} editor={editor} context={context} />;
     case 'map': return <MapEditor field={field} editor={editor} context={context} />;
@@ -293,16 +387,68 @@ export function FieldRows(props: { readonly fields: readonly PropertyField[]; re
   );
 }
 
+/** 能拖标签的数值：字面值或没写；绑定着的、写成对象的不能拖。 */
+function draggableNumber(field: PropertyField, context: FieldContext): Extract<Editor, { kind: 'number' }> | undefined {
+  if (field.needs) return undefined;
+  if (field.editor.kind === 'number') return field.editor;
+  const literal = field.editor.kind === 'variants' && context.binding ? field.editor.bindable?.literal : undefined;
+  return literal?.kind === 'number' && (field.value === undefined || typeof field.value === 'number') ? literal : undefined;
+}
+
+/** 拖一下走多少：0 到 1 的属性（不透明度）细一些，整数一格一个，毫米 0.1。 */
+const dragStep = (editor: Extract<Editor, { kind: 'number' }>) => (editor.integer ? 1 : editor.max !== undefined && editor.max - (editor.min ?? 0) <= 1 ? 0.01 : 0.1);
+
+function clampNumber(editor: Extract<Editor, { kind: 'number' }>, value: number, step: number): number {
+  let result = Math.round(value / step) * step;
+  if (editor.min !== undefined) result = Math.max(editor.min, result);
+  if (editor.max !== undefined) result = Math.min(editor.max, result);
+  if (editor.exclusiveMin !== undefined && result <= editor.exclusiveMin) result = editor.exclusiveMin + step;
+  return Number(result.toFixed(4));
+}
+
+/** 按住标签左右拖：拖的时候只改显示，松手才写回，所以一次拖动只出一张图、撤销一步。按住 Shift 走得快十倍。 */
+function useLabelDrag(field: PropertyField, context: FieldContext) {
+  const [live, setLive] = useState<number>();
+  const editor = draggableNumber(field, context);
+  const start = (event: ReactPointerEvent) => {
+    if (!editor || event.button !== 0) return;
+    const from = typeof field.value === 'number' ? field.value : typeof field.fallback === 'number' ? field.fallback : editor.min ?? 0;
+    const x = event.clientX, step = dragStep(editor);
+    let moved = false, value = from;
+    const move = (next: PointerEvent) => {
+      const distance = next.clientX - x;
+      if (!moved && Math.abs(distance) < 3) return;
+      moved = true;
+      value = clampNumber(editor, from + distance * step * (next.shiftKey ? 10 : 1), step);
+      setLive(value);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setLive(undefined);
+      if (moved && value !== from) context.onWrite(field.path, value, { now: true });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return { live, draggable: Boolean(editor), start };
+}
+
 /** 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。 */
 export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext }) {
   const { field, context } = props, id = useId();
   const wide = field.editor.kind === 'group' || field.editor.kind === 'list' || field.editor.kind === 'map';
+  const { live, draggable, start } = useLabelDrag(field, context);
+  const overridden = context.binding?.overriddenBy(field) ?? [];
+  const labelClass = `prop-label${field.required ? ' required' : ''}${draggable ? ' draggable' : ''}`;
+  const dot = overridden.length > 0 && <i className="prop-state-dot" data-testid="state-dot" title={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} aria-label={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} />;
   return (
-    <div className={`prop${wide ? ' wide' : ''}`} data-testid="property-field" data-key={field.key} title={field.description}>
-      {wide ? <span className={`prop-label${field.required ? ' required' : ''}`}>{field.label}</span> : <label className={`prop-label${field.required ? ' required' : ''}`} htmlFor={id}>{field.label}</label>}
+    <div className={`prop${wide ? ' wide' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
+      {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{dot}{field.label}</label>}
       <div className="prop-control">
-        {field.needs ? <span className="small muted">先写{field.needs.join('、')}</span> : <EditorView id={id} field={field} editor={field.editor} context={context} />}
+        {field.needs ? <span className="small muted">先写{field.needs.join('、')}</span> : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} />}
       </div>
+      {field.noBinding && <p className="prop-nobind small faint" data-testid="no-binding">{field.noBinding}</p>}
     </div>
   );
 }

@@ -5,9 +5,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { api, ApiError } from '../api.js';
 import { ProblemList } from '../components/problems.js';
-import { FieldRow, FieldRows, type FieldContext } from '../components/property-fields.js';
+import { FieldRow, FieldRows, type BindingHost, type FieldContext } from '../components/property-fields.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { useLoad } from '../hooks.js';
+import { describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
@@ -16,7 +17,7 @@ import type { Selection } from './stage.js';
 import { VariableInspector, type VariableSelection } from './variables.js';
 
 /** 建议项：变量、字段与资源。内置的数据定义（单值文本）没有静态版本，只是少几条建议。 */
-function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists']; readonly element: ReactNode } {
+function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists']; readonly element: ReactNode; readonly baseFields: readonly BaseField[] } {
   const base = isObject(doc.document['base']) ? doc.document['base'] as { name: string; version: number } : undefined;
   const compiled = useLoad(() => (base ? api.staticSchema(base.name, base.version).catch((error: unknown) => { if (error instanceof ApiError) return undefined; throw error; }) : Promise.resolve(undefined)), `${base?.name}@${base?.version}`);
   const resources = useLoad(() => api.resources(), 'design-resources');
@@ -29,6 +30,10 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
     }
     return names;
   }, [compiled.data]);
+  const baseFields = useMemo<readonly BaseField[]>(() => (compiled.data ? formOf(compiled.data.compiled as FormObject).fields.map((field) => ({
+    name: field.name, label: field.spec.title || field.name, type: field.spec.kind === 'object' ? 'ref' : field.spec.kind,
+    ...(field.spec.kind === 'object' ? { fields: field.spec.fields.map((inner) => ({ name: inner.name, label: inner.spec.title || inner.name, type: inner.spec.kind })) } : {}),
+  })) : []), [compiled.data]);
   const named = (list: string) => (Array.isArray(doc.document[list]) ? (doc.document[list] as unknown[]).flatMap((item) => (isObject(item) && typeof item['name'] === 'string' ? [item['name']] : [])) : []);
   const variables = [...named('parameters'), ...named('derived'), ...fields];
   const refs = (kind: 'font' | 'image') => (resources.data?.resources ?? []).filter((resource) => resource.kind === kind).map((resource) => `res:${resource.id}`);
@@ -36,6 +41,7 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
   return {
     lists: { variable: 'design-variables', field: 'design-fields', font: 'design-fonts', image: 'design-images' },
     element: <>{options('design-variables', variables)}{options('design-fields', fields)}{options('design-fonts', refs('font'))}{options('design-images', refs('image'))}</>,
+    baseFields,
   };
 }
 
@@ -43,25 +49,26 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
 export function DesignInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply; readonly impact?: string;
   readonly variable?: VariableSelection; readonly inspection?: ElementInspection; readonly onVariable: (selection: VariableSelection | undefined) => void;
+  readonly documentOf: (template: string) => JsonObject | undefined;
   readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
   const { doc, session } = props;
   // 什么都没选时显示画板。
   const selected = props.selected ?? { template: doc.name, path: doc.name };
-  const { lists, element } = useFieldLists(doc);
+  const { lists, element, baseFields } = useFieldLists(doc);
   const edit = (document: JsonObject, key: string) => session.edit(doc.name, document, key);
   if (props.variable) {
     return (
       <>
         {element}
-        <VariableInspector key={`${props.variable.template}\n${props.variable.name}`} doc={doc} session={session} selection={props.variable} {...(props.inspection ? { inspection: props.inspection } : {})} lists={lists} onElement={props.onSelect} onVariable={props.onVariable} onClear={() => props.onVariable(undefined)} />
+        <VariableInspector key={`${props.variable.template}\n${props.variable.name}`} doc={doc} session={session} selection={props.variable} {...(props.inspection ? { inspection: props.inspection } : {})} lists={lists} documentOf={props.documentOf} onElement={props.onSelect} onVariable={props.onVariable} onClear={() => props.onVariable(undefined)} />
       </>
     );
   }
   return (
     <>
       {element}
-      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
+      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} baseFields={baseFields} {...(props.inspection ? { inspection: props.inspection } : {})} documentOf={props.documentOf} onVariable={props.onVariable} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
@@ -69,15 +76,29 @@ export function DesignInspector(props: {
 
 function PropertiesTab(props: {
   readonly doc: DesignDoc; readonly selected: Selection; readonly reply?: PreviewReply; readonly impact?: string; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void; readonly onCommit: () => void;
+  readonly baseFields: readonly BaseField[]; readonly inspection?: ElementInspection; readonly documentOf: (template: string) => JsonObject | undefined; readonly onVariable: (selection: VariableSelection) => void;
   readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
-  const { doc, selected, reply } = props;
+  const { doc, selected, reply, inspection } = props;
   const path = selected.path, panel = propertyPanel(doc.document, path);
+  const variables = useMemo(() => scopeVariables(doc.document, props.baseFields, inspection?.template === doc.name ? inspection : undefined), [doc.document, props.baseFields, inspection, doc.name]);
   if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
   const segments = path.split('/'), element = elementAt(doc.document, path)?.element;
+  const cases = isObject(element?.['states']) && isObject(element['states']['cases']) ? element['states']['cases'] : {};
+  const binding: BindingHost = {
+    variables,
+    taken: takenNames(doc.document, variables),
+    suggest: (field) => suggestParameter(doc.document, variables, segments.at(-1)!, field),
+    // 加参数与绑定是一次写回，一步撤销。
+    extract: (field, bindable, value, name, displayName) => { props.onEdit(extractParameter(doc.document, path, field.path, { name, displayName, type: bindable.type, value }), `extract:${path}:${name}`); props.onCommit(); },
+    describe: (variable) => (variable.origin ? describeOrigin(variable.origin, doc.name, props.documentOf) : undefined),
+    open: (link) => props.onVariable({ template: link.template || doc.name, name: link.name, kind: link.kind }),
+    overriddenBy: (field) => (field.path.length === 1 ? Object.entries(cases).flatMap(([state, overrides]) => (isObject(overrides) && String(field.path[0]) in overrides ? [state] : [])) : []),
+  };
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
   const context: FieldContext = {
     lists: props.lists,
+    binding,
     onWrite: (fieldPath: FieldPath, value: unknown, options) => {
       props.onEdit(writeProperty(doc.document, path, fieldPath, value), `${path}:${fieldPath.join('.')}`);
       if (options?.now) props.onCommit();

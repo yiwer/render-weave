@@ -4,7 +4,8 @@
  */
 import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { listItemPanel, propertyPanel, writeListItem, writeProperty, type Editor, type PropertyField, type PropertyPanel } from '../console/src/template/properties.js';
+import { bindingCandidates, boundName, currentLiteral, describeOrigin, extractParameter, parameterNameProblem, scopeVariables, suggestParameter, takenNames, unboundValue } from '../console/src/template/binding.js';
+import { listItemPanel, propertyPanel, writeListItem, writeProperty, type Bindable, type Editor, type PropertyField, type PropertyPanel } from '../console/src/template/properties.js';
 import type { JsonObject } from '../console/src/template/document.js';
 import templateSchema from '../../schemas/template.schema.json' with { type: 'json' };
 import { checkDslDocument } from '../src/engine.js';
@@ -337,5 +338,154 @@ describe('穷举：每个元素的每个顶层属性，每个变体的初始值�
       if (editor.kind === 'group' && editor.absent) tryWrite(field, '初始值', editor.initial);
     }
     expect(failures).toEqual([]);
+  });
+});
+
+describe('值格：绑定、断开、提取为参数（模板设计页票据 09）', () => {
+  const bindableOf = (field: PropertyField): Bindable | undefined => (field.editor.kind === 'variants' ? field.editor.bindable : undefined);
+  const mustBind = (field: PropertyField): Bindable => {
+    const found = bindableOf(field);
+    if (!found) throw new Error(`${field.key} 不是值格`);
+    return found;
+  };
+  const inspection = (variables: { name: string; displayName?: string; kind: 'field' | 'parameter' | 'derived'; type: string; value: unknown; origin?: unknown }[], template = NAME) => ({
+    path: NAME, template, source: NAME, checks: [], instances: [],
+    variables: variables.map((item) => ({ displayName: item.name, ...item })),
+  }) as never;
+
+  it('能不能绑定以 Schema 的变体为准：有绑定变量这一项、字面值类型说得清的都是值格', () => {
+    const document = fresh();
+    for (const name of ['椭圆', '矩形', '容器', '文字', '图片', '二维码', '条码']) {
+      for (const field of allFields(panelOf(document, at(name)))) {
+        if (field.editor.kind !== 'variants' || !field.editor.variants.some((variant) => variant.label === '绑定变量')) continue;
+        const labels = field.editor.variants.map((variant) => variant.label);
+        // 传入参数的值是 { value }、{ loop }、{ var }，字面值没有单一类型，留给调用的表单（票据 15）。
+        const describable = labels.some((label) => ['数值', '颜色', '资源', '文字', '是'].includes(label));
+        expect(Boolean(field.editor.bindable), `${name} 的 ${field.key}：${labels.join('、')}`).toBe(describable);
+      }
+    }
+  });
+
+  it.each([
+    ['椭圆', 'opacity', 'number'],
+    ['矩形', 'fill', 'color'],
+    ['矩形', 'visible', 'boolean'],
+    ['矩形', 'cornerRadius', 'number'],
+    ['图片', 'source', 'image'],
+    ['二维码', 'content', 'text'],
+    ['二维码', 'foreground', 'color'],
+    ['文字', 'letterSpacing', 'number'],
+  ])('类型和模板静态检查的判断一致：%s 的 %s 要 %s', (name, key, type) => {
+    expect(mustBind(fieldOf(fresh(), at(name), key)).type).toBe(type);
+  });
+
+  it('不能绑定的属性不是值格，并写明原因：字体要用状态样式', () => {
+    const document = fresh();
+    const font = fieldOf(document, at('文字'), 'font');
+    expect(bindableOf(font)).toBeUndefined();
+    expect(font.noBinding).toContain('用状态样式');
+    expect(fieldOf(document, at('文字'), 'writingMode').noBinding).toContain('书写方向');
+    expect(fieldOf(document, at('文字'), 'name').noBinding, '名称不是值').toBeUndefined();
+    expect(fieldOf(document, at('椭圆'), 'opacity').noBinding, '能绑定的不写').toBeUndefined();
+  });
+
+  it('没写的属性带引擎的缺省值，字面值的输入框也在，不用先选变体', () => {
+    const field = fieldOf(fresh(), at('椭圆'), 'opacity');
+    expect(field.fallback).toBe(1);
+    expect(mustBind(field).literal).toMatchObject({ kind: 'number', min: 0, max: 1 });
+  });
+
+  it('绑定：写回 { var }，结果由 checkDslDocument 判断；只列类型相符的变量，引用展开一层', () => {
+    const document = fresh(), path = at('矩形');
+    const written = extractParameter(document, path, ['fill'], { name: 'accent', displayName: '强调色', type: 'color', value: '#112233' });
+    const rebound = writeProperty(written, path, ['fill'], { var: 'accent' });
+    expect(severe(rebound)).toEqual([]);
+    const fields = [
+      { name: 'title', label: '标题', type: 'text' },
+      { name: 'stops', label: '站点', type: 'list' },
+      { name: 'terminal', label: '终点站', type: 'ref', fields: [{ name: 'name', label: '站名', type: 'text' }, { name: 'order', label: '序号', type: 'number' }] },
+    ];
+    const variables = scopeVariables(rebound, fields, inspection([
+      { name: 'title', kind: 'field', type: 'text', value: '万国城' },
+      { name: 'terminal', kind: 'field', type: 'ref', value: { fields: { name: '万国城总站', order: 35 } } },
+      { name: 'accent', kind: 'parameter', type: 'color', value: '#112233FF' },
+    ]));
+    expect(bindingCandidates(variables, 'color').map((item) => item.name)).toContain('accent');
+    expect(bindingCandidates(variables, 'color').some((item) => item.name === 'title'), '文本不能绑颜色').toBe(false);
+    expect(bindingCandidates(variables, 'text').filter((item) => item.kind === 'field').map((item) => [item.name, item.value])).toEqual([['title', '万国城'], ['terminal.name', '万国城总站']]);
+    expect(bindingCandidates(variables, 'number').find((item) => item.name === 'terminal.order')).toMatchObject({ value: 35, label: '终点站 · 序号' });
+  });
+
+  it('别的模板的求值结果不算：名单照文档列，没有取值', () => {
+    const document = extractParameter(fresh(), at('矩形'), ['fill'], { name: 'accent', displayName: '强调色', type: 'color', value: '#112233' });
+    const variables = scopeVariables(document, [], undefined);
+    expect(variables.find((item) => item.name === 'accent')).toEqual({ name: 'accent', label: '强调色', kind: 'parameter', type: 'color' });
+  });
+
+  it('断开：当前值变成字面值，不透明的颜色去掉 FF；当前值用不上时写初值', () => {
+    const document = fresh(), path = at('矩形');
+    const fill = mustBind(fieldOf(document, path, 'fill')), opacity = mustBind(fieldOf(document, at('椭圆'), 'opacity'));
+    expect(unboundValue(fill, '#FF8000FF')).toBe('#FF8000');
+    expect(unboundValue(fill, '#FF800080'), '半透明要留着').toBe('#FF800080');
+    expect(unboundValue(opacity, 0.4)).toBe(0.4);
+    expect(unboundValue(opacity, null), '空值').toBe(opacity.initial);
+    expect(unboundValue(opacity, 5), '超出这一格的范围').toBe(opacity.initial);
+    const bound = writeProperty(document, path, ['fill'], { var: 'someColor' });
+    const unbound = writeProperty(bound, path, ['fill'], unboundValue(fill, '#FF8000FF'));
+    expect(elementOf(unbound, path)['fill']).toBe('#FF8000');
+    expect(severe(unbound)).toEqual([]);
+    expect(boundName(elementOf(bound, path)['fill'])).toBe('someColor');
+  });
+
+  it('提取为参数：当前值存成内部参数的缺省值并绑定它，一次写回；合法的模板', () => {
+    const document = fresh(), path = at('椭圆');
+    const written = writeProperty(document, path, ['opacity'], 0.5);
+    const field = fieldOf(written, path, 'opacity'), bindable = mustBind(field);
+    expect(currentLiteral(field, bindable, undefined)).toBe(0.5);
+    const extracted = extractParameter(written, path, ['opacity'], { name: 'opacity', displayName: '椭圆不透明度', type: bindable.type, value: 0.5 });
+    expect(severe(extracted)).toEqual([]);
+    expect(elementOf(extracted, path)['opacity']).toEqual({ var: 'opacity' });
+    expect((extracted['parameters'] as unknown[]).at(-1)).toEqual({ name: 'opacity', displayName: '椭圆不透明度', visibility: 'internal', type: 'number', default: 0.5 });
+    expect(elementOf(written, path)['opacity'], '原文档不变').toBe(0.5);
+  });
+
+  it('提取的值：绑定着的取当前样例的值，没写的取缺省；写成对象或还没选图时没有单个的值', () => {
+    const document = fresh();
+    const unset = fieldOf(document, at('椭圆'), 'opacity');
+    expect(currentLiteral(unset, mustBind(unset), undefined)).toBe(1);
+    const boundDoc = writeProperty(document, at('椭圆'), ['opacity'], { var: 'x' }), bound = fieldOf(boundDoc, at('椭圆'), 'opacity');
+    expect(currentLiteral(bound, mustBind(bound), 0.25)).toBe(0.25);
+    const corners = writeProperty(document, at('矩形'), ['cornerRadius'], { topLeft: 2 }), split = fieldOf(corners, at('矩形'), 'cornerRadius');
+    expect(currentLiteral(split, mustBind(split), undefined)).toBeUndefined();
+    const noImage = writeProperty(document, at('图片'), ['source'], { var: 'x' }), source = fieldOf(noImage, at('图片'), 'source');
+    expect(currentLiteral(source, mustBind(source), undefined), '当前样例没有图').toBeUndefined();
+  });
+
+  it('起名：沿用属性的英文键，重名加序号；嵌套的写法取外层；点与重名不合法', () => {
+    const document = fresh();
+    const opacity = fieldOf(document, at('椭圆'), 'opacity');
+    expect(suggestParameter(document, [], '椭圆', opacity)).toEqual({ name: 'opacity', displayName: '椭圆不透明度' });
+    const once = extractParameter(document, at('椭圆'), ['opacity'], { name: 'opacity', displayName: '椭圆不透明度', type: 'number', value: 1 });
+    expect(suggestParameter(once, [], '矩形', fieldOf(once, at('矩形'), 'opacity')).name).toBe('opacity2');
+    const fixed = writeProperty(document, at('矩形'), ['place', 'width'], { fixed: 12 });
+    expect(suggestParameter(fixed, [], '矩形', fieldOf(fixed, at('矩形'), 'place.width.fixed')).name).toBe('width');
+    const taken = takenNames(once, []);
+    expect(parameterNameProblem('opacity', taken)).toContain('已经有');
+    expect(parameterNameProblem('a.b', taken)).toContain('点');
+    expect(parameterNameProblem('', taken)).toBeDefined();
+    expect(parameterNameProblem('fresh', taken)).toBeUndefined();
+  });
+
+  it('来源链说成人话，能跳的给出位置：内部参数、请求给值、经调用的字段、固定值与循环信息', () => {
+    const doc = { parameters: [{ name: 'stopNameSize', displayName: '站名字号' }] } as JsonObject;
+    const documentOf = (template: string) => (template === '标准线路单边' ? doc : undefined);
+    expect(describeOrigin({ kind: 'default', template: '标准线路单边', name: 'stopNameSize', visibility: 'internal' }, '站点', documentOf)).toEqual({
+      before: '来自 ', link: { template: '标准线路单边', name: 'stopNameSize', kind: 'parameter', label: '标准线路单边「站名字号」' }, after: '（内部参数）',
+    });
+    expect(describeOrigin({ kind: 'default', template: '标准线路单边', name: 'stopNameSize', visibility: 'public' }, '标准线路单边', documentOf)).toMatchObject({ link: { label: '本模板「站名字号」' }, after: '（对外参数的缺省值）' });
+    expect(describeOrigin({ kind: 'request', template: '标准线路单边', name: 'currentIndex' }, '站点', documentOf)).toMatchObject({ link: { name: 'currentIndex' }, after: '（对外参数，渲染请求给值）' });
+    expect(describeOrigin({ kind: 'field', template: '标准线路单边', name: 'terminal.name', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toMatchObject({ link: { name: 'terminal', kind: 'field' }, after: '（调用 站点列 传入）' });
+    expect(describeOrigin({ kind: 'value', template: '标准线路单边', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '调用 站点列 写的固定值', after: '' });
+    expect(describeOrigin({ kind: 'loop', template: '标准线路单边', loop: 'index', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '循环序号，由循环 站点列 传入', after: '' });
   });
 });

@@ -19,8 +19,11 @@ export type Editor =
   | { readonly kind: 'text'; readonly pattern?: string; readonly minLength?: number; readonly suggest?: 'variable' | 'field' | 'font' | 'image' }
   | { readonly kind: 'color' }
   | { readonly kind: 'choice'; readonly options: readonly ChoiceOption[] }
-  /** anyOf：选一个变体，active 是当前值落在哪个变体上（-1 是没写）；变体有内容要填时 editor 是它的编辑器。 */
-  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor }
+  /**
+   * anyOf：选一个变体，active 是当前值落在哪个变体上（-1 是没写）；变体有内容要填时 editor 是它的编辑器。
+   * 有"绑定变量"这个变体且字面值类型说得清时带 bindable，页面画成值格（模板设计页票据 09）。
+   */
+  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor; readonly bindable?: Bindable }
   /** 对象：absent 表示还没写，有必填子项时要先"添加"，写入 initial。 */
   | { readonly kind: 'group'; readonly fields: readonly PropertyField[]; readonly absent: boolean; readonly initial: unknown }
   | { readonly kind: 'list'; readonly items: readonly PropertyField[]; readonly append: readonly ChoiceOption[]; readonly minItems: number }
@@ -31,6 +34,17 @@ export type Editor =
 
 export interface ChoiceOption { readonly label: string; readonly value: unknown }
 export interface Variant { readonly label: string; readonly initial: unknown }
+
+/** 属性要的变量类型，和模板静态检查的判断一致（M71）：只有完全相符才能绑定。 */
+export type BindingType = 'number' | 'color' | 'boolean' | 'text' | 'image';
+export interface Bindable {
+  readonly type: BindingType;
+  /** 字面值的编辑器：没写、断开绑定之后都用它。 */
+  readonly literal: Editor;
+  /** 这种字面值的初值，和 schema 一起决定断开时写什么。 */
+  readonly initial: unknown;
+  readonly schema: JsonObject;
+}
 
 export interface PropertyField {
   /** 从元素（或列表项）算起的路径，写回时原样交给 writeProperty。 */
@@ -45,6 +59,10 @@ export interface PropertyField {
   readonly description?: string;
   /** dependentRequired：这几个属性没写之前，这一项写了也不合法。 */
   readonly needs?: readonly string[];
+  /** 没写时引擎用的值，页面淡色显示；不知道时没有这一项。 */
+  readonly fallback?: unknown;
+  /** 这一项不能绑定变量的原因（DSL 的能绑定表），只给人会想绑定的属性。 */
+  readonly noBinding?: string;
 }
 
 export const PROPERTY_GROUPS = ['基本', '绑定', '位置尺寸', '布局', '文字', '图片', '形状', '码', '颜色', '适配', '条件显示', '状态样式', '其他'] as const;
@@ -114,6 +132,16 @@ const ENUM_LABELS: Readonly<Record<string, string>> = {
 const STEP_LABELS: Readonly<Record<string, string>> = { tightenSpacing: '收紧字距', compressGlyphs: '压缩字形', shrink: '缩字' };
 
 const VARIANT_KEYS: Readonly<Record<string, string>> = { var: '绑定变量', fixed: '固定', fill: '按比例撑满', fraction: '按比例', value: '固定值', loop: '循环位置', text: '固定文字', slot: '字段', mode: '排布' };
+
+/** 没写时的取值：和引擎读取时的缺省一致（src/template/parse.ts、docs/dsl/template.md），没把握的不列，页面写"缺省"。 */
+const FALLBACKS: Readonly<Record<string, unknown>> = {
+  visible: true, opacity: 1, rotation: 0, clip: false, reverse: false, showText: false, letterSpacing: 0, slant: 0, color: '#000000', foreground: '#000000',
+  writingMode: 'horizontal', horizontalAlign: 'start', verticalAlign: 'top', errorCorrectionLevel: 'M', fillRule: 'nonzero',
+  'layout.gap': 0, 'layout.rowGap': 0, 'layout.columnGap': 0, 'layout.wrap': false, 'itemLayout.gap': 0, 'itemLayout.wrap': false, 'fit.compressMin': 0.6,
+};
+const ELEMENT_FALLBACKS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  image: { fit: 'contain' }, line: { fit: 'fill' }, polygon: { fit: 'fill' }, path: { fit: 'fill' }, barcode: { fontSize: 3 },
+};
 
 // —— JSON Schema 的一小部分：模板 Schema 用到的关键字 ——
 
@@ -291,6 +319,26 @@ function variantLabel(alternative: Schema, path: FieldPath): string {
   return '分别设置';
 }
 
+/** 字面值变体对应的变量类型；对象形态的变体（分别设置、固定值）说不清，是 undefined。 */
+function literalType(alternative: Schema): BindingType | undefined {
+  if (typeof alternative['const'] === 'boolean') return 'boolean';
+  if (alternative['type'] === 'number' || alternative['type'] === 'integer') return 'number';
+  if (alternative['pattern'] === colorPattern()) return 'color';
+  if (alternative['pattern'] === resourcePattern()) return 'image';
+  return alternative['type'] === 'string' ? 'text' : undefined;
+}
+
+/** 能不能绑定以 Schema 为准：有 { var } 变体，又有说得清类型的字面值变体。Schema 加属性时不用改这里。 */
+function bindableOf(flat: readonly Schema[], path: FieldPath, context: Context): Bindable | undefined {
+  const isVariable = (alternative: Schema) => Array.isArray(alternative['required']) && alternative['required'][0] === 'var';
+  if (!flat.some(isVariable)) return undefined;
+  const literal = flat.find((alternative) => !isVariable(alternative) && literalType(alternative));
+  const type = literal && literalType(literal);
+  if (!literal || !type) return undefined;
+  if (type === 'boolean') return { type, literal: { kind: 'choice', options: [{ label: '是', value: true }, { label: '否', value: false }] }, initial: false, schema: { type: 'boolean' } };
+  return { type, literal: editorOf([literal], undefined, path, context), initial: initialOf([literal]), schema: literal };
+}
+
 function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, context: Context): Editor {
   const fragments = applying(view, value);
   const named = narrowest(fragments, (fragment) => (Array.isArray(fragment['enum']) ? fragment['enum'] as unknown[] : 'const' in fragment ? [fragment['const']] : undefined));
@@ -301,11 +349,12 @@ function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, cont
   const alternatives = alternativesOf(fragments);
   if (alternatives) {
     const flat = flatAlternatives(alternatives), active = value === undefined ? -1 : flat.findIndex((alternative) => matchesSchema(alternative, value));
-    const chosen = flat[active];
+    const chosen = flat[active], bindable = bindableOf(flat, path, context);
     return {
       kind: 'variants', active,
       variants: flat.map((alternative) => ({ label: variantLabel(alternative, path), initial: initialOf([alternative]) })),
       ...(chosen && !('const' in chosen) ? { editor: editorOf([chosen], value, path, context) } : {}),
+      ...(bindable ? { bindable } : {}),
     };
   }
   const type = narrowest(fragments, (fragment) => (typeof fragment['type'] === 'string' ? fragment['type'] : undefined));
@@ -332,10 +381,29 @@ function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, cont
 
 function fieldOf(view: readonly Schema[], value: unknown, path: FieldPath, required: boolean, context: Context, needs?: readonly string[]): PropertyField {
   const description = narrowest(applying(view, value), (fragment) => (typeof fragment['description'] === 'string' ? fragment['description'] : undefined));
+  const key = path.join('.'), label = labelOf(path, context), editor = editorOf(view, value, path, context);
+  const fallback = ELEMENT_FALLBACKS[context.type]?.[key] ?? FALLBACKS[key], noBinding = noBindingReason(path, label, editor, context);
   return {
-    path, key: path.join('.'), label: labelOf(path, context), required, value, editor: editorOf(view, value, path, context),
+    path, key, label, required, value, editor,
     ...(description ? { description } : {}), ...(needs?.length ? { needs } : {}),
+    ...(fallback !== undefined ? { fallback } : {}), ...(noBinding ? { noBinding } : {}),
   };
+}
+
+/** 元素的状态样式能覆盖哪些属性：不能绑定的属性，要按取值换就走这条路。 */
+function overridableKeys(context: Context): readonly string[] {
+  const states = propertyView(context.fragments, 'states').flatMap((schema) => propertyView([resolved(schema)], 'cases'));
+  const additional = states.map((schema) => resolved(schema)['additionalProperties']).find(isObject);
+  const names = additional?.['propertyNames'];
+  return isObject(names) && Array.isArray(names['enum']) ? names['enum'] as string[] : [];
+}
+
+/** 顶层的单值属性没有绑定写法时说明原因；名称、合并字段这类本来就不是"值"的不提。 */
+function noBindingReason(path: FieldPath, label: string, editor: Editor, context: Context): string | undefined {
+  if (path.length !== 1 || !['choice', 'text', 'number', 'color'].includes(editor.kind)) return undefined;
+  const key = String(path[0]);
+  if (key === 'name' || key === 'mergeBy' || !overridableKeys(context).includes(key)) return undefined;
+  return `${label.replace(/（.*）$/u, '')}不能绑定变量：要按取值换，用状态样式。`;
 }
 
 /** 当前分支不许写的键（横排的 widthOverflow、竖排的 minFontSize）：不列出来。 */

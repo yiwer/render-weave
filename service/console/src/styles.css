@@ -618,6 +618,34 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .prop .color-input { min-width: 0; }
 .prop .color-input input[type="color"] { flex: none; width: 36px; min-height: 32px; }
 .prop-error { font-size: 12px; color: var(--bad); }
+.prop-label.draggable { cursor: ew-resize; user-select: none; touch-action: none; }
+.prop-state-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--mark); vertical-align: middle; }
+.prop-nobind { display: none; grid-column: 1 / -1; margin: 0; }
+.prop:focus-within > .prop-nobind { display: block; }
+.value-cell { position: relative; display: flex; flex-direction: column; gap: 3px; flex: 1 1 100%; min-width: 0; }
+.value-cell-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.value-cell-row > input, .value-cell-row > select, .value-cell-row > .color-input { flex: 1 1 0; min-width: 0; }
+.value-action { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; min-height: 26px; height: 26px; padding: 0; border: 0; background: none; color: var(--faint); border-radius: var(--r); }
+.value-action:hover:not(:disabled), .value-action[aria-expanded="true"] { color: var(--ink); background: var(--hover); }
+.value-action svg { width: 14px; height: 14px; }
+.value-bound { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; min-height: 32px; height: 32px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--sunken); font-size: 13px; font-weight: 400; color: var(--ink); text-align: left; }
+.value-bound:hover:not(:disabled) { background: var(--accent-soft); }
+.value-bound-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.value-bound .value-text { flex: 0 1 auto; color: var(--muted); }
+.value-origin { margin: 0; color: var(--faint); line-height: 1.5; }
+/* 下面多一行来源链时，标签对齐灰底条，不对齐整格的中线。 */
+.prop:has(> .prop-control .value-origin) > .prop-label { align-self: start; margin-top: 7px; }
+.value-origin button.link { padding: 0 1px; font-size: inherit; }
+.value-popover { position: absolute; right: 0; top: 100%; z-index: 40; width: min(280px, calc(100vw - 32px)); max-height: 360px; margin-top: 4px; padding: 8px; overflow: auto; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
+.value-popover p { margin: 0; }
+.value-popover-group h4 { margin: 2px 0; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.value-option { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 28px; height: 28px; padding: 0 4px; border: 0; background: none; font-size: 13px; font-weight: 400; text-align: left; border-radius: 4px; }
+.value-option:hover:not(:disabled) { background: var(--hover); }
+.value-option.current { background: var(--accent-soft); }
+.value-popover-foot { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 6px; border-top: 1px solid var(--hair); }
+.value-extract { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.value-extract label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.value-extract input { min-height: 30px; font-size: 13px; }
 .prop-group { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 2px solid var(--hair); }
 .prop-tuple { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 6px; }
 .prop-list { display: flex; flex-direction: column; gap: 8px; }

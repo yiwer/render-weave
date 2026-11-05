@@ -23,4 +23,6 @@ export const CURSOR = 'M5 3l14 8-6 2-2 6z';
 export const HAND = 'M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13c0 4-2 7-6 7s-5-2-7-5l-1-2c-.7-1.3.8-2.6 2-1.5l2 2';
 export const PANEL_LEFT = 'M4 5h16v14H4zM10 5v14';
 export const PANEL_RIGHT = 'M4 5h16v14H4zM14 5v14';
+export const LINK = 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1';
+export const UNLINK = 'M10 14a4 4 0 0 0 3 1M14 10a4 4 0 0 0-1.5-.9M15 16l1-1 3-3a4 4 0 0 0-6-6l-1 1M9 8l-1 1-3 3a4 4 0 0 0 6 6l1-1M4 4l16 16';
 export const TRASH = 'M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5';
