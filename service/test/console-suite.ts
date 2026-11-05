@@ -2075,8 +2075,20 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 压测数据是名字里写了压测的数据集，工具栏单独列一组。
       expect((await server('POST', `/v1/datasets/badge-zhang/copies`, token, { id: 'badge-stress', name: '压测：长姓名' })).status).toBe(201);
 
-      // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
+      // 只看不改（模板设计页票据 01）：不开工作副本，离开之后审计里也没有。
       await (await nav(target, '模板')).click();
+      const looked = worked((body) => body.template === ALL);
+      await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
+      await looked;
+      await image().waitFor();
+      expect((await server('GET', copyUrl, token)).status, '只看不开工作副本').toBe(404);
+      await (await nav(target, '模板')).click();
+      await target.getByRole('article', { name: `模板 ${ALL}` }).waitFor();
+      expect((await server('GET', copyUrl, token)).status, '离开之后也没有').toBe(404);
+      const events = (await server('GET', '/v1/audit-events?limit=200', token)).body.events as { action: string; object: { id: string } }[];
+      expect(events.filter((event) => event.action.startsWith('templateWorkingCopy.') && event.object.id === ALL), '只看不改不留审计').toEqual([]);
+
+      // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
       const first = worked((body) => body.template === ALL);
       await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
       let layout = (await (await first).json() as Reply).layout;

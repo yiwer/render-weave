@@ -271,6 +271,15 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     return copy;
   });
 
+  /** 当前修订的内容：不开工作副本也能读，页面只看不改时不写任何东西（模板设计页票据 01）。 */
+  app.get(`${templateUrl}/content`, { config: { access: readAccess } }, async (request) => {
+    const scope = scopeOf(request), name = nameOf(request), current = currentOf(await scope.storage.authoringState(), name);
+    if (!current) throw notFound();
+    const bytes = await contentOf(scope.storage, current.revision.sha256);
+    await auditRead(request, { type: 'template', id: name });
+    return { name, revision: current.template.currentRevision, sha256: current.revision.sha256, content: Buffer.from(bytes).toString('utf8') };
+  });
+
   /** 修订历史：修订号、主体、时间与来源。 */
   app.get(`${templateUrl}/revisions`, { config: { access: readAccess } }, async (request) => {
     const scope = scopeOf(request), name = nameOf(request);

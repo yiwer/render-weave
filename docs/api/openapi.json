@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.13.0",
+    "version": "1.14.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；客户端应忽略不认识的属性与枚举值；1.12.0 放宽静态版本类型，兼容说明见变更记录。说明见 docs/api.md。"
   },
   "servers": [
@@ -3019,6 +3019,83 @@
                       "items": {
                         "$ref": "#/components/schemas/TemplateWorkingCopy"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/templates/{name}/content": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdTemplatesNameContent",
+        "tags": [
+          "代建"
+        ],
+        "summary": "读当前修订的内容：不开工作副本，不写任何东西",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "revision",
+                    "sha256",
+                    "content"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "模板名称"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "当前修订号"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "description": "原文的 SHA-256"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "当前修订的原文，与存入时逐字节相同"
                     }
                   }
                 }
@@ -7388,6 +7465,73 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Template"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/templates/{name}/content": {
+      "get": {
+        "operationId": "getV1TemplatesNameContent",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "读当前修订的内容：不开工作副本，不写任何东西",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "revision",
+                    "sha256",
+                    "content"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "模板名称"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "当前修订号"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "description": "原文的 SHA-256"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "当前修订的原文，与存入时逐字节相同"
+                    }
+                  }
                 }
               }
             }

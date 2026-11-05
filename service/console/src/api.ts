@@ -7,7 +7,7 @@ import type {
   SchemaRef, SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, StoredDefinition,
   DefinitionCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
   PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
-  TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
+  TemplateContent, TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
 import type { ImportJob, ImportDetail, ImportCells } from './import-types.js';
 
@@ -145,6 +145,8 @@ export const api = {
   setCurrentTemplate: (template: string, revision: number) => json<TemplateRevisions>('POST', '/v1/template-current', { json: { template, revision } }),
   copyTemplate: (name: string, newName: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/copies`, { json: { name: newName } }),
   workingCopies: () => json<{ workingCopies: TemplateWorkingCopy[] }>('GET', '/v1/template-working-copies'),
+  /** 当前修订的内容：不开工作副本，只读。 */
+  templateContent: (name: string) => json<TemplateContent>('GET', `/v1/templates/${enc(name)}/content`),
   openWorkingCopy: (name: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/working-copy`),
   workingCopy: (name: string) => json<TemplateWorkingCopy & { readonly content: string }>('GET', `/v1/templates/${enc(name)}/working-copy`),
   /** 暂存：整份替换；预期哈希不是当前内容时答 409 draft.stale，回答带 currentSha256。 */

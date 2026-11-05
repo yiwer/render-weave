@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.13.0';
+export const API_VERSION = '1.14.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -539,6 +539,9 @@ function workingCopyDocs(prefix: string, tag: string): Record<string, RouteDoc> 
       description: '模板静态检查有严重问题时答 400。预期哈希不是当前内容答 409 draft.stale。基准不是当前修订答 409 template.revisionConflict，回答带两边差异；overwrite 为 true 才覆盖。',
       replies: [ok(ref('TemplateSaved')), acceptedAsRequest] },
     [`POST ${template}/copies`]: { tag, summary: '复制为新模板：内容与基准数据定义取当前修订，成为没有基准修订的工作副本，保存时记修订 1', errors: [409], replies: [created(ref('TemplateWorkingCopy'))] },
+    [`GET ${template}/content`]: { tag, summary: '读当前修订的内容：不开工作副本，不写任何东西', replies: [ok(object({
+      name: str('模板名称'), revision: int('当前修订号'), sha256: str('原文的 SHA-256'), content: str('当前修订的原文，与存入时逐字节相同'),
+    }, ['name', 'revision', 'sha256', 'content']))] },
     [`GET ${template}/revisions`]: { tag, summary: '模板的修订历史：修订号、主体、时间与来源', replies: [ok(ref('TemplateRevisions'))] },
   };
 }

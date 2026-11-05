@@ -199,6 +199,9 @@ export interface TemplateInfo {
 }
 
 /** 模板工作副本（P1 票据 07）：一个模板至多一份，记它基于哪个修订；复制出来的新模板没有基准。 */
+/** 模板当前修订的内容：不开工作副本也能读。 */
+export interface TemplateContent { readonly name: string; readonly revision: number; readonly sha256: string; readonly content: string }
+
 export interface TemplateWorkingCopy {
   readonly name: string;
   readonly baseRevision?: number;

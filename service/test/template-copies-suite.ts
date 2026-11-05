@@ -224,6 +224,33 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect((await world.call('GET', `/v1/templates/${GREETING}/working-copy`, token)).body.sha256).toBe(stashed.body.sha256);
     });
 
+    it('读当前修订的内容：不开工作副本、不写审计；暂存不影响它；两种寻址都能读，代建的读取记审计', async () => {
+      const { id, admin, operator, engineer } = await tenant();
+      const url = `/v1/templates/${GREETING}/content`;
+      const audited = async () => (await world.call('GET', '/v1/audit-events?limit=200', admin.token)).body.events as { action: string }[];
+      const auditBefore = (await audited()).length;
+      const read = await world.call('GET', url, admin.token);
+      expect(read.status).toBe(200);
+      expect(read.body).toMatchObject({ name: '问候牌', revision: 1 });
+      expect(read.body.sha256).toBe(sha256(read.body.content as string));
+      expect((await world.call('GET', url, operator.token)).status).toBe(200);
+      expect((await world.call('GET', `/v1/templates/${GREETING}/working-copy`, admin.token)).status, '读内容不开工作副本').toBe(404);
+      expect((await audited()).length, '客户成员的读取不记审计').toBe(auditBefore);
+
+      const opened = await open(admin.token);
+      const document = JSON.parse(read.body.content as string) as Record<string, unknown>;
+      const stashed = await stash(admin.token, { ...document, parameters: [] }, opened.body.sha256 as string);
+      expect(stashed.status, stashed.raw.slice(0, 300)).toBe(200);
+      expect((await world.call('GET', url, admin.token)).body.sha256, '暂存不影响当前修订').toBe(read.body.sha256);
+      await world.call('DELETE', `/v1/templates/${GREETING}/working-copy`, admin.token);
+
+      const authored = await world.call('GET', `/v1/authoring/tenants/${id}/templates/${GREETING}/content`, engineer);
+      expect(authored.status).toBe(200);
+      expect(authored.body.sha256).toBe(read.body.sha256);
+      expect((await audited()).some((event) => event.action === 'authoring.read'), '代建工程师的读取记审计').toBe(true);
+      expect((await world.call('GET', '/v1/templates/not-here/content', admin.token)).status).toBe(404);
+    });
+
     it('复制为新模板：内容与基准取当前修订，没有基准修订，保存时记修订 1；名称已有时拒绝；可以预览还没保存的新模板', async () => {
       const target = await tenant(), token = target.admin.token, fresh = encodeURIComponent('问候牌-竖版');
       const copied = await world.call('POST', `/v1/templates/${GREETING}/copies`, token, { name: '问候牌-竖版' });

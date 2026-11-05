@@ -111,6 +111,7 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'POST /v1/templates/:name/working-copy/save', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/templates/:name/copies', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/copies`, body: { name: '跨租户副本' } }) },
+  { route: 'GET /v1/templates/:name/content', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/content` }) },
   { route: 'GET /v1/templates/:name/revisions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/revisions` }) },
   // 审批策略与发布申请（P1 票据 11）：申请 ID 在路径里，别的租户的与不存在的同样答 404。
   { route: 'GET /v1/approval-policy', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/approval-policy' }) },
@@ -132,6 +133,7 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy/save', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/copies`, body: { name: '跨租户副本' } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/content', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/content` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/revisions` }) },
   { route: 'POST /v1/template-current', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/template-current', body: { template: a.templateName, revision: 1 } }) },
   // Excel 导入（票据 13）：租户由身份决定，模板名写在请求体里；另一租户没有这个模板，答问题清单。

@@ -197,6 +197,7 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/templates/:name/working-copy/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/working-copy/check` }) },
   { route: 'POST /v1/templates/:name/working-copy/save', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/templates/:name/copies', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/templates/:name/content', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/content` }) },
   { route: 'GET /v1/templates/:name/revisions', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/revisions` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/template-working-copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/template-working-copies` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
@@ -206,6 +207,7 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy/check', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/check` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy/save', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/content', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/content` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/revisions` }) },
   { route: 'POST /v1/template-current', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/template-current', body: { template: '矩阵', revision: 1 } }) },
   // 审批策略与发布申请（P1 票据 11）：对象 ID 用随机值，改策略用什么也不改的请求。

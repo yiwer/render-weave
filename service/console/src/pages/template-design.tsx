@@ -74,9 +74,10 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const preview = useLivePreview(request, 120, { workingCopies: true, version: String(state.stashes) });
   const reply = preview.reply;
 
-  const check = useLoad(() => (doc ? api.checkWorkingCopy(name) : Promise.resolve(undefined)), `${name}\n${doc?.sha256 ?? ''}`);
+  // 还没开工作副本时没有什么可比的（第一次写回才开）。
+  const check = useLoad(() => (doc?.opened ? api.checkWorkingCopy(name) : Promise.resolve(undefined)), `${name}\n${doc?.opened ?? ''}\n${doc?.sha256 ?? ''}`);
   // 复制出来还没保存的新模板没有修订可比，整份都算未发布。
-  const unpublished = check.data && (check.data.changes.status === 'added' ? 1 : check.data.changes.changes.length);
+  const unpublished = doc && !doc.opened ? 0 : check.data && (check.data.changes.status === 'added' ? 1 : check.data.changes.changes.length);
 
   const locations = useMemo(() => new Map((reply?.elements ?? []).map((element) => [element.path, element.source])), [reply?.elements]);
   const select = (template: string, path: string, instance?: string) => {
