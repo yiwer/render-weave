@@ -1,15 +1,18 @@
 # 115 显示字段审核与参考图模板接续
 
-2026-11-04，M377。新增显示字段已走通真实网页上传、Claude + OpenCode Go 提取、独立来源核对和正式审核。用户确认前保留为候选；旧数据、旧模板和旧交付不变。验收命令与状态见 [票据 05](../../.scratch/dataset-import-app/issues/05-display-mapping-review.md)。
+2026-11-04，M377。本文记录显示字段进入审核时的历史材料，验收命令见 [票据 05](../../.scratch/dataset-import-app/issues/05-display-mapping-review.md)。
+
+接续时已核实：显示字段任务在本轮部署前已于 `2026-11-04T10:37:30.282Z` 保存，两份数据集已存在。本轮未再次确认或修改这批业务数据，也不据此推算人工审核工时。四个参考图模板现已进入应用的可编辑工作副本，尚未发布；原正式模板保留。当前运行入口见 [本机运行说明](dataset-import-rollout.md)，实测记录见 [票据 08](../../.scratch/dataset-import-app/issues/08-local-rollout.md)。下文“候选／待确认”描述的是原轮次状态，剩余样式确认仍适用。
 
 ## 现场入口
 
 - [参考图与 65 张样张总览](http://127.0.0.1:18115/)：第 13 站对照、四类尺寸筛选、全部原始批注与待确认差异。
-- [应用内数据审核](http://127.0.0.1:18080/console/#/dataset-imports/61f625af-c1e4-4033-977e-e447c634e7d7)：`production-direction-view@1` 的两份候选，来源区域逐项展示映射规则。
+- [应用内提取记录](http://127.0.0.1:18080/console/#/dataset-imports/61f625af-c1e4-4033-977e-e447c634e7d7)：`production-direction-view@1` 的两份数据已保存，保留来源与映射规则。
+- [应用内模板设计](http://127.0.0.1:18080/console/#/templates/wuxi-production-sign/design)：选择 `115-up-display-review` 或 `115-down-display-review` 作为样例数据集，继续修改工作副本。
 - 本机登录信息仍在 `F:/GenCode/render-weave-dataset-import-app/.secrets/dataset-115-login.json`，不进版本库。
 - 成果根目录：`F:/GenCode/render-weave-dataset-import-app/out/display-115/`。`latest.json`、`verification.json`、`browser-review.json`、`mapping.png`、`comparison.png` 为数据和网页核对；`archive/extraction/` 保留完整模型原始证据；`workspace/`、`resources/`、`preview/` 为可重现样张的输入及输出。
 
-总览关闭后，在该工作树运行 `node out/display-115/serve.mjs`；应用恢复步骤沿用 [上一轮现场](dataset-import-115-app.md)。不要重复运行上传脚本，新任务会产生模型调用。
+总览关闭后，在该工作树运行 `node out/display-115/serve.mjs`；应用恢复步骤使用 [当前运行说明](dataset-import-rollout.md)，不再启动旧构建。不要重复运行上传脚本，新任务会产生模型调用。
 
 ## 显式映射如何审核
 

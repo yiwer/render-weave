@@ -1,0 +1,274 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Los_Angeles",
+  "sourceCommit": "31575c76dfb4c5cf0a2ed8ccd40dd50a467aa0ad",
+  "migration": {
+    "businessTablesUnchanged": true,
+    "tables": {
+      "workspace_documents": {
+        "count": 20,
+        "sha256": "8f917ae3f51c90645d0fc71569410b3c0f8830fc8b19d3d6c76e7865a5077c53"
+      },
+      "templates": {
+        "count": 2,
+        "sha256": "a3cd8c354a4965a9bc3196e58d2631c8c9844dd243f6122e1906eb7ae37b38d2"
+      },
+      "template_revisions": {
+        "count": 2,
+        "sha256": "556c5956c00da1b2e86ec19ab11c706c2b7b141177649846613f03f46df1c8f4"
+      },
+      "resources": {
+        "count": 15,
+        "sha256": "4608beb536c57ee4e649e4d46291bbdbf4dced2c95b16385758e4d6d4a0afb66"
+      },
+      "resource_versions": {
+        "count": 15,
+        "sha256": "b8795a4893e75677d201c1eb55f8e7c23f5256b3344bb8a589d53ddc411d8a23"
+      },
+      "agent_jobs": {
+        "count": 2,
+        "sha256": "a0f771c0134a2d54d5bf4689021f3e50ebb64cc1f289ae89c46b6122246d8c67"
+      },
+      "batches": {
+        "count": 1,
+        "sha256": "4601c975a0fa76fa4bce35b9822a3a01cf2b18d0bcf455abdb715a732a8204f9"
+      },
+      "batch_items": {
+        "count": 32,
+        "sha256": "edce6e76c604a580089ef22bcb0331ff88763eb467eac36ee36d2b0e71a4b477"
+      },
+      "batch_item_files": {
+        "count": 64,
+        "sha256": "57a11984d2a57fd3dd47b75dbea3ee1a3224ebb6d42dd37cc4025c66f5b39024"
+      },
+      "audit_events": {
+        "count": 25,
+        "sha256": "097e057fca2e99acebebe55d5e37e1891dac167971ac78428183916f0c33e832"
+      }
+    },
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "backup": {
+      "file": "before-31575c7.dump",
+      "bytes": 129745,
+      "sha256": "39a11a2a6b6e9bb5c3577db71ee9af942fe697b4638d5f5d0bc3ca0256eb1ef1",
+      "at": "2026-11-05T02:21:00.792Z"
+    },
+    "restoreDrill": false
+  },
+  "generic": {
+    "passed": true,
+    "build": "sha256:23f276fe9f3d820a64a3825f391535906185425a4483c3c769891db516981857",
+    "staticSchema": {
+      "name": "material-card-rollout",
+      "version": "release-2026-11"
+    },
+    "jobId": "643accf9-8065-4e6c-ba14-a5e18a388536",
+    "datasetId": "rollout-material-card",
+    "comments": 2,
+    "vmlAnchors": 2,
+    "sourceFields": 3,
+    "manualCorrection": true,
+    "templateRevision": 3,
+    "previewProblems": [],
+    "batchId": "7cde47d7-f238-4f63-9f79-6e89e08628bb",
+    "delivered": 1,
+    "failed": 0,
+    "pageErrors": [],
+    "usage": {
+      "task": "dataset-extraction",
+      "round": 1,
+      "sha256": "c46941d46ed686325daeae6746b3019a6dd8e981862cbbb6aabec4ad08887329",
+      "tokens": {
+        "inputTokens": 14,
+        "outputTokens": 3100,
+        "cacheReadTokens": 35224,
+        "cacheCreationTokens": 10388
+      }
+    },
+    "queuedMs": 886,
+    "reviewReadyMs": 29109
+  },
+  "existing115": {
+    "passed": true,
+    "build": "sha256:23f276fe9f3d820a64a3825f391535906185425a4483c3c769891db516981857",
+    "apiVersion": "1.12.0",
+    "approvedJob": "applied",
+    "displayJobStatus": "applied",
+    "displayJobAppliedAt": "2026-11-04T10:37:30.282Z",
+    "batchId": "99834217-8ea0-4ca8-a2ac-09402cfce07b",
+    "delivered": 1,
+    "failed": 0,
+    "stationNamesMatched": 32,
+    "previewProblems": [],
+    "queued": 0,
+    "pageErrors": [],
+    "proofCaption": "本地模块验收 · 非制作交付"
+  },
+  "referenceWorkingCopies": {
+    "passed": true,
+    "workingCopies": [
+      {
+        "name": "wuxi-production-sign",
+        "sha256": "d54d6ffb5895dcbcdd9a41a053979a397d6bd5473a9af19bf96960cfb72cd24c",
+        "base": {
+          "name": "production-direction-view",
+          "version": 1
+        }
+      },
+      {
+        "name": "wuxi-115-stop-column",
+        "sha256": "280986a2b107a047a7a76960ec3df8be9537d9b6613f6d05d478af5bb2ae3461",
+        "base": {
+          "name": "production-stop-view",
+          "version": 1
+        }
+      },
+      {
+        "name": "wuxi-115-transfer-marks",
+        "sha256": "e7ae612d61cf77ea0efbd2f044be8d14d9c1cfef2163173a16b901e4ede4edff",
+        "base": {
+          "name": "production-stop-view",
+          "version": 1
+        }
+      },
+      {
+        "name": "wuxi-115-connection-mark",
+        "sha256": "01565dc5e542ccfbc2e9dcb3b43e0e1e135098af67b4d278f094a7a2c479bf76",
+        "base": {
+          "name": "production-connection-view",
+          "version": 1
+        }
+      }
+    ],
+    "addedResources": [
+      "wuxi-railway",
+      "wuxi-airport",
+      "wuxi-metro",
+      "font-hei-cn",
+      "font-song"
+    ],
+    "publishedTemplatesUnchanged": true,
+    "samples": [
+      {
+        "dataset": "115-down-display-review",
+        "index": 1,
+        "output": {
+          "width": 450,
+          "height": 208,
+          "dpi": 96,
+          "format": "png"
+        },
+        "problems": []
+      },
+      {
+        "dataset": "115-down-display-review",
+        "index": 1,
+        "output": {
+          "width": 525,
+          "height": 135,
+          "dpi": 96,
+          "format": "png"
+        },
+        "problems": []
+      },
+      {
+        "dataset": "115-down-display-review",
+        "index": 5,
+        "output": {
+          "width": 480,
+          "height": 135,
+          "dpi": 96,
+          "format": "png"
+        },
+        "problems": []
+      },
+      {
+        "dataset": "115-up-display-review",
+        "index": 1,
+        "output": {
+          "width": 890,
+          "height": 270,
+          "dpi": 96,
+          "format": "png"
+        },
+        "problems": []
+      },
+      {
+        "dataset": "115-up-display-review",
+        "index": 13,
+        "output": {
+          "width": 525,
+          "height": 135,
+          "dpi": 96,
+          "format": "png"
+        },
+        "problems": []
+      }
+    ],
+    "designerUrl": "http://127.0.0.1:18080/console/#/templates/wuxi-production-sign/design",
+    "pageErrors": [],
+    "businessStyleApproval": "pending",
+    "formalReferenceBatches": 0
+  },
+  "finalStatus": {
+    "at": "2026-11-05T02:48:16.799Z",
+    "apiVersion": "1.12.0",
+    "build": "sha256:23f276fe9f3d820a64a3825f391535906185425a4483c3c769891db516981857",
+    "enabled": true,
+    "activeAgent": 0,
+    "activeRender": 0,
+    "syntheticJobStatus": "applied",
+    "batches": [
+      {
+        "id": "174f6348-46cd-494e-b7a6-282057fbc2c5",
+        "status": "finished",
+        "summary": {
+          "hints": 0,
+          "total": 1,
+          "failed": 0,
+          "notRun": 0,
+          "severe": 0,
+          "delivered": 1,
+          "previewed": 0
+        }
+      },
+      {
+        "id": "7cde47d7-f238-4f63-9f79-6e89e08628bb",
+        "status": "finished",
+        "summary": {
+          "hints": 0,
+          "total": 1,
+          "failed": 0,
+          "notRun": 0,
+          "severe": 0,
+          "delivered": 1,
+          "previewed": 0
+        }
+      }
+    ]
+  },
+  "scope": {
+    "localApplication": true,
+    "productionHostingAccepted": false,
+    "newReferenceStyleApproved": false,
+    "humanBusinessReviewHours": null,
+    "actualCharge": null
+  }
+}

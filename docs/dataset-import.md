@@ -65,7 +65,7 @@ docker pull python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc5
 
 ## 接口与代码入口
 
-OpenAPI **1.11.0**，完整描述见 [openapi.json](api/openapi.json)。查询要求 `tenant.read`，创建、取消、修改和确认要求 `datasets.write`。这是数据集确认保存，不增加模板/定义的管理员发布审批。
+OpenAPI **1.12.0**，完整描述见 [openapi.json](api/openapi.json)。查询要求 `tenant.read`，创建、取消、修改和确认要求 `datasets.write`。这是数据集确认保存，不增加模板/定义的管理员发布审批。
 
 | 接口 | 用途 |
 |---|---|
@@ -93,4 +93,6 @@ OpenAPI **1.11.0**，完整描述见 [openapi.json](api/openapi.json)。查询�
 
 仅在合并前已执行 `0015_agent_jobs.sql` 的内部测试库：先停止 API、渲染 worker、Agent worker，并备份数据库；使用数据库属主执行 [编号转换脚本](../service/scripts/reconcile-agent-migration.sql)，再用新构建执行 `setup`，最后启动同构建的全部服务。脚本取得与迁移器相同的锁，核对旧名称、确切 SHA-256、任务表和未占用的新编号后，只将旧登记 15 改为 16；`setup` 补执行命名版本迁移 15，已有 Agent 表和任务保留。任何条件不符都会拒绝，不能绕过哈希检查或直接重跑建表 SQL。转换后旧构建不能再启动；回退须恢复备份及旧构建。
 
-本次提交只验证升级步骤，不升级正在运行的 115 验收服务。
+2026-11-04 已按此流程升级本机 115 验收应用。当前入口、固定运行目录及重启方法见 [本机运行说明](agent-eval/dataset-import-rollout.md)，实测证据见 [票据 08](../.scratch/dataset-import-app/issues/08-local-rollout.md)。
+
+批注中的换行会原样保存；模板如何排版另由模板决定。DSL 的一个文字元素只排一行或一列，不自动排段落（[文字元素](dsl/template.md)，M339）。固定两行可以拆为两个文字元素；可变行数应先设计相应的数据与循环布局，不能为了出图静默删除原文。
