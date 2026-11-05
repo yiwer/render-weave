@@ -1,0 +1,1120 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RenderWeave 模板设计</title>
+<style>
+/* 版式：引擎出的图铺在织纹舞台上，结构与检查器浮在两侧，样例带贴底；配色沿用控制台 M361（画室视频），控制台只有浅色，这里同样只做浅色 */
+:root {
+  --bg: #f7f4ec; --chrome: #ece5d7; --surface: #fdfcf8; --sunken: #e9e2d4; --accent-soft: #eee6d8; --hover: #f1ede3;
+  --ink: #1d262e; --muted: #5b4a39; --faint: #6f6251;
+  --line: #d6cdbd; --hair: #e6dfd2; --field: #a89c88;
+  --accent: #293642; --mark: #b38047; --clay: #946350; --olive: #535a2c; --slate: #556469;
+  --ok: #4f5e2a; --warn: #8a5a1f; --warn-soft: #f3e7d2; --bad: #9c3f27; --bad-soft: #f4e2da;
+  --r: 8px; --r-card: 12px;
+  --shadow: 0 1px 2px rgba(29,38,46,.06), 0 12px 32px rgba(29,38,46,.10);
+  --spring: cubic-bezier(.22,1,.36,1);
+  --sans: -apple-system,"Segoe UI Variable Text","Segoe UI","PingFang SC","Microsoft YaHei UI","Noto Sans SC","Source Han Sans SC",system-ui,sans-serif;
+  --mono: ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
+  --left-w: 288px; --right-w: 328px; color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font: 13px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+code, .mono { font-family: var(--mono); font-size: 11.5px; }
+svg.i { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 2px solid var(--mark); outline-offset: 1px; }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .small { font-size: 12px; }
+
+.app { height: 100%; display: grid; grid-template-rows: 44px 44px minmax(0,1fr) auto 28px; }
+/* 标题栏（全局框架） */
+.titlebar { display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--chrome); border-bottom: 1px solid var(--line); min-width: 0; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -.01em; }
+.module { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.cmd { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 6px 0 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--muted); min-width: 220px; }
+.cmd kbd { margin-left: auto; font: 600 11px var(--sans); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.grow { flex: 1 1 auto; min-width: 0; }
+/* 文档条 */
+.docbar { display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--bg); border-bottom: 1px solid var(--line); min-width: 0; white-space: nowrap; }
+.crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.crumbs a { color: var(--muted); text-decoration: none; } .crumbs b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; }
+.meta { color: var(--faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; display: inline-block; }
+.dot.warn { background: var(--mark); } .dot.bad { background: var(--bad); } .dot.idle { background: transparent; box-shadow: inset 0 0 0 1.5px var(--field); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.btn:hover:not(:disabled) { background: var(--hover); } .btn:disabled { color: var(--field); cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover:not(:disabled) { background: var(--ink); } .btn.primary:disabled { background: var(--sunken); border-color: var(--sunken); color: var(--faint); }
+.btn.quiet { border-color: transparent; background: transparent; } .btn.quiet:hover:not(:disabled) { background: var(--hover); }
+.btn.icon { width: 28px; padding: 0; }
+
+/* 舞台 */
+.stage-wrap { position: relative; overflow: hidden; min-height: 0; }
+.stage { position: absolute; inset: 0; overflow: hidden; background-color: #e7e0d2;
+  background-image: repeating-linear-gradient(45deg, rgba(41,54,66,.055) 0 1px, transparent 1px 9px), repeating-linear-gradient(135deg, rgba(179,128,71,.075) 0 1px, transparent 1px 9px); cursor: default; }
+.stage.pan { cursor: grab; } .stage.panning { cursor: grabbing; }
+.board { position: absolute; background: #fff; box-shadow: 0 2px 4px rgba(29,38,46,.08), 0 18px 44px rgba(29,38,46,.18); }
+.board img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; transition: opacity .15s; }
+.board.busy img { opacity: .72; }
+.overlay { position: absolute; inset: 0; }
+.box { position: absolute; pointer-events: none; }
+.box.hover { outline: 1px solid var(--accent); outline-offset: -1px; background: rgba(41,54,66,.05); }
+.box.struct { outline: 1px solid rgba(41,54,66,.28); outline-offset: -.5px; } .box.struct.leaf { outline-color: rgba(179,128,71,.55); }
+.box.sel { outline: 2px solid var(--mark); outline-offset: -1px; transition: left .16s var(--spring), top .16s var(--spring), width .16s var(--spring), height .16s var(--spring); }
+.box.other { outline: 1px dashed var(--mark); outline-offset: -.5px; }
+.box.usevar { outline: 1.5px solid var(--olive); outline-offset: -1px; background: rgba(83,90,44,.14); }
+.box.fit { background: rgba(179,128,71,.28); outline: 1px solid rgba(138,90,31,.75); outline-offset: -1px; }
+.box.fit.over { background: rgba(156,63,39,.34); outline-color: var(--bad); }
+.box.data { background: rgba(85,100,105,.20); outline: 1px solid rgba(85,100,105,.55); outline-offset: -1px; }
+.box.fixed { outline: 1px dashed rgba(148,99,80,.75); outline-offset: -1px; }
+.tag { position: absolute; left: -2px; bottom: 100%; margin-bottom: 3px; padding: 0 6px; border-radius: 4px; background: var(--ink); color: var(--bg); font: 11px/18px var(--sans); white-space: nowrap; pointer-events: none; z-index: 6; }
+.tag.under { bottom: auto; top: 100%; margin: 3px 0 0; }
+.mark { position: absolute; box-shadow: inset 0 0 0 1.5px var(--bad); pointer-events: none; }
+.mark.hint { box-shadow: inset 0 0 0 1.5px var(--warn); }
+.mark b { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 10px/16px var(--sans); text-align: center; pointer-events: auto; cursor: pointer; }
+.mark.hint b { background: var(--warn); }
+.pct { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); padding: 0 3px; border-radius: 3px; background: var(--ink); color: var(--bg); font: 9.5px/14px var(--sans); pointer-events: none; white-space: nowrap; }
+.h { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; background: #fff; border: 1.5px solid var(--mark); border-radius: 2px; pointer-events: auto; z-index: 5; }
+.gapbar { position: absolute; pointer-events: auto; background: repeating-linear-gradient(135deg, rgba(179,128,71,.55) 0 2px, rgba(179,128,71,.12) 2px 5px); z-index: 4; }
+.gapbar.row { cursor: ew-resize; } .gapbar.col { cursor: ns-resize; }
+.padbar { position: absolute; pointer-events: none; background: repeating-linear-gradient(45deg, rgba(85,100,105,.4) 0 2px, rgba(85,100,105,.08) 2px 5px); }
+.track { position: absolute; background: var(--mark); pointer-events: auto; z-index: 4; }
+.track.h-line { left: -14px; right: -14px; height: 1px; cursor: ns-resize; } .track.v-line { top: -14px; bottom: -14px; width: 1px; cursor: ew-resize; }
+.track::after { content: ""; position: absolute; inset: -4px; }
+.tracklabel { position: absolute; font: 10px/14px var(--mono); color: var(--ink); background: var(--warn-soft); border-radius: 3px; padding: 0 4px; pointer-events: none; white-space: nowrap; z-index: 4; }
+.readout { position: absolute; z-index: 9; padding: 2px 7px; border-radius: 5px; background: var(--ink); color: var(--bg); font: 11px/16px var(--mono); pointer-events: none; white-space: nowrap; }
+.ghost { position: absolute; outline: 2px dashed var(--accent); outline-offset: -1px; background: rgba(41,54,66,.08); pointer-events: none; z-index: 8; }
+.dropline { position: absolute; background: var(--accent); pointer-events: none; z-index: 8; }
+.compare-clip { position: absolute; inset: 0; overflow: hidden; }
+.compare-clip img { position: absolute; left: 0; top: 0; height: 100%; max-width: none; }
+.compare-bar { position: absolute; top: -10px; bottom: -10px; width: 2px; background: var(--ink); cursor: ew-resize; z-index: 7; }
+.compare-bar i { position: absolute; top: 50%; left: -9px; width: 20px; height: 20px; margin-top: -10px; border-radius: 50%; background: var(--ink); }
+
+/* 选区条 */
+.chip { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 12; max-width: calc(100% - var(--left-w) - var(--right-w) - 72px); display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); font-size: 12px; white-space: nowrap; }
+.chip .path { display: flex; align-items: center; gap: 3px; overflow: hidden; direction: rtl; min-width: 0; }
+.chip .path > span { direction: ltr; display: inline-flex; align-items: center; gap: 3px; }
+.chip button.seg { border: 0; background: none; padding: 1px 3px; border-radius: 4px; color: var(--muted); }
+.chip button.seg:hover { background: var(--hover); color: var(--ink); } .chip button.seg.now { color: var(--ink); font-weight: 650; }
+.chip button.seg.tpl { color: var(--clay); }
+.chip .scope { padding-left: 10px; border-left: 1px solid var(--hair); color: var(--muted); flex: none; }
+.chip .scope b { color: var(--ink); font-weight: 650; }
+.slash { color: var(--field); }
+
+/* 浮动面板 */
+.panel { position: absolute; top: 10px; bottom: 10px; z-index: 11; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow); min-height: 0; }
+.panel.left { left: 10px; width: var(--left-w); } .panel.right { right: 10px; width: var(--right-w); }
+.panel[hidden] { display: none; }
+.tabs { flex: none; display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--hair); }
+.tabs button { border: 0; background: none; padding: 5px 8px 7px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button:hover { color: var(--ink); } .tabs button.on { color: var(--ink); font-weight: 650; border-bottom-color: var(--mark); }
+.tabs .count { color: var(--bad); font-weight: 700; margin-left: 3px; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+/* 结构树 */
+.tree { padding: 6px 0 12px; }
+.row { position: relative; display: flex; align-items: center; gap: 5px; height: 26px; padding-right: 8px; cursor: default; white-space: nowrap; }
+.row:hover { background: var(--hover); } .row.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--mark); } .row.dim .nm { color: var(--faint); }
+.row .tw { width: 14px; height: 14px; flex: none; display: grid; place-items: center; color: var(--faint); border: 0; background: none; padding: 0; }
+.row .tw svg { width: 11px; height: 11px; transition: transform .12s; } .row .tw.open svg { transform: rotate(90deg); }
+.row .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.row .bd { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 10.5px; }
+.row .bd .e { color: var(--bad); }
+.row.scope-head { height: 22px; font-size: 11px; color: var(--clay); }
+.row.scope-head .nm { color: var(--clay); }
+.band { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(148,99,80,.35); }
+.pill { display: inline-block; padding: 0 5px; border-radius: 4px; background: var(--sunken); font-size: 10.5px; color: var(--muted); line-height: 16px; }
+/* 变量面板 */
+.vscope { padding: 8px 12px; border-bottom: 1px solid var(--hair); font-size: 12px; color: var(--muted); }
+.vscope b { color: var(--ink); }
+.vgroup { padding: 8px 0 4px; }
+.vgroup h4 { margin: 0; padding: 2px 12px 4px; font-size: 11.5px; font-weight: 650; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
+.vgroup h4 span { color: var(--faint); font-weight: 400; }
+.vrow { display: flex; align-items: center; gap: 7px; padding: 3px 12px; min-height: 26px; cursor: default; }
+.vrow:hover { background: var(--hover); } .vrow.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--mark); }
+.vrow .gl { width: 16px; flex: none; text-align: center; font: 600 10px var(--mono); color: var(--slate); }
+.vrow .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vrow .val { flex: none; max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; }
+.vrow.fired .val { color: var(--bad); font-weight: 650; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: none; box-shadow: inset 0 0 0 1px rgba(29,38,46,.2); display: inline-block; }
+/* 添加 */
+.pal { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; padding: 10px 12px; }
+.pal button { display: grid; justify-items: center; gap: 2px; padding: 8px 2px 6px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--bg); font-size: 11.5px; }
+.pal button:hover { border-color: var(--field); background: var(--hover); }
+.palh { padding: 8px 12px 0; font-size: 11.5px; font-weight: 650; color: var(--muted); }
+.fld { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: 12px; } .fld:hover { background: var(--hover); }
+.fld .arrow { color: var(--faint); margin-left: auto; font-size: 11px; white-space: nowrap; }
+/* Agent 占位 */
+.agent { display: flex; flex-direction: column; height: 100%; padding: 12px; gap: 10px; }
+.agent .say { padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--hair); font-size: 12.5px; }
+.agent .box2 { margin-top: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 6px; background: var(--bg); }
+/* 检查器 */
+.ihead { flex: none; padding: 10px 12px 8px; border-bottom: 1px solid var(--hair); }
+.ihead h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.ihead .sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.impact { margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: var(--warn-soft); font-size: 12px; color: var(--warn); }
+.states { padding: 8px 12px; border-bottom: 1px solid var(--hair); background: var(--bg); }
+.states .lbl { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.states .cases { display: flex; flex-wrap: wrap; gap: 4px; }
+.case { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 1px 7px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.case.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.case.ghost-case { border-style: dashed; color: var(--faint); }
+.case small { font-size: 10.5px; opacity: .75; }
+.sec { padding: 9px 12px 10px; border-bottom: 1px solid var(--hair); }
+.sec h4 { margin: 0 0 6px; font-size: 11.5px; font-weight: 650; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sec h4 span { font-weight: 400; color: var(--faint); }
+.f { display: grid; grid-template-columns: 74px minmax(0,1fr); gap: 6px; align-items: center; min-height: 28px; }
+.f > label { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.f > label.ov::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--mark); flex: none; }
+.f + .f { margin-top: 2px; }
+.cell { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.inp { flex: 1 1 auto; min-width: 0; height: 26px; display: flex; align-items: center; gap: 4px; padding: 0 6px; border: 1px solid var(--hair); border-radius: 6px; background: var(--bg); }
+.inp:focus-within { border-color: var(--field); background: #fff; }
+.inp input { flex: 1 1 auto; width: 100%; min-width: 0; border: 0; outline: 0; background: none; padding: 0; font-variant-numeric: tabular-nums; }
+.inp .u { color: var(--faint); font-size: 11px; flex: none; }
+.bound { flex: 1 1 auto; min-width: 0; height: 26px; display: flex; align-items: center; gap: 5px; padding: 0 6px; border: 1px solid rgba(85,100,105,.45); border-radius: 6px; background: rgba(85,100,105,.10); text-align: left; }
+.bound:hover { background: rgba(85,100,105,.17); }
+.bound .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bound .cv { margin-left: auto; flex: none; color: var(--faint); font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; }
+.bind { flex: none; width: 24px; height: 26px; border: 0; background: none; color: var(--faint); border-radius: 5px; display: grid; place-items: center; }
+.bind:hover { background: var(--hover); color: var(--ink); } .bind.on { color: var(--slate); }
+.nobind { flex: none; width: 24px; text-align: center; color: var(--hair); }
+.f.chain-row { min-height: 0; margin-top: 0; }
+.chain { grid-column: 2; font-size: 11.5px; color: var(--faint); margin: 1px 0 3px; }
+.chain button { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-decoration-color: var(--field); text-underline-offset: 2px; font-size: 11.5px; }
+.seg-group { display: inline-flex; flex: 1 1 auto; padding: 2px; gap: 2px; border-radius: 6px; background: var(--sunken); min-width: 0; }
+.seg-group button { flex: 1 1 auto; border: 0; background: none; border-radius: 4px; padding: 0 4px; height: 22px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
+.seg-group button.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 1px rgba(29,38,46,.1); }
+.seg-group button:disabled { color: var(--field); cursor: not-allowed; }
+.content { display: flex; flex-wrap: wrap; gap: 3px; padding: 5px; border: 1px solid var(--hair); border-radius: 6px; background: var(--bg); min-height: 30px; align-items: center; }
+.tok { display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: 4px; font-size: 12px; line-height: 20px; }
+.tok.lit { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+.tok.slot { background: rgba(85,100,105,.14); box-shadow: inset 0 0 0 1px rgba(85,100,105,.4); }
+.tok em { font: 10.5px var(--mono); color: var(--faint); font-style: normal; }
+.steps { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 5px; font-size: 12px; }
+.step { padding: 0 6px; border-radius: 4px; background: var(--sunken); color: var(--faint); line-height: 20px; }
+.step.on { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.result { margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: var(--bg); border: 1px solid var(--hair); font-size: 12px; color: var(--muted); }
+.result b { color: var(--ink); font-weight: 650; } .result.bad { background: var(--bad-soft); border-color: transparent; color: var(--bad); } .result.bad b { color: var(--bad); }
+.args { width: 100%; border-collapse: collapse; font-size: 12px; }
+.args td { padding: 3px 0; border-top: 1px solid var(--hair); vertical-align: middle; } .args tr:first-child td { border-top: 0; }
+.args td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+.src { display: inline-flex; align-items: center; gap: 4px; padding: 0 5px; border-radius: 4px; background: rgba(85,100,105,.12); line-height: 20px; }
+.src.loop { background: rgba(179,128,71,.18); } .src.none { background: none; color: var(--faint); padding: 0; }
+.branch { border: 1px solid var(--hair); border-radius: 6px; padding: 6px 8px; margin-bottom: 4px; background: var(--bg); font-size: 12px; }
+.branch.hit { border-color: var(--mark); background: var(--warn-soft); }
+.branch .kw { color: var(--faint); font-size: 11px; margin-right: 4px; }
+.branch .ln { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.op { color: var(--muted); }
+.lnk { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-decoration-color: var(--field); text-underline-offset: 2px; font-size: inherit; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.opt { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 2px 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+.opt.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+.note { font-size: 11.5px; color: var(--faint); margin-top: 5px; }
+.tiny-list { margin: 0; padding: 0; list-style: none; font-size: 12px; } .tiny-list li { padding: 1px 0; }
+/* 操作条 */
+.dock { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 12; display: flex; align-items: center; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); white-space: nowrap; max-width: calc(100% - 20px); }
+.dock .sep { width: 1px; height: 18px; background: var(--hair); margin: 0 3px; flex: none; }
+.dock button { height: 26px; min-width: 26px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; }
+.dock button:hover:not(:disabled) { background: var(--hover); color: var(--ink); } .dock button.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; } .dock button:disabled { color: var(--field); cursor: not-allowed; }
+.dock .zv { min-width: 44px; font-variant-numeric: tabular-nums; }
+.legend { position: absolute; left: 50%; transform: translateX(-50%); bottom: 50px; z-index: 10; white-space: nowrap; max-width: calc(100% - var(--left-w) - var(--right-w) - 60px); overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; color: var(--muted); background: rgba(253,252,248,.92); border-radius: 6px; padding: 2px 8px; }
+.facts { font-size: 11.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; min-width: 0; padding-right: 6px; }
+/* 样例带 */
+.tray { background: var(--bg); border-top: 1px solid var(--line); min-width: 0; }
+.trayhead { display: flex; align-items: center; gap: 2px; padding: 0 10px; height: 34px; }
+.trayhead button.t { border: 0; background: none; padding: 5px 9px; border-radius: 6px; color: var(--muted); }
+.trayhead button.t:hover { background: var(--hover); } .trayhead button.t.on { color: var(--ink); font-weight: 650; background: var(--accent-soft); }
+.trayhead .count { margin-left: 3px; color: var(--bad); font-weight: 700; } .trayhead .count.quiet { color: var(--faint); font-weight: 400; }
+.traybody { padding: 0 10px 10px; }
+.samples { display: flex; gap: 14px; align-items: stretch; overflow-x: auto; padding-bottom: 2px; }
+.knobs { flex: none; display: grid; gap: 6px; align-content: start; padding-right: 14px; border-right: 1px solid var(--hair); min-width: 196px; }
+.knob { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.sgroup { display: flex; flex-direction: column; gap: 3px; flex: none; }
+.sgroup > span { font-size: 11px; color: var(--faint); }
+.scards { display: flex; gap: 8px; }
+.scard { width: 158px; padding: 0; border: 1px solid var(--hair); border-radius: var(--r); background: var(--surface); text-align: left; overflow: hidden; display: block; }
+.scard:hover { border-color: var(--field); } .scard.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.scard .th { height: 50px; background: var(--sunken); display: grid; place-items: center; padding: 4px; }
+.scard .th img { max-width: 100%; max-height: 42px; display: block; box-shadow: 0 1px 3px rgba(29,38,46,.2); }
+.scard .tx { padding: 4px 7px 5px; font-size: 12px; line-height: 1.35; }
+.scard .tx div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scard .st { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--faint); }
+.plist { max-height: 168px; overflow: auto; }
+.prow { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 5px 6px; border: 0; background: none; text-align: left; border-radius: 6px; }
+.prow:hover { background: var(--hover); }
+.prow .n { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 11px/18px var(--sans); text-align: center; }
+.prow .n.hint { background: var(--warn); }
+.prow .where { font: 11px var(--mono); color: var(--faint); display: block; word-break: break-all; }
+.dsl { max-height: 216px; overflow: auto; margin: 0; padding: 8px 10px; background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; font: 11.5px/1.5 var(--mono); white-space: pre; }
+.empty { padding: 8px 6px; color: var(--faint); font-size: 12.5px; }
+/* 状态栏 */
+.statusbar { display: flex; align-items: center; gap: 12px; padding: 0 12px; background: var(--chrome); border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); white-space: nowrap; min-width: 0; overflow: hidden; }
+.statusbar button { border: 0; background: none; padding: 0 2px; font-size: 11.5px; color: var(--accent); text-decoration: underline; text-decoration-color: var(--field); text-underline-offset: 2px; }
+.statusbar button.on { font-weight: 700; text-decoration: none; color: var(--ink); }
+.proto { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* 弹层 */
+.pop { position: fixed; z-index: 40; min-width: 240px; max-width: 340px; max-height: 60vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); padding: 6px; font-size: 12.5px; }
+.pop h5 { margin: 4px 6px; font-size: 11.5px; color: var(--faint); font-weight: 600; }
+.pop button.it { display: flex; align-items: center; gap: 7px; width: 100%; border: 0; background: none; padding: 4px 6px; border-radius: 6px; text-align: left; white-space: nowrap; }
+.pop button.it:hover:not(:disabled) { background: var(--hover); } .pop button.it:disabled { color: var(--field); cursor: not-allowed; }
+.pop button.it .r { margin-left: auto; color: var(--faint); font-size: 11.5px; padding-left: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.pop hr { border: 0; border-top: 1px solid var(--hair); margin: 4px 0; }
+.toast { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); z-index: 50; max-width: min(620px, calc(100vw - 32px)); padding: 7px 14px; border-radius: 9px; background: var(--ink); color: var(--bg); font-size: 12.5px; box-shadow: var(--shadow); }
+.tour { position: fixed; right: 12px; bottom: 36px; z-index: 45; width: min(380px, calc(100vw - 24px)); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow); padding: 10px 12px 12px; }
+.tour h3 { margin: 0 0 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.tour ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.tour li button { display: grid; grid-template-columns: 18px 1fr; gap: 6px; width: 100%; padding: 5px 6px; border: 0; border-radius: 6px; background: none; text-align: left; font-size: 12.5px; line-height: 1.4; }
+.tour li button:hover { background: var(--hover); } .tour li b { color: var(--mark); font-variant-numeric: tabular-nums; } .tour li small { display: block; color: var(--faint); font-size: 11.5px; }
+@media (max-width: 1180px) { .cmd, .docbar .meta { display: none; } }
+@media (max-width: 900px) {
+  :root { --left-w: min(300px, calc(100vw - 32px)); --right-w: min(320px, calc(100vw - 32px)); }
+  .titlebar .tenant, .docbar .hide-narrow, .proto { display: none; }
+  .chip { max-width: calc(100% - 20px); } .chip .scope { display: none; }
+  .legend, .facts { display: none; }
+  .knobs { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="app" id="app">
+  <header class="titlebar">
+    <span class="brand"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#293642"/><path d="M6 8.5c4 0 4 7 8 7s4-7 4-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M6 15.5c4 0 4-7 8-7" stroke="#D9A566" stroke-width="2" fill="none" stroke-linecap="round"/></svg>RenderWeave</span>
+    <span class="module">模板<svg class="i" viewBox="0 0 24 24" style="width:11px;height:11px"><path d="m6 9 6 6 6-6"/></svg></span>
+    <span class="cmd">搜索或执行命令<kbd>Ctrl K</kbd></span>
+    <span class="grow"></span>
+    <span class="tenant muted small">青禾公交 · 客户管理员</span>
+  </header>
+  <div class="docbar" id="docbar"></div>
+  <main class="stage-wrap" id="wrap">
+    <div class="stage" id="stage"><div class="board" id="board"><img id="boardImg" alt="引擎出的草稿预览" draggable="false"><div class="overlay" id="overlay"></div></div></div>
+    <div class="chip" id="chip"></div>
+    <aside class="panel left" id="left" aria-label="结构与变量"></aside>
+    <aside class="panel right" id="right" aria-label="检查器"></aside>
+    <div class="legend" id="legend"></div>
+    <div class="dock" id="dock" role="toolbar" aria-label="舞台工具"></div>
+  </main>
+  <section class="tray" id="tray" aria-label="样例"></section>
+  <footer class="statusbar" id="statusbar"></footer>
+</div>
+<div id="float"></div>
+
+<script>
+'use strict';
+/* —— 图标 —— */
+const ICONS = {
+  text:'<path d="M5 6h14M12 6v13M9 19h6"/>', image:'<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m5 18 5-5 3 3 2-2 4 4"/>',
+  container:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/>', artboard:'<rect x="5" y="4" width="14" height="16" rx="1"/><path d="M2 8h2M2 16h2M20 8h2M20 16h2"/>',
+  loop:'<path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/>', call:'<rect x="4" y="9" width="11" height="11" rx="2"/><path d="M13 4h7v7M20 4l-8 8"/>',
+  rect:'<rect x="5" y="6" width="14" height="12" rx="1.5"/>', ellipse:'<ellipse cx="12" cy="12" rx="8" ry="6.5"/>', line:'<path d="M5 19 19 5"/>', polygon:'<path d="M12 4l8 15H4z"/>',
+  path:'<path d="M4 18c4-14 12 2 16-12"/><circle cx="4" cy="18" r="1.4"/><circle cx="20" cy="6" r="1.4"/>', qrcode:'<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 19h1M19 14h1"/>',
+  barcode:'<path d="M5 5v14M8 5v14M12 5v14M15 5v14M19 5v14"/>', link:'<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8v8M8 12h8" opacity="0"/>', chev:'<path d="m9 6 6 6-6 6"/>', undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>', redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>',
+  cursor:'<path d="M5 3l14 8-6 2-2 6z"/>', hand:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13c0 4-2 7-6 7s-5-2-7-5l-1-2c-.7-1.3.8-2.6 2-1.5l2 2"/>', comment:'<path d="M4 5h16v11H9l-5 4z"/>',
+  left:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M10 5v14"/>', right:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M14 5v14"/>', down:'<path d="m6 9 6 6 6-6"/>', up:'<path d="m6 15 6-6 6 6"/>', x:'<path d="M6 6l12 12M18 6 6 18"/>', eyeoff:'<path d="M4 4l16 16M10 6.2A9 9 0 0 1 21 12a14 14 0 0 1-2.6 3.3M6.3 7.7A14 14 0 0 0 3 12a9 9 0 0 0 11.5 5.4"/>',
+};
+const icon = (n, s) => `<svg class="i" viewBox="0 0 24 24"${s ? ` style="width:${s}px;height:${s}px"` : ''} aria-hidden="true">${ICONS[n] || ''}</svg>`;
+const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const $ = (id) => document.getElementById(id);
+const TYPE_LABEL = { artboard:'画板', container:'容器', loop:'循环容器', call:'子模板调用', text:'文字', image:'图片', qrcode:'二维码', barcode:'条形码', rect:'矩形', ellipse:'椭圆', line:'线条', polygon:'多边形', path:'路径' };
+const TYPE_GLYPH = { text:'T', number:'#', date:'日', time:'时', datetime:'刻', boolean:'?', image:'▣', color:'◐', list:'≡', ref:'{}' };
+const OPS = { branch:'条件分支', pickItem:'取项', splitPart:'拆取文本', length:'长度', add:'加', subtract:'减', multiply:'乘', divide:'除', mod:'取模' };
+const CMP = { eq:'等于', ne:'不等于', lt:'小于', le:'不大于', gt:'大于', ge:'不小于', empty:'为空', notEmpty:'不为空' };
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
+/* —— 状态 —— */
+let DATA, F, docs = {}, originals = {}, cur = null, byPath = new Map();
+const S = {
+  fam: 'm402', sample: 'base', sel: null, hover: null, hoverVar: null,
+  layers: { problems: true, struct: false, fit: false, data: false }, tool: 'select', zoom: 1, pan: { x: 0, y: 0 },
+  panels: { left: innerWidth > 900, right: innerWidth > 900, tray: true }, leftTab: 'structure', trayTab: 'samples', caseOf: {}, expanded: new Set(), undo: [], redo: [],
+  edits: {}, confirmed: '{}', saving: null, unconfirmed: 0, busy: false, compare: false, compareAt: .5, drag: null, noVariant: false, tour: false, dslWhole: false,
+};
+const fam = () => DATA.families.find((f) => f.id === S.fam);
+const sampleOf = (id) => fam().samples.find((s) => s.id === id);
+
+/* —— 模板文档 —— */
+const childrenOf = (e) => (Array.isArray(e && e.children) ? e.children : []);
+function elementAt(tpl, path) {
+  const doc = docs[tpl]; if (!doc) return null;
+  const [, ...names] = path.split('/'); let el = doc.artboard, parent = null;
+  for (const n of names) { const c = childrenOf(el).find((x) => x.name === n); if (!c) return null; parent = el; el = c; }
+  return { el, parent, isRoot: names.length === 0, doc };
+}
+function elVars(el) {
+  const found = new Set();
+  const walk = (v, key) => { if (Array.isArray(v)) { v.forEach((i) => walk(i)); return; } if (!v || typeof v !== 'object') return; if (typeof v.var === 'string') found.add(v.var); if (typeof v.slot === 'string') found.add(v.slot); for (const [k, i] of Object.entries(v)) if (k !== 'children' || key !== undefined) walk(i, k); };
+  walk(el); return [...found];
+}
+function closure(doc, vars) {
+  const derived = new Map((doc.derived || []).map((d) => [d.name, d])), seen = new Set(), q = vars.map((v) => v.split('.')[0]);
+  while (q.length) { const n = q.pop(); if (seen.has(n)) continue; seen.add(n); const d = derived.get(n); if (d) q.push(...elVars(d).map((v) => v.split('.')[0])); }
+  return seen;
+}
+function allElements(tpl) { const out = []; const walk = (e, p) => { out.push({ el: e, path: p }); childrenOf(e).forEach((c) => walk(c, `${p}/${c.name}`)); }; walk(docs[tpl].artboard, tpl); return out; }
+const elementsUsing = (tpl, name) => allElements(tpl).filter(({ el }) => closure(docs[tpl], elVars(el)).has(name.split('.')[0]));
+function schemaOf(doc) {
+  const b = doc.base || {}; const s = F.schemas[`${b.name}@${b.version}`]; if (s) return s;
+  if ((b.name || '').startsWith('单值·')) { const t = { '文本':'text','数值':'number','日期':'date','时刻':'time','时间':'datetime','布尔':'boolean','图片':'image' }[b.name.slice(3)] || 'text'; return { name: b.name, version: 1, fields: [{ name: 'value', displayName: '值', type: t }] }; }
+  return { name: b.name, version: b.version, fields: [] };
+}
+function schemaFor(ref) { return ref ? F.schemas[`${ref.name}@${ref.version}`] : null; }
+function varInfo(doc, path) {
+  const [head, ...rest] = path.split('.');
+  const param = (doc.parameters || []).find((p) => p.name === head); if (param) return { kind: 'param', def: param, type: param.type, label: param.displayName || head };
+  const der = (doc.derived || []).find((d) => d.name === head);
+  if (der) { if (rest.length && der.ref) { const s = schemaFor(der.ref), f = s && s.fields.find((x) => x.name === rest[0]); return { kind: 'derived', def: der, type: f ? f.type : '?', label: `${der.displayName || head}.${f ? f.displayName : rest[0]}` }; } return { kind: 'derived', def: der, type: der.type, label: der.displayName || head }; }
+  const f = schemaOf(doc).fields.find((x) => x.name === head);
+  if (f) { if (rest.length && f.type === 'ref') { const s = schemaFor(f.ref), g = s && s.fields.find((x) => x.name === rest[0]); return { kind: 'field', def: f, type: g ? g.type : '?', label: `${f.displayName}.${g ? g.displayName : rest[0]}` }; } return { kind: 'field', def: f, type: f.type === 'list' ? 'list' : f.type, label: f.displayName || head }; }
+  return { kind: 'unknown', def: null, type: '?', label: path };
+}
+
+/* —— 求值：原型在页面里算；真实产品由预览接口回答（方案 §12 的接口缺口） —— */
+const isEmpty = (v) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+function makeScope(tpl, data, argVals, parent, callerEl, loopInfo, argOps) {
+  const doc = docs[tpl], cache = new Map();
+  const base = (name) => {
+    if (cache.has(name)) return cache.get(name);
+    let v; const p = (doc.parameters || []).find((x) => x.name === name), d = (doc.derived || []).find((x) => x.name === name);
+    if (p) v = argVals && name in argVals ? argVals[name] : p.default;
+    else if (d) v = evalDerived(d, s);
+    else v = data ? data[name] : undefined;
+    cache.set(name, v); return v;
+  };
+  const s = { tpl, doc, data, argVals, parent, callerEl, loopInfo, argOps, get(path) { const [h, ...r] = String(path).split('.'); let v = base(h); for (const k of r) v = v == null ? undefined : v[k]; return v; } };
+  return s;
+}
+function opnd(o, s) { if (o == null) return undefined; if ('var' in o) return s.get(o.var); if ('value' in o) return o.value; if ('loop' in o) return s.loopInfo ? s.loopInfo[o.loop] : undefined; return undefined; }
+function compare(c, s) { const l = opnd(c.left, s); if (c.op === 'empty') return isEmpty(l); if (c.op === 'notEmpty') return !isEmpty(l); const r = opnd(c.right, s); switch (c.op) { case 'eq': return l == r; case 'ne': return l != r; case 'lt': return l < r; case 'le': return l <= r; case 'gt': return l > r; case 'ge': return l >= r; } return false; }
+function cond(c, s) { if (c.all) return c.all.every((x) => compare(x, s)); if (c.any) return c.any.some((x) => compare(x, s)); return compare(c, s); }
+function branchHit(d, s) { for (let i = 0; i < d.branches.length; i++) if (cond(d.branches[i].when, s)) return i; return -1; }
+function evalDerived(d, s) {
+  switch (d.op) {
+    case 'branch': { const i = branchHit(d, s); return opnd(i >= 0 ? d.branches[i].then : d.otherwise, s); }
+    case 'length': { const v = opnd(d.of, s); return v == null ? 0 : v.length; }
+    case 'pickItem': { const l = opnd(d.list, s) || []; const p = d.position; if (p === 'first') return l[0]; if (p === 'last') return l[l.length - 1]; const n = opnd(p.index, s); return l[n - 1]; }
+    case 'splitPart': { const v = opnd(d.of, s); if (isEmpty(v)) return ''; const del = typeof d.delimiter === 'string' ? d.delimiter : opnd(d.delimiter, s); const parts = String(v).split(del); const p = d.position; return p === 'first' ? parts[0] : p === 'last' ? parts[parts.length - 1] : parts[opnd(p.index, s) - 1] ?? ''; }
+    case 'add': return opnd(d.left, s) + opnd(d.right, s);
+    case 'subtract': return opnd(d.left, s) - opnd(d.right, s);
+    case 'multiply': return opnd(d.left, s) * opnd(d.right, s);
+    case 'divide': return opnd(d.left, s) / opnd(d.right, s);
+    case 'mod': return opnd(d.left, s) % opnd(d.right, s);
+  }
+}
+const rootScope = () => { const sm = sampleOf(S.sample); return makeScope(F.root, sm.data, sm.params || {}, null, null, null, null); };
+function enterCalled(el, s, item, idx, count) {
+  const t = el.template, target = docs[t]; if (!target) return null;
+  const loopInfo = idx != null ? { index: idx, isFirst: idx === 1, isLast: idx === count, count, groupSize: 1 } : null;
+  const shim = { ...s, loopInfo, get: s.get };
+  const args = {}; for (const [k, o] of Object.entries(el.args || {})) args[k] = opnd(o, shim);
+  let data;
+  if (idx != null) data = item !== null && typeof item === 'object' ? item : { value: item };
+  else if (el.data === 'current') data = s.data; else if (el.data && el.data.var) data = s.get(el.data.var); else data = null;
+  return makeScope(t, data, args, s, el, loopInfo, el.args || {});
+}
+function scopeFor(inst) {
+  const segs = inst.split('/'); let s = rootScope(), el = docs[F.root].artboard;
+  for (const raw of segs.slice(1)) {
+    const m = raw.match(/^(.*)\[(\d+)\]$/), name = m ? m[1] : raw, idx = m ? +m[2] : null;
+    const c = childrenOf(el).find((x) => x.name === name); if (!c) return s;
+    if (c.type === 'loop' && idx != null) { const list = opnd(c.list, s) || []; const nx = enterCalled(c, s, list[idx - 1], idx, list.length); if (!nx) return s; s = nx; el = s.doc.artboard; }
+    else if (c.type === 'call') { const nx = enterCalled(c, s); if (!nx) return s; s = nx; el = s.doc.artboard; }
+    else el = c;
+  }
+  return s;
+}
+function scopeOfTemplate(tpl) { if (tpl === F.root) return rootScope(); const n = cur.nodes.find((x) => x.s && x.s[0] === tpl); return n ? scopeFor(n.p) : makeScope(tpl, null, {}, null, null, null, null); }
+function fmtVal(v, type) {
+  if (v === undefined || v === null) return '空';
+  if (Array.isArray(v)) return `${v.length} 项`;
+  if (typeof v === 'object') { const k = v.name || v.title; return k ? `{ ${k} }` : '{…}'; }
+  if (type === 'boolean' || typeof v === 'boolean') return v ? '是' : '否';
+  if (v === '') return '空文本';
+  const t = String(v); return t.startsWith('res:') ? t.slice(4) : t;
+}
+const valHtml = (v, type) => (type === 'color' && typeof v === 'string' ? `<i class="sw" style="background:${esc(v)}"></i><span>${esc(v)}</span>` : `<span>${esc(fmtVal(v, type))}</span>`);
+const isColor = (v) => typeof v === 'string' && /^#[0-9a-fA-F]{6,8}$/.test(v);
+
+/* —— 当前结果 —— */
+function activeVariantKey() { const ks = Object.keys(S.edits); return ks.length === 1 ? `${ks[0]}|${S.edits[ks[0]].value}` : null; }
+function computeCur() {
+  const sm = sampleOf(S.sample); let res = sm; S.noVariant = false;
+  const ks = Object.keys(S.edits);
+  if (ks.length && S.sample === 'base') { const v = F.variants[activeVariantKey()]; if (v) res = { ...sm, ...v }; else S.noVariant = true; }
+  else if (ks.length) S.noVariant = true;
+  cur = res; byPath = new Map(cur.nodes.map((n) => [n.p, n]));
+}
+const instancesOf = (tpl, path) => cur.nodes.filter((n) => n.s && n.s[0] === tpl && n.s[1] === path && n.v);
+const parentInst = (p) => { const last = p.split('/').pop(); if (/\[\d+\]$/.test(last)) return p.replace(/\[\d+\]$/, ''); const i = p.lastIndexOf('/'); return i < 0 ? null : p.slice(0, i); };
+const stripIdx = (p) => p.replace(/\[\d+\]/g, '');
+function problemsWithIndex() { return cur.problems.map((p, i) => ({ ...p, n: i + 1 })); }
+function problemsAt(tpl, path) { return problemsWithIndex().filter((p) => { if (p.location.kind !== 'element') return false; const n = byPath.get(p.location.path); return n && n.s && n.s[0] === tpl && n.s[1] === path; }); }
+
+/* —— 选择 —— */
+function ensureExpanded(inst) { const parts = stripIdx(inst).split('/'); for (let i = 1; i < parts.length; i++) S.expanded.add(parts.slice(0, i).join('/')); }
+function selectInst(inst) {
+  const n = byPath.get(inst); if (!n) return;
+  if (!n.s) { toast('这个元素在当前样例下不显示'); return; }
+  S.sel = { kind: 'el', tpl: n.s[0], path: n.s[1], inst }; ensureExpanded(inst); paint();
+  requestAnimationFrame(() => { const r = document.querySelector('.tree .row.on'); if (r) r.scrollIntoView({ block: 'nearest' }); });
+}
+function selectSource(tpl, path, treeKey) {
+  const ins = instancesOf(tpl, path);
+  S.sel = { kind: 'el', tpl, path, inst: ins[0] ? ins[0].p : undefined }; if (treeKey) S.selKey = treeKey; paint();
+}
+function selectVar(tpl, name, vk) { S.sel = { kind: 'var', tpl, name, vk }; S.leftTab = 'vars'; S.panels.left = true; S.panels.right = true; paint(); }
+const selEl = () => (S.sel && S.sel.kind === 'el' ? S.sel : { kind: 'el', tpl: F.root, path: F.root, inst: F.root });
+
+/* —— 舞台几何 —— */
+function stageRect() {
+  const w = $('wrap').clientWidth, h = $('wrap').clientHeight;
+  const narrow = innerWidth <= 900;
+  const L = S.panels.left && !narrow ? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--left-w')) + 22 : 14;
+  const R = S.panels.right && !narrow ? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--right-w')) + 22 : 14;
+  return { x: L, y: 52, w: Math.max(80, w - L - R), h: Math.max(60, h - 52 - 54), wrapW: w, wrapH: h };
+}
+function fitWidth() { const r = stageRect(), a = cur.output.width / cur.output.height; return Math.min(r.w, r.h * a); }
+function layoutBoard() {
+  const r = stageRect(), a = cur.output.width / cur.output.height, fw = fitWidth(), bw = fw * S.zoom, bh = bw / a;
+  const board = $('board'); board.style.width = `${bw}px`; board.style.height = `${bh}px`;
+  board.style.left = `${r.x + (r.w - bw) / 2 + S.pan.x}px`; board.style.top = `${r.y + (r.h - bh) / 2 + S.pan.y}px`;
+}
+const pct = (n) => { const o = cur.output; return `left:${n.x / o.width * 100}%;top:${n.y / o.height * 100}%;width:${n.w / o.width * 100}%;height:${n.h / o.height * 100}%`; };
+const mmToPx = () => $('board').clientWidth / cur.output.width;
+function hitTest(evt) {
+  const b = $('board').getBoundingClientRect(), x = (evt.clientX - b.left) / b.width * cur.output.width, y = (evt.clientY - b.top) / b.height * cur.output.height;
+  if (x < 0 || y < 0 || x > cur.output.width || y > cur.output.height) return null;
+  const list = cur.nodes; for (let i = list.length - 1; i >= 0; i--) { const n = list[i]; if (n.v && n.s && x >= n.x && x <= n.x + n.w && y >= n.y && y <= n.y + n.h) return n; }
+  return null;
+}
+function hitStack(evt) {
+  const b = $('board').getBoundingClientRect(), x = (evt.clientX - b.left) / b.width * cur.output.width, y = (evt.clientY - b.top) / b.height * cur.output.height;
+  return cur.nodes.filter((n) => n.v && n.s && x >= n.x && x <= n.x + n.w && y >= n.y && y <= n.y + n.h).reverse();
+}
+
+/* —— 叠加层 —— */
+function renderOverlay() {
+  const out = [], sel = S.sel && S.sel.kind === 'el' ? S.sel : null;
+  if (S.layers.struct) for (const n of cur.nodes) if (n.v && n.s && n.d > 0) out.push(`<span class="box struct${n.t === 'container' || n.t === 'loop' || n.t === 'call' ? '' : ' leaf'}" style="${pct(n)}"></span>`);
+  if (S.layers.data) for (const n of cur.nodes) { if (!n.v || !n.s) continue; const loc = elementAt(n.s[0], n.s[1]); if (!loc) continue; const e = loc.el; if (e.type === 'text') out.push(`<span class="box ${(e.content || []).some((c) => c.slot) ? 'data' : 'fixed'}" style="${pct(n)}"></span>`); else if (e.type === 'image' || e.type === 'qrcode' || e.type === 'barcode') out.push(`<span class="box ${(e.source && e.source.var) || (e.content && e.content.var) ? 'data' : 'fixed'}" style="${pct(n)}"></span>`); }
+  if (S.layers.fit) for (const n of cur.nodes) { if (!n.tx || !n.v) continue; if (n.tx.ov) out.push(`<span class="box fit over" style="${pct(n)}"></span>`); else if (n.tx.cmp < .999) out.push(`<span class="box fit" style="${pct(n)};opacity:${.45 + (1 - n.tx.cmp) * 1.4}">${S.zoom >= 1.4 ? `<span class="pct">${Math.round(n.tx.cmp * 100)}%</span>` : ''}</span>`); }
+  if (S.layers.problems) problemsWithIndex().forEach((p) => { if (p.location.kind !== 'element') return; const n = byPath.get(p.location.path); if (!n) return; out.push(`<span class="mark ${p.level === 'hint' ? 'hint' : ''}" style="${pct(n)}"><b data-act="problem" data-v="${p.n - 1}">${p.n}</b></span>`); });
+  if (S.hoverVar) { const { tpl, name } = S.hoverVar; const paths = new Set(elementsUsing(tpl, name).map((x) => x.path)); for (const n of cur.nodes) if (n.v && n.s && n.s[0] === tpl && paths.has(n.s[1]) && n.t !== 'artboard') out.push(`<span class="box usevar" style="${pct(n)}"></span>`); }
+  if (sel) {
+    const ins = instancesOf(sel.tpl, sel.path);
+    const main = ins.find((n) => n.p === sel.inst) || ins[0];
+    const others = ins.filter((n) => n !== main);
+    if (others.length <= 120) others.forEach((n) => out.push(`<span class="box other" style="${pct(n)}"></span>`));
+    if (main) {
+      const under = main.y < 8;
+      out.push(`<span class="box sel" id="selbox" data-path="${esc(main.p)}" style="${pct(main)}"><span class="tag${under ? ' under' : ''}">${esc(main.n)} · ${round1(main.w)} × ${round1(main.h)} mm</span></span>`);
+      out.push(guidesFor(sel, main));
+    }
+  }
+  if (S.hover && (!sel || S.hover !== sel.inst)) { const n = byPath.get(S.hover); if (n) out.push(`<span class="box hover" style="${pct(n)}"></span>`); else if (S.hover.startsWith('src:')) { const [, tpl, path] = S.hover.split(':'); instancesOf(tpl, path).forEach((m) => out.push(`<span class="box hover" style="${pct(m)}"></span>`)); } }
+  if (S.compare && S.sample === 'base' && Object.keys(S.edits).length) {
+    const x = S.compareAt * 100, base = sampleOf('base');
+    out.push(`<div class="compare-clip" style="width:${x}%"><img src="${base.img}" style="width:${$('board').clientWidth}px" alt="当前修订"></div><span class="compare-bar" data-drag="compare" style="left:${x}%"><i></i></span><span class="tag" style="left:0;bottom:100%">当前修订</span><span class="tag" style="left:auto;right:0;bottom:100%">工作副本</span>`);
+  }
+  if (S.drag && S.drag.html) out.push(S.drag.html);
+  $('overlay').innerHTML = out.join('');
+}
+const round1 = (v) => Math.round(v * 10) / 10;
+function directChildren(inst) {
+  const depth = inst.split('/').length;
+  return cur.nodes.filter((n) => n.v && n.p.startsWith(`${inst}/`) && n.p.split('/').length === depth + 1);
+}
+function guidesFor(sel, node) {
+  const loc = elementAt(sel.tpl, sel.path); if (!loc) return ''; const el = loc.el, out = [], o = cur.output;
+  const X = (v) => `${v / o.width * 100}%`, Y = (v) => `${v / o.height * 100}%`;
+  const pad = typeof el.padding === 'object' ? el.padding : typeof el.padding === 'number' ? { top: el.padding, right: el.padding, bottom: el.padding, left: el.padding } : null;
+  if (pad && el.layout) {
+    if (pad.top) out.push(`<span class="padbar" style="left:${X(node.x)};top:${Y(node.y)};width:${X(node.w)};height:${Y(pad.top)}"></span>`);
+    if (pad.bottom) out.push(`<span class="padbar" style="left:${X(node.x)};top:${Y(node.y + node.h - pad.bottom)};width:${X(node.w)};height:${Y(pad.bottom)}"></span>`);
+    if (pad.left) out.push(`<span class="padbar" style="left:${X(node.x)};top:${Y(node.y)};width:${X(pad.left)};height:${Y(node.h)}"></span>`);
+    if (pad.right) out.push(`<span class="padbar" style="left:${X(node.x + node.w - pad.right)};top:${Y(node.y)};width:${X(pad.right)};height:${Y(node.h)}"></span>`);
+  }
+  const lay = el.layout;
+  if (lay && lay.mode === 'stack') {
+    const kids = directChildren(node.p), gap = typeof lay.gap === 'number' ? lay.gap : 0, row = lay.direction !== 'column';
+    for (let i = 0; i < kids.length - 1; i++) { const a = kids[i], b = kids[i + 1];
+      if (row) { const s = a.x + a.w, w = b.x - s; if (w > .05) out.push(`<span class="gapbar row" data-drag="gap" data-v="${gap}" data-axis="x" style="left:${X(s)};top:${Y(node.y)};width:${X(w)};height:${Y(node.h)}"></span>`); }
+      else { const s = a.y + a.h, h = b.y - s; if (h > .05) out.push(`<span class="gapbar col" data-drag="gap" data-v="${gap}" data-axis="y" style="left:${X(node.x)};top:${Y(s)};width:${X(node.w)};height:${Y(h)}"></span>`); } }
+  }
+  if (lay && lay.mode === 'grid') {
+    const kids = childrenOf(el), inst = directChildren(node.p);
+    const rows = lay.rows || [], cols = lay.columns || [];
+    const edges = (tracks, key, spanKey, start, size, base) => { const res = []; tracks.forEach((t, i) => { const k = kids.find((c) => c.place && c.place[key] === i + 1 && (c.place[spanKey] || 1) === 1); const n = k && inst.find((m) => m.n === k.name); if (n) res[i] = [n[start], n[start] + n[size]]; }); let cursor = base; tracks.forEach((t, i) => { if (!res[i]) res[i] = [cursor, cursor + (typeof t === 'object' && t.fixed ? t.fixed : 0)]; cursor = res[i][1]; }); return res; };
+    const label = (t) => (t === 'hug' ? '随内容' : t.fixed !== undefined ? `${t.fixed} mm` : t.fraction !== undefined ? `${t.fraction} 份` : '');
+    const re = edges(rows, 'row', 'rowSpan', 'y', 'h', node.y), ce = edges(cols, 'column', 'columnSpan', 'x', 'w', node.x);
+    re.forEach((r, i) => { out.push(`<span class="tracklabel" style="left:calc(${X(node.x)} + 3px);top:${Y((r[0] + r[1]) / 2)};transform:translateY(-50%)">${label(rows[i])}</span>`); if (i < re.length - 1) out.push(`<span class="track h-line" data-drag="track" data-axis="y" data-v="${rows[i].fixed ?? ''}" data-label="第 ${i + 1} 行高" style="top:${Y(r[1])};left:calc(${X(node.x)} - 8px);right:auto;width:calc(${X(node.w)} + 16px)"></span>`); });
+    ce.forEach((c, i) => { out.push(`<span class="tracklabel" style="top:calc(${Y(node.y)} + 3px);left:${X((c[0] + c[1]) / 2)};transform:translateX(-50%)">${label(cols[i])}</span>`); if (i < ce.length - 1) out.push(`<span class="track v-line" data-drag="track" data-axis="x" data-v="${cols[i].fixed ?? ''}" data-label="第 ${i + 1} 列宽" style="left:${X(c[1])};top:calc(${Y(node.y)} - 8px);bottom:auto;height:calc(${Y(node.h)} + 16px)"></span>`); });
+  }
+  if (!loc.isRoot && loc.parent) {
+    const pm = (loc.parent.layout && loc.parent.layout.mode) || 'free';
+    const dots = (list) => list.map(([px, py, cur_, kind]) => `<span class="h" data-drag="${kind}" style="left:${X(node.x + node.w * px)};top:${Y(node.y + node.h * py)};cursor:${cur_}" data-hx="${px}" data-hy="${py}"></span>`).join('');
+    const fixedW = el.place && el.place.width && el.place.width.fixed !== undefined, fixedH = el.place && el.place.height && el.place.height.fixed !== undefined;
+    if (pm === 'free') {
+      out.push(`<span class="box" data-drag="move" style="${pct(node)};pointer-events:auto;cursor:move"></span>`);
+      out.push(dots([[0,0,'nwse-resize','resize'],[.5,0,'ns-resize','resize'],[1,0,'nesw-resize','resize'],[0,.5,'ew-resize','resize'],[1,.5,'ew-resize','resize'],[0,1,'nesw-resize','resize'],[.5,1,'ns-resize','resize'],[1,1,'nwse-resize','resize']]));
+    } else if (pm === 'stack') {
+      const row = loc.parent.layout.direction !== 'column';
+      out.push(`<span class="box" data-drag="reorder" data-axis="${row ? 'x' : 'y'}" style="${pct(node)};pointer-events:auto;cursor:grab"></span>`);
+      if (row && fixedW) out.push(dots([[1,.5,'ew-resize','resize']]));
+      if (!row && fixedH) out.push(dots([[.5,1,'ns-resize','resize']]));
+    } else if (pm === 'grid') {
+      out.push(`<span class="box" data-drag="cell" style="${pct(node)};pointer-events:auto;cursor:move"></span>`);
+      out.push(dots([[1,.5,'ew-resize','span'],[.5,1,'ns-resize','span']]));
+    }
+  }
+  return out.join('');
+}
+
+/* —— 拖动：只写 DSL 里已有的数；松手才写回，然后才换图 —— */
+function startDrag(evt, h) {
+  const kind = h.dataset.drag; evt.preventDefault(); evt.stopPropagation();
+  if (kind === 'compare') { const move = (e) => { const b = $('board').getBoundingClientRect(); S.compareAt = Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)); renderOverlay(); }; const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); }; addEventListener('pointermove', move); addEventListener('pointerup', up); return; }
+  const sel = selEl(), loc = elementAt(sel.tpl, sel.path), node = byPath.get(sel.inst), k = mmToPx(), x0 = evt.clientX, y0 = evt.clientY, o = cur.output;
+  const X = (v) => `${v / o.width * 100}%`, Y = (v) => `${v / o.height * 100}%`;
+  const snap = (v, e) => (e.shiftKey ? Math.round(v * 10) / 10 : Math.round(v * 2) / 2);
+  let msg = '';
+  const move = (e) => {
+    const dx = (e.clientX - x0) / k, dy = (e.clientY - y0) / k; let html = '';
+    if (kind === 'gap') { const g = +h.dataset.v || 0, d = h.dataset.axis === 'x' ? dx : dy, v = Math.max(0, snap(g + d, e)); msg = `layout.gap ${g} → ${v} mm`; html = `<span class="readout" style="left:${X(node.x + node.w / 2)};top:${Y(node.y)};transform:translate(-50%,-130%)">${msg}</span>`; }
+    else if (kind === 'track') { const ax = h.dataset.axis, base = h.dataset.v === '' ? null : +h.dataset.v, d = ax === 'y' ? dy : dx; const v = base == null ? null : Math.max(1, snap(base + d, e)); msg = base == null ? `${h.dataset.label}：这条轨道是按比例或随内容，拖动改固定轨道的余量` : `${h.dataset.label} ${base} → ${v} mm`; const lbl = ax === 'y' ? `left:${X(node.x + node.w / 2)};top:${parseFloat(h.style.top)}%` : `left:${parseFloat(h.style.left)}%;top:${Y(node.y + node.h / 2)}`; html = `<span class="readout" style="${lbl};transform:translate(${ax === 'y' ? `-50%,calc(${e.clientY - y0}px - 130%)` : `calc(${e.clientX - x0}px - 50%),-50%`})">${msg}</span>`; }
+    else if (kind === 'move') { const anchors = loc.el.place || {}; const nl = snap((anchors.left ?? node.x) + dx, e), nt = snap((anchors.top ?? 0) + dy, e); msg = `place.left ${anchors.left ?? 0} → ${nl}，place.top ${anchors.top ?? 0} → ${nt} mm`; html = `<span class="ghost" style="left:${X(node.x + dx)};top:${Y(node.y + dy)};width:${X(node.w)};height:${Y(node.h)}"></span><span class="readout" style="left:${X(node.x + dx)};top:${Y(node.y + dy)};transform:translateY(-130%)">${msg}</span>`; }
+    else if (kind === 'resize') { const hx = +h.dataset.hx, hy = +h.dataset.hy; const nw = Math.max(1, node.w + (hx === 1 ? dx : hx === 0 ? -dx : 0)), nh = Math.max(1, node.h + (hy === 1 ? dy : hy === 0 ? -dy : 0)); const lx = hx === 0 ? node.x + dx : node.x, ty = hy === 0 ? node.y + dy : node.y; msg = `place.width ${snap(nw, e)} mm，place.height ${snap(nh, e)} mm`; html = `<span class="ghost" style="left:${X(lx)};top:${Y(ty)};width:${X(nw)};height:${Y(nh)}"></span><span class="readout" style="left:${X(lx)};top:${Y(ty + nh)};transform:translateY(30%)">${msg}</span>`; }
+    else if (kind === 'reorder') { const ax = h.dataset.axis, kids = directChildren(parentInst(node.p) || ''), list = kids.filter((m) => m !== node), c = ax === 'x' ? node.x + node.w / 2 + dx : node.y + node.h / 2 + dy; let i = 0; for (const m of list) { const mid = ax === 'x' ? m.x + m.w / 2 : m.y + m.h / 2; if (c > mid) i++; } const prev = list[i - 1], next = list[i]; const at = prev ? (ax === 'x' ? prev.x + prev.w : prev.y + prev.h) : (ax === 'x' ? (next ? next.x : node.x) : (next ? next.y : node.y)); const parent = byPath.get(parentInst(node.p)) || node; const line = ax === 'x' ? `left:${X(at)};top:${Y(parent.y)};width:2px;height:${Y(parent.h)}` : `left:${X(parent.x)};top:${Y(at)};height:2px;width:${X(parent.w)}`; msg = `children 顺序：把「${node.n}」放到第 ${i + 1} 位（顺序同时决定叠放）`; html = `<span class="ghost" style="left:${X(node.x + (ax === 'x' ? dx : 0))};top:${Y(node.y + (ax === 'y' ? dy : 0))};width:${X(node.w)};height:${Y(node.h)}"></span><span class="dropline" style="${line}"></span><span class="readout" style="left:${X(parent.x + parent.w / 2)};top:${Y(parent.y)};transform:translate(-50%,-130%)">${esc(msg)}</span>`; }
+    else if (kind === 'cell' || kind === 'span') { const p = loc.parent.layout, kids = childrenOf(loc.parent), row = (loc.el.place || {}).row, col = (loc.el.place || {}).column; const n = kids.length; msg = kind === 'cell' ? `place.row ${row}，place.column ${col}：吸到最近的格子` : `place.columnSpan / rowSpan：沿轨道增减跨度`; html = `<span class="ghost" style="left:${X(node.x + dx)};top:${Y(node.y + dy)};width:${X(node.w)};height:${Y(node.h)}"></span><span class="readout" style="left:${X(node.x + dx)};top:${Y(node.y + dy)};transform:translateY(-130%)">${esc(msg)}</span>`; }
+    S.drag = { html }; renderOverlay();
+  };
+  const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); const had = S.drag && S.drag.html; S.drag = null; renderOverlay(); if (had && msg) toast(`松手写入 ${msg}。原型不写回；真实页面此时记一步撤销、暂存，再出新图。`); };
+  addEventListener('pointermove', move); addEventListener('pointerup', up);
+}
+
+/* —— 选区条 —— */
+function renderChip() {
+  const c = $('chip');
+  if (S.sel && S.sel.kind === 'var') { const info = varInfo(docs[S.sel.tpl], S.sel.name); c.innerHTML = `<span class="muted">${S.sel.vk === 'check' ? '检查项' : { param: '模板参数', derived: '派生变量', field: '数据字段' }[info.kind] || '变量'}</span><b>${esc(S.sel.vk === 'check' ? S.sel.name : info.label)}</b><span class="scope">在模板 <b>${esc(S.sel.tpl)}</b> 的作用域里</span>`; return; }
+  const sel = selEl(), inst = sel.inst || sel.path, parts = inst.split('/'), now = [];
+  parts.forEach((seg, i) => { const p = parts.slice(0, i + 1).join('/'); const n = byPath.get(p), bound = /\[\d+\]$/.test(seg) || (n && n.t === 'call'); now.push(`${i ? '<span class="slash">/</span>' : ''}<button class="seg${i === parts.length - 1 ? ' now' : ''}${bound ? ' tpl' : ''}" data-act="sel-inst" data-v="${esc(p)}">${esc(seg)}</button>`); });
+  const ins = instancesOf(sel.tpl, sel.path);
+  const cnt = ins.length, idx = ins.findIndex((n) => n.p === sel.inst);
+  const scope = sel.tpl === F.root && cnt <= 1 ? `<span class="scope">属于模板 <b>${esc(sel.tpl)}</b></span>`
+    : cnt > 1 ? `<span class="scope">定义在 <b>${esc(sel.tpl)}</b>，图上 <b>${cnt}</b> 处${idx >= 0 ? `，这是第 ${idx + 1} 处` : ''}，改一处全改</span>`
+    : `<span class="scope">定义在 <b>${esc(sel.tpl)}</b></span>`;
+  c.innerHTML = `<span class="path"><span>${now.join('')}</span></span>${scope}`;
+}
+
+/* —— 左侧 —— */
+function renderLeft() {
+  const el = $('left'); el.hidden = !S.panels.left; if (!S.panels.left) return;
+  const t = S.leftTab;
+  el.style.setProperty('--w', '');
+  document.documentElement.style.setProperty('--left-w', t === 'agent' && innerWidth > 900 ? '380px' : innerWidth > 900 ? '288px' : '');
+  const scroller = el.querySelector('.scroll'), top = scroller ? scroller.scrollTop : 0, prev = el.dataset.tab;
+  el.innerHTML = `<div class="tabs" role="tablist">${[['structure','结构'],['vars','变量'],['add','添加'],['agent','Agent']].map(([id, l]) => `<button role="tab" aria-selected="${t === id}" class="${t === id ? 'on' : ''}" data-act="left-tab" data-v="${id}">${l}${id === 'agent' ? ' <span class="pill">P2</span>' : ''}</button>`).join('')}</div><div class="scroll">${t === 'structure' ? treeHtml() : t === 'vars' ? varsHtml() : t === 'add' ? addHtml() : agentHtml()}</div>`;
+  el.dataset.tab = t; if (prev === t) el.querySelector('.scroll').scrollTop = top;
+}
+function layoutGlyph(e) { const l = e.layout; if (!l) return ''; if (l.mode === 'stack') return l.direction === 'column' ? '纵' : '横'; if (l.mode === 'grid') return '网格'; return '自由'; }
+function treeHtml() {
+  const out = [], probs = problemsWithIndex();
+  const walk = (tpl, el, path, key, depth, isRoot, bands) => {
+    const type = isRoot ? 'artboard' : el.type, exp = S.expanded.has(key);
+    const target = el.template && docs[el.template];
+    const hasKids = (childrenOf(el).length > 0) || !!target;
+    const ins = instancesOf(tpl, path), hidden = ins.length === 0 && !isRoot, pr = problemsAt(tpl, path).length;
+    const sel = S.sel && S.sel.kind === 'el' && S.sel.tpl === tpl && S.sel.path === path;
+    const bd = [];
+    if (type === 'loop') { const roots = new Set(ins.map((n) => n.p)); const count = cur.nodes.filter((n) => { const m = n.p.match(/^(.*)\[\d+\]$/); return m && roots.has(m[1]); }).length; bd.push(`<span class="pill">×${count}</span>`); }
+    if (el.layout) bd.push(`<span>${layoutGlyph(el)}</span>`);
+    if (el.visible && typeof el.visible === 'object') bd.push('<span title="条件显示">显隐</span>');
+    if (el.states) bd.push('<span title="有状态样式">状态</span>');
+    if (hidden) bd.push(`<span title="当前样例不显示">${icon('eyeoff', 12)}</span>`);
+    if (pr) bd.push(`<span class="e" title="有问题">●</span>`);
+    const bandHtml = bands.map((b) => `<i class="band" style="left:${b}px"></i>`).join('');
+    out.push(`<div class="row${sel ? ' on' : ''}${hidden ? ' dim' : ''}" style="padding-left:${6 + depth * 13}px" data-act="sel-src" data-v="${esc(tpl)}|${esc(path)}" data-hover="src:${esc(tpl)}:${esc(path)}" data-ctx="tree" >${bandHtml}${hasKids ? `<button class="tw${exp ? ' open' : ''}" data-act="toggle" data-v="${esc(key)}" aria-label="展开">${icon('chev')}</button>` : '<span class="tw"></span>'}${icon(type, 14)}<span class="nm">${esc(isRoot ? `${path}（画板）` : el.name)}</span><span class="bd">${bd.join('')}</span></div>`);
+    if (!exp) return;
+    if (target) {
+      const nb = [...bands, 12 + depth * 13];
+      out.push(`<div class="row scope-head" style="padding-left:${6 + (depth + 1) * 13}px" data-act="sel-src" data-v="${esc(el.template)}|${esc(el.template)}">${nb.map((b) => `<i class="band" style="left:${b}px"></i>`).join('')}<span class="tw"></span><span class="nm">进入模板「${esc(el.template)}」· 基准 ${esc(target.base.name)} v${esc(target.base.version)}</span></div>`);
+      childrenOf(target.artboard).forEach((c) => walk(el.template, c, `${el.template}/${c.name}`, `${key}/${c.name}`, depth + 1, false, nb));
+    } else childrenOf(el).forEach((c) => walk(tpl, c, `${path}/${c.name}`, `${key}/${c.name}`, depth + 1, false, bands));
+  };
+  walk(F.root, docs[F.root].artboard, F.root, F.root, 0, true, []);
+  return `<div class="tree" role="tree">${out.join('')}</div>`;
+}
+function varScopeTpl() { return S.sel ? S.sel.tpl : F.root; }
+function varRow(tpl, kind, name, label, type, value, extra) {
+  const on = S.sel && S.sel.kind === 'var' && S.sel.tpl === tpl && S.sel.name === name;
+  const uses = kind === 'check' ? '' : elementsUsing(tpl, name).length;
+  return `<div class="vrow${on ? ' on' : ''}${extra === 'fired' ? ' fired' : ''}" data-act="sel-var" data-v="${esc(tpl)}|${esc(name)}|${kind}" data-hovervar="${esc(tpl)}|${esc(name)}" title="${esc(name)}${uses !== '' ? ` · ${uses} 个元素在用` : ''}"><span class="gl">${esc(TYPE_GLYPH[type] || '·')}</span><span class="nm">${esc(label)}</span><span class="val">${valHtml(value, type)}</span></div>`;
+}
+function varsHtml() {
+  const tpl = varScopeTpl(), doc = docs[tpl], scope = S.sel && S.sel.kind === 'el' && S.sel.inst && byPath.get(S.sel.inst) ? scopeFor(S.sel.inst) : scopeOfTemplate(tpl);
+  const fields = schemaOf(doc).fields, pub = (doc.parameters || []).filter((p) => p.visibility === 'public'), int = (doc.parameters || []).filter((p) => p.visibility === 'internal'), der = doc.derived || [], chk = doc.checks || [];
+  const g = (title, hint, rows) => (rows.length ? `<div class="vgroup"><h4>${title} <span>${hint}</span></h4>${rows.join('')}</div>` : '');
+  return `<div class="vscope">作用域 <b>${esc(tpl)}</b>${tpl !== F.root ? ` · <button class="lnk" data-act="scope-root">回到 ${esc(F.root)}</button>` : ''}<div class="faint small">每次模板调用各是一个作用域，不继承；要用外面的值，经调用传入。悬停一行，图上标出谁在用。</div></div>`
+    + g('字段', `${esc(doc.base.name)} v${esc(doc.base.version)}`, fields.map((f) => varRow(tpl, 'field', f.name, f.displayName || f.name, f.type, scope.get(f.name))))
+    + g('对外参数', '调用方或渲染请求给值', pub.map((p) => varRow(tpl, 'param', p.name, p.displayName || p.name, p.type, scope.get(p.name))))
+    + g('内部参数', '设计者设定', int.map((p) => varRow(tpl, 'param', p.name, p.displayName || p.name, p.type, scope.get(p.name))))
+    + g('派生变量', '单步运算，按名组合', der.map((d) => varRow(tpl, 'derived', d.name, d.displayName || d.name, d.type, scope.get(d.name))))
+    + g('检查项', '渲染前求值', chk.map((c) => { const fired = !!opnd(c.problemWhen, scope); return varRow(tpl, 'check', c.name, c.displayName || c.name, 'boolean', fired ? (c.level === 'severe' ? '成立·严重' : '成立·提示') : '未成立', fired ? 'fired' : ''); }));
+}
+function addHtml() {
+  const types = ['container','text','image','rect','ellipse','line','polygon','path','qrcode','barcode','loop','call'];
+  const doc = docs[varScopeTpl()], fields = schemaOf(doc).fields;
+  const map = (f) => (f.type === 'list' ? (f.items && f.items.type === 'ref' ? '循环容器 + 循环模板' : '循环容器（单值模板）') : f.type === 'ref' ? '子模板调用' : f.type === 'image' ? '图片' : f.type === 'boolean' ? '绑到所选元素的显示' : '文字（带插槽）');
+  return `<div class="palh">从字段创建 <span class="faint">拖进容器，绑定一步到位</span></div>${fields.map((f) => `<div class="fld" data-act="todo" data-v="从字段创建元素在第二期"><span class="gl mono faint">${esc(TYPE_GLYPH[f.type] || '·')}</span>${esc(f.displayName || f.name)}<span class="arrow">${esc(map(f))}</span></div>`).join('')}<div class="palh" style="margin-top:8px">元素</div><div class="pal">${types.map((t) => `<button data-act="todo" data-v="添加元素在第二期">${icon(t, 17)}${TYPE_LABEL[t]}</button>`).join('')}</div><p class="note" style="padding:0 12px 12px">放下的位置决定写什么：堆叠里是 children 的顺序，网格里是行列，自由布局里才是坐标。</p>`;
+}
+function agentHtml() {
+  const sel = selEl();
+  return `<div class="agent"><div class="say faint">P2 之前不显示这一页。放在这里，是为了让 Agent、结构与变量共用左侧面板，不再多占一栏；打开时面板加宽到 380 px。</div><div class="say">第 11 列的站名压到 74%，还在 60% 的下限之上。要再收紧列间留白吗？</div><div class="box2"><span class="pill mono" style="justify-self:start">@${esc(sel.inst || sel.path)}</span><span class="faint">说说要怎么改选中的元素…</span></div></div>`;
+}
+
+/* —— 值格 —— */
+const BINDABLE = new Set(['fill','color','tint','foreground','background','stroke.color','fontSize','letterSpacing','slant','opacity','rotation','stroke.width','padding','margin','cornerRadius','place.left','place.right','place.top','place.bottom','place.row','place.column','place.rowSpan','place.columnSpan','gap','crossGap','rowGap','columnGap','visible','clip','reverse','showText','source','content']);
+const getKey = (o, key) => key.split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+function provenance(scope, name) {
+  const steps = []; let s = scope, n = name.split('.')[0], guard = 0;
+  while (s && guard++ < 6) {
+    const p = (s.doc.parameters || []).find((x) => x.name === n);
+    if (!p || p.visibility !== 'public' || !s.argOps || !(n in s.argOps)) { if (p) steps.push({ tpl: s.tpl, name: n, label: `${s.tpl}「${p.displayName || n}」`, kind: p.visibility === 'internal' ? '内部参数' : '缺省值' }); break; }
+    const o = s.argOps[n];
+    if (o.var) { s = s.parent; n = o.var.split('.')[0]; continue; }
+    if (o.loop) { steps.push({ loop: o.loop, label: `循环信息 ${o.loop}` }); break; }
+    steps.push({ label: '调用时写死' }); break;
+  }
+  return steps[0];
+}
+function cell(ctx, key, kind, opts = {}) {
+  const v = getKey(ctx.eff, key), ov = ctx.caseOver && getKey(ctx.caseOver, key) !== undefined;
+  const labelCls = ov ? ' class="ov"' : '';
+  const canBind = BINDABLE.has(key) && !opts.nobind;
+  const unit = kind === 'mm' ? 'mm' : opts.unit || '';
+  let body, after = '';
+  if (v && typeof v === 'object' && 'var' in v) {
+    const info = varInfo(ctx.doc, v.var), cv = ctx.scope.get(v.var);
+    const pv = info.kind === 'param' && info.def.visibility === 'public' ? provenance(ctx.scope, v.var) : null;
+    body = `<div class="cell"><button class="bound" data-act="bind-pop" data-v="${esc(key)}" data-kind="${kind}" title="${esc(v.var)}">${icon('link', 12)}<span class="nm">${esc(info.label)}</span><span class="cv">${valHtml(cv, info.type)}</span></button></div>`;
+    if (pv) after = `<div class="f chain-row"><span></span><div class="chain">来自 ${pv.tpl ? `<button data-act="sel-var" data-v="${esc(pv.tpl)}|${esc(pv.name)}|param">${esc(pv.label)}</button>（${pv.kind}）` : esc(pv.label)}</div></div>`;
+    else if (info.kind !== 'field') after = `<div class="f chain-row"><span></span><div class="chain"><button data-act="sel-var" data-v="${esc(ctx.tpl)}|${esc(v.var.split('.')[0])}|${info.kind}">打开这个${info.kind === 'param' ? '参数' : '派生变量'}</button></div></div>`;
+  } else if (kind === 'color') {
+    body = `<div class="cell"><label class="inp"><i class="sw" style="background:${esc(v || 'transparent')}"></i><input aria-label="${esc(key)}" value="${esc(v ?? '')}" placeholder="未写" data-edit="${esc(key)}"></label>${canBind ? `<button class="bind" data-act="bind-pop" data-v="${esc(key)}" data-kind="${kind}" title="绑定变量" aria-label="绑定变量">${icon('link')}</button>` : '<span class="nobind"></span>'}</div>`;
+  } else {
+    const SIDES = { top:'上', right:'右', bottom:'下', left:'左' };
+    const shown = v === undefined ? '' : typeof v === 'object' ? Object.entries(v).map(([a, b]) => `${SIDES[a] || a} ${b}`).join('  ') : v;
+    body = `<div class="cell"><label class="inp"><input aria-label="${esc(key)}" value="${esc(shown)}" placeholder="${esc(opts.placeholder ?? '未写')}" data-edit="${esc(key)}" ${opts.ro ? 'readonly' : ''}>${unit ? `<span class="u">${unit}</span>` : ''}</label>${canBind ? `<button class="bind" data-act="bind-pop" data-v="${esc(key)}" data-kind="${kind}" title="绑定变量" aria-label="绑定变量">${icon('link')}</button>` : `<span class="nobind" title="DSL 不能绑定这一项"></span>`}</div>`;
+  }
+  return `<div class="f"><label${labelCls}>${esc(opts.label || key)}</label>${body}</div>${after}`;
+}
+const segs = (key, value, options) => `<div class="seg-group" role="group">${options.map(([v, l, dis]) => `<button class="${String(value) === String(v) ? 'on' : ''}" ${dis ? `disabled title="${esc(dis)}"` : ''} data-act="seg" data-v="${esc(key)}|${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+const row = (label, body, ov) => `<div class="f"><label${ov ? ' class="ov"' : ''}>${esc(label)}</label><div class="cell">${body}</div></div>`;
+const sec = (title, hint, body) => `<div class="sec"><h4>${esc(title)}${hint ? `<span>${esc(hint)}</span>` : ''}</h4>${body}</div>`;
+function sizeMode(v) { if (v === 'hug') return ['hug', '随内容']; if (v === 'fill' || (v && typeof v === 'object' && 'fill' in v)) return ['fill', '撑满']; if (v && typeof v === 'object' && 'fixed' in v) return ['fixed', '固定']; return ['', '缺省']; }
+function placeSection(ctx) {
+  const { loc, node, el } = ctx; if (loc.isRoot) return '';
+  const pm = (loc.parent.layout && loc.parent.layout.mode) || 'free', place = el.place || {};
+  const pname = loc.parent === ctx.doc.artboard ? `${ctx.tpl}（画板）` : loc.parent.name;
+  const hint = { free: '父容器是自由布局', stack: `父容器是${loc.parent.layout.direction === 'column' ? '纵向' : '横向'}堆叠`, grid: '父容器是网格' }[pm];
+  const size = (k, label) => { const v = place[k], [m] = sizeMode(v); const fixedVal = v && typeof v === 'object' && 'fixed' in v ? v.fixed : ''; return `<div class="f"><label>${label}</label><div class="cell">${segs(`place.${k}`, m, [['fixed','固定'],['hug','随内容'],['fill','撑满']])}</div></div>${m === 'fixed' ? `<div class="f"><span></span><div class="cell"><label class="inp"><input value="${esc(typeof fixedVal === 'object' ? JSON.stringify(fixedVal) : fixedVal)}" aria-label="${label}"><span class="u">mm</span></label><span class="nobind"></span></div></div>` : ''}`; };
+  let body = '';
+  if (pm === 'free') {
+    const hAnchor = 'right' in place ? 'right' : 'left', vAnchor = 'bottom' in place ? 'bottom' : 'top';
+    body += `<div class="f"><label>横向锚</label><div class="cell">${segs('anchorH', hAnchor, [['left','距左'],['right','距右']])}</div></div>` + cell(ctx, `place.${hAnchor}`, 'mm', { label: hAnchor === 'left' ? '距左' : '距右', placeholder: '0' });
+    body += `<div class="f"><label>纵向锚</label><div class="cell">${segs('anchorV', vAnchor, [['top','距上'],['bottom','距下']])}</div></div>` + cell(ctx, `place.${vAnchor}`, 'mm', { label: vAnchor === 'top' ? '距上' : '距下', placeholder: '0' });
+    body += size('width', '宽') + size('height', '高');
+  } else if (pm === 'stack') {
+    body += size('width', '宽') + size('height', '高') + cell(ctx, 'place.margin', 'mm', { label: '外边距', placeholder: '0' }) + row('自身对齐', segs('place.alignSelf', place.alignSelf || '', [['','跟随'],['start','头'],['center','中'],['end','尾']]));
+  } else {
+    body += cell(ctx, 'place.row', 'num', { label: '第几行' }) + cell(ctx, 'place.column', 'num', { label: '第几列' }) + cell(ctx, 'place.rowSpan', 'num', { label: '跨行', placeholder: '1' }) + cell(ctx, 'place.columnSpan', 'num', { label: '跨列', placeholder: '1' });
+  }
+  const actual = node ? `<div class="note">实际 ${round1(node.w)} × ${round1(node.h)} mm，位于 ${round1(node.x)}, ${round1(node.y)}（布局摘要）</div>` : '';
+  return sec('位置与尺寸', hint, body + actual);
+}
+function layoutSection(ctx) {
+  const { el } = ctx, l = el.layout || { mode: 'free' };
+  if (!(el.type === 'container' || ctx.loc.isRoot)) return '';
+  let b = row('方式', segs('layout.mode', l.mode, [['free','自由'],['stack','堆叠'],['grid','网格']]));
+  if (l.mode === 'stack') {
+    b += row('方向', segs('layout.direction', l.direction || 'row', [['row','横向'],['column','纵向']])) + cell(ctx, 'layout.gap', 'mm', { label: '间距', placeholder: '0', nobind: false });
+    b += row('主轴分布', segs('layout.justifyContent', l.justifyContent || 'start', [['start','头'],['center','中'],['end','尾'],['spaceBetween','两端'],['spaceEvenly','均分']]));
+    b += row('交叉对齐', segs('layout.alignItems', l.alignItems || 'start', [['start','头'],['center','中'],['end','尾']]));
+    b += row('自动折行', segs('layout.wrap', l.wrap ? 'true' : 'false', [['false','不折'],['true','折行']]));
+  }
+  if (l.mode === 'grid') {
+    const tr = (t) => (t === 'hug' ? '随内容' : t.fixed !== undefined ? `${typeof t.fixed === 'object' ? '绑定' : t.fixed + ' mm'}` : `${t.fraction} 份`);
+    b += `<div class="f"><label>行</label><div class="chips">${(l.rows || []).map((t) => `<span class="pill">${esc(tr(t))}</span>`).join('')}</div></div><div class="f"><label>列</label><div class="chips">${(l.columns || []).map((t) => `<span class="pill">${esc(tr(t))}</span>`).join('')}</div></div>`;
+    b += cell(ctx, 'layout.rowGap', 'mm', { label: '行距', placeholder: '0' }) + cell(ctx, 'layout.columnGap', 'mm', { label: '列距', placeholder: '0' });
+  }
+  b += cell(ctx, 'padding', 'mm', { label: '内边距', placeholder: '0' });
+  return sec('排布', '', b);
+}
+function fontLabel(v) { if (!v) return ''; const id = String(v).replace('res:', ''); const w = { regular:'Regular', medium:'Medium', bold:'Bold', heavy:'Heavy' }[id.split('-').pop()]; return `思源黑体 ${w || id}`; }
+function textSections(ctx) {
+  const { eff: e, doc, scope, node } = ctx, out = [];
+  const toks = (e.content || []).map((c) => { if (c.slot !== undefined) { const info = varInfo(doc, c.slot), val = scope.get(c.slot); return `<span class="tok slot" title="${esc(c.slot)}">${icon('link', 11)}${esc(info.label)}${c.format ? `<em>${esc(c.format)}</em>` : ''}<em>${esc(fmtVal(val, info.type))}</em></span>`; } return `<span class="tok lit">${esc(c.text)}</span>`; });
+  out.push(sec('内容', '文字与变量插槽', `<div class="content">${toks.join('')}</div><div class="note">一个文字元素只排一行或一列，不会自动换行。输入 / 插入字段，点插槽改展示格式。</div>`));
+  let t = row('字体', `<label class="inp"><input value="${esc(fontLabel(e.font))}" readonly aria-label="字体"></label><span class="nobind" title="字体不能绑定；要按取值换字体，用状态样式"></span>`);
+  t += cell(ctx, 'fontSize', 'mm', { label: '字号' }) + cell(ctx, 'color', 'color', { label: '颜色' }) + cell(ctx, 'letterSpacing', 'mm', { label: '字间距', placeholder: '0' });
+  const vert = e.writingMode === 'vertical';
+  t += row('书写方向', segs('writingMode', e.writingMode || 'horizontal', [['horizontal','横排'],['vertical','竖排']]));
+  t += row('水平对齐', segs('horizontalAlign', e.horizontalAlign || 'start', vert ? [['start','头'],['center','中'],['end','尾']] : [['start','头'],['center','中'],['end','尾'],['distribute','两端'],['spaceEvenly','均分']]));
+  t += row('垂直对齐', segs('verticalAlign', e.verticalAlign || 'top', vert ? [['top','上'],['center','中'],['bottom','下'],['distribute','分散']] : [['top','上'],['center','中'],['bottom','下']]));
+  if (!vert) t += cell(ctx, 'slant', 'num', { label: '倾斜', unit: '度', placeholder: '0' });
+  out.push(sec('文字', '', t));
+  const fit = e.fit;
+  const allSteps = vert ? [['tightenSpacing','收紧字距'],['compressGlyphs','压缩字形']] : [['tightenSpacing','收紧字距'],['compressGlyphs','压缩字形'],['shrink','缩字']];
+  let f = `<div class="steps">${allSteps.map(([k, l], i) => `${i ? '<span class="faint">→</span>' : ''}<span class="step${fit && (fit.steps || []).includes(k) ? ' on' : ''}">${l}</span>`).join('')}${vert ? `<span class="faint">→</span><span class="step${fit && fit.widthOverflow ? ' on' : ''}">缩字组</span>` : ''}</div>`;
+  if (fit) { f += cell(ctx, 'fit.compressMin', 'num', { label: '压缩下限', nobind: true, placeholder: '0.6' }); f += row('放不下时', segs('fit.onFail', fit.onFail || 'severe', [['severe','严重'],['hint','提示']])); if (fit.widthOverflow) { const g = fit.widthOverflow.shrinkGroup, members = cur.nodes.filter((n) => n.tx && n.tx.sg === g && n.v).length; f += `<div class="f"><label>缩字组</label><div class="cell"><span class="pill mono">${esc(g)}</span><span class="faint small">图上 ${members} 个成员，一起缩到同一字号</span></div></div>`; } } else f += '<div class="note">没写适配：放不下直接报问题。</div>';
+  if (node && node.tx) { const x = node.tx, cls = x.ov ? ' bad' : ''; f += `<div class="result${cls}">当前样例：${x.ov ? '<b>放不下</b>，' : ''}压到 <b>${Math.round(x.cmp * 100)}%</b>，字号 <b>${x.fs} mm</b>，字距 ${round1(x.sp)} mm</div>`; }
+  out.push(sec('适配', '只对这一处实例显示结果', f));
+  return out.join('');
+}
+function loopSections(ctx) {
+  const { el, doc, scope, tpl, node } = ctx, out = [], isLoop = el.type === 'loop', target = docs[el.template];
+  const operand = (o, targetType) => { if (!o) return '<span class="src none">未传</span>'; if ('var' in o) { const i = varInfo(doc, o.var); return `<span class="src">${icon('link', 11)}${esc(i.label)}</span>`; } if ('loop' in o) return `<span class="src loop">${{ index:'序号', isFirst:'是首项', isLast:'是末项', count:'总数', groupSize:'组内项数' }[o.loop] || o.loop}</span>`; return `<span class="src">${esc(JSON.stringify(o.value))}</span>`; };
+  let d = '';
+  if (isLoop) { const li = varInfo(doc, el.list.var), lst = scope.get(el.list.var) || []; d += row('遍历', `<button class="bound" data-act="todo" data-v="只列列表类型的变量">${icon('link', 12)}<span class="nm">${esc(li.label)}</span><span class="cv">${lst.length} 项</span></button>`); }
+  else { const dm = el.data === undefined || el.data === 'none' ? 'none' : el.data === 'current' ? 'current' : 'var'; d += row('数据', segs('data', dm, [['none','不传'],['current','当前'],['var','单引用']])); if (dm === 'var') d += row('', `<button class="bound" data-act="todo" data-v="只列单引用字段">${icon('link', 12)}<span class="nm">${esc(varInfo(doc, el.data.var).label)}</span></button>`); }
+  d += row('调用模板', `<button class="bound" style="background:none;border-color:var(--hair)" data-act="enter-tpl" data-v="${esc(el.template)}">${icon('call', 13)}<span class="nm">${esc(el.template)}</span><span class="cv">${target ? `${esc(target.base.name)} v${target.base.version}` : ''}</span></button>`);
+  out.push(sec(isLoop ? '循环' : '调用', '只列基准相符的模板', d));
+  const params = target ? (target.parameters || []).filter((p) => p.visibility === 'public') : [];
+  out.push(sec('传入参数', '被调模板的对外参数', params.length ? `<table class="args">${params.map((p) => `<tr><td>${esc(p.displayName || p.name)}${p.default === undefined ? ' <span style="color:var(--bad)" title="没有缺省值，必须传">*</span>' : ''}</td><td>${el.args && el.args[p.name] ? operand(el.args[p.name]) : `<span class="src none">缺省 ${esc(fmtVal(p.default, p.type))}</span>`}</td></tr>`).join('')}</table><div class="note">作用域不继承：要用的值都要在这里传。</div>` : '<div class="note">这个模板没有对外参数。</div>'));
+  if (isLoop) {
+    const il = el.itemLayout || {}, col = il.direction === 'column', k = col ? 'heights' : 'widths', mode = il[k] === 'equal' ? 'equal' : il[k] === 'content' ? 'content' : 'fixed';
+    let b = row('方向', segs('itemLayout.direction', il.direction || 'row', [['row','横向'],['column','纵向']]));
+    b += row(col ? '每项高' : '每项宽', segs(`itemLayout.${k}`, mode, [['equal','等分', il.wrap ? '折行时不能等分' : ''],['content','随内容', el.mergeBy ? '合并时不能随内容' : ''],['fixed','固定', el.mergeBy ? '合并时只能等分' : '']]));
+    b += cell(ctx, 'itemLayout.gap', 'mm', { label: '间距', placeholder: '0' });
+    b += row('自动折行', segs('itemLayout.wrap', il.wrap ? 'true' : 'false', [['false','不折'],['true','折行', mode === 'equal' || el.mergeBy ? 'DSL 不允许：折行不能与等分或合并同用' : '']]));
+    if (el.mergeBy) b += row('合并相邻', `<span class="pill mono">${esc(el.mergeBy)}</span><span class="faint small">同值项跨列</span>`);
+    b += row('反序', segs('reverse', el.reverse === true ? 'true' : 'false', [['false','否'],['true','是']]));
+    if (el.slice) b += row('只取一段', `<span class="pill">第 ${esc(JSON.stringify(el.slice.start ?? 1))} 到 ${esc(el.slice.end && el.slice.end.var ? el.slice.end.var : el.slice.end ?? '末')} 项</span>`);
+    out.push(sec('每项排布', '', b));
+  }
+  return out.join('');
+}
+function kindSection(ctx) {
+  const { el, loc } = ctx, t = loc.isRoot ? 'artboard' : el.type, out = [];
+  if (t === 'image') out.push(sec('图片', '', cell(ctx, 'source', 'image', { label: '来源' }) + row('适配方式', segs('fit', el.fit || 'contain', [['contain','完整'],['cover','铺满'],['fill','拉伸']])) + cell(ctx, 'tint', 'color', { label: '单色重染' })));
+  if (t === 'qrcode' || t === 'barcode') out.push(sec(TYPE_LABEL[t], '', cell(ctx, 'content', 'text', { label: '编码内容' }) + (t === 'barcode' ? row('码制', `<span class="pill">${esc(el.format)}</span>`) + row('显示文字', segs('showText', el.showText ? 'true' : 'false', [['true','是'],['false','否']])) : row('纠错等级', segs('errorCorrectionLevel', el.errorCorrectionLevel || 'M', [['L','L'],['M','M'],['Q','Q'],['H','H']]))) + cell(ctx, 'foreground', 'color', { label: '前景色' }) + cell(ctx, 'background', 'color', { label: '背景色' })));
+  if (t === 'line' || t === 'polygon' || t === 'path') out.push(sec('形状', '路径数据与顶点不能绑定', `<div class="note mono" style="word-break:break-all;margin:0">${esc(t === 'path' ? el.d : t === 'polygon' ? JSON.stringify(el.points) : `${JSON.stringify(el.from)} → ${JSON.stringify(el.to)}`)}</div>`));
+  return out.join('');
+}
+function looksSection(ctx) {
+  const { el, loc } = ctx, t = loc.isRoot ? 'artboard' : el.type, out = [];
+  if (['container','artboard','rect','ellipse','polygon','path','line','loop'].includes(t)) { let b = ''; if (t !== 'line') b += cell(ctx, 'fill', 'color', { label: '填充' }); b += cell(ctx, 'stroke.color', 'color', { label: '描边色' }) + cell(ctx, 'stroke.width', 'mm', { label: '描边宽' }); if (['container','artboard','rect','loop'].includes(t)) b += cell(ctx, 'cornerRadius', 'mm', { label: '圆角', placeholder: '0' }); out.push(sec('外观', '', b)); }
+  if (t !== 'artboard') out.push(sec('其他', '', cell(ctx, 'opacity', 'num', { label: '不透明度', placeholder: '1' }) + cell(ctx, 'rotation', 'num', { label: '旋转', unit: '度', placeholder: '0' })));
+  return out.join('');
+}
+function renderRight() {
+  const r = $('right'); r.hidden = !S.panels.right; if (!S.panels.right) return;
+  const sc = r.querySelector('.scroll'), top = sc ? sc.scrollTop : 0, prevKey = r.dataset.key;
+  let key, html;
+  if (S.sel && S.sel.kind === 'var') { key = `v:${S.sel.tpl}:${S.sel.name}`; html = S.sel.vk === 'check' ? checkInspector() : varInspector(); }
+  else { const sel = selEl(); key = `e:${sel.tpl}:${sel.path}`; html = elementInspector(sel); }
+  r.innerHTML = html; r.dataset.key = key;
+  if (prevKey === key) { const n = r.querySelector('.scroll'); if (n) n.scrollTop = top; }
+}
+function elementInspector(sel) {
+  const loc = elementAt(sel.tpl, sel.path); if (!loc) return '<div class="ihead">元素不存在</div>';
+  const { el, doc, isRoot } = loc, ins = instancesOf(sel.tpl, sel.path), node = (sel.inst && byPath.get(sel.inst)) || ins[0], scope = node ? scopeFor(node.p) : scopeOfTemplate(sel.tpl);
+  const stateKey = `${sel.tpl}|${sel.path}`, caseName = el.states ? S.caseOf[stateKey] : undefined, caseOver = caseName && el.states.cases[caseName];
+  const eff = caseOver ? { ...el, ...caseOver } : el;
+  const ctx = { loc, el, eff, doc, tpl: sel.tpl, path: sel.path, scope, node, caseOver };
+  const type = isRoot ? 'artboard' : el.type;
+  const usedElsewhere = isRoot ? [] : Object.values(docs).filter((d) => d.name !== sel.tpl && allElementsOf(d).some((x) => x.template === sel.tpl));
+  const impact = ins.length > 1 ? `<div class="impact">这里改的是模板「${esc(sel.tpl)}」，图上 ${ins.length} 处一起变。</div>` : sel.tpl !== F.root ? `<div class="impact">这里改的是子模板「${esc(sel.tpl)}」，不是这张图独有。</div>` : '';
+  const shownNote = !ins.length && !isRoot ? `<div class="result" style="margin-top:6px">当前样例下不显示，图上没有框。原因见下方「显示」。</div>` : '';
+  let statesHtml = '';
+  if (el.states) {
+    const by = el.states.by.var, info = varInfo(doc, by), counts = {};
+    for (const n of ins) { const v = fmtVal(scopeFor(n.p).get(by), info.type); counts[v] = (counts[v] || 0) + 1; }
+    const listed = Object.keys(el.states.cases);
+    const suggested = info.kind === 'derived' && info.def.op === 'branch' ? [...new Set([...info.def.branches.map((b) => b.then && b.then.value), info.def.otherwise && info.def.otherwise.value].filter((v) => v !== undefined).map(String))].filter((v) => !listed.includes(v)) : [];
+    const cnt = (v) => (counts[v] ? `<small>${counts[v]}</small>` : '');
+    statesHtml = `<div class="states"><div class="lbl">状态样式 · 按 <button class="lnk" data-act="sel-var" data-v="${esc(sel.tpl)}|${esc(by.split('.')[0])}|${info.kind}">${esc(info.label)}</button></div><div class="cases"><button class="case${!caseName ? ' on' : ''}" data-act="case" data-v="${esc(stateKey)}|">自身属性</button>${listed.map((c) => `<button class="case${caseName === c ? ' on' : ''}" data-act="case" data-v="${esc(stateKey)}|${esc(c)}">${esc(c)}${cnt(c)}</button>`).join('')}${suggested.map((c) => `<button class="case ghost-case" data-act="todo" data-v="给「${esc(c)}」加一组覆盖在第二期" title="这个取值还没有覆盖，沿用自身属性">+ ${esc(c)}${cnt(c)}</button>`).join('')}</div>${caseName ? `<div class="note">在这个状态下改的值写进 states.cases，圆点标出被覆盖的项。${counts[caseName] ? `当前样例有 ${counts[caseName]} 处。<button class="lnk" data-act="goto-case" data-v="${esc(stateKey)}|${esc(caseName)}">定位到第一处</button>` : '当前样例没有这个状态，换个样例才看得到。'}</div>` : ''}</div>`;
+  }
+  let body = '';
+  if (type === 'artboard') {
+    const a = el, sr = a.sizeRange || {};
+    body += sec('模板', '', `${row('基准', `<span class="pill">${esc(doc.base.name)} v${esc(doc.base.version)}</span><button class="lnk small" data-act="todo" data-v="模板升级不在这一页的范围（M343）">升级…</button>`)}${row('当前修订', '<span class="muted small">修订 12</span>')}`);
+    body += sec('适用尺寸范围', '实际尺寸在样例里调', `${row('宽', `<span class="pill">${esc(sr.width && sr.width.min)} – ${esc(sr.width && sr.width.max)} mm</span>`)}${row('高', `<span class="pill">${esc(sr.height && sr.height.min)} – ${esc(sr.height && sr.height.max)} mm</span>`)}${a.size ? row('画板尺寸', '<span class="pill">随内容</span>') : ''}${cell(ctx, 'minFontSize', 'mm', { label: '缩字下限', placeholder: '5', nobind: true })}`);
+    body += layoutSection(ctx) + looksSection(ctx);
+  } else {
+    if (type === 'text') body += textSections(ctx);
+    if (type === 'loop' || type === 'call') body += loopSections(ctx);
+    body += layoutSection(ctx) + kindSection(ctx) + placeSection(ctx) + looksSection(ctx);
+    const vis = eff.visible;
+    let vb = '';
+    if (vis && typeof vis === 'object') { const info = varInfo(doc, vis.var), val = node ? scope.get(vis.var) : undefined; vb = cell(ctx, 'visible', 'bool', { label: '按变量' }); if (!ins.length) { const parentScope = scopeOfTemplate(sel.tpl); vb += `<div class="result">当前样例「${esc(info.label)}」为${esc(fmtVal(parentScope.get(vis.var), 'boolean'))}，所以不显示，也不占位。</div>`; } }
+    else vb = `<div class="f"><label>显示</label><div class="cell">${segs('visible', vis === false ? 'false' : 'true', [['true','总是'],['false','隐藏']])}<button class="bind" data-act="bind-pop" data-v="visible" data-kind="bool" title="按变量决定" aria-label="按变量决定">${icon('link')}</button></div></div>`;
+    body += sec('显示', '隐藏的元素不占位', vb);
+  }
+  const pr = problemsAt(sel.tpl, sel.path);
+  const probs = pr.length ? `<div class="sec"><h4>这个元素的问题<span>${pr.length} 个</span></h4>${pr.slice(0, 4).map((p) => `<div class="result bad" style="margin-top:0;margin-bottom:4px">${esc(p.message)}</div>`).join('')}</div>` : '';
+  const crumb = `${TYPE_LABEL[type]}${sel.tpl !== F.root ? ` · 模板 ${sel.tpl}` : ''}`;
+  return `<div class="ihead"><h3>${icon(type, 16)}${esc(isRoot ? sel.tpl : el.name)}</h3><div class="sub">${esc(crumb)}</div>${impact}${shownNote}</div>${statesHtml}<div class="scroll">${probs}${body}<p class="note" style="padding:0 12px 12px">属性从 template.schema.json 生成；没写的可选项在各组里显示缺省值。</p></div>`;
+}
+const allElementsOf = (doc) => { const out = []; const w = (e) => { out.push(e); childrenOf(e).forEach(w); }; w(doc.artboard); return out; };
+const opHtml = (o, doc, scope) => { if (o == null) return '<span class="faint">—</span>'; if ('var' in o) { const i = varInfo(doc, o.var); const isD = i.kind !== 'field'; return `<span class="src">${icon('link', 11)}${isD ? `<button class="lnk" data-act="sel-var" data-v="${esc(doc.name)}|${esc(o.var.split('.')[0])}|${i.kind}">${esc(i.label)}</button>` : esc(i.label)}<span class="faint">= ${esc(fmtVal(scope.get(o.var), i.type))}</span></span>`; } if ('loop' in o) return `<span class="src loop">${esc(o.loop)}</span>`; return `<span class="src" style="background:var(--surface);box-shadow:inset 0 0 0 1px var(--hair)">${esc(typeof o.value === 'string' ? o.value : JSON.stringify(o.value))}</span>`; };
+function condHtml(c, doc, scope) {
+  if (c.all || c.any) { const list = c.all || c.any; return `<span class="kw">${c.all ? '全部成立' : '任一成立'}</span>${list.map((x) => condHtml(x, doc, scope)).join('<span class="op">，</span>')}`; }
+  return `${opHtml(c.left, doc, scope)}<span class="op">${CMP[c.op]}</span>${c.right ? opHtml(c.right, doc, scope) : ''}`;
+}
+function usesHtml(tpl, name) {
+  const doc = docs[tpl], els = elementsUsing(tpl, name), deps = (doc.derived || []).filter((d) => d.name !== name && elVars(d).some((v) => v.split('.')[0] === name));
+  return sec('谁在用', `${els.length} 个元素`, `<ul class="tiny-list">${els.slice(0, 12).map(({ el, path }) => `<li><button class="lnk" data-act="sel-src" data-v="${esc(tpl)}|${esc(path)}">${esc(path === tpl ? '画板' : el.name)}</button></li>`).join('') || '<li class="faint">没有元素直接或间接用它</li>'}</ul>${deps.length ? `<div class="note">派生变量：${deps.map((d) => `<button class="lnk" data-act="sel-var" data-v="${esc(tpl)}|${esc(d.name)}|derived">${esc(d.displayName || d.name)}</button>`).join('、')}</div>` : ''}`);
+}
+function varInspector() {
+  const { tpl, name } = S.sel, doc = docs[tpl], info = varInfo(doc, name), scope = scopeOfTemplate(tpl);
+  const value = scope.get(name); let body = '';
+  const kindLabel = { param: '模板参数', derived: '派生变量', field: '数据字段' }[info.kind];
+  if (info.kind === 'derived') {
+    const d = info.def;
+    let f = '';
+    if (d.op === 'branch') { const hit = branchHit(d, scope); f = d.branches.map((b, i) => `<div class="branch${hit === i ? ' hit' : ''}"><div class="ln"><span class="kw">当</span>${condHtml(b.when, doc, scope)}</div><div class="ln" style="margin-top:3px"><span class="kw">取</span>${opHtml(b.then, doc, scope)}${hit === i ? '<span class="small" style="color:var(--warn);margin-left:auto">当前命中</span>' : ''}</div></div>`).join('') + `<div class="branch${hit < 0 ? ' hit' : ''}"><div class="ln"><span class="kw">否则取</span>${opHtml(d.otherwise, doc, scope)}${hit < 0 ? '<span class="small" style="color:var(--warn);margin-left:auto">当前命中</span>' : ''}</div></div><button class="btn quiet small" data-act="todo" data-v="增删分支在第二期" style="margin-top:2px">+ 加一个分支</button>`; }
+    else if (d.op === 'pickItem') f = `${row('列表', opHtml(d.list, doc, scope))}${row('取第', d.position === 'first' ? '<span class="pill">首项</span>' : d.position === 'last' ? '<span class="pill">末项</span>' : opHtml(d.position.index, doc, scope))}<div class="note">序号从 1 开始，越界时结果为空，不报错。</div>`;
+    else if (d.op === 'length') f = row('求长度', opHtml(d.of, doc, scope));
+    else if (d.op === 'splitPart') f = `${row('拆取', opHtml(d.of, doc, scope))}${row('分隔符', `<span class="pill">${esc(d.delimiter)}</span>`)}${row('取', `<span class="pill">${esc(typeof d.position === 'string' ? d.position : '第 N 段')}</span>`)}`;
+    else f = `${row('左', opHtml(d.left, doc, scope))}${row(OPS[d.op], opHtml(d.right, doc, scope))}`;
+    body += sec(OPS[d.op], '单步运算', f);
+  } else if (info.kind === 'param') {
+    const p = info.def;
+    const presets = paramPresets(tpl, name);
+    let f = row('可见性', segs('visibility', p.visibility, [['public','对外'],['internal','内部']]));
+    f += row('类型', `<span class="pill">${esc(p.type)}</span>`);
+    if (p.constraints) f += row('约束', `<span class="faint small mono">${esc(JSON.stringify(p.constraints))}</span>`);
+    f += `<div class="f" style="align-items:flex-start"><label style="padding-top:4px">缺省值</label><div>${presets ? `<div class="chips">${presets.map((v) => `<button class="opt${String(p.default) === String(v) ? ' on' : ''}" data-act="set-param" data-v="${esc(tpl)}|${esc(name)}|${esc(v)}">${isColor(v) ? `<i class="sw" style="background:${esc(v)}"></i>` : ''}${esc(v)}${p.type === 'number' ? ' mm' : ''}</button>`).join('')}</div><div class="note">这几个值已用引擎预渲染，点一下看真实结果。</div>` : `<label class="inp"><input value="${esc(fmtVal(p.default, p.type))}" aria-label="缺省值"></label>`}</div></div>`;
+    if (p.visibility === 'public') f += '<div class="note">试值不写进模板：在样例带里调。缺省值才写进模板。</div>';
+    body += sec('参数', '', f);
+  } else if (info.kind === 'field') {
+    const f = info.def;
+    body += sec('字段', `${doc.base.name} v${doc.base.version}`, `${row('类型', `<span class="pill">${esc(f.type)}${f.ref ? ` → ${esc(f.ref.name)}` : f.items && f.items.ref ? ` → ${esc(f.items.ref.name)}` : ''}</span>`)}${f.constraints ? row('约束', `<span class="faint small mono" style="word-break:break-all">${esc(JSON.stringify(f.constraints))}</span>`) : ''}<div class="note">字段属于数据定义，这里只读。改它去<button class="lnk" data-act="todo" data-v="跳到数据定义详情并展开这个字段（现有 ?field= 地址）">数据定义</button>。</div>`);
+  }
+  return `<div class="ihead"><h3><span class="mono faint" style="font-size:12px">${esc(TYPE_GLYPH[info.type] || '')}</span>${esc(info.label)}</h3><div class="sub"><span class="mono">${esc(name)}</span> · ${esc(kindLabel)} · 模板 ${esc(tpl)}</div><div class="result" style="margin-top:6px">当前样例取值：<b style="display:inline-flex;align-items:center;gap:4px">${valHtml(value, info.type)}</b></div></div><div class="scroll">${body}${usesHtml(tpl, name)}</div>`;
+}
+function checkInspector() {
+  const { tpl, name } = S.sel, doc = docs[tpl], c = (doc.checks || []).find((x) => x.name === name), scope = scopeOfTemplate(tpl), fired = !!opnd(c.problemWhen, scope);
+  return `<div class="ihead"><h3>${esc(c.displayName || c.name)}</h3><div class="sub">检查项 · 模板 ${esc(tpl)}</div><div class="result${fired ? ' bad' : ''}" style="margin-top:6px">当前样例：<b>${fired ? '条件成立，报问题' : '条件不成立'}</b></div></div><div class="scroll">${sec('规则', '', `${row('成立时报', opHtml(c.problemWhen, doc, scope))}${row('等级', segs('level', c.level, [['severe','严重'],['hint','提示']]))}<div class="f" style="align-items:flex-start"><label>提示文字</label><div class="content">${esc(c.message)}</div></div><div class="note">严重的检查项会阻止正式出图。</div>`)}</div>`;
+}
+function paramPresets(tpl, name) {
+  const orig = (originals[tpl].parameters || []).find((p) => p.name === name); if (!orig) return null;
+  const vals = Object.keys(F.variants).filter((k) => k.startsWith(`${tpl}|param|${name}|`)).map((k) => k.split('|')[3]);
+  return vals.length ? [...new Set([String(orig.default), ...vals])].sort((a, b) => (isNaN(a) ? 0 : a - b)) : null;
+}
+
+/* —— 改动：真实结果来自预渲染 —— */
+function pushEdit(step) { S.undo.push(step); S.redo = []; applyStep(step, 'after'); }
+function applyStep(step, side) {
+  const val = step[side];
+  if (step.kind === 'param') { const p = docs[step.tpl].parameters.find((x) => x.name === step.key); p.default = val; const k = `${step.tpl}|param|${step.key}`; if (String(val) === String(step.orig)) delete S.edits[k]; else S.edits[k] = { value: val, label: step.label, before: step.orig, tpl: step.tpl }; }
+  else { const { el } = elementAt(step.tpl, step.path); el[step.key] = val; const k = `${step.tpl}|${step.path}|${step.key}`; if (String(val) === String(step.orig)) delete S.edits[k]; else S.edits[k] = { value: val, label: step.label, before: step.orig, tpl: step.tpl }; }
+  S.unconfirmed = JSON.stringify(S.edits) !== S.confirmed ? 1 : 0; S.saving = 'pending'; S.busy = true; S.sample = 'base'; paint();
+  clearTimeout(S.t1); clearTimeout(S.t2);
+  S.t1 = setTimeout(() => { S.saving = 'stashing'; paintDoc(); }, 260);
+  S.t2 = setTimeout(() => { S.saving = null; S.busy = false; computeCur(); paint(); if (S.noVariant) toast('这个组合没有预渲染，图没变；真实页面约 1 秒内换图'); }, 620);
+}
+function undo() { const s = S.undo.pop(); if (!s) return; S.redo.push(s); applyStep(s, 'before'); }
+function redo() { const s = S.redo.pop(); if (!s) return; S.undo.push(s); applyStep(s, 'after'); }
+
+/* —— 文档条、操作条、样例带、状态栏 —— */
+function paintDoc() {
+  const n = Object.keys(S.edits).length, sr = docs[F.root].artboard.sizeRange;
+  const st = S.saving === 'pending' ? `<span class="dot warn"></span>1 处未保存` : S.saving === 'stashing' ? '<span class="dot warn"></span>正在暂存…' : S.unconfirmed ? '<span class="dot warn"></span>已暂存，未保存' : '<span class="dot"></span>已保存';
+  $('docbar').innerHTML = `<nav class="crumbs"><a href="#" data-act="todo" data-v="回到模板列表（画板 09）">模板</a><span class="slash">/</span><b>${esc(F.root)}</b></nav><span class="meta">${esc(docs[F.root].base.name)} v${esc(docs[F.root].base.version)} · ${sr.width.min === sr.width.max ? sr.width.min : `${sr.width.min}–${sr.width.max}`} × ${sr.height.min === sr.height.max ? sr.height.min : `${sr.height.min}–${sr.height.max}`} mm</span><span class="grow"></span><button class="btn icon quiet" data-act="undo" ${S.undo.length ? '' : 'disabled'} title="撤销 Ctrl+Z" aria-label="撤销">${icon('undo')}</button><button class="btn icon quiet" data-act="redo" ${S.redo.length ? '' : 'disabled'} title="重做 Ctrl+Y" aria-label="重做">${icon('redo')}</button><span class="status" aria-live="polite" data-testid="save-state">${st}</span>${n ? `<button class="btn quiet hide-narrow" data-act="tray-tab" data-v="changes">${n} 处未发布</button>` : ''}<button class="btn" data-act="save" ${S.unconfirmed ? '' : 'disabled'} title="Ctrl+S">保存</button><button class="btn primary" data-act="publish" ${n ? '' : 'disabled'}>发布修订</button>`;
+}
+function renderDock() {
+  const pct_ = Math.round(S.zoom * 100), L = S.layers;
+  $('dock').innerHTML = `<button class="${S.tool === 'select' ? 'on' : ''}" data-act="tool" data-v="select" title="选择 V" aria-label="选择">${icon('cursor')}</button><button class="${S.tool === 'pan' ? 'on' : ''}" data-act="tool" data-v="pan" title="平移 H，或按住空格" aria-label="平移">${icon('hand')}</button><button disabled title="评论 C：P4 接入" aria-label="评论">${icon('comment')}</button><span class="sep"></span><button data-act="zoom" data-v="out" aria-label="缩小">−</button><button class="zv" data-act="zoom" data-v="fit" title="适应 Ctrl+0">${pct_}%</button><button data-act="zoom" data-v="in" aria-label="放大">+</button><span class="sep"></span>${[['problems','问题'],['struct','结构'],['fit','适配'],['data','数据']].map(([k, l]) => `<button class="${L[k] ? 'on' : ''}" data-act="layer" data-v="${k}" aria-pressed="${L[k]}">${l}</button>`).join('')}<span class="sep"></span><button class="${S.panels.left ? 'on' : ''}" data-act="panel" data-v="left" title="结构与变量" aria-label="左侧面板">${icon('left')}</button><button class="${S.panels.right ? 'on' : ''}" data-act="panel" data-v="right" title="检查器" aria-label="右侧面板">${icon('right')}</button>`;
+}
+function renderLegend() {
+  const leg = $('legend');
+  const text = cur.nodes.filter((n) => n.tx && n.v), comp = text.filter((n) => n.tx.cmp < .999), over = text.filter((n) => n.tx.ov);
+  const parts = [];
+  if (S.layers.fit) parts.push(`适配：${comp.length} 处被压缩${comp.length ? `，最低 ${Math.round(Math.min(...comp.map((n) => n.tx.cmp)) * 100)}%` : ''}${over.length ? `，${over.length} 处放不下` : ''}`);
+  if (S.layers.data) parts.push('灰底 = 数据驱动，赭色虚线 = 固定内容');
+  if (S.layers.struct) parts.push('元素框来自布局摘要');
+  if (S.noVariant) parts.push('图没换：这个组合没有预渲染');
+  leg.textContent = parts.join(' · '); leg.hidden = !parts.length;
+}
+function renderTray() {
+  const t = S.trayTab, n = cur.problems.length, ch = Object.keys(S.edits).length;
+  const head = `<div class="trayhead" role="tablist">${[['samples','样例', fam().samples.length, 'quiet'],['problems','问题', n, ''],['changes','改动', ch, 'quiet'],['dsl','DSL', '', 'quiet']].map(([id, l, c, q]) => `<button class="t${S.panels.tray && t === id ? ' on' : ''}" role="tab" data-act="tray-tab" data-v="${id}">${l}${c ? `<span class="count ${q}">${c}</span>` : ''}</button>`).join('')}<span class="grow"></span><span class="facts">${factsHtml()}</span><button class="btn icon quiet" data-act="panel" data-v="tray" aria-label="收起或展开">${icon(S.panels.tray ? 'down' : 'up')}</button></div>`;
+  let body = '';
+  if (S.panels.tray) {
+    if (t === 'samples') {
+      const groups = ['数据集','压测'].map((g) => [g, fam().samples.filter((s) => s.group === g)]);
+      const stale = Object.keys(S.edits).length > 0;
+      body = `<div class="samples"><div class="knobs">${fam().knobs.map((k) => `<div class="knob"><span>${esc(k.label)}</span>${segsKnob(k)}</div>`).join('')}<div class="faint small" style="max-width:190px">对外参数与画板尺寸是这一份样例的试值，不写进模板。</div></div>${groups.map(([g, list]) => `<div class="sgroup"><span>${g}</span><div class="scards">${list.map((s) => { const sv = s.problems.filter((p) => p.level === 'severe').length, hi = s.problems.length - sv, isStale = stale && s.id !== 'base'; return `<button class="scard${S.sample === s.id ? ' on' : ''}" data-act="sample" data-v="${esc(s.id)}" title="${esc(s.note)}"><span class="th" style="display:grid"><img src="${esc(s.img)}" alt="" loading="lazy"></span><span class="tx" style="display:block"><div>${esc(s.label)}</div><div class="st"><span class="dot ${isStale ? 'idle' : sv ? 'bad' : hi ? 'warn' : ''}"></span>${isStale ? '改动后没重新出' : sv ? `${sv} 个严重问题` : hi ? `${hi} 个提示` : '没有问题'}</div></span></button>`; }).join('')}</div></div>`).join('')}</div>`;
+    } else if (t === 'problems') {
+      body = n ? `<div class="plist">${problemsWithIndex().map((p) => { const loc = p.location; const where = loc.kind === 'element' ? loc.path : loc.kind === 'field' ? `字段 ${loc.path}` : loc.kind === 'check' ? `检查项 ${loc.name}` : (loc.path || loc.kind); return `<button class="prow" data-act="problem" data-v="${p.n - 1}"><span class="n ${p.level === 'hint' ? 'hint' : ''}">${p.n}</span><span>${esc(p.message)}<span class="where">${esc(p.code)} · ${esc(where)}</span></span></button>`; }).join('')}</div>` : '<div class="empty">这份样例没有问题。换到压测样例看看放不下时怎么报。</div>';
+    } else if (t === 'changes') {
+      const list = Object.entries(S.edits);
+      body = list.length ? `<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1 1 320px;min-width:0">${list.map(([k, e]) => `<div class="fld" style="padding:3px 0"><span>${esc(e.label)}</span><span class="arrow mono">${esc(e.before)} → ${esc(e.value)}</span></div>`).join('')}</div><div style="flex:none;display:flex;gap:8px"><button class="btn${S.compare ? ' primary' : ''}" data-act="compare">${S.compare ? '关掉对比' : '在图上对比'}</button><button class="btn" data-act="publish">去发布修订</button></div></div><p class="note">和当前修订比。改动已在工作副本，出图仍读当前修订，发布之后才生效。</p>` : '<div class="empty">还没有改动。试试变量页里线路牌的站名字号或主色，或胸牌的姓名字号。</div>';
+    } else {
+      const sel = S.sel && S.sel.kind === 'var' ? null : selEl();
+      let text;
+      if (S.dslWhole || !sel) text = JSON.stringify(docs[(S.sel || sel).tpl], null, 2);
+      else { const loc = elementAt(sel.tpl, sel.path), { children, ...rest } = loc.isRoot ? loc.el : loc.el; text = JSON.stringify(children ? { ...rest, children: `… ${children.length} 个子元素` } : rest, null, 2); }
+      body = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span class="seg-group" style="flex:none">${[['false','选中的元素'],['true','整份模板']].map(([v, l]) => `<button class="${String(S.dslWhole) === v ? 'on' : ''}" data-act="dsl-whole" data-v="${v}">${l}</button>`).join('')}</span><button class="btn" data-act="copy-dsl">复制</button><span class="faint small">含未暂存的改动。可复制、可下载；片段直接编辑放第三期。</span></div><pre class="dsl" id="dslText" tabindex="0">${esc(text)}</pre>`;
+    }
+  }
+  $('tray').innerHTML = head + (S.panels.tray ? `<div class="traybody">${body}</div>` : '');
+}
+function factsHtml() { const sv = cur.problems.filter((p) => p.level === 'severe').length, hi = cur.problems.length - sv; return `<span class="dot ${sv ? 'bad' : hi ? 'warn' : ''}"></span>${sv ? `${sv} 个严重问题，正式出图不会出` : hi ? `${hi} 个提示，正式图上没有问题边框` : '可以正式出图'} · 草稿 ${cur.dpi} DPI · ${cur.widthPx} × ${cur.heightPx} 像素 · 引擎 ${cur.ms} ms`; }
+function segsKnob(k) { const current = S.sample; const anyOn = k.options.some(([, id]) => id === current); return `<span class="seg-group">${k.options.map(([l, id]) => `<button class="${id === current ? 'on' : ''}" data-act="sample" data-v="${esc(id)}">${esc(l)}</button>`).join('')}</span>`; }
+function renderStatus() {
+  $('statusbar').innerHTML = `<span><span class="dot"></span> 已连接</span><span>本月剩余 38,200 张</span><span class="grow"></span><span class="proto faint">原型：图、布局摘要、元素定位与问题清单都是引擎的真实输出；写回是模拟。</span><span>样板 ${DATA.families.map((f) => `<button class="${f.id === S.fam ? 'on' : ''}" data-act="fam" data-v="${f.id}" title="${esc(f.hint)}">${esc(f.label)}</button>`).join(' ')}</span><button data-act="tour">试这几步</button>`;
+}
+function paint() { computeCur(); renderLeft(); renderRight(); renderChip(); paintDoc(); renderDock(); renderTray(); layoutBoard(); $('boardImg').src = cur.img; $('board').classList.toggle('busy', S.busy); renderOverlay(); renderLegend(); renderStatus(); $('stage').className = `stage${S.tool === 'pan' ? ' pan' : ''}`; }
+
+/* —— 浮层 —— */
+function closeFloat() { $('float').innerHTML = S.tour ? tourHtml() : ''; }
+function pop(x, y, html) { $('float').innerHTML = (S.tour ? tourHtml() : '') + `<div class="pop" id="pop" role="menu" style="left:${x}px;top:${y}px">${html}</div>`; const p = $('pop'), r = p.getBoundingClientRect(); if (r.right > innerWidth - 8) p.style.left = `${Math.max(8, innerWidth - r.width - 8)}px`; if (r.bottom > innerHeight - 8) p.style.top = `${Math.max(8, innerHeight - r.height - 8)}px`; }
+let toastTimer; function toast(msg) { let t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3800); }
+function bindPop(anchor, key, kind) {
+  const sel = selEl(), doc = docs[sel.tpl], node = sel.inst && byPath.get(sel.inst), scope = node ? scopeFor(node.p) : scopeOfTemplate(sel.tpl);
+  const want = { color: ['color'], mm: ['number'], num: ['number'], bool: ['boolean'], image: ['image'], text: ['text','number','date','time','datetime'] }[kind] || [];
+  const fields = schemaOf(doc).fields.filter((f) => want.includes(f.type)), params = (doc.parameters || []).filter((p) => want.includes(p.type)), der = (doc.derived || []).filter((d) => want.includes(d.type));
+  const it = (name, label, type) => `<button class="it" data-act="todo" data-v="绑定 ${esc(name)}：真实页面写入 ${esc(key)} = { var: ${esc(name)} }，再出图"><span class="mono faint" style="width:14px;text-align:center">${esc(TYPE_GLYPH[type] || '')}</span>${esc(label)}<span class="r">${valHtml(scope.get(name), type)}</span></button>`;
+  const r = anchor.getBoundingClientRect();
+  pop(r.left - 180, r.bottom + 4, `<h5>${esc(key)} 能绑定的变量（只列类型相符的）</h5>${fields.length ? `<h5>字段</h5>${fields.map((f) => it(f.name, f.displayName || f.name, f.type)).join('')}` : ''}${params.length ? `<h5>参数</h5>${params.map((p) => it(p.name, p.displayName || p.name, p.type)).join('')}` : ''}${der.length ? `<h5>派生变量</h5>${der.map((d) => it(d.name, d.displayName || d.name, d.type)).join('')}` : ''}${!fields.length && !params.length && !der.length ? '<h5>这个作用域没有相符的变量</h5>' : ''}<hr><button class="it" data-act="todo" data-v="提取为内部参数：把当前值存成参数缺省值并绑定它，这就是旋钮的来源">提取为参数<span class="r">当前值做缺省</span></button><button class="it" data-act="todo" data-v="新建派生变量在第二期">新建派生变量</button>`);
+}
+function ctxMenu(evt) {
+  const stack = hitStack(evt); if (!stack.length) return; const top = stack[0];
+  selectInst(top.p); const sel = selEl(), loc = elementAt(sel.tpl, sel.path), vars = loc ? elVars(loc.el) : [];
+  pop(evt.clientX, evt.clientY, `<h5>这里的元素</h5>${stack.slice(0, 7).map((n) => `<button class="it" data-act="sel-inst" data-v="${esc(n.p)}">${icon(n.t === 'call' ? 'artboard' : n.t, 14)}${esc(n.n)}<span class="r">${TYPE_LABEL[n.t]}</span></button>`).join('')}<hr><button class="it" data-act="copy-path">复制元素路径</button><button class="it" data-act="locate">在结构中定位</button>${vars.slice(0, 3).map((v) => { const i = varInfo(docs[sel.tpl], v); return `<button class="it" data-act="sel-var" data-v="${esc(sel.tpl)}|${esc(v.split('.')[0])}|${i.kind}">打开 ${esc(i.label)}</button>`; }).join('')}<hr><button class="it" disabled>让 Agent 改这里 · P2</button><button class="it" disabled>在这里留评论 · P4</button>`);
+}
+function treeMenu(x, y, tpl, path) {
+  pop(x, y, `<h5>${esc(path.split('/').pop())}</h5>${['复制一份 Ctrl+D','删除 Del','上移 Alt+↑','下移 Alt+↓','包进容器','提取为子模板','重命名 F2'].map((l) => `<button class="it" data-act="todo" data-v="结构编辑在第二期：${esc(l)}">${esc(l)}</button>`).join('')}`);
+}
+const TOUR = [
+  ['点图上第 12 站的站名', '范围条写明改的是「站点」模板，图上 35 处一起变', () => { go('m402'); selectInst(`${F.root}/站点面板/站点列[12]/名称区/站名`); }],
+  ['追字号的来源，改成 12 mm', '站名字号在「站点」里是对外参数，真正的值在主模板', () => { go('m402'); selectVar(F.root, 'stopNameSize', 'param'); }],
+  ['切到 50 站样例，打开适配层', '能看到哪些站名被压缩，哪些放不下', () => { go('m402'); S.sample = 'fifty'; S.layers.fit = true; S.trayTab = 'problems'; S.panels.tray = true; paint(); }],
+  ['看状态样式与命中数', '本站、已过站各有几处，点一下定位过去', () => { go('m402'); S.sample = 'base'; S.layers.fit = false; S.trayTab = 'samples'; selectInst(`${F.root}/站点面板/站点列[5]/名称区/站名`); S.caseOf[`站点|站点/名称区/站名`] = '本站'; paint(); }],
+  ['打开派生变量 stopState', '分支编辑器标出当前命中的那一支', () => { go('m402'); selectVar('站点', 'stopState', 'derived'); }],
+  ['选顶栏，拖一下间距条', '堆叠容器只给间距与顺序，写的是 layout.gap', () => { go('m402'); selectInst(`${F.root}/顶栏`); toast('在图上拖动顶栏里带斜纹的间距条，看读数。'); }],
+  ['换到胸牌，选相框或照片', '自由布局才有八个手柄，写的是 place', () => { go('badge'); selectInst(`${F.root}/照片区/相框`); }],
+];
+function go(id) { if (S.fam !== id) setFamily(id); }
+function tourHtml() { return `<div class="tour" id="tour"><h3>试这几步<button class="btn icon quiet" data-act="tour" aria-label="关闭">${icon('x')}</button></h3><ol>${TOUR.map(([a, b], i) => `<li><button data-act="tour-step" data-v="${i}"><b>${i + 1}</b><span>${esc(a)}<small>${esc(b)}</small></span></button></li>`).join('')}</ol><p class="note" style="margin:8px 6px 0">V 选择 · H 或空格 平移 · Esc 上一层 · Enter 下一层 · Alt+点 穿透 · 右键 列出这里的元素 · Ctrl+\ 收起面板</p></div>`; }
+
+/* —— 事件 —— */
+const ACTIONS = {
+  'sel-inst': (v) => { closeFloat(); S.leftTab = S.leftTab === 'vars' ? 'vars' : S.leftTab; selectInst(v); },
+  'sel-src': (v) => { const [tpl, path] = v.split('|'); closeFloat(); selectSource(tpl, path); },
+  'sel-var': (v) => { const [tpl, name, kind] = v.split('|'); closeFloat(); selectVar(tpl, name, kind); },
+  toggle: (v) => { S.expanded.has(v) ? S.expanded.delete(v) : S.expanded.add(v); renderLeft(); },
+  'left-tab': (v) => { S.leftTab = v; paint(); },
+  'tray-tab': (v) => { if (S.panels.tray && S.trayTab === v) S.panels.tray = false; else { S.trayTab = v; S.panels.tray = true; } paint(); },
+  tool: (v) => { S.tool = v; paint(); },
+  zoom: (v) => { const r = stageRect(); if (v === 'fit') { S.zoom = 1; S.pan = { x: 0, y: 0 }; } else S.zoom = Math.min(8, Math.max(.4, S.zoom * (v === 'in' ? 1.25 : .8))); paint(); },
+  layer: (v) => { S.layers[v] = !S.layers[v]; paint(); },
+  panel: (v) => { S.panels[v] = !S.panels[v]; paint(); },
+  sample: (v) => { S.sample = v; S.compare = false; const sel = S.sel; computeCur(); if (sel && sel.kind === 'el' && sel.inst && !byPath.has(sel.inst)) { const ins = instancesOf(sel.tpl, sel.path); sel.inst = ins[0] ? ins[0].p : undefined; } paint(); },
+  problem: (v) => { const p = cur.problems[+v]; if (!p) return; S.trayTab = 'problems'; S.panels.tray = true; if (p.location.kind === 'element') selectInst(p.location.path); else if (p.location.kind === 'check') selectVar(p.location.template, p.location.name, 'check'); else { const f = String(p.location.path || '').split(/[.[]/)[0]; if (f && schemaOf(docs[F.root]).fields.some((x) => x.name === f)) selectVar(F.root, f, 'field'); else paint(); } },
+  case: (v) => { const [k, c] = v.split('|'); if (c) S.caseOf[k] = c; else delete S.caseOf[k]; renderRight(); },
+  'goto-case': (v) => { const [k, c] = v.split('|'); const [tpl, path] = k.split('|'); const el = elementAt(tpl, path).el, by = el.states.by.var; const n = instancesOf(tpl, path).find((m) => String(scopeFor(m.p).get(by)) === c); if (n) selectInst(n.p); },
+  'set-param': (v) => { const [tpl, name, val] = v.split('|'); const p = docs[tpl].parameters.find((x) => x.name === name), orig = originals[tpl].parameters.find((x) => x.name === name).default, value = p.type === 'number' ? +val : val; if (String(p.default) === String(value)) return; pushEdit({ kind: 'param', tpl, key: name, before: p.default, after: value, orig, label: `${tpl} · 参数 ${p.displayName || name} 的缺省值` }); },
+  'bind-pop': (v, el) => bindPop(el, v, el.dataset.kind),
+  'enter-tpl': (v) => { selectSource(v, v); },
+  'scope-root': () => { S.sel = null; paint(); },
+  undo, redo,
+  save: () => { S.confirmed = JSON.stringify(S.edits); S.unconfirmed = 0; paintDoc(); toast('已保存：写进工作副本。出图仍读当前修订，发布之后才生效。'); },
+  publish: () => toast('去发布修订页（沿用画板 12）：看结构化差异与前后对比，保存为新修订。'),
+  compare: () => { S.compare = !S.compare; S.compareAt = .5; paint(); },
+  'dsl-whole': (v) => { S.dslWhole = v === 'true'; renderTray(); },
+  'copy-dsl': () => { const t = $('dslText'); try { navigator.clipboard.writeText(t.textContent).then(() => toast('已复制'), () => toast('复制不了，请手动选中')); } catch { toast('复制不了，请手动选中'); } },
+  'copy-path': () => { closeFloat(); const p = selEl().inst || selEl().path; try { navigator.clipboard.writeText(p).then(() => toast(`已复制 ${p}`), () => toast(p)); } catch { toast(p); } },
+  locate: () => { closeFloat(); S.leftTab = 'structure'; S.panels.left = true; paint(); requestAnimationFrame(() => { const r = document.querySelector('.tree .row.on'); if (r) r.scrollIntoView({ block: 'center' }); }); },
+  fam: (v) => { setFamily(v); },
+  tour: () => { S.tour = !S.tour; closeFloat(); },
+  'tour-step': (v) => { TOUR[+v][2](); },
+  seg: () => toast('原型只预渲染了部分改动；真实页面写回后约 1 秒换图。'),
+  todo: (v) => { closeFloat(); toast(v); },
+};
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-act]');
+  if (!a) { if (!e.target.closest('#pop')) closeFloat(); return; }
+  if (a.tagName === 'A') e.preventDefault();
+  if (a.closest('.row') && a.dataset.act === 'toggle') e.stopPropagation();
+  ACTIONS[a.dataset.act] && ACTIONS[a.dataset.act](a.dataset.v, a, e);
+});
+document.addEventListener('contextmenu', (e) => {
+  if (e.target.closest('#board')) { e.preventDefault(); ctxMenu(e); return; }
+  const r = e.target.closest('.row[data-ctx="tree"]'); if (r) { e.preventDefault(); const [tpl, path] = r.dataset.v.split('|'); treeMenu(e.clientX, e.clientY, tpl, path); }
+});
+document.addEventListener('mouseover', (e) => {
+  const h = e.target.closest('[data-hover]'), v = e.target.closest('[data-hovervar]');
+  if (h) { if (S.hover !== h.dataset.hover) { S.hover = h.dataset.hover; renderOverlay(); } } else if (S.hover && S.hover.startsWith('src:')) { S.hover = null; renderOverlay(); }
+  if (v) { const [tpl, name] = v.dataset.hovervar.split('|'); if (!S.hoverVar || S.hoverVar.name !== name || S.hoverVar.tpl !== tpl) { S.hoverVar = { tpl, name }; renderOverlay(); } } else if (S.hoverVar) { S.hoverVar = null; renderOverlay(); }
+});
+const stage = $('stage'); let panning = null, spaceDown = false, moved = false;
+stage.addEventListener('pointerdown', (e) => {
+  const h = e.target.closest('[data-drag]'); moved = false;
+  if (h && S.tool === 'select' && !spaceDown) { startDrag(e, h); return; }
+  const onBoard = e.target.closest('#board');
+  if (S.tool === 'pan' || spaceDown || !onBoard || e.button === 1) { panning = { x: e.clientX, y: e.clientY, px: S.pan.x, py: S.pan.y }; stage.classList.add('panning'); stage.setPointerCapture(e.pointerId); }
+});
+stage.addEventListener('pointermove', (e) => {
+  if (panning) { const dx = e.clientX - panning.x, dy = e.clientY - panning.y; if (Math.abs(dx) + Math.abs(dy) > 3) moved = true; S.pan = { x: panning.px + dx, y: panning.py + dy }; layoutBoard(); return; }
+  if (S.tool !== 'select' || !e.target.closest('#board')) { if (S.hover && !S.hover.startsWith('src:')) { S.hover = null; renderOverlay(); } return; }
+  const n = hitTest(e), v = n ? n.p : null; if (v !== S.hover) { S.hover = v; renderOverlay(); }
+});
+stage.addEventListener('pointerup', (e) => { if (panning) { panning = null; stage.classList.remove('panning'); if (moved) { moved = true; } } });
+stage.addEventListener('click', (e) => {
+  if (e.target.closest('[data-act]')) return;
+  if (moved) { moved = false; return; }
+  if (S.tool !== 'select') return;
+  if (!e.target.closest('#board')) { S.sel = null; paint(); return; }
+  const stack = hitStack(e); if (!stack.length) return;
+  if (e.altKey && S.sel && S.sel.inst) { const i = stack.findIndex((n) => n.p === S.sel.inst); selectInst((stack[i + 1] || stack[0]).p); return; }
+  selectInst(stack[0].p);
+});
+stage.addEventListener('dblclick', (e) => {
+  if (!e.target.closest('#board')) return; const n = hitTest(e); if (!n || !n.tx) return;
+  const loc = elementAt(n.s[0], n.s[1]); if (!loc) return;
+  pop(e.clientX - 120, e.clientY + 10, `<h5>内容 · ${esc(n.n)}</h5><div class="content">${(loc.el.content || []).map((c) => (c.slot !== undefined ? `<span class="tok slot">${icon('link', 11)}${esc(varInfo(loc.doc, c.slot).label)}${c.format ? `<em>${esc(c.format)}</em>` : ''}</span>` : `<span class="tok lit">${esc(c.text)}</span>`)).join('')}</div><div class="note" style="padding:0 2px 2px">在图上就地改片段：打字是文字，/ 插入字段。真实页面只暂存，不在浏览器里排版。</div>`);
+});
+stage.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey || !e.shiftKey && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+    const b = $('board').getBoundingClientRect(), f = Math.exp(-e.deltaY * .0016), nz = Math.min(8, Math.max(.4, S.zoom * f)), k = nz / S.zoom, cx = e.clientX - (b.left + b.width / 2), cy = e.clientY - (b.top + b.height / 2);
+    S.pan = { x: S.pan.x - cx * (k - 1), y: S.pan.y - cy * (k - 1) }; S.zoom = nz; if (Math.abs(S.zoom - 1) < .02 && !e.ctrlKey) S.zoom = 1; layoutBoard(); renderOverlay(); renderDock();
+  } else { S.pan = { x: S.pan.x - e.deltaX - (e.shiftKey ? e.deltaY : 0), y: S.pan.y - (e.shiftKey ? 0 : e.deltaY) }; layoutBoard(); }
+}, { passive: false });
+document.addEventListener('change', (e) => {
+  const t = e.target; if (!t.dataset || !t.dataset.edit) return;
+  const sel = selEl(), key = t.dataset.edit; if (key === 'fontSize' && !isNaN(+t.value)) {
+    const { el } = elementAt(sel.tpl, sel.path), val = +t.value, orig = originals[sel.tpl] ? elementInDoc(originals[sel.tpl], sel.path).fontSize : el.fontSize;
+    pushEdit({ kind: 'prop', tpl: sel.tpl, path: sel.path, key, before: el.fontSize, after: val, orig, label: `${sel.path.split('/').pop()} 的字号` }); return; }
+  toast('原型只预渲染了部分改动；真实页面写回后约 1 秒换图。');
+});
+const elementInDoc = (doc, path) => { const [, ...names] = path.split('/'); let e = doc.artboard; for (const n of names) e = childrenOf(e).find((c) => c.name === n); return e; };
+document.addEventListener('keydown', (e) => {
+  const typing = e.target.closest && e.target.closest('input, textarea, select');
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    if (k === 's') { e.preventDefault(); ACTIONS.save(); } else if (k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } else if (k === 'y') { e.preventDefault(); redo(); } else if (k === '0') { e.preventDefault(); ACTIONS.zoom('fit'); } else if (k === '\\') { e.preventDefault(); const v = !(S.panels.left || S.panels.right); S.panels.left = v; S.panels.right = v; paint(); }
+    return;
+  }
+  if (typing) return;
+  if (k === 'v') { S.tool = 'select'; paint(); } else if (k === 'h') { S.tool = 'pan'; paint(); }
+  else if (e.code === 'Space') { e.preventDefault(); if (!spaceDown) { spaceDown = true; stage.classList.add('pan'); } }
+  else if (k === 'escape') { closeFloat(); if (S.sel && S.sel.kind === 'el' && S.sel.inst) { const p = parentInst(S.sel.inst); if (p && byPath.has(p)) { selectInst(p); return; } } S.sel = null; paint(); }
+  else if (k === 'enter' && S.sel && S.sel.inst) { const kid = directChildren(S.sel.inst).find((n) => n.s); if (kid) selectInst(kid.p); }
+});
+document.addEventListener('keyup', (e) => { if (e.code === 'Space') { spaceDown = false; if (S.tool !== 'pan') stage.classList.remove('pan'); } });
+new ResizeObserver(() => { if (cur) { layoutBoard(); renderOverlay(); } }).observe($('wrap'));
+
+function setFamily(id) {
+  S.fam = id; F = fam(); docs = clone(F.templates); originals = clone(F.templates);
+  S.sample = 'base'; S.sel = null; S.edits = {}; S.confirmed = '{}'; S.undo = []; S.redo = []; S.unconfirmed = 0; S.saving = null; S.zoom = 1; S.pan = { x: 0, y: 0 }; S.caseOf = {}; S.compare = false; S.expanded = new Set([F.root]); S.dslWhole = false;
+  computeCur(); paint();
+}
+fetch('data.json').then((r) => r.json()).then((d) => {
+  DATA = d; setFamily('m402');
+  selectInst(`${F.root}/站点面板/站点列[12]/名称区/站名`);
+}).catch((err) => { $('docbar').textContent = `读不到原型数据：${err.message}`; });
+</script>

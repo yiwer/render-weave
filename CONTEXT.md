@@ -34,7 +34,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 2026-11-04：17 用户再次纠正：数据定义是独立的实体，主键是名称，没有草案；发布只产出静态数据定义，对它毫无影响（开放 API 1.13.0，迁移 0017，ADR-0030，M389）。
 - **接着做**：
   - 别的页面要不要照票据 14 的做法对齐原型或旧项目：用户还没定，走查时说过"实现和原型对不上"，审计日志的原始动作代码、画板 09 与 13–18 的版式都还没动。
-  - 模板设计的修正：用户走查时说后续再做，具体改什么还没定（M383）。
+  - 模板设计页重做（M383、M392、M393）：按[规格与 20 张票据](.scratch/template-design-page/README.md)实施，设计看[整体方案](docs/template-design-page.md)与[原型](docs/prototypes/template-design/README.md)。这一页的 Agent 进不进左面板（修订 M342）还没定，只影响第四期，P2 前定。
 - **怎么做**：每张票在独立 worktree 里做，合入 main 前确认主检出没有评估在跑（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
 - **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
 - **测试现状**：见 [P1 验收](docs/p1-acceptance.md)「回归与跨平台」。引擎组全量要 `--maxWorkers=4`，Linux 容器要 `--init`（[开发环境与接续](docs/dev-setup.md)）。
@@ -180,6 +180,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [scripts/agent-eval/template-design/](scripts/agent-eval/template-design/README.md) | 模板设计评估集：12 个用例（样图、项目说明、专家数据定义与数据集、压测、版面检查、用例文档）、图片素材与来源核对 |
 | [web/](web/review.html) | `agent review` 的本地审核页（单个 HTML，由 `src/agent/review-server.ts` 提供） |
 | [docs/prototypes/desktop-workbench/](docs/prototypes/desktop-workbench/README.md) | 阶段 5 桌面工作台原型：从 claude.ai 设计画布导出的 21 张画板源文件、素材与逐张截图，P1 票据按画板编号引用 |
+| [docs/template-design-page.md](docs/template-design-page.md) | 模板设计页整体方案（M393）：DSL 对页面的要求、版式、选择与范围、舞台与手柄、结构与变量、值格、样例带、接口缺口与分期；原型在 [docs/prototypes/template-design/](docs/prototypes/template-design/README.md) |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
@@ -189,6 +190,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [.scratch/agent-harness-hardening/](.scratch/agent-harness-hardening/README.md) | Agent 可靠执行与可信验收 PRD 与 26 张票据，含公交留出材料与核准记录 |
 | [.scratch/template-design-eval/](.scratch/template-design-eval/README.md) | 模板设计评估集的规格与 5 张票据 |
 | [.scratch/authoring-api-and-pages/](.scratch/authoring-api-and-pages/README.md) | 阶段 5.0 P1 PRD（代建接口与人类页面）与 13 张票据 |
+| [.scratch/template-design-page/](.scratch/template-design-page/README.md) | 模板设计页重做的规格与 20 张票据（方案的第一、二期） |
 
 ## 关键决定摘要
 
@@ -198,7 +200,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
 - **服务**：渲染在 worker 进程里隔离，带单项超时与内存上限（ADR-0017）；租户共享库、行级安全隔离，存储经接口抽象（ADR-0018）；出图记录按内容哈希存进对象存储，仍自足可重放（ADR-0019）；按自然月额度计出图张数与 token，批量交付先预占（ADR-0020）。开放 API 1.x 只做加法（M246）。
 - **Agent**：工具提供读取、校验、草稿预览与识别（ADR-0001、ADR-0003）；Agent 与人类共用一套代建写入，缺省直发，租户可要求发布前批准，风险靠不可变版本、修订、审计与回退控制（ADR-0022，修订了只读 MCP 与"写入只经提案"的旧边界）；有严重问题的成果不能批准或应用（ADR-0021）。产品中的业务 Agent 由服务端进程内的 Tool Runner 驱动，不依赖 Claude Code（M340，ADR-0027，取代 ADR-0015 的执行方式）；本机 `agent run` 在过渡期仍缺省以受限模式的 Claude Code 无头运行，只连 MCP 服务。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
-- **界面与终端**：网页与桌面是同一份控制台页面，桌面端是 Electron 薄壳，Agent 循环与正式出图只在服务端（M341）；每页左栏的模块上下文对话第一版只读（M342）；不做自由拖拽画布（M205）。
+- **界面与终端**：网页与桌面是同一份控制台页面，桌面端是 Electron 薄壳，Agent 循环与正式出图只在服务端（M341）；每页左栏的模块上下文对话第一版只读（M342）；不做任意摆放的画布（M205），模板设计可以用按布局约束的手柄，只写 DSL 已有的数（M392）。
 
 ## 开发
 
