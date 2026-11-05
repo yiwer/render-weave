@@ -66,11 +66,19 @@ export interface PreviewReply {
   readonly problems: TaskResult['problems'];
   readonly layout?: TaskResult['layout'];
   readonly elements?: TaskResult['elements'];
+  readonly inspection?: TaskResult['inspection'];
 }
 
 /** 用工作副本预览的查询参数（P1 票据 07）。 */
-export const PREVIEW_QUERY = { querystring: { type: 'object', properties: { workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' } } } } as const;
-export const previewOptions = (query: unknown) => ({ workingCopies: (query as { workingCopies?: string }).workingCopies === 'true' });
+export const PREVIEW_QUERY = { querystring: { type: 'object', properties: {
+  workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' },
+  inspect: { type: 'string', minLength: 1, maxLength: 2000, description: '元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段' },
+} } } as const;
+export interface PreviewOptions { readonly workingCopies: boolean; readonly inspect?: string }
+export const previewOptions = (query: unknown): PreviewOptions => {
+  const { workingCopies, inspect } = query as { workingCopies?: string; inspect?: string };
+  return { workingCopies: workingCopies === 'true', ...(inspect === undefined ? {} : { inspect }) };
+};
 
 /**
  * 引用的已保存数据集超出字节上限时的问题；documents 是租户的文档清单（一个请求读一次，批次的各项共用），source 是请求里数据集的位置。
@@ -100,7 +108,7 @@ export function measureLimitProblems(limits: ServiceLimits, plan: Plan, measure:
 }
 
 /** 一次草稿预览：检查、入队、等结果。客户与代建工程师的端点都走这里。workingCopies 时用工作副本，检查与限制都一样。 */
-export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown, options: { readonly workingCopies: boolean } = { workingCopies: false }): Promise<PreviewReply> {
+export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown, options: PreviewOptions = { workingCopies: false }): Promise<PreviewReply> {
   const { limits, now } = context;
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw fail(400, ServiceProblemCodes.requestInvalid, 'request.body', '预览请求必须是 JSON 对象');
   const input = body as Record<string, unknown>;
@@ -120,7 +128,7 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   if (pixels.length) throw new ApiError(413, pixels);
   if (expansion.length) throw new ApiError(413, expansion);
 
-  const queued = await scope.tasks.enqueuePreview(options.workingCopies ? { ...request, workingCopies: true } : request, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
+  const queued = await scope.tasks.enqueuePreview({ ...request, ...(options.workingCopies ? { workingCopies: true } : {}), ...(options.inspect === undefined ? {} : { inspect: options.inspect }) }, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
   if ('limited' in queued) {
     throw fail(429, ServiceProblemCodes.previewRateLimited, 'request', queued.limited === 'concurrency'
       ? `本租户同时进行的预览已达并发上限 ${plan.concurrency} 个，请等前面的完成`
@@ -148,6 +156,7 @@ function reply(result: TaskResult): PreviewReply {
     problems: result.problems,
     ...(result.layout ? { layout: result.layout } : {}),
     ...(result.elements ? { elements: result.elements } : {}),
+    ...(result.inspection ? { inspection: result.inspection } : {}),
   };
 }
 

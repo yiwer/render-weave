@@ -151,6 +151,26 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect((await preview(token, { ...request, mode: 'draft' })).image.base64).toBe(before.image.base64);
     }, 120_000);
 
+    it('预览带求值（模板设计页票据 02）：inspect 回答实例的变量取值、命中分支、参数来源与全部实例；不改变图片与问题；路径不存在时没有这个字段', async () => {
+      const target = await tenant(seedM402), token = target.admin.token;
+      const request = { ...JSON.parse(await readFile(`${M402_DIR}render-request-m402.json`, 'utf8')), mode: 'draft' };
+      const plain = await preview(token, request);
+      expect(plain.inspection).toBeUndefined();
+      const path = '标准线路单边/站点面板/站点列[12]/名称区/站名';
+      const asked = await preview(token, request, `?inspect=${encodeURIComponent(path)}`);
+      expect(asked.image.base64).toBe(plain.image.base64);
+      expect(asked.problems).toEqual(plain.problems);
+      expect(asked.inspection).toMatchObject({ path, template: '站点', source: '站点/名称区/站名' });
+      expect(asked.inspection.instances).toHaveLength(35);
+      expect(asked.inspection.variables.find((variable: any) => variable.name === 'stopState')).toMatchObject({ value: '未到站', branch: -1 });
+      expect((await preview(token, request, '?inspect=%E6%B2%A1%E6%9C%89')).inspection).toBeUndefined();
+      const copy = (await open(token, STOP)).body;
+      const document = await documentOf(token, STOP);
+      expect((await stash(token, { ...document, displayName: undefined }, copy.sha256, STOP)).status).toBe(200);
+      const both = await preview(token, request, `?workingCopies=true&inspect=${encodeURIComponent(path)}`);
+      expect(both.inspection.template, '两个查询参数一起用').toBe('站点');
+    }, 120_000);
+
     it('保存：按 M265 记新修订，来源是网页，当前修订指向它，删除工作副本；出图读到新内容；字节相同记为不变；记审计', async () => {
       const target = await tenant(), token = target.admin.token;
       const original = await readFile(`${SINGLE_TEXT}template-greeting.json`);

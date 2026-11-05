@@ -348,6 +348,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.15.0 | 2026-11-05 | 预览带求值（模板设计页票据 02，M393）：`POST /v1/previews` 与代建端点加查询参数 `inspect=元素路径`，回答加可选的 `inspection`：这个元素实例所在作用域的变量取值、条件分支命中第几支、参数的来源、检查项是否成立，以及这个定义的全部实例与状态取值 | 只做加法 |
 | 1.14.0 | 2026-11-05 | 读模板当前修订的内容（模板设计页票据 01，M393）：新增 `GET /v1/templates/{name}/content`，代建端点同样。设计页只看不改时不再开工作副本 | 只做加法 |
 | 1.13.0 | 2026-11-04 | 数据定义是独立的实体，发布只产出静态数据定义（ADR-0030，M389）：`/v1/definitions/{name}/draft` 系列换成 `POST /v1/definitions`，`GET`、`PUT`、`DELETE /v1/definitions/{name}`，`…/check`、`…/publish-check`、`…/publish`，代建端点同样；列表与详情直接是数据定义本身，不再有 `draft`；校验、预检的 `baseVersion` 改为读取时现算的最新版本；`GET /v1/static-schemas` 加 `sourceDeleted`；审计动作 `definitionDraft.*` 换成 `definition.create`、`definition.save`、`definition.delete` | 这组路径不兼容：1.2.0 加的，只有控制台与测试在用，P1 还没交付给客户；相对 1.0.0 基线仍只做了加法 |
 | 1.12.0 | 2026-11-04 | 发布不影响数据定义，版本可以自定义（ADR-0028，M384）：`POST …/draft/publish` 加可选的 `version` 与 `note`，发布后草案留着，基于的版本换成这一版；`GET /v1/definition-publications` 与发布申请加 `note`；`fromVersion` 可以写字符串。凡是静态数据定义的 `version`、`baseVersion`，从整数放宽成整数或字符串 | **不全是加法**：发布后 `GET …/draft` 不再答 404；用了自定义版本的租户，回答里的 `version` 可能是字符串。没用的租户读到的还是整数 |

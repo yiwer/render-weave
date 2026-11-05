@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.14.0';
+export const API_VERSION = '1.15.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -221,12 +221,25 @@ const SCHEMAS: Record<string, unknown> = {
     }, ['name', 'displayName', 'type', 'constraints']), '对外参数'),
     problems: { ...ref('ProblemList'), description: '模板读不了时只有名称、当前修订与问题清单' },
   }, ['name', 'currentRevision']),
+  ElementInspection: object({
+    path: str('问的元素实例'), template: str('它所在的作用域：定义它的模板'), source: str('它在模板文档里的路径，第一段是模板名'),
+    variables: array(object({
+      name: str('变量名'), displayName: str('显示名称'), kind: { type: 'string', enum: ['field', 'parameter', 'derived'] }, type: str('字段类型或参数类型'),
+      value: { description: '当前值的摘要：基本类型原样，列表写成 { list: 项数 }，引用写成 { fields: 一层字段 }，缺值是 null' },
+      branch: { type: 'integer', description: '条件分支命中第几支，从 0 开始，-1 是"否则"' },
+      origin: freeform('参数的值最终从哪来：kind 是 request、default、field、derived、value 或 loop'),
+    }, ['name', 'displayName', 'kind', 'type']), '这个作用域的全部变量'),
+    checks: array(object({ name: str('检查项名称'), level: { type: 'string', enum: ['severe', 'hint'] }, failed: { type: 'boolean' } }, ['name', 'level', 'failed']), '这个作用域的检查项与当前是否成立'),
+    instances: array(object({ path: str('元素路径'), visible: { type: 'boolean' }, state: str('元素有状态样式时，这个实例的取值') }, ['path', 'visible']), '这个定义的全部实例'),
+    states: object({ by: str('状态样式按的变量'), known: array(str(), '能确定的全部取值') }, ['by']),
+  }, ['path', 'template', 'source', 'variables', 'checks', 'instances'], { description: '一个元素实例的求值结果（1.15.0）' }),
   PreviewResult: object({
     image: object({ format: { type: 'string', enum: ['png', 'jpeg'] }, widthPx: int(), heightPx: int(), dpi: { type: 'number' }, base64: str('图片字节的 base64') }),
     problems: ref('ProblemList'),
     layout: freeform('布局摘要：元素路径、位置与尺寸（docs/render-modes.md）'),
     elements: array(object({ path: str('元素路径，同布局摘要'), source: object({ template: str('源模板'), path: str('元素在源模板里的路径，第一段是模板名') }) }),
       '会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）'),
+    inspection: ref('ElementInspection'),
   }, ['problems'], { description: '草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单' }),
 
   // 批量交付
@@ -611,7 +624,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/templates': { tag: '模板与预览', summary: '本租户的模板：适用尺寸范围、所用的数据定义与对外参数', replies: [ok(list('templates', 'Template'))] },
   'GET /v1/templates/:name': { tag: '模板与预览', summary: '一个模板', replies: [ok(ref('Template'))] },
   'POST /v1/previews': { tag: '模板与预览', summary: '草稿预览：同步返回图片与问题清单，不计额度', body: 'renderRequest', errors: [413, 429, 503],
-    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。',
+    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。inspect=元素路径 时回答多一个 inspection：这个实例的求值结果，不改变图片、问题清单与布局摘要。',
     replies: [ok(ref('PreviewResult'))] },
 
   'POST /v1/batches': { tag: '批量交付', summary: '提交批量正式交付：固定批次后按项异步交付', body: 'batchRequest', errors: [409, 413, 429],

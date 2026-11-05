@@ -13,6 +13,7 @@ import { evidenceNodes, type RenderEvidence } from './render-evidence.js';
 export type { RenderEvidence } from './render-evidence.js';
 import { formatElementPath } from './element-path.js';
 import { ImageStore } from './images.js';
+import { createInspector, stateVariableReader, type ElementInspection } from './inspection.js';
 import { evaluate, walkVisible, type EvaluatedTemplate } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
@@ -41,6 +42,8 @@ export interface RenderResult {
   readonly problems: readonly Problem[];
   /** 排版完成时才有布局摘要。 */
   readonly layout?: LayoutSummary;
+  /** 要了 inspect 且元素实例存在才有：它所在作用域的变量取值、命中的分支与这个定义的全部实例（模板设计页票据 02）。 */
+  readonly inspection?: ElementInspection;
 }
 
 export interface RenderOptions {
@@ -48,6 +51,8 @@ export interface RenderOptions {
   readonly comparisonEvidence?: boolean;
   /** 回答每个会显示的元素实例的源模板与在模板文档里的位置（P1 票据 07）。 */
   readonly elementLocations?: boolean;
+  /** 元素路径：回答这个实例的求值结果。不改变图片、问题清单与布局摘要。 */
+  readonly inspect?: string;
   /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
   readonly fallbackFonts?: readonly string[];
   /** SVG 可用的字体资源 ID；缺省为思源黑体四种字重，始终禁用系统字体。 */
@@ -92,16 +97,18 @@ export function checkTemplateStatic(workspace: Workspace, template: string): { p
 }
 
 /** 渲染的展开段（同步、不出图）：准备、尺寸范围与求值。无法展开时没有 evaluated，problems 是 render 会返回的完整问题清单。 */
-function expand(workspace: Workspace, requestInput: unknown): { request?: RenderRequest; evaluated?: EvaluatedTemplate; problems: Problem[] } {
+function expand(workspace: Workspace, requestInput: unknown, inspect?: string): { request?: RenderRequest; evaluated?: EvaluatedTemplate; inspection?: ElementInspection; problems: Problem[] } {
   const { request, prepared, problems } = prepareRender(workspace, requestInput);
   if (!request || !prepared) return { problems };
   const { template, dataset, checked, parameters } = prepared;
   problems.push(...checkSizeRange(template, request.output));
+  const inspector = inspect === undefined ? undefined : createInspector(inspect, request.parameters, stateVariableReader(workspace.templates));
   const evaluation = evaluate(new Scope(template, checked.program.get(template.name)!.table, dataset.data, parameters.values),
-    checked.program, problems, parameters.problems);
+    checked.program, problems, parameters.problems, inspector?.observer);
   problems.push(...evaluation.problems);
   if (!evaluation.evaluated) expansionBlocked(problems);
-  return { request, ...(evaluation.evaluated && { evaluated: evaluation.evaluated }), problems };
+  const inspection = inspector?.result();
+  return { request, ...(evaluation.evaluated && { evaluated: evaluation.evaluated }), ...(inspection && { inspection }), problems };
 }
 
 /** 一次渲染的规模：出图像素，以及展开后会显示的元素数与循环项数。 */
@@ -142,7 +149,7 @@ export async function preloadRenderer(): Promise<void> {
 }
 
 export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
-  const { request, evaluated, problems } = expand(workspace, requestInput);
+  const { request, evaluated, inspection, problems } = expand(workspace, requestInput, options.inspect);
   if (!request || !evaluated) return { problems };
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources, options.fallbackFonts);
@@ -187,7 +194,7 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     }
     const image = draw(ck, { fonts, images }, drawOps, request.output);
     const elements = options.elementLocations ? elementLocations(evaluated.root) : undefined;
-    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}), ...(elements ? { elements } : {}) };
+    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}), ...(elements ? { elements } : {}), ...(inspection ? { inspection } : {}) };
   } finally {
     fonts.dispose();
     images.dispose();

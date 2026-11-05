@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.14.0",
+    "version": "1.15.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；客户端应忽略不认识的属性与枚举值；1.12.0 放宽静态版本类型，兼容说明见变更记录。说明见 docs/api.md。"
   },
   "servers": [
@@ -1955,6 +1955,17 @@
                 "true"
               ],
               "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "inspect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段"
             }
           }
         ],
@@ -6043,7 +6054,7 @@
           "模板与预览"
         ],
         "summary": "草稿预览：同步返回图片与问题清单，不计额度",
-        "description": "请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。",
+        "description": "请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。inspect=元素路径 时回答多一个 inspection：这个实例的求值结果，不改变图片、问题清单与布局摘要。",
         "x-access": "preview",
         "parameters": [
           {
@@ -6056,6 +6067,17 @@
                 "true"
               ],
               "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "inspect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段"
             }
           }
         ],
@@ -10097,6 +10119,150 @@
           }
         }
       },
+      "ElementInspection": {
+        "type": "object",
+        "required": [
+          "path",
+          "template",
+          "source",
+          "variables",
+          "checks",
+          "instances"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "问的元素实例"
+          },
+          "template": {
+            "type": "string",
+            "description": "它所在的作用域：定义它的模板"
+          },
+          "source": {
+            "type": "string",
+            "description": "它在模板文档里的路径，第一段是模板名"
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "displayName",
+                "kind",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "变量名"
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "显示名称"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "field",
+                    "parameter",
+                    "derived"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "description": "字段类型或参数类型"
+                },
+                "value": {
+                  "description": "当前值的摘要：基本类型原样，列表写成 { list: 项数 }，引用写成 { fields: 一层字段 }，缺值是 null"
+                },
+                "branch": {
+                  "type": "integer",
+                  "description": "条件分支命中第几支，从 0 开始，-1 是\"否则\""
+                },
+                "origin": {
+                  "type": "object",
+                  "description": "参数的值最终从哪来：kind 是 request、default、field、derived、value 或 loop",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "description": "这个作用域的全部变量"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "level",
+                "failed"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "检查项名称"
+                },
+                "level": {
+                  "type": "string",
+                  "enum": [
+                    "severe",
+                    "hint"
+                  ]
+                },
+                "failed": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "这个作用域的检查项与当前是否成立"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "visible"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "元素路径"
+                },
+                "visible": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "description": "元素有状态样式时，这个实例的取值"
+                }
+              }
+            },
+            "description": "这个定义的全部实例"
+          },
+          "states": {
+            "type": "object",
+            "required": [
+              "by"
+            ],
+            "properties": {
+              "by": {
+                "type": "string",
+                "description": "状态样式按的变量"
+              },
+              "known": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "能确定的全部取值"
+              }
+            }
+          }
+        },
+        "description": "一个元素实例的求值结果（1.15.0）"
+      },
       "PreviewResult": {
         "type": "object",
         "required": [
@@ -10178,6 +10344,9 @@
               }
             },
             "description": "会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）"
+          },
+          "inspection": {
+            "$ref": "#/components/schemas/ElementInspection"
           }
         },
         "description": "草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单"

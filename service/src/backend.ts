@@ -2,7 +2,7 @@
  * 服务的后端（ADR-0018）：平台级的跨租户操作，与只触及一个租户的句柄。
  * 两种实现跑同一组 API 用例：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑（阶段 4 PRD「接缝」）。
  */
-import type { BatchItemFiles, BatchOutput, BatchSource, BatchSummary, ElementLocation, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend, WorkspaceDocumentSource, SchemaVersion } from './engine.js';
+import type { BatchItemFiles, BatchOutput, BatchSource, BatchSummary, ElementInspection, ElementLocation, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend, WorkspaceDocumentSource, SchemaVersion } from './engine.js';
 
 export interface Tenant {
   readonly id: string;
@@ -618,6 +618,8 @@ export interface TaskResult {
   readonly layout?: LayoutSummary;
   /** 元素实例各自的源模板与位置（P1 票据 07）。 */
   readonly elements?: readonly ElementLocation[];
+  /** 要了 inspect 才有：这个元素实例的求值结果（模板设计页票据 02）。 */
+  readonly inspection?: ElementInspection;
 }
 
 /**

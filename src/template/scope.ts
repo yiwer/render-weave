@@ -140,6 +140,17 @@ export class Scope {
     return undefined;
   }
 
+  /** 条件分支命中第几支，从 0 开始，-1 是"否则"；不是条件分支时 undefined（模板设计页票据 02）。 */
+  branchHit(name: string): number | undefined {
+    const operation = this.derived.get(name)?.operation;
+    return operation?.op === 'branch' ? operation.branches.findIndex((branch) => this.condition(branch.when)) : undefined;
+  }
+
+  /** 这个检查项在当前数据下成不成立。 */
+  checkFailed(check: CheckModel): boolean {
+    return this.operand(check.problemWhen) === true;
+  }
+
   /** 检查项（M25）：问题条件为真时，按其等级与提示文字记入问题清单。 */
   runChecks(): Problem[] {
     return this.template.checks.flatMap((check: CheckModel) =>
