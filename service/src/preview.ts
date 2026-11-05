@@ -45,15 +45,14 @@ export async function withWorkingCopies(storage: TenantStorage, workspace: Works
 
 /** 渲染一次草稿预览；请求已由接口进程检查过，mode 已是 draft。任务里的 workingCopies 表示用工作副本预览。 */
 export async function renderPreview(storage: TenantStorage, task: unknown): Promise<TaskResult> {
-  const { workingCopies, inspect, ...request } = task as { workingCopies?: boolean; inspect?: string };
+  const { workingCopies, ...request } = task as { workingCopies?: boolean };
   const workspace = await loadTenantWorkspace(storage);
-  const result = await render(workingCopies ? await withWorkingCopies(storage, workspace) : workspace, request, { elementLocations: true, ...(inspect === undefined ? {} : { inspect }) });
+  const result = await render(workingCopies ? await withWorkingCopies(storage, workspace) : workspace, request, { elementLocations: true });
   const image = result.image;
   return {
     problems: result.problems,
     ...(result.layout ? { layout: result.layout } : {}),
     ...(result.elements ? { elements: result.elements } : {}),
-    ...(result.inspection ? { inspection: result.inspection } : {}),
     ...(image ? { image: { format: image.format, widthPx: image.widthPx, heightPx: image.heightPx, dpi: image.dpi, bytes: image.bytes } } : {}),
   };
 }

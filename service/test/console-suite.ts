@@ -13,7 +13,7 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { chromium, type Browser, type BrowserContext, type LaunchOptions, type Locator, type Page } from 'playwright-core';
+import { chromium, type Browser, type BrowserContext, type Dialog, type LaunchOptions, type Locator, type Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
@@ -45,6 +45,8 @@ const LONG_NAME = '欧阳娜娜娜娜娜娜娜娜';
 const REPLACEMENT = `${RESOURCES_DIR}images/m402/landmark-3.png`;
 /** 资源页上传的新图。 */
 const STAMP = `${RESOURCES_DIR}images/m402/icon-metro.png`;
+/** 预览按租户每分钟限频，撞上时页面自己重试：等图要等得过一个窗口。Docker 后端用的是真实上限。 */
+const PREVIEW_WINDOW_MS = 90_000;
 const enc = encodeURIComponent;
 
 /** webhook 接收端：一律答 200，记下收到的请求。 */
@@ -141,6 +143,19 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await opened.getByRole('button', { name: '登录' }).click();
       await opened.getByRole('heading', { name: '数据集', level: 1 }).waitFor();
       return (admin = opened);
+    };
+    /**
+     * 离开设计页回到模板列表。页面可能问"还没保存，确定离开"：由页面自己换地址，
+     * page.goto 也算一次导航，会把这个确认框关掉，页面就留在了设计页，连累下一个用例。
+     */
+    const leaveDesign = async (target: Page, trialKey?: string) => {
+      const accept = (dialog: Dialog) => { void dialog.accept(); };
+      target.on('dialog', accept);
+      try {
+        await target.evaluate(() => { location.hash = '#/templates'; });
+        await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      } finally { target.off('dialog', accept); }
+      if (trialKey) await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${trialKey}`);
     };
     /** 标题栏的模块下拉（P1 票据 01）：点开后找名为 name 的模块。 */
     const nav = async (target: Page, name: string) => {
@@ -2382,14 +2397,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 变量页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
       await side().getByRole('tab', { name: '变量' }).click();
       const parameter = (name: string) => side().locator(`[data-testid="parameter-row"][data-name="${name}"]`);
-      const sideInput = (key: string) => side().locator(`[data-testid="property-field"][data-key="${key}"]`).first().locator('input[type="text"]').first();
       await side().getByRole('region', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
       await parameter('accentColor').getByRole('button').first().click();
-      ({ document } = await edit(() => sideInput('default').fill('#0B4EA2')));
+      ({ document } = await edit(() => input('default').fill('#0B4EA2')));
       expect((document['parameters'] as Record<string, unknown>[]).find((item) => item['name'] === 'accentColor')).toMatchObject({ default: '#0B4EA2' });
       await parameter('nameSize').getByRole('button').first().click();
-      await sideInput('displayName').fill('姓名大小');
-      await sideInput('constraints.max').fill('20');
+      await input('displayName').fill('姓名大小');
+      await input('constraints.max').fill('20');
       await expect.poll(async () => (await documentNow())['parameters']).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'nameSize', displayName: '姓名大小', constraints: { min: 3, max: 20 } })]));
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
       await side().getByLabel('新参数的名称').fill('footnote');
@@ -2425,7 +2439,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '发布修订' }).click();
       await target.getByRole('heading', { name: '发布修订 2', level: 1 }).waitFor();
       await target.locator(`[data-testid="change"][data-path="${at('椭圆')}"]`).waitFor();
-      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor({ timeout: PREVIEW_WINDOW_MS });
       await target.getByRole('button', { name: '发布为修订 2' }).click();
       await target.getByRole('status').filter({ hasText: '已保存为修订 2' }).waitFor();
       expect((await server('GET', `/v1/templates/${enc(ALL)}`, token)).body.currentRevision).toBe(2);
@@ -2444,7 +2458,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
       await target.getByRole('button', { name: '发布修订' }).click();
       await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
-      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor({ timeout: PREVIEW_WINDOW_MS });
       expect(await target.getByTestId('compare-current').count(), '没有当前修订可比').toBe(0);
       await target.getByRole('button', { name: '发布为修订 1' }).click();
       await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
@@ -2621,9 +2635,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const copyUrl = `/v1/templates/${enc(ROOT)}/working-copy`;
       const isMain = (response: { url(): string; request(): { method(): string } }) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST';
       // 上一个用例也在这一页：先离开，清掉记住的试值，再进来。
-      await target.goto(`${baseUrl}/console/#/templates`);
-      await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${ROOT}`);
-      await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      await leaveDesign(target, ROOT);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
       const card = (id: string) => target.locator(`[data-testid="sample-card"][data-id="${id}"]`);
@@ -2675,7 +2687,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await side.getByRole('tab', { name: '变量' }).click();
       await side.locator('[data-testid="parameter-row"][data-name="primaryColor"]').getByRole('button').first().click();
       const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
-      await side.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('#1D6B3C');
+      await target.getByRole('complementary', { name: '检查器' }).locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('#1D6B3C');
       await stashed;
       await target.getByTestId('tray-changes').getByTestId('change').first().waitFor();
       await target.getByRole('button', { name: '在图上对比' }).click();
@@ -2699,8 +2711,78 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 收尾：丢掉工作副本，不影响别的用例。
       expect((await server('DELETE', copyUrl, token)).status).toBe(204);
-      target.once('dialog', (dialog) => { void dialog.accept(); });
-      await target.goto(`${baseUrl}/console/#/templates`);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 08）：变量面板有当前值，悬停标出谁在用；选中变量右边显示它；取值只从接口来', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      await side.getByRole('tab', { name: '变量' }).click();
+      const row = (name: string) => side.locator(`[data-name="${name}"]`);
+      // 四组都有当前值。
+      for (const group of ['字段', '对外参数', '内部参数', '派生变量', '检查项']) await side.getByRole('region', { name: group }).waitFor();
+      await expect.poll(() => row('routeNo').textContent()).toContain('M402');
+      await expect.poll(() => row('stops').textContent()).toContain('35 项');
+      await expect.poll(() => row('stopCount').textContent()).toContain('35');
+      await expect.poll(() => row('primaryColor').textContent()).toContain('#FF8000');
+      await expect.poll(() => row('本站序号不能超过站点数').textContent()).toContain('未成立');
+
+      // 悬停标出谁在用，连带派生变量。
+      await row('stops').hover();
+      await expect.poll(() => target.getByTestId('use-box').count()).toBeGreaterThan(0);
+      await target.getByTestId('design-scope').hover();
+      await expect.poll(() => target.getByTestId('use-box').count()).toBe(0);
+
+      // 选中字段：只读，链到数据定义。
+      await row('routeNo').getByRole('button').click();
+      const panel = inspector.getByTestId('variable-inspector');
+      await panel.filter({ hasText: '字段属于数据定义' }).waitFor();
+      expect(await panel.getByRole('link', { name: /打开数据定义/ }).getAttribute('href')).toBe(`#/definitions/${enc('线路牌')}?field=routeNo`);
+
+      // 选中内部参数：改缺省值写进模板，图跟着变；谁在用可以点。
+      await row('stopNameSize').getByRole('button').click();
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
+      await inspector.getByTestId('variable-uses').getByRole('button', { name: '站点列' }).waitFor();
+      const before = await target.getByTestId('preview-image').getAttribute('src');
+      await inspector.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('12');
+      await expect.poll(() => target.getByTestId('preview-image').getAttribute('src'), { timeout: 15_000 }).not.toBe(before);
+      await expect.poll(() => row('stopNameSize').textContent()).toContain('12');
+
+      // 选中元素后右边回到元素；作用域换成它的模板，取值是这一处实例的。
+      await inspector.getByTestId('variable-uses').getByRole('button', { name: '站点列' }).click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ROOT}/站点面板/站点列"]`).waitFor();
+
+      // 试值让检查项成立：问题定位到检查项，右边显示它。
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knob.getByRole('textbox').fill('40');
+      await knob.getByRole('textbox').press('Enter');
+      await expect.poll(() => row('本站序号不能超过站点数').textContent(), { timeout: 15_000 }).toContain('成立·严重');
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /问题/ }).click();
+      await target.getByRole('list', { name: '预览的问题' }).getByRole('button', { name: /本站序号超过了停靠站点数/ }).click();
+      await inspector.locator('[data-testid="variable-inspector"][data-kind="check"]').waitFor();
+
+      // 进到子模板：作用域换了，取值是这一处实例的；派生变量标出命中。
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: '样例' }).click();
+      await target.getByRole('button', { name: '恢复缺省' }).click();
+      const knobValue = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knobValue.getByRole('textbox').fill('5');
+      await knobValue.getByRole('textbox').press('Enter');
+      await side.getByRole('tab', { name: '结构' }).click();
+      await side.getByRole('button', { name: '展开 站点面板' }).click();
+      await side.getByRole('button', { name: '展开 站点列' }).click();
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
+      await side.getByRole('tab', { name: '变量' }).click();
+      await row('stopState').getByRole('button').click();
+      await inspector.locator('[data-testid="variable-inspector"][data-kind="derived"]').waitFor();
+      await inspector.getByTestId('branch-hit').waitFor();
+
+      // 收尾：丢掉工作副本与试值。
+      expect((await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token)).status).toBe(204);
+      await leaveDesign(target, ROOT);
     }, 180_000);
 
     it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {

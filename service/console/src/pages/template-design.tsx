@@ -11,7 +11,8 @@ import { api } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
-import { DesignInspector, DesignVariables } from '../design/panels.js';
+import { DesignInspector } from '../design/panels.js';
+import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
 import { CodePanel } from '../components/code-panel.js';
@@ -82,7 +83,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const [menu, setMenu] = useState<MenuState>();
   const [notice, setNotice] = useState<string>();
   const [locateTick, setLocateTick] = useState(0);
-  const [openParameter, setOpenParameter] = useState<string>();
+  const [variable, setVariable] = useState<VariableSelection>();
+  const [hoverVariable, setHoverVariable] = useState<{ readonly template: string; readonly name: string }>();
 
   const openTemplate = (template: string) => go(['templates', template, 'design'], template === root ? {} : { in: root });
 
@@ -118,6 +120,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
 
   const locations = useMemo(() => new Map((reply?.elements ?? []).map((element) => [element.path, element.source])), [reply?.elements]);
   const select = (template: string, path: string, instance?: string) => {
+    setVariable(undefined);
     setSelection({ template, path, ...(instance ? { instance } : {}) });
     if (template !== name) openTemplate(template);
   };
@@ -129,11 +132,18 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const onProblem = (problem: Problem) => {
     const location = problem.location;
     if (location.kind === 'element') { pick(location.path); return; }
-    if (location.kind === 'check' || location.kind === 'field' || location.kind === 'parameter' || location.kind === 'variable') {
-      setPanels((now) => ({ ...now, left: true }));
-      setLeftTab('variables');
-      if (location.kind === 'parameter') setOpenParameter(location.name);
-    }
+    const chosen: VariableSelection | undefined = location.kind === 'check' ? { template: location.template, name: location.name, kind: 'check' }
+      : location.kind === 'variable' ? { template: location.template, name: location.name, kind: 'derived' }
+      : location.kind === 'parameter' ? { template: name, name: location.name, kind: 'parameter' }
+      : location.kind === 'field' ? { template: root, name: location.path.split(/[.[]/)[0]!, kind: 'field' } : undefined;
+    if (!chosen) return;
+    openVariable(chosen);
+  };
+  const openVariable = (chosen: VariableSelection) => {
+    setPanels((now) => ({ ...now, left: true, right: true }));
+    setLeftTab('variables');
+    setVariable(chosen);
+    if (chosen.template !== name) openTemplate(chosen.template);
   };
   /** 点选：最深的元素；按着 Alt 沿层叠往下穿透。 */
   const pickFrom = (stack: readonly string[], through: boolean) => {
@@ -142,6 +152,13 @@ function Design(props: { readonly name: string; readonly root: string }) {
   };
   const selected = selection?.template === name ? selection : undefined;
   const instances = instancesOf(reply, selected);
+  // 变量的当前值：选中实例所在的作用域；没选中时取这个模板的第一处。
+  const scopeInstance = selected?.instance ?? instances[0] ?? (name === root ? root : (reply?.elements ?? []).find((element) => element.source.template === name)?.path);
+  const inspection = useInspection(request, scopeInstance, String(state.stashes));
+  const usedBy = useMemo(() => {
+    const document = hoverVariable && documentOf(hoverVariable.template);
+    return document ? new Set(usesOfVariable(document, hoverVariable.template, hoverVariable.name).elements.map((element) => `${hoverVariable.template}\n${element.path}`)) : undefined;
+  }, [hoverVariable, state.stashes]);
   /** 实例对应的模板文档里的元素。 */
   const elementOf = (instance: string) => { const source = locations.get(instance), document = source && documentOf(source.template); return document ? elementAt(document, source.path)?.element : undefined; };
   /** Esc、Enter：上一层、下一层。上一层到头就取消选中，检查器回到画板。 */
@@ -248,7 +265,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -267,14 +284,14 @@ function Design(props: { readonly name: string; readonly root: string }) {
               {doc ? (leftTab === 'structure'
                 ? <DesignStructure root={root} documentOf={documentOf} {...(selected ? { selection: selected } : {})} {...(reply ? { reply } : {})} locateTick={locateTick} onSelect={(template, path) => select(template, path)} onHover={setTreeHover}
                   onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }} />
-                : <DesignVariables doc={doc} session={session} open={openParameter} onOpen={setOpenParameter} />) : <Loading>正在读取模板…</Loading>}
+                : <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
         {panels.right && (
           <aside className="design-panel right" aria-label="检查器">
             <div className="design-panel-body">
-              {doc ? <DesignInspector doc={doc} session={session} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
+              {doc ? <DesignInspector doc={doc} session={session} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
@@ -360,7 +377,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       {menu && doc && (
         <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
           onLocate={() => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setLeftTab('structure'); setLocateTick((value) => value + 1); }}
-          onParameter={(parameter) => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setOpenParameter(parameter); setLeftTab('variables'); }} />
+          onParameter={(parameter) => { setMenu(undefined); openVariable({ template: name, name: parameter, kind: 'parameter' }); }} />
       )}
     </section>
   );

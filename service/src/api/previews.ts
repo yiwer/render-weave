@@ -6,7 +6,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import type { Plan, StoredDocument, TaskResult, TenantScope } from '../backend.js';
-import { describeTemplate, measureRender, parseJsonKeepingPrecision, type Problem, type RenderMeasure } from '../engine.js';
+import { describeTemplate, inspectElement, measureRender, parseJsonKeepingPrecision, type ElementInspection, type Problem, type RenderMeasure } from '../engine.js';
 import { loadTenantWorkspace, withWorkingCopies } from '../preview.js';
 import { identityOf, ownTenant, type ApiContext } from './app.js';
 import { ApiError, fail, notFound, problem, ServiceProblemCodes, type ServiceProblem } from './problems.js';
@@ -66,19 +66,16 @@ export interface PreviewReply {
   readonly problems: TaskResult['problems'];
   readonly layout?: TaskResult['layout'];
   readonly elements?: TaskResult['elements'];
-  readonly inspection?: TaskResult['inspection'];
 }
 
 /** 用工作副本预览的查询参数（P1 票据 07）。 */
-export const PREVIEW_QUERY = { querystring: { type: 'object', properties: {
-  workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' },
-  inspect: { type: 'string', minLength: 1, maxLength: 2000, description: '元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段' },
+export const PREVIEW_QUERY = { querystring: { type: 'object', properties: { workingCopies: { type: 'string', enum: ['true'], description: '用模板工作副本预览：有工作副本的模板用工作副本' } } } } as const;
+export const previewOptions = (query: unknown) => ({ workingCopies: (query as { workingCopies?: string }).workingCopies === 'true' });
+/** 求值的查询参数（模板设计页票据 02）。 */
+export const INSPECTION_QUERY = { querystring: { type: 'object', required: ['element'], properties: {
+  ...PREVIEW_QUERY.querystring.properties,
+  element: { type: 'string', minLength: 1, maxLength: 2000, description: '元素路径；不存在时回答没有 inspection' },
 } } } as const;
-export interface PreviewOptions { readonly workingCopies: boolean; readonly inspect?: string }
-export const previewOptions = (query: unknown): PreviewOptions => {
-  const { workingCopies, inspect } = query as { workingCopies?: string; inspect?: string };
-  return { workingCopies: workingCopies === 'true', ...(inspect === undefined ? {} : { inspect }) };
-};
 
 /**
  * 引用的已保存数据集超出字节上限时的问题；documents 是租户的文档清单（一个请求读一次，批次的各项共用），source 是请求里数据集的位置。
@@ -108,7 +105,7 @@ export function measureLimitProblems(limits: ServiceLimits, plan: Plan, measure:
 }
 
 /** 一次草稿预览：检查、入队、等结果。客户与代建工程师的端点都走这里。workingCopies 时用工作副本，检查与限制都一样。 */
-export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown, options: PreviewOptions = { workingCopies: false }): Promise<PreviewReply> {
+export async function runPreview(context: ApiContext, scope: TenantScope, body: unknown, options: { readonly workingCopies: boolean } = { workingCopies: false }): Promise<PreviewReply> {
   const { limits, now } = context;
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw fail(400, ServiceProblemCodes.requestInvalid, 'request.body', '预览请求必须是 JSON 对象');
   const input = body as Record<string, unknown>;
@@ -128,7 +125,7 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   if (pixels.length) throw new ApiError(413, pixels);
   if (expansion.length) throw new ApiError(413, expansion);
 
-  const queued = await scope.tasks.enqueuePreview({ ...request, ...(options.workingCopies ? { workingCopies: true } : {}), ...(options.inspect === undefined ? {} : { inspect: options.inspect }) }, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
+  const queued = await scope.tasks.enqueuePreview(options.workingCopies ? { ...request, workingCopies: true } : request, { concurrency: plan.concurrency, perMinute: limits.previewPerMinute, staleAfterMs: limits.previewWaitMs }, now());
   if ('limited' in queued) {
     throw fail(429, ServiceProblemCodes.previewRateLimited, 'request', queued.limited === 'concurrency'
       ? `本租户同时进行的预览已达并发上限 ${plan.concurrency} 个，请等前面的完成`
@@ -149,6 +146,20 @@ export async function runPreview(context: ApiContext, scope: TenantScope, body: 
   }
 }
 
+/**
+ * 一个元素实例的求值结果（模板设计页票据 02）：变量的当前值、命中的分支与参数来源。
+ * 只求值不出图，在接口进程里做完（同入队前的度量），不入队，不占预览的并发与频率；请求检查与预览相同。
+ */
+export async function runInspection(context: ApiContext, scope: TenantScope, body: unknown, query: unknown): Promise<{ readonly problems: readonly Problem[]; readonly inspection?: ElementInspection }> {
+  const { limits } = context;
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) throw fail(400, ServiceProblemCodes.requestInvalid, 'request.body', '求值请求必须是 JSON 对象');
+  const input = body as Record<string, unknown>;
+  const dataset = datasetLimitProblems(limits, (await scope.storage.authoringState()).documents, input['dataset'], 'request.dataset');
+  if (dataset.length) throw new ApiError(413, dataset);
+  const workspace = await loadTenantWorkspace(scope.storage), { workingCopies } = previewOptions(query);
+  return inspectElement(workingCopies ? await withWorkingCopies(scope.storage, workspace) : workspace, { ...input, mode: 'draft' }, (query as { element: string }).element);
+}
+
 function reply(result: TaskResult): PreviewReply {
   const { image } = result;
   return {
@@ -156,7 +167,6 @@ function reply(result: TaskResult): PreviewReply {
     problems: result.problems,
     ...(result.layout ? { layout: result.layout } : {}),
     ...(result.elements ? { elements: result.elements } : {}),
-    ...(result.inspection ? { inspection: result.inspection } : {}),
   };
 }
 
@@ -189,4 +199,6 @@ export function registerPreviewRoutes(app: FastifyInstance, context: ApiContext)
   });
 
   app.post('/v1/previews', { config: { access: 'preview' }, bodyLimit: limits.maxRequestBytes, schema: PREVIEW_QUERY }, async (request) => runPreview(context, scopeOf(request), request.body, previewOptions(request.query)));
+
+  app.post('/v1/previews/inspection', { config: { access: 'preview' }, bodyLimit: limits.maxRequestBytes, schema: INSPECTION_QUERY }, async (request) => runInspection(context, scopeOf(request), request.body, request.query));
 }

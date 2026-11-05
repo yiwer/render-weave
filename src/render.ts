@@ -42,8 +42,6 @@ export interface RenderResult {
   readonly problems: readonly Problem[];
   /** 排版完成时才有布局摘要。 */
   readonly layout?: LayoutSummary;
-  /** 要了 inspect 且元素实例存在才有：它所在作用域的变量取值、命中的分支与这个定义的全部实例（模板设计页票据 02）。 */
-  readonly inspection?: ElementInspection;
 }
 
 export interface RenderOptions {
@@ -51,8 +49,6 @@ export interface RenderOptions {
   readonly comparisonEvidence?: boolean;
   /** 回答每个会显示的元素实例的源模板与在模板文档里的位置（P1 票据 07）。 */
   readonly elementLocations?: boolean;
-  /** 元素路径：回答这个实例的求值结果。不改变图片、问题清单与布局摘要。 */
-  readonly inspect?: string;
   /** 后备字体资源 ID，按文件 OS/2 字重选择；省略时为默认思源黑体，空列表禁用替代。 */
   readonly fallbackFonts?: readonly string[];
   /** SVG 可用的字体资源 ID；缺省为思源黑体四种字重，始终禁用系统字体。 */
@@ -137,6 +133,15 @@ export function measureRender(workspace: Workspace, requestInput: unknown): { me
   return { measure: { widthPx: mmToPx(width, dpi), heightPx: mmToPx(height, dpi), elements, loopItems }, problems };
 }
 
+/**
+ * 一个元素实例的求值结果（模板设计页票据 02）：它所在作用域的变量取值、命中的分支、参数来源与这个定义的全部实例。
+ * 只解析、检查与求值，不加载 CanvasKit，同 measureRender。路径不存在时没有 inspection，不算问题。
+ */
+export function inspectElement(workspace: Workspace, requestInput: unknown, path: string): { inspection?: ElementInspection; problems: Problem[] } {
+  const { inspection, problems } = expand(workspace, requestInput, path);
+  return { ...(inspection ? { inspection } : {}), problems };
+}
+
 function elementLocations(root: EvaluatedTemplate['root']): ElementLocation[] {
   const locations: ElementLocation[] = [];
   for (const node of walkVisible(root)) if (node.source) locations.push({ path: formatElementPath(node.model.path), source: node.source });
@@ -149,7 +154,7 @@ export async function preloadRenderer(): Promise<void> {
 }
 
 export async function render(workspace: Workspace, requestInput: unknown, options: RenderOptions = {}): Promise<RenderResult> {
-  const { request, evaluated, inspection, problems } = expand(workspace, requestInput, options.inspect);
+  const { request, evaluated, problems } = expand(workspace, requestInput);
   if (!request || !evaluated) return { problems };
   const ck = await loadCanvasKit();
   const fonts = new FontStore(ck, workspace.resources, options.fallbackFonts);
@@ -194,7 +199,7 @@ export async function render(workspace: Workspace, requestInput: unknown, option
     }
     const image = draw(ck, { fonts, images }, drawOps, request.output);
     const elements = options.elementLocations ? elementLocations(evaluated.root) : undefined;
-    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}), ...(elements ? { elements } : {}), ...(inspection ? { inspection } : {}) };
+    return { image, problems, layout: result.summary, ...(evidence ? { evidence } : {}), ...(elements ? { elements } : {}) };
   } finally {
     fonts.dispose();
     images.dispose();

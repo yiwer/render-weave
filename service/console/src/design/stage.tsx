@@ -37,6 +37,8 @@ export function DesignStage(props: {
   /** 结构树上悬停的定义：图上标出它的全部实例。 */
   readonly hover?: { readonly template: string; readonly path: string };
   readonly layers: Layers;
+  /** 用到悬停的变量的元素定义：写成"模板\n路径"。 */
+  readonly usedBy?: ReadonlySet<string>;
   /** 在图上和当前修订对比：图是当前修订，拖分割线。 */
   readonly compare?: string;
   /** 实例对应的模板文档里的元素：叠加层要看它的内容来源、排布与旋转。 */
@@ -171,6 +173,7 @@ export function DesignStage(props: {
           {props.layers.fit && all.filter((node) => node.text && (node.text.overflow || node.text.compression < 0.999)).map((node) => (
             <span key={`fit-${node.path}`} className={`layer-box fit${node.text!.overflow ? ' over' : ''}`} data-testid={node.text!.overflow ? 'overflow-box' : 'fit-box'} title={`压到 ${Math.round(node.text!.compression * 100)}%${node.text!.overflow ? '，仍放不下' : ''}`} style={percent(node)} />
           ))}
+          {props.usedBy && (reply?.elements ?? []).filter((element) => props.usedBy!.has(`${element.source.template}\n${element.source.path}`) && element.source.path !== element.source.template).map((element) => { const node = nodes.get(element.path); return node ? <span key={`use-${element.path}`} className="layer-box use" data-testid="use-box" style={percent(node)} /> : null; })}
           {guides?.gaps.map((box, index) => <span key={`gap-${index}`} className="guide-gap" data-testid="guide-gap" style={boxStyle(box)} />)}
           {guides?.padding.map((box, index) => <span key={`pad-${index}`} className="guide-pad" data-testid="guide-pad" style={boxStyle(box)} />)}
           {guides?.tracks.map((track, index) => (track.axis === 'row'

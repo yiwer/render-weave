@@ -1956,17 +1956,6 @@
               ],
               "description": "用模板工作副本预览：有工作副本的模板用工作副本"
             }
-          },
-          {
-            "name": "inspect",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2000,
-              "description": "元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段"
-            }
           }
         ],
         "requestBody": {
@@ -2011,6 +2000,89 @@
           },
           "503": {
             "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/previews/inspection": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdPreviewsInspection",
+        "tags": [
+          "代建"
+        ],
+        "summary": "用被指定租户的身份看元素实例的求值结果",
+        "x-access": "authoring.preview",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "workingCopies",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "element",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径；不存在时回答没有 inspection"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
           }
         }
       }
@@ -6054,7 +6126,7 @@
           "模板与预览"
         ],
         "summary": "草稿预览：同步返回图片与问题清单，不计额度",
-        "description": "请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。inspect=元素路径 时回答多一个 inspection：这个实例的求值结果，不改变图片、问题清单与布局摘要。",
+        "description": "请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。",
         "x-access": "preview",
         "parameters": [
           {
@@ -6067,17 +6139,6 @@
                 "true"
               ],
               "description": "用模板工作副本预览：有工作副本的模板用工作副本"
-            }
-          },
-          {
-            "name": "inspect",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 2000,
-              "description": "元素路径：回答多一个 inspection，是这个元素实例的求值结果；路径不存在时没有这个字段"
             }
           }
         ],
@@ -6120,6 +6181,77 @@
           },
           "503": {
             "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/v1/previews/inspection": {
+      "post": {
+        "operationId": "postV1PreviewsInspection",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "一个元素实例的求值结果：变量的当前值、命中的分支、参数来源与全部实例",
+        "description": "请求与预览相同，element 是元素路径。只求值不出图，不入队，不占预览的并发与频率。",
+        "x-access": "preview",
+        "parameters": [
+          {
+            "name": "workingCopies",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "element",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径；不存在时回答没有 inspection"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
           }
         }
       }
@@ -10446,6 +10578,21 @@
         },
         "description": "一个元素实例的求值结果（1.15.0）"
       },
+      "InspectionResult": {
+        "type": "object",
+        "required": [
+          "problems"
+        ],
+        "properties": {
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList"
+          },
+          "inspection": {
+            "$ref": "#/components/schemas/ElementInspection"
+          }
+        },
+        "description": "一个元素实例的求值结果；路径不存在时没有 inspection"
+      },
       "PreviewResult": {
         "type": "object",
         "required": [
@@ -10525,9 +10672,6 @@
               }
             },
             "description": "会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）"
-          },
-          "inspection": {
-            "$ref": "#/components/schemas/ElementInspection"
           }
         },
         "description": "草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单"

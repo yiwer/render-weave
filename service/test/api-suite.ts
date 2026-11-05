@@ -159,6 +159,8 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/templates/:name', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent('问候牌')}` }) },
   // 预览请求用不存在的模板：入队前就答问题清单，不需要 worker。
   { route: 'POST /v1/previews', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/previews', body: BLOCKED_PREVIEW }) },
+  { route: 'POST /v1/previews/inspection', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/previews/inspection?element=x', body: BLOCKED_PREVIEW }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews/inspection', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews/inspection?element=x`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/previews', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],

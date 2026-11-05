@@ -251,13 +251,13 @@ const SCHEMAS: Record<string, unknown> = {
     instances: array(object({ path: str('元素路径'), visible: { type: 'boolean' }, state: str('元素有状态样式时，这个实例的取值') }, ['path', 'visible']), '这个定义的全部实例'),
     states: object({ by: str('状态样式按的变量'), known: array(str(), '能确定的全部取值') }, ['by']),
   }, ['path', 'template', 'source', 'variables', 'checks', 'instances'], { description: '一个元素实例的求值结果（1.15.0）' }),
+  InspectionResult: object({ problems: ref('ProblemList'), inspection: ref('ElementInspection') }, ['problems'], { description: '一个元素实例的求值结果；路径不存在时没有 inspection' }),
   PreviewResult: object({
     image: object({ format: { type: 'string', enum: ['png', 'jpeg'] }, widthPx: int(), heightPx: int(), dpi: { type: 'number' }, base64: str('图片字节的 base64') }),
     problems: ref('ProblemList'),
     layout: ref('LayoutSummary'),
     elements: array(object({ path: str('元素路径，同布局摘要'), source: object({ template: str('源模板'), path: str('元素在源模板里的路径，第一段是模板名') }) }),
       '会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）'),
-    inspection: ref('ElementInspection'),
   }, ['problems'], { description: '草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单' }),
 
   // 批量交付
@@ -642,8 +642,10 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'GET /v1/templates': { tag: '模板与预览', summary: '本租户的模板：适用尺寸范围、所用的数据定义与对外参数', replies: [ok(list('templates', 'Template'))] },
   'GET /v1/templates/:name': { tag: '模板与预览', summary: '一个模板', replies: [ok(ref('Template'))] },
   'POST /v1/previews': { tag: '模板与预览', summary: '草稿预览：同步返回图片与问题清单，不计额度', body: 'renderRequest', errors: [413, 429, 503],
-    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。inspect=元素路径 时回答多一个 inspection：这个实例的求值结果，不改变图片、问题清单与布局摘要。',
+    description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。',
     replies: [ok(ref('PreviewResult'))] },
+  'POST /v1/previews/inspection': { tag: '模板与预览', summary: '一个元素实例的求值结果：变量的当前值、命中的分支、参数来源与全部实例', body: 'renderRequest', errors: [413],
+    description: '请求与预览相同，element 是元素路径。只求值不出图，不入队，不占预览的并发与频率。', replies: [ok(ref('InspectionResult'))] },
 
   'POST /v1/batches': { tag: '批量交付', summary: '提交批量正式交付：固定批次后按项异步交付', body: 'batchRequest', errors: [409, 413, 429],
     description: '请求是 DSL 1.0 的批次请求（mode 只能省略或为 final）。外层不合法整批拒绝；单项超限只让这一项失败。带 Idempotency-Key 时重试拿回同一批次（200）。'
@@ -713,6 +715,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
       usage: object({ rounds: int('附了几轮'), recorded: int('这次新记了几轮'), tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), []) }) })),
     ok(object({ ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties, request: ref('PublishRequest') }), '审批策略打开：整份推送没有生效，成了一份发布申请', 202)] },
   'POST /v1/authoring/tenants/:tenantId/previews': { tag: '代建', summary: '用被指定租户的身份看草稿预览', body: 'renderRequest', errors: [413, 429, 503], replies: [ok(ref('PreviewResult'))] },
+  'POST /v1/authoring/tenants/:tenantId/previews/inspection': { tag: '代建', summary: '用被指定租户的身份看元素实例的求值结果', body: 'renderRequest', errors: [413], replies: [ok(ref('InspectionResult'))] },
   'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions')), acceptedAsRequest] },
   ...definitionDocs('/v1', '数据定义'),
   ...definitionDocs('/v1/authoring/tenants/:tenantId', '代建'),

@@ -11,8 +11,9 @@ import { useLoad } from '../hooks.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
-import type { PreviewReply } from '../types.js';
+import type { ElementInspection, PreviewReply } from '../types.js';
 import type { Selection } from './stage.js';
+import { VariableInspector, type VariableSelection } from './variables.js';
 
 /** 建议项：变量、字段与资源。内置的数据定义（单值文本）没有静态版本，只是少几条建议。 */
 function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists']; readonly element: ReactNode } {
@@ -38,9 +39,10 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
   };
 }
 
-/** 右边的检查器：选中的东西。没有选中时是画板的入口。 */
+/** 右边的检查器：选中的东西，元素或变量；什么都没选时是画板。 */
 export function DesignInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply; readonly impact?: string;
+  readonly variable?: VariableSelection; readonly inspection?: ElementInspection; readonly onVariable: (selection: VariableSelection | undefined) => void;
   readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
   const { doc, session } = props;
@@ -48,25 +50,19 @@ export function DesignInspector(props: {
   const selected = props.selected ?? { template: doc.name, path: doc.name };
   const { lists, element } = useFieldLists(doc);
   const edit = (document: JsonObject, key: string) => session.edit(doc.name, document, key);
+  if (props.variable) {
+    return (
+      <>
+        {element}
+        <VariableInspector key={`${props.variable.template}\n${props.variable.name}`} doc={doc} session={session} selection={props.variable} {...(props.inspection ? { inspection: props.inspection } : {})} lists={lists} onElement={props.onSelect} onVariable={props.onVariable} onClear={() => props.onVariable(undefined)} />
+      </>
+    );
+  }
   return (
     <>
       {element}
       <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
-    </>
-  );
-}
-
-/** 左面板的变量页：参数与检查项。 */
-export function DesignVariables(props: { readonly doc: DesignDoc; readonly session: DesignSession; readonly open?: string; readonly onOpen: (name: string | undefined) => void }) {
-  const { doc, session } = props;
-  const { lists, element } = useFieldLists(doc);
-  const edit = (document: JsonObject, key: string) => session.edit(doc.name, document, key);
-  return (
-    <>
-      {element}
-      <ParametersTab key={doc.name} doc={doc} lists={lists} open={props.open} onOpen={props.onOpen} onEdit={edit} />
-      <AllChecks doc={doc} lists={lists} onEdit={edit} />
     </>
   );
 }
@@ -109,62 +105,6 @@ function PropertiesTab(props: {
   );
 }
 
-const PARAMETER_TYPES: Readonly<Record<string, string>> = { text: '文本', number: '数值', date: '日期', time: '时刻', datetime: '时间', boolean: '布尔', image: '图片', color: '颜色' };
-
-function ParametersTab(props: {
-  readonly doc: DesignDoc; readonly lists: FieldContext['lists']; readonly open?: string; readonly onOpen: (name: string | undefined) => void; readonly onEdit: (document: JsonObject, key: string) => void;
-}) {
-  const { doc, open } = props;
-  const [name, setName] = useState('');
-  const parameters = Array.isArray(doc.document['parameters']) ? (doc.document['parameters'] as unknown[]).filter(isObject) : [];
-  const trimmed = name.trim(), taken = parameters.some((item) => item['name'] === trimmed), valid = trimmed !== '' && !trimmed.includes('.') && !taken;
-  const add = () => {
-    props.onEdit({ ...doc.document, parameters: [...parameters, { name: trimmed, displayName: trimmed, visibility: 'public', type: 'text', default: '' }] }, `parameters:add:${trimmed}`);
-    props.onOpen(trimmed);
-    setName('');
-  };
-  const section = (title: string, visibility: string) => {
-    const shown = parameters.filter((item) => item['visibility'] === visibility);
-    return (
-      <section className="prop-section" aria-label={title}>
-        <h3>{title}</h3>
-        {shown.length === 0 && <p className="small muted">没有。</p>}
-        {shown.map((parameter) => {
-          const parameterName = String(parameter['name']), index = parameters.indexOf(parameter), expanded = open === parameterName;
-          const context: FieldContext = {
-            lists: props.lists,
-            onWrite: (path, value) => props.onEdit(writeListItem(doc.document, 'parameters', index, path, value), `parameters:${parameterName}:${path.join('.')}`),
-          };
-          return (
-            <div key={parameterName} className={`list-row${expanded ? ' selected' : ''}`} data-testid="parameter-row" data-name={parameterName}>
-              <button type="button" className="list-row-button" aria-expanded={expanded} onClick={() => props.onOpen(expanded ? undefined : parameterName)}>
-                <span>{String(parameter['displayName'] ?? parameterName)}</span>
-                <span className="small muted mono">{parameterName} · {PARAMETER_TYPES[String(parameter['type'])] ?? String(parameter['type'])}</span>
-              </button>
-              {expanded && (
-                <div className="list-row-body">
-                  {listItemPanel(doc.document, 'parameters', index).map((field) => <FieldRow key={field.key} field={field} context={context} />)}
-                  <button type="button" className="link danger" onClick={() => { props.onEdit({ ...doc.document, parameters: parameters.filter((item) => item !== parameter) }, `parameters:delete:${parameterName}`); props.onOpen(undefined); }}>删除这个参数</button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </section>
-    );
-  };
-  return (
-    <div data-testid="parameters">
-      {section('对外参数', 'public')}
-      {section('内部参数', 'internal')}
-      <form className="prop-actions" aria-label="添加参数" onSubmit={(event) => { event.preventDefault(); if (valid) add(); }}>
-        <input type="text" aria-label="新参数的名称" placeholder="新参数的名称，一般用英文" value={name} onChange={(event) => setName(event.target.value)} aria-invalid={taken ? true : undefined} />
-        <button type="submit" className="small quiet" disabled={!valid}>添加参数</button>
-      </form>
-    </div>
-  );
-}
-
 function CheckRow(props: { readonly doc: DesignDoc; readonly index: number; readonly expanded: boolean; readonly lists: FieldContext['lists']; readonly onToggle: () => void; readonly onEdit: (document: JsonObject, key: string) => void }) {
   const { doc, index, expanded } = props, checks = Array.isArray(doc.document['checks']) ? doc.document['checks'] as unknown[] : [];
   const check = checks[index], name = isObject(check) ? String(check['name']) : `#${index + 1}`;
@@ -177,18 +117,6 @@ function CheckRow(props: { readonly doc: DesignDoc; readonly index: number; read
       </button>
       {expanded && <div className="list-row-body">{listItemPanel(doc.document, 'checks', index).map((field) => <FieldRow key={field.key} field={field} context={context} />)}</div>}
     </div>
-  );
-}
-
-function AllChecks(props: { readonly doc: DesignDoc; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void }) {
-  const [open, setOpen] = useState<number>();
-  const count = Array.isArray(props.doc.document['checks']) ? (props.doc.document['checks'] as unknown[]).length : 0;
-  return (
-    <section className="prop-section" aria-label="检查项">
-      <h3>检查项</h3>
-      {count === 0 && <p className="small muted">这个模板没有检查项。</p>}
-      {Array.from({ length: count }, (_, index) => <CheckRow key={index} doc={props.doc} index={index} expanded={open === index} lists={props.lists} onEdit={props.onEdit} onToggle={() => setOpen(open === index ? undefined : index)} />)}
-    </section>
   );
 }
 

@@ -505,6 +505,23 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .design-panel.right { right: 10px; width: 340px; }
 .design-panel .tabs { flex: none; gap: 14px; padding: 4px 12px 0; margin: 0; }
 .design-panel-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px 12px 16px; }
+.variable-scope { margin: 0 0 8px; }
+.variable-group { padding: 6px 0; }
+.variable-group > h3 { display: flex; align-items: baseline; gap: 6px; margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.variable-row { border-radius: 6px; }
+.variable-row:hover { background: var(--hover); }
+.variable-row.selected { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--mark); }
+.variable-button { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 26px; height: 26px; padding: 0 4px; border: 0; background: none; font-size: 13px; font-weight: 400; text-align: left; }
+.variable-button:hover:not(:disabled) { background: none; }
+.variable-glyph { flex: none; width: 16px; text-align: center; font-size: 10px; color: var(--slate); }
+.variable-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.value-text { flex: none; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 11.5px; }
+.variable-row.failed .value-text { color: var(--bad); font-weight: 600; }
+.value-swatch { width: 12px; height: 12px; flex: none; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(29, 38, 46, .2); display: inline-block; }
+.variable-current { margin: 6px 0; display: flex; align-items: center; gap: 6px; }
+.variable-current .value-text { max-width: none; color: var(--ink); }
+.variable-uses { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.layer-box.use { background: rgba(83, 90, 44, .16); outline: 1.5px solid var(--olive); outline-offset: -1px; }
 .layer-box { position: absolute; pointer-events: none; }
 .layer-box.structure { outline: 1px solid rgba(41, 54, 66, .3); outline-offset: -.5px; }
 .layer-box.structure.leaf { outline-color: rgba(179, 128, 71, .6); }

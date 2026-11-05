@@ -17,7 +17,7 @@ import { registerApprovalReads } from './approvals.js';
 import { registerDefinitionRoutes } from './definitions.js';
 import { constrainedScopes, openPublishRequest, type RequestActor } from './publish-requests.js';
 import { registerWorkingCopyRoutes, requestSetCurrent, SET_CURRENT_SCHEMA, setCurrentTemplate } from './template-copies.js';
-import { PREVIEW_QUERY, previewOptions, runPreview } from './previews.js';
+import { INSPECTION_QUERY, PREVIEW_QUERY, previewOptions, runInspection, runPreview } from './previews.js';
 import { ApiError, fail, notFound, objectId, ServiceProblemCodes } from './problems.js';
 
 /** 单份上传内容的上限；思源黑体一类的中文字体约 16 MB。 */
@@ -126,6 +126,12 @@ export function registerAuthoringRoutes(app: FastifyInstance, context: ApiContex
       const template = (request.body as { template?: unknown } | null)?.template;
       await audit(request, 'authoring.preview', { type: 'template', id: typeof template === 'string' ? template : '' });
       return runPreview(context, target(request), request.body, previewOptions(request.query));
+    });
+
+    scope.post('/v1/authoring/tenants/:tenantId/previews/inspection', { config: { access: 'authoring.preview' }, bodyLimit: context.limits.maxRequestBytes, schema: INSPECTION_QUERY }, async (request) => {
+      const template = (request.body as { template?: unknown } | null)?.template;
+      await audit(request, 'authoring.preview', { type: 'template', id: typeof template === 'string' ? template : '' });
+      return runInspection(context, target(request), request.body, request.query);
     });
 
     /** 把模板的当前修订指向它已有的一个修订，可以指回旧修订；审计记改前改后两个修订的内容哈希。 */

@@ -151,24 +151,36 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect((await preview(token, { ...request, mode: 'draft' })).image.base64).toBe(before.image.base64);
     }, 120_000);
 
-    it('预览带求值（模板设计页票据 02）：inspect 回答实例的变量取值、命中分支、参数来源与全部实例；不改变图片与问题；路径不存在时没有这个字段', async () => {
+    it('元素求值（模板设计页票据 02）：回答实例的变量取值、命中分支、参数来源与全部实例；不入队，不占预览的频率；路径不存在时没有这个字段', async () => {
       const target = await tenant(seedM402), token = target.admin.token;
       const request = { ...JSON.parse(await readFile(`${M402_DIR}render-request-m402.json`, 'utf8')), mode: 'draft' };
-      const plain = await preview(token, request);
-      expect(plain.inspection).toBeUndefined();
+      const inspect = async (element: string, query = '') => {
+        const reply = await world.call('POST', `/v1/previews/inspection?element=${encodeURIComponent(element)}${query}`, token, request);
+        expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
+        return reply.body;
+      };
       const path = '标准线路单边/站点面板/站点列[12]/名称区/站名';
-      const asked = await preview(token, request, `?inspect=${encodeURIComponent(path)}`);
-      expect(asked.image.base64).toBe(plain.image.base64);
-      expect(asked.problems).toEqual(plain.problems);
+      const asked = await inspect(path);
+      expect(asked).not.toHaveProperty('image');
       expect(asked.inspection).toMatchObject({ path, template: '站点', source: '站点/名称区/站名' });
       expect(asked.inspection.instances).toHaveLength(35);
       expect(asked.inspection.variables.find((variable: any) => variable.name === 'stopState')).toMatchObject({ value: '未到站', branch: -1 });
-      expect((await preview(token, request, '?inspect=%E6%B2%A1%E6%9C%89')).inspection).toBeUndefined();
+      expect((await inspect('没有')).inspection).toBeUndefined();
+      expect((await world.call('POST', '/v1/previews/inspection', token, request)).status, '要写元素路径').toBe(400);
+      // 工作副本：改了内部参数的缺省值，求值跟着变。
       const copy = (await open(token, STOP)).body;
       const document = await documentOf(token, STOP);
-      expect((await stash(token, { ...document, displayName: undefined }, copy.sha256, STOP)).status).toBe(200);
-      const both = await preview(token, request, `?workingCopies=true&inspect=${encodeURIComponent(path)}`);
-      expect(both.inspection.template, '两个查询参数一起用').toBe('站点');
+      document.parameters.find((parameter: any) => parameter.name === 'nameColor').default = '#FF0000';
+      expect((await stash(token, document, copy.sha256, STOP)).status).toBe(200);
+      const of = (reply: any, name: string) => reply.inspection.variables.find((variable: any) => variable.name === name).value;
+      expect(of(await inspect(path, '&workingCopies=true'), 'nameColor')).toBe('#FF0000FF');
+      expect(of(await inspect(path), 'nameColor')).toBe('#333333FF');
+      // 不占预览的频率：连问很多次也不答 429。
+      for (let index = 0; index < 70; index++) expect((await world.call('POST', `/v1/previews/inspection?element=${encodeURIComponent(path)}`, token, request)).status).toBe(200);
+      // 代建工程师同样能问，记审计。
+      const authored = await world.call('POST', `/v1/authoring/tenants/${target.id}/previews/inspection?element=${encodeURIComponent(path)}`, target.engineer, request);
+      expect(authored.status).toBe(200);
+      expect(authored.body.inspection.template).toBe('站点');
     }, 120_000);
 
     it('保存：按 M265 记新修订，来源是网页，当前修订指向它，删除工作副本；出图读到新内容；字节相同记为不变；记审计', async () => {

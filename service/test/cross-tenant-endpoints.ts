@@ -55,6 +55,8 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/templates', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/templates' }) },
   { route: 'GET /v1/templates/:name', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}` }) },
   { route: 'POST /v1/previews', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/previews', body: preview(a.templateName) }) },
+  { route: 'POST /v1/previews/inspection', addressesObject: false, request: (a) => ({ method: 'POST', url: `/v1/previews/inspection?element=${encodeURIComponent(a.templateName)}`, body: preview(a.templateName) }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews/inspection', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews/inspection?element=${encodeURIComponent(a.templateName)}`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/previews', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', addressesObject: true,

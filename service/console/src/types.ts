@@ -453,8 +453,6 @@ export interface PreviewReply {
   readonly layout?: { readonly output: { readonly width: number; readonly height: number }; readonly root: LayoutNode };
   /** 元素定位：会显示的元素实例，path 与布局摘要的元素路径相同，source 是它所在的模板文档与在文档里的路径。 */
   readonly elements?: readonly ElementLocation[];
-  /** 预览带 inspect 时才有。 */
-  readonly inspection?: ElementInspection;
 }
 
 /** 一个元素实例的求值结果（模板设计页票据 02）：变量的当前值、命中的分支、参数来源，这个定义的全部实例。 */

@@ -20,6 +20,8 @@ import { TEST_WEBHOOK_CONFIG } from './webhooks-suite.js';
 const CONSOLE_DIR = fileURLToPath(new URL('../dist/console/', import.meta.url));
 const browser = process.env['RW_BROWSER'];
 if (browser && !existsSync(`${CONSOLE_DIR}index.html`)) throw new Error('控制台没有构建：先在 service/ 下执行 npm run build');
+/** 脚本一秒改两三次，比真人密得多（P1 用例 32 秒发 62 次预览）；限频本身由 preview-suite 测，这里放宽免得用例等满一分钟窗口。 */
+const BROWSER_LIMITS = { previewPerMinute: 600 };
 const silent = new Writable({ write(_chunk, _encoding, done) { done(); } });
 const silentLogger = { info() {}, warn() {}, error() {}, debug() {}, fatal() {}, child() { return silentLogger; } } as never;
 
@@ -28,7 +30,7 @@ describeConsole('内存后端', async () => createMemoryBackend(), {
   inProcessWorker: true,
   start: async (backend) => {
     const secretKey = randomBytes(32), logger = createLogger('api', 'sha256:test', 'info', silent);
-    const app = createApi({ backend, build: 'sha256:test', logger, passwordCost: 'test', secretKey, consoleDir: CONSOLE_DIR, allowPrivateWebhooks: true });
+    const app = createApi({ backend, build: 'sha256:test', logger, passwordCost: 'test', secretKey, consoleDir: CONSOLE_DIR, allowPrivateWebhooks: true, limits: BROWSER_LIMITS });
     // 批次项按引擎的构建标识领取（ADR-0019）：进程内 worker 用本进程引擎的构建标识。
     const scheduler = startScheduler({ backend, runner: inProcessRunner(backend), logger: silentLogger, pollMs: 20, workerId: 'console-browser', build: await rendererBuildId(), leaseMs: 120_000 });
     // webhook 的投递任务与接口进程同一个服务密钥（票据 14 的投递记录），接收端在本机。
