@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.15.0';
+export const API_VERSION = '1.16.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -221,6 +221,24 @@ const SCHEMAS: Record<string, unknown> = {
     }, ['name', 'displayName', 'type', 'constraints']), '对外参数'),
     problems: { ...ref('ProblemList'), description: '模板读不了时只有名称、当前修订与问题清单' },
   }, ['name', 'currentRevision']),
+  LayoutNode: object({
+    path: str('元素路径'), name: str('元素名称'), type: str('元素类型'),
+    x: { type: 'number', description: '相对画板左上角的毫米数，不计旋转；隐藏的元素位置与尺寸为 0' }, y: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' },
+    visible: { type: 'boolean' },
+    text: object({
+      fontFallback: { type: 'boolean', description: '有缺字替代时为 true' }, shrinkGroup: str('一次出图内的缩字组名称'), content: str('求值后的文字'), font: str('字体资源引用'), writingMode: str('书写方向'),
+      fontSize: { type: 'number', description: '最终字号，毫米' }, width: { type: 'number' }, height: { type: 'number' }, spacing: { type: 'number', description: '字距，毫米' },
+      compression: { type: 'number', description: '沿书写方向的压缩比，1 为不压缩' }, overflow: { type: 'boolean', description: '按适配规则处理后仍放不下' },
+      fragments: array(freeform('片段求值后的文字与样式')),
+    }, ['content', 'font', 'writingMode', 'fontSize', 'width', 'height', 'spacing', 'compression', 'overflow', 'fragments']),
+    image: freeform('图片的来源、适配方式与实际画出的区域'), qrcode: freeform('二维码的模块数与实际画出的区域'), barcode: freeform('条形码的模块数与实际画出的区域'),
+    children: array(ref('LayoutNode')),
+  }, ['path', 'name', 'type', 'x', 'y', 'width', 'height', 'visible'], { description: '布局摘要中的一个元素（docs/render-modes.md）' }),
+  LayoutSummary: object({
+    template: str('根模板'),
+    output: object({ width: { type: 'number' }, height: { type: 'number' }, dpi: { type: 'number' }, widthPx: int(), heightPx: int(), format: str() }),
+    root: ref('LayoutNode'),
+  }, ['template', 'output', 'root'], { description: '布局摘要：元素路径、位置与尺寸，文字的最终字号与压缩比（1.16.0 写明结构）' }),
   ElementInspection: object({
     path: str('问的元素实例'), template: str('它所在的作用域：定义它的模板'), source: str('它在模板文档里的路径，第一段是模板名'),
     variables: array(object({
@@ -236,7 +254,7 @@ const SCHEMAS: Record<string, unknown> = {
   PreviewResult: object({
     image: object({ format: { type: 'string', enum: ['png', 'jpeg'] }, widthPx: int(), heightPx: int(), dpi: { type: 'number' }, base64: str('图片字节的 base64') }),
     problems: ref('ProblemList'),
-    layout: freeform('布局摘要：元素路径、位置与尺寸（docs/render-modes.md）'),
+    layout: ref('LayoutSummary'),
     elements: array(object({ path: str('元素路径，同布局摘要'), source: object({ template: str('源模板'), path: str('元素在源模板里的路径，第一段是模板名') }) }),
       '会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）'),
     inspection: ref('ElementInspection'),

@@ -7,7 +7,9 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEven
 import { problemMarks } from '../components/preview-canvas.js';
 import type { LivePreview } from '../hooks.js';
 import { hitStack } from '../template/document.js';
+import type { JsonObject } from '../template/document.js';
 import type { LayoutNode } from '../types.js';
+import { contentKind, fitSummary, flatNodes, layoutGuides, type Layers } from './overlays.js';
 
 export interface StageView { readonly zoom: number; readonly x: number; readonly y: number }
 export const FIT_VIEW: StageView = { zoom: 1, x: 0, y: 0 };
@@ -34,6 +36,9 @@ export function DesignStage(props: {
   readonly preview: LivePreview; readonly tool: 'select' | 'pan'; readonly view: StageView; readonly insets: StageInsets; readonly selected?: Selection;
   /** 结构树上悬停的定义：图上标出它的全部实例。 */
   readonly hover?: { readonly template: string; readonly path: string };
+  readonly layers: Layers;
+  /** 实例对应的模板文档里的元素：叠加层要看它的内容来源、排布与旋转。 */
+  readonly elementOf: (instance: string) => JsonObject | undefined;
   readonly onView: (view: StageView) => void; readonly onFit: (width: number) => void;
   /** stack 是这个位置的全部元素，第一个最深；through 是按着 Alt 穿透。 */
   readonly onPick: (stack: readonly string[], through: boolean) => void; readonly onMenu: (x: number, y: number, stack: readonly LayoutNode[]) => void; readonly onClear: () => void;
@@ -116,6 +121,18 @@ export function DesignStage(props: {
   const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
   const hovered = useMemo(() => (props.hover ? (reply?.elements ?? []).filter((element) => element.source.template === props.hover!.template && element.source.path === props.hover!.path).map((element) => element.path) : []), [reply?.elements, props.hover]);
   const [under, setUnder] = useState<string>();
+  const all = useMemo(() => (layout ? flatNodes(layout.root).filter((node) => node.visible) : []), [layout]);
+  const fitState = useMemo(() => (layout ? fitSummary(layout.root) : undefined), [layout]);
+  const guides = useMemo(() => (main ? layoutGuides(props.elementOf(main), nodes.get(main)) : undefined), [main, nodes, reply]);
+  const xOf = (value: number) => (layout ? `${(value / layout.output.width) * 100}%` : '0');
+  const yOf = (value: number) => (layout ? `${(value / layout.output.height) * 100}%` : '0');
+  const boxStyle = (box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }) => ({ left: xOf(box.x), top: yOf(box.y), width: xOf(box.width), height: yOf(box.height) });
+  /** 布局摘要的框不计旋转：写了固定角度的元素，框按角度转过去。 */
+  const rotated = (path: string) => { const rotation = props.elementOf(path)?.['rotation']; return typeof rotation === 'number' && rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}; };
+  const legend = [
+    ...(props.layers.fit && fitState ? [`适配：${fitState.compressed} 处被压缩${fitState.lowest === undefined ? '' : `，最低 ${Math.round(fitState.lowest * 100)}%`}${fitState.overflow ? `，${fitState.overflow} 处放不下` : ''}`] : []),
+    ...(props.layers.data ? ['灰底是数据驱动，虚线是固定内容'] : []),
+  ].join(' · ');
   const hit = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (!layout) return [];
     const box = event.currentTarget.getBoundingClientRect();
@@ -129,20 +146,32 @@ export function DesignStage(props: {
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
-          {marks.map((mark, index) => (
+          {props.layers.structure && all.filter((node) => node.path !== layout.root.path).map((node) => <span key={`structure-${node.path}`} className={`layer-box structure${node.children?.length ? '' : ' leaf'}`} data-testid="structure-box" style={percent(node)} />)}
+          {props.layers.data && all.map((node) => { const kind = contentKind(props.elementOf(node.path)); return kind ? <span key={`data-${node.path}`} className={`layer-box ${kind}`} data-testid={`${kind}-box`} style={percent(node)} /> : null; })}
+          {props.layers.fit && all.filter((node) => node.text && (node.text.overflow || node.text.compression < 0.999)).map((node) => (
+            <span key={`fit-${node.path}`} className={`layer-box fit${node.text!.overflow ? ' over' : ''}`} data-testid={node.text!.overflow ? 'overflow-box' : 'fit-box'} title={`压到 ${Math.round(node.text!.compression * 100)}%${node.text!.overflow ? '，仍放不下' : ''}`} style={percent(node)} />
+          ))}
+          {guides?.gaps.map((box, index) => <span key={`gap-${index}`} className="guide-gap" data-testid="guide-gap" style={boxStyle(box)} />)}
+          {guides?.padding.map((box, index) => <span key={`pad-${index}`} className="guide-pad" data-testid="guide-pad" style={boxStyle(box)} />)}
+          {guides?.tracks.map((track, index) => (track.axis === 'row'
+            ? <span key={`track-${index}`} className="guide-track" data-testid="guide-track" style={{ left: xOf(track.from), width: xOf(track.to - track.from), top: yOf(track.at), height: 1 }} />
+            : <span key={`track-${index}`} className="guide-track" data-testid="guide-track" style={{ top: yOf(track.from), height: yOf(track.to - track.from), left: xOf(track.at), width: 1 }} />))}
+          {guides?.labels.map((label, index) => <span key={`label-${index}`} className="guide-label" data-testid="guide-label" style={{ left: xOf(label.x), top: yOf(label.y) }}>{label.text}</span>)}
+          {props.layers.problems && marks.map((mark, index) => (
             <span key={index} className={`mark ${mark.problem.level}`} data-testid="problem-mark" style={{ left: `${mark.box.left}%`, top: `${mark.box.top}%`, width: `${mark.box.width}%`, height: `${mark.box.height}%` }} title={mark.problem.message}>
               <span className="marker-number">{index + 1}</span>
             </span>
           ))}
-          {[...hovered, ...(under ? [under] : [])].map((path) => { const node = nodes.get(path); return node ? <span key={`hover-${path}`} className="select-box hover" data-testid="hover-box" style={percent(node)} /> : null; })}
-          {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={percent(node)} /> : null; })}
+          {[...hovered, ...(under ? [under] : [])].map((path) => { const node = nodes.get(path); return node ? <span key={`hover-${path}`} className="select-box hover" data-testid="hover-box" style={{ ...percent(node), ...rotated(path) }} /> : null; })}
+          {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={{ ...percent(node), ...rotated(path) }} /> : null; })}
           {main && nodes.get(main) && (
-            <span className="select-box" data-testid="select-box" data-path={main} style={percent(nodes.get(main)!)}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
+            <span className="select-box" data-testid="select-box" data-path={main} style={{ ...percent(nodes.get(main)!), ...rotated(main) }}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
           )}
         </div>
       ) : (
         <div className="stage-empty">{reply ? '没有图片：问题见样例带的问题页' : preview.problems ? '预览失败' : '正在出草稿预览…'}</div>
       )}
+      {legend && <span className="design-legend small" data-testid="overlay-legend">{legend}</span>}
     </div>
   );
 }

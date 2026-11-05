@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.15.0",
+    "version": "1.16.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；客户端应忽略不认识的属性与枚举值；1.12.0 放宽静态版本类型，兼容说明见变更记录。说明见 docs/api.md。"
   },
   "servers": [
@@ -10119,6 +10119,189 @@
           }
         }
       },
+      "LayoutNode": {
+        "type": "object",
+        "required": [
+          "path",
+          "name",
+          "type",
+          "x",
+          "y",
+          "width",
+          "height",
+          "visible"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "元素路径"
+          },
+          "name": {
+            "type": "string",
+            "description": "元素名称"
+          },
+          "type": {
+            "type": "string",
+            "description": "元素类型"
+          },
+          "x": {
+            "type": "number",
+            "description": "相对画板左上角的毫米数，不计旋转；隐藏的元素位置与尺寸为 0"
+          },
+          "y": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "object",
+            "required": [
+              "content",
+              "font",
+              "writingMode",
+              "fontSize",
+              "width",
+              "height",
+              "spacing",
+              "compression",
+              "overflow",
+              "fragments"
+            ],
+            "properties": {
+              "fontFallback": {
+                "type": "boolean",
+                "description": "有缺字替代时为 true"
+              },
+              "shrinkGroup": {
+                "type": "string",
+                "description": "一次出图内的缩字组名称"
+              },
+              "content": {
+                "type": "string",
+                "description": "求值后的文字"
+              },
+              "font": {
+                "type": "string",
+                "description": "字体资源引用"
+              },
+              "writingMode": {
+                "type": "string",
+                "description": "书写方向"
+              },
+              "fontSize": {
+                "type": "number",
+                "description": "最终字号，毫米"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "spacing": {
+                "type": "number",
+                "description": "字距，毫米"
+              },
+              "compression": {
+                "type": "number",
+                "description": "沿书写方向的压缩比，1 为不压缩"
+              },
+              "overflow": {
+                "type": "boolean",
+                "description": "按适配规则处理后仍放不下"
+              },
+              "fragments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "片段求值后的文字与样式",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "image": {
+            "type": "object",
+            "description": "图片的来源、适配方式与实际画出的区域",
+            "additionalProperties": true
+          },
+          "qrcode": {
+            "type": "object",
+            "description": "二维码的模块数与实际画出的区域",
+            "additionalProperties": true
+          },
+          "barcode": {
+            "type": "object",
+            "description": "条形码的模块数与实际画出的区域",
+            "additionalProperties": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutNode"
+            }
+          }
+        },
+        "description": "布局摘要中的一个元素（docs/render-modes.md）"
+      },
+      "LayoutSummary": {
+        "type": "object",
+        "required": [
+          "template",
+          "output",
+          "root"
+        ],
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "根模板"
+          },
+          "output": {
+            "type": "object",
+            "required": [
+              "width",
+              "height",
+              "dpi",
+              "widthPx",
+              "heightPx",
+              "format"
+            ],
+            "properties": {
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "dpi": {
+                "type": "number"
+              },
+              "widthPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "heightPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "format": {
+                "type": "string"
+              }
+            }
+          },
+          "root": {
+            "$ref": "#/components/schemas/LayoutNode"
+          }
+        },
+        "description": "布局摘要：元素路径、位置与尺寸，文字的最终字号与压缩比（1.16.0 写明结构）"
+      },
       "ElementInspection": {
         "type": "object",
         "required": [
@@ -10307,9 +10490,7 @@
             "$ref": "#/components/schemas/ProblemList"
           },
           "layout": {
-            "type": "object",
-            "description": "布局摘要：元素路径、位置与尺寸（docs/render-modes.md）",
-            "additionalProperties": true
+            "$ref": "#/components/schemas/LayoutSummary"
           },
           "elements": {
             "type": "array",

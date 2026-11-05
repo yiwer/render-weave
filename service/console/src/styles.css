@@ -505,6 +505,18 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .design-panel.right { right: 10px; width: 340px; }
 .design-panel .tabs { flex: none; gap: 14px; padding: 4px 12px 0; margin: 0; }
 .design-panel-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px 12px 16px; }
+.layer-box { position: absolute; pointer-events: none; }
+.layer-box.structure { outline: 1px solid rgba(41, 54, 66, .3); outline-offset: -.5px; }
+.layer-box.structure.leaf { outline-color: rgba(179, 128, 71, .6); }
+.layer-box.data { background: rgba(85, 100, 105, .2); outline: 1px solid rgba(85, 100, 105, .55); outline-offset: -1px; }
+.layer-box.fixed { outline: 1px dashed rgba(148, 99, 80, .75); outline-offset: -1px; }
+.layer-box.fit { background: rgba(179, 128, 71, .34); outline: 1px solid var(--warn); outline-offset: -1px; }
+.layer-box.fit.over { background: rgba(156, 63, 39, .36); outline-color: var(--bad); }
+.guide-gap { position: absolute; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(179, 128, 71, .55) 0 2px, rgba(179, 128, 71, .12) 2px 5px); }
+.guide-pad { position: absolute; pointer-events: none; background: repeating-linear-gradient(45deg, rgba(85, 100, 105, .4) 0 2px, rgba(85, 100, 105, .08) 2px 5px); }
+.guide-track { position: absolute; pointer-events: none; background: var(--mark); }
+.guide-label { position: absolute; pointer-events: none; transform: translate(3px, -50%); padding: 0 4px; border-radius: 3px; background: var(--warn-soft); color: var(--ink); font: 10px/14px var(--mono); white-space: nowrap; }
+.design-legend { position: absolute; left: 50%; bottom: 50px; transform: translateX(-50%); z-index: 10; padding: 2px 8px; border-radius: 6px; background: var(--surface); color: var(--muted); white-space: nowrap; box-shadow: 0 1px 2px rgba(29, 38, 46, .1); }
 .design-scope-wrap { position: absolute; top: 10px; z-index: 12; display: flex; justify-content: center; pointer-events: none; min-width: 0; }
 .design-scope { pointer-events: auto; display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; padding: 4px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); font-size: 12px; white-space: nowrap; }
 .scope-path { display: flex; align-items: center; gap: 3px; min-width: 0; overflow: hidden; direction: rtl; }

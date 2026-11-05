@@ -418,10 +418,27 @@ export interface ReplacementCheck {
 
 export interface OutputSettings { readonly width: number; readonly height: number; readonly dpi: number; readonly format: 'png' | 'jpeg' }
 
+/** 布局摘要里文字的结果：最终字号、压缩比与放不下（引擎的 TextSummary）。 */
+export interface LayoutText {
+  readonly content: string;
+  readonly font: string;
+  readonly writingMode: string;
+  readonly fontSize: number;
+  readonly width: number;
+  readonly height: number;
+  readonly spacing: number;
+  readonly compression: number;
+  readonly overflow: boolean;
+  readonly shrinkGroup?: string;
+  readonly fontFallback?: true;
+  readonly fragments: readonly unknown[];
+}
+
 export interface LayoutNode {
   readonly path: string;
   readonly name: string;
   readonly type: string;
+  readonly text?: LayoutText;
   readonly x: number;
   readonly y: number;
   readonly width: number;

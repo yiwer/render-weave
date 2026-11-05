@@ -2559,6 +2559,50 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.mouse.click((await target.getByTestId('design-stage').boundingBox())!.x + 320, (await target.getByTestId('design-stage').boundingBox())!.y + 30);
       await expect.poll(() => scope.getAttribute('data-count')).toBe('0');
 
+      // 叠加层（票据 06）：只画不出图。结构框、数据与固定内容；选中容器时的排布参考线。
+      const layer = (name: string) => target.getByRole('group', { name: '叠加层' }).getByRole('button', { name });
+      const before = await target.getByTestId('preview-image').getAttribute('src');
+      await layer('结构').click();
+      await expect.poll(() => target.getByTestId('structure-box').count()).toBeGreaterThan(100);
+      await layer('结构').click();
+      await layer('数据').click();
+      await expect.poll(() => target.getByTestId('data-box').count()).toBeGreaterThan(35);
+      expect(await target.getByTestId('fixed-box').count(), '开往箭头这类图形不算，固定文字算').toBeGreaterThan(0);
+      await target.getByTestId('overlay-legend').filter({ hasText: '灰底是数据驱动' }).waitFor();
+      await layer('数据').click();
+      await canvas.click({ position: await position(`${ROOT}/顶栏/运营方`) });
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/顶栏`);
+      await expect.poll(() => target.getByTestId('guide-gap').count(), '顶栏是横向堆叠').toBeGreaterThan(0);
+      await expect.poll(() => target.getByTestId('guide-pad').count()).toBeGreaterThan(0);
+      await target.keyboard.press('Escape');
+      await scopeAt(ROOT);
+      await expect.poll(() => target.getByTestId('guide-track').count(), '根模板是四行的网格').toBe(3);
+      expect(await target.getByTestId('guide-label').allTextContents()).toEqual(['34 mm', '1 份', '10 mm', '21 mm', '1 份']);
+      expect(await target.getByTestId('preview-image').getAttribute('src'), '叠加层不重新出图').toBe(before);
+
+      // 适配层：M402 有 7 处被压缩，最低 65%；50 站的压测数据有放不下的。结论和布局摘要对得上。
+      await layer('适配').click();
+      await expect.poll(() => target.getByTestId('fit-box').count()).toBe(7);
+      await target.getByTestId('overlay-legend').filter({ hasText: '适配：7 处被压缩，最低 65%' }).waitFor();
+      const m402 = await server('GET', '/v1/datasets/ds-m402-wanguocheng', world.b.admin.token);
+      const fifty = JSON.parse(JSON.stringify(m402.body.content ? JSON.parse(m402.body.content as string) : m402.body)) as { dataset: Record<string, unknown>; data: { stops: { name: string }[] } };
+      while (fifty.data.stops.length < 50) { const copy = { ...fifty.data.stops[fifty.data.stops.length % 35]! }; copy.name = `${copy.name}北`; fifty.data.stops.push(copy); }
+      fifty.dataset = { id: 'm402-stress-50', name: '压测：50 站', staticSchema: fifty.dataset['staticSchema'] };
+      expect((await server('POST', '/v1/datasets', world.b.admin.token, fifty)).status).toBe(201);
+      await target.reload();
+      await target.getByTestId('preview-image').waitFor();
+      const replied50 = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && (response.request().postDataJSON() as { dataset: { id?: string } }).dataset.id === 'm402-stress-50', { timeout: 60_000 });
+      await target.getByLabel('样例数据集').selectOption('m402-stress-50');
+      const fiftyLayout = (await (await replied50).json() as { layout: { root: Node } }).layout.root;
+      const texts = (node: Node & { text?: { compression: number; overflow: boolean } }): (Node & { text?: { compression: number; overflow: boolean } })[] => [node, ...(node.children ?? []).flatMap(texts)];
+      const compressed = texts(fiftyLayout).filter((node) => node.text && node.text.compression < 0.999).length, over = texts(fiftyLayout).filter((node) => node.text?.overflow).length;
+      expect(over).toBeGreaterThan(0);
+      await layer('适配').click();
+      await expect.poll(() => target.getByTestId('overflow-box').count()).toBe(over);
+      expect(await target.getByTestId('fit-box').count() + over).toBe(compressed);
+      await target.getByTestId('overlay-legend').filter({ hasText: `${compressed} 处被压缩` }).filter({ hasText: `${over} 处放不下` }).waitFor();
+
       // 隐藏的元素：结构页选中，写明原因，范围条写当前样例不显示。
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();

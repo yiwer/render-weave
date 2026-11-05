@@ -14,6 +14,7 @@ import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO,
 import { DesignInspector, DesignVariables } from '../design/panels.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
+import { DEFAULT_LAYERS, type LayerName, type Layers } from '../design/overlays.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
 import { go, guardNavigation, href, useLivePreview, useLoad, type Route } from '../hooks.js';
 import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind } from '../template/document.js';
@@ -59,6 +60,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const called = calledTemplates(root, documentOf).join('\n');
   useEffect(() => { for (const template of called.split('\n')) if (template !== root && template !== name) void session.open(template, { quiet: true }); }, [session, called, root, name]);
   const [treeHover, setTreeHover] = useState<TreeSource>();
+  const [layers, setLayers] = useState<Layers>(DEFAULT_LAYERS);
 
   const [selection, setSelection] = useState<Selection>();
   const [leftTab, setLeftTab] = useState<LeftTab>('structure');
@@ -114,6 +116,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
   };
   const selected = selection?.template === name ? selection : undefined;
   const instances = instancesOf(reply, selected);
+  /** 实例对应的模板文档里的元素。 */
+  const elementOf = (instance: string) => { const source = locations.get(instance), document = source && documentOf(source.template); return document ? elementAt(document, source.path)?.element : undefined; };
   /** Esc、Enter：上一层、下一层。上一层到头就取消选中，检查器回到画板。 */
   const climb = () => {
     const from = selection?.instance ?? instancesOf(reply, selection)[0];
@@ -219,7 +223,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} elementOf={elementOf} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -259,6 +263,12 @@ function Design(props: { readonly name: string; readonly root: string }) {
             <button type="button" aria-label="缩小" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoomBy(1 / 1.25)}>−</button>
             <button type="button" className="dock-zoom" data-testid="zoom-level" title="恢复适应窗口 Ctrl+0" onClick={fitView}>{Math.round(view.zoom * 100)}%</button>
             <button type="button" aria-label="放大" disabled={view.zoom >= MAX_ZOOM} onClick={() => zoomBy(1.25)}>+</button>
+          </span>
+          <span className="dock-sep" aria-hidden="true" />
+          <span className="dock-group" role="group" aria-label="叠加层">
+            {(([['problems', '问题'], ['structure', '结构'], ['fit', '适配'], ['data', '数据']] as const) satisfies readonly (readonly [LayerName, string])[]).map(([layer, label]) => (
+              <button key={layer} type="button" aria-pressed={layers[layer]} onClick={() => setLayers((now) => ({ ...now, [layer]: !now[layer] }))}>{label}</button>
+            ))}
           </span>
           <span className="dock-sep" aria-hidden="true" />
           <span className="dock-group" role="group" aria-label="面板">
