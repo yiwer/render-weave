@@ -1,0 +1,165 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Los_Angeles",
+  "sourceCommit": "31575c76dfb4c5cf0a2ed8ccd40dd50a467aa0ad",
+  "authorization": {
+    "instruction": "继续下一步",
+    "scope": "当前候选发布和既定 65 项应用内正式出图；不涉及实物印制",
+    "pixelSimilarity": "notChecked",
+    "humanBusinessReviewHours": null,
+    "actualCharge": null
+  },
+  "published": {
+    "at": "2026-11-05T03:03:59.052Z",
+    "published": [
+      {
+        "name": "wuxi-115-connection-mark",
+        "revision": 1,
+        "sha256": "01565dc5e542ccfbc2e9dcb3b43e0e1e135098af67b4d278f094a7a2c479bf76",
+        "problems": []
+      },
+      {
+        "name": "wuxi-115-transfer-marks",
+        "revision": 1,
+        "sha256": "e7ae612d61cf77ea0efbd2f044be8d14d9c1cfef2163173a16b901e4ede4edff",
+        "problems": []
+      },
+      {
+        "name": "wuxi-115-stop-column",
+        "revision": 1,
+        "sha256": "280986a2b107a047a7a76960ec3df8be9537d9b6613f6d05d478af5bb2ae3461",
+        "problems": []
+      },
+      {
+        "name": "wuxi-production-sign",
+        "revision": 1,
+        "sha256": "d54d6ffb5895dcbcdd9a41a053979a397d6bd5473a9af19bf96960cfb72cd24c",
+        "problems": []
+      }
+    ],
+    "pageErrors": [],
+    "originalTemplatesUnchanged": true
+  },
+  "batch": {
+    "id": "191092bf-735b-459f-b122-26bd1f99327b",
+    "mode": "final",
+    "build": "sha256:23f276fe9f3d820a64a3825f391535906185425a4483c3c769891db516981857",
+    "status": "finished",
+    "createdAt": "2026-11-05T03:04:20.316Z",
+    "finishedAt": "2026-11-05T03:04:36.711Z",
+    "progress": {
+      "completed": 65,
+      "total": 65
+    },
+    "summary": {
+      "hints": 0,
+      "total": 65,
+      "failed": 0,
+      "notRun": 0,
+      "severe": 0,
+      "delivered": 65,
+      "previewed": 0
+    }
+  },
+  "contentVerification": {
+    "total": 65,
+    "passed": 65,
+    "stationNamesChecked": 2080,
+    "failures": [],
+    "renderSummary": {
+      "hints": 0,
+      "total": 65,
+      "failed": 0,
+      "notRun": 0,
+      "severe": 0,
+      "delivered": 65,
+      "previewed": 0
+    }
+  },
+  "markerVerification": {
+    "images": 65,
+    "checkedMarkers": {
+      "railway": 65,
+      "metro-3": 455,
+      "metro-4": 130,
+      "metro-1": 65
+    },
+    "failures": [],
+    "scope": "编号、来源图标与圆标主色；不证明矢量图标与参考原件形状一致"
+  },
+  "fileVerification": {
+    "passed": true,
+    "checkedFiles": 260,
+    "pngDimensionsChecked": 65,
+    "registeredImageLayoutProblemsMatched": 195,
+    "originalTemplatesUnchanged": true,
+    "datasetsUnchanged": true
+  },
+  "browser": {
+    "batchUrl": "http://127.0.0.1:18080/console/#/batches/191092bf-735b-459f-b122-26bd1f99327b",
+    "completed": true,
+    "pageErrors": [],
+    "singleDownloadMatched": true,
+    "zip": {
+      "file": "out/reference-delivery/115-reference-revision1-images.zip",
+      "bytes": 14162653,
+      "sha256": "58ee2b52676a01d4f116d9edf4d53debb04ce6e4a57445509019dd06b2752110"
+    }
+  },
+  "package": {
+    "passed": true,
+    "officialZipImages": 65,
+    "allImageHashesMatched": true,
+    "deliveryZipEntries": 68,
+    "excludedItems": [
+      {
+        "datasetId": "115-down",
+        "index": 32,
+        "name": "无锡汽车站",
+        "reason": "原表未提供尺寸，不能推定制作项",
+        "sources": {
+          "sheet": "sheet-1",
+          "nameCell": "B36",
+          "sizeCell": "F36",
+          "annotationCell": "C36"
+        },
+        "annotation": "1、3、火车站",
+        "nameComment": "作者:\n1号火车站\n3号火车站",
+        "sizeComment": null
+      },
+      {
+        "datasetId": "115-up",
+        "index": 32,
+        "name": "江南影视学院",
+        "reason": "原表未提供尺寸，不能推定制作项",
+        "sources": {
+          "sheet": "sheet-1",
+          "nameCell": "I36",
+          "sizeCell": "M36",
+          "annotationCell": "J36"
+        },
+        "annotation": null,
+        "nameComment": null,
+        "sizeComment": null
+      }
+    ],
+    "file": "out\\reference-delivery\\115-reference-revision1-delivery.zip",
+    "bytes": 13247971,
+    "sha256": "ffec79fa3fc793e31b179cc3d21de8e6bdc32669035e6e5cb2d503b5e62bae63"
+  },
+  "finalStatus": {
+    "at": "2026-11-05T03:07:28.260Z",
+    "apiVersion": "1.12.0",
+    "build": "sha256:23f276fe9f3d820a64a3825f391535906185425a4483c3c769891db516981857",
+    "activeAgent": 0,
+    "activeRender": 0
+  },
+  "additionalModelCalls": 0,
+  "scope": {
+    "physicalPrinting": false,
+    "pixelSimilarity": "notChecked",
+    "productionHostingAccepted": false,
+    "humanBusinessReviewHours": null,
+    "actualCharge": null
+  }
+}

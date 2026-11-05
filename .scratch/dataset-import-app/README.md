@@ -1,6 +1,6 @@
 # 数据集智能导入的应用接入
 
-规格与代码证据见[接入方案](../../docs/excel-agent-app-integration.md)，决定 M374–M378、M385、M387。
+规格与代码证据见[接入方案](../../docs/excel-agent-app-integration.md)，决定 M374–M378、M385、M387–M388。
 
 | 票据 | 直接阻塞 | 验收映射 |
 |---|---|---|
@@ -12,5 +12,6 @@
 | [06：恢复排队出图并拦截缺失参数](issues/06-queued-delivery.md) | 无 | 本机进程构建一致；提交前必填检查；真实队列与预览 |
 | [07：合并远端命名版本并推送](issues/07-merge-named-versions.md) | 无 | 精确版本导入、新建页面、迁移编号与双方历史 |
 | [08：部署当前本地应用并验收](issues/08-local-rollout.md) | 07 | 固定构建、旧库升级、通用真实模型导入、115 出图与模板工作副本 |
+| [09：发布参考图模板并完成 65 项出图](issues/09-reference-delivery.md) | 08 | 当前候选发布、正式批次、逐项核对与图片清单包 |
 
 规格见 [spec.md](spec.md)，实际合同与尚待验证的生产边界见 [模块说明](../../docs/dataset-import.md)。

@@ -6,12 +6,12 @@
 
 - [数据集智能导入](http://127.0.0.1:18080/console/#/dataset-imports)：选择已发布的静态数据定义及精确版本，上传 Excel，审核来源、批注和映射后整组保存。
 - [数据集](http://127.0.0.1:18080/console/#/datasets)：选择保存的数据，再用兼容模板预览、填写参数和出图。
-- [115 参考图模板设计](http://127.0.0.1:18080/console/#/templates/wuxi-production-sign/design)：已有四个关联模板的工作副本及所需资源。样例选 `115-up-display-review`，第 13 站对应用户参考图；尺寸 `525 × 135 mm`、96 dpi。
+- [115 参考图模板设计](http://127.0.0.1:18080/console/#/templates/wuxi-production-sign/design)：四个关联模板已发布为修订 1，继续修改时从当前修订创建工作副本。样例选 `115-up-display-review`，第 13 站对应用户参考图；尺寸 `525 × 135 mm`、96 dpi。
 - [115 本轮验收批次](http://127.0.0.1:18080/console/#/batches/99834217-8ea0-4ca8-a2ac-09402cfce07b)：使用原有正式模板，带“本地模块验收 · 非制作交付”说明。
 
 既有账号继续使用。本机登录资料在运行目录 `.secrets/dataset-115-login.json`；非公交合成验收使用另一个租户，资料在 `.secrets/rollout-login.json`。两者均不入库，也不把密码放入本文。
 
-参考图模板从底层到主模板依次为 `wuxi-115-connection-mark`、`wuxi-115-transfer-marks`、`wuxi-115-stop-column`、`wuxi-production-sign`。当前可编辑、可预览。样式业务确认后，按此顺序预检并发布修订，再从数据集提交正式出图；工作副本预览不会代替发布，也不会更改现有 `production-115` 模板。
+参考图模板从底层到主模板依次为 `wuxi-115-connection-mark`、`wuxi-115-transfer-marks`、`wuxi-115-stop-column`、`wuxi-production-sign`。用户接续指令后已按此顺序发布，65 项正式批次及图片清单包见 [接续说明](reference-115-delivery.md)。继续修改时创建新的工作副本，预检后发布新修订；现有 `production-115` 模板保持不变。
 
 ![参考图模板的本机预览](../images/dataset-import/rollout-reference.png)
 
