@@ -2284,19 +2284,21 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 工具栏：切换样例数据集；正式模式按问题清单说结果；缩放；平移时点图不改选中。
       await target.getByTestId('select-box').waitFor();
       const blank = worked((body) => body.dataset.inline !== undefined);
-      await target.getByLabel('样例数据集').selectOption({ label: '空白数据（显示占位）' });
+      const sampleCard = (id: string) => target.locator(`[data-testid="sample-card"][data-id="${id}"]`);
+      await sampleCard('').click();
       await blank;
       await target.getByTestId('final-mode-note').filter({ hasText: /正式出图时不出图：有 \d+ 个严重问题/ }).waitFor();
       const again = worked((body) => body.dataset.id === 'badge-zhang');
-      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      await sampleCard('badge-zhang').click();
       layout = (await (await again).json() as Reply).layout;
       await image().waitFor();
       await target.getByTestId('final-mode-note').filter({ hasText: /没有问题|没有问题边框/ }).waitFor();
-      expect(await target.getByLabel('样例数据集').locator('optgroup[label="压测数据"] option').allTextContents()).toEqual(['压测：长姓名']);
+      expect(await target.getByRole('group', { name: '压测' }).getByTestId('sample-card').count(), '名字里写了压测的单独一组').toBe(1);
+      expect(await target.getByRole('group', { name: '压测' }).getByTestId('sample-card').textContent()).toContain('压测：长姓名');
       const stress = worked((body) => body.dataset.id === 'badge-stress');
-      await target.getByLabel('样例数据集').selectOption('badge-stress');
+      await sampleCard('badge-stress').click();
       await stress;
-      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      await sampleCard('badge-zhang').click();
       await image().waitFor();
       const width = (await target.getByTestId('design-canvas').boundingBox())!.width;
       await target.getByRole('button', { name: '放大' }).click();
@@ -2593,7 +2595,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.reload();
       await target.getByTestId('preview-image').waitFor();
       const replied50 = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && (response.request().postDataJSON() as { dataset: { id?: string } }).dataset.id === 'm402-stress-50', { timeout: 60_000 });
-      await target.getByLabel('样例数据集').selectOption('m402-stress-50');
+      await target.locator('[data-testid="sample-card"][data-id="m402-stress-50"]').click();
       const fiftyLayout = (await (await replied50).json() as { layout: { root: Node } }).layout.root;
       const texts = (node: Node & { text?: { compression: number; overflow: boolean } }): (Node & { text?: { compression: number; overflow: boolean } })[] => [node, ...(node.children ?? []).flatMap(texts)];
       const compressed = texts(fiftyLayout).filter((node) => node.text && node.text.compression < 0.999).length, over = texts(fiftyLayout).filter((node) => node.text?.overflow).length;
@@ -2612,6 +2614,94 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
       expect(await scope.textContent()).toContain('当前样例不显示');
     }, 120_000);
+
+    it('模板设计（票据 07）：样例带上换数据、试值、看问题、改动与 DSL；试值不写进模板', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      const copyUrl = `/v1/templates/${enc(ROOT)}/working-copy`;
+      const isMain = (response: { url(): string; request(): { method(): string } }) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST';
+      // 上一个用例也在这一页：先离开，清掉记住的试值，再进来。
+      await target.goto(`${baseUrl}/console/#/templates`);
+      await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${ROOT}`);
+      await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const card = (id: string) => target.locator(`[data-testid="sample-card"][data-id="${id}"]`);
+      // 其他样例依次补一次缩略图；每张卡片都写结论。
+      await expect.poll(() => card('ds-m402-wanguocheng').getByTestId('sample-state').textContent(), { timeout: 30_000 }).toMatch(/没有问题|个提示|个严重问题/);
+      expect(await card('m402-stress-50').count(), '上一个用例建的压测数据').toBe(1);
+
+      // 试值：改本站序号与画板宽，请求带上试值，工作副本与审计都不动。
+      const eventsBefore = ((await server('GET', '/v1/audit-events?limit=200', token)).body.events as unknown[]).length;
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      const withIndex = target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && (request.postDataJSON() as { parameters: Record<string, unknown> }).parameters['currentIndex'] === 5, { timeout: 30_000 });
+      await knob.getByRole('textbox').fill('5');
+      await knob.getByRole('textbox').press('Enter');
+      await withIndex;
+      const withWidth = target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && (request.postDataJSON() as { output: { width: number } }).output.width === 1000, { timeout: 30_000 });
+      const size = target.locator('[data-testid="size-knob"][data-name="width"]');
+      await size.getByRole('textbox').fill('1000');
+      await size.getByRole('textbox').press('Enter');
+      await withWidth;
+      expect((await server('GET', copyUrl, token)).status, '试值不开工作副本').toBe(404);
+      expect(((await server('GET', '/v1/audit-events?limit=200', token)).body.events as unknown[]).length, '试值不写审计').toBe(eventsBefore);
+      await expect.poll(() => card('m402-stress-50').getByTestId('sample-state').textContent()).toMatch(/没重新出|还没出/);
+      // 试值记在浏览器里，刷新还在。
+      await target.reload();
+      await target.getByTestId('preview-image').waitFor();
+      expect(await knob.getByRole('textbox').inputValue()).toBe('5');
+      await target.getByRole('button', { name: '恢复缺省' }).click();
+      await expect.poll(() => knob.getByRole('textbox').inputValue()).toBe('0');
+
+      // 切到 50 站：放不下的问题定位到元素；缺字段的样例定位到变量页。
+      const problemsTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /问题/ });
+      const toFifty = target.waitForResponse((response) => isMain(response) && (response.request().postDataJSON() as { dataset: { id?: string } }).dataset.id === 'm402-stress-50', { timeout: 60_000 });
+      await card('m402-stress-50').click();
+      await toFifty;
+      await problemsTab.click();
+      await target.getByRole('list', { name: '预览的问题' }).getByRole('button').first().click();
+      await expect.poll(() => target.getByTestId('design-scope').getAttribute('data-path')).toMatch(/道路段列\[\d+\]/);
+      await card('ds-m402-wanguocheng').count();
+
+      // 改动页：没改时写还没有；改了能看差异，并在图上和当前修订对比。
+      const samplesTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: '样例' });
+      await samplesTab.click();
+      await card('ds-m402-wanguocheng').click();
+      const changesTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /改动/ });
+      await changesTab.click();
+      await target.getByTestId('tray-changes').getByText('还没有改动').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' });
+      await target.locator('nav.crumbs').getByRole('link', { name: ROOT }).click();
+      await side.getByRole('tab', { name: '变量' }).click();
+      await side.locator('[data-testid="parameter-row"][data-name="primaryColor"]').getByRole('button').first().click();
+      const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await side.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('#1D6B3C');
+      await stashed;
+      await target.getByTestId('tray-changes').getByTestId('change').first().waitFor();
+      await target.getByRole('button', { name: '在图上对比' }).click();
+      await target.getByTestId('compare-clip').getByRole('img').waitFor();
+      const bar = (await target.getByTestId('compare-bar').boundingBox())!;
+      const clipBefore = (await target.getByTestId('compare-clip').boundingBox())!.width;
+      await target.mouse.move(bar.x + 1, bar.y + bar.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(bar.x - 120, bar.y + bar.height / 2, { steps: 3 });
+      await target.mouse.up();
+      await expect.poll(async () => (await target.getByTestId('compare-clip').boundingBox())!.width).toBeLessThan(clipBefore);
+      await target.getByRole('button', { name: '关掉对比' }).click();
+      expect(await target.getByTestId('compare-clip').count()).toBe(0);
+
+      // DSL 页：选中的元素或整份，含改动。
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: 'DSL' }).click();
+      await target.getByRole('group', { name: 'DSL 的范围' }).getByRole('button', { name: '整份模板' }).click();
+      await expect.poll(() => target.getByTestId('design-dsl').textContent()).toContain('#1D6B3C');
+      await target.getByRole('group', { name: 'DSL 的范围' }).getByRole('button', { name: '选中的元素' }).click();
+      await expect.poll(() => target.getByTestId('design-dsl').textContent()).toContain('"sizeRange"');
+
+      // 收尾：丢掉工作副本，不影响别的用例。
+      expect((await server('DELETE', copyUrl, token)).status).toBe(204);
+      target.once('dialog', (dialog) => { void dialog.accept(); });
+      await target.goto(`${baseUrl}/console/#/templates`);
+    }, 180_000);
 
     it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {
       const created = await world.call('POST', '/v1/platform/tenants', world.platform, { name: '无模板数据集测试' });

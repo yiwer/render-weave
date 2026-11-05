@@ -51,7 +51,7 @@ export function DesignInspector(props: {
   return (
     <>
       {element}
-      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} onEdit={edit} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
+      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
@@ -72,7 +72,7 @@ export function DesignVariables(props: { readonly doc: DesignDoc; readonly sessi
 }
 
 function PropertiesTab(props: {
-  readonly doc: DesignDoc; readonly selected: Selection; readonly reply?: PreviewReply; readonly impact?: string; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void;
+  readonly doc: DesignDoc; readonly selected: Selection; readonly reply?: PreviewReply; readonly impact?: string; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void; readonly onCommit: () => void;
   readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
   const { doc, selected, reply } = props;
@@ -82,8 +82,9 @@ function PropertiesTab(props: {
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
   const context: FieldContext = {
     lists: props.lists,
-    onWrite: (fieldPath: FieldPath, value: unknown) => {
+    onWrite: (fieldPath: FieldPath, value: unknown, options) => {
       props.onEdit(writeProperty(doc.document, path, fieldPath, value), `${path}:${fieldPath.join('.')}`);
+      if (options?.now) props.onCommit();
       // 改名之后元素路径跟着变，选中不丢。
       if (fieldPath.length === 1 && fieldPath[0] === 'name' && typeof value === 'string') props.onSelected({ template: doc.name, path: [...segments.slice(0, -1), value].join('/') });
     },

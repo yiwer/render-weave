@@ -9,10 +9,13 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { api } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
-import { countText, ErrorBox, ProblemList } from '../components/problems.js';
+import { ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
 import { DesignInspector, DesignVariables } from '../design/panels.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
+import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
+import { CodePanel } from '../components/code-panel.js';
+import { RevisionChanges } from '../components/revision-changes.js';
 import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
 import { DEFAULT_LAYERS, type LayerName, type Layers } from '../design/overlays.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
@@ -27,7 +30,7 @@ import { Loading } from '../components/motifs.js';
 import { problemMarks } from '../components/preview-canvas.js';
 
 type LeftTab = 'structure' | 'variables';
-type TrayTab = 'samples' | 'problems';
+type TrayTab = 'samples' | 'problems' | 'changes' | 'dsl';
 const STRESS = /压测|压力|stress/i;
 /**
  * 预览的分辨率：按屏幕需要往上取一档，不让连续缩放变成连续出图；上限 200 DPI，改一处不用等太久。
@@ -68,7 +71,11 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const [trayOpen, setTrayOpen] = useState(true);
   const narrow = window.innerWidth <= NARROW;
   const [panels, setPanels] = useState({ left: !narrow, right: !narrow });
-  const [datasetId, setDatasetId] = useState<string>();
+  const stored = useMemo(() => readStored(root), [root]);
+  const [datasetId, setDatasetId] = useState<string | undefined>(stored.datasetId);
+  const [trial, setTrial] = useState<Trial>(stored.trial ?? NO_TRIAL);
+  const [compare, setCompare] = useState(false);
+  const [dslWhole, setDslWhole] = useState(false);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const [view, setView] = useState<StageView>(FIT_VIEW);
   const [fit, setFit] = useState(800);
@@ -83,17 +90,26 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const rootInfo = useMemo(() => (rootDoc ? documentInfo(root, parseTemplateText(rootDoc.savedText)) : undefined), [root, rootDoc?.savedText]);
   const datasets = useLoad(() => api.datasets(), 'design-datasets');
   const samples = useMemo(() => (datasets.data?.datasets ?? []).filter((entry) => sameSchema(entry.staticSchema, rootInfo?.base)), [datasets.data, rootInfo?.base]);
-  const chosen = datasetId ?? samples[0]?.id ?? '';
-  const outputSize = rootInfo?.sizeRange ? defaultOutput(rootInfo) : { width: 100, height: 100 };
-  const outputWidth = outputSize.width;
-  const needed = Math.max((fit * view.zoom * window.devicePixelRatio * 25.4) / outputWidth, (MIN_LONG_EDGE_PX * 25.4) / Math.max(outputSize.width, outputSize.height));
+  const sampleList = useMemo<readonly Sample[]>(() => [...samples.map((entry) => ({ id: entry.id, name: entry.name ?? entry.id, stress: STRESS.test(entry.name ?? entry.id) })), { id: '', name: '空白数据（显示占位）', stress: false }], [samples]);
+  // 记住的数据集可能已经没了：回到第一份。
+  const chosen = datasetId !== undefined && sampleList.some((sample) => sample.id === datasetId) ? datasetId : samples[0]?.id ?? '';
+  const defaults = useMemo(() => (rootInfo ? defaultParameters(rootInfo) : {}), [rootInfo]);
+  const baseOutput = rootInfo?.sizeRange ? defaultOutput(rootInfo) : { width: 100, height: 100, dpi: 120, format: 'png' as const };
+  const clamp = (value: number | undefined, range: { readonly min: number; readonly max: number } | undefined, fallback: number) => (value === undefined || !range ? fallback : Math.min(range.max, Math.max(range.min, value)));
+  const output = { ...baseOutput, width: clamp(trial.width, rootInfo?.sizeRange?.width, baseOutput.width), height: clamp(trial.height, rootInfo?.sizeRange?.height, baseOutput.height) };
+  const outputWidth = output.width;
+  const needed = Math.max((fit * view.zoom * window.devicePixelRatio * 25.4) / outputWidth, (MIN_LONG_EDGE_PX * 25.4) / Math.max(output.width, output.height));
   const dpi = DPI_STEPS.find((step) => step >= needed) ?? DPI_STEPS.at(-1)!;
-  const request = useMemo(() => {
-    if (!rootInfo?.base || !rootInfo.sizeRange || !datasets.data) return undefined;
-    return { template: root, dataset: datasetRef(rootInfo.base, chosen || undefined), parameters: defaultParameters(rootInfo), output: { ...defaultOutput(rootInfo), dpi } };
-  }, [root, rootInfo, chosen, dpi, datasets.data]);
+  const requestFor = (id: string) => (rootInfo?.base ? { template: root, dataset: datasetRef(rootInfo.base, id || undefined), parameters: { ...defaults, ...trial.parameters }, output: { ...output, dpi } } : undefined);
+  const request = useMemo(() => (rootInfo?.base && rootInfo.sizeRange && datasets.data ? requestFor(chosen) : undefined), [root, rootInfo, chosen, dpi, datasets.data, trial, output.width, output.height]);
   const preview = useLivePreview(request, 120, { workingCopies: true, version: String(state.stashes) });
   const reply = preview.reply;
+  const version = `${state.stashes}\n${JSON.stringify(trial)}`;
+  const thumbs = useSampleThumbs(sampleList, chosen, reply, version, requestFor);
+  useEffect(() => { writeStored(root, { ...(datasetId === undefined ? {} : { datasetId }), trial }); }, [root, datasetId, trial]);
+  // 在图上对比：同一个请求，不用工作副本，就是当前修订的图。
+  const currentRevision = useLivePreview(compare ? request : undefined, 120);
+  const compareImage = compare && currentRevision.reply?.image ? `data:image/${currentRevision.reply.image.format};base64,${currentRevision.reply.image.base64}` : undefined;
 
   // 还没开工作副本时没有什么可比的（第一次写回才开）。
   const check = useLoad(() => (doc?.opened ? api.checkWorkingCopy(name) : Promise.resolve(undefined)), `${name}\n${doc?.opened ?? ''}\n${doc?.sha256 ?? ''}`);
@@ -108,6 +124,16 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const pick = (instance: string) => {
     const source = locations.get(instance);
     if (source) select(source.template, source.path, instance);
+  };
+  /** 问题定位：元素选中它，字段、参数与检查项打开变量页。 */
+  const onProblem = (problem: Problem) => {
+    const location = problem.location;
+    if (location.kind === 'element') { pick(location.path); return; }
+    if (location.kind === 'check' || location.kind === 'field' || location.kind === 'parameter' || location.kind === 'variable') {
+      setPanels((now) => ({ ...now, left: true }));
+      setLeftTab('variables');
+      if (location.kind === 'parameter') setOpenParameter(location.name);
+    }
   };
   /** 点选：最深的元素；按着 Alt 沿层叠往下穿透。 */
   const pickFrom = (stack: readonly string[], through: boolean) => {
@@ -198,7 +224,6 @@ function Design(props: { readonly name: string; readonly root: string }) {
   };
 
   const failures = [...state.docs.values()].filter((item) => item.failure);
-  const groupedSamples = { normal: samples.filter((entry) => !STRESS.test(entry.name ?? entry.id)), stress: samples.filter((entry) => STRESS.test(entry.name ?? entry.id)) };
   const severe = reply?.problems.filter((problem) => problem.level === 'severe').length ?? 0;
   const insets = { left: panels.left && !narrow ? LEFT_WIDTH + PANEL_GAP : 14, right: panels.right && !narrow ? RIGHT_WIDTH + PANEL_GAP : 14 };
   const sizeRange = rootInfo?.sizeRange;
@@ -223,7 +248,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} elementOf={elementOf} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -280,13 +305,16 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <section className="design-tray" aria-label="样例带">
         <div className="design-tray-head">
           <div className="tabs" role="tablist" aria-label="样例带">
-            <button type="button" role="tab" aria-selected={trayOpen && trayTab === 'samples'} className={trayOpen && trayTab === 'samples' ? 'active' : undefined} onClick={() => { setTrayTab('samples'); setTrayOpen(true); }}>样例</button>
-            <button type="button" role="tab" aria-selected={trayOpen && trayTab === 'problems'} className={trayOpen && trayTab === 'problems' ? 'active' : undefined} onClick={() => { setTrayTab('problems'); setTrayOpen(true); }}>问题{reply?.problems.length ? <span className={`tab-count${severe ? ' bad' : ''}`}>{reply.problems.length}</span> : null}</button>
+            {(([['samples', '样例', undefined], ['problems', '问题', reply?.problems.length], ['changes', '改动', unpublished], ['dsl', 'DSL', undefined]] as const)).map(([id, label, count]) => (
+              <button key={id} type="button" role="tab" aria-selected={trayOpen && trayTab === id} className={trayOpen && trayTab === id ? 'active' : undefined} onClick={() => { if (trayOpen && trayTab === id) setTrayOpen(false); else { setTrayTab(id); setTrayOpen(true); } }}>
+                {label}{count ? <span className={`tab-count${id === 'problems' && severe ? ' bad' : ''}`}>{count}</span> : null}
+              </button>
+            ))}
           </div>
           <span className="toolbar-gap" />
           {reply && <Verdict reply={reply} />}
           <span className="design-status small muted" aria-live="polite" data-testid="design-status">
-            {preview.waiting ? '预览太频繁，稍后自动重试…' : preview.loading ? '正在出草稿预览…' : reply?.image ? `草稿 ${reply.image.dpi} DPI · ${reply.image.widthPx} × ${reply.image.heightPx} 像素 · ${countText(reply.problems)}` : ''}
+            {preview.waiting ? '预览太频繁，稍后自动重试…' : preview.loading ? '正在出草稿预览…' : reply?.image ? `草稿 ${reply.image.dpi} DPI · ${reply.image.widthPx} × ${reply.image.heightPx} 像素` : ''}
           </span>
           <button type="button" className="small quiet icon-only" aria-label={trayOpen ? '收起样例带' : '展开样例带'} aria-expanded={trayOpen} onClick={() => setTrayOpen(!trayOpen)}><Icon d={trayOpen ? CHEVRON : CHEVRON_UP} /></button>
         </div>
@@ -294,22 +322,36 @@ function Design(props: { readonly name: string; readonly root: string }) {
           <div className="design-tray-body">
             {trayTab === 'samples' && (
               <div className="tray-samples">
-                <label className="small muted" htmlFor="design-dataset">样例数据集</label>
-                <select id="design-dataset" className="toolbar-select" value={chosen} onChange={(event) => setDatasetId(event.target.value)}>
-                  {groupedSamples.normal.map((entry) => <option key={entry.id} value={entry.id}>{entry.name ?? entry.id}</option>)}
-                  {groupedSamples.stress.length > 0 && (
-                    <optgroup label="压测数据">
-                      {groupedSamples.stress.map((entry) => <option key={entry.id} value={entry.id}>{entry.name ?? entry.id}</option>)}
-                    </optgroup>
-                  )}
-                  <option value="">空白数据（显示占位）</option>
-                </select>
+                {rootInfo && <SampleKnobs info={rootInfo} defaults={defaults} output={output} trial={trial} onTrial={setTrial} />}
+                <SampleCards samples={sampleList} current={chosen} thumbs={thumbs} version={version} onChoose={setDatasetId} />
               </div>
             )}
             {trayTab === 'problems' && (
               <div className="tray-problems">
                 <ErrorBox problems={preview.problems} title="预览失败" />
-                {reply && <ProblemsOfPreview reply={reply} onPick={pick} />}
+                {reply && <ProblemsOfPreview reply={reply} onPick={onProblem} />}
+              </div>
+            )}
+            {trayTab === 'changes' && (
+              <div className="tray-changes" data-testid="tray-changes">
+                {doc?.opened && check.data
+                  ? <>
+                    <div className="tray-changes-tools">
+                      <span className="small muted">和当前修订比。改动已在工作副本，出图仍读当前修订，发布之后才生效。</span>
+                      {check.data.changes.status !== 'added' && <button type="button" className={`small${compare ? ' primary' : ''}`} aria-pressed={compare} onClick={() => setCompare(!compare)}>{compare ? '关掉对比' : '在图上对比'}</button>}
+                    </div>
+                    <RevisionChanges diff={check.data.changes} label="和当前修订的差异" />
+                  </>
+                  : <p className="small muted">还没有改动。</p>}
+              </div>
+            )}
+            {trayTab === 'dsl' && doc && (
+              <div className="tray-dsl" data-testid="tray-dsl">
+                <span className="segmented" role="group" aria-label="DSL 的范围">
+                  <button type="button" className="small" aria-pressed={!dslWhole} onClick={() => setDslWhole(false)}>选中的元素</button>
+                  <button type="button" className="small" aria-pressed={dslWhole} onClick={() => setDslWhole(true)}>整份模板</button>
+                </span>
+                <CodePanel testid="design-dsl" value={dslWhole ? doc.document : (elementAt(doc.document, selected?.path ?? name)?.element ?? doc.document)} file={`${dslWhole || !selected ? name : selected.path}.json`} type="application/json" />
               </div>
             )}
           </div>
@@ -353,12 +395,12 @@ function SaveFailure(props: { readonly doc: DesignDoc; readonly session: DesignS
   );
 }
 
-function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPick: (instance: string) => void }) {
+function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPick: (problem: Problem) => void }) {
   const { reply } = props;
   const numbers = useMemo(() => new Map(problemMarks(reply).map((mark, index) => [mark.problem, index + 1])), [reply]);
   const [chosen, setChosen] = useState<Problem>();
   return reply.problems.length
-    ? <ProblemList problems={reply.problems} numbers={numbers} selected={chosen} label="预览的问题" onSelect={(problem) => { setChosen(problem); if (problem.location.kind === 'element') props.onPick(problem.location.path); }} />
+    ? <ProblemList problems={reply.problems} numbers={numbers} selected={chosen} label="预览的问题" onSelect={(problem) => { setChosen(problem); props.onPick(problem); }} />
     : <p className="small muted">这份样例没有问题。</p>;
 }
 

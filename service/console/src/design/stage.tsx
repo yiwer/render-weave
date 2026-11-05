@@ -37,6 +37,8 @@ export function DesignStage(props: {
   /** 结构树上悬停的定义：图上标出它的全部实例。 */
   readonly hover?: { readonly template: string; readonly path: string };
   readonly layers: Layers;
+  /** 在图上和当前修订对比：图是当前修订，拖分割线。 */
+  readonly compare?: string;
   /** 实例对应的模板文档里的元素：叠加层要看它的内容来源、排布与旋转。 */
   readonly elementOf: (instance: string) => JsonObject | undefined;
   readonly onView: (view: StageView) => void; readonly onFit: (width: number) => void;
@@ -121,6 +123,16 @@ export function DesignStage(props: {
   const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
   const hovered = useMemo(() => (props.hover ? (reply?.elements ?? []).filter((element) => element.source.template === props.hover!.template && element.source.path === props.hover!.path).map((element) => element.path) : []), [reply?.elements, props.hover]);
   const [under, setUnder] = useState<string>();
+  const [compareAt, setCompareAt] = useState(0.5);
+  const canvas = useRef<HTMLDivElement>(null);
+  const dragCompare = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const move = (next: PointerEvent) => { const box = canvas.current?.getBoundingClientRect(); if (box) setCompareAt(Math.min(1, Math.max(0, (next.clientX - box.left) / box.width))); };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
   const all = useMemo(() => (layout ? flatNodes(layout.root).filter((node) => node.visible) : []), [layout]);
   const fitState = useMemo(() => (layout ? fitSummary(layout.root) : undefined), [layout]);
   const guides = useMemo(() => (main ? layoutGuides(props.elementOf(main), nodes.get(main)) : undefined), [main, nodes, reply]);
@@ -141,11 +153,19 @@ export function DesignStage(props: {
   return (
     <div className={`design-stage${panning ? ' tool-pan' : ''}${preview.loading ? ' busy' : ''}`} ref={stage} data-testid="design-stage" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
       {image && layout ? (
-        <div className="design-canvas" data-testid="design-canvas" style={{ width, height, left, top }}
+        <div className="design-canvas" ref={canvas} data-testid="design-canvas" style={{ width, height, left, top }}
           onMouseMove={(event) => { if (panning) { setUnder(undefined); return; } const path = hit(event)[0]?.path; if (path !== under) setUnder(path); }} onMouseLeave={() => setUnder(undefined)}
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
+          {props.compare && (
+            <>
+              <span className="compare-clip" data-testid="compare-clip" style={{ width: `${compareAt * 100}%` }}><img src={props.compare} alt="当前修订的草稿预览" draggable={false} style={{ width }} /></span>
+              <span className="compare-bar" data-testid="compare-bar" style={{ left: `${compareAt * 100}%` }} onPointerDown={dragCompare} onClick={(event) => event.stopPropagation()}><i aria-hidden="true" /></span>
+              <span className="compare-tag left">当前修订</span>
+              <span className="compare-tag right">工作副本</span>
+            </>
+          )}
           {props.layers.structure && all.filter((node) => node.path !== layout.root.path).map((node) => <span key={`structure-${node.path}`} className={`layer-box structure${node.children?.length ? '' : ' leaf'}`} data-testid="structure-box" style={percent(node)} />)}
           {props.layers.data && all.map((node) => { const kind = contentKind(props.elementOf(node.path)); return kind ? <span key={`data-${node.path}`} className={`layer-box ${kind}`} data-testid={`${kind}-box`} style={percent(node)} /> : null; })}
           {props.layers.fit && all.filter((node) => node.text && (node.text.overflow || node.text.compression < 0.999)).map((node) => (

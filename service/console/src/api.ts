@@ -100,7 +100,17 @@ const page = async <T>(path: string, key: string): Promise<PageOf<T>> => {
   return { items: reply[key] as T[], ...(typeof reply['next'] === 'string' ? { next: reply['next'] } : {}) };
 };
 
-export interface PreviewOptions { readonly workingCopies?: boolean }
+export interface PreviewOptions {
+  readonly workingCopies?: boolean;
+  /** 元素路径：回答多一个 inspection，这个实例的求值结果。 */
+  readonly inspect?: string;
+  /** 样例带补缩略图时写样例的 ID：服务端不看，只让这次请求和主预览分得开。 */
+  readonly sample?: string;
+}
+const previewQuery = (options: PreviewOptions) => {
+  const parts = [...(options.workingCopies ? ['workingCopies=true'] : []), ...(options.inspect === undefined ? [] : [`inspect=${encodeURIComponent(options.inspect)}`]), ...(options.sample === undefined ? [] : [`sample=${encodeURIComponent(options.sample)}`])];
+  return parts.length ? `?${parts.join('&')}` : '';
+};
 export interface RecordQuery { readonly batchId?: string; readonly template?: string; readonly from?: string; readonly to?: string; readonly before?: string }
 
 export const api = {
@@ -203,7 +213,7 @@ export const api = {
   importExcel: (request: { template: string; workbook: string; parameters: unknown; output: unknown }) => json<ExcelImport>('POST', '/v1/excel-imports', { json: request }),
 
   /** workingCopies：有工作副本的模板用工作副本预览，检查与限制都一样。 */
-  preview: (request: unknown, options: PreviewOptions = {}) => json<PreviewReply>('POST', `/v1/previews${options.workingCopies ? '?workingCopies=true' : ''}`, { json: request }),
+  preview: (request: unknown, options: PreviewOptions = {}) => json<PreviewReply>('POST', `/v1/previews${previewQuery(options)}`, { json: request }),
 
   submitBatch: (request: unknown, idempotencyKey: string) =>
     changingUsage(json<BatchView>('POST', '/v1/batches', { json: request, headers: { 'idempotency-key': idempotencyKey } })),

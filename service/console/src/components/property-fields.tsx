@@ -6,7 +6,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { Editor, FieldPath, PropertyField } from '../template/properties.js';
 
 export interface FieldContext {
-  onWrite(path: FieldPath, value: unknown): void;
+  /** now：选项与开关立刻写回，打字才等停顿。 */
+  onWrite(path: FieldPath, value: unknown, options?: { readonly now?: boolean }): void;
   /** 建议的选项：<datalist> 的 ID，由页面按变量、字段与资源生成。 */
   readonly lists: Readonly<Record<'variable' | 'field' | 'font' | 'image', string>>;
 }
@@ -145,7 +146,7 @@ function Choice(props: { readonly id: string; readonly field: PropertyField; rea
   const { field, editor, context } = props;
   const selected = editor.options.findIndex((option) => same(option.value, field.value));
   return (
-    <select id={props.id} value={selected} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.options[index]!.value); }}>
+    <select id={props.id} value={selected} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.options[index]!.value, { now: true }); }}>
       {(!field.required || selected < 0) && <option value={-1}>缺省</option>}
       {editor.options.map((option, index) => <option key={index} value={index}>{option.label}</option>)}
     </select>
@@ -156,7 +157,7 @@ function Variants(props: { readonly id: string; readonly field: PropertyField; r
   const { field, editor, context } = props;
   return (
     <>
-      <select id={props.id} className="prop-variant" value={editor.active} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.variants[index]!.initial); }}>
+      <select id={props.id} className="prop-variant" value={editor.active} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.variants[index]!.initial, { now: true }); }}>
         {(!field.required || editor.active < 0) && <option value={-1}>缺省</option>}
         {editor.variants.map((variant, index) => <option key={index} value={index}>{variant.label}</option>)}
       </select>
@@ -172,7 +173,7 @@ function Group(props: { readonly field: PropertyField; readonly editor: Extract<
   const { field, editor, context } = props;
   // 有必填子项的对象（描边、状态样式）要先添加。
   if (editor.absent && hasRequired(editor.initial)) {
-    return <button type="button" className="small quiet prop-add" onClick={() => context.onWrite(field.path, editor.initial)}>添加</button>;
+    return <button type="button" className="small quiet prop-add" onClick={() => context.onWrite(field.path, editor.initial, { now: true })}>添加</button>;
   }
   // 只有一项的对象（{ fixed: 数值 }、{ var: 变量名 }）不再多一层标题。
   if (editor.fields.length === 1) {
@@ -186,7 +187,7 @@ function Group(props: { readonly field: PropertyField; readonly editor: Extract<
         ? editor.fields.map((inner) => <span key={inner.key} data-testid="property-field" data-key={inner.key}><EditorView id={inner.key} field={inner} editor={inner.editor} context={context} /></span>)
         : <FieldRows fields={editor.fields} context={context} />}
       {!field.required && !editor.absent && hasRequired(editor.initial) && (
-        <button type="button" className="link danger prop-remove" onClick={() => context.onWrite(field.path, undefined)}>去掉{field.label}</button>
+        <button type="button" className="link danger prop-remove" onClick={() => context.onWrite(field.path, undefined, { now: true })}>去掉{field.label}</button>
       )}
     </div>
   );
