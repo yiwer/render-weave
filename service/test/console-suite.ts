@@ -2073,8 +2073,6 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const side = () => target.getByRole('complementary', { name: '结构与变量' });
       const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const input = (key: string) => fieldOf(key).locator('input[type="text"]').first();
-      /** 没写的属性收在"其他 N 项"里，展开它们才找得到。 */
-      const expand = () => inspector().locator('details:not([open]) > summary').evaluateAll((items) => items.forEach((item) => (item as unknown as { click(): void }).click()));
       const documentNow = async (name = ALL) => JSON.parse((await server('GET', `/v1/templates/${enc(name)}/working-copy`, token)).body.content as string) as Record<string, unknown>;
       /** 做一次改动：等预览回来、图变了，再读工作副本，核对 checkDslDocument 没有严重问题。 */
       const edit = async (action: () => Promise<unknown>, name = ALL) => {
@@ -2123,13 +2121,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const clickElement = async (path: string) => {
         await target.getByTestId('design-canvas').click({ position: await positionOf(path) });
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
-        await expand();
       };
       const chooseRow = async (path: string) => {
         await side().getByRole('tab', { name: '结构' }).click();
         await side().locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
-        await expand();
       };
 
       // 点选：选中框与元素路径显示在图上，属性面板打开它在模板文档里的位置。
@@ -2138,8 +2134,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await target.getByTestId('design-scope').getAttribute('data-path')).toBe(at('文字'));
       expect(await target.getByTestId('select-tag').textContent()).toMatch(/^文字 · [\d.]+ × [\d.]+ mm$/);
       expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('text');
-      // 属性面板按 Schema 分组：位置尺寸、文字、颜色、适配、条件显示、状态样式。
-      for (const group of ['位置尺寸', '文字', '颜色', '适配', '条件显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
+      // 属性面板按元素类型分组（方案第 7 节的表），先后也照它。
+      for (const group of ['内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
+      expect(await inspector().getByTestId('properties').locator('section > h3').allTextContents()).toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']);
+      expect(await inspector().locator('details').count(), '没有"其他 N 项"').toBe(0);
       expect(await input('place.left').inputValue()).toBe('2');
 
       // 每种元素改一项属性。text：字号断开绑定，当前值 5 变成字面值，图不变；再改成 8。
@@ -2364,7 +2362,6 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 检查器：所选元素相关的检查项（经派生变量连带）、适配规则，改写回。
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
-      await expand();
       await inspector().locator('[data-testid="check-row"][data-name="姓名太长"]').waitFor();
       expect(await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').count(), '文字没有用照片').toBe(0);
       await inspector().getByTestId('fit-hint').filter({ hasText: '画板的 2 mm' }).waitFor();
@@ -2373,12 +2370,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await expect.poll(async () => elementIn(await documentNow(), '文字')['fit']).toMatchObject({ compressMin: 0.8 });
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('图片')) });
       await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').waitFor();
-      await inspector().getByText('这个元素没有适配规则').waitFor();
       // 竖排的文字才有缩字组：写了组名，同组的元素列出来。
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
-      await expand();
-      await fieldOf('writingMode').locator('select').selectOption({ label: '竖排' });
-      await expand();
+      await fieldOf('writingMode').getByRole('button', { name: '竖排' }).click();
       await fieldOf('fit.widthOverflow').getByRole('button', { name: '添加' }).click();
       await input('fit.widthOverflow.shrinkGroup').fill('站名组');
       await inspector().getByTestId('shrink-group').filter({ hasText: '缩字组 站名组：文字' }).waitFor();
@@ -2800,7 +2794,6 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await side.getByRole('button', { name: '展开 名称区' }).click();
       await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
       await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
-      await inspector.locator('details:not([open]) > summary').evaluateAll((items) => items.forEach((item) => (item as unknown as { click(): void }).click()));
 
       // 绑定态：显示名称与当前值；值从主模板的内部参数来。
       const size = field('fontSize');
@@ -2812,7 +2805,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await size.getByTestId('state-dot').count()).toBe(0);
       // 不能绑定：字体没有按钮，写明原因。
       expect(await field('font').getByTestId('bind-button').count()).toBe(0);
-      await field('font').locator('input').first().focus();
+      await field('font').getByTestId('font-select').focus();
       await field('font').getByTestId('no-binding').filter({ hasText: '用状态样式' }).waitFor();
 
       // 弹层只列类型相符的变量，分组、带当前值；Esc 关掉，不动选中。
@@ -2893,6 +2886,131 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
       await expect.poll(() => target.url()).toContain(`/templates/${enc(ROOT)}/design`);
       await expect.poll(() => inspector.getByTestId('value-origin').textContent()).toBe('来自 本模板「站名字号」（内部参数）');
+
+      // 收尾：丢掉工作副本。
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 10）：检查器按类型分组；竖排适配只给合法步骤并写明这一处的结果；内容插入字段、改格式、片段样式；双击图上文字就地改；字体按族列字重', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME_AT = `${ROOT}/站点面板/站点列[12]/名称区/站名`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      interface Node { path: string; x: number; y: number; width: number; height: number; children?: Node[] }
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Node } };
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const stopName = async () => {
+        const document = JSON.parse((await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token)).body.content as string) as { artboard: Record<string, unknown> };
+        const find = (node: Record<string, unknown>): Record<string, unknown> | undefined => (node['name'] === '站名' ? node : ((node['children'] ?? []) as Record<string, unknown>[]).map(find).find(Boolean));
+        return find(document.artboard)!;
+      };
+
+      // 双击图上的文字：就地打开内容编辑，焦点在里面；打字写回，Esc 收起，选中不动。
+      const walk = (node: Node): Node | undefined => (node.path === NAME_AT ? node : node.children?.map(walk).find(Boolean));
+      const canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!, stop = walk(layout.root)!;
+      await canvas.dblclick({ position: { x: ((stop.x + stop.width / 2) / layout.output.width) * box.width, y: ((stop.y + stop.height / 2) / layout.output.height) * box.height } });
+      const inline = target.getByTestId('inline-text');
+      await inline.getByTestId('content-slot').filter({ hasText: '站名' }).waitFor();
+      await expect.poll(() => inline.getByTestId('content-gap').last().evaluate((element) => element === document.activeElement)).toBe(true);
+      const typed = stashed();
+      await target.keyboard.type('站');
+      await typed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }]);
+      await target.keyboard.press('Escape');
+      expect(await inline.count()).toBe(0);
+      await expect.poll(() => target.getByTestId('design-scope').getAttribute('data-path')).toBe(NAME_AT);
+
+      // 按类型分组，没有"其他 N 项"；片段是字段，不是 JSON。
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      expect(await inspector.getByTestId('properties').locator('section > h3').allTextContents()).toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']);
+      expect(await inspector.locator('details').count()).toBe(0);
+      expect(await inspector.getByRole('region', { name: '内容' }).locator('textarea').count()).toBe(0);
+
+      // 字体按族列字重，值还是资源引用。
+      const font = field('font').getByTestId('font-select');
+      expect(await font.inputValue()).toBe('res:font-hei-medium');
+      expect(await font.locator('optgroup[label="hei"] option').allTextContents()).toEqual(['hei Medium', 'hei Heavy']);
+
+      // 竖排的适配：只有三种步骤，这一处的结果在最后一行；用不上的写明要什么。
+      const steps = field('fit.steps').locator('select');
+      expect((await steps.locator('option').allTextContents()).filter((label) => !label.startsWith('缺省'))).toEqual(['不适配', '收紧字距', '收紧字距 → 压缩字形']);
+      await expect.poll(() => inspector.getByTestId('fit-result').textContent()).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm，字距 [\d.]+ mm/);
+      await inspector.getByTestId('shrink-group').filter({ hasText: '缩字组 stopNames：站名，共 1 个成员' }).waitFor();
+      await inspector.getByTestId('fit-mode').filter({ hasText: '竖排' }).waitFor();
+      expect(await field('fit.compressMin').locator('input[type="text"]').inputValue()).toBe('0.6');
+      const changedSteps = stashed();
+      await steps.selectOption({ label: '收紧字距' });
+      await changedSteps;
+      expect((await stopName())['fit']).toMatchObject({ steps: ['tightenSpacing'] });
+      await inspector.getByTestId('fit-off').filter({ hasText: '步骤里有压缩字形才生效' }).waitFor();
+      expect(await field('fit.compressMin').count()).toBe(0);
+      // 失效写明：竖排不能倾斜。
+      await field('slant').getByTestId('field-blocked').filter({ hasText: '竖排文字不能倾斜' }).waitFor();
+
+      // 内容：打 / 选字段，只列能显示成文字的，光标跟着走。
+      const editor = inspector.getByTestId('content-editor');
+      await editor.getByTestId('content-text').click();
+      await target.keyboard.press('End');
+      await target.keyboard.press('/');
+      const picker = editor.getByTestId('slot-picker');
+      await picker.getByRole('textbox').waitFor();
+      expect(await picker.locator('[data-name="nameColor"]').count(), '颜色不能显示成文字').toBe(0);
+      await picker.getByRole('textbox').fill('index');
+      const withSlot = stashed();
+      await target.keyboard.press('Enter');
+      await withSlot;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }]);
+      // 选字段时按 Esc：就是打了一个 /。
+      await editor.getByTestId('content-gap').last().click();
+      await target.keyboard.press('/');
+      await picker.getByRole('textbox').waitFor();
+      const slashed = stashed();
+      await target.keyboard.press('Escape');
+      await slashed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }, { text: '/' }]);
+      expect(await inspector.getByTestId('properties').count(), 'Esc 没有变成选上一层').toBe(1);
+      // 退格删掉 / 这段，光标回到空位。
+      const unslashed = stashed();
+      await target.keyboard.press('Backspace');
+      await unslashed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }]);
+
+      // 点插槽改展示格式：不合法的不写回，当场说明。
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').click();
+      const piece = editor.getByTestId('piece-popover');
+      const format = piece.getByLabel('展示格式');
+      await format.fill('HH:mm');
+      await piece.getByTestId('format-problem').filter({ hasText: '含时分秒' }).waitFor();
+      await format.fill('xx');
+      await piece.getByTestId('format-problem').filter({ hasText: '不是可用的格式符' }).waitFor();
+      await target.waitForTimeout(800);
+      expect(((await stopName())['content'] as unknown[])[2], '不合法的没写回').toEqual({ slot: 'index' });
+      const formatted = stashed();
+      await piece.getByTestId('format-presets').getByRole('button', { name: '0.00' }).click();
+      await formatted;
+      expect(((await stopName())['content'] as unknown[])[2]).toEqual({ slot: 'index', format: '0.00' });
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').filter({ hasText: '0.00' }).waitFor();
+      // 文本字段不带格式。
+      await editor.locator('[data-testid="content-slot"][data-slot="name"]').click();
+      await piece.getByTestId('format-none').waitFor();
+      // 片段样式：竖排没有倾斜。
+      expect(await piece.locator('[data-key="content.0.slant"]').count()).toBe(0);
+      const sized = stashed();
+      await piece.locator('[data-key="content.0.fontSize"]').locator('input[type="text"]').first().fill('8');
+      await sized;
+      expect(((await stopName())['content'] as unknown[])[0]).toEqual({ slot: 'name', fontSize: 8 });
+      // 删除这个插槽。
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').click();
+      const removed = stashed();
+      await piece.getByRole('button', { name: '删除这个插槽' }).click();
+      await removed;
+      expect(((await stopName())['content'] as Record<string, unknown>[]).some((item) => item['slot'] === 'index')).toBe(false);
 
       // 收尾：丢掉工作副本。
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);

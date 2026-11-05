@@ -2,13 +2,31 @@
  * 绑定弹层（模板设计页票据 09）：只列类型相符的变量，分字段、参数、派生三组，带当前值；底部是提取为参数。
  * 新建派生变量的入口在派生变量的编辑器做完之后才有（票据 16）。
  */
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { bindingCandidates, parameterNameProblem, type ScopeVariable } from '../template/binding.js';
 import type { BindingType } from '../template/properties.js';
 import { TYPE_GLYPHS, ValueText } from './value-text.js';
 
 const TYPE_NAMES: Readonly<Record<BindingType, string>> = { number: '数值', color: '颜色', boolean: '布尔', text: '文本', image: '图片' };
 const GROUPS: readonly { readonly kind: ScopeVariable['kind']; readonly title: string }[] = [{ kind: 'field', title: '字段' }, { kind: 'parameter', title: '参数' }, { kind: 'derived', title: '派生变量' }];
+
+/**
+ * 弹层的关闭：点外面关掉；打开时滚进视野（可能超出面板底边）。
+ * Esc 在捕获阶段接住：打开时焦点常在触发按钮上，不接住就成了舞台的"选上一层"。onEscape 是 Esc 和点外面不一样时才给。
+ */
+export function usePopoverDismiss(box: RefObject<HTMLElement | null>, onClose: () => void, onEscape?: () => void) {
+  const latest = useRef({ onClose, onEscape });
+  latest.current = { onClose, onEscape };
+  useEffect(() => {
+    box.current?.scrollIntoView({ block: 'nearest' });
+    // 打开它的那个按钮自己会关：这里也关的话，点一下先关后开，关不掉。
+    const away = (event: PointerEvent) => { const target = event.target as Element; if (!box.current?.contains(target) && !target.closest?.('[aria-expanded="true"]')) latest.current.onClose(); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); (latest.current.onEscape ?? latest.current.onClose)(); } };
+    document.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', escape, true);
+    return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('keydown', escape, true); };
+  }, []);
+}
 
 export interface ExtractOffer {
   /** 要存成缺省值的当前值；没有单个的值时（分别设置、还没选图）提取关掉。 */
@@ -28,16 +46,7 @@ export function BindingPopover(props: {
   const [name, setName] = useState(extract.name);
   const [displayName, setDisplayName] = useState(extract.displayName);
   const candidates = bindingCandidates(props.variables, type);
-  // 点外面关掉；弹层可能超出面板底边，打开时滚进视野。
-  // Esc 在捕获阶段接住：打开时焦点常在触发按钮上，不接住就成了舞台的"选上一层"。
-  useEffect(() => {
-    box.current?.scrollIntoView({ block: 'nearest' });
-    const away = (event: PointerEvent) => { if (!box.current?.contains(event.target as Node)) onClose(); };
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); onClose(); } };
-    document.addEventListener('pointerdown', away);
-    window.addEventListener('keydown', escape, true);
-    return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('keydown', escape, true); };
-  }, [onClose]);
+  usePopoverDismiss(box, onClose);
   const problem = parameterNameProblem(name.trim(), extract.taken);
   const canExtract = extract.value !== undefined;
   const submit = (event: FormEvent) => {

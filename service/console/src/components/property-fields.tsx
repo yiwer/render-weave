@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { boundName, currentLiteral, unboundValue, type OriginLink, type OriginText, type ScopeVariable } from '../template/binding.js';
+import type { FontFamily } from '../template/fonts.js';
 import type { Bindable, Editor, FieldPath, PropertyField } from '../template/properties.js';
 import { BindingPopover } from './binding-popover.js';
 import { Icon, LINK, UNLINK } from './icon.js';
@@ -30,6 +31,8 @@ export interface FieldContext {
   /** 建议的选项：<datalist> 的 ID，由页面按变量、字段与资源生成。 */
   readonly lists: Readonly<Record<'variable' | 'field' | 'font' | 'image', string>>;
   readonly binding?: BindingHost;
+  /** 字体按族分组列字重（M115）；没给时字体是文本框。 */
+  readonly fonts?: readonly FontFamily[];
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -86,6 +89,25 @@ function NumberInput(props: { readonly id: string; readonly field: PropertyField
   );
 }
 
+/** 字体：按族分组列字重，选的仍是资源引用。资源库里没有的引用也列出来，不悄悄换掉。 */
+function FontSelect(props: { readonly id: string; readonly field: PropertyField; readonly families: readonly FontFamily[]; readonly context: FieldContext }) {
+  const { field, families, context } = props;
+  const value = typeof field.value === 'string' ? field.value : '';
+  const known = families.some((family) => family.fonts.some((font) => font.ref === value));
+  return (
+    <select id={props.id} value={value} data-testid="font-select" onChange={(event) => context.onWrite(field.path, event.target.value === '' ? undefined : event.target.value, { now: true })}>
+      {!field.required && <option value="">缺省</option>}
+      {field.required && value === '' && <option value="">选择字体</option>}
+      {value !== '' && !known && <option value={value}>{value}（资源库里没有）</option>}
+      {families.map((family) => (
+        <optgroup key={family.family} label={family.family}>
+          {family.fonts.map((font) => <option key={font.ref} value={font.ref}>{family.family} {font.weight}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
 function TextInput(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'text' }>; readonly context: FieldContext }) {
   const { field, editor, context } = props;
   const { draft, setDraft, error, setError, written } = useDraft(field.value, (value) => (typeof value === 'string' ? value : ''));
@@ -131,7 +153,7 @@ function ColorInput(props: { readonly id: string; readonly field: PropertyField;
   return (
     <span className="color-input">
       {/* 取色器只认 #RRGGBB，带透明度的取前 6 位显示。 */}
-      <input type="color" aria-label={`${field.label}（取色）`} value={/^#[0-9a-fA-F]{6}/.test(draft) ? draft.slice(0, 7).toLowerCase() : '#000000'} onChange={(event) => write(event.target.value.toUpperCase())} />
+      <input type="color" className={draft ? undefined : 'unset'} aria-label={`${field.label}（取色）`} value={/^#[0-9a-fA-F]{6}/.test(draft) ? draft.slice(0, 7).toLowerCase() : '#000000'} onChange={(event) => write(event.target.value.toUpperCase())} />
       <input id={props.id} type="text" value={draft} aria-invalid={error ? true : undefined} placeholder={placeholderOf(field, '#RRGGBB')} onChange={(event) => write(event.target.value)} />
       {error && <span className="prop-error" role="alert">{error}</span>}
     </span>
@@ -168,6 +190,18 @@ function Choice(props: { readonly id: string; readonly field: PropertyField; rea
   const { field, editor, context } = props;
   const selected = editor.options.findIndex((option) => same(option.value, field.value));
   const fallback = field.fallback === undefined ? undefined : editor.options.find((option) => same(option.value, field.fallback));
+  // 选项少又短的摊开成分段：一眼看到全部取值，一下点到。没写又不知道缺省是什么的还用下拉，要能显示"缺省"。
+  const short = editor.options.length <= 4 && editor.options.reduce((total, option) => total + option.label.length, 0) <= 12;
+  if (short && (field.required || fallback)) {
+    return (
+      <div className="segmented prop-segmented" role="group" aria-label={field.label} data-testid="segmented">
+        {editor.options.map((option, index) => (
+          <button key={index} type="button" aria-pressed={selected === index} className={selected < 0 && same(option.value, field.fallback) ? 'implied' : undefined} title={selected < 0 && same(option.value, field.fallback) ? '没写，这是缺省值' : undefined}
+            onClick={() => context.onWrite(field.path, option.value, { now: true })}>{option.label}</button>
+        ))}
+      </div>
+    );
+  }
   return (
     <select id={props.id} value={selected} onChange={(event) => { const index = Number(event.target.value); context.onWrite(field.path, index < 0 ? undefined : editor.options[index]!.value, { now: true }); }}>
       {(!field.required || selected < 0) && <option value={-1}>{fallback ? `缺省（${fallback.label}）` : '缺省'}</option>}
@@ -273,11 +307,13 @@ function Group(props: { readonly field: PropertyField; readonly editor: Extract<
     return <span className="prop-inline" data-testid="property-field" data-key={only.key}><EditorView id={`${only.key}-only`} field={only} editor={only.editor} context={context} /></span>;
   }
   const tuple = typeof editor.fields[0]?.path.at(-1) === 'number';
+  // 只有一个取值的必填项（layout 的 mode）已经由外层的变体选定，不用再摆一个只有一项的选择。
+  const shown = editor.fields.filter((inner) => !(inner.required && inner.editor.kind === 'choice' && inner.editor.options.length === 1));
   return (
     <div className={tuple ? 'prop-tuple' : 'prop-group'}>
       {tuple
-        ? editor.fields.map((inner) => <span key={inner.key} data-testid="property-field" data-key={inner.key}><EditorView id={inner.key} field={inner} editor={inner.editor} context={context} /></span>)
-        : <FieldRows fields={editor.fields} context={context} />}
+        ? shown.map((inner) => <span key={inner.key} data-testid="property-field" data-key={inner.key}><EditorView id={inner.key} field={inner} editor={inner.editor} context={context} /></span>)
+        : <FieldRows fields={shown} context={context} />}
       {!field.required && !editor.absent && hasRequired(editor.initial) && (
         <button type="button" className="link danger prop-remove" onClick={() => context.onWrite(field.path, undefined, { now: true })}>去掉{field.label}</button>
       )}
@@ -354,7 +390,7 @@ function EditorView(props: { readonly id: string; readonly field: PropertyField;
   const { id, field, editor, context, live } = props;
   switch (editor.kind) {
     case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} live={live} />;
-    case 'text': return <TextInput id={id} field={field} editor={editor} context={context} />;
+    case 'text': return editor.suggest === 'font' && context.fonts ? <FontSelect id={id} field={field} families={context.fonts} context={context} /> : <TextInput id={id} field={field} editor={editor} context={context} />;
     case 'color': return <ColorInput id={id} field={field} context={context} />;
     case 'choice': return <Choice id={id} field={field} editor={editor} context={context} />;
     case 'variants': return editor.bindable && context.binding
@@ -367,24 +403,9 @@ function EditorView(props: { readonly id: string; readonly field: PropertyField;
   }
 }
 
-/**
- * 一组字段：写了的与必填的直接显示，没写的可选项不止一个时收进"其他 N 项"。按打开时的样子分一次，
- * 之后不再挪动，否则刚填的那一项会跳走、丢掉焦点。
- */
+/** 一组字段：没写的可选项也留在组里，淡色显示缺省值（方案第 7 节，取代"其他 N 项"，M356）。 */
 export function FieldRows(props: { readonly fields: readonly PropertyField[]; readonly context: FieldContext }) {
-  const { fields, context } = props;
-  const initial = useRef<ReadonlySet<string>>(new Set(fields.filter((field) => field.required || field.value !== undefined).map((field) => field.key)));
-  const shown = fields.filter((field) => initial.current.has(field.key)), rest = fields.filter((field) => !initial.current.has(field.key));
-  if (rest.length < 2) return <>{fields.map((field) => <FieldRow key={field.key} field={field} context={context} />)}</>;
-  return (
-    <>
-      {shown.map((field) => <FieldRow key={field.key} field={field} context={context} />)}
-      <details className="prop-more">
-        <summary>其他 {rest.length} 项</summary>
-        <div className="prop-more-body">{rest.map((field) => <FieldRow key={field.key} field={field} context={context} />)}</div>
-      </details>
-    </>
-  );
+  return <>{props.fields.map((field) => <FieldRow key={field.key} field={field} context={props.context} />)}</>;
 }
 
 /** 能拖标签的数值：字面值或没写；绑定着的、写成对象的不能拖。 */
@@ -446,9 +467,12 @@ export function FieldRow(props: { readonly field: PropertyField; readonly contex
     <div className={`prop${wide ? ' wide' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
       {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{dot}{field.label}</label>}
       <div className="prop-control">
-        {field.needs ? <span className="small muted">先写{field.needs.join('、')}</span> : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} />}
+        {field.blocked ? <span className="small faint" data-testid="field-blocked">{field.blocked}</span>
+          : field.needs ? <span className="small muted">先写{field.needs.join('、')}</span>
+          : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} />}
       </div>
       {field.noBinding && <p className="prop-nobind small faint" data-testid="no-binding">{field.noBinding}</p>}
+      {field.exclusive && <p className="prop-nobind small faint" data-testid="field-exclusive">和{field.exclusive.join('、')}二选一，写了这一项会去掉它。</p>}
     </div>
   );
 }

@@ -3,7 +3,7 @@
  * 面板浮在舞台上：适应按两个面板之间的空隙算，放大后图从面板底下穿过去。缩放以适应窗口为 100%；图不用 transform 缩放，
  * 所以框的线宽在任何缩放下都一样。
  */
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { problemMarks } from '../components/preview-canvas.js';
 import type { LivePreview } from '../hooks.js';
 import { hitStack } from '../template/document.js';
@@ -46,6 +46,10 @@ export function DesignStage(props: {
   readonly onView: (view: StageView) => void; readonly onFit: (width: number) => void;
   /** stack 是这个位置的全部元素，第一个最深；through 是按着 Alt 穿透。 */
   readonly onPick: (stack: readonly string[], through: boolean) => void; readonly onMenu: (x: number, y: number, stack: readonly LayoutNode[]) => void; readonly onClear: () => void;
+  /** 双击：stack 同 onPick。文字元素就地打开内容编辑。 */
+  readonly onEditText?: (stack: readonly string[]) => void;
+  /** 就地编辑器：浮在这个实例下方，跟着缩放与平移走。 */
+  readonly inline?: { readonly instance: string; readonly editor: ReactNode };
 }) {
   const { preview, tool, view, insets, selected } = props, reply = preview.reply, image = reply?.image, layout = reply?.layout;
   const stage = useRef<HTMLDivElement>(null);
@@ -158,6 +162,7 @@ export function DesignStage(props: {
         <div className="design-canvas" ref={canvas} data-testid="design-canvas" style={{ width, height, left, top }}
           onMouseMove={(event) => { if (panning) { setUnder(undefined); return; } const path = hit(event)[0]?.path; if (path !== under) setUnder(path); }} onMouseLeave={() => setUnder(undefined)}
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
+          onDoubleClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onEditText?.(stack.map((node) => node.path)); }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
           {props.compare && (
@@ -194,6 +199,15 @@ export function DesignStage(props: {
       ) : (
         <div className="stage-empty">{reply ? '没有图片：问题见样例带的问题页' : preview.problems ? '预览失败' : '正在出草稿预览…'}</div>
       )}
+      {props.inline && layout && nodes.get(props.inline.instance) && (() => {
+        const node = nodes.get(props.inline.instance)!;
+        const x = left + (node.x / layout.output.width) * width, y = top + ((node.y + node.height) / layout.output.height) * height;
+        return (
+          <div className="inline-anchor" style={{ left: Math.max(8, Math.min(x, size.width - 348)), top: Math.max(8, Math.min(y + 6, size.height - 220)) }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
+            {props.inline.editor}
+          </div>
+        );
+      })()}
       {legend && <span className="design-legend small" data-testid="overlay-legend">{legend}</span>}
     </div>
   );

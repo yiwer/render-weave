@@ -2,7 +2,7 @@
  * 舞台的叠加层（模板设计页票据 06）：适配的压力、内容的来源、排布参考线。纯函数，入口与页面用的相同。
  */
 import { describe, expect, it } from 'vitest';
-import { contentKind, fitSummary, layoutGuides } from '../console/src/design/overlays.js';
+import { contentKind, fitSummary, layoutGuides, fitResult } from '../console/src/design/overlays.js';
 import type { LayoutNode } from '../console/src/types.js';
 
 const node = (name: string, x: number, y: number, width: number, height: number, extra: Partial<LayoutNode> = {}): LayoutNode => ({ path: name, name, type: 'container', x, y, width, height, visible: true, ...extra });
@@ -66,5 +66,14 @@ describe('layoutGuides', () => {
   it('没有排布的元素只有内边距；没有元素或实例时什么也没有', () => {
     expect(layoutGuides({ padding: 2 }, node('框', 0, 0, 10, 10)).padding).toHaveLength(4);
     expect(layoutGuides(undefined, undefined)).toEqual({ gaps: [], padding: [], tracks: [], labels: [] });
+  });
+});
+
+describe('这一处实例的适配结果', () => {
+  const text = (over: Partial<{ compression: number; fontSize: number; spacing: number; overflow: boolean }>) => ({ font: 'res:a', writingMode: 'horizontal', width: 10, height: 3, fragments: [], fontSize: 10, spacing: 0, compression: 1, overflow: false, ...over });
+  it('压缩了写压到多少，字号与字距照布局摘要', () => {
+    expect(fitResult(text({ compression: 0.74 }))).toBe('压到 74%，字号 10 mm，字距 0 mm');
+    expect(fitResult(text({ fontSize: 7.456, spacing: 0.3 }))).toBe('没有压缩，字号 7.46 mm，字距 0.3 mm');
+    expect(fitResult(text({ compression: 0.6, overflow: true }))).toBe('压到 60%，字号 10 mm，字距 0 mm，仍放不下');
   });
 });

@@ -63,9 +63,14 @@ export interface PropertyField {
   readonly fallback?: unknown;
   /** 这一项不能绑定变量的原因（DSL 的能绑定表），只给人会想绑定的属性。 */
   readonly noBinding?: string;
+  /** 和这几项二选一（place 的左与右）：写了这一项会去掉它们。值是显示名称。 */
+  readonly exclusive?: readonly string[];
+  /** 在当前写法下不可用的原因（竖排文字不能倾斜）：不给编辑器，直接写明。 */
+  readonly blocked?: string;
 }
 
-export const PROPERTY_GROUPS = ['基本', '绑定', '位置尺寸', '布局', '文字', '图片', '形状', '码', '颜色', '适配', '条件显示', '状态样式', '其他'] as const;
+/** 分组的先后（方案第 7 节的表）：每种元素只出现它有的那几组，顺序都合这一条。 */
+export const PROPERTY_GROUPS = ['基本', '内容', '循环', '调用', '传入参数', '每项排布', '图片', '码', '形状', '文字', '适配', '适用尺寸范围', '缩字下限', '排布', '位置与尺寸', '外观', '显示', '状态样式', '其他'] as const;
 export type PropertyGroup = (typeof PROPERTY_GROUPS)[number];
 
 export interface PropertyPanel {
@@ -104,19 +109,20 @@ const ELEMENT_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>>
 };
 
 const GROUPS: Readonly<Record<string, PropertyGroup>> = {
-  name: '基本', place: '位置尺寸', rotation: '位置尺寸', sizeRange: '位置尺寸', size: '位置尺寸',
-  layout: '布局', padding: '布局', clip: '布局', itemLayout: '布局',
-  list: '绑定', reverse: '绑定', slice: '绑定', template: '绑定', args: '绑定', mergeBy: '绑定', data: '绑定',
-  content: '文字', font: '文字', fontSize: '文字', letterSpacing: '文字', writingMode: '文字', horizontalAlign: '文字', verticalAlign: '文字', slant: '文字',
+  name: '基本', place: '位置与尺寸', rotation: '位置与尺寸', sizeRange: '适用尺寸范围', size: '适用尺寸范围', minFontSize: '缩字下限',
+  layout: '排布', padding: '排布', clip: '外观', itemLayout: '每项排布',
+  list: '循环', reverse: '循环', slice: '循环', mergeBy: '循环', template: '调用', data: '调用', args: '传入参数',
+  content: '内容', font: '文字', fontSize: '文字', letterSpacing: '文字', color: '文字', writingMode: '文字', horizontalAlign: '文字', verticalAlign: '文字', slant: '文字',
   source: '图片', tint: '图片', d: '形状', points: '形状', from: '形状', to: '形状', viewBox: '形状', fillRule: '形状',
   errorCorrectionLevel: '码', format: '码', showText: '码',
-  color: '颜色', fill: '颜色', stroke: '颜色', foreground: '颜色', background: '颜色', cornerRadius: '颜色', opacity: '颜色',
-  fit: '适配', minFontSize: '适配', visible: '条件显示', states: '状态样式',
+  fill: '外观', stroke: '外观', foreground: '外观', background: '外观', cornerRadius: '外观', opacity: '显示', visible: '显示',
+  fit: '适配', states: '状态样式',
 };
 
 const ELEMENT_GROUPS: Readonly<Record<string, Readonly<Record<string, PropertyGroup>>>> = {
-  image: { fit: '图片' }, line: { fit: '形状', stroke: '形状' }, polygon: { fit: '形状' }, path: { fit: '形状' },
-  qrcode: { content: '绑定' }, barcode: { content: '绑定', font: '码', fontSize: '码' },
+  image: { fit: '图片' }, line: { fit: '形状' }, polygon: { fit: '形状' }, path: { fit: '形状' },
+  text: { stroke: '文字', padding: '文字' }, loop: { template: '循环', data: '循环', padding: '每项排布' },
+  qrcode: { content: '码' }, barcode: { content: '码', font: '码', fontSize: '码' },
 };
 
 /** 枚举值的中文。同一个值在不同属性上意思不同时写 属性:值。 */
@@ -137,7 +143,7 @@ const VARIANT_KEYS: Readonly<Record<string, string>> = { var: '绑定变量', fi
 const FALLBACKS: Readonly<Record<string, unknown>> = {
   visible: true, opacity: 1, rotation: 0, clip: false, reverse: false, showText: false, letterSpacing: 0, slant: 0, color: '#000000', foreground: '#000000',
   writingMode: 'horizontal', horizontalAlign: 'start', verticalAlign: 'top', errorCorrectionLevel: 'M', fillRule: 'nonzero',
-  'layout.gap': 0, 'layout.rowGap': 0, 'layout.columnGap': 0, 'layout.wrap': false, 'itemLayout.gap': 0, 'itemLayout.wrap': false, 'fit.compressMin': 0.6,
+  'layout.gap': 0, 'layout.rowGap': 0, 'layout.columnGap': 0, 'layout.wrap': false, 'itemLayout.gap': 0, 'itemLayout.wrap': false, 'fit.compressMin': 0.6, 'fit.onFail': 'severe', 'fit.steps': [],
 };
 const ELEMENT_FALLBACKS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   image: { fit: 'contain' }, line: { fit: 'fill' }, polygon: { fit: 'fill' }, path: { fit: 'fill' }, barcode: { fontSize: 3 },
@@ -410,10 +416,14 @@ function noBindingReason(path: FieldPath, label: string, editor: Editor, context
 const prohibited = (fragments: readonly Schema[]) => new Set(fragments.flatMap((fragment) => (isObject(fragment['not']) && Array.isArray(fragment['not']['required']) ? fragment['not']['required'] as string[] : [])));
 
 function groupEditor(fragments: readonly Schema[], keys: readonly string[], value: unknown, path: FieldPath, context: Context): Editor {
-  const current = isObject(value) ? value : {}, required = requiredOf(fragments), hidden = prohibited(fragments);
+  const current = isObject(value) ? value : {}, required = requiredOf(fragments), hidden = prohibited(fragments), sets = exclusiveSets(fragments);
   return {
     kind: 'group', absent: value === undefined, initial: initialOf([{ type: 'object' }, ...fragments]),
-    fields: keys.filter((key) => !hidden.has(key)).map((key) => fieldOf(propertyView(fragments, key), current[key], [...path, key], required.has(key), context)),
+    fields: keys.filter((key) => !hidden.has(key)).map((key) => {
+      const field = fieldOf(propertyView(fragments, key), current[key], [...path, key], required.has(key), context);
+      const others = sets.filter((set) => set.includes(key)).flatMap((set) => set.filter((other) => other !== key));
+      return others.length ? { ...field, exclusive: others.map((other) => labelOf([...path, other], context)) } : field;
+    }),
   };
 }
 
@@ -430,10 +440,12 @@ function arrayEditor(fragments: readonly Schema[], value: unknown, path: FieldPa
       fields: views.map((item, index) => fieldOf([item], current[index], [...path, index], true, context)),
     };
   }
-  const alternatives = items ? alternativesOf(applying([items], undefined)) : undefined;
+  // 列表项的 Schema 分散在各片段：基础定义加收窄。只取最窄的会丢掉 oneOf（竖排文字的片段只收窄了 slant）。
+  const itemViews = fragments.flatMap((fragment) => (isObject(fragment['items']) ? [fragment['items']] : []));
+  const alternatives = itemViews.length ? alternativesOf(applying(itemViews, undefined)) : undefined;
   return {
     kind: 'list', minItems,
-    items: current.map((item, index) => fieldOf(items ? [items] : [], item, [...path, index], true, context)),
+    items: current.map((item, index) => fieldOf(itemViews, item, [...path, index], true, context)),
     append: alternatives
       ? flatAlternatives(alternatives).map((alternative) => ({ label: variantLabel(alternative, path), value: initialOf([alternative]) }))
       : [{ label: '一项', value: initialOf(items ? [items] : []) }],
@@ -495,7 +507,9 @@ export function propertyPanel(document: unknown, path: string): PropertyPanel | 
   for (const key of propertyKeys(fragments)) {
     if (key === 'type' || key === 'children') continue;
     const missing = (dependent[key] ?? []).filter((name) => !(name in element));
-    const field = fieldOf(propertyView(fragments, key), element[key], [key], required.has(key), context, missing);
+    const generated = fieldOf(propertyView(fragments, key), element[key], [key], required.has(key), context, missing);
+    // 写了变量的不拦：那是已有的内容，由问题清单说明。
+    const field = key === 'slant' && type === 'text' && element['writingMode'] === 'vertical' && !isObject(element[key]) ? { ...generated, blocked: '竖排文字不能倾斜（M109）' } : generated;
     const group = ELEMENT_GROUPS[type]?.[key] ?? GROUPS[key] ?? '其他';
     // 位置尺寸摊开放进分组，不再套一层。
     if (key === 'place' && field.editor.kind === 'group') field.editor.fields.forEach((inner) => add(group, inner));
@@ -539,14 +553,19 @@ export function listItemPanel(document: unknown, list: TemplateList, index: numb
 
 // —— 写回 ——
 
-/** 值里互斥的键（place 的 left 与 right）：写了一边就去掉另一边。 */
-function excludedBy(fragments: readonly Schema[], current: JsonObject, written: string | number | undefined): string[] {
-  const sets = fragments.flatMap((fragment) => {
+/** Schema 的 not 列的键组。一组两个键是互斥（place 的左与右）；一组一个键是这个分支不许写。 */
+function notSets(fragments: readonly Schema[]): readonly (readonly string[])[] {
+  return fragments.flatMap((fragment) => {
     const not = isObject(fragment['not']) ? fragment['not'] : undefined;
     if (!not) return [];
     return [...(Array.isArray(not['required']) ? [not['required'] as string[]] : []), ...(Array.isArray(not['anyOf']) ? (not['anyOf'] as Schema[]).flatMap((part) => (Array.isArray(part['required']) ? [part['required'] as string[]] : [])) : [])];
   });
-  return sets.flatMap((set) => (set.every((key) => key in current) ? set.filter((key) => key !== written) : []));
+}
+const exclusiveSets = (fragments: readonly Schema[]) => notSets(fragments).filter((set) => set.length > 1);
+
+/** 值里互斥的键：写了一边就去掉另一边；这个分支不许写的也去掉。 */
+function excludedBy(fragments: readonly Schema[], current: JsonObject, written: string | number | undefined): string[] {
+  return notSets(fragments).flatMap((set) => (set.every((key) => key in current) ? set.filter((key) => key !== written) : []));
 }
 
 /**

@@ -11,7 +11,7 @@ import { api } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
-import { DesignInspector } from '../design/panels.js';
+import { DesignInspector, InlineTextEditor } from '../design/panels.js';
 import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
@@ -85,6 +85,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const [locateTick, setLocateTick] = useState(0);
   const [variable, setVariable] = useState<VariableSelection>();
   const [hoverVariable, setHoverVariable] = useState<{ readonly template: string; readonly name: string }>();
+  const [inlineText, setInlineText] = useState<string>();
 
   const openTemplate = (template: string) => go(['templates', template, 'design'], template === root ? {} : { in: root });
 
@@ -150,6 +151,12 @@ function Design(props: { readonly name: string; readonly root: string }) {
     const at = through && selection?.instance ? stack.indexOf(selection.instance) : -1;
     pick(through ? stack[(at + 1) % stack.length]! : stack[0]!);
   };
+  /** 双击图上的文字：选中最深的元素，就地打开内容编辑。不是文字就只是选中。 */
+  const editText = (stack: readonly string[]) => {
+    const instance = stack[0]!;
+    pick(instance);
+    if (elementOf(instance)?.['type'] === 'text') setInlineText(instance);
+  };
   const selected = selection?.template === name ? selection : undefined;
   const instances = instancesOf(reply, selected);
   // 变量的当前值：选中实例所在的作用域；没选中时取这个模板的第一处。
@@ -176,6 +183,12 @@ function Design(props: { readonly name: string; readonly root: string }) {
     const child = find(reply.layout.root)?.children?.find((node) => node.visible && locations.has(node.path));
     if (child) pick(child.path);
   };
+
+  // 换了选中（点别处、Esc 上一层）就地编辑器跟着收起。
+  useEffect(() => { if (selection?.instance !== inlineText) setInlineText(undefined); }, [selection?.instance]);
+  const inlineEditor = inlineText && doc && selected?.instance === inlineText
+    ? { instance: inlineText, editor: <InlineTextEditor doc={doc} session={session} selected={selected} {...(inspection ? { inspection } : {})} documentOf={documentOf} onVariable={openVariable} onSelected={setSelection} onClose={() => setInlineText(undefined)} /> }
+    : undefined;
 
   const undo = () => { const template = session.undo(); if (template && template !== name) openTemplate(template); };
   const redo = () => { const template = session.redo(); if (template && template !== name) openTemplate(template); };
@@ -265,7 +278,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} {...(inlineEditor ? { inline: inlineEditor } : {})} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;

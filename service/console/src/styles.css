@@ -604,6 +604,7 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .prop-section { padding: 12px 0; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 8px; }
 .prop-section:first-of-type { border-top: 1px solid var(--line); }
 .prop-section > h3 { font-size: 12px; font-weight: 600; color: var(--muted); }
+.prop-section > p { margin: 0; }
 .prop { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 10px; align-items: center; min-width: 0; }
 .prop.wide { grid-template-columns: minmax(0, 1fr); }
 .prop-label { font-size: 13px; color: var(--muted); }
@@ -613,14 +614,15 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .prop-control > .prop-group, .prop-control > .prop-tuple, .prop-control > .prop-list, .prop-control > .prop-error { flex: 1 1 100%; }
 .prop select.prop-variant { flex: 0 1 auto; width: auto; max-width: 96px; }
 .prop-inline { display: contents; }
-.prop-more > summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 2px 0; }
-.prop-more-body { display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
 .prop .color-input { min-width: 0; }
 .prop .color-input input[type="color"] { flex: none; width: 36px; min-height: 32px; }
+.color-input input[type="color"].unset { opacity: .25; }
 .prop-error { font-size: 12px; color: var(--bad); }
 .prop-label.draggable { cursor: ew-resize; user-select: none; touch-action: none; }
 .prop-state-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--mark); vertical-align: middle; }
-.prop-nobind { display: none; grid-column: 1 / -1; margin: 0; }
+/* 聚焦时才出现的说明浮在下面，不占位：占位的话失焦时下面的内容会跳一下，点击就落空了。 */
+.prop { position: relative; }
+.prop-nobind { display: none; position: absolute; top: 100%; left: 106px; right: 0; z-index: 5; margin: 2px 0 0; padding: 3px 6px; border: 1px solid var(--hair); border-radius: 4px; background: var(--surface); pointer-events: none; }
 .prop:focus-within > .prop-nobind { display: block; }
 .value-cell { position: relative; display: flex; flex-direction: column; gap: 3px; flex: 1 1 100%; min-width: 0; }
 .value-cell-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
@@ -633,8 +635,8 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .value-bound-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .value-bound .value-text { flex: 0 1 auto; color: var(--muted); }
 .value-origin { margin: 0; color: var(--faint); line-height: 1.5; }
-/* 下面多一行来源链时，标签对齐灰底条，不对齐整格的中线。 */
-.prop:has(> .prop-control .value-origin) > .prop-label { align-self: start; margin-top: 7px; }
+/* 下面多一行来源链或一组子项时，标签对齐第一行，不对齐整格的中线。 */
+.prop:has(> .prop-control .value-origin) > .prop-label, .prop:has(> .prop-control .prop-group) > .prop-label { align-self: start; margin-top: 7px; }
 .value-origin button.link { padding: 0 1px; font-size: inherit; }
 .value-popover { position: absolute; right: 0; top: 100%; z-index: 40; width: min(280px, calc(100vw - 32px)); max-height: 360px; margin-top: 4px; padding: 8px; overflow: auto; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
 .value-popover p { margin: 0; }
@@ -646,10 +648,39 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .value-extract { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .value-extract label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
 .value-extract input { min-height: 30px; font-size: 13px; }
+.prop-segmented { display: flex; width: 100%; }
+.prop-segmented button { flex: 1 1 0; min-width: 0; min-height: 28px; height: 28px; padding: 0 4px; font-size: 12.5px; font-weight: 400; }
+.prop-segmented button.implied { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.value-cell-row > .prop-segmented { flex: 1 1 0; }
+.content-editor { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.token-box { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-height: 38px; padding: 4px 6px; border: 1px solid var(--field); border-radius: var(--r); background: var(--surface); cursor: text; }
+.token-box:focus-within { border-color: var(--ink); }
+.token-box input.token-text { flex: none; max-width: 100%; min-width: 0; min-height: 24px; height: 24px; padding: 0 1px; border: 0; border-radius: 3px; background: none; font-size: 13px; outline: none; }
+.token-box input.token-text.styled { text-decoration: underline dotted var(--mark); text-underline-offset: 3px; }
+.token-box input.token-text.gap { background: none; }
+.token-slot { flex: none; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 24px; height: 24px; padding: 0 6px; border: 0; border-radius: 4px; background: var(--sunken); color: var(--ink); font-size: 12.5px; font-weight: 400; }
+.token-slot:hover:not(:disabled), .token-slot[aria-expanded="true"] { background: var(--accent-soft); }
+.token-slot.styled { box-shadow: inset 0 -2px 0 var(--mark); }
+.token-slot .value-text { max-width: 80px; }
+.token-format { font-size: 11px; color: var(--muted); }
+.content-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.content-actions button { min-height: 26px; height: 26px; padding: 0 8px; gap: 4px; }
+.content-actions svg { width: 12px; height: 12px; }
+.content-hint { margin: 0; }
+.value-popover-field { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.value-popover-field input, .value-popover-field select { min-height: 30px; font-size: 13px; }
+.value-popover-group { display: flex; flex-direction: column; gap: 4px; }
+.value-popover .prop { grid-template-columns: 72px minmax(0, 1fr); }
+.fit-result { margin: 0; padding: 6px 8px; border-radius: var(--r); background: var(--sunken); color: var(--ink); }
+.fit-result.over { color: var(--bad); font-weight: 600; }
+.inline-anchor { position: absolute; z-index: 30; width: 340px; max-width: calc(100% - 16px); }
+.inline-text { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
 .prop-group { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 2px solid var(--hair); }
 .prop-tuple { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 6px; }
 .prop-list { display: flex; flex-direction: column; gap: 8px; }
 .prop-list-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: var(--r); background: var(--sunken); }
+/* 列表项是纵向排的：输入框的 flex-basis 在这里变成高度。 */
+.prop-list-item input:not([type="color"]):not([type="checkbox"]) { flex: none; }
 .prop-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .prop-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .prop-actions input { flex: 1 1 120px; min-height: 32px; font-size: 13px; }

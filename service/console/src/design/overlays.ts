@@ -23,6 +23,13 @@ export function fitSummary(root: LayoutNode): FitSummary {
   };
 }
 
+/** 这一处实例的适配结果（方案第 7 节）："压到 74%，字号 10 mm，字距 0 mm"。 */
+export function fitResult(text: NonNullable<LayoutNode['text']>): string {
+  const round = (value: number) => Math.round(value * 100) / 100;
+  const compressed = text.compression < 0.999 ? `压到 ${Math.round(text.compression * 100)}%` : '没有压缩';
+  return `${compressed}，字号 ${round(text.fontSize)} mm，字距 ${round(text.spacing)} mm${text.overflow ? '，仍放不下' : ''}`;
+}
+
 /** 元素的内容从哪来：有插槽或绑定的是数据驱动，其余是固定内容；不是内容元素时 undefined。 */
 export function contentKind(element: JsonObject | undefined): 'data' | 'fixed' | undefined {
   if (!element) return undefined;
