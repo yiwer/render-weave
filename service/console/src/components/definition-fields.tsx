@@ -2,9 +2,11 @@
  * 数据定义页面共用的字段部件（M360）：一行摘要、字段树、谁在用、改名与删字段的影响、这种类型能写的约束。
  * 数据定义的编辑页与静态数据定义的详情页都用；只显示与改值，不调接口。
  */
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { parseVersion, versionLabel } from '../form/schema-version.js';
 import { constraintText, isRequired, typeText, withConstraint } from '../form/definition.js';
+import { duplicateIndexes, enumTexts, enumValue, pastedLines } from '../form/enum-list.js';
+import { CROSS, Icon, PLUS } from './icon.js';
 import { href } from '../hooks.js';
 import type { DefinitionDocument, DefinitionField, DefinitionItems, FieldType, Problem, SchemaRef, StaticSchemaSummary, TemplateBinding } from '../types.js';
 
@@ -160,7 +162,7 @@ export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T
           {number('minLength', '最短（字）')}
           {number('maxLength', '最长（字）')}
           <PatternField id={`${prefix}-pattern`} label={`${tag}正则`} value={typeof c['pattern'] === 'string' ? c['pattern'] : ''} onChange={(value) => set('pattern', value)} />
-          <EnumField id={`${prefix}-enum`} label={`${tag}可选值（一行一个）`} value={c['enum']} numeric={false} onChange={(value) => set('enum', value)} />
+          <EnumField id={`${prefix}-enum`} label={`${tag}可选值`} value={c['enum']} numeric={false} onChange={(value) => set('enum', value)} />
         </>
       );
     case 'number':
@@ -169,7 +171,7 @@ export function TypeFields<T extends DefinitionItems>(props: { readonly owner: T
           {number('min', '下限', false)}
           {number('max', '上限', false)}
           <label className={`constraint-card inline wide${c['integer'] === true ? ' on' : ''}`}><input type="checkbox" checked={c['integer'] === true} onChange={(event) => set('integer', event.target.checked ? true : undefined)} />{tag}只能是整数</label>
-          <EnumField id={`${prefix}-enum`} label={`${tag}可选值（一行一个）`} value={c['enum']} numeric onChange={(value) => set('enum', value)} />
+          <EnumField id={`${prefix}-enum`} label={`${tag}可选值`} value={c['enum']} numeric onChange={(value) => set('enum', value)} />
         </>
       );
     case 'image': {
@@ -217,18 +219,89 @@ function PatternField(props: { readonly id: string; readonly label: string; read
   );
 }
 
-/** 枚举：一行一个。数值枚举读不成数的原样写回，由服务端报问题。 */
+/**
+ * 枚举（M390）：一项一个输入框，能增删、上下移动；回车加一项，空的一项按退格删掉，粘贴多行拆成多项。
+ * 自己留着每一项正在打的字，空的项不进文档；重复的当场提示，还是写回去，由服务端报问题。
+ */
 function EnumField(props: { readonly id: string; readonly label: string; readonly value: unknown; readonly numeric: boolean; readonly onChange: (value: unknown) => void }) {
-  const [text, setText] = useState(Array.isArray(props.value) ? props.value.join('\n') : '');
-  const change = (next: string) => {
-    setText(next);
-    const lines = next.split('\n').map((line) => line.trim()).filter(Boolean);
-    props.onChange(lines.length ? (props.numeric ? lines.map((line) => (Number.isNaN(Number(line)) ? line : Number(line))) : lines) : undefined);
+  const nextKey = useRef(0);
+  const row = (text: string) => ({ key: nextKey.current++, text });
+  const [rows, setRows] = useState(() => {
+    const texts = enumTexts(props.value);
+    return (texts.length ? texts : ['']).map(row);
+  });
+  const list = useRef<HTMLOListElement>(null);
+  // 改完这一轮渲染之后，焦点到第几项。
+  const [focusAt, setFocusAt] = useState<number>();
+  useEffect(() => {
+    if (focusAt === undefined) return;
+    list.current?.querySelectorAll('input')[focusAt]?.focus();
+    setFocusAt(undefined);
+  }, [focusAt]);
+  const write = (next: typeof rows, focus?: number) => {
+    setRows(next);
+    if (focus !== undefined) setFocusAt(focus);
+    props.onChange(enumValue(next.map((item) => item.text), props.numeric));
   };
-  const optional = useOptional(Array.isArray(props.value), () => change(''));
+  const optional = useOptional(Array.isArray(props.value), () => write([row('')]));
+  const duplicates = duplicateIndexes(rows.map((item) => item.text), props.numeric);
+  const insertAfter = (index: number, texts: readonly string[]) => [...rows.slice(0, index + 1), ...texts.map(row), ...rows.slice(index + 1)];
+  const remove = (index: number) => {
+    if (rows.length === 1) write([row('')], 0);
+    else write(rows.filter((_item, at) => at !== index), Math.min(index, rows.length - 2));
+  };
+  const move = (index: number, by: -1 | 1) => {
+    const next = [...rows];
+    [next[index], next[index + by]] = [next[index + by]!, next[index]!];
+    write(next, index + by);
+  };
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      write(insertAfter(index, ['']), index + 1);
+    } else if (event.key === 'Backspace' && !rows[index]!.text && rows.length > 1) {
+      event.preventDefault();
+      write(rows.filter((_item, at) => at !== index), Math.max(index - 1, 0));
+    }
+  };
+  const onPaste = (event: ClipboardEvent<HTMLInputElement>, index: number) => {
+    const lines = pastedLines(event.clipboardData.getData('text'));
+    if (lines.length < 2) return;
+    event.preventDefault();
+    const merged = rows.map((item, at) => (at === index ? { ...item, text: lines[0]! } : item));
+    const added = lines.slice(1).map(row);
+    write([...merged.slice(0, index + 1), ...added, ...merged.slice(index + 1)], index + added.length);
+  };
   return (
     <ConstraintCard id={props.id} label={props.label} on={optional.on} wide onToggle={optional.toggle}>
-      <textarea ref={optional.control} id={props.id} rows={3} value={text} onChange={(event) => change(event.target.value)} />
+      <ol ref={list} className="enum-list" aria-label={props.label}>
+        {rows.map((item, index) => {
+          const name = `${props.label} 第 ${index + 1} 项`, repeated = duplicates.has(index);
+          return (
+            <li key={item.key} className="enum-row" data-testid="enum-row">
+              <div className="enum-row-main">
+                <input ref={index === 0 ? optional.control : undefined} id={index === 0 ? props.id : undefined} type="text" {...(props.numeric ? { inputMode: 'decimal' as const } : {})} aria-label={name} aria-invalid={repeated} value={item.text}
+                  onChange={(event) => write(rows.map((other, at) => (at === index ? { ...other, text: event.target.value } : other)))}
+                  onKeyDown={(event) => onKeyDown(event, index)} onPaste={(event) => onPaste(event, index)} />
+                {optional.on && (
+                  <span className="enum-row-tools">
+                    <button type="button" className="icon" aria-label={`上移${name}`} title="上移" disabled={index === 0} onClick={() => move(index, -1)}>↑</button>
+                    <button type="button" className="icon" aria-label={`下移${name}`} title="下移" disabled={index === rows.length - 1} onClick={() => move(index, 1)}>↓</button>
+                    <button type="button" className="icon" aria-label={`删除${name}`} title="删除" onClick={() => remove(index)}><Icon d={CROSS} /></button>
+                  </span>
+                )}
+              </div>
+              {repeated && <span className="enum-row-note" role="alert">和前面的重复了</span>}
+            </li>
+          );
+        })}
+      </ol>
+      {optional.on && (
+        <div className="enum-foot">
+          <button type="button" className="small quiet" onClick={() => write(insertAfter(rows.length - 1, ['']), rows.length)}><Icon d={PLUS} />添加可选值</button>
+          <span className="small muted">回车加一项，可以粘贴多行</span>
+        </div>
+      )}
     </ConstraintCard>
   );
 }

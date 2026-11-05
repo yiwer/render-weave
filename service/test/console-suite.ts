@@ -1312,7 +1312,49 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await addField(target, { displayName: '标题', name: 'title', type: '文本', required: true }, async (form) => {
         await form.getByLabel('最短（字）', { exact: true }).fill('1');
         await form.getByLabel('最长（字）', { exact: true }).fill('20');
-        await form.getByLabel('可选值（一行一个）', { exact: true }).fill('甲\n乙');
+        // 可选值列表（M390）：一项一个输入框。打字就算启用；回车加一项，焦点到新的一项；空的项不进文档。
+        const choice = (n: number) => form.getByLabel(`可选值 第 ${n} 项`, { exact: true });
+        expect(await form.getByRole('button', { name: '添加可选值' }).count(), '没启用时只有一个输入框').toBe(0);
+        await choice(1).fill('甲');
+        expect(await form.getByLabel('启用可选值').isChecked()).toBe(true);
+        await choice(1).press('Enter');
+        await choice(2).pressSequentially('乙');
+        await form.getByRole('button', { name: '添加可选值' }).click();
+        await expect.poll(() => choice(3).evaluate((element) => element === document.activeElement), { message: '焦点到新的一项' }).toBe(true);
+        // 重复的当场提示；空的一项按退格删掉，焦点回到上一项。
+        await choice(3).fill('甲');
+        await form.getByTestId('enum-row').nth(2).getByRole('alert').filter({ hasText: '和前面的重复了' }).waitFor();
+        await choice(3).fill('');
+        expect(await form.getByTestId('enum-row').nth(2).getByRole('alert').count()).toBe(0);
+        await choice(3).press('Backspace');
+        expect(await form.getByTestId('enum-row').count()).toBe(2);
+        // 粘贴多行拆成多项；上下移动；删除一项。
+        await choice(2).fill('');
+        await target.evaluate(`(() => {
+          const data = new DataTransfer();
+          data.setData('text', '乙\\r\\n丙\\n\\n丁');
+          document.querySelector('input[aria-label="可选值 第 2 项"]').dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+        })()`);
+        expect(await form.getByTestId('enum-row').locator('input').evaluateAll((items) => items.map((item) => (item as unknown as { value: string }).value))).toEqual(['甲', '乙', '丙', '丁']);
+        await form.getByRole('button', { name: '下移可选值 第 1 项' }).click();
+        await form.getByRole('button', { name: '删除可选值 第 4 项' }).click();
+        await form.getByRole('button', { name: '删除可选值 第 3 项' }).click();
+        await form.getByRole('button', { name: '下移可选值 第 1 项' }).click();
+        expect(await form.getByRole('button', { name: '上移可选值 第 1 项' }).isDisabled()).toBe(true);
+        expect(await form.getByRole('button', { name: '下移可选值 第 2 项' }).isDisabled()).toBe(true);
+        expect(await choice(1).inputValue()).toBe('甲');
+        expect(await choice(2).inputValue()).toBe('乙');
+        const choiceText = fieldRow(target, 'title').getByTestId('field-constraints');
+        expect(await choiceText.textContent()).toContain('甲、乙');
+        // 取消勾选：这条约束没了，回到一个空的输入框；再打字又启用。
+        await form.getByLabel('启用可选值').uncheck();
+        expect(await form.getByTestId('enum-row').count()).toBe(1);
+        expect(await choice(1).inputValue()).toBe('');
+        expect(await choiceText.textContent()).not.toContain('甲');
+        await choice(1).fill('甲');
+        await choice(1).press('Enter');
+        await choice(2).pressSequentially('乙');
+        expect(await choiceText.textContent()).toContain('甲、乙');
         // 可选约束（M379）：打字就算启用，取消勾选就去掉这条，勾上时焦点到输入框。
         const limits = fieldRow(target, 'title').getByTestId('field-constraints');
         expect(await form.getByLabel('启用最短（字）').isChecked()).toBe(true);
@@ -1330,6 +1372,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await addField(target, { displayName: '金额', name: 'amount', type: '数值' }, async (form) => {
         await form.getByLabel('下限', { exact: true }).fill('0.5');
         await form.getByLabel('上限', { exact: true }).fill('100');
+        expect(await form.getByLabel('可选值 第 1 项', { exact: true }).getAttribute('inputmode'), '数值枚举用数字键盘').toBe('decimal');
       });
       await addField(target, { displayName: '日期', name: 'day', type: '日期' });
       await addField(target, { displayName: '时刻', name: 'at', type: '时刻' });
@@ -1339,6 +1382,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await addField(target, { displayName: '标签', name: 'tags', type: '列表' }, async (form) => {
         await form.getByLabel('最多项数', { exact: true }).fill('3');
         await form.getByLabel('元素最长（字）', { exact: true }).fill('4');
+        expect(await form.getByLabel('元素可选值 第 1 项', { exact: true }).count(), '列表元素也是同一个组件').toBe(1);
       });
       await addField(target, { displayName: '站点', name: 'stops', type: '列表' }, async (form) => {
         await form.getByLabel('元素类型', { exact: true }).selectOption({ label: '数据定义引用' });

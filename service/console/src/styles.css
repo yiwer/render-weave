@@ -660,6 +660,18 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .constraint-card-head input { flex: none; }
 .constraint-card input:not([type="checkbox"]), .constraint-card textarea { width: 100%; min-height: 34px; }
 .constraint-card:not(.on) input:not([type="checkbox"]), .constraint-card:not(.on) textarea { border-color: var(--hair); background: var(--sunken); }
+/* 可选值列表（M390）：一项一行，工具收在右边。 */
+.enum-list { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.enum-row { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.enum-row-main { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.constraint-card .enum-row-main input:not([type="checkbox"]) { flex: 1; width: auto; min-width: 0; }
+.enum-row-main input[aria-invalid="true"] { border-color: var(--bad); }
+.enum-row-tools { display: inline-flex; flex: none; }
+.enum-row-tools button.icon { width: 26px; min-height: 30px; }
+.enum-row-tools button.icon:disabled { opacity: .35; }
+.enum-row-tools svg.icon { width: 14px; height: 14px; }
+.enum-row-note { font-size: 12px; color: var(--bad); }
+.enum-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .studio-inspector .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .studio-inspector .field-used { margin-top: 14px; }
 .studio-inspector .impact-note { margin-top: 12px; }
