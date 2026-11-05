@@ -7,6 +7,7 @@
  * - 代建轮次（票据 09）：可选，各轮 round.json 的 token 用量，与推送同一事务记为该租户的用量事件；已记过的轮次跳过，只记不拦。
  * - 审批策略（P1 票据 11）：写入碰到打开了策略的范围时，整份推送变成发布申请；批准时走同一个 commitPush，按当时的状态重算冲突。
  */
+import { documentBytes, parsedDocument } from './api/authoring-documents.js';
 import { ApiError, problem, ServiceProblemCodes, type ServiceProblem } from './api/problems.js';
 import type { AuditWriter } from './api/publish-requests.js';
 import { auditDiff } from './audit.js';
@@ -265,12 +266,50 @@ export async function commitPush(scope: TenantScope, manifest: PushManifest, pus
     writes = pushWrites(manifest, diff);
     const problems = await verifyContents(writes, storage.contents);
     if (problems.length) throw new ApiError(400, problems);
+    writes = { ...writes, definitions: await pushedDefinitions(storage, state, writes.documents) };
     return writes;
   }, by);
   const result = { ...diff!, documents: diff!.documents.map((item) => (revisions.has(item.key) && item.kind === 'template' ? { ...item, revision: revisions.get(item.key)! } : item)) };
   await audit('push.commit', { type: 'push', id: pushId }, { diff: pushAuditDiff(before!, writes!) });
+  for (const { name, sha256 } of writes!.definitions ?? []) {
+    await audit('definition.create', { type: 'definition', id: name }, { afterSha256: sha256, diff: auditDiff([{ path: `schema:${name}`, change: 'added', afterSha256: sha256 }]) });
+  }
   const usage = { rounds: manifest.rounds?.length ?? 0, recorded: recordedRounds.length, tokens: roundTokens(manifest, recordedRounds) };
   return { pushId, ...result, usage };
+}
+
+/**
+ * 每个名称最新一个静态版本去掉版本号，就是它的数据定义的初始内容（ADR-0030）。statics 按登记的先后，最后一个就是最新的。
+ * 推送第一次带来一个名称、部署步骤补存量都用它。内容读不到的跳过。
+ */
+export async function definitionsFromStatics(statics: readonly StoredDocument[], contents: ContentStore, wanted: (name: string) => boolean): Promise<{ readonly name: string; readonly bytes: Uint8Array }[]> {
+  const latest = new Map<string, StoredDocument>();
+  for (const stored of statics) {
+    const name = stored.key.slice(0, stored.key.lastIndexOf('@'));
+    if (wanted(name)) latest.set(name, stored);
+  }
+  const found = await Promise.all([...latest].map(async ([name, stored]) => {
+    const content = await contents.get(stored.sha256);
+    if (!content) return undefined;
+    const { version: _version, ...rest } = parsedDocument(content) as Record<string, unknown>;
+    return { name, bytes: documentBytes(rest) };
+  }));
+  return found.filter((item) => item !== undefined);
+}
+
+/**
+ * 这次推送第一次带来的名称要建的数据定义：已有数据定义的不动；有过静态版本而没有数据定义的是被删了，不复活（ADR-0030）。
+ * 同一次写入按键的长度再按键登记（ADR-0028），一次带来几个版本时取最后一个。
+ */
+export async function pushedDefinitions(storage: TenantStorage, state: AuthoringState, documents: readonly StoredDocument[]): Promise<NonNullable<PushWrites['definitions']>> {
+  const nameOf = (key: string) => key.slice(0, key.lastIndexOf('@'));
+  const known = new Set([
+    ...state.documents.filter((stored) => stored.kind === 'definition').map((stored) => nameOf(stored.key)),
+    ...(await storage.definitions()).map((definition) => definition.name),
+  ]);
+  const statics = documents.filter((stored) => stored.kind === 'definition').sort((a, b) => a.key.length - b.key.length || (a.key < b.key ? -1 : 1));
+  const created = await definitionsFromStatics(statics, storage.contents, (name) => !known.has(name));
+  return Promise.all(created.map(async ({ name, bytes }) => ({ name, sha256: await storage.contents.put(bytes), byteLength: bytes.length })));
 }
 
 /** 这次新记的轮次的 token 合计。 */

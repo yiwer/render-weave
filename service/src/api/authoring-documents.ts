@@ -1,5 +1,5 @@
 /**
- * 数据定义草案与模板工作副本共用的部分（P1 票据 04、07）：两种寻址，与按原始字节存的文档。
+ * 数据定义与模板工作副本共用的部分（P1 票据 04、07）：两种寻址，与按原始字节存的文档。
  */
 import type { FastifyRequest } from 'fastify';
 import type { TenantScope } from '../backend.js';
@@ -39,5 +39,5 @@ export function checkedDocument(body: unknown, name: string, what: string): Uint
 }
 
 /** 预期哈希不是当前内容：别人先保存了。回答带当前哈希，读回最新内容再改。 */
-export const staleDraft = (current: string, source: string, what = '草案') =>
+export const staleDraft = (current: string, source: string, what = '数据定义') =>
   new ApiError(409, [problem(ServiceProblemCodes.draftStale, source, `${what}已被别人保存，当前内容哈希是 ${current}；读回最新内容再改`)], { currentSha256: current });

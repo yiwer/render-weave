@@ -1,6 +1,6 @@
 /**
- * 发布数据定义草案（P1 票据 05，验收 A04、A10）：只经开放 API 驱动。预检用 M402 样例与构造的失配数据集；
- * 发布产物与本地 renderweave publish 的输出比字节；回退是从旧版另起草案再发布。
+ * 发布数据定义（ADR-0030，P1 票据 05、17，验收 A04、A10）：只经开放 API 驱动。预检用 M402 样例与构造的失配数据集；
+ * 发布产物与本地 renderweave publish 的输出比字节；发布只产出静态版本，数据定义不动。
  * 同一组用例跑两种后端：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑。
  */
 import { createHash, randomUUID } from 'node:crypto';
@@ -21,7 +21,7 @@ const text = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 const ROUTE_SIGN = encodeURIComponent('线路牌'), GREETING = encodeURIComponent('问候');
 
 export function describeDefinitionPublish(name: string, makeBackend: () => Promise<ServiceBackend>): void {
-  describe(`发布数据定义草案（${name}）`, () => {
+  describe(`发布数据定义（${name}）`, () => {
     let world: World, backend: ServiceBackend;
     /** 下一次登记之前先做的事：用来排出"算好版本之后被别人抢先"的先后。 */
     let beforeCommit: (() => Promise<void>) | undefined;
@@ -31,13 +31,13 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       // 只包一层登记：其余操作原样。
       const wrapped: ServiceBackend = Object.create(backend, { tenant: { value: (id: string): TenantScope => {
         const scope = backend.tenant(id), storage: TenantStorage = scope.storage;
-        const publishDefinitionDraft: TenantStorage['publishDefinitionDraft'] = async (...args) => {
+        const publishDefinition: TenantStorage['publishDefinition'] = async (...args) => {
           const before = beforeCommit;
           beforeCommit = undefined;
           await before?.();
-          return storage.publishDefinitionDraft(...args);
+          return storage.publishDefinition(...args);
         };
-        return Object.create(scope, { storage: { value: Object.create(storage, { publishDefinitionDraft: { value: publishDefinitionDraft } }) } });
+        return Object.create(scope, { storage: { value: Object.create(storage, { publishDefinition: { value: publishDefinition } }) } });
       } } });
       world = await createWorld(wrapped);
     });
@@ -51,18 +51,18 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       await seed(backend.tenant(id).storage);
       return { id, engineer: issued.body.token as string, admin: await world.member(id, 'admin'), operator: await world.member(id, 'operator') };
     };
-    const fromVersion = (token: string, version: number, name = ROUTE_SIGN, prefix = '/v1') => world.call('POST', `${prefix}/definitions/${name}/draft`, token, { fromVersion: version });
-    const documentOf = async (token: string, name = ROUTE_SIGN) => JSON.parse((await world.call('GET', `/v1/definitions/${name}/draft`, token)).body.content);
-    const save = (token: string, name: string, document: unknown, expected: string) => world.call('PUT', `/v1/definitions/${name}/draft?expectedSha256=${expected}`, token, text(document), JSON_TYPE);
+    const current = (token: string, name = ROUTE_SIGN, prefix = '/v1') => world.call('GET', `${prefix}/definitions/${name}`, token);
+    const documentOf = async (token: string, name = ROUTE_SIGN) => JSON.parse((await world.call('GET', `/v1/definitions/${name}`, token)).body.content);
+    const save = (token: string, name: string, document: unknown, expected: string) => world.call('PUT', `/v1/definitions/${name}?expectedSha256=${expected}`, token, text(document), JSON_TYPE);
     const preflight = async (token: string, expectedSha256: string, name = ROUTE_SIGN, prefix = '/v1') => {
-      const reply = await world.call('POST', `${prefix}/definitions/${name}/draft/publish-check`, token, { expectedSha256 });
+      const reply = await world.call('POST', `${prefix}/definitions/${name}/publish-check`, token, { expectedSha256 });
       expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
       return reply.body;
     };
-    const publish = (token: string, expectedSha256: string, name = ROUTE_SIGN, prefix = '/v1') => world.call('POST', `${prefix}/definitions/${name}/draft/publish`, token, { expectedSha256 });
-    /** 客户管理员从 v1 另起，在线路牌上加一个必填字段、改一个显示名称、删一个字段。 */
+    const publish = (token: string, expectedSha256: string, name = ROUTE_SIGN, prefix = '/v1') => world.call('POST', `${prefix}/definitions/${name}/publish`, token, { expectedSha256 });
+    /** 客户管理员在线路牌上加一个必填字段、改一个显示名称、删一个字段。 */
     const editedDraft = async (token: string) => {
-      const first = (await fromVersion(token, 1)).body;
+      const first = (await current(token)).body;
       const document = await documentOf(token);
       document.fields.find((field: any) => field.name === 'fare').displayName = '票价';
       document.fields = document.fields.filter((field: any) => field.name !== 'scheduleType');
@@ -72,7 +72,7 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       return { document, sha256: saved.body.sha256 as string };
     };
 
-    it('预检：与基于版本的字段级差异、按新版失配的数据集份数与问题摘要、仍绑定旧版的模板；不写任何东西', async () => {
+    it('预检：与最新版本的字段级差异、按新版失配的数据集份数与问题摘要、仍绑定旧版的模板；不写任何东西', async () => {
       const target = await tenant(), token = target.admin.token;
       const { sha256: draftSha } = await editedDraft(token);
       const schemasBefore = (await world.call('GET', '/v1/static-schemas', token)).raw;
@@ -89,17 +89,17 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect(check.datasets.samples).toEqual([{ id: expect.any(String), problemCount: expect.any(Number), problems: expect.any(Array) }]);
       expect(JSON.stringify(check.datasets.samples[0].problems)).toContain('operatorCode');
       expect(check.templates).toEqual([{ name: '标准线路单边', base: { name: '线路牌', version: 1 } }]);
-      // 只读：静态版本与草案都没变。
+      // 只读：静态版本与数据定义都没变。
       expect((await world.call('GET', '/v1/static-schemas', token)).raw).toBe(schemasBefore);
-      expect((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft`, token)).body.sha256).toBe(draftSha);
+      expect((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}`, token)).body.sha256).toBe(draftSha);
       // 预期哈希不是当前内容：看的不是这一份。
-      expect(await world.call('POST', `/v1/definitions/${ROUTE_SIGN}/draft/publish-check`, token, { expectedSha256: sha256('别的') }))
+      expect(await world.call('POST', `/v1/definitions/${ROUTE_SIGN}/publish-check`, token, { expectedSha256: sha256('别的') }))
         .toMatchObject({ status: 409, body: { problems: [{ code: 'draft.stale' }], currentSha256: draftSha } });
     });
 
     it('预检：只加可选字段时数据集不失配；有严重问题时只答问题，发布同样拒绝且问题码与本地发布相同', async () => {
       const target = await tenant(), token = target.admin.token;
-      const first = (await fromVersion(token, 1)).body, document = await documentOf(token);
+      const first = (await current(token)).body, document = await documentOf(token);
       document.fields.push({ name: 'memo', displayName: '备注', type: 'text' });
       const optional = await save(token, ROUTE_SIGN, document, first.sha256);
       expect((await preflight(token, optional.body.sha256)).datasets).toEqual({ total: 1, checked: 1, complete: true, mismatched: 0, samples: [] });
@@ -117,12 +117,44 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       const code = await runCli(['publish', '--definition', join(dir, 'schema.json'), '--workspace', M402_DIR, '--out', join(dir, 'out')], { stdout: (line) => out.push(line), stderr: (line) => out.push(line) });
       expect(code).not.toBe(0);
       expect(out.join('')).toContain('definition.constraintConflict');
-      // 草案还在，改正之后可以发布。
-      expect((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft`, token)).status).toBe(200);
+      // 数据定义还在，改正之后可以发布。
+      expect((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}`, token)).status).toBe(200);
       expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).status).toBe(404);
     });
 
-    it('发布：产物与本地 renderweave publish 逐字节相同，成对写入，草案留着；旧版本、模板与数据集不动；记审计', async () => {
+    it('发布只产出静态版本，对数据定义毫无影响（ADR-0030）：内容、哈希、保存人、保存时间逐项不变；接着改、接着发布；旧版本不变', async () => {
+      const target = await tenant(), token = target.admin.token;
+      const { sha256: firstSha } = await editedDraft(token);
+      const facts = async () => {
+        const { versions: _versions, fieldUses: _uses, ...rest } = (await current(token)).body;
+        return rest;
+      };
+      const before = await facts();
+      const v2 = await publish(token, firstSha);
+      expect(v2.status, v2.raw.slice(0, 300)).toBe(201);
+      expect(await facts(), '发布之后逐项不变').toEqual(before);
+      const v2Static = (await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).raw;
+
+      // 接着改：改的是同一个数据定义，已发布的版本看不到。
+      const document = JSON.parse(before.content);
+      document.displayName = '发布之后接着改';
+      const edited = await save(token, ROUTE_SIGN, document, firstSha);
+      expect(edited.status, edited.raw.slice(0, 300)).toBe(200);
+      expect((await current(token)).body).toMatchObject({ displayName: '发布之后接着改', createdAt: before.createdAt });
+      expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).raw, '已发布的版本不变').toBe(v2Static);
+
+      // 接着发布：与最新版本比较，读取时现算；同一份内容也能再发一个版本。
+      const check = await preflight(token, edited.body.sha256);
+      expect(check).toMatchObject({ version: 3, baseVersion: 2 });
+      expect(check.diff.definition).toEqual([expect.objectContaining({ key: 'displayName' })]);
+      expect((await publish(token, edited.body.sha256)).body).toMatchObject({ version: 3, baseVersion: 2 });
+      expect((await publish(token, edited.body.sha256)).body).toMatchObject({ version: 4, baseVersion: 3 });
+      expect((await current(token)).body.versions.map((item: any) => item.version)).toEqual([1, 2, 3, 4]);
+      expect((await current(token)).body).not.toHaveProperty('baseVersion');
+      expect((await current(token)).body.sha256, '发了两次还是这份内容').toBe(edited.body.sha256);
+    });
+
+    it('发布：产物与本地 renderweave publish 逐字节相同，成对写入；旧版本、模板与数据集不动；记审计', async () => {
       const target = await tenant(), token = target.admin.token;
       const { document, sha256: draftSha } = await editedDraft(token);
       const v1Before = (await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/1`, token)).raw;
@@ -147,10 +179,9 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       const readBack = await world.call('GET', `/v1/authoring/tenants/${target.id}/contents/${sha256(localCompiled)}`, target.engineer);
       expect(Buffer.compare(readBack.bytes, localCompiled)).toBe(0);
 
-      expect((await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft`, token)).body, '草案留着，内容不变，基于刚发布的版本（ADR-0028）').toMatchObject({ sha256: draftSha, baseVersion: 2 });
       const listed = (await world.call('GET', '/v1/definitions', token)).body.definitions.find((item: any) => item.name === '线路牌');
       expect(listed.versions.map((version: any) => version.version)).toEqual([1, 2]);
-      expect(listed.draft).toMatchObject({ baseVersion: 2 });
+      expect(listed.sha256).toBe(draftSha);
       expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/1`, token)).raw, '旧版本不变').toBe(v1Before);
       expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).status).toBe(200);
       expect((await world.call('GET', '/v1/templates', token)).raw, '模板不动').toBe(templatesBefore);
@@ -164,13 +195,12 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       });
     });
 
-    it('回退：草案留着，用旧版的内容覆盖草案再发布，得到内容与旧版相同的新版本；旧版本保持不变；预期哈希不符时拒绝', async () => {
+    it('回到旧内容没有单独的操作：把旧版的内容存回数据定义再发布，得到内容与旧版相同的新版本；旧版本保持不变；预期哈希不符时拒绝', async () => {
       const target = await tenant(), token = target.admin.token;
       const { sha256: draftSha } = await editedDraft(token);
       expect(await publish(token, sha256('别的内容'))).toMatchObject({ status: 409, body: { problems: [{ code: 'draft.stale' }], currentSha256: draftSha } });
       expect((await publish(token, draftSha)).status).toBe(201);
       const v2 = (await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).raw;
-      expect(await fromVersion(token, 1), '草案还在，不能再另起一份').toMatchObject({ status: 409, body: { problems: [{ code: 'input.duplicate' }] } });
 
       const read = async (version: number) => (await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/${version}`, token)).body;
       const { version: _version, ...oldContent } = (await read(1)).definition;
@@ -187,8 +217,8 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect((await world.call('GET', `/v1/static-schemas/${ROUTE_SIGN}/versions/2`, token)).raw).toBe(v2);
     });
 
-    it('版本可以自定义（ADR-0028）：字符串版本；v3 与 3 是同一个编号；不能重复，写法不对都拒绝；说明进发布记录；草案能接着发；最新的看发布的先后', async () => {
-      const target = await tenant(), token = target.admin.token, url = `/v1/definitions/${ROUTE_SIGN}/draft`;
+    it('版本可以自定义（ADR-0028）：字符串版本；v3 与 3 是同一个编号；不能重复，写法不对都拒绝；说明进发布记录；能接着发；最新的看发布的先后', async () => {
+      const target = await tenant(), token = target.admin.token, url = `/v1/definitions/${ROUTE_SIGN}`;
       const { sha256: draftSha, document } = await editedDraft(token);
       const publishAs = (body: Record<string, unknown>) => world.call('POST', `${url}/publish`, token, { expectedSha256: draftSha, ...body });
 
@@ -201,11 +231,11 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       const versions = async () => (await world.call('GET', '/v1/definitions', token)).body.definitions.find((item: any) => item.name === '线路牌').versions.map((item: any) => item.version);
       expect(await versions(), '写法不对的什么也没写').toEqual([1]);
 
-      // 字符串版本：草案留着，基于这一版；同一份内容可以再发一个版本，不写就是下一个编号。
+      // 字符串版本：数据定义不动；同一份内容可以再发一个版本，不写就是下一个编号。
       const named = await publishAs({ version: '2026-08', note: '  八月的版本  ' });
       expect(named.status, named.raw.slice(0, 300)).toBe(201);
       expect(named.body).toMatchObject({ version: '2026-08', baseVersion: 1 });
-      expect((await world.call('GET', url, token)).body).toMatchObject({ sha256: draftSha, baseVersion: '2026-08' });
+      expect((await world.call('GET', url, token)).body).toMatchObject({ sha256: draftSha });
       expect(await publishAs({ version: '2026-08' }), '不能重复').toMatchObject({ status: 400 });
       expect((await preflight(token, draftSha)).version, '预检给的还是下一个编号').toBe(2);
       expect((await publishAs({})).body).toMatchObject({ version: 2, baseVersion: '2026-08' });
@@ -227,23 +257,22 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       const summaries = (await world.call('GET', '/v1/static-schemas', token)).body.staticSchemas.filter((item: any) => item.name === '线路牌').map((item: any) => item.version);
       expect(summaries).toEqual([1, '2026-08', 2, 3, 'a.1_b-c']);
 
-      // 发布记录：新的在前，说明记下来；差异与基于的版本比。
+      // 发布记录：新的在前，说明记下来；差异与当时最新的版本比。
       const records = (await world.call('GET', `/v1/definition-publications?name=${ROUTE_SIGN}`, token)).body.publications as any[];
       expect(records.map((item) => item.version)).toEqual(['a.1_b-c', 3, 2, '2026-08', 1]);
       expect(records.find((item) => item.version === '2026-08')).toMatchObject({ note: '八月的版本', baseVersion: 1 });
       expect(records.find((item) => item.version === 2)).not.toHaveProperty('note');
       expect(records.find((item) => item.version === 2)).toMatchObject({ baseVersion: '2026-08', diff: { fields: [], definition: [] } });
 
-      // 引用字符串版本：数据集按这一版校验（这一版多了必填字段），另起草案也能从它开始；复制到新名称不受影响。
+      // 引用字符串版本：数据集按这一版校验（这一版多了必填字段），也能复制它成新的数据定义。
       const dataset = { dataset: { staticSchema: { name: '线路牌', version: '2026-08' } }, data: {} };
       const checked = await world.call('POST', '/v1/dataset-checks', token, dataset);
       expect(JSON.stringify(checked.body), '校验读到了这一版').toContain('operatorCode');
       const old = await world.call('POST', '/v1/dataset-checks', token, { ...dataset, dataset: { staticSchema: { name: '线路牌', version: 1 } } });
       expect(JSON.stringify(old.body), 'v1 没有这个字段').not.toContain('operatorCode');
       expect(document.fields.some((field: any) => field.name === 'operatorCode')).toBe(true);
-      expect((await world.call('DELETE', url, token)).status).toBe(204);
-      expect(await world.call('POST', url, token, { fromVersion: '2026-08' })).toMatchObject({ status: 201, body: { baseVersion: '2026-08' } });
-      expect((await world.call('POST', url, token, { fromVersion: 'UP' })).status, '写法不对').toBe(400);
+      expect((await world.call('POST', '/v1/definitions', token, { name: '八月的副本', fromStatic: { name: '线路牌', version: '2026-08' } })).status).toBe(201);
+      expect((await world.call('POST', '/v1/definitions', token, { name: '写法不对的副本', fromStatic: { name: '线路牌', version: 'UP' } })).status).toBe(400);
     });
 
     /** 代建工程师推送一个静态版本：原文与编译产物，都按本地发布的写法。 */
@@ -261,6 +290,31 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect(pushed.status, pushed.raw.slice(0, 300)).toBe(200);
       return published!;
     };
+
+    it('推送（ADR-0030）：第一次带来一个名称时建数据定义，内容是最新版本去掉版本号；已有的不动；删掉过的不复活', async () => {
+      const target = await tenant(), token = target.admin.token, NEW = encodeURIComponent('推送来的');
+      const definition = { dslVersion: 'renderweave-schema/1', name: '推送来的', displayName: '第一次', fields: [{ name: 'title', displayName: '标题', type: 'text' }] };
+      await pushVersion(target, { ...definition, version: 1 });
+      const created = (await current(token, NEW)).body;
+      expect(created).toMatchObject({ name: '推送来的', displayName: '第一次', versions: [{ version: 1 }] });
+      expect(JSON.parse(created.content)).toEqual(definition);
+      const audit = async (action: string) => ((await world.call('GET', '/v1/audit-events?limit=500', token)).body.events as any[]).filter((event) => event.action === action);
+      expect(await audit('definition.create')).toEqual([expect.objectContaining({ actor: expect.objectContaining({ kind: 'authoringToken' }), object: { type: 'definition', id: '推送来的' }, afterSha256: created.sha256 })]);
+
+      // 已有的不动：网页上改过，再推送一个新版本，内容还是网页上的。
+      const edited = await save(token, NEW, { ...definition, displayName: '网页上改的' }, created.sha256);
+      await pushVersion(target, { ...definition, version: 2, displayName: '第二次推送' });
+      const after = (await current(token, NEW)).body;
+      expect(after).toMatchObject({ sha256: edited.body.sha256, displayName: '网页上改的' });
+      expect(after.versions.map((item: any) => item.version)).toEqual([1, 2]);
+      expect(await audit('definition.create'), '没有再建').toHaveLength(1);
+
+      // 删掉过的不复活：再推送新版本，静态版本照写，数据定义还是没有。
+      expect((await world.call('DELETE', `/v1/definitions/${NEW}`, token)).status).toBe(204);
+      await pushVersion(target, { ...definition, version: 3 });
+      expect((await current(token, NEW)).status).toBe(404);
+      expect((await world.call('GET', `/v1/static-schemas/${NEW}/versions/3`, token)).body).toMatchObject({ version: 3, sourceDeleted: true });
+    });
 
     it('发布记录（票据 06，M355）：操作员也能看，每个版本谁在何时发布、来源、前后内容哈希与差异；审计之前的版本没有主体', async () => {
       const target = await tenant(), token = target.admin.token, operator = target.operator.token;
@@ -308,37 +362,37 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect((await world.call('GET', '/v1/audit-events?limit=500', token)).body.events.some((event: any) => event.action === 'authoring.read' && event.object.type === 'tenant')).toBe(true);
     });
 
-    it('一个数据定义（票据 06）：静态版本、草案与每个字段被哪些模板读到，经过引用读到的也算；只读，操作员也能看；不存在答 404', async () => {
+    it('一个数据定义（票据 06）：原文、静态版本与每个字段被哪些模板读到，经过引用读到的也算；只读，操作员也能看；不存在答 404', async () => {
       const target = await tenant(), token = target.admin.token, operator = target.operator.token;
       const read = async (name: string, who = operator) => world.call('GET', `/v1/definitions/${encodeURIComponent(name)}`, who);
       const route = (await read('线路牌')).body;
       const list = (await world.call('GET', '/v1/definitions', operator)).body.definitions as any[];
-      const { fieldUses, ...entry } = route;
+      const { fieldUses, content, ...entry } = route;
+      expect(sha256(content)).toBe(route.sha256);
       expect(entry).toEqual(list.find((item) => item.name === '线路牌'));
       const uses = new Map((fieldUses as any[]).map((item) => [item.field, item.templates]));
       expect(uses.get('routeNo')).toEqual([{ name: '标准线路单边', base: { name: '线路牌', version: 1 } }]);
       expect(uses.get('fare')).toEqual([{ name: '标准线路单边', base: { name: '线路牌', version: 1 } }]);
       // 停靠站点的字段由线路牌的模板经引用读到。
       expect(new Map(((await read('停靠站点')).body.fieldUses as any[]).map((item) => [item.field, item.templates.map((template: any) => template.name)])).get('name')).toContain('标准线路单边');
-      // 草案也在；与校验的 affectedBindings 同一份。
-      const first = (await fromVersion(token, 1)).body, document = await documentOf(token);
+      // 与校验的 affectedBindings 同一份。
+      const first = (await current(token)).body, document = await documentOf(token);
       document.fields = document.fields.filter((field: any) => field.name !== 'routeNo');
       await save(token, ROUTE_SIGN, document, first.sha256);
-      expect((await read('线路牌')).body.draft).toMatchObject({ baseVersion: 1 });
-      const check = (await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/draft/check`, operator)).body;
+      const check = (await world.call('GET', `/v1/definitions/${ROUTE_SIGN}/check`, operator)).body;
       expect(check.affectedBindings).toEqual([{ field: 'routeNo', templates: uses.get('routeNo') }]);
-      // 还没发布过的名称只有草案。
-      await world.call('POST', `/v1/definitions/${encodeURIComponent('全新')}/draft`, token, { displayName: '全新结构' });
-      expect((await read('全新')).body).toMatchObject({ name: '全新', displayName: '全新结构', versions: [], draft: { name: '全新' }, fieldUses: [] });
+      // 还没发布过的没有版本。
+      await world.call('POST', '/v1/definitions', token, { name: '全新', displayName: '全新结构' });
+      expect((await read('全新')).body).toMatchObject({ name: '全新', displayName: '全新结构', versions: [], fieldUses: [] });
       expect((await read(`没有${randomUUID()}`)).status).toBe(404);
     });
 
-    it('新名称：没有基准，字段全算新增，发布成 v1；空白草案可以发布；代建工程师走自己的寻址，审计标跨租户', async () => {
+    it('新名称：没有基准，字段全算新增，发布成 v1；代建工程师走自己的寻址，审计标跨租户', async () => {
       const target = await tenant(), prefix = `/v1/authoring/tenants/${target.id}`, name = encodeURIComponent('全新结构');
-      const blank = await world.call('POST', `${prefix}/definitions/${name}/draft`, target.engineer, { displayName: '全新结构' });
+      const blank = await world.call('POST', `${prefix}/definitions`, target.engineer, { name: '全新结构', displayName: '全新结构' });
       expect(blank.status).toBe(201);
       const document = { dslVersion: 'renderweave-schema/1', name: '全新结构', displayName: '全新结构', fields: [{ name: 'title', displayName: '标题', type: 'text' }] };
-      const saved = await world.call('PUT', `${prefix}/definitions/${name}/draft?expectedSha256=${blank.body.sha256}`, target.engineer, text(document), JSON_TYPE);
+      const saved = await world.call('PUT', `${prefix}/definitions/${name}?expectedSha256=${blank.body.sha256}`, target.engineer, text(document), JSON_TYPE);
       const check = await preflight(target.engineer, saved.body.sha256, name, prefix);
       expect(check).toMatchObject({ version: 1, problems: [], datasets: { total: 0, checked: 0, complete: true, mismatched: 0, samples: [] }, templates: [] });
       expect(check).not.toHaveProperty('baseVersion');
@@ -352,18 +406,18 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect(event).toMatchObject({ actor: { kind: 'authoringToken' }, crossTenant: true, object: { id: '全新结构@1' }, afterSha256: published.body.definitionSha256,
         diff: { added: 1, paths: [{ path: 'field:title', change: 'added' }] } });
       expect(event).not.toHaveProperty('beforeSha256');
-      expect(events.some((item) => item.action === 'authoring.read' && item.object.type === 'definitionDraft'), '代建工程师的预检记审计').toBe(true);
+      expect(events.some((item) => item.action === 'authoring.read' && item.object.type === 'definition'), '代建工程师的预检记审计').toBe(true);
       // 操作员看得到，但不能发布。
       const operator = target.operator.token;
       expect((await world.call('GET', `/v1/static-schemas/${name}/versions/1`, operator)).status).toBe(200);
-      const again = await world.call('GET', `/v1/definitions/${name}/draft`, target.admin.token);
+      const again = await world.call('GET', `/v1/definitions/${name}`, target.admin.token);
       expect((await publish(operator, again.body.sha256, name)).status).toBe(403);
-      expect((await world.call('POST', `/v1/definitions/${name}/draft/publish-check`, operator, { expectedSha256: again.body.sha256 })).status).toBe(403);
+      expect((await world.call('POST', `/v1/definitions/${name}/publish-check`, operator, { expectedSha256: again.body.sha256 })).status).toBe(403);
     });
 
-    it('算好版本之后被抢先：推送先写了 v2、别人先改了草案，都答 409，什么也没写；再发一次用下一个版本', async () => {
+    it('算好版本之后被抢先：推送先写了 v2、别人先改了内容，都答 409，什么也没写；再发一次用下一个版本', async () => {
       const target = await tenant(seedGreeting), token = target.admin.token;
-      const first = (await fromVersion(token, 1, GREETING)).body, document = await documentOf(token, GREETING);
+      const first = (await current(token, GREETING)).body, document = await documentOf(token, GREETING);
       document.fields.push({ name: 'extra', displayName: '新增', type: 'text' });
       const saved = (await save(token, GREETING, document, first.sha256)).body;
 
@@ -378,11 +432,11 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       expect(taken).toMatchObject({ status: 409, body: { problems: [{ code: 'draft.versionTaken' }] } });
       const read = async (version: number) => (await world.call('GET', `/v1/static-schemas/${GREETING}/versions/${version}`, token)).body;
       expect((await read(2)).definition.displayName).toBe('推送的第二版');
-      expect((await world.call('GET', `/v1/definitions/${GREETING}/draft`, token)).body.sha256, '草案还在').toBe(saved.sha256);
+      expect((await world.call('GET', `/v1/definitions/${GREETING}`, token)).body.sha256, '数据定义不动').toBe(saved.sha256);
       const retried = await publish(token, saved.sha256, GREETING);
       expect(retried).toMatchObject({ status: 201, body: { version: 3 } });
 
-      // 别人在预检之后、登记之前保存了草案。
+      // 别人在预检之后、登记之前保存了。
       const next = { sha256: saved.sha256 as string };
       const nextDocument = await documentOf(token, GREETING);
       beforeCommit = async () => { expect((await save(token, GREETING, { ...nextDocument, displayName: '别人改的' }, next.sha256)).status).toBe(200); };
@@ -399,11 +453,11 @@ export function describeDefinitionPublish(name: string, makeBackend: () => Promi
       await seedGreeting(storage);
       await seedDocuments(storage, Array.from({ length: 24 }, (_unused, index) =>
         new Uint8Array(Buffer.from(text({ dataset: { id: `ds-${String(index).padStart(2, '0')}`, staticSchema: { name: '问候', version: 1 } }, data: { message: '你好' } })))));
-      const draft = (await limited.call('POST', `/v1/definitions/${GREETING}/draft`, admin, { fromVersion: 1 })).body;
-      const document = JSON.parse((await limited.call('GET', `/v1/definitions/${GREETING}/draft`, admin)).body.content);
+      const draft = (await limited.call('GET', `/v1/definitions/${GREETING}`, admin)).body;
+      const document = JSON.parse((await limited.call('GET', `/v1/definitions/${GREETING}`, admin)).body.content);
       document.fields.push({ name: 'mustHave', displayName: '必填', type: 'text', constraints: { required: true } });
-      const saved = await limited.call('PUT', `/v1/definitions/${GREETING}/draft?expectedSha256=${draft.sha256}`, admin, text(document), JSON_TYPE);
-      const reply = await limited.call('POST', `/v1/definitions/${GREETING}/draft/publish-check`, admin, { expectedSha256: saved.body.sha256 });
+      const saved = await limited.call('PUT', `/v1/definitions/${GREETING}?expectedSha256=${draft.sha256}`, admin, text(document), JSON_TYPE);
+      const reply = await limited.call('POST', `/v1/definitions/${GREETING}/publish-check`, admin, { expectedSha256: saved.body.sha256 });
       expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
       // 问候牌样例自带一份，加上 24 份，共 25 份。
       expect(reply.body.datasets).toMatchObject({ total: 25, checked: 22, complete: false, mismatched: 22 });

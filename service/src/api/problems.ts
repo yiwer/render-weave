@@ -18,9 +18,9 @@ export const ServiceProblemCodes = {
   pushContentMissing: 'push.contentMissing',
   /** 代建推送：上传的内容与哈希、字节数、种类或键的声明不符。 */
   pushContentMismatch: 'push.contentMismatch',
-  /** 数据定义草案（P1 票据 04，M346）：保存时带的预期哈希不是当前内容，别人先保存了（409，回答带 currentSha256）。 */
+  /** 数据定义与模板工作副本（P1 票据 04，M346）：保存时带的预期哈希不是当前内容，别人先保存了（409，回答带 currentSha256）。 */
   draftStale: 'draft.stale',
-  /** 发布草案（P1 票据 05）：算好下一版本之后，这个版本被别的发布或推送先写了（409），重新发布就会用再下一个版本。 */
+  /** 发布数据定义（P1 票据 05）：算好下一版本之后，这个版本被别的发布或推送先写了（409），重新发布就会用再下一个版本。 */
   draftVersionTaken: 'draft.versionTaken',
   /** 保存模板（P1 票据 07）：工作副本的基准不是当前修订，别人先保存了（409，回答带两边差异）；显式 overwrite 才覆盖。 */
   templateRevisionConflict: 'template.revisionConflict',

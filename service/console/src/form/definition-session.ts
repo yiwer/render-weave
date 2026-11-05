@@ -1,5 +1,5 @@
 /**
- * 数据定义草案的编辑会话（M360，参照旧 RenderWeave 的 EditorSession）：页面上的改动先留在这里，点"保存"才写一次草案。
+ * 数据定义的编辑会话（M360，参照旧 RenderWeave 的 EditorSession）：页面上的改动先留在这里，点"保存"才写一次。
  * 表单与树状图是同一个会话的两种看法，切换不丢东西；撤销、重做与"回到已保存"都在这一层，不碰服务端。
  * 纯函数：不认识的键原样带回，校验一律以服务端的问题清单为准（M351）。
  */
@@ -72,7 +72,7 @@ export function sessionReducer(session: DefinitionSession, action: SessionAction
 
 export const isDirty = (session: DefinitionSession) => canonical(session.document) !== canonical(session.saved);
 
-/** 还没写成字段列表的草案（接口上能存）：页面改不了，问题照样显示。 */
+/** 还没写成字段列表的（接口上能存）：页面改不了，问题照样显示。 */
 export const fieldsOf = (document: DefinitionDocument): readonly DefinitionField[] | undefined =>
   (Array.isArray(document.fields) && document.fields.every((field) => typeof field === 'object' && field !== null) ? document.fields : undefined);
 

@@ -5,7 +5,7 @@
  */
 import {
   APPROVAL_SCOPES, documentSource, parseDocumentSource, PublishRequestDecided,
-  type ApprovalPolicy, type ApprovalScope, type AuthoringState, type DefinitionDraft, type PublishRequest, type PublishRequestApproval, type StoredDocument, type StoredTemplate, type TemplateRevision,
+  type ApprovalPolicy, type ApprovalScope, type AuthoringState, type StoredDefinition, type PublishRequest, type PublishRequestApproval, type StoredDocument, type StoredTemplate, type TemplateRevision,
   type TemplateWorkingCopy, type TenantBatch, type TenantStorage,
 } from '../backend.js';
 import { itemDirectory, manifestBytes, resourceBackend, type BatchOutput, type BatchSource, type RecordSource, type ResourceManifestEntry, type ResourceVersionBackend, type WorkspaceDocumentSource, parseSchemaVersion, type SchemaVersion } from '../engine.js';
@@ -77,6 +77,10 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
         await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)',
           [tenantId, documentSource(document.kind, document.key), document.sha256, document.byteLength]);
       }
+      for (const { name, sha256, byteLength } of writes.definitions ?? []) {
+        await client.query(`INSERT INTO definitions (tenant_id, name, sha256, byte_length, created_at, updated_at, updated_by) VALUES ($1, $2, $3, $4, $5, $5, $6)
+          ON CONFLICT (tenant_id, name) DO NOTHING`, [tenantId, name, sha256, byteLength, now, pushedBy]);
+      }
       const revisions = new Map<string, number>();
       for (const { name, sha256, byteLength } of writes.templates) {
         const { next } = (await client.query<{ next: number }>(
@@ -129,38 +133,38 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       const template = (await authoringState(client, tenantId)).templates.find((item) => item.name === name)!;
       return { template, previousRevision: previous!.current_revision };
     }),
-    definitionDrafts: () => withTenant(db, tenantId, async (client) =>
-      (await client.query<DraftRow>(`SELECT ${DRAFT_COLUMNS} FROM definition_drafts WHERE tenant_id = $1`, [tenantId])).rows.map(draftRow)),
-    definitionDraft: (name) => withTenant(db, tenantId, async (client) => {
-      const [row] = (await client.query<DraftRow>(`SELECT ${DRAFT_COLUMNS} FROM definition_drafts WHERE tenant_id = $1 AND name = $2`, [tenantId, name])).rows;
-      return row && draftRow(row);
+    definitions: () => withTenant(db, tenantId, async (client) =>
+      (await client.query<DefinitionRow>(`SELECT ${DEFINITION_COLUMNS} FROM definitions WHERE tenant_id = $1`, [tenantId])).rows.map(definitionRow)),
+    definition: (name) => withTenant(db, tenantId, async (client) => {
+      const [row] = (await client.query<DefinitionRow>(`SELECT ${DEFINITION_COLUMNS} FROM definitions WHERE tenant_id = $1 AND name = $2`, [tenantId, name])).rows;
+      return row && definitionRow(row);
     }),
-    async createDefinitionDraft({ name, baseVersion, bytes }, { updatedBy, now }) {
+    async createDefinition({ name, bytes }, { updatedBy, now }) {
       const sha256 = await blobs.put(tenantId, bytes);
       return withTenant(db, tenantId, async (client) => {
         await lockTenant(client, tenantId);
-        const [row] = (await client.query<DraftRow>(`INSERT INTO definition_drafts (tenant_id, name, base_version, sha256, byte_length, created_at, updated_at, updated_by)
-          VALUES ($1, $2, $3, $4, $5, $6, $6, $7) ON CONFLICT (tenant_id, name) DO NOTHING RETURNING ${DRAFT_COLUMNS}`,
-        [tenantId, name, baseVersion ?? null, sha256, bytes.length, now, updatedBy])).rows;
-        return row && draftRow(row);
+        const [row] = (await client.query<DefinitionRow>(`INSERT INTO definitions (tenant_id, name, sha256, byte_length, created_at, updated_at, updated_by)
+          VALUES ($1, $2, $3, $4, $5, $5, $6) ON CONFLICT (tenant_id, name) DO NOTHING RETURNING ${DEFINITION_COLUMNS}`,
+        [tenantId, name, sha256, bytes.length, now, updatedBy])).rows;
+        return row && definitionRow(row);
       });
     },
-    async saveDefinitionDraft(name, expectedSha256, bytes, { updatedBy, now }) {
+    async saveDefinition(name, expectedSha256, bytes, { updatedBy, now }) {
       const sha256 = await blobs.put(tenantId, bytes);
       return withTenant(db, tenantId, async (client) => {
         await lockTenant(client, tenantId);
-        const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+        const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definitions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
         if (!current) return undefined;
         if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
-        const [row] = (await client.query<DraftRow>(`UPDATE definition_drafts SET sha256 = $3, byte_length = $4, updated_at = $5, updated_by = $6
-          WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name, sha256, bytes.length, now, updatedBy])).rows;
-        return { saved: draftRow(row!) };
+        const [row] = (await client.query<DefinitionRow>(`UPDATE definitions SET sha256 = $3, byte_length = $4, updated_at = $5, updated_by = $6
+          WHERE tenant_id = $1 AND name = $2 RETURNING ${DEFINITION_COLUMNS}`, [tenantId, name, sha256, bytes.length, now, updatedBy])).rows;
+        return { saved: definitionRow(row!) };
       });
     },
-    deleteDefinitionDraft: (name) => withTenant(db, tenantId, async (client) => {
+    deleteDefinition: (name) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
-      const [row] = (await client.query<DraftRow>(`DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2 RETURNING ${DRAFT_COLUMNS}`, [tenantId, name])).rows;
-      return row && draftRow(row);
+      const [row] = (await client.query<DefinitionRow>(`DELETE FROM definitions WHERE tenant_id = $1 AND name = $2 RETURNING ${DEFINITION_COLUMNS}`, [tenantId, name])).rows;
+      return row && definitionRow(row);
     }),
     templateWorkingCopies: () => withTenant(db, tenantId, async (client) =>
       (await client.query<CopyRow>(`SELECT ${COPY_COLUMNS} FROM template_working_copies WHERE tenant_id = $1`, [tenantId])).rows.map(copyRow)),
@@ -219,9 +223,9 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       await pointTemplate(client, tenantId, name, { sha256: copy.sha256, byteLength: Number(copy.byte_length) });
       return { status: 'saved' as const, revision: next, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, version, definition, compiled }, approving) => withTenant(db, tenantId, async (client) => {
+    publishDefinition: (name, expectedSha256, { key, definition, compiled }, approving) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
-      const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
+      const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definitions WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
       if (!current) return undefined;
       if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
       const sources = [documentSource('definition', key), documentSource('compiled', key)];
@@ -231,7 +235,6 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       for (const [source, content] of [[sources[0]!, definition], [sources[1]!, compiled]] as const) {
         await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)', [tenantId, source, content.sha256, content.byteLength]);
       }
-      await client.query('UPDATE definition_drafts SET base_version = $3 WHERE tenant_id = $1 AND name = $2', [tenantId, name, String(version)]);
       return { published: true as const };
     }),
     approvalPolicy: () => withTenant(db, tenantId, (client) => approvalPolicy(client, tenantId)),
@@ -316,14 +319,14 @@ const copyRow = (row: CopyRow): TemplateWorkingCopy => ({
   createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
 });
 
-interface DraftRow { name: string; base_version: string | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
-const DRAFT_COLUMNS = 'name, base_version, sha256, byte_length, created_at, updated_at, updated_by';
-const draftRow = (row: DraftRow): DefinitionDraft => ({
-  name: row.name, ...(row.base_version === null ? {} : { baseVersion: readVersion(row.base_version) }), sha256: row.sha256, byteLength: Number(row.byte_length),
+interface DefinitionRow { name: string; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
+const DEFINITION_COLUMNS = 'name, sha256, byte_length, created_at, updated_at, updated_by';
+const definitionRow = (row: DefinitionRow): StoredDefinition => ({
+  name: row.name, sha256: row.sha256, byteLength: Number(row.byte_length),
   createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
 });
 
-/** 锁住租户的一行：资源提交、推送、改模板的当前修订、保存数据集与写草案依次进行（M260、M264、M270）。 */
+/** 锁住租户的一行：资源提交、推送、改模板的当前修订、保存数据集与写数据定义依次进行（M260、M264、M270）。 */
 async function lockTenant(client: DbClient, tenantId: string): Promise<void> {
   await client.query('INSERT INTO resource_stores (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING', [tenantId]);
   await client.query('SELECT tenant_id FROM resource_stores WHERE tenant_id = $1 FOR UPDATE', [tenantId]);

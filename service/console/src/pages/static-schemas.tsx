@@ -1,8 +1,8 @@
 /**
  * 静态数据定义（M360，参照旧 RenderWeave 的"数据结构资产"）：发布之后不可变的版本（ADR-0008），一个版本一张卡片。
- * - 列表可以搜索、排序；卡片上有字段数、引用深度、谁在用与发布时间，右键有导出编译产物、复制引用、复制为草案；
+ * - 列表可以搜索、排序；卡片上有字段数、引用深度、谁在用与发布时间，右键有导出编译产物、复制引用、复制为新的数据定义；
  * - 详情有字段树、字段表单、编译产物与数据定义 DSL 四种看法，右边是选中字段的只读信息；
- * - 要改就复制为草案：同一名称接着发下一版，换名称是一份新的数据定义。操作员只读。
+ * - 静态版本独立于数据定义（ADR-0030）：来源的数据定义删了照常能用，标"来源已删除"。要接着发下一版就去改数据定义；复制是换名称的一份新的数据定义。操作员只读。
  * 只调开放 API。发布记录在 definition-publish.tsx，同属这个模块。
  */
 import { useEffect, useState, type MouseEvent } from 'react';
@@ -17,8 +17,7 @@ import { ErrorBox } from '../components/problems.js';
 import { fieldKinds, fieldsOf } from '../form/definition-session.js';
 import { FIELD_TYPES } from '../form/definition.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
-import type { DefinitionDocument, FieldType, Identity, Problem, SchemaRef, SchemaVersion } from '../types.js';
-import { documentText, restoreToDraft } from './definition-studio.js';
+import type { FieldType, Identity, Problem, SchemaRef } from '../types.js';
 import { canEditDefinitions, copyReference, definitionPath, exportCompiled, openInNewTab, staticSchemaPath } from './definitions.js';
 import { FieldGraph, Loading } from '../components/motifs.js';
 
@@ -35,11 +34,10 @@ async function loadVersions() {
   const [schemas, definitions, publications] = await Promise.all([api.staticSchemas(), api.definitions(), api.definitionPublications()]);
   const uses = new Map(definitions.definitions.flatMap((definition) => definition.versions.map((version) => [keyOf({ name: definition.name, version: version.version }), version] as const)));
   const published = new Map(publications.publications.map((publication) => [keyOf(publication), publication]));
-  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）；接口按发布的先后列。
-  const latest = new Map(definitions.definitions.map((definition) => [definition.name, definition.versions.at(-1)?.version]));
-  const drafts = new Set(definitions.definitions.filter((definition) => definition.draft).map((definition) => definition.name));
+  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）；接口按发布的先后列，同一名称后面的盖掉前面的。
+  const latest = new Map(schemas.staticSchemas.map((schema) => [schema.name, schema.version]));
   return schemas.staticSchemas.map((schema, order) => ({
-    ...schema, order, uses: uses.get(keyOf(schema)), at: published.get(keyOf(schema))?.at, current: latest.get(schema.name) === schema.version, hasDraft: drafts.has(schema.name),
+    ...schema, order, uses: uses.get(keyOf(schema)), at: published.get(keyOf(schema))?.at, current: latest.get(schema.name) === schema.version,
   }));
 }
 type VersionEntry = Awaited<ReturnType<typeof loadVersions>>[number];
@@ -50,6 +48,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<Sort>('newest');
   const [menu, setMenu] = useState<{ readonly version: VersionEntry; readonly at: { readonly x: number; readonly y: number } }>();
+  const [copying, setCopying] = useState<VersionEntry>();
   const [problems, setProblems] = useState<readonly Problem[]>();
   const [notice, setNotice] = useState<string>();
   const query = search.trim().toLocaleLowerCase('zh-CN');
@@ -78,15 +77,8 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
       { label: '查看发布记录', run: () => go(['definition-publications'], { name: version.name }) },
       { label: '导出编译产物 JSON Schema', run: () => void attempt(() => exportCompiled(ref)) },
       { label: '复制引用', run: () => void attempt(async () => setNotice(await copyReference(ref))) },
-      ...(canEdit ? [version.hasDraft
-        ? { label: '打开这个数据定义', run: () => go(definitionPath(version.name)) }
-        : {
-          label: '复制为草案', hint: versionLabel(version.version),
-          run: () => void attempt(async () => {
-            await api.createDefinitionDraft(version.name, { fromVersion: version.version });
-            go(definitionPath(version.name));
-          }),
-        }] : []),
+      ...(version.sourceDeleted ? [] : [{ label: '打开这个数据定义', run: () => go(definitionPath(version.name)) }]),
+      ...(canEdit ? [{ label: '复制为新的数据定义', hint: versionLabel(version.version), run: () => setCopying(version) }] : []),
     ];
   };
   const openMenu = (event: MouseEvent, version: VersionEntry) => {
@@ -113,7 +105,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
             <span className="small muted" data-testid="version-count">{versions.length} 个版本</span>
           </div>
           {versions.length === 0 && (
-            <div className="list-empty" data-testid="versions-empty"><FieldGraph /><strong>{query ? '没有匹配的版本' : '还没有已发布的版本'}</strong>{!query && <span>在<a href={href(['definitions'])}>数据定义</a>里发布一份草案，或者让代建工程师推送。</span>}</div>
+            <div className="list-empty" data-testid="versions-empty"><FieldGraph /><strong>{query ? '没有匹配的版本' : '还没有已发布的版本'}</strong>{!query && <span>在<a href={href(['definitions'])}>数据定义</a>里发布，或者让代建工程师推送。</span>}</div>
           )}
           <div className="schema-grid" aria-label="静态数据定义的版本">
             {versions.map((version) => (
@@ -121,6 +113,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
                 <a className="schema-card-body" href={href(staticSchemaPath(version.name, version.version))}>
                   <span className="schema-card-states">
                     <span className="schema-pill"><span className={`dot${version.current ? ' ok' : ''}`} aria-hidden="true" />{version.current ? '当前版本' : '历史版本'}</span>
+                    {version.sourceDeleted && <span className="schema-pill" data-testid="source-deleted"><span className="dot" aria-hidden="true" />来源已删除</span>}
                   </span>
                   <span className="schema-card-title">
                     <span className="schema-card-name"><strong>{version.displayName}</strong><span className="version-badge" data-testid="version-badge">{versionLabel(version.version)}</span></span>
@@ -141,7 +134,8 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
         </>
       )}
       {menu && <ContextMenu label={`${menu.version.displayName} ${versionLabel(menu.version.version)} 的操作`} at={menu.at} items={itemsOf(menu.version)} onClose={() => setMenu(undefined)} />}
-      <p className="table-note">发布后的版本不可修改，模板与数据集都绑定到具体版本；要改就复制为草案，发布成下一版。</p>
+      {copying && <CopyDefinition source={copying} displayName={copying.displayName} onClose={() => setCopying(undefined)} />}
+      <p className="table-note">发布后的版本不可修改，模板与数据集都绑定到具体版本；要发下一版就去改数据定义。</p>
     </section>
   );
 }
@@ -152,18 +146,15 @@ const VIEWS: readonly (readonly [View, string])[] = [['tree', '字段树'], ['fo
 export function StaticSchemaPage(props: { readonly name: string; readonly version: string; readonly field?: string; readonly identity: Identity }) {
   const { name } = props, version = parseVersion(props.version) ?? props.version, canEdit = canEditDefinitions(props.identity);
   const loaded = useLoad(async () => {
-    const [schema, detail, list, publications] = await Promise.all([api.staticSchema(name, version), api.definition(name), api.staticSchemas(), api.definitionPublications(name)]);
-    return { schema, detail, summary: list.staticSchemas.find((item) => item.name === name && item.version === version), publication: publications.publications.find((item) => item.version === version) };
+    const [schema, list, publications] = await Promise.all([api.staticSchema(name, version), api.staticSchemas(), api.definitionPublications(name)]);
+    // 来源的数据定义删了就读不到"谁在用"，版本本身照常能看。
+    const detail = schema.sourceDeleted ? undefined : await api.definition(name);
+    const versions = list.staticSchemas.filter((item) => item.name === name).map((item) => item.version);
+    return { schema, detail, versions, summary: list.staticSchemas.find((item) => item.name === name && item.version === version), publication: publications.publications.find((item) => item.version === version) };
   }, `static-schema:${name}@${version}`);
   const [view, setView] = useState<View>('tree');
   const [selected, setSelected] = useState(0);
   const [copying, setCopying] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [restoreProblems, setRestoreProblems] = useState<readonly Problem[]>();
-  const restore = async () => {
-    setRestoreProblems(undefined);
-    try { await restoreToDraft(name, version); } catch (error) { setRestoreProblems(problemsOf(error)); setRestoring(false); }
-  };
   const data = loaded.data;
   const fields = data ? fieldsOf(data.schema.definition) ?? [] : [];
   useEffect(() => {
@@ -180,9 +171,9 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
       </section>
     );
   }
-  const { schema, detail, summary, publication } = data, document = schema.definition;
-  const uses: UseMap = new Map(detail.fieldUses.map((use) => [use.field, use.templates]));
-  const entry = detail.versions.find((item) => item.version === version), latest = detail.versions.at(-1)?.version;
+  const { schema, detail, versions, summary, publication } = data, document = schema.definition;
+  const uses: UseMap = new Map((detail?.fieldUses ?? []).map((use) => [use.field, use.templates]));
+  const entry = detail?.versions.find((item) => item.version === version), latest = versions.at(-1);
   const field = fields[selected];
   return (
     <section className="page">
@@ -196,26 +187,16 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
           <a className="button primary" href={href(['datasets', 'new'], { schema: name, version: String(version) })}>新建数据集</a>
           <a className="button" href={href(['dataset-imports'], { schema: name, version: String(version) })}>智能导入数据集</a>
           <select aria-label="查看的版本" value={version} onChange={(event) => go(staticSchemaPath(name, event.target.value))}>
-            {[...detail.versions].reverse().map((item) => <option key={item.version} value={item.version}>{versionLabel(item.version)}{item.version === latest ? ' · 当前' : ''}</option>)}
+            {[...versions].reverse().map((item) => <option key={item} value={item}>{versionLabel(item)}{item === latest ? ' · 当前' : ''}</option>)}
           </select>
-          {canEdit && detail.draft && <a className="button" href={href(definitionPath(name))}>打开草案</a>}
-          {canEdit && detail.draft && version !== latest && <button type="button" onClick={() => setRestoring(true)}>用这一版覆盖草案</button>}
-          {canEdit && <button type="button" className={detail.draft ? undefined : 'primary'} aria-expanded={copying} onClick={() => setCopying(!copying)}>复制为草案</button>}
+          {!schema.sourceDeleted && <a className="button" href={href(definitionPath(name))}>打开数据定义</a>}
+          {canEdit && <button type="button" onClick={() => setCopying(true)}>复制为新的数据定义</button>}
         </div>
       </div>
-      <ErrorBox problems={restoreProblems} title="没有覆盖" />
-      {restoring && (
-        <Modal title="用这一版覆盖草案" onClose={() => setRestoring(false)}>
-          <p className="modal-text">草案现在的内容会被换成 {versionLabel(version)} 的，不能恢复；已发布的版本都不变。之后在编辑页看过再发布。</p>
-          <div className="modal-actions">
-            <button type="button" className="quiet" onClick={() => setRestoring(false)}>留着</button>
-            <button type="button" className="primary" onClick={() => void restore()}>确认覆盖草案</button>
-          </div>
-        </Modal>
-      )}
-      {copying && <CopyToDraft name={name} version={version} document={document} hasDraft={Boolean(detail.draft)} />}
+      {copying && <CopyDefinition source={{ name, version }} displayName={document.displayName ?? name} onClose={() => setCopying(false)} />}
       <dl className="static-facts" data-testid="static-facts">
         <div><dt>名称</dt><dd className="mono">{name}</dd></div>
+        <div><dt>来源</dt><dd data-testid="static-source">{schema.sourceDeleted ? '数据定义已删除，这一版照常能用' : <a href={href(definitionPath(name))}>数据定义 {name}</a>}</dd></div>
         <div><dt>版本</dt><dd>{versionLabel(version)}{version === latest ? ' · 当前' : ''}</dd></div>
         <div><dt>字段</dt><dd data-testid="static-field-count">{fields.length}</dd></div>
         <div><dt>引用深度</dt><dd>{summary?.referenceDepth ?? '—'}</dd></div>
@@ -258,43 +239,39 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
   );
 }
 
-/** 复制为草案：这个名称没有草案时同名接着发下一版；换名称是一份新的数据定义，字段照抄，身份换新。这个名称已有草案时只能换名称。 */
-function CopyToDraft(props: { readonly name: string; readonly version: SchemaVersion; readonly document: DefinitionDocument; readonly hasDraft: boolean }) {
-  const [name, setName] = useState(props.hasDraft ? `${props.name}-副本` : props.name), [displayName, setDisplayName] = useState(props.document.displayName ?? props.name);
+/** 复制一个静态版本成新的数据定义：换名称，字段照抄，从头开始发布。服务端复制，名称已被用过就答 409。 */
+function CopyDefinition(props: { readonly source: SchemaRef; readonly displayName: string; readonly onClose: () => void }) {
+  const [name, setName] = useState(`${props.source.name}-副本`), [displayName, setDisplayName] = useState(props.displayName);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
-  const target = name.trim(), occupied = props.hasDraft && target === props.name;
+  const target = name.trim();
   const copy = async () => {
     setBusy(true);
     setProblems(undefined);
     try {
-      if (target === props.name) await api.createDefinitionDraft(target, { fromVersion: props.version });
-      else {
-        const draft = await api.createDefinitionDraft(target, { displayName: displayName.trim() || target });
-        const { version: _version, ...rest } = props.document;
-        await api.saveDefinitionDraft(target, draft.sha256, documentText({ ...rest, name: target, displayName: displayName.trim() || target }));
-      }
+      await api.createDefinition({ name: target, displayName: displayName.trim() || target, fromStatic: { name: props.source.name, version: props.source.version } });
       go(definitionPath(target));
     } catch (error) { setProblems(problemsOf(error)); }
     finally { setBusy(false); }
   };
   return (
-    <>
-      <form className="inline-form" aria-label="复制为草案" onSubmit={(event) => { event.preventDefault(); if (target && !occupied) void copy(); }}>
+    <Modal title={`复制 ${props.source.name} ${versionLabel(props.source.version)}`} onClose={props.onClose}>
+      <form className="modal-form" aria-label="复制为新的数据定义" onSubmit={(event) => { event.preventDefault(); if (target) void copy(); }}>
         <div className="field">
-          <label htmlFor="copy-name">草案的名称</label>
+          <label htmlFor="copy-name">名称</label>
           <input id="copy-name" type="text" autoFocus maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+          <span className="hint">这是一个新的数据定义，名称不能和已有的或发布过的重复，从头开始发布。</span>
         </div>
-        {target !== props.name && (
-          <div className="field">
-            <label htmlFor="copy-display-name">显示名称</label>
-            <input id="copy-display-name" type="text" maxLength={200} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-          </div>
-        )}
-        <button type="submit" disabled={!target || occupied || busy}>{busy ? '正在复制…' : '复制'}</button>
-        <span className="small muted">{occupied ? '这个名称已有草案，换一个名称；要用这一版的内容就覆盖草案。' : target === props.name ? `发布时成为 ${props.name} 的下一版。` : '这是一份新的数据定义，从 v1 开始。'}</span>
+        <div className="field">
+          <label htmlFor="copy-display-name">显示名称</label>
+          <input id="copy-display-name" type="text" maxLength={200} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+        </div>
+        <ErrorBox problems={problems} title="没有复制" />
+        <div className="modal-actions">
+          <button type="button" className="quiet" onClick={props.onClose}>取消</button>
+          <button type="submit" className="primary" disabled={!target || busy}>{busy ? '正在复制…' : '复制'}</button>
+        </div>
       </form>
-      <ErrorBox problems={problems} title="没有复制" />
-    </>
+    </Modal>
   );
 }

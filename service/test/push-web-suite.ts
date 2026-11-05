@@ -305,15 +305,15 @@ export function describePushWeb(name: string, makeBackend: () => Promise<Service
       expect((await world.call('GET', `/v1/publish-requests/${JSON.parse(next.stdout).request}`, target.admin.token)).body).toMatchObject({ status: 'pending', recheck: { valid: true } });
     });
 
-    it('静态数据定义的冲突规则不变；草案与工作副本不受推送影响', async () => {
+    it('静态数据定义的冲突规则不变；数据定义与工作副本不受推送影响', async () => {
       const target = await tenant(), dirs = await local();
       expect((await push(target, dirs)).code).toBe(0);
       const definition = encodeURIComponent('问候');
-      const draft = await world.call('POST', `/v1/definitions/${definition}/draft`, target.admin.token, { fromVersion: 1 });
+      const draft = await world.call('GET', `/v1/definitions/${definition}`, target.admin.token);
       const copy = await world.call('POST', `/v1/templates/${GREETING}/working-copy`, target.admin.token);
       await recolor(dirs, '#111111');
       expect((await push(target, dirs)).code).toBe(0);
-      expect((await world.call('GET', `/v1/definitions/${definition}/draft`, target.admin.token)).body.sha256).toBe(draft.body.sha256);
+      expect((await world.call('GET', `/v1/definitions/${definition}`, target.admin.token)).body.sha256).toBe(draft.body.sha256);
       expect((await world.call('GET', `/v1/templates/${GREETING}/working-copy`, target.admin.token)).body.sha256).toBe(copy.body.sha256);
       const file = join(dirs.workspace, 'schema-greeting-v1.json');
       await writeFile(file, (await readFile(file, 'utf8')).replace('"displayName"', '"description": "改了已发布的", "displayName"'));

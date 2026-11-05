@@ -1,10 +1,10 @@
 /**
- * 数据定义的编辑页（M360，参照旧 RenderWeave 的 Schema Studio）：左边是字段，表单与树状图两种看法；右边的检查器改选中的字段。
- * - 改动先留在页面的编辑会话里（form/definition-session.ts），可以撤销、重做、回到已保存；点"保存"（Ctrl+S）才写一次草案，保存就是一条审计（M347）；
+ * 数据定义的编辑页（ADR-0030，M360，参照旧 RenderWeave 的 Schema Studio）：左边是字段，表单与树状图两种看法；右边的检查器改选中的字段。
+ * - 改动先留在页面的编辑会话里（form/definition-session.ts），可以撤销、重做、回到已保存；点"保存"（Ctrl+S）才写一次，保存就是一条审计（M347）；
  * - 每次保存之后重新校验，问题定位到字段（M351：先存再校验）；校验、编译预览与会影响绑定都以服务端为准；
  * - 改字段名称或删字段前，按"谁在用"提示会影响的模板；字段名称是身份，改名等于删一个、加一个（ADR-0005）；
- * - 有没保存的改动时，换页与关窗口都先问；操作员只读：看得到草案与校验结果，没有任何写入口。
- * 这个名称没有草案时去静态数据定义（static-schemas.tsx）。只调开放 API。
+ * - 有没保存的改动时，换页与关窗口都先问；操作员只读：看得到内容与校验结果，没有任何写入口。
+ * 已发布的版本在静态数据定义（static-schemas.tsx）。只调开放 API。
  */
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { versionLabel } from '../form/schema-version.js';
@@ -17,75 +17,48 @@ import { ErrorBox, ProblemList } from '../components/problems.js';
 import { fieldChange, FIELD_TYPES, ITEM_TYPES, itemsOfType, isRequired, problemsByField, withConstraint, withType } from '../form/definition.js';
 import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, moveFieldTo, openSession, removeField, replaceField, sessionReducer } from '../form/definition-session.js';
 import { go, guardNavigation, href, problemsOf, useLoad } from '../hooks.js';
-import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionDraft, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary, SchemaVersion } from '../types.js';
+import type { DefinitionDetail as Detail, DefinitionDocument, DefinitionField, DefinitionItems, FieldType, Identity, Problem, SchemaRef, StaticSchemaSummary, StoredDefinition } from '../types.js';
 import { canEditDefinitions, definitionPath, staticSchemaPath } from './definitions.js';
 import { Loading, Seal, ThreadOrbit } from '../components/motifs.js';
 
 const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 export const documentText = (document: DefinitionDocument) => `${JSON.stringify(document, null, 2)}\n`;
 
-/**
- * 回退（ADR-0028）：把草案的内容换成某个静态版本的，进编辑页看过再发布。草案一直在，所以不是另起一份；
- * 没有草案（只经推送发布过）时才从这一版另起。草案现在的内容会被换掉，页面上要先确认。
- */
-export async function restoreToDraft(name: string, version: SchemaVersion): Promise<void> {
-  const detail = await api.definition(name);
-  if (detail.draft) {
-    const { definition } = await api.staticSchema(name, version);
-    const { version: _version, ...rest } = definition;
-    await api.saveDefinitionDraft(name, detail.draft.sha256, documentText(rest));
-  } else await api.createDefinitionDraft(name, { fromVersion: version });
-  go(definitionPath(name));
-}
 const typeName = (type: FieldType) => FIELD_TYPES.find((item) => item.type === type)?.label ?? type;
 
 /** 编辑页的四种看法（M380）：两种改字段，两种看文档。 */
 type StudioView = 'form' | 'tree' | 'dsl' | 'compiled';
 const STUDIO_VIEWS: readonly (readonly [StudioView, string])[] = [['form', '表单'], ['tree', '树状图'], ['dsl', '数据定义 DSL'], ['compiled', '编译产物']];
 
-/** 路由入口：有草案就编辑草案，没有就去最新的静态版本；地址里的 field 选中那个字段。 */
+/** 路由入口：地址里写了版本就去那个静态版本；否则就是这个数据定义的编辑页，地址里的 field 选中那个字段。 */
 export function DefinitionDetail(props: { readonly name: string; readonly version?: string; readonly field?: string; readonly identity: Identity }) {
   const loaded = useLoad(() => api.definition(props.name), `definition:${props.name}`);
   const detail = loaded.data;
-  const target = detail && (props.version ?? (detail.draft ? undefined : detail.versions.at(-1)?.version));
   useEffect(() => {
     // 换地址不留历史：后退回到来的地方，不会又被转过来。
-    if (target !== undefined) location.replace(href(staticSchemaPath(props.name, target), { field: props.field }));
-  }, [target, props.name, props.field]);
-  if (detail?.draft && target === undefined) return <Studio key={detail.draft.createdAt} detail={detail} draft={detail.draft} field={props.field} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} />;
+    if (props.version !== undefined) location.replace(href(staticSchemaPath(props.name, props.version), { field: props.field }));
+  }, [props.version, props.name, props.field]);
+  const document = useMemo(() => (detail ? JSON.parse(detail.content) as DefinitionDocument : undefined), [detail?.content]);
+  if (detail && document && props.version === undefined) return <StudioEditor key={detail.createdAt} detail={detail} document={document} field={props.field} canEdit={canEditDefinitions(props.identity)} onChanged={loaded.reload} onReread={loaded.reload} />;
   return (
     <section className="page">
       <nav className="crumbs" aria-label="位置"><a href={href(['definitions'])}>数据定义</a><span aria-hidden="true">/</span><span>{props.name}</span></nav>
       <ErrorBox problems={loaded.problems} title="读不到这个数据定义" />
+      {loaded.problems && <p className="small muted">删除了的数据定义不在这里，已发布的版本还在<a href={href(['static-schemas'])}>静态数据定义</a>里。</p>}
       {loaded.loading && <Loading />}
     </section>
   );
 }
 
-function Studio(props: { readonly detail: Detail; readonly draft: DefinitionDraft; readonly field: string | undefined; readonly canEdit: boolean; readonly onChanged: () => void }) {
-  const loaded = useLoad(async () => {
-    const reply = await api.definitionDraft(props.detail.name);
-    return { info: reply as DefinitionDraft, document: JSON.parse(reply.content) as DefinitionDocument };
-  }, `draft:${props.detail.name}`);
-  if (!loaded.data) {
-    return (
-      <section className="page">
-        <ErrorBox problems={loaded.problems} title="读不到草案" />
-        {loaded.loading && <Loading />}
-      </section>
-    );
-  }
-  return <StudioEditor {...props} info={loaded.data.info} document={loaded.data.document} onReread={loaded.reload} />;
-}
-
-function StudioEditor(props: { readonly detail: Detail; readonly info: DefinitionDraft; readonly document: DefinitionDocument; readonly field: string | undefined; readonly canEdit: boolean; readonly onChanged: () => void; readonly onReread: () => void }) {
+function StudioEditor(props: { readonly detail: Detail; readonly document: DefinitionDocument; readonly field: string | undefined; readonly canEdit: boolean; readonly onChanged: () => void; readonly onReread: () => void }) {
   const { detail, canEdit } = props, name = detail.name;
   const initial = fieldsOf(props.document)?.findIndex((field) => field.name === props.field) ?? -1;
   const [session, dispatch] = useReducer(sessionReducer, openSession(props.document, initial >= 0 ? initial : 0));
-  const [info, setInfo] = useState(props.info);
-  const check = useLoad(() => api.checkDefinitionDraft(name), `draft-check:${name}:${info.sha256}`);
-  const baseVersion = info.baseVersion;
-  const base = useLoad(async () => (baseVersion === undefined ? undefined : api.staticSchema(name, baseVersion)), `draft-base:${name}@${baseVersion ?? ''}`);
+  const [info, setInfo] = useState<StoredDefinition>(detail);
+  const check = useLoad(() => api.checkDefinition(name), `definition-check:${name}:${info.sha256}`);
+  // 和最新发布的版本比：读取时现算，发布不往数据定义上记任何东西。
+  const baseVersion = detail.versions.at(-1)?.version;
+  const base = useLoad(async () => (baseVersion === undefined ? undefined : api.staticSchema(name, baseVersion)), `definition-base:${name}@${baseVersion ?? ''}`);
   const schemas = useLoad(() => api.staticSchemas(), 'static-schemas');
   const [view, setView] = useState<StudioView>('form');
   const [search, setSearch] = useState('');
@@ -118,7 +91,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
     setProblems(undefined);
     setNotice(undefined);
     try {
-      const saved = await api.saveDefinitionDraft(name, info.sha256, documentText(document));
+      const saved = await api.saveDefinition(name, info.sha256, documentText(document));
       setInfo(saved);
       dispatch({ type: 'saved', document });
       return true;
@@ -132,7 +105,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
   const publish = async () => {
     if (!(await save())) return;
     try {
-      const fresh = await api.checkDefinitionDraft(name);
+      const fresh = await api.checkDefinition(name);
       if (fresh.problems.some((problem) => problem.level === 'severe')) {
         check.reload();
         setNotice('有严重问题，改正之后才能发布。');
@@ -145,7 +118,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
   const discard = async () => {
     setProblems(undefined);
     try {
-      await api.deleteDefinitionDraft(name);
+      await api.deleteDefinition(name);
       leaving.current = true;
       props.onChanged();
       go(['definitions']);
@@ -161,9 +134,9 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
   useEffect(() => {
     if (opened.current === props.document) return;
     opened.current = props.document;
-    setInfo(props.info);
+    setInfo(detail);
     dispatch({ type: 'load', document: props.document });
-  }, [props.document, props.info]);
+  }, [props.document, detail]);
 
   // 有没保存的改动时，换页与关窗口都先问。保存、删除之后走开不用问。
   const leaving = useRef(false);
@@ -171,7 +144,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
     if (!dirty) return undefined;
     const unload = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener('beforeunload', unload);
-    const release = guardNavigation(() => leaving.current || window.confirm('这份草案有没保存的改动，离开就丢了。确定离开？'));
+    const release = guardNavigation(() => leaving.current || window.confirm('有没保存的改动，离开就丢了。确定离开？'));
     return () => { window.removeEventListener('beforeunload', unload); release(); };
   }, [dirty]);
   // 快捷键：Ctrl+S 随时能按；Ctrl+Z、Ctrl+Y 在输入框里留给输入框自己。
@@ -218,8 +191,8 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
           <div>
             <h1>{document.displayName || name}</h1>
             <p className="meta" data-testid="definition-meta">
-              <span>草案 · {baseVersion === undefined ? '还没发布过' : <a href={href(staticSchemaPath(name, baseVersion))}>基于 {versionLabel(baseVersion)}</a>}</span>
-              {changes && <span data-testid="draft-changes">新增 {changes.added}、修改 {changes.changed}、删除 {changes.removed}</span>}
+              <span>{baseVersion === undefined ? '还没发布过' : <a href={href(staticSchemaPath(name, baseVersion))}>已发布 {versionLabel(baseVersion)}</a>}</span>
+              {changes && baseVersion !== undefined && <span data-testid="definition-changes">与 {versionLabel(baseVersion)} 相比新增 {changes.added}、修改 {changes.changed}、删除 {changes.removed}</span>}
               <span>{info.updatedBy} 保存于 {time(info.updatedAt)}</span>
             </p>
           </div>
@@ -239,10 +212,10 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
             </>}
           </div>
         </div>
-        {!canEdit && <p className="small muted" role="note">你可以查看草案，改动与发布由客户管理员完成。</p>}
+        {!canEdit && <p className="small muted" role="note">你可以查看这个数据定义，改动与发布由客户管理员完成。</p>}
         {stale && (
           <div className="impact-note" role="alert">
-            <strong>别人刚保存过这份草案，你的改动没有写入。</strong>
+            <strong>别人刚保存过这个数据定义，你的改动没有写入。</strong>
             <div className="actions"><button type="button" className="small" onClick={reread}>读回最新内容</button></div>
           </div>
         )}
@@ -264,7 +237,7 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
           </div>
         </div>}
 
-        {!fields && <p className="muted">这份草案还没写成字段列表，页面改不了；问题见下面，或用接口改。</p>}
+        {!fields && <p className="muted">这个数据定义还没写成字段列表，页面改不了；问题见下面，或用接口改。</p>}
         {fields && (
           <>
             <div className="studio-toolbar">
@@ -292,12 +265,12 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
             {view === 'dsl' && (
               <>
                 <p className="small muted studio-view-note">这是页面上现在的内容{dirty ? '，还有没保存的改动' : ''}。</p>
-                <CodePanel testid="definition-dsl" value={document} file={`${name}-草案.json`} type="application/json" />
+                <CodePanel testid="definition-dsl" value={document} file={`${name}.json`} type="application/json" />
               </>
             )}
             {view === 'compiled' && (
               verdict?.compiled && !dirty
-                ? <CodePanel testid="compiled-preview" value={verdict.compiled} file={`${name}-草案.schema.json`} type="application/schema+json" />
+                ? <CodePanel testid="compiled-preview" value={verdict.compiled} file={`${name}.schema.json`} type="application/schema+json" />
                 : <p className="muted studio-view-note" role="status" data-testid="compiled-unavailable">{dirty ? '有没保存的改动：编译产物按存下来的内容算，保存之后才能看。' : verdict ? '改正严重问题之后才有编译产物。' : '正在编译…'}</p>
             )}
             {view === 'form' && (
@@ -340,8 +313,8 @@ function StudioEditor(props: { readonly detail: Detail; readonly info: Definitio
             <button type="button" className="small quiet" disabled={check.loading || dirty} onClick={check.reload}>校验</button>
           </span>
           {canEdit && (discarding
-            ? <span className="confirm small">删除这份草案？已发布的版本不受影响。<button type="button" className="small danger" onClick={() => void discard()}>确认删除草案</button><button type="button" className="small quiet" onClick={() => setDiscarding(false)}>取消</button></span>
-            : <button type="button" className="link danger" onClick={() => setDiscarding(true)}>删除草案</button>)}
+            ? <span className="confirm small">{baseVersion === undefined ? '删除这个数据定义？它还没发布过。' : '删除这个数据定义？已发布的版本不受影响，这个名称不能再用。'}<button type="button" className="small danger" onClick={() => void discard()}>确认删除</button><button type="button" className="small quiet" onClick={() => setDiscarding(false)}>取消</button></span>
+            : <button type="button" className="link danger" onClick={() => setDiscarding(true)}>删除</button>)}
         </div>
         <ErrorBox problems={check.problems} title="校验没有完成" />
         {located && verdict && verdict.problems.length > 0 && (

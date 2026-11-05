@@ -271,7 +271,7 @@ export interface ExcelImport {
   readonly batch?: { readonly template: string; readonly mode: 'final'; readonly items: readonly Record<string, unknown>[] };
 }
 
-export interface StaticSchemaSummary { readonly name: string; readonly version: SchemaVersion; readonly displayName: string; readonly description?: string; readonly fieldCount?: number; readonly referenceDepth?: number }
+export interface StaticSchemaSummary { readonly name: string; readonly version: SchemaVersion; readonly displayName: string; /** 来源的数据定义已删除；这一版照常能用。 */ readonly sourceDeleted?: boolean; readonly description?: string; readonly fieldCount?: number; readonly referenceDepth?: number }
 export interface StaticSchemaDetail extends StaticSchemaSummary { readonly definition: DefinitionDocument; readonly compiled: Record<string, unknown> }
 
 export type FieldType = 'text' | 'number' | 'date' | 'time' | 'datetime' | 'boolean' | 'image' | 'list' | 'ref';
@@ -286,7 +286,7 @@ export interface DefinitionField extends DefinitionItems {
   readonly items?: DefinitionItems;
 }
 
-/** 数据定义文档。没写完的草案也能存，页面只改 fields，别的键原样带回。 */
+/** 数据定义文档。没写完的也能存，页面只改 fields，别的键原样带回。 */
 export interface DefinitionDocument {
   readonly dslVersion: string;
   readonly name: string;
@@ -296,13 +296,9 @@ export interface DefinitionDocument {
   readonly fields: readonly DefinitionField[];
 }
 
-/** 数据定义草案（P1 票据 04）：一个名称至多一份，内容哈希是保存时的预期哈希。 */
-export interface DefinitionDraft {
-  /** 只有列数据定义时才有。 */
-  readonly displayName?: string;
-  readonly fieldCount?: number;
+/** 数据定义（ADR-0030）：可编辑的数据结构定义，主键是名称，发布不改它。内容哈希是保存时的预期哈希。 */
+export interface StoredDefinition {
   readonly name: string;
-  readonly baseVersion?: SchemaVersion;
   readonly sha256: string;
   readonly byteLength: number;
   readonly createdAt: string;
@@ -310,22 +306,25 @@ export interface DefinitionDraft {
   readonly updatedBy: string;
 }
 
-export interface Definition {
-  readonly name: string;
+export interface Definition extends StoredDefinition {
   readonly displayName: string;
+  /** 还没写成字段列表时没有。 */
+  readonly fieldCount?: number;
   readonly versions: readonly { readonly version: SchemaVersion; readonly displayName: string; readonly datasets: number; readonly templates: number }[];
-  readonly draft?: DefinitionDraft;
 }
 
 export interface TemplateBinding { readonly name: string; readonly base: SchemaRef }
 
-/** GET /v1/definitions/{name}：另带每个字段被哪些模板读到。 */
+/** GET /v1/definitions/{name}：另带原文与每个字段被哪些模板读到。 */
 export interface DefinitionDetail extends Definition {
+  readonly content: string;
   readonly fieldUses: readonly { readonly field: string; readonly templates: readonly TemplateBinding[] }[];
 }
 
-export interface DefinitionDraftCheck {
+export interface DefinitionCheck {
   readonly sha256: string;
+  /** 比较用的版本：这个名称最新发布的；还没发布过时没有。 */
+  readonly baseVersion?: SchemaVersion;
   readonly problems: readonly Problem[];
   readonly version?: SchemaVersion;
   readonly compiled?: Record<string, unknown>;

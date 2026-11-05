@@ -71,7 +71,7 @@ export function VersionThread() {
   );
 }
 
-/** 纸页与笔迹：还没有草案。正文一行行写出来；悬停时底下两页散开。 */
+/** 纸页与笔迹：还没有数据定义。正文一行行写出来；悬停时底下两页散开。 */
 export function DraftSheets(props: { readonly size?: number }) {
   return (
     <svg className="motif motif-sheets" {...spot(props.size ?? 104)}>

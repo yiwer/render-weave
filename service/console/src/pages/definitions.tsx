@@ -1,6 +1,6 @@
 /**
- * 数据定义列表（M360、M382，结构参照旧 RenderWeave 的"数据结构设计"）：每个数据定义一张卡片，发布之后还在。
- * - 有草案的写草案的情况，客户管理员能发布、删除；没有草案的写最新版本，要改就从它复制为草案（ADR-0008）；
+ * 数据定义列表（ADR-0030，M360，结构参照旧 RenderWeave 的"数据结构设计"）：每个数据定义一张卡片，点开就是编辑页。
+ * - 发布只产出静态版本，卡片不因发布改变；客户管理员能发布、删除；
  * - 操作员只读，这些入口不显示（权限以开放 API 为准）；
  * - 每个版本的详情与发布记录在静态数据定义里（static-schemas.tsx）。
  * 只调开放 API。编辑页在 definition-studio.tsx，发布与发布记录在 definition-publish.tsx。
@@ -8,11 +8,11 @@
 import { useState } from 'react';
 import { versionLabel } from '../form/schema-version.js';
 import { api, saveBlob } from '../api.js';
-import { CLOCK, COPY, Icon, PLUS, PUBLISH, TRASH } from '../components/icon.js';
+import { CLOCK, Icon, PLUS, PUBLISH, TRASH } from '../components/icon.js';
 import { Modal } from '../components/modal.js';
 import { ErrorBox } from '../components/problems.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
-import type { Definition, Identity, Problem, SchemaRef } from '../types.js';
+import type { Identity, Problem, SchemaRef } from '../types.js';
 import { DraftSheets, Loading } from '../components/motifs.js';
 
 export const canEditDefinitions = (identity: Identity) => identity.role === 'admin';
@@ -43,23 +43,11 @@ const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 const shortTime = (at: string) => new Date(at).toLocaleString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 type Sort = 'updated' | 'oldest' | 'name';
 const SORTS: readonly (readonly [Sort, string])[] = [['updated', '最近改动'], ['oldest', '最早改动'], ['name', '名称']];
-const number = (value: number) => value.toLocaleString('zh-CN');
 
-/** 列表要的几份数据：每个名称的草案与版本、最新版本的字段数与发布时间（审计之前的版本没有时间）。 */
-async function loadDefinitions() {
-  const [definitions, schemas, publications] = await Promise.all([api.definitions(), api.staticSchemas(), api.definitionPublications()]);
-  const keyOf = (ref: SchemaRef) => `${ref.name}@${ref.version}`;
-  const fields = new Map(schemas.staticSchemas.map((schema) => [keyOf(schema), schema.fieldCount]));
-  const published = new Map(publications.publications.map((publication) => [keyOf(publication), publication.at]));
-  return definitions.definitions.map((definition) => {
-    const latest = definition.versions.at(-1), ref = latest && { name: definition.name, version: latest.version };
-    return { ...definition, latest: latest && ref && { ...latest, fieldCount: fields.get(keyOf(ref)), at: published.get(keyOf(ref)) } };
-  });
-}
+const loadDefinitions = async () => (await api.definitions()).definitions;
 type DefinitionEntry = Awaited<ReturnType<typeof loadDefinitions>>[number];
-type LatestVersion = NonNullable<DefinitionEntry['latest']>;
-/** 最近一次改动：有草案看保存，没有看发布。 */
-const changedAt = (definition: DefinitionEntry) => definition.draft?.updatedAt ?? definition.latest?.at ?? '';
+/** 最近一次改动：看保存。发布不改数据定义。 */
+const changedAt = (definition: DefinitionEntry) => definition.updatedAt;
 
 export function DefinitionList(props: { readonly identity: Identity }) {
   const canEdit = canEditDefinitions(props.identity);
@@ -73,16 +61,15 @@ export function DefinitionList(props: { readonly identity: Identity }) {
   const query = search.trim().toLocaleLowerCase('zh-CN');
   const byName = (a: DefinitionEntry, b: DefinitionEntry) => (a.name < b.name ? -1 : 1);
   const definitions = (all ?? [])
-    .filter((definition) => !query || [definition.name, draftName(definition)].some((text) => text.toLocaleLowerCase('zh-CN').includes(query)))
+    .filter((definition) => !query || [definition.name, definition.displayName].some((text) => text.toLocaleLowerCase('zh-CN').includes(query)))
     .sort((a, b) => {
       if (sort === 'name' || changedAt(a) === changedAt(b)) return byName(a, b);
       return (changedAt(a) < changedAt(b) ? 1 : -1) * (sort === 'updated' ? 1 : -1);
     });
-  const draftCount = definitions.filter((definition) => definition.draft).length;
   const remove = async (name: string) => {
     setProblems(undefined);
     try {
-      await api.deleteDefinitionDraft(name);
+      await api.deleteDefinition(name);
       setRemoving(undefined);
       loaded.reload();
     } catch (error) { setProblems(problemsOf(error)); }
@@ -106,7 +93,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
                 {SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
-            <span className="small muted" data-testid="definition-count">{definitions.length} 个数据定义{draftCount > 0 && `，${draftCount} 份草案`}</span>
+            <span className="small muted" data-testid="definition-count">{definitions.length} 个数据定义</span>
           </div>
           {definitions.length === 0 && (
             <div className="list-empty" data-testid="definitions-empty">
@@ -117,19 +104,18 @@ export function DefinitionList(props: { readonly identity: Identity }) {
           )}
           <div className="schema-grid" aria-label="数据定义">
             {definitions.map((definition) => {
-              const { name, draft, latest } = definition;
-              if (!draft) return latest && <PublishedCard key={name} definition={definition} latest={latest} canEdit={canEdit} onProblems={setProblems} />;
+              const { name } = definition, latest = definition.versions.at(-1);
               return (
-                <article key={name} className="schema-card" data-testid="draft-card" data-name={name}>
+                <article key={name} className="schema-card" data-testid="definition-card" data-name={name}>
                   <a className="schema-card-body" href={href(definitionPath(name))}>
                     <span className="schema-card-head">
-                      <span className="schema-card-title"><strong>{draftName(definition)}</strong><code>{name}</code></span>
-                      <span className="schema-pill" data-testid="draft-base"><span className={`dot ${latest ? 'ok' : 'accent'}`} aria-hidden="true" />{latest ? `已发布 ${versionLabel(latest.version)}` : '还没发布过'}</span>
+                      <span className="schema-card-title"><strong>{definition.displayName}</strong><code>{name}</code></span>
+                      <span className="schema-pill" data-testid="definition-state"><span className={`dot ${latest ? 'ok' : 'accent'}`} aria-hidden="true" />{latest ? `已发布 ${versionLabel(latest.version)}` : '还没发布过'}</span>
                     </span>
                     <dl className="schema-facts draft-facts">
-                      <div><dt>字段</dt><dd data-testid="draft-fields">{draft.fieldCount ?? '—'}</dd></div>
-                      <div><dt>保存人</dt><dd title={draft.updatedBy}><span className="schema-fact-text">{draft.updatedBy}</span></dd></div>
-                      <div><dt>最近保存</dt><dd title={time(draft.updatedAt)}><Icon d={CLOCK} /><span className="schema-fact-text">{shortTime(draft.updatedAt)}</span></dd></div>
+                      <div><dt>字段</dt><dd data-testid="definition-fields">{definition.fieldCount ?? '—'}</dd></div>
+                      <div><dt>保存人</dt><dd title={definition.updatedBy}><span className="schema-fact-text">{definition.updatedBy}</span></dd></div>
+                      <div><dt>最近保存</dt><dd title={time(definition.updatedAt)}><Icon d={CLOCK} /><span className="schema-fact-text">{shortTime(definition.updatedAt)}</span></dd></div>
                     </dl>
                   </a>
                   {canEdit && (
@@ -137,7 +123,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
                       {removing === name
                         ? (
                           <>
-                            <span className="small">删除这份草案？已发布的版本不受影响。</span>
+                            <span className="small">{latest ? '删除这个数据定义？已发布的版本不受影响，这个名称不能再用。' : '删除这个数据定义？它还没发布过。'}</span>
                             <button type="button" className="small danger" onClick={() => void remove(name)}>确认删除</button>
                             <button type="button" className="small quiet" onClick={() => setRemoving(undefined)}>取消</button>
                           </>
@@ -160,49 +146,7 @@ export function DefinitionList(props: { readonly identity: Identity }) {
   );
 }
 
-const draftName = (definition: Definition) => definition.draft?.displayName || definition.displayName;
-
-/** 只有已发布的版本、没有草案的数据定义（经推送来的，或草案被删了）：打开看最新版本，要改就从它复制为草案。 */
-function PublishedCard(props: {
-  readonly definition: DefinitionEntry; readonly latest: LatestVersion; readonly canEdit: boolean;
-  readonly onProblems: (problems: readonly Problem[] | undefined) => void;
-}) {
-  const { definition, latest } = props, { name } = definition;
-  const [busy, setBusy] = useState(false);
-  const copy = async () => {
-    setBusy(true);
-    props.onProblems(undefined);
-    try {
-      await api.createDefinitionDraft(name, { fromVersion: latest.version });
-      go(definitionPath(name));
-    } catch (error) {
-      props.onProblems(problemsOf(error));
-      setBusy(false);
-    }
-  };
-  return (
-    <article className="schema-card" data-testid="published-card" data-name={name}>
-      <a className="schema-card-body" href={href(staticSchemaPath(name, latest.version))}>
-        <span className="schema-card-head">
-          <span className="schema-card-title"><strong>{definition.displayName}</strong><code>{name}</code></span>
-          <span className="schema-pill" data-testid="published-state"><span className="dot ok" aria-hidden="true" />已发布 {versionLabel(latest.version)}</span>
-        </span>
-        <dl className="schema-facts draft-facts">
-          <div><dt>字段</dt><dd data-testid="published-fields">{latest.fieldCount ?? '—'}</dd></div>
-          <div><dt>谁在用</dt><dd><span className="schema-fact-text" data-testid="published-uses">{number(latest.templates)} 模板 · {number(latest.datasets)} 数据集</span></dd></div>
-          <div><dt>发布于</dt><dd {...(latest.at ? { title: time(latest.at) } : {})}><Icon d={CLOCK} /><span className="schema-fact-text">{latest.at ? shortTime(latest.at) : '没有记录'}</span></dd></div>
-        </dl>
-      </a>
-      {props.canEdit && (
-        <footer className="schema-card-actions">
-          <button type="button" className="small quiet card-action" disabled={busy} onClick={() => void copy()}><Icon d={COPY} />{busy ? '正在复制…' : '复制为草案'}</button>
-        </footer>
-      )}
-    </article>
-  );
-}
-
-/** 空白新建：名称是身份，发布后不能改，显示名称写给人看（M89 的中文写在显示名称里，数据定义的名称可以用中文）。 */
+/** 空白新建：名称是主键，建好就不能改，显示名称写给人看（M89 的中文写在显示名称里，数据定义的名称可以用中文）。 */
 function NewDefinition(props: { readonly onClose: () => void }) {
   const [name, setName] = useState(''), [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -211,7 +155,7 @@ function NewDefinition(props: { readonly onClose: () => void }) {
     setBusy(true);
     setProblems(undefined);
     try {
-      await api.createDefinitionDraft(name.trim(), { displayName: displayName.trim() || name.trim() });
+      await api.createDefinition({ name: name.trim(), displayName: displayName.trim() || name.trim() });
       go(definitionPath(name.trim()));
     } catch (error) { setProblems(problemsOf(error)); }
     finally { setBusy(false); }
@@ -222,7 +166,7 @@ function NewDefinition(props: { readonly onClose: () => void }) {
         <div className="field">
           <label htmlFor="new-definition-name">名称</label>
           <input id="new-definition-name" type="text" maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
-          <span className="hint">名称是身份，发布后不能改；模板与数据集按名称和版本引用它。</span>
+          <span className="hint">名称是主键，建好就不能改；模板与数据集按名称和版本引用它。</span>
         </div>
         <div className="field">
           <label htmlFor="new-definition-display-name">显示名称</label>
@@ -231,7 +175,7 @@ function NewDefinition(props: { readonly onClose: () => void }) {
         <ErrorBox problems={problems} title="没有新建" />
         <div className="modal-actions">
           <button type="button" className="quiet" onClick={props.onClose}>取消</button>
-          <button type="submit" className="primary" disabled={!name.trim() || busy}>{busy ? '正在新建…' : '新建草案'}</button>
+          <button type="submit" className="primary" disabled={!name.trim() || busy}>{busy ? '正在新建…' : '新建'}</button>
         </div>
       </form>
     </Modal>

@@ -1,6 +1,6 @@
 /**
  * 模板工作副本与修订的端点（P1 票据 07，ADR-0022、M265、M267、M345、M346）：新建、暂存、丢弃、检查与保存工作副本，复制为新模板，修订历史，指回旧修订。
- * 一套处理逻辑，两种寻址（M261、M345），同数据定义草案。
+ * 一套处理逻辑，两种寻址（M261、M345），同数据定义。
  * - 暂存不影响当前修订：出图、只读预览与推送的差异都照旧读当前修订；预览可以指定用工作副本（previews.ts）；
  * - 保存时工作副本的基准不是当前修订答 409 并带两边差异，显式 overwrite 才覆盖，口径同 agent apply --overwrite；
  * - 模板静态检查有严重问题时拒绝保存（ADR-0021）；字节与当前修订相同记为不变（M265），工作副本照样删除；
@@ -181,7 +181,7 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     return { ...copy, content: Buffer.from(bytes).toString('utf8') };
   });
 
-  // 暂存拿到请求体的原文：按原始字节存，同数据定义草案。
+  // 暂存拿到请求体的原文：按原始字节存，同数据定义。
   app.register(async (raw) => {
     raw.removeAllContentTypeParsers();
     raw.addContentTypeParser('application/json', { parseAs: 'buffer', bodyLimit: limits.maxRequestBytes }, (_request, body, done) => done(null, body));

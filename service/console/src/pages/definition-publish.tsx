@@ -2,7 +2,6 @@
  * 数据定义的发布与发布记录（P1 票据 06，M346、M355、M381，原型画板 08）。
  * - 发布：左边是字段级差异与预检结果（失配的数据集、未全部核对、仍绑定旧版的模板），右边一张确认卡写结论与发布按钮；
  * - 发布记录：谁在何时发布了哪一版、改动摘要、内容哈希；选中一行原地展开差异；操作员只读；
- * - 回退：用旧版本的内容覆盖草案，进编辑页看过再发布（ADR-0028）。
  * - 待处理：代建工程师的发布申请（P1 票据 11）。
  * 只调开放 API。
  */
@@ -18,7 +17,6 @@ import { constraintText, isRequired, propertyParts, typeText } from '../form/def
 import { publishVerdict } from '../form/publish-verdict.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
 import type { DefinitionDiff, DefinitionFieldChange, DefinitionProperty, DefinitionPublication, DefinitionPublishCheck, Identity, Problem } from '../types.js';
-import { restoreToDraft } from './definition-studio.js';
 import { canEditDefinitions, definitionPath, exportCompiled, staticSchemaPath } from './definitions.js';
 import { Loading } from '../components/motifs.js';
 
@@ -148,15 +146,15 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
   const canEdit = canEditDefinitions(props.identity);
   const loaded = useLoad(async () => {
     if (!canEdit) return undefined;
-    const [draft, detail] = await Promise.all([api.definitionDraft(name), api.definition(name)]);
-    return { draft, taken: detail.versions.map((item) => item.version), check: await api.publishCheckDefinitionDraft(name, draft.sha256) };
+    const detail = await api.definition(name);
+    return { detail, taken: detail.versions.map((item) => item.version), check: await api.publishCheckDefinition(name, detail.sha256) };
   }, `publish-check:${name}`);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
   /** 版本框里写的；没动过就是预检给的下一个编号。 */
   const [written, setWritten] = useState<string>();
   const [note, setNote] = useState('');
-  const check = loaded.data?.check, draft = loaded.data?.draft;
+  const check = loaded.data?.check, detail = loaded.data?.detail;
   const text = written ?? (check?.version === undefined ? '' : versionLabel(check.version));
   const version = parseVersion(text), label = version === undefined ? undefined : versionLabel(version);
   const versionProblem = version === undefined ? '要以小写字母或数字开头，可以有点、下划线、连字符，最长 64 个字符'
@@ -165,11 +163,11 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
     setBusy(true);
     setProblems(undefined);
     try {
-      const published = await api.publishDefinitionDraft(name, check!.sha256, { version: version!, ...(note.trim() ? { note: note.trim() } : {}) });
+      const published = await api.publishDefinition(name, check!.sha256, { version: version!, ...(note.trim() ? { note: note.trim() } : {}) });
       go(['definition-publications'], { name, version: String(published.version) });
     } catch (error) {
       setProblems(problemsOf(error));
-      // 草案刚被改过时重新预检：看到的一定是要发布的这一份。
+      // 内容刚被改过时重新预检：看到的一定是要发布的这一份。
       loaded.reload();
     } finally { setBusy(false); }
   };
@@ -183,8 +181,8 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
           <h1>{check?.version && label ? `发布为 ${name} ${label}` : `发布 ${name}`}</h1>
           {check && (
             <p className="meta" data-testid="publish-meta">
-              <span>{check.baseVersion === undefined ? '首个版本' : `基于 ${versionLabel(check.baseVersion)}`}</span>
-              {draft && <span>{draft.updatedBy} 保存于 {time(draft.updatedAt)}</span>}
+              <span>{check.baseVersion === undefined ? '首个版本' : `与 ${versionLabel(check.baseVersion)} 比较`}</span>
+              {detail && <span>{detail.updatedBy} 保存于 {time(detail.updatedAt)}</span>}
               <Hash value={check.sha256} />
             </p>
           )}
@@ -196,7 +194,7 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
       {check && (
         <div className="publish-layout">
           <PublishConfirm verdict={publishVerdict(check, version)} busy={busy}
-            {...(check.version === undefined ? {} : { steps: { from: check.baseVersion === undefined ? '草案' : `${versionLabel(check.baseVersion)}`, to: label ?? '？' } })}>
+            {...(check.version === undefined ? {} : { steps: { from: check.baseVersion === undefined ? '还没发布过' : `${versionLabel(check.baseVersion)}`, to: label ?? '？' } })}>
             <ErrorBox problems={problems} title="没有发布" />
             {check.version !== undefined
               ? (
@@ -211,11 +209,11 @@ export function DefinitionPublish(props: { readonly name: string; readonly ident
                     <textarea id="publish-note" rows={2} maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} />
                   </div>
                   <button type="button" className="primary publish-button" disabled={busy || loaded.loading || Boolean(versionProblem)} onClick={() => void publish()}><Icon d={PUBLISH} />{busy ? '正在发布…' : label ? `发布为 ${label}` : '发布'}</button>
-                  <a className="button quiet" href={href(definitionPath(name))}>回到草案</a>
+                  <a className="button quiet" href={href(definitionPath(name))}>回到编辑</a>
                   <p className="publish-note">发布不影响数据定义，发布之后能接着改；已发布的版本不变。</p>
                 </>
               )
-              : <a className="button primary publish-button" href={href(definitionPath(name))}>回到草案改正</a>}
+              : <a className="button primary publish-button" href={href(definitionPath(name))}>回到编辑改正</a>}
           </PublishConfirm>
           <div className="publish-details">
             {check.version === undefined
@@ -268,26 +266,14 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
   const canEdit = canEditDefinitions(props.identity);
   const name = props.query.get('name') ?? undefined, version = props.query.get('version') ?? undefined;
   const loaded = useLoad(async () => {
-    const [publications, definitions] = await Promise.all([api.definitionPublications(name), api.definitions()]);
-    return { publications: publications.publications, definitions: definitions.definitions };
+    const [publications, schemas] = await Promise.all([api.definitionPublications(name), api.staticSchemas()]);
+    return { publications: publications.publications, schemas: schemas.staticSchemas };
   }, `definition-publications:${name ?? ''}`);
   const [open, setOpen] = useState(name && version ? `${name}@${version}` : undefined);
-  const [confirming, setConfirming] = useState<string>();
-  const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
   const data = loaded.data;
-  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）。
-  const latest = new Map((data?.definitions ?? []).map((definition) => [definition.name, definition.versions.at(-1)?.version]));
-  const hasDraft = (candidate: string) => (data?.definitions ?? []).some((definition) => definition.name === candidate && definition.draft);
-  const restore = async (publication: DefinitionPublication) => {
-    setBusy(true);
-    setProblems(undefined);
-    setConfirming(undefined);
-    try { await restoreToDraft(publication.name, publication.version); } catch (error) {
-      setProblems(problemsOf(error));
-      loaded.reload();
-    } finally { setBusy(false); }
-  };
+  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）；接口按发布的先后列，同一名称后面的盖掉前面的。
+  const latest = new Map((data?.schemas ?? []).map((schema) => [schema.name, schema.version]));
   return (
     <section className="page">
       <div className="title-row"><h1>静态数据定义</h1></div>
@@ -310,7 +296,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                 return [
                   <tr key={key} data-testid="publication-row" data-name={publication.name} data-version={publication.version} className={expanded ? 'selected' : undefined}>
                     <td>
-                      <button type="button" className="link-button" aria-expanded={expanded} onClick={() => { setOpen(expanded ? undefined : key); setConfirming(undefined); }}>{publication.displayName}</button>
+                      <button type="button" className="link-button" aria-expanded={expanded} onClick={() => setOpen(expanded ? undefined : key)}>{publication.displayName}</button>
                       <span className="muted"> {versionLabel(publication.version)}</span>
                     </td>
                     <td data-testid="publication-summary">{summaryText(publication)}</td>
@@ -332,18 +318,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
                         <div className="actions">
                           <a className="button small quiet" href={href(staticSchemaPath(publication.name, publication.version))}>打开这一版</a>
                           <button type="button" className="small quiet" onClick={() => void exportCompiled(publication).catch((error: unknown) => setProblems(problemsOf(error)))}>导出编译产物</button>
-                          {canEdit && !current && confirming !== key && <button type="button" className="small" disabled={busy} onClick={() => setConfirming(key)}>{hasDraft(publication.name) ? '用这一版覆盖草案' : '从这一版另起草案'}</button>}
                         </div>
-                        {canEdit && !current && confirming === key && (
-                          <div className="impact-note" data-testid="restore-confirm">
-                            <strong>{hasDraft(publication.name) ? `用 ${versionLabel(publication.version)} 的内容覆盖草案。` : `从 ${versionLabel(publication.version)} 另起草案。`}</strong>
-                            <span>{hasDraft(publication.name) ? '草案现在的内容会被换掉，不能恢复；已发布的版本都不变。' : '已发布的版本都不变。'}进编辑页看过再发布。</span>
-                            <div className="actions">
-                              <button type="button" className="small" disabled={busy} onClick={() => void restore(publication)}>{busy ? '正在处理…' : hasDraft(publication.name) ? '确认覆盖草案' : '确认另起'}</button>
-                              <button type="button" className="small quiet" onClick={() => setConfirming(undefined)}>取消</button>
-                            </div>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   ),
@@ -353,7 +328,7 @@ export function DefinitionRecords(props: { readonly identity: Identity; readonly
           </table>
         </section>
       )}
-      <p className="table-note">每次发布产生一个新版本；要回退，就用旧版本的内容覆盖草案，再发布一次。</p>
+      <p className="table-note">每次发布产生一个新版本，已发布的版本都不变；数据定义不受发布影响，能接着改、接着发布。</p>
     </section>
   );
 }

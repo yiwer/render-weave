@@ -136,6 +136,10 @@
 - **Docker 后端**（`test-docker.mjs`，走查之后、M384 之前）：21 个文件，201 项通过；日志 2,968 行全部合格。
 - **验收脚本**（`accept-p1.mjs --walkthrough`，同上）：从空环境 15 步全过，报告在 `out/p1/acceptance/2026-11-04T08-05-13-016Z/`。走查用的审计原始记录存在 `out/p1/walkthrough-evidence/`（不进版本库）。
 
+### 验收之后的第二次模型纠正（M389，票据 17）
+
+用户走查后指出票据 16 没有改到位：数据定义要是独立的实体，主键是名称，发布只产出静态数据定义，对它毫无影响；并指明参考 `E:\GenCode\RenderWeave`。下面票据 16 那一节说的"草案留着""基于的版本换成这一版""用这一版覆盖草案"都不再成立，以 [ADR-0030](adr/0030-definition-is-an-entity-publishing-only-creates-statics.md) 为准。重跑的结果记在[票据 17](../.scratch/authoring-api-and-pages/issues/17-schema-is-an-entity.md)。
+
 ### 验收之后的模型纠正（M384，票据 16）
 
 用户走查后纠正：发布不应该影响数据定义，版本号允许自定义字符串。上面的验收结论针对纠正之前的模型；纠正本身在票据 16。这几处说法因此变了：A02、A04 的"发布后删除草案"不再成立；A01 不再是"只有加法"（`version` 放宽成整数或字符串，发布后 `GET …/draft` 不再答 404，逐条列在 `service/test/openapi.test.ts`）。

@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import type { DocumentKind, StoredDocument, TenantStorage } from '../src/backend.js';
 import { classifyWorkspaceDocument, parseJsonKeepingPrecision, publishStaticSchema } from '../src/engine.js';
+import { pushedDefinitions } from '../src/push.js';
 
 export const SINGLE_TEXT = fileURLToPath(new URL('../../fixtures/workspaces/single-text/', import.meta.url));
 export const FONT_MEDIUM = fileURLToPath(new URL('../../fixtures/resources/fonts/SourceHanSansCN-Medium.otf', import.meta.url));
@@ -22,8 +23,9 @@ export async function seedDocuments(storage: TenantStorage, documents: readonly 
     if (found.kind === 'other' || found.kind === 'invalid') throw new Error('不是工作区文档');
     stored.push({ kind: found.kind as DocumentKind, key: found.key, sha256: await storage.contents.put(bytes), byteLength: bytes.length });
   }
-  await storage.push(async () => ({
+  await storage.push(async (state) => ({
     documents: stored.filter((document) => document.kind !== 'template'),
+    definitions: await pushedDefinitions(storage, state, stored),
     templates: stored.filter((document) => document.kind === 'template').map((document) => ({ name: document.key, sha256: document.sha256, byteLength: document.byteLength })),
     resources: [],
   }), { pushedBy: '测试准备', now: new Date() });

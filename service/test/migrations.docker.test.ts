@@ -102,7 +102,7 @@ it('接口进程与 worker 等部署步骤执行迁移：迁移完成前等待�
 it('已有命名版本迁移 15 的库只追加 Agent 迁移 16', async () => {
   const migrations = await loadMigrations(), db = await freshDatabase();
   await migrate(db, migrations.slice(0, 15));
-  expect((await migrate(db, migrations)).applied).toEqual([16]);
+  expect((await migrate(db, migrations.slice(0, 16))).applied).toEqual([16]);
   expect((await db.query("SELECT to_regclass('agent_jobs') IS NOT NULL AS exists")).rows[0].exists).toBe(true);
 });
 
@@ -110,10 +110,27 @@ it('旧 Agent 测试库先拒绝升级；显式核对哈希改编号后只补命
   const migrations = await loadMigrations(), db = await freshDatabase();
   const old = [...migrations.slice(0, 14), { ...migrations[15]!, version: 15 }];
   await migrate(db, old);
-  await expect(migrate(db, migrations)).rejects.toThrow(/被改动/);
+  await expect(migrate(db, migrations.slice(0, 16))).rejects.toThrow(/被改动/);
   const repair = await readFile(new URL('../scripts/reconcile-agent-migration.sql', import.meta.url), 'utf8');
   await db.query(repair);
-  expect((await migrate(db, migrations))).toMatchObject({ applied: [15], pending: [], problems: [] });
+  expect((await migrate(db, migrations.slice(0, 16)))).toMatchObject({ applied: [15], pending: [], problems: [] });
   await expect(db.query(repair)).rejects.toThrow(/不是待转换/);
   await db.query('ROLLBACK');
+});
+
+it('迁移 17（ADR-0030）：草案表改名为数据定义，已有的行留着，去掉基于的版本，留下补存量的标记', async () => {
+  const migrations = await loadMigrations(), db = await freshDatabase();
+  await migrate(db, migrations.slice(0, 16));
+  const { rows: [tenant] } = await db.query<{ id: string }>(`INSERT INTO tenants (name) VALUES ('迁移') RETURNING id`);
+  await db.query(`INSERT INTO definition_drafts (tenant_id, name, base_version, sha256, byte_length, created_at, updated_at, updated_by)
+    VALUES ($1, '线路牌', '1', $2, 2, now(), now(), '测试')`, [tenant!.id, 'a'.repeat(64)]);
+
+  expect((await migrate(db, migrations.slice(0, 17))).applied).toEqual([17]);
+  expect((await db.query(`SELECT to_regclass('definition_drafts') IS NULL AS gone`)).rows[0].gone).toBe(true);
+  expect((await db.query('SELECT name, sha256, updated_by FROM definitions')).rows).toEqual([{ name: '线路牌', sha256: 'a'.repeat(64), updated_by: '测试' }]);
+  const columns = (await db.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'definitions'`)).rows.map((row) => row.column_name);
+  expect(columns).not.toContain('base_version');
+  expect((await db.query('SELECT step FROM pending_data_steps')).rows).toEqual([{ step: 'definitions-backfill' }]);
+  // 行级安全随表留着。
+  expect((await db.query(`SELECT relrowsecurity FROM pg_class WHERE relname = 'definitions'`)).rows[0].relrowsecurity).toBe(true);
 });

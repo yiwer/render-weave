@@ -23,6 +23,7 @@ import { startReconciler } from './metering.js';
 import { createPostgresBackend } from './postgres/backend.js';
 import { createS3Client, s3Blobs } from './postgres/blobs.js';
 import { createDb } from './postgres/db.js';
+import { runPendingDataSteps } from './postgres/data-steps.js';
 import { loadMigrations, migrate, setAppRolePassword, waitForMigrations } from './postgres/migrate.js';
 import { startQueueMaintenance } from './tasks.js';
 import { childRunner } from './worker/child-runner.js';
@@ -51,14 +52,16 @@ async function main(): Promise<void> {
     if (command === 'setup') {
       const config = loadSetupConfig(process.env);
       logger = createLogger('setup', build, config.logLevel);
-      const owner = createDb(config.ownerDatabaseUrl);
+      const owner = createDb(config.ownerDatabaseUrl), s3 = createS3Client(config.s3);
       try {
-        const state = await migrate(owner, await loadMigrations());
+        const migrations = await loadMigrations();
+        const state = await migrate(owner, migrations);
         logger.info({ schemaVersion: state.version, applied: state.applied }, '数据库迁移完成');
         await setAppRolePassword(owner, config.appDatabasePassword);
         logger.info('应用账号已可登录');
+        await createBucket(s3, config.s3.bucket, logger);
+        await runPendingDataSteps(owner, createPostgresBackend({ db: owner, blobs: s3Blobs(s3, config.s3.bucket), migrations }), (message, details) => logger.info(details, message));
       } finally { await owner.end(); }
-      await createBucket(createS3Client(config.s3), config.s3.bucket, logger);
       return;
     }
 

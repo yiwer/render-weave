@@ -20,6 +20,7 @@
 | 12 | [平台管理员在控制台看服务健康、管理租户、套餐、成员账号与代建令牌](issues/12-platform-admin-page.md) | 01 | A10、A11 |
 | 13 | [P1 阶段验收：完成标准全流程、真人走查与两轴审查](issues/13-acceptance.md) | 08、11、12 | A01–A12 |
 | 16 | [发布不影响数据定义，版本可以自定义](issues/16-definition-survives-publish.md) | 13 | M384 |
+| 17 | [数据定义是独立的实体，发布只产出静态数据定义](issues/17-schema-is-an-entity.md) | 16 | M389 |
 | 14 | [参照旧 RenderWeave 重做数据定义与静态数据定义两个模块](issues/14-definition-modules.md) | 06 | A11 |
 | 15 | [控制台的配色与动效对齐画室视频，引入灵动的小图](issues/15-studio-visual.md) | 14 | A11 |
 

@@ -69,7 +69,8 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
     }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     const read = await Promise.all(definitions.map(async ({ name, version, stored }) => ({ name, version, definition: await readJson(storage, stored) })));
     const byKey = new Map(read.map((item) => [`${item.name}@${item.version}`, item.definition]));
-    return { staticSchemas: read.map(({ name, version, definition }) => ({ ...summaryOf(name, version, definition), ...listFacts(definition, byKey) })) };
+    const sources = new Set((await storage.definitions()).map((definition) => definition.name));
+    return { staticSchemas: read.map(({ name, version, definition }) => ({ ...summaryOf(name, version, definition), ...listFacts(definition, byKey), sourceDeleted: !sources.has(name) })) };
   });
 
   /** 路径里的静态数据定义：原文与编译产物都在才算有。 */
@@ -89,7 +90,7 @@ export function registerStaticSchemaRoutes(app: FastifyInstance, context: ApiCon
   /** 一个静态数据定义：原文与编译产物。控制台按编译产物生成表单，字段用它的 title（显示名称）。 */
   app.get('/v1/static-schemas/:name/versions/:version', { config: { access: 'tenant.read' } }, async (request) => {
     const { summary, definition, compiled } = await staticSchemaOf(request);
-    return { ...summary, definition, compiled };
+    return { ...summary, definition, compiled, sourceDeleted: !await storageOf(request).definition(summary.name) };
   });
 
   /** Excel 导入的空白表（票据 13）：按编译产物生成，主表一行表头，引用与引用列表各一张表。 */

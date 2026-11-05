@@ -121,7 +121,7 @@ export function describeAudit(name: string, makeBackend: () => Promise<ServiceBa
         .toBe(`[{"path":"template:问候牌","change":"changed","beforeSha256":"${sha256(edited)}","afterSha256":"${sha256(template)}"}]`);
 
       // 不是代建写入的事件（登录、开通、上传内容、推送前比对）没有这些字段。
-      const plain = all.filter((event) => !['push.commit', 'template.setCurrent'].includes(event.action));
+      const plain = all.filter((event) => !['push.commit', 'template.setCurrent', 'definition.create'].includes(event.action));
       expect(plain.map((event) => event.action)).toEqual(expect.arrayContaining(['tenant.create', 'member.create', 'session.create', 'content.upload']));
       for (const field of ['beforeSha256', 'afterSha256', 'diff', 'round', 'reason']) expect(plain.filter((event) => field in event), field).toEqual([]);
 

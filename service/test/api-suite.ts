@@ -163,34 +163,31 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/template-current`, body: { template: '矩阵', revision: 1 } }) },
-  // 数据定义草案（P1 票据 04，M345）：客户管理员写、客户成员与 API 密钥只读，代建工程师走自己的寻址；名称用随机值，另起没有这一版答 404。
+  // 数据定义（P1 票据 04，M345）：客户管理员写、客户成员与 API 密钥只读，代建工程师走自己的寻址；名称用随机值，复制没有的版本答 404。
   { route: 'GET /v1/definitions', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/definitions' }) },
   { route: 'GET /v1/definitions/:name', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}` }) },
   { route: 'GET /v1/definition-publications', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: '/v1/definition-publications' }) },
-  { route: 'POST /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/draft`, body: { fromVersion: 1 } }) },
-  { route: 'GET /v1/definitions/:name/draft', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}/draft` }) },
-  { route: 'PUT /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'PUT', url: `/v1/definitions/d${randomUUID()}/draft?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
-  { route: 'GET /v1/definitions/:name/draft/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}/draft/check` }) },
-  { route: 'DELETE /v1/definitions/:name/draft', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/definitions/d${randomUUID()}/draft` }) },
-  { route: 'POST /v1/definitions/:name/draft/publish-check', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/draft/publish-check`, body: { expectedSha256: SAMPLE_SHA256 } }) },
-  { route: 'POST /v1/definitions/:name/draft/publish', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/draft/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/definitions', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/definitions', body: { name: `d${randomUUID()}`, fromStatic: { name: `d${randomUUID()}`, version: 1 } } }) },
+  { route: 'PUT /v1/definitions/:name', allow: ['admin'], request: () => ({ method: 'PUT', url: `/v1/definitions/d${randomUUID()}?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'GET /v1/definitions/:name/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/definitions/d${randomUUID()}/check` }) },
+  { route: 'DELETE /v1/definitions/:name', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/definitions/d${randomUUID()}` }) },
+  { route: 'POST /v1/definitions/:name/publish-check', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/publish-check`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/definitions/:name/publish', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/definitions/d${randomUUID()}/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/definitions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/definition-publications', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definition-publications` }) },
-  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft`, body: { fromVersion: 1 } }) },
-  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft` }) },
-  { route: 'PUT /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
-  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/draft/check', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/check` }) },
-  { route: 'DELETE /v1/authoring/tenants/:tenantId/definitions/:name/draft', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'DELETE', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft` }) },
-  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft/publish-check', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/publish-check`, body: { expectedSha256: SAMPLE_SHA256 } }) },
-  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/draft/publish', allow: ['authoringEngineer'],
-    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/draft/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/definitions', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions`, body: { name: `d${randomUUID()}`, fromStatic: { name: `d${randomUUID()}`, version: 1 } } }) },
+  { route: 'PUT /v1/authoring/tenants/:tenantId/definitions/:name', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'PUT', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}?expectedSha256=${SAMPLE_SHA256}`, body: {} }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/definitions/:name/check', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/check` }) },
+  { route: 'DELETE /v1/authoring/tenants/:tenantId/definitions/:name', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'DELETE', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}` }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/publish-check', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/publish-check`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/definitions/:name/publish', allow: ['authoringEngineer'],
+    request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/definitions/d${randomUUID()}/publish`, body: { expectedSha256: SAMPLE_SHA256 } }) },
   // 模板工作副本（P1 票据 07，M345）：同数据定义草案；指回旧修订开放给客户管理员，模板名用不存在的。
   { route: 'GET /v1/template-working-copies', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/template-working-copies` }) },
   { route: 'POST /v1/templates/:name/working-copy', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/working-copy` }) },
@@ -445,12 +442,12 @@ export function describeApi(name: string, makeBackend: () => Promise<ServiceBack
       // A 的一份模板工作副本：同样。
       const workingCopy = await call('POST', `/v1/templates/${encodeURIComponent('问候牌')}/working-copy`, a.admin.token);
       expect(workingCopy.status, workingCopy.raw.slice(0, 300)).toBe(201);
-      // A 的一份数据定义草案：另一租户读、改、删、校验都与不存在的名称回答相同。
-      const draft = await call('POST', `/v1/definitions/${encodeURIComponent('问候')}/draft`, a.admin.token, { fromVersion: 1 });
-      expect(draft.status, draft.raw.slice(0, 300)).toBe(201);
+      // A 的一个数据定义：另一租户读、改、删、校验都与不存在的名称回答相同。
+      const draft = await call('GET', `/v1/definitions/${encodeURIComponent('问候')}`, a.admin.token);
+      expect(draft.status, draft.raw.slice(0, 300)).toBe(200);
       // A 的一份发布申请：另一租户读、批准、退回都与不存在的 ID 回答相同。
       expect((await call('PUT', '/v1/approval-policy', a.admin.token, { definitions: true })).status).toBe(200);
-      const publishRequest = await call('POST', `/v1/authoring/tenants/${a.id}/definitions/${encodeURIComponent('问候')}/draft/publish`, a.engineer.token, { expectedSha256: draft.body.sha256 });
+      const publishRequest = await call('POST', `/v1/authoring/tenants/${a.id}/definitions/${encodeURIComponent('问候')}/publish`, a.engineer.token, { expectedSha256: draft.body.sha256 });
       expect(publishRequest.status, publishRequest.raw.slice(0, 300)).toBe(202);
       expect((await call('PUT', '/v1/approval-policy', a.admin.token, { definitions: false })).status).toBe(200);
       const requestId = publishRequest.body.request.id as string;

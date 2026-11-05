@@ -41,8 +41,8 @@ export function describeDatasets(name: string, makeBackend: () => Promise<Servic
       const list = await call('GET', '/v1/static-schemas', b.operator.token);
       expect(list.status).toBe(200);
       expect(list.body).toEqual({ staticSchemas: [
-        { name: '停靠站点', version: 1, displayName: '停靠站点', fieldCount: 4, referenceDepth: 0, description: '线路在一个行驶方向上依次停靠的站点' },
-        { name: '线路牌', version: 1, displayName: '线路牌（单线路单方向）', fieldCount: 11, referenceDepth: 1 },
+        { name: '停靠站点', version: 1, displayName: '停靠站点', fieldCount: 4, referenceDepth: 0, description: '线路在一个行驶方向上依次停靠的站点', sourceDeleted: false },
+        { name: '线路牌', version: 1, displayName: '线路牌（单线路单方向）', fieldCount: 11, referenceDepth: 1, sourceDeleted: false },
       ] });
       expect((await call('GET', '/v1/static-schemas', a.key.token)).body).toEqual({ staticSchemas: [expect.objectContaining({ name: '问候', version: 1 })] });
 
@@ -52,6 +52,7 @@ export function describeDatasets(name: string, makeBackend: () => Promise<Servic
         name: '线路牌', version: 1, displayName: '线路牌（单线路单方向）',
         definition: JSON.parse(await readFile(`${M402_DIR}schema-route-sign-v1.json`, 'utf8')),
         compiled: JSON.parse(await readFile(`${M402_DIR}compiled-route-sign-v1.schema.json`, 'utf8')),
+        sourceDeleted: false,
       });
 
       // 只有原文、没有编译产物的定义（推送不会产生，存储层可以）：不列，查看答 404。

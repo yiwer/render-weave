@@ -41,6 +41,7 @@ COPY --from=service /app ./
 COPY docs/examples/m402-dsl docs/examples/m402-dsl
 COPY test/support test/support
 COPY service/migrations service/migrations
+COPY service/scripts/reconcile-agent-migration.sql service/scripts/
 COPY service/vitest.docker.config.ts service/
 COPY service/test service/test
 CMD ["node_modules/.bin/vitest", "run", "--config", "service/vitest.docker.config.ts"]

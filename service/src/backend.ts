@@ -388,17 +388,18 @@ export interface PushWrites {
   readonly templates: readonly { readonly name: string; readonly sha256: string; readonly byteLength: number }[];
   /** 新资源（从 v1 起），或已有资源追加的后续内容版本。 */
   readonly resources: readonly { readonly id: string; readonly kind: 'image' | 'font'; readonly create: boolean; readonly versions: readonly ContentVersion[] }[];
+  /** 这次推送第一次带来的名称要建的数据定义（ADR-0030）：内容已先写进本租户的内容；已有的不动。 */
+  readonly definitions?: readonly { readonly name: string; readonly sha256: string; readonly byteLength: number }[];
   /** 随推送附带的代建轮次：与推送同一事务记为用量事件，已记过的轮次跳过（票据 09）。 */
   readonly rounds?: readonly RoundUsageEntry[];
 }
 
 /**
- * 数据定义草案（P1 票据 04，M346）：一个数据定义名称还没发布的那一份，每个名称至多一份。
+ * 数据定义（ADR-0030）：可编辑的数据结构定义，主键是名称，本身就是唯一的一份。发布只产出静态数据定义，不改这一行。
  * baseVersion 是它基于的静态版本，发布之后换成刚发布的那一版（ADR-0028），新名称没有。内容按原始字节存在本租户的内容里，读回与保存时逐字节相同。
  */
-export interface DefinitionDraft {
+export interface StoredDefinition {
   readonly name: string;
-  readonly baseVersion?: SchemaVersion;
   readonly sha256: string;
   readonly byteLength: number;
   readonly createdAt: string;
@@ -429,15 +430,15 @@ export type WorkingCopyCommit =
   /** 基准不是当前修订：别人先保存了。currentRevision 是现在的当前修订。 */
   | { readonly conflict: { readonly currentRevision: number } };
 
-/** 发布草案要登记的两份内容：键是"名称@版本"。 */
-export interface PublishedDraft {
+/** 发布要登记的两份内容：键是"名称@版本"。 */
+export interface PublishedDefinition {
   readonly key: string;
   readonly version: SchemaVersion;
   readonly definition: { readonly sha256: string; readonly byteLength: number };
   readonly compiled: { readonly sha256: string; readonly byteLength: number };
 }
 
-/** 写草案的主体与时间。 */
+/** 写数据定义或工作副本的主体与时间。 */
 export interface DraftWriter {
   readonly updatedBy: string;
   readonly now: Date;
@@ -468,7 +469,7 @@ export interface PublishRequest {
   /** 受约束的范围：推送可能两个都有。 */
   readonly scopes: readonly ApprovalScope[];
   readonly status: PublishRequestStatus;
-  /** 固定的内容哈希：草案、工作副本、要指回的修订，或推送清单。 */
+  /** 固定的内容哈希：数据定义、工作副本、要指回的修订，或推送清单。 */
   readonly sha256: string;
   /** 申请时要被换掉的内容：基于的版本，或当前修订。 */
   readonly beforeSha256?: string;
@@ -531,23 +532,23 @@ export interface TenantStorage {
    */
   setCurrentTemplate(name: string, revision: number, by: { readonly source: TemplateCurrentOrigin['source']; readonly by: string; readonly now: Date; readonly expectedCurrent?: number; readonly approving?: PublishRequestApproval }):
     Promise<{ readonly template: StoredTemplate; readonly previousRevision: number } | { readonly moved: number } | undefined>;
-  /** 本租户全部数据定义草案。 */
-  definitionDrafts(): Promise<readonly DefinitionDraft[]>;
-  definitionDraft(name: string): Promise<DefinitionDraft | undefined>;
-  /** 新建草案；这个名称已有草案时什么也不写，返回 undefined。与推送、资源提交依次进行。 */
-  createDefinitionDraft(draft: { readonly name: string; readonly baseVersion?: SchemaVersion; readonly bytes: Uint8Array }, by: DraftWriter): Promise<DefinitionDraft | undefined>;
+  /** 本租户全部数据定义。 */
+  definitions(): Promise<readonly StoredDefinition[]>;
+  definition(name: string): Promise<StoredDefinition | undefined>;
+  /** 新建数据定义；这个名称已有时什么也不写，返回 undefined。与推送、资源提交依次进行。 */
+  createDefinition(definition: { readonly name: string; readonly bytes: Uint8Array }, by: DraftWriter): Promise<StoredDefinition | undefined>;
   /**
-   * 整份替换草案：只有当前内容哈希等于 expectedSha256 才写，否则什么也不写，答当前哈希（stale）。没有这份草案时 undefined。
+   * 整份替换数据定义：只有当前内容哈希等于 expectedSha256 才写，否则什么也不写，答当前哈希（stale）。没有这个数据定义时 undefined。
    */
-  saveDefinitionDraft(name: string, expectedSha256: string, bytes: Uint8Array, by: DraftWriter):
-    Promise<{ readonly saved: DefinitionDraft } | { readonly stale: string } | undefined>;
-  /** 删除草案，答删掉的那一份；没有时 undefined。 */
-  deleteDefinitionDraft(name: string): Promise<DefinitionDraft | undefined>;
+  saveDefinition(name: string, expectedSha256: string, bytes: Uint8Array, by: DraftWriter):
+    Promise<{ readonly saved: StoredDefinition } | { readonly stale: string } | undefined>;
+  /** 删除数据定义，答删掉的那一份；没有时 undefined。静态版本不受影响。 */
+  deleteDefinition(name: string): Promise<StoredDefinition | undefined>;
   /**
-   * 发布草案（P1 票据 05，ADR-0028）：在一个事务里登记静态数据定义的原文与编译产物，草案留着，基于的版本换成这一版。内容已先写进本租户的内容。
-   * 草案的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这份草案时 undefined。
+   * 发布（ADR-0030）：在一个事务里登记静态数据定义的原文与编译产物，不写数据定义那一行。内容已先写进本租户的内容。
+   * 数据定义的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这个数据定义时 undefined。
    */
-  publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft, approving?: PublishRequestApproval): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
+  publishDefinition(name: string, expectedSha256: string, published: PublishedDefinition, approving?: PublishRequestApproval): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;
   /** 本租户全部模板工作副本。 */
   templateWorkingCopies(): Promise<readonly TemplateWorkingCopy[]>;
   templateWorkingCopy(name: string): Promise<TemplateWorkingCopy | undefined>;

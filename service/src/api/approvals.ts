@@ -13,7 +13,7 @@ import { loadTenantWorkspace } from '../preview.js';
 import { commitPush, diffPush, pushProblems, pushWrites, verifyContents, type PushManifest } from '../push.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
 import { parsedDocument, type AuthoringAddressing } from './authoring-documents.js';
-import { baseDocumentOf, commitDraftPublish } from './definitions.js';
+import { baseDocumentOf, commitPublish, latestStatic } from './definitions.js';
 import { ApiError, notFound, objectId, problem, ServiceProblemCodes } from './problems.js';
 import { requestContent, requestObject, type RequestActor } from './publish-requests.js';
 import { commitCopy, currentOf, overlaid, setCurrentTemplate } from './template-copies.js';
@@ -46,19 +46,19 @@ async function recheck(scope: TenantScope, request: PublishRequest): Promise<Rec
   const storage = scope.storage;
   switch (request.kind) {
     case 'definitionPublish': {
-      const draft = await storage.definitionDraft(request.subject);
-      if (!draft) return { stale: '草案已经不在了' };
-      if (draft.sha256 !== request.sha256) return { stale: '草案在申请之后又被修改' };
-      const bytes = await storage.contents.get(draft.sha256);
-      if (!bytes) return { stale: '草案的内容读不到' };
+      const definition = await storage.definition(request.subject);
+      if (!definition) return { stale: '数据定义已经不在了' };
+      if (definition.sha256 !== request.sha256) return { stale: '数据定义在申请之后又被修改' };
+      const bytes = await storage.contents.get(definition.sha256);
+      if (!bytes) return { stale: '数据定义的内容读不到' };
       const document = parsedDocument(bytes), workspace = await readWorkspaceDocuments(storage.documents);
-      const base = draft.baseVersion === undefined ? undefined : workspace.staticSchemas.find((entry) => entry.ref.name === draft.name && entry.ref.version === draft.baseVersion)?.definition;
-      const { problems: _none, ...changes } = diffDefinition(baseDocumentOf(base, document), document);
-      const taken = workspace.staticSchemas.filter((entry) => entry.ref.name === draft.name).map((entry) => entry.ref.version);
+      const base = await latestStatic(storage, workspace, definition.name);
+      const { problems: _none, ...changes } = diffDefinition(baseDocumentOf(base?.definition, document), document);
+      const taken = workspace.staticSchemas.filter((entry) => entry.ref.name === definition.name).map((entry) => entry.ref.version);
       if (request.version !== undefined && taken.includes(request.version)) return { changes, stale: `申请时的版本 ${request.version} 已被占用，下一个版本已是 ${nextSchemaVersion(taken)}` };
       const { published, problems } = publishStaticSchema(document, workspace.staticSchemas, request.version === undefined ? {} : { version: request.version });
-      if (!published) return { changes, stale: '草案有严重问题', blockers: problems };
-      return { changes, apply: (approving, approver) => commitDraftPublish(scope, { draft, document, workspace, published, ...(request.note ? { note: request.note } : {}) }, approver.audit, approving) };
+      if (!published) return { changes, stale: '数据定义有严重问题', blockers: problems };
+      return { changes, apply: (approving, approver) => commitPublish(scope, { definition, document, workspace, published, ...(request.note ? { note: request.note } : {}) }, approver.audit, approving) };
     }
     case 'templateSave': {
       const copy = await storage.templateWorkingCopy(request.subject);

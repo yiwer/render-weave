@@ -5,7 +5,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   APPROVAL_SCOPES, DEFAULT_PLAN, documentSource, EmailTakenError, MAX_ACTIVE_WEBHOOKS, parseDocumentSource, periodOf, PublishRequestDecided, TOKEN_KINDS,
-  type ApiKeyInfo, type ApprovalPolicy, type ApprovalScope, type ApprovalSetting, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type DefinitionDraft, type Identity, type ItemResult, type LoginRecord, type Member,
+  type ApiKeyInfo, type ApprovalPolicy, type ApprovalScope, type ApprovalSetting, type AuditEvent, type AuthoringState, type AuthoringTokenInfo, type BatchState, type StoredDefinition, type Identity, type ItemResult, type LoginRecord, type Member,
   type MemberRole, type NewAuditEvent, type Plan, type PlatformUser, type PreviewQuota, type PublishRequest, type PublishRequestApproval, type RecordCursor, type RecordEntry, type RegisteredFile,
   type ReleasedReservation, type ReplayResult, type RoundUsageEntry, type ServiceBackend, type StoredDocument, type StoredTemplate, type TaskResult,
   type TemplateCurrentOrigin, type TemplateRevision, type TemplateWorkingCopy, type Tenant, type TenantBatch, type TenantScope, type TenantStorage, type TokenKind, type UsageEvent,
@@ -538,7 +538,7 @@ function memoryStorage(metering: MeteringHooks, audit: (event: NewAuditEvent, no
   /** 工作区文档：来源 → 内容。推送进来的文档来源是"种类:键"，模板那一行指向当前修订。 */
   const documents = new Map<string, { sha256: string; byteLength: number }>();
   const templates = new Map<string, { current: number; origin: TemplateCurrentOrigin; revisions: TemplateRevision[] }>();
-  const drafts = new Map<string, DefinitionDraft>();
+  const definitions = new Map<string, StoredDefinition>();
   const workingCopies = new Map<string, TemplateWorkingCopy>();
   const approvalSettings = new Map<ApprovalScope, ApprovalSetting>();
   const publishRequests = new Map<string, PublishRequest>();
@@ -648,6 +648,9 @@ function memoryStorage(metering: MeteringHooks, audit: (event: NewAuditEvent, no
       // 批准生效的修订算网页一侧（M354）：内容与主体还是推送的，当前修订的来历是批准的人。
       const origin = (): TemplateCurrentOrigin => ({ source: approving ? 'web' : 'push', action: 'revision', by: approving?.by ?? pushedBy, at: now.toISOString() });
       for (const document of writes.documents) documents.set(documentSource(document.kind, document.key), { sha256: document.sha256, byteLength: document.byteLength });
+      for (const { name, sha256, byteLength } of writes.definitions ?? []) {
+        if (!definitions.has(name)) definitions.set(name, { name, sha256, byteLength, createdAt: now.toISOString(), updatedAt: now.toISOString(), updatedBy: pushedBy });
+      }
       const revisions = new Map<string, number>();
       for (const { name, sha256, byteLength } of writes.templates) {
         const row = templates.get(name) ?? { current: 0, origin: origin(), revisions: [] };
@@ -689,26 +692,26 @@ function memoryStorage(metering: MeteringHooks, audit: (event: NewAuditEvent, no
       }
       return { template: template(name, row), previousRevision };
     }),
-    definitionDrafts: async () => [...drafts.values()],
-    definitionDraft: async (name) => drafts.get(name),
-    createDefinitionDraft: ({ name, baseVersion, bytes }, { updatedBy, now }) => exclusive(async () => {
-      if (drafts.has(name)) return undefined;
+    definitions: async () => [...definitions.values()],
+    definition: async (name) => definitions.get(name),
+    createDefinition: ({ name, bytes }, { updatedBy, now }) => exclusive(async () => {
+      if (definitions.has(name)) return undefined;
       const at = now.toISOString();
-      const draft: DefinitionDraft = { name, ...(baseVersion === undefined ? {} : { baseVersion }), sha256: put(bytes), byteLength: bytes.length, createdAt: at, updatedAt: at, updatedBy };
-      drafts.set(name, draft);
-      return draft;
+      const definition: StoredDefinition = { name, sha256: put(bytes), byteLength: bytes.length, createdAt: at, updatedAt: at, updatedBy };
+      definitions.set(name, definition);
+      return definition;
     }),
-    saveDefinitionDraft: (name, expectedSha256, bytes, { updatedBy, now }) => exclusive(async () => {
-      const current = drafts.get(name);
+    saveDefinition: (name, expectedSha256, bytes, { updatedBy, now }) => exclusive(async () => {
+      const current = definitions.get(name);
       if (!current) return undefined;
       if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
-      const saved: DefinitionDraft = { ...current, sha256: put(bytes), byteLength: bytes.length, updatedAt: now.toISOString(), updatedBy };
-      drafts.set(name, saved);
+      const saved: StoredDefinition = { ...current, sha256: put(bytes), byteLength: bytes.length, updatedAt: now.toISOString(), updatedBy };
+      definitions.set(name, saved);
       return { saved };
     }),
-    deleteDefinitionDraft: (name) => exclusive(async () => {
-      const current = drafts.get(name);
-      drafts.delete(name);
+    deleteDefinition: (name) => exclusive(async () => {
+      const current = definitions.get(name);
+      definitions.delete(name);
       return current;
     }),
     templateWorkingCopies: async () => [...workingCopies.values()],
@@ -753,15 +756,14 @@ function memoryStorage(metering: MeteringHooks, audit: (event: NewAuditEvent, no
       documents.set(documentSource('template', name), { sha256: copy.sha256, byteLength: copy.byteLength });
       return { status: 'saved' as const, revision, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, version, definition, compiled }, approving) => exclusive(async () => {
-      const current = drafts.get(name);
+    publishDefinition: (name, expectedSha256, { key, definition, compiled }, approving) => exclusive(async () => {
+      const current = definitions.get(name);
       if (!current) return undefined;
       if (current.sha256 !== expectedSha256) return { stale: current.sha256 };
       if (documents.has(documentSource('definition', key)) || documents.has(documentSource('compiled', key))) return { taken: true as const };
       approve(approving);
       documents.set(documentSource('definition', key), definition);
       documents.set(documentSource('compiled', key), compiled);
-      drafts.set(name, { ...current, baseVersion: version });
       return { published: true as const };
     }),
     approvalPolicy: async () => policy(),

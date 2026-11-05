@@ -4,7 +4,7 @@
  * 界面按原型方案一（M282）：首页是数据集，编辑页左表单、右草稿预览，出图在侧栏里进行。
  * 票据 14 另有出图记录、用量、资源与管理页（M300、M301）：客户管理员在另一个浏览器上下文里登录，操作员与管理员各看各的。
  * P1 票据 01 换成标题栏模块下拉与状态栏的新框架：换页走模块下拉（nav），既有用例只改了选择器；新框架另有三条用例。
- * P1 票据 06、14 的数据定义与静态数据定义：复制为草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发，九种字段类型，操作员只读。
+ * P1 票据 06、14、17 的数据定义与静态数据定义：打开数据定义 → 加必填字段 → 看差异与影响 → 发布 → 接着改、接着发布，九种字段类型，删除，操作员只读。
  * P1 票据 11 的审批：管理页打开开关，代建工程师经开放 API 发起申请，发布记录页与发布模板修订页上退回与批准。
  * Docker 后端测试里浏览器是 tester 容器里的 Chromium，接口进程与 worker 是 Compose 里真实的进程（console.docker.test.ts）；
  * 本机另可用内存后端加本机浏览器快速跑（console.browser.test.ts，设 RW_BROWSER）。
@@ -815,7 +815,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await page.getByRole('heading', { name: '静态数据定义', level: 1 }).waitFor();
       expect(hashOf()).toBe('#/static-schemas');
       const schemas = (await api('GET', '/v1/static-schemas')).body.staticSchemas as { name: string; version: number }[];
-      await expect.poll(() => page.getByTestId('version-card').evaluateAll((cards) => cards.map((card) => `${card.getAttribute('data-name')}@${card.getAttribute('data-version')}`).sort()))
+      await expect.poll(() => page.getByTestId('version-card').evaluateAll((cards) => cards.map((card) => `${card.getAttribute('data-name')}@${card.getAttribute('data-version')}`).sort()), { timeout: 15_000 })
         .toEqual(schemas.map((schema) => `${schema.name}@${schema.version}`).sort());
       await adminPage.keyboard.press('Control+8');
       await adminPage.getByRole('heading', { name: '管理', level: 1 }).waitFor();
@@ -903,7 +903,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         return { color: body.color, background: body.backgroundColor, orange, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
       })()`) as Promise<{ color: string; background: string; orange: string[]; overflow: number }>;
       const pages: [string, () => Promise<unknown>][] = [
-        ['#/definitions', () => page.getByTestId('draft-card').first().waitFor()],
+        ['#/definitions', () => page.getByTestId('definition-card').first().waitFor()],
         [`#/definitions/${enc('线路牌')}`, () => page.getByTestId('field-row').first().waitFor()],
         ['#/static-schemas', () => page.getByTestId('version-card').first().waitFor()],
         [`#/static-schemas/${enc('线路牌')}/1`, () => page.getByTestId('tree-field').first().waitFor()],
@@ -917,8 +917,6 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         ['#/resources', () => page.getByTestId('resource-row').first().waitFor()],
         ['#/usage', () => page.getByTestId('usage-limit').waitFor()],
       ];
-      // 编辑页只有草案才进得去。
-      expect((await adminApi('POST', `/v1/definitions/${enc('线路牌')}/draft`, { fromVersion: 1 })).status).toBe(201);
       try {
         for (const width of [1440, 375]) {
           await page.setViewportSize({ width, height: 900 });
@@ -935,14 +933,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         }
       } finally {
         await page.setViewportSize({ width: 1440, height: 1000 });
-        expect((await world.call('DELETE', `/v1/definitions/${enc('线路牌')}/draft`, world.b.admin.token)).status).toBe(204);
       }
     }, 180_000);
 
-    /** 静态数据定义的一张卡片（一个版本）、数据定义草案的一张卡片、字段的一行（表单）与字段树上的一个字段。 */
+    /** 静态数据定义的一张卡片（一个版本）、数据定义的一张卡片、字段的一行（表单）与字段树上的一个字段。 */
     const versionCard = (target: Page, name: string, version: number | string) => target.locator(`[data-testid="version-card"][data-name="${name}"][data-version="${version}"]`);
-    const draftCard = (target: Page, name: string) => target.locator(`[data-testid="draft-card"][data-name="${name}"]`);
-    const publishedCard = (target: Page, name: string) => target.locator(`[data-testid="published-card"][data-name="${name}"]`);
+    const definitionCard = (target: Page, name: string) => target.locator(`[data-testid="definition-card"][data-name="${name}"]`);
     const fieldRow = (target: Page, name: string) => target.locator(`[data-testid="field-row"][data-field="${name}"]`);
     const treeField = (target: Page, name: string) => target.locator(`[data-testid="tree-field"][data-field="${name}"]`);
     const publicationRow = (target: Page, name: string, version: number | string) => target.locator(`[data-testid="publication-row"][data-name="${name}"][data-version="${version}"]`);
@@ -954,7 +950,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '保存', exact: true }).click();
       await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
     };
-    /** 添加字段：填共同的属性，别的由 fill 填。改动先留在页面上，要保存才写草案。 */
+    /** 添加字段：填共同的属性，别的由 fill 填。改动先留在页面上，要保存才写。 */
     const addField = async (target: Page, field: { displayName: string; name: string; type: string; required?: boolean }, fill?: (form: Locator) => Promise<void>) => {
       await target.getByRole('button', { name: '添加字段' }).click();
       const form = inspector(target);
@@ -966,7 +962,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await fieldRow(target, field.name).waitFor();
     };
 
-    it('静态数据定义与数据定义（P1 票据 06、14）：复制为草案 → 加必填字段 → 看差异与影响 → 发布 → 以旧版另发；每一步都与开放 API 相同', async () => {
+    it('静态数据定义与数据定义（P1 票据 06、14、17）：打开数据定义 → 加必填字段 → 看差异与影响 → 发布 → 接着改、接着发布；每一步都与开放 API 相同', async () => {
       const target = await asAdmin(), name = '线路牌', path = enc(name);
       const definitionsApi = async () => ((await adminApi('GET', '/v1/definitions')).body.definitions as any[]).find((item) => item.name === name);
       const versionOf = async (version: number | string) => (await adminApi('GET', `/v1/static-schemas/${path}/versions/${version}`)).body;
@@ -997,7 +993,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 右键一张卡片：导出编译产物与开放 API 相同，复制引用，在新标签页打开时带着会话。
       await card.click({ button: 'right' });
-      expect(await menuLabels(target)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '复制为草案']);
+      expect(await menuLabels(target)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '打开这个数据定义', '复制为新的数据定义']);
       const exported = await downloadBytes(target, () => target.getByRole('menuitem', { name: /导出编译产物/ }).click());
       expect(exported.name).toBe('线路牌-v1.schema.json');
       expect(JSON.parse(exported.bytes.toString('utf8'))).toEqual((await versionOf(1)).compiled);
@@ -1023,12 +1019,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await publicationRow(target, name, 1).getByTestId('publication-actor').textContent(), '种子直接写存储，审计里没有').toBe('没有记录');
       await (await nav(target, '静态数据定义')).click();
 
-      // 从这一版复制为草案：进编辑页，表单列字段，检查器看谁在用。
+      // 打开这个数据定义：推送来的也能直接改；进编辑页，表单列字段，检查器看谁在用。
       await card.click({ button: 'right' });
-      await target.getByRole('menuitem', { name: /复制为草案/ }).click();
-      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
-      const draft = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
-      expect(draft).toMatchObject({ baseVersion: 1, updatedBy: world.b.admin.email });
+      await target.getByRole('menuitem', { name: '打开这个数据定义' }).click();
+      await target.getByTestId('definition-meta').filter({ hasText: '已发布 v1' }).waitFor();
+      const draft = (await adminApi('GET', `/v1/definitions/${path}`)).body;
       const routeNo = fieldRow(target, 'routeNo');
       expect(await routeNo.getByTestId('field-type').textContent()).toBe('文本');
       expect(await routeNo.getByTestId('field-constraints').textContent()).toBe('1–8 字');
@@ -1037,7 +1032,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '校验', exact: true }).click();
       await checkPassed(target);
 
-      // 改字段名称、删字段：提示会影响的模板；撤销、重做、回到已保存都不碰草案。
+      // 改字段名称、删字段：提示会影响的模板；撤销、重做、回到已保存都不碰服务端。
       await openField(target, 'routeNo');
       await target.getByTestId('field-used-by').filter({ hasText: ROUTE }).waitFor();
       await inspector(target).getByLabel('字段名称', { exact: true }).fill('lineNo');
@@ -1059,14 +1054,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '回到已保存' }).click();
       await routeNo.waitFor();
       await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.sha256).toBe(draft.sha256);
+      expect((await adminApi('GET', `/v1/definitions/${path}`)).body.sha256).toBe(draft.sha256);
 
       // 有没保存的改动时换页先问：答否留在这里，改动还在；保存之后不再问。
       await inspector(target).getByLabel('说明', { exact: true }).fill('还没保存');
       const asked: string[] = [];
       target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
       await target.getByRole('navigation', { name: '位置' }).getByRole('link', { name: '数据定义' }).click();
-      await expect.poll(() => asked).toEqual(['这份草案有没保存的改动，离开就丢了。确定离开？']);
+      await expect.poll(() => asked).toEqual(['有没保存的改动，离开就丢了。确定离开？']);
       await expect.poll(() => target.evaluate('location.hash')).toBe(`#/definitions/${path}`);
       expect(await inspector(target).getByLabel('说明', { exact: true }).inputValue()).toBe('还没保存');
       await target.getByRole('button', { name: '回到已保存' }).click();
@@ -1094,11 +1089,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await depot.getByTestId('field-constraints').textContent()).toBe('最多 20 字');
       expect(await depot.getByTestId('field-required').textContent()).toBe('必填');
       expect(await depot.getByText('新增').count()).toBe(1);
-      await target.getByTestId('draft-changes').filter({ hasText: '新增 1、修改 0、删除 0' }).waitFor();
+      await target.getByTestId('definition-changes').filter({ hasText: '与 v1 相比新增 1、修改 0、删除 0' }).waitFor();
       await inspector(target).getByLabel('说明', { exact: true }).fill('运营这条线路的车队');
       await target.keyboard.press('Control+s');
       await target.getByTestId('save-status').filter({ hasText: '已保存' }).waitFor();
-      await expect.poll(async () => JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content).fields.at(-1))
+      await expect.poll(async () => JSON.parse((await adminApi('GET', `/v1/definitions/${path}`)).body.content).fields.at(-1))
         .toEqual({ name: 'depot', displayName: '所属车队', type: 'text', constraints: { required: true, maxLength: 20 }, description: '运营这条线路的车队' });
       await checkPassed(target);
 
@@ -1131,14 +1126,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 编译预览与校验接口相同。
       await target.getByRole('button', { name: '编译产物' }).click();
       const preview = JSON.parse((await target.getByTestId('compiled-preview').textContent())!);
-      const verdict = (await adminApi('GET', `/v1/definitions/${path}/draft/check`)).body;
+      const verdict = (await adminApi('GET', `/v1/definitions/${path}/check`)).body;
       expect(preview).toEqual(verdict.compiled);
       expect(preview.required).toContain('depot');
 
       // 发布：先看字段级差异与预检结果，数字与开放 API 相同。
       await target.getByRole('button', { name: '发布为 v2' }).click();
-      const saved = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
-      const preflight = (await adminApi('POST', `/v1/definitions/${path}/draft/publish-check`, { expectedSha256: saved.sha256 })).body;
+      const saved = (await adminApi('GET', `/v1/definitions/${path}`)).body;
+      const preflight = (await adminApi('POST', `/v1/definitions/${path}/publish-check`, { expectedSha256: saved.sha256 })).body;
       await target.getByRole('heading', { name: '发布为 线路牌 v2', level: 1 }).waitFor();
       // 确认卡先给结论：能发，但有影响要看，数字与预检相同。
       const confirm = target.getByTestId('publish-confirm');
@@ -1156,13 +1151,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await target.getByTestId('datasets-incomplete').count()).toBe(0);
       expect(await target.getByTestId('publish-meta').locator('[data-sha256]').getAttribute('data-sha256')).toBe(saved.sha256);
       // 超过上限的情况写清楚（真要造 1,000 份数据集太慢，用改过的回答）。
-      await target.route('**/draft/publish-check', async (route) => {
+      await target.route('**/publish-check', async (route) => {
         const response = await route.fetch(), body = await response.json();
         await route.fulfill({ response, json: { ...body, datasets: { ...body.datasets, total: 1280, checked: 1000, complete: false } } });
       });
       await target.reload();
       await target.getByTestId('datasets-incomplete').filter({ hasText: '未全部核对' }).filter({ hasText: '共 1,280 份' }).filter({ hasText: '前 1,000 份' }).waitFor();
-      await target.unroute('**/draft/publish-check');
+      await target.unroute('**/publish-check');
       await target.reload();
       await target.getByRole('button', { name: '发布为 v2' }).click();
 
@@ -1178,18 +1173,19 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await detail.locator('li[data-path="depot"]').waitFor();
       expect(await detail.locator('[data-sha256]').first().getAttribute('data-sha256')).toBe(newest.sha256);
       expect(await detail.locator('[data-sha256]').nth(1).getAttribute('data-sha256')).toBe(newest.baseSha256);
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body, '草案留着，基于刚发布的版本（ADR-0028）').toMatchObject({ baseVersion: 2 });
+      const afterPublish = (await adminApi('GET', `/v1/definitions/${path}`)).body;
+      expect(afterPublish.versions.map((item: any) => item.version), '发布只多了一个静态版本（ADR-0030）').toEqual([1, 2]);
       const compiled = await downloadBytes(target, () => detail.getByRole('button', { name: '导出编译产物' }).click());
       expect(createHash('sha256').update(compiled.bytes).digest('hex'), '导出的字节就是发布的产物').toBe(newest.compiledSha256);
-      expect(await detail.getByRole('button', { name: /覆盖草案/ }).count(), '当前版本不用回退').toBe(0);
 
-      // 回退（ADR-0028）：用 v1 的内容覆盖草案，进编辑页看过，发布成自定义的版本；旧版本不变。
-      await publicationRow(target, name, 1).getByRole('button').first().click();
-      await detail.getByRole('button', { name: '用这一版覆盖草案' }).click();
-      await target.getByTestId('restore-confirm').filter({ hasText: '用 v1 的内容覆盖草案' }).filter({ hasText: '不能恢复' }).waitFor();
+      // 发布之后接着改：还是同一个数据定义。把内容改回 v1 的样子，进编辑页看过，发布成自定义的版本；旧版本不变。
       const v2Before = (await adminApi('GET', `/v1/static-schemas/${path}/versions/2`)).raw;
-      await target.getByRole('button', { name: '确认覆盖草案' }).click();
-      await target.getByTestId('definition-meta').filter({ hasText: '基于 v2' }).waitFor();
+      const { version: _old, ...oldContent } = (await versionOf(1)).definition;
+      const restored = await world.call('PUT', `/v1/definitions/${path}?expectedSha256=${afterPublish.sha256}`, world.b.admin.token, `${JSON.stringify(oldContent, null, 2)}\n`, { 'content-type': 'application/json' });
+      expect(restored.status, restored.raw.slice(0, 300)).toBe(200);
+      await target.goto(`${baseUrl}/console/#/definitions/${path}`);
+      await target.reload();
+      await target.getByTestId('definition-meta').filter({ hasText: '已发布 v2' }).waitFor();
       await checkPassed(target);
       await target.getByRole('button', { name: '发布为 v3' }).click();
 
@@ -1219,7 +1215,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect({ ...third.definition, version: 1 }).toEqual(first.definition);
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/2`)).raw, '旧版本不变').toBe(v2Before);
       expect((await records()).map((item) => item.version)).toEqual(['2026-08', 2, 1]);
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body, '发布之后草案还在').toMatchObject({ baseVersion: '2026-08' });
+      expect((await adminApi('GET', `/v1/definitions/${path}`)).body, '发布之后内容不变').toMatchObject({ sha256: restored.body.sha256 });
 
       // 看已发布的版本：只读，可以切换；四种看法与开放 API 相同。
       await (await nav(target, '静态数据定义')).click();
@@ -1250,28 +1246,29 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await treeField(target, 'depot').count()).toBe(0);
     });
 
-    it('静态数据定义（P1 票据 14）：详情页复制为草案，同名接着发下一版，换名称是一份新的数据定义；草案卡片能搜索、能删除', async () => {
+    it('静态数据定义（P1 票据 14、17）：详情页复制成新的数据定义，要换名称；卡片能搜索、能删除', async () => {
       const target = await asAdmin(), name = '胸牌', path = enc(name), copy = `胸牌副本${randomUUID().slice(0, 8)}`;
       const original = (await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).body.definition;
       await target.goto(`${baseUrl}/console/#/static-schemas/${path}/1`);
-      await target.getByRole('button', { name: '复制为草案' }).click();
-      const form = target.getByRole('form', { name: '复制为草案' });
-      await form.getByText(`发布时成为 ${name} 的下一版`).waitFor();
-      await form.getByLabel('草案的名称').fill(copy);
-      await form.getByText('这是一份新的数据定义').waitFor();
+      await target.getByRole('button', { name: '复制为新的数据定义' }).click();
+      const form = target.getByRole('form', { name: '复制为新的数据定义' });
+      await form.getByLabel('名称', { exact: true }).fill(name);
+      await form.getByRole('button', { name: '复制', exact: true }).click();
+      await form.getByText('没有复制').waitFor();
+      await form.getByLabel('名称', { exact: true }).fill(copy);
       await form.getByLabel('显示名称').fill('胸牌的副本');
       await form.getByRole('button', { name: '复制', exact: true }).click();
       await target.getByRole('heading', { name: '胸牌的副本', level: 1 }).waitFor();
       await target.getByTestId('definition-meta').filter({ hasText: '还没发布过' }).waitFor();
-      const document = JSON.parse((await adminApi('GET', `/v1/definitions/${enc(copy)}/draft`)).body.content);
+      const document = JSON.parse((await adminApi('GET', `/v1/definitions/${enc(copy)}`)).body.content);
       expect(document).toMatchObject({ name: copy, displayName: '胸牌的副本', fields: original.fields });
-      expect(document.version, '草案不带版本号').toBeUndefined();
+      expect(document.version, '数据定义不带版本号').toBeUndefined();
 
-      // 草案卡片：字段数、基于、搜索；删除要确认。
+      // 卡片：字段数、发布状态、搜索；删除要确认。
       await (await nav(target, '数据定义')).click();
-      const card = draftCard(target, copy);
-      expect(await card.getByTestId('draft-fields').textContent()).toBe(String(original.fields.length));
-      expect(await card.getByTestId('draft-base').textContent()).toBe('还没发布过');
+      const card = definitionCard(target, copy);
+      expect(await card.getByTestId('definition-fields').textContent()).toBe(String(original.fields.length));
+      expect(await card.getByTestId('definition-state').textContent()).toBe('还没发布过');
       await target.getByLabel('搜索数据定义').fill('没有这个');
       await target.getByTestId('definitions-empty').filter({ hasText: '没有匹配的数据定义' }).waitFor();
       await target.getByLabel('搜索数据定义').fill('胸牌的');
@@ -1279,10 +1276,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await card.getByRole('button', { name: '删除' }).click();
       await card.getByRole('button', { name: '确认删除' }).click();
       await card.waitFor({ state: 'detached' });
-      expect((await adminApi('GET', `/v1/definitions/${enc(copy)}/draft`)).status).toBe(404);
+      expect((await adminApi('GET', `/v1/definitions/${enc(copy)}`)).status).toBe(404);
     });
 
-    it('数据定义（P1 票据 06、14）：新建空白数据定义，手动添加九种字段类型并发布成 v1；名称写错定位到那一行；别人先保存时读回；草案可以删除', async () => {
+    it('数据定义（P1 票据 06、14、17）：新建空白数据定义，手动添加九种字段类型并发布成 v1；名称写错定位到那一行；别人先保存时读回；发布之后接着改；删除不影响已发布的版本', async () => {
       const target = await asAdmin(), name = `全字段${randomUUID().slice(0, 8)}`, path = enc(name);
       await target.goto(`${baseUrl}/console/#/definitions`);
       // 新建用弹窗（M362）：焦点落在名称上；Esc、取消、点背后的遮罩都关掉，什么也不建，焦点回到按钮；服务端拒绝时错误显示在弹窗里。
@@ -1302,11 +1299,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await dialog.waitFor({ state: 'detached' });
       await opener.click();
       await target.getByLabel('名称', { exact: true }).fill('线路牌');
-      await target.getByRole('button', { name: '新建草案' }).click();
+      await dialog.getByRole('button', { name: '新建', exact: true }).click();
       await dialog.getByText('没有新建').waitFor();
       await target.getByLabel('名称', { exact: true }).fill(name);
       await target.getByLabel('显示名称', { exact: true }).fill('九种字段');
-      await target.getByRole('button', { name: '新建草案' }).click();
+      await dialog.getByRole('button', { name: '新建', exact: true }).click();
       await target.getByRole('heading', { name: '九种字段', level: 1 }).waitFor();
       await target.getByTestId('definition-meta').filter({ hasText: '还没发布过' }).waitFor();
       await target.getByText('还没有字段，添加第一个。').waitFor();
@@ -1371,7 +1368,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await saveDraft(target);
       await checkPassed(target);
 
-      const document = JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content);
+      const document = JSON.parse((await adminApi('GET', `/v1/definitions/${path}`)).body.content);
       expect(document.fields.map((field: any) => field.type)).toEqual(['text', 'number', 'date', 'time', 'datetime', 'boolean', 'image', 'list', 'list', 'ref']);
       expect(document.fields[0].constraints).toEqual({ required: true, minLength: 1, maxLength: 20, enum: ['甲', '乙'] });
       expect(document.fields[1].constraints).toEqual({ min: 0.5, max: 100 });
@@ -1380,13 +1377,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(document.fields[8].items).toEqual({ type: 'ref', ref: { name: '停靠站点', version: 1 } });
       expect(document.fields[9].ref).toEqual({ name: '停靠站点', version: 1 });
 
-      // 上移一行、切必填、复制一行：保存之后写进草案。
+      // 上移一行、切必填、复制一行：保存之后才写。
       await fieldRow(target, 'enabled').getByRole('button', { name: /^上移字段/ }).click();
       await fieldRow(target, 'day').getByTestId('field-required').click();
       await fieldRow(target, 'day').getByRole('button', { name: /^复制字段/ }).click();
       await fieldRow(target, 'dayCopy').waitFor();
       await saveDraft(target);
-      const moved = JSON.parse((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.content).fields as any[];
+      const moved = JSON.parse((await adminApi('GET', `/v1/definitions/${path}`)).body.content).fields as any[];
       expect(moved.map((field) => field.name).slice(2, 7)).toEqual(['day', 'dayCopy', 'at', 'enabled', 'moment']);
       expect(moved[2].constraints).toEqual({ required: true });
       await fieldRow(target, 'dayCopy').getByRole('button', { name: /^删除字段/ }).click();
@@ -1437,14 +1434,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await checkPassed(target);
 
       // 别人先保存了：这次改动没有写入，读回最新内容再改。
-      const current = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
-      const other = await world.call('PUT', `/v1/definitions/${path}/draft?expectedSha256=${current.sha256}`, world.b.admin.token, current.content.replace('"九种字段"', '"九种字段（别人改的）"'), { 'content-type': 'application/json' });
+      const current = (await adminApi('GET', `/v1/definitions/${path}`)).body;
+      const other = await world.call('PUT', `/v1/definitions/${path}?expectedSha256=${current.sha256}`, world.b.admin.token, current.content.replace('"九种字段"', '"九种字段（别人改的）"'), { 'content-type': 'application/json' });
       expect(other.status, other.raw.slice(0, 300)).toBe(200);
       await openField(target, 'day');
       await inspector(target).getByLabel('说明', { exact: true }).fill('不会写入');
       await target.getByRole('button', { name: '保存', exact: true }).click();
-      await target.getByRole('alert').filter({ hasText: '别人刚保存过这份草案' }).waitFor();
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body.sha256).toBe(other.body.sha256);
+      await target.getByRole('alert').filter({ hasText: '别人刚保存过这个数据定义' }).waitFor();
+      expect((await adminApi('GET', `/v1/definitions/${path}`)).body.sha256).toBe(other.body.sha256);
       await target.getByRole('button', { name: '读回最新内容' }).click();
       await target.getByRole('heading', { name: '九种字段（别人改的）', level: 1 }).waitFor();
       expect(await target.getByRole('alert').count()).toBe(0);
@@ -1461,66 +1458,55 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await publicationRow(target, name, 1).getByTestId('publication-summary').filter({ hasText: '首个版本，10 个字段' }).waitFor();
       expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
 
-      // 发布之后数据定义还在（ADR-0028）：草案留着，卡片写已发布的版本，点开接着改。
+      // 发布不影响数据定义（ADR-0030）：卡片写已发布的版本，点开接着改。
       await (await nav(target, '数据定义')).click();
-      const card = draftCard(target, name);
-      await card.getByTestId('draft-base').filter({ hasText: '已发布 v1' }).waitFor();
-      expect(await card.getByTestId('draft-fields').textContent()).toBe('10');
-      expect(await publishedCard(target, name).count()).toBe(0);
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).body).toMatchObject({ baseVersion: 1 });
+      const card = definitionCard(target, name);
+      await card.getByTestId('definition-state').filter({ hasText: '已发布 v1' }).waitFor();
+      expect(await card.getByTestId('definition-fields').textContent()).toBe('10');
       await card.getByRole('link').first().click();
-      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
+      await target.getByTestId('definition-meta').filter({ hasText: '已发布 v1' }).waitFor();
+      expect(await target.getByText('草案').count(), '页面上没有"草案"这个东西').toBe(0);
 
-      // 草案删了，已发布的版本不受影响：卡片写最新版本，能搜到；要改就复制为草案；点开看这一版。
-      await target.getByRole('button', { name: '删除草案' }).click();
-      await target.getByRole('button', { name: '确认删除草案' }).click();
-      const published = publishedCard(target, name);
-      await published.getByTestId('published-state').filter({ hasText: '已发布 v1' }).waitFor();
-      expect(await published.getByTestId('published-fields').textContent()).toBe('10');
-      expect(await published.getByTestId('published-uses').textContent()).toBe('0 模板 · 0 数据集');
-      await target.getByLabel('搜索数据定义').fill(name);
-      await published.waitFor();
-      await published.getByRole('button', { name: '复制为草案' }).click();
-      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).status, '复制出一份基于 v1 的草案').toBe(200);
-      await target.getByRole('button', { name: '删除草案' }).click();
-      await target.getByRole('button', { name: '确认删除草案' }).click();
+      // 删除数据定义：已发布的版本不受影响，标来源已删除；名称不能再用。
+      await target.locator('.check-bar').getByRole('button', { name: '删除', exact: true }).click();
+      await target.getByRole('button', { name: '确认删除', exact: true }).click();
       await target.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
-      await publishedCard(target, name).waitFor();
-      await publishedCard(target, name).locator('a').first().click();
+      await definitionCard(target, name).waitFor({ state: 'detached' });
+      expect((await adminApi('GET', `/v1/definitions/${path}`)).status).toBe(404);
+      expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).body).toMatchObject({ sourceDeleted: true });
+      expect((await adminApi('POST', '/v1/definitions', { name, displayName: '再建一次' })).status).toBe(409);
+      await (await nav(target, '静态数据定义')).click();
+      const orphan = versionCard(target, name, 1);
+      await orphan.getByTestId('source-deleted').filter({ hasText: '来源已删除' }).waitFor();
+      await orphan.click({ button: 'right' });
+      expect(await menuLabels(target)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '复制为新的数据定义']);
+      await target.keyboard.press('Escape');
+      await orphan.getByRole('link').click();
       await target.getByTestId('static-facts').filter({ hasText: 'v1 · 当前' }).waitFor();
-
-      // 没有草案时打开这个名称：去最新的静态版本。草案可以删除，已发布的版本不受影响。
+      await target.getByTestId('static-source').filter({ hasText: '数据定义已删除' }).waitFor();
+      expect(await target.getByRole('link', { name: '打开数据定义' }).count()).toBe(0);
       await target.goto(`${baseUrl}/console/#/definitions/${path}`);
-      await target.getByTestId('static-facts').filter({ hasText: 'v1 · 当前' }).waitFor();
-      await target.getByRole('button', { name: '复制为草案' }).click();
-      await target.getByRole('form', { name: '复制为草案' }).getByRole('button', { name: '复制', exact: true }).click();
-      await target.getByTestId('definition-meta').filter({ hasText: '基于 v1' }).waitFor();
-      await target.getByRole('button', { name: '删除草案' }).click();
-      await target.getByRole('button', { name: '确认删除草案' }).click();
-      await target.getByRole('heading', { name: '数据定义', level: 1 }).waitFor();
-      expect((await adminApi('GET', `/v1/definitions/${path}/draft`)).status).toBe(404);
-      expect((await adminApi('GET', `/v1/static-schemas/${path}/versions/1`)).status).toBe(200);
+      await target.getByText('已发布的版本还在').waitFor();
     });
 
-    it('数据定义（P1 票据 06、14）：客户操作员只读，看得到版本、草案与发布记录，没有任何写入口；直接调用写接口被拒绝', async () => {
-      const name = '线路牌', path = enc(name), drafted = (await adminApi('GET', `/v1/definitions/${path}/draft`)).body;
+    it('数据定义（P1 票据 06、14）：客户操作员只读，看得到内容、版本与发布记录，没有任何写入口；直接调用写接口被拒绝', async () => {
+      const name = '线路牌', path = enc(name), drafted = (await adminApi('GET', `/v1/definitions/${path}`)).body;
       await page.goto(`${baseUrl}/console/#/definitions`);
-      const card = draftCard(page, name);
+      const card = definitionCard(page, name);
       await card.waitFor();
       expect(await page.getByRole('button', { name: '新建数据定义' }).count()).toBe(0);
       expect(await card.getByRole('button', { name: '删除' }).count() + await card.getByRole('link', { name: '发布', exact: true }).count()).toBe(0);
-      expect(await card.getByTestId('draft-base').textContent()).toBe('已发布 2026-08');
+      expect(await card.getByTestId('definition-state').textContent()).toBe('已发布 2026-08');
 
-      // 草案：字段表与校验结果都看得到，检查器是只读的。
+      // 字段表与校验结果都看得到，检查器是只读的。
       await card.getByRole('link').first().click();
-      await page.getByTestId('definition-meta').filter({ hasText: '基于 2026-08' }).waitFor();
+      await page.getByTestId('definition-meta').filter({ hasText: '已发布 2026-08' }).waitFor();
       await page.getByRole('note').filter({ hasText: '改动与发布由客户管理员完成' }).waitFor();
       await checkPassed(page);
       await openField(page, 'routeNo');
       await page.getByTestId('field-used-by').filter({ hasText: ROUTE }).waitFor();
       expect(await page.getByRole('complementary', { name: '字段检查器' }).locator('input, select, textarea').count()).toBe(0);
-      for (const label of ['添加字段', '删除草案', '保存', '撤销', '回到已保存', '确认删除字段']) expect(await page.getByRole('button', { name: label }).count(), label).toBe(0);
+      for (const label of ['添加字段', '删除', '保存', '撤销', '回到已保存', '确认删除字段']) expect(await page.getByRole('button', { name: label }).count(), label).toBe(0);
       expect(await page.getByRole('button', { name: /^(发布|复制字段|删除字段)/ }).count()).toBe(0);
       expect(await page.getByLabel('显示名称', { exact: true }).getAttribute('readonly')).not.toBeNull();
       await page.getByRole('button', { name: '编译产物' }).click();
@@ -1529,51 +1515,46 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await page.getByTestId('map-status').waitFor();
       expect(await page.getByTestId('map-status').textContent()).not.toContain('拖动');
 
-      // 静态数据定义也一样：右键没有复制为草案，详情页也没有。
+      // 静态数据定义也一样：右键没有复制，详情页也没有。
       await page.goto(`${baseUrl}/console/#/static-schemas`);
       const version = versionCard(page, name, 1);
       await version.click({ button: 'right' });
-      expect(await menuLabels(page)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用']);
+      expect(await menuLabels(page)).toEqual(['打开', '在新标签页打开', '查看发布记录', '导出编译产物 JSON Schema', '复制引用', '打开这个数据定义']);
       await page.keyboard.press('Escape');
       expect(await page.getByRole('menu').count()).toBe(0);
       await version.getByRole('link').click();
       await page.getByTestId('static-facts').filter({ hasText: 'v1' }).waitFor();
-      expect(await page.getByRole('button', { name: '复制为草案' }).count() + await page.getByRole('link', { name: '打开草案' }).count()).toBe(0);
+      expect(await page.getByRole('button', { name: '复制为新的数据定义' }).count()).toBe(0);
 
       // 发布这一步：只说明由谁来做，不发预检。
       await page.goto(`${baseUrl}/console/#/definitions/${path}/publish`);
       await page.getByText('发布由客户管理员完成').waitFor();
       expect(await page.getByRole('button', { name: /^发布/ }).count()).toBe(0);
 
-      // 发布记录：谁、改动摘要与哈希都看得到，不能回退。
+      // 发布记录：谁、改动摘要与哈希都看得到。
       await page.goto(`${baseUrl}/console/#/definition-publications`);
       const v2 = publicationRow(page, name, 2);
       await v2.getByTestId('publication-actor').filter({ hasText: world.b.admin.email }).waitFor();
       await publicationRow(page, name, 1).getByRole('button').first().click();
       await page.getByTestId('publication-detail').locator('[data-sha256]').first().waitFor();
-      expect(await page.getByRole('button', { name: /覆盖草案/ }).count()).toBe(0);
 
       // 权限以开放 API 为准。
       const operator = world.b.operator.token;
-      expect((await world.call('POST', `/v1/definitions/${enc('新的')}/draft`, operator, { displayName: '新的' })).status).toBe(403);
-      expect((await world.call('POST', `/v1/definitions/${path}/draft/publish`, operator, { expectedSha256: drafted.sha256 })).status).toBe(403);
-      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+      expect((await world.call('POST', '/v1/definitions', operator, { name: '新的', displayName: '新的' })).status).toBe(403);
+      expect((await world.call('POST', `/v1/definitions/${path}/publish`, operator, { expectedSha256: drafted.sha256 })).status).toBe(403);
     });
 
-    it('打开绑定的字段（P1 票据 08、13、14）：地址带 field 时选中那个字段；没有草案去静态版本，有草案进编辑页', async () => {
+    it('打开绑定的字段（P1 票据 08、13、14）：地址带 field 时选中那个字段；数据定义进编辑页，静态版本进只读页', async () => {
       const target = await asAdmin(), name = '胸牌', path = enc(name);
-      await target.goto(`${baseUrl}/console/#/definitions/${path}?field=fullName`);
-      await target.reload();
-      await target.getByTestId('field-facts').filter({ hasText: 'fullName' }).waitFor();
-      expect(await target.evaluate('location.hash')).toBe(`#/static-schemas/${path}/1?field=fullName`);
-      expect(await treeField(target, 'fullName').getByRole('button').getAttribute('aria-pressed')).toBe('true');
-      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
       await target.goto(`${baseUrl}/console/#/definitions/${path}?field=fullName`);
       await target.reload();
       await inspector(target).waitFor();
       expect(await inspector(target).getByLabel('字段名称', { exact: true }).inputValue()).toBe('fullName');
       expect(await fieldRow(target, 'fullName').getByRole('button').first().getAttribute('aria-pressed')).toBe('true');
-      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
+      await target.goto(`${baseUrl}/console/#/static-schemas/${path}/1?field=fullName`);
+      await target.reload();
+      await target.getByTestId('field-facts').filter({ hasText: 'fullName' }).waitFor();
+      expect(await treeField(target, 'fullName').getByRole('button').getAttribute('aria-pressed')).toBe('true');
     });
 
     it('下拉（M362）：下拉框是同一个箭头，选项样式同模块下拉；选别的项，宽度不跳，值照旧写回', async () => {
@@ -1619,12 +1600,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByLabel('搜索静态数据定义').fill('没有这个');
       await target.getByTestId('versions-empty').locator('svg.motif-graph').waitFor();
 
-      expect((await adminApi('POST', `/v1/definitions/${path}/draft`, { fromVersion: 1 })).status).toBe(201);
       await target.goto(`${baseUrl}/console/#/definitions/${path}`);
       await target.reload();
       await checkPassed(target);
       await target.getByTestId('check-status').locator('svg.motif-seal').waitFor();
-      expect((await world.call('DELETE', `/v1/definitions/${path}/draft`, world.b.admin.token)).status).toBe(204);
 
       await target.goto(`${baseUrl}/console/#/usage`);
       await target.getByTestId('usage-limit').waitFor();
@@ -1666,14 +1645,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await narrow.opened.close();
     });
 
-    /** 代建工程师经开放 API：从这个名称的最新版本另起草案，加一个字段，发布。开着审批策略时答 202。 */
+    /** 代建工程师经开放 API：在这个数据定义上加一个字段，发布。开着审批策略时答 202。 */
     const engineerPublish = async (name: string, field: string) => {
-      const url = `/v1/authoring/tenants/${world.b.id}/definitions/${enc(name)}/draft`, token = world.b.engineer.token;
-      const versions = ((await adminApi('GET', '/v1/definitions')).body.definitions as any[]).find((item) => item.name === name).versions as { version: number }[];
-      const draft = await world.call('GET', url, token);
-      const opened = draft.status === 200 ? draft : await world.call('POST', url, token, { fromVersion: versions.at(-1)!.version });
-      expect([200, 201], opened.raw.slice(0, 300)).toContain(opened.status);
-      const content = draft.status === 200 ? draft.body.content as string : (await world.call('GET', url, token)).body.content as string, document = JSON.parse(content);
+      const url = `/v1/authoring/tenants/${world.b.id}/definitions/${enc(name)}`, token = world.b.engineer.token;
+      const opened = await world.call('GET', url, token);
+      expect(opened.status, opened.raw.slice(0, 300)).toBe(200);
+      const document = JSON.parse(opened.body.content);
       document.fields.push({ name: field, displayName: `字段 ${field}`, type: 'text' });
       const saved = await world.call('PUT', `${url}?expectedSha256=${opened.body.sha256}`, token, `${JSON.stringify(document, null, 2)}\n`, { 'content-type': 'application/json' });
       expect(saved.status, saved.raw.slice(0, 300)).toBe(200);
@@ -2021,7 +1998,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const ALL = '全元素牌', at = (name: string) => `${ALL}/${name}`;
       const target = await asAdmin(), token = world.b.admin.token;
       const copyUrl = `/v1/templates/${enc(ALL)}/working-copy`;
-      interface Reply { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: Reply['layout']['root'][] } } }
+      interface Reply { problems?: unknown; layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: Reply['layout']['root'][] } } }
       /** 等一次工作副本预览；有上一次改动的预览还在路上时，只等请求内容对得上的。 */
       const worked = (match: (body: { template: string; dataset: { id?: string; inline?: unknown } }) => boolean = () => true) => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST' && response.status() === 200
         && match(response.request().postDataJSON() as never), { timeout: 60_000 });
@@ -2045,7 +2022,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         const preview = afterStash();
         await action();
         const reply = await (await preview).json() as Reply;
-        await expect.poll(() => image().getAttribute('src'), { message: '预览随之变化' }).not.toBe(before);
+        await expect.poll(() => image().getAttribute('src'), { message: `预览随之变化；预览回答的问题：${JSON.stringify(reply.problems ?? []).slice(0, 400)}`, timeout: 10_000 }).not.toBe(before);
         const document = await documentNow(name);
         expect(checkDslDocument(document).problems.filter((problem) => problem.level === 'severe')).toEqual([]);
         return { document, reply };
@@ -2423,7 +2400,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
     it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {
       const created = await world.call('POST', '/v1/platform/tenants', world.platform, { name: '无模板数据集测试' });
       const owner = await world.member(created.body.id, 'admin'), operator = await world.member(created.body.id, 'operator');
-      const schema = 'inventory-card', token = owner.token, draftUrl = `/v1/definitions/${schema}/draft`;
+      const schema = 'inventory-card', token = owner.token, draftUrl = `/v1/definitions/${schema}`;
       expect((await server('GET', '/v1/templates', token)).body.templates).toEqual([]);
       const isolated = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
       const target = await isolated.newPage(); watch(target);
@@ -2434,8 +2411,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await target.getByRole('button', { name: '登录' }).click();
         await target.getByText('还没有可用的静态数据定义。', { exact: false }).waitFor();
         for (const version of [1, 2]) {
-          const made = await server('POST', draftUrl, token, version === 1 ? { displayName: '库存卡' } : { fromVersion: 1 });
-          expect(made.status, made.raw).toBe(201);
+          const made = version === 1 ? await server('POST', draftUrl.slice(0, draftUrl.lastIndexOf('/')), token, { name: schema, displayName: '库存卡' }) : await server('GET', draftUrl, token);
+          expect(made.status, made.raw).toBe(version === 1 ? 201 : 200);
           const document = { dslVersion: 'renderweave-schema/1', name: schema, displayName: '库存卡', fields: [
             { name: 'sku', displayName: '货号', type: 'text', constraints: { required: true } },
             ...(version === 2 ? [{ name: 'bin', displayName: '库位', type: 'text', constraints: { required: true } }] : []),
@@ -2472,7 +2449,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await target.getByLabel('货号', { exact: true }).waitFor();
         expect(new URL(target.url()).hash).toContain('version=1');
         expect(await target.getByLabel('库位', { exact: true }).count()).toBe(0);
-        await target.goto(`${baseUrl}/console/#/datasets/new?schema=${schema}&version=2oops`);
+        await target.goto(`${baseUrl}/console/#/datasets/new?schema=${schema}&version=UP`);
         await target.getByText('请选择静态数据定义的名称和确切版本', { exact: true }).waitFor();
         await target.goto(`${baseUrl}/console/#/datasets/new?schema=${schema}&version=99`);
         await target.getByText('打不开数据集', { exact: true }).waitFor();

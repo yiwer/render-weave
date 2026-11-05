@@ -72,45 +72,47 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
    - 整批图片：`GET /v1/batches/{batchId}/images.zip`；
    - 留档：`GET /v1/batches/{batchId}/export.zip`。导出包能用命令行 `renderweave replay` 离线重放。
 
-## 数据定义草案
+## 数据定义
 
-草案是一个数据定义名称可修改的那一份（1.2.0）。发布从它产出一个静态版本，它自己留着，能接着改、再发布（1.12.0）。每个名称至多一份，记它基于哪个静态版本。客户管理员用 `/v1/definitions…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/definitions…`，同一组操作，请求与回答相同；客户操作员与 API 密钥只读。
+数据定义是可编辑的数据结构定义，主键是名称，每个名称只有这一份（1.13.0，ADR-0030）。发布从它产出一个不可变的静态版本，对它毫无影响：内容、哈希、保存人与保存时间都不变，能接着改、接着发布。客户管理员用 `/v1/definitions…`，代建工程师用 `/v1/authoring/tenants/{tenantId}/definitions…`，同一组操作，请求与回答相同；客户操作员与 API 密钥只读。
 
 | 操作 | 端点 | 说明 |
 |---|---|---|
-| 列出 | `GET /v1/definitions` | 每个名称的静态版本、各版本被多少数据集与模板直接使用，以及草案 |
-| 一个数据定义 | `GET /v1/definitions/{name}` | 列表里的一项，加 `fieldUses`：每个字段被哪些模板读到，经过引用读到的也算，没有模板读的字段不列（1.7.0） |
+| 列出 | `GET /v1/definitions` | 每个数据定义的内容摘要（显示名称、字段数、哈希、保存人、保存时间）、这个名称的静态版本、各版本被多少数据集与模板直接使用。数据定义已删除、只剩静态版本的名称不在这里 |
+| 一个数据定义 | `GET /v1/definitions/{name}` | 列表里的一项，加 `content`：原文，与保存时逐字节相同，它的 SHA-256 就是 `sha256`；加 `fieldUses`：每个字段被哪些模板读到，经过引用读到的也算，没有模板读的字段不列 |
 | 发布记录 | `GET /v1/definition-publications` | 见下；可写 `?name=` 只看一个名称（1.7.0） |
-| 新建 | `POST /v1/definitions/{name}/draft` | 请求体写 `{ "displayName": "…" }` 是空白新建，写 `{ "fromVersion": 1 }` 是从静态版本另起（复制原文，去掉版本号）。已有草案答 409 `input.duplicate`；空白新建不能用已有静态版本的名称，也答 409 |
-| 读取 | `GET …/draft` | 登记信息与 `content`：原文，与保存时逐字节相同，它的 SHA-256 就是 `sha256` |
-| 保存 | `PUT …/draft?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
-| 校验与编译预览 | `GET …/draft/check` | 只读，见下 |
-| 发布预检 | `POST …/draft/publish-check` | 请求体 `{ "expectedSha256": "…" }`，只读，见下 |
-| 发布 | `POST …/draft/publish` | 同样的请求体，可选 `version`（编号或字符串，不写就是下一个编号）与 `note`（发布说明，至多 2,000 字）。得到一个静态数据定义，产物与本地 `renderweave publish` 逐字节相同；草案留着，基于的版本换成这一版。版本的写法不对、同名已有都答 400。严重问题答 400，问题码与本地发布相同；预期哈希不是当前内容答 409 `draft.stale`；版本刚被别的发布或推送占用答 409 `draft.versionTaken`，什么也没写，重新发布 |
-| 删除 | `DELETE …/draft` | 静态版本不受影响 |
+| 新建 | `POST /v1/definitions` | 请求体写 `{ "name": "…", "displayName": "…" }` 是空白新建，写 `{ "name": "…", "fromStatic": { "name": "…", "version": 1 } }` 是复制一个静态版本（原文去掉版本号，换成这个名称，可以另写 `displayName`）。名称已有数据定义，或有过静态版本（那个数据定义被删了），都答 409 `input.duplicate`；复制的版本不存在答 404 |
+| 保存 | `PUT /v1/definitions/{name}?expectedSha256=…` | 请求体是数据定义的 JSON 原文，整份替换，按原始字节存。预期哈希不是当前内容答 409 `draft.stale`，回答带 `currentSha256`；读回最新内容再改 |
+| 校验与编译预览 | `GET /v1/definitions/{name}/check` | 只读，见下 |
+| 发布预检 | `POST …/publish-check` | 请求体 `{ "expectedSha256": "…" }`，只读，见下 |
+| 发布 | `POST …/publish` | 同样的请求体，可选 `version`（编号或字符串，不写就是下一个编号）与 `note`（发布说明，至多 2,000 字）。得到一个静态数据定义，产物与本地 `renderweave publish` 逐字节相同；数据定义不动。版本的写法不对、同名已有都答 400。严重问题答 400，问题码与本地发布相同。预期哈希不是当前内容答 409 `draft.stale`；版本被别的发布或推送先占了答 409 `draft.versionTaken`，什么也没写，再发一次。回答的 `baseVersion` 是发布时最新的版本。开着审批策略时答 202，见[发布审批](#发布审批) |
+| 删除 | `DELETE /v1/definitions/{name}` | 静态版本不受影响，模板与数据集照旧用；`GET /v1/static-schemas` 上标 `sourceDeleted`。有过静态版本的名称不能再新建 |
 
-保存只要求请求体是 UTF-8 的 JSON 对象、`name` 与路径一致、数值不超过 15 位有效数字，还没写完的草案也能存。名称是身份，不能在草案里改；要换名称就新建一份。草案不进工作区，渲染、数据集与模板都看不到它。
+推送第一次带来一个名称时建数据定义，内容是最新版本去掉版本号；已有的不动；删掉过的不复活。
+
+保存只要求请求体是 UTF-8 的 JSON 对象、`name` 与路径一致、数值不超过 15 位有效数字，还没写完的也能存。名称是主键，不能改；要换名称就复制成新的。数据定义不进工作区，渲染、数据集与模板只看静态版本。
 
 校验回答这些字段：
 
 ```json
-{ "sha256": "…", "problems": [ { "level": "severe", "code": "definition.constraintConflict",
+{ "sha256": "…", "baseVersion": 1, "problems": [ { "level": "severe", "code": "definition.constraintConflict",
     "location": { "kind": "definition", "schema": "线路牌", "path": "fare.constraints" }, "message": "约束冲突：下界 10 大于上界 1" } ],
   "affectedBindings": [ { "field": "fare", "templates": [ { "name": "标准线路单边", "base": { "name": "线路牌", "version": 1 } } ] } ] }
 ```
 
 - `problems` 定位到字段，与发布走同一入口：写了不对的版本号、引用的静态数据定义不存在，这里都报。
 - 没有严重问题时另有 `version`（发布后的版本号）与 `compiled`（编译产物 JSON Schema，与发布的产物相同）。
-- `affectedBindings` 列出与基于的版本相比被删除的字段，改字段名称等于删一个、加一个。`templates` 是当前修订读到这个字段的模板，经过引用读到的也算（`nextStop.landmark` 算用到停靠站点的 `landmark`）。
+- `baseVersion` 是比较用的版本：这个名称最新发布的，读取时现算；还没发布过时没有。
+- `affectedBindings` 列出与它相比被删除的字段，改字段名称等于删一个、加一个。`templates` 是当前修订读到这个字段的模板，经过引用读到的也算（`nextStop.landmark` 算用到停靠站点的 `landmark`）。
 
 发布预检回答这些字段，有严重问题时只有 `sha256`、`baseVersion` 与 `problems`：
 
 - `version`：发布后的版本号。
-- `diff`：与基于版本的字段级差异，结构同引擎的 `diffDefinition`。新名称没有基准，字段全算新增。
-- `datasets`：绑定基于版本的数据集按 ID 排序，逐份按新编译产物校验。`total` 是总份数，`checked` 是校验了几份，`mismatched` 是会失配的份数，`samples` 是前 20 份的问题摘要。超过 1,000 份只校验前 1,000 份，`complete` 为 `false`，标为未全部核对。
+- `diff`：与最新版本的字段级差异，结构同引擎的 `diffDefinition`。还没发布过就没有基准，字段全算新增。
+- `datasets`：绑定最新版本的数据集按 ID 排序，逐份按新编译产物校验。`total` 是总份数，`checked` 是校验了几份，`mismatched` 是会失配的份数，`samples` 是前 20 份的问题摘要。超过 1,000 份只校验前 1,000 份，`complete` 为 `false`，标为未全部核对。
 - `templates`：基准是这个名称的模板。发布不改动它们，它们照旧绑定各自的版本。
 
-回退没有单独的端点：把旧版本的内容保存到草案（`PUT …/draft`），再发布成新版本；没有草案时从旧版本另起（`fromVersion`）。旧版本不变。
+回到旧内容没有单独的端点：把旧版本的内容保存到数据定义，再发布成新版本。旧版本不变。
 
 发布记录每个静态版本一行，新的在前。客户操作员与 API 密钥也能读：
 
@@ -178,7 +180,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 | 写入 | 范围 | 申请的 `kind` | 固定的内容 |
 |---|---|---|---|
-| `POST …/definitions/{name}/draft/publish` | `definitions` | `definitionPublish` | 草案哈希、要发布成的版本、发布说明 |
+| `POST …/definitions/{name}/publish` | `definitions` | `definitionPublish` | 数据定义的内容哈希、要发布成的版本、发布说明 |
 | `POST …/templates/{name}/working-copy/save` | `templates` | `templateSave` | 工作副本哈希、当前修订 |
 | `POST …/template-current` | `templates` | `templateSetCurrent` | 要指回的修订、当前修订 |
 | `POST …/pushes` | 写入碰到的范围 | `push` | 推送清单的哈希 |
@@ -187,7 +189,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 
 这些写入照常先核对：哈希不对答 409，有严重问题答 400，模板基准不符答 409 `template.revisionConflict`，推送冲突答 409 `push.conflict`。都通过才记申请，回答 `{ "request": { … } }`（推送另带逐项差异）。
 
-**同时最多一份待处理**：同一份草案、工作副本、同一个模板的指回、同一位代建工程师的推送。重发相同的内容答同一份；内容改了，旧申请过期，再记新的。草案或工作副本保存了新内容、被删除或被直接发布时，申请也随之过期。
+**同时最多一份待处理**：同一个数据定义、工作副本、同一个模板的指回、同一位代建工程师的推送。重发相同的内容答同一份；内容改了，旧申请过期，再记新的。草案或工作副本保存了新内容、被删除或被直接发布时，申请也随之过期。
 
 **批准时重核**，任何一项不符就把申请标为 `expired`，答 409 `publishRequest.expired`，回答带 `request`，有严重问题时另带 `blockers`，要重新发起：
 
@@ -345,6 +347,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.13.0 | 2026-11-04 | 数据定义是独立的实体，发布只产出静态数据定义（ADR-0030，M389）：`/v1/definitions/{name}/draft` 系列换成 `POST /v1/definitions`，`GET`、`PUT`、`DELETE /v1/definitions/{name}`，`…/check`、`…/publish-check`、`…/publish`，代建端点同样；列表与详情直接是数据定义本身，不再有 `draft`；校验、预检的 `baseVersion` 改为读取时现算的最新版本；`GET /v1/static-schemas` 加 `sourceDeleted`；审计动作 `definitionDraft.*` 换成 `definition.create`、`definition.save`、`definition.delete` | 这组路径不兼容：1.2.0 加的，只有控制台与测试在用，P1 还没交付给客户；相对 1.0.0 基线仍只做了加法 |
 | 1.12.0 | 2026-11-04 | 发布不影响数据定义，版本可以自定义（ADR-0028，M384）：`POST …/draft/publish` 加可选的 `version` 与 `note`，发布后草案留着，基于的版本换成这一版；`GET /v1/definition-publications` 与发布申请加 `note`；`fromVersion` 可以写字符串。凡是静态数据定义的 `version`、`baseVersion`，从整数放宽成整数或字符串 | **不全是加法**：发布后 `GET …/draft` 不再答 404；用了自定义版本的租户，回答里的 `version` 可能是字符串。没用的租户读到的还是整数 |
 | 1.11.0 | 2026-11-04 | `GET /v1/agent-jobs` 返回 `maxWorkbookBytes`，上传页面按服务端有效上限提示和校验 | 兼容，只做加法 |
 | 1.10.0 | 2026-11-03 | 工作簿 Agent 任务、原件与单元格读取、来源审核、取消和整组保存数据集；新增 `/v1/agent-jobs` 接口 | 兼容，只做加法 |

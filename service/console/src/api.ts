@@ -4,8 +4,8 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft,
-  DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
+  SchemaRef, SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, StoredDefinition,
+  DefinitionCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
   PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
   TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
@@ -168,13 +168,12 @@ export const api = {
   definitions: () => json<{ definitions: Definition[] }>('GET', '/v1/definitions'),
   definition: (name: string) => json<DefinitionDetail>('GET', `/v1/definitions/${enc(name)}`),
   definitionPublications: (name?: string) => json<{ publications: DefinitionPublication[] }>('GET', `/v1/definition-publications${search({ name })}`),
-  createDefinitionDraft: (name: string, body: { displayName: string } | { fromVersion: SchemaVersion }) => json<DefinitionDraft>('POST', `/v1/definitions/${enc(name)}/draft`, { json: body }),
-  definitionDraft: (name: string) => json<DefinitionDraft & { content: string }>('GET', `/v1/definitions/${enc(name)}/draft`),
-  saveDefinitionDraft: (name: string, expectedSha256: string, text: string) => json<DefinitionDraft>('PUT', `/v1/definitions/${enc(name)}/draft${search({ expectedSha256 })}`, { jsonText: text }),
-  deleteDefinitionDraft: async (name: string) => { await send('DELETE', `/v1/definitions/${enc(name)}/draft`); },
-  checkDefinitionDraft: (name: string) => json<DefinitionDraftCheck>('GET', `/v1/definitions/${enc(name)}/draft/check`),
-  publishCheckDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublishCheck>('POST', `/v1/definitions/${enc(name)}/draft/publish-check`, { json: { expectedSha256 } }),
-  publishDefinitionDraft: (name: string, expectedSha256: string, options: { readonly version?: SchemaVersion; readonly note?: string } = {}) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256, ...options } }),
+  createDefinition: (body: { readonly name: string; readonly displayName?: string; readonly fromStatic?: SchemaRef }) => json<StoredDefinition>('POST', '/v1/definitions', { json: body }),
+  saveDefinition: (name: string, expectedSha256: string, text: string) => json<StoredDefinition>('PUT', `/v1/definitions/${enc(name)}${search({ expectedSha256 })}`, { jsonText: text }),
+  deleteDefinition: async (name: string) => { await send('DELETE', `/v1/definitions/${enc(name)}`); },
+  checkDefinition: (name: string) => json<DefinitionCheck>('GET', `/v1/definitions/${enc(name)}/check`),
+  publishCheckDefinition: (name: string, expectedSha256: string) => json<DefinitionPublishCheck>('POST', `/v1/definitions/${enc(name)}/publish-check`, { json: { expectedSha256 } }),
+  publishDefinition: (name: string, expectedSha256: string, options: { readonly version?: SchemaVersion; readonly note?: string } = {}) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/publish`, { json: { expectedSha256, ...options } }),
 
   datasets: () => json<{ datasets: DatasetEntry[] }>('GET', '/v1/datasets'),
   agentJobs: () => json<{ enabled: boolean; maxWorkbookBytes: number; jobs: ImportJob[] }>('GET', '/v1/agent-jobs'),
