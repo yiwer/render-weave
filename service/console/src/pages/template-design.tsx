@@ -12,11 +12,13 @@ import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { countText, ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
 import { DesignInspector, DesignStructure, DesignVariables } from '../design/panels.js';
+import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
 import { go, guardNavigation, href, useLivePreview, useLoad, type Route } from '../hooks.js';
-import { documentInfo, elementAt, elementVariables, isObject, parseTemplateText, variableKind } from '../template/document.js';
+import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind } from '../template/document.js';
+import { ELEMENT_TYPES } from '../template/properties.js';
 import { createDesignSession, leaveQuestion, type DesignDoc, type DesignSession } from '../template/session.js';
-import type { Identity, PreviewReply, Problem } from '../types.js';
+import type { Identity, LayoutNode, PreviewReply, Problem } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
 import { problemMarks } from '../components/preview-canvas.js';
@@ -33,7 +35,7 @@ const MIN_LONG_EDGE_PX = 1400;
 const PHYSICAL_DPI = 96;
 const LEFT_WIDTH = 288, RIGHT_WIDTH = 340, PANEL_GAP = 22, NARROW = 900;
 
-interface MenuState { readonly x: number; readonly y: number; readonly template: string; readonly path: string; readonly instance?: string }
+interface MenuState { readonly x: number; readonly y: number; readonly template: string; readonly path: string; readonly instance?: string; readonly stack?: readonly LayoutNode[] }
 
 export function TemplateDesign(props: { readonly name: string; readonly root: string; readonly identity: Identity }) {
   if (props.identity.role !== 'admin') {
@@ -98,7 +100,28 @@ function Design(props: { readonly name: string; readonly root: string }) {
     const source = locations.get(instance);
     if (source) select(source.template, source.path, instance);
   };
+  /** 点选：最深的元素；按着 Alt 沿层叠往下穿透。 */
+  const pickFrom = (stack: readonly string[], through: boolean) => {
+    const at = through && selection?.instance ? stack.indexOf(selection.instance) : -1;
+    pick(through ? stack[(at + 1) % stack.length]! : stack[0]!);
+  };
   const selected = selection?.template === name ? selection : undefined;
+  const instances = instancesOf(reply, selected);
+  /** Esc、Enter：上一层、下一层。上一层到头就取消选中，检查器回到画板。 */
+  const climb = () => {
+    const from = selection?.instance ?? instancesOf(reply, selection)[0];
+    if (!from) { setSelection(undefined); return; }
+    let parent = parentInstance(from);
+    while (parent && !locations.has(parent)) parent = parentInstance(parent);
+    if (parent) pick(parent); else setSelection(undefined);
+  };
+  const descend = () => {
+    const from = selection?.instance ?? instancesOf(reply, selection)[0];
+    if (!from || !reply?.layout) return;
+    const find = (node: LayoutNode): LayoutNode | undefined => (node.path === from ? node : (node.children ?? []).map(find).find(Boolean));
+    const child = find(reply.layout.root)?.children?.find((node) => node.visible && locations.has(node.path));
+    if (child) pick(child.path);
+  };
 
   const undo = () => { const template = session.undo(); if (template && template !== name) openTemplate(template); };
   const redo = () => { const template = session.redo(); if (template && template !== name) openTemplate(template); };
@@ -115,9 +138,9 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const fitView = () => setView(FIT_VIEW);
 
   // 快捷键：Ctrl+S、Ctrl+Z、Ctrl+Y、Ctrl+0、Ctrl+1、Ctrl+\\；V、H 切工具，打字时不算。
-  const keys = useRef({ undo, redo, save, fitView, physical: () => {}, togglePanels: () => {} });
+  const keys = useRef({ undo, redo, save, fitView, climb, descend, physical: () => {}, togglePanels: () => {} });
   keys.current = {
-    undo, redo, save, fitView,
+    undo, redo, save, fitView, climb, descend,
     physical: () => setView({ zoom: ((outputWidth / 25.4) * PHYSICAL_DPI) / fit, x: 0, y: 0 }),
     togglePanels: () => setPanels((now) => { const open = !(now.left || now.right); return { left: open, right: open }; }),
   };
@@ -138,6 +161,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
       if (event.altKey || event.isComposing || target?.closest('input, select, textarea')) return;
       if (key === 'v') setTool('select');
       if (key === 'h') setTool('pan');
+      if (key === 'escape') keys.current.climb();
+      if (key === 'enter' && target?.tagName !== 'BUTTON' && target?.tagName !== 'A') keys.current.descend();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -187,13 +212,14 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} onView={setView} onFit={setFit} onPick={pick}
-          onMenu={(x, y, instance) => {
-            const source = locations.get(instance);
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+          onMenu={(x, y, stack) => {
+            const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
             select(source.template, source.path, instance);
-            setMenu({ x, y, template: source.template, path: source.path, instance });
+            setMenu({ x, y, template: source.template, path: source.path, instance, stack });
           }} />
+        <ScopeBar root={root} name={name} selected={selected} reply={reply} left={insets.left} right={insets.right} onPick={pick} />
         {panels.left && (
           <aside className="design-panel left" aria-label="结构与变量">
             <div className="tabs" role="tablist" aria-label="结构与变量">
@@ -211,7 +237,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         {panels.right && (
           <aside className="design-panel right" aria-label="检查器">
             <div className="design-panel-body">
-              {doc ? <DesignInspector doc={doc} session={session} selected={selected} reply={reply} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
+              {doc ? <DesignInspector doc={doc} session={session} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
@@ -272,7 +298,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         )}
       </section>
       {menu && doc && (
-        <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)}
+        <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
           onLocate={() => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setLeftTab('structure'); setLocateTick((value) => value + 1); }}
           onParameter={(parameter) => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setOpenParameter(parameter); setLeftTab('variables'); }} />
       )}
@@ -320,7 +346,7 @@ function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPic
 
 /** 右键菜单：复制元素路径、在结构中定位、打开绑定的字段。 */
 function ElementMenu(props: {
-  readonly menu: MenuState; readonly doc: DesignDoc; readonly onClose: () => void; readonly onCopy: (text: string) => void; readonly onLocate: () => void; readonly onParameter: (name: string) => void;
+  readonly menu: MenuState; readonly doc: DesignDoc; readonly onClose: () => void; readonly onCopy: (text: string) => void; readonly onPick: (instance: string) => void; readonly onLocate: () => void; readonly onParameter: (name: string) => void;
 }) {
   const { menu, doc } = props, root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -336,7 +362,18 @@ function ElementMenu(props: {
   const base = isObject(doc.document['base']) ? String(doc.document['base']['name']) : undefined;
   const bound = variables.filter((name) => variableKind(doc.document, name.split('.')[0]!) !== 'derived');
   return (
-    <div className="menu element-menu" role="menu" aria-label="元素" ref={root} data-testid="element-menu" style={{ left: menu.x, top: menu.y }}>
+    <div className="menu element-menu" role="menu" aria-label="元素" ref={root} data-testid="element-menu" style={{ left: menu.x, top: Math.min(menu.y, window.innerHeight - 340) }}>
+      {(menu.stack?.length ?? 0) > 1 && (
+        <>
+          <span className="menu-title small faint">这里的元素</span>
+          {menu.stack!.slice(0, 7).map((node) => (
+            <button key={node.path} type="button" role="menuitem" data-testid="stack-item" aria-current={node.path === menu.instance ? 'true' : undefined} onClick={() => props.onPick(node.path)}>
+              <span>{node.name}</span><span className="small faint">{ELEMENT_TYPES[node.type] ?? node.type}</span>
+            </button>
+          ))}
+          <hr className="menu-rule" />
+        </>
+      )}
       <button type="button" role="menuitem" onClick={() => props.onCopy(menu.instance ?? menu.path)}>复制元素路径</button>
       <button type="button" role="menuitem" onClick={props.onLocate}>在结构中定位</button>
       {bound.map((name) => (variableKind(doc.document, name.split('.')[0]!) === 'parameter'

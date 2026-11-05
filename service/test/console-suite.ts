@@ -2120,7 +2120,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 点选：选中框与元素路径显示在图上，属性面板打开它在模板文档里的位置。
       await clickElement(at('文字'));
       expect(await target.getByTestId('select-box').getAttribute('data-path')).toBe(at('文字'));
-      expect(await target.getByTestId('select-tag').textContent()).toBe(at('文字'));
+      expect(await target.getByTestId('design-scope').getAttribute('data-path')).toBe(at('文字'));
+      expect(await target.getByTestId('select-tag').textContent()).toMatch(/^文字 · [\d.]+ × [\d.]+ mm$/);
       expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('text');
       // 属性面板按 Schema 分组：位置尺寸、文字、颜色、适配、条件显示、状态样式。
       for (const group of ['位置尺寸', '文字', '颜色', '适配', '条件显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
@@ -2412,7 +2413,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('design-canvas').click({ position: await positionOf(`${at('调用')}/场次名称`) });
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
-      expect(await target.getByTestId('select-tag').textContent()).toBe(`${at('调用')}/场次名称`);
+      expect(await target.getByTestId('design-scope').getAttribute('data-path')).toBe(`${at('调用')}/场次名称`);
       // 跨模板撤销：撤回子模板上的字号。
       await target.getByRole('button', { name: '撤销', exact: true }).click();
       await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":3.2');
@@ -2471,6 +2472,80 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await server('POST', copyUrl, world.b.operator.token)).status, '接口同样拒绝').toBe(403);
       await reader.close();
     }, 300_000);
+
+    it('模板设计（票据 04）：点第 12 站的站名，范围条写定义在站点、图上 35 处；Alt 穿透、右键列层叠、Esc 与 Enter；隐藏的元素写明原因', async () => {
+      const ROOT = '标准线路单边', stop = (index: number) => `${ROOT}/站点面板/站点列[${index}]/名称区/站名`;
+      const target = await asAdmin();
+      interface Node { path: string; x: number; y: number; width: number; height: number; children?: Node[] }
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Node } };
+      const canvas = target.getByTestId('design-canvas');
+      await target.getByTestId('preview-image').waitFor();
+      const position = async (path: string) => {
+        const walk = (node: Node): Node | undefined => (node.path === path ? node : node.children?.map(walk).find(Boolean));
+        const box = (await canvas.boundingBox())!, node = walk(layout.root)!;
+        return { x: ((node.x + node.width / 2) / layout.output.width) * box.width, y: ((node.y + node.height / 2) / layout.output.height) * box.height };
+      };
+      const scope = target.getByTestId('design-scope');
+      const scopeAt = (path: string) => expect.poll(() => scope.getAttribute('data-path')).toBe(path);
+      const inspector = () => target.getByRole('complementary', { name: '检查器' });
+
+      // 没选中：检查器是画板。
+      await inspector().locator(`[data-testid="properties"][data-type="artboard"]`).waitFor();
+      await scopeAt(ROOT);
+
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+      expect(await scope.getAttribute('data-count')).toBe('35');
+      expect(await scope.textContent()).toContain('定义在 站点，图上 35 处，这是第 12 处，改一处全改');
+      await inspector().locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      await inspector().getByTestId('design-impact').filter({ hasText: '这里改的是模板「站点」，图上 35 处一起变' }).waitFor();
+      expect(await target.locator('.select-box.other').count(), '其余 34 处是虚线框').toBe(34);
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/站点/design?in=${ROOT}`);
+
+      // 上下层：Esc 到名称区，再到这一项，再到循环容器，再回到站名。
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列[12]`);
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列`);
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/${enc(ROOT) && ROOT}/design`);
+      await target.keyboard.press('Enter');
+      await scopeAt(`${ROOT}/站点面板/站点列[1]`);
+
+      // Alt + 点：沿层叠穿透。
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+      await canvas.click({ position: await position(stop(12)), modifiers: ['Alt'] });
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+
+      // 范围条的路径能点。
+      await scope.getByRole('button', { name: '站点面板' }).click();
+      await scopeAt(`${ROOT}/站点面板`);
+
+      // 右键：这里的元素，从最深到画板。
+      await canvas.click({ button: 'right', position: await position(stop(12)) });
+      const menu = target.getByTestId('element-menu');
+      const stack = await menu.getByTestId('stack-item').allTextContents();
+      expect(stack[0]).toContain('站名');
+      expect(stack.at(-1)).toContain(ROOT);
+      await menu.getByTestId('stack-item').filter({ hasText: '名称区' }).click();
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+
+      // 点舞台空白处取消选中，回到画板。
+      await target.mouse.click((await target.getByTestId('design-stage').boundingBox())!.x + 320, (await target.getByTestId('design-stage').boundingBox())!.y + 30);
+      await expect.poll(() => scope.getAttribute('data-count')).toBe('0');
+
+      // 隐藏的元素：结构页选中，写明原因，范围条写当前样例不显示。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' });
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏/线路号"]`).getByRole('button').first().click();
+      await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
+      expect(await scope.textContent()).toContain('当前样例不显示');
+    }, 120_000);
 
     it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {
       const created = await world.call('POST', '/v1/platform/tenants', world.platform, { name: '无模板数据集测试' });

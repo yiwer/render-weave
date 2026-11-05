@@ -8,7 +8,7 @@ import { ProblemList } from '../components/problems.js';
 import { FieldRow, FieldRows, type FieldContext } from '../components/property-fields.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { useLoad } from '../hooks.js';
-import { elementAt, elementTree, flatElements, isObject, relatedChecks, type ElementNode, type JsonObject } from '../template/document.js';
+import { elementAt, elementTree, flatElements, hiddenReason, isObject, relatedChecks, type ElementNode, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { PreviewReply } from '../types.js';
@@ -40,17 +40,19 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
 
 /** 右边的检查器：选中的东西。没有选中时是画板的入口。 */
 export function DesignInspector(props: {
-  readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply;
+  readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply; readonly impact?: string;
   readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
-  const { doc, session, selected } = props;
+  const { doc, session } = props;
+  // 什么都没选时显示画板。
+  const selected = props.selected ?? { template: doc.name, path: doc.name };
   const { lists, element } = useFieldLists(doc);
   const edit = (document: JsonObject, key: string) => session.edit(doc.name, document, key);
   return (
     <>
       {element}
-      <PropertiesTab key={`${doc.name}\n${selected?.path ?? ''}`} doc={doc} selected={selected} reply={props.reply} lists={lists} onEdit={edit} onSelect={props.onSelect} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
-      {selected && <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />}
+      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} onEdit={edit} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
+      <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
 }
@@ -78,19 +80,12 @@ export function DesignVariables(props: { readonly doc: DesignDoc; readonly sessi
 }
 
 function PropertiesTab(props: {
-  readonly doc: DesignDoc; readonly selected?: Selection; readonly reply?: PreviewReply; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void;
-  readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
+  readonly doc: DesignDoc; readonly selected: Selection; readonly reply?: PreviewReply; readonly impact?: string; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void;
+  readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
 }) {
   const { doc, selected, reply } = props;
-  const path = selected?.path, panel = path ? propertyPanel(doc.document, path) : undefined;
-  if (!path || !panel) {
-    return (
-      <div className="inspector-empty">
-        <p className="muted">在图上点选一个元素，或者到结构页里选。</p>
-        <button type="button" className="small quiet" onClick={() => props.onSelect(doc.name)}>选中画板</button>
-      </div>
-    );
-  }
+  const path = selected.path, panel = propertyPanel(doc.document, path);
+  if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
   const segments = path.split('/'), element = elementAt(doc.document, path)?.element;
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
   const context: FieldContext = {
@@ -108,13 +103,8 @@ function PropertiesTab(props: {
         <h2>{segments.at(-1)}</h2>
         <span className="small muted">{ELEMENT_TYPES[panel.type] ?? panel.type}</span>
       </div>
-      <nav className="element-path" aria-label="元素路径" data-testid="selected-path">
-        {segments.map((segment, index) => {
-          const prefix = segments.slice(0, index + 1).join('/');
-          return <span key={prefix}>{index > 0 && <span aria-hidden="true">/</span>}{index === segments.length - 1 ? <code>{segment}</code> : <button type="button" className="link mono" onClick={() => props.onSelect(prefix)}>{segment}</button>}</span>;
-        })}
-      </nav>
-      {!shown && <p className="small muted">当前数据下这个元素不显示，图上没有框。</p>}
+      {props.impact && <p className="design-impact" data-testid="design-impact">{props.impact}</p>}
+      {!shown && <p className="small muted" data-testid="hidden-reason">{hiddenReason(doc.document, path)}</p>}
       {template && <p className="small"><button type="button" className="link" onClick={() => props.onOpenTemplate(template)}>打开子模板 {template}</button></p>}
       {panel.groups.map((group) => (
         <section key={group.name} className="prop-section" aria-label={group.name}>

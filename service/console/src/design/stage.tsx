@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { problemMarks } from '../components/preview-canvas.js';
 import type { LivePreview } from '../hooks.js';
-import { hitElement } from '../template/document.js';
+import { hitStack } from '../template/document.js';
 import type { LayoutNode } from '../types.js';
 
 export interface StageView { readonly zoom: number; readonly x: number; readonly y: number }
@@ -21,6 +21,8 @@ export interface Selection { readonly template: string; readonly path: string; r
 export interface StageInsets { readonly left: number; readonly right: number }
 const TOP = 52, BOTTOM = 56, MIN_FIT = 120;
 
+const round = (value: number) => Math.round(value * 10) / 10;
+
 function flatten(node: LayoutNode | undefined, into = new Map<string, LayoutNode>()): Map<string, LayoutNode> {
   if (!node) return into;
   into.set(node.path, node);
@@ -31,7 +33,8 @@ function flatten(node: LayoutNode | undefined, into = new Map<string, LayoutNode
 export function DesignStage(props: {
   readonly preview: LivePreview; readonly tool: 'select' | 'pan'; readonly view: StageView; readonly insets: StageInsets; readonly selected?: Selection;
   readonly onView: (view: StageView) => void; readonly onFit: (width: number) => void;
-  readonly onPick: (instance: string) => void; readonly onMenu: (x: number, y: number, instance: string) => void;
+  /** stack 是这个位置的全部元素，第一个最深；through 是按着 Alt 穿透。 */
+  readonly onPick: (stack: readonly string[], through: boolean) => void; readonly onMenu: (x: number, y: number, stack: readonly LayoutNode[]) => void; readonly onClear: () => void;
 }) {
   const { preview, tool, view, insets, selected } = props, reply = preview.reply, image = reply?.image, layout = reply?.layout;
   const stage = useRef<HTMLDivElement>(null);
@@ -97,7 +100,12 @@ export function DesignStage(props: {
     if (Math.abs(dx) + Math.abs(dy) > 3) now.moved = true;
     props.onView({ ...now.view, x: now.view.x + dx, y: now.view.y + dy });
   };
-  const endDrag = () => { drag.current = undefined; };
+  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const now = drag.current;
+    drag.current = undefined;
+    // 点舞台空白处（没拖动）：取消选中，检查器回到画板。
+    if (now && !now.moved && !panning && !(event.target as HTMLElement).closest('[data-testid="design-canvas"]')) props.onClear();
+  };
 
   const nodes = useMemo(() => flatten(layout?.root), [layout]);
   const percent = (node: LayoutNode) => (layout ? { left: `${(node.x / layout.output.width) * 100}%`, top: `${(node.y / layout.output.height) * 100}%`, width: `${(node.width / layout.output.width) * 100}%`, height: `${(node.height / layout.output.height) * 100}%` } : {});
@@ -105,16 +113,16 @@ export function DesignStage(props: {
   const main = selected?.instance && instances.includes(selected.instance) ? selected.instance : instances[0];
   const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
   const hit = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (!layout) return undefined;
+    if (!layout) return [];
     const box = event.currentTarget.getBoundingClientRect();
-    return hitElement(layout.root, ((event.clientX - box.left) / box.width) * layout.output.width, ((event.clientY - box.top) / box.height) * layout.output.height);
+    return hitStack(layout.root, ((event.clientX - box.left) / box.width) * layout.output.width, ((event.clientY - box.top) / box.height) * layout.output.height);
   };
   return (
     <div className={`design-stage${panning ? ' tool-pan' : ''}${preview.loading ? ' busy' : ''}`} ref={stage} data-testid="design-stage" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
       {image && layout ? (
         <div className="design-canvas" data-testid="design-canvas" style={{ width, height, left, top }}
-          onClick={(event) => { if (panning) return; const node = hit(event); if (node) props.onPick(node.path); }}
-          onContextMenu={(event) => { const node = hit(event); if (!node) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, node.path); }}>
+          onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
+          onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
           {marks.map((mark, index) => (
             <span key={index} className={`mark ${mark.problem.level}`} data-testid="problem-mark" style={{ left: `${mark.box.left}%`, top: `${mark.box.top}%`, width: `${mark.box.width}%`, height: `${mark.box.height}%` }} title={mark.problem.message}>
@@ -123,7 +131,7 @@ export function DesignStage(props: {
           ))}
           {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={percent(node)} /> : null; })}
           {main && nodes.get(main) && (
-            <span className="select-box" data-testid="select-box" data-path={main} style={percent(nodes.get(main)!)}><span className="select-tag" data-testid="select-tag">{main}</span></span>
+            <span className="select-box" data-testid="select-box" data-path={main} style={percent(nodes.get(main)!)}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
           )}
         </div>
       ) : (

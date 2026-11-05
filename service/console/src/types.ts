@@ -420,6 +420,8 @@ export interface OutputSettings { readonly width: number; readonly height: numbe
 
 export interface LayoutNode {
   readonly path: string;
+  readonly name: string;
+  readonly type: string;
   readonly x: number;
   readonly y: number;
   readonly width: number;
