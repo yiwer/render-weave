@@ -13,7 +13,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { capture, ensureEnv, root, run } from './docker.mjs';
+import { capture, ensureEnv, ensureProjectFree, holdProject, root, run } from './docker.mjs';
 import {
   API, backlog, call, expectStatus, finished, itemTimings, M402_DIR, m402Items, median, memoryPeak, openTenant, percentile, platformLogin,
   PRICE_TAG_DIR, priceTagItems, push, resourceStore, restart, sleep, statsSampler, submit, webhookReceiver,
@@ -28,6 +28,7 @@ if (!['profile', 'long', 'scale', 'soak'].includes(phase)) {
   console.error('用法：node service/scripts/capacity.mjs profile|long|scale|soak [--cpus 1] [--memory 2g] [--recycle 500] [--timeout 60000] [--items N] [--workers N] [--hours N] [--tenants N] [--keep]');
   process.exit(2);
 }
+ensureProjectFree();
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const out = join(root, 'out/stage4/capacity', `${phase}-${stamp}`);
 await mkdir(out, { recursive: true });
@@ -85,6 +86,7 @@ const report = { phase, startedAt: new Date().toISOString(), environment, result
 let stats;
 try {
   const workers = phase === 'soak' ? Number(options.workers ?? 2) : 1;
+  holdProject();
   run('docker', ['compose', 'up', '-d', '--build', '--wait', '--scale', `worker=${workers}`, 'api', 'worker']);
   const platform = await platformLogin('platform@capacity.test');
   const resources = await resourceStore(join(out, 'resources'));

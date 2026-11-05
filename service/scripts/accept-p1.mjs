@@ -19,7 +19,7 @@ import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright-core';
-import { capture, ensureEnv, root, run, up } from './docker.mjs';
+import { capture, ensureEnv, ensureProjectFree, root, run, up } from './docker.mjs';
 import { API, call, expectStatus, M402_DIR, openTenant, platformLogin, push, renderweave, resourceStore } from './stage4.mjs';
 
 const { values: options } = parseArgs({ options: { headed: { type: 'boolean', default: false }, keep: { type: 'boolean', default: false }, walkthrough: { type: 'boolean', default: false } } });
@@ -34,6 +34,7 @@ const TEMPLATE_FILE = 'template-route-sign.json', BLANK = '空白数据（显示
 const ADMIN = 'admin@customer.acceptance.test', LABEL = '验收客户的代建工程师';
 const enc = encodeURIComponent;
 
+ensureProjectFree();
 const out = join(root, 'out/p1/acceptance', new Date().toISOString().replace(/[:.]/g, '-'));
 await mkdir(out, { recursive: true });
 const steps = [];

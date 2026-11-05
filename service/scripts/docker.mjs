@@ -41,8 +41,39 @@ export function capture(command, args) {
   return result.stdout;
 }
 
+/** 比较工作目录用：Windows 上路径不分大小写，盘符可能写成小写。 */
+const checkoutKey = (dir) => (process.platform === 'win32' ? resolve(dir).toLowerCase() : resolve(dir));
+
+/**
+ * 动 Compose 项目之前先调（M386）：项目名写死在 compose.yaml，端口也有缺省值，同一个项目一台机器上只能有一个检出在用。
+ * 这个项目有容器在跑且属于别的检出时，打印占用的目录并以退出码 3 结束，什么也不动。
+ * 只看在跑的容器：这个检出自己的残留、别的检出停着的容器不算占用，由调用方照旧清掉。
+ * 设了 COMPOSE_PROJECT_NAME 的隔离跑只查它自己的项目，不碰、也不管 renderweave。
+ */
+export function ensureProjectFree() {
+  const project = process.env.COMPOSE_PROJECT_NAME || 'renderweave';
+  const rows = capture('docker', ['ps', '--filter', `label=com.docker.compose.project=${project}`, '--format', '{{.Names}}|{{.Label "com.docker.compose.project.working_dir"}}']);
+  const held = new Map();
+  for (const row of rows.split('\n').filter((line) => line.trim())) {
+    const [name, dir] = row.trim().split('|');
+    if (!dir || checkoutKey(dir) !== checkoutKey(root)) held.set(dir, [...(held.get(dir) ?? []), name]);
+  }
+  if (!held.size) return;
+  console.error(`Compose 项目 ${project} 正被别的检出占用，这次什么也没动：`);
+  for (const [dir, names] of held) console.error(`  ${dir || '（容器没有记工作目录）'}：${names.join('、')}`);
+  console.error('等那边跑完再来；要同时跑就换项目名与端口：COMPOSE_PROJECT_NAME=rw-test RW_API_PORT=18080 RW_WORKER_PORT=18081。');
+  console.error(`确认那边没人在用、数据也不要了，才清掉（连数据卷一起删）：docker compose -p ${project} down -v --remove-orphans`);
+  process.exit(3);
+}
+
+/** 构建要几分钟，这段时间还没有 api、worker 的容器，别的检出查不到占用：构建之前先起不用构建的 postgres 占住项目（M386）。 */
+export function holdProject() {
+  run('docker', ['compose', 'up', '-d', 'postgres']);
+}
+
 /** 起服务并等到全部就绪，再以构建标识给镜像打标签（ADR-0019），返回构建标识与标签。 */
 export function up() {
+  holdProject();
   run('docker', ['compose', 'up', '-d', '--build', '--wait', 'api', 'worker']);
   const build = capture('docker', ['run', '--rm', '--entrypoint', 'cat', 'renderweave-service:local', '/app/BUILD_ID']).trim();
   if (!/^sha256:[0-9a-f]{64}$/.test(build)) throw new Error('镜像里的构建标识格式不对');

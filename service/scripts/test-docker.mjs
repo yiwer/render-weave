@@ -1,11 +1,13 @@
 /**
  * Docker 后端测试（不进 npm test）：从空环境起服务，在 Compose 网络里的 tester 容器中跑 service/test，
  * 再核对各服务的日志每行都是 JSON。默认前后都清空容器与数据卷；加 --keep 则结束后保留环境。
+ * 别的检出正占着 Compose 项目时拒绝开始，退出码 3，什么也不动（M386）。
  * 用法：node service/scripts/test-docker.mjs [--keep]
  */
 import { spawnSync } from 'node:child_process';
-import { capture, ensureEnv, root, run, up } from './docker.mjs';
+import { capture, ensureEnv, ensureProjectFree, root, run, up } from './docker.mjs';
 
+ensureProjectFree();
 const keep = process.argv.includes('--keep');
 // worker 用小的单项超时、内存上限与换新项数，稳定触发超时、内存超限与子进程换新（票据 06）。
 // 单项超时照 M302 的规则取（M349）：测试里最慢的正常一项是换新后第一项的 M402 与问候牌的重放，本机约 2 秒，不到 8 秒的三分之一；
