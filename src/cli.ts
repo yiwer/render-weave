@@ -46,7 +46,9 @@ import { serveMcp } from './mcp/server.js';
 import { MCP_CONTRACT_VERSION, createTools } from './mcp/tools.js';
 import { referenceTexts } from './mcp/references.js';
 import { describeError } from './util.js';
-import { loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision } from './workspace.js';
+import {
+  loadWorkspace, loadWorkspaceDocuments, parseJsonKeepingPrecision, formatStaticSchemaRef,
+} from './workspace.js';
 import { initializeResourceStore, importResources, openVersionedResourceStore, checkResourceReplacement, applyResourceReplacement } from './versioned-resources.js';
 import { DEFAULT_TOKEN_ENV, pullWorkspace, pushWorkspace, templateRevisions, type PushDiff, type PushTarget, type ReportedProblem } from './push.js';
 
@@ -695,7 +697,7 @@ async function runPublish(options: Record<string, string>, io: CliIo): Promise<n
       { path: schemaFile, value: published.definition },
       { path: compiledFile, value: published.compiled },
     ]);
-    io.stdout(`已发布：${published.ref.name} v${version}\n  ${schemaFile}\n  ${compiledFile}\n`);
+    io.stdout(`已发布：${formatStaticSchemaRef(published.ref)}\n  ${schemaFile}\n  ${compiledFile}\n`);
     return ExitCodes.ok;
   });
 }

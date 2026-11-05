@@ -15,19 +15,25 @@ function parseHash(): Route {
   return { path: path.split('/').filter(Boolean).map((segment) => decodeURIComponent(segment)), query: new URLSearchParams(query) };
 }
 
-/** 有没保存的改动时拦住换页（数据定义的编辑页，M360）：答 false 就退回原来的地址，页面不重新渲染、改动还在。 */
-let navigationGuard: (() => boolean) | undefined;
+/**
+ * 有没保存的改动时拦住换页（数据定义的编辑页 M360，模板设计页 M383）：答 false 就退回原来的地址，页面不重新渲染、改动还在。
+ * target 是要去的地址；退出登录这种不换地址的离开没有 target。
+ */
+type NavigationGuard = (target?: Route) => boolean;
+let navigationGuard: NavigationGuard | undefined;
 let committedHash = location.hash;
-export function guardNavigation(guard: () => boolean): () => void {
+export function guardNavigation(guard: NavigationGuard): () => void {
   navigationGuard = guard;
   return () => { if (navigationGuard === guard) navigationGuard = undefined; };
 }
+/** 不换地址的离开（退出登录）也要问一声。 */
+export const mayLeave = () => !navigationGuard || navigationGuard();
 
 const routeListeners = new Set<() => void>();
 function onHashChange() {
   // 退回原来的地址也会触发一次，那次什么都不用做。
   if (location.hash === committedHash) return;
-  if (navigationGuard && !navigationGuard()) { location.hash = committedHash; return; }
+  if (navigationGuard && !navigationGuard(parseHash())) { location.hash = committedHash; return; }
   committedHash = location.hash;
   for (const listener of routeListeners) listener();
 }

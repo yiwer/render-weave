@@ -20,7 +20,7 @@ export {
 } from './record-stores.js';
 /** 完成清单与批次清单的字节写法（record.json、preview.json、batch.json），各存储实现写法一致。 */
 export { jsonBytes as manifestBytes } from './record-files.js';
-export { publishStaticSchema, compileStaticSchema, type PublishedStaticSchema } from './schema/publish.js';
+export { publishStaticSchema, compileStaticSchema, nextSchemaVersion, type PublishedStaticSchema } from './schema/publish.js';
 export { checkDslDocument, dslDocumentKind, type DslDocumentCheck, type DslDocumentKind } from './dsl.js';
 /** 两份数据定义之间按字段列出增、删、改与改动的属性键；字段名称是身份，改名是一删一增（出图服务的发布前差异）。 */
 export { diffDefinition, type DefinitionDiff, type FieldChange, type FieldOrderChange } from './definition-diff.js';
@@ -36,6 +36,9 @@ export {
   classifyWorkspaceDocument,
   parseJsonKeepingPrecision,
   formatStaticSchemaRef,
+  formatSchemaVersion,
+  parseSchemaVersion,
+  type SchemaVersion,
   type WorkspaceDocumentClass,
   type WorkspaceDocumentSource,
   type WorkspaceDocumentEntry,

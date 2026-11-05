@@ -2,10 +2,7 @@
  * 服务的后端（ADR-0018）：平台级的跨租户操作，与只触及一个租户的句柄。
  * 两种实现跑同一组 API 用例：内存后端进 npm test，PostgreSQL 加 S3 后端在 Docker 后端测试里跑（阶段 4 PRD「接缝」）。
  */
-import type {
-  BatchItemFiles, BatchOutput, BatchSource, BatchSummary, ElementLocation, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend,
-  WorkspaceDocumentSource,
-} from './engine.js';
+import type { BatchItemFiles, BatchOutput, BatchSource, BatchSummary, ElementLocation, LayoutSummary, Problem, ProblemLocation, RecordSource, RenderMode, ReplayManifest, ResourceVersionBackend, WorkspaceDocumentSource, SchemaVersion } from './engine.js';
 
 export interface Tenant {
   readonly id: string;
@@ -325,7 +322,7 @@ export function parseDocumentSource(source: string): { kind: DocumentKind; key: 
   return at > 0 && DOCUMENT_KINDS.includes(kind) && at < source.length - 1 ? { kind, key: source.slice(at + 1) } : undefined;
 }
 
-/** 服务端的一份工作区文档：种类加键，内容按 SHA-256 存放。模板是当前修订的内容。 */
+/** 服务端的一份工作区文档：种类加键，内容按 SHA-256 存放。模板是当前修订的内容。列出来时按登记的先后，同一个数据定义的最后一个版本就是最新的。 */
 export interface StoredDocument {
   readonly kind: DocumentKind;
   readonly key: string;
@@ -397,11 +394,11 @@ export interface PushWrites {
 
 /**
  * 数据定义草案（P1 票据 04，M346）：一个数据定义名称还没发布的那一份，每个名称至多一份。
- * baseVersion 是它基于的静态版本，新名称没有。内容按原始字节存在本租户的内容里，读回与保存时逐字节相同。
+ * baseVersion 是它基于的静态版本，发布之后换成刚发布的那一版（ADR-0028），新名称没有。内容按原始字节存在本租户的内容里，读回与保存时逐字节相同。
  */
 export interface DefinitionDraft {
   readonly name: string;
-  readonly baseVersion?: number;
+  readonly baseVersion?: SchemaVersion;
   readonly sha256: string;
   readonly byteLength: number;
   readonly createdAt: string;
@@ -435,6 +432,7 @@ export type WorkingCopyCommit =
 /** 发布草案要登记的两份内容：键是"名称@版本"。 */
 export interface PublishedDraft {
   readonly key: string;
+  readonly version: SchemaVersion;
   readonly definition: { readonly sha256: string; readonly byteLength: number };
   readonly compiled: { readonly sha256: string; readonly byteLength: number };
 }
@@ -474,9 +472,10 @@ export interface PublishRequest {
   readonly sha256: string;
   /** 申请时要被换掉的内容：基于的版本，或当前修订。 */
   readonly beforeSha256?: string;
-  /** 数据定义：基于的版本，与申请时算出的下一个版本。 */
-  readonly baseVersion?: number;
-  readonly version?: number;
+  /** 数据定义：基于的版本，要发布成的版本，与发布说明。 */
+  readonly baseVersion?: SchemaVersion;
+  readonly version?: SchemaVersion;
+  readonly note?: string;
   /** 模板：申请时的当前修订（新模板没有），指回时另有要指回的修订。 */
   readonly baseRevision?: number;
   readonly revision?: number;
@@ -536,7 +535,7 @@ export interface TenantStorage {
   definitionDrafts(): Promise<readonly DefinitionDraft[]>;
   definitionDraft(name: string): Promise<DefinitionDraft | undefined>;
   /** 新建草案；这个名称已有草案时什么也不写，返回 undefined。与推送、资源提交依次进行。 */
-  createDefinitionDraft(draft: { readonly name: string; readonly baseVersion?: number; readonly bytes: Uint8Array }, by: DraftWriter): Promise<DefinitionDraft | undefined>;
+  createDefinitionDraft(draft: { readonly name: string; readonly baseVersion?: SchemaVersion; readonly bytes: Uint8Array }, by: DraftWriter): Promise<DefinitionDraft | undefined>;
   /**
    * 整份替换草案：只有当前内容哈希等于 expectedSha256 才写，否则什么也不写，答当前哈希（stale）。没有这份草案时 undefined。
    */
@@ -545,7 +544,7 @@ export interface TenantStorage {
   /** 删除草案，答删掉的那一份；没有时 undefined。 */
   deleteDefinitionDraft(name: string): Promise<DefinitionDraft | undefined>;
   /**
-   * 发布草案（P1 票据 05，M346）：在一个事务里登记静态数据定义的原文与编译产物，再删除草案。内容已先写进本租户的内容。
+   * 发布草案（P1 票据 05，ADR-0028）：在一个事务里登记静态数据定义的原文与编译产物，草案留着，基于的版本换成这一版。内容已先写进本租户的内容。
    * 草案的内容哈希不是 expectedSha256 时答当前哈希（stale）；这个版本已被占用（别的发布或推送先写了）时答 taken，都什么也不写。没有这份草案时 undefined。
    */
   publishDefinitionDraft(name: string, expectedSha256: string, published: PublishedDraft, approving?: PublishRequestApproval): Promise<{ readonly published: true } | { readonly stale: string } | { readonly taken: true } | undefined>;

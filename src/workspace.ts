@@ -13,9 +13,12 @@ import { significantDigits } from './schema/formats.js';
 import { MAX_SIGNIFICANT_DIGITS } from './schema/model.js';
 import { describeError, isRecord } from './util.js';
 
+/** 静态数据定义的版本：缺省是编号，也可以是发布时写的字符串（ADR-0028）。 */
+export type SchemaVersion = number | string;
+
 export interface StaticSchemaRef {
   readonly name: string;
-  readonly version: number;
+  readonly version: SchemaVersion;
 }
 
 export interface StaticSchemaEntry {
@@ -57,19 +60,37 @@ export interface Workspace {
   readonly problems: readonly Problem[];
 }
 
+/** 版本给人看的写法：编号写成 v2，字符串原样。 */
+export const formatSchemaVersion = (version: SchemaVersion): string => (typeof version === 'number' ? `v${version}` : version);
+
 export function formatStaticSchemaRef(ref: StaticSchemaRef): string {
-  return `${ref.name} v${ref.version}`;
+  return `${ref.name} ${formatSchemaVersion(ref.version)}`;
 }
 
 export function sameStaticSchema(a: StaticSchemaRef, b: StaticSchemaRef): boolean {
   return a.name === b.name && a.version === b.version;
 }
 
+const NUMBERED_VERSION = /^v?([1-9][0-9]*)$/, NAMED_VERSION = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+
+/**
+ * 读一个版本：正整数原样；`2` 与 `v2` 就是编号 2，一个写法只对应一个版本；其余按 ADR-0028 的写法查。不合法时 undefined。
+ */
+export function parseSchemaVersion(value: unknown): SchemaVersion | undefined {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 1 ? value : undefined;
+  if (typeof value !== 'string') return undefined;
+  const numbered = NUMBERED_VERSION.exec(value);
+  if (numbered) {
+    const number = Number(numbered[1]);
+    return Number.isSafeInteger(number) ? number : undefined;
+  }
+  return NAMED_VERSION.test(value) ? value : undefined;
+}
+
 export function parseStaticSchemaRef(value: unknown): StaticSchemaRef | undefined {
   if (!isRecord(value)) return undefined;
-  const { name, version } = value;
-  if (typeof name !== 'string' || name === '') return undefined;
-  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) return undefined;
+  const { name } = value, version = parseSchemaVersion(value['version']);
+  if (typeof name !== 'string' || name === '' || version === undefined) return undefined;
   return { name, version };
 }
 

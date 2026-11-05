@@ -23,7 +23,7 @@
 
 这是可启用的内部开发功能，默认关闭新任务入口。已有任务仍可查询。启用标志表示 API 允许入队，不代表处理进程在线；必须同时启动独立 Agent worker。
 
-先按 [服务部署说明](service.md)配置 PostgreSQL、S3 和应用账号，并用 `setup` 执行包括 `0015_agent_jobs.sql` 在内的迁移。模型密钥仅给 Agent 宿主进程，不交给浏览器或转换容器。
+先按 [服务部署说明](service.md)配置 PostgreSQL、S3 和应用账号，并用 `setup` 执行包括 `0016_agent_jobs.sql` 在内的迁移。模型密钥仅给 Agent 宿主进程，不交给浏览器或转换容器。
 
 ```powershell
 npm run build
@@ -85,3 +85,12 @@ OpenAPI **1.11.0**，完整描述见 [openapi.json](api/openapi.json)。查询�
 浏览器测试使用确定性模型接缝，真实读取器、独立检查、审核、HTTP 与数据集写入；另做真实 Claude + OpenCode Go 小样和完整服务任务实测，结果见 [验收票据](../.scratch/dataset-import-app/issues/03-smart-import-module.md)。同一 115 原件的新版网页自动走查及兼容模板预览已补做，见 [现场说明](agent-eval/dataset-import-115-app.md)。这些验证不替代新增显示投影的业务核准、生产隔离复核或 P0/P1 原有门槛。
 
 模型上报的 token 按轮次身份登记；进程硬崩溃前未落盘的用量可能缺失，不能据此结算。**人工业务审核工时、实际扣费未知。**
+
+
+## 合并前内部测试库的迁移编号
+
+合并后的开放 API 为 1.12.0，命名版本使用 `0015_named_schema_versions.sql`，Agent 任务使用 `0016_agent_jobs.sql`（M385）。新安装和已执行命名版本迁移的库按普通 `setup` 升级。
+
+仅在合并前已执行 `0015_agent_jobs.sql` 的内部测试库：先停止 API、渲染 worker、Agent worker，并备份数据库；使用数据库属主执行 [编号转换脚本](../service/scripts/reconcile-agent-migration.sql)，再用新构建执行 `setup`，最后启动同构建的全部服务。脚本取得与迁移器相同的锁，核对旧名称、确切 SHA-256、任务表和未占用的新编号后，只将旧登记 15 改为 16；`setup` 补执行命名版本迁移 15，已有 Agent 表和任务保留。任何条件不符都会拒绝，不能绕过哈希检查或直接重跑建表 SQL。转换后旧构建不能再启动；回退须恢复备份及旧构建。
+
+本次提交只验证升级步骤，不升级正在运行的 115 验收服务。

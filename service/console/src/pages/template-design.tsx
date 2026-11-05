@@ -2,7 +2,7 @@
  * 模板设计（P1 票据 08，M205、M299、M356，原型画板 10）：客户管理员不写 DSL 也能做小改。只给客户管理员，操作员看只读预览。
  * - 左边是工作副本的草稿预览：按布局摘要的元素框点选，按元素定位打开模板文档里的位置；元素在子模板里时切到子模板，预览仍是调用它的模板；
  * - 右边是属性、参数、结构、规则四页，都从模板文档与 Schema 生成（template/properties.ts）；只能填数，不做拖拽；
- * - 每次改动写回工作副本，再重渲染、刷新问题清单（template/session.ts）；撤销与重做只在这一页里；"保存"是立刻暂存，"发布修订"去下一页；
+ * - 每次改动写回工作副本，再重渲染、刷新问题清单（template/session.ts）；撤销与重做只在这一页里；"保存"是立刻暂存，改了没点保存就离开要提醒（M383），"发布修订"去下一页；
  * - 正式模式：预览接口只出草稿，两种模式的问题清单相同（docs/render-modes.md），所以这里按问题清单说正式出图的结果：有严重问题时不出图。
  * "让 Agent 修改""留评论"在 P2、P4 接入前不显示。
  */
@@ -13,10 +13,10 @@ import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { countText, ErrorBox, ProblemList } from '../components/problems.js';
 import { FieldRow, FieldRows, type FieldContext } from '../components/property-fields.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
-import { go, href, useLivePreview, useLoad, type LivePreview } from '../hooks.js';
+import { go, guardNavigation, href, useLivePreview, useLoad, type LivePreview, type Route } from '../hooks.js';
 import { documentInfo, elementAt, elementTree, elementVariables, flatElements, hitElement, isObject, parseTemplateText, relatedChecks, variableKind, type ElementNode, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath, type PropertyField } from '../template/properties.js';
-import { createDesignSession, type DesignDoc, type DesignSession } from '../template/session.js';
+import { createDesignSession, leaveQuestion, type DesignDoc, type DesignSession } from '../template/session.js';
 import type { Identity, LayoutNode, PreviewReply, Problem } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
@@ -92,9 +92,12 @@ function Design(props: { readonly name: string; readonly root: string }) {
 
   const undo = () => { const template = session.undo(); if (template && template !== name) openTemplate(template); };
   const redo = () => { const template = session.redo(); if (template && template !== name) openTemplate(template); };
-  const save = () => { void session.flush(); };
+  const save = () => { void session.save(); };
+  // 发布修订是往下走，改动都带过去，不用问。
+  const leaving = useRef(false);
   const publish = async () => {
     await session.flush();
+    leaving.current = true;
     go(['templates', name, 'publish'], root === name ? {} : { in: root });
   };
 
@@ -119,12 +122,18 @@ function Design(props: { readonly name: string; readonly root: string }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+  // 改了没点保存就离开先问（M383）：换页、关窗口、退出登录。切子模板还在这个编辑会话里，不算离开。
+  const latest = useRef(state);
+  latest.current = state;
+  const dirty = state.unsaved > 0 || state.unconfirmed > 0;
   useEffect(() => {
-    if (state.unsaved === 0) return undefined;
+    if (!dirty) return undefined;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [state.unsaved > 0]);
+    const staysHere = (target?: Route) => target?.path[0] === 'templates' && target.path[2] === 'design' && (target.query.get('in') ?? target.path[1]) === root;
+    const release = guardNavigation((target) => leaving.current || staysHere(target) || window.confirm(leaveQuestion(latest.current)));
+    return () => { window.removeEventListener('beforeunload', warn); release(); };
+  }, [dirty, root]);
 
   const copyPath = async (text: string) => {
     setMenu(undefined);
@@ -142,7 +151,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
           <a href={href(['templates'])}>模板</a><span aria-hidden="true">/</span>
           {root === name ? <strong>{name}</strong> : <><a href={href(['templates', root, 'design'])}>{root}</a><span aria-hidden="true">/</span><strong>{name}</strong></>}
         </nav>
-        <span className={`chip ${state.unsaved ? 'warn' : 'ok'}`} data-testid="unsaved-count">{state.unsaved ? `${state.unsaved} 处未保存` : state.saving ? '正在暂存…' : '已暂存'}</span>
+        <span className={`chip ${dirty ? 'warn' : 'ok'}`} data-testid="unsaved-count">{state.unsaved ? `${state.unsaved} 处未保存` : state.saving ? '正在暂存…' : state.unconfirmed ? '已暂存，未保存' : '已保存'}</span>
         {unpublished !== undefined && <span className="chip" data-testid="unpublished-count">{check.data?.changes.status === 'added' ? '新模板，未发布' : `${unpublished} 处未发布`}</span>}
         {check.data?.conflict && <span className="chip warn" data-testid="base-changed">基准已变，发布时看两边差异</span>}
         <span className="toolbar-gap" />
@@ -166,7 +175,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
           <button type="button" className="small" aria-pressed={!finalMode} onClick={() => setFinalMode(false)}>草稿</button>
           <button type="button" className="small" aria-pressed={finalMode} onClick={() => setFinalMode(true)}>正式</button>
         </span>
-        <button type="button" className="small" onClick={save} aria-keyshortcuts="Control+S" disabled={state.unsaved === 0}>保存</button>
+        <button type="button" className="small" onClick={save} aria-keyshortcuts="Control+S" disabled={!dirty}>保存</button>
         <button type="button" className="small primary" disabled={!unpublished} title={unpublished ? undefined : '还没有改动'} onClick={() => void publish()}>发布修订</button>
       </div>
       {notice && <p className="notice design-notice" role="status">{notice}<button type="button" className="link" onClick={() => setNotice(undefined)}>知道了</button></p>}

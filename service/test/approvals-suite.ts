@@ -67,8 +67,10 @@ export function describeApprovals(name: string, makeBackend: () => Promise<Servi
     /** 代建工程师从 v1 另起草案，加一个字段，答草案的内容哈希。 */
     const engineerDraft = async (target: Target, field = 'note') => {
       const url = `${target.prefix}/definitions/${DEFINITION}/draft`;
-      const created = await world.call('POST', url, target.engineer, { fromVersion: 1 });
-      expect(created.status, created.raw.slice(0, 300)).toBe(201);
+      // 发布之后草案留着（ADR-0028）：已有就接着改。
+      const existing = await world.call('GET', url, target.engineer);
+      const created = existing.status === 200 ? existing : await world.call('POST', url, target.engineer, { fromVersion: 1 });
+      expect(created.status, created.raw.slice(0, 300)).toBe(existing.status === 200 ? 200 : 201);
       const document = JSON.parse((await world.call('GET', url, target.engineer)).body.content);
       document.fields.push({ name: field, displayName: '备注', type: 'text' });
       const saved = await world.call('PUT', `${url}?expectedSha256=${created.body.sha256}`, target.engineer, text(document), JSON_TYPE);
@@ -128,7 +130,8 @@ export function describeApprovals(name: string, makeBackend: () => Promise<Servi
       expect(published).toMatchObject({ status: 201, body: { name: '问候', version: 2 } });
 
       await policy(target, { definitions: true });
-      const draft = await world.call('POST', `${target.prefix}/definitions/${DEFINITION}/draft`, target.engineer, { fromVersion: 2 });
+      const draft = await world.call('GET', `${target.prefix}/definitions/${DEFINITION}/draft`, target.engineer);
+      expect(draft.body, '发布之后草案留着，基于刚发布的版本').toMatchObject({ baseVersion: 2 });
       const url = `${target.prefix}/definitions/${DEFINITION}/draft`, document = JSON.parse((await world.call('GET', url, target.engineer)).body.content);
       document.fields.push({ name: 'extra', displayName: '另一项', type: 'text' });
       const hash = (await world.call('PUT', `${url}?expectedSha256=${draft.body.sha256}`, target.engineer, text(document), JSON_TYPE)).body.sha256;
@@ -152,7 +155,7 @@ export function describeApprovals(name: string, makeBackend: () => Promise<Servi
       expect(approved.status, approved.raw.slice(0, 300)).toBe(200);
       expect(approved.body).toMatchObject({ request: { id, status: 'approved', decidedBy: target.admin.email }, result: { name: '问候', version: 3, baseVersion: 2 } });
       expect(await versions(target)).toEqual([1, 2, 3]);
-      expect((await world.call('GET', url, target.engineer)).status).toBe(404);
+      expect((await world.call('GET', url, target.engineer)).body, '批准之后草案也留着').toMatchObject({ sha256: hash, baseVersion: 3 });
 
       // 申请、批准与生效各记一条，带主体与内容哈希；发布记录要读的 definition.publish 是批准的人。
       const events = await auditOf(target, 'publishRequest.create', 'publishRequest.approve', 'definition.publish');
@@ -161,7 +164,7 @@ export function describeApprovals(name: string, makeBackend: () => Promise<Servi
       expect(events.find((event) => event.action === 'definition.publish' && event.object.id === '问候@3')).toMatchObject({ actor: { kind: 'member', label: target.admin.email }, afterSha256: approved.body.result.definitionSha256 });
 
       // 客户管理员自己的发布直接生效，不留申请。
-      const own = await world.call('POST', `/v1/definitions/${DEFINITION}/draft`, target.admin.token, { fromVersion: 3 });
+      const own = await world.call('GET', `/v1/definitions/${DEFINITION}/draft`, target.admin.token);
       const ownDocument = JSON.parse((await world.call('GET', `/v1/definitions/${DEFINITION}/draft`, target.admin.token)).body.content);
       ownDocument.fields.push({ name: 'own', displayName: '自己的', type: 'text' });
       const ownHash = (await world.call('PUT', `/v1/definitions/${DEFINITION}/draft?expectedSha256=${own.body.sha256}`, target.admin.token, text(ownDocument), JSON_TYPE)).body.sha256;

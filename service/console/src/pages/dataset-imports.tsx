@@ -8,12 +8,13 @@ import { formOf } from '../form/schema.js';
 import { canonicalText, fromJson, toJsonText } from '../form/value.js';
 import { go, guardNavigation, href, problemsOf, useLoad } from '../hooks.js';
 import type { ImportDetail, ImportJob, ImportReview } from '../import-types.js';
-import type { Problem } from '../types.js';
+import { parseVersion } from '../form/schema-version.js';
+import type { Problem, SchemaRef } from '../types.js';
 import { schemaText } from './templates.js';
 
 const STATUS: Record<ImportJob['status'], string> = { queued: '等待处理', running: '正在提取', needsReview: '待核对', applied: '已保存', failed: '提取失败', cancelled: '已取消' };
 const active = (job: ImportJob) => job.status === 'queued' || job.status === 'running';
-const selectValue = (schema: { name: string; version: number }) => JSON.stringify([schema.name, schema.version]);
+const selectValue = (schema: SchemaRef) => JSON.stringify([schema.name, schema.version]);
 async function base64(file: File) {
   const bytes = new Uint8Array(await file.arrayBuffer()); let value = '';
   for (let i = 0; i < bytes.length; i += 32768) value += String.fromCharCode(...bytes.subarray(i, i + 32768));
@@ -21,7 +22,8 @@ async function base64(file: File) {
 }
 export function DatasetImports(props: { schemaName?: string; schemaVersion?: string }) {
   const loaded = useLoad(async () => ({ ...await api.agentJobs(), schemas: (await api.staticSchemas()).staticSchemas }), 'dataset-imports');
-  const [selected, setSelected] = useState(props.schemaName && props.schemaVersion ? selectValue({ name: props.schemaName, version: Number(props.schemaVersion) }) : '');
+  const initialVersion = parseVersion(props.schemaVersion ?? '');
+  const [selected, setSelected] = useState(props.schemaName && initialVersion !== undefined ? selectValue({ name: props.schemaName, version: initialVersion }) : '');
   const [file, setFile] = useState<File>(); const [brief, setBrief] = useState('');
   const [busy, setBusy] = useState(false), [problems, setProblems] = useState<readonly Problem[]>();
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());

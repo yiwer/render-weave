@@ -15,7 +15,7 @@ import { commentSchema, commentWorkbook, fixtureExtractor, note } from './agent-
 
 it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核对批注和 VML、人工改值、整组保存并打开普通数据集', async () => {
   const root = await mkdtemp(join(tmpdir(), 'rw-job-browser-')), backend = createMemoryBackend(), world = await createWorld(backend);
-  const schema = commentSchema(), storage = backend.tenant(world.b.id).storage;
+  const schema = commentSchema('release-2026'), storage = backend.tenant(world.b.id).storage;
   await seedDocuments(storage, [schema.definition, schema.compiled].map(d => Buffer.from(JSON.stringify(d))));
   const bytes = await commentWorkbook(root), silent = new Writable({ write(_chunk, _encoding, done) { done(); } });
   const app = createApi({ backend, build: 'sha256:test', logger: createLogger('api', 'sha256:test', 'info', silent), secretKey: randomBytes(32), passwordCost: 'test', consoleDir: join(process.cwd(), 'service/dist/console'), datasetAgentEnabled: true, limits: { maxWorkbookBytes: 10240 } });
@@ -24,10 +24,10 @@ it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核�
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, locale: 'zh-CN' }); const errors: string[] = [];
     page.on('pageerror', e => errors.push(e.message));
-    await page.goto(`${url}/console/#/dataset-imports`);
+    await page.goto(`${url}/console/#/dataset-imports?schema=${schema.ref.name}&version=${schema.ref.version}`);
     await page.getByLabel('邮箱').fill(world.b.operator.email); await page.getByLabel('密码').fill(world.b.operator.password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
-    await page.getByLabel('静态数据定义与版本').selectOption(JSON.stringify([schema.ref.name, schema.ref.version]));
+    await expect.poll(() => page.getByLabel('静态数据定义与版本').inputValue()).toBe(JSON.stringify([schema.ref.name, schema.ref.version]));
     await page.getByText('.xlsx，最大 10 KiB。保留工作表、合并关系与传统批注。', { exact: true }).waitFor();
     let uploads = 0;
     page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/v1/agent-jobs')) uploads++; });
@@ -64,6 +64,14 @@ it.skipIf(!process.env['RW_BROWSER'])('真实页面上传、刷新恢复、核�
     await page.locator('[data-path="label"] input').waitFor();
     expect(await page.locator('[data-path="label"] input').inputValue()).toBe('甲（业务核准）');
     expect(await page.getByLabel('批注', { exact: true }).inputValue()).toBe(note);
+    // 同一个命名版本也能脱离模板手工新建。
+    await page.goto(`${url}/console/#/datasets/new?schema=${schema.ref.name}&version=${schema.ref.version}`);
+    await page.getByLabel('数据集 ID', { exact: true }).fill('named-manual');
+    await page.locator('[data-path="label"] input').fill('手工物料');
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    await page.waitForURL(/datasets\/named-manual/);
+    const saved = await world.call('GET', '/v1/datasets/named-manual', world.b.operator.token);
+    expect(saved.body.dataset.staticSchema).toEqual(schema.ref);
     expect(errors).toEqual([]);
   } finally { await browser.close(); await worker.stop(); await app.close(); await world.app.close(); await rm(root, { recursive: true, force: true }); }
 }, 60000);

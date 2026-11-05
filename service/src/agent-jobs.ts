@@ -1,4 +1,5 @@
 /** Agent 任务的持久化合同。任务进度与候选独立于正式工作区，只有应用事务写数据集。 */
+import type { StaticSchemaRef } from './engine.js';
 import type { Actor, AuthoringState, NewAuditEvent, StoredDocument, RoundUsageEntry } from './backend.js';
 
 export interface AgentArtifact { readonly file: string; readonly sha256: string; readonly byteLength: number }
@@ -10,7 +11,7 @@ export interface AgentJob {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly actor: Actor;
-  readonly staticSchema: { readonly name: string; readonly version: number };
+  readonly staticSchema: StaticSchemaRef;
   readonly filename: string;
   readonly source: AgentArtifact;
   readonly brief: string;

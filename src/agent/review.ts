@@ -615,7 +615,8 @@ async function applyCapturedRound(options: AgentApplyOptions): Promise<AgentAppl
     if (!outcome.published) {
       return failed([severe(ProblemCodes.applyFailed, at(path), `发布失败，工作区未改动：${outcome.problems.map((problem) => problem.message).join('；')}`), ...outcome.problems]);
     }
-    versions.set(`${result.published.ref.name}\0${result.published.ref.version}`, outcome.published.ref.version);
+    // 上面删掉了文档里写的版本，发布分配的一定是编号（Agent 先不用自定义版本，ADR-0028）。
+    versions.set(`${result.published.ref.name}\0${result.published.ref.version}`, outcome.published.ref.version as number);
     published.push({ candidate: path, entry: outcome.published });
   }
   // 数据集与模板：在当前工作区上重新校验（工作区可能已有同名的数据集或模板；覆盖时工作副本代替最新保存的模板）。
@@ -642,7 +643,7 @@ async function applyCapturedRound(options: AgentApplyOptions): Promise<AgentAppl
   type Entry = { candidate: string; kind: CandidateKind; name: string; version?: number; replaced?: boolean; files: JsonFileWrite[] };
   const entries: Entry[] = published.map(({ candidate, entry }) => {
     const names = publishedFileNames(candidate, entry.ref.version);
-    return { candidate, kind: 'definition' as const, name: entry.ref.name, version: entry.ref.version, files: [
+    return { candidate, kind: 'definition' as const, name: entry.ref.name, version: entry.ref.version as number, files: [
       { path: join(workspace, names.schema), value: entry.definition, mode: 'create' as const },
       { path: join(workspace, names.compiled), value: entry.compiled, mode: 'create' as const },
     ] };
@@ -1289,7 +1290,8 @@ async function workspaceDrift(round: AgentRound, workspace: string, actual: stri
   const before = await jsonFileHashes(join(round.dir, 'snapshot'));
   const after = await jsonFileHashes(workspace);
   const latest = (entries: readonly StaticSchemaEntry[], name: string) => {
-    const versions = entries.filter((entry) => entry.ref.name === name).map((entry) => entry.ref.version);
+    // 只比较编号：Agent 的工作区漂移检查不认自定义版本（ADR-0028）。
+    const versions = entries.filter((entry) => entry.ref.name === name).map((entry) => entry.ref.version).filter((version): version is number => typeof version === 'number');
     return versions.length === 0 ? null : Math.max(...versions);
   };
   const names = [...state.results.values()].flatMap((result) => (result.published ? [result.published.ref.name] : []));

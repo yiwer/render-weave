@@ -5,11 +5,12 @@
 import { open, rm, type FileHandle } from 'node:fs/promises';
 import { basename, dirname } from 'node:path';
 import { withLocalAccess } from '../local-access.js';
+import { formatSchemaVersion, type SchemaVersion } from '../workspace.js';
 
 /** 文件名沿用定义文件名：去掉 schema- 前缀与 -v<版本> 后缀，如 schema-route-sign-v1.json → schema-route-sign-v2.json 与 compiled-route-sign-v2.schema.json。 */
-export function publishedFileNames(definitionFile: string, version: number): { readonly schema: string; readonly compiled: string } {
-  const stem = basename(definitionFile, '.json').replace(/^schema-/, '').replace(/-v\d+$/, '');
-  return { schema: `schema-${stem}-v${version}.json`, compiled: `compiled-${stem}-v${version}.schema.json` };
+export function publishedFileNames(definitionFile: string, version: SchemaVersion): { readonly schema: string; readonly compiled: string } {
+  const stem = basename(definitionFile, '.json').replace(/^schema-/, '').replace(/-v\d+$/, ''), label = formatSchemaVersion(version);
+  return { schema: `schema-${stem}-${label}.json`, compiled: `compiled-${stem}-${label}.schema.json` };
 }
 
 /** 逐个排他创建并写入 JSON；任一失败时撤回本次已创建的文件，再抛出原错误。 */

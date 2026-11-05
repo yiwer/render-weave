@@ -1,6 +1,6 @@
 # CodingAgent 处理 Excel 制作表的流程设计
 
-2026-11-03。对应 M363、M364；使用现有 **Claude Code + Claude 模型 + OpenCode Go**。本文是实施前的流程设计，新增工具、文件和状态均为计划，不代表当前命令已经支持。业务范围与旧系统证据见[接入规格](../.scratch/excel-agent-extraction/spec.md)，执行隔离见 [ADR-0028 草案](adr/0028-excel-agent-script-execution.md)。
+2026-11-03。对应 M363、M364；使用现有 **Claude Code + Claude 模型 + OpenCode Go**。本文是实施前的流程设计，新增工具、文件和状态均为计划，不代表当前命令已经支持。业务范围与旧系统证据见[接入规格](../.scratch/excel-agent-extraction/spec.md)，执行隔离见 [ADR-0028 草案](adr/0029-excel-agent-script-execution.md)。
 
 ## 1. 核心选择
 
@@ -112,7 +112,7 @@ Agent 输出一份可查看的处理计划，不要求用户学习新的 DSL。�
 
 工具能力按职责分为“查看工作簿目录”“读取区域”“执行转换”“检查候选”“读取完整反馈”。前两项读取固定视图，执行工具只调度隔离环境，检查工具复用引擎并保存宿主报告。这里只定职责，不在本轮冻结 MCP 名称、参数 Schema 或 HTTP 接口。
 
-文件写入工具继续用于 Agent 编写脚本和候选说明；不开放宿主通用命令执行。脚本完成后由宿主导入普通文件，拒绝越界路径、链接、重复输出身份和超限内容，再固定候选字节。更完整的执行边界见 [ADR-0028](adr/0028-excel-agent-script-execution.md)。
+文件写入工具继续用于 Agent 编写脚本和候选说明；不开放宿主通用命令执行。脚本完成后由宿主导入普通文件，拒绝越界路径、链接、重复输出身份和超限内容，再固定候选字节。更完整的执行边界见 [ADR-0028](adr/0029-excel-agent-script-execution.md)。
 
 ## 7. 如何证明没有漏抄、乱抄
 

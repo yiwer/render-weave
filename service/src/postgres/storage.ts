@@ -8,10 +8,7 @@ import {
   type ApprovalPolicy, type ApprovalScope, type AuthoringState, type DefinitionDraft, type PublishRequest, type PublishRequestApproval, type StoredDocument, type StoredTemplate, type TemplateRevision,
   type TemplateWorkingCopy, type TenantBatch, type TenantStorage,
 } from '../backend.js';
-import {
-  itemDirectory, manifestBytes, resourceBackend,
-  type BatchOutput, type BatchSource, type RecordSource, type ResourceManifestEntry, type ResourceVersionBackend, type WorkspaceDocumentSource,
-} from '../engine.js';
+import { itemDirectory, manifestBytes, resourceBackend, type BatchOutput, type BatchSource, type RecordSource, type ResourceManifestEntry, type ResourceVersionBackend, type WorkspaceDocumentSource, parseSchemaVersion, type SchemaVersion } from '../engine.js';
 import { sha256Hex, type BlobStore } from './blobs.js';
 import { isUniqueViolation, withTenant, type Db, type DbClient } from './db.js';
 import { recordRounds, settleItem } from './metering.js';
@@ -222,7 +219,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       await pointTemplate(client, tenantId, name, { sha256: copy.sha256, byteLength: Number(copy.byte_length) });
       return { status: 'saved' as const, revision: next, sha256: copy.sha256 };
     }),
-    publishDefinitionDraft: (name, expectedSha256, { key, definition, compiled }, approving) => withTenant(db, tenantId, async (client) => {
+    publishDefinitionDraft: (name, expectedSha256, { key, version, definition, compiled }, approving) => withTenant(db, tenantId, async (client) => {
       await lockTenant(client, tenantId);
       const [current] = (await client.query<{ sha256: string }>('SELECT sha256 FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name])).rows;
       if (!current) return undefined;
@@ -234,7 +231,7 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
       for (const [source, content] of [[sources[0]!, definition], [sources[1]!, compiled]] as const) {
         await client.query('INSERT INTO workspace_documents (tenant_id, source, sha256, byte_length) VALUES ($1, $2, $3, $4)', [tenantId, source, content.sha256, content.byteLength]);
       }
-      await client.query('DELETE FROM definition_drafts WHERE tenant_id = $1 AND name = $2', [tenantId, name]);
+      await client.query('UPDATE definition_drafts SET base_version = $3 WHERE tenant_id = $1 AND name = $2', [tenantId, name, String(version)]);
       return { published: true as const };
     }),
     approvalPolicy: () => withTenant(db, tenantId, (client) => approvalPolicy(client, tenantId)),
@@ -261,12 +258,12 @@ export function tenantStorage(db: Db, blobs: BlobStore, tenantId: string): Tenan
     }),
     createPublishRequest: (request, now) => withTenant(db, tenantId, async (client) => {
       const [row] = (await client.query<RequestRow>(`INSERT INTO publish_requests
-        (tenant_id, id, kind, subject, scopes, sha256, before_sha256, base_version, version, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at)
-        VALUES ($1, gen_random_uuid(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        (tenant_id, id, kind, subject, scopes, sha256, before_sha256, base_version, version, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at, note)
+        VALUES ($1, gen_random_uuid(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         ON CONFLICT (tenant_id, kind, subject) WHERE status = 'pending' DO NOTHING RETURNING ${REQUEST_COLUMNS}`,
-      [tenantId, request.kind, request.subject, request.scopes, request.sha256, request.beforeSha256 ?? null, request.baseVersion ?? null, request.version ?? null,
+      [tenantId, request.kind, request.subject, request.scopes, request.sha256, request.beforeSha256 ?? null, storedVersion(request.baseVersion), storedVersion(request.version),
         request.baseRevision ?? null, request.revision ?? null, request.overwrite ?? false, JSON.stringify(request.diff),
-        request.requestedBy.kind, request.requestedBy.id, request.requestedBy.label, now])).rows;
+        request.requestedBy.kind, request.requestedBy.id, request.requestedBy.label, now, request.note ?? null])).rows;
       return row && requestRow(row);
     }),
     settlePublishRequest: (id, { status, by, now, message }) => withTenant(db, tenantId, async (client) => {
@@ -294,15 +291,19 @@ async function approveRequest(client: DbClient, tenantId: string, approving: Pub
   if (!updated.rowCount) throw new PublishRequestDecided();
 }
 
+/** 版本在表里是文本（ADR-0028）：编号写成十进制，读回时还原成整数。 */
+const storedVersion = (version: SchemaVersion | undefined) => (version === undefined ? null : String(version));
+const readVersion = (text: string): SchemaVersion => parseSchemaVersion(text) ?? text;
+
 interface RequestRow {
   id: string; kind: PublishRequest['kind']; subject: string; scopes: ApprovalScope[]; status: PublishRequest['status']; sha256: string; before_sha256: string | null;
-  base_version: number | null; version: number | null; base_revision: number | null; revision: number | null; overwrite: boolean; diff: PublishRequest['diff'];
+  base_version: string | null; version: string | null; note: string | null; base_revision: number | null; revision: number | null; overwrite: boolean; diff: PublishRequest['diff'];
   requested_by_kind: PublishRequest['requestedBy']['kind']; requested_by_id: string; requested_by_label: string; requested_at: Date; decided_by: string | null; decided_at: Date | null; message: string | null;
 }
-const REQUEST_COLUMNS = 'id, kind, subject, scopes, status, sha256, before_sha256, base_version, version, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at, decided_by, decided_at, message';
+const REQUEST_COLUMNS = 'id, kind, subject, scopes, status, sha256, before_sha256, base_version, version, note, base_revision, revision, overwrite, diff, requested_by_kind, requested_by_id, requested_by_label, requested_at, decided_by, decided_at, message';
 const requestRow = (row: RequestRow): PublishRequest => ({
   id: row.id, kind: row.kind, subject: row.subject, scopes: row.scopes, status: row.status, sha256: row.sha256, ...(row.before_sha256 === null ? {} : { beforeSha256: row.before_sha256 }),
-  ...(row.base_version === null ? {} : { baseVersion: row.base_version }), ...(row.version === null ? {} : { version: row.version }),
+  ...(row.base_version === null ? {} : { baseVersion: readVersion(row.base_version) }), ...(row.version === null ? {} : { version: readVersion(row.version) }), ...(row.note === null ? {} : { note: row.note }),
   ...(row.base_revision === null ? {} : { baseRevision: row.base_revision }), ...(row.revision === null ? {} : { revision: row.revision }), ...(row.overwrite ? { overwrite: true } : {}),
   diff: row.diff, requestedBy: { kind: row.requested_by_kind, id: row.requested_by_id, label: row.requested_by_label }, requestedAt: new Date(row.requested_at).toISOString(),
   ...(row.decided_by === null ? {} : { decidedBy: row.decided_by }), ...(row.decided_at === null ? {} : { decidedAt: new Date(row.decided_at).toISOString() }), ...(row.message === null ? {} : { message: row.message }),
@@ -315,10 +316,10 @@ const copyRow = (row: CopyRow): TemplateWorkingCopy => ({
   createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
 });
 
-interface DraftRow { name: string; base_version: number | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
+interface DraftRow { name: string; base_version: string | null; sha256: string; byte_length: string; created_at: Date; updated_at: Date; updated_by: string }
 const DRAFT_COLUMNS = 'name, base_version, sha256, byte_length, created_at, updated_at, updated_by';
 const draftRow = (row: DraftRow): DefinitionDraft => ({
-  name: row.name, ...(row.base_version === null ? {} : { baseVersion: row.base_version }), sha256: row.sha256, byteLength: Number(row.byte_length),
+  name: row.name, ...(row.base_version === null ? {} : { baseVersion: readVersion(row.base_version) }), sha256: row.sha256, byteLength: Number(row.byte_length),
   createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), updatedBy: row.updated_by,
 });
 
@@ -361,10 +362,10 @@ async function authoringState(client: DbClient, tenantId: string): Promise<Autho
   return { documents, templates, resources };
 }
 
-/** 工作区文档的登记：来源是"种类:键"的文档。 */
+/** 工作区文档的登记：来源是"种类:键"的文档，按登记的先后；同一次写入的按键的长度再按键，v9 排在 v10 前面。 */
 async function storedDocuments(client: DbClient, tenantId: string): Promise<StoredDocument[]> {
   return (await client.query<{ source: string; sha256: string; byte_length: string }>(
-    'SELECT source, sha256, byte_length FROM workspace_documents WHERE tenant_id = $1', [tenantId])).rows.flatMap((row): StoredDocument[] => {
+    'SELECT source, sha256, byte_length FROM workspace_documents WHERE tenant_id = $1 ORDER BY created_at, length(source), source', [tenantId])).rows.flatMap((row): StoredDocument[] => {
     const parsed = parseDocumentSource(row.source);
     return parsed ? [{ ...parsed, sha256: row.sha256, byteLength: Number(row.byte_length) }] : [];
   });

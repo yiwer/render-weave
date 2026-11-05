@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { api, onUnauthorized, session } from './api.js';
 import { Logo } from './components/logo.js';
 import { Frame, ROLE } from './frame.js';
-import { go, href, useRoute } from './hooks.js';
+import { go, href, mayLeave, useRoute } from './hooks.js';
 import { moduleOf } from './modules.js';
 import { AdminPage } from './pages/admin.js';
 import { BatchList } from './pages/batches.js';
@@ -42,6 +42,7 @@ export function App() {
     if (session.token) api.me().then(setIdentity, () => setIdentity(null));
   }, []);
   const logout = async () => {
+    if (!mayLeave()) return;
     try { await api.logout(); } catch { /* 会话已失效也照样退出 */ }
     session.clear();
     setNotice('已退出');

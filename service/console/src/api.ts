@@ -4,7 +4,7 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft,
+  SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, DefinitionDraft,
   DefinitionDraftCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
   PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
   TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
@@ -156,8 +156,8 @@ export const api = {
   saveWorkingCopy: (name: string, expectedSha256: string, overwrite = false) =>
     json<TemplateSaved>('POST', `/v1/templates/${enc(name)}/working-copy/save`, { json: { expectedSha256, ...(overwrite ? { overwrite } : {}) } }),
   staticSchemas: () => json<{ staticSchemas: StaticSchemaSummary[] }>('GET', '/v1/static-schemas'),
-  staticSchema: (name: string, version: number) => json<StaticSchemaDetail>('GET', `/v1/static-schemas/${enc(name)}/versions/${version}`),
-  blankWorkbook: async (name: string, version: number) => (await send('GET', `/v1/static-schemas/${enc(name)}/versions/${version}/workbook`)).blob(),
+  staticSchema: (name: string, version: SchemaVersion) => json<StaticSchemaDetail>('GET', `/v1/static-schemas/${enc(name)}/versions/${version}`),
+  blankWorkbook: async (name: string, version: SchemaVersion) => (await send('GET', `/v1/static-schemas/${enc(name)}/versions/${version}/workbook`)).blob(),
 
   approvalPolicy: () => json<ApprovalPolicy>('GET', '/v1/approval-policy'),
   setApprovalPolicy: (changes: Partial<Record<ApprovalScope, boolean>>) => json<ApprovalPolicy>('PUT', '/v1/approval-policy', { json: changes }),
@@ -168,18 +168,18 @@ export const api = {
   definitions: () => json<{ definitions: Definition[] }>('GET', '/v1/definitions'),
   definition: (name: string) => json<DefinitionDetail>('GET', `/v1/definitions/${enc(name)}`),
   definitionPublications: (name?: string) => json<{ publications: DefinitionPublication[] }>('GET', `/v1/definition-publications${search({ name })}`),
-  createDefinitionDraft: (name: string, body: { displayName: string } | { fromVersion: number }) => json<DefinitionDraft>('POST', `/v1/definitions/${enc(name)}/draft`, { json: body }),
+  createDefinitionDraft: (name: string, body: { displayName: string } | { fromVersion: SchemaVersion }) => json<DefinitionDraft>('POST', `/v1/definitions/${enc(name)}/draft`, { json: body }),
   definitionDraft: (name: string) => json<DefinitionDraft & { content: string }>('GET', `/v1/definitions/${enc(name)}/draft`),
   saveDefinitionDraft: (name: string, expectedSha256: string, text: string) => json<DefinitionDraft>('PUT', `/v1/definitions/${enc(name)}/draft${search({ expectedSha256 })}`, { jsonText: text }),
   deleteDefinitionDraft: async (name: string) => { await send('DELETE', `/v1/definitions/${enc(name)}/draft`); },
   checkDefinitionDraft: (name: string) => json<DefinitionDraftCheck>('GET', `/v1/definitions/${enc(name)}/draft/check`),
   publishCheckDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublishCheck>('POST', `/v1/definitions/${enc(name)}/draft/publish-check`, { json: { expectedSha256 } }),
-  publishDefinitionDraft: (name: string, expectedSha256: string) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256 } }),
+  publishDefinitionDraft: (name: string, expectedSha256: string, options: { readonly version?: SchemaVersion; readonly note?: string } = {}) => json<DefinitionPublished>('POST', `/v1/definitions/${enc(name)}/draft/publish`, { json: { expectedSha256, ...options } }),
 
   datasets: () => json<{ datasets: DatasetEntry[] }>('GET', '/v1/datasets'),
   agentJobs: () => json<{ enabled: boolean; maxWorkbookBytes: number; jobs: ImportJob[] }>('GET', '/v1/agent-jobs'),
   agentJob: (id: string) => json<ImportDetail>('GET', `/v1/agent-jobs/${enc(id)}`),
-  createAgentJob: (body: { requestId: string; staticSchema: { name: string; version: number }; workbook: string; filename: string; brief: string }) => json<ImportDetail>('POST', '/v1/agent-jobs', { json: body }),
+  createAgentJob: (body: { requestId: string; staticSchema: { name: string; version: SchemaVersion }; workbook: string; filename: string; brief: string }) => json<ImportDetail>('POST', '/v1/agent-jobs', { json: body }),
   cancelAgentJob: (id: string) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/cancel`),
   reviewAgentJob: (id: string, body: { revision: number; item: number; document: unknown; reason: string }) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/review`, { json: body }),
   applyAgentJob: (id: string, revision: number) => json<ImportDetail>('POST', `/v1/agent-jobs/${enc(id)}/apply`, { json: { revision, confirmed: true } }),

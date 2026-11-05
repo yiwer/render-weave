@@ -8,7 +8,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { auditDiff } from '../audit.js';
 import { APPROVAL_SCOPES, PUBLISH_REQUEST_STATUSES, PublishRequestDecided, type ApprovalScope, type AuditDiffPath, type NewAuditEvent, type PublishRequest, type PublishRequestApproval, type PublishRequestStatus, type TenantScope } from '../backend.js';
-import { checkTemplateStatic, diffDefinition, publishStaticSchema, readWorkspaceDocuments, revisionDiff, type Problem } from '../engine.js';
+import { checkTemplateStatic, diffDefinition, nextSchemaVersion, publishStaticSchema, readWorkspaceDocuments, revisionDiff, type Problem } from '../engine.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { commitPush, diffPush, pushProblems, pushWrites, verifyContents, type PushManifest } from '../push.js';
 import { actorOf, identityOf, ownTenant, type ApiContext } from './app.js';
@@ -54,10 +54,11 @@ async function recheck(scope: TenantScope, request: PublishRequest): Promise<Rec
       const document = parsedDocument(bytes), workspace = await readWorkspaceDocuments(storage.documents);
       const base = draft.baseVersion === undefined ? undefined : workspace.staticSchemas.find((entry) => entry.ref.name === draft.name && entry.ref.version === draft.baseVersion)?.definition;
       const { problems: _none, ...changes } = diffDefinition(baseDocumentOf(base, document), document);
-      const { published, problems } = publishStaticSchema(document, workspace.staticSchemas);
+      const taken = workspace.staticSchemas.filter((entry) => entry.ref.name === draft.name).map((entry) => entry.ref.version);
+      if (request.version !== undefined && taken.includes(request.version)) return { changes, stale: `申请时的版本 ${request.version} 已被占用，下一个版本已是 ${nextSchemaVersion(taken)}` };
+      const { published, problems } = publishStaticSchema(document, workspace.staticSchemas, request.version === undefined ? {} : { version: request.version });
       if (!published) return { changes, stale: '草案有严重问题', blockers: problems };
-      if (published.ref.version !== request.version) return { changes, stale: `申请时的版本 ${request.version} 已被占用，下一个版本已是 ${published.ref.version}` };
-      return { changes, apply: (approving, approver) => commitDraftPublish(scope, { draft, document, workspace, published }, approver.audit, approving) };
+      return { changes, apply: (approving, approver) => commitDraftPublish(scope, { draft, document, workspace, published, ...(request.note ? { note: request.note } : {}) }, approver.audit, approving) };
     }
     case 'templateSave': {
       const copy = await storage.templateWorkingCopy(request.subject);

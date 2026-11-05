@@ -4,6 +4,7 @@
  * 客户管理员（P1 票据 08、09）从这里进模板设计与发布修订，也能把模板复制成新模板；还没保存的新模板只有工作副本，单独列出。
  */
 import { useEffect, useMemo, useState } from 'react';
+import { versionLabel } from '../form/schema-version.js';
 import { api } from '../api.js';
 import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, rangeText, type ParameterValues } from '../components/parameters.js';
 import { PreviewCanvas } from '../components/preview-canvas.js';
@@ -17,7 +18,7 @@ export const sameSchema = (a: SchemaRef | undefined, b: SchemaRef | undefined) =
 export function schemaText(ref: SchemaRef | undefined, schemas: readonly StaticSchemaSummary[] = []): string {
   if (!ref) return '—';
   const found = schemas.find((schema) => sameSchema(schema, ref));
-  return found && found.displayName !== ref.name ? `${found.displayName}（${ref.name} v${ref.version}）` : `${ref.name} v${ref.version}`;
+  return found && found.displayName !== ref.name ? `${found.displayName}（${ref.name} ${versionLabel(ref.version)}）` : `${ref.name} ${versionLabel(ref.version)}`;
 }
 
 /** 预览请求里的数据集：已保存的按 ID，否则是只选了数据定义的空白数据。 */

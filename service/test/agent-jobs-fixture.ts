@@ -8,16 +8,16 @@ import { contentHash } from '../src/agent-files.js';
 import type { WorkbookExtractor } from '../src/agent-worker.js';
 
 export const note = ' 制作\n甲 & <script>test</script> ';
-export const commentSchema = () => publishStaticSchema({ dslVersion: 'renderweave-schema/1', name: 'comment-test', displayName: '物料卡', fields: [
+export const commentSchema = (version?: string) => publishStaticSchema({ dslVersion: 'renderweave-schema/1', name: 'comment-test', displayName: '物料卡', fields: [
   { name: 'label', displayName: '名称', type: 'text', constraints: { required: true } }, { name: 'note', displayName: '批注', type: 'text' }, { name: 'emptyNote', displayName: '空批注', type: 'text' },
-] }, []).published!;
+] }, [], version ? { version } : {}).published!;
 export async function commentWorkbook(root: string) {
   const file = join(root, 'source.xlsx');
   execFileSync(process.platform === 'win32' ? 'python' : 'python3', ['-X', 'utf8', fileURLToPath(new URL('../../test/support/excel-comments.py', import.meta.url)), file, 'good'], { windowsHide: true });
   return readFile(file);
 }
 export const fixtureExtractor: WorkbookExtractor = async ({ job, storage, root, progress }) => {
-  const workspace = join(root, 'workspace'), from = join(root, 'from'), round = join(root, 'round'), schema = commentSchema();
+  const workspace = join(root, 'workspace'), from = join(root, 'from'), round = join(root, 'round'), schema = commentSchema(typeof job.staticSchema.version === 'string' ? job.staticSchema.version : undefined);
   for (const p of [workspace, join(from, 'inputs'), join(from, 'attempt-01')]) await mkdir(p, { recursive: true });
   const save = (file: string, value: unknown) => writeFile(file, JSON.stringify(value));
   const bytes = await storage.contents.get(job.source.sha256); if (!bytes) throw new Error('Missing fixture');

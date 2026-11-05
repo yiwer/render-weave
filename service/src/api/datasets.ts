@@ -4,6 +4,7 @@
  * - 保存时按所选静态数据定义的编译产物校验，问题与渲染时对数据集的检查相同；有严重问题不保存，答 400 与问题清单。
  * 租户由身份决定；别的租户的数据集与不存在的同样答 404。
  */
+import type { StaticSchemaRef } from '../engine.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { NewAuditEvent, StoredDocument, TenantScope, TenantStorage } from '../backend.js';
 import { checkDataset, classifyWorkspaceDocument, parseJsonKeepingPrecision, type DatasetDocument, type Problem } from '../engine.js';
@@ -15,7 +16,7 @@ import { ApiError, fail, notFound, ServiceProblemCodes } from './problems.js';
 export interface DatasetEntry {
   readonly id: string;
   readonly name?: string;
-  readonly staticSchema?: { readonly name: string; readonly version: number };
+  readonly staticSchema?: StaticSchemaRef;
   readonly sha256: string;
   readonly byteLength: number;
 }

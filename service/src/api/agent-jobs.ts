@@ -10,7 +10,7 @@ import { loadTenantWorkspace } from '../preview.js';
 import type { TenantStorage } from '../backend.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const refSchema = { type: 'object', additionalProperties: false, required: ['name', 'version'], properties: { name: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'integer', minimum: 1 } } };
+const refSchema = { type: 'object', additionalProperties: false, required: ['name', 'version'], properties: { name: { type: 'string', minLength: 1, maxLength: 200 }, version: { anyOf: [{ type: 'integer', minimum: 1 }, { type: 'string', pattern: '^[a-z0-9][a-z0-9._-]{0,63}$' }] } } };
 const revision = { type: 'integer', minimum: 1 };
 const conflict = (message: string) => fail(409, ServiceProblemCodes.inputDuplicate, 'request', message);
 function summary(job: AgentJob) {

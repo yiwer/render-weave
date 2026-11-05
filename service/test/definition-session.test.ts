@@ -3,7 +3,7 @@
  * 只经"给会话与动作、得到新的会话"这个接缝，不开页面。
  */
 import { describe, expect, it } from 'vitest';
-import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, openSession, removeField, replaceField, sessionReducer, type DefinitionSession, type SessionAction } from '../console/src/form/definition-session.js';
+import { appendField, copyField, fieldKinds, fieldsOf, isDirty, moveField, moveFieldTo, openSession, removeField, replaceField, sessionReducer, type DefinitionSession, type SessionAction } from '../console/src/form/definition-session.js';
 import type { DefinitionDocument, DefinitionField } from '../console/src/types.js';
 
 const field = (name: string, extra: Partial<DefinitionField> = {}): DefinitionField => ({ name, displayName: name.toUpperCase(), type: 'text', ...extra });
@@ -103,6 +103,13 @@ describe('对字段的改动', () => {
     expect(namesOf(document), '不改原文档').toEqual(['a', 'b', 'c']);
   });
 
+  it('挪到指定位置：其余的保持顺序；没动或越界答 undefined', () => {
+    expect(namesOf(moveFieldTo(DOCUMENT, 0, 2)!)).toEqual(['b', 'c', 'a']);
+    expect(namesOf(moveFieldTo(DOCUMENT, 2, 0)!)).toEqual(['c', 'a', 'b']);
+    expect(moveFieldTo(DOCUMENT, 1, 1)).toBeUndefined();
+    expect(moveFieldTo(DOCUMENT, 0, 3)).toBeUndefined();
+    expect(moveFieldTo(DOCUMENT, -1, 0)).toBeUndefined();
+  });
   it('上移下移交换相邻两个；到头了答 undefined', () => {
     expect(namesOf(moveField(DOCUMENT, 1, -1)!)).toEqual(['b', 'a', 'c']);
     expect(namesOf(moveField(DOCUMENT, 1, 1)!)).toEqual(['a', 'c', 'b']);

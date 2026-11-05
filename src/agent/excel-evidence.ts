@@ -1,4 +1,5 @@
 /** Excel 宿主证据与人工修正重放；不执行 Agent 的脚本。 */
+import type { StaticSchemaRef } from '../workspace.js';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { canonical } from './diff.js';
@@ -11,7 +12,7 @@ export interface ExcelComment {
 }
 export interface ExcelCorrection { datasetId: string; path: string; before?: unknown; after?: unknown; removed: boolean; reason: string; actor: 'local-review'; status: 'replayed' | 'conflict'; detail?: string }
 export interface ExcelEvidence {
-  format: 'renderweave-excel-evidence/1'; sourceHash: string; definition: { name: string; version: number };
+  format: 'renderweave-excel-evidence/1'; sourceHash: string; definition: StaticSchemaRef;
   artifacts: { file: string; sha256: string }[]; sources: ExcelSource[];
   context: { sheet: string; range: string; reason: string }[];
   comments?: ExcelComment[];

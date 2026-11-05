@@ -1,7 +1,7 @@
 /**
  * 数据库迁移（M259）：按版本号顺序执行，启动时检查。每个用例在自己的临时数据库里进行。
  */
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -96,4 +96,24 @@ it('接口进程与 worker 等部署步骤执行迁移：迁移完成前等待�
   const waiting = waitForMigrations(db, set, 10_000);
   await migrate(db, set);
   await expect(waiting).resolves.toBe(1);
+});
+
+
+it('已有命名版本迁移 15 的库只追加 Agent 迁移 16', async () => {
+  const migrations = await loadMigrations(), db = await freshDatabase();
+  await migrate(db, migrations.slice(0, 15));
+  expect((await migrate(db, migrations)).applied).toEqual([16]);
+  expect((await db.query("SELECT to_regclass('agent_jobs') IS NOT NULL AS exists")).rows[0].exists).toBe(true);
+});
+
+it('旧 Agent 测试库先拒绝升级；显式核对哈希改编号后只补命名版本迁移，不重复建表', async () => {
+  const migrations = await loadMigrations(), db = await freshDatabase();
+  const old = [...migrations.slice(0, 14), { ...migrations[15]!, version: 15 }];
+  await migrate(db, old);
+  await expect(migrate(db, migrations)).rejects.toThrow(/被改动/);
+  const repair = await readFile(new URL('../scripts/reconcile-agent-migration.sql', import.meta.url), 'utf8');
+  await db.query(repair);
+  expect((await migrate(db, migrations))).toMatchObject({ applied: [15], pending: [], problems: [] });
+  await expect(db.query(repair)).rejects.toThrow(/不是待转换/);
+  await db.query('ROLLBACK');
 });

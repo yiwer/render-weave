@@ -4,6 +4,7 @@
  * 确认后把能提交的行作为一批正式交付（POST /v1/batches，带幂等键），有问题的行不进批次；随后与出图一样看进度。
  */
 import { useEffect, useMemo, useState } from 'react';
+import { versionLabel } from '../form/schema-version.js';
 import { api, saveBlob } from '../api.js';
 import { defaultOutput, defaultParameters, OutputPanel, ParameterPanel, type ParameterValues } from '../components/parameters.js';
 import { ErrorBox, levelText } from '../components/problems.js';
@@ -100,7 +101,7 @@ export function ImportSheet(props: {
     if (!template?.base) return;
     setProblems(undefined);
     const { name, version } = template.base;
-    try { saveBlob(await api.blankWorkbook(name, version), `${name}-v${version}.xlsx`); } catch (error) { setProblems(problemsOf(error)); }
+    try { saveBlob(await api.blankWorkbook(name, version), `${name}-${versionLabel(version)}.xlsx`); } catch (error) { setProblems(problemsOf(error)); }
   };
   const submit = async () => {
     if (!batch) return;

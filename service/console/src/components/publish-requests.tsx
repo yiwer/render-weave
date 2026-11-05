@@ -5,6 +5,7 @@
  * 重核不符时不给"批准"，只给"标为过期"：接口上是同一个动作，服务端重核不符就标为过期。
  */
 import { useState, type ReactNode } from 'react';
+import { versionLabel } from '../form/schema-version.js';
 import { api } from '../api.js';
 import { problemsOf, useLoad } from '../hooks.js';
 import type { ApprovalScope, Problem, PublishRequest, PublishRequestDetail } from '../types.js';
@@ -15,7 +16,7 @@ const time = (at: string) => new Date(at).toLocaleString('zh-CN');
 /** 一份申请要做什么，写成一句话。 */
 function requestTitle(request: PublishRequest): string {
   switch (request.kind) {
-    case 'definitionPublish': return `发布 ${request.subject} v${request.version}${request.baseVersion === undefined ? '' : `（基于 v${request.baseVersion}）`}`;
+    case 'definitionPublish': return `发布 ${request.subject} ${request.version === undefined ? "" : versionLabel(request.version)}${request.baseVersion === undefined ? '' : `（基于 ${versionLabel(request.baseVersion)}）`}`;
     case 'templateSave': return `保存 ${request.subject}${request.baseRevision === undefined ? '（新模板）' : `（当前修订 ${request.baseRevision}）`}`;
     case 'templateSetCurrent': return `把 ${request.subject} 指回修订 ${request.revision}（当前修订 ${request.baseRevision}）`;
     case 'push': return `${request.requestedBy.label} 的一次推送`;
@@ -33,8 +34,8 @@ function DiffPaths(props: { readonly request: PublishRequest }) {
   const { paths, added, removed, changed } = props.request.diff;
   if (!paths.length) return <p className="muted">没有改动。</p>;
   return (
-    <ul className="diff-list" data-testid="request-diff">
-      {paths.map((item) => <li key={item.path} data-path={item.path} data-change={item.change}><span className={`diff-mark ${item.change}`}>{CHANGE[item.change]}</span><code>{item.path}</code></li>)}
+    <ul className="diff-list paths" data-testid="request-diff">
+      {paths.map((item) => <li key={item.path} data-path={item.path} data-change={item.change}><span className={`diff-mark ${item.change}`}>{CHANGE[item.change]}</span><code className="diff-path">{item.path}</code></li>)}
       {added + removed + changed > paths.length && <li className="muted">只列前 {paths.length} 项，共 {added + removed + changed} 项。</li>}
     </ul>
   );
@@ -67,10 +68,13 @@ function RequestDetail(props: { readonly id: string; readonly canDecide: boolean
         <span>{request.requestedBy.label} 申请于 {time(request.requestedAt)}</span>
         <span>内容哈希 <code className="hash" title={request.sha256} data-sha256={request.sha256}>sha256:{request.sha256.slice(0, 12)}…</code></span>
         {request.overwrite && <span className="warn">申请时明确要盖过别人先保存的修订</span>}
+        {request.note && <span data-testid="request-note">发布说明：{request.note}</span>}
       </p>
       {request.recheck && !valid && (
         <div className="impact-note" data-testid="request-stale">
-          <strong>这份申请已经不能批准：</strong><span>{request.recheck.message}。要生效得重新发起。</span>
+          <strong>这份申请已经不能批准。</strong>
+          <span>{canDecide ? `点"标为过期"收掉它，再让 ${request.requestedBy.label} ${request.kind === 'push' ? '取回最新内容后重新推送' : '重新发起'}。` : '要生效得重新发起。'}</span>
+          <small className="request-stale-why">{request.kind === 'push' ? '给代建工程师的说明' : '原因'}：{request.recheck.message}。</small>
           {request.recheck.blockers && request.recheck.blockers.length > 0 && <ProblemList problems={request.recheck.blockers} />}
         </div>
       )}

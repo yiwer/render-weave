@@ -542,9 +542,14 @@ export function createTools(context: ToolContext): McpTool[] {
             `数值超过 15 位有效数字，按双精度读取会失真：${tooPrecise.join('、')}`)] });
           continue;
         }
+        // Agent 的工具合同里版本是整数（ADR-0028）：文档里写了字符串版本就不发布。
+        if (isRecord(document) && typeof document['version'] === 'string') {
+          results.push({ path, published: null, problems: [severe(ProblemCodes.definitionInvalid, { kind: 'input', source: path }, '版本由发布自动分配，不要写 version')] });
+          continue;
+        }
         const outcome = publishStaticSchema(document, [...workspace.staticSchemas, ...published]);
         if (outcome.published) published.push(outcome.published);
-        results.push({ path, published: outcome.published ? { ...outcome.published.ref } : null, problems: outcome.problems, ...(outcome.published ? { entry: outcome.published } : {}) });
+        results.push({ path, published: outcome.published ? { name: outcome.published.ref.name, version: outcome.published.ref.version as number } : null, problems: outcome.problems, ...(outcome.published ? { entry: outcome.published } : {}) });
       } catch (error) {
         if (!(error instanceof ToolInputError)) throw error;
         results.push({ path, published: null, problems: [severe(ProblemCodes.inputUnreadable, { kind: 'input', source: path }, error.message)] });

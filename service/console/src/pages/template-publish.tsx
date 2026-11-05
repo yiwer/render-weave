@@ -1,5 +1,6 @@
 /**
- * 发布模板修订（P1 票据 09，M265、M299、M352，原型画板 12）：保存前看后果，保存后随时能回去。
+ * 发布模板修订（P1 票据 09，M265、M299、M352、M381，原型画板 12）：保存前看后果，保存后随时能回去。
+ * - 版式同数据定义的发布页：左边是要同意的内容，右边一张确认卡写结论与发布按钮；
  * - 对比：当前修订与工作副本用同一份样例数据集各渲染一张；工作副本的预览换上全部工作副本，改子模板时看的是调用它的模板；
  * - 改动：当前修订到工作副本的结构化差异，按元素路径列出；
  * - 基准已变：显示两边差异，明确选择覆盖才保存（口径同 agent apply --overwrite）；
@@ -9,9 +10,12 @@
 import { useMemo, useState } from 'react';
 import { api, ApiError } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
+import { Icon, PUBLISH } from '../components/icon.js';
 import { countText, ErrorBox, ProblemList } from '../components/problems.js';
+import { PublishConfirm } from '../components/publish-confirm.js';
 import { PendingRequests } from '../components/publish-requests.js';
 import { changesSummary, RevisionChanges } from '../components/revision-changes.js';
+import { templatePublishVerdict } from '../form/publish-verdict.js';
 import { href, problemsOf, useLivePreview, useLoad, type LivePreview } from '../hooks.js';
 import { documentInfo, parseTemplateText } from '../template/document.js';
 import type { RevisionDiff, DatasetEntry, Identity, Problem, RevisionConflict, TemplateInfo, TemplateRevisions, WorkingCopyCheck } from '../types.js';
@@ -99,8 +103,9 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
   const severe = check?.problems.filter((problem) => problem.level === 'severe').length ?? 0;
   const nextRevision = data?.revisions ? Math.max(...data.revisions.revisions.map((revision) => revision.revision)) + 1 : 1;
   const unchanged = check?.changes.status === 'unchanged';
+  const history = data?.revisions && <History key={String(Boolean(check))} revisions={data.revisions} open={!check} canPublish={canPublish} busy={busy} onPointBack={(revision) => void pointBack(revision)} />;
   return (
-    <section className="page">
+    <section className="page publish-page">
       <nav className="crumbs" aria-label="位置">
         <a href={href(['templates'])}>模板</a><span aria-hidden="true">/</span>
         <a href={href(['templates', name])}>{name}</a><span aria-hidden="true">/</span>
@@ -118,16 +123,7 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
             </div>
           )}
         </div>
-        {canPublish && (
-          <div className="actions">
-            <a className="button quiet" href={design}>{check ? '回到设计' : '打开设计'}</a>
-            {check && !shownConflict && (
-              <button type="button" className="primary" disabled={busy || severe > 0 || unchanged} onClick={() => void publish(false)}>
-                {busy ? '正在保存…' : `发布为修订 ${nextRevision}`}
-              </button>
-            )}
-          </div>
-        )}
+        {canPublish && !check && <div className="actions"><a className="button quiet" href={design}>打开设计</a></div>}
       </div>
       {notice && <p className="notice" role="status">{notice}<a className="notice-link" href={href(['admin', 'audit'])}>看审计日志</a></p>}
       <ErrorBox problems={problems} title="没有完成" />
@@ -135,15 +131,40 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
       {loaded.loading && !data && <Loading />}
       <PendingRequests scope="templates" subject={name} canDecide={canPublish} onDecided={loaded.reload} refresh={`${data?.revisions?.currentRevision ?? ''}:${check?.sha256 ?? ''}`}
         renderChanges={(request) => (request.kind !== 'push' && request.changes ? <RevisionChanges diff={request.changes as RevisionDiff} label="这份申请的改动" empty="内容与当前修订相同。" /> : undefined)} />
-      {data && check && data.workingInfo && (
-        <Compare key={`${root}\n${data.current?.currentRevision ?? 0}`} root={root} current={data.current} working={data.workingInfo}
-          datasets={data.datasets} currentRevision={data.revisions?.currentRevision} version={check.sha256} />
-      )}
-      {check && (
-        <Changes check={check} name={name} canPublish={canPublish} busy={busy} onDiscard={() => void discard()} />
-      )}
-      {shownConflict && <Conflict conflict={shownConflict} canPublish={canPublish} busy={busy || severe > 0} onOverwrite={() => void publish(true)} />}
-      {data?.revisions && <History key={String(Boolean(check))} revisions={data.revisions} open={!check} canPublish={canPublish} busy={busy} onPointBack={(revision) => void pointBack(revision)} />}
+      {check
+        ? (
+          <div className="publish-layout">
+            <PublishConfirm busy={busy}
+              verdict={templatePublishVerdict({
+                severe, hints: check.problems.length - severe, status: check.changes.status, summary: changesSummary(check.changes), next: nextRevision,
+                ...(shownConflict ? { conflict: shownConflict } : {}),
+              })}
+              {...(severe || shownConflict ? {} : { steps: { from: data?.revisions ? `修订 ${data.revisions.currentRevision}` : '新模板', to: `修订 ${nextRevision}` } })}>
+              {canPublish && (
+                <>
+                  {!shownConflict && (
+                    <button type="button" className="primary publish-button" disabled={busy || severe > 0 || unchanged} onClick={() => void publish(false)}>
+                      <Icon d={PUBLISH} />{busy ? '正在保存…' : `发布为修订 ${nextRevision}`}
+                    </button>
+                  )}
+                  <a className="button quiet" href={design}>回到设计</a>
+                  <DiscardCopy busy={busy} onDiscard={() => void discard()} />
+                  <p className="publish-note">发布后模板可以随时指回任一旧修订。</p>
+                </>
+              )}
+            </PublishConfirm>
+            <div className="publish-details">
+              {data?.workingInfo && (
+                <Compare key={`${root}\n${data.current?.currentRevision ?? 0}`} root={root} current={data.current} working={data.workingInfo}
+                  datasets={data.datasets} currentRevision={data.revisions?.currentRevision} version={check.sha256} />
+              )}
+              <Changes check={check} />
+              {shownConflict && <Conflict conflict={shownConflict} canPublish={canPublish} busy={busy || severe > 0} onOverwrite={() => void publish(true)} />}
+              {history}
+            </div>
+          </div>
+        )
+        : history}
       {data && !data.revisions && !check && <p className="muted">这个模板还没有修订。</p>}
     </section>
   );
@@ -177,7 +198,7 @@ function Compare(props: {
   const before = useLivePreview(currentRequest, 200);
   const after = useLivePreview(workingRequest, 200, { workingCopies: true, version: props.version });
   return (
-    <div className="card">
+    <section className="publish-section">
       <div className="card-head">
         <h2>改前改后</h2>
         <div className="field inline-field">
@@ -192,30 +213,34 @@ function Compare(props: {
         {current && <CompareFigure testid="compare-current" title={props.currentRevision === undefined ? '当前修订' : `修订 ${props.currentRevision} · 当前`} preview={before} />}
         <CompareFigure testid="compare-working-copy" title="工作副本" preview={after} />
       </div>
-    </div>
+    </section>
   );
 }
 
-function Changes(props: { readonly check: WorkingCopyCheck; readonly name: string; readonly canPublish: boolean; readonly busy: boolean; readonly onDiscard: () => void }) {
-  const { check } = props;
+/** 丢弃工作副本要确认一次：丢了就没了。 */
+function DiscardCopy(props: { readonly busy: boolean; readonly onDiscard: () => void }) {
   const [confirming, setConfirming] = useState(false);
+  return confirming
+    ? <span className="confirm publish-discard">丢弃后这些改动就没了。<button type="button" className="small danger" disabled={props.busy} onClick={props.onDiscard}>确认丢弃</button><button type="button" className="small quiet" onClick={() => setConfirming(false)}>取消</button></span>
+    : <button type="button" className="link publish-discard" onClick={() => setConfirming(true)}>丢弃工作副本</button>;
+}
+
+function Changes(props: { readonly check: WorkingCopyCheck }) {
+  const { check } = props;
   return (
-    <div className="card">
-      <div className="card-head">
+    <>
+      <section className="publish-section">
         <h2>改动 <span className="card-count" data-testid="changes-summary">{changesSummary(check.changes)}</span></h2>
-        {props.canPublish && (confirming
-          ? <span className="confirm">丢弃后这些改动就没了。<button type="button" className="small danger" disabled={props.busy} onClick={props.onDiscard}>确认丢弃</button><button type="button" className="small quiet" onClick={() => setConfirming(false)}>取消</button></span>
-          : <button type="button" className="small quiet" onClick={() => setConfirming(true)}>丢弃工作副本</button>)}
-      </div>
-      <RevisionChanges diff={check.changes} label="当前修订到工作副本的改动" empty="工作副本与当前修订没有差别，不用发布。" />
+        <div className="publish-sheet"><RevisionChanges diff={check.changes} label="当前修订到工作副本的改动" empty="工作副本与当前修订没有差别，不用发布。" /></div>
+      </section>
       {check.problems.length > 0 && (
-        <>
-          <h3 className="subhead">静态检查</h3>
-          <ProblemList problems={check.problems} label="模板静态检查的问题" />
+        <section className="publish-section">
+          <h2>静态检查</h2>
+          <div className="publish-sheet"><ProblemList problems={check.problems} label="模板静态检查的问题" /></div>
           {check.problems.some((problem) => problem.level === 'severe') && <p className="hint">有严重问题，改好之后才能发布。</p>}
-        </>
+        </section>
       )}
-    </div>
+    </>
   );
 }
 
@@ -224,7 +249,7 @@ function Conflict(props: { readonly conflict: RevisionConflict; readonly canPubl
   const { conflict } = props;
   const [understood, setUnderstood] = useState(false);
   return (
-    <div className="card conflict" data-testid="revision-conflict" role="group" aria-label="基准已变">
+    <div className="publish-section conflict" data-testid="revision-conflict" role="group" aria-label="基准已变">
       <div className="card-head">
         <h2>基准已变</h2>
         <span className="chip warn">工作副本基于修订 {conflict.baseRevision ?? '（无）'}，当前修订已是 {conflict.currentRevision}</span>
@@ -232,11 +257,11 @@ function Conflict(props: { readonly conflict: RevisionConflict; readonly canPubl
       <div className="conflict-sides">
         <div data-testid="conflict-ours">
           <h3 className="subhead">这边改的（基准到工作副本）</h3>
-          <RevisionChanges diff={conflict.ours} label="这边改的" />
+          <div className="publish-sheet"><RevisionChanges diff={conflict.ours} label="这边改的" /></div>
         </div>
         <div data-testid="conflict-theirs">
           <h3 className="subhead">别人改的（基准到修订 {conflict.currentRevision}）</h3>
-          <RevisionChanges diff={conflict.theirs} label="别人改的" />
+          <div className="publish-sheet"><RevisionChanges diff={conflict.theirs} label="别人改的" /></div>
         </div>
       </div>
       {props.canPublish && (
@@ -259,6 +284,7 @@ function History(props: { readonly revisions: TemplateRevisions; readonly open: 
   return (
     <details className="card history" open={props.open} data-testid="revision-history">
       <summary><h2>修订历史</h2><span className="card-count">模板可以随时指回任一旧修订</span></summary>
+      <div className="publish-sheet">
       <table className="table">
         <thead><tr><th>修订</th><th>主体</th><th>时间</th><th>来源</th><th>内容哈希</th><th><span className="visually-hidden">操作</span></th></tr></thead>
         <tbody>
@@ -285,6 +311,7 @@ function History(props: { readonly revisions: TemplateRevisions; readonly open: 
           })}
         </tbody>
       </table>
+      </div>
     </details>
   );
 }

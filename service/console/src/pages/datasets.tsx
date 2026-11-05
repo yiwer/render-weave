@@ -17,6 +17,7 @@ import type { OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateI
 import { BatchSheet, DeliverSheet } from './deliver.js';
 import { ImportSheet } from './import.js';
 import { sameSchema, schemaText } from './templates.js';
+import { parseVersion } from '../form/schema-version.js';
 import { Loading } from '../components/motifs.js';
 
 /** 跨页面的一句提示（如保存后跳到数据集页）。 */
@@ -172,8 +173,9 @@ export function DatasetEditor(props: { readonly id?: string; readonly templateNa
       const template = templates.find((candidate) => candidate.name === props.templateName);
       if (props.templateName && !template?.base) throw new Error('指定的模板不可用，请重新选择模板或静态数据定义');
       const hasSchema = props.schemaName !== undefined || props.schemaVersion !== undefined;
-      if (hasSchema && (!props.schemaName || !/^[1-9]\d*$/.test(props.schemaVersion ?? '') || !Number.isSafeInteger(Number(props.schemaVersion)))) throw new Error('请选择静态数据定义的名称和确切版本');
-      const selected = hasSchema ? { name: props.schemaName!, version: Number(props.schemaVersion) } : template?.base;
+      const schemaVersion = parseVersion(props.schemaVersion ?? '');
+      if (hasSchema && (!props.schemaName || schemaVersion === undefined)) throw new Error('请选择静态数据定义的名称和确切版本');
+      const selected = hasSchema ? { name: props.schemaName!, version: schemaVersion! } : template?.base;
       if (!selected) throw new Error('新建数据集要先选择静态数据定义');
       if (template && !sameSchema(template.base, selected)) throw new Error('模板使用的静态数据定义与所选版本不一致，请重新选择');
       identity = { staticSchema: selected };

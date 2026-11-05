@@ -8,7 +8,7 @@
  * 租户由身份决定；别的租户的模板与不存在的同样答 400 input.templateNotFound（与批量交付相同）。
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { checkDataset, describeTemplate, measureRender, ProblemCodes, type Problem } from '../engine.js';
+import { checkDataset, describeTemplate, measureRender, ProblemCodes, type Problem, formatStaticSchemaRef } from '../engine.js';
 import { cellOf, ImportProblemCodes, importRows, sheetsToRead, type ImportProblem, type WorkbookCell } from '../excel-import.js';
 import { loadTenantWorkspace } from '../preview.js';
 import { readWorkbook, WorkbookError } from '../xlsx.js';
@@ -67,7 +67,7 @@ export function registerExcelImportRoutes(app: FastifyInstance, context: ApiCont
     const schema = workspace.staticSchemas.find((entry) => entry.ref.name === base.name && entry.ref.version === base.version && entry.compiled);
     if (!schema?.compiled) {
       throw fail(400, ServiceProblemCodes.requestInvalid, 'request.template',
-        `模板 ${body.template} 用的数据定义 ${base.name} v${base.version} 是引擎内置的或不在本租户，没有可以从 Excel 导入的字段`);
+        `模板 ${body.template} 用的数据定义 ${formatStaticSchemaRef(base)} 是引擎内置的或不在本租户，没有可以从 Excel 导入的字段`);
     }
     const staticSchema = schema.ref, compiled = schema.compiled;
     const displayName = (schema.definition as { displayName?: unknown } | undefined)?.displayName;

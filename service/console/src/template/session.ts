@@ -1,7 +1,8 @@
 /**
  * 模板设计页的编辑会话（P1 票据 08，M356）：页面里的文档、撤销与重做、暂存。
  * - 预览只能渲染已暂存的工作副本（POST /v1/previews?workingCopies=true），所以每次改动都写回：改完 500 毫秒暂存一次，暂存完再预览。
- *   "保存"是立刻暂存；还没写回服务端的改动算未保存，写回失败时留在这里，看得到数目、能重试；
+ *   还没写回服务端的改动算未保存，写回失败时留在这里，看得到数目、能重试；
+ * - "保存"也是立刻暂存，另外记一笔"这些改动看过了"：自上次点保存以来有改动就算没点保存，离开时提醒（M383）；
  * - 撤销与重做只在这一页、这一次打开里有，撤销也是一次写回。子模板各有自己的工作副本，撤销按改动的先后，跨模板也一样；
  * - 打开设计页要读内容，内容只从工作副本来：没有工作副本就开一份。这次开的、离开时与开的时候一样（没改或都撤销了），就删掉，不留空的工作副本；
  *   基准已变而这边没有改动的旧工作副本，打开时换成当前修订，不让它显得有冲突。
@@ -18,6 +19,8 @@ export interface DesignDoc {
   readonly text: string;
   /** 服务端工作副本的原文与内容哈希。 */
   readonly savedText: string;
+  /** 上次点"保存"时的原文，没点过就是打开时的。 */
+  readonly confirmedText: string;
   readonly sha256: string;
   readonly baseRevision?: number;
   /** 写回失败：stale 是别处先改了，missing 是工作副本没了（在别处发布或丢弃了）。 */
@@ -28,6 +31,8 @@ export interface DesignState {
   readonly docs: ReadonlyMap<string, DesignDoc>;
   /** 还没写回服务端的改动数：逐个属性比，改回原值就不算。 */
   readonly unsaved: number;
+  /** 自上次点"保存"以来的改动数，同样逐个属性比。这些改动多半已经暂存，不会丢，只是离开时要提醒。 */
+  readonly unconfirmed: number;
   readonly saving: boolean;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
@@ -53,6 +58,8 @@ export interface DesignSession {
   redo(): string | undefined;
   /** 立刻写回全部改动，写完才结束。 */
   flush(): Promise<void>;
+  /** 点"保存"：立刻写回，写回成功的不再算没点保存。 */
+  save(): Promise<void>;
   /** 丢掉这里的改动，读回服务端的内容；工作副本没了就重新开一份。 */
   reload(name: string): Promise<void>;
   /** 别处先改了时，用这里的内容盖过去。 */
@@ -63,6 +70,11 @@ export interface DesignSession {
 
 const missing = (error: unknown) => error instanceof ApiError && error.status === 404;
 
+/** 离开时问的话：已暂存的不会丢，还没写回的才可能丢。 */
+export const leaveQuestion = (state: Pick<DesignState, 'unsaved'>) => (state.unsaved
+  ? `有 ${state.unsaved} 处改动还没写回，离开可能丢失。确定离开？`
+  : '这些改动已经暂存，下次打开还在，但你还没点保存。确定离开？');
+
 export function createDesignSession(): DesignSession {
   const docs = new Map<string, DesignDoc>(), listeners = new Set<() => void>();
   const opening = new Map<string, Promise<void>>(), running = new Map<string, Promise<void>>();
@@ -70,9 +82,11 @@ export function createDesignSession(): DesignSession {
   const created = new Map<string, string>();
   let undoSteps: Step[] = [], redoSteps: Step[] = [], stashes = 0, problems: readonly Problem[] | undefined, timer: number | undefined;
 
+  /** 从哪一份原文算起改了多少处：改回原值就不算。 */
+  const changesSince = (origin: (doc: DesignDoc) => string) => [...docs.values()].reduce((sum, doc) => (doc.text === origin(doc) ? sum : sum + Math.max(1, changeCount(parseTemplateText(origin(doc)), doc.document))), 0);
   const compute = (): DesignState => ({
     docs: new Map(docs),
-    unsaved: [...docs.values()].reduce((sum, doc) => (doc.text === doc.savedText ? sum : sum + Math.max(1, changeCount(parseTemplateText(doc.savedText), doc.document))), 0),
+    unsaved: changesSince((doc) => doc.savedText), unconfirmed: changesSince((doc) => doc.confirmedText),
     saving: running.size > 0, canUndo: undoSteps.length > 0, canRedo: redoSteps.length > 0, stashes,
     ...(problems ? { problems } : {}),
   });
@@ -99,7 +113,7 @@ export function createDesignSession(): DesignSession {
     }
     copy ??= await start();
     docs.set(name, {
-      name, document: parseTemplateText(copy.content), text: copy.content, savedText: copy.content, sha256: copy.sha256,
+      name, document: parseTemplateText(copy.content), text: copy.content, savedText: copy.content, confirmedText: copy.content, sha256: copy.sha256,
       ...(copy.baseRevision === undefined ? {} : { baseRevision: copy.baseRevision }),
     });
   };
@@ -203,6 +217,11 @@ export function createDesignSession(): DesignSession {
       return step.template;
     },
     flush,
+    async save() {
+      await flush();
+      for (const [name, doc] of docs) if (doc.text === doc.savedText) docs.set(name, { ...doc, confirmedText: doc.text });
+      changed();
+    },
     async reload(name) {
       docs.delete(name);
       undoSteps = undoSteps.filter((step) => step.template !== name);

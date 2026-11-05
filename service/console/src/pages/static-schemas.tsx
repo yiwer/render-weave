@@ -6,7 +6,10 @@
  * 只调开放 API。发布记录在 definition-publish.tsx，同属这个模块。
  */
 import { useEffect, useState, type MouseEvent } from 'react';
-import { api, saveBlob } from '../api.js';
+import { Modal } from '../components/modal.js';
+import { parseVersion, versionLabel } from '../form/schema-version.js';
+import { api } from '../api.js';
+import { CodePanel } from '../components/code-panel.js';
 import { ContextMenu, type ContextMenuItem } from '../components/context-menu.js';
 import { DefinitionTree, FieldFacts, FieldSummary, type UseMap } from '../components/definition-fields.js';
 import { StaticSchemaTabs } from '../components/module-tabs.js';
@@ -14,8 +17,8 @@ import { ErrorBox } from '../components/problems.js';
 import { fieldKinds, fieldsOf } from '../form/definition-session.js';
 import { FIELD_TYPES } from '../form/definition.js';
 import { go, href, problemsOf, useLoad } from '../hooks.js';
-import type { DefinitionDocument, FieldType, Identity, Problem, SchemaRef } from '../types.js';
-import { documentText } from './definition-studio.js';
+import type { DefinitionDocument, FieldType, Identity, Problem, SchemaRef, SchemaVersion } from '../types.js';
+import { documentText, restoreToDraft } from './definition-studio.js';
 import { canEditDefinitions, copyReference, definitionPath, exportCompiled, openInNewTab, staticSchemaPath } from './definitions.js';
 import { FieldGraph, Loading } from '../components/motifs.js';
 
@@ -32,11 +35,11 @@ async function loadVersions() {
   const [schemas, definitions, publications] = await Promise.all([api.staticSchemas(), api.definitions(), api.definitionPublications()]);
   const uses = new Map(definitions.definitions.flatMap((definition) => definition.versions.map((version) => [keyOf({ name: definition.name, version: version.version }), version] as const)));
   const published = new Map(publications.publications.map((publication) => [keyOf(publication), publication]));
-  const latest = new Map<string, number>();
-  for (const schema of schemas.staticSchemas) latest.set(schema.name, Math.max(latest.get(schema.name) ?? 0, schema.version));
+  // 字符串版本没有大小，最新的看发布的先后（ADR-0028）；接口按发布的先后列。
+  const latest = new Map(definitions.definitions.map((definition) => [definition.name, definition.versions.at(-1)?.version]));
   const drafts = new Set(definitions.definitions.filter((definition) => definition.draft).map((definition) => definition.name));
-  return schemas.staticSchemas.map((schema) => ({
-    ...schema, uses: uses.get(keyOf(schema)), at: published.get(keyOf(schema))?.at, current: latest.get(schema.name) === schema.version, hasDraft: drafts.has(schema.name),
+  return schemas.staticSchemas.map((schema, order) => ({
+    ...schema, order, uses: uses.get(keyOf(schema)), at: published.get(keyOf(schema))?.at, current: latest.get(schema.name) === schema.version, hasDraft: drafts.has(schema.name),
   }));
 }
 type VersionEntry = Awaited<ReturnType<typeof loadVersions>>[number];
@@ -51,7 +54,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
   const [notice, setNotice] = useState<string>();
   const query = search.trim().toLocaleLowerCase('zh-CN');
   const order = (a: VersionEntry, b: VersionEntry) => {
-    const byName = a.name < b.name ? -1 : a.name > b.name ? 1 : b.version - a.version;
+    const byName = a.name < b.name ? -1 : a.name > b.name ? 1 : b.order - a.order;
     if (sort === 'nameAsc') return byName;
     if (sort === 'nameDesc') return -byName;
     // 审计之前的版本没有时间，总在最后。
@@ -60,7 +63,7 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
     return (a.at < b.at ? 1 : -1) * (sort === 'newest' ? 1 : -1);
   };
   const versions = (loaded.data ?? [])
-    .filter((version) => !query || [version.name, version.displayName, `v${version.version}`].some((text) => text.toLocaleLowerCase('zh-CN').includes(query)))
+    .filter((version) => !query || [version.name, version.displayName, `${versionLabel(version.version)}`].some((text) => text.toLocaleLowerCase('zh-CN').includes(query)))
     .sort(order);
   const attempt = async (action: () => Promise<void>) => {
     setProblems(undefined);
@@ -75,13 +78,15 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
       { label: '查看发布记录', run: () => go(['definition-publications'], { name: version.name }) },
       { label: '导出编译产物 JSON Schema', run: () => void attempt(() => exportCompiled(ref)) },
       { label: '复制引用', run: () => void attempt(async () => setNotice(await copyReference(ref))) },
-      ...(canEdit ? [{
-        label: '复制为草案', hint: version.hasDraft ? '已有草案' : `v${version.version}`, disabled: version.hasDraft,
-        run: () => void attempt(async () => {
-          await api.createDefinitionDraft(version.name, { fromVersion: version.version });
-          go(definitionPath(version.name));
-        }),
-      }] : []),
+      ...(canEdit ? [version.hasDraft
+        ? { label: '打开这个数据定义', run: () => go(definitionPath(version.name)) }
+        : {
+          label: '复制为草案', hint: versionLabel(version.version),
+          run: () => void attempt(async () => {
+            await api.createDefinitionDraft(version.name, { fromVersion: version.version });
+            go(definitionPath(version.name));
+          }),
+        }] : []),
     ];
   };
   const openMenu = (event: MouseEvent, version: VersionEntry) => {
@@ -116,10 +121,9 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
                 <a className="schema-card-body" href={href(staticSchemaPath(version.name, version.version))}>
                   <span className="schema-card-states">
                     <span className="schema-pill"><span className={`dot${version.current ? ' ok' : ''}`} aria-hidden="true" />{version.current ? '当前版本' : '历史版本'}</span>
-                    {version.hasDraft && version.current && <span className="schema-pill"><span className="dot accent" aria-hidden="true" />有草案</span>}
                   </span>
                   <span className="schema-card-title">
-                    <span className="schema-card-name"><strong>{version.displayName}</strong><span className="version-badge" data-testid="version-badge">v{version.version}</span></span>
+                    <span className="schema-card-name"><strong>{version.displayName}</strong><span className="version-badge" data-testid="version-badge">{versionLabel(version.version)}</span></span>
                     <code>{version.name}</code>
                   </span>
                   <dl className="schema-facts">
@@ -129,14 +133,14 @@ export function StaticSchemaList(props: { readonly identity: Identity }) {
                   </dl>
                   <span className="schema-card-foot">{version.at ? `发布于 ${time(version.at)}` : '审计里没有发布记录'}</span>
                 </a>
-                <button type="button" className="icon schema-card-more" aria-haspopup="menu" aria-label={`${version.displayName} v${version.version} 的更多操作`}
+                <button type="button" className="icon schema-card-more" aria-haspopup="menu" aria-label={`${version.displayName} ${versionLabel(version.version)} 的更多操作`}
                   onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); setMenu({ version, at: { x: box.left, y: box.bottom + 4 } }); }}>⋯</button>
               </article>
             ))}
           </div>
         </>
       )}
-      {menu && <ContextMenu label={`${menu.version.displayName} v${menu.version.version} 的操作`} at={menu.at} items={itemsOf(menu.version)} onClose={() => setMenu(undefined)} />}
+      {menu && <ContextMenu label={`${menu.version.displayName} ${versionLabel(menu.version.version)} 的操作`} at={menu.at} items={itemsOf(menu.version)} onClose={() => setMenu(undefined)} />}
       <p className="table-note">发布后的版本不可修改，模板与数据集都绑定到具体版本；要改就复制为草案，发布成下一版。</p>
     </section>
   );
@@ -146,7 +150,7 @@ type View = 'tree' | 'form' | 'compiled' | 'definition';
 const VIEWS: readonly (readonly [View, string])[] = [['tree', '字段树'], ['form', '字段表单'], ['compiled', '编译产物 JSON Schema'], ['definition', '数据定义 DSL']];
 
 export function StaticSchemaPage(props: { readonly name: string; readonly version: string; readonly field?: string; readonly identity: Identity }) {
-  const { name } = props, version = Number(props.version), canEdit = canEditDefinitions(props.identity);
+  const { name } = props, version = parseVersion(props.version) ?? props.version, canEdit = canEditDefinitions(props.identity);
   const loaded = useLoad(async () => {
     const [schema, detail, list, publications] = await Promise.all([api.staticSchema(name, version), api.definition(name), api.staticSchemas(), api.definitionPublications(name)]);
     return { schema, detail, summary: list.staticSchemas.find((item) => item.name === name && item.version === version), publication: publications.publications.find((item) => item.version === version) };
@@ -154,13 +158,19 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
   const [view, setView] = useState<View>('tree');
   const [selected, setSelected] = useState(0);
   const [copying, setCopying] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreProblems, setRestoreProblems] = useState<readonly Problem[]>();
+  const restore = async () => {
+    setRestoreProblems(undefined);
+    try { await restoreToDraft(name, version); } catch (error) { setRestoreProblems(problemsOf(error)); setRestoring(false); }
+  };
   const data = loaded.data;
   const fields = data ? fieldsOf(data.schema.definition) ?? [] : [];
   useEffect(() => {
     const index = fields.findIndex((field) => field.name === props.field);
     if (index >= 0) setSelected(index);
   }, [data, props.field]);
-  const crumbs = <nav className="crumbs" aria-label="位置"><a href={href(['static-schemas'])}>静态数据定义</a><span aria-hidden="true">/</span><span>{name} v{props.version}</span></nav>;
+  const crumbs = <nav className="crumbs" aria-label="位置"><a href={href(['static-schemas'])}>静态数据定义</a><span aria-hidden="true">/</span><span>{name} {versionLabel(version)}</span></nav>;
   if (!data) {
     return (
       <section className="page">
@@ -179,35 +189,46 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
       {crumbs}
       <div className="title-row">
         <div>
-          <h1>{document.displayName ?? name} <span className="version-badge large">v{version}</span></h1>
+          <h1>{document.displayName ?? name} <span className="version-badge large">{versionLabel(version)}</span></h1>
           {document.description && <p className="small muted">{document.description}</p>}
         </div>
         <div className="actions">
           <a className="button primary" href={href(['datasets', 'new'], { schema: name, version: String(version) })}>新建数据集</a>
           <a className="button" href={href(['dataset-imports'], { schema: name, version: String(version) })}>智能导入数据集</a>
           <select aria-label="查看的版本" value={version} onChange={(event) => go(staticSchemaPath(name, event.target.value))}>
-            {[...detail.versions].reverse().map((item) => <option key={item.version} value={item.version}>v{item.version}{item.version === latest ? ' · 当前' : ''}</option>)}
+            {[...detail.versions].reverse().map((item) => <option key={item.version} value={item.version}>{versionLabel(item.version)}{item.version === latest ? ' · 当前' : ''}</option>)}
           </select>
-          {canEdit && (detail.draft
-            ? <a className="button" href={href(definitionPath(name))}>打开草案</a>
-            : <button type="button" className="primary" aria-expanded={copying} onClick={() => setCopying(!copying)}>复制为草案</button>)}
+          {canEdit && detail.draft && <a className="button" href={href(definitionPath(name))}>打开草案</a>}
+          {canEdit && detail.draft && version !== latest && <button type="button" onClick={() => setRestoring(true)}>用这一版覆盖草案</button>}
+          {canEdit && <button type="button" className={detail.draft ? undefined : 'primary'} aria-expanded={copying} onClick={() => setCopying(!copying)}>复制为草案</button>}
         </div>
       </div>
-      {copying && <CopyToDraft name={name} version={version} document={document} />}
+      <ErrorBox problems={restoreProblems} title="没有覆盖" />
+      {restoring && (
+        <Modal title="用这一版覆盖草案" onClose={() => setRestoring(false)}>
+          <p className="modal-text">草案现在的内容会被换成 {versionLabel(version)} 的，不能恢复；已发布的版本都不变。之后在编辑页看过再发布。</p>
+          <div className="modal-actions">
+            <button type="button" className="quiet" onClick={() => setRestoring(false)}>留着</button>
+            <button type="button" className="primary" onClick={() => void restore()}>确认覆盖草案</button>
+          </div>
+        </Modal>
+      )}
+      {copying && <CopyToDraft name={name} version={version} document={document} hasDraft={Boolean(detail.draft)} />}
       <dl className="static-facts" data-testid="static-facts">
         <div><dt>名称</dt><dd className="mono">{name}</dd></div>
-        <div><dt>版本</dt><dd>v{version}{version === latest ? ' · 当前' : ''}</dd></div>
+        <div><dt>版本</dt><dd>{versionLabel(version)}{version === latest ? ' · 当前' : ''}</dd></div>
         <div><dt>字段</dt><dd data-testid="static-field-count">{fields.length}</dd></div>
         <div><dt>引用深度</dt><dd>{summary?.referenceDepth ?? '—'}</dd></div>
         <div><dt>谁在用</dt><dd>{entry ? `${number(entry.templates)} 模板 · ${number(entry.datasets)} 数据集` : '—'}</dd></div>
         <div><dt>发布</dt><dd>{publication?.at ? `${publication.actor?.label ?? ''} · ${time(publication.at)}` : <span className="muted">审计里没有记录</span>}</dd></div>
       </dl>
+      {publication?.note && <p className="publication-note" data-testid="publication-note">{publication.note}</p>}
       <div className="tabs" role="tablist" aria-label="查看方式">
         {VIEWS.map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={view === value} className={view === value ? 'active' : undefined} onClick={() => setView(value)}>{label}</button>)}
         <span className="small muted static-kinds">{fields.length} 个字段{fields.length ? ` · ${fieldKinds(fields, typeName)}` : ''}</span>
       </div>
-      {view === 'compiled' && <CodePanel testid="compiled-json-schema" value={schema.compiled} file={`${name}-v${version}.schema.json`} type="application/schema+json" />}
-      {view === 'definition' && <CodePanel testid="definition-dsl" value={document} file={`${name}-v${version}.json`} type="application/json" />}
+      {view === 'compiled' && <CodePanel testid="compiled-json-schema" value={schema.compiled} file={`${name}-${versionLabel(version)}.schema.json`} type="application/schema+json" />}
+      {view === 'definition' && <CodePanel testid="definition-dsl" value={document} file={`${name}-${versionLabel(version)}.json`} type="application/json" />}
       {(view === 'tree' || view === 'form') && (
         <div className="static-split">
           {view === 'tree'
@@ -218,6 +239,7 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
                 {fields.map((item, index) => (
                   <article key={item.name} className={`studio-row${selected === index ? ' selected' : ''}`} data-testid="field-row" data-field={item.name}>
                     <button type="button" className="studio-row-main" aria-pressed={selected === index} aria-label={`查看字段 ${item.displayName || item.name}`} onClick={() => setSelected(index)}>
+                      <span className="tree-number">{String(index + 1).padStart(2, '0')}</span>
                       <FieldSummary field={item} index={index} />
                     </button>
                   </article>
@@ -236,12 +258,12 @@ export function StaticSchemaPage(props: { readonly name: string; readonly versio
   );
 }
 
-/** 复制为草案：同一名称接着发下一版；换名称是一份新的数据定义，字段照抄，身份换新。 */
-function CopyToDraft(props: { readonly name: string; readonly version: number; readonly document: DefinitionDocument }) {
-  const [name, setName] = useState(props.name), [displayName, setDisplayName] = useState(props.document.displayName ?? props.name);
+/** 复制为草案：这个名称没有草案时同名接着发下一版；换名称是一份新的数据定义，字段照抄，身份换新。这个名称已有草案时只能换名称。 */
+function CopyToDraft(props: { readonly name: string; readonly version: SchemaVersion; readonly document: DefinitionDocument; readonly hasDraft: boolean }) {
+  const [name, setName] = useState(props.hasDraft ? `${props.name}-副本` : props.name), [displayName, setDisplayName] = useState(props.document.displayName ?? props.name);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<readonly Problem[]>();
-  const target = name.trim();
+  const target = name.trim(), occupied = props.hasDraft && target === props.name;
   const copy = async () => {
     setBusy(true);
     setProblems(undefined);
@@ -249,7 +271,7 @@ function CopyToDraft(props: { readonly name: string; readonly version: number; r
       if (target === props.name) await api.createDefinitionDraft(target, { fromVersion: props.version });
       else {
         const draft = await api.createDefinitionDraft(target, { displayName: displayName.trim() || target });
-        const { version: _version, ...rest } = props.document as DefinitionDocument & { readonly version?: number };
+        const { version: _version, ...rest } = props.document;
         await api.saveDefinitionDraft(target, draft.sha256, documentText({ ...rest, name: target, displayName: displayName.trim() || target }));
       }
       go(definitionPath(target));
@@ -258,7 +280,7 @@ function CopyToDraft(props: { readonly name: string; readonly version: number; r
   };
   return (
     <>
-      <form className="inline-form" aria-label="复制为草案" onSubmit={(event) => { event.preventDefault(); if (target) void copy(); }}>
+      <form className="inline-form" aria-label="复制为草案" onSubmit={(event) => { event.preventDefault(); if (target && !occupied) void copy(); }}>
         <div className="field">
           <label htmlFor="copy-name">草案的名称</label>
           <input id="copy-name" type="text" autoFocus maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
@@ -269,32 +291,10 @@ function CopyToDraft(props: { readonly name: string; readonly version: number; r
             <input id="copy-display-name" type="text" maxLength={200} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
           </div>
         )}
-        <button type="submit" disabled={!target || busy}>{busy ? '正在复制…' : '复制'}</button>
-        <span className="small muted">{target === props.name ? `发布时成为 ${props.name} 的下一版。` : '这是一份新的数据定义，从 v1 开始。'}</span>
+        <button type="submit" disabled={!target || occupied || busy}>{busy ? '正在复制…' : '复制'}</button>
+        <span className="small muted">{occupied ? '这个名称已有草案，换一个名称；要用这一版的内容就覆盖草案。' : target === props.name ? `发布时成为 ${props.name} 的下一版。` : '这是一份新的数据定义，从 v1 开始。'}</span>
       </form>
       <ErrorBox problems={problems} title="没有复制" />
     </>
-  );
-}
-
-/** 只读的代码块：可以复制、下载。 */
-function CodePanel(props: { readonly testid: string; readonly value: unknown; readonly file: string; readonly type: string }) {
-  const text = `${JSON.stringify(props.value, null, 2)}\n`;
-  const [copied, setCopied] = useState<string>();
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied('已复制');
-    } catch { setCopied('浏览器不让复制，请手动选中'); }
-  };
-  return (
-    <section className="code-panel">
-      <div className="actions code-panel-tools">
-        {copied && <span className="small muted" role="status">{copied}</span>}
-        <button type="button" className="small quiet" onClick={() => void copy()}>复制</button>
-        <button type="button" className="small quiet" onClick={() => saveBlob(new Blob([text], { type: props.type }), props.file.replace(/[\\/:*?"<>|]/g, '_'))}>下载</button>
-      </div>
-      <pre className="compiled" data-testid={props.testid} tabIndex={0}>{text}</pre>
-    </section>
   );
 }

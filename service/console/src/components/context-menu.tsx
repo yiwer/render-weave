@@ -24,12 +24,15 @@ export function ContextMenu(props: { readonly label: string; readonly at: { read
   useEffect(() => {
     const away = (event: PointerEvent) => { if (!menu.current?.contains(event.target as Node)) onClose(); };
     const close = () => onClose();
+    // 刚打开时到的滚动事件是打开之前就在路上的（惯性滚动、内容变高时浏览器调整位置），不算，否则菜单一闪就没了。
+    const openedAt = performance.now();
+    const scrolled = () => { if (performance.now() - openedAt > 200) onClose(); };
     document.addEventListener('pointerdown', away);
-    window.addEventListener('scroll', close, true);
+    window.addEventListener('scroll', scrolled, true);
     window.addEventListener('hashchange', close);
     return () => {
       document.removeEventListener('pointerdown', away);
-      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('scroll', scrolled, true);
       window.removeEventListener('hashchange', close);
     };
   }, [onClose]);
