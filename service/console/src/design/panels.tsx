@@ -2,13 +2,13 @@
  * 左面板与检查器的内容（模板设计页票据 03）：结构与变量在左，属性在右，右边永远只显示选中的东西。
  * 字段都从模板文档与 Schema 生成（template/properties.ts）；只能填数，手柄见票据 13。
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { api, ApiError } from '../api.js';
 import { ProblemList } from '../components/problems.js';
 import { FieldRow, FieldRows, type FieldContext } from '../components/property-fields.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { useLoad } from '../hooks.js';
-import { elementAt, elementTree, flatElements, hiddenReason, isObject, relatedChecks, type ElementNode, type JsonObject } from '../template/document.js';
+import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { PreviewReply } from '../types.js';
@@ -55,14 +55,6 @@ export function DesignInspector(props: {
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
-}
-
-/** 左面板的结构页。 */
-export function DesignStructure(props: {
-  readonly doc: DesignDoc; readonly selected?: Selection; readonly locateTick: number;
-  readonly onSelect: (path: string) => void; readonly onOpenTemplate: (template: string) => void; readonly onMenu: (x: number, y: number, path: string) => void;
-}) {
-  return <StructureTab doc={props.doc} selected={props.selected} locateTick={props.locateTick} onSelect={props.onSelect} onOpenTemplate={props.onOpenTemplate} onMenu={props.onMenu} />;
 }
 
 /** 左面板的变量页：参数与检查项。 */
@@ -170,30 +162,6 @@ function ParametersTab(props: {
       </form>
     </div>
   );
-}
-
-function StructureTab(props: {
-  readonly doc: DesignDoc; readonly selected?: Selection; readonly locateTick: number; readonly onSelect: (path: string) => void; readonly onOpenTemplate: (template: string) => void; readonly onMenu: (x: number, y: number, path: string) => void;
-}) {
-  const { doc, selected } = props, tree = useMemo(() => elementTree(doc.document, doc.name), [doc.document, doc.name]);
-  const root = useRef<HTMLUListElement>(null);
-  // 预览上选中了、或右键"在结构中定位"：滚到这一行。
-  useEffect(() => {
-    root.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest' });
-  }, [selected?.path, props.locateTick]);
-  const row = (node: ElementNode) => (
-    <li key={node.path}>
-      <div className="tree-row" data-testid="structure-row" data-path={node.path} data-selected={selected?.path === node.path}
-        onContextMenu={(event) => { event.preventDefault(); props.onMenu(event.clientX, event.clientY, node.path); }}>
-        <button type="button" className="tree-button" aria-current={selected?.path === node.path ? 'true' : undefined} onClick={() => props.onSelect(node.path)}>
-          <span>{node.name}</span><span className="small muted">{ELEMENT_TYPES[node.type] ?? node.type}</span>
-        </button>
-        {node.template && <button type="button" className="link small" onClick={() => props.onOpenTemplate(node.template!)}>打开 {node.template}</button>}
-      </div>
-      {node.children.length > 0 && <ul>{node.children.map(row)}</ul>}
-    </li>
-  );
-  return <ul className="tree" ref={root} data-testid="structure">{row(tree)}</ul>;
 }
 
 function CheckRow(props: { readonly doc: DesignDoc; readonly index: number; readonly expanded: boolean; readonly lists: FieldContext['lists']; readonly onToggle: () => void; readonly onEdit: (document: JsonObject, key: string) => void }) {

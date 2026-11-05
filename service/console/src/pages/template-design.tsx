@@ -11,13 +11,15 @@ import { api } from '../api.js';
 import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { countText, ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
-import { DesignInspector, DesignStructure, DesignVariables } from '../design/panels.js';
+import { DesignInspector, DesignVariables } from '../design/panels.js';
+import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
 import { go, guardNavigation, href, useLivePreview, useLoad, type Route } from '../hooks.js';
 import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind } from '../template/document.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
 import { createDesignSession, leaveQuestion, type DesignDoc, type DesignSession } from '../template/session.js';
+import { calledTemplates } from '../template/tree.js';
 import type { Identity, LayoutNode, PreviewReply, Problem } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
@@ -52,6 +54,11 @@ function Design(props: { readonly name: string; readonly root: string }) {
   useEffect(() => { void session.open(root); }, [session, root]);
   useEffect(() => { void session.open(name); }, [session, name]);
   const rootDoc = state.docs.get(root), doc = state.docs.get(name);
+  // 结构树要读调用树里的全部模板；只读，不开工作副本（票据 01）。
+  const documentOf = (template: string) => state.docs.get(template)?.document;
+  const called = calledTemplates(root, documentOf).join('\n');
+  useEffect(() => { for (const template of called.split('\n')) if (template !== root && template !== name) void session.open(template, { quiet: true }); }, [session, called, root, name]);
+  const [treeHover, setTreeHover] = useState<TreeSource>();
 
   const [selection, setSelection] = useState<Selection>();
   const [leftTab, setLeftTab] = useState<LeftTab>('structure');
@@ -212,7 +219,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -229,7 +236,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
             </div>
             <div className="design-panel-body">
               {doc ? (leftTab === 'structure'
-                ? <DesignStructure doc={doc} selected={selected} locateTick={locateTick} onSelect={(path) => select(name, path)} onOpenTemplate={openTemplate} onMenu={(x, y, path) => { select(name, path); setMenu({ x, y, template: name, path }); }} />
+                ? <DesignStructure root={root} documentOf={documentOf} {...(selected ? { selection: selected } : {})} {...(reply ? { reply } : {})} locateTick={locateTick} onSelect={(template, path) => select(template, path)} onHover={setTreeHover}
+                  onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }} />
                 : <DesignVariables doc={doc} session={session} open={openParameter} onOpen={setOpenParameter} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>

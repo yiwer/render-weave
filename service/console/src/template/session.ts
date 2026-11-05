@@ -53,7 +53,8 @@ const STASH_DELAY_MS = 500;
 export interface DesignSession {
   subscribe(listener: () => void): () => void;
   getState(): DesignState;
-  open(name: string): Promise<void>;
+  /** 读一个模板；quiet 时读不到不算页面的错（结构树读被调模板，树里单独标）。 */
+  open(name: string, options?: { readonly quiet?: boolean }): Promise<void>;
   /** 一次改动：记进撤销，稍后写回。key 相同的连续改动合成一步。 */
   edit(name: string, document: JsonObject, key?: string): void;
   /** 返回这一步所在的模板：页面要切过去，让人看得到改了什么。 */
@@ -192,13 +193,13 @@ export function createDesignSession(): DesignSession {
   return {
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getState: () => state,
-    open(name) {
+    open(name, options) {
       if (docs.has(name)) return Promise.resolve();
       const pending = opening.get(name);
       if (pending) return pending;
       const work = load(name).then(
-        () => { problems = undefined; },
-        (error: unknown) => { problems = problemsOf(error); },
+        () => { if (!options?.quiet) problems = undefined; },
+        (error: unknown) => { if (!options?.quiet) problems = problemsOf(error); },
       ).finally(() => { opening.delete(name); changed(); });
       opening.set(name, work);
       return work;

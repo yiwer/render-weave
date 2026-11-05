@@ -2400,9 +2400,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 结构页打开子模板：预览仍是调用它的模板，改子模板时那张图跟着变；图上点到子模板的元素也切过去。
       await side().getByRole('tab', { name: '结构' }).click();
-      await side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`).getByRole('button', { name: '打开 场次条' }).click();
+      await side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`).getByRole('button', { name: '展开 循环' }).click();
+      await side().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').first().getByRole('button').first().click();
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
-      await side().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').getByRole('button').first().click();
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
       const child = afterStash();
       await input('fontSize').fill('4');
@@ -2504,6 +2504,27 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await target.locator('.select-box.other').count(), '其余 34 处是虚线框').toBe(34);
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/站点/design?in=${ROOT}`);
 
+      // 结构树跨模板：选中时展开到那一行，循环项数、状态标记都在；树上悬停标出全部实例；只读不开工作副本。
+      const side0 = target.getByRole('complementary', { name: '结构与变量' });
+      const nameRow = side0.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]');
+      await nameRow.waitFor();
+      expect(await nameRow.getAttribute('data-selected')).toBe('true');
+      expect(await nameRow.textContent()).toContain('状态');
+      expect(await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByTestId('loop-count').textContent()).toBe('×35');
+      expect(await side0.locator('[data-testid="structure-row"][data-path="站点/名称区/地标"]').getByTestId('row-hidden').count(), '地标在有些站显示').toBe(0);
+      await side0.getByRole('button', { name: /进入模板「站点」/ }).waitFor();
+      await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带"]`).hover();
+      await expect.poll(() => target.getByTestId('hover-box').count()).toBeGreaterThan(0);
+      await nameRow.hover();
+      await expect.poll(() => target.getByTestId('hover-box').count(), '35 处都标出来').toBeGreaterThanOrEqual(35);
+      await target.getByTestId('design-scope').hover();
+      for (const template of ['站点', '标识图标', '道路段', '班次时刻']) expect((await server('GET', `/v1/templates/${enc(template)}/working-copy`, world.b.admin.token)).status, `${template} 没开工作副本`).toBe(404);
+      // 树上点一行，图上出现它的框，检查器跟着走。
+      await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      await inspector().locator(`[data-testid="properties"][data-path="${ROOT}/站点面板/站点列"]`).waitFor();
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+
       // 上下层：Esc 到名称区，再到这一项，再到循环容器，再回到站名。
       await target.keyboard.press('Escape');
       await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
@@ -2542,6 +2563,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
       const side = target.getByRole('complementary', { name: '结构与变量' });
+      await side.getByRole('button', { name: '展开 顶栏' }).click();
       await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏/线路号"]`).getByRole('button').first().click();
       await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
       expect(await scope.textContent()).toContain('当前样例不显示');

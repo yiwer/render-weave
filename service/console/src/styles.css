@@ -498,6 +498,7 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .design-canvas .mark { pointer-events: none; }
 .select-box { position: absolute; pointer-events: none; outline: 2px solid var(--mark); outline-offset: -1px; border-radius: 1px; }
 .select-box.other { outline-width: 1px; outline-style: dashed; outline-offset: 0; }
+.select-box.hover { outline: 1px solid var(--accent); outline-offset: -1px; background: rgba(41, 54, 66, .05); }
 .select-tag { position: absolute; bottom: 100%; left: -2px; margin-bottom: 3px; max-width: 420px; padding: 1px 6px; border-radius: 4px; background: var(--ink); color: var(--bg); font: 11px/1.5 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 3; }
 .design-panel { position: absolute; top: 10px; bottom: 10px; z-index: 11; display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow); }
 .design-panel.left { left: 10px; width: 288px; }
@@ -574,14 +575,29 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .list-row-button { width: 100%; min-height: 0; padding: 8px 6px; display: flex; justify-content: space-between; gap: 8px; border: none; background: none; text-align: left; white-space: normal; }
 .list-row-body { display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 10px; }
 .tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { padding-top: 8px; }
-.tree ul { margin-left: 12px; padding-left: 8px; border-left: 1px solid var(--hair); }
-.tree-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 6px; }
+.tree ul { margin-left: 9px; padding-left: 6px; border-left: 1px solid var(--hair); }
+.tree ul.tree-scope { border-left: 2px solid var(--clay); }
+.tree-row { display: flex; align-items: center; gap: 2px; min-height: 26px; border-radius: 6px; }
 .tree-row:hover { background: var(--hover); }
-.tree-row[data-selected="true"] { background: var(--accent-soft); }
-.tree-button { flex: 1 1 auto; min-width: 0; min-height: 28px; padding: 0 6px; justify-content: flex-start; gap: 8px; border: none; background: none; text-align: left; font-size: 13px; }
+.tree-row[data-selected="true"] { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--mark); }
+.tree-row.hidden-now .tree-name { color: var(--faint); }
+.tree-toggle { order: -1; flex: none; width: 18px; height: 18px; min-height: 0; padding: 0; border: 0; background: none; color: var(--faint); }
+.tree-toggle:hover:not(:disabled) { background: none; color: var(--ink); }
+.tree-toggle svg.icon { width: 11px; height: 11px; transition: transform .12s; }
+.tree-toggle.open svg.icon { transform: rotate(90deg); }
+.tree-toggle-space { order: -1; flex: none; width: 18px; }
+.tree-button { flex: 1 1 auto; min-width: 0; min-height: 26px; height: 26px; padding: 0 2px; justify-content: flex-start; gap: 6px; border: none; background: none; text-align: left; font-size: 13px; font-weight: 400; }
 .tree-button:hover:not(:disabled) { background: none; }
-.tree-row button.link { font-size: 12px; white-space: nowrap; }
+.tree-button svg.icon { width: 14px; height: 14px; color: var(--faint); }
+.tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tree-marks { flex: none; display: inline-flex; align-items: center; gap: 5px; padding-right: 6px; font-size: 10.5px; }
+.tree-marks svg.icon { width: 12px; height: 12px; }
+.tree-count { padding: 0 4px; border-radius: 4px; background: var(--sunken); color: var(--muted); }
+.tree-flag { color: var(--bad); }
+.tree-scope-head { display: block; width: 100%; min-height: 0; height: auto; padding: 2px 4px; border: 0; background: none; color: var(--clay); font-size: 11px; font-weight: 400; text-align: left; white-space: normal; }
+.tree-scope-head:hover:not(:disabled) { background: var(--hover); color: var(--clay); }
+.tree-note { margin: 2px 4px; font-size: 11px; color: var(--muted); }
+.tree-note.warn { color: var(--warn); }
 .element-menu { position: fixed; top: auto; right: auto; z-index: 42; width: 260px; }
 .element-menu [role="menuitem"] { width: 100%; min-height: 34px; height: auto; justify-content: flex-start; border: none; background: none; text-align: left; white-space: normal; }
 .element-menu button[role="menuitem"]:hover:not(:disabled) { background: var(--hover); }

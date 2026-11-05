@@ -32,6 +32,8 @@ function flatten(node: LayoutNode | undefined, into = new Map<string, LayoutNode
 
 export function DesignStage(props: {
   readonly preview: LivePreview; readonly tool: 'select' | 'pan'; readonly view: StageView; readonly insets: StageInsets; readonly selected?: Selection;
+  /** 结构树上悬停的定义：图上标出它的全部实例。 */
+  readonly hover?: { readonly template: string; readonly path: string };
   readonly onView: (view: StageView) => void; readonly onFit: (width: number) => void;
   /** stack 是这个位置的全部元素，第一个最深；through 是按着 Alt 穿透。 */
   readonly onPick: (stack: readonly string[], through: boolean) => void; readonly onMenu: (x: number, y: number, stack: readonly LayoutNode[]) => void; readonly onClear: () => void;
@@ -112,6 +114,8 @@ export function DesignStage(props: {
   const instances = useMemo(() => (selected ? (reply?.elements ?? []).filter((element) => element.source.template === selected.template && element.source.path === selected.path).map((element) => element.path) : []), [reply?.elements, selected]);
   const main = selected?.instance && instances.includes(selected.instance) ? selected.instance : instances[0];
   const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
+  const hovered = useMemo(() => (props.hover ? (reply?.elements ?? []).filter((element) => element.source.template === props.hover!.template && element.source.path === props.hover!.path).map((element) => element.path) : []), [reply?.elements, props.hover]);
+  const [under, setUnder] = useState<string>();
   const hit = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (!layout) return [];
     const box = event.currentTarget.getBoundingClientRect();
@@ -121,6 +125,7 @@ export function DesignStage(props: {
     <div className={`design-stage${panning ? ' tool-pan' : ''}${preview.loading ? ' busy' : ''}`} ref={stage} data-testid="design-stage" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
       {image && layout ? (
         <div className="design-canvas" data-testid="design-canvas" style={{ width, height, left, top }}
+          onMouseMove={(event) => { if (panning) { setUnder(undefined); return; } const path = hit(event)[0]?.path; if (path !== under) setUnder(path); }} onMouseLeave={() => setUnder(undefined)}
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
@@ -129,6 +134,7 @@ export function DesignStage(props: {
               <span className="marker-number">{index + 1}</span>
             </span>
           ))}
+          {[...hovered, ...(under ? [under] : [])].map((path) => { const node = nodes.get(path); return node ? <span key={`hover-${path}`} className="select-box hover" data-testid="hover-box" style={percent(node)} /> : null; })}
           {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={percent(node)} /> : null; })}
           {main && nodes.get(main) && (
             <span className="select-box" data-testid="select-box" data-path={main} style={percent(nodes.get(main)!)}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
