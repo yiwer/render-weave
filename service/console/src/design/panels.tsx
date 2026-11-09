@@ -11,6 +11,7 @@ import { href, useLoad } from '../hooks.js';
 import { describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { fontFamilies, type FontFamily } from '../template/fonts.js';
+import { feedOf } from '../template/tree.js';
 import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { ElementInspection, LayoutNode, PreviewReply } from '../types.js';
@@ -156,6 +157,7 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
       {props.impact && <p className="design-impact" data-testid="design-impact">{props.impact}</p>}
       {!shown && <p className="small muted" data-testid="hidden-reason">{hiddenReason(doc.document, path)}</p>}
       {template && <p className="small"><button type="button" className="link" onClick={() => props.onOpenTemplate(template)}>打开子模板 {template}</button></p>}
+      {template && element && <p className="small muted" data-testid="call-feed">{feedOf(element, props.documentOf)}。进去之后只有这份数据和传入的参数，作用域不继承。</p>}
       {base && (
         <section className="prop-section" aria-label="基准">
           <h3>基准</h3>

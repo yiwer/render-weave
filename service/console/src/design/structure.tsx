@@ -82,7 +82,7 @@ export function DesignStructure(props: {
                   {node.called.state === 'missing' && <p className="tree-note warn">读不到模板 {node.called.template}</p>}
                   {node.called.state === 'ok' && (
                     <button type="button" className="tree-scope-head" title={`选中 ${node.called.template} 的画板`} onClick={() => props.onSelect(node.called!.template, node.called!.template)}>
-                      进入模板「{node.called.template}」{node.called.base ? ` · 基准 ${node.called.base}` : ''}
+                      进入模板「{node.called.template}」{node.called.feed ? ` · ${node.called.feed}` : ''}
                     </button>
                   )}
                 </li>

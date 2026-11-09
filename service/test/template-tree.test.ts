@@ -22,7 +22,7 @@ describe('buildTree', () => {
     const tree = buildTree('标准线路单边', of)!;
     expect(tree).toMatchObject({ key: '标准线路单边', type: 'artboard', layout: '网格' });
     const loop = find(tree, '标准线路单边/站点面板/站点列')!;
-    expect(loop.called).toMatchObject({ template: '站点', base: '停靠站点 v1', state: 'ok' });
+    expect(loop.called).toMatchObject({ template: '站点', base: '停靠站点 v1', feed: '每项的数据：停靠站点 v1（stops 的一项）', state: 'ok' });
     const name = find(tree, '标准线路单边/站点面板/站点列/名称区/站名')!;
     expect(name).toMatchObject({ template: '站点', path: '站点/名称区/站名', type: 'text', hasStates: true });
     const badge = find(tree, '标准线路单边/站点面板/站点列/标识行')!;
@@ -44,6 +44,7 @@ describe('buildTree', () => {
     const b = { name: '乙', artboard: { children: [{ type: 'call', name: '调甲', template: '甲' }, { type: 'loop', name: '循环', template: '没有' }] } };
     const tree = buildTree('甲', (name) => ({ 甲: a, 乙: b } as Record<string, JsonObject>)[name])!;
     expect(find(tree, '甲/调乙/调甲')?.called?.state).toBe('cycle');
+    expect(find(tree, '甲/调乙')?.called?.feed, '调用没写 data 就是不传数据').toBe('不传数据');
     expect(find(tree, '甲/调乙/循环')?.called?.state).toBe('missing');
   });
 

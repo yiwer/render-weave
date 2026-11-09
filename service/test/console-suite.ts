@@ -2520,7 +2520,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await nameRow.textContent()).toContain('状态');
       expect(await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByTestId('loop-count').textContent()).toBe('×35');
       expect(await side0.locator('[data-testid="structure-row"][data-path="站点/名称区/地标"]').getByTestId('row-hidden').count(), '地标在有些站显示').toBe(0);
-      await side0.getByRole('button', { name: /进入模板「站点」/ }).waitFor();
+      await side0.getByRole('button', { name: '进入模板「站点」 · 每项的数据：停靠站点 v1（stops 的一项）' }).waitFor();
       await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带"]`).hover();
       await expect.poll(() => target.getByTestId('hover-box').count()).toBeGreaterThan(0);
       await nameRow.hover();

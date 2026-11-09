@@ -17,9 +17,29 @@ export interface TreeNode {
   /** 条件显示绑定了变量。 */
   readonly conditional: boolean;
   readonly hasStates: boolean;
-  /** 循环容器与子模板调用：被调模板的名称、基准与展开后的元素。 */
-  readonly called?: { readonly template: string; readonly base?: string; readonly state: 'ok' | 'missing' | 'cycle'; readonly children: readonly TreeNode[] };
+  /** 循环容器与子模板调用：被调模板的名称、基准、拿到什么数据（feed）与展开后的元素。 */
+  readonly called?: { readonly template: string; readonly base?: string; readonly feed?: string; readonly state: 'ok' | 'missing' | 'cycle'; readonly children: readonly TreeNode[] };
   readonly children: readonly TreeNode[];
+}
+
+const baseOf = (document: JsonObject | undefined) => (document && isObject(document['base']) ? `${String(document['base']['name'])} v${String(document['base']['version'])}` : undefined);
+
+/**
+ * 被调模板拿到什么数据，说成人话（M394）：作用域不继承，进去之后手里只有这一份数据和传入的参数。
+ * 循环是列表的每一项，调用看 data：不传、调用方的当前数据，或一个单引用字段。不是循环或调用时是 undefined。
+ */
+export function feedOf(node: JsonObject, documentOf: (template: string) => JsonObject | undefined): string | undefined {
+  const target = typeof node['template'] === 'string' ? node['template'] : undefined;
+  if (!target) return undefined;
+  const base = baseOf(documentOf(target));
+  if (node['type'] === 'loop') {
+    const list = isObject(node['list']) && typeof node['list']['var'] === 'string' ? node['list']['var'] : undefined;
+    return `每项的数据：${base ?? '（被调模板没写数据定义）'}${list ? `（${list} 的一项）` : ''}`;
+  }
+  const data = node['data'];
+  if (data === 'current') return `数据：${base ?? ''}（调用方的当前数据）`;
+  if (isObject(data) && typeof data['var'] === 'string') return `数据：${base ?? ''}（字段 ${data['var']}）`;
+  return '不传数据';
 }
 
 const childrenOf = (node: JsonObject): JsonObject[] => (Array.isArray(node['children']) ? (node['children'] as unknown[]).filter(isObject) : []);
@@ -42,12 +62,12 @@ export function buildTree(root: string, documentOf: (template: string) => JsonOb
     if (target) {
       const document = documentOf(target);
       const artboard = document && isObject(document['artboard']) ? document['artboard'] : undefined;
-      const base = document && isObject(document['base']) ? `${String(document['base']['name'])} v${String(document['base']['version'])}` : undefined;
+      const base = baseOf(document), feed = feedOf(node, documentOf);
       if (chain.has(target)) called = { template: target, state: 'cycle', children: [] };
       else if (!artboard) called = { template: target, state: 'missing', children: [] };
       else {
         const inner = new Set(chain).add(target);
-        called = { template: target, ...(base ? { base } : {}), state: 'ok', children: childrenOf(artboard).map((child) => element(child, target, `${target}/${String(child['name'])}`, `${key}/${String(child['name'])}`, inner)) };
+        called = { template: target, ...(base ? { base } : {}), ...(feed ? { feed } : {}), state: 'ok', children: childrenOf(artboard).map((child) => element(child, target, `${target}/${String(child['name'])}`, `${key}/${String(child['name'])}`, inner)) };
       }
     }
     const layout = layoutOf(node);
