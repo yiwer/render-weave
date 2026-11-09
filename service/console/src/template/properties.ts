@@ -518,6 +518,13 @@ export function propertyPanel(document: unknown, path: string): PropertyPanel | 
   return { type, groups: PROPERTY_GROUPS.flatMap((name) => (groups.has(name) ? [{ name, fields: groups.get(name)! }] : [])) };
 }
 
+/** 元素的状态样式能覆盖哪些属性（按类型，Schema 的 states.cases 的 propertyNames）；画板与不认识的类型是空的。 */
+export function stateOverridable(document: unknown, path: string): readonly string[] {
+  const target = elementView(document, path);
+  if (!target) return [];
+  return overridableKeys({ type: target.type, fragments: applying(target.view, target.element) });
+}
+
 /** 面板里按 key 找一项，嵌套的也算。 */
 export function fieldByKey(panel: PropertyPanel, key: string): PropertyField | undefined {
   const inner = (editor: Editor | undefined): readonly PropertyField[] => {

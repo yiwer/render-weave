@@ -35,6 +35,9 @@ export interface FieldContext {
   readonly fonts?: readonly FontFamily[];
   /** 写回之前的额外检查（元素名在模板内唯一）：有问题时不写回，标在输入框下面。 */
   check?(field: PropertyField, value: unknown): string | undefined;
+  /** 状态样式选中的取值（票据 17）：被这个取值覆盖的项可以重置回自身属性。 */
+  readonly stateValue?: string;
+  resetOverride?(field: PropertyField): void;
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -469,6 +472,7 @@ export function FieldRow(props: { readonly field: PropertyField; readonly contex
   const overridden = context.binding?.overriddenBy(field) ?? [];
   const labelClass = `prop-label${field.required ? ' required' : ''}${draggable ? ' draggable' : ''}`;
   const dot = overridden.length > 0 && <i className="prop-state-dot" data-testid="state-dot" title={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} aria-label={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} />;
+  const resettable = context.stateValue !== undefined && context.resetOverride && overridden.includes(context.stateValue);
   return (
     <div className={`prop${wide ? ' wide' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
       {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{dot}{field.label}</label>}
@@ -479,6 +483,7 @@ export function FieldRow(props: { readonly field: PropertyField; readonly contex
       </div>
       {field.noBinding && <p className="prop-nobind small faint" data-testid="no-binding">{field.noBinding}</p>}
       {field.exclusive && <p className="prop-nobind small faint" data-testid="field-exclusive">和{field.exclusive.join('、')}二选一，写了这一项会去掉它。</p>}
+      {resettable && <button type="button" className="link small prop-reset" data-testid="state-reset" onClick={() => context.resetOverride!(field)}>重置为自身属性{field.path[0] === 'place' && field.path.length > 1 ? '（整个位置与尺寸）' : ''}</button>}
     </div>
   );
 }

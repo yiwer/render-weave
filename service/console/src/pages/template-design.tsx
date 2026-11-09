@@ -287,15 +287,20 @@ function Design(props: { readonly name: string; readonly root: string }) {
     }
     setNotice(payload.fromField ? '字段只能放进这个模板自己的容器里。' : '这里没有能放元素的容器。');
   };
-  // —— 手柄（票据 13）：松手记一步撤销、暂存、出图；方向键连着按合成一步。 ——
+  // —— 状态样式（票据 17）：选中的取值跟着选中的元素走，换了元素就回到自身属性。 ——
+  const [stateChoice, setStateChoice] = useState<{ readonly key: string; readonly value: string }>();
+  const selectedKey = selected ? `${name}\n${selected.path}` : '';
+  const stateValue = stateChoice?.key === selectedKey ? stateChoice.value : undefined;
+  const chooseState = (value: string | undefined) => setStateChoice(value === undefined ? undefined : { key: selectedKey, value });
+  // —— 手柄（票据 13）：松手记一步撤销、暂存、出图；方向键连着按合成一步。选了状态样式的取值时写进这个取值的覆盖。 ——
   const handleInput = useMemo<HandleInput | undefined>(() => {
     if (!selected || !doc || !reply?.layout) return undefined;
     const instance = selected.instance && instances.includes(selected.instance) ? selected.instance : instances[0];
     const context = instance ? layoutContext(reply.layout.root, instance) : undefined;
     if (!context) return undefined;
     const host = selected.path === name && context.parent ? elementOf(context.parent.path) : undefined;
-    return { document: doc.document, template: name, path: selected.path, node: context.node, ...(context.parent ? { parent: context.parent } : {}), ...(host ? { host } : {}), count: instances.length };
-  }, [selected, doc?.document, reply, name, instances.join('\n')]);
+    return { document: doc.document, template: name, path: selected.path, node: context.node, ...(context.parent ? { parent: context.parent } : {}), ...(host ? { host } : {}), ...(stateValue !== undefined ? { state: stateValue } : {}), count: instances.length };
+  }, [selected, doc?.document, reply, name, instances.join('\n'), stateValue]);
   const handleSet = useMemo(() => (handleInput ? handlesOf(handleInput) : undefined), [handleInput]);
   const [handleNote, setHandleNote] = useState<string>();
   const noteTimer = useRef<number | undefined>(undefined);
@@ -444,7 +449,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         {panels.right && (
           <aside className="design-panel right" aria-label="检查器">
             <div className="design-panel-body">
-              {doc ? <DesignInspector doc={doc} session={session} documentOf={documentOf} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(handleSet ? { handles: handleSet } : {})} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
+              {doc ? <DesignInspector doc={doc} session={session} documentOf={documentOf} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(handleSet ? { handles: handleSet } : {})} {...(stateValue !== undefined ? { stateValue } : {})} onStateValue={chooseState} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}

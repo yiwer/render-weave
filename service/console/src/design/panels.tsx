@@ -13,7 +13,7 @@ import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type Js
 import { fontFamilies, type FontFamily } from '../template/fonts.js';
 import { nameProblem } from '../template/structure.js';
 import { feedOf } from '../template/tree.js';
-import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
+import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, stateOverridable, writeListItem, writeProperty, type FieldPath, type PropertyField } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { ElementInspection, LayoutNode, PreviewReply } from '../types.js';
 import { usePopoverDismiss } from '../components/binding-popover.js';
@@ -22,6 +22,8 @@ import { FitEditor } from './fit-editor.js';
 import { ArgsForm, CallSourceForm, ItemLayoutForm, LoopSourceForm } from './loop-form.js';
 import { setElement } from '../template/calls.js';
 import type { HandleSet } from '../template/handles.js';
+import { carryOverride, knownValues, mergedDocument, resetOverride, setStateBy, statesOf, writeElementOverride, writeOverride } from '../template/states.js';
+import { StateBar } from './state-bar.js';
 import { flatNodes } from './overlays.js';
 import type { Selection } from './stage.js';
 import { VariableInspector, type VariableSelection } from './variables.js';
@@ -58,6 +60,9 @@ export function DesignInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply; readonly impact?: string;
   /** 选中那一处在图上能拖什么（票据 13）。 */
   readonly handles?: HandleSet;
+  /** 状态样式选中的取值（票据 17）：编辑写进这个取值的覆盖。 */
+  readonly stateValue?: string;
+  readonly onStateValue: (value: string | undefined) => void;
   readonly variable?: VariableSelection; readonly inspection?: ElementInspection; readonly onVariable: (selection: VariableSelection | undefined) => void;
   readonly documentOf: (template: string) => JsonObject | undefined;
   readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
@@ -78,7 +83,7 @@ export function DesignInspector(props: {
   return (
     <>
       {element}
-      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} {...(props.handles ? { handles: props.handles } : {})} lists={lists} baseFields={baseFields} {...(fonts ? { fonts } : {})} {...(props.inspection ? { inspection: props.inspection } : {})} documentOf={props.documentOf} onVariable={props.onVariable} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
+      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} {...(props.handles ? { handles: props.handles } : {})} {...(props.stateValue !== undefined ? { stateValue: props.stateValue } : {})} onStateValue={props.onStateValue} lists={lists} baseFields={baseFields} {...(fonts ? { fonts } : {})} {...(props.inspection ? { inspection: props.inspection } : {})} documentOf={props.documentOf} onVariable={props.onVariable} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
@@ -88,6 +93,8 @@ interface ElementProps {
   readonly doc: DesignDoc; readonly selected: Selection; readonly lists: FieldContext['lists']; readonly onEdit: (document: JsonObject, key: string) => void; readonly onCommit: () => void;
   readonly baseFields: readonly BaseField[]; readonly fonts?: readonly FontFamily[]; readonly inspection?: ElementInspection; readonly documentOf: (template: string) => JsonObject | undefined; readonly onVariable: (selection: VariableSelection) => void;
   readonly onSelected: (selection: Selection) => void;
+  /** 状态样式选中的取值：写回落进这个取值的覆盖。 */
+  readonly state?: string;
 }
 
 /** 一个元素的字段环境：写回、绑定与字体。检查器和图上的就地编辑共用。 */
@@ -96,22 +103,44 @@ function useElementContext(props: ElementProps): FieldContext {
   const variables = useMemo(() => scopeVariables(doc.document, props.baseFields, inspection?.template === doc.name ? inspection : undefined), [doc.document, props.baseFields, inspection, doc.name]);
   const segments = path.split('/'), element = elementAt(doc.document, path)?.element;
   const cases = isObject(element?.['states']) && isObject(element['states']['cases']) ? element['states']['cases'] : {};
+  const state = props.state;
   const binding: BindingHost = {
     variables,
     taken: takenNames(doc.document, variables),
     suggest: (field) => suggestParameter(doc.document, variables, segments.at(-1)!, field),
     // 加参数与绑定是一次写回，一步撤销。
-    extract: (field, bindable, value, name, displayName) => { props.onEdit(extractParameter(doc.document, path, field.path, { name, displayName, type: bindable.type, value }), `extract:${path}:${name}`); props.onCommit(); },
+    extract: (field, bindable, value, name, displayName) => {
+      const parameter = { name, displayName, type: bindable.type, value };
+      // 在某个取值下提成参数：参数照常加，绑定写进这个取值的覆盖。
+      const next = state === undefined ? extractParameter(doc.document, path, field.path, parameter)
+        : carryOverride(doc.document, path, state, extractParameter(mergedDocument(doc.document, path, state), path, field.path, parameter), [String(field.path[0])]);
+      props.onEdit(next, `extract:${path}:${name}`);
+      props.onCommit();
+    },
     describe: (variable) => (variable.origin ? describeOrigin(variable.origin, doc.name, props.documentOf) : undefined),
     open: (link) => props.onVariable({ template: link.template || doc.name, name: link.name, kind: link.kind }),
-    overriddenBy: (field) => (field.path.length === 1 ? Object.entries(cases).flatMap(([state, overrides]) => (isObject(overrides) && String(field.path[0]) in overrides ? [state] : [])) : []),
+    // 覆盖是整项替换：位置与尺寸摊开的各格跟着 place 算。选了取值时只看这个取值。
+    overriddenBy: (field) => {
+      const top = String(field.path[0]);
+      if (field.path.length !== 1 && top !== 'place') return [];
+      return Object.entries(cases).flatMap(([value, overrides]) => ((state === undefined || value === state) && isObject(overrides) && top in overrides ? [value] : []));
+    },
   };
   return {
     lists: props.lists,
     binding,
     ...(props.fonts ? { fonts: props.fonts } : {}),
     check: (field, value) => (field.key === 'name' && typeof value === 'string' && path !== doc.name ? nameProblem(doc.document, doc.name, path, value) : undefined),
+    ...(state !== undefined ? {
+      stateValue: state,
+      resetOverride: (field: PropertyField) => { props.onEdit(resetOverride(doc.document, path, state, String(field.path[0])), `${path}:${state}:reset:${Date.now()}`); props.onCommit(); },
+    } : {}),
     onWrite: (fieldPath: FieldPath, value: unknown, options) => {
+      if (state !== undefined) {
+        props.onEdit(writeOverride(doc.document, path, state, fieldPath, value), `${path}:${state}:${fieldPath.join('.')}`);
+        if (options?.now) props.onCommit();
+        return;
+      }
       props.onEdit(writeProperty(doc.document, path, fieldPath, value), `${path}:${fieldPath.join('.')}`);
       if (options?.now) props.onCommit();
       // 改名之后元素路径跟着变，选中不丢。
@@ -131,13 +160,20 @@ function instanceNode(reply: PreviewReply | undefined, selected: Selection): Lay
   return first ? nodes.find((node) => node.path === first.path) : undefined;
 }
 
-function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | undefined; readonly impact?: string | undefined; readonly handles?: HandleSet; readonly onOpenTemplate: (template: string) => void }) {
+function PropertiesTab(props: ElementProps & {
+  readonly reply?: PreviewReply | undefined; readonly impact?: string | undefined; readonly handles?: HandleSet; readonly onOpenTemplate: (template: string) => void;
+  readonly stateValue?: string; readonly onStateValue: (value: string | undefined) => void;
+}) {
   const { doc, selected, reply } = props;
-  const path = selected.path, panel = propertyPanel(doc.document, path);
-  const context = useElementContext(props);
+  const path = selected.path, own = elementAt(doc.document, path)?.element, info = statesOf(own);
+  // 选了取值：面板显示自身属性加这个取值的覆盖，写回落进覆盖（票据 17）。
+  const state = info.by !== undefined && path !== doc.name ? props.stateValue : undefined;
+  const display = state === undefined ? doc.document : mergedDocument(doc.document, path, state);
+  const panel = propertyPanel(display, path);
+  const context = useElementContext({ ...props, ...(state !== undefined ? { state } : {}) });
   const [formProblem, setFormProblem] = useState<string>();
   if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
-  const segments = path.split('/'), element = elementAt(doc.document, path)?.element;
+  const segments = path.split('/'), element = elementAt(display, path)?.element;
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
   const template = typeof element?.['template'] === 'string' ? element['template'] : undefined;
   const isText = panel.type === 'text', vertical = element?.['writingMode'] === 'vertical';
@@ -149,9 +185,20 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
   const base = panel.type === 'artboard' && isObject(doc.document['base']) ? doc.document['base'] : undefined;
   const isLoop = panel.type === 'loop', isCall = panel.type === 'call', variables = context.binding?.variables ?? [];
   /** 循环与调用的表单写回整个元素；选项类的立刻暂存。 */
-  const writeElement = (next: JsonObject, now?: boolean) => { setFormProblem(undefined); props.onEdit(setElement(doc.document, path, next), `${path}:form`); if (now) props.onCommit(); };
+  const writeElement = (next: JsonObject, now?: boolean) => {
+    setFormProblem(undefined);
+    props.onEdit(state === undefined ? setElement(doc.document, path, next) : writeElementOverride(doc.document, path, state, next), `${path}:${state ?? ''}:form`);
+    if (now) props.onCommit();
+  };
+  // 状态样式：依据的全部取值与当前样例的各处取值，以引擎求值为准；还没求值时按文档推。
+  const inspected = props.inspection && props.inspection.template === doc.name && props.inspection.source === path && props.inspection.states?.by === info.by ? props.inspection : undefined;
+  const known = info.by === undefined ? undefined : inspected?.states?.known ?? knownValues(doc.document, variables, info.by);
+  const allowed = stateOverridable(doc.document, path);
+  const lock = (field: PropertyField): PropertyField => (state === undefined || allowed.includes(String(field.path[0])) ? field : { ...field, blocked: '不能按取值换：状态样式不覆盖这一项' });
   const rows = (fields: Parameters<typeof FieldRows>[0]['fields'], keys: readonly string[]) => <FieldRows fields={fields.filter((field) => keys.includes(field.key))} context={context} />;
   const body = (name: string, fields: Parameters<typeof FieldRows>[0]['fields']) => {
+    // 选了取值时，循环与调用的来源按一项项的字段改：模板不能覆盖，列表、数据可以。
+    if (state !== undefined && (name === '循环' || name === '调用')) return <FieldRows fields={fields} context={context} />;
     if (element && isLoop && name === '循环') return <LoopSourceForm element={element} template={doc.name} variables={variables} documentOf={props.documentOf} onElement={writeElement} onProblem={setFormProblem}>{rows(fields, ['reverse', 'slice'])}</LoopSourceForm>;
     if (element && isCall && name === '调用') return <CallSourceForm element={element} template={doc.name} document={doc.document} variables={variables} onElement={writeElement} />;
     if (element && (isLoop || isCall) && name === '传入参数') return <ArgsForm element={element} called={props.documentOf(String(element['template'] ?? ''))} variables={variables} onElement={writeElement} />;
@@ -178,6 +225,11 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
       </div>
       {props.impact && <p className="design-impact" data-testid="design-impact">{props.impact}</p>}
       {!shown && <p className="small muted" data-testid="hidden-reason">{hiddenReason(doc.document, path)}</p>}
+      {panel.type !== 'artboard' && own && (
+        <StateBar element={own} variables={variables} {...(known ? { known } : {})} {...(inspected ? { instances: inspected.instances } : {})} {...(state !== undefined ? { value: state } : {})}
+          onValue={props.onStateValue} onLocate={(instance) => props.onSelected({ template: doc.name, path, instance })}
+          onBy={(by) => { props.onEdit(setStateBy(doc.document, path, by), `${path}:states.by:${Date.now()}`); props.onCommit(); }} />
+      )}
       {props.handles && (props.handles.can || props.handles.notes.length > 0) && (
         <div className="handle-notes small" data-testid="handle-notes">
           {props.handles.can && <p>{props.handles.can}</p>}
@@ -193,10 +245,11 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
           <p className="small" data-testid="artboard-base">{String(base['name'])} v{String(base['version'])}<a className="small" style={{ marginLeft: 8 }} href={href(['definitions', String(base['name'])])}>打开数据定义</a></p>
         </section>
       )}
-      {panel.groups.map((item) => (
+      {panel.groups.filter((item) => item.name !== '状态样式').map((item) => (
         <section key={item.name} className="prop-section" aria-label={item.name}>
           <h3>{item.name}</h3>
-          {body(item.name, item.fields)}
+          {body(item.name, item.fields.map(lock))}
+          {item.name === '显示' && <p className="hint" data-testid="visible-hint">隐藏的元素不占位：堆叠与网格里像没写它一样排，后面的补上来。</p>}
           {item.name === '缩字下限' && <p className="hint">这个模板文字缩字的最低字号，不写时 5 mm。</p>}
         </section>
       ))}

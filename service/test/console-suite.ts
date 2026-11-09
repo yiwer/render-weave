@@ -2144,7 +2144,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('text');
       // 属性面板按元素类型分组（方案第 7 节的表），先后也照它。
       for (const group of ['内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
-      expect(await inspector().getByTestId('properties').locator('section > h3').allTextContents()).toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']);
+      expect(await inspector().getByTestId('properties').locator('section > h3').allTextContents(), '状态样式在顶上（票据 17），不再是一组').toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示']);
       expect(await inspector().locator('details').count(), '没有"其他 N 项"').toBe(0);
       expect(await input('place.left').inputValue()).toBe('2');
 
@@ -2943,7 +2943,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 按类型分组，没有"其他 N 项"；片段是字段，不是 JSON。
       await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
-      expect(await inspector.getByTestId('properties').locator('section > h3').allTextContents()).toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']);
+      expect(await inspector.getByTestId('properties').locator('section > h3').allTextContents(), '状态样式在顶上（票据 17），不再是一组').toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示']);
       expect(await inspector.locator('details').count()).toBe(0);
       expect(await inspector.getByRole('region', { name: '内容' }).locator('textarea').count()).toBe(0);
 
@@ -3498,6 +3498,88 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
       await server('DELETE', `/v1/templates/${enc(BADGE)}/working-copy`, token);
       expect(await current(ROOT)).toEqual(routeBefore);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 17）：站名按站点状态的取值带命中数，选"本站"后改的值写进覆盖，有圆点能重置，名称这类不能覆盖；定位到本站；换依据时对不上的取值当场标红', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME = `${STOP}/名称区/站名`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; opacity?: number; states?: { by: { var: string }; cases: Record<string, Record<string, unknown>> }; children?: Node[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(STOP)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const stopName = async () => find((await current()).artboard, '站名')!;
+      const before = await current();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      // 本站序号 5：已过站 4 处、本站 1 处、未到站 30 处。
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knob.getByRole('textbox').fill('5');
+      await knob.getByRole('textbox').press('Enter');
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await side.locator(`[data-testid="structure-row"][data-path="${NAME}"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${NAME}"]`).waitFor();
+      const bar = inspector.getByTestId('state-bar'), chip = (value: string) => bar.locator(`[data-testid="state-chip"][data-value="${value}"]`);
+      expect(await bar.getByRole('combobox').inputValue()).toBe('stopState');
+      // 能作为依据的只列单值变量：站点列表（stops 在主模板）不在这里，布尔的有地标在。
+      expect(await bar.getByRole('combobox').locator('option').allTextContents()).toContain('有地标（hasLandmark）');
+      expect(await bar.locator('[data-testid="state-chip"]').evaluateAll((chips) => chips.map((item) => item.getAttribute('data-value')))).toEqual(['', '普通', '已过站', '本站', '未到站']);
+      await expect.poll(() => chip('本站').getAttribute('aria-label'), { timeout: PREVIEW_WINDOW_MS }).toBe('本站，当前样例 1 处');
+      expect(await chip('已过站').getAttribute('aria-label')).toBe('已过站，当前样例 4 处');
+      expect(await chip('未到站').getAttribute('aria-label')).toBe('未到站，当前样例 30 处，还没覆盖');
+      // 不分状态时：颜色被覆盖，标签前有圆点。
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`);
+      await field('color').getByTestId('state-dot').waitFor();
+
+      // 选"本站"：说明命中几处，名称不能覆盖，颜色有圆点能重置；顺序不分取值。
+      await chip('本站').click();
+      expect(await chip('本站').getAttribute('aria-pressed')).toBe('true');
+      await bar.getByTestId('state-hint').filter({ hasText: '当前样例有 1 处' }).waitFor();
+      await field('name').getByTestId('field-blocked').filter({ hasText: '不能按取值换' }).waitFor();
+      await field('color').getByTestId('state-reset').waitFor();
+      expect(await field('opacity').getByTestId('state-reset').count()).toBe(0);
+      await inspector.getByTestId('handle-notes').filter({ hasText: '顺序不分取值' }).waitFor();
+      // 定位到第一处：图上选中本站的那一处。
+      await bar.getByTestId('state-locate').click();
+      await expect.poll(() => target.getByTestId('select-box').getAttribute('data-path')).toMatch(/站点列\[\d+\]\/名称区\/站名$/u);
+      expect(await chip('本站').getAttribute('aria-pressed'), '定位不换取值').toBe('true');
+
+      // 在"本站"下改不透明度：写进覆盖，自身属性不动；重置回去。
+      let saved = stashed();
+      await field('opacity').getByRole('textbox').fill('0.8');
+      await field('opacity').getByRole('textbox').press('Tab');
+      await saved;
+      let name = await stopName();
+      expect(name.states!.cases['本站']).toEqual({ color: { var: 'currentTextColor' }, opacity: 0.8 });
+      expect(name.opacity).toBeUndefined();
+      await field('opacity').getByTestId('state-dot').waitFor();
+      saved = stashed();
+      await field('opacity').getByTestId('state-reset').click();
+      await saved;
+      name = await stopName();
+      expect(name.states!.cases['本站']).toEqual({ color: { var: 'currentTextColor' } });
+
+      // 换依据：原来的取值对不上布尔，当场标红并写明引擎会报的代码；撤销回来。
+      saved = stashed();
+      await bar.getByRole('combobox').selectOption('hasLandmark');
+      await saved;
+      expect((await stopName()).states!.by).toEqual({ var: 'hasLandmark' });
+      await bar.getByTestId('state-problem').filter({ hasText: '列出的取值 "已过站"、"本站" 不会出现：hasLandmark 只可能是 true、false（template.unknownStateValue）' }).waitFor();
+      expect(await chip('已过站').getAttribute('class')).toContain('unknown');
+      expect(await chip('true').getAttribute('class')).toContain('empty');
+      saved = stashed();
+      await target.getByRole('button', { name: '撤销' }).click();
+      await saved;
+      expect((await stopName()).states!.by).toEqual({ var: 'stopState' });
+
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      expect(await current()).toEqual(before);
       await leaveDesign(target, ROOT);
     }, 180_000);
 

@@ -267,7 +267,7 @@ function selfOf(input: HandleInput) {
   return { element, isArtboard, parent };
 }
 
-const countText = (input: HandleInput) => ((input.count ?? 1) > 1 ? `；图上 ${input.count} 处一起变` : '');
+const countText = (input: HandleInput) => `${input.state !== undefined ? `；写进「${input.state}」的覆盖` : ''}${(input.count ?? 1) > 1 ? `；图上 ${input.count} 处一起变` : ''}`;
 
 /** 这个元素在图上有哪些手柄，没有的写明原因。 */
 export function handlesOf(input: HandleInput): HandleSet {
@@ -312,7 +312,9 @@ export function handlesOf(input: HandleInput): HandleSet {
   }
   if (mode === 'stack') {
     const layout = isObject(parent?.['layout']) ? parent['layout'] : {}, row = layout['direction'] !== 'column';
-    if (childrenOf(parent).length > 1) { move('grab', '改顺序'); can.push(`${row ? '左右' : '上下'}拖动改顺序`); }
+    // 顺序是父容器的 children，不能按取值换：选了取值时不给。
+    if (childrenOf(parent).length > 1 && state !== undefined) notes.push('顺序不分取值，没有排序手柄：回到「自身属性」再拖。');
+    else if (childrenOf(parent).length > 1) { move('grab', '改顺序'); can.push(`${row ? '左右' : '上下'}拖动改顺序`); }
     if (rotated) notes.push('旋转的元素只能改顺序：框不计旋转，尺寸在检查器里填。');
     else {
       const width = sizeOf(place['width'], '宽', 'hug'), height = sizeOf(place['height'], '高', 'hug');

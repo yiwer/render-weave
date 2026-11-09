@@ -152,6 +152,11 @@ describe('堆叠', () => {
     const MARK = '站点/名称区/地标';
     const marks = { document: stop, template: '站点', path: MARK, node: box(MARK, 6, 14, 8, 8), parent: box('站点/名称区', 0, 8, 20, 16, [box('站点/名称区/站名', 2, 8, 16, 5), box(MARK, 6, 14, 8, 8)]) };
     const result = valid(applyHandle({ ...marks, state: '已过站' }, drag('s', 0, 1)));
+    expect(result.readout).toBe('宽 8 × 高 9 mm；写进「已过站」的覆盖');
+    // 顺序不能按取值换：选了取值时没有排序手柄，方向键也不换位。
+    expect(ids({ ...marks, state: '已过站' })).toEqual(['e', 's', 'se']);
+    expect(handlesOf({ ...marks, state: '已过站' }).notes).toContain('顺序不分取值，没有排序手柄：回到「自身属性」再拖。');
+    expect(nudge({ ...marks, state: '已过站' }, 'ArrowDown', false)).toBeUndefined();
     const element = elementAt(result.document, MARK)!.element;
     expect(element['place']).toEqual({ width: { fixed: 8 }, height: { fixed: 8 }, margin: { top: 1 } });
     expect(element['states']).toEqual({ by: { var: 'stopState' }, cases: { 已过站: { opacity: 0.35, place: { width: { fixed: 8 }, height: { fixed: 9 }, margin: { top: 1 } } } } });

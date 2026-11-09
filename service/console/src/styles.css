@@ -550,6 +550,21 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .handle-line.vertical { width: 2px !important; margin-left: -1px; }
 .handle-line.horizontal { height: 2px !important; margin-top: -1px; }
 .handle-readout { position: absolute; z-index: 5; pointer-events: none; margin-top: 4px; max-width: 460px; padding: 1px 6px; border-radius: 4px; background: var(--mark); color: #fff; font: 11px/1.5 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 状态样式（票据 17）：一排取值按钮，虚线是还没覆盖的，红框是不会出现的。 */
+.state-bar { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+.state-by { display: flex; align-items: center; gap: 8px; }
+.state-by select { flex: 1 1 auto; min-height: 30px; font-size: 13px; }
+.state-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.state-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12.5px; }
+.state-chip.empty { border-style: dashed; color: var(--muted); background: transparent; }
+.state-chip.unknown { border-color: var(--bad); color: var(--bad); }
+.state-chip[aria-pressed="true"], .state-chip[aria-pressed="true"]:hover { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.state-count { font: 11px/1 var(--mono); opacity: .7; }
+.state-add { width: 84px; min-height: 26px; padding: 0 8px; border-style: dashed; font-size: 12.5px; }
+.state-bar p { margin: 0; }
+.state-hint .link { margin-left: 4px; }
+.prop-reset { grid-column: 2; justify-self: start; padding: 0; font-size: 11.5px; }
+.prop.wide .prop-reset { grid-column: 1; }
 .handle-notes { margin: 0 0 10px; padding: 6px 8px; border-radius: var(--r); background: var(--surface); }
 .handle-notes p { margin: 0; }
 .handle-notes p + p { margin-top: 2px; }
