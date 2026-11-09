@@ -3145,6 +3145,82 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 180_000);
 
+    it('模板设计（票据 14）：从元素目录点一下加到选中的容器；把字段拖到图上生成绑定好的文字；列表字段选基准相符的模板变循环；拖经结构页签放到树上', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; type: string; content?: unknown; list?: unknown; template?: string; place?: Record<string, unknown>; children?: Node[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const childrenOf = async (name: string) => (await current()).artboard.children!.find((child) => child.name === name)!.children ?? [];
+      const before = await current();
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] } } };
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ROOT}/${name}"]`);
+
+      // 选中顶栏，到"添加"页：写明加到哪。点矩形，加在顶栏的最后，堆叠里只写尺寸。
+      await row('顶栏').getByRole('button').first().click();
+      await side.getByRole('tab', { name: '添加' }).click();
+      await side.getByTestId('add-target').filter({ hasText: '「顶栏」的最后' }).waitFor();
+      let saved = stashed();
+      await side.locator('[data-testid="add-element"][data-kind="rect"]').click();
+      await saved;
+      const top = await childrenOf('顶栏');
+      expect(top.at(-1)).toMatchObject({ name: '矩形', type: 'rect', place: { width: { fixed: 20 }, height: { fixed: 10 } } });
+      await expect.poll(() => inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${ROOT}/顶栏/矩形`);
+
+      // 字段拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
+      const walk = (node: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] }): typeof node | undefined => (node.path === `${ROOT}/道路带` ? node : (node.children as typeof node[] | undefined)?.map(walk).find(Boolean));
+      const road = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!;
+      saved = stashed();
+      await side.locator('[data-testid="add-field"][data-name="routeNo"]').dragTo(canvas, { targetPosition: { x: ((road.x + road.width / 2) / layout.output.width) * box.width, y: ((road.y + road.height / 2) / layout.output.height) * box.height } });
+      await saved;
+      const added = (await childrenOf('道路带')).find((child) => child.type === 'text' && JSON.stringify(child.content) === JSON.stringify([{ slot: 'routeNo' }]));
+      expect(added?.name, '名字取显示名称，主模板里已有"线路号"，加序号').toBe('线路号2');
+
+      // 列表字段：选基准相符的模板，变成循环容器。
+      await side.locator('[data-testid="add-field"][data-name="stops"]').click();
+      const form = side.getByRole('form', { name: /从 .* 创建/ });
+      expect(await form.getByLabel('被调模板').locator('option').allTextContents(), '道路段的基准也是停靠站点 v1').toEqual(['选一个模板', '站点', '道路段']);
+      await form.getByLabel('被调模板').selectOption('站点');
+      saved = stashed();
+      await form.getByRole('button', { name: '添加循环容器' }).click();
+      await saved;
+      expect(JSON.stringify(await current())).toContain('"list":{"var":"stops"},"template":"站点"');
+
+      // 拖经"结构"页签放到树上：椭圆放进底栏。
+      const ellipse = side.locator('[data-testid="add-element"][data-kind="ellipse"]');
+      const from = (await ellipse.boundingBox())!;
+      await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+      await target.mouse.down();
+      const tab = (await side.getByRole('tab', { name: '结构' }).boundingBox())!;
+      await target.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 5 });
+      await row('底栏').waitFor();
+      const bottom = (await row('底栏').boundingBox())!;
+      saved = stashed();
+      await target.mouse.move(bottom.x + 60, bottom.y + bottom.height / 2, { steps: 5 });
+      await target.mouse.up();
+      await saved;
+      expect((await childrenOf('底栏')).some((child) => child.type === 'ellipse')).toBe(true);
+
+      // 四次添加，四次撤销，回到开始的样子。
+      for (let step = 0; step < 4; step++) {
+        saved = stashed();
+        await target.getByRole('button', { name: '撤销', exact: true }).click();
+        await saved;
+      }
+      expect(await current()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;

@@ -265,11 +265,13 @@ function ValueCell(props: { readonly id: string; readonly field: PropertyField; 
               </select>
             )}
             {/* 字面值的输入框不随"没写→写了"重建，否则打第一个字就丢焦点。 */}
-            <EditorView key={scalar ? 'literal' : editor.active} id={id} field={field} editor={shown} context={context} live={live} />
+            {scalar && <EditorView key="literal" id={id} field={field} editor={shown} context={context} live={live} />}
             {button('绑定变量')}
           </>
         )}
       </div>
+      {/* 写成对象的变体（内边距分别设置）放在下拉下面，占满整行：挤在一行里每格就太窄了。 */}
+      {name === undefined && !scalar && <EditorView key={editor.active} id={id} field={field} editor={shown} context={context} live={live} />}
       {origin && <OriginLine text={origin} onOpen={host.open} />}
       {open && (
         <BindingPopover type={bindable.type} label={field.label} {...(name !== undefined ? { current: name } : {})} variables={host.variables}

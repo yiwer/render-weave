@@ -15,6 +15,9 @@ import { DesignInspector, InlineTextEditor } from '../design/panels.js';
 import { callersOf, deleteElement, dropTarget, duplicateElement, moveElement, moveElementTo, renameElement, unwrapContainer, wrapInContainer, type DropZone, type Edited } from '../template/structure.js';
 import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
+import { AddPanel, canDropInto, currentAdd, isAddDrag } from '../design/add-panel.js';
+import { insertElement, insertionPoint, type Drop } from '../template/create.js';
+import { writeProperty } from '../template/properties.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
 import { CodePanel } from '../components/code-panel.js';
 import { RevisionChanges } from '../components/revision-changes.js';
@@ -22,7 +25,7 @@ import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
 import { DEFAULT_LAYERS, type LayerName, type Layers } from '../design/overlays.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
 import { go, guardNavigation, href, useLivePreview, useLoad, type Route } from '../hooks.js';
-import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind } from '../template/document.js';
+import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
 import { createDesignSession, leaveQuestion, type DesignDoc, type DesignSession } from '../template/session.js';
 import { calledTemplates } from '../template/tree.js';
@@ -31,7 +34,7 @@ import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
 import { problemMarks } from '../components/preview-canvas.js';
 
-type LeftTab = 'structure' | 'variables';
+type LeftTab = 'structure' | 'variables' | 'add';
 type TrayTab = 'samples' | 'problems' | 'changes' | 'dsl';
 const STRESS = /压测|压力|stress/i;
 /**
@@ -238,6 +241,51 @@ function Design(props: { readonly name: string; readonly root: string }) {
     setLeftTab('structure');
     setRenaming({ template: target.template, path: target.path });
   };
+  // —— 添加元素（票据 14）：点一下加到选中的位置；拖到结构树或图上放在那里。 ——
+  const addTargetLabel = (document: JsonObject) => {
+    const point = insertionPoint(document, name, selected?.path), container = point.container === name ? `画板「${name}」` : `「${point.container.split('/').at(-1)!}」`;
+    return selected && selected.path !== name && point.container !== selected.path ? `${container}，放在「${selected.path.split('/').at(-1)!}」后面` : `${container}的最后`;
+  };
+  const addElement = (element: JsonObject) => {
+    if (!doc) return;
+    const point = insertionPoint(doc.document, name, selected?.path);
+    if (!applyStructure(name, insertElement(doc.document, name, point.container, element, { index: point.index }), 'add')) setNotice('这里放不进元素。');
+  };
+  const bindVisible = (variable: string) => {
+    if (!doc || !selected || selected.path === name) { setNotice('先选中一个元素，再把布尔字段绑到它的显示。'); return; }
+    session.edit(name, writeProperty(doc.document, selected.path, ['visible'], { var: variable }), `structure:visible:${Date.now()}`);
+    void session.flush();
+    setNotice(`「${selected.path.split('/').at(-1)!}」按 ${variable} 决定显示。`);
+  };
+  const addOnTree = (template: string, over: string, zone: DropZone) => {
+    const payload = currentAdd(), document = documentOf(template), place = document && dropTarget(document, template, over, zone);
+    if (!payload || !document || !place || !canDropInto(payload, template)) return;
+    applyStructure(template, insertElement(document, template, place.target, payload.element, { index: place.index }), 'add');
+  };
+  /** 拖到图上：从最深处往外找第一个能放的容器；自由布局写落点坐标，堆叠按落点算第几位，网格取落点所在那一格。 */
+  const addOnStage = (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }) => {
+    const payload = currentAdd();
+    if (!payload) return;
+    for (const node of stack) {
+      const source = locations.get(node.path), element = elementOf(node.path), document = source && documentOf(source.template);
+      if (!source || !document || !element || !(source.path === source.template || element['type'] === 'container') || !canDropInto(payload, source.template)) continue;
+      const layout = isObject(element['layout']) ? element['layout'] : {}, mode = typeof layout['mode'] === 'string' ? layout['mode'] : 'free';
+      const kids = (node.children ?? []).filter((child) => child.visible);
+      let at: Drop = {};
+      if (mode === 'free') at = { point: { x: point.x - node.x, y: point.y - node.y } };
+      else if (mode === 'stack') {
+        const row = layout['direction'] !== 'column';
+        at = { index: kids.filter((child) => (row ? child.x + child.width / 2 < point.x : child.y + child.height / 2 < point.y)).length };
+      } else {
+        const inside = kids.find((child) => point.x >= child.x && point.x <= child.x + child.width && point.y >= child.y && point.y <= child.y + child.height);
+        const place = inside && elementOf(inside.path)?.['place'];
+        if (isObject(place) && typeof place['row'] === 'number' && typeof place['column'] === 'number') at = { cell: { row: place['row'], column: place['column'] } };
+      }
+      applyStructure(source.template, insertElement(document, source.template, source.path, payload.element, at), 'add');
+      return;
+    }
+    setNotice(payload.fromField ? '字段只能放进这个模板自己的容器里。' : '这里没有能放元素的容器。');
+  };
   const dropOnTree = (template: string, path: string, over: string, zone: DropZone) => {
     const document = documentOf(template), place = document && dropTarget(document, template, over, zone);
     if (!document || !place) return;
@@ -338,7 +386,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} {...(inlineEditor ? { inline: inlineEditor } : {})} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -349,16 +397,19 @@ function Design(props: { readonly name: string; readonly root: string }) {
         {panels.left && (
           <aside className="design-panel left" aria-label="结构与变量">
             <div className="tabs" role="tablist" aria-label="结构与变量">
-              {([['structure', '结构'], ['variables', '变量']] as const).map(([id, label]) => (
-                <button key={id} type="button" role="tab" aria-selected={leftTab === id} className={leftTab === id ? 'active' : undefined} onClick={() => setLeftTab(id)}>{label}</button>
+              {([['structure', '结构'], ['variables', '变量'], ['add', '添加']] as const).map(([id, label]) => (
+                <button key={id} type="button" role="tab" aria-selected={leftTab === id} className={leftTab === id ? 'active' : undefined} onClick={() => setLeftTab(id)}
+                  onDragEnter={(event) => { if (isAddDrag(event) && leftTab !== id) setLeftTab(id); }}>{label}</button>
               ))}
             </div>
             <div className="design-panel-body">
               {doc ? (leftTab === 'structure'
                 ? <DesignStructure root={root} documentOf={documentOf} {...(selected ? { selection: selected } : {})} {...(reply ? { reply } : {})} locateTick={locateTick} onSelect={(template, path) => select(template, path)} onHover={setTreeHover}
                   onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }}
-                  {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} />
-                : <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />) : <Loading>正在读取模板…</Loading>}
+                  {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} onAddDrop={addOnTree} />
+                : leftTab === 'variables'
+                  ? <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />
+                  : <AddPanel template={name} document={doc.document} targetLabel={addTargetLabel(doc.document)} {...(selected && selected.path !== name ? { selectionLabel: selected.path.split('/').at(-1)! } : {})} onAdd={addElement} onBindVisible={bindVisible} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}

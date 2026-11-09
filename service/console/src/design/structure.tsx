@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import type { DropZone } from '../template/structure.js';
+import { canDropInto, currentAdd, isAddDrag } from './add-panel.js';
 import { CHEVRON_RIGHT, EYE_OFF, Icon } from '../components/icon.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
 import { ancestorKeys, buildTree, type TreeNode } from '../template/tree.js';
@@ -40,6 +41,8 @@ export function DesignStructure(props: {
   /** 正在改名的元素；onRename 回答问题时留在输入框里。 */
   readonly renaming?: TreeSource; readonly onRename: (template: string, path: string, name: string) => string | undefined; readonly onRenameDone: () => void;
   readonly onDrop: (template: string, path: string, over: string, zone: DropZone) => void;
+  /** 从"添加"页拖来的新元素放在这一行的前后或里面。 */
+  readonly onAddDrop: (template: string, over: string, zone: DropZone) => void;
 }) {
   const { root, documentOf, selection, reply } = props;
   const dragged = useRef<TreeSource | undefined>(undefined);
@@ -82,7 +85,8 @@ export function DesignStructure(props: {
   /** 拖到这一行的哪里：上半、下半，能装子元素的中间一段是放进去。 */
   const zoneOf = (event: DragEvent<HTMLElement>, node: TreeNode): DropZone | undefined => {
     const from = dragged.current;
-    if (!from || from.template !== node.template || node.path === from.path || node.path.startsWith(`${from.path}/`)) return undefined;
+    const adding = !from && isAddDrag(event) && canDropInto(currentAdd(), node.template);
+    if (!adding && (!from || from.template !== node.template || node.path === from.path || node.path.startsWith(`${from.path}/`))) return undefined;
     const holds = node.path === node.template || node.type === 'container';
     if (node.path === node.template) return 'inside';
     const box = event.currentTarget.getBoundingClientRect(), at = (event.clientY - box.top) / box.height;
@@ -104,9 +108,14 @@ export function DesignStructure(props: {
           draggable={movable && !renaming}
           onDragStart={(event) => { dragged.current = { template: node.template, path: node.path }; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', node.path); }}
           onDragEnd={() => { dragged.current = undefined; setDrop(undefined); }}
-          onDragOver={(event) => { const zone = zoneOf(event, node); if (!zone) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (drop?.key !== node.key || drop.zone !== zone) setDrop({ key: node.key, zone }); }}
+          onDragOver={(event) => { const zone = zoneOf(event, node); if (!zone) return; event.preventDefault(); event.dataTransfer.dropEffect = dragged.current ? 'move' : 'copy'; if (drop?.key !== node.key || drop.zone !== zone) setDrop({ key: node.key, zone }); }}
           onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDrop(undefined); }}
-          onDrop={(event) => { const zone = zoneOf(event, node), from = dragged.current; event.preventDefault(); setDrop(undefined); dragged.current = undefined; if (zone && from) props.onDrop(from.template, from.path, node.path, zone); }}
+          onDrop={(event) => {
+            const zone = zoneOf(event, node), from = dragged.current;
+            event.preventDefault(); setDrop(undefined); dragged.current = undefined;
+            if (zone && from) props.onDrop(from.template, from.path, node.path, zone);
+            else if (zone && isAddDrag(event)) props.onAddDrop(node.template, node.path, zone);
+          }}
           onMouseEnter={() => props.onHover({ template: node.template, path: node.path })} onMouseLeave={() => props.onHover(undefined)}
           onContextMenu={(event) => { event.preventDefault(); props.onMenu(event.clientX, event.clientY, node.template, node.path); }}>
           {renaming

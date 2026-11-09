@@ -679,7 +679,7 @@ export function writeProperty(document: JsonObject, path: string, fieldPath: Fie
   return replaceElement(document, located, next);
 }
 
-function firstFont(document: JsonObject): string | undefined {
+export function firstFont(document: JsonObject): string | undefined {
   const walk = (node: unknown): string | undefined => {
     if (!isObject(node)) return undefined;
     if (typeof node['font'] === 'string' && node['font'] !== RESOURCE_PLACEHOLDER) return node['font'];

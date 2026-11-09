@@ -9,6 +9,7 @@ import type { LivePreview } from '../hooks.js';
 import { hitStack } from '../template/document.js';
 import type { JsonObject } from '../template/document.js';
 import type { LayoutNode } from '../types.js';
+import { isAddDrag } from './add-panel.js';
 import { contentKind, fitSummary, flatNodes, layoutGuides, type Layers } from './overlays.js';
 
 export interface StageView { readonly zoom: number; readonly x: number; readonly y: number }
@@ -50,6 +51,8 @@ export function DesignStage(props: {
   readonly onEditText?: (stack: readonly string[]) => void;
   /** 就地编辑器：浮在这个实例下方，跟着缩放与平移走。 */
   readonly inline?: { readonly instance: string; readonly editor: ReactNode };
+  /** 从"添加"页拖到图上：这个位置的元素（第一个最深）与落点（毫米）。 */
+  readonly onDropAdd?: (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }) => void;
 }) {
   const { preview, tool, view, insets, selected } = props, reply = preview.reply, image = reply?.image, layout = reply?.layout;
   const stage = useRef<HTMLDivElement>(null);
@@ -163,6 +166,13 @@ export function DesignStage(props: {
           onMouseMove={(event) => { if (panning) { setUnder(undefined); return; } const path = hit(event)[0]?.path; if (path !== under) setUnder(path); }} onMouseLeave={() => setUnder(undefined)}
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
           onDoubleClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onEditText?.(stack.map((node) => node.path)); }}
+          onDragOver={(event) => { if (props.onDropAdd && isAddDrag(event)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }}
+          onDrop={(event) => {
+            if (!props.onDropAdd || !isAddDrag(event) || !layout) return;
+            event.preventDefault();
+            const box = event.currentTarget.getBoundingClientRect();
+            props.onDropAdd(hit(event), { x: ((event.clientX - box.left) / box.width) * layout.output.width, y: ((event.clientY - box.top) / box.height) * layout.output.height });
+          }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
           {props.compare && (

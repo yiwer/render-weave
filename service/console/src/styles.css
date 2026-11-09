@@ -678,6 +678,22 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .inline-anchor { position: absolute; z-index: 30; width: 340px; max-width: calc(100% - 16px); }
 .inline-text { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
 .tree-hint { margin: 0 0 6px; padding: 0 4px; }
+.add-panel { display: flex; flex-direction: column; gap: 10px; }
+.add-panel > p { margin: 0; }
+.add-section { display: flex; flex-direction: column; gap: 6px; }
+.add-section > h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.add-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.add-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 54px; padding: 6px 4px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-size: 12px; font-weight: 400; color: var(--ink); cursor: grab; }
+.add-item:hover:not(:disabled), .add-item[aria-expanded="true"] { border-color: var(--field); background: var(--hover); }
+.add-item svg { width: 18px; height: 18px; color: var(--slate); }
+.add-form { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: var(--r); background: var(--sunken); }
+.add-form p { margin: 0; }
+.add-field { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.add-field select { min-height: 30px; font-size: 13px; }
+.add-fields { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.add-field-row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 28px; padding: 0 4px; border: 0; background: none; font-size: 13px; font-weight: 400; text-align: left; border-radius: 4px; cursor: grab; }
+.add-field-row:hover:not(:disabled) { background: var(--hover); }
+.add-field-row > .small { flex: none; margin-left: auto; }
 .tree-row.drop-before { box-shadow: inset 0 2px 0 var(--mark); }
 .tree-row.drop-after { box-shadow: inset 0 -2px 0 var(--mark); }
 .tree-row.drop-inside { background: var(--accent-soft); outline: 1px dashed var(--mark); outline-offset: -1px; }
