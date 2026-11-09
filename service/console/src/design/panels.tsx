@@ -21,6 +21,7 @@ import { ContentEditor } from './content-editor.js';
 import { FitEditor } from './fit-editor.js';
 import { ArgsForm, CallSourceForm, ItemLayoutForm, LoopSourceForm } from './loop-form.js';
 import { setElement } from '../template/calls.js';
+import type { HandleSet } from '../template/handles.js';
 import { flatNodes } from './overlays.js';
 import type { Selection } from './stage.js';
 import { VariableInspector, type VariableSelection } from './variables.js';
@@ -55,6 +56,8 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
 /** 右边的检查器：选中的东西，元素或变量；什么都没选时是画板。 */
 export function DesignInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selected?: Selection; readonly reply?: PreviewReply; readonly impact?: string;
+  /** 选中那一处在图上能拖什么（票据 13）。 */
+  readonly handles?: HandleSet;
   readonly variable?: VariableSelection; readonly inspection?: ElementInspection; readonly onVariable: (selection: VariableSelection | undefined) => void;
   readonly documentOf: (template: string) => JsonObject | undefined;
   readonly onSelect: (path: string) => void; readonly onSelected: (selection: Selection) => void; readonly onOpenTemplate: (template: string) => void;
@@ -75,7 +78,7 @@ export function DesignInspector(props: {
   return (
     <>
       {element}
-      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} lists={lists} baseFields={baseFields} {...(fonts ? { fonts } : {})} {...(props.inspection ? { inspection: props.inspection } : {})} documentOf={props.documentOf} onVariable={props.onVariable} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
+      <PropertiesTab key={`${doc.name}\n${selected.path}`} doc={doc} selected={selected} reply={props.reply} impact={props.impact} {...(props.handles ? { handles: props.handles } : {})} lists={lists} baseFields={baseFields} {...(fonts ? { fonts } : {})} {...(props.inspection ? { inspection: props.inspection } : {})} documentOf={props.documentOf} onVariable={props.onVariable} onEdit={edit} onCommit={() => void session.flush()} onSelected={props.onSelected} onOpenTemplate={props.onOpenTemplate} />
       <ElementRules key={`${doc.name}\n${selected.path}\nrules`} doc={doc} path={selected.path} reply={props.reply} lists={lists} onEdit={edit} />
     </>
   );
@@ -128,7 +131,7 @@ function instanceNode(reply: PreviewReply | undefined, selected: Selection): Lay
   return first ? nodes.find((node) => node.path === first.path) : undefined;
 }
 
-function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | undefined; readonly impact?: string | undefined; readonly onOpenTemplate: (template: string) => void }) {
+function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | undefined; readonly impact?: string | undefined; readonly handles?: HandleSet; readonly onOpenTemplate: (template: string) => void }) {
   const { doc, selected, reply } = props;
   const path = selected.path, panel = propertyPanel(doc.document, path);
   const context = useElementContext(props);
@@ -175,6 +178,12 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
       </div>
       {props.impact && <p className="design-impact" data-testid="design-impact">{props.impact}</p>}
       {!shown && <p className="small muted" data-testid="hidden-reason">{hiddenReason(doc.document, path)}</p>}
+      {props.handles && (props.handles.can || props.handles.notes.length > 0) && (
+        <div className="handle-notes small" data-testid="handle-notes">
+          {props.handles.can && <p>{props.handles.can}</p>}
+          {props.handles.notes.map((note) => <p key={note} className="muted">{note}</p>)}
+        </div>
+      )}
       {template && <p className="small"><button type="button" className="link" data-testid="enter-template" title="选中它的画板；图还是这一张" onClick={() => { props.onSelected({ template, path: template }); props.onOpenTemplate(template); }}>进入模板「{template}」</button></p>}
       {formProblem && <p className="prop-error" role="alert">{formProblem}</p>}
       {template && element && <p className="small muted" data-testid="call-feed">{feedOf(element, props.documentOf)}。进去之后只有这份数据和传入的参数，作用域不继承。</p>}

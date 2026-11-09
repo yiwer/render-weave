@@ -3401,6 +3401,106 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 180_000);
 
+    it('模板设计（票据 13）：拖胸牌相框的下边，拖动中只画幽灵框不写回，Esc 取消，松手一步撤销；方向键换位；拖 M402 顶栏的间距条', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, BADGE);
+      type Node = { name: string; place?: Record<string, unknown>; layout?: Record<string, unknown>; children?: Node[] };
+      const current = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const badgeBefore = await current(BADGE), routeBefore = await current(ROOT);
+      const photo = async () => find((await current(BADGE)).artboard, '照片')!;
+      const writes: string[] = [];
+      target.on('request', (request) => { if (request.method() === 'PUT' && request.url().includes('/working-copy?')) writes.push(request.url()); });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(BADGE)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      await side.locator(`[data-testid="structure-row"][data-path="${BADGE}/照片"]`).getByRole('button').first().click();
+      await inspector.getByTestId('handle-notes').filter({ hasText: '拖右下的手柄改宽高' }).waitFor();
+      // 纵向堆叠里宽高都固定：右边、下边、右下角，外加拖动改顺序。
+      expect(await target.getByTestId('handle').evaluateAll((handles) => handles.map((handle) => handle.getAttribute('data-handle')))).toEqual(['e', 's', 'se']);
+      const bottom = target.locator('[data-testid="handle"][data-handle="s"]');
+      const press = async () => {
+        const box = (await bottom.boundingBox())!;
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await target.mouse.down();
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 15, { steps: 5 });
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 30, { steps: 5 });
+      };
+
+      // 拖动中：幽灵框与读数，不写回；Esc 取消。
+      await press();
+      await target.getByTestId('handle-ghost').waitFor();
+      const readout = await target.getByTestId('handle-readout').textContent();
+      expect(readout).toMatch(/^宽 24 × 高 \d+(\.5)? mm$/u);
+      expect(writes).toEqual([]);
+      await target.keyboard.press('Escape');
+      await target.getByTestId('handle-ghost').waitFor({ state: 'detached' });
+      await target.mouse.up();
+      expect(await inspector.getByTestId('properties').getAttribute('data-path'), 'Esc 取消拖动，不是选上一层').toBe(`${BADGE}/照片`);
+      expect(writes).toEqual([]);
+      expect((await photo()).place).toEqual({ width: { fixed: 24 }, height: { fixed: 24 } });
+
+      // 再拖一次松手：写回吸到 0.5 mm 的高，和读数一致；选中不变。
+      await press();
+      const shown = await target.getByTestId('handle-readout').textContent();
+      let saved = stashed();
+      await target.mouse.up();
+      await saved;
+      const height = ((await photo()).place!['height'] as { fixed: number }).fixed;
+      expect(height).toBeGreaterThan(24);
+      expect(height * 2).toBe(Math.round(height * 2));
+      expect(shown).toBe(`宽 24 × 高 ${height} mm`);
+      expect(await inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${BADGE}/照片`);
+      await target.getByTestId('select-tag').filter({ hasText: `× ${height} mm` }).waitFor({ timeout: PREVIEW_WINDOW_MS });
+      // 一步撤销。
+      saved = stashed();
+      await target.keyboard.press('Control+z');
+      await saved;
+      expect((await photo()).place).toEqual({ width: { fixed: 24 }, height: { fixed: 24 } });
+
+      // 方向键：在堆叠里和后一个换位。先在图上点它，焦点回到页面。
+      const body = (await target.getByTestId('handle-move').boundingBox())!;
+      await target.mouse.click(body.x + body.width / 2, body.y + body.height / 2);
+      saved = stashed();
+      await target.keyboard.press('ArrowDown');
+      await target.getByTestId('handle-readout').filter({ hasText: '放到第 3 位（共 8 位）' }).waitFor();
+      await saved;
+      expect((await current(BADGE)).artboard.children!.map((child) => child.name).slice(0, 3)).toEqual(['页眉', '姓名', '照片']);
+      saved = stashed();
+      await target.keyboard.press('Control+z');
+      await saved;
+      expect(await current(BADGE)).toEqual(badgeBefore);
+
+      // M402 顶栏：选中横向堆叠，拖第一个间距条，写 layout.gap。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏"]`).getByRole('button').first().click();
+      await inspector.getByTestId('handle-notes').filter({ hasText: '拖间距条改间距' }).waitFor();
+      const bar = (await target.locator('[data-testid="handle-bar"][data-handle="gap:0"]').boundingBox())!;
+      await target.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(bar.x + bar.width / 2 + 12, bar.y + bar.height / 2, { steps: 6 });
+      const gapText = (await target.getByTestId('handle-readout').textContent())!;
+      expect(gapText).toMatch(/^间距 \d+(\.5)? mm$/u);
+      saved = stashed();
+      await target.mouse.up();
+      await saved;
+      const gap = find((await current(ROOT)).artboard, '顶栏')!.layout!['gap'] as number;
+      expect(gap).toBeGreaterThan(8);
+      expect(gapText).toBe(`间距 ${gap} mm`);
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(BADGE)}/working-copy`, token);
+      expect(await current(ROOT)).toEqual(routeBefore);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;

@@ -532,6 +532,27 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .guide-gap { position: absolute; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(179, 128, 71, .55) 0 2px, rgba(179, 128, 71, .12) 2px 5px); }
 .guide-pad { position: absolute; pointer-events: none; background: repeating-linear-gradient(45deg, rgba(85, 100, 105, .4) 0 2px, rgba(85, 100, 105, .08) 2px 5px); }
 .guide-track { position: absolute; pointer-events: none; background: var(--mark); }
+/* 手柄（票据 13）：方块改尺寸或跨度，条改间距与轨道；拖动中只有幽灵框、插入线与读数。 */
+.handle-body { position: absolute; z-index: 2; user-select: none; touch-action: none; }
+.handle-body.dragging { background: rgba(41, 54, 66, .06); }
+.handle { position: absolute; z-index: 4; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border: 1.5px solid var(--mark); border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); touch-action: none; }
+.handle::before { content: ''; position: absolute; inset: -5px; }
+.handle:hover, .handle.dragging { background: var(--mark); }
+.handle-bar { position: absolute; z-index: 3; touch-action: none; }
+.handle-bar::before { content: ''; position: absolute; inset: -4px; }
+.handle-bar::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 14px; margin: -7px 0 0 -2px; border-radius: 2px; background: var(--mark); box-shadow: 0 0 0 1.5px #fff; opacity: .8; }
+.handle-bar.horizontal::after { width: 14px; height: 4px; margin: -2px 0 0 -7px; }
+.handle-bar:hover::after, .handle-bar.dragging::after { opacity: 1; }
+.handle-bar:hover, .handle-bar.dragging { background: rgba(179, 128, 71, .22); outline: 1px solid var(--mark); }
+.handle-ghost { position: absolute; z-index: 3; pointer-events: none; outline: 1.5px dashed var(--mark); outline-offset: -1px; background: rgba(41, 54, 66, .08); }
+.handle-line { position: absolute; z-index: 3; pointer-events: none; background: rgba(179, 128, 71, .4); outline: 1px solid var(--mark); outline-offset: -1px; }
+.handle-line.vertical, .handle-line.horizontal { background: var(--mark); outline: 0; }
+.handle-line.vertical { width: 2px !important; margin-left: -1px; }
+.handle-line.horizontal { height: 2px !important; margin-top: -1px; }
+.handle-readout { position: absolute; z-index: 5; pointer-events: none; margin-top: 4px; max-width: 460px; padding: 1px 6px; border-radius: 4px; background: var(--mark); color: #fff; font: 11px/1.5 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.handle-notes { margin: 0 0 10px; padding: 6px 8px; border-radius: var(--r); background: var(--surface); }
+.handle-notes p { margin: 0; }
+.handle-notes p + p { margin-top: 2px; }
 .guide-label { position: absolute; pointer-events: none; transform: translate(3px, -50%); padding: 0 4px; border-radius: 3px; background: var(--warn-soft); color: var(--ink); font: 10px/14px var(--mono); white-space: nowrap; }
 .design-legend { position: absolute; left: 50%; bottom: 50px; transform: translateX(-50%); z-index: 10; padding: 2px 8px; border-radius: 6px; background: var(--surface); color: var(--muted); white-space: nowrap; box-shadow: 0 1px 2px rgba(29, 38, 46, .1); }
 .design-scope-wrap { position: absolute; top: 10px; z-index: 12; display: flex; justify-content: center; pointer-events: none; min-width: 0; }

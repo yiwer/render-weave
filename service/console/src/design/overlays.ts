@@ -2,6 +2,7 @@
  * 舞台的叠加层（模板设计页票据 06，方案第 4 节）：都从布局摘要与模板文档算，不重新出图。纯函数。
  */
 import { isObject, type JsonObject } from '../template/document.js';
+import { gridTracks } from '../template/handles.js';
 import type { LayoutNode } from '../types.js';
 
 export type LayerName = 'problems' | 'structure' | 'fit' | 'data';
@@ -85,32 +86,19 @@ export function layoutGuides(element: JsonObject | undefined, node: LayoutNode |
     return { gaps, padding, tracks: [], labels: [] };
   }
   if (layout?.['mode'] !== 'grid') return { ...NO_GUIDES, padding };
-  const children = Array.isArray(element['children']) ? (element['children'] as unknown[]).filter(isObject) : [];
-  const edges = (tracks: readonly unknown[], key: string, span: string, position: (kid: LayoutNode) => [number, number], base: number) => {
-    const found: ([number, number] | undefined)[] = tracks.map((_, index) => {
-      const child = children.find((item) => isObject(item['place']) && item['place'][key] === index + 1 && ((item['place'][span] as number | undefined) ?? 1) === 1);
-      const kid = child && kids.find((item) => item.name === child['name']);
-      return kid ? position(kid) : undefined;
-    });
-    let cursor = base;
-    return tracks.map((track, index) => {
-      const range = found[index] ?? [cursor, cursor + (isObject(track) && typeof track['fixed'] === 'number' ? track['fixed'] : 0)] as [number, number];
-      cursor = range[1];
-      return range;
-    });
-  };
-  const rows = Array.isArray(layout['rows']) ? layout['rows'] as unknown[] : [], columns = Array.isArray(layout['columns']) ? layout['columns'] as unknown[] : [];
-  const rowEdges = edges(rows, 'row', 'rowSpan', (kid) => [kid.y, kid.y + kid.height], node.y);
-  const columnEdges = edges(columns, 'column', 'columnSpan', (kid) => [kid.x, kid.x + kid.width], node.x);
+  // 轨道位置和网格的手柄同一个口径（template/handles.ts）：线画在哪，手柄就在哪。
+  const tracks = gridTracks(element, node);
+  if (!tracks) return { ...NO_GUIDES, padding };
+  const rows = layout['rows'] as unknown[], columns = layout['columns'] as unknown[];
   return {
     gaps: [], padding,
     tracks: [
-      ...rowEdges.slice(0, -1).map(([, end]) => ({ axis: 'row' as const, at: end, from: node.x, to: node.x + node.width, label: '' })),
-      ...columnEdges.slice(0, -1).map(([, end]) => ({ axis: 'column' as const, at: end, from: node.y, to: node.y + node.height, label: '' })),
+      ...tracks.rows.slice(0, -1).map((track) => ({ axis: 'row' as const, at: track.start + track.size, from: node.x, to: node.x + node.width, label: '' })),
+      ...tracks.columns.slice(0, -1).map((track) => ({ axis: 'column' as const, at: track.start + track.size, from: node.y, to: node.y + node.height, label: '' })),
     ],
     labels: [
-      ...rowEdges.map(([start, end], index) => ({ x: node.x, y: (start + end) / 2, text: trackLabel(rows[index]) })),
-      ...columnEdges.map(([start, end], index) => ({ x: (start + end) / 2, y: node.y, text: trackLabel(columns[index]) })),
+      ...tracks.rows.map((track, index) => ({ x: node.x, y: track.start + track.size / 2, text: trackLabel(rows[index]) })),
+      ...tracks.columns.map((track, index) => ({ x: track.start + track.size / 2, y: node.y, text: trackLabel(columns[index]) })),
     ],
   };
 }

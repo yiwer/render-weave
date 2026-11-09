@@ -10,6 +10,8 @@ import { hitStack } from '../template/document.js';
 import type { JsonObject } from '../template/document.js';
 import type { LayoutNode } from '../types.js';
 import { isAddDrag } from './add-panel.js';
+import { HandleLayer } from './handles.js';
+import type { HandleInput, HandleResult } from '../template/handles.js';
 import { contentKind, fitSummary, flatNodes, layoutGuides, type Layers } from './overlays.js';
 
 export interface StageView { readonly zoom: number; readonly x: number; readonly y: number }
@@ -53,6 +55,10 @@ export function DesignStage(props: {
   readonly inline?: { readonly instance: string; readonly editor: ReactNode };
   /** 从"添加"页拖到图上：这个位置的元素（第一个最深）与落点（毫米）。 */
   readonly onDropAdd?: (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }) => void;
+  /** 选中那一处的手柄（票据 13）：能拖什么由父容器的布局决定；松手交回写回。平移时不显示。 */
+  readonly handles?: HandleInput;
+  readonly handleNote?: string;
+  readonly onHandle?: (result: HandleResult) => void;
 }) {
   const { preview, tool, view, insets, selected } = props, reply = preview.reply, image = reply?.image, layout = reply?.layout;
   const stage = useRef<HTMLDivElement>(null);
@@ -204,6 +210,9 @@ export function DesignStage(props: {
           {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={{ ...percent(node), ...rotated(path) }} /> : null; })}
           {main && nodes.get(main) && (
             <span className="select-box" data-testid="select-box" data-path={main} style={{ ...percent(nodes.get(main)!), ...rotated(main) }}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
+          )}
+          {!panning && props.handles && props.onHandle && props.handles.node.path === main && (
+            <HandleLayer input={props.handles} output={layout.output} rotation={rotated(main)} {...(props.handleNote ? { note: props.handleNote } : {})} onCommit={props.onHandle} />
           )}
         </div>
       ) : (

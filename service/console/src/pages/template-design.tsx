@@ -18,6 +18,7 @@ import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { AddPanel, canDropInto, currentAdd, isAddDrag } from '../design/add-panel.js';
 import { insertElement, insertionPoint, type Drop } from '../template/create.js';
 import { writeProperty } from '../template/properties.js';
+import { handlesOf, layoutContext, nudge, type ArrowKey, type HandleInput, type HandleResult } from '../template/handles.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
 import { CodePanel } from '../components/code-panel.js';
 import { RevisionChanges } from '../components/revision-changes.js';
@@ -286,6 +287,31 @@ function Design(props: { readonly name: string; readonly root: string }) {
     }
     setNotice(payload.fromField ? '字段只能放进这个模板自己的容器里。' : '这里没有能放元素的容器。');
   };
+  // —— 手柄（票据 13）：松手记一步撤销、暂存、出图；方向键连着按合成一步。 ——
+  const handleInput = useMemo<HandleInput | undefined>(() => {
+    if (!selected || !doc || !reply?.layout) return undefined;
+    const instance = selected.instance && instances.includes(selected.instance) ? selected.instance : instances[0];
+    const context = instance ? layoutContext(reply.layout.root, instance) : undefined;
+    if (!context) return undefined;
+    const host = selected.path === name && context.parent ? elementOf(context.parent.path) : undefined;
+    return { document: doc.document, template: name, path: selected.path, node: context.node, ...(context.parent ? { parent: context.parent } : {}), ...(host ? { host } : {}), count: instances.length };
+  }, [selected, doc?.document, reply, name, instances.join('\n')]);
+  const handleSet = useMemo(() => (handleInput ? handlesOf(handleInput) : undefined), [handleInput]);
+  const [handleNote, setHandleNote] = useState<string>();
+  const noteTimer = useRef<number | undefined>(undefined);
+  const commitHandle = (result: HandleResult) => {
+    session.edit(name, result.document, `handle:${Date.now()}`);
+    void session.flush();
+  };
+  const nudgeSelected = (key: ArrowKey, fine: boolean) => {
+    const result = handleInput && nudge(handleInput, key, fine);
+    if (!result || !selected) return;
+    session.edit(name, result.document, `nudge:${selected.path}`);
+    setHandleNote(result.readout);
+    window.clearTimeout(noteTimer.current);
+    noteTimer.current = window.setTimeout(() => setHandleNote(undefined), 1600);
+  };
+  useEffect(() => () => window.clearTimeout(noteTimer.current), []);
   const dropOnTree = (template: string, path: string, over: string, zone: DropZone) => {
     const document = documentOf(template), place = document && dropTarget(document, template, over, zone);
     if (!document || !place) return;
@@ -307,9 +333,9 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const fitView = () => setView(FIT_VIEW);
 
   // 快捷键：Ctrl+S、Ctrl+Z、Ctrl+Y、Ctrl+0、Ctrl+1、Ctrl+\\；V、H 切工具，打字时不算。
-  const keys = useRef({ undo, redo, save, fitView, climb, descend, structure, startRename, physical: () => {}, togglePanels: () => {} });
+  const keys = useRef({ undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected, physical: () => {}, togglePanels: () => {} });
   keys.current = {
-    undo, redo, save, fitView, climb, descend, structure, startRename,
+    undo, redo, save, fitView, climb, descend, structure, startRename, nudge: nudgeSelected,
     physical: () => setView({ zoom: ((outputWidth / 25.4) * PHYSICAL_DPI) / fit, x: 0, y: 0 }),
     togglePanels: () => setPanels((now) => { const open = !(now.left || now.right); return { left: open, right: open }; }),
   };
@@ -332,6 +358,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
       // 改结构：Alt+↑、Alt+↓ 上移下移，Del 删除，F2 改名。打字时不算。
       if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) { event.preventDefault(); keys.current.structure(event.key === 'ArrowUp' ? 'up' : 'down'); return; }
       if (event.altKey) return;
+      // 方向键微调选中的元素（票据 13）：焦点在页面或舞台上时才算，树与面板里的按钮照常。
+      if (event.key.startsWith('Arrow') && (target === document.body || target?.closest('[data-testid="design-stage"]'))) { event.preventDefault(); keys.current.nudge(event.key as ArrowKey, event.shiftKey); return; }
       if (event.key === 'Delete') { event.preventDefault(); keys.current.structure('delete'); return; }
       if (event.key === 'F2') { event.preventDefault(); keys.current.startRename(); return; }
       if (key === 'v') setTool('select');
@@ -386,7 +414,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} {...(handleInput ? { handles: handleInput } : {})} {...(handleNote ? { handleNote } : {})} onHandle={commitHandle} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -416,7 +444,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         {panels.right && (
           <aside className="design-panel right" aria-label="检查器">
             <div className="design-panel-body">
-              {doc ? <DesignInspector doc={doc} session={session} documentOf={documentOf} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
+              {doc ? <DesignInspector doc={doc} session={session} documentOf={documentOf} selected={selected} reply={reply} impact={impactOf(root, selected, instances.length)} {...(handleSet ? { handles: handleSet } : {})} {...(variable?.template === name ? { variable } : {})} {...(inspection ? { inspection } : {})} onVariable={(next) => { if (next) openVariable(next); else setVariable(undefined); }} onSelect={(path) => select(name, path)} onSelected={setSelection} onOpenTemplate={openTemplate} /> : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
