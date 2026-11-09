@@ -2,7 +2,8 @@
  * 值格背后的规则（模板设计页票据 09，方案第 7 节）：作用域里有哪些变量、哪些能绑到这一格、断开时写什么、提取为参数、值从哪来。
  * 纯函数，不碰页面与接口。绑定就是把值写成 { var }（M71），写回走 properties.ts 的同一个入口；取值都来自元素求值，这里不求值。
  */
-import type { ElementInspection, InspectedValue, ParameterOrigin } from '../types.js';
+import { formOf, type JsonObject as FormObject } from '../form/schema.js';
+import type { ElementInspection, InspectedValue, ParameterOrigin, StaticSchemaDetail } from '../types.js';
 import { isObject, type JsonObject } from './document.js';
 import { matchesSchema, writeProperty, type Bindable, type BindingType, type FieldPath, type PropertyField } from './properties.js';
 
@@ -15,10 +16,30 @@ export interface ScopeVariable {
   readonly type: string;
   readonly value?: InspectedValue;
   readonly origin?: ParameterOrigin;
+  /** 列表每一项的类型；是引用时 itemRef 写明数据定义（派生变量的取项按它推结果类型）。 */
+  readonly itemType?: string;
+  readonly itemRef?: { readonly name: string; readonly version: number };
 }
 
 /** 数据定义里的一个字段。object 是单引用，fields 是它的下一层（路径只经过单引用，M21）。 */
-export interface BaseField { readonly name: string; readonly label: string; readonly type: string; readonly fields?: readonly BaseField[] }
+export interface BaseField {
+  readonly name: string; readonly label: string; readonly type: string; readonly fields?: readonly BaseField[];
+  readonly itemType?: string; readonly itemRef?: { readonly name: string; readonly version: number };
+}
+
+/** 静态数据定义的字段：类型取编译产物，列表的项另从数据定义文档读（编译产物里引用已内联，读不出指向哪个数据定义）。 */
+export function baseFieldsOf(detail: StaticSchemaDetail | undefined): readonly BaseField[] {
+  if (!detail) return [];
+  const items = new Map((detail.definition?.fields ?? []).filter((field) => field.type === 'list' && field.items).map((field) => [field.name, field.items!]));
+  return formOf(detail.compiled as FormObject).fields.map((field) => {
+    const item = items.get(field.name);
+    return {
+      name: field.name, label: field.spec.title || field.name, type: field.spec.kind === 'object' ? 'ref' : field.spec.kind,
+      ...(field.spec.kind === 'object' ? { fields: field.spec.fields.map((inner) => ({ name: inner.name, label: inner.spec.title || inner.name, type: inner.spec.kind })) } : {}),
+      ...(item ? { itemType: item.type, ...(item.ref ? { itemRef: { name: item.ref.name, version: Number(item.ref.version) } } : {}) } : {}),
+    };
+  });
+}
 
 const namedList = (document: JsonObject, list: string): readonly JsonObject[] => (Array.isArray(document[list]) ? (document[list] as unknown[]).filter(isObject) : []);
 
@@ -37,7 +58,7 @@ export function scopeVariables(document: JsonObject, fields: readonly BaseField[
   const fieldRows = base.flatMap((field) => {
     const parent = known.get(field.name)?.value, inner = isObject(parent) && 'fields' in parent ? parent.fields as Readonly<Record<string, unknown>> : undefined;
     return [
-      entry(field.name, field.label, 'field', field.type),
+      { ...entry(field.name, field.label, 'field', field.type), ...(field.itemType ? { itemType: field.itemType } : {}), ...(field.itemRef ? { itemRef: field.itemRef } : {}) },
       ...(field.fields ?? []).map((child): ScopeVariable => {
         const value = inner?.[child.name];
         return { name: `${field.name}.${child.name}`, label: `${field.label} · ${child.label}`, kind: 'field', type: child.type, ...(value === undefined || typeof value === 'object' ? {} : { value: value as InspectedValue }) };

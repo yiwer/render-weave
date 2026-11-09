@@ -678,6 +678,26 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .inline-anchor { position: absolute; z-index: 30; width: 340px; max-width: calc(100% - 16px); }
 .inline-text { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
 .tree-hint { margin: 0 0 6px; padding: 0 4px; }
+.derived-editor { display: flex; flex-direction: column; gap: 8px; }
+.branches { display: flex; flex-direction: column; gap: 6px; }
+.branch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 6px 8px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--surface); }
+/* 当前样例命中的那一支：和原型一样用强调色的边框，加一个标签，不只靠底色。 */
+.branch-row.hit { border-color: var(--mark); background: var(--accent-soft); }
+.branch-hit-tag { font-size: 11.5px; color: var(--mark); font-weight: 600; margin-right: 4px; }
+.branch-word { font-size: 12px; color: var(--muted); }
+.branch-tools { margin-left: auto; display: inline-flex; gap: 2px; }
+.branch-tools button.link { padding: 0 4px; }
+.condition { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.condition-item, .compare, .operand { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.branches select, .branches input, .derived-editor .operand select, .derived-editor .operand input { min-height: 28px; height: 28px; padding: 0 6px; font-size: 12.5px; width: auto; max-width: 140px; }
+/* 写法（变量 / 固定值、单个条件 / 全部成立）收窄、去掉边框：要的是后面的值。 */
+.derived-editor select.operand-kind, .derived-editor select.condition-kind { max-width: 72px; padding: 0 2px; border-color: transparent; background: none; color: var(--muted); font-size: 11.5px; }
+.derived-editor select.operand-kind:hover, .derived-editor select.condition-kind:hover { border-color: var(--line); }
+.operand .value-text { max-width: 90px; }
+.variable-create { flex-wrap: wrap; }
+.variable-create input { flex: 1 1 120px; min-height: 30px; }
+.variable-create select { min-height: 30px; }
+.variable-add { align-self: flex-start; margin: 2px 0 8px; }
 .add-panel { display: flex; flex-direction: column; gap: 10px; }
 .add-panel > p { margin: 0; }
 .add-section { display: flex; flex-direction: column; gap: 6px; }

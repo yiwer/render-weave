@@ -8,7 +8,7 @@ import { ProblemList } from '../components/problems.js';
 import { FieldRow, FieldRows, type BindingHost, type FieldContext } from '../components/property-fields.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { href, useLoad } from '../hooks.js';
-import { describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
+import { baseFieldsOf, describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { fontFamilies, type FontFamily } from '../template/fonts.js';
 import { nameProblem } from '../template/structure.js';
@@ -37,10 +37,7 @@ function useFieldLists(doc: DesignDoc): { readonly lists: FieldContext['lists'];
     }
     return names;
   }, [compiled.data]);
-  const baseFields = useMemo<readonly BaseField[]>(() => (compiled.data ? formOf(compiled.data.compiled as FormObject).fields.map((field) => ({
-    name: field.name, label: field.spec.title || field.name, type: field.spec.kind === 'object' ? 'ref' : field.spec.kind,
-    ...(field.spec.kind === 'object' ? { fields: field.spec.fields.map((inner) => ({ name: inner.name, label: inner.spec.title || inner.name, type: inner.spec.kind })) } : {}),
-  })) : []), [compiled.data]);
+  const baseFields = useMemo<readonly BaseField[]>(() => baseFieldsOf(compiled.data), [compiled.data]);
   const named = (list: string) => (Array.isArray(doc.document[list]) ? (doc.document[list] as unknown[]).flatMap((item) => (isObject(item) && typeof item['name'] === 'string' ? [item['name']] : [])) : []);
   const variables = [...named('parameters'), ...named('derived'), ...fields];
   const refs = (kind: 'font' | 'image') => (resources.data?.resources ?? []).filter((resource) => resource.kind === kind).map((resource) => `res:${resource.id}`);
@@ -69,7 +66,7 @@ export function DesignInspector(props: {
     return (
       <>
         {element}
-        <VariableInspector key={`${props.variable.template}\n${props.variable.name}`} doc={doc} session={session} selection={props.variable} {...(props.inspection ? { inspection: props.inspection } : {})} lists={lists} documentOf={props.documentOf} onElement={props.onSelect} onVariable={props.onVariable} onClear={() => props.onVariable(undefined)} />
+        <VariableInspector key={`${props.variable.template}\n${props.variable.name}`} doc={doc} session={session} selection={props.variable} {...(props.inspection ? { inspection: props.inspection } : {})} lists={lists} baseFields={baseFields} documentOf={props.documentOf} onElement={props.onSelect} onVariable={props.onVariable} onClear={() => props.onVariable(undefined)} />
       </>
     );
   }

@@ -8,7 +8,9 @@ import { FieldRow, OriginLine, type FieldContext } from '../components/property-
 import { TYPE_GLYPHS, ValueText } from '../components/value-text.js';
 import { formOf, type JsonObject as FormObject } from '../form/schema.js';
 import { href, useLoad } from '../hooks.js';
-import { describeOrigin } from '../template/binding.js';
+import { baseFieldsOf, describeOrigin, parameterNameProblem, scopeVariables, takenNames, type BaseField } from '../template/binding.js';
+import { addCheck, addDerived, cycleOf, definitionsUsing, newCheck, newDerived, OPS, removeCheck, removeDerived, setDerived, withOp, type DerivedOp } from '../template/derived.js';
+import { DerivedEditor } from './derived-editor.js';
 import { elementVariables, flatElements, isObject, variableClosure, type JsonObject } from '../template/document.js';
 import { listItemPanel, writeListItem } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
@@ -66,6 +68,44 @@ export function VariablesPanel(props: {
   const base = isObject(document['base']) ? document['base'] as { name: string; version: string | number } : undefined;
   const compiled = useLoad(() => (base ? api.staticSchema(base.name, base.version as number).catch((error: unknown) => { if (error instanceof ApiError) return undefined; throw error; }) : Promise.resolve(undefined)), `${base?.name}@${base?.version}`);
   const values = useMemo(() => new Map<string, InspectedVariable>((inspection?.template === doc.name ? inspection.variables : []).map((item) => [item.name, item])), [inspection, doc.name]);
+  const scope = useMemo(() => scopeVariables(document, baseFieldsOf(compiled.data), inspection?.template === doc.name ? inspection : undefined), [document, compiled.data, inspection, doc.name]);
+  const [creating, setCreating] = useState<{ readonly list: 'derived' | 'checks'; readonly name: string; readonly op: DerivedOp } | undefined>();
+  const [createProblem, setCreateProblem] = useState<string>();
+  /** 新建派生变量或检查项：名称一般用英文（M89），同作用域不能重名；显示名称先同名称，在右边改。 */
+  const create = () => {
+    if (!creating) return;
+    const trimmed = creating.name.trim(), problem = parameterNameProblem(trimmed, takenNames(document, scope));
+    if (problem) { setCreateProblem(problem); return; }
+    const variables = scope.map((item) => ({ name: item.name, type: item.type, ...(item.itemType ? { itemType: item.itemType } : {}), ...(item.itemRef ? { itemRef: item.itemRef } : {}) }));
+    if (creating.list === 'checks') {
+      props.session.edit(doc.name, addCheck(document, newCheck(trimmed, trimmed, variables)), `checks:add:${trimmed}`);
+      props.onSelect({ template: doc.name, name: trimmed, kind: 'check' });
+    } else {
+      const definition = newDerived(creating.op, trimmed, trimmed, variables);
+      if ('problem' in definition) { setCreateProblem(String(definition['problem'])); return; }
+      props.session.edit(doc.name, addDerived(document, definition), `derived:add:${trimmed}`);
+      props.onSelect({ template: doc.name, name: trimmed, kind: 'derived' });
+    }
+    void props.session.flush();
+    setCreating(undefined);
+    setCreateProblem(undefined);
+  };
+  const creator = (list: 'derived' | 'checks') => (creating?.list === list
+    ? (
+      <form className="prop-actions variable-create" aria-label={list === 'derived' ? '新建派生变量' : '新建检查项'} onSubmit={(event) => { event.preventDefault(); create(); }}>
+        <input type="text" autoFocus aria-label={list === 'derived' ? '新派生变量的名称' : '新检查项的名称'} placeholder="名称，一般用英文" value={creating.name} aria-invalid={createProblem ? true : undefined}
+          onChange={(event) => { setCreating({ ...creating, name: event.target.value }); setCreateProblem(undefined); }} />
+        {list === 'derived' && (
+          <select aria-label="运算" value={creating.op} onChange={(event) => setCreating({ ...creating, op: event.target.value as DerivedOp })}>
+            {OPS.map((item) => <option key={item.op} value={item.op}>{item.label}</option>)}
+          </select>
+        )}
+        <button type="submit" className="small">新建</button>
+        <button type="button" className="small quiet" onClick={() => { setCreating(undefined); setCreateProblem(undefined); }}>取消</button>
+        {createProblem && <span className="prop-error" role="alert">{createProblem}</span>}
+      </form>
+    )
+    : <button type="button" className="small quiet variable-add" onClick={() => setCreating({ list, name: '', op: 'branch' })}>{list === 'derived' ? '新建派生变量' : '新建检查项'}</button>);
   const parameters = namedList(document, 'parameters'), derived = namedList(document, 'derived'), checks = namedList(document, 'checks');
   const fields = useMemo(() => {
     if (compiled.data) return formOf(compiled.data.compiled as FormObject).fields.map((field) => ({ name: field.name, label: field.spec.title || field.name }));
@@ -104,8 +144,10 @@ export function VariablesPanel(props: {
         <input type="text" aria-label="新参数的名称" placeholder="新参数的名称，一般用英文" value={newName} onChange={(event) => setNewName(event.target.value)} aria-invalid={taken ? true : undefined} />
         <button type="submit" className="small quiet" disabled={!valid}>添加参数</button>
       </form>
-      {section('派生变量', '单步运算，按名组合', derived.map((item) => rowOf(String(item['name']), String(item['displayName'] ?? item['name']), 'derived', String(item['type']))))}
+      {section('派生变量', '单步运算，按名组合', derived.map((item) => rowOf(String(item['name']), String(item['displayName'] ?? item['name']), 'derived', String(item['type']))), '还没有派生变量。')}
+      {creator('derived')}
       {section('检查项', '渲染前求值', checks.map((item) => { const name = String(item['name']), result = failed(name); return { name, label: String(item['displayName'] ?? name), kind: 'check' as const, type: 'boolean', ...(result === undefined ? {} : { failed: result }), level: String(item['level']) }; }), '这个模板没有检查项。')}
+      {creator('checks')}
     </div>
   );
 }
@@ -147,7 +189,7 @@ const originIsSelf = (origin: ParameterOrigin, template: string, name: string) =
 /** 右边：选中的变量。参数与检查项能改；字段属于数据定义，只读；派生变量的编辑器在票据 16，这里先看。 */
 export function VariableInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selection: VariableSelection; readonly inspection?: ElementInspection; readonly lists: FieldContext['lists'];
-  readonly documentOf: (template: string) => JsonObject | undefined;
+  readonly documentOf: (template: string) => JsonObject | undefined; readonly baseFields: readonly BaseField[];
   readonly onElement: (path: string) => void; readonly onVariable: (selection: VariableSelection) => void; readonly onClear: () => void;
 }) {
   const { doc, session, selection, inspection } = props, { name, kind } = selection, document = doc.document;
@@ -166,6 +208,17 @@ export function VariableInspector(props: {
   const kindText = { field: '数据字段', parameter: '模板参数', derived: '派生变量', check: '检查项' }[kind];
   const base = isObject(document['base']) ? String(document['base']['name']) : '';
   const derived = kind === 'derived' ? namedList(document, 'derived').find((item) => item['name'] === name) : undefined;
+  const [opProblem, setOpProblem] = useState<string>();
+  const scope = scopeVariables(document, props.baseFields, inspection?.template === doc.name ? inspection : undefined);
+  const editorVariables = scope.map((item) => ({ name: item.name, label: item.label, type: item.type, ...(item.value !== undefined ? { value: item.value } : {}), ...(item.itemType ? { itemType: item.itemType } : {}), ...(item.itemRef ? { itemRef: item.itemRef } : {}) }));
+  /** 删之前说清谁在用：还在用的留给问题清单报，不替人改绑定。 */
+  const remove = (what: string, next: JsonObject) => {
+    const uses = [...usesOfVariable(document, doc.name, name).elements.map((element) => element.name), ...definitionsUsing(document, name)];
+    if (uses.length && !window.confirm(`还有 ${uses.length} 处在用：${uses.join('、')}。删了之后由问题清单报，不替你改绑定。确定删除${what}？`)) return;
+    edit(next, `${kind}:delete:${name}:${Date.now()}`);
+    void session.flush();
+    props.onClear();
+  };
   return (
     <div data-testid="variable-inspector" data-name={name} data-kind={kind}>
       <div className="inspector-head">
@@ -186,12 +239,22 @@ export function VariableInspector(props: {
           <button type="button" className="link danger" onClick={() => { edit({ ...document, parameters: namedList(document, 'parameters').filter((item) => item['name'] !== name) }, `parameters:delete:${name}`); props.onClear(); }}>删除这个参数</button>
         </section>
       )}
-      {kind === 'check' && <section className="prop-section" aria-label="检查项">{listField('checks')}</section>}
+      {kind === 'check' && (
+        <section className="prop-section" aria-label="检查项">
+          {listField('checks')}
+          <button type="button" className="link danger" onClick={() => { edit(removeCheck(document, name), `checks:delete:${name}:${Date.now()}`); void session.flush(); props.onClear(); }}>删除这个检查项</button>
+        </section>
+      )}
       {derived && (
         <section className="prop-section" aria-label="运算">
           <h3>{OPERATIONS[String(derived['op'])] ?? String(derived['op'])}</h3>
           {known?.branch !== undefined && <p className="small muted" data-testid="branch-hit">{known.branch < 0 ? '当前命中"否则"' : `当前命中第 ${known.branch + 1} 支`}</p>}
-          <p className="small faint">编辑器在下一期。</p>
+          <DerivedEditor definition={derived} variables={editorVariables} hit={known?.branch}
+            onChange={(next) => { setOpProblem(undefined); edit(setDerived(document, name, next), `derived:${name}`); }}
+            onOp={(op: DerivedOp) => { const next = withOp(derived, op, editorVariables); if ('problem' in next) { setOpProblem(String(next['problem'])); return; } setOpProblem(undefined); edit(setDerived(document, name, next), `derived:${name}:op:${Date.now()}`); void session.flush(); }} />
+          {opProblem && <p className="prop-error" role="alert">{opProblem}</p>}
+          {cycleOf(document, name) && <p className="prop-error" role="alert" data-testid="variable-cycle">这个派生变量经别的派生变量用到了自己（template.variableCycle）。</p>}
+          <button type="button" className="link danger" onClick={() => remove('这个派生变量', removeDerived(document, name))}>删除这个派生变量</button>
         </section>
       )}
       {kind !== 'check' && <Uses document={document} template={doc.name} name={name} onElement={props.onElement} onVariable={(next) => props.onVariable({ template: doc.name, name: next, kind: 'derived' })} />}

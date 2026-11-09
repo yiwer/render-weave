@@ -3221,6 +3221,104 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 180_000);
 
+    it('模板设计（票据 16）：stopState 的分支编辑器标出命中，改取值、加一支、换条件写法；新建派生变量与检查项，重名拦下；删还在用的先确认', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Doc = { derived?: { name: string; op: string; branches?: { when: Record<string, unknown>; then: unknown }[] }[]; checks?: { name: string }[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(STOP)}/content`, token)).body;
+        return JSON.parse(body.content as string) as Doc;
+      };
+      const stopState = async () => (await current()).derived!.find((item) => item.name === 'stopState')!;
+      const before = await current();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
+      await side.getByRole('tab', { name: '变量' }).click();
+      await side.locator('[data-name="stopState"]').getByRole('button').click();
+      const editor = inspector.getByTestId('derived-editor');
+      const rows = editor.getByTestId('branch-row');
+      await expect.poll(() => rows.count()).toBe(3);
+      // 本站序号缺省是 0：第 1 支"普通"成立，高亮。
+      await expect.poll(() => rows.nth(0).getAttribute('data-hit')).toBe('true');
+      expect(await editor.getByLabel('结果类型').inputValue()).toBe('text');
+
+      // 改取值。
+      let saved = stashed();
+      await rows.nth(0).getByLabel('第 1 支的取值', { exact: true }).fill('常态');
+      await saved;
+      await expect.poll(async () => (await stopState()).branches![0]!.then).toEqual({ value: '常态' });
+
+      // 加一支，再去掉。
+      saved = stashed();
+      await editor.getByRole('button', { name: '加一支' }).click();
+      await saved;
+      await expect.poll(async () => (await stopState()).branches!.length).toBe(4);
+      saved = stashed();
+      await editor.getByRole('button', { name: '去掉第 4 支' }).click();
+      await saved;
+      await expect.poll(async () => (await stopState()).branches!.length).toBe(3);
+
+      // 第 2 支换成"全部成立"。
+      saved = stashed();
+      await rows.nth(1).getByLabel('第 2 支的写法', { exact: true }).selectOption('all');
+      await saved;
+      await expect.poll(async () => Object.keys((await stopState()).branches![1]!.when)).toEqual(['all']);
+
+      // 新建派生变量：重名拦下，换个名字就建好并选中。
+      await side.getByRole('button', { name: '新建派生变量' }).click();
+      const creating = side.getByRole('form', { name: '新建派生变量' });
+      await creating.getByLabel('新派生变量的名称').fill('stopState');
+      await creating.getByRole('button', { name: '新建' }).click();
+      await creating.getByRole('alert').filter({ hasText: '已经有' }).waitFor();
+      await creating.getByLabel('新派生变量的名称').fill('stopCount');
+      await creating.getByLabel('运算').selectOption({ label: '加' });
+      saved = stashed();
+      await creating.getByRole('button', { name: '新建' }).click();
+      await saved;
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopCount"]').waitFor();
+      await editor.getByLabel('算法').waitFor();
+      expect((await current()).derived!.map((item) => item.name)).toContain('stopCount');
+
+      // 删还在用的 stopState：先列出谁在用，不确定就不动。
+      await side.locator('[data-name="stopState"]').getByRole('button').click();
+      const asked: string[] = [];
+      target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
+      await inspector.getByRole('button', { name: '删除这个派生变量' }).click();
+      await expect.poll(() => asked).toEqual([expect.stringContaining('在用')]);
+      expect((await current()).derived!.map((item) => item.name)).toContain('stopState');
+
+      // 没人用的 stopCount 直接删。
+      await side.locator('[data-name="stopCount"]').getByRole('button').click();
+      saved = stashed();
+      await inspector.getByRole('button', { name: '删除这个派生变量' }).click();
+      await saved;
+      expect((await current()).derived!.map((item) => item.name)).not.toContain('stopCount');
+
+      // 检查项：新建再删掉。
+      await side.getByRole('button', { name: '新建检查项' }).click();
+      const check = side.getByRole('form', { name: '新建检查项' });
+      await check.getByLabel('新检查项的名称').fill('noName');
+      saved = stashed();
+      await check.getByRole('button', { name: '新建' }).click();
+      await saved;
+      await inspector.locator('[data-testid="variable-inspector"][data-name="noName"]').waitFor();
+      saved = stashed();
+      await inspector.getByRole('button', { name: '删除这个检查项' }).click();
+      await saved;
+      expect((await current()).checks ?? []).toEqual([]);
+
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      expect(await current()).toEqual(before);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;
