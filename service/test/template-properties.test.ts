@@ -485,7 +485,7 @@ describe('值格：绑定、断开、提取为参数（模板设计页票据 09�
       before: '来自 ', link: { template: '标准线路单边', name: 'stopNameSize', kind: 'parameter', label: '标准线路单边「站名字号」' }, after: '（内部参数）',
     });
     expect(describeOrigin({ kind: 'default', template: '标准线路单边', name: 'stopNameSize', visibility: 'public' }, '标准线路单边', documentOf)).toMatchObject({ link: { label: '本模板「站名字号」' }, after: '（对外参数的缺省值）' });
-    expect(describeOrigin({ kind: 'request', template: '标准线路单边', name: 'currentIndex' }, '站点', documentOf)).toMatchObject({ link: { name: 'currentIndex' }, after: '（对外参数，渲染请求给值）' });
+    expect(describeOrigin({ kind: 'request', template: '标准线路单边', name: 'currentIndex' }, '站点', documentOf)).toMatchObject({ link: { name: 'currentIndex' }, after: '（对外参数，出图时由渲染请求给值）' });
     expect(describeOrigin({ kind: 'field', template: '标准线路单边', name: 'terminal.name', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toMatchObject({ link: { name: 'terminal', kind: 'field' }, after: '（调用 站点列 传入）' });
     expect(describeOrigin({ kind: 'value', template: '标准线路单边', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '调用 站点列 写的固定值', after: '' });
     expect(describeOrigin({ kind: 'loop', template: '标准线路单边', loop: 'index', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '循环序号，由循环 站点列 传入', after: '' });

@@ -152,7 +152,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const accept = (dialog: Dialog) => { void dialog.accept(); };
       target.on('dialog', accept);
       try {
-        await target.evaluate(() => { location.hash = '#/templates'; });
+        await target.evaluate("location.hash = '#/templates'");
         await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
       } finally { target.off('dialog', accept); }
       if (trialKey) await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${trialKey}`);
@@ -1335,7 +1335,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await choice(1).press('Enter');
         await choice(2).pressSequentially('乙');
         await form.getByRole('button', { name: '添加可选值' }).click();
-        await expect.poll(() => choice(3).evaluate((element) => element === document.activeElement), { message: '焦点到新的一项' }).toBe(true);
+        await expect.poll(() => choice(3).evaluate((element) => element === element.ownerDocument.activeElement), { message: '焦点到新的一项' }).toBe(true);
         // 重复的当场提示；空的一项按退格删掉，焦点回到上一项。
         await choice(3).fill('甲');
         await form.getByTestId('enum-row').nth(2).getByRole('alert').filter({ hasText: '和前面的重复了' }).waitFor();
@@ -2494,6 +2494,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       };
       const scope = target.getByTestId('design-scope');
       const scopeAt = (path: string) => expect.poll(() => scope.getAttribute('data-path')).toBe(path);
+      /** 范围条从左到右是根到叶：路径的第一段在最左边。 */
+      const scopeLeftToRight = async () => { const lefts = await scope.locator('.scope-segment').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().left)); expect(lefts).toEqual([...lefts].sort((a, b) => a - b)); };
       const inspector = () => target.getByRole('complementary', { name: '检查器' });
 
       // 没选中：检查器是画板。
@@ -2502,6 +2504,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       await canvas.click({ position: await position(stop(12)) });
       await scopeAt(stop(12));
+      await scopeLeftToRight();
       expect(await scope.getAttribute('data-count')).toBe('35');
       expect(await scope.textContent()).toContain('定义在 站点，图上 35 处，这是第 12 处，改一处全改');
       await inspector().locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
@@ -2521,7 +2524,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带"]`).hover();
       await expect.poll(() => target.getByTestId('hover-box').count()).toBeGreaterThan(0);
       await nameRow.hover();
-      await expect.poll(() => target.getByTestId('hover-box').count(), '35 处都标出来').toBeGreaterThanOrEqual(35);
+      await expect.poll(() => target.getByTestId('hover-box').count(), { message: '35 处都标出来' }).toBeGreaterThanOrEqual(35);
       await target.getByTestId('design-scope').hover();
       for (const template of ['站点', '标识图标', '道路段', '班次时刻']) expect((await server('GET', `/v1/templates/${enc(template)}/working-copy`, world.b.admin.token)).status, `${template} 没开工作副本`).toBe(404);
       // 树上点一行，图上出现它的框，检查器跟着走。
@@ -2578,11 +2581,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await canvas.click({ position: await position(`${ROOT}/顶栏/运营方`) });
       await target.keyboard.press('Escape');
       await scopeAt(`${ROOT}/顶栏`);
-      await expect.poll(() => target.getByTestId('guide-gap').count(), '顶栏是横向堆叠').toBeGreaterThan(0);
+      await expect.poll(() => target.getByTestId('guide-gap').count(), { message: '顶栏是横向堆叠' }).toBeGreaterThan(0);
       await expect.poll(() => target.getByTestId('guide-pad').count()).toBeGreaterThan(0);
       await target.keyboard.press('Escape');
       await scopeAt(ROOT);
-      await expect.poll(() => target.getByTestId('guide-track').count(), '根模板是四行的网格').toBe(3);
+      await expect.poll(() => target.getByTestId('guide-track').count(), { message: '根模板是四行的网格' }).toBe(3);
       expect(await target.getByTestId('guide-label').allTextContents()).toEqual(['34 mm', '1 份', '10 mm', '21 mm', '1 份']);
       expect(await target.getByTestId('preview-image').getAttribute('src'), '叠加层不重新出图').toBe(before);
 
@@ -2885,7 +2888,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await inspector.getByTestId('value-origin').getByRole('button', { name: `${ROOT}「站名字号」` }).click();
       await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
       await expect.poll(() => target.url()).toContain(`/templates/${enc(ROOT)}/design`);
-      await expect.poll(() => inspector.getByTestId('value-origin').textContent()).toBe('来自 本模板「站名字号」（内部参数）');
+      await inspector.getByTestId('variable-current').waitFor();
+      expect(await inspector.getByTestId('value-origin').count(), '值就在这里，不用再说来自哪').toBe(0);
 
       // 收尾：丢掉工作副本。
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
@@ -2902,7 +2906,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Node } };
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const stopName = async () => {
@@ -2917,7 +2921,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await canvas.dblclick({ position: { x: ((stop.x + stop.width / 2) / layout.output.width) * box.width, y: ((stop.y + stop.height / 2) / layout.output.height) * box.height } });
       const inline = target.getByTestId('inline-text');
       await inline.getByTestId('content-slot').filter({ hasText: '站名' }).waitFor();
-      await expect.poll(() => inline.getByTestId('content-gap').last().evaluate((element) => element === document.activeElement)).toBe(true);
+      await expect.poll(() => inline.getByTestId('content-gap').last().evaluate((element) => element === element.ownerDocument.activeElement)).toBe(true);
       const typed = stashed();
       await target.keyboard.type('站');
       await typed;
@@ -3014,6 +3018,38 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 收尾：丢掉工作副本。
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
+    it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      // 等样例带补完缩略图，别和打点抢并发。
+      await expect.poll(() => target.locator('[data-testid="sample-card"]').first().getByTestId('sample-state').textContent(), { timeout: 60_000 }).toMatch(/没有问题|个提示|个严重问题/);
+      await target.waitForTimeout(5_000);
+      await side.getByRole('tab', { name: '变量' }).click();
+      await side.locator('[data-name="stopNameSize"]').getByRole('button').click();
+      const input = inspector.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first();
+      const span = (response: { request(): { timing(): { requestStart: number; responseEnd: number } } }) => { const timing = response.request().timing(); return Math.round(timing.responseEnd - Math.max(0, timing.requestStart)); };
+      const rows: { readonly total: number; readonly write: number; readonly preview: number }[] = [];
+      for (let round = 0; round < 12; round++) {
+        const before = await target.getByTestId('preview-image').getAttribute('src');
+        const write = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+        const preview = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+        const started = Date.now();
+        await input.fill(String(9 + (round % 3)));
+        const [written, previewed] = await Promise.all([write, preview]);
+        await expect.poll(() => target.getByTestId('preview-image').getAttribute('src'), { interval: 10, timeout: 30_000 }).not.toBe(before);
+        rows.push({ total: Date.now() - started, write: span(written), preview: span(previewed) });
+        await target.waitForTimeout(1_500);
+      }
+      console.log(`TIMING ${JSON.stringify(rows)}`);
       await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
       await leaveDesign(target, ROOT);
     }, 180_000);

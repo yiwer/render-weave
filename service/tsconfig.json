@@ -3,5 +3,7 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src", "test", "vitest.docker.config.ts"]
+  "include": ["src", "test", "vitest.docker.config.ts"],
+  // 这个用例引入控制台的 api.ts 与 hooks.ts，要 DOM 的类型，由 console/tsconfig.json 检查。
+  "exclude": ["test/template-session.test.ts"]
 }

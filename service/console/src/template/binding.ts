@@ -124,7 +124,7 @@ export function describeOrigin(origin: ParameterOrigin, template: string, docume
     return typeof found?.['displayName'] === 'string' ? found['displayName'] : name;
   };
   switch (origin.kind) {
-    case 'request': return { before: '来自 ', link: { template: origin.template, name: origin.name, kind: 'parameter', label: `${where}「${displayName(origin.name)}」` }, after: '（对外参数，渲染请求给值）' };
+    case 'request': return { before: '来自 ', link: { template: origin.template, name: origin.name, kind: 'parameter', label: `${where}「${displayName(origin.name)}」` }, after: '（对外参数，出图时由渲染请求给值）' };
     case 'default': return { before: '来自 ', link: { template: origin.template, name: origin.name, kind: 'parameter', label: `${where}「${displayName(origin.name)}」` }, after: origin.visibility === 'internal' ? '（内部参数）' : '（对外参数的缺省值）' };
     case 'field': return { before: '来自 ', link: { template: origin.template, name: origin.name.split('.')[0]!, kind: 'field', label: `${where}的字段 ${origin.name}` }, after: `（调用 ${callName(origin.call)} 传入）` };
     case 'derived': return { before: '来自 ', link: { template: origin.template, name: origin.name, kind: 'derived', label: `${where}的派生变量 ${origin.name}` }, after: `（调用 ${callName(origin.call)} 传入）` };

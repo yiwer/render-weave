@@ -12,7 +12,7 @@ import { describeOrigin } from '../template/binding.js';
 import { elementVariables, flatElements, isObject, variableClosure, type JsonObject } from '../template/document.js';
 import { listItemPanel, writeListItem } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
-import type { ElementInspection, InspectedValue, InspectedVariable } from '../types.js';
+import type { ElementInspection, InspectedValue, InspectedVariable, ParameterOrigin } from '../types.js';
 
 export type VariableKind = 'field' | 'parameter' | 'derived' | 'check';
 export interface VariableSelection { readonly template: string; readonly name: string; readonly kind: VariableKind }
@@ -141,6 +141,9 @@ function Uses(props: { readonly document: JsonObject; readonly template: string;
   );
 }
 
+/** 来源就是它自己（本模板的参数，值就在这里）：不用再说一遍。 */
+const originIsSelf = (origin: ParameterOrigin, template: string, name: string) => (origin.kind === 'default' || origin.kind === 'request') && origin.template === template && origin.name === name;
+
 /** 右边：选中的变量。参数与检查项能改；字段属于数据定义，只读；派生变量的编辑器在票据 16，这里先看。 */
 export function VariableInspector(props: {
   readonly doc: DesignDoc; readonly session: DesignSession; readonly selection: VariableSelection; readonly inspection?: ElementInspection; readonly lists: FieldContext['lists'];
@@ -170,7 +173,7 @@ export function VariableInspector(props: {
         <span className="small muted">{kindText} · <span className="mono">{name}</span></span>
       </div>
       {known && <p className="small muted variable-current" data-testid="variable-current">当前样例取值：<ValueText value={known.value} type={known.type} /></p>}
-      {known?.origin && <OriginLine text={describeOrigin(known.origin, doc.name, props.documentOf)} onOpen={(link) => props.onVariable({ template: link.template, name: link.name, kind: link.kind })} />}
+      {known?.origin && !originIsSelf(known.origin, doc.name, name) && <OriginLine text={describeOrigin(known.origin, doc.name, props.documentOf)} onOpen={(link) => props.onVariable({ template: link.template, name: link.name, kind: link.kind })} />}
       {kind === 'field' && (
         <section className="prop-section" aria-label="字段">
           <p className="small muted">字段属于数据定义，这里只读。<a href={href(['definitions', base], { field: name })}>打开数据定义的这个字段</a></p>

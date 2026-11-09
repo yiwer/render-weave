@@ -536,8 +536,9 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .design-legend { position: absolute; left: 50%; bottom: 50px; transform: translateX(-50%); z-index: 10; padding: 2px 8px; border-radius: 6px; background: var(--surface); color: var(--muted); white-space: nowrap; box-shadow: 0 1px 2px rgba(29, 38, 46, .1); }
 .design-scope-wrap { position: absolute; top: 10px; z-index: 12; display: flex; justify-content: center; pointer-events: none; min-width: 0; }
 .design-scope { pointer-events: auto; display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; padding: 4px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); font-size: 12px; white-space: nowrap; }
-.scope-path { display: flex; align-items: center; gap: 3px; min-width: 0; overflow: hidden; direction: rtl; }
-.scope-path > * { direction: ltr; flex: none; }
+/* 放不下时留住末段：靠右对齐，多出来的从左边裁掉。不用 direction: rtl，那会把 flex 的主轴反过来，路径整个倒着显示。 */
+.scope-path { display: flex; align-items: center; justify-content: flex-end; gap: 3px; min-width: 0; overflow: hidden; }
+.scope-path > * { flex: none; }
 .scope-slash { color: var(--field); }
 .scope-segment { min-height: 0; height: auto; padding: 1px 3px; border: 0; border-radius: 4px; background: none; color: var(--muted); font-size: 12px; font-weight: 400; }
 .scope-segment:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
@@ -568,6 +569,7 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .design-tray-body { padding: 0 14px 10px; max-height: 200px; overflow: auto; }
 .tray-samples { display: flex; align-items: stretch; gap: 14px; overflow-x: auto; padding-bottom: 2px; }
 .tray-problems, .tray-changes, .tray-dsl { min-width: 0; }
+.tray-problems .problem-button { padding: 5px 4px; }
 .tray-changes-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .tray-dsl { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .tray-dsl .code-panel { width: 100%; }
@@ -680,7 +682,7 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .prop-list { display: flex; flex-direction: column; gap: 8px; }
 .prop-list-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: var(--r); background: var(--sunken); }
 /* 列表项是纵向排的：输入框的 flex-basis 在这里变成高度。 */
-.prop-list-item input:not([type="color"]):not([type="checkbox"]) { flex: none; }
+.prop-list-item input:not([type="color"]):not([type="checkbox"]), .prop-list-item select { flex: none; }
 .prop-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .prop-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .prop-actions input { flex: 1 1 120px; min-height: 32px; font-size: 13px; }

@@ -70,7 +70,7 @@ describe('layoutGuides', () => {
 });
 
 describe('这一处实例的适配结果', () => {
-  const text = (over: Partial<{ compression: number; fontSize: number; spacing: number; overflow: boolean }>) => ({ font: 'res:a', writingMode: 'horizontal', width: 10, height: 3, fragments: [], fontSize: 10, spacing: 0, compression: 1, overflow: false, ...over });
+  const text = (over: Partial<{ compression: number; fontSize: number; spacing: number; overflow: boolean }>) => ({ content: '字', font: 'res:a', writingMode: 'horizontal', width: 10, height: 3, fragments: [], fontSize: 10, spacing: 0, compression: 1, overflow: false, ...over });
   it('压缩了写压到多少，字号与字距照布局摘要', () => {
     expect(fitResult(text({ compression: 0.74 }))).toBe('压到 74%，字号 10 mm，字距 0 mm');
     expect(fitResult(text({ fontSize: 7.456, spacing: 0.3 }))).toBe('没有压缩，字号 7.46 mm，字距 0.3 mm');
