@@ -11,6 +11,7 @@ import { href, useLoad } from '../hooks.js';
 import { describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { fontFamilies, type FontFamily } from '../template/fonts.js';
+import { nameProblem } from '../template/structure.js';
 import { feedOf } from '../template/tree.js';
 import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, writeListItem, writeProperty, type FieldPath } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
@@ -107,6 +108,7 @@ function useElementContext(props: ElementProps): FieldContext {
     lists: props.lists,
     binding,
     ...(props.fonts ? { fonts: props.fonts } : {}),
+    check: (field, value) => (field.key === 'name' && typeof value === 'string' && path !== doc.name ? nameProblem(doc.document, doc.name, path, value) : undefined),
     onWrite: (fieldPath: FieldPath, value: unknown, options) => {
       props.onEdit(writeProperty(doc.document, path, fieldPath, value), `${path}:${fieldPath.join('.')}`);
       if (options?.now) props.onCommit();

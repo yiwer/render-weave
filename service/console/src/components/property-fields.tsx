@@ -33,6 +33,8 @@ export interface FieldContext {
   readonly binding?: BindingHost;
   /** 字体按族分组列字重（M115）；没给时字体是文本框。 */
   readonly fonts?: readonly FontFamily[];
+  /** 写回之前的额外检查（元素名在模板内唯一）：有问题时不写回，标在输入框下面。 */
+  check?(field: PropertyField, value: unknown): string | undefined;
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -121,6 +123,8 @@ function TextInput(props: { readonly id: string; readonly field: PropertyField; 
     }
     const tooShort = editor.minLength !== undefined && text.length < editor.minLength, badPattern = editor.pattern !== undefined && !new RegExp(editor.pattern, 'u').test(text);
     if (tooShort || badPattern) { setError(text === '' ? '必填' : '格式不对'); return; }
+    const problem = context.check?.(field, text);
+    if (problem) { setError(problem); return; }
     setError(undefined);
     written.current = text;
     context.onWrite(field.path, text);

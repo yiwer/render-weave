@@ -98,6 +98,24 @@ describe('模板设计的编辑会话', () => {
     expect(session.getState().docs.get(NAME)!.opened).toBe(false);
   });
 
+  it('改结构的每个操作一步撤销，撤销还原字节（票据 12）', async () => {
+    const { duplicateElement, wrapInContainer } = await import('../console/src/template/structure.js');
+    const { parseTemplateText } = await import('../console/src/template/document.js');
+    const original = `${JSON.stringify({ name: NAME, artboard: { children: [{ type: 'rect', name: '甲', place: { left: 1, top: 1 } }] } }, null, 2)}\n`;
+    server.current = { content: original, sha256: 'current-1', revision: 3 };
+    const session = createDesignSession();
+    await session.open(NAME);
+    const text = () => session.getState().docs.get(NAME)!.text;
+    const copied = duplicateElement(parseTemplateText(text()), NAME, `${NAME}/甲`)!;
+    session.edit(NAME, copied.document, 'structure:duplicate');
+    const wrapped = wrapInContainer(parseTemplateText(text()), NAME, copied.path)!;
+    session.edit(NAME, wrapped.document, 'structure:wrap');
+    session.undo();
+    expect(parseTemplateText(text())).toEqual(copied.document);
+    session.undo();
+    expect(text()).toBe(original);
+  });
+
   it('已有工作副本：读它，改动直接暂存，不再开', async () => {
     server.copy = { content: '{"name":"牌"}\n', sha256: 'mine', baseRevision: 3 };
     const session = createDesignSession();

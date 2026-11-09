@@ -12,6 +12,7 @@ import { defaultOutput, defaultParameters } from '../components/parameters.js';
 import { ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
 import { DesignInspector, InlineTextEditor } from '../design/panels.js';
+import { callersOf, deleteElement, dropTarget, duplicateElement, moveElement, moveElementTo, renameElement, unwrapContainer, wrapInContainer, type DropZone, type Edited } from '../template/structure.js';
 import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
@@ -86,6 +87,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const [variable, setVariable] = useState<VariableSelection>();
   const [hoverVariable, setHoverVariable] = useState<{ readonly template: string; readonly name: string }>();
   const [inlineText, setInlineText] = useState<string>();
+  const [renaming, setRenaming] = useState<{ readonly template: string; readonly path: string }>();
 
   const openTemplate = (template: string) => go(['templates', template, 'design'], template === root ? {} : { in: root });
 
@@ -190,6 +192,58 @@ function Design(props: { readonly name: string; readonly root: string }) {
     ? { instance: inlineText, editor: <InlineTextEditor doc={doc} session={session} selected={selected} {...(inspection ? { inspection } : {})} documentOf={documentOf} onVariable={openVariable} onSelected={setSelection} onClose={() => setInlineText(undefined)} /> }
     : undefined;
 
+  // —— 改结构（票据 12）：每个操作写回一次，所以一步撤销；之后选中操作的结果。 ——
+  /** 被多处调用的子模板里删改元素，先说清会影响到哪。 */
+  const confirmShared = (template: string, path: string, verb: string) => {
+    if (template === root) return true;
+    const callers = callersOf(template, [...state.docs.values()].map((item) => ({ name: item.name, document: item.document })));
+    const count = (reply?.elements ?? []).filter((element) => element.source.template === template && element.source.path === path).length;
+    if (callers.length <= 1 && count <= 1) return true;
+    return window.confirm(`「${path.split('/').at(-1)!}」在模板「${template}」里，这个模板被 ${callers.length} 处调用（${callers.join('、')}），图上 ${count} 处。${verb}会影响全部，确定？`);
+  };
+  const applyStructure = (template: string, edited: Edited | undefined, what: string) => {
+    if (!edited) return false;
+    // 每次操作一个新键：不和前后的改动合成一步撤销。
+    session.edit(template, edited.document, `structure:${what}:${Date.now()}`);
+    void session.flush();
+    select(template, edited.path);
+    return true;
+  };
+  type StructureOp = 'duplicate' | 'delete' | 'up' | 'down' | 'wrap' | 'unwrap';
+  const structure = (op: StructureOp, target: { readonly template: string; readonly path: string } | undefined = selection) => {
+    setMenu(undefined);
+    const document = target && documentOf(target.template);
+    if (!target || !document) return;
+    const { template, path } = target;
+    if (path === template) { setNotice('画板不能复制、删除或移动。'); return; }
+    if (op === 'delete' && !confirmShared(template, path, '删除')) return;
+    const edited = op === 'duplicate' ? duplicateElement(document, template, path) : op === 'delete' ? deleteElement(document, template, path)
+      : op === 'up' ? moveElement(document, template, path, -1) : op === 'down' ? moveElement(document, template, path, 1)
+      : op === 'wrap' ? wrapInContainer(document, template, path) : unwrapContainer(document, template, path);
+    if (!applyStructure(template, edited, op)) setNotice(op === 'up' ? '已经在最前面了。' : op === 'down' ? '已经在最后面了。' : op === 'unwrap' ? '只有容器能拆开。' : '这个操作对它不适用。');
+  };
+  const rename = (template: string, path: string, name: string): string | undefined => {
+    const document = documentOf(template), result = document && renameElement(document, template, path, name);
+    if (!result) return undefined;
+    if ('problem' in result) return result.problem;
+    if (!confirmShared(template, path, '改名')) { setRenaming(undefined); return undefined; }
+    setRenaming(undefined);
+    applyStructure(template, result, 'rename');
+    return undefined;
+  };
+  const startRename = (target: { readonly template: string; readonly path: string } | undefined = selection) => {
+    setMenu(undefined);
+    if (!target || target.path === target.template) return;
+    setPanels((now) => ({ ...now, left: true }));
+    setLeftTab('structure');
+    setRenaming({ template: target.template, path: target.path });
+  };
+  const dropOnTree = (template: string, path: string, over: string, zone: DropZone) => {
+    const document = documentOf(template), place = document && dropTarget(document, template, over, zone);
+    if (!document || !place) return;
+    applyStructure(template, moveElementTo(document, template, path, place.target, place.index), 'move');
+  };
+
   const undo = () => { const template = session.undo(); if (template && template !== name) openTemplate(template); };
   const redo = () => { const template = session.redo(); if (template && template !== name) openTemplate(template); };
   const save = () => { void session.save(); };
@@ -205,9 +259,9 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const fitView = () => setView(FIT_VIEW);
 
   // 快捷键：Ctrl+S、Ctrl+Z、Ctrl+Y、Ctrl+0、Ctrl+1、Ctrl+\\；V、H 切工具，打字时不算。
-  const keys = useRef({ undo, redo, save, fitView, climb, descend, physical: () => {}, togglePanels: () => {} });
+  const keys = useRef({ undo, redo, save, fitView, climb, descend, structure, startRename, physical: () => {}, togglePanels: () => {} });
   keys.current = {
-    undo, redo, save, fitView, climb, descend,
+    undo, redo, save, fitView, climb, descend, structure, startRename,
     physical: () => setView({ zoom: ((outputWidth / 25.4) * PHYSICAL_DPI) / fit, x: 0, y: 0 }),
     togglePanels: () => setPanels((now) => { const open = !(now.left || now.right); return { left: open, right: open }; }),
   };
@@ -222,10 +276,16 @@ function Design(props: { readonly name: string; readonly root: string }) {
         else if (key === '0') { event.preventDefault(); keys.current.fitView(); }
         else if (key === '1') { event.preventDefault(); keys.current.physical(); }
         else if (key === '\\') { event.preventDefault(); keys.current.togglePanels(); }
+        else if (key === 'd' && !(event.target as HTMLElement | null)?.closest('input, select, textarea')) { event.preventDefault(); keys.current.structure('duplicate'); }
         return;
       }
       const target = event.target as HTMLElement | null;
-      if (event.altKey || event.isComposing || target?.closest('input, select, textarea')) return;
+      if (event.isComposing || target?.closest('input, select, textarea')) return;
+      // 改结构：Alt+↑、Alt+↓ 上移下移，Del 删除，F2 改名。打字时不算。
+      if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) { event.preventDefault(); keys.current.structure(event.key === 'ArrowUp' ? 'up' : 'down'); return; }
+      if (event.altKey) return;
+      if (event.key === 'Delete') { event.preventDefault(); keys.current.structure('delete'); return; }
+      if (event.key === 'F2') { event.preventDefault(); keys.current.startRename(); return; }
       if (key === 'v') setTool('select');
       if (key === 'h') setTool('pan');
       if (key === 'escape') keys.current.climb();
@@ -296,7 +356,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
             <div className="design-panel-body">
               {doc ? (leftTab === 'structure'
                 ? <DesignStructure root={root} documentOf={documentOf} {...(selected ? { selection: selected } : {})} {...(reply ? { reply } : {})} locateTick={locateTick} onSelect={(template, path) => select(template, path)} onHover={setTreeHover}
-                  onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }} />
+                  onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }}
+                  {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} />
                 : <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
@@ -390,7 +451,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
       {menu && doc && (
         <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
           onLocate={() => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setLeftTab('structure'); setLocateTick((value) => value + 1); }}
-          onParameter={(parameter) => { setMenu(undefined); openVariable({ template: name, name: parameter, kind: 'parameter' }); }} />
+          onParameter={(parameter) => { setMenu(undefined); openVariable({ template: name, name: parameter, kind: 'parameter' }); }}
+          onStructure={(op) => structure(op, { template: menu.template, path: menu.path })} onRename={() => startRename({ template: menu.template, path: menu.path })} />
       )}
     </section>
   );
@@ -434,9 +496,10 @@ function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPic
     : <p className="small muted">这份样例没有问题。</p>;
 }
 
-/** 右键菜单：复制元素路径、在结构中定位、打开绑定的字段。 */
+/** 右键菜单：这里的元素、改结构（票据 12）、复制元素路径、在结构中定位、打开绑定的字段。 */
 function ElementMenu(props: {
   readonly menu: MenuState; readonly doc: DesignDoc; readonly onClose: () => void; readonly onCopy: (text: string) => void; readonly onPick: (instance: string) => void; readonly onLocate: () => void; readonly onParameter: (name: string) => void;
+  readonly onStructure: (op: 'duplicate' | 'delete' | 'up' | 'down' | 'wrap' | 'unwrap') => void; readonly onRename: () => void;
 }) {
   const { menu, doc } = props, root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -461,6 +524,18 @@ function ElementMenu(props: {
               <span>{node.name}</span><span className="small faint">{ELEMENT_TYPES[node.type] ?? node.type}</span>
             </button>
           ))}
+          <hr className="menu-rule" />
+        </>
+      )}
+      {menu.path !== menu.template && (
+        <>
+          <button type="button" role="menuitem" onClick={() => props.onStructure('duplicate')}><span>复制一份</span><kbd>Ctrl+D</kbd></button>
+          <button type="button" role="menuitem" onClick={() => props.onStructure('up')}><span>上移</span><kbd>Alt+↑</kbd></button>
+          <button type="button" role="menuitem" onClick={() => props.onStructure('down')}><span>下移</span><kbd>Alt+↓</kbd></button>
+          <button type="button" role="menuitem" onClick={() => props.onStructure('wrap')}>包进容器</button>
+          {element?.['type'] === 'container' && <button type="button" role="menuitem" onClick={() => props.onStructure('unwrap')}>拆开容器</button>}
+          <button type="button" role="menuitem" onClick={props.onRename}><span>重命名</span><kbd>F2</kbd></button>
+          <button type="button" role="menuitem" className="danger" onClick={() => props.onStructure('delete')}><span>删除</span><kbd>Del</kbd></button>
           <hr className="menu-rule" />
         </>
       )}

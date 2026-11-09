@@ -640,18 +640,22 @@ function replaceElement(document: JsonObject, located: NonNullable<ReturnType<ty
   return { ...document, artboard: replaceIn(document['artboard'] as JsonObject) };
 }
 
-/** 改了排布方式之后，子元素的 place 只留新方式认识的键；网格要的行列按顺序补上。 */
-function fitChildren(element: JsonObject): JsonObject {
+/**
+ * 改了排布方式、换了父容器之后，子元素的 place 只留新方式认识的键；网格要的行列按顺序补上，但不超出网格的行数
+ * （排满了就放在最后一行，重叠由布局的问题清单说明，M237），不然静态检查就不过。
+ */
+export function fitChildren(element: JsonObject): JsonObject {
   if (!Array.isArray(element['children'])) return element;
   const mode = modeOf(element), schema = resolved({ $ref: `#/$defs/${PLACE[mode] ?? 'placeInFree'}` }), keys = Object.keys(schema['properties'] as object);
   const columns = isObject(element['layout']) && Array.isArray(element['layout']['columns']) ? Math.max(1, element['layout']['columns'].length) : 1;
+  const rows = isObject(element['layout']) && Array.isArray(element['layout']['rows']) && element['layout']['rows'].length > 0 ? element['layout']['rows'].length : Infinity;
   return {
     ...element,
     children: (element['children'] as unknown[]).map((child, index) => {
       if (!isObject(child)) return child;
       const place = isObject(child['place']) ? child['place'] : {};
       const kept = Object.fromEntries(Object.entries(place).filter(([key]) => keys.includes(key)));
-      if (mode === 'grid') { kept['row'] ??= Math.floor(index / columns) + 1; kept['column'] ??= (index % columns) + 1; }
+      if (mode === 'grid') { kept['row'] ??= Math.min(rows, Math.floor(index / columns) + 1); kept['column'] ??= (index % columns) + 1; }
       const { place: _place, ...rest } = child;
       return Object.keys(kept).length ? { ...rest, place: kept } : rest;
     }),

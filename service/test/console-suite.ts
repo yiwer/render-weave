@@ -157,6 +157,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       } finally { target.off('dialog', accept); }
       if (trialKey) await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${trialKey}`);
     };
+    /** 展开结构树的一行；已经展开的不再点（选中时树会自己展开到那一行）。 */
+    const openRow = async (scope: Locator, name: string) => {
+      // 先等这一行出来：刚切到结构页时树还没画，数不到按钮会误以为已经展开。
+      await scope.getByRole('button', { name: new RegExp(`^(展开|收起) ${name}$`, 'u') }).first().waitFor();
+      const button = scope.getByRole('button', { name: `展开 ${name}`, exact: true });
+      if (await button.count()) await button.click();
+      await scope.getByRole('button', { name: `收起 ${name}`, exact: true }).waitFor();
+    };
     /** 标题栏的模块下拉（P1 票据 01）：点开后找名为 name 的模块。 */
     const nav = async (target: Page, name: string) => {
       await target.getByRole('button', { name: '切换模块' }).click();
@@ -2405,7 +2413,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 结构页打开子模板：预览仍是调用它的模板，改子模板时那张图跟着变；图上点到子模板的元素也切过去。
       await side().getByRole('tab', { name: '结构' }).click();
-      await side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`).getByRole('button', { name: '展开 循环' }).click();
+      await openRow(side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`), '循环');
       await side().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').first().getByRole('button').first().click();
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
@@ -2615,7 +2623,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
       const side = target.getByRole('complementary', { name: '结构与变量' });
-      await side.getByRole('button', { name: '展开 顶栏' }).click();
+      await openRow(side, '顶栏');
       await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏/线路号"]`).getByRole('button').first().click();
       await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
       expect(await scope.textContent()).toContain('当前样例不显示');
@@ -2764,8 +2772,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await knobValue.getByRole('textbox').fill('5');
       await knobValue.getByRole('textbox').press('Enter');
       await side.getByRole('tab', { name: '结构' }).click();
-      await side.getByRole('button', { name: '展开 站点面板' }).click();
-      await side.getByRole('button', { name: '展开 站点列' }).click();
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
       await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
       await side.getByRole('tab', { name: '变量' }).click();
       await row('stopState').getByRole('button').click();
@@ -2792,9 +2800,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         const find = (node: Record<string, unknown>): Record<string, unknown> | undefined => (node['name'] === '站名' ? node : ((node['children'] ?? []) as Record<string, unknown>[]).map(find).find(Boolean));
         return find((await stopDocument()).artboard as Record<string, unknown>)!;
       };
-      await side.getByRole('button', { name: '展开 站点面板' }).click();
-      await side.getByRole('button', { name: '展开 站点列' }).click();
-      await side.getByRole('button', { name: '展开 名称区' }).click();
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await openRow(side, '名称区');
       await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
       await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
 
@@ -3022,6 +3030,118 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 收尾：丢掉工作副本。
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
       await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 12）：结构树上复制、上移、改名、包进容器再拆开、拖进容器、删除，每步一次撤销；重名当场拦下；被多处调用的先确认', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      const current = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: { children: { name: string; type: string; children?: { name: string }[] }[] } };
+      };
+      const before = await current(ALL);
+      const names = async () => (await current(ALL)).artboard.children.map((child) => child.name);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ALL}/${name}"]`);
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      await side.getByText('顺序就是 DSL 的顺序').waitFor();
+
+      // 复制：放在原件后面，自动起名，选中副本。
+      await row('矩形').getByRole('button').first().click();
+      let saved = stashed();
+      await target.keyboard.press('Control+d');
+      await saved;
+      expect(await names()).toContain('矩形2');
+      expect((await names()).indexOf('矩形2')).toBe((await names()).indexOf('矩形') + 1);
+      await expect.poll(selectedPath).toBe(`${ALL}/矩形2`);
+
+      // 上移：顺序就是 DSL 的顺序。
+      saved = stashed();
+      await target.keyboard.press('Alt+ArrowUp');
+      await saved;
+      expect((await names()).indexOf('矩形2')).toBe((await names()).indexOf('矩形') - 1);
+
+      // 改名：重名当场拦下，不写回；换个名字就改。
+      await target.keyboard.press('F2');
+      const input = side.getByTestId('rename-input');
+      await input.fill('椭圆');
+      await input.press('Enter');
+      await side.getByRole('alert').filter({ hasText: '模板内唯一' }).waitFor();
+      await input.fill('色块');
+      saved = stashed();
+      await input.press('Enter');
+      await saved;
+      expect(await names()).toContain('色块');
+      await expect.poll(selectedPath).toBe(`${ALL}/色块`);
+
+      // 右键：包进容器，再拆开。
+      await row('色块').click({ button: 'right' });
+      saved = stashed();
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '包进容器' }).click();
+      await saved;
+      const wrapped = (await current(ALL)).artboard.children.find((child) => child.type === 'container' && child.children?.[0]?.name === '色块');
+      expect(wrapped?.name, '新容器起了没重的名字').toBe('容器2');
+      await row('容器2').click({ button: 'right' });
+      saved = stashed();
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '拆开容器' }).click();
+      await saved;
+      expect(await names()).toContain('色块');
+      expect(await names()).not.toContain('容器2');
+
+      // 拖进容器：拖到"容器"那一行的中间。
+      const box = (await row('容器').boundingBox())!;
+      saved = stashed();
+      await row('色块').dragTo(row('容器'), { targetPosition: { x: 40, y: box.height / 2 } });
+      await saved;
+      const container = (await current(ALL)).artboard.children.find((child) => child.name === '容器')!;
+      expect(container.children?.map((child) => child.name)).toContain('色块');
+
+      // 删除：选中回到父容器。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/色块"]`).getByRole('button').first().click();
+      saved = stashed();
+      await target.keyboard.press('Delete');
+      await saved;
+      expect(JSON.stringify(await current(ALL))).not.toContain('色块');
+      await expect.poll(selectedPath).toBe(`${ALL}/容器`);
+
+      // 每步一次撤销：七步撤完，和开始时一样。
+      for (let step = 0; step < 7; step++) {
+        saved = stashed();
+        await target.getByRole('button', { name: '撤销', exact: true }).click();
+        await saved;
+      }
+      expect(await current(ALL)).toEqual(before);
+
+      // 检查器里改名同样拦下重名。
+      await row('文字').getByRole('button').first().click();
+      const nameInput = inspector.locator('[data-testid="property-field"][data-key="name"]').first().locator('input[type="text"]').first();
+      await nameInput.fill('矩形');
+      await inspector.locator('[data-testid="property-field"][data-key="name"]').getByRole('alert').filter({ hasText: '模板内唯一' }).waitFor();
+      await target.waitForTimeout(800);
+      expect(await current(ALL)).toEqual(before);
+      await nameInput.fill('文字');
+
+      // 被多处调用的子模板：删站名之前先说清图上几处；不确定就不动。
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await openRow(side, '名称区');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      const asked: string[] = [];
+      target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
+      await target.keyboard.press('Delete');
+      await expect.poll(() => asked).toEqual([expect.stringContaining('图上 35 处')]);
+      expect((await server('GET', `/v1/templates/${enc('站点')}/working-copy`, token)).status, '没确定就不动').toBe(404);
       await leaveDesign(target, ROOT);
     }, 180_000);
 
