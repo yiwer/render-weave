@@ -24,7 +24,7 @@
 - 服务端全部用例：`npx vitest run --project service --maxWorkers=3`，35 个文件、356 项通过，3 项跳过（打点只在 `RW_TIMING` 时跑）。其中控制台浏览器用例（Edge）全过，含 P1 的模板设计用例（A01）与离开提醒、发布修订（A11）。
 - OpenAPI 快照在上面这一轮里通过。
 - 严格类型检查：`tsc --noEmit -p service/console`、`tsc --noEmit -p service`、`tsc --noEmit -p .` 都没有报错。`-p service` 原先因票据 01 的 `template-session.test.ts` 把 React 的全局声明带进服务端程序而报 30 多处，已改由控制台的 tsconfig 检查这个用例。
-- 全量 `npx vitest run` 第一次在本机负载下失败 244 项，几乎都在 `test/agent-*`：超时与 `local.storeBusy`（并发抢工作区目录锁）。单独重跑出错的 7 个引擎文件，205 项全过（唯一一项失败单独跑也过）。
+- 引擎用例：全量 `npx vitest run` 第一次在本机负载下失败 244 项，几乎都在 `test/agent-*`，是超时与 `local.storeBusy`、`resource.storeBusy`（并发抢目录锁）。`--maxWorkers=3` 重跑 1317 项剩 8 项失败（和 Docker 测试同时跑）；这 7 个文件再单独跑剩 3 项，都在 Agent 工具链：Windows 上建符号链接没有权限（`EPERM`）、一处 60 秒超时、一处子进程计时。这个分支没改 Agent 的代码，推断与本分支无关；没在 main 上复核。渲染、布局、变量、竖排与元素求值的用例全过。
 
 **观感已对照**（真页面 1440 × 900，本地内存后端，和原型七张逐张看）
 
