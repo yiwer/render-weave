@@ -487,19 +487,23 @@ const modeOf = (container: JsonObject | undefined) => (isObject(container?.['lay
 const placeSchema = (mode: string): Schema => ({ properties: { place: { $ref: `#/$defs/${PLACE[mode] ?? 'placeInFree'}` } } });
 
 /** 元素的 Schema：类型定义，加上按父容器排布取的 place。 */
-function elementView(document: unknown, path: string): { readonly type: string; readonly element: JsonObject; readonly view: readonly Schema[] } | undefined {
+function elementView(document: unknown, path: string): { readonly type: string; readonly element: JsonObject; readonly view: readonly Schema[]; readonly parentMode?: string } | undefined {
   const located = elementAt(document, path);
   if (!located) return undefined;
   const { element, parent } = located, type = parent ? String(element['type'] ?? '') : 'artboard', definition = DEFS[TYPE_DEFS[type] ?? ''];
   if (!definition) return undefined;
-  return { type, element, view: parent ? [definition, placeSchema(modeOf(parent))] : [definition] };
+  return parent ? { type, element, view: [definition, placeSchema(modeOf(parent))], parentMode: modeOf(parent) } : { type, element, view: [definition] };
 }
+
+/** 没写宽高时引擎怎么排（DSL「宽高」）：网格里撑满，堆叠与自由布局里随内容。 */
+const sizeFallback = (field: PropertyField, parentMode: string | undefined): PropertyField =>
+  ((field.key === 'place.width' || field.key === 'place.height') && field.fallback === undefined ? { ...field, fallback: parentMode === 'grid' ? 'fill' : 'hug' } : field);
 
 /** 属性面板：这个元素的全部可编辑项，按分组；路径不存在或类型不认识时是 undefined。 */
 export function propertyPanel(document: unknown, path: string): PropertyPanel | undefined {
   const target = elementView(document, path);
   if (!target) return undefined;
-  const { type, element, view } = target, fragments = applying(view, element), required = requiredOf(fragments);
+  const { type, element, view, parentMode } = target, fragments = applying(view, element), required = requiredOf(fragments);
   const context: Context = { type, fragments };
   const dependent = Object.assign({}, ...fragments.map((fragment) => (isObject(fragment['dependentRequired']) ? fragment['dependentRequired'] : {}))) as Record<string, string[]>;
   const groups = new Map<PropertyGroup, PropertyField[]>();
@@ -512,7 +516,7 @@ export function propertyPanel(document: unknown, path: string): PropertyPanel | 
     const field = key === 'slant' && type === 'text' && element['writingMode'] === 'vertical' && !isObject(element[key]) ? { ...generated, blocked: '竖排文字不能倾斜（M109）' } : generated;
     const group = ELEMENT_GROUPS[type]?.[key] ?? GROUPS[key] ?? '其他';
     // 位置尺寸摊开放进分组，不再套一层。
-    if (key === 'place' && field.editor.kind === 'group') field.editor.fields.forEach((inner) => add(group, inner));
+    if (key === 'place' && field.editor.kind === 'group') field.editor.fields.forEach((inner) => add(group, sizeFallback(inner, parentMode)));
     else add(group, field);
   }
   return { type, groups: PROPERTY_GROUPS.flatMap((name) => (groups.has(name) ? [{ name, fields: groups.get(name)! }] : [])) };

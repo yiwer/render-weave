@@ -170,7 +170,10 @@ function PropertiesTab(props: ElementProps & {
   const state = info.by !== undefined && path !== doc.name ? props.stateValue : undefined;
   const display = state === undefined ? doc.document : mergedDocument(doc.document, path, state);
   const panel = propertyPanel(display, path);
-  const context = useElementContext({ ...props, ...(state !== undefined ? { state } : {}) });
+  const elementContext = useElementContext({ ...props, ...(state !== undefined ? { state } : {}) });
+  // 宽高一格要这一处的实际尺寸（第三轮票据 01）。
+  const node = instanceNode(reply, selected);
+  const context: FieldContext = node ? { ...elementContext, box: { width: node.width, height: node.height } } : elementContext;
   const [formProblem, setFormProblem] = useState<string>();
   if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
   const segments = path.split('/'), element = elementAt(display, path)?.element;

@@ -2165,7 +2165,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(elementIn(document, '容器')['fill']).toBe('#DDEEFF');
 
       await chooseRow(at('循环'));
-      ({ document } = await edit(() => inspector().getByLabel('每项的固定尺寸').fill('4')));
+      ({ document } = await edit(() => inspector().getByLabel('每项高', { exact: true }).fill('4')));
       expect(elementIn(document, '循环')['itemLayout']).toMatchObject({ heights: { fixed: 4 } });
 
       await chooseRow(at('调用'));
@@ -3364,13 +3364,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await layout.getByTestId('wrap-blocked').filter({ hasText: '折行不能配等分' }).waitFor();
       expect(await layout.getByRole('button', { name: '放不下就折行' }).isDisabled()).toBe(true);
       saved = stashed();
-      await layout.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '随内容' }).click();
+      await layout.getByLabel('每项宽的尺寸方式').selectOption('content');
       await saved;
       saved = stashed();
       await layout.getByRole('button', { name: '放不下就折行' }).click();
       await saved;
       expect((await loopNow('站点列')).itemLayout).toMatchObject({ widths: 'content', wrap: true });
-      expect(await layout.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '等分' }).isDisabled()).toBe(true);
+      expect(await layout.getByLabel('每项宽的尺寸方式').locator('option[value="equal"]').isDisabled()).toBe(true);
       // 换方向：每项宽跟着换成每项高。
       saved = stashed();
       await layout.getByRole('group', { name: '方向' }).getByRole('button', { name: '纵向' }).click();
@@ -3383,7 +3383,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带/道路段列"]`).getByRole('button').first().click();
       await inspector.getByTestId('merge-row').waitFor();
       expect(await inspector.getByLabel('合并相邻同值项').inputValue()).toBe('road');
-      expect(await inspector.getByTestId('item-layout-form').getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '随内容' }).isDisabled()).toBe(true);
+      expect(await inspector.getByTestId('item-layout-form').getByLabel(/^每项(宽|高)的尺寸方式$/).locator('option[value="content"]').isDisabled()).toBe(true);
       await inspector.getByTestId('item-layout-form').getByTestId('wrap-blocked').filter({ hasText: '合并相邻' }).waitFor();
       saved = stashed();
       await inspector.getByLabel('合并相邻同值项').selectOption('');
@@ -3857,11 +3857,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => text('name').fill('标识行'));
       await selected(`${NAME}/标识行`);
       const items = inspector.getByTestId('item-layout-form');
-      await write(() => items.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '固定' }).click());
-      await write(() => items.getByLabel('每项的固定尺寸').fill('9'));
+      await write(() => items.getByLabel('每项宽', { exact: true }).fill('9'));
       await write(() => text('itemLayout.gap').fill('1'));
       await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
-      await write(() => text('place.height.fixed').fill('10'));
+      await write(() => text('place.height').fill('10'));
       await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
       await write(() => text('place.margin.bottom').fill('2'));
 
@@ -3901,8 +3900,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const fit = field('fit');
       if (await fit.getByRole('button', { name: '完整显示' }).count()) await write(() => fit.getByRole('button', { name: '完整显示' }).click());
       else await write(() => fit.locator('select').first().selectOption({ label: '完整显示' }));
-      await write(() => text('place.width.fixed').fill('8'));
-      await write(() => text('place.height.fixed').fill('8'));
+      await write(() => text('place.width').fill('8'));
+      await write(() => text('place.height').fill('8'));
       await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
       await write(() => text('place.margin.top').fill('1'));
       await states('stopState', { 已过站: () => text('opacity').fill('0.35') });
@@ -3949,6 +3948,78 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (const name of [ROOT, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
       await leaveDesign(target, ROOT);
     }, 600_000);
+
+    it('模板设计（第三轮 01）：宽高一格，打数就是固定，随内容与没写时淡色显示实际尺寸，按比例改权重，固定值能绑定；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { artboard: { children: { name: string; place?: Record<string, unknown> }[] } };
+      };
+      const placeOf = async (name: string) => (await content()).artboard.children.find((child) => child.name === name)!.place!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const cell = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first().getByTestId('size-cell');
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const width = cell('place.width'), number = width.getByRole('textbox'), mode = width.getByLabel('宽的尺寸方式');
+
+      // 自由布局里的矩形：一格里是 22 加"固定"，没有第二个控件。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/矩形"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/矩形"]`).waitFor();
+      expect(await number.inputValue()).toBe('22');
+      expect(await mode.inputValue()).toBe('fixed');
+      expect(await inspector.locator('[data-testid="property-field"][data-key="place.width.fixed"]').count(), '固定值不再是另一格').toBe(0);
+      // 打数就是固定。
+      await write(() => number.fill('30'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 30 });
+      // 换随内容：数值框空着，淡色是这一处的实际宽（布局摘要）。
+      await write(() => mode.selectOption('hug'));
+      expect((await placeOf('矩形'))['width']).toBe('hug');
+      expect(await number.inputValue()).toBe('');
+      await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
+      // 随内容时打数：直接变固定。
+      await write(() => number.fill('12.5'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 12.5 });
+      // 按比例撑满：框里改的是权重。
+      await write(() => mode.selectOption('ratio'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 1 });
+      await write(() => number.fill('2'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 2 });
+      // 不合法的不写回，当场说。
+      await number.fill('0');
+      await width.getByRole('alert').filter({ hasText: '比例要大于 0' }).waitFor();
+      await target.waitForTimeout(800);
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 2 });
+      // 换回固定取实际宽；固定值能绑定数值变量，绑定时是灰底条。
+      await write(() => mode.selectOption('fixed'));
+      expect((await placeOf('矩形'))['width']).toMatchObject({ fixed: expect.any(Number) });
+      await width.getByTestId('bind-button').click();
+      await write(() => width.locator('[data-testid="binding-option"][data-name="bandHeight"]').click());
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: { var: 'bandHeight' } });
+      await width.getByTestId('bound-chip').filter({ hasText: '色带高度' }).waitFor();
+      await write(() => width.getByTestId('unbind-button').click());
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 2 });
+
+      // 堆叠里的文字：宽没写，下拉写"缺省（随内容）"，框里淡色是实际宽。
+      await openRow(side, '容器');
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/容器内文字"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器/容器内文字"]`).waitFor();
+      expect(await mode.inputValue()).toBe('');
+      expect(await mode.locator('option:checked').textContent()).toBe('缺省（随内容）');
+      await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
+      expect(await cell('place.height').getByLabel('高的尺寸方式').inputValue()).toBe('fill');
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
 
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {

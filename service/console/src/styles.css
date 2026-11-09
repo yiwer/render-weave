@@ -701,6 +701,15 @@ fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
 .prop-segmented button { flex: 1 1 0; min-width: 0; min-height: 28px; height: 28px; padding: 0 4px; font-size: 12.5px; font-weight: 400; }
 .prop-segmented button.implied { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .value-cell-row > .prop-segmented { flex: 1 1 0; }
+/* 宽高一格（第三轮票据 01）：数值与尺寸方式拼成一个框，同 Figma 的宽高框；没写或随内容时数值是实际尺寸的淡色。 */
+.size-cell { position: relative; display: flex; flex-direction: column; gap: 3px; flex: 1 1 100%; min-width: 0; }
+.size-cell-row { display: flex; align-items: center; min-width: 0; }
+.prop .size-cell-row > .size-input { flex: 1 1 0; min-width: 0; border-radius: var(--r) 0 0 var(--r); }
+.prop .size-cell-row > .value-bound { border-radius: var(--r) 0 0 var(--r); }
+.size-cell-row > .size-unit { flex: none; align-self: stretch; display: flex; align-items: center; padding: 0 6px; border-block: 1px solid var(--field); }
+.prop .size-cell-row > select.size-mode { flex: 0 0 auto; width: auto; max-width: 118px; margin-left: -1px; border-radius: 0 var(--r) var(--r) 0; color: var(--muted); background-color: var(--sunken); }
+.size-cell-row > .value-action { margin-left: 4px; }
+.size-input::placeholder { color: var(--faint); }
 .content-editor { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .token-box { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-height: 38px; padding: 4px 6px; border: 1px solid var(--field); border-radius: var(--r); background: var(--surface); cursor: text; }
 .token-box:focus-within { border-color: var(--ink); }

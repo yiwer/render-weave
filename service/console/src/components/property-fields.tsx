@@ -7,7 +7,9 @@ import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as R
 import { boundName, currentLiteral, unboundValue, type OriginLink, type OriginText, type ScopeVariable } from '../template/binding.js';
 import type { FontFamily } from '../template/fonts.js';
 import type { Bindable, Editor, FieldPath, PropertyField } from '../template/properties.js';
+import { sizeKindOf, sizeModel } from '../template/size.js';
 import { BindingPopover } from './binding-popover.js';
+import { SizeCell } from './size-cell.js';
 import { Icon, LINK, UNLINK } from './icon.js';
 import { ValueText } from './value-text.js';
 
@@ -38,6 +40,8 @@ export interface FieldContext {
   /** 状态样式选中的取值（票据 17）：被这个取值覆盖的项可以重置回自身属性。 */
   readonly stateValue?: string;
   resetOverride?(field: PropertyField): void;
+  /** 选中的这一处在图上的实际尺寸（布局摘要）：宽高一格没写或随内容时淡色显示它（第三轮票据 01）。 */
+  readonly box?: { readonly width: number; readonly height: number };
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -402,9 +406,18 @@ function EditorView(props: { readonly id: string; readonly field: PropertyField;
     case 'text': return editor.suggest === 'font' && context.fonts ? <FontSelect id={id} field={field} families={context.fonts} context={context} /> : <TextInput id={id} field={field} editor={editor} context={context} />;
     case 'color': return <ColorInput id={id} field={field} context={context} />;
     case 'choice': return <Choice id={id} field={field} editor={editor} context={context} />;
-    case 'variants': return editor.bindable && context.binding
-      ? <ValueCell id={id} field={field} editor={editor} bindable={editor.bindable} host={context.binding} context={context} live={live} />
-      : <Variants id={id} field={field} editor={editor} context={context} />;
+    case 'variants': {
+      // 宽高：数值加尺寸方式一格（第三轮票据 01）。只在设计页（有绑定能力时）这样画，别处照旧是变体下拉。
+      const size = context.binding && editor === field.editor ? sizeModel(field) : undefined;
+      if (size) {
+        const axis = field.path.at(-1), actual = axis === 'width' ? context.box?.width : axis === 'height' ? context.box?.height : undefined;
+        return <SizeCell id={id} label={field.label} model={size} actual={actual} fallback={sizeKindOf(field.fallback)} required={field.required}
+          onWrite={(value, now) => context.onWrite(field.path, value, { now })} binding={{ host: context.binding!, field }} />;
+      }
+      return editor.bindable && context.binding
+        ? <ValueCell id={id} field={field} editor={editor} bindable={editor.bindable} host={context.binding} context={context} live={live} />
+        : <Variants id={id} field={field} editor={editor} context={context} />;
+    }
     case 'group': return <Group field={field} editor={editor} context={context} />;
     case 'list': return <ListEditor field={field} editor={editor} context={context} />;
     case 'map': return <MapEditor field={field} editor={editor} context={context} />;

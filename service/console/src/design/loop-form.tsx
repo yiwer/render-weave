@@ -11,7 +11,9 @@ import { argRows, canUseLoopInfo, dataOf, directionOf, itemSizeOf, LOOP_INFO_TYP
 import { fieldInfo, matchingTemplates, type SchemaRef } from '../template/create.js';
 import { isObject, type JsonObject } from '../template/document.js';
 import { useLoad } from '../hooks.js';
+import { itemSizeModel, SIZE_LABELS, type SizeKind } from '../template/size.js';
 import type { LayoutNode } from '../types.js';
+import { SizeCell } from '../components/size-cell.js';
 import { LiteralInput } from './derived-editor.js';
 
 const Row = (props: { readonly label: string; readonly children: ReactNode; readonly testid?: string }) => (
@@ -186,13 +188,16 @@ export function ArgsForm(props: { readonly element: JsonObject; readonly called:
   );
 }
 
-const SIZE_LABELS: readonly (readonly ['equal' | 'content' | 'fixed', string])[] = [['equal', '等分'], ['content', '随内容'], ['fixed', '固定']];
+const ITEM_KINDS = ['equal', 'content', 'fixed'] as const;
 
-/** 每项排布：方向、每项尺寸、折行；用不了的选项禁用并写原因。间距与换行间距沿用值格。 */
+/** 每项排布：方向、每项尺寸、折行；用不了的选项禁用并写原因。每项尺寸是宽高一格（第三轮票据 01），间距与换行间距沿用值格。 */
 export function ItemLayoutForm(props: { readonly element: JsonObject; readonly node?: LayoutNode | undefined; readonly onElement: (next: JsonObject, now?: boolean) => void; readonly onProblem: (problem: string) => void; readonly children?: ReactNode }) {
   const { element } = props, direction = directionOf(element), size = itemSizeOf(element) ?? 'equal';
   const sizeKind = typeof size === 'string' ? size : 'fixed', wrap = wrapOf(element), wrapReason = wrapBlocked(element);
   const apply = (next: JsonObject | { problem: string }) => { if ('problem' in next) props.onProblem(String(next['problem'])); else props.onElement(next, true); };
+  const writeSize = (value: unknown, now: boolean) => { const next = setItemSize(element, value as ItemSize); if ('problem' in next) props.onProblem(String(next['problem'])); else props.onElement(next, now); };
+  const items = (props.node?.children ?? []).filter((child) => child.visible), label = direction === 'row' ? '每项宽' : '每项高';
+  const blocked = Object.fromEntries(ITEM_KINDS.flatMap((kind) => { const reason = kind === sizeKind ? undefined : sizeBlocked(element, kind); return reason ? [[kind, reason]] : []; })) as Partial<Record<SizeKind, string>>;
   return (
     <div className="call-form" data-testid="item-layout-form">
       <Row label="方向">
@@ -200,18 +205,9 @@ export function ItemLayoutForm(props: { readonly element: JsonObject; readonly n
           {(['row', 'column'] as const).map((value) => <button key={value} type="button" aria-pressed={direction === value} onClick={() => apply(setDirection(element, value))}>{value === 'row' ? '横向' : '纵向'}</button>)}
         </div>
       </Row>
-      <Row label={direction === 'row' ? '每项宽' : '每项高'}>
-        <div className="segmented prop-segmented" role="group" aria-label="每项尺寸">
-          {SIZE_LABELS.map(([kind, label]) => {
-            const reason = kind === sizeKind ? undefined : sizeBlocked(element, kind);
-            return <button key={kind} type="button" aria-pressed={sizeKind === kind} disabled={Boolean(reason)} title={reason} onClick={() => apply(setItemSize(element, kind === 'fixed' ? { fixed: 10 } : kind))}>{label}</button>;
-          })}
-        </div>
-        {sizeKind === 'fixed' && (
-          <LiteralInput type="number" label="每项的固定尺寸" value={(size as { fixed: unknown }).fixed}
-            onChange={(value) => { if (typeof value === 'number' && value > 0) props.onElement(setItemSize(element, { fixed: value } as ItemSize) as JsonObject); }} />
-        )}
-        {(['equal', 'content', 'fixed'] as const).map((kind) => { const reason = kind === sizeKind ? undefined : sizeBlocked(element, kind); return reason ? <span key={kind} className="small faint" data-testid="size-blocked">{SIZE_LABELS.find(([key]) => key === kind)![1]}：{reason}</span> : null; })}
+      <Row label={label}>
+        <SizeCell label={label} model={itemSizeModel(itemSizeOf(element))} actual={items.length ? (direction === 'row' ? items[0]!.width : items[0]!.height) : undefined} required blocked={blocked} onWrite={writeSize} />
+        {ITEM_KINDS.map((kind) => (blocked[kind] ? <span key={kind} className="small faint" data-testid="size-blocked">{SIZE_LABELS[kind]}：{blocked[kind]}</span> : null))}
       </Row>
       {props.children}
       <Row label="折行">
