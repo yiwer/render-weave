@@ -17,7 +17,7 @@ const EMPTY: SchemaRef = { name: '空数据定义', version: 1 };
 const keyOf = (ref: SchemaRef) => `${ref.name}\n${String(ref.version)}`;
 
 /** 一行两个数：宽 [最小] – [最大] mm，默认尺寸 [宽] × [高] mm。 */
-function Pair(props: { readonly label: string; readonly joiner: string; readonly names: readonly [string, string]; readonly values: readonly [string, string]; readonly onChange: (index: 0 | 1, value: string) => void }) {
+export function Pair(props: { readonly label: string; readonly joiner: string; readonly names: readonly [string, string]; readonly values: readonly [string, string]; readonly onChange: (index: 0 | 1, value: string) => void }) {
   return (
     <div className="pair-row">
       <span className="pair-label">{props.label}</span>

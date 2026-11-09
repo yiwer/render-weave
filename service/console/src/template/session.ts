@@ -4,6 +4,7 @@
  *   还没写回服务端的改动算未保存，写回失败时留在这里，看得到数目、能重试；
  * - "保存"也是立刻暂存，另外记一笔"这些改动看过了"：自上次点保存以来有改动就算没点保存，离开时提醒（M383）；
  * - 撤销与重做只在这一页、这一次打开里有，撤销也是一次写回。子模板各有自己的工作副本，撤销按改动的先后，跨模板也一样；
+ *   一次改两个模板（提取为子模板，票据 19）记成一步，撤销时两边一起回去；
  * - 打开设计页只读内容：有工作副本读工作副本，没有就读当前修订，不写任何东西（模板设计页票据 01）。第一次写回时才开工作副本；
  *   这次开的、离开时与开的时候一样（都撤销了），就删掉，不留空的工作副本；
  *   基准已变而这边没有改动的旧工作副本，打开时丢掉、改读当前修订，不让它显得有冲突。
@@ -44,7 +45,9 @@ export interface DesignState {
   readonly problems?: readonly Problem[];
 }
 
-interface Step { readonly template: string; readonly before: string; after: string; readonly key?: string; at: number }
+interface Change { readonly template: string; readonly before: string; after: string }
+/** 一步撤销：通常改一个模板；提取为子模板时两个模板一起改。 */
+interface Step { readonly changes: readonly Change[]; readonly key?: string; at: number }
 
 /** 连续改同一项（输入框打字）合成一步撤销。 */
 const COALESCE_MS = 1500;
@@ -53,10 +56,15 @@ const STASH_DELAY_MS = 500;
 export interface DesignSession {
   subscribe(listener: () => void): () => void;
   getState(): DesignState;
-  /** 读一个模板；quiet 时读不到不算页面的错（结构树读被调模板，树里单独标）。 */
-  open(name: string, options?: { readonly quiet?: boolean }): Promise<void>;
+  /**
+   * 读一个模板；quiet 时读不到不算页面的错（结构树读被调模板，树里单独标）。
+   * created：这个工作副本是这一页刚建的（提取为子模板），离开时内容还和建的时候一样就删掉。
+   */
+  open(name: string, options?: { readonly quiet?: boolean; readonly created?: boolean }): Promise<void>;
   /** 一次改动：记进撤销，稍后写回。key 相同的连续改动合成一步。 */
   edit(name: string, document: JsonObject, key?: string): void;
+  /** 一次改几个模板，记成一步撤销（提取为子模板）。模板都要已经读进来。 */
+  editMany(changes: readonly { readonly name: string; readonly document: JsonObject }[]): void;
   /** 返回这一步所在的模板：页面要切过去，让人看得到改了什么。 */
   undo(): string | undefined;
   redo(): string | undefined;
@@ -198,7 +206,11 @@ export function createDesignSession(): DesignSession {
       const pending = opening.get(name);
       if (pending) return pending;
       const work = load(name).then(
-        () => { if (!options?.quiet) problems = undefined; },
+        () => {
+          if (!options?.quiet) problems = undefined;
+          const doc = docs.get(name);
+          if (options?.created && doc) created.set(name, doc.savedText);
+        },
         (error: unknown) => { if (!options?.quiet) problems = problemsOf(error); },
       ).finally(() => { opening.delete(name); changed(); });
       opening.set(name, work);
@@ -209,31 +221,43 @@ export function createDesignSession(): DesignSession {
       if (!doc) return;
       const text = templateText(document);
       if (text === doc.text) return;
-      const now = Date.now(), last = undoSteps.at(-1);
-      if (key !== undefined && last && last.key === key && last.template === name && now - last.at < COALESCE_MS && redoSteps.length === 0) {
-        last.after = text;
+      const now = Date.now(), last = undoSteps.at(-1), only = last?.changes.length === 1 ? last.changes[0]! : undefined;
+      if (key !== undefined && last && only && last.key === key && only.template === name && now - last.at < COALESCE_MS && redoSteps.length === 0) {
+        only.after = text;
         last.at = now;
-        if (last.before === last.after) undoSteps.pop();
+        if (only.before === only.after) undoSteps.pop();
       } else {
-        undoSteps.push({ template: name, before: doc.text, after: text, ...(key !== undefined ? { key } : {}), at: now });
+        undoSteps.push({ changes: [{ template: name, before: doc.text, after: text }], ...(key !== undefined ? { key } : {}), at: now });
       }
       redoSteps = [];
       apply(name, text);
     },
+    editMany(changes) {
+      const step: Change[] = [];
+      for (const { name, document } of changes) {
+        const doc = docs.get(name), text = templateText(document);
+        if (doc && text !== doc.text) step.push({ template: name, before: doc.text, after: text });
+      }
+      if (!step.length) return;
+      undoSteps.push({ changes: step, at: Date.now() });
+      redoSteps = [];
+      for (const change of step) apply(change.template, change.after);
+    },
+    // 返回这一步的最后一个模板：提取时最后改的是原模板，页面切回它。
     undo() {
       const step = undoSteps.pop();
       if (!step) return undefined;
       redoSteps.push(step);
-      apply(step.template, step.before);
-      return step.template;
+      for (const change of step.changes) apply(change.template, change.before);
+      return step.changes.at(-1)!.template;
     },
     redo() {
       const step = redoSteps.pop();
       if (!step) return undefined;
       // 重做之后的下一次改动不和它合成一步。
       undoSteps.push({ ...step, at: 0 });
-      apply(step.template, step.after);
-      return step.template;
+      for (const change of step.changes) apply(change.template, change.after);
+      return step.changes.at(-1)!.template;
     },
     flush,
     async save() {
@@ -243,8 +267,8 @@ export function createDesignSession(): DesignSession {
     },
     async reload(name) {
       docs.delete(name);
-      undoSteps = undoSteps.filter((step) => step.template !== name);
-      redoSteps = redoSteps.filter((step) => step.template !== name);
+      undoSteps = undoSteps.filter((step) => !step.changes.some((change) => change.template === name));
+      redoSteps = redoSteps.filter((step) => !step.changes.some((change) => change.template === name));
       changed();
       await this.open(name);
     },

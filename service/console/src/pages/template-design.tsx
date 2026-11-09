@@ -19,13 +19,16 @@ import { AddPanel, canDropInto, currentAdd, isAddDrag } from '../design/add-pane
 import { insertElement, insertionPoint, type Drop } from '../template/create.js';
 import { writeProperty } from '../template/properties.js';
 import { handlesOf, layoutContext, nudge, type ArrowKey, type HandleInput, type HandleResult } from '../template/handles.js';
+import { extractTemplate, type SizeRange } from '../template/extract.js';
+import { ExtractDialog } from '../design/extract-dialog.js';
+import { differentPixels } from '../design/pixels.js';
 import { NO_TRIAL, readStored, SampleCards, SampleKnobs, useSampleThumbs, writeStored, type Sample, type Trial } from '../design/tray.js';
 import { CodePanel } from '../components/code-panel.js';
 import { RevisionChanges } from '../components/revision-changes.js';
 import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
-import { DEFAULT_LAYERS, type LayerName, type Layers } from '../design/overlays.js';
+import { DEFAULT_LAYERS, flatNodes as flatNodesOf, type LayerName, type Layers } from '../design/overlays.js';
 import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
-import { go, guardNavigation, href, useLivePreview, useLoad, type Route } from '../hooks.js';
+import { go, guardNavigation, href, queuePreview, useLivePreview, useLoad, type Route } from '../hooks.js';
 import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
 import { createDesignSession, leaveQuestion, type DesignDoc, type DesignSession } from '../template/session.js';
@@ -317,6 +320,31 @@ function Design(props: { readonly name: string; readonly root: string }) {
     noteTimer.current = window.setTimeout(() => setHandleNote(undefined), 1600);
   };
   useEffect(() => () => window.clearTimeout(noteTimer.current), []);
+  // —— 提取为子模板（票据 19）：先建空白工作副本，两边的改动记成一步撤销；两边都暂存后用同一个请求再出一张图，和提取前逐像素比对。 ——
+  const [extracting, setExtracting] = useState<{ readonly template: string; readonly path: string }>();
+  const extractBoxes = (template: string, path: string) => {
+    const nodes = reply?.layout ? new Map(flatNodesOf(reply.layout.root).map((node) => [node.path, node])) : new Map<string, LayoutNode>();
+    return (reply?.elements ?? []).filter((item) => item.source.template === template && item.source.path === path).flatMap((item) => { const node = nodes.get(item.path); return node?.visible ? [{ width: node.width, height: node.height }] : []; });
+  };
+  const extract = async (target: { readonly template: string; readonly path: string }, newName: string, sizeRange: SizeRange) => {
+    const document = documentOf(target.template), image = reply?.image, asked = request;
+    if (!document || !image || !asked) return;
+    const result = extractTemplate(document, target.template, target.path, { name: newName, sizeRange });
+    if ('problem' in result) { setNotice(result.problem); setExtracting(undefined); return; }
+    // 名称已被占用时这里答 409，弹窗里显示，什么也没改。
+    await api.createTemplate({ name: newName, base: document['base'] as never, sizeRange });
+    await session.open(newName, { created: true });
+    session.editMany([{ name: newName, document: result.callee }, { name: target.template, document: result.caller }]);
+    setExtracting(undefined);
+    setNotice(`已提取为子模板「${newName}」，正在出新图，和提取前逐像素比对…`);
+    await session.flush();
+    select(target.template, target.path);
+    const after = await queuePreview(asked, () => false, undefined, { workingCopies: true }).catch(() => undefined);
+    const count = after?.image ? await differentPixels(`data:image/${image.format};base64,${image.base64}`, `data:image/${after.image.format};base64,${after.image.base64}`) : undefined;
+    setNotice(count === 0 ? `已提取为子模板「${newName}」：提取前后的图逐像素相同。`
+      : count === undefined ? `已提取为子模板「${newName}」，但新图没出来，没法比对：看一下问题清单。`
+      : `提取为「${newName}」之后图有 ${count} 个像素不同，这次提取不算完成：看一下差在哪，或撤销（Ctrl+Z）回到提取前。`);
+  };
   const dropOnTree = (template: string, path: string, over: string, zone: DropZone) => {
     const document = documentOf(template), place = document && dropTarget(document, template, over, zone);
     if (!document || !place) return;
@@ -545,7 +573,13 @@ function Design(props: { readonly name: string; readonly root: string }) {
         <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
           onLocate={() => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setLeftTab('structure'); setLocateTick((value) => value + 1); }}
           onParameter={(parameter) => { setMenu(undefined); openVariable({ template: name, name: parameter, kind: 'parameter' }); }}
-          onStructure={(op) => structure(op, { template: menu.template, path: menu.path })} onRename={() => startRename({ template: menu.template, path: menu.path })} />
+          onStructure={(op) => structure(op, { template: menu.template, path: menu.path })} onRename={() => startRename({ template: menu.template, path: menu.path })}
+          onExtract={() => { setMenu(undefined); setExtracting({ template: menu.template, path: menu.path }); }} />
+      )}
+      {extracting && documentOf(extracting.template) && (
+        <ExtractDialog document={documentOf(extracting.template)!} template={extracting.template} path={extracting.path} boxes={extractBoxes(extracting.template, extracting.path)}
+          open={[...state.docs.keys()]} ready={Boolean(reply?.image) && !preview.loading && !state.saving && state.unsaved === 0}
+          onClose={() => setExtracting(undefined)} onExtract={(newName, sizeRange) => extract(extracting, newName, sizeRange)} />
       )}
     </section>
   );
@@ -593,6 +627,8 @@ function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPic
 function ElementMenu(props: {
   readonly menu: MenuState; readonly doc: DesignDoc; readonly onClose: () => void; readonly onCopy: (text: string) => void; readonly onPick: (instance: string) => void; readonly onLocate: () => void; readonly onParameter: (name: string) => void;
   readonly onStructure: (op: 'duplicate' | 'delete' | 'up' | 'down' | 'wrap' | 'unwrap') => void; readonly onRename: () => void;
+  /** 提取为子模板（票据 19）。 */
+  readonly onExtract: () => void;
 }) {
   const { menu, doc } = props, root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -628,6 +664,7 @@ function ElementMenu(props: {
           <button type="button" role="menuitem" onClick={() => props.onStructure('wrap')}>包进容器</button>
           {element?.['type'] === 'container' && <button type="button" role="menuitem" onClick={() => props.onStructure('unwrap')}>拆开容器</button>}
           <button type="button" role="menuitem" onClick={props.onRename}><span>重命名</span><kbd>F2</kbd></button>
+          <button type="button" role="menuitem" onClick={props.onExtract}>提取为子模板…</button>
           <button type="button" role="menuitem" className="danger" onClick={() => props.onStructure('delete')}><span>删除</span><kbd>Del</kbd></button>
           <hr className="menu-rule" />
         </>

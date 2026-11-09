@@ -550,6 +550,9 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .handle-line.vertical { width: 2px !important; margin-left: -1px; }
 .handle-line.horizontal { height: 2px !important; margin-top: -1px; }
 .handle-readout { position: absolute; z-index: 5; pointer-events: none; margin-top: 4px; max-width: 460px; padding: 1px 6px; border-radius: 4px; background: var(--mark); color: #fff; font: 11px/1.5 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 提取为子模板的确认（票据 19）。 */
+.extract-facts dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.extract-name { padding: 0 5px; border-radius: 4px; background: var(--surface-2, rgba(41, 54, 66, .06)); font: 12px/1.6 var(--mono); }
 /* 新建模板的弹窗：尺寸一行两个数。 */
 fieldset.field.plain { margin: 0; padding: 0; border: 0; min-width: 0; }
 fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }

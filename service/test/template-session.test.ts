@@ -116,6 +116,26 @@ describe('模板设计的编辑会话', () => {
     expect(text()).toBe(original);
   });
 
+  it('提取为子模板一次改两个模板：记成一步，撤销两边一起回去，重做一起回来（票据 19）', async () => {
+    const session = createDesignSession();
+    await session.open(NAME);
+    await session.open('子');
+    const text = (name: string) => session.getState().docs.get(name)!.text;
+    const before = [text(NAME), text('子')];
+    session.edit(NAME, { name: NAME, artboard: { fill: '#000000' } }, 'fill');
+    session.editMany([{ name: '子', document: { name: '子', artboard: { children: [{ type: 'rect', name: '甲' }] } } }, { name: NAME, document: { name: NAME, artboard: { children: [{ type: 'call', name: '甲', template: '子' }] } } }]);
+    const after = [text(NAME), text('子')];
+    expect(session.undo(), '切回原模板').toBe(NAME);
+    expect(text('子')).toBe(before[1]);
+    expect(JSON.parse(text(NAME))).toEqual({ name: NAME, artboard: { fill: '#000000' } });
+    expect(session.redo()).toBe(NAME);
+    expect([text(NAME), text('子')]).toEqual(after);
+    session.undo();
+    session.undo();
+    expect([text(NAME), text('子')]).toEqual(before);
+    expect(session.getState().canUndo).toBe(false);
+  });
+
   it('已有工作副本：读它，改动直接暂存，不再开', async () => {
     server.copy = { content: '{"name":"牌"}\n', sha256: 'mine', baseRevision: 3 };
     const session = createDesignSession();

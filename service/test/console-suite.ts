@@ -3671,6 +3671,58 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, NAME);
     }, 180_000);
 
+    it('模板设计（票据 19）：把 M402 站点的名称区提取成子模板，列出带走的参数与派生变量；提取前后的图逐像素相同；一步撤销两边一起回去', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME = `站名区 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; type?: string; template?: string; data?: unknown; args?: Record<string, unknown>; children?: Node[] };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string;
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const before = await contentOf(STOP);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' });
+      for (const row of ['站点面板', '站点列']) await openRow(side, row);
+      await side.locator(`[data-testid="structure-row"][data-path="${STOP}/名称区"]`).click({ button: 'right' });
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '提取为子模板…' }).click();
+      const dialog = target.getByRole('dialog', { name: '提取为子模板' });
+      expect(await dialog.getByLabel('新模板名称').inputValue()).toBe('名称区');
+      expect(await dialog.getByTestId('extract-base').textContent()).toBe('停靠站点 v1，调用传当前数据');
+      expect(await dialog.getByTestId('extract-parameters').locator('code').allTextContents()).toEqual(['index', 'currentIndex', 'stopNameSize', 'nameColor', 'passedColor', 'currentTextColor', 'highlightColor']);
+      expect(await dialog.getByTestId('extract-derived').locator('code').allTextContents()).toEqual(['stopState', 'hasLandmark']);
+      // 尺寸范围按图上 35 处的实际尺寸放宽；名称不能和已有模板重。
+      expect(Number(await dialog.getByLabel('宽 最小', { exact: true }).inputValue())).toBeGreaterThan(0);
+      await dialog.getByLabel('新模板名称').fill('道路段');
+      await dialog.getByTestId('extract-problem').filter({ hasText: '已有模板「道路段」' }).waitFor();
+      await dialog.getByLabel('新模板名称').fill(NAME);
+      await dialog.getByRole('button', { name: '提取' }).click();
+      await target.getByRole('status').filter({ hasText: `已提取为子模板「${NAME}」：提取前后的图逐像素相同。` }).waitFor({ timeout: PREVIEW_WINDOW_MS });
+
+      // 原地换成调用，传当前数据与同名参数；新模板带着名称区本身、对外参数与派生变量。
+      const call = find((JSON.parse(await contentOf(STOP)) as { artboard: Node }).artboard, '名称区')!;
+      expect(call).toMatchObject({ type: 'call', template: NAME, data: 'current', args: { index: { var: 'index' }, highlightColor: { var: 'highlightColor' } } });
+      const callee = JSON.parse(await contentOf(NAME)) as { base: unknown; parameters: { name: string; visibility: string }[]; derived: { name: string }[]; artboard: Node };
+      expect(callee.base).toEqual({ name: '停靠站点', version: 1 });
+      expect(callee.parameters.every((parameter) => parameter.visibility === 'public')).toBe(true);
+      expect(callee.derived.map((item) => item.name)).toEqual(['stopState', 'hasLandmark']);
+      expect(callee.artboard.children!.map((child) => [child.type, child.name])).toEqual([['container', '名称区']]);
+      await target.getByRole('complementary', { name: '检查器' }).locator(`[data-testid="properties"][data-path="${STOP}/名称区"][data-type="call"]`).waitFor();
+
+      // 一步撤销：两边一起回去，原模板逐字节还原。
+      const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes(enc(STOP)) && response.status() === 200, { timeout: 60_000 });
+      await target.getByRole('button', { name: '撤销' }).click();
+      await stashed;
+      await expect.poll(() => contentOf(STOP)).toBe(before);
+      await expect.poll(async () => (JSON.parse(await contentOf(NAME)) as { artboard: Node }).artboard.children ?? []).toEqual([]);
+      expect(await target.getByRole('button', { name: '撤销' }).isDisabled()).toBe(true);
+
+      for (const name of [STOP, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;
