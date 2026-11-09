@@ -59,6 +59,8 @@ export function DesignStage(props: {
   readonly handles?: HandleInput;
   readonly handleNote?: string;
   readonly onHandle?: (result: HandleResult) => void;
+  /** 空画板时的下一步（票据 18）：放在舞台下方，不挡拖放。 */
+  readonly hint?: ReactNode;
 }) {
   const { preview, tool, view, insets, selected } = props, reply = preview.reply, image = reply?.image, layout = reply?.layout;
   const stage = useRef<HTMLDivElement>(null);
@@ -228,6 +230,10 @@ export function DesignStage(props: {
         );
       })()}
       {legend && <span className="design-legend small" data-testid="overlay-legend">{legend}</span>}
+      {props.hint && (
+        // 放在两个浮动面板之间的空隙里，不被面板盖住。
+        <div className="stage-hint" data-testid="stage-hint" style={{ left: insets.left + room.width / 2, maxWidth: Math.max(240, room.width - 24) }} onPointerDown={(event) => event.stopPropagation()}>{props.hint}</div>
+      )}
     </div>
   );
 }

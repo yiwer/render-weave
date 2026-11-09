@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.16.0",
+    "version": "1.17.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；客户端应忽略不认识的属性与枚举值；1.12.0 放宽静态版本类型，兼容说明见变更记录。说明见 docs/api.md。"
   },
   "servers": [
@@ -3116,6 +3116,157 @@
           },
           "404": {
             "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/templates": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdTemplates",
+        "tags": [
+          "代建"
+        ],
+        "summary": "从空白新建模板：一块空画板，成为没有基准修订的工作副本，保存时记修订 1",
+        "description": "请求体是名称、基准（静态数据定义的确切版本，或内置的空数据定义 v1、单值·文本 v1 等）与适用尺寸范围，写法同模板 DSL。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400，问题清单同保存时的模板静态检查。",
+        "x-access": "templates.write",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "base",
+                  "sizeRange"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$"
+                  },
+                  "base": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "version": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sizeRange": {
+                    "type": "object",
+                    "required": [
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "width": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "height": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateWorkingCopy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
           }
         }
       }
@@ -7589,6 +7740,140 @@
           },
           "403": {
             "$ref": "#/components/responses/Error403"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV1Templates",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "从空白新建模板：一块空画板，成为没有基准修订的工作副本，保存时记修订 1",
+        "description": "请求体是名称、基准（静态数据定义的确切版本，或内置的空数据定义 v1、单值·文本 v1 等）与适用尺寸范围，写法同模板 DSL。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400，问题清单同保存时的模板静态检查。",
+        "x-access": "templates.write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "base",
+                  "sizeRange"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$"
+                  },
+                  "base": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "version": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sizeRange": {
+                    "type": "object",
+                    "required": [
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "width": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "height": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateWorkingCopy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
           }
         }
       }

@@ -152,6 +152,9 @@ export const api = {
   /** 指回旧修订：当前修订指向已有的一个修订，审计记前后内容哈希。 */
   setCurrentTemplate: (template: string, revision: number) => json<TemplateRevisions>('POST', '/v1/template-current', { json: { template, revision } }),
   copyTemplate: (name: string, newName: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/copies`, { json: { name: newName } }),
+  /** 从空白新建（模板设计页票据 18）：一块空画板的工作副本，没有基准修订。 */
+  createTemplate: (body: { readonly name: string; readonly base: SchemaRef; readonly sizeRange: Readonly<Record<'width' | 'height', { readonly min: number; readonly max: number }>> }) =>
+    json<TemplateWorkingCopy>('POST', '/v1/templates', { json: body }),
   workingCopies: () => json<{ workingCopies: TemplateWorkingCopy[] }>('GET', '/v1/template-working-copies'),
   /** 当前修订的内容：不开工作副本，只读。 */
   templateContent: (name: string) => json<TemplateContent>('GET', `/v1/templates/${enc(name)}/content`),

@@ -4,6 +4,7 @@
  */
 import { useState, type DragEvent } from 'react';
 import { api, ApiError } from '../api.js';
+import { NewTemplate } from '../components/new-template.js';
 import { Icon } from '../components/icon.js';
 import { TYPE_GLYPHS } from '../components/value-text.js';
 import { useLoad } from '../hooks.js';
@@ -28,17 +29,32 @@ const endDrag = () => { pending = undefined; };
 const refText = (ref: SchemaRef) => `${ref.name} v${ref.version}`;
 const EMPTY: SchemaRef = { name: '空数据定义', version: 1 };
 
-/** 选模板：只列基准相符的，没有时写明缺什么。 */
-function TemplateChoice(props: { readonly base: SchemaRef | undefined; readonly templates: readonly { readonly name: string; readonly base?: SchemaRef }[]; readonly self: string; readonly value: string; readonly onChange: (name: string) => void }) {
+const NEW = '\u0000new';
+
+/** 选模板：只列基准相符的；也能当场从空白新建一个，基准预先填好（票据 18）。 */
+function TemplateChoice(props: { readonly base: SchemaRef | undefined; readonly templates: readonly { readonly name: string; readonly base?: SchemaRef }[]; readonly self: string; readonly value: string; readonly why: string; readonly onChange: (name: string) => void }) {
+  const [creating, setCreating] = useState(false);
   const names = props.base ? matchingTemplates(props.templates, props.base).filter((name) => name !== props.self) : [];
   if (!props.base) return <p className="small muted">先选上面那一项。</p>;
-  if (names.length === 0) return <p className="small muted" data-testid="no-template">还没有基准是「{refText(props.base)}」的模板。从空白新建模板在票据 18。</p>;
+  const dialog = creating && <NewTemplate base={{ ref: props.base, why: props.why }} onClose={() => setCreating(false)} onCreated={(name) => { setCreating(false); props.onChange(name); }} />;
+  if (names.length === 0 && !props.value) {
+    return (
+      <div className="small add-field" data-testid="no-template">
+        <span className="muted">还没有基准是「{refText(props.base)}」的模板。</span>
+        <button type="button" className="small" data-testid="new-template" onClick={() => setCreating(true)}>新建一个</button>
+        {dialog}
+      </div>
+    );
+  }
   return (
     <label className="small add-field">被调模板（基准 {refText(props.base)}）
-      <select aria-label="被调模板" autoFocus value={props.value} onChange={(event) => props.onChange(event.target.value)}>
+      <select aria-label="被调模板" autoFocus value={props.value} onChange={(event) => { if (event.target.value === NEW) setCreating(true); else props.onChange(event.target.value); }}>
         <option value="">选一个模板</option>
+        {props.value && !names.includes(props.value) && <option value={props.value}>{props.value}（新建，未发布）</option>}
         {names.map((name) => <option key={name} value={name}>{name}</option>)}
+        <option value={NEW}>+ 新建模板…</option>
       </select>
+      {dialog}
     </label>
   );
 }
@@ -92,7 +108,7 @@ export function AddPanel(props: {
               </select>
             </label>
             {lists.length === 0 && <p className="small muted">这个模板的数据里没有列表字段。</p>}
-            {chosen.list && <TemplateChoice base={listBase} templates={all} self={template} value={chosen.template} onChange={(name) => setChosen({ ...chosen, template: name })} />}
+            {chosen.list && <TemplateChoice base={listBase} templates={all} self={template} value={chosen.template} why={`循环的每一项是「${lists.find((field) => field.name === chosen.list)?.label ?? chosen.list}」的一项，被调模板的基准就是它。`} onChange={(name) => setChosen({ ...chosen, template: name })} />}
             <button type="submit" className="small" disabled={!chosen.list || !chosen.template}>添加循环容器</button>
           </form>
         )}
@@ -105,7 +121,7 @@ export function AddPanel(props: {
                 <option value="none">不传数据</option>
               </select>
             </label>
-            <TemplateChoice base={callBase} templates={all} self={template} value={chosen.template} onChange={(name) => setChosen({ ...chosen, template: name })} />
+            <TemplateChoice base={callBase} templates={all} self={template} value={chosen.template} why={chosen.data === 'none' ? '这个调用不传数据，被调模板的基准是空数据定义。' : chosen.data === 'current' ? '这个调用传当前数据，被调模板的基准和这个模板相同。' : '这个调用传这个单引用字段，被调模板的基准是它指向的数据定义。'} onChange={(name) => setChosen({ ...chosen, template: name })} />
             <button type="submit" className="small" disabled={!chosen.template}>添加子模板调用</button>
           </form>
         )}
@@ -136,7 +152,7 @@ export function AddPanel(props: {
                 </button>
                 {open === key && plan.kind === 'template' && (
                   <form className="add-form" aria-label={`从 ${field.label} 创建`} onSubmit={(event) => { event.preventDefault(); if (chosen.template) { props.onAdd(plan.element(chosen.template)); reset(); } }}>
-                    <TemplateChoice base={plan.base} templates={all} self={template} value={chosen.template} onChange={(name) => setChosen({ ...chosen, template: name })} />
+                    <TemplateChoice base={plan.base} templates={all} self={template} value={chosen.template} why={field.type === 'list' ? `循环的每一项是「${field.label}」的一项，被调模板的基准就是它。` : `调用传「${field.label}」这份数据，被调模板的基准是它指向的数据定义。`} onChange={(name) => setChosen({ ...chosen, template: name })} />
                     <button type="submit" className="small" disabled={!chosen.template}>{field.type === 'list' ? '添加循环容器' : '添加子模板调用'}</button>
                   </form>
                 )}

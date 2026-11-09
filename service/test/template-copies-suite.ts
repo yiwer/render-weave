@@ -312,6 +312,49 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect(saveEvent).not.toHaveProperty('beforeSha256');
     });
 
+    it('从空白新建（模板设计页票据 18）：一块空画板，没有基准修订，保存记修订 1；名称已占答 409；基准不存在、尺寸颠倒答 400；代建端点同形，记审计', async () => {
+      const target = await tenant(), token = target.admin.token, sizeRange = { width: { min: 60, max: 120 }, height: { min: 30, max: 30 } };
+      const blank = (body: unknown, who = token, prefix = '/v1') => world.call('POST', `${prefix}/templates`, who, body);
+      const created = await blank({ name: '空白牌', base: { name: '问候', version: 1 }, sizeRange });
+      expect(created.status, created.raw.slice(0, 300)).toBe(201);
+      expect(created.body).toMatchObject({ name: '空白牌', updatedBy: target.admin.email });
+      expect(created.body).not.toHaveProperty('baseRevision');
+      expect(await documentOf(token, encodeURIComponent('空白牌'))).toEqual({ dslVersion: 'renderweave-template/1', name: '空白牌', base: { name: '问候', version: 1 }, artboard: { sizeRange } });
+      expect((await world.call('GET', '/v1/templates', token)).body.templates.map((item: any) => item.name), '还没保存').toEqual(['问候牌']);
+      // 没有数据集也能看：空白数据出一张空画板。
+      const drawn = await preview(token, { template: '空白牌', dataset: { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: {} } }, output: { width: 60, height: 30, dpi: 72, format: 'png' } }, '?workingCopies=true');
+      expect(drawn.image).toBeTruthy();
+      // 空白数据缺必填字段是数据的问题（草稿照出，显示占位）；模板本身没有问题。
+      expect(drawn.problems.filter((problem: any) => problem.code.startsWith('template.'))).toEqual([]);
+
+      // 内置的空数据定义也能当基准。
+      expect((await blank({ name: '空数据牌', base: { name: '空数据定义', version: 1 }, sizeRange })).status).toBe(201);
+      for (const [body, status, code] of [
+        [{ name: '问候牌', base: { name: '问候', version: 1 }, sizeRange }, 409, 'input.duplicate'],
+        [{ name: '空白牌', base: { name: '问候', version: 1 }, sizeRange }, 409, 'input.duplicate'],
+        [{ name: '没有基准', base: { name: '没有这个定义', version: 1 }, sizeRange }, 400, undefined],
+        [{ name: '颠倒', base: { name: '问候', version: 1 }, sizeRange: { ...sizeRange, width: { min: 120, max: 60 } } }, 400, 'request.invalid'],
+        [{ name: '带/斜杠', base: { name: '问候', version: 1 }, sizeRange }, 400, 'request.invalid'],
+        [{ name: '缺尺寸', base: { name: '问候', version: 1 } }, 400, 'request.invalid'],
+      ] as const) {
+        const reply = await blank(body);
+        expect(reply.status, JSON.stringify(body)).toBe(status);
+        if (code) expect(reply.body.problems[0].code, JSON.stringify(body)).toBe(code);
+      }
+      expect((await world.call('GET', '/v1/template-working-copies', token)).body.workingCopies.map((item: any) => item.name).sort()).toEqual(['空数据牌', '空白牌']);
+
+      const saved = await save(token, created.body.sha256, {}, encodeURIComponent('空白牌'));
+      expect(saved).toMatchObject({ status: 200, body: { name: '空白牌', revision: 1, status: 'saved' } });
+      const event = (await auditOf(token, 'templateWorkingCopy.blank')).find((item) => item.object.id === '空白牌');
+      expect(event).toMatchObject({ actor: { kind: 'member', label: target.admin.email }, crossTenant: false, afterSha256: created.body.sha256, diff: { added: 1 } });
+
+      // 代建端点同形，另标跨租户；操作员不能新建。
+      const prefix = `/v1/authoring/tenants/${target.id}`;
+      expect((await blank({ name: '代建空白', base: { name: '问候', version: 1 }, sizeRange }, target.engineer, prefix)).status).toBe(201);
+      expect((await auditOf(token, 'templateWorkingCopy.blank')).find((item) => item.object.id === '代建空白')).toMatchObject({ actor: { kind: 'authoringToken' }, crossTenant: true });
+      expect((await blank({ name: '不行', base: { name: '问候', version: 1 }, sizeRange }, target.operator.token)).status).toBe(403);
+    });
+
     it('指回旧修订开放给客户管理员，记审计；操作员不能指回；工作副本的基准随之过期', async () => {
       const target = await tenant(), token = target.admin.token;
       const { sha256: copySha } = await editedCopy(token);

@@ -3188,7 +3188,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 列表字段：选基准相符的模板，变成循环容器。
       await side.locator('[data-testid="add-field"][data-name="stops"]').click();
       const form = side.getByRole('form', { name: /从 .* 创建/ });
-      expect(await form.getByLabel('被调模板').locator('option').allTextContents(), '道路段的基准也是停靠站点 v1').toEqual(['选一个模板', '站点', '道路段']);
+      expect(await form.getByLabel('被调模板').locator('option').allTextContents(), '道路段的基准也是停靠站点 v1').toEqual(['选一个模板', '站点', '道路段', '+ 新建模板…']);
       await form.getByLabel('被调模板').selectOption('站点');
       saved = stashed();
       await form.getByRole('button', { name: '添加循环容器' }).click();
@@ -3343,7 +3343,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 来源：列表是 stops，模板只列基准是停靠站点 v1 的。
       expect(await form.getByLabel('循环的列表').inputValue()).toBe('stops');
-      expect(await form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段']);
+      expect(await form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段', '+ 新建模板…']);
       await form.getByText('只列基准是 停靠站点 v1 的').waitFor();
 
       // 传入参数：一行一个对外参数；换成固定值，再换回变量。
@@ -3581,6 +3581,94 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
       expect(await current()).toEqual(before);
       await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 18）：模板列表从空白新建，空画板写明下一步；加一个字段就能发布为修订 1；从列表字段加循环时当场新建被调模板，基准预先填好', async () => {
+      const NAME = `空白站点 ${randomUUID().slice(0, 6)}`, BADGE = `站名标识 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      type Node = { name: string; type?: string; template?: string; content?: unknown; children?: Node[] };
+      const copyOf = async (name: string) => {
+        const reply = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return reply.status === 200 ? JSON.parse(reply.body.content as string) as { base: unknown; artboard: Node & { sizeRange: unknown } } : undefined;
+      };
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await (await nav(target, '模板')).click();
+      await target.getByRole('button', { name: '新建模板' }).click();
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      await dialog.getByLabel('名称').fill(NAME);
+      await dialog.getByLabel('基准').selectOption({ label: '停靠站点（停靠站点 v1）' });
+      for (const [label, value] of [['宽 最小', '8'], ['宽 最大', '800'], ['高 最小', '80'], ['高 最大', '110'], ['默认宽', '20'], ['默认高', '100']] as const) await dialog.getByLabel(label, { exact: true }).fill(value);
+      // 默认尺寸要在范围里，不对时当场说，不能提交。
+      await dialog.getByLabel('默认宽', { exact: true }).fill('900');
+      await dialog.getByTestId('new-template-problem').filter({ hasText: '默认宽要在适用范围里' }).waitFor();
+      expect(await dialog.getByRole('button', { name: '新建' }).isDisabled()).toBe(true);
+      await dialog.getByLabel('默认宽', { exact: true }).fill('20');
+      await dialog.getByRole('button', { name: '新建' }).click();
+
+      // 进设计页：一块空画板，舞台下方写明下一步；样例带用默认尺寸与空白数据。
+      await target.getByTestId('preview-image').waitFor();
+      expect(await copyOf(NAME)).toEqual({ dslVersion: 'renderweave-template/1', name: NAME, base: { name: '停靠站点', version: 1 }, artboard: { sizeRange: { width: { min: 8, max: 800 }, height: { min: 80, max: 110 } } } });
+      await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
+      expect(await target.locator('[data-testid="size-knob"][data-name="width"]').getByRole('textbox').inputValue()).toBe('20');
+      const hint = target.getByTestId('stage-hint');
+      await hint.filter({ hasText: '空画板' }).waitFor();
+      await hint.getByRole('button', { name: '打开"添加"页' }).click();
+      const side = target.getByRole('complementary', { name: '结构与变量' });
+      expect(await side.getByRole('tab', { name: '添加' }).getAttribute('aria-selected')).toBe('true');
+      let saved = stashed();
+      await side.locator('[data-testid="add-field"][data-name="name"]').click();
+      await saved;
+      expect((await copyOf(NAME))!.artboard.children!.map((child) => [child.type, child.content])).toEqual([['text', [{ slot: 'name' }]]]);
+      await hint.waitFor({ state: 'detached' });
+
+      // 发布：没有修订可比，记修订 1。
+      await target.getByRole('button', { name: '发布修订' }).click();
+      await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
+      await target.getByRole('button', { name: '发布为修订 1' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
+      expect((await server('GET', `/v1/templates/${enc(NAME)}`, token)).body.currentRevision).toBe(1);
+
+      // 从列表字段加循环：当场新建被调模板，基准预先填好是单值·文本 v1。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(NAME)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await side.getByRole('tab', { name: '添加' }).click();
+      await side.locator('[data-testid="add-field"][data-name="badges"]').click();
+      const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
+      // 基准是单值·文本 v1 的已有模板（M402 的标识图标等）列在前面，最后一项是当场新建。
+      const choices = await choose.getByLabel('被调模板').locator('option').allTextContents();
+      expect(choices).toContain('标识图标');
+      expect(choices.at(-1)).toBe('+ 新建模板…');
+      await choose.getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const callee = target.getByRole('dialog', { name: '新建模板' });
+      expect(await callee.getByTestId('new-template-base').textContent()).toBe('单值·文本 v1');
+      await callee.getByLabel('名称').fill(BADGE);
+      await callee.getByRole('button', { name: '新建' }).click();
+      await callee.waitFor({ state: 'detached' });
+      expect(await choose.getByLabel('被调模板').inputValue()).toBe(BADGE);
+      saved = stashed();
+      await choose.getByRole('button', { name: '添加循环容器' }).click();
+      await saved;
+      const loop = (await copyOf(NAME))!.artboard.children!.find((child) => child.type === 'loop');
+      expect(loop).toMatchObject({ template: BADGE, list: { var: 'badges' } });
+      expect(await copyOf(BADGE)).toMatchObject({ base: { name: '单值·文本', version: 1 }, artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } } } });
+
+      // 检查器里循环的表单同样能当场新建，建好就换过去。
+      const AGAIN = `站名标识二 ${randomUUID().slice(0, 6)}`;
+      await side.getByRole('tab', { name: '结构' }).click();
+      await side.locator(`[data-testid="structure-row"][data-path="${NAME}/${loop!.name}"]`).getByRole('button').first().click();
+      const loopForm = target.getByRole('complementary', { name: '检查器' }).getByTestId('loop-form');
+      await loopForm.getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const second = target.getByRole('dialog', { name: '新建模板' });
+      expect(await second.getByTestId('new-template-base').textContent()).toBe('单值·文本 v1');
+      await second.getByLabel('名称').fill(AGAIN);
+      saved = stashed();
+      await second.getByRole('button', { name: '新建' }).click();
+      await saved;
+      expect((await copyOf(NAME))!.artboard.children!.find((child) => child.type === 'loop')!.template).toBe(AGAIN);
+      expect(target.url(), '没有整页重载').not.toContain('/console/?');
+
+      for (const name of [NAME, BADGE, AGAIN]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, NAME);
     }, 180_000);
 
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。

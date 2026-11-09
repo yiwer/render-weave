@@ -550,6 +550,14 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .handle-line.vertical { width: 2px !important; margin-left: -1px; }
 .handle-line.horizontal { height: 2px !important; margin-top: -1px; }
 .handle-readout { position: absolute; z-index: 5; pointer-events: none; margin-top: 4px; max-width: 460px; padding: 1px 6px; border-radius: 4px; background: var(--mark); color: #fff; font: 11px/1.5 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 新建模板的弹窗：尺寸一行两个数。 */
+fieldset.field.plain { margin: 0; padding: 0; border: 0; min-width: 0; }
+fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
+.pair-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.pair-label { font-size: 13px; color: var(--muted); }
+/* 空画板的下一步（票据 18）：舞台下方居中，不挡图与拖放。 */
+.stage-hint { position: absolute; bottom: 66px; z-index: 6; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: max-content; padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 6px 20px rgba(29, 38, 46, .12); font-size: 13px; }
+.stage-hint button { flex: none; }
 /* 状态样式（票据 17）：一排取值按钮，虚线是还没覆盖的，红框是不会出现的。 */
 .state-bar { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
 .state-by { display: flex; align-items: center; gap: 8px; }

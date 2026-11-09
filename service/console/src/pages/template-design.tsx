@@ -395,6 +395,15 @@ function Design(props: { readonly name: string; readonly root: string }) {
   };
 
   const failures = [...state.docs.values()].filter((item) => item.failure);
+  // 空画板（从空白新建，票据 18）：舞台下方写明下一步。
+  const board = doc && isObject(doc.document['artboard']) ? doc.document['artboard'] : undefined;
+  const blankBoard = board && !(Array.isArray(board['children']) && board['children'].length > 0);
+  const stageHint = blankBoard ? (
+    <>
+      <span>空画板。下一步：从左边的"添加"页加元素，或把字段拖到图上。</span>
+      <button type="button" className="small" onClick={() => { setPanels((now) => ({ ...now, left: true })); setLeftTab('add'); }}>打开"添加"页</button>
+    </>
+  ) : undefined;
   const severe = reply?.problems.filter((problem) => problem.level === 'severe').length ?? 0;
   const insets = { left: panels.left && !narrow ? LEFT_WIDTH + PANEL_GAP : 14, right: panels.right && !narrow ? RIGHT_WIDTH + PANEL_GAP : 14 };
   const sizeRange = rootInfo?.sizeRange;
@@ -419,7 +428,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} {...(handleInput ? { handles: handleInput } : {})} {...(handleNote ? { handleNote } : {})} onHandle={commitHandle} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} {...(handleInput ? { handles: handleInput } : {})} {...(handleNote ? { handleNote } : {})} onHandle={commitHandle} {...(stageHint ? { hint: stageHint } : {})} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;

@@ -140,6 +140,7 @@ HTTP 状态按类别映射，每个端点会有哪些状态写在描述里：
 | 保存 | `POST …/working-copy/save` | 请求体 `{ "expectedSha256": "…", "overwrite": false }`，见下 |
 | 丢弃 | `DELETE …/working-copy` | 当前修订不受影响 |
 | 复制为新模板 | `POST /v1/templates/{name}/copies` | 请求体 `{ "name": "新名称" }`。内容与基准数据定义取当前修订，成为没有基准修订的工作副本。名称已有模板或工作副本答 409 |
+| 从空白新建 | `POST /v1/templates` | 请求体 `{ "name": "名称", "base": { "name": "数据定义", "version": 1 }, "sizeRange": { "width": { "min": 60, "max": 120 }, "height": { "min": 30, "max": 30 } } }`，写法同模板 DSL；基准可以是内置的空数据定义 v1。得到一块空画板，成为没有基准修订的工作副本，保存时记修订 1。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400 |
 | 读当前修订 | `GET /v1/templates/{name}/content` | 名称、修订号、内容哈希与 `content`：当前修订的原文。不开工作副本，不写任何东西（1.14.0） |
 | 修订历史 | `GET /v1/templates/{name}/revisions` | 修订号、主体、时间与来源（`push`、`web`） |
 | 指回旧修订 | `POST /v1/template-current` | 请求体 `{ "template": "…", "revision": 1 }`，客户管理员；代建工程师用原来的 `…/template-current` |
@@ -348,6 +349,7 @@ function verify(secret, header, rawBody, now = Date.now()) {
 | 版本 | 日期 | 改动 | 兼容 |
 |---|---|---|---|
 | 1.0.0 | 2026-10-20 | 首个版本：账号与鉴权、模板与草稿预览、批量交付、数据集与资源、出图记录与重放、用量与套餐、代建推送、webhook；批次加 `outcome`。定稿前并入：静态数据定义的两个只读端点（票据 12），Excel 导入预览与空白表（票据 13）；`GET /v1/usage` 的访问要求从 `usage.read` 改为 `usage.summary`，操作员与 API 密钥也能看合计（票据 14，M300），按兼容检查算访问要求变了，重写基线。2026-10-22 阶段 4 验收时定稿 | — |
+| 1.17.0 | 2026-11-08 | 从空白新建模板（模板设计页票据 18）：新增 `POST /v1/templates` 与代建端点 `POST /v1/authoring/tenants/{tenantId}/templates`，请求体是名称、基准与适用尺寸范围，回答没有基准修订的工作副本，同复制为新模板；审计动作 `templateWorkingCopy.blank` | 只做加法 |
 | 1.16.0 | 2026-11-05 | 布局摘要写明结构（模板设计页票据 06）：`PreviewResult.layout` 从任意对象改成 `LayoutSummary`，文字的 `compression`、`overflow`、最终字号都写清楚。回答本身不变 | 只写明描述 |
 | 1.15.0 | 2026-11-05 | 元素求值（模板设计页票据 02，M393）：新增 `POST /v1/previews/inspection?element=元素路径` 与代建端点，请求与预览相同，回答这个元素实例所在作用域的变量取值、条件分支命中第几支、参数的来源、检查项是否成立，以及这个定义的全部实例与状态取值。只求值不出图，不入队，不占预览的并发与频率 | 只做加法 |
 | 1.14.0 | 2026-11-05 | 读模板当前修订的内容（模板设计页票据 01，M393）：新增 `GET /v1/templates/{name}/content`，代建端点同样。设计页只看不改时不再开工作副本 | 只做加法 |

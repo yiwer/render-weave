@@ -1,5 +1,5 @@
 /**
- * 模板工作副本与修订的端点（P1 票据 07，ADR-0022、M265、M267、M345、M346）：新建、暂存、丢弃、检查与保存工作副本，复制为新模板，修订历史，指回旧修订。
+ * 模板工作副本与修订的端点（P1 票据 07，ADR-0022、M265、M267、M345、M346）：新建、暂存、丢弃、检查与保存工作副本，复制为新模板，从空白新建（模板设计页票据 18），修订历史，指回旧修订。
  * 一套处理逻辑，两种寻址（M261、M345），同数据定义。
  * - 暂存不影响当前修订：出图、只读预览与推送的差异都照旧读当前修订；预览可以指定用工作副本（previews.ts）；
  * - 保存时工作副本的基准不是当前修订答 409 并带两边差异，显式 overwrite 才覆盖，口径同 agent apply --overwrite；
@@ -23,6 +23,19 @@ import { constrainedScopes, expirePending, openPublishRequest, type AuditWriter,
 const NAME_PATTERN = '^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$';
 const SHA256 = '^[0-9a-f]{64}$';
 const COPY_SCHEMA = { type: 'object', required: ['name'], additionalProperties: false, properties: { name: { type: 'string', minLength: 1, maxLength: 200, pattern: NAME_PATTERN } } } as const;
+const RANGE_SCHEMA = { type: 'object', required: ['min', 'max'], additionalProperties: false, properties: { min: { type: 'number', exclusiveMinimum: 0, maximum: 100_000 }, max: { type: 'number', exclusiveMinimum: 0, maximum: 100_000 } } } as const;
+/** 从空白新建：名称、基准（静态数据定义的确切版本，或内置的空数据定义）与适用尺寸范围，同 DSL 的写法。 */
+const BLANK_SCHEMA = {
+  type: 'object', required: ['name', 'base', 'sizeRange'], additionalProperties: false,
+  properties: {
+    name: COPY_SCHEMA.properties.name,
+    base: {
+      type: 'object', required: ['name', 'version'], additionalProperties: false,
+      properties: { name: { type: 'string', minLength: 1, maxLength: 200 }, version: { anyOf: [{ type: 'integer', minimum: 1 }, { type: 'string', pattern: '^[a-z0-9][a-z0-9._-]{0,63}$' }] } },
+    },
+    sizeRange: { type: 'object', required: ['width', 'height'], additionalProperties: false, properties: { width: RANGE_SCHEMA, height: RANGE_SCHEMA } },
+  },
+} as const;
 const SAVE_SCHEMA = {
   type: 'object', required: ['expectedSha256'], additionalProperties: false,
   properties: { expectedSha256: { type: 'string', pattern: SHA256 }, overwrite: { type: 'boolean', description: '基准不是当前修订时也保存，盖过别人先保存的修订' } },
@@ -265,6 +278,29 @@ export function registerWorkingCopyRoutes(app: FastifyInstance, context: ApiCont
     const copy = await storage.createTemplateWorkingCopy({ name, bytes }, writer(request));
     if (!copy) throw fail(409, ServiceProblemCodes.inputDuplicate, 'request.body.name', `${name} 已有工作副本`);
     await audit(request, 'templateWorkingCopy.copy', { type: 'templateWorkingCopy', id: name }, {
+      afterSha256: copy.sha256, diff: auditDiff([{ path: copySource(name), change: 'added', afterSha256: copy.sha256 }]),
+    });
+    reply.code(201);
+    return copy;
+  });
+
+  /**
+   * 从空白新建（模板设计页票据 18）：一块空画板，成为没有基准修订的工作副本，保存时记修订 1，同复制为新模板。
+   * 名称已有模板或工作副本答 409；基准不存在、尺寸范围最小大于最大这类严重问题答 400，问题清单同保存时的静态检查。
+   */
+  app.post(`${prefix}/templates`, { config: { access: 'templates.write' }, schema: { body: BLANK_SCHEMA } }, async (request, reply) => {
+    const scope = scopeOf(request), storage = scope.storage;
+    const { name, base, sizeRange } = request.body as { name: string; base: { name: string; version: number | string }; sizeRange: Record<'width' | 'height', { min: number; max: number }> };
+    for (const axis of ['width', 'height'] as const) {
+      if (sizeRange[axis].min > sizeRange[axis].max) throw fail(400, ServiceProblemCodes.requestInvalid, `request.body.sizeRange.${axis}`, `${axis === 'width' ? '宽' : '高'}的最小不能大于最大`);
+    }
+    if (currentOf(await storage.authoringState(), name)) throw fail(409, ServiceProblemCodes.inputDuplicate, 'request.body.name', `已有模板 ${name}`);
+    const document = { dslVersion: 'renderweave-template/1', name, base, artboard: { sizeRange } };
+    const { problems, blocked } = checkTemplateStatic(overlaid(await loadTenantWorkspace(storage), name, document), name);
+    if (blocked || problems.some((item) => item.level === 'severe')) throw new ApiError(400, problems);
+    const copy = await storage.createTemplateWorkingCopy({ name, bytes: documentBytes(document) }, writer(request));
+    if (!copy) throw fail(409, ServiceProblemCodes.inputDuplicate, 'request.body.name', `${name} 已有工作副本`);
+    await audit(request, 'templateWorkingCopy.blank', { type: 'templateWorkingCopy', id: name }, {
       afterSha256: copy.sha256, diff: auditDiff([{ path: copySource(name), change: 'added', afterSha256: copy.sha256 }]),
     });
     reply.code(201);
