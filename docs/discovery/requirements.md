@@ -1558,3 +1558,12 @@ P1 票据 11 落地 M347、ADR-0022 时定的，PRD 没写细或写法要调整�
 - **手柄保留、缺省开**：走查没有反馈手柄比填数更容易改错，M392 的切换条件没有触发。
 - **第三轮方案**：[docs/template-design-refine.md](../template-design-refine.md)，原型在 [docs/prototypes/template-design-v3/](../prototypes/template-design-v3/README.md)。参照 Claude Design、Figma UI3、Penpot、Framer、Webflow、Canva：插入搬到底部工具栏，左面板合成"图层 / 数据 / Agent"，检查器照 Figma UI3 收紧，调用方传了的参数一键建、按字段是否为空显示一步建，加选中条与快捷操作。按走查路径数，操作估计从 120 下降到约 68 下。DSL、保存语义、开放 API 都不变。用户确认方向后拆票据；Agent 进左面板（修订 M342）在方案里建议进，同一次确认。
 
+
+### M396：模板设计页第三轮按方案拆票据（2026-11-09）
+
+用户看过[第三轮方案](../template-design-refine.md)与[原型](../prototypes/template-design-v3/README.md)，原话"方向对，拆票据"。规格与 16 张票据在 [.scratch/template-design-refine/](../../.scratch/template-design-refine/README.md)。
+
+- **确认的方向**：插入搬到底部工具栏，左面板合成"图层 / 数据"（Agent 页接入 P2 时出现），检查器照 Figma UI3 收紧，重复劳动交给页面（一键建调用方传的参数、按字段是否为空显示、新元素按父布局给尺寸），加选中条与快捷操作，样例带默认收成一行。
+- **Agent 进左面板**，作第三页，随这次方向一起定，修订 M342 与 M393 的"待定"。接入前不显示，照第一期的规矩。切换条件：P2 时发现对话要和检查器同时看，改成可拆出的独立窗口。
+- **不变**：DSL、保存语义（M346、M356、M383）、开放 API（这一轮不加接口）、舞台只显示引擎出的图、手柄只按布局约束（M392）。
+- **验收**：票据 20 的走查路径改用新操作，操作数降到 70 以内，出图仍与原来逐字节相同；和第三轮原型截图逐张对照；真人走查记时长，和 P1 的小改时长并列。
