@@ -434,7 +434,9 @@ function Design(props: { readonly name: string; readonly root: string }) {
   ) : undefined;
   const severe = reply?.problems.filter((problem) => problem.level === 'severe').length ?? 0;
   const insets = { left: panels.left && !narrow ? LEFT_WIDTH + PANEL_GAP : 14, right: panels.right && !narrow ? RIGHT_WIDTH + PANEL_GAP : 14 };
-  const sizeRange = rootInfo?.sizeRange;
+  // 文档条写面包屑最后一级的模板：进了子模板就写它自己的基准与适用尺寸，不是主模板的。
+  const currentDoc = name === root ? undefined : documentOf(name);
+  const shownInfo = currentDoc ? documentInfo(name, currentDoc) : rootInfo, sizeRange = shownInfo?.sizeRange;
   return (
     <section className="design" aria-label={`模板设计 ${name}`}>
       <div className="design-toolbar" role="toolbar" aria-label="模板设计">
@@ -442,7 +444,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
           <a href={href(['templates'])}>模板</a><span aria-hidden="true">/</span>
           {root === name ? <strong>{name}</strong> : <><a href={href(['templates', root, 'design'])}>{root}</a><span aria-hidden="true">/</span><strong>{name}</strong></>}
         </nav>
-        {rootInfo?.base && sizeRange && <span className="small faint design-facts">{rootInfo.base.name} v{String(rootInfo.base.version)} · {rangeText(sizeRange.width)} × {rangeText(sizeRange.height)} mm</span>}
+        {shownInfo?.base && sizeRange && <span className="small faint design-facts" data-testid="design-facts">{shownInfo.base.name} v{String(shownInfo.base.version)} · {rangeText(sizeRange.width)} × {rangeText(sizeRange.height)} mm</span>}
         <span className="toolbar-gap" />
         <button type="button" className="small quiet icon-only" aria-label="撤销" title="撤销 Ctrl+Z" disabled={!state.canUndo} onClick={undo} aria-keyshortcuts="Control+Z"><Icon d={UNDO} /></button>
         <button type="button" className="small quiet icon-only" aria-label="重做" title="重做 Ctrl+Y" disabled={!state.canRedo} onClick={redo} aria-keyshortcuts="Control+Y"><Icon d={REDO} /></button>

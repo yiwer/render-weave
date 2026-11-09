@@ -3343,7 +3343,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 来源：列表是 stops，模板只列基准是停靠站点 v1 的。
       expect(await form.getByLabel('循环的列表').inputValue()).toBe('stops');
-      expect(await form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段', '+ 新建模板…']);
+      // 模板列表加载完之前只有当前值与新建一项：等它加载完（Docker 里接口慢，直接读会读到半截）。
+      await expect.poll(() => form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段', '+ 新建模板…']);
       await form.getByText('只列基准是 停靠站点 v1 的').waitFor();
 
       // 传入参数：一行一个对外参数；换成固定值，再换回变量。
@@ -3722,6 +3723,232 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (const name of [STOP, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
       await leaveDesign(target, ROOT);
     }, 180_000);
+
+    it('模板设计（票据 20）：第二期验收：在主模板里给站点列从空白新建站点模板，不写 DSL 做出标识行循环、竖排站名、缩字组、地标、状态样式与 stopState；M402 的数据出图和原来的站点模板逐字节相同，0 个严重问题', async () => {
+      const ROOT = '标准线路单边', NAME = `我的站点 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = Record<string, unknown> & { name: string; type?: string; children?: Node[] };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as Node & { artboard: Node; parameters?: Node[]; derived?: Node[] };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const text = (key: string) => field(key).locator('input[type="text"]').first();
+      /** 一步改动：等它写回工作副本。 */
+      const write = async (action: () => Promise<unknown>) => {
+        const saved = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+        await action();
+        await saved;
+      };
+      const selected = (path: string) => inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      const bind = async (key: string, variable: string) => {
+        await field(key).getByTestId('bind-button').click();
+        await write(() => field(key).locator(`[data-testid="binding-option"][data-name="${variable}"]`).click());
+      };
+      const states = async (by: string, cases: Readonly<Record<string, () => Promise<unknown>>>) => {
+        await write(() => inspector.getByLabel('状态样式按哪个变量').selectOption(by));
+        for (const [value, change] of Object.entries(cases)) {
+          await inspector.locator(`[data-testid="state-chip"][data-value="${value}"]`).click();
+          await write(change);
+        }
+        await inspector.locator('[data-testid="state-chip"][data-value=""]').click();
+      };
+
+      // 原来的样子：打开时舞台与样例带出的每一张图，记下请求、图与严重问题数，最后原样重放。
+      type Reply = { image?: { base64: string }; problems: { level: string; code: string; message: string }[] };
+      const severeOf = (reply: Reply) => reply.problems.filter((problem) => problem.level === 'severe');
+      const shots = new Map<string, Promise<{ body: unknown; reply: Reply }>>();
+      const collect = (response: { url(): string; status(): number; request(): { postData(): string | null; postDataJSON(): unknown }; json(): Promise<unknown> }) => {
+        const key = response.request().postData() ?? '';
+        if (response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200 && !shots.has(key)) shots.set(key, response.json().then((reply) => ({ body: response.request().postDataJSON(), reply: reply as Reply })));
+      };
+      target.on('response', collect);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const cards = target.getByTestId('sample-card');
+      await expect.poll(async () => (await cards.getByTestId('sample-state').allTextContents()).every((state) => state !== '还没出'), { timeout: PREVIEW_WINDOW_MS }).toBe(true);
+      target.off('response', collect);
+      const before = await Promise.all(shots.values());
+      expect(before.length).toBeGreaterThan(0);
+      const started = Date.now();
+
+      // 站点列换成当场从空白新建的模板，基准预先填好；进入它。
+      await openRow(side, '站点面板');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      await inspector.getByTestId('loop-form').getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      expect(await dialog.getByTestId('new-template-base').textContent()).toBe('停靠站点 v1');
+      await dialog.getByLabel('名称').fill(NAME);
+      for (const [label, value] of [['宽 最小', '8'], ['宽 最大', '800'], ['高 最小', '80'], ['高 最大', '110']] as const) await dialog.getByLabel(label, { exact: true }).fill(value);
+      await write(() => dialog.getByRole('button', { name: '新建' }).click());
+      await inspector.getByTestId('enter-template').click();
+      await selected(NAME);
+      // 文档条写的是这个子模板自己的基准与尺寸，图还是主模板这张。
+      await target.getByTestId('design-facts').filter({ hasText: '停靠站点 v1 · 8–800 × 80–110 mm' }).waitFor();
+
+      // 画板：纵向堆叠，居中。
+      await write(() => field('layout').locator('select').first().selectOption({ label: '堆叠' }));
+      await write(() => field('layout.direction').getByRole('button', { name: '纵向' }).click());
+      await write(() => field('layout.alignItems').locator('select').first().selectOption({ label: '居中' }));
+
+      // 对外参数：主模板按这三个名字传。
+      await side.getByRole('tab', { name: '变量' }).click();
+      for (const [name, label, fallback, min] of [['index', '序号', '1', '1'], ['currentIndex', '本站序号', '0', '0'], ['stopNameSize', '站名字号', '10', '5']] as const) {
+        await side.getByLabel('新参数的名称').fill(name);
+        await write(() => side.getByRole('button', { name: '添加参数' }).click());
+        await inspector.locator(`[data-testid="variable-inspector"][data-name="${name}"]`).waitFor();
+        await write(() => text('displayName').fill(label));
+        await write(() => field('type').locator('select').first().selectOption({ label: '数值' }));
+        if (name !== 'stopNameSize') await write(() => field('constraints.integer').locator('select').first().selectOption({ label: '是' }));
+        await write(() => text('constraints.min').fill(min));
+        await write(() => text('default').fill(fallback));
+      }
+
+      // 派生变量 stopState：三支加否则。
+      const derive = async (name: string, label: string) => {
+        await side.getByRole('button', { name: '新建派生变量' }).click();
+        const creating = side.getByRole('form', { name: '新建派生变量' });
+        await creating.getByLabel('新派生变量的名称').fill(name);
+        await write(() => creating.getByRole('button', { name: '新建' }).click());
+        await inspector.locator(`[data-testid="variable-inspector"][data-name="${name}"]`).waitFor();
+        const editor = inspector.getByTestId('derived-editor');
+        await write(() => editor.getByLabel('显示名称').fill(label));
+        return editor;
+      };
+      let editor = await derive('stopState', '站点状态');
+      const branch = async (index: number, left: string, op: string, right: { var: string } | { value: string }, then: string) => {
+        const at = `第 ${index} 支`, condition = `${at}第 1 个条件`;
+        if (index > 1) await write(() => editor.getByRole('button', { name: '加一支' }).click());
+        await write(() => editor.getByLabel(`${condition}的左侧`, { exact: true }).selectOption(left));
+        await write(() => editor.getByLabel(`${condition}的比较`, { exact: true }).selectOption(op));
+        if ('var' in right) {
+          await write(() => editor.getByLabel(`${condition}的右侧的写法`, { exact: true }).selectOption('var'));
+          if (await editor.getByLabel(`${condition}的右侧`, { exact: true }).inputValue() !== right.var) await write(() => editor.getByLabel(`${condition}的右侧`, { exact: true }).selectOption(right.var));
+        } else {
+          await write(() => editor.getByLabel(`${condition}的右侧`, { exact: true }).fill(right.value));
+        }
+        await write(() => editor.getByLabel(`${at}的取值`, { exact: true }).fill(then));
+      };
+      await branch(1, 'currentIndex', 'eq', { value: '0' }, '普通');
+      await branch(2, 'index', 'lt', { var: 'currentIndex' }, '已过站');
+      await branch(3, 'index', 'eq', { var: 'currentIndex' }, '本站');
+      await write(() => editor.getByLabel('否则的取值', { exact: true }).fill('未到站'));
+
+      // 派生变量 hasLandmark：地标为空就不显示。
+      editor = await derive('hasLandmark', '有地标');
+      await write(() => editor.getByLabel('结果类型').selectOption('boolean'));
+      await write(() => editor.getByLabel('第 1 支第 1 个条件的左侧', { exact: true }).selectOption('landmark'));
+      await write(() => editor.getByLabel('第 1 支第 1 个条件的比较', { exact: true }).selectOption('empty'));
+      // 换成布尔时固定值都成了"否"：第 1 支不用动，否则取"是"。
+      expect(await editor.getByLabel('第 1 支的取值', { exact: true }).inputValue()).toBe('false');
+      await write(() => editor.getByLabel('否则的取值', { exact: true }).selectOption('true'));
+      expect((await contentOf(NAME)).derived).toEqual(JSON.parse(JSON.stringify((await contentOf('站点')).derived)));
+
+      // 标识行：从列表字段加循环，每项固定 9 mm、间距 1，高 10 mm，下边距 2。
+      await side.getByRole('tab', { name: '添加' }).click();
+      await side.locator('[data-testid="add-field"][data-name="badges"]').click();
+      const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
+      await choose.getByLabel('被调模板').selectOption('标识图标');
+      await write(() => choose.getByRole('button', { name: '添加循环容器' }).click());
+      await selected(`${NAME}/站名上方的标识`);
+      await write(() => text('name').fill('标识行'));
+      await selected(`${NAME}/标识行`);
+      const items = inspector.getByTestId('item-layout-form');
+      await write(() => items.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '固定' }).click());
+      await write(() => items.getByLabel('每项的固定尺寸').fill('9'));
+      await write(() => text('itemLayout.gap').fill('1'));
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => text('place.height.fixed').fill('10'));
+      await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
+      await write(() => text('place.margin.bottom').fill('2'));
+
+      // 名称区：容器，内边距 1，纵向居中，宽随内容、高撑满；本站时高亮底色。
+      await write(() => side.locator('[data-testid="add-element"][data-kind="container"]').click());
+      await selected(`${NAME}/容器`);
+      await write(() => text('name').fill('名称区'));
+      await selected(`${NAME}/名称区`);
+      await write(() => text('padding').fill('1'));
+      await write(() => field('layout.alignItems').locator('select').first().selectOption({ label: '居中' }));
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => field('place.height').locator('select').first().selectOption({ label: '撑满' }));
+      await states('stopState', { 本站: () => text('fill').fill('#FFF000') });
+
+      // 站名：从字段加进名称区，竖排、分散对齐，字号绑站名字号，收紧字距再压缩字形，缩字组 stopNames。
+      await write(() => side.locator('[data-testid="add-field"][data-name="name"]').click());
+      await selected(`${NAME}/名称区/站名`);
+      const font = field('font').getByTestId('font-select');
+      if (await font.inputValue() !== 'res:font-hei-medium') await write(() => font.selectOption('res:font-hei-medium'));
+      await bind('fontSize', 'stopNameSize');
+      await write(() => text('color').fill('#333333'));
+      await write(() => field('writingMode').getByRole('button', { name: '竖排' }).click());
+      await write(() => field('verticalAlign').getByRole('button', { name: '分散' }).click());
+      await write(() => field('horizontalAlign').getByRole('button', { name: '居中' }).click());
+      await write(() => field('fit.steps').locator('select').first().selectOption({ label: '收紧字距 → 压缩字形' }));
+      await write(() => field('fit.widthOverflow').getByRole('button', { name: '添加' }).click());
+      await write(() => text('fit.widthOverflow.shrinkGroup').fill('stopNames'));
+      await write(() => text('fit.widthOverflow.minFontSize').fill('5'));
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => field('place.height').locator('select').first().selectOption({ label: '撑满' }));
+      await states('stopState', { 已过站: () => text('color').fill('#C8C8C8'), 本站: () => text('color').fill('#E60012') });
+
+      // 地标：从字段加在站名后面，8 × 8 mm、上边距 1，完整显示；没有地标不显示，已过站变淡。
+      await write(() => side.locator('[data-testid="add-field"][data-name="landmark"]').click());
+      await selected(`${NAME}/名称区/地标`);
+      await bind('visible', 'hasLandmark');
+      const fit = field('fit');
+      if (await fit.getByRole('button', { name: '完整显示' }).count()) await write(() => fit.getByRole('button', { name: '完整显示' }).click());
+      else await write(() => fit.locator('select').first().selectOption({ label: '完整显示' }));
+      await write(() => text('place.width.fixed').fill('8'));
+      await write(() => text('place.height.fixed').fill('8'));
+      await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
+      await write(() => text('place.margin.top').fill('1'));
+      await states('stopState', { 已过站: () => text('opacity').fill('0.35') });
+      const minutes = (Date.now() - started) / 60_000;
+
+      // 结果：结构和原来的站点模板一样；同一个预览请求出的图逐字节相同，每份样例的问题数也一样，当前样例没有严重问题。
+      const made = await contentOf(NAME);
+      expect(made.parameters!.map((item) => [item['name'], item['type'], item['visibility']])).toEqual([['index', 'number', 'public'], ['currentIndex', 'number', 'public'], ['stopNameSize', 'number', 'public']]);
+      expect(made.artboard).toMatchObject({ layout: { mode: 'stack', direction: 'column', alignItems: 'center' }, children: [
+        { type: 'loop', name: '标识行', list: { var: 'badges' }, template: '标识图标', itemLayout: { direction: 'row', widths: { fixed: 9 }, gap: 1 } },
+        { type: 'container', name: '名称区', padding: 1, states: { by: { var: 'stopState' }, cases: { 本站: { fill: '#FFF000' } } }, children: [
+          { type: 'text', name: '站名', content: [{ slot: 'name' }], writingMode: 'vertical', verticalAlign: 'distribute', fontSize: { var: 'stopNameSize' }, fit: { steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: 'stopNames', minFontSize: 5 } } },
+          { type: 'image', name: '地标', source: { var: 'landmark' }, visible: { var: 'hasLandmark' }, states: { by: { var: 'stopState' }, cases: { 已过站: { opacity: 0.35 } } } },
+        ] },
+      ] });
+      expect(find((await contentOf(ROOT)).artboard, '站点列')).toMatchObject({ template: NAME, args: { index: { loop: 'index' } } });
+      for (const [index, shot] of before.entries()) {
+        const now = await server('POST', '/v1/previews?workingCopies=true', token, shot.body);
+        expect(now.status).toBe(200);
+        expect(shot.reply.image?.base64, '原来出了图').toBeTruthy();
+        expect(severeOf(now.body as Reply).map((problem) => problem.code), `第 ${index + 1} 张的严重问题和原来一样`).toEqual(severeOf(shot.reply).map((problem) => problem.code));
+        expect((now.body as Reply).image?.base64 === shot.reply.image?.base64, `第 ${index + 1} 张和原来的站点模板出的图逐字节相同`).toBe(true);
+      }
+      // 舞台上的当前样例：没有严重问题。
+      await expect.poll(() => target.getByText(/正式出图时不出图/).count(), { timeout: PREVIEW_WINDOW_MS }).toBe(0);
+      console.log(`票据 20：从空白做出站点模板，用例动手 ${minutes.toFixed(1)} 分钟`);
+
+      // 发布：主模板调用的新模板还没发布，发布页写明先发布它；发布它之后主模板就能发布（这里不真的发布主模板）。
+      const accept = (dialog: Dialog) => { void dialog.accept(); };
+      target.on('dialog', accept);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/publish`);
+      const callees = target.getByTestId('publish-callees-first');
+      await callees.filter({ hasText: `「${NAME}」是这里调用的新模板，还没发布` }).waitFor();
+      expect(await target.getByRole('button', { name: /^发布为修订/ }).isDisabled()).toBe(true);
+      await callees.getByRole('link', { name: `「${NAME}」` }).click();
+      await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
+      await target.getByRole('button', { name: '发布为修订 1' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/publish`);
+      await expect.poll(() => target.getByRole('button', { name: /^发布为修订/ }).isDisabled(), { timeout: 30_000 }).toBe(false);
+      expect(await callees.count()).toBe(0);
+      target.off('dialog', accept);
+
+      for (const name of [ROOT, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 600_000);
 
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
