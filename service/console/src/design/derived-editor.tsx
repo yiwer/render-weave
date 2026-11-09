@@ -14,7 +14,7 @@ export interface EditorVariable extends Variable { readonly label: string; reado
 const TYPE_NAMES: Readonly<Record<string, string>> = { text: '文本', number: '数值', boolean: '布尔', color: '颜色', date: '日期', time: '时刻', datetime: '时间', image: '图片', list: '列表', ref: '引用' };
 
 /** 固定值：按类型给输入框；数值打不成数时不写回。 */
-function LiteralInput(props: { readonly type: string; readonly value: unknown; readonly label: string; readonly onChange: (value: string | number | boolean) => void }) {
+export function LiteralInput(props: { readonly type: string; readonly value: unknown; readonly label: string; readonly onChange: (value: string | number | boolean) => void }) {
   const { type, value } = props;
   const [draft, setDraft] = useState(String(value ?? ''));
   useEffect(() => { setDraft(String(value ?? '')); }, [value]);

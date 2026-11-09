@@ -2165,7 +2165,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(elementIn(document, '容器')['fill']).toBe('#DDEEFF');
 
       await chooseRow(at('循环'));
-      ({ document } = await edit(() => input('itemLayout.heights.fixed').fill('4')));
+      ({ document } = await edit(() => inspector().getByLabel('每项的固定尺寸').fill('4')));
       expect(elementIn(document, '循环')['itemLayout']).toMatchObject({ heights: { fixed: 4 } });
 
       await chooseRow(at('调用'));
@@ -3315,6 +3315,88 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await current()).checks ?? []).toEqual([]);
 
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      expect(await current()).toEqual(before);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 15）：循环的表单只列基准相符的模板，传入参数换来源，每项排布的互斥直接禁用并写原因，合并相邻；进入被调模板不离开这张图', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Loop = { name: string; args?: Record<string, unknown>; itemLayout?: Record<string, unknown>; mergeBy?: string; children?: Loop[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Loop };
+      };
+      const find = (node: Loop, name: string): Loop | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const loopNow = async (name: string) => find((await current()).artboard, name)!;
+      const before = await current();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await openRow(side, '站点面板');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      const form = inspector.getByTestId('loop-form');
+      await form.waitFor();
+
+      // 来源：列表是 stops，模板只列基准是停靠站点 v1 的。
+      expect(await form.getByLabel('循环的列表').inputValue()).toBe('stops');
+      expect(await form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段']);
+      await form.getByText('只列基准是 停靠站点 v1 的').waitFor();
+
+      // 传入参数：一行一个对外参数；换成固定值，再换回变量。
+      const args = inspector.getByTestId('args-form'), row = (name: string) => args.locator(`[data-testid="arg-row"][data-name="${name}"]`);
+      expect(await row('index').locator('select').first().inputValue(), '序号经循环信息传入').toBe('loop');
+      let saved = stashed();
+      await row('currentIndex').locator('select').first().selectOption('value');
+      await saved;
+      expect((await loopNow('站点列')).args!['currentIndex']).toEqual({ value: 0 });
+      saved = stashed();
+      await row('currentIndex').locator('select').first().selectOption('var');
+      await saved;
+      expect((await loopNow('站点列')).args!['currentIndex']).toMatchObject({ var: expect.any(String) });
+
+      // 每项排布：等分时折行用不了并写明原因；换随内容后能折行，这时等分用不了。
+      const layout = inspector.getByTestId('item-layout-form');
+      await layout.getByTestId('wrap-blocked').filter({ hasText: '折行不能配等分' }).waitFor();
+      expect(await layout.getByRole('button', { name: '放不下就折行' }).isDisabled()).toBe(true);
+      saved = stashed();
+      await layout.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '随内容' }).click();
+      await saved;
+      saved = stashed();
+      await layout.getByRole('button', { name: '放不下就折行' }).click();
+      await saved;
+      expect((await loopNow('站点列')).itemLayout).toMatchObject({ widths: 'content', wrap: true });
+      expect(await layout.getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '等分' }).isDisabled()).toBe(true);
+      // 换方向：每项宽跟着换成每项高。
+      saved = stashed();
+      await layout.getByRole('group', { name: '方向' }).getByRole('button', { name: '纵向' }).click();
+      await saved;
+      expect((await loopNow('站点列')).itemLayout).toMatchObject({ direction: 'column', heights: 'content' });
+      await layout.getByTestId('loop-result').filter({ hasText: /这一处：35 项/ }).waitFor();
+
+      // 合并相邻：道路段列按道路合并，别的尺寸用不了；取消合并，spanBy 一起去掉。
+      await openRow(side, '道路带');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带/道路段列"]`).getByRole('button').first().click();
+      await inspector.getByTestId('merge-row').waitFor();
+      expect(await inspector.getByLabel('合并相邻同值项').inputValue()).toBe('road');
+      expect(await inspector.getByTestId('item-layout-form').getByRole('group', { name: '每项尺寸' }).getByRole('button', { name: '随内容' }).isDisabled()).toBe(true);
+      await inspector.getByTestId('item-layout-form').getByTestId('wrap-blocked').filter({ hasText: '合并相邻' }).waitFor();
+      saved = stashed();
+      await inspector.getByLabel('合并相邻同值项').selectOption('');
+      await saved;
+      const road = await loopNow('道路段列');
+      expect(road.mergeBy).toBeUndefined();
+      expect(road.itemLayout).not.toHaveProperty('spanBy');
+
+      // 进入被调模板：选中它的画板，图还是这一张。
+      await inspector.getByTestId('enter-template').click();
+      await inspector.locator('[data-testid="properties"][data-path="道路段"]').waitFor();
+      await expect.poll(() => target.url()).toContain(`in=${enc(ROOT)}`);
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
       expect(await current()).toEqual(before);
       await leaveDesign(target, ROOT);
     }, 180_000);

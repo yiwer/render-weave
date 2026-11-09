@@ -19,6 +19,8 @@ import type { ElementInspection, LayoutNode, PreviewReply } from '../types.js';
 import { usePopoverDismiss } from '../components/binding-popover.js';
 import { ContentEditor } from './content-editor.js';
 import { FitEditor } from './fit-editor.js';
+import { ArgsForm, CallSourceForm, ItemLayoutForm, LoopSourceForm } from './loop-form.js';
+import { setElement } from '../template/calls.js';
 import { flatNodes } from './overlays.js';
 import type { Selection } from './stage.js';
 import { VariableInspector, type VariableSelection } from './variables.js';
@@ -130,6 +132,7 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
   const { doc, selected, reply } = props;
   const path = selected.path, panel = propertyPanel(doc.document, path);
   const context = useElementContext(props);
+  const [formProblem, setFormProblem] = useState<string>();
   if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
   const segments = path.split('/'), element = elementAt(doc.document, path)?.element;
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
@@ -141,7 +144,24 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
     ? flatElements(doc.document, doc.name).filter((node) => { const other = fitOf(elementAt(doc.document, node.path)?.element)?.['widthOverflow']; return isObject(other) && other['shrinkGroup'] === groupName; }).map((node) => node.name)
     : [];
   const base = panel.type === 'artboard' && isObject(doc.document['base']) ? doc.document['base'] : undefined;
+  const isLoop = panel.type === 'loop', isCall = panel.type === 'call', variables = context.binding?.variables ?? [];
+  /** 循环与调用的表单写回整个元素；选项类的立刻暂存。 */
+  const writeElement = (next: JsonObject, now?: boolean) => { setFormProblem(undefined); props.onEdit(setElement(doc.document, path, next), `${path}:form`); if (now) props.onCommit(); };
+  const rows = (fields: Parameters<typeof FieldRows>[0]['fields'], keys: readonly string[]) => <FieldRows fields={fields.filter((field) => keys.includes(field.key))} context={context} />;
   const body = (name: string, fields: Parameters<typeof FieldRows>[0]['fields']) => {
+    if (element && isLoop && name === '循环') return <LoopSourceForm element={element} template={doc.name} variables={variables} documentOf={props.documentOf} onElement={writeElement} onProblem={setFormProblem}>{rows(fields, ['reverse', 'slice'])}</LoopSourceForm>;
+    if (element && isCall && name === '调用') return <CallSourceForm element={element} template={doc.name} document={doc.document} variables={variables} onElement={writeElement} />;
+    if (element && (isLoop || isCall) && name === '传入参数') return <ArgsForm element={element} called={props.documentOf(String(element['template'] ?? ''))} variables={variables} onElement={writeElement} />;
+    if (element && isLoop && name === '每项排布') {
+      const gap = fieldByKey(panel, 'itemLayout.gap'), cross = fieldByKey(panel, 'itemLayout.crossGap');
+      return (
+        <ItemLayoutForm element={element} node={instanceNode(reply, selected)} onElement={writeElement} onProblem={setFormProblem}>
+          {gap && <FieldRow field={gap} context={context} />}
+          {cross && isObject(element['itemLayout']) && element['itemLayout']['wrap'] === true && <FieldRow field={cross} context={context} />}
+          {rows(fields, ['padding'])}
+        </ItemLayoutForm>
+      );
+    }
     const content = isText && name === '内容' ? fields.find((field) => field.key === 'content') : undefined;
     if (content) return <ContentEditor field={content} panel={panel} context={context} vertical={vertical} />;
     if (isText && name === '适配' && element) return <FitEditor panel={panel} element={element} context={context} boardMinimum={boardMinimumOf(doc.document)} members={members} vertical={vertical} instance={instanceNode(reply, selected)} />;
@@ -155,7 +175,8 @@ function PropertiesTab(props: ElementProps & { readonly reply?: PreviewReply | u
       </div>
       {props.impact && <p className="design-impact" data-testid="design-impact">{props.impact}</p>}
       {!shown && <p className="small muted" data-testid="hidden-reason">{hiddenReason(doc.document, path)}</p>}
-      {template && <p className="small"><button type="button" className="link" onClick={() => props.onOpenTemplate(template)}>打开子模板 {template}</button></p>}
+      {template && <p className="small"><button type="button" className="link" data-testid="enter-template" title="选中它的画板；图还是这一张" onClick={() => { props.onSelected({ template, path: template }); props.onOpenTemplate(template); }}>进入模板「{template}」</button></p>}
+      {formProblem && <p className="prop-error" role="alert">{formProblem}</p>}
       {template && element && <p className="small muted" data-testid="call-feed">{feedOf(element, props.documentOf)}。进去之后只有这份数据和传入的参数，作用域不继承。</p>}
       {base && (
         <section className="prop-section" aria-label="基准">

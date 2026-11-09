@@ -678,6 +678,12 @@ span.diff-path { font-size: 13px; color: var(--muted); }
 .inline-anchor { position: absolute; z-index: 30; width: 340px; max-width: calc(100% - 16px); }
 .inline-text { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 16px 40px rgba(29, 38, 46, .16); }
 .tree-hint { margin: 0 0 6px; padding: 0 4px; }
+.call-form { display: flex; flex-direction: column; gap: 8px; }
+.args { display: flex; flex-direction: column; gap: 6px; }
+.arg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 6px 8px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--surface); }
+.arg-row.missing { border-color: var(--bad); }
+.arg-name { flex: 1 1 100%; font-size: 13px; }
+.arg-row select, .arg-row input { min-height: 28px; height: 28px; padding: 0 6px; font-size: 12.5px; width: auto; max-width: 150px; }
 .derived-editor { display: flex; flex-direction: column; gap: 8px; }
 .branches { display: flex; flex-direction: column; gap: 6px; }
 .branch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 6px 8px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--surface); }
