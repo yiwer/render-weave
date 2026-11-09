@@ -2862,7 +2862,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await stopName())['color']).toMatch(/^#/);
 
       // 拖标签：拖的时候只改显示，松手才写回。
-      const label = field('letterSpacing').locator('label').first(), box = (await label.boundingBox())!;
+      // 先滚进视野：鼠标不会自己滚，标签在视口外时拖不到它（容器里的字体高，检查器更长）。
+      const label = field('letterSpacing').locator('label').first();
+      await label.scrollIntoViewIfNeeded();
+      const box = (await label.boundingBox())!;
       let writes = 0;
       const countWrites = (request: { method(): string; url(): string }) => { if (request.method() === 'PUT' && request.url().includes('/working-copy?')) writes++; };
       target.on('request', countWrites);
