@@ -3,14 +3,15 @@
  * 输入框里的草稿留在这里：不合法的不写回，标红并说明；撤销、换元素时跟着文档里的值走。
  * 能绑定的属性画成值格（模板设计页票据 09）：字面值、没写、绑定三种样子，绑定与断开写回同一个入口。
  */
-import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { boundName, currentLiteral, unboundValue, type OriginLink, type OriginText, type ScopeVariable } from '../template/binding.js';
+import { edgesSummary, inSpokenOrder, partsNoun, partValues, writePart } from '../template/edges.js';
 import type { FontFamily } from '../template/fonts.js';
 import type { Bindable, Editor, FieldPath, PropertyField } from '../template/properties.js';
 import { sizeKindOf, sizeModel } from '../template/size.js';
 import { BindingPopover } from './binding-popover.js';
 import { SizeCell } from './size-cell.js';
-import { Icon, LINK, UNLINK } from './icon.js';
+import { Icon, LINK, SIDES, UNLINK } from './icon.js';
 import { ValueText } from './value-text.js';
 
 /** 值格要的页面能力。没有它时（列表项的编辑）字段按老样子画变体下拉。 */
@@ -19,7 +20,8 @@ export interface BindingHost {
   readonly variables: readonly ScopeVariable[];
   readonly taken: ReadonlySet<string>;
   suggest(field: PropertyField): { readonly name: string; readonly displayName: string };
-  extract(field: PropertyField, bindable: Bindable, value: unknown, name: string, displayName: string): void;
+  /** written：绑定只是这一格的一部分时（四边里的一边）整格要写成什么。 */
+  extract(field: PropertyField, bindable: Bindable, value: unknown, name: string, displayName: string, written?: unknown): void;
   describe(variable: ScopeVariable): OriginText | undefined;
   /** 来源链与"查看变量"跳过去。 */
   open(link: Pick<OriginLink, 'template' | 'name' | 'kind'>): void;
@@ -71,7 +73,7 @@ function numberError(editor: Extract<Editor, { kind: 'number' }>, value: number)
   return undefined;
 }
 
-function NumberInput(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'number' }>; readonly context: FieldContext; readonly live?: number | undefined }) {
+function NumberInput(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'number' }>; readonly context: FieldContext; readonly live?: number | undefined; readonly hint?: string | undefined }) {
   const { field, editor, live } = props;
   const { draft, setDraft, error, setError, written } = useDraft(field.value, (value) => (typeof value === 'number' ? String(value) : ''));
   const change = (text: string) => {
@@ -91,7 +93,7 @@ function NumberInput(props: { readonly id: string; readonly field: PropertyField
   };
   return (
     <>
-      <input id={props.id} type="text" inputMode="decimal" className="prop-number" value={live === undefined ? draft : String(live)} aria-invalid={error ? true : undefined} placeholder={placeholderOf(field)}
+      <input id={props.id} type="text" inputMode="decimal" className="prop-number" value={live === undefined ? draft : String(live)} aria-invalid={error ? true : undefined} placeholder={props.hint ?? placeholderOf(field)}
         onChange={(event) => change(event.target.value)} />
       {error && <span className="prop-error" role="alert">{error}</span>}
     </>
@@ -235,9 +237,17 @@ export function OriginLine(props: { readonly text: OriginText; readonly onOpen: 
 
 /**
  * 值格：绑定时是灰底条（显示名称与当前值），点开换绑定，旁边断开；断开时当前值变成字面值，图不变。
- * 没绑定时是字面值的输入框，没写就淡色显示缺省值；右边的按钮打开绑定弹层。写成对象的变体（分别设置）在下拉里选。
+ * 没绑定时是字面值的输入框，没写就淡色显示缺省值；右边的按钮打开绑定弹层。字面值有几种写法时在下拉里选（四边、四角另由 EdgesCell 画）。
  */
-function ValueCell(props: { readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'variants' }>; readonly bindable: Bindable; readonly host: BindingHost; readonly context: FieldContext; readonly live?: number | undefined }) {
+function ValueCell(props: {
+  readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'variants' }>; readonly bindable: Bindable; readonly host: BindingHost; readonly context: FieldContext; readonly live?: number | undefined;
+  /** 数值框空着时显示的字（四边一格的摘要）；没给就是缺省值。 */
+  readonly hint?: string | undefined;
+  /** 排在绑定按钮前面的按钮（四边一格的展开）。 */
+  readonly extra?: ReactNode;
+  /** 窄格（四边里的一边）：不画来源那一行，变量的名称在灰底条的提示里。 */
+  readonly compact?: boolean;
+}) {
   const { id, field, editor, bindable, host, context, live } = props;
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -262,6 +272,7 @@ function ValueCell(props: { readonly id: string; readonly field: PropertyField; 
               <span className="value-bound-name">{variable?.label ?? name}</span>
               <ValueText value={variable?.value} type={variable?.type ?? bindable.type} />
             </button>
+            {props.extra}
             <button type="button" className="value-action" aria-label="断开绑定" title="断开绑定：当前值变成字面值" data-testid="unbind-button" onClick={() => context.onWrite(field.path, unboundValue(bindable, variable?.value), { now: true })}><Icon d={UNLINK} /></button>
           </>
         ) : (
@@ -272,14 +283,15 @@ function ValueCell(props: { readonly id: string; readonly field: PropertyField; 
               </select>
             )}
             {/* 字面值的输入框不随"没写→写了"重建，否则打第一个字就丢焦点。 */}
-            {scalar && <EditorView key="literal" id={id} field={field} editor={shown} context={context} live={live} />}
+            {scalar && <EditorView key="literal" id={id} field={field} editor={shown} context={context} live={live} hint={props.hint} />}
+            {props.extra}
             {button('绑定变量')}
           </>
         )}
       </div>
       {/* 写成对象的变体（内边距分别设置）放在下拉下面，占满整行：挤在一行里每格就太窄了。 */}
       {name === undefined && !scalar && <EditorView key={editor.active} id={id} field={field} editor={shown} context={context} live={live} />}
-      {origin && <OriginLine text={origin} onOpen={host.open} />}
+      {origin && !props.compact && <OriginLine text={origin} onOpen={host.open} />}
       {open && (
         <BindingPopover type={bindable.type} label={field.label} {...(name !== undefined ? { current: name } : {})} variables={host.variables}
           extract={{ value: currentLiteral(field, bindable, variable?.value), name: suggested.name, displayName: suggested.displayName, taken: host.taken }}
@@ -287,6 +299,69 @@ function ValueCell(props: { readonly id: string; readonly field: PropertyField; 
           onExtract={(next, displayName) => { host.extract(field, bindable, currentLiteral(field, bindable, variable?.value), next, displayName); close(); }}
           onOpen={(target) => { const base = target.name.split('.')[0]!; close(); host.open({ template: '', name: base, kind: target.kind }); }}
           onClose={close} />
+      )}
+    </div>
+  );
+}
+
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/**
+ * 四边一格（第三轮票据 02）：内边距、外边距、圆角。一格是一个数（四边都是它）或一个变量；四边不一样时框里是摘要（"上 1 · 下 2"），
+ * 这时打一个数是四边都改。点右边的按钮展开四个值格，直接在某一边打数或绑定变量；只写那一边，四边都一样时收回成一个数。
+ * 每边的取值与写回由 template/edges.ts 决定。
+ */
+function EdgesCell(props: {
+  readonly id: string; readonly field: PropertyField; readonly editor: Extract<Editor, { kind: 'variants' }>; readonly bindable: Bindable; readonly parts: readonly PropertyField[];
+  readonly host: BindingHost; readonly context: FieldContext; readonly live?: number | undefined;
+}) {
+  const { id, field, editor, bindable, parts, host, context } = props;
+  const [open, setOpen] = useState(false);
+  const keys = parts.map((part) => part.key.slice(field.key.length + 1)), noun = partsNoun(keys);
+  const split = typeof field.value === 'object' && field.value !== null && boundName(field.value) === undefined;
+  // 这一格只管"一个数或一个变量"：对象形态的变体不进下拉，由展开的四格写。
+  const scalar = editor.variants.flatMap((variant, index) => (typeof variant.initial === 'object' && variant.initial !== null && boundName(variant.initial) === undefined ? [] : [{ variant, index }]));
+  const whole: Extract<Editor, { kind: 'variants' }> = { kind: 'variants', variants: scalar.map((item) => item.variant), active: scalar.findIndex((item) => item.index === editor.active), bindable };
+  const labelOfVariable = (name: string) => host.variables.find((item) => item.name === name)?.label ?? name;
+  const summary = split ? edgesSummary(field.value, parts.map((part, index) => ({ key: keys[index]!, label: part.label })), labelOfVariable) : undefined;
+  const values = partValues(field.value, keys);
+  const toggle = (
+    <button type="button" className="value-action" aria-label={`${open ? '收起' : '展开'}${field.label}的${noun}`} title={`${noun}分开写`} aria-expanded={open} data-testid="edges-toggle" onClick={() => setOpen(!open)}><Icon d={SIDES} /></button>
+  );
+  return (
+    <div className="edges-cell" data-testid="edges-cell" data-state={split ? 'parts' : boundName(field.value) !== undefined ? 'bound' : field.value === undefined ? 'unset' : 'literal'} {...(summary !== undefined ? { 'data-summary': summary, title: `${noun}不一样：${summary}。在这里打一个数是${noun}都改` } : {})}>
+      <ValueCell id={id} field={{ ...field, editor: whole }} editor={whole} bindable={bindable} host={host} context={context} live={props.live} hint={summary} extra={toggle} />
+      {open && (
+        <div className="edges-parts" role="group" aria-label={`${field.label}的${noun}`} data-testid="edges-parts">
+          {inSpokenOrder(parts.map((part, index) => ({ key: keys[index]!, part }))).map(({ key, part }) => {
+            const value = values[key];
+            if (part.editor.kind !== 'variants' || !part.editor.bindable) return null;
+            const partEditor: Extract<Editor, { kind: 'variants' }> = { ...part.editor, active: value === undefined ? -1 : boundName(value) !== undefined ? part.editor.variants.findIndex((variant) => boundName(variant.initial) !== undefined) : part.editor.variants.findIndex((variant) => boundName(variant.initial) === undefined) };
+            const partField: PropertyField = { ...part, label: `${field.label}（${part.label}）`, value, editor: partEditor, fallback: 0 };
+            // 写一边就是写整格：别的边照现在的取值留着。
+            const partContext: FieldContext = {
+              ...context,
+              onWrite: (_path, next, options) => context.onWrite(field.path, writePart(field.value, keys, key, next), options),
+              binding: {
+                ...host,
+                suggest: () => {
+                  const base = host.suggest(field), stem = `${base.name.replace(/\d+$/u, '')}${capital(key)}`;
+                  let name = stem;
+                  for (let count = 2; host.taken.has(name); count++) name = `${stem}${count}`;
+                  return { name, displayName: `${base.displayName}（${part.label}）` };
+                },
+                extract: (_field, kind, current, name, displayName) => host.extract(field, kind, current, name, displayName, writePart(field.value, keys, key, { var: name })),
+                overriddenBy: () => [],
+              },
+            };
+            return (
+              <div key={key} className="edges-part" data-testid="property-field" data-key={part.key}>
+                <label className="edges-part-label small muted" htmlFor={`${id}-${key}`}>{part.label}</label>
+                <ValueCell id={`${id}-${key}`} field={partField} editor={partEditor} bindable={part.editor.bindable} host={partContext.binding!} context={partContext} compact />
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -399,10 +474,10 @@ function MapEditor(props: { readonly field: PropertyField; readonly editor: Extr
   );
 }
 
-function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext; readonly live?: number | undefined }) {
+function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext; readonly live?: number | undefined; readonly hint?: string | undefined }) {
   const { id, field, editor, context, live } = props;
   switch (editor.kind) {
-    case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} live={live} />;
+    case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} live={live} hint={props.hint} />;
     case 'text': return editor.suggest === 'font' && context.fonts ? <FontSelect id={id} field={field} families={context.fonts} context={context} /> : <TextInput id={id} field={field} editor={editor} context={context} />;
     case 'color': return <ColorInput id={id} field={field} context={context} />;
     case 'choice': return <Choice id={id} field={field} editor={editor} context={context} />;
@@ -414,6 +489,8 @@ function EditorView(props: { readonly id: string; readonly field: PropertyField;
         return <SizeCell id={id} label={field.label} model={size} actual={actual} fallback={sizeKindOf(field.fallback)} required={field.required}
           onWrite={(value, now) => context.onWrite(field.path, value, { now })} binding={{ host: context.binding!, field }} />;
       }
+      // 四边、四角：一格写完，要分开时点开（第三轮票据 02）。
+      if (editor.bindable && context.binding && editor.parts && editor === field.editor) return <EdgesCell id={id} field={field} editor={editor} bindable={editor.bindable} parts={editor.parts} host={context.binding} context={context} live={live} />;
       return editor.bindable && context.binding
         ? <ValueCell id={id} field={field} editor={editor} bindable={editor.bindable} host={context.binding} context={context} live={live} />
         : <Variants id={id} field={field} editor={editor} context={context} />;

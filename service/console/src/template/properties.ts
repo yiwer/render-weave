@@ -22,8 +22,10 @@ export type Editor =
   /**
    * anyOf：选一个变体，active 是当前值落在哪个变体上（-1 是没写）；变体有内容要填时 editor 是它的编辑器。
    * 有"绑定变量"这个变体且字面值类型说得清时带 bindable，页面画成值格（模板设计页票据 09）。
+   * 对象形态的变体是一组同样的可选项（四边、四角）时带 parts：各项的字段，值是一个数或变量时按都没写生成，
+   * 页面画成四边一格（第三轮票据 02），每项的实际取值由 template/edges.ts 算。
    */
-  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor; readonly bindable?: Bindable }
+  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor; readonly bindable?: Bindable; readonly parts?: readonly PropertyField[] }
   /** 对象：absent 表示还没写，有必填子项时要先"添加"，写入 initial。 */
   | { readonly kind: 'group'; readonly fields: readonly PropertyField[]; readonly absent: boolean; readonly initial: unknown }
   | { readonly kind: 'list'; readonly items: readonly PropertyField[]; readonly append: readonly ChoiceOption[]; readonly minItems: number }
@@ -141,7 +143,7 @@ const VARIANT_KEYS: Readonly<Record<string, string>> = { var: '绑定变量', fi
 
 /** 没写时的取值：和引擎读取时的缺省一致（src/template/parse.ts、docs/dsl/template.md），没把握的不列，页面写"缺省"。 */
 const FALLBACKS: Readonly<Record<string, unknown>> = {
-  visible: true, opacity: 1, rotation: 0, clip: false, reverse: false, showText: false, letterSpacing: 0, slant: 0, color: '#000000', foreground: '#000000',
+  visible: true, opacity: 1, rotation: 0, clip: false, padding: 0, 'place.margin': 0, cornerRadius: 0, reverse: false, showText: false, letterSpacing: 0, slant: 0, color: '#000000', foreground: '#000000',
   writingMode: 'horizontal', horizontalAlign: 'start', verticalAlign: 'top', errorCorrectionLevel: 'M', fillRule: 'nonzero',
   'layout.gap': 0, 'layout.rowGap': 0, 'layout.columnGap': 0, 'layout.wrap': false, 'itemLayout.gap': 0, 'itemLayout.wrap': false, 'fit.compressMin': 0.6, 'fit.onFail': 'severe', 'fit.steps': [],
 };
@@ -345,6 +347,13 @@ function bindableOf(flat: readonly Schema[], path: FieldPath, context: Context):
   return { type, literal: editorOf([literal], undefined, path, context), initial: initialOf([literal]), schema: literal };
 }
 
+/** 一组同样的可选项（四边、四角）：对象，没有必填，不许别的键，各项的写法都一样。 */
+function isParts(alternative: Schema): boolean {
+  if (alternative['type'] !== 'object' || alternative['additionalProperties'] !== false || Array.isArray(alternative['required']) || !isObject(alternative['properties'])) return false;
+  const items = Object.values(alternative['properties']);
+  return items.length > 1 && items.every((item) => same(item, items[0]));
+}
+
 function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, context: Context): Editor {
   const fragments = applying(view, value);
   const named = narrowest(fragments, (fragment) => (Array.isArray(fragment['enum']) ? fragment['enum'] as unknown[] : 'const' in fragment ? [fragment['const']] : undefined));
@@ -356,11 +365,14 @@ function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, cont
   if (alternatives) {
     const flat = flatAlternatives(alternatives), active = value === undefined ? -1 : flat.findIndex((alternative) => matchesSchema(alternative, value));
     const chosen = flat[active], bindable = bindableOf(flat, path, context);
+    const whole = bindable?.type === 'number' ? flat.find(isParts) : undefined;
+    const parts = whole && groupEditor([whole], Object.keys(whole['properties'] as JsonObject), isObject(value) ? value : {}, path, context);
     return {
       kind: 'variants', active,
       variants: flat.map((alternative) => ({ label: variantLabel(alternative, path), initial: initialOf([alternative]) })),
       ...(chosen && !('const' in chosen) ? { editor: editorOf([chosen], value, path, context) } : {}),
       ...(bindable ? { bindable } : {}),
+      ...(parts?.kind === 'group' ? { parts: parts.fields } : {}),
     };
   }
   const type = narrowest(fragments, (fragment) => (typeof fragment['type'] === 'string' ? fragment['type'] : undefined));

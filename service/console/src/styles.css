@@ -710,6 +710,17 @@ fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
 .prop .size-cell-row > select.size-mode { flex: 0 0 auto; width: auto; max-width: 118px; margin-left: -1px; border-radius: 0 var(--r) var(--r) 0; color: var(--muted); background-color: var(--sunken); }
 .size-cell-row > .value-action { margin-left: 4px; }
 .size-input::placeholder { color: var(--faint); }
+/* 四边一格（第三轮票据 02）：四边不一样时框里是摘要，用正文色；展开的四格占满这一行，两格一排。 */
+.edges-cell { display: flex; flex-direction: column; gap: 6px; flex: 1 1 100%; min-width: 0; }
+.edges-cell[data-state="parts"] > .value-cell input { text-overflow: ellipsis; }
+.edges-cell[data-state="parts"] > .value-cell input::placeholder { color: var(--ink); opacity: 1; }
+.edges-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; margin-left: -106px; padding: 2px 0 2px 10px; border-left: 2px solid var(--hair); }
+.edges-part { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; }
+/* 一边的绑定弹层挂在四格整块下面：挂在窄格上会伸出检查器左边，被画布盖住。 */
+.edges-parts { position: relative; }
+.edges-part > .value-cell { position: static; }
+.edges-part-label { white-space: nowrap; }
+.prop:has(> .prop-control .edges-parts) > .prop-label { align-self: start; margin-top: 7px; }
 .content-editor { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .token-box { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-height: 38px; padding: 4px 6px; border: 1px solid var(--field); border-radius: var(--r); background: var(--surface); cursor: text; }
 .token-box:focus-within { border-color: var(--ink); }

@@ -3861,7 +3861,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => text('itemLayout.gap').fill('1'));
       await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
       await write(() => text('place.height').fill('10'));
-      await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
+      await field('place.margin').getByTestId('edges-toggle').click();
       await write(() => text('place.margin.bottom').fill('2'));
 
       // 名称区：容器，内边距 1，纵向居中，宽随内容、高撑满；本站时高亮底色。
@@ -3902,7 +3902,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       else await write(() => fit.locator('select').first().selectOption({ label: '完整显示' }));
       await write(() => text('place.width').fill('8'));
       await write(() => text('place.height').fill('8'));
-      await write(() => field('place.margin').locator('select').first().selectOption({ label: '分别设置' }));
+      await field('place.margin').getByTestId('edges-toggle').click();
       await write(() => text('place.margin.top').fill('1'));
       await states('stopState', { 已过站: () => text('opacity').fill('0.35') });
       const minutes = (Date.now() - started) / 60_000;
@@ -4012,6 +4012,107 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await mode.locator('option:checked').textContent()).toBe('缺省（随内容）');
       await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
       expect(await cell('place.height').getByLabel('高的尺寸方式').inputValue()).toBe('fill');
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
+
+    it('模板设计（第三轮 02）：内外边距一格写四边，点开直接改某一边，四边一样时收回成一个数；一边能绑定与提取为参数；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; padding?: unknown; cornerRadius?: unknown; place?: Record<string, unknown>; children?: Element[] };
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { parameters: Record<string, unknown>[]; artboard: { children: Element[] } };
+      };
+      const box = async () => (await content()).artboard.children.find((child) => child.name === '容器')!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const cell = (key: string) => field(key).getByTestId('edges-cell');
+      const whole = (key: string) => cell(key).locator('input[type="text"]').first();
+      const part = (key: string, edge: string) => field(`${key}.${edge}`);
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const popover = inspector.getByTestId('binding-popover');
+
+      // 容器的内边距：一格里是 1，没有"的写法"下拉，四边没展开。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器"]`).waitFor();
+      expect(await whole('padding').inputValue()).toBe('1');
+      expect(await field('padding').locator('select').count(), '不再有"分别设置"下拉').toBe(0);
+      expect(await cell('padding').getByTestId('edges-parts').count()).toBe(0);
+      // 在这一格打数：四边都是它。
+      await write(() => whole('padding').fill('2'));
+      expect((await box()).padding).toBe(2);
+
+      // 点开：四个值格，各是 2；直接改下边，只有下边变，一格里换成摘要。
+      await field('padding').getByRole('button', { name: '展开内边距的四边' }).click();
+      const parts = cell('padding').getByTestId('edges-parts');
+      expect(await parts.locator('label').allTextContents()).toEqual(['上', '下', '左', '右']);
+      expect(await parts.locator('input[type="text"]').evaluateAll((inputs) => inputs.map((input) => (input as unknown as { value: string }).value))).toEqual(['2', '2', '2', '2']);
+      await write(() => part('padding', 'bottom').locator('input[type="text"]').fill('3'));
+      expect((await box()).padding).toEqual({ top: 2, right: 2, bottom: 3, left: 2 });
+      await expect.poll(() => cell('padding').getAttribute('data-state')).toBe('parts');
+      expect(await whole('padding').inputValue()).toBe('');
+      expect(await whole('padding').getAttribute('placeholder')).toBe('上左右 2 · 下 3');
+      // 改回和别的边一样：收回成一个数。
+      await write(() => part('padding', 'bottom').locator('input[type="text"]').fill('2'));
+      expect((await box()).padding).toBe(2);
+      await expect.poll(() => whole('padding').inputValue()).toBe('2');
+
+      // 一边绑定变量：别的边留着；断开时这一边变成变量现在的值（2），四边又一样，收回。
+      await part('padding', 'top').getByTestId('bind-button').click();
+      await write(() => popover.locator('[data-testid="binding-option"][data-name="bandHeight"]').click());
+      expect((await box()).padding).toEqual({ top: { var: 'bandHeight' }, right: 2, bottom: 2, left: 2 });
+      await part('padding', 'top').getByTestId('bound-chip').filter({ hasText: '色带高度' }).waitFor();
+      expect(await whole('padding').getAttribute('placeholder')).toBe('上 色带高度 · 下左右 2');
+      await write(() => part('padding', 'top').getByTestId('unbind-button').click());
+      expect((await box()).padding).toBe(2);
+
+      // 一边提取为参数：名字带上这一边，参数加上，只有这一边绑定它。
+      await part('padding', 'left').getByTestId('bind-button').click();
+      await popover.getByRole('button', { name: '提取为参数' }).click();
+      const naming = popover.getByRole('form', { name: '提取为参数' });
+      expect(await naming.getByLabel('名称', { exact: true }).inputValue()).toBe('paddingLeft');
+      expect(await naming.getByLabel('显示名称').inputValue()).toBe('容器内边距（左）');
+      expect(await naming.getByTestId('extract-value').textContent()).toBe('2');
+      await write(() => naming.getByRole('button', { name: '提取并绑定' }).click());
+      expect((await box()).padding).toEqual({ top: 2, right: 2, bottom: 2, left: { var: 'paddingLeft' } });
+      expect((await content()).parameters.at(-1)).toEqual({ name: 'paddingLeft', displayName: '容器内边距（左）', visibility: 'internal', type: 'number', default: 2 });
+
+      // 四边不一样时在一格里打数：四边都改。
+      await write(() => whole('padding').fill('1'));
+      expect((await box()).padding).toBe(1);
+      await expect.poll(() => cell('padding').getAttribute('data-state')).toBe('literal');
+      // 收起。
+      await field('padding').getByRole('button', { name: '收起内边距的四边' }).click();
+      expect(await cell('padding').getByTestId('edges-parts').count()).toBe(0);
+      // 圆角是四角。
+      await field('cornerRadius').getByRole('button', { name: '展开圆角的四角' }).waitFor();
+
+      // 堆叠里的文字：外边距没写，淡色是 0；点开只打下边，只写那一边。
+      await openRow(side, '容器');
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/容器内文字"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器/容器内文字"]`).waitFor();
+      expect(await cell('place.margin').getAttribute('data-state')).toBe('unset');
+      expect(await whole('place.margin').inputValue()).toBe('');
+      expect(await whole('place.margin').getAttribute('placeholder')).toBe('0');
+      await field('place.margin').getByRole('button', { name: '展开外边距的四边' }).click();
+      await write(() => part('place.margin', 'bottom').locator('input[type="text"]').fill('2'));
+      const inner = async () => (await box()).children!.find((child) => child.name === '容器内文字')!.place!;
+      expect((await inner())['margin']).toEqual({ bottom: 2 });
+      expect(await whole('place.margin').getAttribute('placeholder')).toBe('下 2');
+      // 清空这一边：一边都不剩，整格去掉。
+      await write(() => part('place.margin', 'bottom').locator('input[type="text"]').fill(''));
+      expect((await inner())['margin']).toBeUndefined();
 
       // 撤销：一直撤到不能撤，回到原样。
       const undo = target.getByRole('button', { name: '撤销', exact: true });

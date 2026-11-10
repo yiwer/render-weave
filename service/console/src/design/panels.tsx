@@ -109,11 +109,11 @@ function useElementContext(props: ElementProps): FieldContext {
     taken: takenNames(doc.document, variables),
     suggest: (field) => suggestParameter(doc.document, variables, segments.at(-1)!, field),
     // 加参数与绑定是一次写回，一步撤销。
-    extract: (field, bindable, value, name, displayName) => {
+    extract: (field, bindable, value, name, displayName, written) => {
       const parameter = { name, displayName, type: bindable.type, value };
       // 在某个取值下提成参数：参数照常加，绑定写进这个取值的覆盖。
-      const next = state === undefined ? extractParameter(doc.document, path, field.path, parameter)
-        : carryOverride(doc.document, path, state, extractParameter(mergedDocument(doc.document, path, state), path, field.path, parameter), [String(field.path[0])]);
+      const next = state === undefined ? extractParameter(doc.document, path, field.path, parameter, written)
+        : carryOverride(doc.document, path, state, extractParameter(mergedDocument(doc.document, path, state), path, field.path, parameter, written), [String(field.path[0])]);
       props.onEdit(next, `extract:${path}:${name}`);
       props.onCommit();
     },

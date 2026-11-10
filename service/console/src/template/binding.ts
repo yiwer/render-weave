@@ -120,11 +120,14 @@ export function parameterNameProblem(name: string, taken: ReadonlySet<string>): 
 
 export interface ExtractedParameter { readonly name: string; readonly displayName: string; readonly type: BindingType; readonly value: unknown }
 
-/** 提取为参数（M208）：把当前值存成内部参数的缺省值，并把这一格绑定它。一次写回，所以一步撤销。 */
-export function extractParameter(document: JsonObject, path: string, fieldPath: FieldPath, parameter: ExtractedParameter): JsonObject {
+/**
+ * 提取为参数（M208）：把当前值存成内部参数的缺省值，并把这一格绑定它。一次写回，所以一步撤销。
+ * written：绑定只是这一格的一部分时（四边里的一边）整格要写成什么；没给就是整格绑定。
+ */
+export function extractParameter(document: JsonObject, path: string, fieldPath: FieldPath, parameter: ExtractedParameter, written?: unknown): JsonObject {
   const { name, displayName, type, value } = parameter;
   const withParameter: JsonObject = { ...document, parameters: [...namedList(document, 'parameters'), { name, displayName, visibility: 'internal', type, default: value }] };
-  return writeProperty(withParameter, path, fieldPath, { var: name });
+  return writeProperty(withParameter, path, fieldPath, written ?? { var: name });
 }
 
 const LOOP_LABELS: Readonly<Record<string, string>> = { index: '循环序号', isFirst: '是否第一项', isLast: '是否最后一项', count: '循环总项数', groupSize: '合并的项数' };
