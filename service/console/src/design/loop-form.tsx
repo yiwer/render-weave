@@ -15,6 +15,8 @@ import { itemSizeModel, SIZE_LABELS, type SizeKind } from '../template/size.js';
 import type { LayoutNode } from '../types.js';
 import { SizeCell } from '../components/size-cell.js';
 import { LiteralInput } from './derived-editor.js';
+import { FlowButtons } from './layout-form.js';
+import { FLOW_COLUMN, FLOW_ROW } from '../components/icon.js';
 
 const Row = (props: { readonly label: string; readonly children: ReactNode; readonly testid?: string }) => (
   <div className="prop" data-testid={props.testid}><span className="prop-label">{props.label}</span><div className="prop-control">{props.children}</div></div>
@@ -189,8 +191,10 @@ export function ArgsForm(props: { readonly element: JsonObject; readonly called:
 }
 
 const ITEM_KINDS = ['equal', 'content', 'fixed'] as const;
+/** 每项方向：和容器的排布用同样的两个图标（第三轮票据 03）。 */
+const ITEM_FLOWS = [{ value: 'row', label: '横向', icon: FLOW_ROW }, { value: 'column', label: '纵向', icon: FLOW_COLUMN }] as const;
 
-/** 每项排布：方向、每项尺寸、折行；用不了的选项禁用并写原因。每项尺寸是宽高一格（第三轮票据 01），间距与换行间距沿用值格。 */
+/** 每项排布：方向（两个图标）、每项尺寸、折行；用不了的选项禁用并写原因。每项尺寸是宽高一格（第三轮票据 01），间距与换行间距沿用值格。 */
 export function ItemLayoutForm(props: { readonly element: JsonObject; readonly node?: LayoutNode | undefined; readonly onElement: (next: JsonObject, now?: boolean) => void; readonly onProblem: (problem: string) => void; readonly children?: ReactNode }) {
   const { element } = props, direction = directionOf(element), size = itemSizeOf(element) ?? 'equal';
   const sizeKind = typeof size === 'string' ? size : 'fixed', wrap = wrapOf(element), wrapReason = wrapBlocked(element);
@@ -201,9 +205,7 @@ export function ItemLayoutForm(props: { readonly element: JsonObject; readonly n
   return (
     <div className="call-form" data-testid="item-layout-form">
       <Row label="方向">
-        <div className="segmented prop-segmented" role="group" aria-label="方向">
-          {(['row', 'column'] as const).map((value) => <button key={value} type="button" aria-pressed={direction === value} onClick={() => apply(setDirection(element, value))}>{value === 'row' ? '横向' : '纵向'}</button>)}
-        </div>
+        <FlowButtons label="方向" value={direction} options={ITEM_FLOWS} onPick={(value) => apply(setDirection(element, value))} />
       </Row>
       <Row label={label}>
         <SizeCell label={label} model={itemSizeModel(itemSizeOf(element))} actual={items.length ? (direction === 'row' ? items[0]!.width : items[0]!.height) : undefined} required blocked={blocked} onWrite={writeSize} />

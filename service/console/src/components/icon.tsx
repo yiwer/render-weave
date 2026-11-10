@@ -27,4 +27,9 @@ export const PANEL_RIGHT = 'M4 5h16v14H4zM14 5v14';
 export const SIDES = 'M8 4.5h8M8 19.5h8M4.5 8v8M19.5 8v8';
 export const LINK = 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1';
 export const UNLINK = 'M10 14a4 4 0 0 0 3 1M14 10a4 4 0 0 0-1.5-.9M15 16l1-1 3-3a4 4 0 0 0-6-6l-1 1M9 8l-1 1-3 3a4 4 0 0 0 6 6l1-1M4 4l16 16';
+/** 排布的四种方式（第三轮票据 03）：自由是两个错开的方块，堆叠是箭头，网格是田字。 */
+export const FLOW_FREE = 'M4.5 4.5h6.5v6.5H4.5zM13 13h6.5v6.5H13z';
+export const FLOW_ROW = 'M5 12h14M13 6l6 6-6 6';
+export const FLOW_COLUMN = 'M12 5v14M6 13l6 6 6-6';
+export const FLOW_GRID = 'M4.5 4.5h15v15h-15zM4.5 12h15M12 4.5v15';
 export const TRASH = 'M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5';

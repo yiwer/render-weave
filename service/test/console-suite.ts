@@ -3790,9 +3790,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('design-facts').filter({ hasText: '停靠站点 v1 · 8–800 × 80–110 mm' }).waitFor();
 
       // 画板：纵向堆叠，居中。
-      await write(() => field('layout').locator('select').first().selectOption({ label: '堆叠' }));
-      await write(() => field('layout.direction').getByRole('button', { name: '纵向' }).click());
-      await write(() => field('layout.alignItems').locator('select').first().selectOption({ label: '居中' }));
+      await write(() => field('layout').getByRole('button', { name: '纵向堆叠' }).click());
+      await write(() => field('layout').getByRole('button', { name: '上中', exact: true }).click());
 
       // 对外参数：主模板按这三个名字传。
       await side.getByRole('tab', { name: '变量' }).click();
@@ -3870,7 +3869,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => text('name').fill('名称区'));
       await selected(`${NAME}/名称区`);
       await write(() => text('padding').fill('1'));
-      await write(() => field('layout.alignItems').locator('select').first().selectOption({ label: '居中' }));
+      await write(() => field('layout').getByRole('button', { name: '上中', exact: true }).click());
       await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
       await write(() => field('place.height').locator('select').first().selectOption({ label: '撑满' }));
       await states('stopState', { 本站: () => text('fill').fill('#FFF000') });
@@ -4113,6 +4112,108 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 清空这一边：一边都不剩，整格去掉。
       await write(() => part('place.margin', 'bottom').locator('input[type="text"]').fill(''));
       expect((await inner())['margin']).toBeUndefined();
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
+
+    it('模板设计（第三轮 03）：排布用方向图标与九宫格，间距与内边距一行；换排布时子元素的位置键跟着换；循环的每项方向是两个图标；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; layout?: Record<string, unknown>; itemLayout?: Record<string, unknown>; place?: Record<string, unknown>; children?: Element[] };
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const named = async (name: string) => (await content()).artboard.children.find((child) => child.name === name)!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: ReturnType<typeof field>, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const head = field('layout');
+      const flow = (name: string) => head.getByTestId('flow-buttons').getByRole('button', { name, exact: true });
+      const cell = (name: string) => head.getByTestId('align-grid').getByRole('button', { name, exact: true });
+      const lit = () => attributes(head.locator('[data-testid="align-cell"][aria-pressed="true"]'), 'aria-label');
+      const paired = () => attributes(inspector.locator('[data-testid="prop-pair"] > [data-testid="property-field"]'), 'data-key');
+      const spread = head.getByLabel('主轴分布');
+
+      // 容器是横向堆叠：四个图标里按下的是它，九宫格亮左上（两根轴都没写），间距与内边距并排一行；方向、对齐不再是一项项的下拉。
+      await pick(`${ALL}/容器`);
+      expect(await head.getAttribute('data-flow')).toBe('row');
+      expect(await attributes(head.getByTestId('flow-buttons').getByRole('button'), 'aria-label')).toEqual(['自由', '横向堆叠', '纵向堆叠', '网格']);
+      expect(await flow('横向堆叠').getAttribute('aria-pressed')).toBe('true');
+      expect(await head.getByTestId('align-cell').count()).toBe(9);
+      expect(await lit()).toEqual(['左上']);
+      expect(await paired()).toEqual(['layout.gap', 'padding']);
+      for (const key of ['layout.mode', 'layout.direction', 'layout.justifyContent', 'layout.alignItems']) expect(await field(key).count(), key).toBe(0);
+
+      // 横向点右中：左中右是主轴，上中下是交叉轴。
+      await write(() => cell('右中').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'row', gap: 1, justifyContent: 'end', alignItems: 'center' });
+      expect(await lit()).toEqual(['右中']);
+      // 换成纵向：只改方向，对齐的两个键留着，亮的那格跟着转到下中；子元素的位置键堆叠里都认得，不动。
+      await write(() => flow('纵向堆叠').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'end', alignItems: 'center' });
+      expect((await named('容器')).children![0]!.place).toEqual({ height: 'fill' });
+      expect(await head.getAttribute('data-flow')).toBe('column');
+      expect(await lit()).toEqual(['下中']);
+
+      // 两端在小下拉里：主轴分空隙，九宫格只管交叉轴，对上的一列三格都亮；点左下只改交叉轴（开头不写）。
+      await write(() => spread.selectOption({ label: '两端' }));
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'spaceBetween', alignItems: 'center' });
+      expect(await lit()).toEqual(['上中', '居中', '下中']);
+      await write(() => cell('左下').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'spaceBetween' });
+      expect(await lit()).toEqual(['左上', '左中', '左下']);
+      // 选回挨着排：主轴回到开头。
+      await write(() => spread.selectOption({ label: '挨着排' }));
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1 });
+      expect(await lit()).toEqual(['左上']);
+
+      // 换成网格：一个子元素一行一列，纵向的间距带成行间距；子元素补上行列；九宫格收起，行列轨道照旧，行间距与列间距并排。
+      await write(() => flow('网格').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'grid', rows: ['hug'], columns: ['hug'], rowGap: 1 });
+      expect((await named('容器')).children![0]!.place).toMatchObject({ row: 1, column: 1 });
+      expect(await head.getByTestId('align-grid').count()).toBe(0);
+      expect(await field('layout.rows').count()).toBe(1);
+      expect(await field('layout.columns').count()).toBe(1);
+      expect(await paired()).toEqual(['layout.rowGap', 'layout.columnGap']);
+      // 换成自由：只剩 mode，子元素的行列清掉；没有并排的一行，内边距照常一项。
+      await write(() => flow('自由').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'free' });
+      expect((await named('容器')).children![0]!.place ?? {}).not.toHaveProperty('row');
+      expect(await head.getAttribute('data-flow')).toBe('free');
+      expect(await head.getByTestId('align-grid').count()).toBe(0);
+      expect(await paired()).toEqual([]);
+      expect(await field('padding').count()).toBe(1);
+      // 再点回横向堆叠。
+      await write(() => flow('横向堆叠').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'row' });
+      expect(await paired()).toEqual(['layout.gap', 'padding']);
+
+      // 循环的每项方向：同样的两个图标，点横向写 direction，每项高换成每项宽。
+      await pick(`${ALL}/循环`);
+      const direction = inspector.getByRole('group', { name: '方向' });
+      expect(await attributes(direction.getByRole('button'), 'aria-label')).toEqual(['横向', '纵向']);
+      expect(await direction.getByRole('button', { name: '纵向' }).getAttribute('aria-pressed')).toBe('true');
+      expect(await direction.locator('svg').count()).toBe(2);
+      await write(() => direction.getByRole('button', { name: '横向' }).click());
+      const heights = before.artboard.children.find((child) => child.name === '循环')!.itemLayout!['heights'];
+      expect((await named('循环')).itemLayout).toEqual({ direction: 'row', widths: heights });
+      expect(await direction.getByRole('button', { name: '横向' }).getAttribute('aria-pressed')).toBe('true');
 
       // 撤销：一直撤到不能撤，回到原样。
       const undo = target.getByRole('button', { name: '撤销', exact: true });

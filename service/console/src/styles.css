@@ -721,6 +721,28 @@ fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
 .edges-part > .value-cell { position: static; }
 .edges-part-label { white-space: nowrap; }
 .prop:has(> .prop-control .edges-parts) > .prop-label { align-self: start; margin-top: 7px; }
+/* 排布一块（第三轮票据 03）：方向图标在左，分布的小下拉与九宫格在右；下面两项并排一行。 */
+.layout-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.layout-head > .prop-state-dot { flex: none; margin-right: 0; }
+.flow-buttons { flex: none; }
+.flow-buttons button { width: 34px; min-height: 28px; height: 28px; padding: 0; }
+.flow-buttons button svg.icon { width: 16px; height: 16px; }
+.layout-align { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
+select.layout-spread { flex: 0 1 auto; width: auto; min-width: 0; max-width: 92px; min-height: 28px; height: 28px; font-size: 12.5px; color: var(--muted); }
+.align-grid { flex: none; display: grid; grid-template-columns: repeat(3, 16px); padding: 4px; border-radius: 7px; background: var(--sunken); }
+button.align-cell { display: grid; place-items: center; width: 16px; min-height: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: none; }
+.align-cell > i { width: 10px; height: 10px; border-radius: 3px; background: var(--line); }
+.align-cell:hover:not(:disabled) > i { background: var(--faint); }
+.align-cell[aria-pressed="true"] > i, .align-cell[aria-pressed="true"]:hover > i { background: var(--accent); }
+/* 两项并排：名称在上面；点开四边、绑定了变量时这一项占满一行。绑定弹层挂在整行下面，不然窄格的弹层会伸出检查器。 */
+.prop-pair { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; min-width: 0; }
+.prop-pair > .prop { position: static; flex: 1 1 calc(50% - 5px); grid-template-columns: minmax(0, 1fr); }
+.prop-pair > .prop:has(.edges-parts), .prop-pair > .prop:has(.value-origin) { flex-basis: 100%; }
+.prop-pair > .prop > .prop-label { align-self: auto; margin-top: 0; font-size: 12px; }
+.prop-pair > .prop > .prop-control > .value-cell, .prop-pair > .prop > .prop-control > .edges-cell > .value-cell { position: static; }
+.prop-pair > .prop > .prop-nobind { left: 0; }
+.prop-pair > .prop > .prop-reset { grid-column: 1; }
+.prop-pair .edges-parts { margin-left: 0; }
 .content-editor { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .token-box { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-height: 38px; padding: 4px 6px; border: 1px solid var(--field); border-radius: var(--r); background: var(--surface); cursor: text; }
 .token-box:focus-within { border-color: var(--ink); }

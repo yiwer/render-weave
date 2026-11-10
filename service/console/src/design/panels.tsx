@@ -20,6 +20,7 @@ import { usePopoverDismiss } from '../components/binding-popover.js';
 import { ContentEditor } from './content-editor.js';
 import { FitEditor } from './fit-editor.js';
 import { ArgsForm, CallSourceForm, ItemLayoutForm, LoopSourceForm } from './loop-form.js';
+import { LayoutSection } from './layout-form.js';
 import { setElement } from '../template/calls.js';
 import type { HandleSet } from '../template/handles.js';
 import { carryOverride, knownValues, mergedDocument, resetOverride, setStateBy, statesOf, writeElementOverride, writeOverride } from '../template/states.js';
@@ -215,6 +216,8 @@ function PropertiesTab(props: ElementProps & {
         </ItemLayoutForm>
       );
     }
+    // 排布（第三轮票据 03）：方向图标、九宫格、间距与内边距一行；这个取值下不能改排布时仍是一项项的字段。
+    if (name === '排布' && fields.some((field) => field.key === 'layout' && !field.blocked)) return <LayoutSection panel={panel} fields={fields} context={context} childCount={Array.isArray(element?.['children']) ? element['children'].length : 0} />;
     const content = isText && name === '内容' ? fields.find((field) => field.key === 'content') : undefined;
     if (content) return <ContentEditor field={content} panel={panel} context={context} vertical={vertical} />;
     if (isText && name === '适配' && element) return <FitEditor panel={panel} element={element} context={context} boardMinimum={boardMinimumOf(doc.document)} members={members} vertical={vertical} instance={instanceNode(reply, selected)} />;

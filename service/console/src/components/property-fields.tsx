@@ -554,8 +554,8 @@ function useLabelDrag(field: PropertyField, context: FieldContext) {
   return { live, draggable: Boolean(editor), start };
 }
 
-/** 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。 */
-export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext }) {
+/** 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。half：两项并排一行时的半格，名称在上面（第三轮票据 03）。 */
+export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext; readonly half?: boolean }) {
   const { field, context } = props, id = useId();
   const wide = field.editor.kind === 'group' || field.editor.kind === 'list' || field.editor.kind === 'map';
   const { live, draggable, start } = useLabelDrag(field, context);
@@ -564,7 +564,7 @@ export function FieldRow(props: { readonly field: PropertyField; readonly contex
   const dot = overridden.length > 0 && <i className="prop-state-dot" data-testid="state-dot" title={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} aria-label={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} />;
   const resettable = context.stateValue !== undefined && context.resetOverride && overridden.includes(context.stateValue);
   return (
-    <div className={`prop${wide ? ' wide' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
+    <div className={`prop${wide ? ' wide' : ''}${props.half ? ' half' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
       {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{dot}{field.label}</label>}
       <div className="prop-control">
         {field.blocked ? <span className="small faint" data-testid="field-blocked">{field.blocked}</span>
