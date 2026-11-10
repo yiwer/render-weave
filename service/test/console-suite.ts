@@ -4016,12 +4016,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => width.getByTestId('unbind-button').click());
       expect((await placeOf('矩形'))['width']).toEqual({ fixed: 2 });
 
-      // 堆叠里的文字：宽没写，下拉写"缺省（随内容）"，框里淡色是实际宽。
+      // 堆叠里的文字：宽没写，下拉写"缺省"（宽高并排后半行放不下全称，引擎怎么排在提示里，第三轮票据 05），框里淡色是实际宽。
       await openRow(side, '容器');
       await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/容器内文字"]`).getByRole('button').first().click();
       await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器/容器内文字"]`).waitFor();
       expect(await mode.inputValue()).toBe('');
-      expect(await mode.locator('option:checked').textContent()).toBe('缺省（随内容）');
+      expect(await mode.locator('option:checked').textContent()).toBe('缺省');
+      expect(await mode.getAttribute('title')).toBe('缺省（随内容）');
       await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
       expect(await cell('place.height').getByLabel('高的尺寸方式').inputValue()).toBe('fill');
 
@@ -4308,13 +4309,18 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await attributes(field('writingMode').locator('button.implied'), 'aria-label')).toEqual(['横排']);
       expect(await pressed('horizontalAlign')).toEqual(['开头']);
       expect(await aligns.locator('svg').count(), '书写方向与左中右是图标').toBe(5);
-      expect(await field('slant').count()).toBe(1);
+      // 倾斜没写，不占一行，在底部的"+ 属性"里（第三轮票据 05）。
+      const slantOffer = inspector.getByTestId('add-property').locator('button[data-key="slant"]');
+      expect(await field('slant').count()).toBe(0);
+      expect(await slantOffer.count()).toBe(1);
       expect(await note('适配').textContent()).toBe('横排');
 
       // 横排写上分散与倾斜；换成竖排：只在横排才有的两项跟着去掉，垂直对齐多出分散，倾斜不列，文档没有严重问题。
       await write(() => choose('horizontalAlign', '分散').click());
       expect((await text())['horizontalAlign']).toBe('distribute');
       expect(await pressed('horizontalAlign')).toEqual(['分散']);
+      await write(() => slantOffer.click());
+      expect((await text())['slant']).toBe(0);
       await write(() => field('slant').locator('input[type="text"]').fill('8'));
       expect((await text())['slant']).toBe(8);
       await write(() => choose('writingMode', '竖排').click());
@@ -4326,6 +4332,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await labels('horizontalAlign')).toEqual(['开头', '居中', '末尾']);
       expect(await labels('verticalAlign')).toEqual(['上', '居中', '下', '分散']);
       expect(await field('slant').count()).toBe(0);
+      expect(await slantOffer.count(), '竖排不能倾斜，菜单里也不列').toBe(0);
       expect(await note('适配').textContent()).toBe('竖排');
       await write(() => choose('verticalAlign', '分散').click());
       expect((await text())['verticalAlign']).toBe('distribute');
@@ -4370,7 +4377,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(back['fit']).not.toHaveProperty('widthOverflow');
       expect(await rule.textContent()).toBe('收紧字距');
       expect(await note('适配').textContent()).toBe('横排');
-      expect(await field('slant').count()).toBe(1);
+      expect(await slantOffer.count(), '换回横排，倾斜回到菜单里').toBe(1);
       expect(await severe(ALL)).toEqual([]);
 
       // 撤销：一直撤到不能撤，回到原样。
@@ -4406,6 +4413,214 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => reset.click());
       expect((await stopName()).states!.cases['本站']).not.toHaveProperty('horizontalAlign');
       expect(await field('horizontalAlign').getByTestId('state-dot').count()).toBe(0);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    it('模板设计（第三轮 05）：检查器只显示写了的与常用的属性，别的从"+ 属性"加，加上的项行内能去掉；宽高并排成一行；选了取值时加的项写进覆盖；撤销回到原样', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; states?: { cases: Record<string, Record<string, unknown>> }; children?: Element[]; [key: string]: unknown };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ALL);
+      const element = async (name: string) => find((await contentOf(ALL)).artboard, name)!;
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const menu = inspector.getByTestId('add-property');
+      const add = (key: string) => menu.locator(`button[data-key="${key}"]`);
+      const offered = () => attributes(menu.locator('button'), 'data-key');
+      const drop = (key: string) => field(key).getByTestId('property-remove');
+      const typed = (key: string) => field(key).locator('input[type="text"]').first();
+      /** 没写的不常用项不显示、在菜单里；常用的写没写都显示、不在菜单里。 */
+      const expectHidden = async (keys: readonly string[]) => {
+        const menuKeys = await offered();
+        for (const key of keys) { expect(await field(key).count(), `${key} 没写，不显示`).toBe(0); expect(menuKeys, `${key} 在"+ 属性"里`).toContain(key); }
+      };
+      const expectShown = async (keys: readonly string[]) => {
+        const menuKeys = await offered();
+        for (const key of keys) { expect(await field(key).count(), `${key} 总是显示`).toBe(1); expect(menuKeys, `${key} 不在"+ 属性"里`).not.toContain(key); }
+      };
+
+      // 文字：常用的（内容、文字块、位置与尺寸、显示）没写也显示；倾斜、描边、内边距、最小最大宽高、旋转没写，收在底部的"+ 属性"里。
+      await pick(`${ALL}/文字`);
+      const textBefore = find(before.artboard, '文字')!;
+      for (const key of ['slant', 'stroke', 'padding', 'rotation']) expect(textBefore, `样例里文字没写 ${key}`).not.toHaveProperty(key);
+      await expectShown(['font', 'fontSize', 'letterSpacing', 'color', 'writingMode', 'horizontalAlign', 'verticalAlign', 'place.left', 'place.right', 'place.top', 'place.bottom', 'place.width', 'place.height', 'visible', 'opacity']);
+      await expectHidden(['slant', 'stroke', 'padding', 'place.minWidth', 'place.maxWidth', 'place.minHeight', 'place.maxHeight', 'rotation']);
+      expect(await menu.getByRole('button').allTextContents()).toEqual(['倾斜', '描边', '内边距', '最小宽', '最大宽', '最小高', '最大高', '旋转']);
+      expect(await inspector.getByTestId('property-remove').count(), '常用的项没有"去掉"').toBe(0);
+
+      // 宽高并排成一行，名称缩成 W、H；读屏的名称还是"宽""高"。
+      const pair = inspector.getByTestId('size-pair');
+      expect(await attributes(pair.locator('> [data-testid="property-field"]'), 'data-key')).toEqual(['place.width', 'place.height']);
+      expect(await pair.locator('> [data-testid="property-field"] > label').allTextContents()).toEqual(['W', 'H']);
+      const cells = [(await field('place.width').boundingBox())!, (await field('place.height').boundingBox())!];
+      expect(Math.abs(cells[0]!.y - cells[1]!.y), '宽高在一行').toBeLessThan(2);
+      expect(cells[1]!.x).toBeGreaterThan(cells[0]!.x + cells[0]!.width - 1);
+      expect(await field('place.width').getByRole('textbox', { name: '宽', exact: true }).count()).toBe(1);
+      expect(await field('place.height').getByRole('combobox', { name: '高的尺寸方式' }).count()).toBe(1);
+      const input = (await field('place.width').getByRole('textbox', { name: '宽', exact: true }).boundingBox())!;
+      expect(input.width, '半行里数值框放得下四位数').toBeGreaterThanOrEqual(40);
+
+      // 加一项：写它的初值，这一行出现在它的分组里、从菜单里消失，焦点落进它的编辑器。
+      await write(() => add('rotation').click());
+      expect((await element('文字'))['rotation']).toBe(0);
+      await expectShown(['rotation']);
+      expect(await inspector.getByRole('region', { name: '位置与尺寸' }).locator('[data-testid="property-field"][data-key="rotation"]').count()).toBe(1);
+      expect(await inspector.locator('[data-testid="property-field"]:focus-within').first().getAttribute('data-key')).toBe('rotation');
+      await write(() => typed('rotation').fill('15'));
+      expect((await element('文字'))['rotation']).toBe(15);
+      expect(await severe(ALL)).toEqual([]);
+      // 清空输入框：键删掉了，这一行先留着（人还要接着打字），不跳回菜单；再打数照常写回。
+      await write(() => typed('rotation').fill(''));
+      expect(await element('文字')).not.toHaveProperty('rotation');
+      await expectShown(['rotation']);
+      await write(() => typed('rotation').fill('30'));
+      expect((await element('文字'))['rotation']).toBe(30);
+      // 去掉：删掉这个键，回到菜单里。
+      expect(await drop('rotation').getAttribute('aria-label')).toBe('去掉旋转（度）');
+      await write(() => drop('rotation').click());
+      expect(await element('文字')).not.toHaveProperty('rotation');
+      await expectHidden(['rotation']);
+
+      // 一组的项（描边）：加上是带必填子项的初值；"去掉"只有行内这一个。
+      await write(() => add('stroke').click());
+      expect((await element('文字'))['stroke']).toEqual({ color: '#000000', width: 1 });
+      await expectShown(['stroke']);
+      expect(await field('stroke').getByRole('button', { name: '去掉描边', exact: true }).count()).toBe(1);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('stroke').click());
+      expect(await element('文字')).not.toHaveProperty('stroke');
+      await expectHidden(['stroke']);
+      // 加了再撤销：这一行跟着没了，不留空行。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      await write(() => add('padding').click());
+      expect((await element('文字'))['padding']).toBe(0);
+      await expectShown(['padding']);
+      await write(() => undo.click());
+      expect(await element('文字')).not.toHaveProperty('padding');
+      await expectHidden(['padding']);
+
+      // 容器：写了的不常用项（样例里的圆角）显示着、能去掉；开关加上就是打开；最大宽从这一处的实际宽度起，画面不变。
+      await pick(`${ALL}/容器`);
+      const boxBefore = find(before.artboard, '容器')!;
+      await expectShown(['layout', 'padding', 'fill', 'place.width', 'place.height']);
+      if ('cornerRadius' in boxBefore) expect(await drop('cornerRadius').count(), '写了的圆角能去掉').toBe(1);
+      for (const key of ['clip', 'stroke']) expect(boxBefore, `样例里容器没写 ${key}`).not.toHaveProperty(key);
+      await expectHidden(['clip', 'stroke', 'place.maxWidth', 'rotation']);
+      await write(() => add('clip').click());
+      expect((await element('容器'))['clip']).toBe(true);
+      await expectShown(['clip']);
+      await write(() => add('place.maxWidth').click());
+      const limit = ((await element('容器'))['place'] as Record<string, unknown>)['maxWidth'];
+      expect(limit, '最大宽的初值是量出来的宽，不是 0').toBeGreaterThan(0);
+      await expectShown(['place.maxWidth']);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('place.maxWidth').click());
+      expect((await element('容器'))['place']).toEqual(boxBefore['place']);
+      await write(() => drop('clip').click());
+      expect(await element('容器')).toEqual(boxBefore);
+
+      // 循环：反序、只取一段在"+ 属性"里，加上显示在循环那一栏。
+      await pick(`${ALL}/循环`);
+      const loopBefore = find(before.artboard, '循环')!;
+      for (const key of ['reverse', 'slice']) expect(loopBefore, `样例里循环没写 ${key}`).not.toHaveProperty(key);
+      await expectHidden(['reverse', 'slice']);
+      await write(() => add('reverse').click());
+      expect((await element('循环'))['reverse']).toBe(true);
+      expect(await inspector.getByRole('region', { name: '循环', exact: true }).locator('[data-testid="property-field"][data-key="reverse"]').count()).toBe(1);
+      await write(() => add('slice').click());
+      expect((await element('循环'))['slice']).toEqual({ start: 1 });
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('slice').click());
+      await write(() => drop('reverse').click());
+      expect(await element('循环')).toEqual(loopBefore);
+
+      // 线条：随框缩放要先有视图框，没有时按钮是灰的、写明先加哪一项。
+      await pick(`${ALL}/线条`);
+      const lineBefore = find(before.artboard, '线条')!;
+      expect(lineBefore, '样例里线条没写视图框').not.toHaveProperty('viewBox');
+      await expectHidden(['viewBox', 'fit']);
+      expect(await add('fit').isDisabled()).toBe(true);
+      expect(await add('fit').getAttribute('title')).toBe('先加视图框');
+      await write(() => add('viewBox').click());
+      expect((await element('线条'))['viewBox']).toEqual([0, 0, 1, 1]);
+      expect(await add('fit').isDisabled()).toBe(false);
+      await write(() => add('fit').click());
+      expect((await element('线条'))['fit']).toBe('fill');
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('fit').click());
+      await write(() => drop('viewBox').click());
+      expect(await element('线条')).toEqual(lineBefore);
+
+      // 画板：尺寸范围、缩字下限、排布总是显示；描边、圆角、裁剪从"+ 属性"加，写在 artboard 上。
+      await pick(ALL);
+      await expectShown(['sizeRange', 'minFontSize', 'layout', 'padding']);
+      const boardKeys = ['stroke', 'cornerRadius', 'clip'].filter((key) => !(key in before.artboard));
+      expect(boardKeys.length, '样例里画板至少有一项没写').toBeGreaterThan(0);
+      await expectHidden(boardKeys);
+      await write(() => add(boardKeys[0]!).click());
+      expect((await contentOf(ALL)).artboard).toHaveProperty(boardKeys[0]!);
+      await expectShown([boardKeys[0]!]);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop(boardKeys[0]!).click());
+      expect(await contentOf(ALL)).toEqual(before);
+
+      // 撤销：一直撤到不能撤，回到原样。
+      for (let step = 0; step < 40 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ALL)).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+
+      // 状态样式模式：选"本站"后从"+ 属性"加的项写进这个取值的覆盖，自身属性不动；这一行有圆点、没有"去掉"，重置后回到菜单里。
+      const stopBefore = await contentOf(STOP);
+      const stopName = async () => find((await contentOf(STOP)).artboard, '站名')!;
+      expect(find(stopBefore.artboard, '站名')!, '样例里站名没写旋转').not.toHaveProperty('rotation');
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await pick(`${STOP}/名称区/站名`);
+      // 站名在纵向堆叠里：宽高照样并排，外边距在下一行；自身对齐只在堆叠里才有，在菜单里。
+      expect(await attributes(pair.locator('> [data-testid="property-field"]'), 'data-key')).toEqual(['place.width', 'place.height']);
+      await expectShown(['place.margin']);
+      await expectHidden(['rotation', 'place.alignSelf']);
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      await expectHidden(['rotation']);
+      expect(await add('rotation').getAttribute('title')).toBe('写进这个取值的覆盖');
+      await write(() => add('rotation').click());
+      const overridden = await stopName();
+      expect(overridden.states!.cases['本站']).toMatchObject({ rotation: 0 });
+      expect(overridden).not.toHaveProperty('rotation');
+      await expectShown(['rotation']);
+      expect(await field('rotation').getByTestId('state-dot').count()).toBe(1);
+      expect(await drop('rotation').count(), '覆盖的项用"重置为自身属性"，没有"去掉"').toBe(0);
+      expect(await severe(STOP)).toEqual([]);
+      // 换回自身属性：自身没写旋转，这一行不显示。
+      await inspector.locator('[data-testid="state-chip"][data-value=""]').click();
+      await expectHidden(['rotation']);
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      await expectShown(['rotation']);
+      await write(() => field('rotation').getByTestId('state-reset').click());
+      expect((await stopName()).states?.cases['本站'] ?? {}).not.toHaveProperty('rotation');
+      await expectHidden(['rotation']);
       for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
       expect(await contentOf(STOP)).toEqual(stopBefore);
       await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);

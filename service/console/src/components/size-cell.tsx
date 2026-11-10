@@ -27,6 +27,8 @@ export function SizeCell(props: {
   readonly required?: boolean;
   /** 用不了的方式与原因（循环每项的互斥），下拉里禁用。 */
   readonly blocked?: Partial<Record<SizeKind, string>>;
+  /** 半行宽的格子（宽高并排，第三轮票据 05）：没写时下拉只写"缺省"，引擎怎么排放进提示。 */
+  readonly compact?: boolean | undefined;
   /** now：选方式立刻写回；打字等停顿。 */
   readonly onWrite: (value: unknown, now: boolean) => void;
   /** 固定值能绑定变量时给：绑定弹层与提取为参数用这个字段的 `fixed` 子项。 */
@@ -72,8 +74,9 @@ export function SizeCell(props: {
             aria-invalid={error ? true : undefined} title={model.kind === 'ratio' ? '按比例撑满的权重' : '打一个数就是固定尺寸（毫米）'} onChange={(event) => type(event.target.value)} />
         )}
         {model.kind === 'ratio' && <span className="size-unit small faint">份</span>}
-        <select className="size-mode" aria-label={`${label}的尺寸方式`} value={model.kind ?? ''} onChange={(event) => choose(event.target.value as SizeKind | '')}>
-          {(!props.required || model.kind === undefined) && <option value="">{props.fallback ? `缺省（${SIZE_LABELS[props.fallback]}）` : '缺省'}</option>}
+        <select className="size-mode" aria-label={`${label}的尺寸方式`} value={model.kind ?? ''} onChange={(event) => choose(event.target.value as SizeKind | '')}
+          {...(props.compact && props.fallback && model.kind === undefined ? { title: `缺省（${SIZE_LABELS[props.fallback]}）` } : {})}>
+          {(!props.required || model.kind === undefined) && <option value="">{props.fallback && !props.compact ? `缺省（${SIZE_LABELS[props.fallback]}）` : '缺省'}</option>}
           {model.options.map((option) => {
             const reason = option.kind === model.kind ? undefined : props.blocked?.[option.kind];
             return <option key={option.kind} value={option.kind} disabled={Boolean(reason)} title={reason}>{option.label}{reason ? `（${reason}）` : ''}</option>;

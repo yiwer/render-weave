@@ -2,7 +2,7 @@
  * 左面板与检查器的内容（模板设计页票据 03）：结构与变量在左，属性在右，右边永远只显示选中的东西。
  * 字段都从模板文档与 Schema 生成（template/properties.ts），分组按元素类型排；内容与适配有专属的编辑器（票据 10）。手柄见票据 13。
  */
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError } from '../api.js';
 import { ProblemList } from '../components/problems.js';
 import { FieldRow, FieldRows, type BindingHost, type FieldContext } from '../components/property-fields.js';
@@ -11,6 +11,7 @@ import { href, useLoad } from '../hooks.js';
 import { baseFieldsOf, describeOrigin, extractParameter, scopeVariables, suggestParameter, takenNames, type BaseField } from '../template/binding.js';
 import { elementAt, flatElements, hiddenReason, isObject, relatedChecks, type JsonObject } from '../template/document.js';
 import { fontFamilies, type FontFamily } from '../template/fonts.js';
+import { splitPanel, type AddableProperty } from '../template/optional.js';
 import { nameProblem } from '../template/structure.js';
 import { feedOf } from '../template/tree.js';
 import { ELEMENT_TYPES, fieldByKey, listItemPanel, propertyPanel, stateOverridable, writeListItem, writeProperty, type FieldPath, type PropertyField } from '../template/properties.js';
@@ -174,10 +175,42 @@ function PropertiesTab(props: ElementProps & {
   const panel = propertyPanel(display, path);
   const elementContext = useElementContext({ ...props, ...(state !== undefined ? { state } : {}) });
   // 宽高一格要这一处的实际尺寸（第三轮票据 01）。
-  const node = instanceNode(reply, selected);
-  const context: FieldContext = node ? { ...elementContext, box: { width: node.width, height: node.height } } : elementContext;
+  const node = instanceNode(reply, selected), box = node ? { width: node.width, height: node.height } : undefined;
   const [formProblem, setFormProblem] = useState<string>();
+  // "+ 属性"（第三轮票据 05）：人清空了输入框、还在改的项先留着这一行；写上值之后不用再留，换取值时从头算。
+  const [pinned, setPinned] = useState<ReadonlySet<string>>(new Set());
+  const [added, setAdded] = useState<string>();
+  const root = useRef<HTMLDivElement>(null);
+  const filled = panel ? [...pinned].filter((key) => fieldByKey(panel, key)?.value !== undefined).join('\n') : '';
+  useEffect(() => { if (filled) setPinned((current) => new Set([...current].filter((key) => !filled.split('\n').includes(key)))); }, [filled]);
+  useEffect(() => setPinned(new Set()), [state]);
+  // 刚加上的一项滚到看得见的地方，焦点落进它的编辑器。
+  useEffect(() => {
+    if (!added) return;
+    const row = [...(root.current?.querySelectorAll<HTMLElement>('[data-testid="property-field"]') ?? [])].find((item) => item.dataset['key'] === added);
+    if (!row) return;
+    row.scrollIntoView({ block: 'nearest' });
+    row.querySelector<HTMLElement>('.prop-control :is(input, select, textarea, button)')?.focus({ preventScroll: true });
+    setAdded(undefined);
+  }, [added, panel]);
   if (!panel) return <p className="muted">这个元素已经不在模板里了。</p>;
+  const allowed = stateOverridable(doc.document, path);
+  // 常用的、必填的与写了的显示，其余的在底部的"+ 属性"里；选了取值时只有可覆盖的能加，写进这个取值的覆盖。
+  const split = splitPanel(panel, { pinned, ...(state !== undefined ? { overridable: allowed } : {}), ...(box ? { box } : {}) });
+  const fieldKeys = new Set(panel.groups.flatMap((item) => item.fields.map((field) => field.key)));
+  const unpin = (drop: (key: string) => boolean) => setPinned((current) => new Set([...current].filter((key) => !drop(key))));
+  const context: FieldContext = {
+    ...elementContext, ...(box ? { box } : {}), removable: split.removable,
+    onWrite: (fieldPath, value, options) => {
+      // 清空输入框和点"去掉"不一样：人多半还要接着打字，这一行不能跟着没了。
+      const key = fieldPath.join('.');
+      if (value === undefined && fieldKeys.has(key)) setPinned((current) => new Set([...current, key]));
+      elementContext.onWrite(fieldPath, value, options);
+    },
+    onRemove: (field) => { unpin((key) => key === field.key); elementContext.onWrite(field.path, undefined, { now: true }); },
+    ...(elementContext.resetOverride ? { resetOverride: (field: PropertyField) => { unpin((key) => key.split('.')[0] === String(field.path[0])); elementContext.resetOverride!(field); } } : {}),
+  };
+  const add = (item: AddableProperty) => { context.onWrite(item.field.path, item.value, { now: true }); setAdded(item.field.key); };
   const segments = path.split('/'), element = elementAt(display, path)?.element;
   const shown = !reply?.elements || reply.elements.some((item) => item.source.template === doc.name && item.source.path === path);
   const template = typeof element?.['template'] === 'string' ? element['template'] : undefined;
@@ -198,7 +231,6 @@ function PropertiesTab(props: ElementProps & {
   // 状态样式：依据的全部取值与当前样例的各处取值，以引擎求值为准；还没求值时按文档推。
   const inspected = props.inspection && props.inspection.template === doc.name && props.inspection.source === path && props.inspection.states?.by === info.by ? props.inspection : undefined;
   const known = info.by === undefined ? undefined : inspected?.states?.known ?? knownValues(doc.document, variables, info.by);
-  const allowed = stateOverridable(doc.document, path);
   const lock = (field: PropertyField): PropertyField => (state === undefined || allowed.includes(String(field.path[0])) ? field : { ...field, blocked: '不能按取值换：状态样式不覆盖这一项' });
   const rows = (fields: Parameters<typeof FieldRows>[0]['fields'], keys: readonly string[]) => <FieldRows fields={fields.filter((field) => keys.includes(field.key))} context={context} />;
   const body = (name: string, fields: Parameters<typeof FieldRows>[0]['fields']) => {
@@ -223,6 +255,7 @@ function PropertiesTab(props: ElementProps & {
     if (content) return <ContentEditor field={content} panel={panel} context={context} vertical={vertical} />;
     // 文字（第三轮票据 04）：常用的几项挤成一块；适配平时是一行摘要，点开才是编辑器。
     if (isText && name === '文字') return <TextSection fields={fields} context={context} />;
+    if (name === '位置与尺寸') return <PlaceRows fields={fields} context={context} />;
     if (isText && name === '适配' && element) return <FitSection panel={panel} element={element} context={context} boardMinimum={boardMinimumOf(doc.document)} members={members} vertical={vertical} instance={instanceNode(reply, selected)} />;
     return <FieldRows fields={fields} context={context} />;
   };
@@ -235,7 +268,7 @@ function PropertiesTab(props: ElementProps & {
     return covered.length ? { text: `${covered.length} 项被状态覆盖`, title: `${covered.map((field) => field.label).join('、')}在状态样式里被覆盖` } : undefined;
   };
   return (
-    <div data-testid="properties" data-path={path} data-type={panel.type}>
+    <div ref={root} data-testid="properties" data-path={path} data-type={panel.type}>
       <div className="inspector-head">
         <h2>{segments.at(-1)}</h2>
         <span className="small muted">{ELEMENT_TYPES[panel.type] ?? panel.type}</span>
@@ -262,7 +295,7 @@ function PropertiesTab(props: ElementProps & {
           <p className="small" data-testid="artboard-base">{String(base['name'])} v{String(base['version'])}<a className="small" style={{ marginLeft: 8 }} href={href(['definitions', String(base['name'])])}>打开数据定义</a></p>
         </section>
       )}
-      {panel.groups.filter((item) => item.name !== '状态样式').map((item) => (
+      {split.groups.filter((item) => item.name !== '状态样式').map((item) => (
         <section key={item.name} className="prop-section" aria-label={item.name}>
           <h3>{item.name}</h3>
           {((mark) => mark && <span className="prop-section-note small" data-testid="section-note" title={mark.title}>{mark.title && <i className="prop-state-dot" />}{mark.text}</span>)(note(item.name, item.fields))}
@@ -271,7 +304,33 @@ function PropertiesTab(props: ElementProps & {
           {item.name === '缩字下限' && <p className="hint">这个模板文字缩字的最低字号，不写时 5 mm。</p>}
         </section>
       ))}
+      {split.addable.length > 0 && (
+        <div className="add-props" role="group" aria-label="添加属性" data-testid="add-property">
+          <span className="add-props-title">+ 属性</span>
+          {split.addable.map((item) => (
+            <button key={item.field.key} type="button" className="add-prop" data-key={item.field.key} disabled={Boolean(item.needs)}
+              title={item.needs ? `先加${item.needs.join('、')}` : state !== undefined ? '写进这个取值的覆盖' : item.field.description} onClick={() => add(item)}>{item.label}</button>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+/** 位置与尺寸：宽高并排一行，名称缩成 W、H（第三轮票据 05，原型 01）；别的照旧一项一行。这个取值下不能改位置时不并排。 */
+function PlaceRows(props: { readonly fields: readonly PropertyField[]; readonly context: FieldContext }) {
+  const { fields, context } = props;
+  const size = fields.filter((field) => (field.key === 'place.width' || field.key === 'place.height') && !field.blocked);
+  if (size.length < 2) return <FieldRows fields={fields} context={context} />;
+  const at = fields.indexOf(size[0]!), others = (list: readonly PropertyField[]) => list.filter((field) => !size.includes(field));
+  return (
+    <>
+      <FieldRows fields={others(fields.slice(0, at))} context={context} />
+      <div className="prop-pair size-pair" data-testid="size-pair">
+        {size.map((field) => <FieldRow key={field.key} field={field} context={context} half caption={field.key === 'place.width' ? 'W' : 'H'} />)}
+      </div>
+      <FieldRows fields={others(fields.slice(at))} context={context} />
+    </>
   );
 }
 

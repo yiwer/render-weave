@@ -745,6 +745,29 @@ button.align-cell { display: grid; place-items: center; width: 16px; min-height:
 .prop-pair > .prop > .prop-nobind { left: 0; }
 .prop-pair > .prop > .prop-reset { grid-column: 1; }
 .prop-pair .edges-parts { margin-left: 0; }
+/* 宽高并排（第三轮票据 05）：名称缩成 W、H，排在格子左边；绑定了变量的那一项占满一行（上面 .value-origin 那条）。 */
+.prop-pair > .prop.captioned { grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; }
+.prop-pair.prop-pair > .prop.captioned > .prop-label { align-self: start; min-width: 12px; line-height: 32px; color: var(--faint); }
+.prop-pair > .prop.captioned > .prop-reset { grid-column: 1 / -1; }
+/* 并排的格子只有半行宽：数值框留够四位数，尺寸方式收紧、放不下就截断（下拉里是全称），按比例的"份"省掉。 */
+.prop-pair.size-pair .size-cell-row > input.size-input { flex: 1 1 40px; min-width: 40px; padding: 0 5px; }
+.prop-pair.size-pair .size-cell-row > select.size-mode { flex: 0 1 auto; min-width: 0; padding: 0 19px 0 7px; background-position: right 5px center; background-size: 11px; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.size-pair .size-cell-row > .size-unit { display: none; }
+.size-pair .size-cell-row > .value-action { margin-left: 0; }
+/* "+ 属性"（第三轮票据 05）：没写的不常用项收在检查器底部，一项一个虚线框的小按钮；加上的项行尾有去掉。 */
+.add-props { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 0 14px; border-top: 1px solid var(--hair); color: var(--faint); font-size: 12px; }
+.add-props-title { margin-right: 2px; }
+button.add-prop { min-height: 24px; height: 24px; padding: 0 8px; border: 1px dashed var(--line); border-radius: 6px; background: none; color: var(--muted); font-size: 12px; font-weight: 400; }
+button.add-prop:hover:not(:disabled) { border-color: var(--faint); background: var(--hover); color: var(--ink); }
+/* 去掉：跟在名称后面（名称那一栏的右端），编辑器和别的行一样宽、绑定按钮对齐；占一整行的项（描边）在标题行的右端。 */
+.prop.removable > .prop-label { grid-column: 1; grid-row: 1; padding-right: 16px; }
+.prop.removable > .prop-control { grid-column: 2; grid-row: 1; }
+.prop.removable > .prop-drop { grid-column: 1; grid-row: 1; justify-self: end; align-self: start; width: 16px; margin-top: 3px; }
+.prop.removable > .prop-drop svg { width: 12px; height: 12px; }
+.prop.wide.removable { grid-template-columns: minmax(0, 1fr) 26px; }
+.prop.wide.removable > .prop-label { padding-right: 0; }
+.prop.wide.removable > .prop-control { grid-column: 1 / -1; grid-row: 2; }
+.prop.wide.removable > .prop-drop { grid-column: 2; align-self: center; width: 26px; margin-top: 0; }
 .content-editor { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .token-box { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-height: 38px; padding: 4px 6px; border: 1px solid var(--field); border-radius: var(--r); background: var(--surface); cursor: text; }
 .token-box:focus-within { border-color: var(--ink); }

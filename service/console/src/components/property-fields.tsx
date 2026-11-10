@@ -11,7 +11,7 @@ import type { Bindable, Editor, FieldPath, PropertyField } from '../template/pro
 import { sizeKindOf, sizeModel } from '../template/size.js';
 import { BindingPopover } from './binding-popover.js';
 import { SizeCell } from './size-cell.js';
-import { Icon, LINK, SIDES, UNLINK } from './icon.js';
+import { CROSS, Icon, LINK, SIDES, UNLINK } from './icon.js';
 import { ValueText } from './value-text.js';
 
 /** 值格要的页面能力。没有它时（列表项的编辑）字段按老样子画变体下拉。 */
@@ -44,6 +44,9 @@ export interface FieldContext {
   resetOverride?(field: PropertyField): void;
   /** 选中的这一处在图上的实际尺寸（布局摘要）：宽高一格没写或随内容时淡色显示它（第三轮票据 01）。 */
   readonly box?: { readonly width: number; readonly height: number };
+  /** 从"+ 属性"加上的项（第三轮票据 05）：行尾有"去掉"，点了删掉这个键，这一项回到菜单里。值是字段的 key。 */
+  readonly removable?: ReadonlySet<string>;
+  onRemove?(field: PropertyField): void;
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -413,7 +416,7 @@ function Group(props: { readonly field: PropertyField; readonly editor: Extract<
       {tuple
         ? shown.map((inner) => <span key={inner.key} data-testid="property-field" data-key={inner.key}><EditorView id={inner.key} field={inner} editor={inner.editor} context={context} /></span>)
         : <FieldRows fields={shown} context={context} />}
-      {!field.required && !editor.absent && hasRequired(editor.initial) && (
+      {!field.required && !editor.absent && hasRequired(editor.initial) && !context.removable?.has(field.key) && (
         <button type="button" className="link danger prop-remove" onClick={() => context.onWrite(field.path, undefined, { now: true })}>去掉{field.label}</button>
       )}
     </div>
@@ -485,7 +488,7 @@ function MapEditor(props: { readonly field: PropertyField; readonly editor: Extr
   );
 }
 
-function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext; readonly live?: number | undefined; readonly hint?: string | undefined }) {
+function EditorView(props: { readonly id: string; readonly field: PropertyField; readonly editor: Editor; readonly context: FieldContext; readonly live?: number | undefined; readonly hint?: string | undefined; readonly compact?: boolean }) {
   const { id, field, editor, context, live } = props;
   switch (editor.kind) {
     case 'number': return <NumberInput id={id} field={field} editor={editor} context={context} live={live} hint={props.hint} />;
@@ -497,7 +500,7 @@ function EditorView(props: { readonly id: string; readonly field: PropertyField;
       const size = context.binding && editor === field.editor ? sizeModel(field) : undefined;
       if (size) {
         const axis = field.path.at(-1), actual = axis === 'width' ? context.box?.width : axis === 'height' ? context.box?.height : undefined;
-        return <SizeCell id={id} label={field.label} model={size} actual={actual} fallback={sizeKindOf(field.fallback)} required={field.required}
+        return <SizeCell id={id} label={field.label} model={size} actual={actual} fallback={sizeKindOf(field.fallback)} required={field.required} compact={props.compact}
           onWrite={(value, now) => context.onWrite(field.path, value, { now })} binding={{ host: context.binding!, field }} />;
       }
       // 四边、四角：一格写完，要分开时点开（第三轮票据 02）。
@@ -568,8 +571,9 @@ function useLabelDrag(field: PropertyField, context: FieldContext) {
 /**
  * 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。half：两项并排一行时的半格，名称在上面（第三轮票据 03）。
  * bare：名称不占地方（只给读屏），编辑器占满一行，状态覆盖的圆点挪到编辑器前面（第三轮票据 04 的字体一行）。
+ * caption：名称换成短的（宽高的 W、H），排在编辑器左边；全名留在提示与读屏的名称里（第三轮票据 05）。
  */
-export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext; readonly half?: boolean; readonly bare?: boolean }) {
+export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext; readonly half?: boolean; readonly bare?: boolean; readonly caption?: string }) {
   const { field, context } = props, id = useId();
   const wide = field.editor.kind === 'group' || field.editor.kind === 'list' || field.editor.kind === 'map';
   const { live, draggable, start } = useLabelDrag(field, context);
@@ -578,15 +582,23 @@ export function FieldRow(props: { readonly field: PropertyField; readonly contex
   const labelClass = `prop-label${field.required ? ' required' : ''}${draggable ? ' draggable' : ''}${bare ? ' visually-hidden' : ''}`;
   const dot = overridden.length > 0 && <i className="prop-state-dot" data-testid="state-dot" title={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} aria-label={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} />;
   const resettable = context.stateValue !== undefined && context.resetOverride && overridden.includes(context.stateValue);
+  const removable = Boolean(context.onRemove) && Boolean(context.removable?.has(field.key));
+  const caption = wide ? undefined : props.caption;
   return (
-    <div className={`prop${wide ? ' wide' : ''}${props.half ? ' half' : ''}${bare ? ' bare' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
-      {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{!bare && dot}{field.label}</label>}
+    <div className={`prop${wide ? ' wide' : ''}${props.half ? ' half' : ''}${bare ? ' bare' : ''}${removable ? ' removable' : ''}${caption ? ' captioned' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
+      {wide ? <span className={labelClass}>{dot}{field.label}</span>
+        : <label className={labelClass} htmlFor={id} onPointerDown={start} {...(caption ? { title: field.label } : {})}>{!bare && dot}{caption ?? field.label}</label>}
       <div className="prop-control">
         {bare && dot}
         {field.blocked ? <span className="small faint" data-testid="field-blocked">{field.blocked}</span>
           : field.needs ? <span className="small muted">先写{field.needs.join('、')}</span>
-          : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} />}
+          : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} compact={Boolean(caption)} />}
       </div>
+      {removable && (
+        <button type="button" className="value-action prop-drop" data-testid="property-remove" aria-label={`去掉${field.label}`} title={`去掉${field.label}：删掉这一项，要用时再从"+ 属性"加`} onClick={() => context.onRemove!(field)}>
+          <Icon d={CROSS} />
+        </button>
+      )}
       {field.noBinding && <p className="prop-nobind small faint" data-testid="no-binding">{field.noBinding}</p>}
       {field.exclusive && <p className="prop-nobind small faint" data-testid="field-exclusive">和{field.exclusive.join('、')}二选一，写了这一项会去掉它。</p>}
       {resettable && <button type="button" className="link small prop-reset" data-testid="state-reset" onClick={() => context.resetOverride!(field)}>重置为自身属性{field.path[0] === 'place' && field.path.length > 1 ? '（整个位置与尺寸）' : ''}</button>}
