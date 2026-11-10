@@ -32,4 +32,10 @@ export const FLOW_FREE = 'M4.5 4.5h6.5v6.5H4.5zM13 13h6.5v6.5H13z';
 export const FLOW_ROW = 'M5 12h14M13 6l6 6-6 6';
 export const FLOW_COLUMN = 'M12 5v14M6 13l6 6 6-6';
 export const FLOW_GRID = 'M4.5 4.5h15v15h-15zM4.5 12h15M12 4.5v15';
+/** 文字的书写方向与对齐（第三轮票据 04）：横排是两行横线，竖排是两列竖线；对齐是三行长短不一的线靠左、居中、靠右。 */
+export const TEXT_HORIZONTAL = 'M4 9h16M4 15h10';
+export const TEXT_VERTICAL = 'M9 4v16M15 4v10';
+export const ALIGN_START = 'M4 6h16M4 12h10M4 18h14';
+export const ALIGN_CENTER = 'M4 6h16M7 12h10M5 18h14';
+export const ALIGN_END = 'M4 6h16M10 12h10M6 18h14';
 export const TRASH = 'M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5';

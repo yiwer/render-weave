@@ -2372,6 +2372,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
       await inspector().locator('[data-testid="check-row"][data-name="姓名太长"]').waitFor();
       expect(await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').count(), '文字没有用照片').toBe(0);
+      // 适配收成一行（第三轮票据 04），点开才是编辑器。
+      await inspector().getByTestId('fit-summary').click();
       await inspector().getByTestId('fit-hint').filter({ hasText: '画板的 2 mm' }).waitFor();
       expect(await input('fit.compressMin').inputValue()).toBe('0.7');
       await input('fit.compressMin').fill('0.8');
@@ -2381,6 +2383,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 竖排的文字才有缩字组：写了组名，同组的元素列出来。
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
       await fieldOf('writingMode').getByRole('button', { name: '竖排' }).click();
+      await inspector().getByTestId('fit-summary').click();
       await fieldOf('fit.widthOverflow').getByRole('button', { name: '添加' }).click();
       await input('fit.widthOverflow.shrinkGroup').fill('站名组');
       await inspector().getByTestId('shrink-group').filter({ hasText: '缩字组 站名组：文字' }).waitFor();
@@ -2947,11 +2950,18 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await inspector.locator('details').count()).toBe(0);
       expect(await inspector.getByRole('region', { name: '内容' }).locator('textarea').count()).toBe(0);
 
-      // 字体按族列字重，值还是资源引用。
+      // 字体族与字重两个下拉（第三轮票据 04），值还是资源引用。
       const font = field('font').getByTestId('font-select');
+      expect(await field('font').getByTestId('font-family').inputValue()).toBe('hei');
       expect(await font.inputValue()).toBe('res:font-hei-medium');
-      expect(await font.locator('optgroup[label="hei"] option').allTextContents()).toEqual(['hei Medium', 'hei Heavy']);
+      expect(await font.locator('option').allTextContents()).toEqual(['Medium', 'Heavy']);
 
+      // 适配收成一行（第三轮票据 04）：规则与这一处的结果；点开才是编辑器。
+      const summary = inspector.getByTestId('fit-summary');
+      expect(await summary.getByTestId('fit-rule').textContent()).toBe('收紧字距 → 压缩字形 · 缩字组 stopNames');
+      await expect.poll(() => summary.getByTestId('fit-here').textContent()).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm$/);
+      expect(await field('fit.steps').count(), '没点开时不列适配的字段').toBe(0);
+      await summary.click();
       // 竖排的适配：只有三种步骤，这一处的结果在最后一行；用不上的写明要什么。
       const steps = field('fit.steps').locator('select');
       expect((await steps.locator('option').allTextContents()).filter((label) => !label.startsWith('缺省'))).toEqual(['不适配', '收紧字距', '收紧字距 → 压缩字形']);
@@ -2965,8 +2975,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await stopName())['fit']).toMatchObject({ steps: ['tightenSpacing'] });
       await inspector.getByTestId('fit-off').filter({ hasText: '步骤里有压缩字形才生效' }).waitFor();
       expect(await field('fit.compressMin').count()).toBe(0);
-      // 失效写明：竖排不能倾斜。
-      await field('slant').getByTestId('field-blocked').filter({ hasText: '竖排文字不能倾斜' }).waitFor();
+      expect(await summary.getByTestId('fit-rule').textContent(), '摘要跟着改').toBe('收紧字距 · 缩字组 stopNames');
+      // 竖排不能倾斜：这一项不列出来（第三轮票据 04）。
+      expect(await field('slant').count()).toBe(0);
 
       // 内容：打 / 选字段，只列能显示成文字的，光标跟着走。
       const editor = inspector.getByTestId('content-editor');
@@ -3877,13 +3888,15 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 站名：从字段加进名称区，竖排、分散对齐，字号绑站名字号，收紧字距再压缩字形，缩字组 stopNames。
       await write(() => side.locator('[data-testid="add-field"][data-name="name"]').click());
       await selected(`${NAME}/名称区/站名`);
-      const font = field('font').getByTestId('font-select');
+      const font = field('font').getByTestId('font-select'), family = field('font').getByTestId('font-family');
+      if (await family.inputValue() !== 'hei') await write(() => family.selectOption('hei'));
       if (await font.inputValue() !== 'res:font-hei-medium') await write(() => font.selectOption('res:font-hei-medium'));
       await bind('fontSize', 'stopNameSize');
       await write(() => text('color').fill('#333333'));
       await write(() => field('writingMode').getByRole('button', { name: '竖排' }).click());
       await write(() => field('verticalAlign').getByRole('button', { name: '分散' }).click());
       await write(() => field('horizontalAlign').getByRole('button', { name: '居中' }).click());
+      await inspector.getByTestId('fit-summary').click();
       await write(() => field('fit.steps').locator('select').first().selectOption({ label: '收紧字距 → 压缩字形' }));
       await write(() => field('fit.widthOverflow').getByRole('button', { name: '添加' }).click());
       await write(() => text('fit.widthOverflow.shrinkGroup').fill('stopNames'));
@@ -4222,6 +4235,183 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
       await leaveDesign(target, ALL);
     }, 180_000);
+
+    it('模板设计（第三轮 04）：文字的字体族与字重两个下拉，字号与字距一行，书写方向与对齐三组图标，竖排多"分散"、不列倾斜；适配收成一行，收起展开不写回；状态覆盖的圆点与重置照旧；撤销回到原样', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; states?: { cases: Record<string, Record<string, unknown>> }; children?: Element[]; [key: string]: unknown };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ALL);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const labels = (key: string) => attributes(field(key).getByRole('button'), 'aria-label');
+      const pressed = (key: string) => attributes(field(key).locator('button[aria-pressed="true"]'), 'aria-label');
+      const choose = (key: string, name: string) => field(key).getByRole('button', { name, exact: true });
+      const note = (name: string) => inspector.getByRole('region', { name }).getByTestId('section-note');
+      const text = async () => find((await contentOf(ALL)).artboard, '文字')!;
+      const summary = inspector.getByTestId('fit-summary'), rule = summary.getByTestId('fit-rule');
+
+      // 字体：字体族与字重两个下拉一行，标签收起；换字重写的是这一族里另一个字体资源的引用。
+      await pick(`${ALL}/文字`);
+      const family = field('font').getByTestId('font-family'), weight = field('font').getByTestId('font-select');
+      expect(await family.inputValue()).toBe('hei');
+      expect(await family.locator('option').allTextContents()).toContain('hei');
+      expect(await weight.inputValue()).toBe('res:font-hei-medium');
+      expect(await weight.locator('option').allTextContents()).toEqual(['Medium', 'Heavy']);
+      const selects = [(await family.boundingBox())!, (await weight.boundingBox())!];
+      expect(Math.abs(selects[0]!.y - selects[1]!.y), '两个下拉在一行').toBeLessThan(2);
+      await write(() => weight.selectOption({ label: 'Heavy' }));
+      expect((await text())['font']).toBe('res:font-hei-heavy');
+      expect(await family.inputValue()).toBe('hei');
+
+      // 字号与字距一行：字号绑定着，值格与来源链照旧，来源链排在这一行下面；字距打数写回。
+      expect(await attributes(inspector.locator('[data-testid="prop-pair"] > [data-testid="property-field"]'), 'data-key')).toEqual(['fontSize', 'letterSpacing']);
+      // 前面的用例改过这个参数的显示名称，也断开过字号的绑定：没绑着就先绑回去，值格只认绑着，不认名称。
+      if (typeof find(before.artboard, '文字')!['fontSize'] !== 'object') {
+        await field('fontSize').getByTestId('bind-button').click();
+        await write(() => field('fontSize').locator('[data-testid="binding-option"][data-name="nameSize"]').click());
+      }
+      await field('fontSize').getByTestId('bound-chip').waitFor();
+      const cells =[(await field('fontSize').boundingBox())!, (await field('letterSpacing').boundingBox())!];
+      expect(Math.abs(cells[0]!.y - cells[1]!.y), '字号与字距在一行').toBeLessThan(2);
+      expect(cells[1]!.x).toBeGreaterThan(cells[0]!.x + cells[0]!.width - 1);
+      const origin = (await field('fontSize').getByTestId('value-origin').boundingBox())!;
+      expect(origin.width, '来源链占满这一行').toBeGreaterThan(cells[0]!.width + cells[1]!.width);
+      expect(await field('color').getByTestId('bound-chip').count()).toBe(1);
+      await write(() => field('letterSpacing').locator('input[type="text"]').fill('0.5'));
+      expect((await text())['letterSpacing']).toBe(0.5);
+
+      // 三组图标一行：书写方向没写，缺省的横排描边、不按下；水平对齐写着开头；横排的垂直对齐没有分散，倾斜在。
+      const aligns = inspector.getByTestId('text-aligns');
+      expect(await attributes(aligns.getByRole('group'), 'aria-label')).toEqual(['书写方向', '水平对齐', '垂直对齐']);
+      const groups = await aligns.getByRole('group').evaluateAll((all) => all.map((node) => (node as unknown as { getBoundingClientRect(): { top: number } }).getBoundingClientRect().top));
+      expect(Math.max(...groups) - Math.min(...groups), '三组在一行').toBeLessThan(2);
+      expect(await labels('writingMode')).toEqual(['横排', '竖排']);
+      expect(await labels('horizontalAlign')).toEqual(['开头', '居中', '末尾', '分散', '均分']);
+      expect(await labels('verticalAlign')).toEqual(['上', '居中', '下']);
+      expect(await pressed('writingMode')).toEqual([]);
+      expect(await attributes(field('writingMode').locator('button.implied'), 'aria-label')).toEqual(['横排']);
+      expect(await pressed('horizontalAlign')).toEqual(['开头']);
+      expect(await aligns.locator('svg').count(), '书写方向与左中右是图标').toBe(5);
+      expect(await field('slant').count()).toBe(1);
+      expect(await note('适配').textContent()).toBe('横排');
+
+      // 横排写上分散与倾斜；换成竖排：只在横排才有的两项跟着去掉，垂直对齐多出分散，倾斜不列，文档没有严重问题。
+      await write(() => choose('horizontalAlign', '分散').click());
+      expect((await text())['horizontalAlign']).toBe('distribute');
+      expect(await pressed('horizontalAlign')).toEqual(['分散']);
+      await write(() => field('slant').locator('input[type="text"]').fill('8'));
+      expect((await text())['slant']).toBe(8);
+      await write(() => choose('writingMode', '竖排').click());
+      const vertical = await text();
+      expect(vertical['writingMode']).toBe('vertical');
+      expect(vertical).not.toHaveProperty('horizontalAlign');
+      expect(vertical).not.toHaveProperty('slant');
+      expect(await pressed('writingMode')).toEqual(['竖排']);
+      expect(await labels('horizontalAlign')).toEqual(['开头', '居中', '末尾']);
+      expect(await labels('verticalAlign')).toEqual(['上', '居中', '下', '分散']);
+      expect(await field('slant').count()).toBe(0);
+      expect(await note('适配').textContent()).toBe('竖排');
+      await write(() => choose('verticalAlign', '分散').click());
+      expect((await text())['verticalAlign']).toBe('distribute');
+      expect(await pressed('verticalAlign')).toEqual(['分散']);
+      expect(await severe(ALL)).toEqual([]);
+
+      // 适配收成一行：规则与这一处的结果；没点开时不列适配的字段。收起展开不写回。
+      expect(await summary.getAttribute('aria-expanded')).toBe('false');
+      expect(await rule.textContent()).toBe('收紧字距 → 压缩字形');
+      await expect.poll(() => summary.getByTestId('fit-here').textContent(), { timeout: PREVIEW_WINDOW_MS }).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm(，仍放不下)?$/);
+      expect(await field('fit.steps').count()).toBe(0);
+      const held = await contentOf(ALL), puts: string[] = [];
+      const listen = (request: { method(): string; url(): string }) => { if (request.method() === 'PUT') puts.push(request.url()); };
+      target.on('request', listen);
+      await summary.click();
+      expect(await summary.getAttribute('aria-expanded')).toBe('true');
+      await inspector.getByTestId('fit-mode').filter({ hasText: '竖排' }).waitFor();
+      expect(await field('fit.steps').count()).toBe(1);
+      await summary.click();
+      expect(await summary.getAttribute('aria-expanded')).toBe('false');
+      expect(await field('fit.steps').count()).toBe(0);
+      await target.waitForTimeout(1200);
+      target.off('request', listen);
+      expect(puts, '收起展开不写回').toEqual([]);
+      expect(await contentOf(ALL)).toEqual(held);
+
+      // 点开改：摘要跟着变；加了缩字组带上组名。
+      await summary.click();
+      await write(() => field('fit.steps').locator('select').first().selectOption({ label: '收紧字距' }));
+      expect(await rule.textContent()).toBe('收紧字距');
+      await write(() => field('fit.widthOverflow').getByRole('button', { name: '添加' }).click());
+      await write(() => field('fit.widthOverflow.shrinkGroup').locator('input[type="text"]').fill('牌面'));
+      await expect.poll(() => rule.textContent()).toBe('收紧字距 · 缩字组 牌面');
+      expect((await text())['fit']).toMatchObject({ steps: ['tightenSpacing'], widthOverflow: { shrinkGroup: '牌面' } });
+      expect(await severe(ALL)).toEqual([]);
+      // 换回横排：垂直对齐的分散与缩字组跟着去掉，倾斜又列出来。
+      await write(() => choose('writingMode', '横排').click());
+      const back = await text();
+      expect(back['writingMode']).toBe('horizontal');
+      expect(back).not.toHaveProperty('verticalAlign');
+      expect(back['fit']).toMatchObject({ steps: ['tightenSpacing'] });
+      expect(back['fit']).not.toHaveProperty('widthOverflow');
+      expect(await rule.textContent()).toBe('收紧字距');
+      expect(await note('适配').textContent()).toBe('横排');
+      expect(await field('slant').count()).toBe(1);
+      expect(await severe(ALL)).toEqual([]);
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 30 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ALL)).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+
+      // 状态覆盖照旧：站名的颜色被覆盖，标题写几项；选"本站"点水平对齐，写进这个取值的覆盖，图标组上有圆点，能重置。
+      const stopBefore = await contentOf(STOP);
+      const stopName = async () => find((await contentOf(STOP)).artboard, '站名')!;
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await pick(`${STOP}/名称区/站名`);
+      expect(await note('文字').textContent()).toBe('1 项被状态覆盖');
+      expect(await note('文字').getAttribute('title')).toContain('颜色');
+      expect(await field('horizontalAlign').getByTestId('state-dot').count()).toBe(0);
+      expect(await pressed('verticalAlign')).toEqual(['分散']);
+      expect(await rule.textContent()).toBe('收紧字距 → 压缩字形 · 缩字组 stopNames');
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      const reset = inspector.locator('[data-testid="state-reset"][data-key="horizontalAlign"]');
+      expect(await reset.count()).toBe(0);
+      await write(() => choose('horizontalAlign', '末尾').click());
+      const overridden = await stopName();
+      expect(overridden.states!.cases['本站']).toMatchObject({ horizontalAlign: 'end' });
+      expect(overridden['horizontalAlign']).toBe(find(stopBefore.artboard, '站名')!['horizontalAlign']);
+      expect(await pressed('horizontalAlign')).toEqual(['末尾']);
+      expect(await field('horizontalAlign').getByTestId('state-dot').getAttribute('title')).toContain('本站');
+      expect(await note('文字').textContent()).toBe('2 项被状态覆盖');
+      expect(await severe(STOP)).toEqual([]);
+      await write(() => reset.click());
+      expect((await stopName()).states!.cases['本站']).not.toHaveProperty('horizontalAlign');
+      expect(await field('horizontalAlign').getByTestId('state-dot').count()).toBe(0);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
 
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {

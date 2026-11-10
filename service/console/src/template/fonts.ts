@@ -23,3 +23,11 @@ export function fontFamilies(ids: readonly string[]): readonly FontFamily[] {
   }
   return [...families].map(([family, fonts]) => ({ family, fonts: [...fonts].sort((a, b) => weightRank(a.weight) - weightRank(b.weight)) })).sort((a, b) => a.family.localeCompare(b.family));
 }
+
+/** 这个引用在哪一族；资源库里没有的引用不属于任何一族。 */
+export const familyOf = (families: readonly FontFamily[], ref: string): FontFamily | undefined => families.find((family) => family.fonts.some((font) => font.ref === ref));
+
+/** 换字体族（第三轮票据 04）：字重留着；这一族没有这个字重时取 Regular，再没有取最细的那个。写回的仍是资源引用。 */
+export function fontInFamily(family: FontFamily, weight: string | undefined): string {
+  return (family.fonts.find((font) => font.weight === weight) ?? family.fonts.find((font) => font.weight === 'Regular') ?? family.fonts[0]!).ref;
+}

@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { boundName, currentLiteral, unboundValue, type OriginLink, type OriginText, type ScopeVariable } from '../template/binding.js';
 import { edgesSummary, inSpokenOrder, partsNoun, partValues, writePart } from '../template/edges.js';
-import type { FontFamily } from '../template/fonts.js';
+import { familyOf, fontInFamily, type FontFamily } from '../template/fonts.js';
 import type { Bindable, Editor, FieldPath, PropertyField } from '../template/properties.js';
 import { sizeKindOf, sizeModel } from '../template/size.js';
 import { BindingPopover } from './binding-popover.js';
@@ -100,22 +100,33 @@ function NumberInput(props: { readonly id: string; readonly field: PropertyField
   );
 }
 
-/** 字体：按族分组列字重，选的仍是资源引用。资源库里没有的引用也列出来，不悄悄换掉。 */
+/**
+ * 字体：字体族与字重两个下拉（第三轮票据 04），写回的仍是一个资源引用（M115）。换字体族时字重留着，这一族没有就取 Regular。
+ * 资源库里没有的引用也列出来，不悄悄换掉；这时字重没得选。
+ */
 function FontSelect(props: { readonly id: string; readonly field: PropertyField; readonly families: readonly FontFamily[]; readonly context: FieldContext }) {
   const { field, families, context } = props;
   const value = typeof field.value === 'string' ? field.value : '';
-  const known = families.some((family) => family.fonts.some((font) => font.ref === value));
+  const current = familyOf(families, value), weight = current?.fonts.find((font) => font.ref === value)?.weight;
+  const write = (ref: string | undefined) => context.onWrite(field.path, ref, { now: true });
+  const pickFamily = (name: string) => {
+    if (name === '') return write(undefined);
+    const family = families.find((item) => item.family === name);
+    if (family) write(fontInFamily(family, weight));
+  };
   return (
-    <select id={props.id} value={value} data-testid="font-select" onChange={(event) => context.onWrite(field.path, event.target.value === '' ? undefined : event.target.value, { now: true })}>
-      {!field.required && <option value="">缺省</option>}
-      {field.required && value === '' && <option value="">选择字体</option>}
-      {value !== '' && !known && <option value={value}>{value}（资源库里没有）</option>}
-      {families.map((family) => (
-        <optgroup key={family.family} label={family.family}>
-          {family.fonts.map((font) => <option key={font.ref} value={font.ref}>{family.family} {font.weight}</option>)}
-        </optgroup>
-      ))}
-    </select>
+    <span className="font-select">
+      <select id={props.id} value={current ? current.family : value} data-testid="font-family" aria-label="字体族" title="字体族" onChange={(event) => pickFamily(event.target.value)}>
+        {!field.required && <option value="">缺省</option>}
+        {field.required && value === '' && <option value="">选择字体</option>}
+        {value !== '' && !current && <option value={value}>{value}（资源库里没有）</option>}
+        {families.map((family) => <option key={family.family} value={family.family}>{family.family}</option>)}
+      </select>
+      <select value={current ? value : ''} data-testid="font-select" aria-label="字重" title="字重：换的是这一族里的另一个字体资源" disabled={!current} onChange={(event) => write(event.target.value)}>
+        {!current && <option value="">字重</option>}
+        {current?.fonts.map((font) => <option key={font.ref} value={font.ref}>{font.weight}</option>)}
+      </select>
+    </span>
   );
 }
 
@@ -554,19 +565,24 @@ function useLabelDrag(field: PropertyField, context: FieldContext) {
   return { live, draggable: Boolean(editor), start };
 }
 
-/** 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。half：两项并排一行时的半格，名称在上面（第三轮票据 03）。 */
-export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext; readonly half?: boolean }) {
+/**
+ * 一项属性：名称与它的编辑器。放不进一行的（对象、列表）占满整行。half：两项并排一行时的半格，名称在上面（第三轮票据 03）。
+ * bare：名称不占地方（只给读屏），编辑器占满一行，状态覆盖的圆点挪到编辑器前面（第三轮票据 04 的字体一行）。
+ */
+export function FieldRow(props: { readonly field: PropertyField; readonly context: FieldContext; readonly half?: boolean; readonly bare?: boolean }) {
   const { field, context } = props, id = useId();
   const wide = field.editor.kind === 'group' || field.editor.kind === 'list' || field.editor.kind === 'map';
   const { live, draggable, start } = useLabelDrag(field, context);
   const overridden = context.binding?.overriddenBy(field) ?? [];
-  const labelClass = `prop-label${field.required ? ' required' : ''}${draggable ? ' draggable' : ''}`;
+  const bare = Boolean(props.bare) && !wide;
+  const labelClass = `prop-label${field.required ? ' required' : ''}${draggable ? ' draggable' : ''}${bare ? ' visually-hidden' : ''}`;
   const dot = overridden.length > 0 && <i className="prop-state-dot" data-testid="state-dot" title={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} aria-label={`状态样式在 ${overridden.join('、')} 时覆盖这一项`} />;
   const resettable = context.stateValue !== undefined && context.resetOverride && overridden.includes(context.stateValue);
   return (
-    <div className={`prop${wide ? ' wide' : ''}${props.half ? ' half' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
-      {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{dot}{field.label}</label>}
+    <div className={`prop${wide ? ' wide' : ''}${props.half ? ' half' : ''}${bare ? ' bare' : ''}`} data-testid="property-field" data-key={field.key} title={field.noBinding ?? field.description}>
+      {wide ? <span className={labelClass}>{dot}{field.label}</span> : <label className={labelClass} htmlFor={id} onPointerDown={start}>{!bare && dot}{field.label}</label>}
       <div className="prop-control">
+        {bare && dot}
         {field.blocked ? <span className="small faint" data-testid="field-blocked">{field.blocked}</span>
           : field.needs ? <span className="small muted">先写{field.needs.join('、')}</span>
           : <EditorView id={id} field={field} editor={field.editor} context={context} live={live} />}

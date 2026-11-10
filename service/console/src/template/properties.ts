@@ -308,8 +308,11 @@ function labelOf(path: FieldPath, context: Context): string {
   return (path.length === 1 ? ELEMENT_LABELS[context.type]?.[last] : undefined) ?? LABELS[last] ?? last;
 }
 
+/** 适配顺序的说法：一步步用箭头连起来，一步也没有是不适配。 */
+export const stepsLabel = (steps: readonly unknown[]): string => (steps.length ? steps.map((step) => STEP_LABELS[String(step)] ?? String(step)).join(' → ') : '不适配');
+
 function enumLabel(path: FieldPath, value: unknown): string {
-  if (Array.isArray(value)) return value.length ? value.map((step) => STEP_LABELS[String(step)] ?? String(step)).join(' → ') : '不适配';
+  if (Array.isArray(value)) return stepsLabel(value);
   const text = String(value);
   return ENUM_LABELS[`${lastName(path)}:${text}`] ?? ENUM_LABELS[text] ?? text;
 }

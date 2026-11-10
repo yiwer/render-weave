@@ -18,7 +18,8 @@ import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { ElementInspection, LayoutNode, PreviewReply } from '../types.js';
 import { usePopoverDismiss } from '../components/binding-popover.js';
 import { ContentEditor } from './content-editor.js';
-import { FitEditor } from './fit-editor.js';
+import { FitSection } from './fit-editor.js';
+import { TextSection } from './text-form.js';
 import { ArgsForm, CallSourceForm, ItemLayoutForm, LoopSourceForm } from './loop-form.js';
 import { LayoutSection } from './layout-form.js';
 import { setElement } from '../template/calls.js';
@@ -220,8 +221,18 @@ function PropertiesTab(props: ElementProps & {
     if (name === '排布' && fields.some((field) => field.key === 'layout' && !field.blocked)) return <LayoutSection panel={panel} fields={fields} context={context} childCount={Array.isArray(element?.['children']) ? element['children'].length : 0} />;
     const content = isText && name === '内容' ? fields.find((field) => field.key === 'content') : undefined;
     if (content) return <ContentEditor field={content} panel={panel} context={context} vertical={vertical} />;
-    if (isText && name === '适配' && element) return <FitEditor panel={panel} element={element} context={context} boardMinimum={boardMinimumOf(doc.document)} members={members} vertical={vertical} instance={instanceNode(reply, selected)} />;
+    // 文字（第三轮票据 04）：常用的几项挤成一块；适配平时是一行摘要，点开才是编辑器。
+    if (isText && name === '文字') return <TextSection fields={fields} context={context} />;
+    if (isText && name === '适配' && element) return <FitSection panel={panel} element={element} context={context} boardMinimum={boardMinimumOf(doc.document)} members={members} vertical={vertical} instance={instanceNode(reply, selected)} />;
     return <FieldRows fields={fields} context={context} />;
+  };
+  /** 分组标题右边的一句（原型 01）：文字写有几项被状态样式覆盖，适配写横排还是竖排。 */
+  const note = (name: string, fields: readonly PropertyField[]): { readonly text: string; readonly title?: string } | undefined => {
+    if (!isText) return undefined;
+    if (name === '适配') return { text: vertical ? '竖排' : '横排' };
+    if (name !== '文字') return undefined;
+    const covered = fields.filter((field) => (context.binding?.overriddenBy(field) ?? []).length > 0);
+    return covered.length ? { text: `${covered.length} 项被状态覆盖`, title: `${covered.map((field) => field.label).join('、')}在状态样式里被覆盖` } : undefined;
   };
   return (
     <div data-testid="properties" data-path={path} data-type={panel.type}>
@@ -254,6 +265,7 @@ function PropertiesTab(props: ElementProps & {
       {panel.groups.filter((item) => item.name !== '状态样式').map((item) => (
         <section key={item.name} className="prop-section" aria-label={item.name}>
           <h3>{item.name}</h3>
+          {((mark) => mark && <span className="prop-section-note small" data-testid="section-note" title={mark.title}>{mark.title && <i className="prop-state-dot" />}{mark.text}</span>)(note(item.name, item.fields))}
           {body(item.name, item.fields.map(lock))}
           {item.name === '显示' && <p className="hint" data-testid="visible-hint">隐藏的元素不占位：堆叠与网格里像没写它一样排，后面的补上来。</p>}
           {item.name === '缩字下限' && <p className="hint">这个模板文字缩字的最低字号，不写时 5 mm。</p>}

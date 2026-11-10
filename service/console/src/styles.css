@@ -654,6 +654,8 @@ fieldset.field.plain > legend { padding: 0; margin-bottom: 6px; }
 .prop-section:first-of-type { border-top: 1px solid var(--line); }
 .prop-section > h3 { font-size: 12px; font-weight: 600; color: var(--muted); }
 .prop-section > p { margin: 0; }
+.prop-section { position: relative; }
+.prop-section-note { position: absolute; top: 12px; right: 0; color: var(--faint); line-height: 18px; }
 .prop { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 10px; align-items: center; min-width: 0; }
 .prop.wide { grid-template-columns: minmax(0, 1fr); }
 .prop-label { font-size: 13px; color: var(--muted); }
@@ -738,7 +740,7 @@ button.align-cell { display: grid; place-items: center; width: 16px; min-height:
 .prop-pair { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; min-width: 0; }
 .prop-pair > .prop { position: static; flex: 1 1 calc(50% - 5px); grid-template-columns: minmax(0, 1fr); }
 .prop-pair > .prop:has(.edges-parts), .prop-pair > .prop:has(.value-origin) { flex-basis: 100%; }
-.prop-pair > .prop > .prop-label { align-self: auto; margin-top: 0; font-size: 12px; }
+.prop-pair.prop-pair > .prop > .prop-label { align-self: auto; margin-top: 0; font-size: 12px; }
 .prop-pair > .prop > .prop-control > .value-cell, .prop-pair > .prop > .prop-control > .edges-cell > .value-cell { position: static; }
 .prop-pair > .prop > .prop-nobind { left: 0; }
 .prop-pair > .prop > .prop-reset { grid-column: 1; }
@@ -762,6 +764,32 @@ button.align-cell { display: grid; place-items: center; width: 16px; min-height:
 .value-popover-field input, .value-popover-field select { min-height: 30px; font-size: 13px; }
 .value-popover-group { display: flex; flex-direction: column; gap: 4px; }
 .value-popover .prop { grid-template-columns: 72px minmax(0, 1fr); }
+/* 文字一块（第三轮票据 04）：字体族与字重一行，三组图标一行；适配收成一行摘要。 */
+.prop.bare { grid-template-columns: minmax(0, 1fr); }
+.prop.bare > .prop-control { flex-wrap: nowrap; }
+.prop.bare > .prop-control > .prop-state-dot { flex: none; margin-right: 2px; }
+.prop.bare > .prop-nobind { left: 0; }
+.prop.bare > .prop-reset { grid-column: 1; }
+.font-select { display: flex; gap: 6px; flex: 1 1 100%; min-width: 0; }
+.prop .font-select > select { flex: 3 1 0; min-width: 0; width: auto; }
+.prop .font-select > select + select { flex: 2 1 0; }
+/* 字号与字距总在一行：来源链排在这一行下面占满整行；两项都有来源链时才各占一行。 */
+.text-pair > .prop:has(.value-origin) { flex-basis: calc(50% - 5px); }
+.text-pair > .prop:not(:only-child) .value-origin { width: calc(200% + 10px); }
+.text-pair > .prop:not(:only-child):last-child .value-origin { margin-left: calc(-100% - 10px); }
+.text-pair:has(> .prop:first-child .value-origin):has(> .prop:last-child .value-origin) > .prop { flex-basis: 100%; }
+.text-pair:has(> .prop:first-child .value-origin):has(> .prop:last-child .value-origin) > .prop .value-origin { width: auto; margin-left: 0; }
+.text-aligns { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.text-choice { position: relative; display: flex; flex: none; }
+.text-choice > .prop-state-dot { position: absolute; top: -2px; left: -2px; z-index: 1; margin: 0; }
+.text-buttons button { width: 26px; font-size: 12.5px; }
+.text-buttons button.implied { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.fit-summary { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 0; padding: 8px; border: 0; border-radius: var(--r); background: var(--sunken); color: var(--ink); text-align: left; font-weight: 400; }
+.fit-summary:hover { box-shadow: inset 0 0 0 1px var(--line); }
+.fit-summary-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-width: 0; font-size: 13px; }
+.fit-summary .fit-here { color: var(--faint); font-size: 12px; }
+.fit-summary.over .fit-here { color: var(--bad); font-weight: 600; }
+.fit-summary > svg.icon { flex: none; width: 14px; height: 14px; color: var(--faint); }
 .fit-result { margin: 0; padding: 6px 8px; border-radius: var(--r); background: var(--sunken); color: var(--ink); }
 .fit-result.over { color: var(--bad); font-weight: 600; }
 .inline-anchor { position: absolute; z-index: 30; width: 340px; max-width: calc(100% - 16px); }
