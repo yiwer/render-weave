@@ -1,7 +1,7 @@
 /**
  * 弹窗（M362）：用浏览器自带的 <dialog>，焦点留在弹窗里、背后不能点、关掉后焦点回到打开它的按钮，都由浏览器负责。
  * 按 Esc、点背后的遮罩都走 onClose；打开时焦点落在第一个能聚焦的控件上。
- * 挂在 document.body 下（portal）：弹窗常从别的表单里打开（"添加"页选模板时当场新建，票据 18），
+ * 挂在 document.body 下（portal）：弹窗常从别的表单里打开（"数据"页选模板时当场新建，票据 18），
  * 表单套表单时里面的提交事件到外层表单就不再冒泡，React 接不到，浏览器会按原生表单提交把整页重载。
  */
 import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';

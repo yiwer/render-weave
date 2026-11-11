@@ -2,8 +2,10 @@
  * 左面板的结构页（模板设计页票据 05，方案第 5 节）：一棵树从根模板展开到循环模板与子模板，竖线标出作用域边界。
  * 改结构（票据 12）：拖动排序、就地改名；复制、删除、包进容器等在右键菜单与快捷键里，写回都是 template/structure.ts。
  * 拖动只在同一个模板里：别的模板的元素在别的文档里。元素最多几十个，不需要虚拟滚动。
+ * 从"数据"页拖来的字段（第三轮票据 07）：放在一行的前后或容器里是建元素，放在文字、图片这一行的中间是连上；布尔字段整行都是绑显示。
  */
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { fieldDropKind } from '../template/connect.js';
 import type { DropZone } from '../template/structure.js';
 import { canDropInto, currentAdd, isAddDrag } from './insert-bar.js';
 import { CHEVRON_RIGHT, EYE_OFF, Icon } from '../components/icon.js';
@@ -41,12 +43,14 @@ export function DesignStructure(props: {
   /** 正在改名的元素；onRename 回答问题时留在输入框里。 */
   readonly renaming?: TreeSource; readonly onRename: (template: string, path: string, name: string) => string | undefined; readonly onRenameDone: () => void;
   readonly onDrop: (template: string, path: string, over: string, zone: DropZone) => void;
-  /** 从"添加"页拖来的新元素放在这一行的前后或里面。 */
+  /** 从工具栏或"数据"页拖来的放在这一行的前后或里面：建新元素。 */
   readonly onAddDrop: (template: string, over: string, zone: DropZone) => void;
+  /** 从"数据"页拖来的字段放在这一行上：连到这个元素。at 是落点，结果写在那里。 */
+  readonly onConnectDrop: (template: string, path: string, at: { readonly x: number; readonly y: number }) => void;
 }) {
   const { root, documentOf, selection, reply } = props;
   const dragged = useRef<TreeSource | undefined>(undefined);
-  const [drop, setDrop] = useState<{ readonly key: string; readonly zone: DropZone }>();
+  const [drop, setDrop] = useState<{ readonly key: string; readonly zone: DropZone | 'connect' }>();
   const tree = buildTree(root, documentOf);
   // 一开始就展开到选中的那一行：切回结构页时不先画一棵收起的树再跳开。
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set([
@@ -56,6 +60,8 @@ export function DesignStructure(props: {
   ]));
   const toggle = (key: string) => setExpanded((now) => { const next = new Set(now); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const list = useRef<HTMLUListElement>(null);
+  // 从别处拖来的（字段、工具栏）取消时，行上的 dragend 收不到：拖完一律收起落点。
+  useEffect(() => { const clear = () => setDrop(undefined); window.addEventListener('dragend', clear); return () => window.removeEventListener('dragend', clear); }, []);
 
   // 选中时展开到那一行，再滚过去。
   useEffect(() => {
@@ -82,15 +88,19 @@ export function DesignStructure(props: {
     return { instances, flagged };
   }, [reply]);
 
-  /** 拖到这一行的哪里：上半、下半，能装子元素的中间一段是放进去。 */
-  const zoneOf = (event: DragEvent<HTMLElement>, node: TreeNode): DropZone | undefined => {
+  /** 拖到这一行的哪里：上半、下半，能装子元素的中间一段是放进去；拖的是字段时，文字与图片的中间一段是连上。 */
+  const zoneOf = (event: DragEvent<HTMLElement>, node: TreeNode): DropZone | 'connect' | undefined => {
     const from = dragged.current;
-    const adding = !from && isAddDrag(event) && canDropInto(currentAdd(), node.template);
+    const payload = !from && isAddDrag(event) ? currentAdd() : undefined;
+    const adding = canDropInto(payload, node.template);
     if (!adding && (!from || from.template !== node.template || node.path === from.path || node.path.startsWith(`${from.path}/`))) return undefined;
-    const holds = node.path === node.template || node.type === 'container';
-    if (node.path === node.template) return 'inside';
+    const board = node.path === node.template, holds = board || node.type === 'container';
+    const field = payload?.field, connects = field !== undefined && fieldDropKind(board ? undefined : node.type, board, field.type) === 'connect';
+    // 布尔字段不建元素：整行都是绑到它的显示（画板没有显示条件，放上去会说明原因）。
+    if (connects && field.type === 'boolean') return 'connect';
+    if (board) return 'inside';
     const box = event.currentTarget.getBoundingClientRect(), at = (event.clientY - box.top) / box.height;
-    if (holds && at > 0.3 && at < 0.7) return 'inside';
+    if ((holds || connects) && at > 0.3 && at < 0.7) return connects ? 'connect' : 'inside';
     return at < 0.5 ? 'before' : 'after';
   };
   const rowOf = (node: TreeNode): ReactNode => {
@@ -113,7 +123,8 @@ export function DesignStructure(props: {
           onDrop={(event) => {
             const zone = zoneOf(event, node), from = dragged.current;
             event.preventDefault(); setDrop(undefined); dragged.current = undefined;
-            if (zone && from) props.onDrop(from.template, from.path, node.path, zone);
+            if (zone === 'connect') props.onConnectDrop(node.template, node.path, { x: event.clientX, y: event.clientY });
+            else if (zone && from) props.onDrop(from.template, from.path, node.path, zone);
             else if (zone && isAddDrag(event)) props.onAddDrop(node.template, node.path, zone);
           }}
           onMouseEnter={() => props.onHover({ template: node.template, path: node.path })} onMouseLeave={() => props.onHover(undefined)}

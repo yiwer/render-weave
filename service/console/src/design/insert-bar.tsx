@@ -2,13 +2,15 @@
  * 底部工具栏的插入一组（第三轮票据 06，方案「底部工具栏管插入」，M396）：文字、图片、形状、容器、循环、调用。
  * - 点一下加到 insertionPoint 算出的位置（选中容器就放进去，选中别的就放在它后面），也能拖到图上或图层里；写回只有 template/create.ts 一处；
  * - 形状点开是一块小目录；循环与调用点开是小表单：选列表或数据，再选基准相符的模板，也能当场新建一个（票据 18）；
- * - 正在拖的新元素与"能不能放"也在这里：舞台、结构树与"添加"页（从字段创建，票据 07 搬走）共用。
+ * - 正在拖的东西与"能不能放"也在这里：舞台、图层与"数据"页共用。从"数据"页拖出来的是字段（第三轮票据 07）：
+ *   拖到空白处或容器里建元素，拖到已有元素上是连上，所以带着字段本身，建得出元素的再带上元素。
  */
-import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { api, ApiError } from '../api.js';
 import { Icon } from '../components/icon.js';
 import { NewTemplate } from '../components/new-template.js';
 import { useLoad } from '../hooks.js';
+import { baseFieldsOf, type BaseField } from '../template/binding.js';
 import { CATALOG, INSERT_BAR, SHAPE_KINDS, fieldInfo, matchingTemplates, newElement, type Bindings, type FieldInfo, type NewKind, type SchemaRef } from '../template/create.js';
 import { isObject, type JsonObject } from '../template/document.js';
 import type { DefinitionField } from '../types.js';
@@ -16,8 +18,11 @@ import { ELEMENT_ICONS, SHAPES_ICON } from './icons.js';
 
 // —— 拖一个新元素 ——
 
-/** 正在拖的新元素：拖动时读不到 dataTransfer 的内容，放在这里给结构树与舞台看。 */
-export interface AddPayload { readonly template: string; readonly element: JsonObject; readonly fromField: boolean }
+/**
+ * 正在拖的东西：拖动时读不到 dataTransfer 的内容，放在这里给图层与舞台看。
+ * 工具栏拖出来的只有 element；"数据"页拖出来的带 field，文字类与图片字段同时带着建好的 element，列表与单引用要先选模板所以没有。
+ */
+export interface AddPayload { readonly template: string; readonly fromField: boolean; readonly element?: JsonObject; readonly field?: FieldInfo }
 let pending: AddPayload | undefined;
 export const currentAdd = () => pending;
 export const ADD_TYPE = 'application/x-renderweave-add';
@@ -25,7 +30,7 @@ export const ADD_TYPE = 'application/x-renderweave-add';
 export const startAddDrag = (event: DragEvent<HTMLElement>, payload: AddPayload) => {
   pending = payload;
   event.dataTransfer.effectAllowed = 'copy';
-  event.dataTransfer.setData(ADD_TYPE, String(payload.element['type']));
+  event.dataTransfer.setData(ADD_TYPE, String(payload.element?.['type'] ?? 'field'));
 };
 export const endAddDrag = () => { pending = undefined; };
 
@@ -38,6 +43,8 @@ export const isAddDrag = (event: DragEvent<HTMLElement>) => event.dataTransfer.t
 export interface InsertSources {
   readonly base: SchemaRef | undefined;
   readonly fields: readonly FieldInfo[];
+  /** 同一份字段，带着一层引用展开（terminal.name 这样的）：作用域里能连的变量从它算。 */
+  readonly baseFields: readonly BaseField[];
   readonly loadingFields: boolean;
   readonly templates: readonly { readonly name: string; readonly base?: SchemaRef }[];
   /** 模板里还没用过字体时，文字用资源库里的第一种。 */
@@ -46,16 +53,18 @@ export interface InsertSources {
   readonly refresh: () => void;
 }
 
-/** 设计页读一次，工具栏与"添加"页共用。 */
+/** 设计页读一次，工具栏、"数据"页与"连接数据…"共用。 */
 export function useInsertSources(document: JsonObject | undefined): InsertSources {
   const base = document && isObject(document['base']) ? document['base'] as unknown as SchemaRef : undefined;
   const detail = useLoad(() => (base ? api.staticSchema(base.name, base.version).catch((error: unknown) => { if (error instanceof ApiError) return undefined; throw error; }) : Promise.resolve(undefined)), `${base?.name}@${base?.version}`);
   const templates = useLoad(() => api.templates(), 'design-add-templates');
   const resources = useLoad(() => api.resources(), 'design-add-resources');
   const font = resources.data?.resources.find((resource) => resource.kind === 'font');
+  const baseFields = useMemo(() => baseFieldsOf(detail.data), [detail.data]);
   return {
     base,
     fields: (detail.data?.definition.fields ?? []).map((field: DefinitionField) => fieldInfo(field as never)),
+    baseFields,
     loadingFields: detail.loading,
     templates: (templates.data?.templates ?? []).map((item) => ({ name: item.name, ...(item.base ? { base: item.base as SchemaRef } : {}) })),
     bindings: font ? { font: `res:${font.id}` } : {},

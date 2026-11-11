@@ -1,23 +1,33 @@
 /**
- * 变量面板（模板设计页票据 08，方案第 6 节）：左边列字段、参数、派生变量与检查项，带当前样例的取值；悬停时图上标出谁在用；
- * 选中一个变量时右边显示它。取值都来自元素求值（POST /v1/previews/inspection），页面不再实现一遍求值。
+ * 左面板的"数据"页（第三轮票据 07，方案「左面板」，M396）：字段、参数、派生变量、检查项四组，带当前样例的取值。
+ * - 字段能拖：拖到图上空白处或图层里建绑定好的元素，拖到已有元素上就是连上（template/connect.ts）；行尾的"+"是点一下就加，
+ *   列表与单引用字段先选基准相符的模板；
+ * - 悬停时图上标出谁在用，选中一个变量时右边显示它（票据 08 的变量面板，原样留着）；每组标题旁的"+"新建参数、派生变量、检查项。
+ * 取值都来自元素求值（POST /v1/previews/inspection），页面不再实现一遍求值。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { api, ApiError } from '../api.js';
+import { api } from '../api.js';
 import { FieldRow, OriginLine, type FieldContext } from '../components/property-fields.js';
 import { TYPE_GLYPHS, ValueText } from '../components/value-text.js';
-import { formOf, type JsonObject as FormObject } from '../form/schema.js';
-import { href, useLoad } from '../hooks.js';
-import { baseFieldsOf, describeOrigin, parameterNameProblem, scopeVariables, takenNames, type BaseField } from '../template/binding.js';
+import { href } from '../hooks.js';
+import { describeOrigin, parameterNameProblem, scopeVariables, takenNames, type BaseField } from '../template/binding.js';
+import type { DataSource } from '../template/connect.js';
+import { planFromField, type Drop, type FieldInfo } from '../template/create.js';
 import { addCheck, addDerived, cycleOf, definitionsUsing, newCheck, newDerived, OPS, removeCheck, removeDerived, setDerived, withOp, type DerivedOp } from '../template/derived.js';
 import { DerivedEditor } from './derived-editor.js';
 import { elementVariables, flatElements, isObject, variableClosure, type JsonObject } from '../template/document.js';
 import { listItemPanel, writeListItem } from '../template/properties.js';
 import type { DesignDoc, DesignSession } from '../template/session.js';
 import type { ElementInspection, InspectedValue, InspectedVariable, ParameterOrigin } from '../types.js';
+import { endAddDrag, refText, startAddDrag, TemplateChoice, type InsertSources } from './insert-bar.js';
 
 export type VariableKind = 'field' | 'parameter' | 'derived' | 'check';
 export interface VariableSelection { readonly template: string; readonly name: string; readonly kind: VariableKind }
+
+/** 字段建出来的元素放在哪：拖到图上或图层里时由落点定，点"+"时没有（照 insertionPoint）。label 是说给人听的那个容器。 */
+export interface FieldPlace { readonly container: string; readonly at: Drop; readonly label: string }
+/** 列表或单引用字段正在选模板：选好之前什么也不写。 */
+export interface Choosing { readonly template: string; readonly field: string; readonly place?: FieldPlace }
 
 const OPERATIONS: Readonly<Record<string, string>> = { branch: '条件分支', pickItem: '取项', splitPart: '拆取文本', length: '长度', add: '加', subtract: '减', multiply: '乘', divide: '除', mod: '取模' };
 
@@ -59,18 +69,29 @@ function VariableRow(props: { readonly row: Row; readonly selected: boolean; rea
   );
 }
 
-export function VariablesPanel(props: {
-  readonly doc: DesignDoc; readonly session: DesignSession; readonly inspection?: ElementInspection; readonly selected?: VariableSelection;
+/** 每组标题旁的"+"。 */
+function Plus(props: { readonly label: string; readonly open?: boolean; readonly onClick: () => void }) {
+  return <button type="button" className="variable-plus" aria-label={props.label} title={props.label} {...(props.open === undefined ? {} : { 'aria-expanded': props.open })} onClick={props.onClick}>+</button>;
+}
+
+export function DataPanel(props: {
+  readonly doc: DesignDoc; readonly session: DesignSession; readonly sources: InsertSources; readonly inspection?: ElementInspection; readonly selected?: VariableSelection;
+  /** 点"+"加到哪（insertionLabel 的说法），与选中的元素叫什么（布尔字段绑到它的显示）。 */
+  readonly targetLabel: string; readonly selectionLabel?: string;
+  readonly choosing?: Choosing; readonly onChoosing: (next: Choosing | undefined) => void;
+  readonly onAdd: (element: JsonObject, place?: FieldPlace) => void; readonly onConnectSelected: (field: DataSource) => void;
   readonly onSelect: (selection: VariableSelection) => void; readonly onHover: (selection: { readonly template: string; readonly name: string } | undefined) => void;
 }) {
-  const { doc, inspection, selected } = props, document = doc.document;
-  const [newName, setNewName] = useState('');
-  const base = isObject(document['base']) ? document['base'] as { name: string; version: string | number } : undefined;
-  const compiled = useLoad(() => (base ? api.staticSchema(base.name, base.version as number).catch((error: unknown) => { if (error instanceof ApiError) return undefined; throw error; }) : Promise.resolve(undefined)), `${base?.name}@${base?.version}`);
+  const { doc, inspection, selected, sources, choosing } = props, document = doc.document, base = sources.base;
+  const [newName, setNewName] = useState<string>();
+  const [template, setTemplate] = useState('');
   const values = useMemo(() => new Map<string, InspectedVariable>((inspection?.template === doc.name ? inspection.variables : []).map((item) => [item.name, item])), [inspection, doc.name]);
-  const scope = useMemo(() => scopeVariables(document, baseFieldsOf(compiled.data), inspection?.template === doc.name ? inspection : undefined), [document, compiled.data, inspection, doc.name]);
+  const scope = useMemo(() => scopeVariables(document, sources.baseFields, inspection?.template === doc.name ? inspection : undefined), [document, sources.baseFields, inspection, doc.name]);
   const [creating, setCreating] = useState<{ readonly list: 'derived' | 'checks'; readonly name: string; readonly op: DerivedOp } | undefined>();
   const [createProblem, setCreateProblem] = useState<string>();
+  // 换了一个字段或落点，上一次选的模板不算数。
+  const choosingKey = choosing ? `${choosing.field}\u0000${choosing.place?.container ?? ''}` : '';
+  useEffect(() => { setTemplate(''); if (choosingKey) sources.refresh(); }, [choosingKey]);
   /** 新建派生变量或检查项：名称一般用英文（M89），同作用域不能重名；显示名称先同名称，在右边改。 */
   const create = () => {
     if (!creating) return;
@@ -90,64 +111,128 @@ export function VariablesPanel(props: {
     setCreating(undefined);
     setCreateProblem(undefined);
   };
-  const creator = (list: 'derived' | 'checks') => (creating?.list === list
-    ? (
-      <form className="prop-actions variable-create" aria-label={list === 'derived' ? '新建派生变量' : '新建检查项'} onSubmit={(event) => { event.preventDefault(); create(); }}>
-        <input type="text" autoFocus aria-label={list === 'derived' ? '新派生变量的名称' : '新检查项的名称'} placeholder="名称，一般用英文" value={creating.name} aria-invalid={createProblem ? true : undefined}
-          onChange={(event) => { setCreating({ ...creating, name: event.target.value }); setCreateProblem(undefined); }} />
-        {list === 'derived' && (
-          <select aria-label="运算" value={creating.op} onChange={(event) => setCreating({ ...creating, op: event.target.value as DerivedOp })}>
-            {OPS.map((item) => <option key={item.op} value={item.op}>{item.label}</option>)}
-          </select>
-        )}
-        <button type="submit" className="small">新建</button>
-        <button type="button" className="small quiet" onClick={() => { setCreating(undefined); setCreateProblem(undefined); }}>取消</button>
-        {createProblem && <span className="prop-error" role="alert">{createProblem}</span>}
-      </form>
-    )
-    : <button type="button" className="small quiet variable-add" onClick={() => setCreating({ list, name: '', op: 'branch' })}>{list === 'derived' ? '新建派生变量' : '新建检查项'}</button>);
+  const toggleCreating = (list: 'derived' | 'checks') => { setCreating(creating?.list === list ? undefined : { list, name: '', op: 'branch' }); setCreateProblem(undefined); };
+  const creator = (list: 'derived' | 'checks') => creating?.list === list && (
+    <form className="prop-actions variable-create" aria-label={list === 'derived' ? '新建派生变量' : '新建检查项'} onSubmit={(event) => { event.preventDefault(); create(); }}>
+      <input type="text" autoFocus aria-label={list === 'derived' ? '新派生变量的名称' : '新检查项的名称'} placeholder="名称，一般用英文" value={creating.name} aria-invalid={createProblem ? true : undefined}
+        onChange={(event) => { setCreating({ ...creating, name: event.target.value }); setCreateProblem(undefined); }} />
+      {list === 'derived' && (
+        <select aria-label="运算" value={creating.op} onChange={(event) => setCreating({ ...creating, op: event.target.value as DerivedOp })}>
+          {OPS.map((item) => <option key={item.op} value={item.op}>{item.label}</option>)}
+        </select>
+      )}
+      <button type="submit" className="small">新建</button>
+      <button type="button" className="small quiet" onClick={() => { setCreating(undefined); setCreateProblem(undefined); }}>取消</button>
+      {createProblem && <span className="prop-error" role="alert">{createProblem}</span>}
+    </form>
+  );
   const parameters = namedList(document, 'parameters'), derived = namedList(document, 'derived'), checks = namedList(document, 'checks');
-  const fields = useMemo(() => {
-    if (compiled.data) return formOf(compiled.data.compiled as FormObject).fields.map((field) => ({ name: field.name, label: field.spec.title || field.name }));
-    return [...values.values()].filter((item) => item.kind === 'field').map((item) => ({ name: item.name, label: item.displayName }));
-  }, [compiled.data, values]);
+  // 内置的单值数据定义没有静态版本，字段名单只能从求值结果来。
+  const fields = useMemo((): readonly FieldInfo[] => {
+    if (sources.baseFields.length > 0) return sources.baseFields.map((field) => sources.fields.find((item) => item.name === field.name) ?? { name: field.name, label: field.label, type: field.type });
+    return [...values.values()].filter((item) => item.kind === 'field').map((item) => ({ name: item.name, label: item.displayName, type: item.type }));
+  }, [sources.baseFields, sources.fields, values]);
   const rowOf = (name: string, label: string, kind: VariableKind, declared?: string): Row => {
     const known = values.get(name), type = known?.type ?? declared;
     return { name, label, kind, ...(type ? { type } : {}), ...(known ? { value: known.value } : {}) };
   };
   const failed = (name: string) => inspection?.template === doc.name ? inspection.checks.find((check) => check.name === name)?.failed : undefined;
-  const section = (title: string, hint: string, rows: readonly Row[], empty?: string) => (rows.length > 0 || empty) && (
-    <section className="variable-group" aria-label={title}>
-      <h3>{title}<span className="small faint">{hint}</span></h3>
-      {rows.length === 0 && <p className="small muted">{empty}</p>}
-      {rows.map((row) => (
-        <VariableRow key={row.name} row={row} selected={selected?.template === doc.name && selected.name === row.name}
-          onSelect={() => props.onSelect({ template: doc.name, name: row.name, kind: row.kind })}
-          onHover={(hovering) => props.onHover(hovering && row.kind !== 'check' ? { template: doc.name, name: row.name } : undefined)} />
-      ))}
-    </section>
-  );
+  const isSelected = (name: string) => selected?.template === doc.name && selected.name === name;
+  const rowsOf = (rows: readonly Row[]) => rows.map((row) => (
+    <VariableRow key={row.name} row={row} selected={isSelected(row.name)}
+      onSelect={() => props.onSelect({ template: doc.name, name: row.name, kind: row.kind })}
+      onHover={(hovering) => props.onHover(hovering && row.kind !== 'check' ? { template: doc.name, name: row.name } : undefined)} />
+  ));
   const parameterRows = (visibility: string) => parameters.filter((item) => item['visibility'] === visibility).map((item) => rowOf(String(item['name']), String(item['displayName'] ?? item['name']), 'parameter', String(item['type'])));
-  const trimmed = newName.trim(), taken = values.has(trimmed) || parameters.some((item) => item['name'] === trimmed), valid = trimmed !== '' && !trimmed.includes('.') && !taken;
+  const publicRows = parameterRows('public'), internalRows = parameterRows('internal');
+  const derivedRows = derived.map((item) => rowOf(String(item['name']), String(item['displayName'] ?? item['name']), 'derived', String(item['type'])));
+  const checkRows = checks.map((item): Row => { const name = String(item['name']), result = failed(name); return { name, label: String(item['displayName'] ?? name), kind: 'check', type: 'boolean', ...(result === undefined ? {} : { failed: result }), level: String(item['level']) }; });
+  const trimmed = (newName ?? '').trim(), taken = values.has(trimmed) || parameters.some((item) => item['name'] === trimmed), valid = trimmed !== '' && !trimmed.includes('.') && !taken;
   const add = () => {
     props.session.edit(doc.name, { ...document, parameters: [...parameters, { name: trimmed, displayName: trimmed, visibility: 'public', type: 'text', default: '' }] }, `parameters:add:${trimmed}`);
     props.onSelect({ template: doc.name, name: trimmed, kind: 'parameter' });
-    setNewName('');
+    setNewName(undefined);
   };
+
+  /** 字段的一行：整行能拖，点名称选中它，行尾的"+"点一下就加（布尔是绑到选中元素的显示，列表与单引用先选模板）。 */
+  const fieldRow = (field: FieldInfo) => {
+    const plan = planFromField(field, document, sources.bindings);
+    const row = rowOf(field.name, field.label, 'field', field.type), open = choosing?.field === field.name;
+    const image = plan.kind === 'element' && plan.element['type'] === 'image';
+    const action = plan.kind === 'element' ? `把「${field.label}」加成${image ? '图片' : '文字'}`
+      : plan.kind === 'visible' ? `把「${field.label}」绑到选中元素的显示`
+      : plan.kind === 'template' ? `用「${field.label}」建${field.type === 'list' ? '循环容器' : '子模板调用'}` : plan.reason;
+    const hint = plan.kind === 'element' ? `${action}，加到${props.targetLabel}`
+      : plan.kind === 'visible' ? (props.selectionLabel ? `绑到「${props.selectionLabel}」的显示` : '先选中一个元素')
+      : plan.kind === 'template' ? `${action}：先选基准相符的模板` : plan.reason;
+    return (
+      <div key={field.name}>
+        <div className={`variable-row field-row${isSelected(field.name) ? ' selected' : ''}`} data-testid="variable-row" data-name={field.name} data-kind="field" draggable={plan.kind !== 'none'}
+          onDragStart={(event) => { if (plan.kind !== 'none') startAddDrag(event, { template: doc.name, fromField: true, field, ...(plan.kind === 'element' ? { element: plan.element } : {}) }); }} onDragEnd={endAddDrag}
+          onMouseEnter={() => props.onHover({ template: doc.name, name: field.name })} onMouseLeave={() => props.onHover(undefined)}>
+          <span className="variable-grip" aria-hidden="true" />
+          <button type="button" className="variable-button" aria-pressed={isSelected(field.name)} title={`${field.name}：拖到图上建元素，拖到元素上连上`} onClick={() => props.onSelect({ template: doc.name, name: field.name, kind: 'field' })}>
+            <span className="variable-glyph mono" aria-hidden="true">{TYPE_GLYPHS[row.type ?? ''] ?? '·'}</span>
+            <span className="variable-name">{field.label}<span className="variable-key mono">{field.name}</span></span>
+            <ValueText value={row.value} {...(row.type ? { type: row.type } : {})} />
+          </button>
+          <button type="button" className="variable-plus" data-testid="add-field" data-field={field.name} aria-label={action} title={hint}
+            disabled={plan.kind === 'none' || (plan.kind === 'visible' && !props.selectionLabel)} {...(plan.kind === 'template' ? { 'aria-expanded': open } : {})}
+            onClick={() => {
+              if (plan.kind === 'element') props.onAdd(plan.element);
+              else if (plan.kind === 'visible') props.onConnectSelected(field);
+              else if (plan.kind === 'template') props.onChoosing(open ? undefined : { template: doc.name, field: field.name });
+            }}>+</button>
+        </div>
+        {open && plan.kind === 'template' && (
+          <form className="add-form" aria-label={`从 ${field.label} 创建`} onSubmit={(event) => { event.preventDefault(); if (template) { props.onAdd(plan.element(template), choosing.place); props.onChoosing(undefined); } }}>
+            <TemplateChoice base={plan.base} templates={sources.templates} self={doc.name} value={template} why={field.type === 'list' ? `循环的每一项是「${field.label}」的一项，被调模板的基准就是它。` : `调用传「${field.label}」这份数据，被调模板的基准是它指向的数据定义。`} onChange={setTemplate} />
+            <p className="small faint">{choosing.place ? '加进刚才拖到的' : '加到'}<span data-testid="add-target">{choosing.place?.label ?? props.targetLabel}</span>。</p>
+            <span className="prop-actions">
+              <button type="submit" className="small" disabled={!template}>{field.type === 'list' ? '添加循环容器' : '添加子模板调用'}</button>
+              <button type="button" className="small quiet" onClick={() => props.onChoosing(undefined)}>取消</button>
+            </span>
+          </form>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div data-testid="parameters">
+    <div className="data-panel" data-testid="data-panel">
       <p className="small faint variable-scope">作用域 <strong>{doc.name}</strong>：每次模板调用各是一个作用域，不继承；要用外面的值，经调用传入。</p>
-      {section('字段', base ? `${base.name} v${String(base.version)}` : '', fields.map((field) => rowOf(field.name, field.label, 'field')))}
-      {section('对外参数', '调用方或渲染请求给值', parameterRows('public'), '没有。')}
-      {section('内部参数', '设计者设定', parameterRows('internal'), '没有。')}
-      <form className="prop-actions" aria-label="添加参数" onSubmit={(event) => { event.preventDefault(); if (valid) add(); }}>
-        <input type="text" aria-label="新参数的名称" placeholder="新参数的名称，一般用英文" value={newName} onChange={(event) => setNewName(event.target.value)} aria-invalid={taken ? true : undefined} />
-        <button type="submit" className="small quiet" disabled={!valid}>添加参数</button>
-      </form>
-      {section('派生变量', '单步运算，按名组合', derived.map((item) => rowOf(String(item['name']), String(item['displayName'] ?? item['name']), 'derived', String(item['type']))), '还没有派生变量。')}
-      {creator('derived')}
-      {section('检查项', '渲染前求值', checks.map((item) => { const name = String(item['name']), result = failed(name); return { name, label: String(item['displayName'] ?? name), kind: 'check' as const, type: 'boolean', ...(result === undefined ? {} : { failed: result }), level: String(item['level']) }; }), '这个模板没有检查项。')}
-      {creator('checks')}
+      <section className="variable-group" aria-label="字段">
+        <h3>字段<span className="small faint">{base ? refText(base) : ''}</span></h3>
+        {!base && <p className="small muted">这个模板没有写数据定义。</p>}
+        {base && fields.length === 0 && <p className="small muted">{sources.loadingFields ? '正在读取字段…' : '读不到字段：内置的单值数据定义只有 value。'}</p>}
+        {fields.length > 0 && <p className="small faint variable-hint">拖到图上建元素；拖到元素上就是连上。</p>}
+        {fields.map(fieldRow)}
+      </section>
+      <section className="variable-group" aria-label="参数">
+        <h3>参数<span className="small faint">调用方给值，或设计者设定</span><Plus label="新建参数" open={newName !== undefined} onClick={() => setNewName(newName === undefined ? '' : undefined)} /></h3>
+        {newName !== undefined && (
+          <form className="prop-actions variable-create" aria-label="添加参数" onSubmit={(event) => { event.preventDefault(); if (valid) add(); }}>
+            <input type="text" autoFocus aria-label="新参数的名称" placeholder="新参数的名称，一般用英文" value={newName} onChange={(event) => setNewName(event.target.value)} aria-invalid={taken ? true : undefined} />
+            <button type="submit" className="small" disabled={!valid}>添加参数</button>
+            <button type="button" className="small quiet" onClick={() => setNewName(undefined)}>取消</button>
+          </form>
+        )}
+        {parameters.length === 0 && <p className="small muted">还没有参数。</p>}
+        {publicRows.length > 0 && <div role="group" aria-label="对外参数"><span className="small faint variable-sub">对外</span>{rowsOf(publicRows)}</div>}
+        {internalRows.length > 0 && <div role="group" aria-label="内部参数"><span className="small faint variable-sub">内部</span>{rowsOf(internalRows)}</div>}
+      </section>
+      <section className="variable-group" aria-label="派生变量">
+        <h3>派生变量<span className="small faint">单步运算，按名组合</span><Plus label="新建派生变量" open={creating?.list === 'derived'} onClick={() => toggleCreating('derived')} /></h3>
+        {creator('derived')}
+        {derivedRows.length === 0 && <p className="small muted">还没有派生变量。</p>}
+        {rowsOf(derivedRows)}
+      </section>
+      <section className="variable-group" aria-label="检查项">
+        <h3>检查项<span className="small faint">渲染前求值</span><Plus label="新建检查项" open={creating?.list === 'checks'} onClick={() => toggleCreating('checks')} /></h3>
+        {creator('checks')}
+        {checkRows.length === 0 && <p className="small muted">这个模板没有检查项。</p>}
+        {rowsOf(checkRows)}
+      </section>
     </div>
   );
 }

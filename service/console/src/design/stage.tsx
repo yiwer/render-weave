@@ -22,6 +22,9 @@ export const MAX_ZOOM = 16;
 /** 选中的元素：path 是它在模板文档里的路径，instance 是图上的那一个实例（带调用链与循环序号）。 */
 export interface Selection { readonly template: string; readonly path: string; readonly instance?: string }
 
+/** 拖着的东西会落到谁身上：path 是图上的实例，label 是写在框上的那句话。 */
+export interface DropMark { readonly path: string; readonly kind: 'connect' | 'inside'; readonly label: string }
+
 /** 两边留给浮动面板的宽度，放范围条与操作条的上下留白。 */
 export interface StageInsets { readonly left: number; readonly right: number }
 const TOP = 52, BOTTOM = 56, MIN_FIT = 120;
@@ -53,8 +56,10 @@ export function DesignStage(props: {
   readonly onEditText?: (stack: readonly string[]) => void;
   /** 就地编辑器：浮在这个实例下方，跟着缩放与平移走。 */
   readonly inline?: { readonly instance: string; readonly editor: ReactNode };
-  /** 从"添加"页拖到图上：这个位置的元素（第一个最深）与落点（毫米）。 */
-  readonly onDropAdd?: (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }) => void;
+  /** 从工具栏或"数据"页拖到图上：这个位置的元素（第一个最深）、落点（毫米）与落点在窗口里的位置（结果写在那里）。 */
+  readonly onDropAdd?: (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }, client: { readonly x: number; readonly y: number }) => void;
+  /** 拖着的东西放在这里会落到谁身上：connect 是连到它上面，inside 是放进它里面。拖动时图上标出来。 */
+  readonly dropTargetOf?: (stack: readonly LayoutNode[]) => DropMark | undefined;
   /** 选中那一处的手柄（票据 13）：能拖什么由父容器的布局决定；松手交回写回。平移时不显示。 */
   readonly handles?: HandleInput;
   readonly handleNote?: string;
@@ -140,6 +145,9 @@ export function DesignStage(props: {
   const marks = useMemo(() => (reply ? problemMarks(reply) : []), [reply]);
   const hovered = useMemo(() => (props.hover ? (reply?.elements ?? []).filter((element) => element.source.template === props.hover!.template && element.source.path === props.hover!.path).map((element) => element.path) : []), [reply?.elements, props.hover]);
   const [under, setUnder] = useState<string>();
+  const [dropAt, setDropAt] = useState<DropMark>();
+  // 拖动取消（Esc、放到别处）时不一定有 dragleave 落到图上：拖完一律收起落点标记。
+  useEffect(() => { const clear = () => setDropAt(undefined); window.addEventListener('dragend', clear); return () => window.removeEventListener('dragend', clear); }, []);
   const [compareAt, setCompareAt] = useState(0.5);
   const canvas = useRef<HTMLDivElement>(null);
   const dragCompare = (event: ReactPointerEvent<HTMLSpanElement>) => {
@@ -157,6 +165,8 @@ export function DesignStage(props: {
   const yOf = (value: number) => (layout ? `${(value / layout.output.height) * 100}%` : '0');
   const boxStyle = (box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }) => ({ left: xOf(box.x), top: yOf(box.y), width: xOf(box.width), height: yOf(box.height) });
   /** 布局摘要的框不计旋转：写了固定角度的元素，框按角度转过去。 */
+  /** 元素在图的右半边：框上的标签靠右对齐，不伸到检查器底下。 */
+  const sided = (node: LayoutNode) => (layout && node.x + node.width / 2 > layout.output.width / 2 ? ' end' : '');
   const rotated = (path: string) => { const rotation = props.elementOf(path)?.['rotation']; return typeof rotation === 'number' && rotation !== 0 ? { transform: `rotate(${rotation}deg)` } : {}; };
   const legend = [
     ...(props.layers.fit && fitState ? [`适配：${fitState.compressed} 处被压缩${fitState.lowest === undefined ? '' : `，最低 ${Math.round(fitState.lowest * 100)}%`}${fitState.overflow ? `，${fitState.overflow} 处放不下` : ''}`] : []),
@@ -174,12 +184,20 @@ export function DesignStage(props: {
           onMouseMove={(event) => { if (panning) { setUnder(undefined); return; } const path = hit(event)[0]?.path; if (path !== under) setUnder(path); }} onMouseLeave={() => setUnder(undefined)}
           onClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onPick(stack.map((node) => node.path), event.altKey); }}
           onDoubleClick={(event) => { if (panning) return; const stack = hit(event); if (stack.length) props.onEditText?.(stack.map((node) => node.path)); }}
-          onDragOver={(event) => { if (props.onDropAdd && isAddDrag(event)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } }}
+          onDragOver={(event) => {
+            if (!props.onDropAdd || !isAddDrag(event)) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+            const next = props.dropTargetOf?.(hit(event));
+            if (next?.path !== dropAt?.path || next?.kind !== dropAt?.kind) setDropAt(next);
+          }}
+          onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropAt(undefined); }}
           onDrop={(event) => {
             if (!props.onDropAdd || !isAddDrag(event) || !layout) return;
             event.preventDefault();
+            setDropAt(undefined);
             const box = event.currentTarget.getBoundingClientRect();
-            props.onDropAdd(hit(event), { x: ((event.clientX - box.left) / box.width) * layout.output.width, y: ((event.clientY - box.top) / box.height) * layout.output.height });
+            props.onDropAdd(hit(event), { x: ((event.clientX - box.left) / box.width) * layout.output.width, y: ((event.clientY - box.top) / box.height) * layout.output.height }, { x: event.clientX, y: event.clientY });
           }}
           onContextMenu={(event) => { const stack = hit(event); if (!stack.length) return; event.preventDefault(); props.onMenu(event.clientX, event.clientY, stack); }}>
           <img data-testid="preview-image" src={`data:image/${image.format};base64,${image.base64}`} alt="工作副本的草稿预览" draggable={false} />
@@ -209,9 +227,12 @@ export function DesignStage(props: {
             </span>
           ))}
           {[...hovered, ...(under ? [under] : [])].map((path) => { const node = nodes.get(path); return node ? <span key={`hover-${path}`} className="select-box hover" data-testid="hover-box" style={{ ...percent(node), ...rotated(path) }} /> : null; })}
+          {dropAt && nodes.get(dropAt.path) && (
+            <span className={`select-box drop ${dropAt.kind}${sided(nodes.get(dropAt.path)!)}`} data-testid="drop-target" data-kind={dropAt.kind} data-path={dropAt.path} style={{ ...percent(nodes.get(dropAt.path)!), ...rotated(dropAt.path) }}><span className="select-tag">{dropAt.label}</span></span>
+          )}
           {instances.filter((path) => path !== main).map((path) => { const node = nodes.get(path); return node ? <span key={path} className="select-box other" style={{ ...percent(node), ...rotated(path) }} /> : null; })}
           {main && nodes.get(main) && (
-            <span className="select-box" data-testid="select-box" data-path={main} style={{ ...percent(nodes.get(main)!), ...rotated(main) }}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
+            <span className={`select-box${sided(nodes.get(main)!)}`} data-testid="select-box" data-path={main} style={{ ...percent(nodes.get(main)!), ...rotated(main) }}><span className="select-tag" data-testid="select-tag">{nodes.get(main)!.name} · {round(nodes.get(main)!.width)} × {round(nodes.get(main)!.height)} mm</span></span>
           )}
           {!panning && props.handles && props.onHandle && props.handles.node.path === main && (
             <HandleLayer input={props.handles} output={layout.output} rotation={rotated(main)} {...(props.handleNote ? { note: props.handleNote } : {})} onCommit={props.onHandle} />

@@ -19,6 +19,7 @@ import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
 import { unzip } from './records-suite.js';
 import { checkDslDocument } from '../src/engine.js';
+import { connectData, type DataSource } from '../console/src/template/connect.js';
 import { insertElement, insertionPoint, newElement, type Bindings, type NewKind } from '../console/src/template/create.js';
 import { parseTemplateText, templateText } from '../console/src/template/document.js';
 import { RESOURCES_DIR, seedAllElements, seedConsoleBadge, seedM402, seedPriceTag, seedStress } from './seed.js';
@@ -2080,7 +2081,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       };
       const image = () => target.getByTestId('preview-image');
       const inspector = () => target.getByRole('complementary', { name: '检查器' });
-      const side = () => target.getByRole('complementary', { name: '结构与变量' });
+      const side = () => target.getByRole('complementary', { name: '图层与数据' });
       const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const input = (key: string) => fieldOf(key).locator('input[type="text"]').first();
       const documentNow = async (name = ALL) => JSON.parse((await server('GET', `/v1/templates/${enc(name)}/working-copy`, token)).body.content as string) as Record<string, unknown>;
@@ -2133,7 +2134,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
       };
       const chooseRow = async (path: string) => {
-        await side().getByRole('tab', { name: '结构' }).click();
+        await side().getByRole('tab', { name: '图层' }).click();
         await side().locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
       };
@@ -2354,14 +2355,14 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await side().waitFor();
       await inspector().waitFor();
 
-      // 右键菜单：复制元素路径、在结构中定位、打开绑定的字段；没有 Agent 与评论。
+      // 右键菜单：复制元素路径、在图层中定位、打开绑定的字段；没有 Agent 与评论。
       await target.getByTestId('design-canvas').click({ button: 'right', position: await positionOf(at('文字')) });
       const menu = target.getByTestId('element-menu');
       await menu.getByRole('menuitem', { name: '复制元素路径' }).waitFor();
       expect(await menu.getByRole('menuitem', { name: '打开绑定的字段 fullName' }).getAttribute('href')).toBe(`#/definitions/${enc('胸牌')}?field=fullName`);
       expect(await menu.textContent()).not.toMatch(/Agent|评论/);
-      await menu.getByRole('menuitem', { name: '在结构中定位' }).click();
-      await side().getByRole('tab', { name: '结构', selected: true }).waitFor();
+      await menu.getByRole('menuitem', { name: '在图层中定位' }).click();
+      await side().getByRole('tab', { name: '图层', selected: true }).waitFor();
       expect(await side().locator(`[data-testid="structure-row"][data-path="${at('文字')}"]`).getAttribute('data-selected')).toBe('true');
       // 结构与预览双向：结构里选一行，图上出现它的框。
       await side().locator(`[data-testid="structure-row"][data-path="${at('矩形')}"]`).getByRole('button').first().click();
@@ -2396,10 +2397,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (let step = 0; step < 3; step++) await target.getByRole('button', { name: '撤销', exact: true }).click();
       await expect.poll(async () => elementIn(await documentNow(), '文字')['writingMode']).toBeUndefined();
 
-      // 变量页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
-      await side().getByRole('tab', { name: '变量' }).click();
+      // "数据"页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
+      await side().getByRole('tab', { name: '数据' }).click();
       const parameter = (name: string) => side().locator(`[data-testid="parameter-row"][data-name="${name}"]`);
-      await side().getByRole('region', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
+      await side().getByRole('group', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
       await parameter('accentColor').getByRole('button').first().click();
       ({ document } = await edit(() => input('default').fill('#0B4EA2')));
       expect((document['parameters'] as Record<string, unknown>[]).find((item) => item['name'] === 'accentColor')).toMatchObject({ default: '#0B4EA2' });
@@ -2408,6 +2409,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await input('constraints.max').fill('20');
       await expect.poll(async () => (await documentNow())['parameters']).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'nameSize', displayName: '姓名大小', constraints: { min: 3, max: 20 } })]));
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
+      await side().getByRole('button', { name: '新建参数' }).click();
       await side().getByLabel('新参数的名称').fill('footnote');
       await side().getByRole('button', { name: '添加参数' }).click();
       await parameter('footnote').waitFor();
@@ -2417,7 +2419,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await expect.poll(async () => ((await documentNow())['parameters'] as unknown[]).length).toBe(3);
 
       // 结构页打开子模板：预览仍是调用它的模板，改子模板时那张图跟着变；图上点到子模板的元素也切过去。
-      await side().getByRole('tab', { name: '结构' }).click();
+      await side().getByRole('tab', { name: '图层' }).click();
       await openRow(side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`), '循环');
       await side().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').first().getByRole('button').first().click();
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
@@ -2526,7 +2528,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/站点/design?in=${ROOT}`);
 
       // 结构树跨模板：选中时展开到那一行，循环项数、状态标记都在；树上悬停标出全部实例；只读不开工作副本。
-      const side0 = target.getByRole('complementary', { name: '结构与变量' });
+      const side0 = target.getByRole('complementary', { name: '图层与数据' });
       const nameRow = side0.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]');
       await nameRow.waitFor();
       expect(await nameRow.getAttribute('data-selected')).toBe('true');
@@ -2627,7 +2629,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 隐藏的元素：结构页选中，写明原因，范围条写当前样例不显示。
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' });
+      const side = target.getByRole('complementary', { name: '图层与数据' });
       await openRow(side, '顶栏');
       await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏/线路号"]`).getByRole('button').first().click();
       await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
@@ -2687,9 +2689,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const changesTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /改动/ });
       await changesTab.click();
       await target.getByTestId('tray-changes').getByText('还没有改动').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' });
+      const side = target.getByRole('complementary', { name: '图层与数据' });
       await target.locator('nav.crumbs').getByRole('link', { name: ROOT }).click();
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       await side.locator('[data-testid="parameter-row"][data-name="primaryColor"]').getByRole('button').first().click();
       const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       await target.getByRole('complementary', { name: '检查器' }).locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('#1D6B3C');
@@ -2725,11 +2727,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
-      await side.getByRole('tab', { name: '变量' }).click();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      await side.getByRole('tab', { name: '数据' }).click();
       const row = (name: string) => side.locator(`[data-name="${name}"]`);
       // 四组都有当前值。
-      for (const group of ['字段', '对外参数', '内部参数', '派生变量', '检查项']) await side.getByRole('region', { name: group }).waitFor();
+      for (const group of ['字段', '参数', '派生变量', '检查项']) await side.getByRole('region', { name: group, exact: true }).waitFor();
+      for (const group of ['对外参数', '内部参数']) await side.getByRole('group', { name: group }).waitFor();
       await expect.poll(() => row('routeNo').textContent()).toContain('M402');
       await expect.poll(() => row('stops').textContent()).toContain('35 项');
       await expect.poll(() => row('stopCount').textContent()).toContain('35');
@@ -2743,7 +2746,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await expect.poll(() => target.getByTestId('use-box').count()).toBe(0);
 
       // 选中字段：只读，链到数据定义。
-      await row('routeNo').getByRole('button').click();
+      await row('routeNo').locator('.variable-button').click();
       const panel = inspector.getByTestId('variable-inspector');
       await panel.filter({ hasText: '字段属于数据定义' }).waitFor();
       expect(await panel.getByRole('link', { name: /打开数据定义/ }).getAttribute('href')).toBe(`#/definitions/${enc('线路牌')}?field=routeNo`);
@@ -2776,11 +2779,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const knobValue = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
       await knobValue.getByRole('textbox').fill('5');
       await knobValue.getByRole('textbox').press('Enter');
-      await side.getByRole('tab', { name: '结构' }).click();
+      await side.getByRole('tab', { name: '图层' }).click();
       await openRow(side, '站点面板');
       await openRow(side, '站点列');
       await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       await row('stopState').getByRole('button').click();
       await inspector.locator('[data-testid="variable-inspector"][data-kind="derived"]').waitFor();
       await inspector.getByTestId('branch-hit').waitFor();
@@ -2796,7 +2799,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const stopDocument = async () => JSON.parse((await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token)).body.content as string) as { parameters: { name: string }[]; artboard: unknown };
@@ -2895,7 +2898,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await stopName())['letterSpacing']).toBe(3);
 
       // 经循环信息传入的写明是循环序号。
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       await side.locator('[data-name="index"]').getByRole('button').click();
       await inspector.getByTestId('value-origin').filter({ hasText: '循环序号，由循环 站点列 传入' }).waitFor();
 
@@ -3059,7 +3062,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const names = async () => (await current(ALL)).artboard.children.map((child) => child.name);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ALL}/${name}"]`);
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
@@ -3174,7 +3177,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] } } };
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ROOT}/${name}"]`);
 
@@ -3189,18 +3192,18 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(top.at(-1)).toMatchObject({ name: '矩形', type: 'rect', place: { width: { fixed: 20 }, height: { fixed: 10 } } });
       await expect.poll(() => inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${ROOT}/顶栏/矩形`);
 
-      // 字段在左面板的"添加"页。拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
-      await side.getByRole('tab', { name: '添加' }).click();
+      // 字段在左面板的"数据"页（第三轮票据 07），整行能拖。拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
+      await side.getByRole('tab', { name: '数据' }).click();
       const walk = (node: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] }): typeof node | undefined => (node.path === `${ROOT}/道路带` ? node : (node.children as typeof node[] | undefined)?.map(walk).find(Boolean));
       const road = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!;
       saved = stashed();
-      await side.locator('[data-testid="add-field"][data-name="routeNo"]').dragTo(canvas, { targetPosition: { x: ((road.x + road.width / 2) / layout.output.width) * box.width, y: ((road.y + road.height / 2) / layout.output.height) * box.height } });
+      await side.locator('[data-testid="variable-row"][data-name="routeNo"]').dragTo(canvas, { targetPosition: { x: ((road.x + road.width / 2) / layout.output.width) * box.width, y: ((road.y + road.height / 2) / layout.output.height) * box.height } });
       await saved;
       const added = (await childrenOf('道路带')).find((child) => child.type === 'text' && JSON.stringify(child.content) === JSON.stringify([{ slot: 'routeNo' }]));
       expect(added?.name, '名字取显示名称，主模板里已有"线路号"，加序号').toBe('线路号2');
 
       // 列表字段：选基准相符的模板，变成循环容器。
-      await side.locator('[data-testid="add-field"][data-name="stops"]').click();
+      await side.locator('[data-testid="add-field"][data-field="stops"]').click();
       const form = side.getByRole('form', { name: /从 .* 创建/ });
       expect(await form.getByLabel('被调模板').locator('option').allTextContents(), '道路段的基准也是停靠站点 v1').toEqual(['选一个模板', '站点', '道路段', '+ 新建模板…']);
       await form.getByLabel('被调模板').selectOption('站点');
@@ -3215,7 +3218,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const from = (await ellipse.boundingBox())!;
       await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
       await target.mouse.down();
-      const tab = (await side.getByRole('tab', { name: '结构' }).boundingBox())!;
+      const tab = (await side.getByRole('tab', { name: '图层' }).boundingBox())!;
       await target.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 5 });
       await row('底栏').waitFor();
       const bottom = (await row('底栏').boundingBox())!;
@@ -3250,12 +3253,12 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await current();
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       await openRow(side, '站点面板');
       await openRow(side, '站点列');
       await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       await side.locator('[data-name="stopState"]').getByRole('button').click();
       const editor = inspector.getByTestId('derived-editor');
       const rows = editor.getByTestId('branch-row');
@@ -3349,7 +3352,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await current();
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       await openRow(side, '站点面板');
       await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
@@ -3435,7 +3438,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       await target.goto(`${baseUrl}/console/#/templates/${enc(BADGE)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       await side.locator(`[data-testid="structure-row"][data-path="${BADGE}/照片"]`).getByRole('button').first().click();
       await inspector.getByTestId('handle-notes').filter({ hasText: '拖右下的手柄改宽高' }).waitFor();
       // 纵向堆叠里宽高都固定：右边、下边、右下角，外加拖动改顺序。
@@ -3537,7 +3540,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
       await knob.getByRole('textbox').fill('5');
       await knob.getByRole('textbox').press('Enter');
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
       await side.locator(`[data-testid="structure-row"][data-path="${NAME}"]`).getByRole('button').first().click();
       await inspector.locator(`[data-testid="properties"][data-path="${NAME}"]`).waitFor();
@@ -3628,11 +3631,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await target.locator('[data-testid="size-knob"][data-name="width"]').getByRole('textbox').inputValue()).toBe('20');
       const hint = target.getByTestId('stage-hint');
       await hint.filter({ hasText: '空画板' }).waitFor();
-      await hint.getByRole('button', { name: '打开"添加"页' }).click();
-      const side = target.getByRole('complementary', { name: '结构与变量' });
-      expect(await side.getByRole('tab', { name: '添加' }).getAttribute('aria-selected')).toBe('true');
+      await hint.getByRole('button', { name: '打开"数据"页' }).click();
+      const side = target.getByRole('complementary', { name: '图层与数据' });
+      expect(await side.getByRole('tab', { name: '数据' }).getAttribute('aria-selected')).toBe('true');
       let saved = stashed();
-      await side.locator('[data-testid="add-field"][data-name="name"]').click();
+      await side.locator('[data-testid="add-field"][data-field="name"]').click();
       await saved;
       expect((await copyOf(NAME))!.artboard.children!.map((child) => [child.type, child.content])).toEqual([['text', [{ slot: 'name' }]]]);
       await hint.waitFor({ state: 'detached' });
@@ -3647,8 +3650,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 从列表字段加循环：当场新建被调模板，基准预先填好是单值·文本 v1。
       await target.goto(`${baseUrl}/console/#/templates/${enc(NAME)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      await side.getByRole('tab', { name: '添加' }).click();
-      await side.locator('[data-testid="add-field"][data-name="badges"]').click();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-testid="add-field"][data-field="badges"]').click();
       const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
       // 基准是单值·文本 v1 的已有模板（M402 的标识图标等）列在前面，最后一项是当场新建。
       const choices = await choose.getByLabel('被调模板').locator('option').allTextContents();
@@ -3670,7 +3673,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
 
       // 检查器里循环的表单同样能当场新建，建好就换过去。
       const AGAIN = `站名标识二 ${randomUUID().slice(0, 6)}`;
-      await side.getByRole('tab', { name: '结构' }).click();
+      await side.getByRole('tab', { name: '图层' }).click();
       await side.locator(`[data-testid="structure-row"][data-path="${NAME}/${loop!.name}"]`).getByRole('button').first().click();
       const loopForm = target.getByRole('complementary', { name: '检查器' }).getByTestId('loop-form');
       await loopForm.getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
@@ -3700,7 +3703,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await contentOf(STOP);
       await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' });
+      const side = target.getByRole('complementary', { name: '图层与数据' });
       for (const row of ['站点面板', '站点列']) await openRow(side, row);
       await side.locator(`[data-testid="structure-row"][data-path="${STOP}/名称区"]`).click({ button: 'right' });
       await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '提取为子模板…' }).click();
@@ -3749,7 +3752,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as Node & { artboard: Node; parameters?: Node[]; derived?: Node[] };
       };
       const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const text = (key: string) => field(key).locator('input[type="text"]').first();
       /** 一步改动：等它写回工作副本。 */
@@ -3809,8 +3812,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await write(() => field('layout').getByRole('button', { name: '上中', exact: true }).click());
 
       // 对外参数：主模板按这三个名字传。
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       for (const [name, label, fallback, min] of [['index', '序号', '1', '1'], ['currentIndex', '本站序号', '0', '0'], ['stopNameSize', '站名字号', '10', '5']] as const) {
+        await side.getByRole('button', { name: '新建参数' }).click();
         await side.getByLabel('新参数的名称').fill(name);
         await write(() => side.getByRole('button', { name: '添加参数' }).click());
         await inspector.locator(`[data-testid="variable-inspector"][data-name="${name}"]`).waitFor();
@@ -3862,8 +3866,8 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await contentOf(NAME)).derived).toEqual(JSON.parse(JSON.stringify((await contentOf('站点')).derived)));
 
       // 标识行：从列表字段加循环，每项固定 9 mm、间距 1，高 10 mm，下边距 2。
-      await side.getByRole('tab', { name: '添加' }).click();
-      await side.locator('[data-testid="add-field"][data-name="badges"]').click();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-testid="add-field"][data-field="badges"]').click();
       const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
       await choose.getByLabel('被调模板').selectOption('标识图标');
       await write(() => choose.getByRole('button', { name: '添加循环容器' }).click());
@@ -3890,7 +3894,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await states('stopState', { 本站: () => text('fill').fill('#FFF000') });
 
       // 站名：从字段加进名称区，竖排、分散对齐，字号绑站名字号，收紧字距再压缩字形，缩字组 stopNames。
-      await write(() => side.locator('[data-testid="add-field"][data-name="name"]').click());
+      await write(() => side.locator('[data-testid="add-field"][data-field="name"]').click());
       await selected(`${NAME}/名称区/站名`);
       const font = field('font').getByTestId('font-select'), family = field('font').getByTestId('font-family');
       if (await family.inputValue() !== 'hei') await write(() => family.selectOption('hei'));
@@ -3910,7 +3914,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await states('stopState', { 已过站: () => text('color').fill('#C8C8C8'), 本站: () => text('color').fill('#E60012') });
 
       // 地标：从字段加在站名后面，8 × 8 mm、上边距 1，完整显示；没有地标不显示，已过站变淡。
-      await write(() => side.locator('[data-testid="add-field"][data-name="landmark"]').click());
+      await write(() => side.locator('[data-testid="add-field"][data-field="landmark"]').click());
       await selected(`${NAME}/名称区/地标`);
       await bind('visible', 'hasLandmark');
       const fit = field('fit');
@@ -3977,7 +3981,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await content();
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const cell = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first().getByTestId('size-cell');
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
@@ -4051,7 +4055,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await content();
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const cell = (key: string) => field(key).getByTestId('edges-cell');
       const whole = (key: string) => cell(key).locator('input[type="text"]').first();
@@ -4152,7 +4156,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await content();
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
@@ -4255,7 +4259,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const before = await contentOf(ALL);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
@@ -4439,7 +4443,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const element = async (name: string) => find((await contentOf(ALL)).artboard, name)!;
       await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
@@ -4632,7 +4636,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 240_000);
 
-    it('模板设计（第三轮 06）：底部工具栏点一下、按 T 或 F 加到选中的位置，写回与同一操作逐字节相同，也能拖到图上；形状点开是小目录，循环与调用先选列表、数据与模板；打字时快捷键不算，V、H 照旧；"添加"页只剩从字段创建；撤销回到原样', async () => {
+    it('模板设计（第三轮 06）：底部工具栏点一下、按 T 或 F 加到选中的位置，写回与同一操作逐字节相同，也能拖到图上；形状点开是小目录，循环与调用先选列表、数据与模板；打字时快捷键不算，V、H 照旧；从字段创建不在工具栏里（第三轮票据 07 起在"数据"页）；撤销回到原样', async () => {
       const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
       const target = await asAdmin();
       await leaveDesign(target, ROOT);
@@ -4650,7 +4654,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Box } };
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
       const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
       const pick = async (path: string) => {
@@ -4733,7 +4737,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(await pop.getByRole('button').allTextContents()).toEqual(['矩形', '椭圆', '线条', '多边形', '路径', '二维码', '条码']);
       expect(await pop.getByTestId('insert-target').textContent()).toBe('「容器2」的最后');
       expect(await shape.getAttribute('aria-expanded')).toBe('true');
-      await side.getByRole('tab', { name: '结构' }).click();
+      await side.getByRole('tab', { name: '图层' }).click();
       await pop.waitFor({ state: 'detached' });
       expect(await shape.getAttribute('aria-expanded')).toBe('false');
       // 点线条：加进刚才的容器，目录收起；再点图片，放在线条后面。
@@ -4772,13 +4776,13 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(loop).toBe(`${ROOT}/底栏/循环容器`);
       expect(find((await contentOf(ROOT)).artboard, '底栏')!.children!.at(-1)).toMatchObject({ type: 'loop', list: { var: 'stops' }, template: '站点' });
 
-      // 左面板的"添加"页：元素目录搬走了，只剩从字段创建；加到哪和工具栏说的一样。
-      await side.getByRole('tab', { name: '添加' }).click();
-      const panel = side.getByTestId('add-panel');
+      // 左面板的"数据"页（第三轮票据 07 起从字段创建在这里）：没有元素目录；字段行尾的"+"加到哪和工具栏说的一样。
+      await side.getByRole('tab', { name: '数据' }).click();
+      const panel = side.getByTestId('data-panel');
       await panel.locator('[data-testid="add-field"]').first().waitFor();
       expect(await panel.locator('[data-testid="add-element"]').count(), '元素目录不在这一页了').toBe(0);
-      expect(await panel.getByTestId('add-target').textContent()).toBe('「底栏」，放在「循环容器」后面');
-      await side.getByRole('tab', { name: '结构' }).click();
+      expect(await panel.locator('[data-testid="add-field"][data-field="routeNo"]').getAttribute('title')).toBe('把「线路号」加成文字，加到「底栏」，放在「循环容器」后面');
+      await side.getByRole('tab', { name: '图层' }).click();
 
       expect(await severe(ROOT)).toEqual([]);
       for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
@@ -4822,6 +4826,188 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
     }, 240_000);
 
+    it('模板设计（第三轮 07）：左面板是"图层 / 数据"；字段拖到文字上换内容、拖到图片上换来源，类型不合的拒绝并在落点写原因；拖到容器里建元素，列表字段先选模板；右键"连接数据…"只列类型相符的，布尔变量绑显示；写回与同一操作逐字节相同，一步撤销', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Element = { name: string; type?: string; children?: Element[]; [key: string]: unknown };
+      const textOf = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        return (copy.status === 200 ? copy.body.content : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body.content) as string;
+      };
+      const content = async () => JSON.parse(await textOf()) as { artboard: Element & { children: Element[] }; derived: { name: string; displayName?: string }[] };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const element = async (name: string) => find((await content()).artboard, name)!;
+      const severe = async () => checkDslDocument(await content()).problems.filter((problem) => problem.level === 'severe');
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const drawn = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      /** 写回并等新图回来：下一步的落点按新图量。 */
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(), again = drawn(); await action(); await saved; await again; };
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      const note = target.getByTestId('drop-note'), mark = target.getByTestId('drop-target');
+      const treeRow = (path: string) => side.locator(`[data-testid="structure-row"][data-path="${path}"]`);
+      const fieldRow = (name: string) => side.locator(`[data-testid="variable-row"][data-name="${name}"]`);
+      /** 图上一个元素的中心，在窗口里的位置：在图层里选中它，量页面自己画的选中框（换了数据或内容，位置跟着变），再回到"数据"页。 */
+      const pointOf = async (path: string) => {
+        await side.getByRole('tab', { name: '图层' }).click();
+        await openRow(side, '顶栏');
+        await treeRow(path).getByRole('button').first().click();
+        const box = target.locator(`[data-testid="select-box"][data-path="${path}"]`);
+        await box.waitFor();
+        const at = (await box.boundingBox())!;
+        await side.getByRole('tab', { name: '数据' }).click();
+        await fieldRow('fare').waitFor();
+        return { x: at.x + at.width / 2, y: at.y + at.height / 2 };
+      };
+      /** 把字段这一行拖到图上的一点：松手前看图上标出来的落点。 */
+      const dragToStage = async (field: string, path: string, kind: 'connect' | 'inside', label: string) => {
+        const to = await pointOf(path), from = (await fieldRow(field).boundingBox())!;
+        await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await target.mouse.down();
+        await target.mouse.move(to.x, to.y, { steps: 6 });
+        // 自动化的拖动每挪一下才发一次 dragover，最后一下可能还停在路过的元素上：在落点再挪一下（真鼠标停着也会不断发）。
+        await target.mouse.move(to.x + 1, to.y);
+        await target.mouse.move(to.x, to.y);
+        await expect.poll(() => mark.getAttribute('data-path')).toBe(path);
+        expect([await mark.getAttribute('data-kind'), await mark.textContent()]).toEqual([kind, label]);
+        await target.mouse.up();
+        await mark.waitFor({ state: 'detached' });
+      };
+      /**
+       * 连上只有一种写回：template/connect.ts 的 connectData。拖到图上、拖到图层里、右键"连接数据…"写进工作副本的文本都要和它逐字节相同，
+       * 结果写在落点，连完选中这个元素，写回通过检查。
+       */
+      const connects = async (path: string, source: DataSource, action: () => Promise<unknown>) => {
+        const want = connectData(parseTemplateText(await textOf()), ROOT, path, source);
+        if (!want.ok) throw new Error(want.reason);
+        const saved = stashed(), again = drawn();
+        await action();
+        await expect.poll(() => note.textContent()).toBe(want.summary);
+        expect(await note.getAttribute('data-kind')).toBe('ok');
+        await saved;
+        await again;
+        expect(await textOf(), `${source.name} 连到 ${path}`).toBe(templateText(want.document));
+        await expect.poll(selectedPath).toBe(path);
+        expect(await severe()).toEqual([]);
+        return want.summary;
+      };
+      const back = async () => {
+        await write(() => undo.click());
+        expect(await content()).toEqual(before);
+        expect(await undo.isDisabled(), '一步撤销').toBe(true);
+      };
+      const fare: DataSource = { name: 'fare', label: '票价（元）', type: 'number' }, picture: DataSource = { name: 'routeNoImage', label: '线路号图片', type: 'image' };
+      const OPERATOR = `${ROOT}/顶栏/运营方`, BLANK = `${ROOT}/顶栏/顶栏留白`, LANDMARK = `${ROOT}/底栏/下一站区/下一站地标`;
+
+      // 左面板两页：图层、数据。Agent 页接入 P2 才出现（M396）。
+      expect(await side.getByRole('tab').allTextContents()).toEqual(['图层', '数据']);
+      await side.getByRole('tab', { name: '数据' }).click();
+      for (const group of ['字段', '参数', '派生变量', '检查项']) await side.getByRole('region', { name: group, exact: true }).waitFor();
+      expect(await fieldRow('fare').locator('.variable-name').textContent(), '显示名称在前，名称在后').toBe('票价（元）fare');
+      await expect.poll(() => fieldRow('routeNo').textContent()).toContain('M402');
+
+      // 拖到文字上：内容换成这个字段的插槽。拖着的时候图上标出"连到"谁。
+      expect(await connects(OPERATOR, fare, () => dragToStage('fare', OPERATOR, 'connect', '连到「运营方」'))).toBe('「运营方」的内容换成了「票价（元）」（fare）。');
+      expect((await element('运营方'))['content']).toEqual([{ slot: 'fare' }]);
+      await back();
+
+      // 类型不合：图片字段拖到文字上，拒绝，原因写在落点；什么也没写。
+      await dragToStage('routeNoImage', OPERATOR, 'connect', '连到「运营方」');
+      await target.locator('[data-testid="drop-note"][data-kind="reject"]').filter({ hasText: '「运营方」是文字，接不了图片类型的「线路号图片」：拖到图片上换来源，或拖到空白处建一个图片。' }).waitFor();
+      expect(await undo.isDisabled(), '没有写回').toBe(true);
+      expect(await content()).toEqual(before);
+      // 点一下收起。
+      await target.locator('[data-testid="drop-note"][data-kind="reject"]').click();
+      await note.waitFor({ state: 'detached' });
+
+      // 拖到图层里图片这一行的中间：换图片来源。先在图层里选中它，拖经"图层"页签时树展开到这一行。
+      await side.getByRole('tab', { name: '图层' }).click();
+      for (const row of ['底栏', '下一站区']) await openRow(side, row);
+      await treeRow(LANDMARK).getByRole('button').first().click();
+      await expect.poll(selectedPath).toBe(LANDMARK);
+      await side.getByRole('tab', { name: '数据' }).click();
+      expect(await connects(LANDMARK, picture, async () => {
+        const from = (await fieldRow('routeNoImage').boundingBox())!;
+        await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await target.mouse.down();
+        const tab = (await side.getByRole('tab', { name: '图层' }).boundingBox())!;
+        await target.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 5 });
+        await treeRow(LANDMARK).waitFor();
+        const line = (await treeRow(LANDMARK).boundingBox())!;
+        await target.mouse.move(line.x + line.width / 2, line.y + line.height / 2, { steps: 5 });
+        await target.mouse.move(line.x + line.width / 2 + 1, line.y + line.height / 2);
+        await expect.poll(() => treeRow(LANDMARK).getAttribute('class')).toContain('drop-connect');
+        await target.mouse.up();
+      })).toBe('「下一站地标」的图片来源换成了「线路号图片」（routeNoImage）。');
+      expect((await element('下一站地标'))['source']).toEqual({ var: 'routeNoImage' });
+      await back();
+
+      // 拖到容器里：建一个绑好的文字（同票据 14 的从字段创建），名字取显示名称，重名加序号。
+      await side.getByRole('tab', { name: '数据' }).click();
+      await write(() => dragToStage('operator', BLANK, 'inside', '放进「顶栏留白」'));
+      expect(((await element('顶栏留白')).children ?? []).map((child) => [child.name, child.type, child['content']])).toEqual([['运营方2', 'text', [{ slot: 'operator' }]]]);
+      await expect.poll(selectedPath).toBe(`${BLANK}/运营方2`);
+      await back();
+
+      // 列表字段拖到容器里：先选基准相符的模板，表单写明加进刚才拖到的容器；选了就在那里建循环容器。
+      await dragToStage('stops', BLANK, 'inside', '放进「顶栏留白」');
+      const form = side.getByRole('form', { name: '从 停靠站点 创建' });
+      expect(await form.getByTestId('add-target').textContent()).toBe('「顶栏留白」');
+      // 只列基准相符（停靠站点 v1）的模板；别的用例建的同基准模板也会在里面，所以只认头尾和这两个，基准不符的不在。
+      const options = await form.getByLabel('被调模板').locator('option').allTextContents();
+      expect([options[0], options.at(-1)]).toEqual(['选一个模板', '+ 新建模板…']);
+      expect(options).toEqual(expect.arrayContaining(['站点', '道路段']));
+      expect(options).not.toContain(ROOT);
+      await form.getByLabel('被调模板').selectOption('站点');
+      await write(() => form.getByRole('button', { name: '添加循环容器' }).click());
+      await form.waitFor({ state: 'detached' });
+      expect((await element('顶栏留白')).children).toMatchObject([{ type: 'loop', list: { var: 'stops' }, template: '站点' }]);
+      expect(await severe()).toEqual([]);
+      await back();
+
+      // 右键"连接数据…"：容器只接布尔（绑显示），已经连着的列出来但不能再选；点"‹ 连接数据"回到菜单。
+      await side.getByRole('tab', { name: '图层' }).click();
+      await openRow(side, '顶栏');
+      await treeRow(`${ROOT}/顶栏/票价框`).click({ button: 'right' });
+      const menu = target.getByTestId('element-menu'), choices = menu.getByTestId('connect-choice');
+      const attributes = (name: string) => choices.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      await menu.getByTestId('connect-data').click();
+      await choices.first().waitFor();
+      expect(new Set(await attributes('data-effect'))).toEqual(new Set(['visible']));
+      expect(await attributes('data-name')).toContain('hasNextStop');
+      const current = menu.locator('[data-testid="connect-choice"][data-name="hasFare"]');
+      expect([await current.isDisabled(), (await current.textContent())!.endsWith('已连着')]).toEqual([true, true]);
+      await menu.getByRole('menuitem', { name: /连接数据/u }).first().click();
+      await menu.getByRole('menuitem', { name: '复制元素路径' }).waitFor();
+      await target.keyboard.press('Escape');
+      await menu.waitFor({ state: 'detached' });
+
+      // 图上右键文字：文字类字段换内容、布尔绑显示，图片与列表不列。选布尔的派生变量，绑到显示上，写回同上。
+      const text = await pointOf(OPERATOR);
+      await target.mouse.click(text.x, text.y, { button: 'right' });
+      await menu.getByTestId('connect-data').click();
+      await choices.first().waitFor();
+      const names = await attributes('data-name');
+      expect(new Set(await attributes('data-effect'))).toEqual(new Set(['content', 'visible']));
+      expect(names).toEqual(expect.arrayContaining(['routeNo', 'fare', 'firstDeparture', 'hasFare']));
+      for (const name of ['routeNoImage', 'stops', 'departureTimes', 'primaryColor']) expect(names, `${name} 类型不合，不列`).not.toContain(name);
+      expect(await menu.locator('[data-testid="connect-choice"][data-name="operator"]').isDisabled(), '已经连着').toBe(true);
+      const hasFare = before.derived.find((item) => item.name === 'hasFare')!;
+      const summary = await connects(OPERATOR, { name: 'hasFare', label: hasFare.displayName ?? 'hasFare', type: 'boolean' }, () => menu.locator('[data-testid="connect-choice"][data-name="hasFare"]').click());
+      expect(summary).toContain('决定显示');
+      await menu.waitFor({ state: 'detached' });
+      expect((await element('运营方'))['visible']).toEqual({ var: 'hasFare' });
+      await back();
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
     // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
     it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
       const ROOT = '标准线路单边', token = world.b.admin.token;
@@ -4829,11 +5015,11 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await leaveDesign(target, ROOT);
       await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
       await target.getByTestId('preview-image').waitFor();
-      const side = target.getByRole('complementary', { name: '结构与变量' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
       // 等样例带补完缩略图，别和打点抢并发。
       await expect.poll(() => target.locator('[data-testid="sample-card"]').first().getByTestId('sample-state').textContent(), { timeout: 60_000 }).toMatch(/没有问题|个提示|个严重问题/);
       await target.waitForTimeout(5_000);
-      await side.getByRole('tab', { name: '变量' }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
       await side.locator('[data-name="stopNameSize"]').getByRole('button').click();
       const input = inspector.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first();
       const span = (response: { request(): { timing(): { requestStart: number; responseEnd: number } } }) => { const timing = response.request().timing(); return Math.round(timing.responseEnd - Math.max(0, timing.requestStart)); };

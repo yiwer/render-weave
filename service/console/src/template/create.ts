@@ -132,7 +132,7 @@ export function insertionPoint(document: JsonObject, template: string, selected:
   return { container, index: siblings.findIndex((child) => isObject(child) && child['name'] === name) + 1 };
 }
 
-/** insertionPoint 说给人听：加进哪个容器，放在谁后面。工具栏的提示与"添加"页共用。 */
+/** insertionPoint 说给人听：加进哪个容器，放在谁后面。工具栏的提示与"数据"页共用。 */
 export function insertionLabel(document: JsonObject, template: string, selected: string | undefined): string {
   const point = insertionPoint(document, template, selected), last = (path: string) => path.slice(path.lastIndexOf('/') + 1);
   const holder = point.container === template ? `画板「${template}」` : `「${last(point.container)}」`;

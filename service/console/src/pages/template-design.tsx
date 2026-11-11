@@ -1,7 +1,7 @@
 /**
  * 模板设计（方案 docs/template-design-page.md，票据 03 起；P1 票据 08，M205、M299、M356、M392）：客户管理员不写 DSL 也能改模板。只给客户管理员，操作员看只读预览。
  * - 舞台上是引擎出的真图：按布局摘要的元素框点选，按元素定位打开模板文档里的位置；元素在子模板里时切到子模板，预览仍是调用它的模板；
- * - 左面板是结构与变量，右边的检查器只显示选中的东西，都从模板文档与 Schema 生成（template/properties.ts）；
+ * - 左面板是"图层 / 数据"两页（第三轮票据 07，M396），右边的检查器只显示选中的东西，都从模板文档与 Schema 生成（template/properties.ts）；
  * - 每次改动写回工作副本，再重渲染、刷新问题清单（template/session.ts）；撤销与重做只在这一页里；"保存"是立刻暂存，改了没点保存就离开要提醒（M383），"发布修订"去下一页；
  * - 预览接口只出草稿，两种模式的问题清单相同（docs/render-modes.md），所以样例带上常驻一句正式出图的结论，不设切换。
  * - 舞台底部的工具栏：选择、平移，插入（design/insert-bar.tsx，第三轮票据 06），缩放，叠加层，面板；
@@ -14,12 +14,13 @@ import { ErrorBox, ProblemList } from '../components/problems.js';
 import { CHEVRON, CHEVRON_UP, CURSOR, HAND, Icon, PANEL_LEFT, PANEL_RIGHT, REDO, UNDO } from '../components/icon.js';
 import { DesignInspector, InlineTextEditor } from '../design/panels.js';
 import { callersOf, deleteElement, dropTarget, duplicateElement, moveElement, moveElementTo, renameElement, unwrapContainer, wrapInContainer, type DropZone, type Edited } from '../template/structure.js';
-import { usesOfVariable, useInspection, VariablesPanel, type VariableSelection } from '../design/variables.js';
+import { DataPanel, usesOfVariable, useInspection, type Choosing, type FieldPlace, type VariableSelection } from '../design/variables.js';
 import { DesignStructure, type TreeSource } from '../design/structure.js';
-import { AddPanel } from '../design/add-panel.js';
-import { canDropInto, currentAdd, InsertBar, isAddDrag, useInsertSources } from '../design/insert-bar.js';
-import { insertElement, insertionLabel, insertionPoint, insertKey, newElement, type Drop, type NewKind } from '../template/create.js';
-import { writeProperty } from '../template/properties.js';
+import { ConnectList } from '../design/connect.js';
+import { canDropInto, currentAdd, InsertBar, isAddDrag, useInsertSources, type AddPayload } from '../design/insert-bar.js';
+import { insertElement, insertionLabel, insertionPoint, insertKey, newElement, planFromField, type Drop, type NewKind } from '../template/create.js';
+import { connectChoices, connectData, fieldDropKind, type ConnectChoice, type DataSource } from '../template/connect.js';
+import { scopeVariables } from '../template/binding.js';
 import { handlesOf, layoutContext, nudge, type ArrowKey, type HandleInput, type HandleResult } from '../template/handles.js';
 import { extractTemplate, type SizeRange } from '../template/extract.js';
 import { ExtractDialog } from '../design/extract-dialog.js';
@@ -29,7 +30,7 @@ import { CodePanel } from '../components/code-panel.js';
 import { RevisionChanges } from '../components/revision-changes.js';
 import { impactOf, instancesOf, ScopeBar } from '../design/scope.js';
 import { DEFAULT_LAYERS, flatNodes as flatNodesOf, type LayerName, type Layers } from '../design/overlays.js';
-import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type Selection, type StageView } from '../design/stage.js';
+import { DesignStage, FIT_VIEW, MAX_ZOOM, MIN_ZOOM, type DropMark, type Selection, type StageView } from '../design/stage.js';
 import { go, guardNavigation, href, queuePreview, useLivePreview, useLoad, type Route } from '../hooks.js';
 import { documentInfo, elementAt, elementVariables, isObject, parentInstance, parseTemplateText, variableKind, type JsonObject } from '../template/document.js';
 import { ELEMENT_TYPES } from '../template/properties.js';
@@ -40,7 +41,8 @@ import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
 import { problemMarks } from '../components/preview-canvas.js';
 
-type LeftTab = 'structure' | 'variables' | 'add';
+type LeftTab = 'structure' | 'data';
+type Point = { readonly x: number; readonly y: number };
 type TrayTab = 'samples' | 'problems' | 'changes' | 'dsl';
 const STRESS = /压测|压力|stress/i;
 /**
@@ -98,6 +100,12 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const [hoverVariable, setHoverVariable] = useState<{ readonly template: string; readonly name: string }>();
   const [inlineText, setInlineText] = useState<string>();
   const [renaming, setRenaming] = useState<{ readonly template: string; readonly path: string }>();
+  // 列表与引用字段拖到图上之后，在"数据"页选模板；记着落点。
+  const [choosing, setChoosing] = useState<Choosing>();
+  // 写在落点的一句结果：连上了什么，或为什么接不了。
+  const [dropNote, setDropNote] = useState<Point & { readonly text: string; readonly ok: boolean }>();
+  const dropTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(dropTimer.current), []);
 
   const openTemplate = (template: string) => go(['templates', template, 'design'], template === root ? {} : { in: root });
 
@@ -141,7 +149,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
     const source = locations.get(instance);
     if (source) select(source.template, source.path, instance);
   };
-  /** 问题定位：元素选中它，字段、参数与检查项打开变量页。 */
+  /** 问题定位：元素选中它，字段、参数与检查项打开"数据"页。 */
   const onProblem = (problem: Problem) => {
     const location = problem.location;
     if (location.kind === 'element') { pick(location.path); return; }
@@ -154,7 +162,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
   };
   const openVariable = (chosen: VariableSelection) => {
     setPanels((now) => ({ ...now, left: true, right: true }));
-    setLeftTab('variables');
+    setLeftTab('data');
     setVariable(chosen);
     if (chosen.template !== name) openTemplate(chosen.template);
   };
@@ -248,48 +256,109 @@ function Design(props: { readonly name: string; readonly root: string }) {
     setLeftTab('structure');
     setRenaming({ template: target.template, path: target.path });
   };
-  // —— 添加元素（票据 14；第三轮票据 06 起从底部工具栏）：点一下、按 T 或 F 加到选中的位置，都走这一个函数；拖到结构树或图上放在那里。 ——
-  const addElement = (element: JsonObject) => {
+  // —— 添加元素（票据 14；第三轮票据 06 起从底部工具栏）：点一下、按 T 或 F 加到选中的位置，都走这一个函数；拖到图层或图上放在那里。 ——
+  const addElement = (element: JsonObject, place?: FieldPlace) => {
     if (!doc) return;
     const point = insertionPoint(doc.document, name, selected?.path);
-    if (!applyStructure(name, insertElement(doc.document, name, point.container, element, { index: point.index }), 'add')) setNotice('这里放不进元素。');
+    const added = place ? insertElement(doc.document, name, place.container, element, place.at) : insertElement(doc.document, name, point.container, element, { index: point.index });
+    if (!applyStructure(name, added, 'add')) setNotice('这里放不进元素。');
   };
   const addKind = (kind: NewKind) => { if (doc) addElement(newElement(kind, doc.document, sources.bindings)); };
-  const bindVisible = (variable: string) => {
-    if (!doc || !selected || selected.path === name) { setNotice('先选中一个元素，再把布尔字段绑到它的显示。'); return; }
-    session.edit(name, writeProperty(doc.document, selected.path, ['visible'], { var: variable }), `structure:visible:${Date.now()}`);
+  // —— 连接数据（第三轮票据 07）：字段拖到元素上、右键的"连接数据…"、"数据"页的"+"都走 connect 这一个函数，写回在 template/connect.ts。 ——
+  /** 一句结果：有落点就写在落点（拖放、右键菜单），没有就写在页面顶上。 */
+  const say = (text: string, ok: boolean, at?: Point) => {
+    if (!at) { setNotice(text); return; }
+    setDropNote({ ...at, text, ok });
+    window.clearTimeout(dropTimer.current);
+    dropTimer.current = window.setTimeout(() => setDropNote(undefined), ok ? 2600 : 5200);
+  };
+  const connect = (template: string, path: string, source: DataSource, at?: Point, instance?: string) => {
+    const document = documentOf(template);
+    if (!document) return;
+    const result = connectData(document, template, path, source);
+    if (!result.ok) { say(result.reason, false, at); return; }
+    // 一次连接一个新键：一步撤销。
+    session.edit(template, result.document, `structure:connect:${Date.now()}`);
     void session.flush();
-    setNotice(`「${selected.path.split('/').at(-1)!}」按 ${variable} 决定显示。`);
+    select(template, path, instance);
+    say(result.summary, true, at);
+  };
+  const connectSelected = (source: DataSource) => {
+    if (!selected || selected.path === name) { setNotice('先选中一个元素，再把布尔字段绑到它的显示。'); return; }
+    connect(name, selected.path, source, undefined, selected.instance);
+  };
+  /** 拖来的东西放进 container 的 at 处：现成的元素直接放；列表与引用字段要先选模板，打开"数据"页的那张小表单，记着这个落点。 */
+  const placeAdd = (payload: AddPayload, template: string, container: string, at: Drop, client?: Point) => {
+    const document = documentOf(template);
+    if (!document) return;
+    if (payload.element) {
+      if (!applyStructure(template, insertElement(document, template, container, payload.element, at), 'add')) say('这里放不进元素。', false, client);
+      return;
+    }
+    const field = payload.field;
+    if (!field) return;
+    const plan = planFromField(field, document, sources.bindings);
+    if (plan.kind === 'template') {
+      setPanels((now) => ({ ...now, left: true }));
+      setLeftTab('data');
+      setChoosing({ template, field: field.name, place: { container, at, label: container === template ? `画板「${template}」` : `「${container.split('/').at(-1)!}」` } });
+      return;
+    }
+    say(plan.kind === 'none' ? `「${field.label}」建不了元素：${plan.reason}。` : `布尔类型的「${field.label}」绑的是元素的显示：拖到一个元素上。`, false, client);
   };
   const addOnTree = (template: string, over: string, zone: DropZone) => {
     const payload = currentAdd(), document = documentOf(template), place = document && dropTarget(document, template, over, zone);
     if (!payload || !document || !place || !canDropInto(payload, template)) return;
-    applyStructure(template, insertElement(document, template, place.target, payload.element, { index: place.index }), 'add');
+    placeAdd(payload, template, place.target, { index: place.index });
   };
-  /** 拖到图上：从最深处往外找第一个能放的容器；自由布局写落点坐标，堆叠按落点算第几位，网格取落点所在那一格。 */
-  const addOnStage = (stack: readonly LayoutNode[], point: { readonly x: number; readonly y: number }) => {
+  const connectOnTree = (template: string, path: string, at: Point) => {
+    const field = currentAdd()?.field;
+    if (field) connect(template, path, field, at);
+  };
+  /** 拖着的东西放在图上这一处会落到谁身上：从最深处往外找第一个接得住的。字段遇到文字、图片是连上，遇到容器与画板是放进去；新元素只找容器。 */
+  const stageTarget = (stack: readonly LayoutNode[]) => {
+    const payload = currentAdd();
+    if (!payload) return undefined;
+    for (const node of stack) {
+      const source = locations.get(node.path), element = elementOf(node.path);
+      if (!source || !element || !canDropInto(payload, source.template)) continue;
+      const board = source.path === source.template;
+      const kind = payload.field ? fieldDropKind(element['type'], board, payload.field.type) : board || element['type'] === 'container' ? 'inside' : 'pass';
+      if (kind !== 'pass') return { node, source, element, kind, board };
+    }
+    return undefined;
+  };
+  const dropTargetOf = (stack: readonly LayoutNode[]): DropMark | undefined => {
+    const target = stageTarget(stack);
+    if (!target) return undefined;
+    const called = target.board ? '画板' : `「${target.source.path.split('/').at(-1)!}」`;
+    return { path: target.node.path, kind: target.kind, label: `${target.kind === 'connect' ? '连到' : '放进'}${called}` };
+  };
+  /** 拖到图上。连上的写回见 connect；放进容器的：自由布局写落点坐标，堆叠按落点算第几位，网格取落点所在那一格。 */
+  const addOnStage = (stack: readonly LayoutNode[], point: Point, client: Point) => {
     const payload = currentAdd();
     if (!payload) return;
-    for (const node of stack) {
-      const source = locations.get(node.path), element = elementOf(node.path), document = source && documentOf(source.template);
-      if (!source || !document || !element || !(source.path === source.template || element['type'] === 'container') || !canDropInto(payload, source.template)) continue;
-      const layout = isObject(element['layout']) ? element['layout'] : {}, mode = typeof layout['mode'] === 'string' ? layout['mode'] : 'free';
-      const kids = (node.children ?? []).filter((child) => child.visible);
-      let at: Drop = {};
-      if (mode === 'free') at = { point: { x: point.x - node.x, y: point.y - node.y } };
-      else if (mode === 'stack') {
-        const row = layout['direction'] !== 'column';
-        at = { index: kids.filter((child) => (row ? child.x + child.width / 2 < point.x : child.y + child.height / 2 < point.y)).length };
-      } else {
-        const inside = kids.find((child) => point.x >= child.x && point.x <= child.x + child.width && point.y >= child.y && point.y <= child.y + child.height);
-        const place = inside && elementOf(inside.path)?.['place'];
-        if (isObject(place) && typeof place['row'] === 'number' && typeof place['column'] === 'number') at = { cell: { row: place['row'], column: place['column'] } };
-      }
-      applyStructure(source.template, insertElement(document, source.template, source.path, payload.element, at), 'add');
-      return;
+    const target = stageTarget(stack);
+    if (!target) { say(payload.fromField ? '字段只能放进这个模板自己的容器里。' : '这里没有能放元素的容器。', false, client); return; }
+    const { node, source, element } = target;
+    if (target.kind === 'connect') { if (payload.field) connect(source.template, source.path, payload.field, client, node.path); return; }
+    const layout = isObject(element['layout']) ? element['layout'] : {}, mode = typeof layout['mode'] === 'string' ? layout['mode'] : 'free';
+    const kids = (node.children ?? []).filter((child) => child.visible);
+    let at: Drop = {};
+    if (mode === 'free') at = { point: { x: point.x - node.x, y: point.y - node.y } };
+    else if (mode === 'stack') {
+      const row = layout['direction'] !== 'column';
+      at = { index: kids.filter((child) => (row ? child.x + child.width / 2 < point.x : child.y + child.height / 2 < point.y)).length };
+    } else {
+      const inside = kids.find((child) => point.x >= child.x && point.x <= child.x + child.width && point.y >= child.y && point.y <= child.y + child.height);
+      const place = inside && elementOf(inside.path)?.['place'];
+      if (isObject(place) && typeof place['row'] === 'number' && typeof place['column'] === 'number') at = { cell: { row: place['row'], column: place['column'] } };
     }
-    setNotice(payload.fromField ? '字段只能放进这个模板自己的容器里。' : '这里没有能放元素的容器。');
+    placeAdd(payload, source.template, source.path, at, client);
   };
+  // "连接数据…"里列的：这个模板作用域里类型和右键的元素相符的字段与变量。
+  const menuChoices = menu && doc && menu.template === name && menu.path !== name
+    ? connectChoices(doc.document, name, menu.path, scopeVariables(doc.document, sources.baseFields, inspection?.template === name ? inspection : undefined)) : undefined;
   // —— 状态样式（票据 17）：选中的取值跟着选中的元素走，换了元素就回到自身属性。 ——
   const [stateChoice, setStateChoice] = useState<{ readonly key: string; readonly value: string }>();
   const selectedKey = selected ? `${name}\n${selected.path}` : '';
@@ -430,8 +499,8 @@ function Design(props: { readonly name: string; readonly root: string }) {
   const blankBoard = board && !(Array.isArray(board['children']) && board['children'].length > 0);
   const stageHint = blankBoard ? (
     <>
-      <span>空画板。下一步：从底部工具栏加元素，或从"添加"页把字段拖到图上。</span>
-      <button type="button" className="small" onClick={() => { setPanels((now) => ({ ...now, left: true })); setLeftTab('add'); }}>打开"添加"页</button>
+      <span>空画板。下一步：从底部工具栏加元素，或从"数据"页把字段拖到图上。</span>
+      <button type="button" className="small" onClick={() => { setPanels((now) => ({ ...now, left: true })); setLeftTab('data'); }}>打开"数据"页</button>
     </>
   ) : undefined;
   const severe = reply?.problems.filter((problem) => problem.level === 'severe').length ?? 0;
@@ -457,10 +526,14 @@ function Design(props: { readonly name: string; readonly root: string }) {
         <button type="button" className="small primary" disabled={!unpublished} title={unpublished ? undefined : '还没有改动'} onClick={() => void publish()}>发布修订</button>
       </div>
       {notice && <p className="notice design-notice" role="status">{notice}<button type="button" className="link" onClick={() => setNotice(undefined)}>知道了</button></p>}
+      {dropNote && (
+        <p className={`drop-note${dropNote.ok ? '' : ' reject'}`} role="status" data-testid="drop-note" data-kind={dropNote.ok ? 'ok' : 'reject'} title="点一下收起" onClick={() => setDropNote(undefined)}
+          style={{ left: Math.max(12, Math.min(dropNote.x + 12, window.innerWidth - 332)), top: Math.max(12, Math.min(dropNote.y + 16, window.innerHeight - 96)) }}>{dropNote.text}</p>
+      )}
       <ErrorBox problems={state.problems} title="打不开模板" />
       {failures.map((item) => <SaveFailure key={item.name} doc={item} session={session} />)}
       <div className="design-body">
-        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} {...(inlineEditor ? { inline: inlineEditor } : {})} {...(handleInput ? { handles: handleInput } : {})} {...(handleNote ? { handleNote } : {})} onHandle={commitHandle} {...(stageHint ? { hint: stageHint } : {})} onClear={() => setSelection(undefined)}
+        <DesignStage preview={preview} tool={tool} view={view} insets={insets} selected={selected} {...(treeHover ? { hover: treeHover } : {})} layers={layers} {...(usedBy ? { usedBy } : {})} elementOf={elementOf} {...(compareImage ? { compare: compareImage } : {})} onView={setView} onFit={setFit} onPick={pickFrom} onEditText={editText} onDropAdd={addOnStage} dropTargetOf={dropTargetOf} {...(inlineEditor ? { inline: inlineEditor } : {})} {...(handleInput ? { handles: handleInput } : {})} {...(handleNote ? { handleNote } : {})} onHandle={commitHandle} {...(stageHint ? { hint: stageHint } : {})} onClear={() => setSelection(undefined)}
           onMenu={(x, y, stack) => {
             const instance = stack[0]!.path, source = locations.get(instance);
             if (!source) return;
@@ -469,9 +542,9 @@ function Design(props: { readonly name: string; readonly root: string }) {
           }} />
         <ScopeBar root={root} name={name} selected={selected} reply={reply} left={insets.left} right={insets.right} onPick={pick} />
         {panels.left && (
-          <aside className="design-panel left" aria-label="结构与变量">
-            <div className="tabs" role="tablist" aria-label="结构与变量">
-              {([['structure', '结构'], ['variables', '变量'], ['add', '添加']] as const).map(([id, label]) => (
+          <aside className="design-panel left" aria-label="图层与数据">
+            <div className="tabs" role="tablist" aria-label="图层与数据">
+              {([['structure', '图层'], ['data', '数据']] as const).map(([id, label]) => (
                 <button key={id} type="button" role="tab" aria-selected={leftTab === id} className={leftTab === id ? 'active' : undefined} onClick={() => setLeftTab(id)}
                   onDragEnter={(event) => { if (isAddDrag(event) && leftTab !== id) setLeftTab(id); }}>{label}</button>
               ))}
@@ -480,10 +553,10 @@ function Design(props: { readonly name: string; readonly root: string }) {
               {doc ? (leftTab === 'structure'
                 ? <DesignStructure root={root} documentOf={documentOf} {...(selected ? { selection: selected } : {})} {...(reply ? { reply } : {})} locateTick={locateTick} onSelect={(template, path) => select(template, path)} onHover={setTreeHover}
                   onMenu={(x, y, template, path) => { select(template, path); setMenu({ x, y, template, path }); }}
-                  {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} onAddDrop={addOnTree} />
-                : leftTab === 'variables'
-                  ? <VariablesPanel doc={doc} session={session} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})} onSelect={openVariable} onHover={setHoverVariable} />
-                  : <AddPanel template={name} document={doc.document} sources={sources} targetLabel={insertionLabel(doc.document, name, selected?.path)} {...(selected && selected.path !== name ? { selectionLabel: selected.path.split('/').at(-1)! } : {})} onAdd={addElement} onBindVisible={bindVisible} />) : <Loading>正在读取模板…</Loading>}
+                  {...(renaming ? { renaming } : {})} onRename={rename} onRenameDone={() => setRenaming(undefined)} onDrop={dropOnTree} onAddDrop={addOnTree} onConnectDrop={connectOnTree} />
+                : <DataPanel doc={doc} session={session} sources={sources} {...(inspection ? { inspection } : {})} {...(variable ? { selected: variable } : {})}
+                  targetLabel={insertionLabel(doc.document, name, selected?.path)} {...(selected && selected.path !== name ? { selectionLabel: selected.path.split('/').at(-1)! } : {})}
+                  {...(choosing?.template === name ? { choosing } : {})} onChoosing={setChoosing} onAdd={addElement} onConnectSelected={connectSelected} onSelect={openVariable} onHover={setHoverVariable} />) : <Loading>正在读取模板…</Loading>}
             </div>
           </aside>
         )}
@@ -500,7 +573,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
             <button type="button" aria-label="平移" title="平移 H，或按住空格" aria-pressed={tool === 'pan'} onClick={() => setTool('pan')} aria-keyshortcuts="H"><Icon d={HAND} /></button>
           </span>
           <span className="dock-sep" aria-hidden="true" />
-          {doc && <InsertBar key={name} template={name} document={doc.document} sources={sources} targetLabel={insertionLabel(doc.document, name, selected?.path)} onAdd={addElement} />}
+          {doc && <InsertBar key={name} template={name} document={doc.document} sources={sources} targetLabel={insertionLabel(doc.document, name, selected?.path)} onAdd={(element) => addElement(element)} />}
           {doc && <span className="dock-sep" aria-hidden="true" />}
           <span className="dock-group" role="group" aria-label="缩放">
             <button type="button" aria-label="缩小" disabled={view.zoom <= MIN_ZOOM} onClick={() => zoomBy(1 / 1.25)}>−</button>
@@ -515,7 +588,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
           </span>
           <span className="dock-sep" aria-hidden="true" />
           <span className="dock-group" role="group" aria-label="面板">
-            <button type="button" aria-label="结构与变量面板" title="结构与变量 Ctrl+\\" aria-pressed={panels.left} onClick={() => setPanels((now) => ({ ...now, left: !now.left }))}><Icon d={PANEL_LEFT} /></button>
+            <button type="button" aria-label="图层与数据面板" title="图层与数据 Ctrl+\\" aria-pressed={panels.left} onClick={() => setPanels((now) => ({ ...now, left: !now.left }))}><Icon d={PANEL_LEFT} /></button>
             <button type="button" aria-label="检查器面板" title="检查器 Ctrl+\\" aria-pressed={panels.right} onClick={() => setPanels((now) => ({ ...now, right: !now.right }))}><Icon d={PANEL_RIGHT} /></button>
           </span>
         </div>
@@ -576,7 +649,7 @@ function Design(props: { readonly name: string; readonly root: string }) {
         )}
       </section>
       {menu && doc && (
-        <ElementMenu menu={menu} doc={doc} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
+        <ElementMenu menu={menu} doc={doc} {...(menuChoices ? { choices: menuChoices } : {})} onConnect={(source) => { setMenu(undefined); connect(menu.template, menu.path, source, { x: menu.x, y: menu.y }, menu.instance); }} onClose={() => setMenu(undefined)} onCopy={(text) => void copyPath(text)} onPick={(instance) => { setMenu(undefined); pick(instance); }}
           onLocate={() => { setMenu(undefined); setPanels((now) => ({ ...now, left: true })); setLeftTab('structure'); setLocateTick((value) => value + 1); }}
           onParameter={(parameter) => { setMenu(undefined); openVariable({ template: name, name: parameter, kind: 'parameter' }); }}
           onStructure={(op) => structure(op, { template: menu.template, path: menu.path })} onRename={() => startRename({ template: menu.template, path: menu.path })}
@@ -629,14 +702,17 @@ function ProblemsOfPreview(props: { readonly reply: PreviewReply; readonly onPic
     : <p className="small muted">这份样例没有问题。</p>;
 }
 
-/** 右键菜单：这里的元素、改结构（票据 12）、复制元素路径、在结构中定位、打开绑定的字段。 */
+/** 右键菜单：这里的元素、连接数据（第三轮票据 07）、改结构（票据 12）、复制元素路径、在图层中定位、打开绑定的字段。 */
 function ElementMenu(props: {
   readonly menu: MenuState; readonly doc: DesignDoc; readonly onClose: () => void; readonly onCopy: (text: string) => void; readonly onPick: (instance: string) => void; readonly onLocate: () => void; readonly onParameter: (name: string) => void;
   readonly onStructure: (op: 'duplicate' | 'delete' | 'up' | 'down' | 'wrap' | 'unwrap') => void; readonly onRename: () => void;
   /** 提取为子模板（票据 19）。 */
   readonly onExtract: () => void;
+  /** "连接数据…"里列的字段与变量；别的模板里的元素与画板没有。 */
+  readonly choices?: readonly ConnectChoice[]; readonly onConnect: (source: DataSource) => void;
 }) {
   const { menu, doc } = props, root = useRef<HTMLDivElement>(null);
+  const [connecting, setConnecting] = useState(false);
   useEffect(() => {
     const away = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) props.onClose(); };
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') props.onClose(); };
@@ -650,7 +726,14 @@ function ElementMenu(props: {
   const base = isObject(doc.document['base']) ? String(doc.document['base']['name']) : undefined;
   const bound = variables.filter((name) => variableKind(doc.document, name.split('.')[0]!) !== 'derived');
   return (
-    <div className="menu element-menu" role="menu" aria-label="元素" ref={root} data-testid="element-menu" style={{ left: menu.x, top: Math.min(menu.y, window.innerHeight - 340) }}>
+    <div className="menu element-menu" role="menu" aria-label="元素" ref={root} data-testid="element-menu" style={{ left: menu.x, top: Math.min(menu.y, window.innerHeight - 372) }}>
+      {connecting && props.choices ? (
+        <>
+          <button type="button" role="menuitem" className="menu-back" onClick={() => setConnecting(false)}><span>‹ 连接数据</span><span className="small faint">{menu.path.split('/').at(-1)}</span></button>
+          <hr className="menu-rule" />
+          <ConnectList choices={props.choices} onChoose={props.onConnect} />
+        </>
+      ) : <>
       {(menu.stack?.length ?? 0) > 1 && (
         <>
           <span className="menu-title small faint">这里的元素</span>
@@ -664,6 +747,7 @@ function ElementMenu(props: {
       )}
       {menu.path !== menu.template && (
         <>
+          {props.choices && <button type="button" role="menuitem" data-testid="connect-data" onClick={() => setConnecting(true)}><span>连接数据…</span><span className="small faint" aria-hidden="true">›</span></button>}
           <button type="button" role="menuitem" onClick={() => props.onStructure('duplicate')}><span>复制一份</span><kbd>Ctrl+D</kbd></button>
           <button type="button" role="menuitem" onClick={() => props.onStructure('up')}><span>上移</span><kbd>Alt+↑</kbd></button>
           <button type="button" role="menuitem" onClick={() => props.onStructure('down')}><span>下移</span><kbd>Alt+↓</kbd></button>
@@ -676,11 +760,12 @@ function ElementMenu(props: {
         </>
       )}
       <button type="button" role="menuitem" onClick={() => props.onCopy(menu.instance ?? menu.path)}>复制元素路径</button>
-      <button type="button" role="menuitem" onClick={props.onLocate}>在结构中定位</button>
+      <button type="button" role="menuitem" onClick={props.onLocate}>在图层中定位</button>
       {bound.map((name) => (variableKind(doc.document, name.split('.')[0]!) === 'parameter'
         ? <button key={name} type="button" role="menuitem" onClick={() => props.onParameter(name)}>打开绑定的参数 {name}</button>
         : <a key={name} role="menuitem" href={href(['definitions', base ?? ''], { field: name })} onClick={props.onClose}>打开绑定的字段 {name}</a>))}
       {bound.length === 0 && <span className="menu-empty small muted">没有绑定的字段</span>}
+      </>}
     </div>
   );
 }
