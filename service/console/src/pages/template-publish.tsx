@@ -18,6 +18,7 @@ import { changesSummary, RevisionChanges } from '../components/revision-changes.
 import { templatePublishVerdict } from '../form/publish-verdict.js';
 import { href, problemsOf, useLivePreview, useLoad, type LivePreview } from '../hooks.js';
 import { documentInfo, parseTemplateText } from '../template/document.js';
+import { calledTemplates } from '../template/tree.js';
 import type { RevisionDiff, DatasetEntry, Identity, Problem, RevisionConflict, TemplateInfo, TemplateRevisions, WorkingCopyCheck } from '../types.js';
 import { datasetRef, sameSchema } from './templates.js';
 import { Loading } from '../components/motifs.js';
@@ -37,14 +38,19 @@ const orMissing = async <T,>(request: Promise<T>): Promise<T | undefined> => {
 
 /** 这一页要的全部内容：root 是渲染的模板，改子模板时它是调用子模板的模板，只有这样才有数据可看。 */
 async function loadPublish(name: string, root: string) {
-  const [copy, revisions, check, current, rootCopy, datasets] = await Promise.all([
+  const [copy, revisions, check, current, rootCopy, datasets, copies] = await Promise.all([
     orMissing(api.workingCopy(name)), orMissing(api.templateRevisions(name)), orMissing(api.checkWorkingCopy(name)),
-    orMissing(api.template(root)), root === name ? Promise.resolve(undefined) : orMissing(api.workingCopy(root)), api.datasets(),
+    orMissing(api.template(root)), root === name ? Promise.resolve(undefined) : orMissing(api.workingCopy(root)), api.datasets(), api.workingCopies(),
   ]);
   const rootText = root === name ? copy?.content : rootCopy?.content;
   const workingInfo = rootText === undefined ? current : documentInfo(root, parseTemplateText(rootText));
   const base = workingInfo?.base ?? current?.base;
-  return { copy, revisions, check, current, workingInfo, datasets: datasets.datasets.filter((entry) => sameSchema(entry.staticSchema, base)) };
+  // 调用的模板里还没发布的新模板（只有工作副本、没有修订）：检查只叠加这一个工作副本，它们算"没有"，要先发布。
+  let document: ReturnType<typeof parseTemplateText> | undefined;
+  try { document = copy ? parseTemplateText(copy.content) : undefined; } catch { document = undefined; }
+  const fresh = new Set(copies.workingCopies.filter((item) => item.baseRevision === undefined).map((item) => item.name));
+  const unpublished = document ? calledTemplates(name, (template) => (template === name ? document : undefined)).filter((template) => template !== name && fresh.has(template)) : [];
+  return { copy, revisions, check, current, workingInfo, unpublished, datasets: datasets.datasets.filter((entry) => sameSchema(entry.staticSchema, base)) };
 }
 
 export function TemplatePublish(props: { readonly name: string; readonly root?: string; readonly identity: Identity }) {
@@ -158,7 +164,7 @@ export function TemplatePublish(props: { readonly name: string; readonly root?: 
                 <Compare key={`${root}\n${data.current?.currentRevision ?? 0}`} root={root} current={data.current} working={data.workingInfo}
                   datasets={data.datasets} currentRevision={data.revisions?.currentRevision} version={check.sha256} />
               )}
-              <Changes check={check} />
+              <Changes check={check} unpublished={data?.unpublished ?? []} />
               {shownConflict && <Conflict conflict={shownConflict} canPublish={canPublish} busy={busy || severe > 0} onOverwrite={() => void publish(true)} />}
               {history}
             </div>
@@ -225,8 +231,9 @@ function DiscardCopy(props: { readonly busy: boolean; readonly onDiscard: () => 
     : <button type="button" className="link publish-discard" onClick={() => setConfirming(true)}>丢弃工作副本</button>;
 }
 
-function Changes(props: { readonly check: WorkingCopyCheck }) {
-  const { check } = props;
+function Changes(props: { readonly check: WorkingCopyCheck; readonly unpublished: readonly string[] }) {
+  const { check, unpublished } = props;
+  const missing = unpublished.length > 0 && check.problems.some((problem) => problem.code === 'input.templateNotFound');
   return (
     <>
       <section className="publish-section">
@@ -237,7 +244,13 @@ function Changes(props: { readonly check: WorkingCopyCheck }) {
         <section className="publish-section">
           <h2>静态检查</h2>
           <div className="publish-sheet"><ProblemList problems={check.problems} label="模板静态检查的问题" /></div>
-          {check.problems.some((problem) => problem.level === 'severe') && <p className="hint">有严重问题，改好之后才能发布。</p>}
+          {missing && (
+            <p className="hint" data-testid="publish-callees-first">
+              {unpublished.map((template, index) => <span key={template}>{index > 0 && '、'}<a href={href(['templates', template, 'publish'])}>「{template}」</a></span>)}
+              是这里调用的新模板，还没发布：发布时只认已发布的被调模板，先发布{unpublished.length > 1 ? '它们' : '它'}，再回来发布这个模板。
+            </p>
+          )}
+          {check.problems.some((problem) => problem.level === 'severe' && !(missing && problem.code === 'input.templateNotFound')) && <p className="hint">有严重问题，改好之后才能发布。</p>}
         </section>
       )}
     </>

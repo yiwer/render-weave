@@ -4,7 +4,10 @@
  */
 import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { listItemPanel, propertyPanel, writeListItem, writeProperty, type Editor, type PropertyField, type PropertyPanel } from '../console/src/template/properties.js';
+import { bindingCandidates, boundName, currentLiteral, describeOrigin, extractParameter, parameterNameProblem, scopeVariables, suggestParameter, takenNames, unboundValue } from '../console/src/template/binding.js';
+import { canDisplay, formatProblem, fragmentsOf, insertSlot, insertText, removeFragment, setText } from '../console/src/template/content.js';
+import { fontFamilies } from '../console/src/template/fonts.js';
+import { fieldByKey, listItemPanel, propertyPanel, writeListItem, writeProperty, type Bindable, type Editor, type PropertyField, type PropertyPanel } from '../console/src/template/properties.js';
 import type { JsonObject } from '../console/src/template/document.js';
 import templateSchema from '../../schemas/template.schema.json' with { type: 'json' };
 import { checkDslDocument } from '../src/engine.js';
@@ -122,7 +125,7 @@ describe('生成规则', () => {
 
   it('位置尺寸按父容器的排布生成：自由有左上，堆叠有外边距，网格的行列必填', () => {
     const document = fresh();
-    const keys = (path: string) => (panelOf(document, path).groups.find((group) => group.name === '位置尺寸')?.fields ?? []).map((field) => field.key);
+    const keys = (path: string) => (panelOf(document, path).groups.find((group) => group.name === '位置与尺寸')?.fields ?? []).map((field) => field.key);
     expect(keys(at('矩形'))).toEqual(expect.arrayContaining(['place.left', 'place.top', 'place.width', 'place.height']));
     expect(keys(at('矩形'))).not.toContain('place.margin');
     expect(keys(at('容器/容器内文字'))).toContain('place.margin');
@@ -337,5 +340,280 @@ describe('穷举：每个元素的每个顶层属性，每个变体的初始值�
       if (editor.kind === 'group' && editor.absent) tryWrite(field, '初始值', editor.initial);
     }
     expect(failures).toEqual([]);
+  });
+});
+
+describe('值格：绑定、断开、提取为参数（模板设计页票据 09）', () => {
+  const bindableOf = (field: PropertyField): Bindable | undefined => (field.editor.kind === 'variants' ? field.editor.bindable : undefined);
+  const mustBind = (field: PropertyField): Bindable => {
+    const found = bindableOf(field);
+    if (!found) throw new Error(`${field.key} 不是值格`);
+    return found;
+  };
+  const inspection = (variables: { name: string; displayName?: string; kind: 'field' | 'parameter' | 'derived'; type: string; value: unknown; origin?: unknown }[], template = NAME) => ({
+    path: NAME, template, source: NAME, checks: [], instances: [],
+    variables: variables.map((item) => ({ displayName: item.name, ...item })),
+  }) as never;
+
+  it('能不能绑定以 Schema 的变体为准：有绑定变量这一项、字面值类型说得清的都是值格', () => {
+    const document = fresh();
+    for (const name of ['椭圆', '矩形', '容器', '文字', '图片', '二维码', '条码']) {
+      for (const field of allFields(panelOf(document, at(name)))) {
+        if (field.editor.kind !== 'variants' || !field.editor.variants.some((variant) => variant.label === '绑定变量')) continue;
+        const labels = field.editor.variants.map((variant) => variant.label);
+        // 传入参数的值是 { value }、{ loop }、{ var }，字面值没有单一类型，留给调用的表单（票据 15）。
+        const describable = labels.some((label) => ['数值', '颜色', '资源', '文字', '是'].includes(label));
+        expect(Boolean(field.editor.bindable), `${name} 的 ${field.key}：${labels.join('、')}`).toBe(describable);
+      }
+    }
+  });
+
+  it.each([
+    ['椭圆', 'opacity', 'number'],
+    ['矩形', 'fill', 'color'],
+    ['矩形', 'visible', 'boolean'],
+    ['矩形', 'cornerRadius', 'number'],
+    ['图片', 'source', 'image'],
+    ['二维码', 'content', 'text'],
+    ['二维码', 'foreground', 'color'],
+    ['文字', 'letterSpacing', 'number'],
+  ])('类型和模板静态检查的判断一致：%s 的 %s 要 %s', (name, key, type) => {
+    expect(mustBind(fieldOf(fresh(), at(name), key)).type).toBe(type);
+  });
+
+  it('不能绑定的属性不是值格，并写明原因：字体要用状态样式', () => {
+    const document = fresh();
+    const font = fieldOf(document, at('文字'), 'font');
+    expect(bindableOf(font)).toBeUndefined();
+    expect(font.noBinding).toContain('用状态样式');
+    expect(fieldOf(document, at('文字'), 'writingMode').noBinding).toContain('书写方向');
+    expect(fieldOf(document, at('文字'), 'name').noBinding, '名称不是值').toBeUndefined();
+    expect(fieldOf(document, at('椭圆'), 'opacity').noBinding, '能绑定的不写').toBeUndefined();
+  });
+
+  it('没写的属性带引擎的缺省值，字面值的输入框也在，不用先选变体', () => {
+    const field = fieldOf(fresh(), at('椭圆'), 'opacity');
+    expect(field.fallback).toBe(1);
+    expect(mustBind(field).literal).toMatchObject({ kind: 'number', min: 0, max: 1 });
+  });
+
+  it('绑定：写回 { var }，结果由 checkDslDocument 判断；只列类型相符的变量，引用展开一层', () => {
+    const document = fresh(), path = at('矩形');
+    const written = extractParameter(document, path, ['fill'], { name: 'accent', displayName: '强调色', type: 'color', value: '#112233' });
+    const rebound = writeProperty(written, path, ['fill'], { var: 'accent' });
+    expect(severe(rebound)).toEqual([]);
+    const fields = [
+      { name: 'title', label: '标题', type: 'text' },
+      { name: 'stops', label: '站点', type: 'list' },
+      { name: 'terminal', label: '终点站', type: 'ref', fields: [{ name: 'name', label: '站名', type: 'text' }, { name: 'order', label: '序号', type: 'number' }] },
+    ];
+    const variables = scopeVariables(rebound, fields, inspection([
+      { name: 'title', kind: 'field', type: 'text', value: '万国城' },
+      { name: 'terminal', kind: 'field', type: 'ref', value: { fields: { name: '万国城总站', order: 35 } } },
+      { name: 'accent', kind: 'parameter', type: 'color', value: '#112233FF' },
+    ]));
+    expect(bindingCandidates(variables, 'color').map((item) => item.name)).toContain('accent');
+    expect(bindingCandidates(variables, 'color').some((item) => item.name === 'title'), '文本不能绑颜色').toBe(false);
+    expect(bindingCandidates(variables, 'text').filter((item) => item.kind === 'field').map((item) => [item.name, item.value])).toEqual([['title', '万国城'], ['terminal.name', '万国城总站']]);
+    expect(bindingCandidates(variables, 'number').find((item) => item.name === 'terminal.order')).toMatchObject({ value: 35, label: '终点站 · 序号' });
+  });
+
+  it('别的模板的求值结果不算：名单照文档列，没有取值', () => {
+    const document = extractParameter(fresh(), at('矩形'), ['fill'], { name: 'accent', displayName: '强调色', type: 'color', value: '#112233' });
+    const variables = scopeVariables(document, [], undefined);
+    expect(variables.find((item) => item.name === 'accent')).toEqual({ name: 'accent', label: '强调色', kind: 'parameter', type: 'color' });
+  });
+
+  it('断开：当前值变成字面值，不透明的颜色去掉 FF；当前值用不上时写初值', () => {
+    const document = fresh(), path = at('矩形');
+    const fill = mustBind(fieldOf(document, path, 'fill')), opacity = mustBind(fieldOf(document, at('椭圆'), 'opacity'));
+    expect(unboundValue(fill, '#FF8000FF')).toBe('#FF8000');
+    expect(unboundValue(fill, '#FF800080'), '半透明要留着').toBe('#FF800080');
+    expect(unboundValue(opacity, 0.4)).toBe(0.4);
+    expect(unboundValue(opacity, null), '空值').toBe(opacity.initial);
+    expect(unboundValue(opacity, 5), '超出这一格的范围').toBe(opacity.initial);
+    const bound = writeProperty(document, path, ['fill'], { var: 'someColor' });
+    const unbound = writeProperty(bound, path, ['fill'], unboundValue(fill, '#FF8000FF'));
+    expect(elementOf(unbound, path)['fill']).toBe('#FF8000');
+    expect(severe(unbound)).toEqual([]);
+    expect(boundName(elementOf(bound, path)['fill'])).toBe('someColor');
+  });
+
+  it('提取为参数：当前值存成内部参数的缺省值并绑定它，一次写回；合法的模板', () => {
+    const document = fresh(), path = at('椭圆');
+    const written = writeProperty(document, path, ['opacity'], 0.5);
+    const field = fieldOf(written, path, 'opacity'), bindable = mustBind(field);
+    expect(currentLiteral(field, bindable, undefined)).toBe(0.5);
+    const extracted = extractParameter(written, path, ['opacity'], { name: 'opacity', displayName: '椭圆不透明度', type: bindable.type, value: 0.5 });
+    expect(severe(extracted)).toEqual([]);
+    expect(elementOf(extracted, path)['opacity']).toEqual({ var: 'opacity' });
+    expect((extracted['parameters'] as unknown[]).at(-1)).toEqual({ name: 'opacity', displayName: '椭圆不透明度', visibility: 'internal', type: 'number', default: 0.5 });
+    expect(elementOf(written, path)['opacity'], '原文档不变').toBe(0.5);
+  });
+
+  it('提取的值：绑定着的取当前样例的值，没写的取缺省；写成对象或还没选图时没有单个的值', () => {
+    const document = fresh();
+    const unset = fieldOf(document, at('椭圆'), 'opacity');
+    expect(currentLiteral(unset, mustBind(unset), undefined)).toBe(1);
+    const boundDoc = writeProperty(document, at('椭圆'), ['opacity'], { var: 'x' }), bound = fieldOf(boundDoc, at('椭圆'), 'opacity');
+    expect(currentLiteral(bound, mustBind(bound), 0.25)).toBe(0.25);
+    const corners = writeProperty(document, at('矩形'), ['cornerRadius'], { topLeft: 2 }), split = fieldOf(corners, at('矩形'), 'cornerRadius');
+    expect(currentLiteral(split, mustBind(split), undefined)).toBeUndefined();
+    const noImage = writeProperty(document, at('图片'), ['source'], { var: 'x' }), source = fieldOf(noImage, at('图片'), 'source');
+    expect(currentLiteral(source, mustBind(source), undefined), '当前样例没有图').toBeUndefined();
+  });
+
+  it('起名：沿用属性的英文键，重名加序号；嵌套的写法取外层；点与重名不合法', () => {
+    const document = fresh();
+    const opacity = fieldOf(document, at('椭圆'), 'opacity');
+    expect(suggestParameter(document, [], '椭圆', opacity)).toEqual({ name: 'opacity', displayName: '椭圆不透明度' });
+    const once = extractParameter(document, at('椭圆'), ['opacity'], { name: 'opacity', displayName: '椭圆不透明度', type: 'number', value: 1 });
+    expect(suggestParameter(once, [], '矩形', fieldOf(once, at('矩形'), 'opacity')).name).toBe('opacity2');
+    const fixed = writeProperty(document, at('矩形'), ['place', 'width'], { fixed: 12 });
+    expect(suggestParameter(fixed, [], '矩形', fieldOf(fixed, at('矩形'), 'place.width.fixed')).name).toBe('width');
+    const taken = takenNames(once, []);
+    expect(parameterNameProblem('opacity', taken)).toContain('已经有');
+    expect(parameterNameProblem('a.b', taken)).toContain('点');
+    expect(parameterNameProblem('', taken)).toBeDefined();
+    expect(parameterNameProblem('fresh', taken)).toBeUndefined();
+  });
+
+  it('来源链说成人话，能跳的给出位置：内部参数、请求给值、经调用的字段、固定值与循环信息', () => {
+    const doc = { parameters: [{ name: 'stopNameSize', displayName: '站名字号' }] } as JsonObject;
+    const documentOf = (template: string) => (template === '标准线路单边' ? doc : undefined);
+    expect(describeOrigin({ kind: 'default', template: '标准线路单边', name: 'stopNameSize', visibility: 'internal' }, '站点', documentOf)).toEqual({
+      before: '来自 ', link: { template: '标准线路单边', name: 'stopNameSize', kind: 'parameter', label: '标准线路单边「站名字号」' }, after: '（内部参数）',
+    });
+    expect(describeOrigin({ kind: 'default', template: '标准线路单边', name: 'stopNameSize', visibility: 'public' }, '标准线路单边', documentOf)).toMatchObject({ link: { label: '本模板「站名字号」' }, after: '（对外参数的缺省值）' });
+    expect(describeOrigin({ kind: 'request', template: '标准线路单边', name: 'currentIndex' }, '站点', documentOf)).toMatchObject({ link: { name: 'currentIndex' }, after: '（对外参数，出图时由渲染请求给值）' });
+    expect(describeOrigin({ kind: 'field', template: '标准线路单边', name: 'terminal.name', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toMatchObject({ link: { name: 'terminal', kind: 'field' }, after: '（调用 站点列 传入）' });
+    expect(describeOrigin({ kind: 'value', template: '标准线路单边', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '调用 站点列 写的固定值', after: '' });
+    expect(describeOrigin({ kind: 'loop', template: '标准线路单边', loop: 'index', call: '标准线路单边/站点面板/站点列' }, '站点', documentOf)).toEqual({ before: '循环序号，由循环 站点列 传入', after: '' });
+  });
+});
+
+describe('检查器的分组与专属编辑器（模板设计页票据 10）', () => {
+  const groupsOf = (path: string) => panelOf(fresh(), path).groups.map((group) => group.name);
+  const labelsOf = (field: PropertyField) => (field.editor.kind === 'choice' ? field.editor.options.map((option) => option.label) : []);
+
+  it.each([
+    ['文字', ['基本', '内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']],
+    ['循环', ['基本', '循环', '传入参数', '每项排布', '位置与尺寸', '外观', '显示', '状态样式']],
+    ['调用', ['基本', '调用', '传入参数', '位置与尺寸', '显示', '状态样式']],
+    ['容器', ['基本', '排布', '位置与尺寸', '外观', '显示', '状态样式']],
+    ['图片', ['基本', '图片', '位置与尺寸', '显示', '状态样式']],
+    ['二维码', ['基本', '码', '位置与尺寸', '外观', '显示', '状态样式']],
+    ['矩形', ['基本', '位置与尺寸', '外观', '显示', '状态样式']],
+    ['路径', ['基本', '形状', '位置与尺寸', '外观', '显示', '状态样式']],
+  ])('%s 的分组先后照方案第 7 节的表', (name, groups) => {
+    expect(groupsOf(at(name))).toEqual(groups);
+  });
+
+  it('画板：适用尺寸范围、缩字下限、排布、外观', () => {
+    expect(groupsOf(NAME).filter((name) => name !== '基本')).toEqual(['适用尺寸范围', '缩字下限', '排布', '外观']);
+  });
+
+  it('没写的可选项留在组里，显示缺省值', () => {
+    const panel = panelOf(fresh(), at('矩形')), shown = panel.groups.find((group) => group.name === '显示')!;
+    expect(shown.fields.map((field) => [field.key, field.fallback])).toEqual(expect.arrayContaining([['visible', true], ['opacity', 1]]));
+  });
+
+  it('适配步骤只给 DSL 合法的组合，横排竖排分开；写回都合法', () => {
+    const document = fresh(), path = at('文字');
+    const horizontal = fieldOf(document, path, 'fit.steps');
+    expect(labelsOf(horizontal)).toEqual(['不适配', '收紧字距', '压缩字形', '收紧字距 → 压缩字形', '压缩字形 → 缩字', '收紧字距 → 压缩字形 → 缩字']);
+    const vertical = writeProperty(document, path, ['writingMode'], 'vertical');
+    const narrow = fieldOf(vertical, path, 'fit.steps');
+    expect(labelsOf(narrow)).toEqual(['不适配', '收紧字距', '收紧字距 → 压缩字形']);
+    for (const option of narrow.editor.kind === 'choice' ? narrow.editor.options : []) expect(severe(writeProperty(vertical, path, ['fit', 'steps'], option.value))).toEqual([]);
+    // 竖排才有缩字组，横排才有元素自己的缩字下限。
+    expect(fieldByKey(panelOf(document, path), 'fit.widthOverflow')).toBeUndefined();
+    expect(fieldByKey(panelOf(vertical, path), 'fit.widthOverflow')).toBeDefined();
+    expect(fieldByKey(panelOf(vertical, path), 'fit.minFontSize')).toBeUndefined();
+  });
+
+  it('互斥写明：左和右二选一，写了一边去掉另一边', () => {
+    const document = fresh(), path = at('矩形');
+    expect(fieldOf(document, path, 'place.right').exclusive).toEqual(['左']);
+    expect(fieldOf(document, path, 'place.top').exclusive).toEqual(['下']);
+    const written = writeProperty(writeProperty(document, path, ['place', 'left'], 3), path, ['place', 'right'], 4);
+    expect(elementOf(written, path)['place']).toMatchObject({ right: 4 });
+    expect(elementOf(written, path)['place']).not.toHaveProperty('left');
+    expect(severe(written)).toEqual([]);
+  });
+
+  it('失效写明：竖排文字不能倾斜；横排不拦', () => {
+    const document = fresh(), path = at('文字');
+    expect(fieldOf(document, path, 'slant').blocked).toBeUndefined();
+    expect(fieldOf(writeProperty(document, path, ['writingMode'], 'vertical'), path, 'slant').blocked).toContain('竖排文字不能倾斜');
+  });
+
+  it('竖排文字的片段也能展开成字段，不退回 JSON', () => {
+    const document = fresh(), path = at('文字');
+    const vertical = writeProperty(document, path, ['writingMode'], 'vertical');
+    expect(fieldByKey(panelOf(vertical, path), 'content.0.fontSize')).toBeDefined();
+  });
+
+  describe('内容的片段', () => {
+    const name = { slot: 'name' };
+
+    it('打字改文字；写空去掉这一段，相邻的文字合起来；带样式的留着', () => {
+      expect(setText([{ text: '甲' }], 0, '甲乙')).toEqual([{ text: '甲乙' }]);
+      expect(setText([{ text: '甲' }, { text: '' }, { text: '丙' }], 1, '')).toEqual([{ text: '甲丙' }]);
+      expect(setText([{ text: '甲', fontSize: 3 }], 0, '')).toEqual([{ text: '', fontSize: 3 }]);
+      expect(setText([{ text: '甲' }], 0, '')).toEqual([]);
+    });
+
+    it('插入字段：从光标处切开文字，两半各留样式；光标落到插槽后面', () => {
+      expect(insertSlot([{ text: '开往总站' }], { index: 0, offset: 2 }, 'name')).toEqual({ fragments: [{ text: '开往' }, name, { text: '总站' }], caret: { index: 2, offset: 0 } });
+      expect(insertSlot([{ text: '甲乙', color: '#000000' }], { index: 0, offset: 1 }, 'name').fragments).toEqual([{ text: '甲', color: '#000000' }, name, { text: '乙', color: '#000000' }]);
+      expect(insertSlot([{ text: '甲' }], { index: 0, offset: 0 }, 'name')).toEqual({ fragments: [name, { text: '甲' }], caret: { index: 1, offset: 0 } });
+      expect(insertSlot([{ text: '甲' }], { index: 0, offset: 1 }, 'name')).toEqual({ fragments: [{ text: '甲' }, name], caret: { gap: 2 } });
+      expect(insertSlot([], { gap: 0 }, 'name')).toEqual({ fragments: [name], caret: { gap: 1 } });
+      expect(insertSlot([name, { slot: 'b' }], { gap: 1 }, 'c').fragments.map((item) => item['slot'])).toEqual(['name', 'c', 'b']);
+    });
+
+    it('两个插槽之间能打字', () => {
+      expect(insertText([name, { slot: 'b' }], 1, '-')).toEqual([name, { text: '-' }, { slot: 'b' }]);
+    });
+
+    it('删插槽：前后的文字合起来，光标落回原处', () => {
+      expect(removeFragment([{ text: '甲' }, name, { text: '乙' }], 1)).toEqual({ fragments: [{ text: '甲乙' }], caret: { index: 0, offset: 1 } });
+      expect(removeFragment([name, { text: '乙' }], 0)).toEqual({ fragments: [{ text: '乙' }], caret: { index: 0, offset: 0 } });
+      expect(removeFragment([name], 0)).toEqual({ fragments: [], caret: { gap: 0 } });
+    });
+
+    it('写回的结果合法', () => {
+      const document = fresh(), path = at('文字');
+      const before = fragmentsOf(elementOf(document, path)['content']);
+      const { fragments } = insertSlot(insertText(before, 0, '姓名：'), { index: 0, offset: 3 }, 'title');
+      const written = writeProperty(document, path, ['content'], fragments);
+      expect(severe(written)).toEqual([]);
+      expect(elementOf(written, path)['content']).toEqual(fragments);
+    });
+
+    it('展示格式：写法与类型都用引擎的规则，不等出图', () => {
+      expect(formatProblem('0.00', 'number')).toBeUndefined();
+      expect(formatProblem('yyyy年M月d日', 'date')).toBeUndefined();
+      expect(formatProblem('HH:mm', 'time')).toBeUndefined();
+      expect(formatProblem('HH:mm', 'date')).toContain('含时分秒');
+      expect(formatProblem('0.00', 'date')).toContain('不能用于');
+      expect(formatProblem('xx', 'date')).toContain('不是可用的格式符');
+      expect(formatProblem('0.00', 'text')).toContain('文本类型不带展示格式');
+      expect(formatProblem('0.00', undefined), '类型还不知道时只查写法').toBeUndefined();
+    });
+
+    it('能放进插槽的类型：布尔、图片、颜色、列表与引用都不行', () => {
+      expect(['text', 'number', 'date', 'time', 'datetime'].every(canDisplay)).toBe(true);
+      expect(['boolean', 'image', 'color', 'list', 'ref'].some(canDisplay)).toBe(false);
+    });
+  });
+
+  it('字体按族分组列字重，选的仍是资源引用，字重从细到粗', () => {
+    expect(fontFamilies(['font-hei-heavy', 'font-hei-medium', 'font-song', 'custom-bold'])).toEqual([
+      { family: 'custom', fonts: [{ ref: 'res:custom-bold', weight: 'Bold' }] },
+      { family: 'hei', fonts: [{ ref: 'res:font-hei-medium', weight: 'Medium' }, { ref: 'res:font-hei-heavy', weight: 'Heavy' }] },
+      { family: 'song', fonts: [{ ref: 'res:font-song', weight: 'Regular' }] },
+    ]);
   });
 });

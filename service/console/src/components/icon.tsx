@@ -14,4 +14,28 @@ export const CHECK = 'M5 12.5l4.5 4.5L19 7.5';
 export const ALERT = 'M12 6v8M12 18.5v.01';
 export const CROSS = 'M7 7l10 10M17 7L7 17';
 export const COPY = 'M9 8h11v12H9zM5 16V4h11';
+export const CHEVRON_RIGHT = 'M9 6l6 6-6 6';
+export const EYE_OFF = 'M4 4l16 16M10 6.2A9 9 0 0 1 21 12a14 14 0 0 1-2.6 3.3M6.3 7.7A14 14 0 0 0 3 12a9 9 0 0 0 11.5 5.4';
+export const CHEVRON_UP = 'M6 15l6-6 6 6';
+export const UNDO = 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3';
+export const REDO = 'M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3';
+export const CURSOR = 'M5 3l14 8-6 2-2 6z';
+export const HAND = 'M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V13c0 4-2 7-6 7s-5-2-7-5l-1-2c-.7-1.3.8-2.6 2-1.5l2 2';
+export const PANEL_LEFT = 'M4 5h16v14H4zM10 5v14';
+export const PANEL_RIGHT = 'M4 5h16v14H4zM14 5v14';
+/** 四边分开：一个方框拆成四条边。 */
+export const SIDES = 'M8 4.5h8M8 19.5h8M4.5 8v8M19.5 8v8';
+export const LINK = 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1';
+export const UNLINK = 'M10 14a4 4 0 0 0 3 1M14 10a4 4 0 0 0-1.5-.9M15 16l1-1 3-3a4 4 0 0 0-6-6l-1 1M9 8l-1 1-3 3a4 4 0 0 0 6 6l1-1M4 4l16 16';
+/** 排布的四种方式（第三轮票据 03）：自由是两个错开的方块，堆叠是箭头，网格是田字。 */
+export const FLOW_FREE = 'M4.5 4.5h6.5v6.5H4.5zM13 13h6.5v6.5H13z';
+export const FLOW_ROW = 'M5 12h14M13 6l6 6-6 6';
+export const FLOW_COLUMN = 'M12 5v14M6 13l6 6 6-6';
+export const FLOW_GRID = 'M4.5 4.5h15v15h-15zM4.5 12h15M12 4.5v15';
+/** 文字的书写方向与对齐（第三轮票据 04）：横排是两行横线，竖排是两列竖线；对齐是三行长短不一的线靠左、居中、靠右。 */
+export const TEXT_HORIZONTAL = 'M4 9h16M4 15h10';
+export const TEXT_VERTICAL = 'M9 4v16M15 4v10';
+export const ALIGN_START = 'M4 6h16M4 12h10M4 18h14';
+export const ALIGN_CENTER = 'M4 6h16M7 12h10M5 18h14';
+export const ALIGN_END = 'M4 6h16M10 12h10M6 18h14';
 export const TRASH = 'M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5';

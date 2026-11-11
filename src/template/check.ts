@@ -31,6 +31,8 @@ export interface Variable {
 }
 
 export interface VariableTable {
+  /** 作用域里全部变量的名称：字段、参数、派生变量。 */
+  names(): readonly string[];
   get(name: string): Variable | undefined;
   /** 沿"."分隔的路径求类型；路径只能经过单引用。 */
   typeOf(path: string): PathType;
@@ -86,6 +88,10 @@ class Checker implements VariableTable {
   }
 
   // ---------- 变量表 ----------
+
+  names(): readonly string[] {
+    return [...this.variables.keys()];
+  }
 
   get(name: string): Variable | undefined {
     const entry = this.variables.get(name);

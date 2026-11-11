@@ -20,6 +20,7 @@ import { argumentProblem, type TemplateProgram } from './template/program.js';
 import { displayKind } from './template/types.js';
 import { fieldOrigin, MissingValues, type DataOrigin } from './template/missing-values.js';
 import { groupLoopItems } from './template/loop.js';
+import type { ExpansionObserver } from './inspection.js';
 
 export interface EvaluatedNode {
   /** 当前实例在原模板内的来源；比较证据使用，不改变 DSL 或布局摘要。 */
@@ -64,8 +65,8 @@ export interface EvaluatedTemplate {
 const TRANSPARENT = '#00000000';
 
 export function evaluate(scope: Scope, program: TemplateProgram, problems: readonly Problem[] = [],
-  parameterProblems: readonly Problem[] = []): { evaluated?: EvaluatedTemplate; problems: Problem[] } {
-  const expander = new Expander(program, problems);
+  parameterProblems: readonly Problem[] = [], observer?: ExpansionObserver): { evaluated?: EvaluatedTemplate; problems: Problem[] } {
+  const expander = new Expander(program, problems, observer);
   const root = expander.expand(scope, rootPath(scope.template.name), false, { path: '' }, parameterProblems);
   return { ...(root && !expander.failed && { evaluated: { template: scope.template, root } }), problems: expander.problems };
 }
@@ -85,7 +86,7 @@ export function fragmentsText(fragments: readonly EvaluatedFragment[]): string {
 class Expander {
   readonly problems: Problem[] = [];
   failed = false;
-  constructor(private readonly program: TemplateProgram, private readonly inputProblems: readonly Problem[]) {}
+  constructor(private readonly program: TemplateProgram, private readonly inputProblems: readonly Problem[], private readonly observer?: ExpansionObserver) {}
 
   expand(scope: Scope, path: ElementPath, called: boolean, origin?: DataOrigin, parameterProblems: readonly Problem[] = []): EvaluatedNode | undefined {
     const host = new ResolvingHost(scope, new MissingValues(scope, this.inputProblems, origin, parameterProblems));
@@ -102,6 +103,7 @@ class Expander {
   private node(model: ArtboardModel | ElementModel, scope: Scope, host: ResolvingHost, origin: DataOrigin | undefined, root: ElementPath): EvaluatedNode {
     const node = this.expandNode(model, scope, host, origin, root);
     const staticPath = formatElementPath([{ name: scope.template.name }, ...model.path.slice(root.length)]);
+    this.observer?.element(formatElementPath(model.path), { template: scope.template.name, path: staticPath }, scope, model.type === 'artboard' || model.visible);
     const problem = host.affected.has(formatElementPath(model.path)) || this.inputProblems.some((p) =>
       p.location.kind === 'element' && p.location.path === staticPath);
     return { ...node, source: { template: scope.template.name, path: staticPath }, ...(problem ? { previewProblem: true } : {}) };
@@ -179,7 +181,9 @@ class Expander {
       return !reportedStatically.has(problem.location.name);
     }).map((problem) => problem.location.kind === 'parameter'
       ? { ...problem, location: { ...problem.location, path: formatElementPath(path) } } : problem));
-    const root = this.expand(new Scope(target.template, target.table, data, parameters.values), path, true, origin,
+    const called = new Scope(target.template, target.table, data, parameters.values);
+    this.observer?.called(called, caller, formatElementPath(path), call.args);
+    const root = this.expand(called, path, true, origin,
       [...parameters.problems.filter((problem) => problem.location.kind !== 'parameter' || !reportedStatically.has(problem.location.name)),
         ...[...reportedStatically].filter((name) => !parameters.values.has(name))
         .map((name) => severe(ProblemCodes.parameterMissing, { kind: 'parameter', name }, ''))]);

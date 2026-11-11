@@ -151,6 +151,38 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect((await preview(token, { ...request, mode: 'draft' })).image.base64).toBe(before.image.base64);
     }, 120_000);
 
+    it('元素求值（模板设计页票据 02）：回答实例的变量取值、命中分支、参数来源与全部实例；不入队，不占预览的频率；路径不存在时没有这个字段', async () => {
+      const target = await tenant(seedM402), token = target.admin.token;
+      const request = { ...JSON.parse(await readFile(`${M402_DIR}render-request-m402.json`, 'utf8')), mode: 'draft' };
+      const inspect = async (element: string, query = '') => {
+        const reply = await world.call('POST', `/v1/previews/inspection?element=${encodeURIComponent(element)}${query}`, token, request);
+        expect(reply.status, reply.raw.slice(0, 300)).toBe(200);
+        return reply.body;
+      };
+      const path = '标准线路单边/站点面板/站点列[12]/名称区/站名';
+      const asked = await inspect(path);
+      expect(asked).not.toHaveProperty('image');
+      expect(asked.inspection).toMatchObject({ path, template: '站点', source: '站点/名称区/站名' });
+      expect(asked.inspection.instances).toHaveLength(35);
+      expect(asked.inspection.variables.find((variable: any) => variable.name === 'stopState')).toMatchObject({ value: '未到站', branch: -1 });
+      expect((await inspect('没有')).inspection).toBeUndefined();
+      expect((await world.call('POST', '/v1/previews/inspection', token, request)).status, '要写元素路径').toBe(400);
+      // 工作副本：改了内部参数的缺省值，求值跟着变。
+      const copy = (await open(token, STOP)).body;
+      const document = await documentOf(token, STOP);
+      document.parameters.find((parameter: any) => parameter.name === 'nameColor').default = '#FF0000';
+      expect((await stash(token, document, copy.sha256, STOP)).status).toBe(200);
+      const of = (reply: any, name: string) => reply.inspection.variables.find((variable: any) => variable.name === name).value;
+      expect(of(await inspect(path, '&workingCopies=true'), 'nameColor')).toBe('#FF0000FF');
+      expect(of(await inspect(path), 'nameColor')).toBe('#333333FF');
+      // 不占预览的频率：连问很多次也不答 429。
+      for (let index = 0; index < 70; index++) expect((await world.call('POST', `/v1/previews/inspection?element=${encodeURIComponent(path)}`, token, request)).status).toBe(200);
+      // 代建工程师同样能问，记审计。
+      const authored = await world.call('POST', `/v1/authoring/tenants/${target.id}/previews/inspection?element=${encodeURIComponent(path)}`, target.engineer, request);
+      expect(authored.status).toBe(200);
+      expect(authored.body.inspection.template).toBe('站点');
+    }, 120_000);
+
     it('保存：按 M265 记新修订，来源是网页，当前修订指向它，删除工作副本；出图读到新内容；字节相同记为不变；记审计', async () => {
       const target = await tenant(), token = target.admin.token;
       const original = await readFile(`${SINGLE_TEXT}template-greeting.json`);
@@ -224,6 +256,33 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect((await world.call('GET', `/v1/templates/${GREETING}/working-copy`, token)).body.sha256).toBe(stashed.body.sha256);
     });
 
+    it('读当前修订的内容：不开工作副本、不写审计；暂存不影响它；两种寻址都能读，代建的读取记审计', async () => {
+      const { id, admin, operator, engineer } = await tenant();
+      const url = `/v1/templates/${GREETING}/content`;
+      const audited = async () => (await world.call('GET', '/v1/audit-events?limit=200', admin.token)).body.events as { action: string }[];
+      const auditBefore = (await audited()).length;
+      const read = await world.call('GET', url, admin.token);
+      expect(read.status).toBe(200);
+      expect(read.body).toMatchObject({ name: '问候牌', revision: 1 });
+      expect(read.body.sha256).toBe(sha256(read.body.content as string));
+      expect((await world.call('GET', url, operator.token)).status).toBe(200);
+      expect((await world.call('GET', `/v1/templates/${GREETING}/working-copy`, admin.token)).status, '读内容不开工作副本').toBe(404);
+      expect((await audited()).length, '客户成员的读取不记审计').toBe(auditBefore);
+
+      const opened = await open(admin.token);
+      const document = JSON.parse(read.body.content as string) as Record<string, unknown>;
+      const stashed = await stash(admin.token, { ...document, parameters: [] }, opened.body.sha256 as string);
+      expect(stashed.status, stashed.raw.slice(0, 300)).toBe(200);
+      expect((await world.call('GET', url, admin.token)).body.sha256, '暂存不影响当前修订').toBe(read.body.sha256);
+      await world.call('DELETE', `/v1/templates/${GREETING}/working-copy`, admin.token);
+
+      const authored = await world.call('GET', `/v1/authoring/tenants/${id}/templates/${GREETING}/content`, engineer);
+      expect(authored.status).toBe(200);
+      expect(authored.body.sha256).toBe(read.body.sha256);
+      expect((await audited()).some((event) => event.action === 'authoring.read'), '代建工程师的读取记审计').toBe(true);
+      expect((await world.call('GET', '/v1/templates/not-here/content', admin.token)).status).toBe(404);
+    });
+
     it('复制为新模板：内容与基准取当前修订，没有基准修订，保存时记修订 1；名称已有时拒绝；可以预览还没保存的新模板', async () => {
       const target = await tenant(), token = target.admin.token, fresh = encodeURIComponent('问候牌-竖版');
       const copied = await world.call('POST', `/v1/templates/${GREETING}/copies`, token, { name: '问候牌-竖版' });
@@ -251,6 +310,49 @@ export function describeTemplateCopies(name: string, makeBackend: () => Promise<
       expect(copyEvent).toMatchObject({ object: { id: '问候牌-竖版' }, afterSha256: copied.body.sha256 });
       const saveEvent = (await auditOf(token, 'template.save')).find((event) => event.object.id === '问候牌-竖版');
       expect(saveEvent).not.toHaveProperty('beforeSha256');
+    });
+
+    it('从空白新建（模板设计页票据 18）：一块空画板，没有基准修订，保存记修订 1；名称已占答 409；基准不存在、尺寸颠倒答 400；代建端点同形，记审计', async () => {
+      const target = await tenant(), token = target.admin.token, sizeRange = { width: { min: 60, max: 120 }, height: { min: 30, max: 30 } };
+      const blank = (body: unknown, who = token, prefix = '/v1') => world.call('POST', `${prefix}/templates`, who, body);
+      const created = await blank({ name: '空白牌', base: { name: '问候', version: 1 }, sizeRange });
+      expect(created.status, created.raw.slice(0, 300)).toBe(201);
+      expect(created.body).toMatchObject({ name: '空白牌', updatedBy: target.admin.email });
+      expect(created.body).not.toHaveProperty('baseRevision');
+      expect(await documentOf(token, encodeURIComponent('空白牌'))).toEqual({ dslVersion: 'renderweave-template/1', name: '空白牌', base: { name: '问候', version: 1 }, artboard: { sizeRange } });
+      expect((await world.call('GET', '/v1/templates', token)).body.templates.map((item: any) => item.name), '还没保存').toEqual(['问候牌']);
+      // 没有数据集也能看：空白数据出一张空画板。
+      const drawn = await preview(token, { template: '空白牌', dataset: { inline: { dataset: { staticSchema: { name: '问候', version: 1 } }, data: {} } }, output: { width: 60, height: 30, dpi: 72, format: 'png' } }, '?workingCopies=true');
+      expect(drawn.image).toBeTruthy();
+      // 空白数据缺必填字段是数据的问题（草稿照出，显示占位）；模板本身没有问题。
+      expect(drawn.problems.filter((problem: any) => problem.code.startsWith('template.'))).toEqual([]);
+
+      // 内置的空数据定义也能当基准。
+      expect((await blank({ name: '空数据牌', base: { name: '空数据定义', version: 1 }, sizeRange })).status).toBe(201);
+      for (const [body, status, code] of [
+        [{ name: '问候牌', base: { name: '问候', version: 1 }, sizeRange }, 409, 'input.duplicate'],
+        [{ name: '空白牌', base: { name: '问候', version: 1 }, sizeRange }, 409, 'input.duplicate'],
+        [{ name: '没有基准', base: { name: '没有这个定义', version: 1 }, sizeRange }, 400, undefined],
+        [{ name: '颠倒', base: { name: '问候', version: 1 }, sizeRange: { ...sizeRange, width: { min: 120, max: 60 } } }, 400, 'request.invalid'],
+        [{ name: '带/斜杠', base: { name: '问候', version: 1 }, sizeRange }, 400, 'request.invalid'],
+        [{ name: '缺尺寸', base: { name: '问候', version: 1 } }, 400, 'request.invalid'],
+      ] as const) {
+        const reply = await blank(body);
+        expect(reply.status, JSON.stringify(body)).toBe(status);
+        if (code) expect(reply.body.problems[0].code, JSON.stringify(body)).toBe(code);
+      }
+      expect((await world.call('GET', '/v1/template-working-copies', token)).body.workingCopies.map((item: any) => item.name).sort()).toEqual(['空数据牌', '空白牌']);
+
+      const saved = await save(token, created.body.sha256, {}, encodeURIComponent('空白牌'));
+      expect(saved).toMatchObject({ status: 200, body: { name: '空白牌', revision: 1, status: 'saved' } });
+      const event = (await auditOf(token, 'templateWorkingCopy.blank')).find((item) => item.object.id === '空白牌');
+      expect(event).toMatchObject({ actor: { kind: 'member', label: target.admin.email }, crossTenant: false, afterSha256: created.body.sha256, diff: { added: 1 } });
+
+      // 代建端点同形，另标跨租户；操作员不能新建。
+      const prefix = `/v1/authoring/tenants/${target.id}`;
+      expect((await blank({ name: '代建空白', base: { name: '问候', version: 1 }, sizeRange }, target.engineer, prefix)).status).toBe(201);
+      expect((await auditOf(token, 'templateWorkingCopy.blank')).find((item) => item.object.id === '代建空白')).toMatchObject({ actor: { kind: 'authoringToken' }, crossTenant: true });
+      expect((await blank({ name: '不行', base: { name: '问候', version: 1 }, sizeRange }, target.operator.token)).status).toBe(403);
     });
 
     it('指回旧修订开放给客户管理员，记审计；操作员不能指回；工作副本的基准随之过期', async () => {

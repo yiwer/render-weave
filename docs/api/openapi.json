@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RenderWeave 出图服务开放 API",
-    "version": "1.13.0",
+    "version": "1.17.0",
     "description": "按数据定义、模板与数据集出图的多租户服务。错误回答一律是问题清单；客户端应忽略不认识的属性与枚举值；1.12.0 放宽静态版本类型，兼容说明见变更记录。说明见 docs/api.md。"
   },
   "servers": [
@@ -2004,6 +2004,89 @@
         }
       }
     },
+    "/v1/authoring/tenants/{tenantId}/previews/inspection": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdPreviewsInspection",
+        "tags": [
+          "代建"
+        ],
+        "summary": "用被指定租户的身份看元素实例的求值结果",
+        "x-access": "authoring.preview",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "workingCopies",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "element",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径；不存在时回答没有 inspection"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          }
+        }
+      }
+    },
     "/v1/authoring/tenants/{tenantId}/publish-requests": {
       "get": {
         "operationId": "getV1AuthoringTenantsTenantIdPublishRequests",
@@ -3019,6 +3102,234 @@
                       "items": {
                         "$ref": "#/components/schemas/TemplateWorkingCopy"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/templates": {
+      "post": {
+        "operationId": "postV1AuthoringTenantsTenantIdTemplates",
+        "tags": [
+          "代建"
+        ],
+        "summary": "从空白新建模板：一块空画板，成为没有基准修订的工作副本，保存时记修订 1",
+        "description": "请求体是名称、基准（静态数据定义的确切版本，或内置的空数据定义 v1、单值·文本 v1 等）与适用尺寸范围，写法同模板 DSL。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400，问题清单同保存时的模板静态检查。",
+        "x-access": "templates.write",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "base",
+                  "sizeRange"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$"
+                  },
+                  "base": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "version": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sizeRange": {
+                    "type": "object",
+                    "required": [
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "width": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "height": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateWorkingCopy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
+      }
+    },
+    "/v1/authoring/tenants/{tenantId}/templates/{name}/content": {
+      "get": {
+        "operationId": "getV1AuthoringTenantsTenantIdTemplatesNameContent",
+        "tags": [
+          "代建"
+        ],
+        "summary": "读当前修订的内容：不开工作副本，不写任何东西",
+        "x-access": "authoring.read",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "租户 ID"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "revision",
+                    "sha256",
+                    "content"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "模板名称"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "当前修订号"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "description": "原文的 SHA-256"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "当前修订的原文，与存入时逐字节相同"
                     }
                   }
                 }
@@ -6025,6 +6336,77 @@
         }
       }
     },
+    "/v1/previews/inspection": {
+      "post": {
+        "operationId": "postV1PreviewsInspection",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "一个元素实例的求值结果：变量的当前值、命中的分支、参数来源与全部实例",
+        "description": "请求与预览相同，element 是元素路径。只求值不出图，不入队，不占预览的并发与频率。",
+        "x-access": "preview",
+        "parameters": [
+          {
+            "name": "workingCopies",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "用模板工作副本预览：有工作副本的模板用工作副本"
+            }
+          },
+          {
+            "name": "element",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "元素路径；不存在时回答没有 inspection"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "DSL 1.0 的渲染请求",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          }
+        }
+      }
+    },
     "/v1/publish-requests": {
       "get": {
         "operationId": "getV1PublishRequests",
@@ -7360,6 +7742,140 @@
             "$ref": "#/components/responses/Error403"
           }
         }
+      },
+      "post": {
+        "operationId": "postV1Templates",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "从空白新建模板：一块空画板，成为没有基准修订的工作副本，保存时记修订 1",
+        "description": "请求体是名称、基准（静态数据定义的确切版本，或内置的空数据定义 v1、单值·文本 v1 等）与适用尺寸范围，写法同模板 DSL。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400，问题清单同保存时的模板静态检查。",
+        "x-access": "templates.write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "base",
+                  "sizeRange"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?=[\\s\\S]{1,200}$)[^\\s\\p{Cc}/\\[\\]](?:[^\\p{Cc}/\\[\\]]*[^\\s\\p{Cc}/\\[\\]])?$"
+                  },
+                  "base": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "version": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sizeRange": {
+                    "type": "object",
+                    "required": [
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "width": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "height": {
+                        "type": "object",
+                        "required": [
+                          "min",
+                          "max"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "min": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          },
+                          "max": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 100000
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateWorkingCopy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          }
+        }
       }
     },
     "/v1/templates/{name}": {
@@ -7388,6 +7904,73 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Template"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    },
+    "/v1/templates/{name}/content": {
+      "get": {
+        "operationId": "getV1TemplatesNameContent",
+        "tags": [
+          "模板与预览"
+        ],
+        "summary": "读当前修订的内容：不开工作副本，不写任何东西",
+        "x-access": "tenant.read",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "名称"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "revision",
+                    "sha256",
+                    "content"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "模板名称"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "当前修订号"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "description": "原文的 SHA-256"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "当前修订的原文，与存入时逐字节相同"
+                    }
+                  }
                 }
               }
             }
@@ -9953,6 +10536,348 @@
           }
         }
       },
+      "LayoutNode": {
+        "type": "object",
+        "required": [
+          "path",
+          "name",
+          "type",
+          "x",
+          "y",
+          "width",
+          "height",
+          "visible"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "元素路径"
+          },
+          "name": {
+            "type": "string",
+            "description": "元素名称"
+          },
+          "type": {
+            "type": "string",
+            "description": "元素类型"
+          },
+          "x": {
+            "type": "number",
+            "description": "相对画板左上角的毫米数，不计旋转；隐藏的元素位置与尺寸为 0"
+          },
+          "y": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "object",
+            "required": [
+              "content",
+              "font",
+              "writingMode",
+              "fontSize",
+              "width",
+              "height",
+              "spacing",
+              "compression",
+              "overflow",
+              "fragments"
+            ],
+            "properties": {
+              "fontFallback": {
+                "type": "boolean",
+                "description": "有缺字替代时为 true"
+              },
+              "shrinkGroup": {
+                "type": "string",
+                "description": "一次出图内的缩字组名称"
+              },
+              "content": {
+                "type": "string",
+                "description": "求值后的文字"
+              },
+              "font": {
+                "type": "string",
+                "description": "字体资源引用"
+              },
+              "writingMode": {
+                "type": "string",
+                "description": "书写方向"
+              },
+              "fontSize": {
+                "type": "number",
+                "description": "最终字号，毫米"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "spacing": {
+                "type": "number",
+                "description": "字距，毫米"
+              },
+              "compression": {
+                "type": "number",
+                "description": "沿书写方向的压缩比，1 为不压缩"
+              },
+              "overflow": {
+                "type": "boolean",
+                "description": "按适配规则处理后仍放不下"
+              },
+              "fragments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "片段求值后的文字与样式",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "image": {
+            "type": "object",
+            "description": "图片的来源、适配方式与实际画出的区域",
+            "additionalProperties": true
+          },
+          "qrcode": {
+            "type": "object",
+            "description": "二维码的模块数与实际画出的区域",
+            "additionalProperties": true
+          },
+          "barcode": {
+            "type": "object",
+            "description": "条形码的模块数与实际画出的区域",
+            "additionalProperties": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutNode"
+            }
+          }
+        },
+        "description": "布局摘要中的一个元素（docs/render-modes.md）"
+      },
+      "LayoutSummary": {
+        "type": "object",
+        "required": [
+          "template",
+          "output",
+          "root"
+        ],
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "根模板"
+          },
+          "output": {
+            "type": "object",
+            "required": [
+              "width",
+              "height",
+              "dpi",
+              "widthPx",
+              "heightPx",
+              "format"
+            ],
+            "properties": {
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "dpi": {
+                "type": "number"
+              },
+              "widthPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "heightPx": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "format": {
+                "type": "string"
+              }
+            }
+          },
+          "root": {
+            "$ref": "#/components/schemas/LayoutNode"
+          }
+        },
+        "description": "布局摘要：元素路径、位置与尺寸，文字的最终字号与压缩比（1.16.0 写明结构）"
+      },
+      "ElementInspection": {
+        "type": "object",
+        "required": [
+          "path",
+          "template",
+          "source",
+          "variables",
+          "checks",
+          "instances"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "问的元素实例"
+          },
+          "template": {
+            "type": "string",
+            "description": "它所在的作用域：定义它的模板"
+          },
+          "source": {
+            "type": "string",
+            "description": "它在模板文档里的路径，第一段是模板名"
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "displayName",
+                "kind",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "变量名"
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "显示名称"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "field",
+                    "parameter",
+                    "derived"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "description": "字段类型或参数类型"
+                },
+                "value": {
+                  "description": "当前值的摘要：基本类型原样，列表写成 { list: 项数 }，引用写成 { fields: 一层字段 }，缺值是 null"
+                },
+                "branch": {
+                  "type": "integer",
+                  "description": "条件分支命中第几支，从 0 开始，-1 是\"否则\""
+                },
+                "origin": {
+                  "type": "object",
+                  "description": "参数的值最终从哪来：kind 是 request、default、field、derived、value 或 loop",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "description": "这个作用域的全部变量"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "level",
+                "failed"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "检查项名称"
+                },
+                "level": {
+                  "type": "string",
+                  "enum": [
+                    "severe",
+                    "hint"
+                  ]
+                },
+                "failed": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "这个作用域的检查项与当前是否成立"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "visible"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "元素路径"
+                },
+                "visible": {
+                  "type": "boolean"
+                },
+                "state": {
+                  "type": "string",
+                  "description": "元素有状态样式时，这个实例的取值"
+                }
+              }
+            },
+            "description": "这个定义的全部实例"
+          },
+          "states": {
+            "type": "object",
+            "required": [
+              "by"
+            ],
+            "properties": {
+              "by": {
+                "type": "string",
+                "description": "状态样式按的变量"
+              },
+              "known": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "能确定的全部取值"
+              }
+            }
+          }
+        },
+        "description": "一个元素实例的求值结果（1.15.0）"
+      },
+      "InspectionResult": {
+        "type": "object",
+        "required": [
+          "problems"
+        ],
+        "properties": {
+          "problems": {
+            "$ref": "#/components/schemas/ProblemList"
+          },
+          "inspection": {
+            "$ref": "#/components/schemas/ElementInspection"
+          }
+        },
+        "description": "一个元素实例的求值结果；路径不存在时没有 inspection"
+      },
       "PreviewResult": {
         "type": "object",
         "required": [
@@ -9997,9 +10922,7 @@
             "$ref": "#/components/schemas/ProblemList"
           },
           "layout": {
-            "type": "object",
-            "description": "布局摘要：元素路径、位置与尺寸（docs/render-modes.md）",
-            "additionalProperties": true
+            "$ref": "#/components/schemas/LayoutSummary"
           },
           "elements": {
             "type": "array",

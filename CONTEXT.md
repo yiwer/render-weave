@@ -34,7 +34,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 2026-11-04：17 用户再次纠正：数据定义是独立的实体，主键是名称，没有草案；发布只产出静态数据定义，对它毫无影响（开放 API 1.13.0，迁移 0017，ADR-0030，M389）。
 - **接着做**：
   - 别的页面要不要照票据 14 的做法对齐原型或旧项目：用户还没定，走查时说过"实现和原型对不上"，审计日志的原始动作代码、画板 09 与 13–18 的版式都还没动。
-  - 模板设计的修正：用户走查时说后续再做，具体改什么还没定（M383）。
+  - 模板设计页重做（M383、M392、M393）：按[规格与 20 张票据](.scratch/template-design-page/README.md)实施，设计看[整体方案](docs/template-design-page.md)与[原型](docs/prototypes/template-design/README.md)。已完成 01（读当前修订内容，只看不改不留审计，开放 API 1.14.0）、02（预览带回元素实例的求值结果，开放 API 1.15.0）、03（舞台加浮动面板的新外壳，设计页单独分包）、04（范围条与点选规则）、05（跨模板结构树）、06（叠加层，开放 API 1.16.0）、07（样例带）、08（变量面板，元素求值端点 `POST /v1/previews/inspection`）、09（值格：绑定、断开、提取为参数、来源链）、10（检查器按类型分组，内容与适配的专属编辑器）。11（第一期验收通过，M394：改一项到换图中位数约 1.8 秒，其中渲染约 0.7 秒）。第一期在分支 `worktree-template-design-page`，2026-11-11 合入 main。第二期已完成 12（结构树上复制、删除、排序、包进与拆开容器、重命名）、13（舞台上按布局约束的手柄与方向键）、14（"添加"页：元素目录与从字段创建，点或拖到树与图上）、15（循环与调用的表单：传入参数、每项排布与互斥）、16（派生变量与检查项的编辑器，分支标出命中）、17（检查器顶部的状态样式：取值按钮带命中数，编辑与手柄写进覆盖）、18（从空白新建模板，开放 API 1.17.0 `POST /v1/templates`；循环与调用里当场新建被调模板）、19（提取为子模板：带走参数与派生变量，两边一步撤销，提取前后逐像素比对）、20（第二期完成，M395：用例在主模板里不写 DSL 从空白做出 M402 站点模板，出图和原来的逐字节相同；真人走查走完，手柄保留）。走查后用户要求参照成熟的二维设计软件优化页面与流程：第三轮按[方案](docs/template-design-refine.md)与[原型](docs/prototypes/template-design-v3/README.md)实施，用户确认方向（M396），[规格与 16 张票据](.scratch/template-design-refine/README.md)已拆；第三轮已完成 01（宽高一格：打数就是固定，随内容时淡色显示实际尺寸）、02（四边一格：内外边距与圆角收起是一格，点开直接改某一边）、03（排布一块：方向图标加九宫格对齐，间距与内边距一行）、04（文字一块：字体族与字重两个下拉、三组对齐图标，适配收成一行摘要）、05（检查器只显示写了的与常用的属性，别的从"+ 属性"加，宽高并排成 W、H 一行）、06（底部工具栏点一下或按 T、F 加元素，形状是小目录，循环与调用是小表单）、07（左面板是"图层 / 数据"两页；字段拖到图上建元素，拖到元素上连上，类型不合的拒绝并写原因；右键"连接数据…"）；**下一步第三轮 08**（07 已解除 08、09、13 的阻塞），10、11、12、15 没有前置阻塞，改同一组文件的一张合入再开下一张。第三轮 13、14 已按 [Pixso 对照](.scratch/template-design-refine/pixso-reference.md)补同级切换与包进容器并排（M397）；换设备继续做先读[第三轮交接](.scratch/template-design-refine/HANDOFF.md)。Agent 进左面板作第三页已定（M396），P2 接入前不显示。
 - **怎么做**：每张票在独立 worktree 里做，合入 main 前确认主检出没有评估在跑（[开发环境与接续](docs/dev-setup.md)「已知的坑」）。
 - **顺带合入的修复**：Docker 后端测试的单项超时从 1.5 秒改为 8 秒、超时用例改用 16,000 项的压力牌（M349），本机安静时连续两次 139 条全过；渲染子进程在两项之间退出时换新再交（M350）。
 - **测试现状**：见 [P1 验收](docs/p1-acceptance.md)「回归与跨平台」。引擎组全量要 `--maxWorkers=4`，Linux 容器要 `--init`（[开发环境与接续](docs/dev-setup.md)）。
@@ -107,7 +107,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
   - 工作区文档、资源仓库与出图记录有 PostgreSQL 加 S3 实现，与本地、内存实现跑同一组合同用例；
   - 租户、成员与五种身份的鉴权：会话、API 密钥与代建令牌只存哈希，权限按 M247 的矩阵；应用账号加行级安全、跨租户端点清单与审计（M261–M263）；代建写入的审计另记前后内容哈希与差异摘要，可按主体种类与时间筛选、导出 CSV（M347，开放 API 1.1.0）；
   - 代建接口（P1）：数据定义（新建、带预期哈希保存、校验、编译预览、发布预检、发布，ADR-0030）与模板工作副本（暂存、工作副本预览、元素定位、复制为新模板、保存为新修订、指回），客户端点与代建端点共用一份实现，每次写入记前后内容哈希与差异摘要；发布产物与本地 `publish` 逐字节相同。接口见[开放 API](docs/api.md)；
-  - 模板页面（P1）：客户管理员在设计页的图上点选元素，用属性面板、参数、结构与规则做小改，改动自动暂存为工作副本、预览随之变化；发布修订页看结构化差异与前后对比，保存为新修订或指回旧修订；操作员只读（M356）；
+  - 模板页面（P1，模板设计页重做第一、二期）：客户管理员不写 DSL 就能从空白做出模板：设计页舞台上是引擎出的真图，点选元素看到属于哪个模板、图上几处；跨模板的结构树上增删、移动、包进容器，"添加"页从元素目录或字段创建，循环与调用有表单，派生变量有分支编辑器，状态样式按取值写覆盖，舞台上按布局约束的手柄，能从空白新建模板、把一块元素提取为子模板；样例带换数据、试值、看适配与问题；改动自动暂存为工作副本、预览随之变化；发布修订页看结构化差异与前后对比，保存为新修订或指回旧修订；操作员只读（M356）；第三轮已合入 01–07（尺寸一格、四边一格、排布图标、文字一块、"+ 属性"、底部插入工具栏、图层 / 数据两页），下一张见[第三轮交接](.scratch/template-design-refine/HANDOFF.md)；
   - 审批策略与发布申请（P1）：租户可以按范围（数据定义发布、模板修订）要求发布前由客户管理员批准，缺省直发；打开后代建工程师的发布、保存、指回与推送变成申请，批准时重核内容、基准与严重问题，不符就过期，相符才生效，退回要留言；页面在管理页与两个发布页（M357，开放 API 1.8.0）；
   - 平台管理页（P1）：平台管理员在控制台看服务健康，开通租户、改套餐、建成员账号、签发与吊销代建令牌；
   - 数据定义与静态数据定义两个模块（P1）：数据定义是一个名称一张卡片（独立的实体，发布不影响它，点开就能改、能接着发布）加编辑页，表单与节点图共用一个编辑会话，还能看 DSL 与编译产物，右边检查器改选中的字段、加约束，可以撤销、重做、回到已保存，保存后校验并定位到字段，有没保存的改动时离开先问；静态数据定义是不可变版本的卡片，详情有字段树、字段表单、编译产物、DSL 四种看法，可以复制为草案；发布先看字段级差异与预检，确认卡写结论与后果，版本缺省是下一个编号，可以自定义；发布记录列谁在何时发布了哪一版，可以用旧版的内容覆盖草案；操作员只读（M355、M360、M379–M384）；
@@ -180,6 +180,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [scripts/agent-eval/template-design/](scripts/agent-eval/template-design/README.md) | 模板设计评估集：12 个用例（样图、项目说明、专家数据定义与数据集、压测、版面检查、用例文档）、图片素材与来源核对 |
 | [web/](web/review.html) | `agent review` 的本地审核页（单个 HTML，由 `src/agent/review-server.ts` 提供） |
 | [docs/prototypes/desktop-workbench/](docs/prototypes/desktop-workbench/README.md) | 阶段 5 桌面工作台原型：从 claude.ai 设计画布导出的 21 张画板源文件、素材与逐张截图，P1 票据按画板编号引用 |
+| [docs/template-design-page.md](docs/template-design-page.md) | 模板设计页整体方案（M393）：DSL 对页面的要求、版式、选择与范围、舞台与手柄、结构与变量、值格、样例带、接口缺口与分期；原型在 [docs/prototypes/template-design/](docs/prototypes/template-design/README.md) |
+| [docs/template-design-refine.md](docs/template-design-refine.md) | 模板设计页第三轮方案（M395、M396），规格与票据在 [.scratch/template-design-refine/](.scratch/template-design-refine/README.md)：参照 Claude Design、Figma UI3、Penpot、Framer、Webflow、Canva 改左面板、检查器、插入与流程，走查路径逐步数；原型在 [docs/prototypes/template-design-v3/](docs/prototypes/template-design-v3/README.md) |
 | [docs/agents/](docs/agents/) | 技能读取的 issue 记录方式、triage 标签与领域文档规则 |
 | [.scratch/render-pipeline/](.scratch/render-pipeline/spec.md) | 首期规格与 14 张票据 |
 | [.scratch/local-production-output/](.scratch/local-production-output/README.md) | 第二阶段 PRD 与 13 张 tracer-bullet 票据 |
@@ -189,6 +191,8 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 | [.scratch/agent-harness-hardening/](.scratch/agent-harness-hardening/README.md) | Agent 可靠执行与可信验收 PRD 与 26 张票据，含公交留出材料与核准记录 |
 | [.scratch/template-design-eval/](.scratch/template-design-eval/README.md) | 模板设计评估集的规格与 5 张票据 |
 | [.scratch/authoring-api-and-pages/](.scratch/authoring-api-and-pages/README.md) | 阶段 5.0 P1 PRD（代建接口与人类页面）与 13 张票据 |
+| [.scratch/template-design-page/](.scratch/template-design-page/README.md) | 模板设计页重做的规格与 20 张票据（方案的第一、二期） |
+| [.scratch/template-design-refine/](.scratch/template-design-refine/README.md) | 模板设计页第三轮的规格与 16 张票据；换设备做后续票据先读[交接说明](.scratch/template-design-refine/HANDOFF.md)，Pixso 对照与采纳记录见 [pixso-reference.md](.scratch/template-design-refine/pixso-reference.md) |
 
 ## 关键决定摘要
 
@@ -198,7 +202,7 @@ RenderWeave 围绕数据定义、模板与数据集出图：先设计数据结�
 - **引擎**：TypeScript（Node 22），不依赖框架；ajv 校验、CanvasKit 合成、resvg WASM 栅格化 SVG、自研布局（ADR-0011、ADR-0012）。资源清单先写内容、后提交清单（ADR-0014）；出图记录自成一体，可脱离工作区重放（ADR-0013）。
 - **服务**：渲染在 worker 进程里隔离，带单项超时与内存上限（ADR-0017）；租户共享库、行级安全隔离，存储经接口抽象（ADR-0018）；出图记录按内容哈希存进对象存储，仍自足可重放（ADR-0019）；按自然月额度计出图张数与 token，批量交付先预占（ADR-0020）。开放 API 1.x 只做加法（M246）。
 - **Agent**：工具提供读取、校验、草稿预览与识别（ADR-0001、ADR-0003）；Agent 与人类共用一套代建写入，缺省直发，租户可要求发布前批准，风险靠不可变版本、修订、审计与回退控制（ADR-0022，修订了只读 MCP 与"写入只经提案"的旧边界）；有严重问题的成果不能批准或应用（ADR-0021）。产品中的业务 Agent 由服务端进程内的 Tool Runner 驱动，不依赖 Claude Code（M340，ADR-0027，取代 ADR-0015 的执行方式）；本机 `agent run` 在过渡期仍缺省以受限模式的 Claude Code 无头运行，只连 MCP 服务。OCR 用阿里云百炼 Qwen-OCR，固定带日期的模型版本。
-- **界面与终端**：网页与桌面是同一份控制台页面，桌面端是 Electron 薄壳，Agent 循环与正式出图只在服务端（M341）；每页左栏的模块上下文对话第一版只读（M342）；不做自由拖拽画布（M205）。
+- **界面与终端**：网页与桌面是同一份控制台页面，桌面端是 Electron 薄壳，Agent 循环与正式出图只在服务端（M341）；每页左栏的模块上下文对话第一版只读（M342）；不做任意摆放的画布（M205），模板设计可以用按布局约束的手柄，只写 DSL 已有的数（M392）。
 
 ## 开发
 

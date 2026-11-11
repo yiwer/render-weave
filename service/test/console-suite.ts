@@ -13,12 +13,15 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { chromium, type Browser, type BrowserContext, type LaunchOptions, type Locator, type Page } from 'playwright-core';
+import { chromium, type Browser, type BrowserContext, type Dialog, type LaunchOptions, type Locator, type Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServiceBackend } from '../src/backend.js';
 import { createWorld, type World } from './api-suite.js';
 import { unzip } from './records-suite.js';
 import { checkDslDocument } from '../src/engine.js';
+import { connectData, type DataSource } from '../console/src/template/connect.js';
+import { insertElement, insertionPoint, newElement, type Bindings, type NewKind } from '../console/src/template/create.js';
+import { parseTemplateText, templateText } from '../console/src/template/document.js';
 import { RESOURCES_DIR, seedAllElements, seedConsoleBadge, seedM402, seedPriceTag, seedStress } from './seed.js';
 import { xlsxOf } from './xlsx-fixture.js';
 
@@ -45,6 +48,8 @@ const LONG_NAME = '欧阳娜娜娜娜娜娜娜娜';
 const REPLACEMENT = `${RESOURCES_DIR}images/m402/landmark-3.png`;
 /** 资源页上传的新图。 */
 const STAMP = `${RESOURCES_DIR}images/m402/icon-metro.png`;
+/** 预览按租户每分钟限频，撞上时页面自己重试：等图要等得过一个窗口。Docker 后端用的是真实上限。 */
+const PREVIEW_WINDOW_MS = 90_000;
 const enc = encodeURIComponent;
 
 /** webhook 接收端：一律答 200，记下收到的请求。 */
@@ -141,6 +146,27 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await opened.getByRole('button', { name: '登录' }).click();
       await opened.getByRole('heading', { name: '数据集', level: 1 }).waitFor();
       return (admin = opened);
+    };
+    /**
+     * 离开设计页回到模板列表。页面可能问"还没保存，确定离开"：由页面自己换地址，
+     * page.goto 也算一次导航，会把这个确认框关掉，页面就留在了设计页，连累下一个用例。
+     */
+    const leaveDesign = async (target: Page, trialKey?: string) => {
+      const accept = (dialog: Dialog) => { void dialog.accept(); };
+      target.on('dialog', accept);
+      try {
+        await target.evaluate("location.hash = '#/templates'");
+        await target.getByRole('heading', { name: '模板', level: 1 }).waitFor();
+      } finally { target.off('dialog', accept); }
+      if (trialKey) await target.evaluate((key) => { localStorage.removeItem(key); }, `renderweave.design.trial.${trialKey}`);
+    };
+    /** 展开结构树的一行；已经展开的不再点（选中时树会自己展开到那一行）。 */
+    const openRow = async (scope: Locator, name: string) => {
+      // 先等这一行出来：刚切到结构页时树还没画，数不到按钮会误以为已经展开。
+      await scope.getByRole('button', { name: new RegExp(`^(展开|收起) ${name}$`, 'u') }).first().waitFor();
+      const button = scope.getByRole('button', { name: `展开 ${name}`, exact: true });
+      if (await button.count()) await button.click();
+      await scope.getByRole('button', { name: `收起 ${name}`, exact: true }).waitFor();
     };
     /** 标题栏的模块下拉（P1 票据 01）：点开后找名为 name 的模块。 */
     const nav = async (target: Page, name: string) => {
@@ -1320,7 +1346,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
         await choice(1).press('Enter');
         await choice(2).pressSequentially('乙');
         await form.getByRole('button', { name: '添加可选值' }).click();
-        await expect.poll(() => choice(3).evaluate((element) => element === document.activeElement), { message: '焦点到新的一项' }).toBe(true);
+        await expect.poll(() => choice(3).evaluate((element) => element === element.ownerDocument.activeElement), { message: '焦点到新的一项' }).toBe(true);
         // 重复的当场提示；空的一项按退格删掉，焦点回到上一项。
         await choice(3).fill('甲');
         await form.getByTestId('enum-row').nth(2).getByRole('alert').filter({ hasText: '和前面的重复了' }).waitFor();
@@ -2055,10 +2081,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       };
       const image = () => target.getByTestId('preview-image');
       const inspector = () => target.getByRole('complementary', { name: '检查器' });
+      const side = () => target.getByRole('complementary', { name: '图层与数据' });
       const fieldOf = (key: string) => inspector().locator(`[data-testid="property-field"][data-key="${key}"]`).first();
       const input = (key: string) => fieldOf(key).locator('input[type="text"]').first();
-      /** 没写的属性收在"其他 N 项"里，展开它们才找得到。 */
-      const expand = () => inspector().locator('details:not([open]) > summary').evaluateAll((items) => items.forEach((item) => (item as unknown as { click(): void }).click()));
       const documentNow = async (name = ALL) => JSON.parse((await server('GET', `/v1/templates/${enc(name)}/working-copy`, token)).body.content as string) as Record<string, unknown>;
       /** 做一次改动：等预览回来、图变了，再读工作副本，核对 checkDslDocument 没有严重问题。 */
       const edit = async (action: () => Promise<unknown>, name = ALL) => {
@@ -2075,8 +2100,20 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 压测数据是名字里写了压测的数据集，工具栏单独列一组。
       expect((await server('POST', `/v1/datasets/badge-zhang/copies`, token, { id: 'badge-stress', name: '压测：长姓名' })).status).toBe(201);
 
-      // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
+      // 只看不改（模板设计页票据 01）：不开工作副本，离开之后审计里也没有。
       await (await nav(target, '模板')).click();
+      const looked = worked((body) => body.template === ALL);
+      await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
+      await looked;
+      await image().waitFor();
+      expect((await server('GET', copyUrl, token)).status, '只看不开工作副本').toBe(404);
+      await (await nav(target, '模板')).click();
+      await target.getByRole('article', { name: `模板 ${ALL}` }).waitFor();
+      expect((await server('GET', copyUrl, token)).status, '离开之后也没有').toBe(404);
+      const events = (await server('GET', '/v1/audit-events?limit=200', token)).body.events as { action: string; object: { id: string } }[];
+      expect(events.filter((event) => event.action.startsWith('templateWorkingCopy.') && event.object.id === ALL), '只看不改不留审计').toEqual([]);
+
+      // 从模板列表进设计页：打开就有草稿预览，操作员看不到这个入口（下面单独核对）。
       const first = worked((body) => body.template === ALL);
       await target.getByRole('article', { name: `模板 ${ALL}` }).getByRole('link', { name: '设计' }).click();
       let layout = (await (await first).json() as Reply).layout;
@@ -2095,27 +2132,31 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       const clickElement = async (path: string) => {
         await target.getByTestId('design-canvas').click({ position: await positionOf(path) });
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
-        await expand();
       };
       const chooseRow = async (path: string) => {
-        await inspector().getByRole('tab', { name: '结构' }).click();
-        await inspector().locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
-        await inspector().getByRole('tab', { name: '属性' }).click();
+        await side().getByRole('tab', { name: '图层' }).click();
+        await side().locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
         await inspector().locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
-        await expand();
       };
 
       // 点选：选中框与元素路径显示在图上，属性面板打开它在模板文档里的位置。
       await clickElement(at('文字'));
       expect(await target.getByTestId('select-box').getAttribute('data-path')).toBe(at('文字'));
-      expect(await target.getByTestId('select-tag').textContent()).toBe(at('文字'));
+      expect(await target.getByTestId('design-scope').getAttribute('data-path')).toBe(at('文字'));
+      expect(await target.getByTestId('select-tag').textContent()).toMatch(/^文字 · [\d.]+ × [\d.]+ mm$/);
       expect(await inspector().getByTestId('properties').getAttribute('data-type')).toBe('text');
-      // 属性面板按 Schema 分组：位置尺寸、文字、颜色、适配、条件显示、状态样式。
-      for (const group of ['位置尺寸', '文字', '颜色', '适配', '条件显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
+      // 属性面板按元素类型分组（方案第 7 节的表），先后也照它。
+      for (const group of ['内容', '文字', '适配', '位置与尺寸', '显示', '状态样式']) await inspector().getByRole('region', { name: group }).waitFor();
+      expect(await inspector().getByTestId('properties').locator('section > h3').allTextContents(), '状态样式在顶上（票据 17），不再是一组').toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示']);
+      expect(await inspector().locator('details').count(), '没有"其他 N 项"').toBe(0);
       expect(await input('place.left').inputValue()).toBe('2');
 
-      // 每种元素改一项属性。text：字号从绑定变量换成数值。
-      await edit(() => fieldOf('fontSize').locator('select').first().selectOption({ label: '数值' }));
+      // 每种元素改一项属性。text：字号断开绑定，当前值 5 变成字面值，图不变；再改成 8。
+      await expect.poll(() => fieldOf('fontSize').getByTestId('bound-chip').textContent()).toContain('5');
+      const unbound = afterStash();
+      await fieldOf('fontSize').getByTestId('unbind-button').click();
+      await unbound;
+      expect(await input('fontSize').inputValue(), '断开时当前值变成字面值').toBe('5');
       let { document, reply } = await edit(() => input('fontSize').fill('8'));
       const elementIn = (doc: Record<string, unknown>, name: string) => (doc['artboard'] as { children: Record<string, unknown>[] }).children.find((child) => child['name'] === name)!;
       expect(elementIn(document, '文字')['fontSize']).toBe(8);
@@ -2127,31 +2168,22 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect(elementIn(document, '容器')['fill']).toBe('#DDEEFF');
 
       await chooseRow(at('循环'));
-      ({ document } = await edit(() => input('itemLayout.heights.fixed').fill('4')));
+      ({ document } = await edit(() => inspector().getByLabel('每项高', { exact: true }).fill('4')));
       expect(elementIn(document, '循环')['itemLayout']).toMatchObject({ heights: { fixed: 4 } });
 
       await chooseRow(at('调用'));
-      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
       ({ document } = await edit(() => input('opacity').fill('0.5')));
       expect(elementIn(document, '调用')['opacity']).toBe(0.5);
 
       await clickElement(at('图片'));
-      await edit(() => fieldOf('opacity').locator('select').first().selectOption({ label: '数值' }));
       ({ document } = await edit(() => input('opacity').fill('0.4')));
       expect(elementIn(document, '图片')['opacity']).toBe(0.4);
 
       await clickElement(at('二维码'));
-      // 换成"颜色"写入的初始值是黑色，与缺省相同，图还不变。
-      const qrColor = afterStash();
-      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
-      await qrColor;
       ({ document } = await edit(() => input('foreground').fill('#B4532A')));
       expect(elementIn(document, '二维码')['foreground']).toBe('#B4532A');
 
       await clickElement(at('条码'));
-      const barColor = afterStash();
-      await fieldOf('foreground').locator('select').first().selectOption({ label: '颜色' });
-      await barColor;
       ({ document } = await edit(() => input('foreground').fill('#0B4EA2')));
       expect(elementIn(document, '条码')['foreground']).toBe('#0B4EA2');
 
@@ -2271,39 +2303,38 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       // 工具栏：切换样例数据集；正式模式按问题清单说结果；缩放；平移时点图不改选中。
       await target.getByTestId('select-box').waitFor();
       const blank = worked((body) => body.dataset.inline !== undefined);
-      await target.getByLabel('样例数据集').selectOption({ label: '空白数据（显示占位）' });
+      const sampleCard = (id: string) => target.locator(`[data-testid="sample-card"][data-id="${id}"]`);
+      await sampleCard('').click();
       await blank;
-      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '正式' }).click();
-      await target.getByText(/正式模式不出图：有 \d+ 个严重问题/).waitFor();
-      await target.getByTestId('final-mode-note').filter({ hasText: '正式出图时不出图' }).waitFor();
-      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
+      await target.getByTestId('final-mode-note').filter({ hasText: /正式出图时不出图：有 \d+ 个严重问题/ }).waitFor();
       const again = worked((body) => body.dataset.id === 'badge-zhang');
-      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      await sampleCard('badge-zhang').click();
       layout = (await (await again).json() as Reply).layout;
       await image().waitFor();
-      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '正式' }).click();
       await target.getByTestId('final-mode-note').filter({ hasText: /没有问题|没有问题边框/ }).waitFor();
-      await target.getByRole('group', { name: '模式' }).getByRole('button', { name: '草稿' }).click();
-      expect(await target.getByLabel('样例数据集').locator('optgroup[label="压测数据"] option').allTextContents()).toEqual(['压测：长姓名']);
+      expect(await target.getByRole('group', { name: '压测' }).getByTestId('sample-card').count(), '名字里写了压测的单独一组').toBe(1);
+      expect(await target.getByRole('group', { name: '压测' }).getByTestId('sample-card').textContent()).toContain('压测：长姓名');
       const stress = worked((body) => body.dataset.id === 'badge-stress');
-      await target.getByLabel('样例数据集').selectOption('badge-stress');
+      await sampleCard('badge-stress').click();
       await stress;
-      await target.getByLabel('样例数据集').selectOption('badge-zhang');
+      await sampleCard('badge-zhang').click();
       await image().waitFor();
       const width = (await target.getByTestId('design-canvas').boundingBox())!.width;
       await target.getByRole('button', { name: '放大' }).click();
       await target.getByRole('button', { name: '放大' }).click();
-      await target.getByTestId('zoom-level').filter({ hasText: '200%' }).waitFor();
+      await target.getByRole('button', { name: '放大' }).click();
+      await target.getByRole('button', { name: '放大' }).click();
+      await target.getByTestId('zoom-level').filter({ hasText: '244%' }).waitFor();
       await expect.poll(async () => (await target.getByTestId('design-canvas').boundingBox())!.width).toBeGreaterThan(width * 1.9);
       await target.getByRole('group', { name: '工具' }).getByRole('button', { name: '平移' }).click();
       const stage = target.getByTestId('design-stage');
-      const scrollOf = () => stage.evaluate((element) => element.scrollTop + element.scrollLeft);
-      const stageBox = (await stage.boundingBox())!, before = await scrollOf();
+      const canvasAt = async () => { const box = (await target.getByTestId('design-canvas').boundingBox())!; return box.x + box.y; };
+      const stageBox = (await stage.boundingBox())!, before = await canvasAt();
       await target.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height / 2);
       await target.mouse.down();
       await target.mouse.move(stageBox.x + stageBox.width / 2 - 80, stageBox.y + stageBox.height / 2 - 120, { steps: 3 });
       await target.mouse.up();
-      expect(await scrollOf(), '拖动滚动台面').toBeGreaterThan(before);
+      expect(await canvasAt(), '拖动挪动舞台上的图').toBeLessThan(before);
       const pathBefore = await inspector().getByTestId('properties').getAttribute('data-path');
       expect(pathBefore).toBe(ALL);
       await target.keyboard.press('v');
@@ -2311,41 +2342,51 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('zoom-level').click();
       await image().waitFor();
       await expect.poll(async () => Math.round((await target.getByTestId('design-canvas').boundingBox())!.width)).toBeLessThan(width * 1.1);
+      // 滚轮以光标为锚缩放，Ctrl+0 回到适应；Ctrl+\ 收起面板，适应按腾出来的空隙算。
+      await target.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height / 2);
+      await target.mouse.wheel(0, -400);
+      await expect.poll(async () => (await target.getByTestId('zoom-level').textContent()) !== '100%').toBe(true);
+      await target.keyboard.press('Control+0');
+      await target.getByTestId('zoom-level').filter({ hasText: '100%' }).waitFor();
+      await target.keyboard.press('Control+\\');
+      await expect.poll(() => side().count()).toBe(0);
+      expect(await inspector().count()).toBe(0);
+      await target.keyboard.press('Control+\\');
+      await side().waitFor();
+      await inspector().waitFor();
 
-      // 右键菜单：复制元素路径、在结构中定位、打开绑定的字段；没有 Agent 与评论。
+      // 右键菜单：复制元素路径、在图层中定位、打开绑定的字段；没有 Agent 与评论。
       await target.getByTestId('design-canvas').click({ button: 'right', position: await positionOf(at('文字')) });
       const menu = target.getByTestId('element-menu');
       await menu.getByRole('menuitem', { name: '复制元素路径' }).waitFor();
       expect(await menu.getByRole('menuitem', { name: '打开绑定的字段 fullName' }).getAttribute('href')).toBe(`#/definitions/${enc('胸牌')}?field=fullName`);
       expect(await menu.textContent()).not.toMatch(/Agent|评论/);
-      await menu.getByRole('menuitem', { name: '在结构中定位' }).click();
-      await inspector().getByRole('tab', { name: '结构', selected: true }).waitFor();
-      expect(await inspector().locator(`[data-testid="structure-row"][data-path="${at('文字')}"]`).getAttribute('data-selected')).toBe('true');
+      await menu.getByRole('menuitem', { name: '在图层中定位' }).click();
+      await side().getByRole('tab', { name: '图层', selected: true }).waitFor();
+      expect(await side().locator(`[data-testid="structure-row"][data-path="${at('文字')}"]`).getAttribute('data-selected')).toBe('true');
       // 结构与预览双向：结构里选一行，图上出现它的框。
-      await inspector().locator(`[data-testid="structure-row"][data-path="${at('矩形')}"]`).getByRole('button').first().click();
+      await side().locator(`[data-testid="structure-row"][data-path="${at('矩形')}"]`).getByRole('button').first().click();
       await target.locator(`[data-testid="select-box"][data-path="${at('矩形')}"]`).waitFor();
       await target.getByTestId('design-canvas').click({ button: 'right', position: await positionOf(at('椭圆')) });
       await menu.getByRole('menuitem', { name: '复制元素路径' }).click();
       await target.getByRole('status').filter({ hasText: at('椭圆') }).waitFor();
 
-      // 规则页：所选元素相关的检查项（经派生变量连带）、适配规则，改写回。
+      // 检查器：所选元素相关的检查项（经派生变量连带）、适配规则，改写回。
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
-      await inspector().getByRole('tab', { name: '规则' }).click();
       await inspector().locator('[data-testid="check-row"][data-name="姓名太长"]').waitFor();
       expect(await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').count(), '文字没有用照片').toBe(0);
+      // 适配收成一行（第三轮票据 04），点开才是编辑器。
+      await inspector().getByTestId('fit-summary').click();
       await inspector().getByTestId('fit-hint').filter({ hasText: '画板的 2 mm' }).waitFor();
       expect(await input('fit.compressMin').inputValue()).toBe('0.7');
       await input('fit.compressMin').fill('0.8');
       await expect.poll(async () => elementIn(await documentNow(), '文字')['fit']).toMatchObject({ compressMin: 0.8 });
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('图片')) });
       await inspector().locator('[data-testid="check-row"][data-name="没有照片"]').waitFor();
-      await inspector().getByText('这个元素没有适配规则').waitFor();
       // 竖排的文字才有缩字组：写了组名，同组的元素列出来。
       await target.getByTestId('design-canvas').click({ position: await positionOf(at('文字')) });
-      await inspector().getByRole('tab', { name: '属性' }).click();
-      await expand();
-      await fieldOf('writingMode').locator('select').selectOption({ label: '竖排' });
-      await inspector().getByRole('tab', { name: '规则' }).click();
+      await fieldOf('writingMode').getByRole('button', { name: '竖排' }).click();
+      await inspector().getByTestId('fit-summary').click();
       await fieldOf('fit.widthOverflow').getByRole('button', { name: '添加' }).click();
       await input('fit.widthOverflow.shrinkGroup').fill('站名组');
       await inspector().getByTestId('shrink-group').filter({ hasText: '缩字组 站名组：文字' }).waitFor();
@@ -2356,10 +2397,10 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       for (let step = 0; step < 3; step++) await target.getByRole('button', { name: '撤销', exact: true }).click();
       await expect.poll(async () => elementIn(await documentNow(), '文字')['writingMode']).toBeUndefined();
 
-      // 参数页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
-      await inspector().getByRole('tab', { name: '参数' }).click();
-      const parameter = (name: string) => inspector().locator(`[data-testid="parameter-row"][data-name="${name}"]`);
-      await inspector().getByRole('region', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
+      // "数据"页：对外参数与内部参数，改缺省值预览跟着变；约束按类型；加一个参数，撤销后没了。
+      await side().getByRole('tab', { name: '数据' }).click();
+      const parameter = (name: string) => side().locator(`[data-testid="parameter-row"][data-name="${name}"]`);
+      await side().getByRole('group', { name: '内部参数' }).locator('[data-testid="parameter-row"][data-name="bandHeight"]').waitFor();
       await parameter('accentColor').getByRole('button').first().click();
       ({ document } = await edit(() => input('default').fill('#0B4EA2')));
       expect((document['parameters'] as Record<string, unknown>[]).find((item) => item['name'] === 'accentColor')).toMatchObject({ default: '#0B4EA2' });
@@ -2368,8 +2409,9 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await input('constraints.max').fill('20');
       await expect.poll(async () => (await documentNow())['parameters']).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'nameSize', displayName: '姓名大小', constraints: { min: 3, max: 20 } })]));
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
-      await inspector().getByLabel('新参数的名称').fill('footnote');
-      await inspector().getByRole('button', { name: '添加参数' }).click();
+      await side().getByRole('button', { name: '新建参数' }).click();
+      await side().getByLabel('新参数的名称').fill('footnote');
+      await side().getByRole('button', { name: '添加参数' }).click();
       await parameter('footnote').waitFor();
       await expect.poll(async () => ((await documentNow())['parameters'] as unknown[]).length).toBe(4);
       await target.getByTestId('unsaved-count').filter({ hasText: '已暂存' }).waitFor();
@@ -2377,22 +2419,21 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await expect.poll(async () => ((await documentNow())['parameters'] as unknown[]).length).toBe(3);
 
       // 结构页打开子模板：预览仍是调用它的模板，改子模板时那张图跟着变；图上点到子模板的元素也切过去。
-      await inspector().getByRole('tab', { name: '结构' }).click();
-      await inspector().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`).getByRole('button', { name: '打开 场次条' }).click();
+      await side().getByRole('tab', { name: '图层' }).click();
+      await openRow(side().locator(`[data-testid="structure-row"][data-path="${at('循环')}"]`), '循环');
+      await side().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').first().getByRole('button').first().click();
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
-      await inspector().locator('[data-testid="structure-row"][data-path="场次条/场次名称"]').getByRole('button').first().click();
-      await inspector().getByRole('tab', { name: '属性' }).click();
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
       const child = afterStash();
       await input('fontSize').fill('4');
       expect(((await child).request().postDataJSON() as { template: string }).template).toBe(ALL);
       await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":4');
       await target.locator('nav.crumbs').getByRole('link', { name: ALL }).click();
-      await inspector().getByRole('tab', { name: '属性' }).waitFor();
+      await inspector().waitFor();
       await target.getByTestId('design-canvas').click({ position: await positionOf(`${at('调用')}/场次名称`) });
       await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/场次条/design?in=${ALL}`);
       await inspector().locator('[data-testid="properties"][data-path="场次条/场次名称"]').waitFor();
-      expect(await target.getByTestId('select-tag').textContent()).toBe(`${at('调用')}/场次名称`);
+      expect(await target.getByTestId('design-scope').getAttribute('data-path')).toBe(`${at('调用')}/场次名称`);
       // 跨模板撤销：撤回子模板上的字号。
       await target.getByRole('button', { name: '撤销', exact: true }).click();
       await expect.poll(async () => JSON.stringify(await documentNow('场次条'))).toContain('"fontSize":3.2');
@@ -2402,7 +2443,7 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByRole('button', { name: '发布修订' }).click();
       await target.getByRole('heading', { name: '发布修订 2', level: 1 }).waitFor();
       await target.locator(`[data-testid="change"][data-path="${at('椭圆')}"]`).waitFor();
-      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor({ timeout: PREVIEW_WINDOW_MS });
       await target.getByRole('button', { name: '发布为修订 2' }).click();
       await target.getByRole('status').filter({ hasText: '已保存为修订 2' }).waitFor();
       expect((await server('GET', `/v1/templates/${enc(ALL)}`, token)).body.currentRevision).toBe(2);
@@ -2421,11 +2462,22 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
       await target.getByRole('button', { name: '发布修订' }).click();
       await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
-      await target.getByTestId('compare-working-copy').getByRole('img').waitFor();
+      await target.getByTestId('compare-working-copy').getByRole('img').waitFor({ timeout: PREVIEW_WINDOW_MS });
       expect(await target.getByTestId('compare-current').count(), '没有当前修订可比').toBe(0);
       await target.getByRole('button', { name: '发布为修订 1' }).click();
       await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
       expect((await server('GET', `/v1/templates/${enc(copied)}`, token)).body.currentRevision).toBe(1);
+
+      // 窄窗口：面板默认收起，页面不横向滚动，操作条还能把面板打开。
+      await target.setViewportSize({ width: 420, height: 800 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.reload();
+      await image().waitFor();
+      expect(await side().count()).toBe(0);
+      expect(await target.evaluate('document.documentElement.scrollWidth <= window.innerWidth')).toBe(true);
+      await target.getByRole('button', { name: '检查器面板' }).click();
+      await inspector().waitFor();
+      await target.setViewportSize({ width: 1440, height: 1000 });
 
       // 操作员没有设计页。
       const reader = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
@@ -2440,6 +2492,2553 @@ export function describeConsole(name: string, makeBackend: () => Promise<Service
       expect((await server('POST', copyUrl, world.b.operator.token)).status, '接口同样拒绝').toBe(403);
       await reader.close();
     }, 300_000);
+
+    it('模板设计（票据 04）：点第 12 站的站名，范围条写定义在站点、图上 35 处；Alt 穿透、右键列层叠、Esc 与 Enter；隐藏的元素写明原因', async () => {
+      const ROOT = '标准线路单边', stop = (index: number) => `${ROOT}/站点面板/站点列[${index}]/名称区/站名`;
+      const target = await asAdmin();
+      interface Node { path: string; x: number; y: number; width: number; height: number; children?: Node[] }
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Node } };
+      const canvas = target.getByTestId('design-canvas');
+      await target.getByTestId('preview-image').waitFor();
+      const position = async (path: string) => {
+        const walk = (node: Node): Node | undefined => (node.path === path ? node : node.children?.map(walk).find(Boolean));
+        const box = (await canvas.boundingBox())!, node = walk(layout.root)!;
+        return { x: ((node.x + node.width / 2) / layout.output.width) * box.width, y: ((node.y + node.height / 2) / layout.output.height) * box.height };
+      };
+      const scope = target.getByTestId('design-scope');
+      const scopeAt = (path: string) => expect.poll(() => scope.getAttribute('data-path')).toBe(path);
+      /** 范围条从左到右是根到叶：路径的第一段在最左边。 */
+      const scopeLeftToRight = async () => { const lefts = await scope.locator('.scope-segment').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().left)); expect(lefts).toEqual([...lefts].sort((a, b) => a - b)); };
+      const inspector = () => target.getByRole('complementary', { name: '检查器' });
+
+      // 没选中：检查器是画板。
+      await inspector().locator(`[data-testid="properties"][data-type="artboard"]`).waitFor();
+      await scopeAt(ROOT);
+
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+      await scopeLeftToRight();
+      expect(await scope.getAttribute('data-count')).toBe('35');
+      expect(await scope.textContent()).toContain('定义在 站点，图上 35 处，这是第 12 处，改一处全改');
+      await inspector().locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      await inspector().getByTestId('design-impact').filter({ hasText: '这里改的是模板「站点」，图上 35 处一起变' }).waitFor();
+      expect(await target.locator('.select-box.other').count(), '其余 34 处是虚线框').toBe(34);
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/站点/design?in=${ROOT}`);
+
+      // 结构树跨模板：选中时展开到那一行，循环项数、状态标记都在；树上悬停标出全部实例；只读不开工作副本。
+      const side0 = target.getByRole('complementary', { name: '图层与数据' });
+      const nameRow = side0.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]');
+      await nameRow.waitFor();
+      expect(await nameRow.getAttribute('data-selected')).toBe('true');
+      expect(await nameRow.textContent()).toContain('状态');
+      expect(await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByTestId('loop-count').textContent()).toBe('×35');
+      expect(await side0.locator('[data-testid="structure-row"][data-path="站点/名称区/地标"]').getByTestId('row-hidden').count(), '地标在有些站显示').toBe(0);
+      await side0.getByRole('button', { name: '进入模板「站点」 · 每项的数据：停靠站点 v1（stops 的一项）' }).waitFor();
+      await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带"]`).hover();
+      await expect.poll(() => target.getByTestId('hover-box').count()).toBeGreaterThan(0);
+      await nameRow.hover();
+      await expect.poll(() => target.getByTestId('hover-box').count(), { message: '35 处都标出来' }).toBeGreaterThanOrEqual(35);
+      await target.getByTestId('design-scope').hover();
+      for (const template of ['站点', '标识图标', '道路段', '班次时刻']) expect((await server('GET', `/v1/templates/${enc(template)}/working-copy`, world.b.admin.token)).status, `${template} 没开工作副本`).toBe(404);
+      // 树上点一行，图上出现它的框，检查器跟着走。
+      await side0.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      await inspector().locator(`[data-testid="properties"][data-path="${ROOT}/站点面板/站点列"]`).waitFor();
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+
+      // 上下层：Esc 到名称区，再到这一项，再到循环容器，再回到站名。
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列[12]`);
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/站点面板/站点列`);
+      await expect.poll(() => decodeURIComponent(new URL(target.url()).hash)).toBe(`#/templates/${enc(ROOT) && ROOT}/design`);
+      await target.keyboard.press('Enter');
+      await scopeAt(`${ROOT}/站点面板/站点列[1]`);
+
+      // Alt + 点：沿层叠穿透。
+      await canvas.click({ position: await position(stop(12)) });
+      await scopeAt(stop(12));
+      await canvas.click({ position: await position(stop(12)), modifiers: ['Alt'] });
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+
+      // 范围条的路径能点。
+      await scope.getByRole('button', { name: '站点面板' }).click();
+      await scopeAt(`${ROOT}/站点面板`);
+
+      // 右键：这里的元素，从最深到画板。
+      await canvas.click({ button: 'right', position: await position(stop(12)) });
+      const menu = target.getByTestId('element-menu');
+      const stack = await menu.getByTestId('stack-item').allTextContents();
+      expect(stack[0]).toContain('站名');
+      expect(stack.at(-1)).toContain(ROOT);
+      await menu.getByTestId('stack-item').filter({ hasText: '名称区' }).click();
+      await scopeAt(`${ROOT}/站点面板/站点列[12]/名称区`);
+
+      // 点舞台空白处取消选中，回到画板。
+      await target.mouse.click((await target.getByTestId('design-stage').boundingBox())!.x + 320, (await target.getByTestId('design-stage').boundingBox())!.y + 30);
+      await expect.poll(() => scope.getAttribute('data-count')).toBe('0');
+
+      // 叠加层（票据 06）：只画不出图。结构框、数据与固定内容；选中容器时的排布参考线。
+      const layer = (name: string) => target.getByRole('group', { name: '叠加层' }).getByRole('button', { name });
+      const before = await target.getByTestId('preview-image').getAttribute('src');
+      await layer('结构').click();
+      await expect.poll(() => target.getByTestId('structure-box').count()).toBeGreaterThan(100);
+      await layer('结构').click();
+      await layer('数据').click();
+      await expect.poll(() => target.getByTestId('data-box').count()).toBeGreaterThan(35);
+      expect(await target.getByTestId('fixed-box').count(), '开往箭头这类图形不算，固定文字算').toBeGreaterThan(0);
+      await target.getByTestId('overlay-legend').filter({ hasText: '灰底是数据驱动' }).waitFor();
+      await layer('数据').click();
+      await canvas.click({ position: await position(`${ROOT}/顶栏/运营方`) });
+      await target.keyboard.press('Escape');
+      await scopeAt(`${ROOT}/顶栏`);
+      await expect.poll(() => target.getByTestId('guide-gap').count(), { message: '顶栏是横向堆叠' }).toBeGreaterThan(0);
+      await expect.poll(() => target.getByTestId('guide-pad').count()).toBeGreaterThan(0);
+      await target.keyboard.press('Escape');
+      await scopeAt(ROOT);
+      await expect.poll(() => target.getByTestId('guide-track').count(), { message: '根模板是四行的网格' }).toBe(3);
+      expect(await target.getByTestId('guide-label').allTextContents()).toEqual(['34 mm', '1 份', '10 mm', '21 mm', '1 份']);
+      expect(await target.getByTestId('preview-image').getAttribute('src'), '叠加层不重新出图').toBe(before);
+
+      // 适配层：M402 有 7 处被压缩，最低 65%；50 站的压测数据有放不下的。结论和布局摘要对得上。
+      await layer('适配').click();
+      await expect.poll(() => target.getByTestId('fit-box').count()).toBe(7);
+      await target.getByTestId('overlay-legend').filter({ hasText: '适配：7 处被压缩，最低 65%' }).waitFor();
+      const m402 = await server('GET', '/v1/datasets/ds-m402-wanguocheng', world.b.admin.token);
+      const fifty = JSON.parse(JSON.stringify(m402.body.content ? JSON.parse(m402.body.content as string) : m402.body)) as { dataset: Record<string, unknown>; data: { stops: { name: string }[] } };
+      while (fifty.data.stops.length < 50) { const copy = { ...fifty.data.stops[fifty.data.stops.length % 35]! }; copy.name = `${copy.name}北`; fifty.data.stops.push(copy); }
+      fifty.dataset = { id: 'm402-stress-50', name: '压测：50 站', staticSchema: fifty.dataset['staticSchema'] };
+      expect((await server('POST', '/v1/datasets', world.b.admin.token, fifty)).status).toBe(201);
+      await target.reload();
+      await target.getByTestId('preview-image').waitFor();
+      const replied50 = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && (response.request().postDataJSON() as { dataset: { id?: string } }).dataset.id === 'm402-stress-50', { timeout: 60_000 });
+      await target.locator('[data-testid="sample-card"][data-id="m402-stress-50"]').click();
+      const fiftyLayout = (await (await replied50).json() as { layout: { root: Node } }).layout.root;
+      const texts = (node: Node & { text?: { compression: number; overflow: boolean } }): (Node & { text?: { compression: number; overflow: boolean } })[] => [node, ...(node.children ?? []).flatMap(texts)];
+      const compressed = texts(fiftyLayout).filter((node) => node.text && node.text.compression < 0.999).length, over = texts(fiftyLayout).filter((node) => node.text?.overflow).length;
+      expect(over).toBeGreaterThan(0);
+      await layer('适配').click();
+      await expect.poll(() => target.getByTestId('overflow-box').count()).toBe(over);
+      expect(await target.getByTestId('fit-box').count() + over).toBe(compressed);
+      await target.getByTestId('overlay-legend').filter({ hasText: `${compressed} 处被压缩` }).filter({ hasText: `${over} 处放不下` }).waitFor();
+
+      // 隐藏的元素：结构页选中，写明原因，范围条写当前样例不显示。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' });
+      await openRow(side, '顶栏');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏/线路号"]`).getByRole('button').first().click();
+      await inspector().getByTestId('hidden-reason').filter({ hasText: '按变量 noRouteNoImage 决定显示' }).waitFor();
+      expect(await scope.textContent()).toContain('当前样例不显示');
+    }, 120_000);
+
+    it('模板设计（票据 07）：样例带上换数据、试值、看问题、改动与 DSL；试值不写进模板', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      const copyUrl = `/v1/templates/${enc(ROOT)}/working-copy`;
+      const isMain = (response: { url(): string; request(): { method(): string } }) => response.url().endsWith('/v1/previews?workingCopies=true') && response.request().method() === 'POST';
+      // 上一个用例也在这一页：先离开，清掉记住的试值，再进来。
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const card = (id: string) => target.locator(`[data-testid="sample-card"][data-id="${id}"]`);
+      // 其他样例依次补一次缩略图；每张卡片都写结论。
+      await expect.poll(() => card('ds-m402-wanguocheng').getByTestId('sample-state').textContent(), { timeout: 30_000 }).toMatch(/没有问题|个提示|个严重问题/);
+      expect(await card('m402-stress-50').count(), '上一个用例建的压测数据').toBe(1);
+
+      // 试值：改本站序号与画板宽，请求带上试值，工作副本与审计都不动。
+      const eventsBefore = ((await server('GET', '/v1/audit-events?limit=200', token)).body.events as unknown[]).length;
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      const withIndex = target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && (request.postDataJSON() as { parameters: Record<string, unknown> }).parameters['currentIndex'] === 5, { timeout: 30_000 });
+      await knob.getByRole('textbox').fill('5');
+      await knob.getByRole('textbox').press('Enter');
+      await withIndex;
+      const withWidth = target.waitForRequest((request) => request.url().endsWith('/v1/previews?workingCopies=true') && (request.postDataJSON() as { output: { width: number } }).output.width === 1000, { timeout: 30_000 });
+      const size = target.locator('[data-testid="size-knob"][data-name="width"]');
+      await size.getByRole('textbox').fill('1000');
+      await size.getByRole('textbox').press('Enter');
+      await withWidth;
+      expect((await server('GET', copyUrl, token)).status, '试值不开工作副本').toBe(404);
+      expect(((await server('GET', '/v1/audit-events?limit=200', token)).body.events as unknown[]).length, '试值不写审计').toBe(eventsBefore);
+      await expect.poll(() => card('m402-stress-50').getByTestId('sample-state').textContent()).toMatch(/没重新出|还没出/);
+      // 试值记在浏览器里，刷新还在。
+      await target.reload();
+      await target.getByTestId('preview-image').waitFor();
+      expect(await knob.getByRole('textbox').inputValue()).toBe('5');
+      await target.getByRole('button', { name: '恢复缺省' }).click();
+      await expect.poll(() => knob.getByRole('textbox').inputValue()).toBe('0');
+
+      // 切到 50 站：放不下的问题定位到元素；缺字段的样例定位到变量页。
+      const problemsTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /问题/ });
+      const toFifty = target.waitForResponse((response) => isMain(response) && (response.request().postDataJSON() as { dataset: { id?: string } }).dataset.id === 'm402-stress-50', { timeout: 60_000 });
+      await card('m402-stress-50').click();
+      await toFifty;
+      await problemsTab.click();
+      await target.getByRole('list', { name: '预览的问题' }).getByRole('button').first().click();
+      await expect.poll(() => target.getByTestId('design-scope').getAttribute('data-path')).toMatch(/道路段列\[\d+\]/);
+      await card('ds-m402-wanguocheng').count();
+
+      // 改动页：没改时写还没有；改了能看差异，并在图上和当前修订对比。
+      const samplesTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: '样例' });
+      await samplesTab.click();
+      await card('ds-m402-wanguocheng').click();
+      const changesTab = target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /改动/ });
+      await changesTab.click();
+      await target.getByTestId('tray-changes').getByText('还没有改动').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' });
+      await target.locator('nav.crumbs').getByRole('link', { name: ROOT }).click();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-testid="parameter-row"][data-name="primaryColor"]').getByRole('button').first().click();
+      const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await target.getByRole('complementary', { name: '检查器' }).locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('#1D6B3C');
+      await stashed;
+      await target.getByTestId('tray-changes').getByTestId('change').first().waitFor();
+      await target.getByRole('button', { name: '在图上对比' }).click();
+      await target.getByTestId('compare-clip').getByRole('img').waitFor();
+      const bar = (await target.getByTestId('compare-bar').boundingBox())!;
+      const clipBefore = (await target.getByTestId('compare-clip').boundingBox())!.width;
+      await target.mouse.move(bar.x + 1, bar.y + bar.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(bar.x - 120, bar.y + bar.height / 2, { steps: 3 });
+      await target.mouse.up();
+      await expect.poll(async () => (await target.getByTestId('compare-clip').boundingBox())!.width).toBeLessThan(clipBefore);
+      await target.getByRole('button', { name: '关掉对比' }).click();
+      expect(await target.getByTestId('compare-clip').count()).toBe(0);
+
+      // DSL 页：选中的元素或整份，含改动。
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: 'DSL' }).click();
+      await target.getByRole('group', { name: 'DSL 的范围' }).getByRole('button', { name: '整份模板' }).click();
+      await expect.poll(() => target.getByTestId('design-dsl').textContent()).toContain('#1D6B3C');
+      await target.getByRole('group', { name: 'DSL 的范围' }).getByRole('button', { name: '选中的元素' }).click();
+      await expect.poll(() => target.getByTestId('design-dsl').textContent()).toContain('"sizeRange"');
+
+      // 收尾：丢掉工作副本，不影响别的用例。
+      expect((await server('DELETE', copyUrl, token)).status).toBe(204);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 08）：变量面板有当前值，悬停标出谁在用；选中变量右边显示它；取值只从接口来', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      await side.getByRole('tab', { name: '数据' }).click();
+      const row = (name: string) => side.locator(`[data-name="${name}"]`);
+      // 四组都有当前值。
+      for (const group of ['字段', '参数', '派生变量', '检查项']) await side.getByRole('region', { name: group, exact: true }).waitFor();
+      for (const group of ['对外参数', '内部参数']) await side.getByRole('group', { name: group }).waitFor();
+      await expect.poll(() => row('routeNo').textContent()).toContain('M402');
+      await expect.poll(() => row('stops').textContent()).toContain('35 项');
+      await expect.poll(() => row('stopCount').textContent()).toContain('35');
+      await expect.poll(() => row('primaryColor').textContent()).toContain('#FF8000');
+      await expect.poll(() => row('本站序号不能超过站点数').textContent()).toContain('未成立');
+
+      // 悬停标出谁在用，连带派生变量。
+      await row('stops').hover();
+      await expect.poll(() => target.getByTestId('use-box').count()).toBeGreaterThan(0);
+      await target.getByTestId('design-scope').hover();
+      await expect.poll(() => target.getByTestId('use-box').count()).toBe(0);
+
+      // 选中字段：只读，链到数据定义。
+      await row('routeNo').locator('.variable-button').click();
+      const panel = inspector.getByTestId('variable-inspector');
+      await panel.filter({ hasText: '字段属于数据定义' }).waitFor();
+      expect(await panel.getByRole('link', { name: /打开数据定义/ }).getAttribute('href')).toBe(`#/definitions/${enc('线路牌')}?field=routeNo`);
+
+      // 选中内部参数：改缺省值写进模板，图跟着变；谁在用可以点。
+      await row('stopNameSize').getByRole('button').click();
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
+      await inspector.getByTestId('variable-uses').getByRole('button', { name: '站点列' }).waitFor();
+      const before = await target.getByTestId('preview-image').getAttribute('src');
+      await inspector.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first().fill('12');
+      await expect.poll(() => target.getByTestId('preview-image').getAttribute('src'), { timeout: 15_000 }).not.toBe(before);
+      await expect.poll(() => row('stopNameSize').textContent()).toContain('12');
+
+      // 选中元素后右边回到元素；作用域换成它的模板，取值是这一处实例的。
+      await inspector.getByTestId('variable-uses').getByRole('button', { name: '站点列' }).click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ROOT}/站点面板/站点列"]`).waitFor();
+
+      // 试值让检查项成立：问题定位到检查项，右边显示它。
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knob.getByRole('textbox').fill('40');
+      await knob.getByRole('textbox').press('Enter');
+      await expect.poll(() => row('本站序号不能超过站点数').textContent(), { timeout: 15_000 }).toContain('成立·严重');
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: /问题/ }).click();
+      await target.getByRole('list', { name: '预览的问题' }).getByRole('button', { name: /本站序号超过了停靠站点数/ }).click();
+      await inspector.locator('[data-testid="variable-inspector"][data-kind="check"]').waitFor();
+
+      // 进到子模板：作用域换了，取值是这一处实例的；派生变量标出命中。
+      await target.getByRole('region', { name: '样例带' }).getByRole('tab', { name: '样例' }).click();
+      await target.getByRole('button', { name: '恢复缺省' }).click();
+      const knobValue = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knobValue.getByRole('textbox').fill('5');
+      await knobValue.getByRole('textbox').press('Enter');
+      await side.getByRole('tab', { name: '图层' }).click();
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await row('stopState').getByRole('button').click();
+      await inspector.locator('[data-testid="variable-inspector"][data-kind="derived"]').waitFor();
+      await inspector.getByTestId('branch-hit').waitFor();
+
+      // 收尾：丢掉工作副本与试值。
+      expect((await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token)).status).toBe(204);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 09）：值格能绑定、断开、提取为参数，来源链跳到真正的参数；数值拖标签松手才写回', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const stopDocument = async () => JSON.parse((await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token)).body.content as string) as { parameters: { name: string }[]; artboard: unknown };
+      /** 站名这个元素在文档里的样子。 */
+      const stopName = async () => {
+        const find = (node: Record<string, unknown>): Record<string, unknown> | undefined => (node['name'] === '站名' ? node : ((node['children'] ?? []) as Record<string, unknown>[]).map(find).find(Boolean));
+        return find((await stopDocument()).artboard as Record<string, unknown>)!;
+      };
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await openRow(side, '名称区');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+
+      // 绑定态：显示名称与当前值；值从主模板的内部参数来。
+      const size = field('fontSize');
+      await expect.poll(() => size.getByTestId('bound-chip').textContent()).toContain('站名字号');
+      await expect.poll(() => size.getByTestId('bound-chip').textContent()).toContain('10');
+      await expect.poll(() => size.getByTestId('value-origin').textContent()).toBe(`来自 ${ROOT}「站名字号」（内部参数）`);
+      // 被状态覆盖：颜色前有圆点，写明哪些取值；字号没有。
+      expect(await field('color').getByTestId('state-dot').getAttribute('title')).toContain('已过站、本站');
+      expect(await size.getByTestId('state-dot').count()).toBe(0);
+      // 不能绑定：字体没有按钮，写明原因。
+      expect(await field('font').getByTestId('bind-button').count()).toBe(0);
+      await field('font').getByTestId('font-select').focus();
+      await field('font').getByTestId('no-binding').filter({ hasText: '用状态样式' }).waitFor();
+
+      // 弹层只列类型相符的变量，分组、带当前值；Esc 关掉，不动选中。
+      await field('color').getByTestId('bound-chip').click();
+      const popover = field('color').getByTestId('binding-popover');
+      const option = (name: string) => popover.locator(`[data-testid="binding-option"][data-name="${name}"]`);
+      await option('passedColor').waitFor();
+      expect(await option('stopNameSize').count(), '数值不能绑颜色').toBe(0);
+      expect(await option('name').count(), '文本不能绑颜色').toBe(0);
+      expect(await popover.getByRole('region', { name: '参数' }).count()).toBe(1);
+      expect(await option('nameColor').getAttribute('aria-pressed')).toBe('true');
+      await target.keyboard.press('Escape');
+      expect(await popover.count()).toBe(0);
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+
+      // 换绑定：写回 { var }。
+      await field('color').getByTestId('bound-chip').click();
+      const rebound = stashed();
+      await option('passedColor').click();
+      await rebound;
+      expect((await stopName())['color']).toEqual({ var: 'passedColor' });
+
+      // 断开：当前值变成字面值。
+      await expect.poll(() => field('color').getByTestId('bound-chip').textContent()).toContain('已过站');
+      const cut = stashed();
+      await field('color').getByTestId('unbind-button').click();
+      await cut;
+      expect((await stopName())['color']).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(await field('color').getByTestId('value-cell').getAttribute('data-state')).toBe('literal');
+
+      // 提取为参数：起名可改，存当前值，一步撤销。
+      await field('color').getByTestId('bind-button').click();
+      await popover.getByRole('button', { name: '提取为参数' }).click();
+      const naming = popover.getByRole('form', { name: '提取为参数' });
+      expect(await naming.getByLabel('名称', { exact: true }).inputValue()).toBe('color');
+      expect(await naming.getByLabel('显示名称').inputValue()).toBe('站名颜色');
+      await naming.getByLabel('名称', { exact: true }).fill('passedColor');
+      await naming.getByRole('alert').filter({ hasText: '已经有' }).waitFor();
+      expect(await naming.getByRole('button', { name: '提取并绑定' }).isDisabled()).toBe(true);
+      await naming.getByLabel('名称', { exact: true }).fill('stopTextColor');
+      const extracted = stashed();
+      await naming.getByRole('button', { name: '提取并绑定' }).click();
+      await extracted;
+      expect((await stopName())['color']).toEqual({ var: 'stopTextColor' });
+      expect((await stopDocument()).parameters.map((item) => item.name)).toContain('stopTextColor');
+      await expect.poll(() => field('color').getByTestId('bound-chip').textContent()).toContain('站名颜色');
+      const undone = stashed();
+      await target.keyboard.press('Control+z');
+      await undone;
+      expect((await stopDocument()).parameters.map((item) => item.name), '参数和绑定一起撤销').not.toContain('stopTextColor');
+      expect((await stopName())['color']).toMatch(/^#/);
+
+      // 拖标签：拖的时候只改显示，松手才写回。
+      // 先滚进视野：鼠标不会自己滚，标签在视口外时拖不到它（容器里的字体高，检查器更长）。
+      const label = field('letterSpacing').locator('label').first();
+      await label.scrollIntoViewIfNeeded();
+      const box = (await label.boundingBox())!;
+      let writes = 0;
+      const countWrites = (request: { method(): string; url(): string }) => { if (request.method() === 'PUT' && request.url().includes('/working-copy?')) writes++; };
+      target.on('request', countWrites);
+      await target.mouse.move(box.x + 8, box.y + box.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(box.x + 38, box.y + box.height / 2, { steps: 4 });
+      await expect.poll(() => field('letterSpacing').locator('input[type="text"]').first().inputValue()).toBe('3');
+      expect(writes, '还没松手').toBe(0);
+      const dragged = stashed();
+      await target.mouse.up();
+      await dragged;
+      target.off('request', countWrites);
+      expect(writes).toBe(1);
+      expect((await stopName())['letterSpacing']).toBe(3);
+
+      // 经循环信息传入的写明是循环序号。
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-name="index"]').getByRole('button').click();
+      await inspector.getByTestId('value-origin').filter({ hasText: '循环序号，由循环 站点列 传入' }).waitFor();
+
+      // 来源链一键跳过去：右边是主模板的参数。
+      await side.locator('[data-name="stopNameSize"]').getByRole('button').click();
+      await inspector.getByTestId('value-origin').getByRole('button', { name: `${ROOT}「站名字号」` }).click();
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopNameSize"]').waitFor();
+      await expect.poll(() => target.url()).toContain(`/templates/${enc(ROOT)}/design`);
+      await inspector.getByTestId('variable-current').waitFor();
+      expect(await inspector.getByTestId('value-origin').count(), '值就在这里，不用再说来自哪').toBe(0);
+
+      // 收尾：丢掉工作副本。
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 10）：检查器按类型分组；竖排适配只给合法步骤并写明这一处的结果；内容插入字段、改格式、片段样式；双击图上文字就地改；字体按族列字重', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME_AT = `${ROOT}/站点面板/站点列[12]/名称区/站名`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      interface Node { path: string; x: number; y: number; width: number; height: number; children?: Node[] }
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Node } };
+      await target.getByTestId('preview-image').waitFor();
+      const inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const stopName = async () => {
+        const document = JSON.parse((await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token)).body.content as string) as { artboard: Record<string, unknown> };
+        const find = (node: Record<string, unknown>): Record<string, unknown> | undefined => (node['name'] === '站名' ? node : ((node['children'] ?? []) as Record<string, unknown>[]).map(find).find(Boolean));
+        return find(document.artboard)!;
+      };
+
+      // 双击图上的文字：就地打开内容编辑，焦点在里面；打字写回，Esc 收起，选中不动。
+      const walk = (node: Node): Node | undefined => (node.path === NAME_AT ? node : node.children?.map(walk).find(Boolean));
+      const canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!, stop = walk(layout.root)!;
+      await canvas.dblclick({ position: { x: ((stop.x + stop.width / 2) / layout.output.width) * box.width, y: ((stop.y + stop.height / 2) / layout.output.height) * box.height } });
+      const inline = target.getByTestId('inline-text');
+      await inline.getByTestId('content-slot').filter({ hasText: '站名' }).waitFor();
+      await expect.poll(() => inline.getByTestId('content-gap').last().evaluate((element) => element === element.ownerDocument.activeElement)).toBe(true);
+      const typed = stashed();
+      await target.keyboard.type('站');
+      await typed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }]);
+      await target.keyboard.press('Escape');
+      expect(await inline.count()).toBe(0);
+      await expect.poll(() => target.getByTestId('design-scope').getAttribute('data-path')).toBe(NAME_AT);
+
+      // 按类型分组，没有"其他 N 项"；片段是字段，不是 JSON。
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      expect(await inspector.getByTestId('properties').locator('section > h3').allTextContents(), '状态样式在顶上（票据 17），不再是一组').toEqual(['基本', '内容', '文字', '适配', '位置与尺寸', '显示']);
+      expect(await inspector.locator('details').count()).toBe(0);
+      expect(await inspector.getByRole('region', { name: '内容' }).locator('textarea').count()).toBe(0);
+
+      // 字体族与字重两个下拉（第三轮票据 04），值还是资源引用。
+      const font = field('font').getByTestId('font-select');
+      expect(await field('font').getByTestId('font-family').inputValue()).toBe('hei');
+      expect(await font.inputValue()).toBe('res:font-hei-medium');
+      expect(await font.locator('option').allTextContents()).toEqual(['Medium', 'Heavy']);
+
+      // 适配收成一行（第三轮票据 04）：规则与这一处的结果；点开才是编辑器。
+      const summary = inspector.getByTestId('fit-summary');
+      expect(await summary.getByTestId('fit-rule').textContent()).toBe('收紧字距 → 压缩字形 · 缩字组 stopNames');
+      await expect.poll(() => summary.getByTestId('fit-here').textContent()).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm$/);
+      expect(await field('fit.steps').count(), '没点开时不列适配的字段').toBe(0);
+      await summary.click();
+      // 竖排的适配：只有三种步骤，这一处的结果在最后一行；用不上的写明要什么。
+      const steps = field('fit.steps').locator('select');
+      expect((await steps.locator('option').allTextContents()).filter((label) => !label.startsWith('缺省'))).toEqual(['不适配', '收紧字距', '收紧字距 → 压缩字形']);
+      await expect.poll(() => inspector.getByTestId('fit-result').textContent()).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm，字距 [\d.]+ mm/);
+      await inspector.getByTestId('shrink-group').filter({ hasText: '缩字组 stopNames：站名，共 1 个成员' }).waitFor();
+      await inspector.getByTestId('fit-mode').filter({ hasText: '竖排' }).waitFor();
+      expect(await field('fit.compressMin').locator('input[type="text"]').inputValue()).toBe('0.6');
+      const changedSteps = stashed();
+      await steps.selectOption({ label: '收紧字距' });
+      await changedSteps;
+      expect((await stopName())['fit']).toMatchObject({ steps: ['tightenSpacing'] });
+      await inspector.getByTestId('fit-off').filter({ hasText: '步骤里有压缩字形才生效' }).waitFor();
+      expect(await field('fit.compressMin').count()).toBe(0);
+      expect(await summary.getByTestId('fit-rule').textContent(), '摘要跟着改').toBe('收紧字距 · 缩字组 stopNames');
+      // 竖排不能倾斜：这一项不列出来（第三轮票据 04）。
+      expect(await field('slant').count()).toBe(0);
+
+      // 内容：打 / 选字段，只列能显示成文字的，光标跟着走。
+      const editor = inspector.getByTestId('content-editor');
+      await editor.getByTestId('content-text').click();
+      await target.keyboard.press('End');
+      await target.keyboard.press('/');
+      const picker = editor.getByTestId('slot-picker');
+      await picker.getByRole('textbox').waitFor();
+      expect(await picker.locator('[data-name="nameColor"]').count(), '颜色不能显示成文字').toBe(0);
+      await picker.getByRole('textbox').fill('index');
+      const withSlot = stashed();
+      await target.keyboard.press('Enter');
+      await withSlot;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }]);
+      // 选字段时按 Esc：就是打了一个 /。
+      await editor.getByTestId('content-gap').last().click();
+      await target.keyboard.press('/');
+      await picker.getByRole('textbox').waitFor();
+      const slashed = stashed();
+      await target.keyboard.press('Escape');
+      await slashed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }, { text: '/' }]);
+      expect(await inspector.getByTestId('properties').count(), 'Esc 没有变成选上一层').toBe(1);
+      // 退格删掉 / 这段，光标回到空位。
+      const unslashed = stashed();
+      await target.keyboard.press('Backspace');
+      await unslashed;
+      expect((await stopName())['content']).toEqual([{ slot: 'name' }, { text: '站' }, { slot: 'index' }]);
+
+      // 点插槽改展示格式：不合法的不写回，当场说明。
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').click();
+      const piece = editor.getByTestId('piece-popover');
+      const format = piece.getByLabel('展示格式');
+      await format.fill('HH:mm');
+      await piece.getByTestId('format-problem').filter({ hasText: '含时分秒' }).waitFor();
+      await format.fill('xx');
+      await piece.getByTestId('format-problem').filter({ hasText: '不是可用的格式符' }).waitFor();
+      await target.waitForTimeout(800);
+      expect(((await stopName())['content'] as unknown[])[2], '不合法的没写回').toEqual({ slot: 'index' });
+      const formatted = stashed();
+      await piece.getByTestId('format-presets').getByRole('button', { name: '0.00' }).click();
+      await formatted;
+      expect(((await stopName())['content'] as unknown[])[2]).toEqual({ slot: 'index', format: '0.00' });
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').filter({ hasText: '0.00' }).waitFor();
+      // 文本字段不带格式。
+      await editor.locator('[data-testid="content-slot"][data-slot="name"]').click();
+      await piece.getByTestId('format-none').waitFor();
+      // 片段样式：竖排没有倾斜。
+      expect(await piece.locator('[data-key="content.0.slant"]').count()).toBe(0);
+      const sized = stashed();
+      await piece.locator('[data-key="content.0.fontSize"]').locator('input[type="text"]').first().fill('8');
+      await sized;
+      expect(((await stopName())['content'] as unknown[])[0]).toEqual({ slot: 'name', fontSize: 8 });
+      // 删除这个插槽。
+      await editor.locator('[data-testid="content-slot"][data-slot="index"]').click();
+      const removed = stashed();
+      await piece.getByRole('button', { name: '删除这个插槽' }).click();
+      await removed;
+      expect(((await stopName())['content'] as Record<string, unknown>[]).some((item) => item['slot'] === 'index')).toBe(false);
+
+      // 收尾：丢掉工作副本。
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 12）：结构树上复制、上移、改名、包进容器再拆开、拖进容器、删除，每步一次撤销；重名当场拦下；被多处调用的先确认', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      const current = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: { children: { name: string; type: string; children?: { name: string }[] }[] } };
+      };
+      const before = await current(ALL);
+      const names = async () => (await current(ALL)).artboard.children.map((child) => child.name);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ALL}/${name}"]`);
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      await side.getByText('顺序就是 DSL 的顺序').waitFor();
+
+      // 复制：放在原件后面，自动起名，选中副本。
+      await row('矩形').getByRole('button').first().click();
+      let saved = stashed();
+      await target.keyboard.press('Control+d');
+      await saved;
+      expect(await names()).toContain('矩形2');
+      expect((await names()).indexOf('矩形2')).toBe((await names()).indexOf('矩形') + 1);
+      await expect.poll(selectedPath).toBe(`${ALL}/矩形2`);
+
+      // 上移：顺序就是 DSL 的顺序。
+      saved = stashed();
+      await target.keyboard.press('Alt+ArrowUp');
+      await saved;
+      expect((await names()).indexOf('矩形2')).toBe((await names()).indexOf('矩形') - 1);
+
+      // 改名：重名当场拦下，不写回；换个名字就改。
+      await target.keyboard.press('F2');
+      const input = side.getByTestId('rename-input');
+      await input.fill('椭圆');
+      await input.press('Enter');
+      await side.getByRole('alert').filter({ hasText: '模板内唯一' }).waitFor();
+      await input.fill('色块');
+      saved = stashed();
+      await input.press('Enter');
+      await saved;
+      expect(await names()).toContain('色块');
+      await expect.poll(selectedPath).toBe(`${ALL}/色块`);
+
+      // 右键：包进容器，再拆开。
+      await row('色块').click({ button: 'right' });
+      saved = stashed();
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '包进容器' }).click();
+      await saved;
+      const wrapped = (await current(ALL)).artboard.children.find((child) => child.type === 'container' && child.children?.[0]?.name === '色块');
+      expect(wrapped?.name, '新容器起了没重的名字').toBe('容器2');
+      await row('容器2').click({ button: 'right' });
+      saved = stashed();
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '拆开容器' }).click();
+      await saved;
+      expect(await names()).toContain('色块');
+      expect(await names()).not.toContain('容器2');
+
+      // 拖进容器：拖到"容器"那一行的中间。
+      const box = (await row('容器').boundingBox())!;
+      saved = stashed();
+      await row('色块').dragTo(row('容器'), { targetPosition: { x: 40, y: box.height / 2 } });
+      await saved;
+      const container = (await current(ALL)).artboard.children.find((child) => child.name === '容器')!;
+      expect(container.children?.map((child) => child.name)).toContain('色块');
+
+      // 删除：选中回到父容器。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/色块"]`).getByRole('button').first().click();
+      saved = stashed();
+      await target.keyboard.press('Delete');
+      await saved;
+      expect(JSON.stringify(await current(ALL))).not.toContain('色块');
+      await expect.poll(selectedPath).toBe(`${ALL}/容器`);
+
+      // 每步一次撤销：七步撤完，和开始时一样。
+      for (let step = 0; step < 7; step++) {
+        saved = stashed();
+        await target.getByRole('button', { name: '撤销', exact: true }).click();
+        await saved;
+      }
+      expect(await current(ALL)).toEqual(before);
+
+      // 检查器里改名同样拦下重名。
+      await row('文字').getByRole('button').first().click();
+      const nameInput = inspector.locator('[data-testid="property-field"][data-key="name"]').first().locator('input[type="text"]').first();
+      await nameInput.fill('矩形');
+      await inspector.locator('[data-testid="property-field"][data-key="name"]').getByRole('alert').filter({ hasText: '模板内唯一' }).waitFor();
+      await target.waitForTimeout(800);
+      expect(await current(ALL)).toEqual(before);
+      await nameInput.fill('文字');
+
+      // 被多处调用的子模板：删站名之前先说清图上几处；不确定就不动。
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await openRow(side, '名称区');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区/站名"]').getByRole('button').first().click();
+      await inspector.locator('[data-testid="properties"][data-path="站点/名称区/站名"]').waitFor();
+      const asked: string[] = [];
+      target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
+      await target.keyboard.press('Delete');
+      await expect.poll(() => asked).toEqual([expect.stringContaining('图上 35 处')]);
+      expect((await server('GET', `/v1/templates/${enc('站点')}/working-copy`, token)).status, '没确定就不动').toBe(404);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 14）：从底部工具栏点一下加到选中的容器；把字段拖到图上生成绑定好的文字；列表字段选基准相符的模板变循环；拖经结构页签放到树上', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; type: string; content?: unknown; list?: unknown; template?: string; place?: Record<string, unknown>; children?: Node[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const childrenOf = async (name: string) => (await current()).artboard.children!.find((child) => child.name === name)!.children ?? [];
+      const before = await current();
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] } } };
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const row = (name: string) => side.locator(`[data-testid="structure-row"][data-path="${ROOT}/${name}"]`);
+
+      // 选中顶栏，点开底部工具栏的"形状"（第三轮票据 06 起元素目录在这里）：写明加到哪。点矩形，加在顶栏的最后，堆叠里只写尺寸。
+      await row('顶栏').getByRole('button').first().click();
+      await target.getByTestId('insert-shape').click();
+      await target.getByTestId('insert-target').filter({ hasText: '「顶栏」的最后' }).waitFor();
+      let saved = stashed();
+      await target.locator('[data-testid="add-element"][data-kind="rect"]').click();
+      await saved;
+      const top = await childrenOf('顶栏');
+      expect(top.at(-1)).toMatchObject({ name: '矩形', type: 'rect', place: { width: { fixed: 20 }, height: { fixed: 10 } } });
+      await expect.poll(() => inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${ROOT}/顶栏/矩形`);
+
+      // 字段在左面板的"数据"页（第三轮票据 07），整行能拖。拖到图上的道路带：生成绑好插槽的文字，名字取显示名称（重名加序号），放进这个模板自己的容器。
+      await side.getByRole('tab', { name: '数据' }).click();
+      const walk = (node: { path: string; x: number; y: number; width: number; height: number; children?: unknown[] }): typeof node | undefined => (node.path === `${ROOT}/道路带` ? node : (node.children as typeof node[] | undefined)?.map(walk).find(Boolean));
+      const road = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), box = (await canvas.boundingBox())!;
+      saved = stashed();
+      await side.locator('[data-testid="variable-row"][data-name="routeNo"]').dragTo(canvas, { targetPosition: { x: ((road.x + road.width / 2) / layout.output.width) * box.width, y: ((road.y + road.height / 2) / layout.output.height) * box.height } });
+      await saved;
+      const added = (await childrenOf('道路带')).find((child) => child.type === 'text' && JSON.stringify(child.content) === JSON.stringify([{ slot: 'routeNo' }]));
+      expect(added?.name, '名字取显示名称，主模板里已有"线路号"，加序号').toBe('线路号2');
+
+      // 列表字段：选基准相符的模板，变成循环容器。
+      await side.locator('[data-testid="add-field"][data-field="stops"]').click();
+      const form = side.getByRole('form', { name: /从 .* 创建/ });
+      expect(await form.getByLabel('被调模板').locator('option').allTextContents(), '道路段的基准也是停靠站点 v1').toEqual(['选一个模板', '站点', '道路段', '+ 新建模板…']);
+      await form.getByLabel('被调模板').selectOption('站点');
+      saved = stashed();
+      await form.getByRole('button', { name: '添加循环容器' }).click();
+      await saved;
+      expect(JSON.stringify(await current())).toContain('"list":{"var":"stops"},"template":"站点"');
+
+      // 从形状目录拖出来，拖经"结构"页签放到树上：椭圆放进底栏。拖起来以后目录藏起来，不挡要放的地方。
+      await target.getByTestId('insert-shape').click();
+      const ellipse = target.locator('[data-testid="add-element"][data-kind="ellipse"]');
+      const from = (await ellipse.boundingBox())!;
+      await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+      await target.mouse.down();
+      const tab = (await side.getByRole('tab', { name: '图层' }).boundingBox())!;
+      await target.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 5 });
+      await row('底栏').waitFor();
+      const bottom = (await row('底栏').boundingBox())!;
+      saved = stashed();
+      await target.mouse.move(bottom.x + 60, bottom.y + bottom.height / 2, { steps: 5 });
+      await target.mouse.up();
+      await saved;
+      expect((await childrenOf('底栏')).some((child) => child.type === 'ellipse')).toBe(true);
+
+      // 四次添加，四次撤销，回到开始的样子。
+      for (let step = 0; step < 4; step++) {
+        saved = stashed();
+        await target.getByRole('button', { name: '撤销', exact: true }).click();
+        await saved;
+      }
+      expect(await current()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 16）：stopState 的分支编辑器标出命中，改取值、加一支、换条件写法；新建派生变量与检查项，重名拦下；删还在用的先确认', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Doc = { derived?: { name: string; op: string; branches?: { when: Record<string, unknown>; then: unknown }[] }[]; checks?: { name: string }[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(STOP)}/content`, token)).body;
+        return JSON.parse(body.content as string) as Doc;
+      };
+      const stopState = async () => (await current()).derived!.find((item) => item.name === 'stopState')!;
+      const before = await current();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await openRow(side, '站点面板');
+      await openRow(side, '站点列');
+      await side.locator('[data-testid="structure-row"][data-path="站点/名称区"]').getByRole('button').first().click();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-name="stopState"]').getByRole('button').click();
+      const editor = inspector.getByTestId('derived-editor');
+      const rows = editor.getByTestId('branch-row');
+      await expect.poll(() => rows.count()).toBe(3);
+      // 本站序号缺省是 0：第 1 支"普通"成立，高亮。
+      await expect.poll(() => rows.nth(0).getAttribute('data-hit')).toBe('true');
+      expect(await editor.getByLabel('结果类型').inputValue()).toBe('text');
+
+      // 改取值。
+      let saved = stashed();
+      await rows.nth(0).getByLabel('第 1 支的取值', { exact: true }).fill('常态');
+      await saved;
+      await expect.poll(async () => (await stopState()).branches![0]!.then).toEqual({ value: '常态' });
+
+      // 加一支，再去掉。
+      saved = stashed();
+      await editor.getByRole('button', { name: '加一支' }).click();
+      await saved;
+      await expect.poll(async () => (await stopState()).branches!.length).toBe(4);
+      saved = stashed();
+      await editor.getByRole('button', { name: '去掉第 4 支' }).click();
+      await saved;
+      await expect.poll(async () => (await stopState()).branches!.length).toBe(3);
+
+      // 第 2 支换成"全部成立"。
+      saved = stashed();
+      await rows.nth(1).getByLabel('第 2 支的写法', { exact: true }).selectOption('all');
+      await saved;
+      await expect.poll(async () => Object.keys((await stopState()).branches![1]!.when)).toEqual(['all']);
+
+      // 新建派生变量：重名拦下，换个名字就建好并选中。
+      await side.getByRole('button', { name: '新建派生变量' }).click();
+      const creating = side.getByRole('form', { name: '新建派生变量' });
+      await creating.getByLabel('新派生变量的名称').fill('stopState');
+      await creating.getByRole('button', { name: '新建' }).click();
+      await creating.getByRole('alert').filter({ hasText: '已经有' }).waitFor();
+      await creating.getByLabel('新派生变量的名称').fill('stopCount');
+      await creating.getByLabel('运算').selectOption({ label: '加' });
+      saved = stashed();
+      await creating.getByRole('button', { name: '新建' }).click();
+      await saved;
+      await inspector.locator('[data-testid="variable-inspector"][data-name="stopCount"]').waitFor();
+      await editor.getByLabel('算法').waitFor();
+      expect((await current()).derived!.map((item) => item.name)).toContain('stopCount');
+
+      // 删还在用的 stopState：先列出谁在用，不确定就不动。
+      await side.locator('[data-name="stopState"]').getByRole('button').click();
+      const asked: string[] = [];
+      target.once('dialog', (dialog) => { asked.push(dialog.message()); void dialog.dismiss(); });
+      await inspector.getByRole('button', { name: '删除这个派生变量' }).click();
+      await expect.poll(() => asked).toEqual([expect.stringContaining('在用')]);
+      expect((await current()).derived!.map((item) => item.name)).toContain('stopState');
+
+      // 没人用的 stopCount 直接删。
+      await side.locator('[data-name="stopCount"]').getByRole('button').click();
+      saved = stashed();
+      await inspector.getByRole('button', { name: '删除这个派生变量' }).click();
+      await saved;
+      expect((await current()).derived!.map((item) => item.name)).not.toContain('stopCount');
+
+      // 检查项：新建再删掉。
+      await side.getByRole('button', { name: '新建检查项' }).click();
+      const check = side.getByRole('form', { name: '新建检查项' });
+      await check.getByLabel('新检查项的名称').fill('noName');
+      saved = stashed();
+      await check.getByRole('button', { name: '新建' }).click();
+      await saved;
+      await inspector.locator('[data-testid="variable-inspector"][data-name="noName"]').waitFor();
+      saved = stashed();
+      await inspector.getByRole('button', { name: '删除这个检查项' }).click();
+      await saved;
+      expect((await current()).checks ?? []).toEqual([]);
+
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      expect(await current()).toEqual(before);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 15）：循环的表单只列基准相符的模板，传入参数换来源，每项排布的互斥直接禁用并写原因，合并相邻；进入被调模板不离开这张图', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Loop = { name: string; args?: Record<string, unknown>; itemLayout?: Record<string, unknown>; mergeBy?: string; children?: Loop[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Loop };
+      };
+      const find = (node: Loop, name: string): Loop | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const loopNow = async (name: string) => find((await current()).artboard, name)!;
+      const before = await current();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await openRow(side, '站点面板');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      const form = inspector.getByTestId('loop-form');
+      await form.waitFor();
+
+      // 来源：列表是 stops，模板只列基准是停靠站点 v1 的。
+      expect(await form.getByLabel('循环的列表').inputValue()).toBe('stops');
+      // 模板列表加载完之前只有当前值与新建一项：等它加载完（Docker 里接口慢，直接读会读到半截）。
+      await expect.poll(() => form.getByLabel('被调模板').locator('option').allTextContents()).toEqual(['站点', '道路段', '+ 新建模板…']);
+      await form.getByText('只列基准是 停靠站点 v1 的').waitFor();
+
+      // 传入参数：一行一个对外参数；换成固定值，再换回变量。
+      const args = inspector.getByTestId('args-form'), row = (name: string) => args.locator(`[data-testid="arg-row"][data-name="${name}"]`);
+      expect(await row('index').locator('select').first().inputValue(), '序号经循环信息传入').toBe('loop');
+      let saved = stashed();
+      await row('currentIndex').locator('select').first().selectOption('value');
+      await saved;
+      expect((await loopNow('站点列')).args!['currentIndex']).toEqual({ value: 0 });
+      saved = stashed();
+      await row('currentIndex').locator('select').first().selectOption('var');
+      await saved;
+      expect((await loopNow('站点列')).args!['currentIndex']).toMatchObject({ var: expect.any(String) });
+
+      // 每项排布：等分时折行用不了并写明原因；换随内容后能折行，这时等分用不了。
+      const layout = inspector.getByTestId('item-layout-form');
+      await layout.getByTestId('wrap-blocked').filter({ hasText: '折行不能配等分' }).waitFor();
+      expect(await layout.getByRole('button', { name: '放不下就折行' }).isDisabled()).toBe(true);
+      saved = stashed();
+      await layout.getByLabel('每项宽的尺寸方式').selectOption('content');
+      await saved;
+      saved = stashed();
+      await layout.getByRole('button', { name: '放不下就折行' }).click();
+      await saved;
+      expect((await loopNow('站点列')).itemLayout).toMatchObject({ widths: 'content', wrap: true });
+      expect(await layout.getByLabel('每项宽的尺寸方式').locator('option[value="equal"]').isDisabled()).toBe(true);
+      // 换方向：每项宽跟着换成每项高。
+      saved = stashed();
+      await layout.getByRole('group', { name: '方向' }).getByRole('button', { name: '纵向' }).click();
+      await saved;
+      expect((await loopNow('站点列')).itemLayout).toMatchObject({ direction: 'column', heights: 'content' });
+      await layout.getByTestId('loop-result').filter({ hasText: /这一处：35 项/ }).waitFor();
+
+      // 合并相邻：道路段列按道路合并，别的尺寸用不了；取消合并，spanBy 一起去掉。
+      await openRow(side, '道路带');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/道路带/道路段列"]`).getByRole('button').first().click();
+      await inspector.getByTestId('merge-row').waitFor();
+      expect(await inspector.getByLabel('合并相邻同值项').inputValue()).toBe('road');
+      expect(await inspector.getByTestId('item-layout-form').getByLabel(/^每项(宽|高)的尺寸方式$/).locator('option[value="content"]').isDisabled()).toBe(true);
+      await inspector.getByTestId('item-layout-form').getByTestId('wrap-blocked').filter({ hasText: '合并相邻' }).waitFor();
+      saved = stashed();
+      await inspector.getByLabel('合并相邻同值项').selectOption('');
+      await saved;
+      const road = await loopNow('道路段列');
+      expect(road.mergeBy).toBeUndefined();
+      expect(road.itemLayout).not.toHaveProperty('spanBy');
+
+      // 进入被调模板：选中它的画板，图还是这一张。
+      await inspector.getByTestId('enter-template').click();
+      await inspector.locator('[data-testid="properties"][data-path="道路段"]').waitFor();
+      await expect.poll(() => target.url()).toContain(`in=${enc(ROOT)}`);
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      expect(await current()).toEqual(before);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 13）：拖胸牌相框的下边，拖动中只画幽灵框不写回，Esc 取消，松手一步撤销；方向键换位；拖 M402 顶栏的间距条', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, BADGE);
+      type Node = { name: string; place?: Record<string, unknown>; layout?: Record<string, unknown>; children?: Node[] };
+      const current = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const badgeBefore = await current(BADGE), routeBefore = await current(ROOT);
+      const photo = async () => find((await current(BADGE)).artboard, '照片')!;
+      const writes: string[] = [];
+      target.on('request', (request) => { if (request.method() === 'PUT' && request.url().includes('/working-copy?')) writes.push(request.url()); });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(BADGE)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      await side.locator(`[data-testid="structure-row"][data-path="${BADGE}/照片"]`).getByRole('button').first().click();
+      await inspector.getByTestId('handle-notes').filter({ hasText: '拖右下的手柄改宽高' }).waitFor();
+      // 纵向堆叠里宽高都固定：右边、下边、右下角，外加拖动改顺序。
+      expect(await target.getByTestId('handle').evaluateAll((handles) => handles.map((handle) => handle.getAttribute('data-handle')))).toEqual(['e', 's', 'se']);
+      const bottom = target.locator('[data-testid="handle"][data-handle="s"]');
+      const press = async () => {
+        const box = (await bottom.boundingBox())!;
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await target.mouse.down();
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 15, { steps: 5 });
+        await target.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 30, { steps: 5 });
+      };
+
+      // 拖动中：幽灵框与读数，不写回；Esc 取消。
+      await press();
+      await target.getByTestId('handle-ghost').waitFor();
+      const readout = await target.getByTestId('handle-readout').textContent();
+      expect(readout).toMatch(/^宽 24 × 高 \d+(\.5)? mm$/u);
+      expect(writes).toEqual([]);
+      await target.keyboard.press('Escape');
+      await target.getByTestId('handle-ghost').waitFor({ state: 'detached' });
+      await target.mouse.up();
+      expect(await inspector.getByTestId('properties').getAttribute('data-path'), 'Esc 取消拖动，不是选上一层').toBe(`${BADGE}/照片`);
+      expect(writes).toEqual([]);
+      expect((await photo()).place).toEqual({ width: { fixed: 24 }, height: { fixed: 24 } });
+
+      // 再拖一次松手：写回吸到 0.5 mm 的高，和读数一致；选中不变。
+      await press();
+      const shown = await target.getByTestId('handle-readout').textContent();
+      let saved = stashed();
+      await target.mouse.up();
+      await saved;
+      const height = ((await photo()).place!['height'] as { fixed: number }).fixed;
+      expect(height).toBeGreaterThan(24);
+      expect(height * 2).toBe(Math.round(height * 2));
+      expect(shown).toBe(`宽 24 × 高 ${height} mm`);
+      expect(await inspector.getByTestId('properties').getAttribute('data-path')).toBe(`${BADGE}/照片`);
+      await target.getByTestId('select-tag').filter({ hasText: `× ${height} mm` }).waitFor({ timeout: PREVIEW_WINDOW_MS });
+      // 一步撤销。
+      saved = stashed();
+      await target.keyboard.press('Control+z');
+      await saved;
+      expect((await photo()).place).toEqual({ width: { fixed: 24 }, height: { fixed: 24 } });
+
+      // 方向键：在堆叠里和后一个换位。先在图上点它，焦点回到页面。
+      const body = (await target.getByTestId('handle-move').boundingBox())!;
+      await target.mouse.click(body.x + body.width / 2, body.y + body.height / 2);
+      saved = stashed();
+      await target.keyboard.press('ArrowDown');
+      await target.getByTestId('handle-readout').filter({ hasText: '放到第 3 位（共 8 位）' }).waitFor();
+      await saved;
+      expect((await current(BADGE)).artboard.children!.map((child) => child.name).slice(0, 3)).toEqual(['页眉', '姓名', '照片']);
+      saved = stashed();
+      await target.keyboard.press('Control+z');
+      await saved;
+      expect(await current(BADGE)).toEqual(badgeBefore);
+
+      // M402 顶栏：选中横向堆叠，拖第一个间距条，写 layout.gap。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/顶栏"]`).getByRole('button').first().click();
+      await inspector.getByTestId('handle-notes').filter({ hasText: '拖间距条改间距' }).waitFor();
+      const bar = (await target.locator('[data-testid="handle-bar"][data-handle="gap:0"]').boundingBox())!;
+      await target.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
+      await target.mouse.down();
+      await target.mouse.move(bar.x + bar.width / 2 + 12, bar.y + bar.height / 2, { steps: 6 });
+      const gapText = (await target.getByTestId('handle-readout').textContent())!;
+      expect(gapText).toMatch(/^间距 \d+(\.5)? mm$/u);
+      saved = stashed();
+      await target.mouse.up();
+      await saved;
+      const gap = find((await current(ROOT)).artboard, '顶栏')!.layout!['gap'] as number;
+      expect(gap).toBeGreaterThan(8);
+      expect(gapText).toBe(`间距 ${gap} mm`);
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(BADGE)}/working-copy`, token);
+      expect(await current(ROOT)).toEqual(routeBefore);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 17）：站名按站点状态的取值带命中数，选"本站"后改的值写进覆盖，有圆点能重置，名称这类不能覆盖；定位到本站；换依据时对不上的取值当场标红', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME = `${STOP}/名称区/站名`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; opacity?: number; states?: { by: { var: string }; cases: Record<string, Record<string, unknown>> }; children?: Node[] };
+      const current = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(STOP)}/working-copy`, token);
+        const body = copy.status === 200 ? copy.body : (await server('GET', `/v1/templates/${enc(STOP)}/content`, token)).body;
+        return JSON.parse(body.content as string) as { artboard: Node };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const stopName = async () => find((await current()).artboard, '站名')!;
+      const before = await current();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      // 本站序号 5：已过站 4 处、本站 1 处、未到站 30 处。
+      const knob = target.locator('[data-testid="parameter-knob"][data-name="currentIndex"]');
+      await knob.getByRole('textbox').fill('5');
+      await knob.getByRole('textbox').press('Enter');
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await side.locator(`[data-testid="structure-row"][data-path="${NAME}"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${NAME}"]`).waitFor();
+      const bar = inspector.getByTestId('state-bar'), chip = (value: string) => bar.locator(`[data-testid="state-chip"][data-value="${value}"]`);
+      expect(await bar.getByRole('combobox').inputValue()).toBe('stopState');
+      // 能作为依据的只列单值变量：站点列表（stops 在主模板）不在这里，布尔的有地标在。
+      expect(await bar.getByRole('combobox').locator('option').allTextContents()).toContain('有地标（hasLandmark）');
+      expect(await bar.locator('[data-testid="state-chip"]').evaluateAll((chips) => chips.map((item) => item.getAttribute('data-value')))).toEqual(['', '普通', '已过站', '本站', '未到站']);
+      await expect.poll(() => chip('本站').getAttribute('aria-label'), { timeout: PREVIEW_WINDOW_MS }).toBe('本站，当前样例 1 处');
+      expect(await chip('已过站').getAttribute('aria-label')).toBe('已过站，当前样例 4 处');
+      expect(await chip('未到站').getAttribute('aria-label')).toBe('未到站，当前样例 30 处，还没覆盖');
+      // 不分状态时：颜色被覆盖，标签前有圆点。
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`);
+      await field('color').getByTestId('state-dot').waitFor();
+
+      // 选"本站"：说明命中几处，名称不能覆盖，颜色有圆点能重置；顺序不分取值。
+      await chip('本站').click();
+      expect(await chip('本站').getAttribute('aria-pressed')).toBe('true');
+      await bar.getByTestId('state-hint').filter({ hasText: '当前样例有 1 处' }).waitFor();
+      await field('name').getByTestId('field-blocked').filter({ hasText: '不能按取值换' }).waitFor();
+      await field('color').getByTestId('state-reset').waitFor();
+      expect(await field('opacity').getByTestId('state-reset').count()).toBe(0);
+      await inspector.getByTestId('handle-notes').filter({ hasText: '顺序不分取值' }).waitFor();
+      // 定位到第一处：图上选中本站的那一处。
+      await bar.getByTestId('state-locate').click();
+      await expect.poll(() => target.getByTestId('select-box').getAttribute('data-path')).toMatch(/站点列\[\d+\]\/名称区\/站名$/u);
+      expect(await chip('本站').getAttribute('aria-pressed'), '定位不换取值').toBe('true');
+
+      // 在"本站"下改不透明度：写进覆盖，自身属性不动；重置回去。
+      let saved = stashed();
+      await field('opacity').getByRole('textbox').fill('0.8');
+      await field('opacity').getByRole('textbox').press('Tab');
+      await saved;
+      let name = await stopName();
+      expect(name.states!.cases['本站']).toEqual({ color: { var: 'currentTextColor' }, opacity: 0.8 });
+      expect(name.opacity).toBeUndefined();
+      await field('opacity').getByTestId('state-dot').waitFor();
+      saved = stashed();
+      await field('opacity').getByTestId('state-reset').click();
+      await saved;
+      name = await stopName();
+      expect(name.states!.cases['本站']).toEqual({ color: { var: 'currentTextColor' } });
+
+      // 换依据：原来的取值对不上布尔，当场标红并写明引擎会报的代码；撤销回来。
+      saved = stashed();
+      await bar.getByRole('combobox').selectOption('hasLandmark');
+      await saved;
+      expect((await stopName()).states!.by).toEqual({ var: 'hasLandmark' });
+      await bar.getByTestId('state-problem').filter({ hasText: '列出的取值 "已过站"、"本站" 不会出现：hasLandmark 只可能是 true、false（template.unknownStateValue）' }).waitFor();
+      expect(await chip('已过站').getAttribute('class')).toContain('unknown');
+      expect(await chip('true').getAttribute('class')).toContain('empty');
+      saved = stashed();
+      await target.getByRole('button', { name: '撤销' }).click();
+      await saved;
+      expect((await stopName()).states!.by).toEqual({ var: 'stopState' });
+
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      expect(await current()).toEqual(before);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 18）：模板列表从空白新建，空画板写明下一步；加一个字段就能发布为修订 1；从列表字段加循环时当场新建被调模板，基准预先填好', async () => {
+      const NAME = `空白站点 ${randomUUID().slice(0, 6)}`, BADGE = `站名标识 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      type Node = { name: string; type?: string; template?: string; content?: unknown; children?: Node[] };
+      const copyOf = async (name: string) => {
+        const reply = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return reply.status === 200 ? JSON.parse(reply.body.content as string) as { base: unknown; artboard: Node & { sizeRange: unknown } } : undefined;
+      };
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      await (await nav(target, '模板')).click();
+      await target.getByRole('button', { name: '新建模板' }).click();
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      await dialog.getByLabel('名称').fill(NAME);
+      await dialog.getByLabel('基准').selectOption({ label: '停靠站点（停靠站点 v1）' });
+      for (const [label, value] of [['宽 最小', '8'], ['宽 最大', '800'], ['高 最小', '80'], ['高 最大', '110'], ['默认宽', '20'], ['默认高', '100']] as const) await dialog.getByLabel(label, { exact: true }).fill(value);
+      // 默认尺寸要在范围里，不对时当场说，不能提交。
+      await dialog.getByLabel('默认宽', { exact: true }).fill('900');
+      await dialog.getByTestId('new-template-problem').filter({ hasText: '默认宽要在适用范围里' }).waitFor();
+      expect(await dialog.getByRole('button', { name: '新建' }).isDisabled()).toBe(true);
+      await dialog.getByLabel('默认宽', { exact: true }).fill('20');
+      await dialog.getByRole('button', { name: '新建' }).click();
+
+      // 进设计页：一块空画板，舞台下方写明下一步；样例带用默认尺寸与空白数据。
+      await target.getByTestId('preview-image').waitFor();
+      expect(await copyOf(NAME)).toEqual({ dslVersion: 'renderweave-template/1', name: NAME, base: { name: '停靠站点', version: 1 }, artboard: { sizeRange: { width: { min: 8, max: 800 }, height: { min: 80, max: 110 } } } });
+      await target.getByTestId('unpublished-count').filter({ hasText: '新模板，未发布' }).waitFor();
+      expect(await target.locator('[data-testid="size-knob"][data-name="width"]').getByRole('textbox').inputValue()).toBe('20');
+      const hint = target.getByTestId('stage-hint');
+      await hint.filter({ hasText: '空画板' }).waitFor();
+      await hint.getByRole('button', { name: '打开"数据"页' }).click();
+      const side = target.getByRole('complementary', { name: '图层与数据' });
+      expect(await side.getByRole('tab', { name: '数据' }).getAttribute('aria-selected')).toBe('true');
+      let saved = stashed();
+      await side.locator('[data-testid="add-field"][data-field="name"]').click();
+      await saved;
+      expect((await copyOf(NAME))!.artboard.children!.map((child) => [child.type, child.content])).toEqual([['text', [{ slot: 'name' }]]]);
+      await hint.waitFor({ state: 'detached' });
+
+      // 发布：没有修订可比，记修订 1。
+      await target.getByRole('button', { name: '发布修订' }).click();
+      await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
+      await target.getByRole('button', { name: '发布为修订 1' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
+      expect((await server('GET', `/v1/templates/${enc(NAME)}`, token)).body.currentRevision).toBe(1);
+
+      // 从列表字段加循环：当场新建被调模板，基准预先填好是单值·文本 v1。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(NAME)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-testid="add-field"][data-field="badges"]').click();
+      const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
+      // 基准是单值·文本 v1 的已有模板（M402 的标识图标等）列在前面，最后一项是当场新建。
+      const choices = await choose.getByLabel('被调模板').locator('option').allTextContents();
+      expect(choices).toContain('标识图标');
+      expect(choices.at(-1)).toBe('+ 新建模板…');
+      await choose.getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const callee = target.getByRole('dialog', { name: '新建模板' });
+      expect(await callee.getByTestId('new-template-base').textContent()).toBe('单值·文本 v1');
+      await callee.getByLabel('名称').fill(BADGE);
+      await callee.getByRole('button', { name: '新建' }).click();
+      await callee.waitFor({ state: 'detached' });
+      expect(await choose.getByLabel('被调模板').inputValue()).toBe(BADGE);
+      saved = stashed();
+      await choose.getByRole('button', { name: '添加循环容器' }).click();
+      await saved;
+      const loop = (await copyOf(NAME))!.artboard.children!.find((child) => child.type === 'loop');
+      expect(loop).toMatchObject({ template: BADGE, list: { var: 'badges' } });
+      expect(await copyOf(BADGE)).toMatchObject({ base: { name: '单值·文本', version: 1 }, artboard: { sizeRange: { width: { min: 1, max: 2000 }, height: { min: 1, max: 2000 } } } });
+
+      // 检查器里循环的表单同样能当场新建，建好就换过去。
+      const AGAIN = `站名标识二 ${randomUUID().slice(0, 6)}`;
+      await side.getByRole('tab', { name: '图层' }).click();
+      await side.locator(`[data-testid="structure-row"][data-path="${NAME}/${loop!.name}"]`).getByRole('button').first().click();
+      const loopForm = target.getByRole('complementary', { name: '检查器' }).getByTestId('loop-form');
+      await loopForm.getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const second = target.getByRole('dialog', { name: '新建模板' });
+      expect(await second.getByTestId('new-template-base').textContent()).toBe('单值·文本 v1');
+      await second.getByLabel('名称').fill(AGAIN);
+      saved = stashed();
+      await second.getByRole('button', { name: '新建' }).click();
+      await saved;
+      expect((await copyOf(NAME))!.artboard.children!.find((child) => child.type === 'loop')!.template).toBe(AGAIN);
+      expect(target.url(), '没有整页重载').not.toContain('/console/?');
+
+      for (const name of [NAME, BADGE, AGAIN]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, NAME);
+    }, 180_000);
+
+    it('模板设计（票据 19）：把 M402 站点的名称区提取成子模板，列出带走的参数与派生变量；提取前后的图逐像素相同；一步撤销两边一起回去', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', NAME = `站名区 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = { name: string; type?: string; template?: string; data?: unknown; args?: Record<string, unknown>; children?: Node[] };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string;
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const before = await contentOf(STOP);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' });
+      for (const row of ['站点面板', '站点列']) await openRow(side, row);
+      await side.locator(`[data-testid="structure-row"][data-path="${STOP}/名称区"]`).click({ button: 'right' });
+      await target.getByRole('menu', { name: '元素' }).getByRole('menuitem', { name: '提取为子模板…' }).click();
+      const dialog = target.getByRole('dialog', { name: '提取为子模板' });
+      expect(await dialog.getByLabel('新模板名称').inputValue()).toBe('名称区');
+      expect(await dialog.getByTestId('extract-base').textContent()).toBe('停靠站点 v1，调用传当前数据');
+      expect(await dialog.getByTestId('extract-parameters').locator('code').allTextContents()).toEqual(['index', 'currentIndex', 'stopNameSize', 'nameColor', 'passedColor', 'currentTextColor', 'highlightColor']);
+      expect(await dialog.getByTestId('extract-derived').locator('code').allTextContents()).toEqual(['stopState', 'hasLandmark']);
+      // 尺寸范围按图上 35 处的实际尺寸放宽；名称不能和已有模板重。
+      expect(Number(await dialog.getByLabel('宽 最小', { exact: true }).inputValue())).toBeGreaterThan(0);
+      await dialog.getByLabel('新模板名称').fill('道路段');
+      await dialog.getByTestId('extract-problem').filter({ hasText: '已有模板「道路段」' }).waitFor();
+      await dialog.getByLabel('新模板名称').fill(NAME);
+      await dialog.getByRole('button', { name: '提取' }).click();
+      await target.getByRole('status').filter({ hasText: `已提取为子模板「${NAME}」：提取前后的图逐像素相同。` }).waitFor({ timeout: PREVIEW_WINDOW_MS });
+
+      // 原地换成调用，传当前数据与同名参数；新模板带着名称区本身、对外参数与派生变量。
+      const call = find((JSON.parse(await contentOf(STOP)) as { artboard: Node }).artboard, '名称区')!;
+      expect(call).toMatchObject({ type: 'call', template: NAME, data: 'current', args: { index: { var: 'index' }, highlightColor: { var: 'highlightColor' } } });
+      const callee = JSON.parse(await contentOf(NAME)) as { base: unknown; parameters: { name: string; visibility: string }[]; derived: { name: string }[]; artboard: Node };
+      expect(callee.base).toEqual({ name: '停靠站点', version: 1 });
+      expect(callee.parameters.every((parameter) => parameter.visibility === 'public')).toBe(true);
+      expect(callee.derived.map((item) => item.name)).toEqual(['stopState', 'hasLandmark']);
+      expect(callee.artboard.children!.map((child) => [child.type, child.name])).toEqual([['container', '名称区']]);
+      await target.getByRole('complementary', { name: '检查器' }).locator(`[data-testid="properties"][data-path="${STOP}/名称区"][data-type="call"]`).waitFor();
+
+      // 一步撤销：两边一起回去，原模板逐字节还原。
+      const stashed = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes(enc(STOP)) && response.status() === 200, { timeout: 60_000 });
+      await target.getByRole('button', { name: '撤销' }).click();
+      await stashed;
+      await expect.poll(() => contentOf(STOP)).toBe(before);
+      await expect.poll(async () => (JSON.parse(await contentOf(NAME)) as { artboard: Node }).artboard.children ?? []).toEqual([]);
+      expect(await target.getByRole('button', { name: '撤销' }).isDisabled()).toBe(true);
+
+      for (const name of [STOP, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
+
+    it('模板设计（票据 20）：第二期验收：在主模板里给站点列从空白新建站点模板，不写 DSL 做出标识行循环、竖排站名、缩字组、地标、状态样式与 stopState；M402 的数据出图和原来的站点模板逐字节相同，0 个严重问题', async () => {
+      const ROOT = '标准线路单边', NAME = `我的站点 ${randomUUID().slice(0, 6)}`, token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Node = Record<string, unknown> & { name: string; type?: string; children?: Node[] };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as Node & { artboard: Node; parameters?: Node[]; derived?: Node[] };
+      };
+      const find = (node: Node, name: string): Node | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const text = (key: string) => field(key).locator('input[type="text"]').first();
+      /** 一步改动：等它写回工作副本。 */
+      const write = async (action: () => Promise<unknown>) => {
+        const saved = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+        await action();
+        await saved;
+      };
+      const selected = (path: string) => inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      const bind = async (key: string, variable: string) => {
+        await field(key).getByTestId('bind-button').click();
+        await write(() => field(key).locator(`[data-testid="binding-option"][data-name="${variable}"]`).click());
+      };
+      const states = async (by: string, cases: Readonly<Record<string, () => Promise<unknown>>>) => {
+        await write(() => inspector.getByLabel('状态样式按哪个变量').selectOption(by));
+        for (const [value, change] of Object.entries(cases)) {
+          await inspector.locator(`[data-testid="state-chip"][data-value="${value}"]`).click();
+          await write(change);
+        }
+        await inspector.locator('[data-testid="state-chip"][data-value=""]').click();
+      };
+
+      // 原来的样子：打开时舞台与样例带出的每一张图，记下请求、图与严重问题数，最后原样重放。
+      type Reply = { image?: { base64: string }; problems: { level: string; code: string; message: string }[] };
+      const severeOf = (reply: Reply) => reply.problems.filter((problem) => problem.level === 'severe');
+      const shots = new Map<string, Promise<{ body: unknown; reply: Reply }>>();
+      const collect = (response: { url(): string; status(): number; request(): { postData(): string | null; postDataJSON(): unknown }; json(): Promise<unknown> }) => {
+        const key = response.request().postData() ?? '';
+        if (response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200 && !shots.has(key)) shots.set(key, response.json().then((reply) => ({ body: response.request().postDataJSON(), reply: reply as Reply })));
+      };
+      target.on('response', collect);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const cards = target.getByTestId('sample-card');
+      await expect.poll(async () => (await cards.getByTestId('sample-state').allTextContents()).every((state) => state !== '还没出'), { timeout: PREVIEW_WINDOW_MS }).toBe(true);
+      target.off('response', collect);
+      const before = await Promise.all(shots.values());
+      expect(before.length).toBeGreaterThan(0);
+      const started = Date.now();
+
+      // 站点列换成当场从空白新建的模板，基准预先填好；进入它。
+      await openRow(side, '站点面板');
+      await side.locator(`[data-testid="structure-row"][data-path="${ROOT}/站点面板/站点列"]`).getByRole('button').first().click();
+      await inspector.getByTestId('loop-form').getByLabel('被调模板').selectOption({ label: '+ 新建模板…' });
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      expect(await dialog.getByTestId('new-template-base').textContent()).toBe('停靠站点 v1');
+      await dialog.getByLabel('名称').fill(NAME);
+      for (const [label, value] of [['宽 最小', '8'], ['宽 最大', '800'], ['高 最小', '80'], ['高 最大', '110']] as const) await dialog.getByLabel(label, { exact: true }).fill(value);
+      await write(() => dialog.getByRole('button', { name: '新建' }).click());
+      await inspector.getByTestId('enter-template').click();
+      await selected(NAME);
+      // 文档条写的是这个子模板自己的基准与尺寸，图还是主模板这张。
+      await target.getByTestId('design-facts').filter({ hasText: '停靠站点 v1 · 8–800 × 80–110 mm' }).waitFor();
+
+      // 画板：纵向堆叠，居中。
+      await write(() => field('layout').getByRole('button', { name: '纵向堆叠' }).click());
+      await write(() => field('layout').getByRole('button', { name: '上中', exact: true }).click());
+
+      // 对外参数：主模板按这三个名字传。
+      await side.getByRole('tab', { name: '数据' }).click();
+      for (const [name, label, fallback, min] of [['index', '序号', '1', '1'], ['currentIndex', '本站序号', '0', '0'], ['stopNameSize', '站名字号', '10', '5']] as const) {
+        await side.getByRole('button', { name: '新建参数' }).click();
+        await side.getByLabel('新参数的名称').fill(name);
+        await write(() => side.getByRole('button', { name: '添加参数' }).click());
+        await inspector.locator(`[data-testid="variable-inspector"][data-name="${name}"]`).waitFor();
+        await write(() => text('displayName').fill(label));
+        await write(() => field('type').locator('select').first().selectOption({ label: '数值' }));
+        if (name !== 'stopNameSize') await write(() => field('constraints.integer').locator('select').first().selectOption({ label: '是' }));
+        await write(() => text('constraints.min').fill(min));
+        await write(() => text('default').fill(fallback));
+      }
+
+      // 派生变量 stopState：三支加否则。
+      const derive = async (name: string, label: string) => {
+        await side.getByRole('button', { name: '新建派生变量' }).click();
+        const creating = side.getByRole('form', { name: '新建派生变量' });
+        await creating.getByLabel('新派生变量的名称').fill(name);
+        await write(() => creating.getByRole('button', { name: '新建' }).click());
+        await inspector.locator(`[data-testid="variable-inspector"][data-name="${name}"]`).waitFor();
+        const editor = inspector.getByTestId('derived-editor');
+        await write(() => editor.getByLabel('显示名称').fill(label));
+        return editor;
+      };
+      let editor = await derive('stopState', '站点状态');
+      const branch = async (index: number, left: string, op: string, right: { var: string } | { value: string }, then: string) => {
+        const at = `第 ${index} 支`, condition = `${at}第 1 个条件`;
+        if (index > 1) await write(() => editor.getByRole('button', { name: '加一支' }).click());
+        await write(() => editor.getByLabel(`${condition}的左侧`, { exact: true }).selectOption(left));
+        await write(() => editor.getByLabel(`${condition}的比较`, { exact: true }).selectOption(op));
+        if ('var' in right) {
+          await write(() => editor.getByLabel(`${condition}的右侧的写法`, { exact: true }).selectOption('var'));
+          if (await editor.getByLabel(`${condition}的右侧`, { exact: true }).inputValue() !== right.var) await write(() => editor.getByLabel(`${condition}的右侧`, { exact: true }).selectOption(right.var));
+        } else {
+          await write(() => editor.getByLabel(`${condition}的右侧`, { exact: true }).fill(right.value));
+        }
+        await write(() => editor.getByLabel(`${at}的取值`, { exact: true }).fill(then));
+      };
+      await branch(1, 'currentIndex', 'eq', { value: '0' }, '普通');
+      await branch(2, 'index', 'lt', { var: 'currentIndex' }, '已过站');
+      await branch(3, 'index', 'eq', { var: 'currentIndex' }, '本站');
+      await write(() => editor.getByLabel('否则的取值', { exact: true }).fill('未到站'));
+
+      // 派生变量 hasLandmark：地标为空就不显示。
+      editor = await derive('hasLandmark', '有地标');
+      await write(() => editor.getByLabel('结果类型').selectOption('boolean'));
+      await write(() => editor.getByLabel('第 1 支第 1 个条件的左侧', { exact: true }).selectOption('landmark'));
+      await write(() => editor.getByLabel('第 1 支第 1 个条件的比较', { exact: true }).selectOption('empty'));
+      // 换成布尔时固定值都成了"否"：第 1 支不用动，否则取"是"。
+      expect(await editor.getByLabel('第 1 支的取值', { exact: true }).inputValue()).toBe('false');
+      await write(() => editor.getByLabel('否则的取值', { exact: true }).selectOption('true'));
+      expect((await contentOf(NAME)).derived).toEqual(JSON.parse(JSON.stringify((await contentOf('站点')).derived)));
+
+      // 标识行：从列表字段加循环，每项固定 9 mm、间距 1，高 10 mm，下边距 2。
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-testid="add-field"][data-field="badges"]').click();
+      const choose = side.getByRole('form', { name: '从 站名上方的标识 创建' });
+      await choose.getByLabel('被调模板').selectOption('标识图标');
+      await write(() => choose.getByRole('button', { name: '添加循环容器' }).click());
+      await selected(`${NAME}/站名上方的标识`);
+      await write(() => text('name').fill('标识行'));
+      await selected(`${NAME}/标识行`);
+      const items = inspector.getByTestId('item-layout-form');
+      await write(() => items.getByLabel('每项宽', { exact: true }).fill('9'));
+      await write(() => text('itemLayout.gap').fill('1'));
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => text('place.height').fill('10'));
+      await field('place.margin').getByTestId('edges-toggle').click();
+      await write(() => text('place.margin.bottom').fill('2'));
+
+      // 名称区：容器，内边距 1，纵向居中，宽随内容、高撑满；本站时高亮底色。
+      await write(() => target.getByRole('group', { name: '插入' }).locator('[data-testid="add-element"][data-kind="container"]').click());
+      await selected(`${NAME}/容器`);
+      await write(() => text('name').fill('名称区'));
+      await selected(`${NAME}/名称区`);
+      await write(() => text('padding').fill('1'));
+      await write(() => field('layout').getByRole('button', { name: '上中', exact: true }).click());
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => field('place.height').locator('select').first().selectOption({ label: '撑满' }));
+      await states('stopState', { 本站: () => text('fill').fill('#FFF000') });
+
+      // 站名：从字段加进名称区，竖排、分散对齐，字号绑站名字号，收紧字距再压缩字形，缩字组 stopNames。
+      await write(() => side.locator('[data-testid="add-field"][data-field="name"]').click());
+      await selected(`${NAME}/名称区/站名`);
+      const font = field('font').getByTestId('font-select'), family = field('font').getByTestId('font-family');
+      if (await family.inputValue() !== 'hei') await write(() => family.selectOption('hei'));
+      if (await font.inputValue() !== 'res:font-hei-medium') await write(() => font.selectOption('res:font-hei-medium'));
+      await bind('fontSize', 'stopNameSize');
+      await write(() => text('color').fill('#333333'));
+      await write(() => field('writingMode').getByRole('button', { name: '竖排' }).click());
+      await write(() => field('verticalAlign').getByRole('button', { name: '分散' }).click());
+      await write(() => field('horizontalAlign').getByRole('button', { name: '居中' }).click());
+      await inspector.getByTestId('fit-summary').click();
+      await write(() => field('fit.steps').locator('select').first().selectOption({ label: '收紧字距 → 压缩字形' }));
+      await write(() => field('fit.widthOverflow').getByRole('button', { name: '添加' }).click());
+      await write(() => text('fit.widthOverflow.shrinkGroup').fill('stopNames'));
+      await write(() => text('fit.widthOverflow.minFontSize').fill('5'));
+      await write(() => field('place.width').locator('select').first().selectOption({ label: '随内容' }));
+      await write(() => field('place.height').locator('select').first().selectOption({ label: '撑满' }));
+      await states('stopState', { 已过站: () => text('color').fill('#C8C8C8'), 本站: () => text('color').fill('#E60012') });
+
+      // 地标：从字段加在站名后面，8 × 8 mm、上边距 1，完整显示；没有地标不显示，已过站变淡。
+      await write(() => side.locator('[data-testid="add-field"][data-field="landmark"]').click());
+      await selected(`${NAME}/名称区/地标`);
+      await bind('visible', 'hasLandmark');
+      const fit = field('fit');
+      if (await fit.getByRole('button', { name: '完整显示' }).count()) await write(() => fit.getByRole('button', { name: '完整显示' }).click());
+      else await write(() => fit.locator('select').first().selectOption({ label: '完整显示' }));
+      await write(() => text('place.width').fill('8'));
+      await write(() => text('place.height').fill('8'));
+      await field('place.margin').getByTestId('edges-toggle').click();
+      await write(() => text('place.margin.top').fill('1'));
+      await states('stopState', { 已过站: () => text('opacity').fill('0.35') });
+      const minutes = (Date.now() - started) / 60_000;
+
+      // 结果：结构和原来的站点模板一样；同一个预览请求出的图逐字节相同，每份样例的问题数也一样，当前样例没有严重问题。
+      const made = await contentOf(NAME);
+      expect(made.parameters!.map((item) => [item['name'], item['type'], item['visibility']])).toEqual([['index', 'number', 'public'], ['currentIndex', 'number', 'public'], ['stopNameSize', 'number', 'public']]);
+      expect(made.artboard).toMatchObject({ layout: { mode: 'stack', direction: 'column', alignItems: 'center' }, children: [
+        { type: 'loop', name: '标识行', list: { var: 'badges' }, template: '标识图标', itemLayout: { direction: 'row', widths: { fixed: 9 }, gap: 1 } },
+        { type: 'container', name: '名称区', padding: 1, states: { by: { var: 'stopState' }, cases: { 本站: { fill: '#FFF000' } } }, children: [
+          { type: 'text', name: '站名', content: [{ slot: 'name' }], writingMode: 'vertical', verticalAlign: 'distribute', fontSize: { var: 'stopNameSize' }, fit: { steps: ['tightenSpacing', 'compressGlyphs'], widthOverflow: { shrinkGroup: 'stopNames', minFontSize: 5 } } },
+          { type: 'image', name: '地标', source: { var: 'landmark' }, visible: { var: 'hasLandmark' }, states: { by: { var: 'stopState' }, cases: { 已过站: { opacity: 0.35 } } } },
+        ] },
+      ] });
+      expect(find((await contentOf(ROOT)).artboard, '站点列')).toMatchObject({ template: NAME, args: { index: { loop: 'index' } } });
+      for (const [index, shot] of before.entries()) {
+        const now = await server('POST', '/v1/previews?workingCopies=true', token, shot.body);
+        expect(now.status).toBe(200);
+        expect(shot.reply.image?.base64, '原来出了图').toBeTruthy();
+        expect(severeOf(now.body as Reply).map((problem) => problem.code), `第 ${index + 1} 张的严重问题和原来一样`).toEqual(severeOf(shot.reply).map((problem) => problem.code));
+        expect((now.body as Reply).image?.base64 === shot.reply.image?.base64, `第 ${index + 1} 张和原来的站点模板出的图逐字节相同`).toBe(true);
+      }
+      // 舞台上的当前样例：没有严重问题。
+      await expect.poll(() => target.getByText(/正式出图时不出图/).count(), { timeout: PREVIEW_WINDOW_MS }).toBe(0);
+      console.log(`票据 20：从空白做出站点模板，用例动手 ${minutes.toFixed(1)} 分钟`);
+
+      // 发布：主模板调用的新模板还没发布，发布页写明先发布它；发布它之后主模板就能发布（这里不真的发布主模板）。
+      const accept = (dialog: Dialog) => { void dialog.accept(); };
+      target.on('dialog', accept);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/publish`);
+      const callees = target.getByTestId('publish-callees-first');
+      await callees.filter({ hasText: `「${NAME}」是这里调用的新模板，还没发布` }).waitFor();
+      expect(await target.getByRole('button', { name: /^发布为修订/ }).isDisabled()).toBe(true);
+      await callees.getByRole('link', { name: `「${NAME}」` }).click();
+      await target.getByRole('heading', { name: '发布修订 1', level: 1 }).waitFor();
+      await target.getByRole('button', { name: '发布为修订 1' }).click();
+      await target.getByRole('status').filter({ hasText: '已保存为修订 1' }).waitFor();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/publish`);
+      await expect.poll(() => target.getByRole('button', { name: /^发布为修订/ }).isDisabled(), { timeout: 30_000 }).toBe(false);
+      expect(await callees.count()).toBe(0);
+      target.off('dialog', accept);
+
+      for (const name of [ROOT, NAME]) await server('DELETE', `/v1/templates/${enc(name)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 600_000);
+
+    it('模板设计（第三轮 01）：宽高一格，打数就是固定，随内容与没写时淡色显示实际尺寸，按比例改权重，固定值能绑定；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { artboard: { children: { name: string; place?: Record<string, unknown> }[] } };
+      };
+      const placeOf = async (name: string) => (await content()).artboard.children.find((child) => child.name === name)!.place!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const cell = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first().getByTestId('size-cell');
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const width = cell('place.width'), number = width.getByRole('textbox'), mode = width.getByLabel('宽的尺寸方式');
+
+      // 自由布局里的矩形：一格里是 22 加"固定"，没有第二个控件。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/矩形"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/矩形"]`).waitFor();
+      expect(await number.inputValue()).toBe('22');
+      expect(await mode.inputValue()).toBe('fixed');
+      expect(await inspector.locator('[data-testid="property-field"][data-key="place.width.fixed"]').count(), '固定值不再是另一格').toBe(0);
+      // 打数就是固定。
+      await write(() => number.fill('30'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 30 });
+      // 换随内容：数值框空着，淡色是这一处的实际宽（布局摘要）。
+      await write(() => mode.selectOption('hug'));
+      expect((await placeOf('矩形'))['width']).toBe('hug');
+      expect(await number.inputValue()).toBe('');
+      await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
+      // 随内容时打数：直接变固定。
+      await write(() => number.fill('12.5'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 12.5 });
+      // 按比例撑满：框里改的是权重。
+      await write(() => mode.selectOption('ratio'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 1 });
+      await write(() => number.fill('2'));
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 2 });
+      // 不合法的不写回，当场说。
+      await number.fill('0');
+      await width.getByRole('alert').filter({ hasText: '比例要大于 0' }).waitFor();
+      await target.waitForTimeout(800);
+      expect((await placeOf('矩形'))['width']).toEqual({ fill: 2 });
+      // 换回固定取实际宽；固定值能绑定数值变量，绑定时是灰底条。
+      await write(() => mode.selectOption('fixed'));
+      expect((await placeOf('矩形'))['width']).toMatchObject({ fixed: expect.any(Number) });
+      await width.getByTestId('bind-button').click();
+      await write(() => width.locator('[data-testid="binding-option"][data-name="bandHeight"]').click());
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: { var: 'bandHeight' } });
+      await width.getByTestId('bound-chip').filter({ hasText: '色带高度' }).waitFor();
+      await write(() => width.getByTestId('unbind-button').click());
+      expect((await placeOf('矩形'))['width']).toEqual({ fixed: 2 });
+
+      // 堆叠里的文字：宽没写，下拉写"缺省"（宽高并排后半行放不下全称，引擎怎么排在提示里，第三轮票据 05），框里淡色是实际宽。
+      await openRow(side, '容器');
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/容器内文字"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器/容器内文字"]`).waitFor();
+      expect(await mode.inputValue()).toBe('');
+      expect(await mode.locator('option:checked').textContent()).toBe('缺省');
+      expect(await mode.getAttribute('title')).toBe('缺省（随内容）');
+      await expect.poll(() => number.getAttribute('placeholder')).toMatch(/^\d+(\.\d)?$/);
+      expect(await cell('place.height').getByLabel('高的尺寸方式').inputValue()).toBe('fill');
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
+
+    it('模板设计（第三轮 02）：内外边距一格写四边，点开直接改某一边，四边一样时收回成一个数；一边能绑定与提取为参数；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; padding?: unknown; cornerRadius?: unknown; place?: Record<string, unknown>; children?: Element[] };
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { parameters: Record<string, unknown>[]; artboard: { children: Element[] } };
+      };
+      const box = async () => (await content()).artboard.children.find((child) => child.name === '容器')!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const cell = (key: string) => field(key).getByTestId('edges-cell');
+      const whole = (key: string) => cell(key).locator('input[type="text"]').first();
+      const part = (key: string, edge: string) => field(`${key}.${edge}`);
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const popover = inspector.getByTestId('binding-popover');
+
+      // 容器的内边距：一格里是 1，没有"的写法"下拉，四边没展开。
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器"]`).waitFor();
+      expect(await whole('padding').inputValue()).toBe('1');
+      expect(await field('padding').locator('select').count(), '不再有"分别设置"下拉').toBe(0);
+      expect(await cell('padding').getByTestId('edges-parts').count()).toBe(0);
+      // 在这一格打数：四边都是它。
+      await write(() => whole('padding').fill('2'));
+      expect((await box()).padding).toBe(2);
+
+      // 点开：四个值格，各是 2；直接改下边，只有下边变，一格里换成摘要。
+      await field('padding').getByRole('button', { name: '展开内边距的四边' }).click();
+      const parts = cell('padding').getByTestId('edges-parts');
+      expect(await parts.locator('label').allTextContents()).toEqual(['上', '下', '左', '右']);
+      expect(await parts.locator('input[type="text"]').evaluateAll((inputs) => inputs.map((input) => (input as unknown as { value: string }).value))).toEqual(['2', '2', '2', '2']);
+      await write(() => part('padding', 'bottom').locator('input[type="text"]').fill('3'));
+      expect((await box()).padding).toEqual({ top: 2, right: 2, bottom: 3, left: 2 });
+      await expect.poll(() => cell('padding').getAttribute('data-state')).toBe('parts');
+      expect(await whole('padding').inputValue()).toBe('');
+      expect(await whole('padding').getAttribute('placeholder')).toBe('上左右 2 · 下 3');
+      // 改回和别的边一样：收回成一个数。
+      await write(() => part('padding', 'bottom').locator('input[type="text"]').fill('2'));
+      expect((await box()).padding).toBe(2);
+      await expect.poll(() => whole('padding').inputValue()).toBe('2');
+
+      // 一边绑定变量：别的边留着；断开时这一边变成变量现在的值（2），四边又一样，收回。
+      await part('padding', 'top').getByTestId('bind-button').click();
+      await write(() => popover.locator('[data-testid="binding-option"][data-name="bandHeight"]').click());
+      expect((await box()).padding).toEqual({ top: { var: 'bandHeight' }, right: 2, bottom: 2, left: 2 });
+      await part('padding', 'top').getByTestId('bound-chip').filter({ hasText: '色带高度' }).waitFor();
+      expect(await whole('padding').getAttribute('placeholder')).toBe('上 色带高度 · 下左右 2');
+      await write(() => part('padding', 'top').getByTestId('unbind-button').click());
+      expect((await box()).padding).toBe(2);
+
+      // 一边提取为参数：名字带上这一边，参数加上，只有这一边绑定它。
+      await part('padding', 'left').getByTestId('bind-button').click();
+      await popover.getByRole('button', { name: '提取为参数' }).click();
+      const naming = popover.getByRole('form', { name: '提取为参数' });
+      expect(await naming.getByLabel('名称', { exact: true }).inputValue()).toBe('paddingLeft');
+      expect(await naming.getByLabel('显示名称').inputValue()).toBe('容器内边距（左）');
+      expect(await naming.getByTestId('extract-value').textContent()).toBe('2');
+      await write(() => naming.getByRole('button', { name: '提取并绑定' }).click());
+      expect((await box()).padding).toEqual({ top: 2, right: 2, bottom: 2, left: { var: 'paddingLeft' } });
+      expect((await content()).parameters.at(-1)).toEqual({ name: 'paddingLeft', displayName: '容器内边距（左）', visibility: 'internal', type: 'number', default: 2 });
+
+      // 四边不一样时在一格里打数：四边都改。
+      await write(() => whole('padding').fill('1'));
+      expect((await box()).padding).toBe(1);
+      await expect.poll(() => cell('padding').getAttribute('data-state')).toBe('literal');
+      // 收起。
+      await field('padding').getByRole('button', { name: '收起内边距的四边' }).click();
+      expect(await cell('padding').getByTestId('edges-parts').count()).toBe(0);
+      // 圆角是四角。
+      await field('cornerRadius').getByRole('button', { name: '展开圆角的四角' }).waitFor();
+
+      // 堆叠里的文字：外边距没写，淡色是 0；点开只打下边，只写那一边。
+      await openRow(side, '容器');
+      await side.locator(`[data-testid="structure-row"][data-path="${ALL}/容器/容器内文字"]`).getByRole('button').first().click();
+      await inspector.locator(`[data-testid="properties"][data-path="${ALL}/容器/容器内文字"]`).waitFor();
+      expect(await cell('place.margin').getAttribute('data-state')).toBe('unset');
+      expect(await whole('place.margin').inputValue()).toBe('');
+      expect(await whole('place.margin').getAttribute('placeholder')).toBe('0');
+      await field('place.margin').getByRole('button', { name: '展开外边距的四边' }).click();
+      await write(() => part('place.margin', 'bottom').locator('input[type="text"]').fill('2'));
+      const inner = async () => (await box()).children!.find((child) => child.name === '容器内文字')!.place!;
+      expect((await inner())['margin']).toEqual({ bottom: 2 });
+      expect(await whole('place.margin').getAttribute('placeholder')).toBe('下 2');
+      // 清空这一边：一边都不剩，整格去掉。
+      await write(() => part('place.margin', 'bottom').locator('input[type="text"]').fill(''));
+      expect((await inner())['margin']).toBeUndefined();
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
+
+    it('模板设计（第三轮 03）：排布用方向图标与九宫格，间距与内边距一行；换排布时子元素的位置键跟着换；循环的每项方向是两个图标；撤销回到原样', async () => {
+      const ALL = '全元素牌', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; layout?: Record<string, unknown>; itemLayout?: Record<string, unknown>; place?: Record<string, unknown>; children?: Element[] };
+      const content = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ALL)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(ALL)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const named = async (name: string) => (await content()).artboard.children.find((child) => child.name === name)!;
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: ReturnType<typeof field>, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const head = field('layout');
+      const flow = (name: string) => head.getByTestId('flow-buttons').getByRole('button', { name, exact: true });
+      const cell = (name: string) => head.getByTestId('align-grid').getByRole('button', { name, exact: true });
+      const lit = () => attributes(head.locator('[data-testid="align-cell"][aria-pressed="true"]'), 'aria-label');
+      const paired = () => attributes(inspector.locator('[data-testid="prop-pair"] > [data-testid="property-field"]'), 'data-key');
+      const spread = head.getByLabel('主轴分布');
+
+      // 容器是横向堆叠：四个图标里按下的是它，九宫格亮左上（两根轴都没写），间距与内边距并排一行；方向、对齐不再是一项项的下拉。
+      await pick(`${ALL}/容器`);
+      expect(await head.getAttribute('data-flow')).toBe('row');
+      expect(await attributes(head.getByTestId('flow-buttons').getByRole('button'), 'aria-label')).toEqual(['自由', '横向堆叠', '纵向堆叠', '网格']);
+      expect(await flow('横向堆叠').getAttribute('aria-pressed')).toBe('true');
+      expect(await head.getByTestId('align-cell').count()).toBe(9);
+      expect(await lit()).toEqual(['左上']);
+      expect(await paired()).toEqual(['layout.gap', 'padding']);
+      for (const key of ['layout.mode', 'layout.direction', 'layout.justifyContent', 'layout.alignItems']) expect(await field(key).count(), key).toBe(0);
+
+      // 横向点右中：左中右是主轴，上中下是交叉轴。
+      await write(() => cell('右中').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'row', gap: 1, justifyContent: 'end', alignItems: 'center' });
+      expect(await lit()).toEqual(['右中']);
+      // 换成纵向：只改方向，对齐的两个键留着，亮的那格跟着转到下中；子元素的位置键堆叠里都认得，不动。
+      await write(() => flow('纵向堆叠').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'end', alignItems: 'center' });
+      expect((await named('容器')).children![0]!.place).toEqual({ height: 'fill' });
+      expect(await head.getAttribute('data-flow')).toBe('column');
+      expect(await lit()).toEqual(['下中']);
+
+      // 两端在小下拉里：主轴分空隙，九宫格只管交叉轴，对上的一列三格都亮；点左下只改交叉轴（开头不写）。
+      await write(() => spread.selectOption({ label: '两端' }));
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'spaceBetween', alignItems: 'center' });
+      expect(await lit()).toEqual(['上中', '居中', '下中']);
+      await write(() => cell('左下').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1, justifyContent: 'spaceBetween' });
+      expect(await lit()).toEqual(['左上', '左中', '左下']);
+      // 选回挨着排：主轴回到开头。
+      await write(() => spread.selectOption({ label: '挨着排' }));
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'column', gap: 1 });
+      expect(await lit()).toEqual(['左上']);
+
+      // 换成网格：一个子元素一行一列，纵向的间距带成行间距；子元素补上行列；九宫格收起，行列轨道照旧，行间距与列间距并排。
+      await write(() => flow('网格').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'grid', rows: ['hug'], columns: ['hug'], rowGap: 1 });
+      expect((await named('容器')).children![0]!.place).toMatchObject({ row: 1, column: 1 });
+      expect(await head.getByTestId('align-grid').count()).toBe(0);
+      expect(await field('layout.rows').count()).toBe(1);
+      expect(await field('layout.columns').count()).toBe(1);
+      expect(await paired()).toEqual(['layout.rowGap', 'layout.columnGap']);
+      // 换成自由：只剩 mode，子元素的行列清掉；没有并排的一行，内边距照常一项。
+      await write(() => flow('自由').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'free' });
+      expect((await named('容器')).children![0]!.place ?? {}).not.toHaveProperty('row');
+      expect(await head.getAttribute('data-flow')).toBe('free');
+      expect(await head.getByTestId('align-grid').count()).toBe(0);
+      expect(await paired()).toEqual([]);
+      expect(await field('padding').count()).toBe(1);
+      // 再点回横向堆叠。
+      await write(() => flow('横向堆叠').click());
+      expect((await named('容器')).layout).toEqual({ mode: 'stack', direction: 'row' });
+      expect(await paired()).toEqual(['layout.gap', 'padding']);
+
+      // 循环的每项方向：同样的两个图标，点横向写 direction，每项高换成每项宽。
+      await pick(`${ALL}/循环`);
+      const direction = inspector.getByRole('group', { name: '方向' });
+      expect(await attributes(direction.getByRole('button'), 'aria-label')).toEqual(['横向', '纵向']);
+      expect(await direction.getByRole('button', { name: '纵向' }).getAttribute('aria-pressed')).toBe('true');
+      expect(await direction.locator('svg').count()).toBe(2);
+      await write(() => direction.getByRole('button', { name: '横向' }).click());
+      const heights = before.artboard.children.find((child) => child.name === '循环')!.itemLayout!['heights'];
+      expect((await named('循环')).itemLayout).toEqual({ direction: 'row', widths: heights });
+      expect(await direction.getByRole('button', { name: '横向' }).getAttribute('aria-pressed')).toBe('true');
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await content()).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+    }, 180_000);
+
+    it('模板设计（第三轮 04）：文字的字体族与字重两个下拉，字号与字距一行，书写方向与对齐三组图标，竖排多"分散"、不列倾斜；适配收成一行，收起展开不写回；状态覆盖的圆点与重置照旧；撤销回到原样', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; states?: { cases: Record<string, Record<string, unknown>> }; children?: Element[]; [key: string]: unknown };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ALL);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const labels = (key: string) => attributes(field(key).getByRole('button'), 'aria-label');
+      const pressed = (key: string) => attributes(field(key).locator('button[aria-pressed="true"]'), 'aria-label');
+      const choose = (key: string, name: string) => field(key).getByRole('button', { name, exact: true });
+      const note = (name: string) => inspector.getByRole('region', { name }).getByTestId('section-note');
+      const text = async () => find((await contentOf(ALL)).artboard, '文字')!;
+      const summary = inspector.getByTestId('fit-summary'), rule = summary.getByTestId('fit-rule');
+
+      // 字体：字体族与字重两个下拉一行，标签收起；换字重写的是这一族里另一个字体资源的引用。
+      await pick(`${ALL}/文字`);
+      const family = field('font').getByTestId('font-family'), weight = field('font').getByTestId('font-select');
+      expect(await family.inputValue()).toBe('hei');
+      expect(await family.locator('option').allTextContents()).toContain('hei');
+      expect(await weight.inputValue()).toBe('res:font-hei-medium');
+      expect(await weight.locator('option').allTextContents()).toEqual(['Medium', 'Heavy']);
+      const selects = [(await family.boundingBox())!, (await weight.boundingBox())!];
+      expect(Math.abs(selects[0]!.y - selects[1]!.y), '两个下拉在一行').toBeLessThan(2);
+      await write(() => weight.selectOption({ label: 'Heavy' }));
+      expect((await text())['font']).toBe('res:font-hei-heavy');
+      expect(await family.inputValue()).toBe('hei');
+
+      // 字号与字距一行：字号绑定着，值格与来源链照旧，来源链排在这一行下面；字距打数写回。
+      expect(await attributes(inspector.locator('[data-testid="prop-pair"] > [data-testid="property-field"]'), 'data-key')).toEqual(['fontSize', 'letterSpacing']);
+      // 前面的用例改过这个参数的显示名称，也断开过字号的绑定：没绑着就先绑回去，值格只认绑着，不认名称。
+      if (typeof find(before.artboard, '文字')!['fontSize'] !== 'object') {
+        await field('fontSize').getByTestId('bind-button').click();
+        await write(() => field('fontSize').locator('[data-testid="binding-option"][data-name="nameSize"]').click());
+      }
+      await field('fontSize').getByTestId('bound-chip').waitFor();
+      const cells =[(await field('fontSize').boundingBox())!, (await field('letterSpacing').boundingBox())!];
+      expect(Math.abs(cells[0]!.y - cells[1]!.y), '字号与字距在一行').toBeLessThan(2);
+      expect(cells[1]!.x).toBeGreaterThan(cells[0]!.x + cells[0]!.width - 1);
+      const origin = (await field('fontSize').getByTestId('value-origin').boundingBox())!;
+      expect(origin.width, '来源链占满这一行').toBeGreaterThan(cells[0]!.width + cells[1]!.width);
+      expect(await field('color').getByTestId('bound-chip').count()).toBe(1);
+      await write(() => field('letterSpacing').locator('input[type="text"]').fill('0.5'));
+      expect((await text())['letterSpacing']).toBe(0.5);
+
+      // 三组图标一行：书写方向没写，缺省的横排描边、不按下；水平对齐写着开头；横排的垂直对齐没有分散，倾斜在。
+      const aligns = inspector.getByTestId('text-aligns');
+      expect(await attributes(aligns.getByRole('group'), 'aria-label')).toEqual(['书写方向', '水平对齐', '垂直对齐']);
+      const groups = await aligns.getByRole('group').evaluateAll((all) => all.map((node) => (node as unknown as { getBoundingClientRect(): { top: number } }).getBoundingClientRect().top));
+      expect(Math.max(...groups) - Math.min(...groups), '三组在一行').toBeLessThan(2);
+      expect(await labels('writingMode')).toEqual(['横排', '竖排']);
+      expect(await labels('horizontalAlign')).toEqual(['开头', '居中', '末尾', '分散', '均分']);
+      expect(await labels('verticalAlign')).toEqual(['上', '居中', '下']);
+      expect(await pressed('writingMode')).toEqual([]);
+      expect(await attributes(field('writingMode').locator('button.implied'), 'aria-label')).toEqual(['横排']);
+      expect(await pressed('horizontalAlign')).toEqual(['开头']);
+      expect(await aligns.locator('svg').count(), '书写方向与左中右是图标').toBe(5);
+      // 倾斜没写，不占一行，在底部的"+ 属性"里（第三轮票据 05）。
+      const slantOffer = inspector.getByTestId('add-property').locator('button[data-key="slant"]');
+      expect(await field('slant').count()).toBe(0);
+      expect(await slantOffer.count()).toBe(1);
+      expect(await note('适配').textContent()).toBe('横排');
+
+      // 横排写上分散与倾斜；换成竖排：只在横排才有的两项跟着去掉，垂直对齐多出分散，倾斜不列，文档没有严重问题。
+      await write(() => choose('horizontalAlign', '分散').click());
+      expect((await text())['horizontalAlign']).toBe('distribute');
+      expect(await pressed('horizontalAlign')).toEqual(['分散']);
+      await write(() => slantOffer.click());
+      expect((await text())['slant']).toBe(0);
+      await write(() => field('slant').locator('input[type="text"]').fill('8'));
+      expect((await text())['slant']).toBe(8);
+      await write(() => choose('writingMode', '竖排').click());
+      const vertical = await text();
+      expect(vertical['writingMode']).toBe('vertical');
+      expect(vertical).not.toHaveProperty('horizontalAlign');
+      expect(vertical).not.toHaveProperty('slant');
+      expect(await pressed('writingMode')).toEqual(['竖排']);
+      expect(await labels('horizontalAlign')).toEqual(['开头', '居中', '末尾']);
+      expect(await labels('verticalAlign')).toEqual(['上', '居中', '下', '分散']);
+      expect(await field('slant').count()).toBe(0);
+      expect(await slantOffer.count(), '竖排不能倾斜，菜单里也不列').toBe(0);
+      expect(await note('适配').textContent()).toBe('竖排');
+      await write(() => choose('verticalAlign', '分散').click());
+      expect((await text())['verticalAlign']).toBe('distribute');
+      expect(await pressed('verticalAlign')).toEqual(['分散']);
+      expect(await severe(ALL)).toEqual([]);
+
+      // 适配收成一行：规则与这一处的结果；没点开时不列适配的字段。收起展开不写回。
+      expect(await summary.getAttribute('aria-expanded')).toBe('false');
+      expect(await rule.textContent()).toBe('收紧字距 → 压缩字形');
+      await expect.poll(() => summary.getByTestId('fit-here').textContent(), { timeout: PREVIEW_WINDOW_MS }).toMatch(/^这一处：(没有压缩|压到 \d+%)，字号 [\d.]+ mm(，仍放不下)?$/);
+      expect(await field('fit.steps').count()).toBe(0);
+      const held = await contentOf(ALL), puts: string[] = [];
+      const listen = (request: { method(): string; url(): string }) => { if (request.method() === 'PUT') puts.push(request.url()); };
+      target.on('request', listen);
+      await summary.click();
+      expect(await summary.getAttribute('aria-expanded')).toBe('true');
+      await inspector.getByTestId('fit-mode').filter({ hasText: '竖排' }).waitFor();
+      expect(await field('fit.steps').count()).toBe(1);
+      await summary.click();
+      expect(await summary.getAttribute('aria-expanded')).toBe('false');
+      expect(await field('fit.steps').count()).toBe(0);
+      await target.waitForTimeout(1200);
+      target.off('request', listen);
+      expect(puts, '收起展开不写回').toEqual([]);
+      expect(await contentOf(ALL)).toEqual(held);
+
+      // 点开改：摘要跟着变；加了缩字组带上组名。
+      await summary.click();
+      await write(() => field('fit.steps').locator('select').first().selectOption({ label: '收紧字距' }));
+      expect(await rule.textContent()).toBe('收紧字距');
+      await write(() => field('fit.widthOverflow').getByRole('button', { name: '添加' }).click());
+      await write(() => field('fit.widthOverflow.shrinkGroup').locator('input[type="text"]').fill('牌面'));
+      await expect.poll(() => rule.textContent()).toBe('收紧字距 · 缩字组 牌面');
+      expect((await text())['fit']).toMatchObject({ steps: ['tightenSpacing'], widthOverflow: { shrinkGroup: '牌面' } });
+      expect(await severe(ALL)).toEqual([]);
+      // 换回横排：垂直对齐的分散与缩字组跟着去掉，倾斜又列出来。
+      await write(() => choose('writingMode', '横排').click());
+      const back = await text();
+      expect(back['writingMode']).toBe('horizontal');
+      expect(back).not.toHaveProperty('verticalAlign');
+      expect(back['fit']).toMatchObject({ steps: ['tightenSpacing'] });
+      expect(back['fit']).not.toHaveProperty('widthOverflow');
+      expect(await rule.textContent()).toBe('收紧字距');
+      expect(await note('适配').textContent()).toBe('横排');
+      expect(await slantOffer.count(), '换回横排，倾斜回到菜单里').toBe(1);
+      expect(await severe(ALL)).toEqual([]);
+
+      // 撤销：一直撤到不能撤，回到原样。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      for (let step = 0; step < 30 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ALL)).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+
+      // 状态覆盖照旧：站名的颜色被覆盖，标题写几项；选"本站"点水平对齐，写进这个取值的覆盖，图标组上有圆点，能重置。
+      const stopBefore = await contentOf(STOP);
+      const stopName = async () => find((await contentOf(STOP)).artboard, '站名')!;
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await pick(`${STOP}/名称区/站名`);
+      expect(await note('文字').textContent()).toBe('1 项被状态覆盖');
+      expect(await note('文字').getAttribute('title')).toContain('颜色');
+      expect(await field('horizontalAlign').getByTestId('state-dot').count()).toBe(0);
+      expect(await pressed('verticalAlign')).toEqual(['分散']);
+      expect(await rule.textContent()).toBe('收紧字距 → 压缩字形 · 缩字组 stopNames');
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      const reset = inspector.locator('[data-testid="state-reset"][data-key="horizontalAlign"]');
+      expect(await reset.count()).toBe(0);
+      await write(() => choose('horizontalAlign', '末尾').click());
+      const overridden = await stopName();
+      expect(overridden.states!.cases['本站']).toMatchObject({ horizontalAlign: 'end' });
+      expect(overridden['horizontalAlign']).toBe(find(stopBefore.artboard, '站名')!['horizontalAlign']);
+      expect(await pressed('horizontalAlign')).toEqual(['末尾']);
+      expect(await field('horizontalAlign').getByTestId('state-dot').getAttribute('title')).toContain('本站');
+      expect(await note('文字').textContent()).toBe('2 项被状态覆盖');
+      expect(await severe(STOP)).toEqual([]);
+      await write(() => reset.click());
+      expect((await stopName()).states!.cases['本站']).not.toHaveProperty('horizontalAlign');
+      expect(await field('horizontalAlign').getByTestId('state-dot').count()).toBe(0);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    it('模板设计（第三轮 05）：检查器只显示写了的与常用的属性，别的从"+ 属性"加，加上的项行内能去掉；宽高并排成一行；选了取值时加的项写进覆盖；撤销回到原样', async () => {
+      const ALL = '全元素牌', ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ALL);
+      type Element = { name: string; states?: { cases: Record<string, Record<string, unknown>> }; children?: Element[]; [key: string]: unknown };
+      const contentOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return JSON.parse(copy.status === 200 ? copy.body.content as string : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content as string) as { artboard: Element & { children: Element[] } };
+      };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ALL);
+      const element = async (name: string) => find((await contentOf(ALL)).artboard, name)!;
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ALL)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const field = (key: string) => inspector.locator(`[data-testid="property-field"][data-key="${key}"]`).first();
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const menu = inspector.getByTestId('add-property');
+      const add = (key: string) => menu.locator(`button[data-key="${key}"]`);
+      const offered = () => attributes(menu.locator('button'), 'data-key');
+      const drop = (key: string) => field(key).getByTestId('property-remove');
+      const typed = (key: string) => field(key).locator('input[type="text"]').first();
+      /** 没写的不常用项不显示、在菜单里；常用的写没写都显示、不在菜单里。 */
+      const expectHidden = async (keys: readonly string[]) => {
+        const menuKeys = await offered();
+        for (const key of keys) { expect(await field(key).count(), `${key} 没写，不显示`).toBe(0); expect(menuKeys, `${key} 在"+ 属性"里`).toContain(key); }
+      };
+      const expectShown = async (keys: readonly string[]) => {
+        const menuKeys = await offered();
+        for (const key of keys) { expect(await field(key).count(), `${key} 总是显示`).toBe(1); expect(menuKeys, `${key} 不在"+ 属性"里`).not.toContain(key); }
+      };
+
+      // 文字：常用的（内容、文字块、位置与尺寸、显示）没写也显示；倾斜、描边、内边距、最小最大宽高、旋转没写，收在底部的"+ 属性"里。
+      await pick(`${ALL}/文字`);
+      const textBefore = find(before.artboard, '文字')!;
+      for (const key of ['slant', 'stroke', 'padding', 'rotation']) expect(textBefore, `样例里文字没写 ${key}`).not.toHaveProperty(key);
+      await expectShown(['font', 'fontSize', 'letterSpacing', 'color', 'writingMode', 'horizontalAlign', 'verticalAlign', 'place.left', 'place.right', 'place.top', 'place.bottom', 'place.width', 'place.height', 'visible', 'opacity']);
+      await expectHidden(['slant', 'stroke', 'padding', 'place.minWidth', 'place.maxWidth', 'place.minHeight', 'place.maxHeight', 'rotation']);
+      expect(await menu.getByRole('button').allTextContents()).toEqual(['倾斜', '描边', '内边距', '最小宽', '最大宽', '最小高', '最大高', '旋转']);
+      expect(await inspector.getByTestId('property-remove').count(), '常用的项没有"去掉"').toBe(0);
+
+      // 宽高并排成一行，名称缩成 W、H；读屏的名称还是"宽""高"。
+      const pair = inspector.getByTestId('size-pair');
+      expect(await attributes(pair.locator('> [data-testid="property-field"]'), 'data-key')).toEqual(['place.width', 'place.height']);
+      expect(await pair.locator('> [data-testid="property-field"] > label').allTextContents()).toEqual(['W', 'H']);
+      const cells = [(await field('place.width').boundingBox())!, (await field('place.height').boundingBox())!];
+      expect(Math.abs(cells[0]!.y - cells[1]!.y), '宽高在一行').toBeLessThan(2);
+      expect(cells[1]!.x).toBeGreaterThan(cells[0]!.x + cells[0]!.width - 1);
+      expect(await field('place.width').getByRole('textbox', { name: '宽', exact: true }).count()).toBe(1);
+      expect(await field('place.height').getByRole('combobox', { name: '高的尺寸方式' }).count()).toBe(1);
+      const input = (await field('place.width').getByRole('textbox', { name: '宽', exact: true }).boundingBox())!;
+      expect(input.width, '半行里数值框放得下四位数').toBeGreaterThanOrEqual(40);
+
+      // 加一项：写它的初值，这一行出现在它的分组里、从菜单里消失，焦点落进它的编辑器。
+      await write(() => add('rotation').click());
+      expect((await element('文字'))['rotation']).toBe(0);
+      await expectShown(['rotation']);
+      expect(await inspector.getByRole('region', { name: '位置与尺寸' }).locator('[data-testid="property-field"][data-key="rotation"]').count()).toBe(1);
+      expect(await inspector.locator('[data-testid="property-field"]:focus-within').first().getAttribute('data-key')).toBe('rotation');
+      await write(() => typed('rotation').fill('15'));
+      expect((await element('文字'))['rotation']).toBe(15);
+      expect(await severe(ALL)).toEqual([]);
+      // 清空输入框：键删掉了，这一行先留着（人还要接着打字），不跳回菜单；再打数照常写回。
+      await write(() => typed('rotation').fill(''));
+      expect(await element('文字')).not.toHaveProperty('rotation');
+      await expectShown(['rotation']);
+      await write(() => typed('rotation').fill('30'));
+      expect((await element('文字'))['rotation']).toBe(30);
+      // 去掉：删掉这个键，回到菜单里。
+      expect(await drop('rotation').getAttribute('aria-label')).toBe('去掉旋转（度）');
+      await write(() => drop('rotation').click());
+      expect(await element('文字')).not.toHaveProperty('rotation');
+      await expectHidden(['rotation']);
+
+      // 一组的项（描边）：加上是带必填子项的初值；"去掉"只有行内这一个。
+      await write(() => add('stroke').click());
+      expect((await element('文字'))['stroke']).toEqual({ color: '#000000', width: 1 });
+      await expectShown(['stroke']);
+      expect(await field('stroke').getByRole('button', { name: '去掉描边', exact: true }).count()).toBe(1);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('stroke').click());
+      expect(await element('文字')).not.toHaveProperty('stroke');
+      await expectHidden(['stroke']);
+      // 加了再撤销：这一行跟着没了，不留空行。
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      await write(() => add('padding').click());
+      expect((await element('文字'))['padding']).toBe(0);
+      await expectShown(['padding']);
+      await write(() => undo.click());
+      expect(await element('文字')).not.toHaveProperty('padding');
+      await expectHidden(['padding']);
+
+      // 容器：写了的不常用项（样例里的圆角）显示着、能去掉；开关加上就是打开；最大宽从这一处的实际宽度起，画面不变。
+      await pick(`${ALL}/容器`);
+      const boxBefore = find(before.artboard, '容器')!;
+      await expectShown(['layout', 'padding', 'fill', 'place.width', 'place.height']);
+      if ('cornerRadius' in boxBefore) expect(await drop('cornerRadius').count(), '写了的圆角能去掉').toBe(1);
+      for (const key of ['clip', 'stroke']) expect(boxBefore, `样例里容器没写 ${key}`).not.toHaveProperty(key);
+      await expectHidden(['clip', 'stroke', 'place.maxWidth', 'rotation']);
+      await write(() => add('clip').click());
+      expect((await element('容器'))['clip']).toBe(true);
+      await expectShown(['clip']);
+      await write(() => add('place.maxWidth').click());
+      const limit = ((await element('容器'))['place'] as Record<string, unknown>)['maxWidth'];
+      expect(limit, '最大宽的初值是量出来的宽，不是 0').toBeGreaterThan(0);
+      await expectShown(['place.maxWidth']);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('place.maxWidth').click());
+      expect((await element('容器'))['place']).toEqual(boxBefore['place']);
+      await write(() => drop('clip').click());
+      expect(await element('容器')).toEqual(boxBefore);
+
+      // 循环：反序、只取一段在"+ 属性"里，加上显示在循环那一栏。
+      await pick(`${ALL}/循环`);
+      const loopBefore = find(before.artboard, '循环')!;
+      for (const key of ['reverse', 'slice']) expect(loopBefore, `样例里循环没写 ${key}`).not.toHaveProperty(key);
+      await expectHidden(['reverse', 'slice']);
+      await write(() => add('reverse').click());
+      expect((await element('循环'))['reverse']).toBe(true);
+      expect(await inspector.getByRole('region', { name: '循环', exact: true }).locator('[data-testid="property-field"][data-key="reverse"]').count()).toBe(1);
+      await write(() => add('slice').click());
+      expect((await element('循环'))['slice']).toEqual({ start: 1 });
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('slice').click());
+      await write(() => drop('reverse').click());
+      expect(await element('循环')).toEqual(loopBefore);
+
+      // 线条：随框缩放要先有视图框，没有时按钮是灰的、写明先加哪一项。
+      await pick(`${ALL}/线条`);
+      const lineBefore = find(before.artboard, '线条')!;
+      expect(lineBefore, '样例里线条没写视图框').not.toHaveProperty('viewBox');
+      await expectHidden(['viewBox', 'fit']);
+      expect(await add('fit').isDisabled()).toBe(true);
+      expect(await add('fit').getAttribute('title')).toBe('先加视图框');
+      await write(() => add('viewBox').click());
+      expect((await element('线条'))['viewBox']).toEqual([0, 0, 1, 1]);
+      expect(await add('fit').isDisabled()).toBe(false);
+      await write(() => add('fit').click());
+      expect((await element('线条'))['fit']).toBe('fill');
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop('fit').click());
+      await write(() => drop('viewBox').click());
+      expect(await element('线条')).toEqual(lineBefore);
+
+      // 画板：尺寸范围、缩字下限、排布总是显示；描边、圆角、裁剪从"+ 属性"加，写在 artboard 上。
+      await pick(ALL);
+      await expectShown(['sizeRange', 'minFontSize', 'layout', 'padding']);
+      const boardKeys = ['stroke', 'cornerRadius', 'clip'].filter((key) => !(key in before.artboard));
+      expect(boardKeys.length, '样例里画板至少有一项没写').toBeGreaterThan(0);
+      await expectHidden(boardKeys);
+      await write(() => add(boardKeys[0]!).click());
+      expect((await contentOf(ALL)).artboard).toHaveProperty(boardKeys[0]!);
+      await expectShown([boardKeys[0]!]);
+      expect(await severe(ALL)).toEqual([]);
+      await write(() => drop(boardKeys[0]!).click());
+      expect(await contentOf(ALL)).toEqual(before);
+
+      // 撤销：一直撤到不能撤，回到原样。
+      for (let step = 0; step < 40 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ALL)).toEqual(before);
+      await server('DELETE', `/v1/templates/${enc(ALL)}/working-copy`, token);
+      await leaveDesign(target, ALL);
+
+      // 状态样式模式：选"本站"后从"+ 属性"加的项写进这个取值的覆盖，自身属性不动；这一行有圆点、没有"去掉"，重置后回到菜单里。
+      const stopBefore = await contentOf(STOP);
+      const stopName = async () => find((await contentOf(STOP)).artboard, '站名')!;
+      expect(find(stopBefore.artboard, '站名')!, '样例里站名没写旋转').not.toHaveProperty('rotation');
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列', '名称区']) await openRow(side, row);
+      await pick(`${STOP}/名称区/站名`);
+      // 站名在纵向堆叠里：宽高照样并排，外边距在下一行；自身对齐只在堆叠里才有，在菜单里。
+      expect(await attributes(pair.locator('> [data-testid="property-field"]'), 'data-key')).toEqual(['place.width', 'place.height']);
+      await expectShown(['place.margin']);
+      await expectHidden(['rotation', 'place.alignSelf']);
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      await expectHidden(['rotation']);
+      expect(await add('rotation').getAttribute('title')).toBe('写进这个取值的覆盖');
+      await write(() => add('rotation').click());
+      const overridden = await stopName();
+      expect(overridden.states!.cases['本站']).toMatchObject({ rotation: 0 });
+      expect(overridden).not.toHaveProperty('rotation');
+      await expectShown(['rotation']);
+      expect(await field('rotation').getByTestId('state-dot').count()).toBe(1);
+      expect(await drop('rotation').count(), '覆盖的项用"重置为自身属性"，没有"去掉"').toBe(0);
+      expect(await severe(STOP)).toEqual([]);
+      // 换回自身属性：自身没写旋转，这一行不显示。
+      await inspector.locator('[data-testid="state-chip"][data-value=""]').click();
+      await expectHidden(['rotation']);
+      await inspector.locator('[data-testid="state-chip"][data-value="本站"]').click();
+      await expectShown(['rotation']);
+      await write(() => field('rotation').getByTestId('state-reset').click());
+      expect((await stopName()).states?.cases['本站'] ?? {}).not.toHaveProperty('rotation');
+      await expectHidden(['rotation']);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    it('模板设计（第三轮 06）：底部工具栏点一下、按 T 或 F 加到选中的位置，写回与同一操作逐字节相同，也能拖到图上；形状点开是小目录，循环与调用先选列表、数据与模板；打字时快捷键不算，V、H 照旧；从字段创建不在工具栏里（第三轮票据 07 起在"数据"页）；撤销回到原样', async () => {
+      const ROOT = '标准线路单边', STOP = '站点', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Element = { name: string; type?: string; children?: Element[]; [key: string]: unknown };
+      type Box = { path: string; x: number; y: number; width: number; height: number; children?: Box[] };
+      const textOf = async (name: string) => {
+        const copy = await server('GET', `/v1/templates/${enc(name)}/working-copy`, token);
+        return (copy.status === 200 ? copy.body.content : (await server('GET', `/v1/templates/${enc(name)}/content`, token)).body.content) as string;
+      };
+      const contentOf = async (name: string) => JSON.parse(await textOf(name)) as { artboard: Element & { children: Element[] } };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const severe = async (name: string) => checkDslDocument(await contentOf(name)).problems.filter((problem) => problem.level === 'severe');
+      const before = await contentOf(ROOT), stopBefore = await contentOf(STOP);
+      const replied = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      const { layout } = await (await replied).json() as { layout: { output: { width: number; height: number }; root: Box } };
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(); await action(); await saved; };
+      const pick = async (path: string) => {
+        await side.locator(`[data-testid="structure-row"][data-path="${path}"]`).getByRole('button').first().click();
+        await inspector.locator(`[data-testid="properties"][data-path="${path}"]`).waitFor();
+      };
+      const attributes = (nodes: Locator, name: string) => nodes.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      const dock = target.locator('.design-dock'), bar = target.getByRole('group', { name: '插入' }), pop = target.getByTestId('insert-pop'), shape = target.getByTestId('insert-shape');
+      const tool = (kind: string) => target.locator(`[data-testid="add-element"][data-kind="${kind}"]`);
+      const where = async () => (await tool('text').getAttribute('title'))!;
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      const rows = side.locator('[data-testid="structure-row"]');
+      /**
+       * 同一个选中、同一种元素，写回只有一种：template/create.ts 的 insertionPoint 加 insertElement（票据 14 的添加走的就是它）。
+       * 工具栏、快捷键与小表单写进工作副本的文本要和它逐字节相同，加完选中新元素。
+       */
+      const adds = async (name: string, kind: NewKind, selected: string | undefined, action: () => Promise<unknown>, bindings: Bindings = {}) => {
+        const document = parseTemplateText(await textOf(name)), point = insertionPoint(document, name, selected);
+        const want = insertElement(document, name, point.container, newElement(kind, document, bindings), { index: point.index })!;
+        await write(action);
+        expect(await textOf(name), `${kind} 加到 ${selected ?? '画板'}`).toBe(templateText(want.document));
+        await expect.poll(selectedPath).toBe(want.path);
+        return want.path;
+      };
+
+      // 工具栏从左到右：选择、平移 ｜ 文字、图片、形状、容器、循环、调用 ｜ 缩放 ｜ 叠加层 ｜ 面板。评论是第四期，不显示。
+      expect(await attributes(dock.locator('[role="group"]'), 'aria-label')).toEqual(['工具', '插入', '缩放', '叠加层', '面板']);
+      expect(await attributes(bar.locator('> button'), 'aria-label')).toEqual(['文字', '图片', '形状', '容器', '循环', '调用']);
+      expect(await dock.getByRole('button', { name: /评论/u }).count(), '评论是第四期').toBe(0);
+
+      // 拖到图上：把"容器"拖到顶栏的留白上，放进落点最深的那个容器（落在循环的一项上会放进被调模板，和票据 14 一样）。
+      const walk = (node: Box): Box | undefined => (node.path === `${ROOT}/顶栏/顶栏留白` ? node : (node.children ?? []).map(walk).find(Boolean));
+      const blank = walk(layout.root)!, canvas = target.getByTestId('design-canvas'), area = (await canvas.boundingBox())!;
+      expect(blank.width, '留白要有地方落').toBeGreaterThan(4);
+      await write(() => tool('container').dragTo(canvas, { targetPosition: { x: ((blank.x + blank.width / 2) / layout.output.width) * area.width, y: ((blank.y + blank.height / 2) / layout.output.height) * area.height } }));
+      expect((find((await contentOf(ROOT)).artboard, '顶栏留白')!.children ?? []).map((child) => [child.name, child.type])).toEqual([['容器', 'container']]);
+      await expect.poll(selectedPath).toBe(`${ROOT}/顶栏/顶栏留白/容器`);
+
+      // Esc 一层一层往上，直到什么也没选：这时点"文字"，加在画板的最后。
+      for (let step = 0; step < 4 && !(await where()).includes(`画板「${ROOT}」的最后`); step++) await target.keyboard.press('Escape');
+      expect(await where()).toBe(`文字 T：加到画板「${ROOT}」的最后，也能拖到图上或图层里`);
+      const first = await adds(ROOT, 'text', undefined, () => tool('text').click());
+      expect(first).toBe(`${ROOT}/文字`);
+
+      // 选中的是文字，不是容器：按 T，放在它后面。
+      expect(await where()).toBe(`文字 T：加到画板「${ROOT}」，放在「文字」后面，也能拖到图上或图层里`);
+      const second = await adds(ROOT, 'text', first, () => target.keyboard.press('t'));
+      expect((await contentOf(ROOT)).artboard.children.slice(-2).map((child) => child.name)).toEqual(['文字', '文字2']);
+
+      // 打字时不算：改名框里按 T、F 是打字；Esc 作罢，什么也没加，选中没动。
+      const count = await rows.count(), quiet = await textOf(ROOT);
+      await target.keyboard.press('F2');
+      const rename = side.getByTestId('rename-input');
+      await rename.waitFor();
+      await target.keyboard.press('t');
+      await target.keyboard.press('F');
+      expect(await rename.inputValue()).toBe('tF');
+      await target.keyboard.press('Escape');
+      await rename.waitFor({ state: 'detached' });
+      expect(await rows.count()).toBe(count);
+      expect(await selectedPath()).toBe(second);
+      expect(await textOf(ROOT)).toBe(quiet);
+
+      // V、H 照旧切工具，不加元素。
+      const tools = target.getByRole('group', { name: '工具' }), pressed = target.locator('[aria-pressed="true"]');
+      await target.keyboard.press('h');
+      await tools.getByRole('button', { name: '平移' }).and(pressed).waitFor();
+      await target.keyboard.press('v');
+      await tools.getByRole('button', { name: '选择' }).and(pressed).waitFor();
+      expect(await rows.count()).toBe(count);
+
+      // 选中顶栏（容器）：按 F，容器加在顶栏的最后；大写也认。
+      await pick(`${ROOT}/顶栏`);
+      const holder = await adds(ROOT, 'container', `${ROOT}/顶栏`, () => target.keyboard.press('F'));
+      expect(holder).toBe(`${ROOT}/顶栏/容器2`);
+
+      // 形状点开是七种的小目录，写明加到哪；点别处收起。
+      await shape.click();
+      expect(await pop.getByRole('button').allTextContents()).toEqual(['矩形', '椭圆', '线条', '多边形', '路径', '二维码', '条码']);
+      expect(await pop.getByTestId('insert-target').textContent()).toBe('「容器2」的最后');
+      expect(await shape.getAttribute('aria-expanded')).toBe('true');
+      await side.getByRole('tab', { name: '图层' }).click();
+      await pop.waitFor({ state: 'detached' });
+      expect(await shape.getAttribute('aria-expanded')).toBe('false');
+      // 点线条：加进刚才的容器，目录收起；再点图片，放在线条后面。
+      await shape.click();
+      const line = await adds(ROOT, 'line', holder, () => tool('line').click());
+      await pop.waitFor({ state: 'detached' });
+      await adds(ROOT, 'image', line, () => tool('image').click());
+      expect(find((await contentOf(ROOT)).artboard, '容器2')!.children!.map((child) => child.type)).toEqual(['line', 'image']);
+
+      // 循环：点开是小表单，先选列表，再选基准相符的模板；下拉框有焦点时按 T 不加元素。
+      await pick(`${ROOT}/底栏`);
+      await tool('loop').click();
+      const loopForm = target.getByRole('form', { name: '添加循环容器' }), addLoop = loopForm.getByRole('button', { name: '添加循环容器' });
+      await loopForm.waitFor();
+      expect(await loopForm.getByTestId('insert-target').textContent()).toBe('「底栏」的最后');
+      expect(await addLoop.isDisabled(), '没选列表与模板不能加').toBe(true);
+      const lists = loopForm.getByLabel('循环的列表');
+      await lists.press('t');
+      expect(await selectedPath()).toBe(`${ROOT}/底栏`);
+      await loopForm.waitFor();
+      await lists.selectOption('stops');
+      const callee = loopForm.getByLabel('被调模板');
+      await expect.poll(async () => (await callee.locator('option').allTextContents()).filter((name) => name === '站点' || name === '道路段')).toEqual(['站点', '道路段']);
+      const offered = await callee.locator('option').allTextContents();
+      expect([offered[0], offered.at(-1)]).toEqual(['选一个模板', '+ 新建模板…']);
+      // 当场新建：基准预先填好；取消回到表单，表单还开着（弹窗里的点按不算点别处）。
+      await callee.selectOption({ label: '+ 新建模板…' });
+      const dialog = target.getByRole('dialog', { name: '新建模板' });
+      expect(await dialog.getByTestId('new-template-base').textContent()).toBe('停靠站点 v1');
+      await dialog.getByRole('button', { name: '取消' }).click();
+      await dialog.waitFor({ state: 'detached' });
+      await loopForm.waitFor();
+      await callee.selectOption('站点');
+      const loop = await adds(ROOT, 'loop', `${ROOT}/底栏`, () => addLoop.click(), { list: 'stops', template: '站点' });
+      await loopForm.waitFor({ state: 'detached' });
+      expect(loop).toBe(`${ROOT}/底栏/循环容器`);
+      expect(find((await contentOf(ROOT)).artboard, '底栏')!.children!.at(-1)).toMatchObject({ type: 'loop', list: { var: 'stops' }, template: '站点' });
+
+      // 左面板的"数据"页（第三轮票据 07 起从字段创建在这里）：没有元素目录；字段行尾的"+"加到哪和工具栏说的一样。
+      await side.getByRole('tab', { name: '数据' }).click();
+      const panel = side.getByTestId('data-panel');
+      await panel.locator('[data-testid="add-field"]').first().waitFor();
+      expect(await panel.locator('[data-testid="add-element"]').count(), '元素目录不在这一页了').toBe(0);
+      expect(await panel.locator('[data-testid="add-field"][data-field="routeNo"]').getAttribute('title')).toBe('把「线路号」加成文字，加到「底栏」，放在「循环容器」后面');
+      await side.getByRole('tab', { name: '图层' }).click();
+
+      expect(await severe(ROOT)).toEqual([]);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(ROOT)).toEqual(before);
+
+      // 调用：到站点里（从主模板进去），选中名称区。传当前数据时被调模板的基准和站点相同，不列站点自己。
+      await target.goto(`${baseUrl}/console/#/templates/${enc(STOP)}/design?in=${enc(ROOT)}`);
+      await target.getByTestId('preview-image').waitFor();
+      for (const row of ['站点面板', '站点列']) await openRow(side, row);
+      await pick(`${STOP}/名称区`);
+      await tool('call').click();
+      const callForm = target.getByRole('form', { name: '添加子模板调用' }), addCall = callForm.getByRole('button', { name: '添加子模板调用' });
+      const data = callForm.getByLabel('传给它的数据'), called = callForm.getByLabel('被调模板');
+      const sources = await data.locator('option').allTextContents();
+      expect([sources[0], sources.at(-1)]).toEqual(['当前数据（停靠站点 v1）', '不传数据']);
+      expect(await callForm.getByTestId('insert-target').textContent()).toBe('「名称区」的最后');
+      await expect.poll(async () => (await called.locator('option').allTextContents()).includes('道路段')).toBe(true);
+      expect(await called.locator('option').allTextContents(), '不列自己').not.toContain(STOP);
+      // 换成不传数据：被调模板的基准跟着变成空数据定义；没选模板不能加。
+      await data.selectOption('none');
+      await callForm.filter({ hasText: '空数据定义 v1' }).waitFor();
+      expect(await addCall.isDisabled()).toBe(true);
+      // Esc 收起表单：不往上选父级，焦点回到"调用"。
+      await target.keyboard.press('Escape');
+      await callForm.waitFor({ state: 'detached' });
+      expect(await selectedPath()).toBe(`${STOP}/名称区`);
+      expect(await tool('call').evaluate((node) => (node as unknown as { ownerDocument: { activeElement: unknown } }).ownerDocument.activeElement === node), '焦点回到按钮').toBe(true);
+      // 再点开是一张新表单；选道路段，加在名称区的最后。
+      await tool('call').click();
+      expect(await data.inputValue()).toBe('current');
+      await called.selectOption('道路段');
+      const call = await adds(STOP, 'call', `${STOP}/名称区`, () => addCall.click(), { template: '道路段', data: 'current' });
+      await callForm.waitFor({ state: 'detached' });
+      expect(call).toBe(`${STOP}/名称区/子模板调用`);
+      expect(find((await contentOf(STOP)).artboard, '名称区')!.children!.at(-1)).toMatchObject({ type: 'call', template: '道路段', data: 'current' });
+      expect(await severe(STOP)).toEqual([]);
+      for (let step = 0; step < 20 && await undo.isEnabled(); step++) await write(() => undo.click());
+      expect(await contentOf(STOP)).toEqual(stopBefore);
+      await server('DELETE', `/v1/templates/${enc(STOP)}/working-copy`, token);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    it('模板设计（第三轮 07）：左面板是"图层 / 数据"；字段拖到文字上换内容、拖到图片上换来源，类型不合的拒绝并在落点写原因；拖到容器里建元素，列表字段先选模板；右键"连接数据…"只列类型相符的，布尔变量绑显示；写回与同一操作逐字节相同，一步撤销', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      type Element = { name: string; type?: string; children?: Element[]; [key: string]: unknown };
+      const textOf = async () => {
+        const copy = await server('GET', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+        return (copy.status === 200 ? copy.body.content : (await server('GET', `/v1/templates/${enc(ROOT)}/content`, token)).body.content) as string;
+      };
+      const content = async () => JSON.parse(await textOf()) as { artboard: Element & { children: Element[] }; derived: { name: string; displayName?: string }[] };
+      const find = (node: Element, name: string): Element | undefined => (node.name === name ? node : (node.children ?? []).map((child) => find(child, name)).find(Boolean));
+      const element = async (name: string) => find((await content()).artboard, name)!;
+      const severe = async () => checkDslDocument(await content()).problems.filter((problem) => problem.level === 'severe');
+      const before = await content();
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      const stashed = () => target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+      const drawn = () => target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+      /** 写回并等新图回来：下一步的落点按新图量。 */
+      const write = async (action: () => Promise<unknown>) => { const saved = stashed(), again = drawn(); await action(); await saved; await again; };
+      const undo = target.getByRole('button', { name: '撤销', exact: true });
+      const selectedPath = () => inspector.getByTestId('properties').getAttribute('data-path');
+      const note = target.getByTestId('drop-note'), mark = target.getByTestId('drop-target');
+      const treeRow = (path: string) => side.locator(`[data-testid="structure-row"][data-path="${path}"]`);
+      const fieldRow = (name: string) => side.locator(`[data-testid="variable-row"][data-name="${name}"]`);
+      /** 图上一个元素的中心，在窗口里的位置：在图层里选中它，量页面自己画的选中框（换了数据或内容，位置跟着变），再回到"数据"页。 */
+      const pointOf = async (path: string) => {
+        await side.getByRole('tab', { name: '图层' }).click();
+        await openRow(side, '顶栏');
+        await treeRow(path).getByRole('button').first().click();
+        const box = target.locator(`[data-testid="select-box"][data-path="${path}"]`);
+        await box.waitFor();
+        const at = (await box.boundingBox())!;
+        await side.getByRole('tab', { name: '数据' }).click();
+        await fieldRow('fare').waitFor();
+        return { x: at.x + at.width / 2, y: at.y + at.height / 2 };
+      };
+      /** 把字段这一行拖到图上的一点：松手前看图上标出来的落点。 */
+      const dragToStage = async (field: string, path: string, kind: 'connect' | 'inside', label: string) => {
+        const to = await pointOf(path), from = (await fieldRow(field).boundingBox())!;
+        await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await target.mouse.down();
+        await target.mouse.move(to.x, to.y, { steps: 6 });
+        // 自动化的拖动每挪一下才发一次 dragover，最后一下可能还停在路过的元素上：在落点再挪一下（真鼠标停着也会不断发）。
+        await target.mouse.move(to.x + 1, to.y);
+        await target.mouse.move(to.x, to.y);
+        await expect.poll(() => mark.getAttribute('data-path')).toBe(path);
+        expect([await mark.getAttribute('data-kind'), await mark.textContent()]).toEqual([kind, label]);
+        await target.mouse.up();
+        await mark.waitFor({ state: 'detached' });
+      };
+      /**
+       * 连上只有一种写回：template/connect.ts 的 connectData。拖到图上、拖到图层里、右键"连接数据…"写进工作副本的文本都要和它逐字节相同，
+       * 结果写在落点，连完选中这个元素，写回通过检查。
+       */
+      const connects = async (path: string, source: DataSource, action: () => Promise<unknown>) => {
+        const want = connectData(parseTemplateText(await textOf()), ROOT, path, source);
+        if (!want.ok) throw new Error(want.reason);
+        const saved = stashed(), again = drawn();
+        await action();
+        await expect.poll(() => note.textContent()).toBe(want.summary);
+        expect(await note.getAttribute('data-kind')).toBe('ok');
+        await saved;
+        await again;
+        expect(await textOf(), `${source.name} 连到 ${path}`).toBe(templateText(want.document));
+        await expect.poll(selectedPath).toBe(path);
+        expect(await severe()).toEqual([]);
+        return want.summary;
+      };
+      const back = async () => {
+        await write(() => undo.click());
+        expect(await content()).toEqual(before);
+        expect(await undo.isDisabled(), '一步撤销').toBe(true);
+      };
+      const fare: DataSource = { name: 'fare', label: '票价（元）', type: 'number' }, picture: DataSource = { name: 'routeNoImage', label: '线路号图片', type: 'image' };
+      const OPERATOR = `${ROOT}/顶栏/运营方`, BLANK = `${ROOT}/顶栏/顶栏留白`, LANDMARK = `${ROOT}/底栏/下一站区/下一站地标`;
+
+      // 左面板两页：图层、数据。Agent 页接入 P2 才出现（M396）。
+      expect(await side.getByRole('tab').allTextContents()).toEqual(['图层', '数据']);
+      await side.getByRole('tab', { name: '数据' }).click();
+      for (const group of ['字段', '参数', '派生变量', '检查项']) await side.getByRole('region', { name: group, exact: true }).waitFor();
+      expect(await fieldRow('fare').locator('.variable-name').textContent(), '显示名称在前，名称在后').toBe('票价（元）fare');
+      await expect.poll(() => fieldRow('routeNo').textContent()).toContain('M402');
+
+      // 拖到文字上：内容换成这个字段的插槽。拖着的时候图上标出"连到"谁。
+      expect(await connects(OPERATOR, fare, () => dragToStage('fare', OPERATOR, 'connect', '连到「运营方」'))).toBe('「运营方」的内容换成了「票价（元）」（fare）。');
+      expect((await element('运营方'))['content']).toEqual([{ slot: 'fare' }]);
+      await back();
+
+      // 类型不合：图片字段拖到文字上，拒绝，原因写在落点；什么也没写。
+      await dragToStage('routeNoImage', OPERATOR, 'connect', '连到「运营方」');
+      await target.locator('[data-testid="drop-note"][data-kind="reject"]').filter({ hasText: '「运营方」是文字，接不了图片类型的「线路号图片」：拖到图片上换来源，或拖到空白处建一个图片。' }).waitFor();
+      expect(await undo.isDisabled(), '没有写回').toBe(true);
+      expect(await content()).toEqual(before);
+      // 点一下收起。
+      await target.locator('[data-testid="drop-note"][data-kind="reject"]').click();
+      await note.waitFor({ state: 'detached' });
+
+      // 拖到图层里图片这一行的中间：换图片来源。先在图层里选中它，拖经"图层"页签时树展开到这一行。
+      await side.getByRole('tab', { name: '图层' }).click();
+      for (const row of ['底栏', '下一站区']) await openRow(side, row);
+      await treeRow(LANDMARK).getByRole('button').first().click();
+      await expect.poll(selectedPath).toBe(LANDMARK);
+      await side.getByRole('tab', { name: '数据' }).click();
+      expect(await connects(LANDMARK, picture, async () => {
+        const from = (await fieldRow('routeNoImage').boundingBox())!;
+        await target.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await target.mouse.down();
+        const tab = (await side.getByRole('tab', { name: '图层' }).boundingBox())!;
+        await target.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2, { steps: 5 });
+        await treeRow(LANDMARK).waitFor();
+        const line = (await treeRow(LANDMARK).boundingBox())!;
+        await target.mouse.move(line.x + line.width / 2, line.y + line.height / 2, { steps: 5 });
+        await target.mouse.move(line.x + line.width / 2 + 1, line.y + line.height / 2);
+        await expect.poll(() => treeRow(LANDMARK).getAttribute('class')).toContain('drop-connect');
+        await target.mouse.up();
+      })).toBe('「下一站地标」的图片来源换成了「线路号图片」（routeNoImage）。');
+      expect((await element('下一站地标'))['source']).toEqual({ var: 'routeNoImage' });
+      await back();
+
+      // 拖到容器里：建一个绑好的文字（同票据 14 的从字段创建），名字取显示名称，重名加序号。
+      await side.getByRole('tab', { name: '数据' }).click();
+      await write(() => dragToStage('operator', BLANK, 'inside', '放进「顶栏留白」'));
+      expect(((await element('顶栏留白')).children ?? []).map((child) => [child.name, child.type, child['content']])).toEqual([['运营方2', 'text', [{ slot: 'operator' }]]]);
+      await expect.poll(selectedPath).toBe(`${BLANK}/运营方2`);
+      await back();
+
+      // 列表字段拖到容器里：先选基准相符的模板，表单写明加进刚才拖到的容器；选了就在那里建循环容器。
+      await dragToStage('stops', BLANK, 'inside', '放进「顶栏留白」');
+      const form = side.getByRole('form', { name: '从 停靠站点 创建' });
+      expect(await form.getByTestId('add-target').textContent()).toBe('「顶栏留白」');
+      // 只列基准相符（停靠站点 v1）的模板；别的用例建的同基准模板也会在里面，所以只认头尾和这两个，基准不符的不在。
+      const options = await form.getByLabel('被调模板').locator('option').allTextContents();
+      expect([options[0], options.at(-1)]).toEqual(['选一个模板', '+ 新建模板…']);
+      expect(options).toEqual(expect.arrayContaining(['站点', '道路段']));
+      expect(options).not.toContain(ROOT);
+      await form.getByLabel('被调模板').selectOption('站点');
+      await write(() => form.getByRole('button', { name: '添加循环容器' }).click());
+      await form.waitFor({ state: 'detached' });
+      expect((await element('顶栏留白')).children).toMatchObject([{ type: 'loop', list: { var: 'stops' }, template: '站点' }]);
+      expect(await severe()).toEqual([]);
+      await back();
+
+      // 右键"连接数据…"：容器只接布尔（绑显示），已经连着的列出来但不能再选；点"‹ 连接数据"回到菜单。
+      await side.getByRole('tab', { name: '图层' }).click();
+      await openRow(side, '顶栏');
+      await treeRow(`${ROOT}/顶栏/票价框`).click({ button: 'right' });
+      const menu = target.getByTestId('element-menu'), choices = menu.getByTestId('connect-choice');
+      const attributes = (name: string) => choices.evaluateAll((all, key) => all.map((node) => (node as unknown as { getAttribute(key: string): string | null }).getAttribute(key)), name);
+      await menu.getByTestId('connect-data').click();
+      await choices.first().waitFor();
+      expect(new Set(await attributes('data-effect'))).toEqual(new Set(['visible']));
+      expect(await attributes('data-name')).toContain('hasNextStop');
+      const current = menu.locator('[data-testid="connect-choice"][data-name="hasFare"]');
+      expect([await current.isDisabled(), (await current.textContent())!.endsWith('已连着')]).toEqual([true, true]);
+      await menu.getByRole('menuitem', { name: /连接数据/u }).first().click();
+      await menu.getByRole('menuitem', { name: '复制元素路径' }).waitFor();
+      await target.keyboard.press('Escape');
+      await menu.waitFor({ state: 'detached' });
+
+      // 图上右键文字：文字类字段换内容、布尔绑显示，图片与列表不列。选布尔的派生变量，绑到显示上，写回同上。
+      const text = await pointOf(OPERATOR);
+      await target.mouse.click(text.x, text.y, { button: 'right' });
+      await menu.getByTestId('connect-data').click();
+      await choices.first().waitFor();
+      const names = await attributes('data-name');
+      expect(new Set(await attributes('data-effect'))).toEqual(new Set(['content', 'visible']));
+      expect(names).toEqual(expect.arrayContaining(['routeNo', 'fare', 'firstDeparture', 'hasFare']));
+      for (const name of ['routeNoImage', 'stops', 'departureTimes', 'primaryColor']) expect(names, `${name} 类型不合，不列`).not.toContain(name);
+      expect(await menu.locator('[data-testid="connect-choice"][data-name="operator"]').isDisabled(), '已经连着').toBe(true);
+      const hasFare = before.derived.find((item) => item.name === 'hasFare')!;
+      const summary = await connects(OPERATOR, { name: 'hasFare', label: hasFare.displayName ?? 'hasFare', type: 'boolean' }, () => menu.locator('[data-testid="connect-choice"][data-name="hasFare"]').click());
+      expect(summary).toContain('决定显示');
+      await menu.waitFor({ state: 'detached' });
+      expect((await element('运营方'))['visible']).toEqual({ var: 'hasFare' });
+      await back();
+
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 240_000);
+
+    // 打点（票据 11）：平时不跑，要真实的 worker 才有意义。排队与渲染的拆分另查 render_tasks；用法见票据 11 的 Answer。
+    it.skipIf(!process.env['RW_TIMING'])('模板设计（打点）：改一项到换图的耗时', async () => {
+      const ROOT = '标准线路单边', token = world.b.admin.token;
+      const target = await asAdmin();
+      await leaveDesign(target, ROOT);
+      await target.goto(`${baseUrl}/console/#/templates/${enc(ROOT)}/design`);
+      await target.getByTestId('preview-image').waitFor();
+      const side = target.getByRole('complementary', { name: '图层与数据' }), inspector = target.getByRole('complementary', { name: '检查器' });
+      // 等样例带补完缩略图，别和打点抢并发。
+      await expect.poll(() => target.locator('[data-testid="sample-card"]').first().getByTestId('sample-state').textContent(), { timeout: 60_000 }).toMatch(/没有问题|个提示|个严重问题/);
+      await target.waitForTimeout(5_000);
+      await side.getByRole('tab', { name: '数据' }).click();
+      await side.locator('[data-name="stopNameSize"]').getByRole('button').click();
+      const input = inspector.locator('[data-testid="property-field"][data-key="default"]').first().locator('input[type="text"]').first();
+      const span = (response: { request(): { timing(): { requestStart: number; responseEnd: number } } }) => { const timing = response.request().timing(); return Math.round(timing.responseEnd - Math.max(0, timing.requestStart)); };
+      const rows: { readonly total: number; readonly write: number; readonly preview: number }[] = [];
+      for (let round = 0; round < 12; round++) {
+        const before = await target.getByTestId('preview-image').getAttribute('src');
+        const write = target.waitForResponse((response) => response.request().method() === 'PUT' && response.url().includes('/working-copy?') && response.status() === 200, { timeout: 60_000 });
+        const preview = target.waitForResponse((response) => response.url().endsWith('/v1/previews?workingCopies=true') && response.status() === 200, { timeout: 60_000 });
+        const started = Date.now();
+        await input.fill(String(9 + (round % 3)));
+        const [written, previewed] = await Promise.all([write, preview]);
+        await expect.poll(() => target.getByTestId('preview-image').getAttribute('src'), { interval: 10, timeout: 30_000 }).not.toBe(before);
+        rows.push({ total: Date.now() - started, write: span(written), preview: span(previewed) });
+        await target.waitForTimeout(1_500);
+      }
+      console.log(`TIMING ${JSON.stringify(rows)}`);
+      await server('DELETE', `/v1/templates/${enc(ROOT)}/working-copy`, token);
+      await leaveDesign(target, ROOT);
+    }, 180_000);
 
     it('没有模板也能按静态数据定义创建和编辑数据集，历史版本保持固定，错误的版本与模板组合明确拒绝', async () => {
       const created = await world.call('POST', '/v1/platform/tenants', world.platform, { name: '无模板数据集测试' });

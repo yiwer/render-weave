@@ -4,10 +4,10 @@
  * 错误一律是 { problems }，原样交给页面显示。
  */
 import type {
-  SchemaRef, SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, StoredDefinition,
+  ElementInspection, SchemaRef, SchemaVersion, ApiKeyInfo, ApprovalPolicy, ApprovalScope, AuditEvent, AuditQuery, AuthoringTokenInfo, BatchView, DatasetEntry, Definition, DefinitionDetail, StoredDefinition,
   DefinitionCheck, DefinitionPublication, DefinitionPublishCheck, DefinitionPublished, ExcelImport, Identity, Member, PageOf, PlanSettings, PlatformOverview,
   PreviewReply, Problem, PublishRequest, PublishRequestDetail, RecordEntry, ReplacementCheck, ResourceInfo, StaticSchemaDetail, StaticSchemaSummary, TemplateInfo,
-  TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
+  TemplateContent, TemplateRevisions, TemplateSaved, TemplateWorkingCopy, Tenant, Usage, UsageEvent, UsageKind, Webhook, WebhookDelivery, WorkingCopyCheck,
 } from './types.js';
 import type { ImportJob, ImportDetail, ImportCells } from './import-types.js';
 
@@ -100,7 +100,15 @@ const page = async <T>(path: string, key: string): Promise<PageOf<T>> => {
   return { items: reply[key] as T[], ...(typeof reply['next'] === 'string' ? { next: reply['next'] } : {}) };
 };
 
-export interface PreviewOptions { readonly workingCopies?: boolean }
+export interface PreviewOptions {
+  readonly workingCopies?: boolean;
+  /** 样例带补缩略图时写样例的 ID：服务端不看，只让这次请求和主预览分得开。 */
+  readonly sample?: string;
+}
+const previewQuery = (options: PreviewOptions) => {
+  const parts = [...(options.workingCopies ? ['workingCopies=true'] : []), ...(options.sample === undefined ? [] : [`sample=${encodeURIComponent(options.sample)}`])];
+  return parts.length ? `?${parts.join('&')}` : '';
+};
 export interface RecordQuery { readonly batchId?: string; readonly template?: string; readonly from?: string; readonly to?: string; readonly before?: string }
 
 export const api = {
@@ -144,7 +152,12 @@ export const api = {
   /** 指回旧修订：当前修订指向已有的一个修订，审计记前后内容哈希。 */
   setCurrentTemplate: (template: string, revision: number) => json<TemplateRevisions>('POST', '/v1/template-current', { json: { template, revision } }),
   copyTemplate: (name: string, newName: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/copies`, { json: { name: newName } }),
+  /** 从空白新建（模板设计页票据 18）：一块空画板的工作副本，没有基准修订。 */
+  createTemplate: (body: { readonly name: string; readonly base: SchemaRef; readonly sizeRange: Readonly<Record<'width' | 'height', { readonly min: number; readonly max: number }>> }) =>
+    json<TemplateWorkingCopy>('POST', '/v1/templates', { json: body }),
   workingCopies: () => json<{ workingCopies: TemplateWorkingCopy[] }>('GET', '/v1/template-working-copies'),
+  /** 当前修订的内容：不开工作副本，只读。 */
+  templateContent: (name: string) => json<TemplateContent>('GET', `/v1/templates/${enc(name)}/content`),
   openWorkingCopy: (name: string) => json<TemplateWorkingCopy>('POST', `/v1/templates/${enc(name)}/working-copy`),
   workingCopy: (name: string) => json<TemplateWorkingCopy & { readonly content: string }>('GET', `/v1/templates/${enc(name)}/working-copy`),
   /** 暂存：整份替换；预期哈希不是当前内容时答 409 draft.stale，回答带 currentSha256。 */
@@ -201,7 +214,9 @@ export const api = {
   importExcel: (request: { template: string; workbook: string; parameters: unknown; output: unknown }) => json<ExcelImport>('POST', '/v1/excel-imports', { json: request }),
 
   /** workingCopies：有工作副本的模板用工作副本预览，检查与限制都一样。 */
-  preview: (request: unknown, options: PreviewOptions = {}) => json<PreviewReply>('POST', `/v1/previews${options.workingCopies ? '?workingCopies=true' : ''}`, { json: request }),
+  /** 一个元素实例的求值结果：只求值不出图，不占预览的频率。 */
+  inspectElement: (request: unknown, element: string) => json<{ readonly problems: readonly Problem[]; readonly inspection?: ElementInspection }>('POST', `/v1/previews/inspection?workingCopies=true&element=${encodeURIComponent(element)}`, { json: request }),
+  preview: (request: unknown, options: PreviewOptions = {}) => json<PreviewReply>('POST', `/v1/previews${previewQuery(options)}`, { json: request }),
 
   submitBatch: (request: unknown, idempotencyKey: string) =>
     changingUsage(json<BatchView>('POST', '/v1/batches', { json: request, headers: { 'idempotency-key': idempotencyKey } })),

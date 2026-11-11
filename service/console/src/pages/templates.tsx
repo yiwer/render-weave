@@ -1,7 +1,7 @@
 /**
  * 模板：列表（缩略预览、适用尺寸范围、对应的数据定义）与只读预览（参数面板调对外参数，看草稿预览）。
  * 操作员只读；缩略预览用同一数据定义的第一份数据集，没有就用空白数据，草稿里显示占位。
- * 客户管理员（P1 票据 08、09）从这里进模板设计与发布修订，也能把模板复制成新模板；还没保存的新模板只有工作副本，单独列出。
+ * 客户管理员（P1 票据 08、09）从这里进模板设计与发布修订，也能把模板复制成新模板或从空白新建（模板设计页票据 18）；还没保存的新模板只有工作副本，单独列出。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { versionLabel } from '../form/schema-version.js';
@@ -12,6 +12,8 @@ import { ErrorBox, ProblemList } from '../components/problems.js';
 import { go, href, problemsOf, queuePreview, useLivePreview, useLoad } from '../hooks.js';
 import type { DatasetEntry, Identity, OutputSettings, Problem, SchemaRef, StaticSchemaSummary, TemplateInfo, TemplateWorkingCopy } from '../types.js';
 import { Loading } from '../components/motifs.js';
+import { Icon, PLUS } from '../components/icon.js';
+import { NewTemplate } from '../components/new-template.js';
 
 export const sameSchema = (a: SchemaRef | undefined, b: SchemaRef | undefined) => Boolean(a && b && a.name === b.name && a.version === b.version);
 
@@ -93,6 +95,7 @@ export function TemplateList(props: { readonly identity: Identity }) {
   const { data } = loaded;
   const copyOf = (name: string): TemplateWorkingCopy | undefined => data?.copies.find((copy) => copy.name === name);
   const newTemplates = data?.copies.filter((copy) => !data.templates.some((template) => template.name === copy.name)) ?? [];
+  const [creating, setCreating] = useState(false);
   return (
     <section className="page">
       <div className="title-row">
@@ -102,10 +105,12 @@ export function TemplateList(props: { readonly identity: Identity }) {
             ? '点开设计改位置、文字、颜色与参数，改动先暂存在工作副本里，看过差异与对比再发布为新修订；出图一直读当前修订。'
             : '本租户的模板由管理员与 RenderWeave 团队维护，这里只读。可以调对外参数看草稿预览，或者按模板的数据定义新建数据集。'}</p>
         </div>
+        {admin && <button type="button" className="primary" aria-haspopup="dialog" onClick={() => setCreating(true)}><Icon d={PLUS} />新建模板</button>}
       </div>
+      {creating && <NewTemplate onClose={() => setCreating(false)} onCreated={(name) => go(['templates', name, 'design'])} />}
       <ErrorBox problems={loaded.problems} title="读不到模板" />
       {loaded.loading && !data && <Loading />}
-      {data?.templates.length === 0 && newTemplates.length === 0 && <p className="muted">还没有模板。模板由代建团队推送到本租户后出现在这里。</p>}
+      {data?.templates.length === 0 && newTemplates.length === 0 && <p className="muted">还没有模板。{admin ? '可以从空白新建，或由代建团队推送到本租户。' : '模板由管理员新建，或由代建团队推送到本租户后出现在这里。'}</p>}
       {newTemplates.length > 0 && (
         <div className="card new-templates">
           <table className="table">

@@ -133,15 +133,34 @@ export function changeCount(before: unknown, after: unknown): number {
   return 1;
 }
 
-/** 点在哪个元素上（毫米，不计旋转）：最深的、会显示的；后画的盖在上面，所以从后往前找。 */
-export function hitElement(root: LayoutNode, x: number, y: number): LayoutNode | undefined {
-  const visit = (node: LayoutNode): LayoutNode | undefined => {
-    if (!node.visible) return undefined;
-    for (const child of [...(node.children ?? [])].reverse()) {
-      const found = visit(child);
-      if (found) return found;
-    }
-    return x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height ? node : undefined;
+/** 这个位置上的全部元素（毫米，不计旋转），只算会显示的：第一个是最深、最后画的，最后一个是画板。 */
+export function hitStack(root: LayoutNode, x: number, y: number): readonly LayoutNode[] {
+  const found: LayoutNode[] = [];
+  const visit = (node: LayoutNode) => {
+    if (!node.visible) return;
+    for (const child of [...(node.children ?? [])].reverse()) visit(child);
+    if (x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) found.push(node);
   };
-  return visit(root);
+  visit(root);
+  return found;
+}
+
+/** 元素路径的上一层：循环项的上一层是循环容器本身，其他元素是路径的上一段。 */
+export function parentInstance(path: string): string | undefined {
+  const last = path.slice(path.lastIndexOf('/') + 1);
+  if (/\[\d+\]$/.test(last)) return path.replace(/\[\d+\]$/, '');
+  const slash = path.lastIndexOf('/');
+  return slash < 0 ? undefined : path.slice(0, slash);
+}
+
+/** 这个元素为什么不显示：自身的条件显示，或者上面有一层不显示。 */
+export function hiddenReason(document: JsonObject, path: string): string {
+  const segments = path.split('/');
+  for (let end = segments.length; end > 1; end--) {
+    const visible = elementAt(document, segments.slice(0, end).join('/'))?.element['visible'];
+    const own = end === segments.length, who = own ? '这个元素' : `上一层「${segments[end - 1]!}」`;
+    if (visible === false) return `${who}的显示设为否，隐藏的元素不占位。`;
+    if (isObject(visible) && typeof visible['var'] === 'string') return `${who}按变量 ${visible['var']} 决定显示，当前数据下不显示，隐藏的元素不占位。`;
+  }
+  return '当前数据下这个元素不显示，图上没有框。';
 }

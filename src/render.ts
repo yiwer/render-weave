@@ -13,6 +13,7 @@ import { evidenceNodes, type RenderEvidence } from './render-evidence.js';
 export type { RenderEvidence } from './render-evidence.js';
 import { formatElementPath } from './element-path.js';
 import { ImageStore } from './images.js';
+import { createInspector, stateVariableReader, type ElementInspection } from './inspection.js';
 import { evaluate, walkVisible, type EvaluatedTemplate } from './evaluate.js';
 import { layout, type LayoutSummary } from './layout/index.js';
 import { ProblemCodes, hasSevere, severe, type Problem } from './problems.js';
@@ -92,16 +93,18 @@ export function checkTemplateStatic(workspace: Workspace, template: string): { p
 }
 
 /** 渲染的展开段（同步、不出图）：准备、尺寸范围与求值。无法展开时没有 evaluated，problems 是 render 会返回的完整问题清单。 */
-function expand(workspace: Workspace, requestInput: unknown): { request?: RenderRequest; evaluated?: EvaluatedTemplate; problems: Problem[] } {
+function expand(workspace: Workspace, requestInput: unknown, inspect?: string): { request?: RenderRequest; evaluated?: EvaluatedTemplate; inspection?: ElementInspection; problems: Problem[] } {
   const { request, prepared, problems } = prepareRender(workspace, requestInput);
   if (!request || !prepared) return { problems };
   const { template, dataset, checked, parameters } = prepared;
   problems.push(...checkSizeRange(template, request.output));
+  const inspector = inspect === undefined ? undefined : createInspector(inspect, request.parameters, stateVariableReader(workspace.templates));
   const evaluation = evaluate(new Scope(template, checked.program.get(template.name)!.table, dataset.data, parameters.values),
-    checked.program, problems, parameters.problems);
+    checked.program, problems, parameters.problems, inspector?.observer);
   problems.push(...evaluation.problems);
   if (!evaluation.evaluated) expansionBlocked(problems);
-  return { request, ...(evaluation.evaluated && { evaluated: evaluation.evaluated }), problems };
+  const inspection = inspector?.result();
+  return { request, ...(evaluation.evaluated && { evaluated: evaluation.evaluated }), ...(inspection && { inspection }), problems };
 }
 
 /** 一次渲染的规模：出图像素，以及展开后会显示的元素数与循环项数。 */
@@ -128,6 +131,15 @@ export function measureRender(workspace: Workspace, requestInput: unknown): { me
   }
   const { width, height, dpi } = request.output;
   return { measure: { widthPx: mmToPx(width, dpi), heightPx: mmToPx(height, dpi), elements, loopItems }, problems };
+}
+
+/**
+ * 一个元素实例的求值结果（模板设计页票据 02）：它所在作用域的变量取值、命中的分支、参数来源与这个定义的全部实例。
+ * 只解析、检查与求值，不加载 CanvasKit，同 measureRender。路径不存在时没有 inspection，不算问题。
+ */
+export function inspectElement(workspace: Workspace, requestInput: unknown, path: string): { inspection?: ElementInspection; problems: Problem[] } {
+  const { inspection, problems } = expand(workspace, requestInput, path);
+  return { ...(inspection ? { inspection } : {}), problems };
 }
 
 function elementLocations(root: EvaluatedTemplate['root']): ElementLocation[] {

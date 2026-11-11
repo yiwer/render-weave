@@ -15,7 +15,7 @@ import { ServiceProblemCodes, type ServiceProblemCode } from './problems.js';
 import { PLAN_SCHEMA } from './usage.js';
 
 /** 开放 API 的版本：只做加法时升次版本号，并在 docs/api.md 的变更记录里写一行。 */
-export const API_VERSION = '1.13.0';
+export const API_VERSION = '1.17.0';
 
 /** 已注册的路由：方法、路径、访问要求与路由声明的 JSON Schema（请求体、查询串）。 */
 export interface DocumentedRoute {
@@ -221,10 +221,41 @@ const SCHEMAS: Record<string, unknown> = {
     }, ['name', 'displayName', 'type', 'constraints']), '对外参数'),
     problems: { ...ref('ProblemList'), description: '模板读不了时只有名称、当前修订与问题清单' },
   }, ['name', 'currentRevision']),
+  LayoutNode: object({
+    path: str('元素路径'), name: str('元素名称'), type: str('元素类型'),
+    x: { type: 'number', description: '相对画板左上角的毫米数，不计旋转；隐藏的元素位置与尺寸为 0' }, y: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' },
+    visible: { type: 'boolean' },
+    text: object({
+      fontFallback: { type: 'boolean', description: '有缺字替代时为 true' }, shrinkGroup: str('一次出图内的缩字组名称'), content: str('求值后的文字'), font: str('字体资源引用'), writingMode: str('书写方向'),
+      fontSize: { type: 'number', description: '最终字号，毫米' }, width: { type: 'number' }, height: { type: 'number' }, spacing: { type: 'number', description: '字距，毫米' },
+      compression: { type: 'number', description: '沿书写方向的压缩比，1 为不压缩' }, overflow: { type: 'boolean', description: '按适配规则处理后仍放不下' },
+      fragments: array(freeform('片段求值后的文字与样式')),
+    }, ['content', 'font', 'writingMode', 'fontSize', 'width', 'height', 'spacing', 'compression', 'overflow', 'fragments']),
+    image: freeform('图片的来源、适配方式与实际画出的区域'), qrcode: freeform('二维码的模块数与实际画出的区域'), barcode: freeform('条形码的模块数与实际画出的区域'),
+    children: array(ref('LayoutNode')),
+  }, ['path', 'name', 'type', 'x', 'y', 'width', 'height', 'visible'], { description: '布局摘要中的一个元素（docs/render-modes.md）' }),
+  LayoutSummary: object({
+    template: str('根模板'),
+    output: object({ width: { type: 'number' }, height: { type: 'number' }, dpi: { type: 'number' }, widthPx: int(), heightPx: int(), format: str() }),
+    root: ref('LayoutNode'),
+  }, ['template', 'output', 'root'], { description: '布局摘要：元素路径、位置与尺寸，文字的最终字号与压缩比（1.16.0 写明结构）' }),
+  ElementInspection: object({
+    path: str('问的元素实例'), template: str('它所在的作用域：定义它的模板'), source: str('它在模板文档里的路径，第一段是模板名'),
+    variables: array(object({
+      name: str('变量名'), displayName: str('显示名称'), kind: { type: 'string', enum: ['field', 'parameter', 'derived'] }, type: str('字段类型或参数类型'),
+      value: { description: '当前值的摘要：基本类型原样，列表写成 { list: 项数 }，引用写成 { fields: 一层字段 }，缺值是 null' },
+      branch: { type: 'integer', description: '条件分支命中第几支，从 0 开始，-1 是"否则"' },
+      origin: freeform('参数的值最终从哪来：kind 是 request、default、field、derived、value 或 loop'),
+    }, ['name', 'displayName', 'kind', 'type']), '这个作用域的全部变量'),
+    checks: array(object({ name: str('检查项名称'), level: { type: 'string', enum: ['severe', 'hint'] }, failed: { type: 'boolean' } }, ['name', 'level', 'failed']), '这个作用域的检查项与当前是否成立'),
+    instances: array(object({ path: str('元素路径'), visible: { type: 'boolean' }, state: str('元素有状态样式时，这个实例的取值') }, ['path', 'visible']), '这个定义的全部实例'),
+    states: object({ by: str('状态样式按的变量'), known: array(str(), '能确定的全部取值') }, ['by']),
+  }, ['path', 'template', 'source', 'variables', 'checks', 'instances'], { description: '一个元素实例的求值结果（1.15.0）' }),
+  InspectionResult: object({ problems: ref('ProblemList'), inspection: ref('ElementInspection') }, ['problems'], { description: '一个元素实例的求值结果；路径不存在时没有 inspection' }),
   PreviewResult: object({
     image: object({ format: { type: 'string', enum: ['png', 'jpeg'] }, widthPx: int(), heightPx: int(), dpi: { type: 'number' }, base64: str('图片字节的 base64') }),
     problems: ref('ProblemList'),
-    layout: freeform('布局摘要：元素路径、位置与尺寸（docs/render-modes.md）'),
+    layout: ref('LayoutSummary'),
     elements: array(object({ path: str('元素路径，同布局摘要'), source: object({ template: str('源模板'), path: str('元素在源模板里的路径，第一段是模板名') }) }),
       '会显示的元素实例各自的来源，循环与子模板调用里的元素指向它所在的模板文档（1.5.0）'),
   }, ['problems'], { description: '草稿预览：图片、问题清单与布局摘要；无法展开时只有问题清单' }),
@@ -539,6 +570,12 @@ function workingCopyDocs(prefix: string, tag: string): Record<string, RouteDoc> 
       description: '模板静态检查有严重问题时答 400。预期哈希不是当前内容答 409 draft.stale。基准不是当前修订答 409 template.revisionConflict，回答带两边差异；overwrite 为 true 才覆盖。',
       replies: [ok(ref('TemplateSaved')), acceptedAsRequest] },
     [`POST ${template}/copies`]: { tag, summary: '复制为新模板：内容与基准数据定义取当前修订，成为没有基准修订的工作副本，保存时记修订 1', errors: [409], replies: [created(ref('TemplateWorkingCopy'))] },
+    [`POST ${prefix}/templates`]: { tag, summary: '从空白新建模板：一块空画板，成为没有基准修订的工作副本，保存时记修订 1', errors: [409],
+      description: '请求体是名称、基准（静态数据定义的确切版本，或内置的空数据定义 v1、单值·文本 v1 等）与适用尺寸范围，写法同模板 DSL。名称已有模板或工作副本答 409；基准不存在、最小大于最大答 400，问题清单同保存时的模板静态检查。',
+      replies: [created(ref('TemplateWorkingCopy'))] },
+    [`GET ${template}/content`]: { tag, summary: '读当前修订的内容：不开工作副本，不写任何东西', replies: [ok(object({
+      name: str('模板名称'), revision: int('当前修订号'), sha256: str('原文的 SHA-256'), content: str('当前修订的原文，与存入时逐字节相同'),
+    }, ['name', 'revision', 'sha256', 'content']))] },
     [`GET ${template}/revisions`]: { tag, summary: '模板的修订历史：修订号、主体、时间与来源', replies: [ok(ref('TemplateRevisions'))] },
   };
 }
@@ -610,6 +647,8 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
   'POST /v1/previews': { tag: '模板与预览', summary: '草稿预览：同步返回图片与问题清单，不计额度', body: 'renderRequest', errors: [413, 429, 503],
     description: '请求是 DSL 1.0 的渲染请求（mode 只能省略或为 draft）。无法展开时只答问题清单；按套餐的并发数与每分钟次数限流。workingCopies=true 时用模板工作副本预览，检查与限制都一样。',
     replies: [ok(ref('PreviewResult'))] },
+  'POST /v1/previews/inspection': { tag: '模板与预览', summary: '一个元素实例的求值结果：变量的当前值、命中的分支、参数来源与全部实例', body: 'renderRequest', errors: [413],
+    description: '请求与预览相同，element 是元素路径。只求值不出图，不入队，不占预览的并发与频率。', replies: [ok(ref('InspectionResult'))] },
 
   'POST /v1/batches': { tag: '批量交付', summary: '提交批量正式交付：固定批次后按项异步交付', body: 'batchRequest', errors: [409, 413, 429],
     description: '请求是 DSL 1.0 的批次请求（mode 只能省略或为 final）。外层不合法整批拒绝；单项超限只让这一项失败。带 Idempotency-Key 时重试拿回同一批次（200）。'
@@ -679,6 +718,7 @@ const ROUTE_DOCS: Readonly<Record<string, RouteDoc>> = {
       usage: object({ rounds: int('附了几轮'), recorded: int('这次新记了几轮'), tokens: object(Object.fromEntries(TOKEN_KINDS.map((kind) => [kind, int()])), []) }) })),
     ok(object({ ...(SCHEMAS['PushDiff'] as { properties: Record<string, unknown> }).properties, request: ref('PublishRequest') }), '审批策略打开：整份推送没有生效，成了一份发布申请', 202)] },
   'POST /v1/authoring/tenants/:tenantId/previews': { tag: '代建', summary: '用被指定租户的身份看草稿预览', body: 'renderRequest', errors: [413, 429, 503], replies: [ok(ref('PreviewResult'))] },
+  'POST /v1/authoring/tenants/:tenantId/previews/inspection': { tag: '代建', summary: '用被指定租户的身份看元素实例的求值结果', body: 'renderRequest', errors: [413], replies: [ok(ref('InspectionResult'))] },
   'POST /v1/authoring/tenants/:tenantId/template-current': { tag: '代建', summary: '把模板的当前修订指向已有的一个修订', replies: [ok(ref('TemplateRevisions')), acceptedAsRequest] },
   ...definitionDocs('/v1', '数据定义'),
   ...definitionDocs('/v1/authoring/tenants/:tenantId', '代建'),

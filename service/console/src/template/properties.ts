@@ -19,8 +19,13 @@ export type Editor =
   | { readonly kind: 'text'; readonly pattern?: string; readonly minLength?: number; readonly suggest?: 'variable' | 'field' | 'font' | 'image' }
   | { readonly kind: 'color' }
   | { readonly kind: 'choice'; readonly options: readonly ChoiceOption[] }
-  /** anyOf：选一个变体，active 是当前值落在哪个变体上（-1 是没写）；变体有内容要填时 editor 是它的编辑器。 */
-  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor }
+  /**
+   * anyOf：选一个变体，active 是当前值落在哪个变体上（-1 是没写）；变体有内容要填时 editor 是它的编辑器。
+   * 有"绑定变量"这个变体且字面值类型说得清时带 bindable，页面画成值格（模板设计页票据 09）。
+   * 对象形态的变体是一组同样的可选项（四边、四角）时带 parts：各项的字段，值是一个数或变量时按都没写生成，
+   * 页面画成四边一格（第三轮票据 02），每项的实际取值由 template/edges.ts 算。
+   */
+  | { readonly kind: 'variants'; readonly variants: readonly Variant[]; readonly active: number; readonly editor?: Editor; readonly bindable?: Bindable; readonly parts?: readonly PropertyField[] }
   /** 对象：absent 表示还没写，有必填子项时要先"添加"，写入 initial。 */
   | { readonly kind: 'group'; readonly fields: readonly PropertyField[]; readonly absent: boolean; readonly initial: unknown }
   | { readonly kind: 'list'; readonly items: readonly PropertyField[]; readonly append: readonly ChoiceOption[]; readonly minItems: number }
@@ -31,6 +36,17 @@ export type Editor =
 
 export interface ChoiceOption { readonly label: string; readonly value: unknown }
 export interface Variant { readonly label: string; readonly initial: unknown }
+
+/** 属性要的变量类型，和模板静态检查的判断一致（M71）：只有完全相符才能绑定。 */
+export type BindingType = 'number' | 'color' | 'boolean' | 'text' | 'image';
+export interface Bindable {
+  readonly type: BindingType;
+  /** 字面值的编辑器：没写、断开绑定之后都用它。 */
+  readonly literal: Editor;
+  /** 这种字面值的初值，和 schema 一起决定断开时写什么。 */
+  readonly initial: unknown;
+  readonly schema: JsonObject;
+}
 
 export interface PropertyField {
   /** 从元素（或列表项）算起的路径，写回时原样交给 writeProperty。 */
@@ -45,9 +61,18 @@ export interface PropertyField {
   readonly description?: string;
   /** dependentRequired：这几个属性没写之前，这一项写了也不合法。 */
   readonly needs?: readonly string[];
+  /** 没写时引擎用的值，页面淡色显示；不知道时没有这一项。 */
+  readonly fallback?: unknown;
+  /** 这一项不能绑定变量的原因（DSL 的能绑定表），只给人会想绑定的属性。 */
+  readonly noBinding?: string;
+  /** 和这几项二选一（place 的左与右）：写了这一项会去掉它们。值是显示名称。 */
+  readonly exclusive?: readonly string[];
+  /** 在当前写法下不可用的原因（竖排文字不能倾斜）：不给编辑器，直接写明。 */
+  readonly blocked?: string;
 }
 
-export const PROPERTY_GROUPS = ['基本', '绑定', '位置尺寸', '布局', '文字', '图片', '形状', '码', '颜色', '适配', '条件显示', '状态样式', '其他'] as const;
+/** 分组的先后（方案第 7 节的表）：每种元素只出现它有的那几组，顺序都合这一条。 */
+export const PROPERTY_GROUPS = ['基本', '内容', '循环', '调用', '传入参数', '每项排布', '图片', '码', '形状', '文字', '适配', '适用尺寸范围', '缩字下限', '排布', '位置与尺寸', '外观', '显示', '状态样式', '其他'] as const;
 export type PropertyGroup = (typeof PROPERTY_GROUPS)[number];
 
 export interface PropertyPanel {
@@ -86,19 +111,20 @@ const ELEMENT_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>>
 };
 
 const GROUPS: Readonly<Record<string, PropertyGroup>> = {
-  name: '基本', place: '位置尺寸', rotation: '位置尺寸', sizeRange: '位置尺寸', size: '位置尺寸',
-  layout: '布局', padding: '布局', clip: '布局', itemLayout: '布局',
-  list: '绑定', reverse: '绑定', slice: '绑定', template: '绑定', args: '绑定', mergeBy: '绑定', data: '绑定',
-  content: '文字', font: '文字', fontSize: '文字', letterSpacing: '文字', writingMode: '文字', horizontalAlign: '文字', verticalAlign: '文字', slant: '文字',
+  name: '基本', place: '位置与尺寸', rotation: '位置与尺寸', sizeRange: '适用尺寸范围', size: '适用尺寸范围', minFontSize: '缩字下限',
+  layout: '排布', padding: '排布', clip: '外观', itemLayout: '每项排布',
+  list: '循环', reverse: '循环', slice: '循环', mergeBy: '循环', template: '调用', data: '调用', args: '传入参数',
+  content: '内容', font: '文字', fontSize: '文字', letterSpacing: '文字', color: '文字', writingMode: '文字', horizontalAlign: '文字', verticalAlign: '文字', slant: '文字',
   source: '图片', tint: '图片', d: '形状', points: '形状', from: '形状', to: '形状', viewBox: '形状', fillRule: '形状',
   errorCorrectionLevel: '码', format: '码', showText: '码',
-  color: '颜色', fill: '颜色', stroke: '颜色', foreground: '颜色', background: '颜色', cornerRadius: '颜色', opacity: '颜色',
-  fit: '适配', minFontSize: '适配', visible: '条件显示', states: '状态样式',
+  fill: '外观', stroke: '外观', foreground: '外观', background: '外观', cornerRadius: '外观', opacity: '显示', visible: '显示',
+  fit: '适配', states: '状态样式',
 };
 
 const ELEMENT_GROUPS: Readonly<Record<string, Readonly<Record<string, PropertyGroup>>>> = {
-  image: { fit: '图片' }, line: { fit: '形状', stroke: '形状' }, polygon: { fit: '形状' }, path: { fit: '形状' },
-  qrcode: { content: '绑定' }, barcode: { content: '绑定', font: '码', fontSize: '码' },
+  image: { fit: '图片' }, line: { fit: '形状' }, polygon: { fit: '形状' }, path: { fit: '形状' },
+  text: { stroke: '文字', padding: '文字' }, loop: { template: '循环', data: '循环', padding: '每项排布' },
+  qrcode: { content: '码' }, barcode: { content: '码', font: '码', fontSize: '码' },
 };
 
 /** 枚举值的中文。同一个值在不同属性上意思不同时写 属性:值。 */
@@ -114,6 +140,16 @@ const ENUM_LABELS: Readonly<Record<string, string>> = {
 const STEP_LABELS: Readonly<Record<string, string>> = { tightenSpacing: '收紧字距', compressGlyphs: '压缩字形', shrink: '缩字' };
 
 const VARIANT_KEYS: Readonly<Record<string, string>> = { var: '绑定变量', fixed: '固定', fill: '按比例撑满', fraction: '按比例', value: '固定值', loop: '循环位置', text: '固定文字', slot: '字段', mode: '排布' };
+
+/** 没写时的取值：和引擎读取时的缺省一致（src/template/parse.ts、docs/dsl/template.md），没把握的不列，页面写"缺省"。 */
+const FALLBACKS: Readonly<Record<string, unknown>> = {
+  visible: true, opacity: 1, rotation: 0, clip: false, padding: 0, 'place.margin': 0, cornerRadius: 0, reverse: false, showText: false, letterSpacing: 0, slant: 0, color: '#000000', foreground: '#000000',
+  writingMode: 'horizontal', horizontalAlign: 'start', verticalAlign: 'top', errorCorrectionLevel: 'M', fillRule: 'nonzero',
+  'layout.gap': 0, 'layout.rowGap': 0, 'layout.columnGap': 0, 'layout.wrap': false, 'itemLayout.gap': 0, 'itemLayout.wrap': false, 'fit.compressMin': 0.6, 'fit.onFail': 'severe', 'fit.steps': [],
+};
+const ELEMENT_FALLBACKS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  image: { fit: 'contain' }, line: { fit: 'fill' }, polygon: { fit: 'fill' }, path: { fit: 'fill' }, barcode: { fontSize: 3 },
+};
 
 // —— JSON Schema 的一小部分：模板 Schema 用到的关键字 ——
 
@@ -272,8 +308,11 @@ function labelOf(path: FieldPath, context: Context): string {
   return (path.length === 1 ? ELEMENT_LABELS[context.type]?.[last] : undefined) ?? LABELS[last] ?? last;
 }
 
+/** 适配顺序的说法：一步步用箭头连起来，一步也没有是不适配。 */
+export const stepsLabel = (steps: readonly unknown[]): string => (steps.length ? steps.map((step) => STEP_LABELS[String(step)] ?? String(step)).join(' → ') : '不适配');
+
 function enumLabel(path: FieldPath, value: unknown): string {
-  if (Array.isArray(value)) return value.length ? value.map((step) => STEP_LABELS[String(step)] ?? String(step)).join(' → ') : '不适配';
+  if (Array.isArray(value)) return stepsLabel(value);
   const text = String(value);
   return ENUM_LABELS[`${lastName(path)}:${text}`] ?? ENUM_LABELS[text] ?? text;
 }
@@ -291,6 +330,33 @@ function variantLabel(alternative: Schema, path: FieldPath): string {
   return '分别设置';
 }
 
+/** 字面值变体对应的变量类型；对象形态的变体（分别设置、固定值）说不清，是 undefined。 */
+function literalType(alternative: Schema): BindingType | undefined {
+  if (typeof alternative['const'] === 'boolean') return 'boolean';
+  if (alternative['type'] === 'number' || alternative['type'] === 'integer') return 'number';
+  if (alternative['pattern'] === colorPattern()) return 'color';
+  if (alternative['pattern'] === resourcePattern()) return 'image';
+  return alternative['type'] === 'string' ? 'text' : undefined;
+}
+
+/** 能不能绑定以 Schema 为准：有 { var } 变体，又有说得清类型的字面值变体。Schema 加属性时不用改这里。 */
+function bindableOf(flat: readonly Schema[], path: FieldPath, context: Context): Bindable | undefined {
+  const isVariable = (alternative: Schema) => Array.isArray(alternative['required']) && alternative['required'][0] === 'var';
+  if (!flat.some(isVariable)) return undefined;
+  const literal = flat.find((alternative) => !isVariable(alternative) && literalType(alternative));
+  const type = literal && literalType(literal);
+  if (!literal || !type) return undefined;
+  if (type === 'boolean') return { type, literal: { kind: 'choice', options: [{ label: '是', value: true }, { label: '否', value: false }] }, initial: false, schema: { type: 'boolean' } };
+  return { type, literal: editorOf([literal], undefined, path, context), initial: initialOf([literal]), schema: literal };
+}
+
+/** 一组同样的可选项（四边、四角）：对象，没有必填，不许别的键，各项的写法都一样。 */
+function isParts(alternative: Schema): boolean {
+  if (alternative['type'] !== 'object' || alternative['additionalProperties'] !== false || Array.isArray(alternative['required']) || !isObject(alternative['properties'])) return false;
+  const items = Object.values(alternative['properties']);
+  return items.length > 1 && items.every((item) => same(item, items[0]));
+}
+
 function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, context: Context): Editor {
   const fragments = applying(view, value);
   const named = narrowest(fragments, (fragment) => (Array.isArray(fragment['enum']) ? fragment['enum'] as unknown[] : 'const' in fragment ? [fragment['const']] : undefined));
@@ -301,11 +367,15 @@ function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, cont
   const alternatives = alternativesOf(fragments);
   if (alternatives) {
     const flat = flatAlternatives(alternatives), active = value === undefined ? -1 : flat.findIndex((alternative) => matchesSchema(alternative, value));
-    const chosen = flat[active];
+    const chosen = flat[active], bindable = bindableOf(flat, path, context);
+    const whole = bindable?.type === 'number' ? flat.find(isParts) : undefined;
+    const parts = whole && groupEditor([whole], Object.keys(whole['properties'] as JsonObject), isObject(value) ? value : {}, path, context);
     return {
       kind: 'variants', active,
       variants: flat.map((alternative) => ({ label: variantLabel(alternative, path), initial: initialOf([alternative]) })),
       ...(chosen && !('const' in chosen) ? { editor: editorOf([chosen], value, path, context) } : {}),
+      ...(bindable ? { bindable } : {}),
+      ...(parts?.kind === 'group' ? { parts: parts.fields } : {}),
     };
   }
   const type = narrowest(fragments, (fragment) => (typeof fragment['type'] === 'string' ? fragment['type'] : undefined));
@@ -332,20 +402,43 @@ function editorOf(view: readonly Schema[], value: unknown, path: FieldPath, cont
 
 function fieldOf(view: readonly Schema[], value: unknown, path: FieldPath, required: boolean, context: Context, needs?: readonly string[]): PropertyField {
   const description = narrowest(applying(view, value), (fragment) => (typeof fragment['description'] === 'string' ? fragment['description'] : undefined));
+  const key = path.join('.'), label = labelOf(path, context), editor = editorOf(view, value, path, context);
+  const fallback = ELEMENT_FALLBACKS[context.type]?.[key] ?? FALLBACKS[key], noBinding = noBindingReason(path, label, editor, context);
   return {
-    path, key: path.join('.'), label: labelOf(path, context), required, value, editor: editorOf(view, value, path, context),
+    path, key, label, required, value, editor,
     ...(description ? { description } : {}), ...(needs?.length ? { needs } : {}),
+    ...(fallback !== undefined ? { fallback } : {}), ...(noBinding ? { noBinding } : {}),
   };
+}
+
+/** 元素的状态样式能覆盖哪些属性：不能绑定的属性，要按取值换就走这条路。 */
+function overridableKeys(context: Context): readonly string[] {
+  const states = propertyView(context.fragments, 'states').flatMap((schema) => propertyView([resolved(schema)], 'cases'));
+  const additional = states.map((schema) => resolved(schema)['additionalProperties']).find(isObject);
+  const names = additional?.['propertyNames'];
+  return isObject(names) && Array.isArray(names['enum']) ? names['enum'] as string[] : [];
+}
+
+/** 顶层的单值属性没有绑定写法时说明原因；名称、合并字段这类本来就不是"值"的不提。 */
+function noBindingReason(path: FieldPath, label: string, editor: Editor, context: Context): string | undefined {
+  if (path.length !== 1 || !['choice', 'text', 'number', 'color'].includes(editor.kind)) return undefined;
+  const key = String(path[0]);
+  if (key === 'name' || key === 'mergeBy' || !overridableKeys(context).includes(key)) return undefined;
+  return `${label.replace(/（.*）$/u, '')}不能绑定变量：要按取值换，用状态样式。`;
 }
 
 /** 当前分支不许写的键（横排的 widthOverflow、竖排的 minFontSize）：不列出来。 */
 const prohibited = (fragments: readonly Schema[]) => new Set(fragments.flatMap((fragment) => (isObject(fragment['not']) && Array.isArray(fragment['not']['required']) ? fragment['not']['required'] as string[] : [])));
 
 function groupEditor(fragments: readonly Schema[], keys: readonly string[], value: unknown, path: FieldPath, context: Context): Editor {
-  const current = isObject(value) ? value : {}, required = requiredOf(fragments), hidden = prohibited(fragments);
+  const current = isObject(value) ? value : {}, required = requiredOf(fragments), hidden = prohibited(fragments), sets = exclusiveSets(fragments);
   return {
     kind: 'group', absent: value === undefined, initial: initialOf([{ type: 'object' }, ...fragments]),
-    fields: keys.filter((key) => !hidden.has(key)).map((key) => fieldOf(propertyView(fragments, key), current[key], [...path, key], required.has(key), context)),
+    fields: keys.filter((key) => !hidden.has(key)).map((key) => {
+      const field = fieldOf(propertyView(fragments, key), current[key], [...path, key], required.has(key), context);
+      const others = sets.filter((set) => set.includes(key)).flatMap((set) => set.filter((other) => other !== key));
+      return others.length ? { ...field, exclusive: others.map((other) => labelOf([...path, other], context)) } : field;
+    }),
   };
 }
 
@@ -362,10 +455,12 @@ function arrayEditor(fragments: readonly Schema[], value: unknown, path: FieldPa
       fields: views.map((item, index) => fieldOf([item], current[index], [...path, index], true, context)),
     };
   }
-  const alternatives = items ? alternativesOf(applying([items], undefined)) : undefined;
+  // 列表项的 Schema 分散在各片段：基础定义加收窄。只取最窄的会丢掉 oneOf（竖排文字的片段只收窄了 slant）。
+  const itemViews = fragments.flatMap((fragment) => (isObject(fragment['items']) ? [fragment['items']] : []));
+  const alternatives = itemViews.length ? alternativesOf(applying(itemViews, undefined)) : undefined;
   return {
     kind: 'list', minItems,
-    items: current.map((item, index) => fieldOf(items ? [items] : [], item, [...path, index], true, context)),
+    items: current.map((item, index) => fieldOf(itemViews, item, [...path, index], true, context)),
     append: alternatives
       ? flatAlternatives(alternatives).map((alternative) => ({ label: variantLabel(alternative, path), value: initialOf([alternative]) }))
       : [{ label: '一项', value: initialOf(items ? [items] : []) }],
@@ -407,19 +502,23 @@ const modeOf = (container: JsonObject | undefined) => (isObject(container?.['lay
 const placeSchema = (mode: string): Schema => ({ properties: { place: { $ref: `#/$defs/${PLACE[mode] ?? 'placeInFree'}` } } });
 
 /** 元素的 Schema：类型定义，加上按父容器排布取的 place。 */
-function elementView(document: unknown, path: string): { readonly type: string; readonly element: JsonObject; readonly view: readonly Schema[] } | undefined {
+function elementView(document: unknown, path: string): { readonly type: string; readonly element: JsonObject; readonly view: readonly Schema[]; readonly parentMode?: string } | undefined {
   const located = elementAt(document, path);
   if (!located) return undefined;
   const { element, parent } = located, type = parent ? String(element['type'] ?? '') : 'artboard', definition = DEFS[TYPE_DEFS[type] ?? ''];
   if (!definition) return undefined;
-  return { type, element, view: parent ? [definition, placeSchema(modeOf(parent))] : [definition] };
+  return parent ? { type, element, view: [definition, placeSchema(modeOf(parent))], parentMode: modeOf(parent) } : { type, element, view: [definition] };
 }
+
+/** 没写宽高时引擎怎么排（DSL「宽高」）：网格里撑满，堆叠与自由布局里随内容。 */
+const sizeFallback = (field: PropertyField, parentMode: string | undefined): PropertyField =>
+  ((field.key === 'place.width' || field.key === 'place.height') && field.fallback === undefined ? { ...field, fallback: parentMode === 'grid' ? 'fill' : 'hug' } : field);
 
 /** 属性面板：这个元素的全部可编辑项，按分组；路径不存在或类型不认识时是 undefined。 */
 export function propertyPanel(document: unknown, path: string): PropertyPanel | undefined {
   const target = elementView(document, path);
   if (!target) return undefined;
-  const { type, element, view } = target, fragments = applying(view, element), required = requiredOf(fragments);
+  const { type, element, view, parentMode } = target, fragments = applying(view, element), required = requiredOf(fragments);
   const context: Context = { type, fragments };
   const dependent = Object.assign({}, ...fragments.map((fragment) => (isObject(fragment['dependentRequired']) ? fragment['dependentRequired'] : {}))) as Record<string, string[]>;
   const groups = new Map<PropertyGroup, PropertyField[]>();
@@ -427,13 +526,22 @@ export function propertyPanel(document: unknown, path: string): PropertyPanel | 
   for (const key of propertyKeys(fragments)) {
     if (key === 'type' || key === 'children') continue;
     const missing = (dependent[key] ?? []).filter((name) => !(name in element));
-    const field = fieldOf(propertyView(fragments, key), element[key], [key], required.has(key), context, missing);
+    const generated = fieldOf(propertyView(fragments, key), element[key], [key], required.has(key), context, missing);
+    // 写了变量的不拦：那是已有的内容，由问题清单说明。
+    const field = key === 'slant' && type === 'text' && element['writingMode'] === 'vertical' && !isObject(element[key]) ? { ...generated, blocked: '竖排文字不能倾斜（M109）' } : generated;
     const group = ELEMENT_GROUPS[type]?.[key] ?? GROUPS[key] ?? '其他';
     // 位置尺寸摊开放进分组，不再套一层。
-    if (key === 'place' && field.editor.kind === 'group') field.editor.fields.forEach((inner) => add(group, inner));
+    if (key === 'place' && field.editor.kind === 'group') field.editor.fields.forEach((inner) => add(group, sizeFallback(inner, parentMode)));
     else add(group, field);
   }
   return { type, groups: PROPERTY_GROUPS.flatMap((name) => (groups.has(name) ? [{ name, fields: groups.get(name)! }] : [])) };
+}
+
+/** 元素的状态样式能覆盖哪些属性（按类型，Schema 的 states.cases 的 propertyNames）；画板与不认识的类型是空的。 */
+export function stateOverridable(document: unknown, path: string): readonly string[] {
+  const target = elementView(document, path);
+  if (!target) return [];
+  return overridableKeys({ type: target.type, fragments: applying(target.view, target.element) });
 }
 
 /** 面板里按 key 找一项，嵌套的也算。 */
@@ -471,14 +579,19 @@ export function listItemPanel(document: unknown, list: TemplateList, index: numb
 
 // —— 写回 ——
 
-/** 值里互斥的键（place 的 left 与 right）：写了一边就去掉另一边。 */
-function excludedBy(fragments: readonly Schema[], current: JsonObject, written: string | number | undefined): string[] {
-  const sets = fragments.flatMap((fragment) => {
+/** Schema 的 not 列的键组。一组两个键是互斥（place 的左与右）；一组一个键是这个分支不许写。 */
+function notSets(fragments: readonly Schema[]): readonly (readonly string[])[] {
+  return fragments.flatMap((fragment) => {
     const not = isObject(fragment['not']) ? fragment['not'] : undefined;
     if (!not) return [];
     return [...(Array.isArray(not['required']) ? [not['required'] as string[]] : []), ...(Array.isArray(not['anyOf']) ? (not['anyOf'] as Schema[]).flatMap((part) => (Array.isArray(part['required']) ? [part['required'] as string[]] : [])) : [])];
   });
-  return sets.flatMap((set) => (set.every((key) => key in current) ? set.filter((key) => key !== written) : []));
+}
+const exclusiveSets = (fragments: readonly Schema[]) => notSets(fragments).filter((set) => set.length > 1);
+
+/** 值里互斥的键：写了一边就去掉另一边；这个分支不许写的也去掉。 */
+function excludedBy(fragments: readonly Schema[], current: JsonObject, written: string | number | undefined): string[] {
+  return notSets(fragments).flatMap((set) => (set.every((key) => key in current) ? set.filter((key) => key !== written) : []));
 }
 
 /**
@@ -553,18 +666,22 @@ function replaceElement(document: JsonObject, located: NonNullable<ReturnType<ty
   return { ...document, artboard: replaceIn(document['artboard'] as JsonObject) };
 }
 
-/** 改了排布方式之后，子元素的 place 只留新方式认识的键；网格要的行列按顺序补上。 */
-function fitChildren(element: JsonObject): JsonObject {
+/**
+ * 改了排布方式、换了父容器之后，子元素的 place 只留新方式认识的键；网格要的行列按顺序补上，但不超出网格的行数
+ * （排满了就放在最后一行，重叠由布局的问题清单说明，M237），不然静态检查就不过。
+ */
+export function fitChildren(element: JsonObject): JsonObject {
   if (!Array.isArray(element['children'])) return element;
   const mode = modeOf(element), schema = resolved({ $ref: `#/$defs/${PLACE[mode] ?? 'placeInFree'}` }), keys = Object.keys(schema['properties'] as object);
   const columns = isObject(element['layout']) && Array.isArray(element['layout']['columns']) ? Math.max(1, element['layout']['columns'].length) : 1;
+  const rows = isObject(element['layout']) && Array.isArray(element['layout']['rows']) && element['layout']['rows'].length > 0 ? element['layout']['rows'].length : Infinity;
   return {
     ...element,
     children: (element['children'] as unknown[]).map((child, index) => {
       if (!isObject(child)) return child;
       const place = isObject(child['place']) ? child['place'] : {};
       const kept = Object.fromEntries(Object.entries(place).filter(([key]) => keys.includes(key)));
-      if (mode === 'grid') { kept['row'] ??= Math.floor(index / columns) + 1; kept['column'] ??= (index % columns) + 1; }
+      if (mode === 'grid') { kept['row'] ??= Math.min(rows, Math.floor(index / columns) + 1); kept['column'] ??= (index % columns) + 1; }
       const { place: _place, ...rest } = child;
       return Object.keys(kept).length ? { ...rest, place: kept } : rest;
     }),
@@ -588,7 +705,7 @@ export function writeProperty(document: JsonObject, path: string, fieldPath: Fie
   return replaceElement(document, located, next);
 }
 
-function firstFont(document: JsonObject): string | undefined {
+export function firstFont(document: JsonObject): string | undefined {
   const walk = (node: unknown): string | undefined => {
     if (!isObject(node)) return undefined;
     if (typeof node['font'] === 'string' && node['font'] !== RESOURCE_PLACEHOLDER) return node['font'];

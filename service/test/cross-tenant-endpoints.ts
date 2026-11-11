@@ -55,6 +55,8 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/templates', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/templates' }) },
   { route: 'GET /v1/templates/:name', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}` }) },
   { route: 'POST /v1/previews', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/previews', body: preview(a.templateName) }) },
+  { route: 'POST /v1/previews/inspection', addressesObject: false, request: (a) => ({ method: 'POST', url: `/v1/previews/inspection?element=${encodeURIComponent(a.templateName)}`, body: preview(a.templateName) }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews/inspection', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews/inspection?element=${encodeURIComponent(a.templateName)}`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/previews', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/previews`, body: preview(a.templateName) }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', addressesObject: true,
@@ -110,7 +112,10 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/templates/:name/working-copy/check', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/working-copy/check` }) },
   { route: 'POST /v1/templates/:name/working-copy/save', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  // 从空白新建（模板设计页票据 18）：建在调用者自己的租户里，回答不带 A 的任何 ID。
+  { route: 'POST /v1/templates', addressesObject: false, request: () => ({ method: 'POST', url: '/v1/templates', body: { name: '跨租户新模板', base: { name: '问候', version: 1 }, sizeRange: { width: { min: 1, max: 10 }, height: { min: 1, max: 10 } } } }) },
   { route: 'POST /v1/templates/:name/copies', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/templates/${encodeURIComponent(a.templateName)}/copies`, body: { name: '跨租户副本' } }) },
+  { route: 'GET /v1/templates/:name/content', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/content` }) },
   { route: 'GET /v1/templates/:name/revisions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent(a.templateName)}/revisions` }) },
   // 审批策略与发布申请（P1 票据 11）：申请 ID 在路径里，别的租户的与不存在的同样答 404。
   { route: 'GET /v1/approval-policy', addressesObject: false, request: () => ({ method: 'GET', url: '/v1/approval-policy' }) },
@@ -131,7 +136,9 @@ export const CROSS_TENANT_ENDPOINTS: readonly CrossTenantEndpoint[] = [
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy/check', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/working-copy/check` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy/save', addressesObject: true,
     request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/templates', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates`, body: { name: '跨租户新模板', base: { name: '问候', version: 1 }, sizeRange: { width: { min: 1, max: 10 }, height: { min: 1, max: 10 } } } }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', addressesObject: true, request: (a) => ({ method: 'POST', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/copies`, body: { name: '跨租户副本' } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/content', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/content` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', addressesObject: true, request: (a) => ({ method: 'GET', url: `/v1/authoring/tenants/${a.tenantId}/templates/${encodeURIComponent(a.templateName)}/revisions` }) },
   { route: 'POST /v1/template-current', addressesObject: false, request: (a) => ({ method: 'POST', url: '/v1/template-current', body: { template: a.templateName, revision: 1 } }) },
   // Excel 导入（票据 13）：租户由身份决定，模板名写在请求体里；另一租户没有这个模板，答问题清单。

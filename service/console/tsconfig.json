@@ -18,5 +18,5 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src", "../test/template-session.test.ts"]
 }

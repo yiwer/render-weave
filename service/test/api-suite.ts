@@ -159,6 +159,8 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'GET /v1/templates/:name', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/${encodeURIComponent('问候牌')}` }) },
   // 预览请求用不存在的模板：入队前就答问题清单，不需要 worker。
   { route: 'POST /v1/previews', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/previews', body: BLOCKED_PREVIEW }) },
+  { route: 'POST /v1/previews/inspection', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'POST', url: '/v1/previews/inspection?element=x', body: BLOCKED_PREVIEW }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/previews/inspection', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews/inspection?element=x`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/previews', allow: ['authoringEngineer'],
     request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/previews`, body: BLOCKED_PREVIEW }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/template-current', allow: ['authoringEngineer'],
@@ -196,7 +198,10 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'DELETE /v1/templates/:name/working-copy', allow: ['admin'], request: () => ({ method: 'DELETE', url: `/v1/templates/t${randomUUID()}/working-copy` }) },
   { route: 'GET /v1/templates/:name/working-copy/check', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/working-copy/check` }) },
   { route: 'POST /v1/templates/:name/working-copy/save', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  // 从空白新建模板（模板设计页票据 18）：模板名用不存在的。
+  { route: 'POST /v1/templates', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/templates', body: { name: `t${randomUUID()}`, base: { name: '问候', version: 1 }, sizeRange: { width: { min: 1, max: 10 }, height: { min: 1, max: 10 } } } }) },
   { route: 'POST /v1/templates/:name/copies', allow: ['admin'], request: () => ({ method: 'POST', url: `/v1/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/templates/:name/content', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/content` }) },
   { route: 'GET /v1/templates/:name/revisions', allow: ['admin', 'operator', 'apiKey'], request: () => ({ method: 'GET', url: `/v1/templates/t${randomUUID()}/revisions` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/template-working-copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/template-working-copies` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
@@ -205,7 +210,9 @@ const ENDPOINTS: readonly { route: string; allow: readonly IdentityRole[]; reque
   { route: 'DELETE /v1/authoring/tenants/:tenantId/templates/:name/working-copy', allow: ['authoringEngineer'], request: (world) => ({ method: 'DELETE', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/working-copy/check', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/check` }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/working-copy/save', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/working-copy/save`, body: { expectedSha256: SAMPLE_SHA256 } }) },
+  { route: 'POST /v1/authoring/tenants/:tenantId/templates', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates`, body: { name: `t${randomUUID()}`, base: { name: '问候', version: 1 }, sizeRange: { width: { min: 1, max: 10 }, height: { min: 1, max: 10 } } } }) },
   { route: 'POST /v1/authoring/tenants/:tenantId/templates/:name/copies', allow: ['authoringEngineer'], request: (world) => ({ method: 'POST', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/copies`, body: { name: `c${randomUUID()}` } }) },
+  { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/content', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/content` }) },
   { route: 'GET /v1/authoring/tenants/:tenantId/templates/:name/revisions', allow: ['authoringEngineer'], request: (world) => ({ method: 'GET', url: `/v1/authoring/tenants/${world.a.id}/templates/t${randomUUID()}/revisions` }) },
   { route: 'POST /v1/template-current', allow: ['admin'], request: () => ({ method: 'POST', url: '/v1/template-current', body: { template: '矩阵', revision: 1 } }) },
   // 审批策略与发布申请（P1 票据 11）：对象 ID 用随机值，改策略用什么也不改的请求。

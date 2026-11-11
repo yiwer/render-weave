@@ -4,8 +4,10 @@
  *   还没写回服务端的改动算未保存，写回失败时留在这里，看得到数目、能重试；
  * - "保存"也是立刻暂存，另外记一笔"这些改动看过了"：自上次点保存以来有改动就算没点保存，离开时提醒（M383）；
  * - 撤销与重做只在这一页、这一次打开里有，撤销也是一次写回。子模板各有自己的工作副本，撤销按改动的先后，跨模板也一样；
- * - 打开设计页要读内容，内容只从工作副本来：没有工作副本就开一份。这次开的、离开时与开的时候一样（没改或都撤销了），就删掉，不留空的工作副本；
- *   基准已变而这边没有改动的旧工作副本，打开时换成当前修订，不让它显得有冲突。
+ *   一次改两个模板（提取为子模板，票据 19）记成一步，撤销时两边一起回去；
+ * - 打开设计页只读内容：有工作副本读工作副本，没有就读当前修订，不写任何东西（模板设计页票据 01）。第一次写回时才开工作副本；
+ *   这次开的、离开时与开的时候一样（都撤销了），就删掉，不留空的工作副本；
+ *   基准已变而这边没有改动的旧工作副本，打开时丢掉、改读当前修订，不让它显得有冲突。
  */
 import { api, ApiError } from '../api.js';
 import { problemsOf } from '../hooks.js';
@@ -17,12 +19,14 @@ export interface DesignDoc {
   /** 页面里最新的文档与原文。 */
   readonly document: JsonObject;
   readonly text: string;
-  /** 服务端工作副本的原文与内容哈希。 */
+  /** 服务端上这份内容的原文与内容哈希：有工作副本时是工作副本，没有时是当前修订。 */
   readonly savedText: string;
   /** 上次点"保存"时的原文，没点过就是打开时的。 */
   readonly confirmedText: string;
   readonly sha256: string;
   readonly baseRevision?: number;
+  /** 服务端有没有这个模板的工作副本：第一次写回时才开。 */
+  readonly opened: boolean;
   /** 写回失败：stale 是别处先改了，missing 是工作副本没了（在别处发布或丢弃了）。 */
   readonly failure?: { readonly problems: readonly Problem[]; readonly stale?: string; readonly missing?: boolean };
 }
@@ -41,7 +45,9 @@ export interface DesignState {
   readonly problems?: readonly Problem[];
 }
 
-interface Step { readonly template: string; readonly before: string; after: string; readonly key?: string; at: number }
+interface Change { readonly template: string; readonly before: string; after: string }
+/** 一步撤销：通常改一个模板；提取为子模板时两个模板一起改。 */
+interface Step { readonly changes: readonly Change[]; readonly key?: string; at: number }
 
 /** 连续改同一项（输入框打字）合成一步撤销。 */
 const COALESCE_MS = 1500;
@@ -50,9 +56,15 @@ const STASH_DELAY_MS = 500;
 export interface DesignSession {
   subscribe(listener: () => void): () => void;
   getState(): DesignState;
-  open(name: string): Promise<void>;
+  /**
+   * 读一个模板；quiet 时读不到不算页面的错（结构树读被调模板，树里单独标）。
+   * created：这个工作副本是这一页刚建的（提取为子模板），离开时内容还和建的时候一样就删掉。
+   */
+  open(name: string, options?: { readonly quiet?: boolean; readonly created?: boolean }): Promise<void>;
   /** 一次改动：记进撤销，稍后写回。key 相同的连续改动合成一步。 */
   edit(name: string, document: JsonObject, key?: string): void;
+  /** 一次改几个模板，记成一步撤销（提取为子模板）。模板都要已经读进来。 */
+  editMany(changes: readonly { readonly name: string; readonly document: JsonObject }[]): void;
   /** 返回这一步所在的模板：页面要切过去，让人看得到改了什么。 */
   undo(): string | undefined;
   redo(): string | undefined;
@@ -93,16 +105,9 @@ export function createDesignSession(): DesignSession {
   let state = compute();
   const changed = () => { state = compute(); for (const listener of listeners) listener(); };
 
-  /** 读工作副本，没有就开一份（别的标签页抢先开了也算有）。 */
+  /** 读内容：有工作副本读工作副本，没有就读当前修订，不写任何东西。 */
   const load = async (name: string) => {
     const read = async () => { try { return await api.workingCopy(name); } catch (error) { if (missing(error)) return undefined; throw error; } };
-    const start = async () => {
-      let opened = true;
-      try { await api.openWorkingCopy(name); } catch (error) { if (!(error instanceof ApiError && error.status === 409)) throw error; opened = false; }
-      const fresh = await api.workingCopy(name);
-      if (opened) created.set(name, fresh.content);
-      return fresh;
-    };
     let copy = await read();
     if (copy && copy.baseRevision !== undefined) {
       const check = await api.checkWorkingCopy(name);
@@ -111,11 +116,33 @@ export function createDesignSession(): DesignSession {
         copy = undefined;
       }
     }
-    copy ??= await start();
-    docs.set(name, {
-      name, document: parseTemplateText(copy.content), text: copy.content, savedText: copy.content, confirmedText: copy.content, sha256: copy.sha256,
-      ...(copy.baseRevision === undefined ? {} : { baseRevision: copy.baseRevision }),
-    });
+    if (copy) {
+      docs.set(name, {
+        name, document: parseTemplateText(copy.content), text: copy.content, savedText: copy.content, confirmedText: copy.content, sha256: copy.sha256, opened: true,
+        ...(copy.baseRevision === undefined ? {} : { baseRevision: copy.baseRevision }),
+      });
+      return;
+    }
+    const current = await api.templateContent(name);
+    docs.set(name, { name, document: parseTemplateText(current.content), text: current.content, savedText: current.content, confirmedText: current.content, sha256: current.sha256, baseRevision: current.revision, opened: false });
+  };
+
+  /**
+   * 第一次写回前开工作副本，返回暂存要带的预期哈希。别的标签页抢先开了也算有；
+   * 服务端的内容已经不是打开时读到的（别人先保存了新修订或先暂存了），按"别处先改了"处理，由人决定。
+   */
+  const ensureCopy = async (doc: DesignDoc): Promise<string> => {
+    if (doc.opened) return doc.sha256;
+    let mine = true;
+    try { await api.openWorkingCopy(doc.name); } catch (error) { if (!(error instanceof ApiError && error.status === 409)) throw error; mine = false; }
+    const fresh = await api.workingCopy(doc.name);
+    if (mine && fresh.content === doc.savedText) created.set(doc.name, fresh.content);
+    const latest = docs.get(doc.name) ?? doc;
+    docs.set(doc.name, { ...latest, opened: true, ...(fresh.baseRevision === undefined ? {} : { baseRevision: fresh.baseRevision }) });
+    if (fresh.sha256 !== doc.sha256) {
+      throw new ApiError(409, [{ code: 'draft.stale', level: 'severe', location: { kind: 'input', source: `templateWorkingCopy:${doc.name}` }, message: `模板 ${doc.name} 在打开之后被别处改过了` }], { currentSha256: fresh.sha256 });
+    }
+    return doc.sha256;
   };
 
   const stash = (name: string): Promise<void> => {
@@ -124,7 +151,7 @@ export function createDesignSession(): DesignSession {
     const doc = docs.get(name);
     if (!doc || doc.text === doc.savedText || doc.failure?.stale || doc.failure?.missing) return Promise.resolve();
     const text = doc.text;
-    const work = api.stashWorkingCopy(name, doc.sha256, text).then(
+    const work = ensureCopy(doc).then((expected) => api.stashWorkingCopy(name, expected, text)).then(
       (saved) => {
         const latest = docs.get(name);
         if (!latest) return;
@@ -174,13 +201,17 @@ export function createDesignSession(): DesignSession {
   return {
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getState: () => state,
-    open(name) {
+    open(name, options) {
       if (docs.has(name)) return Promise.resolve();
       const pending = opening.get(name);
       if (pending) return pending;
       const work = load(name).then(
-        () => { problems = undefined; },
-        (error: unknown) => { problems = problemsOf(error); },
+        () => {
+          if (!options?.quiet) problems = undefined;
+          const doc = docs.get(name);
+          if (options?.created && doc) created.set(name, doc.savedText);
+        },
+        (error: unknown) => { if (!options?.quiet) problems = problemsOf(error); },
       ).finally(() => { opening.delete(name); changed(); });
       opening.set(name, work);
       return work;
@@ -190,31 +221,43 @@ export function createDesignSession(): DesignSession {
       if (!doc) return;
       const text = templateText(document);
       if (text === doc.text) return;
-      const now = Date.now(), last = undoSteps.at(-1);
-      if (key !== undefined && last && last.key === key && last.template === name && now - last.at < COALESCE_MS && redoSteps.length === 0) {
-        last.after = text;
+      const now = Date.now(), last = undoSteps.at(-1), only = last?.changes.length === 1 ? last.changes[0]! : undefined;
+      if (key !== undefined && last && only && last.key === key && only.template === name && now - last.at < COALESCE_MS && redoSteps.length === 0) {
+        only.after = text;
         last.at = now;
-        if (last.before === last.after) undoSteps.pop();
+        if (only.before === only.after) undoSteps.pop();
       } else {
-        undoSteps.push({ template: name, before: doc.text, after: text, ...(key !== undefined ? { key } : {}), at: now });
+        undoSteps.push({ changes: [{ template: name, before: doc.text, after: text }], ...(key !== undefined ? { key } : {}), at: now });
       }
       redoSteps = [];
       apply(name, text);
     },
+    editMany(changes) {
+      const step: Change[] = [];
+      for (const { name, document } of changes) {
+        const doc = docs.get(name), text = templateText(document);
+        if (doc && text !== doc.text) step.push({ template: name, before: doc.text, after: text });
+      }
+      if (!step.length) return;
+      undoSteps.push({ changes: step, at: Date.now() });
+      redoSteps = [];
+      for (const change of step) apply(change.template, change.after);
+    },
+    // 返回这一步的最后一个模板：提取时最后改的是原模板，页面切回它。
     undo() {
       const step = undoSteps.pop();
       if (!step) return undefined;
       redoSteps.push(step);
-      apply(step.template, step.before);
-      return step.template;
+      for (const change of step.changes) apply(change.template, change.before);
+      return step.changes.at(-1)!.template;
     },
     redo() {
       const step = redoSteps.pop();
       if (!step) return undefined;
       // 重做之后的下一次改动不和它合成一步。
       undoSteps.push({ ...step, at: 0 });
-      apply(step.template, step.after);
-      return step.template;
+      for (const change of step.changes) apply(change.template, change.after);
+      return step.changes.at(-1)!.template;
     },
     flush,
     async save() {
@@ -224,8 +267,8 @@ export function createDesignSession(): DesignSession {
     },
     async reload(name) {
       docs.delete(name);
-      undoSteps = undoSteps.filter((step) => step.template !== name);
-      redoSteps = redoSteps.filter((step) => step.template !== name);
+      undoSteps = undoSteps.filter((step) => !step.changes.some((change) => change.template === name));
+      redoSteps = redoSteps.filter((step) => !step.changes.some((change) => change.template === name));
       changed();
       await this.open(name);
     },

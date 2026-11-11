@@ -7,7 +7,7 @@
  * P1 票据 06 加了数据定义的详情、发布与发布记录。
  * 登录后按 # 路由切换页面；界面只做中文。
  */
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { api, onUnauthorized, session } from './api.js';
 import { Logo } from './components/logo.js';
 import { Frame, ROLE } from './frame.js';
@@ -26,12 +26,14 @@ import { LoginPage } from './pages/login.js';
 import { PlatformPage } from './pages/platform.js';
 import { RecordsPage } from './pages/records.js';
 import { ResourcesPage } from './pages/resources.js';
-import { TemplateDesign } from './pages/template-design.js';
 import { TemplatePublish } from './pages/template-publish.js';
 import { TemplateList, TemplateStudio } from './pages/templates.js';
 import { UsagePage } from './pages/usage.js';
 import type { Identity } from './types.js';
-import { ThreadOrbit } from './components/motifs.js';
+import { Loading, ThreadOrbit } from './components/motifs.js';
+
+/** 模板设计页单独分包：它带着模板的 JSON Schema，别的页面用不到（模板设计页票据 03）。 */
+const TemplateDesign = lazy(() => import('./pages/template-design.js').then((module) => ({ default: module.TemplateDesign })));
 
 export function App() {
   // undefined：正在确认会话；null：没有登录。
@@ -116,7 +118,7 @@ function Shell(props: { readonly identity: Identity; readonly onLogout: () => vo
       const root = query.get('in') ?? undefined;
       if (id && sub === 'publish') page = <TemplatePublish key={`${id}\n${root ?? ''}`} name={id} {...(root ? { root } : {})} identity={props.identity} />;
       // 编辑会话跟着被预览的模板：在它的子模板之间切换时，撤销与未保存的改动都还在。
-      else if (id && sub === 'design') page = <TemplateDesign key={root ?? id} name={id} root={root ?? id} identity={props.identity} />;
+      else if (id && sub === 'design') page = <Suspense fallback={<Loading>正在打开模板设计…</Loading>}><TemplateDesign key={root ?? id} name={id} root={root ?? id} identity={props.identity} /></Suspense>;
       else page = id ? <TemplateStudio name={id} identity={props.identity} /> : <TemplateList identity={props.identity} />;
       break;
     }

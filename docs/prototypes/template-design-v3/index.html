@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模板设计第三轮原型</title>
+<style>
+:root {
+  --bg: #f7f4ec; --chrome: #efe9dd; --surface: #fdfcf8; --sunken: #f1ece2; --hover: #f3eee4; --press: #e7e0d2;
+  --ink: #1d262e; --muted: #5b4a39; --faint: #7a6b5a; --line: #ddd3c3; --hair: #ebe4d7;
+  --accent: #293642; --accent-ink: #fdfcf8; --mark: #b38047; --mark-soft: #f3e8d8;
+  --ok: #4f5e2a; --warn: #8a5a1f; --bad: #9c3f27;
+  --bound: #eef0f2; --bound-ink: #34424f;
+  --r: 8px; --r-panel: 14px;
+  --shadow: 0 1px 2px rgba(29,38,46,.06), 0 10px 30px rgba(29,38,46,.10);
+  --spring: cubic-bezier(.22,1,.36,1);
+  --sans: -apple-system,"Segoe UI Variable Text","Segoe UI","PingFang SC","Microsoft YaHei UI","Noto Sans SC",system-ui,sans-serif;
+  --mono: ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--sans); overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+input, select { font: inherit; color: inherit; }
+svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.faint { color: var(--faint); }
+.muted { color: var(--muted); }
+
+/* —— 标题栏与文档条 —— */
+.titlebar { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--hair); background: var(--bg); }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.kbd { font: 11px var(--mono); color: var(--faint); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.grow { flex: 1; }
+.docbar { height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--hair); background: var(--bg); }
+.crumbs { display: flex; gap: 6px; align-items: baseline; }
+.crumbs a { color: var(--muted); text-decoration: none; }
+.crumbs strong { font-weight: 650; }
+.icon-btn { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); }
+.icon-btn:hover { background: var(--hover); }
+.state { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+.dot.warn { background: var(--mark); }
+.btn { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* —— 舞台 —— */
+.stage { position: absolute; top: 90px; left: 0; right: 0; bottom: 62px; overflow: hidden;
+  background-color: #f4f0e6; background-image: linear-gradient(45deg, rgba(91,74,57,.035) 25%, transparent 25%, transparent 75%, rgba(91,74,57,.035) 75%), linear-gradient(45deg, rgba(91,74,57,.035) 25%, transparent 25%, transparent 75%, rgba(91,74,57,.035) 75%);
+  background-size: 10px 10px; background-position: 0 0, 5px 5px; }
+.paper { position: absolute; box-shadow: 0 2px 6px rgba(29,38,46,.12), 0 18px 40px rgba(29,38,46,.10); border-radius: 2px; background: #fff; }
+.paper img { display: block; width: 100%; height: 100%; }
+.paper.blank img { filter: grayscale(.2) opacity(.35); }
+.box { position: absolute; pointer-events: none; }
+.box.sel { outline: 1.5px solid var(--mark); outline-offset: 0; }
+.box.peer { outline: 1px dashed rgba(179,128,71,.45); }
+.box.slot { outline: 1px dashed rgba(41,54,66,.35); background: rgba(253,252,248,.55); }
+.size-tag { position: absolute; transform: translate(-50%, 6px); background: var(--mark); color: #fff; font: 10px var(--mono); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+.scope { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--hair); border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap; z-index: 3; }
+.scope b { font-weight: 650; }
+.scope .sep { width: 1px; height: 14px; background: var(--line); }
+
+/* 选中条：选中元素上方的快捷操作（Canva 的 quick actions、Figma 的选中工具条） */
+.ctx { position: absolute; display: flex; align-items: center; gap: 2px; padding: 4px; background: var(--accent); color: var(--accent-ink); border-radius: 10px; box-shadow: var(--shadow); z-index: 4; transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap; }
+.ctx .who { display: inline-flex; gap: 6px; align-items: center; padding: 0 8px 0 6px; font-weight: 600; border-right: 1px solid rgba(253,252,248,.18); margin-right: 2px; height: 26px; }
+.ctx button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border-radius: 7px; }
+.ctx button:hover { background: rgba(253,252,248,.12); }
+
+/* 浮动面板 */
+.panel { position: absolute; top: 12px; bottom: 12px; background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-panel); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
+.panel.left { left: 12px; width: 276px; }
+.panel.right { right: 12px; width: 304px; }
+.tabs { display: flex; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--hair); }
+.tab { height: 32px; padding: 0 10px; border-radius: 8px 8px 0 0; color: var(--muted); position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.tab[aria-selected="true"] { color: var(--ink); font-weight: 650; }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--mark); }
+.tag { font-size: 10px; padding: 0 5px; border-radius: 4px; background: var(--sunken); color: var(--faint); font-weight: 500; }
+.scroll { overflow: auto; flex: 1; }
+
+/* 图层 */
+.tree { padding: 6px 6px 12px; }
+.row { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 7px; position: relative; white-space: nowrap; }
+.row:hover { background: var(--hover); }
+.row.on { background: var(--mark-soft); }
+.row .caret { width: 12px; color: var(--faint); font-size: 10px; text-align: center; }
+.row .meta { margin-left: auto; color: var(--faint); font-size: 12px; display: inline-flex; gap: 6px; align-items: center; }
+.row.scope-head { color: var(--faint); font-size: 12px; height: 24px; }
+.state-dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--mark); }
+.guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--mark); opacity: .5; }
+
+/* 数据 */
+.sect { padding: 10px 12px 4px; }
+.sect-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.sect-head h3 { margin: 0; font-size: 12px; font-weight: 650; }
+.sect-head .add { margin-left: auto; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: var(--muted); }
+.sect-head .add:hover { background: var(--hover); }
+.var { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: 7px; }
+.var:hover { background: var(--hover); }
+.var .glyph { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; background: var(--sunken); font: 11px var(--mono); color: var(--muted); }
+.var .value { margin-left: auto; color: var(--faint); font-size: 12px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.var.field { cursor: grab; }
+.var.field .grip { color: var(--line); margin-left: -2px; }
+.hint { color: var(--faint); font-size: 12px; margin: 2px 0 6px; }
+.banner { margin: 10px 12px 0; padding: 10px 12px; border-radius: 10px; background: var(--mark-soft); border: 1px solid #ead8bd; }
+.banner p { margin: 0 0 8px; }
+.banner .args { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; }
+
+/* Agent（P2 接入）：Claude Design 式的对话加画布 */
+.chat { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.msg { padding: 9px 11px; border-radius: 12px; max-width: 92%; }
+.msg.me { align-self: flex-end; background: var(--sunken); }
+.msg.ai { background: transparent; padding-left: 0; }
+.proposal { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
+.proposal .diff { font: 11.5px/1.5 var(--mono); color: var(--muted); }
+.proposal .btn { white-space: nowrap; padding: 0 10px; }
+.msg.ai { max-width: 100%; }
+.composer { margin: 0 10px 10px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--surface); }
+.composer .ctx-chip { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); background: var(--sunken); border-radius: 6px; padding: 1px 6px; }
+
+/* 检查器（Figma UI3 式的紧凑分节） */
+.insp-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--hair); }
+.insp-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 650; }
+.insp-title .kind { font-size: 12px; font-weight: 500; color: var(--faint); }
+.insp-scope { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.states { padding: 10px 14px; border-bottom: 1px solid var(--hair); }
+.states-by { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.states-by .sel { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); padding: 2px 6px; border-radius: 6px; background: var(--sunken); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.s-chip { height: 24px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: var(--surface); }
+.s-chip.own { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
+.s-chip.empty { border-style: dashed; color: var(--faint); }
+.s-chip .n { font: 11px var(--mono); color: var(--faint); }
+.s-chip.own .n { color: rgba(253,252,248,.7); }
+.sec { padding: 10px 14px 12px; border-bottom: 1px solid var(--hair); }
+.sec-head { display: flex; align-items: center; margin-bottom: 8px; }
+.sec-head h4 { margin: 0; font-size: 12px; font-weight: 650; }
+.sec-head .aside { margin-left: auto; color: var(--faint); font-size: 12px; display: inline-flex; gap: 4px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.f { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border-radius: 7px; background: var(--sunken); min-width: 0; position: relative; }
+.f:hover { box-shadow: inset 0 0 0 1px var(--line); }
+.f .lab { color: var(--faint); font-size: 11.5px; width: 14px; flex: none; }
+.f .v { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.f .mode { color: var(--muted); font-size: 11.5px; display: inline-flex; align-items: center; gap: 2px; padding-left: 6px; border-left: 1px solid var(--line); }
+.f.bound { background: var(--bound); color: var(--bound-ink); }
+.f.bound .v::before { content: "⛓ "; color: var(--faint); }
+.f .ov { position: absolute; left: -4px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--mark); }
+.f.full { grid-column: 1 / -1; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(29,38,46,.15); flex: none; }
+.seg { display: inline-flex; background: var(--sunken); border-radius: 7px; padding: 2px; gap: 2px; height: 30px; }
+.seg button { min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; display: grid; place-items: center; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(29,38,46,.12); }
+.line { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+.line > .grow { min-width: 0; }
+.sumrow { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 8px; background: var(--sunken); }
+.sumrow .txt { flex: 1; min-width: 0; }
+.sumrow .txt div:last-child { color: var(--faint); font-size: 12px; }
+.nine { display: grid; grid-template-columns: repeat(3, 10px); gap: 5px; padding: 7px; border-radius: 7px; background: var(--sunken); }
+.nine i { width: 10px; height: 10px; border-radius: 3px; background: var(--line); }
+.nine i.on { background: var(--accent); }
+.token { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px; background: var(--bound); color: var(--bound-ink); font-size: 12px; }
+.addprops { padding: 10px 14px 14px; color: var(--faint); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.addprops button { height: 24px; padding: 0 8px; border-radius: 6px; border: 1px dashed var(--line); color: var(--muted); }
+.note { color: var(--faint); font-size: 12px; margin-top: 6px; }
+
+/* 底部工具栏（插入在这里，Figma UI3 / Canva / Penpot） */
+.toolbar { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 5px; background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; box-shadow: var(--shadow); z-index: 3; }
+.tool { height: 34px; min-width: 34px; padding: 0 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted); }
+.tool:hover { background: var(--hover); }
+.tool.on { background: var(--accent); color: var(--accent-ink); }
+.tool.off { opacity: .45; }
+.tool small { font-size: 12px; }
+.tbsep { width: 1px; height: 22px; background: var(--hair); margin: 0 4px; }
+.flyout { position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display: grid; grid-template-columns: repeat(4, 64px); gap: 4px; z-index: 5; }
+.flyout button { height: 56px; border-radius: 8px; display: grid; justify-items: center; align-content: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.flyout button:hover { background: var(--hover); }
+
+/* 样例条：默认收成一行 */
+.sample { position: absolute; left: 0; right: 0; bottom: 26px; height: 36px; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-top: 1px solid var(--hair); background: var(--bg); }
+.sample .tabs2 { display: flex; gap: 12px; color: var(--muted); }
+.sample .tabs2 b { color: var(--ink); }
+.status { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-top: 1px solid var(--hair); background: var(--chrome); font-size: 12px; color: var(--muted); }
+.status .scenes { display: inline-flex; gap: 4px; }
+.status .scenes button { padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.status .scenes button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* 快捷操作（Figma 的 Quick actions） */
+.scrim { position: absolute; inset: 0; background: rgba(29,38,46,.18); z-index: 20; display: grid; justify-items: center; align-items: start; padding-top: 120px; }
+.palette { width: 560px; background: var(--surface); border-radius: 14px; box-shadow: 0 24px 60px rgba(29,38,46,.28); overflow: hidden; }
+.palette .q { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--hair); font-size: 15px; }
+.palette .q .caret { width: 1.5px; height: 18px; background: var(--ink); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .palette .q .caret { animation: none; } }
+.palette .grp { padding: 8px 8px 4px; }
+.palette .grp-t { color: var(--faint); font-size: 11.5px; padding: 0 8px 4px; }
+.palette .it { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px; border-radius: 8px; }
+.palette .it.on { background: var(--mark-soft); }
+.palette .it .r { margin-left: auto; color: var(--faint); font-size: 12px; }
+.palette .foot { padding: 8px 16px; border-top: 1px solid var(--hair); color: var(--faint); font-size: 12px; display: flex; gap: 14px; }
+
+/* 新建参数的弹层 */
+.pop { position: absolute; z-index: 6; width: 312px; background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; box-shadow: 0 16px 40px rgba(29,38,46,.18); padding: 12px; }
+.pop h5 { margin: 0 0 10px; font-size: 13px; }
+.pop .row2 { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pop .in { height: 30px; border-radius: 7px; background: var(--sunken); display: flex; align-items: center; padding: 0 8px; }
+.pop .in.focus { box-shadow: inset 0 0 0 1.5px var(--accent); background: var(--surface); }
+.pop .actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.empty-card { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); width: 420px; background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; }
+.empty-card h4 { margin: 0 0 8px; font-size: 14px; }
+.step { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+.step .n { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--sunken); font-size: 11px; flex: none; margin-top: 1px; }
+.step .n.done { background: var(--ok); color: #fff; }
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <div class="brand"><span class="brand-mark"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M4 8c5 0 11 8 16 8M4 16c5 0 11-8 16-8"/></svg></span>RenderWeave</div>
+  <span class="pill"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/></svg><span class="muted">模块与动作</span><span class="kbd">Ctrl K</span></span>
+  <span class="pill">模板 <span class="faint">▾</span></span>
+  <span class="grow"></span>
+  <span class="muted">admin@dev.test · 客户管理员</span>
+</div>
+<div class="docbar">
+  <nav class="crumbs"><a href="#">模板</a><span class="faint">/</span><a href="#">标准线路单边</a><span class="faint">/</span><strong id="docName">站点</strong></nav>
+  <span class="faint" id="docFacts">停靠站点 v1 · 8–800 × 80–110 mm</span>
+  <span class="grow"></span>
+  <button class="icon-btn" title="撤销"><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+  <button class="icon-btn" title="重做"><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+  <span class="state"><span class="dot warn"></span><span id="docState">已暂存，未保存 · 1 处未发布</span></span>
+  <button class="btn">保存</button>
+  <button class="btn primary">发布修订</button>
+</div>
+
+<main class="stage" id="stage">
+  <div class="scope" id="scope"></div>
+  <div class="paper" id="paper"><img id="img" alt="引擎出的图：M402 开往万国城，本站是第 5 站" src="../template-design/imgs/m402-base.png"></div>
+  <div id="overlay"></div>
+
+  <aside class="panel left" aria-label="图层、数据与 Agent">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="layers">图层</button>
+      <button class="tab" role="tab" data-tab="data">数据</button>
+      <button class="tab" role="tab" data-tab="agent">Agent <span class="tag">P2</span></button>
+    </div>
+    <div class="scroll" id="left"></div>
+  </aside>
+
+  <aside class="panel right" aria-label="检查器"><div class="scroll" id="right"></div></aside>
+
+  <div class="toolbar" id="toolbar"></div>
+</main>
+
+<div class="sample">
+  <span class="tabs2"><b>样例</b><span>问题 0</span><span>改动 1</span><span>DSL</span></span>
+  <span class="pill" style="height:26px">M402 开往万国城 · 本站序号 5 <span class="faint">▾</span></span>
+  <span class="faint">站名字号 10 mm · 画板 740 × 165 mm</span>
+  <span class="grow"></span>
+  <span class="state"><span class="dot"></span>没有问题：这张图与正式出图相同</span>
+  <span class="faint">草稿 100 DPI</span>
+  <button class="icon-btn" title="展开样例带"><svg class="i" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+</div>
+<div class="status">
+  <span>原型，只作讨论 · 场景</span>
+  <span class="scenes" id="scenes"></span>
+  <span class="grow"></span>
+  <span>Ctrl+/ 快捷操作 · 图和框是引擎的真实输出，写回是模拟</span>
+</div>
+
+<script>
+// —— 引擎输出（旧原型 data.json 的 M402 基准样例，单位 mm；740 × 165） ——
+const OUT = { w: 740, h: 165 };
+const BOX = {"names":[[27.91,51,10,82],[47.74,51,10,82],[67.57,51,10,82],[87.4,51,10,73],[107.23,51,10,73],[127.06,51,10,73],[146.89,51,10,73],[166.71,51,10,73],[186.54,51,10,73],[206.37,51,10,73],[226.2,51,10,82],[246.03,51,10,82],[265.86,51,10,82],[285.69,51,10,82],[305.51,51,10,82],[325.34,51,10,82],[345.17,51,10,82],[365,51,10,82],[384.83,51,10,82],[404.66,51,10,82],[424.49,51,10,82],[444.31,51,10,82],[464.14,51,10,82],[483.97,51,10,82],[503.8,51,10,82],[523.63,51,10,82],[543.46,51,10,82],[563.29,51,10,73],[583.11,51,10,82],[602.94,51,10,73],[622.77,51,10,82],[642.6,51,10,82],[662.43,51,10,82],[682.26,51,10,82],[702.09,51,10,82]],"areas":[[26.91,50,12,84],[46.74,50,12,84],[66.57,50,12,84],[86.4,50,12,84],[106.23,50,12,84],[126.06,50,12,84],[145.89,50,12,84],[165.71,50,12,84],[185.54,50,12,84],[205.37,50,12,84],[225.2,50,12,84],[245.03,50,12,84],[264.86,50,12,84],[284.69,50,12,84],[304.51,50,12,84],[324.34,50,12,84],[344.17,50,12,84],[364,50,12,84],[383.83,50,12,84],[403.66,50,12,84],[423.49,50,12,84],[443.31,50,12,84],[463.14,50,12,84],[482.97,50,12,84],[502.8,50,12,84],[522.63,50,12,84],[542.46,50,12,84],[562.29,50,12,84],[582.11,50,12,84],[601.94,50,12,84],[621.77,50,12,84],[641.6,50,12,84],[661.43,50,12,84],[681.26,50,12,84],[701.09,50,12,84]],"badges":[[32.91,38,0,10],[48.24,38,9,10],[72.57,38,0,10],[92.4,38,0,10],[112.23,38,0,10],[132.06,38,0,10],[151.89,38,0,10],[171.71,38,0,10],[191.54,38,0,10],[211.37,38,0,10],[231.2,38,0,10],[251.03,38,0,10],[270.86,38,0,10],[290.69,38,0,10],[310.51,38,0,10],[330.34,38,0,10],[350.17,38,0,10],[370,38,0,10],[389.83,38,0,10],[409.66,38,0,10],[429.49,38,0,10],[444.81,38,9,10],[469.14,38,0,10],[488.97,38,0,10],[508.8,38,0,10],[528.63,38,0,10],[548.46,38,0,10],[568.29,38,0,10],[588.11,38,0,10],[607.94,38,0,10],[627.77,38,0,10],[643.1,38,9,10],[667.43,38,0,10],[687.26,38,0,10],[707.09,38,0,10]],"marks":[[88.4,125,8,8],[108.23,125,8,8],[128.06,125,8,8],[147.89,125,8,8],[167.71,125,8,8],[187.54,125,8,8],[207.37,125,8,8],[564.29,125,8,8],[603.94,125,8,8]]};
+const STOP = 4; // 第 5 站，样例的本站（下标从 0 起）
+
+const ICON = {
+  select: '<path d="m5 4 13 6-6 2-2 6z"/>', hand: '<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.9L8 14"/>',
+  text: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>', image: '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20 16-4.5-4.5L7 20"/>',
+  shape: '<rect x="4" y="4" width="9" height="9" rx="1.5"/><circle cx="15.5" cy="15.5" r="4.5"/>', box: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/>',
+  loop: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>',
+  call: '<rect x="3" y="7" width="12" height="12" rx="2"/><path d="M10 3h9a2 2 0 0 1 2 2v9"/>', comment: '<path d="M5 18 3 21V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8z"/>',
+  layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>', link: '<path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>',
+  states: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 0 1 0 16" fill="currentColor" stroke="none" opacity=".35"/>',
+  wrap: '<rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="3 3"/><rect x="8" y="8" width="8" height="8" rx="1.5"/>', extract: '<rect x="3" y="9" width="12" height="12" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/>',
+  more: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>', plus: '<path d="M12 5v14M5 12h14"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  right: '<path d="M5 12h14M13 6l6 6-6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', grid: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/>', free: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  vert: '<path d="M9 4v16M15 4v10"/>', horiz: '<path d="M4 9h16M4 15h10"/>', alignL: '<path d="M4 6h16M4 12h10M4 18h14"/>', alignC: '<path d="M4 6h16M7 12h10M5 18h14"/>', alignR: '<path d="M4 6h16M10 12h10M6 18h14"/>',
+  sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>', send: '<path d="m4 12 16-8-6 16-2-6z"/>', enter: '<path d="M9 10 4 15l5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>',
+  margin: '<rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2.5 2.5"/><rect x="8" y="8" width="8" height="8" rx="1"/>', pad: '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1" stroke-dasharray="2.5 2.5"/>', gap: '<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14" y="5" width="7" height="14" rx="1.5"/>',
+};
+const ic = (name, size) => `<svg class="i" viewBox="0 0 24 24"${size ? ` style="width:${size}px;height:${size}px"` : ''}>${ICON[name] ?? ''}</svg>`;
+
+// —— 场景 ——
+const SCENES = { done: '做好的站点', blank: '新建的空模板', param: '新建参数', quick: '快捷操作', insert: '插入菜单', agent: 'Agent（P2）' };
+const state = { scene: 'done', tab: 'layers', sel: 'name' };
+const params = new URLSearchParams(location.hash.slice(1));
+if (params.get('scene')) state.scene = params.get('scene');
+if (params.get('sel')) state.sel = params.get('sel');
+if (state.scene === 'blank' || state.scene === 'param') state.tab = 'data';
+if (state.scene === 'agent') state.tab = 'agent';
+if (params.get('tab')) state.tab = params.get('tab');
+
+const ELEMENTS = {
+  name: { label: '站名', kind: '文字', icon: 'text', path: ['标准线路单边', '站点面板', '站点列[5]', '名称区', '站名'], box: () => BOX.names[STOP], peers: BOX.names },
+  area: { label: '名称区', kind: '容器', icon: 'box', path: ['标准线路单边', '站点面板', '站点列[5]', '名称区'], box: () => BOX.areas[STOP], peers: BOX.areas },
+  badges: { label: '标识行', kind: '循环', icon: 'loop', path: ['标准线路单边', '站点面板', '站点列[2]', '标识行'], box: () => BOX.badges[1], peers: [] },
+  mark: { label: '地标', kind: '图片', icon: 'image', path: ['标准线路单边', '站点面板', '站点列[5]', '名称区', '地标'], box: () => BOX.marks[1], peers: BOX.marks },
+};
+
+// —— 舞台：图放在两个面板之间 ——
+function layoutStage() {
+  const stage = document.getElementById('stage'), r = stage.getBoundingClientRect();
+  const left = 12 + 276 + 20, right = 12 + 304 + 20, top = 64, bottom = 76;
+  const w = Math.min(r.width - left - right, (r.height - top - bottom) * OUT.w / OUT.h);
+  const h = w * OUT.h / OUT.w, x = left + (r.width - left - right - w) / 2, y = top + (r.height - top - bottom - h) / 2 - 10;
+  const paper = document.getElementById('paper');
+  Object.assign(paper.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+  paper.classList.toggle('blank', state.scene === 'blank' || state.scene === 'param');
+  return { x, y, s: w / OUT.w };
+}
+function drawOverlay() {
+  const { x, y, s } = layoutStage(), out = [];
+  const rect = ([bx, by, bw, bh], cls, extra = '') => `<div class="box ${cls}" style="left:${x + bx * s}px;top:${y + by * s}px;width:${Math.max(bw * s, 2)}px;height:${bh * s}px;${extra}"></div>`;
+  if (state.scene === 'blank' || state.scene === 'param') {
+    BOX.areas.forEach((b) => out.push(rect([b[0] - 4, 38, 20, 96], 'slot')));
+    if (state.scene === "blank") out.push(`<div class="empty-card" style="top:${y + OUT.h * s + 18}px">
+      <h4>「站点」还是空画板，图上 35 处都在等它</h4>
+      <div class="step"><span class="n">1</span><div><b>建调用方传的 3 个参数</b><div class="faint">站点列传了 index、currentIndex、stopNameSize，左边"数据"页一键建好，类型照传入的值。</div></div></div>
+      <div class="step"><span class="n">2</span><div><b>选排布</b><div class="faint">右边"自动排布"点纵向，九宫格点上中。</div></div></div>
+      <div class="step"><span class="n">3</span><div><b>把字段拖到图上</b><div class="faint">站名变文字、地标变图片、标识变循环；拖到已有元素上就是连上。</div></div></div>
+    </div>`);
+    document.getElementById('overlay').innerHTML = out.join('');
+    return;
+  }
+  const el = ELEMENTS[state.sel];
+  el.peers.forEach((b, i) => { if (b !== el.box() && b[2] > 0) out.push(rect(b, 'peer')); });
+  const b = el.box();
+  out.push(rect(b, 'sel'));
+  out.push(`<div class="size-tag" style="left:${x + (b[0] + b[2] / 2) * s}px;top:${y + (b[1] + b[3]) * s}px">${el.label} · ${b[2]} × ${b[3]} mm</div>`);
+  if (state.scene === 'done' || state.scene === 'insert') {
+    // 选中条放在图的上沿外面，不压住图；水平跟着选中的元素，但不进两边的面板。
+    const stageWidth = document.getElementById('stage').getBoundingClientRect().width;
+    const center = Math.min(Math.max(x + (b[0] + b[2] / 2) * s, 308 + 175), stageWidth - 336 - 175);
+    out.push(`<div class="ctx" style="left:${center}px;top:${y - 2}px">
+      <span class="who">${ic(el.icon, 14)}${el.label}</span>
+      <button title="把数据字段或变量连到这个元素">${ic('link', 15)}连接数据</button>
+      <button title="按变量取值换样式">${ic('states', 15)}状态</button>
+      <button title="包进容器 Ctrl+G">${ic('wrap', 15)}</button>
+      <button title="提取为子模板">${ic('extract', 15)}</button>
+      <button title="更多 右键同">${ic('more', 15)}</button>
+    </div>`);
+  }
+  document.getElementById('overlay').innerHTML = out.join('');
+}
+
+// —— 范围条 ——
+function drawScope() {
+  const el = ELEMENTS[state.sel], scope = document.getElementById('scope');
+  if (state.scene === 'blank' || state.scene === 'param') { scope.innerHTML = `<span class="faint">标准线路单边 / 站点面板 / 站点列</span><span class="sep"></span><span>正在改 <b>站点</b>（新模板）· 站点列的 35 项都用它</span>`; return; }
+  scope.innerHTML = `<span class="faint">${el.path.slice(0, -1).join(' / ')} /</span> <b>${el.label}</b><span class="sep"></span><span>定义在 <b>站点</b> · 图上 ${el.peers.length || 35} 处，改一处全改</span>`;
+}
+
+// —— 左面板 ——
+function tree() {
+  const row = (depth, icon, text, opts = {}) => `<div class="row${opts.on ? ' on' : ''}" ${opts.sel ? `data-sel="${opts.sel}"` : ''} style="padding-left:${8 + depth * 14}px">
+    <span class="caret">${opts.open === undefined ? '' : opts.open ? '▾' : '▸'}</span>${icon ? ic(icon, 15) : ''}<span>${text}</span><span class="meta">${opts.meta ?? ''}</span></div>`;
+  const s = state.sel, blank = state.scene === 'blank';
+  return `<div class="tree">
+    ${row(0, 'layers', '<b>标准线路单边</b>', { meta: '纵向堆叠' })}
+    ${row(1, 'box', '顶栏', { open: false, meta: '横' })}
+    ${row(1, 'box', '站点面板', { open: true, meta: '横' })}
+    ${row(2, 'loop', '站点列', { open: true, meta: '35 项 → 站点' })}
+    <div style="position:relative">
+      <div class="guide" style="left:46px"></div>
+      <div class="row scope-head" style="padding-left:56px">进入「站点」· 每项的数据：停靠站点 v1</div>
+      ${blank ? `<div class="row scope-head" style="padding-left:56px">空画板：把字段拖到图上，或从底部工具栏插入</div>` : `
+      ${row(3, 'loop', '标识行', { on: s === 'badges', sel: 'badges', meta: '→ 标识图标' })}
+      ${row(3, 'box', '名称区', { open: true, on: s === 'area', sel: 'area', meta: '<span class="state-dot" title="有状态样式"></span>纵' })}
+      ${row(4, 'text', '站名', { on: s === 'name', sel: 'name', meta: '<span class="state-dot" title="有状态样式"></span>' })}
+      ${row(4, 'image', '地标', { on: s === 'mark', sel: 'mark', meta: `<span title="当前样例 26 处不显示">${ic('eye', 13)}9/35</span>` })}`}
+    </div>
+    ${row(1, 'box', '道路带', { open: false, meta: '横' })}
+    ${row(1, 'box', '底栏', { open: false, meta: '横' })}
+  </div>`;
+}
+function dataTab() {
+  const blank = state.scene === 'blank' || state.scene === 'param';
+  const v = (glyph, label, name, value, cls = '') => `<div class="var ${cls}" title="${name}">${cls.includes('field') ? '<span class="grip">⋮⋮</span>' : ''}<span class="glyph">${glyph}</span><span>${label}</span><span class="faint mono">${name}</span><span class="value">${value}</span></div>`;
+  const head = (title, add) => `<div class="sect-head"><h3>${title}</h3>${add ? `<button class="add" title="${add}" data-add="${title}">${ic('plus', 14)}</button>` : ''}</div>`;
+  return `
+    ${blank && state.scene !== 'param' ? `<div class="banner"><p><b>站点列</b>传了 3 个参数，这个模板还没有：</p>
+      <div class="args"><span class="chip"># index · 循环序号</span><span class="chip"># currentIndex · 本站序号</span><span class="chip"># stopNameSize · 站名字号</span></div>
+      <button class="btn primary" style="height:28px">一键建好 3 个参数</button><div class="faint" style="font-size:12px;margin-top:6px">类型、显示名称与缺省值照调用方；建好后传入参数那一栏不再标红。</div></div>` : ''}
+    <div class="sect">${head('字段 · 停靠站点 v1')}
+      <p class="hint">拖到图上建元素；拖到元素上就是连上（Canva 的连接数据）。</p>
+      ${v('T', '站名', 'name', '东门', 'field')}${v('▣', '地标', 'landmark', '有图片', 'field')}${v('T', '所在道路', 'road', '', 'field')}${v('≡', '站名上方的标识', 'badges', '0 项', 'field')}
+    </div>
+    <div class="sect">${head('参数', '新建参数')}
+      ${blank ? '<p class="hint">还没有。</p>' : `${v('#', '序号', 'index', '5')}${v('#', '本站序号', 'currentIndex', '5')}${v('#', '站名字号', 'stopNameSize', '10')}`}
+    </div>
+    <div class="sect">${head('派生变量', '新建派生变量')}
+      ${blank ? '<p class="hint">还没有。</p>' : `${v('⑂', '站点状态', 'stopState', '本站')}${v('⑂', '有地标', 'hasLandmark', '是')}`}
+    </div>
+    <div class="sect">${head('检查项', '新建检查项')}<p class="hint">这个模板没有检查项。</p></div>`;
+}
+function agentTab() {
+  return `<div class="chat">
+    <div class="msg me">本站的站名再醒目一点，已过站的地标也淡一些</div>
+    <div class="msg ai">改两处状态样式，都在「站点」里，图上 35 处一起变：
+      <div class="proposal" style="margin-top:8px">
+        <div style="font-weight:600;margin-bottom:4px">提案 · 2 处改动</div>
+        <div class="diff">站名 · 本站 · 字号 10 → 12 mm<br>地标 · 已过站 · 不透明度 0.35 → 0.25</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><button class="btn primary" style="height:26px">放进工作副本</button><button class="btn" style="height:26px">在图上对比</button></div>
+      </div>
+      <div class="faint" style="font-size:12px;margin-top:6px">和你手改的走同一个工作副本，出现在"改动"页，可撤销（ADR-0022）。</div>
+    </div>
+  </div>
+  <div class="grow"></div>`;
+}
+function drawLeft() {
+  document.querySelectorAll('.tab').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === state.tab)));
+  const left = document.getElementById('left');
+  left.innerHTML = state.tab === 'layers' ? tree() : state.tab === 'data' ? dataTab() : agentTab();
+  const panel = left.parentElement;
+  panel.querySelector('.composer')?.remove();
+  if (state.tab === 'agent') panel.insertAdjacentHTML('beforeend', `<div class="composer"><span class="ctx-chip">@站名 · 站点</span><div class="faint" style="margin:6px 0 4px">说要改什么，Agent 出提案…</div><div style="display:flex;justify-content:flex-end">${ic('send', 16)}</div></div>`);
+  left.querySelectorAll('[data-sel]').forEach((row) => row.addEventListener('click', () => { state.sel = row.dataset.sel; render(); }));
+}
+
+// —— 检查器 ——
+const f = (lab, value, opts = {}) => `<div class="f${opts.bound ? ' bound' : ''}${opts.full ? ' full' : ''}" title="${opts.title ?? ''}">${opts.ov ? '<i class="ov" title="状态样式覆盖了这一项"></i>' : ''}${lab ? `<span class="lab">${lab}</span>` : ''}${opts.swatch ? `<span class="swatch" style="background:${opts.swatch}"></span>` : ''}<span class="v">${value}</span>${opts.mode ? `<span class="mode">${opts.mode} ▾</span>` : ''}</div>`;
+const seg = (items, on) => `<span class="seg">${items.map(([key, label]) => `<button class="${key === on ? 'on' : ''}" title="${key}">${label}</button>`).join('')}</span>`;
+const sec = (title, body, aside = '') => `<section class="sec"><div class="sec-head"><h4>${title}</h4><span class="aside">${aside}</span></div>${body}</section>`;
+function statesBar(covered) {
+  const chips = [['普通', 0], ['已过站', 4], ['本站', 1], ['未到站', 30]];
+  return `<div class="states"><div class="states-by">${ic('states', 14)}状态 · 按 <span class="sel">站点状态 <span class="faint">stopState</span> ▾</span></div>
+    <div class="chips"><button class="s-chip own">自身属性</button>${chips.map(([v, n]) => `<button class="s-chip${covered.includes(v) ? '' : ' empty'}">${covered.includes(v) ? '' : '+ '}${v}<span class="n">${n}</span></button>`).join('')}</div></div>`;
+}
+function head(el, scope) {
+  return `<div class="insp-head"><div class="insp-title">${ic(el.icon, 17)}${el.label}<span class="kind">${el.kind}</span></div><div class="insp-scope">${scope}</div></div>`;
+}
+function inspector() {
+  if (state.scene === 'blank' || state.scene === 'param') {
+    return `${head({ icon: 'layers', label: '站点', kind: '画板 · 新模板' }, '停靠站点 v1 · 站点列的 35 项都用它')}
+      ${sec('自动排布', `<div class="line">${seg([['free', ic('free', 15)], ['row', ic('right', 15)], ['column', ic('down', 15)], ['grid', ic('grid', 15)]], 'free')}<span class="faint" style="font-size:12px">现在：自由</span></div>
+        <div class="note">点 ↓ 是纵向堆叠（Penpot、Figma 的自动布局同一个位置）。</div>`)}
+      ${sec('适用尺寸', `<div class="grid2">${f('宽', '8–800 mm')}${f('高', '80–110 mm')}</div><div class="note">按站点列每项的实际尺寸放宽，新建时已填好。</div>`)}
+      ${sec('文字缩字下限', `<div class="grid2">${f('', '5 mm', { title: '没写，用缺省' })}</div>`)}
+      <div class="addprops">+ 属性 <button>填充</button><button>描边</button><button>圆角</button><button>裁剪</button></div>`;
+  }
+  const el = ELEMENTS[state.sel];
+  const scope = '定义在 <b>站点</b> · 图上 35 处，改一处全改';
+  if (state.sel === 'name') {
+    return `${head(el, scope)}${statesBar(['已过站', '本站'])}
+      ${sec('位置与尺寸', `<div class="grid2">${f('W', String(el.box()[2]), { mode: '随内容', title: '打一个数就是固定' })}${f('H', String(el.box()[3]), { mode: '撑满', title: '这一处的实际高度；有地标的站短一些' })}</div>
+        <div class="line">${f('', '外边距 0', { full: true })}<span class="faint" style="font-size:12px">在「名称区」纵向堆叠里</span></div>`)}
+      ${sec('文字', `<div class="line"><div class="grow">${f('', 'hei', { mode: '' })}</div><div style="width:108px">${f('', 'Medium')}</div></div>
+        <div class="grid2" style="margin-top:6px">${f('', '站名字号 · 10 mm', { bound: true, title: '绑定了对外参数 stopNameSize，来自 标准线路单边「站名字号」' })}${f('', '字距 0 mm')}</div>
+        <div class="line">${f('', '#333333', { swatch: '#333333', full: true, ov: true })}</div>
+        <div class="line">${seg([['h', ic('horiz', 15)], ['v', ic('vert', 15)]], 'v')}${seg([['start', ic('alignL', 15)], ['center', ic('alignC', 15)], ['end', ic('alignR', 15)]], 'center')}${seg([['top', '上'], ['center', '中'], ['distribute', '散']], 'distribute')}</div>`,
+        '<span title="颜色在已过站、本站被覆盖">● 2 项被状态覆盖</span>')}
+      ${sec('内容', `<div><span class="token">站名</span></div><div class="note">打字是文字，/ 插入字段。一个文字元素只排一列。</div>`)}
+      ${sec('适配', `<div class="sumrow"><div class="txt"><div>收紧字距 → 压缩字形 · 缩字组 stopNames</div><div>这一处：没有压缩，字号 10 mm · 下限 5 mm</div></div><span class="faint">▸</span></div>`, '竖排')}
+      ${sec('显示', `<div class="grid2">${f('', '总是显示')}${f('', '不透明度 100%')}</div>`)}
+      <div class="addprops">+ 属性 <button>描边</button><button>旋转</button></div>`;
+  }
+  if (state.sel === 'area') {
+    return `${head(el, scope)}${statesBar(['本站'])}
+      ${sec('位置与尺寸', `<div class="grid2">${f('W', '12', { mode: '随内容' })}${f('H', '84', { mode: '撑满' })}</div>`)}
+      ${sec('自动排布', `<div class="line">${seg([['free', ic('free', 15)], ['row', ic('right', 15)], ['column', ic('down', 15)], ['grid', ic('grid', 15)]], 'column')}<span class="grow"></span>
+        <span class="nine" title="对齐：上中">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<i class="${i === 1 ? 'on' : ''}"></i>`).join('')}</span></div>
+        <div class="grid2" style="margin-top:6px">${f('', `${ic('gap', 14)} 间距 0`)}${f('', `${ic('pad', 14)} 内边距 1`)}</div>
+        <div class="note">内边距一格写四边，点开分别改；不再先选"分别设置"。</div>`)}
+      ${sec('外观', `<div class="line">${f('', '填充 · 没写', { full: true })}</div><div class="note">本站时 #FFF000（状态样式）。</div>`, '<span>● 本站覆盖</span>')}
+      ${sec('显示', `<div class="grid2">${f('', '总是显示')}${f('', '不透明度 100%')}</div>`)}
+      <div class="addprops">+ 属性 <button>描边</button><button>圆角</button><button>裁剪</button></div>`;
+  }
+  if (state.sel === 'badges') {
+    return `${head(el, scope)}
+      ${sec('循环', `<div class="grid2">${f('', '站名上方的标识', { bound: true })}${f('', '标识图标 →', { title: '进入被调模板' })}</div><div class="note">每项的数据：单值·文本 v1（badges 的一项）。不传参数。</div>`)}
+      ${sec('每项', `<div class="line">${seg([['row', ic('right', 15)], ['column', ic('down', 15)]], 'row')}<div class="grow"><div class="grid2">${f('宽', '9', { mode: '固定' })}${f('', `${ic('gap', 14)} 1`)}</div></div></div>
+        <div class="note">这一处：0 项。第 2 站 1 项，每项宽 9 mm。</div>`)}
+      ${sec('位置与尺寸', `<div class="grid2">${f('W', '0', { mode: '随内容' })}${f('H', '10', { mode: '固定' })}</div><div class="line">${f('', `${ic('margin', 14)} 外边距 · 下 2`, { full: true })}</div>`)}
+      <div class="addprops">+ 属性 <button>合并相邻</button><button>反序</button><button>只取一段</button></div>`;
+  }
+  return `${head(el, '定义在 <b>站点</b> · 当前样例显示 9 处，26 处因为「有地标」为否不显示')}${statesBar(['已过站'])}
+    ${sec('图片', `<div class="grid2">${f('', '地标', { bound: true, full: true })}</div><div class="line">${seg([['contain', '完整显示'], ['cover', '铺满裁切'], ['fill', '拉伸']], 'contain')}</div>`)}
+    ${sec('位置与尺寸', `<div class="grid2">${f('W', '8', { mode: '固定' })}${f('H', '8', { mode: '固定' })}</div><div class="line">${f('', `${ic('margin', 14)} 外边距 · 上 1`, { full: true })}</div>`)}
+    ${sec('显示', `<div class="grid2">${f('', '有地标', { bound: true, title: '当「地标」不为空：绑定时一步建好的派生变量 hasLandmark' })}${f('', '不透明度 100%', { ov: true })}</div>
+      <div class="note">绑定弹层里选"当「地标」不为空"，派生变量自动建好。</div>`)}
+    <div class="addprops">+ 属性 <button>单色重染</button><button>旋转</button></div>`;
+}
+function drawRight() { document.getElementById('right').innerHTML = inspector(); }
+
+// —— 底部工具栏 ——
+function drawToolbar() {
+  const t = (icon, label, title, cls = '') => `<button class="tool ${cls}" title="${title}">${ic(icon, 17)}${label ? `<small>${label}</small>` : ''}</button>`;
+  document.getElementById('toolbar').innerHTML = `${t('select', '', '选择 V', 'on')}${t('hand', '', '平移 H 或按住空格')}<span class="tbsep"></span>
+    ${t('text', '', '文字 T')}${t('image', '', '图片')}${t('shape', '', '形状：矩形、椭圆、线条、多边形、路径、二维码、条码')}${t('box', '', '容器 F')}${t('loop', '', '循环：先选列表与被调模板')}${t('call', '', '子模板调用')}<span class="tbsep"></span>
+    ${t('comment', '', '评论 C（第四期）', 'off')}<span class="tbsep"></span>
+    <span class="tool" style="cursor:default"><small>− 100% +</small></span>${t('layers', '叠加', '叠加层：问题、结构、适配、数据')}`;
+  document.getElementById('flyout')?.remove();
+  if (state.scene === 'insert') {
+    document.getElementById('toolbar').insertAdjacentHTML('afterend', `<div class="flyout" id="flyout">
+      ${[['text', '文字'], ['image', '图片'], ['shape', '矩形'], ['shape', '椭圆'], ['shape', '线条'], ['shape', '多边形'], ['grid', '二维码'], ['alignL', '条码']].map(([i, l]) => `<button>${ic(i, 20)}${l}</button>`).join('')}
+      <div style="grid-column:1/-1;color:var(--faint);font-size:12px;padding:4px 6px">点一下加进「名称区」，放在站名后面；也能拖到图上或图层里。</div></div>`);
+  }
+}
+
+// —— 弹层与快捷操作 ——
+function drawPopups() {
+  document.getElementById('pop')?.remove();
+  document.querySelector('.scrim')?.remove();
+  if (state.scene === 'param') {
+    document.getElementById('stage').insertAdjacentHTML('beforeend', `<div class="pop" id="pop" style="left:296px;top:330px">
+      <h5>新建参数</h5>
+      <div class="row2"><span class="faint">名称</span><div class="in focus mono">stopNameSize<span style="width:1.5px;height:16px;background:var(--ink);margin-left:1px"></span></div></div>
+      <div class="row2"><span class="faint">显示名称</span><div class="in faint">站名字号</div></div>
+      <div class="row2"><span class="faint">类型</span>${seg([['text', '文本'], ['number', '数值'], ['color', '颜色'], ['boolean', '布尔'], ['more', '⋯']], 'number')}</div>
+      <div class="row2"><span class="faint">谁来给</span>${seg([['public', '调用方（对外）'], ['internal', '设计时定']], 'public')}</div>
+      <div class="row2"><span class="faint">缺省值</span><div class="in">10<span class="faint" style="margin-left:auto">mm</span></div></div>
+      <div class="actions"><button class="btn">取消</button><button class="btn primary">建好 ↵</button></div></div>`);
+  }
+  if (state.scene === 'quick') {
+    document.body.insertAdjacentHTML('beforeend', `<div class="scrim"><div class="palette">
+      <div class="q">${ic('sparkle', 18)}竖<span class="caret"></span><span class="grow"></span><span class="kbd">Ctrl /</span></div>
+      <div class="grp"><div class="grp-t">对选中的「站名」</div>
+        <div class="it on">${ic('vert', 16)}书写方向：竖排<span class="r">${ic('enter', 14)}</span></div>
+        <div class="it">${ic('sparkle', 16)}适配：竖排站名常用写法（收紧字距 → 压缩字形，加入缩字组）<span class="r"></span></div>
+        <div class="it">${ic('alignC', 16)}垂直对齐：分散<span class="r"></span></div></div>
+      <div class="grp"><div class="grp-t">这个模板</div>
+        <div class="it">${ic('plus', 16)}新建派生变量…<span class="r"></span></div>
+        <div class="it">${ic('extract', 16)}把选中的提取为子模板…<span class="r"></span></div></div>
+      <div class="foot"><span>↑↓ 选择</span><span>Enter 执行</span><span>动作与属性都能搜（Figma 的 Quick actions）</span></div></div></div>`);
+  }
+}
+
+function render() {
+  document.getElementById('scenes').innerHTML = Object.entries(SCENES).map(([key, label]) => `<button class="${key === state.scene ? 'on' : ''}" data-scene="${key}">${label}</button>`).join('');
+  document.querySelectorAll('[data-scene]').forEach((button) => button.addEventListener('click', () => {
+    state.scene = button.dataset.scene; state.tab = state.scene === 'blank' || state.scene === 'param' ? 'data' : state.scene === 'agent' ? 'agent' : 'layers'; render();
+  }));
+  document.getElementById('docName').textContent = '站点';
+  drawScope(); drawLeft(); drawRight(); drawToolbar(); drawOverlay(); drawPopups();
+}
+document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => { state.tab = tab.dataset.tab; render(); }));
+window.addEventListener('resize', drawOverlay);
+window.addEventListener('keydown', (event) => {
+  if (event.ctrlKey && event.key === '/') { event.preventDefault(); state.scene = state.scene === 'quick' ? 'done' : 'quick'; render(); }
+  if (event.key === 'Escape' && state.scene !== 'done') { state.scene = 'done'; state.tab = 'layers'; render(); }
+});
+document.getElementById('img').addEventListener('load', drawOverlay);
+render();
+</script>
+</body>
+</html>
