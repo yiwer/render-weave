@@ -2,7 +2,7 @@
 
 本页只维护索引：标题、直接阻塞与验收映射。状态以各票据的 `**Status:**` 行为准，验收记录写在各票据的 `## Answer`。
 
-父规格：[第三轮 PRD](spec.md)。设计事实源：[第三轮方案](../../docs/template-design-refine.md)与[原型](../../docs/prototypes/template-design-v3/README.md)。决定见 M395、M396。
+父规格：[第三轮 PRD](spec.md)。设计事实源：[第三轮方案](../../docs/template-design-refine.md)与[原型](../../docs/prototypes/template-design-v3/README.md)。决定见 M395、M396、M397。
 
 ## A 检查器
 
